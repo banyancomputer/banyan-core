@@ -1,11 +1,8 @@
-use axum::http::StatusCode;
-use axum::response::IntoResponse;
-use axum::{Json, Router};
+use axum::Router;
 use http::header::{ACCEPT, AUTHORIZATION, ORIGIN};
 use http::Method;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::limit::RequestBodyLimitLayer;
-use tower_http::validate_request::ValidateRequestHeaderLayer;
 
 const REQUEST_BODY_LIMIT: usize = 65_535;
 
@@ -26,14 +23,5 @@ pub fn router() -> Router {
         // todo to limit this more in the future. See:
         // https://docs.rs/tower-http/latest/tower_http/limit/index.html
         .layer(RequestBodyLimitLayer::new(REQUEST_BODY_LIMIT))
-        .layer(ValidateRequestHeaderLayer::accept("application/json"))
         .layer(cors_layer)
-        .fallback(not_found_handler)
-}
-
-async fn not_found_handler() -> impl IntoResponse {
-    (
-        StatusCode::NOT_FOUND,
-        Json(serde_json::json!({"status": "not found"})),
-    )
 }
