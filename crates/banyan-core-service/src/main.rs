@@ -3,8 +3,10 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::{EnvFilter, Layer};
 
-mod error;
-mod http;
+mod api;
+mod util;
+mod health_check;
+mod http_server;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -20,7 +22,7 @@ async fn main() -> anyhow::Result<()> {
 
     tracing_subscriber::registry().with(stderr_layer).init();
 
-    http::serve().await?;
+    http_server::run().await?;
 
     Ok(())
 }

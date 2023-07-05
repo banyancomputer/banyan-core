@@ -1,4 +1,4 @@
-use crate::http::health_check::{HealthCheckResponse, HealthCheckService};
+use crate::health_check::{HealthCheckResponse, HealthCheckService};
 
 pub async fn liveness_check() -> HealthCheckResponse {
     HealthCheckResponse::Ready

@@ -5,8 +5,8 @@ use std::time::Duration;
 use axum::error_handling::HandleErrorLayer;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::{Server, ServiceExt};
 use axum::{Json, Router};
+use axum::{Server, ServiceExt};
 use http::header;
 use tower::ServiceBuilder;
 use tower_http::request_id::MakeRequestUuid;
@@ -18,12 +18,11 @@ use tower_http::validate_request::ValidateRequestHeaderLayer;
 use tower_http::{LatencyUnit, ServiceBuilderExt};
 use tracing::Level;
 
-mod api;
-mod health_check;
+use crate::{api, health_check};
 
 // todo: might want a longer timeout in some parts of the API and I'd like to be able customize a
 // few layers eventually such as CORS and request timeouts but that's for something down the line
-const REQUEST_TIMEOUT_SECS: u64 = 30;
+const REQUEST_TIMEOUT_SECS: u64 = 90;
 
 // todo: probably want better fallback error pages...
 async fn handle_error(error: tower::BoxError) -> impl IntoResponse {
@@ -70,7 +69,7 @@ async fn not_found_handler() -> impl IntoResponse {
     )
 }
 
-pub async fn serve() -> anyhow::Result<()> {
+pub async fn run() -> anyhow::Result<()> {
     let sensitive_headers: Arc<[_]> = Arc::new([
         header::AUTHORIZATION,
         header::COOKIE,

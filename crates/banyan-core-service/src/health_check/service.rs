@@ -2,8 +2,7 @@ use axum::async_trait;
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
 
-use crate::http::health_check::HealthCheckError;
-use crate::http::health_check::HealthCheckResponse;
+use crate::health_check::{HealthCheckError, HealthCheckResponse};
 
 pub struct Service;
 
