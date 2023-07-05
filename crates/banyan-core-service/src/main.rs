@@ -5,6 +5,7 @@ use tracing_subscriber::{EnvFilter, Layer};
 
 mod api;
 mod util;
+mod extractors;
 mod health_check;
 mod http_server;
 

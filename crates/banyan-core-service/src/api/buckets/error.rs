@@ -4,15 +4,9 @@ use std::fmt::{Display, Formatter, Result};
 #[non_exhaustive]
 pub struct Error;
 
-impl Error {
-    pub fn is_temporary(&self) -> bool {
-        false
-    }
-}
-
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        f.write_str("an unknown healthcheck route error occurred")
+        f.write_str("an unknown bucket route error occurred")
     }
 }
 

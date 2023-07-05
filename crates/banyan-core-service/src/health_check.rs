@@ -7,11 +7,11 @@ use tower_http::limit::RequestBodyLimitLayer;
 
 mod error;
 mod handlers;
-mod response;
+mod responses;
 mod service;
 
-pub use error::HealthCheckError;
-pub use response::Response as HealthCheckResponse;
+pub use error::Error as HealthCheckError;
+pub use responses::Response as HealthCheckResponse;
 pub use service::Service as HealthCheckService;
 
 // requests to the healthcheck endpoints shouldn't contain anything other than headers, anything
@@ -26,8 +26,8 @@ pub fn router() -> Router {
         .allow_credentials(false);
 
     Router::new()
-        .layer(RequestBodyLimitLayer::new(REQUEST_BODY_LIMIT))
-        .layer(cors_layer)
         .route("/healthz", get(handlers::liveness_check))
         .route("/readyz", get(handlers::readiness_check))
+        .layer(RequestBodyLimitLayer::new(REQUEST_BODY_LIMIT))
+        .layer(cors_layer)
 }
