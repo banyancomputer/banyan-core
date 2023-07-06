@@ -15,30 +15,30 @@ use jsonwebtoken::{
 use serde::{Deserialize, Serialize};
 
 // Allow 15 minute token windows for now, this is likely to change in the future
-const EXPIRATION_WINDOW_SECS: u64 = 900;
+pub const EXPIRATION_WINDOW_SECS: u64 = 900;
 
 // todo: extract this from state, populate this from the env
-const TESTING_API_KEY: &'static str = "This key will come from the environment";
+pub const TESTING_API_KEY: &'static str = "This key will come from the environment";
 
 #[derive(Deserialize, Serialize)]
 pub struct ApiToken {
     #[serde(rename = "aud")]
-    audience: String,
+    pub audience: String,
 
     #[serde(rename = "sub")]
-    subject: String,
+    pub subject: String,
 
     #[serde(rename = "exp")]
-    expiration: u64,
+    pub expiration: u64,
 
     #[serde(rename = "nbf")]
-    not_before: u64,
+    pub not_before: u64,
 
     #[serde(skip_serializing_if = "Vec::is_empty", rename = "att")]
-    attenuation: Vec<Attenuation>,
+    pub attenuation: Vec<Attenuation>,
 
     #[serde(skip_serializing_if = "Vec::is_empty", rename = "prf")]
-    proofs: Vec<String>,
+    pub proofs: Vec<String>,
 }
 
 #[async_trait]
@@ -185,8 +185,8 @@ enum ApiKeyAuthorizationErrorKind {
 #[derive(Deserialize, Serialize)]
 pub struct Attenuation {
     #[serde(rename = "with")]
-    target_entity: String,
+    pub target_entity: String,
 
     #[serde(rename = "can")]
-    permission: String,
+    pub permission: String,
 }

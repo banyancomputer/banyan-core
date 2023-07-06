@@ -1,13 +1,6 @@
-use axum::Json;
-
-use axum::http::StatusCode;
-use axum::response::IntoResponse;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-
-use crate::api::buckets::BucketError;
-use crate::util::collect_error_messages;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -35,25 +28,6 @@ pub struct DetailedBucket {
 
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
-}
-
-#[derive(Serialize)]
-pub struct ErrorResponse {
-    pub errors: Vec<String>,
-}
-
-impl From<BucketError> for ErrorResponse {
-    fn from(value: BucketError) -> Self {
-        Self {
-            errors: collect_error_messages(value),
-        }
-    }
-}
-
-impl IntoResponse for ErrorResponse {
-    fn into_response(self) -> axum::response::Response {
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(self)).into_response()
-    }
 }
 
 #[derive(Serialize)]
