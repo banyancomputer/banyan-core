@@ -6,7 +6,7 @@ pub struct Error;
 
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        f.write_str("an unknown bucket route error occurred")
+        f.write_str("an unknown auth route error occurred")
     }
 }
 

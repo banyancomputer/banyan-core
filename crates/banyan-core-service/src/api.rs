@@ -3,6 +3,7 @@ use http::header::{ACCEPT, AUTHORIZATION, ORIGIN};
 use http::Method;
 use tower_http::cors::{Any, CorsLayer};
 
+mod auth;
 mod buckets;
 
 pub fn router() -> Router {
@@ -17,6 +18,7 @@ pub fn router() -> Router {
         .allow_credentials(false);
 
     Router::new()
+        .nest("/auth", auth::router())
         .nest("/buckets", buckets::router())
         .layer(cors_layer)
 }

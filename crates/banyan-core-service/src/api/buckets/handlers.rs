@@ -1,5 +1,5 @@
 use axum::extract::{self, Path};
-use axum::headers::{ETag, IfNoneMatch};
+use axum::headers::{ETag, IfMatch, IfNoneMatch};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::TypedHeader;
@@ -20,10 +20,18 @@ pub async fn create(_api_token: ApiToken, extract::Json(new_bucket): extract::Js
             .into_response();
     }
 
-    (StatusCode::OK, "created".to_string()).into_response()
+    (StatusCode::OK, "todo").into_response()
 }
 
-pub async fn index(_api_token: ApiToken) -> impl IntoResponse {
+pub async fn destroy(
+    _api_token: ApiToken,
+    Path(_bucket_id): Path<Uuid>,
+    _if_match: Option<TypedHeader<IfMatch>>,
+) -> Response {
+    (StatusCode::OK, "todo").into_response()
+}
+
+pub async fn index(_api_token: ApiToken) -> Response {
     let bucket_list = vec![
         MinimalBucket {
             uuid: Uuid::parse_str("79bfee96-0a93-4f79-87d1-212675823d6a").expect("valid uuid"),
@@ -49,7 +57,15 @@ pub async fn index(_api_token: ApiToken) -> impl IntoResponse {
         },
     ];
 
-    (StatusCode::OK, axum::Json(bucket_list))
+    (StatusCode::OK, axum::Json(bucket_list)).into_response()
+}
+
+pub async fn publish_metadata(
+    _api_token: ApiToken,
+    Path(_bucket_id): Path<Uuid>,
+    _if_match: Option<TypedHeader<IfMatch>>,
+) -> Response {
+    (StatusCode::OK, "todo").into_response()
 }
 
 pub async fn show(
