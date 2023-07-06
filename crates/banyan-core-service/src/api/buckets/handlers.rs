@@ -1,6 +1,10 @@
+use std::str::FromStr;
+
 use axum::extract::{self, Path};
+use axum::headers::{ETag, IfNoneMatch};
 use axum::http::StatusCode;
-use axum::response::IntoResponse;
+use axum::response::{IntoResponse, Response};
+use axum::TypedHeader;
 use chrono::{DateTime, FixedOffset, Utc};
 use uuid::Uuid;
 use validify::Validate;
@@ -8,15 +12,16 @@ use validify::Validate;
 use crate::api::buckets::requests::*;
 use crate::api::buckets::responses::*;
 
-pub async fn create(extract::Json(new_bucket): extract::Json<CreateBucket>) -> impl IntoResponse {
+pub async fn create(extract::Json(new_bucket): extract::Json<CreateBucket>) -> Response {
     if let Err(errors) = new_bucket.validate() {
         return (
             StatusCode::BAD_REQUEST,
             format!("errors: {:?}", errors.errors()),
-        );
+        )
+            .into_response();
     }
 
-    (StatusCode::OK, "created".to_string())
+    (StatusCode::OK, "created".to_string()).into_response()
 }
 
 pub async fn index() -> impl IntoResponse {
@@ -48,7 +53,23 @@ pub async fn index() -> impl IntoResponse {
     (StatusCode::OK, axum::Json(bucket_list))
 }
 
-pub async fn show(Path(bucket_id): Path<Uuid>) -> impl IntoResponse {
+pub async fn show(
+    Path(bucket_id): Path<Uuid>,
+    if_none_match: Option<TypedHeader<IfNoneMatch>>,
+) -> Response {
+    if let Some(etag) = if_none_match {
+        tracing::info!("etag: {etag:?}");
+
+        let current_etag =
+            ETag::from_str("\"bafybeihdwdcefgh4dqkjv67uzcmw7ojee6xedzdetojuzjevtenxquvyku\"")
+                .expect("valid etag");
+
+        if etag.precondition_passes(&current_etag) {
+            tracing::info!("would return not modified");
+            //return (StatusCode::NOT_MODIFIED, "hasn't changed").into_response();
+        }
+    }
+
     let bucket = DetailedBucket {
         uuid: bucket_id,
         friendly_name: "test interactive bucket".to_string(),
@@ -88,5 +109,5 @@ pub async fn show(Path(bucket_id): Path<Uuid>) -> impl IntoResponse {
         ),
     };
 
-    (StatusCode::OK, axum::Json(bucket))
+    (StatusCode::OK, axum::Json(bucket)).into_response()
 }
