@@ -9,8 +9,9 @@ use validify::Validate;
 
 use crate::api::buckets::requests::*;
 use crate::api::buckets::responses::*;
+use crate::extractors::ApiToken;
 
-pub async fn create(extract::Json(new_bucket): extract::Json<CreateBucket>) -> Response {
+pub async fn create(_api_token: ApiToken, extract::Json(new_bucket): extract::Json<CreateBucket>) -> Response {
     if let Err(errors) = new_bucket.validate() {
         return (
             StatusCode::BAD_REQUEST,
@@ -22,7 +23,7 @@ pub async fn create(extract::Json(new_bucket): extract::Json<CreateBucket>) -> R
     (StatusCode::OK, "created".to_string()).into_response()
 }
 
-pub async fn index() -> impl IntoResponse {
+pub async fn index(_api_token: ApiToken) -> impl IntoResponse {
     let bucket_list = vec![
         MinimalBucket {
             uuid: Uuid::parse_str("79bfee96-0a93-4f79-87d1-212675823d6a").expect("valid uuid"),
@@ -52,6 +53,7 @@ pub async fn index() -> impl IntoResponse {
 }
 
 pub async fn show(
+    _api_token: ApiToken,
     Path(bucket_id): Path<Uuid>,
     if_none_match: Option<TypedHeader<IfNoneMatch>>,
 ) -> Response {
