@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use axum::extract::{self, Path};
 use axum::headers::{ETag, IfNoneMatch};
 use axum::http::StatusCode;
@@ -57,14 +55,14 @@ pub async fn show(
     Path(bucket_id): Path<Uuid>,
     if_none_match: Option<TypedHeader<IfNoneMatch>>,
 ) -> Response {
-    if let Some(etag) = if_none_match {
-        tracing::info!("etag: {etag:?}");
+    if let Some(TypedHeader(etag_hdr)) = if_none_match {
+        let current_etag: ETag = "\"bafybeihdwdcefgh4dqkjv67uzcmw7ojee6xedzdetojuzjevtenxquvyku\""
+            .parse()
+            .expect("valid etag");
 
-        let current_etag =
-            ETag::from_str("\"bafybeihdwdcefgh4dqkjv67uzcmw7ojee6xedzdetojuzjevtenxquvyku\"")
-                .expect("valid etag");
+        tracing::info!("req etag:{etag_hdr:?}\ncur etag:{current_etag:?}\n");
 
-        if etag.precondition_passes(&current_etag) {
+        if etag_hdr.precondition_passes(&current_etag) {
             tracing::info!("would return not modified");
             //return (StatusCode::NOT_MODIFIED, "hasn't changed").into_response();
         }
