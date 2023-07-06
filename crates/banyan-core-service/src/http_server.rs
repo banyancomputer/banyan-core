@@ -81,7 +81,7 @@ pub async fn run() -> anyhow::Result<()> {
         .make_span_with(DefaultMakeSpan::new().level(Level::INFO))
         .on_response(
             DefaultOnResponse::new()
-                .include_headers(true)
+                .include_headers(false)
                 .level(Level::INFO)
                 .latency_unit(LatencyUnit::Micros),
         )
