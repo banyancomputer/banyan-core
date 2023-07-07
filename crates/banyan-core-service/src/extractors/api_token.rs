@@ -19,6 +19,7 @@ pub const EXPIRATION_WINDOW_SECS: u64 = 900;
 pub const TESTING_API_KEY: &str = "This key will come from the environment";
 
 #[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct ApiToken {
     #[serde(rename = "aud")]
     pub audience: String,
@@ -188,6 +189,7 @@ enum ApiKeyAuthorizationErrorKind {
 
 // todo: might want to define this format tighter, good enough for now
 #[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct Attenuation {
     #[serde(rename = "with")]
     pub target_entity: String,
