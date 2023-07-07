@@ -23,6 +23,7 @@ pub struct ApiToken {
     #[serde(rename = "aud")]
     pub audience: String,
 
+    // todo: may be able to get more structured about the subject to go along with attenuations.
     #[serde(rename = "sub")]
     pub subject: String,
 
@@ -32,10 +33,10 @@ pub struct ApiToken {
     #[serde(rename = "nbf")]
     pub not_before: u64,
 
-    #[serde(skip_serializing_if = "Vec::is_empty", rename = "att")]
+    #[serde(default, skip_serializing_if = "Vec::is_empty", rename = "att")]
     pub attenuation: Vec<Attenuation>,
 
-    #[serde(skip_serializing_if = "Vec::is_empty", rename = "prf")]
+    #[serde(default, skip_serializing_if = "Vec::is_empty", rename = "prf")]
     pub proofs: Vec<String>,
 }
 
@@ -164,6 +165,11 @@ impl std::error::Error for ApiKeyAuthorizationError {
 
 impl IntoResponse for ApiKeyAuthorizationError {
     fn into_response(self) -> axum::response::Response {
+        // Report to the CLI, not to the end user. Don't give attackers knowledge of what we didn't
+        // like about their request
+        use crate::util::collect_error_messages;
+        tracing::error!("authentication failed: {:?}", &collect_error_messages(self));
+
         let err_msg = serde_json::json!({ "status": "not authorized" });
         (StatusCode::UNAUTHORIZED, Json(err_msg)).into_response()
     }
