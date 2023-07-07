@@ -54,7 +54,9 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: stable
+          # Nightly is needed for code coverage collection
+          toolchain: nightly
+          override: true
 
       - uses: actions-rs/cargo@v1
         name: Run all workspace tests
