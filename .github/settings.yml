@@ -24,7 +24,7 @@ repository:
     enable_vulnerability_alerts: true
 
 branches:
-  - name: master
+  - name: main
     protection:
       enforce_admins: true
 
@@ -41,12 +41,12 @@ branches:
 
       # Required to to be present due too a limitation in GitHub's GraphQL API
       restrictions: null
-      required_linear_history: false
+      required_linear_history: true
 
 teams:
   # High level change management is controlled by members in this authorized group
   - name: change-management-owners
     permission: admin
-  # Allow internal-engineers create PRs but they need to be approved by devops team (per CODEOWNERS)
+  # Main developers of this repository
   - name: internal-engineers
     permission: push
