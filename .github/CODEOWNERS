@@ -1,0 +1,9 @@
+# Note: Order is important in this file, the last matching pattern has the most precedence.
+
+# By default allow any internal-engineers team member to approve PRs
+*           @banyancomputer/internal-engineers
+
+# The .github/ directory is a special case, the system change management policy
+# requires changes at this level to be approved by appointed change management
+# owners
+.github/    @banyancomputer/change-management-owners
