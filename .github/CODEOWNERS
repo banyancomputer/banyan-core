@@ -1,9 +1,16 @@
 # Note: Order is important in this file, the last matching pattern has the most precedence.
 
 # By default allow any internal-engineers team member to approve PRs
-*           @banyancomputer/internal-engineers
+*               @banyancomputer/internal-engineers
 
-# The .github/ directory is a special case, the system change management policy
-# requires changes at this level to be approved by appointed change management
-# owners
-.github/    @banyancomputer/change-management-owners
+# File relevant to deployment and building should be approved by devops team
+# members.
+Dockerfile      @banyancomputer/devops
+k8s/            @banyancomputer/devops
+build_scripts/  @banyancomputer/devops
+
+# The infrastructure configuration directories are special cases, the system
+# change management policy requires changes at this level to be approved by
+# appointed change management owners
+.github/        @banyancomputer/change-management-owners
+deny.toml       @banyancomputer/change-management-owners
