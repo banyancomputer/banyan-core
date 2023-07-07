@@ -22,6 +22,11 @@ notice = "deny"
 # the other crate their identifier should be added to this list. It should be
 # periodically reviewed and cleaned out as fixes become available.
 ignore = [
+    # Our dependencies are locked on this particular version so we are unable
+    # to update to a non-vulnerable version. That being said we're also not
+    # impacted by this vulnerability as the impacted code is converting between
+    # local timezones from offsets and we only operate on UTC timestamps.
+    "RUSTSEC-2020-0071",
 ]
 
 [licenses]
@@ -34,7 +39,9 @@ unlicensed = "deny"
 allow = [
   "Apache-2.0",
   "BSD-3-Clause",
+  "ISC",
   "MIT",
+  "OpenSSL",
   "Unicode-DFS-2016",
 ]
 
@@ -61,6 +68,13 @@ exceptions = [
     { name = "banyan-storage-provider-service", allow = ["LicenseRef-LICENSE.txt"] },
 ]
 
+# Ring doesn't specify the license in their Cargo manifest, we have to
+# specifically tell cargo-deny what it is.
+[[licenses.clarify]]
+name = "ring"
+expression = "OpenSSL"
+license-files = [{ path = "LICENSE", hash = 0xbd0eed23 }]
+
 [bans]
 multiple-versions = "deny"
 wildcards = "deny"
@@ -76,17 +90,29 @@ deny = []
 # Certain crates/versions that will be skipped when doing duplicate detection.
 # They just couldn't be resolved ourselves.
 skip = [
-    { name = "base64", version = "0.13.1" }, # headers v0.3.8
-    { name = "base64", version = "0.20.0" }, # tower-http v0.4.1
+    { name = "base64", version = "0.13.1" },    # headers v0.3.8
+    { name = "base64", version = "0.20.0" },    # tower-http v0.4.1
 
-    { name = "bitflags", version = "1.3.1" }, # several dependencies
-    { name = "bitflags", version = "2.3.2" }, # tower-http 0.4.1
+    { name = "bitflags", version = "1.3.1" },   # several dependencies
+    { name = "bitflags", version = "2.3.2" },   # tower-http 0.4.1
 
-    { name = "hermit-abi", version = "0.2.6" }, # num_cpus v1.15.0
-    { name = "hermit-abi", version = "0.3.1" }, # io-lifetimes v1.0.11
+    { name = "idna", version = "0.3.0" },   # validify v1.0.11
+    { name = "idna", version = "0.4.0" },   # url v2.4.0
 
-    { name = "regex-syntax", version = "0.6.29" },  # several dependencies
-    { name = "regex-syntax", version = "0.7.2" },   # regex v1.8.4
+    { name = "regex-automata", version = "0.1.10" },    # matchers v0.1.0
+    { name = "regex-automata", version = "0.3.1" },     # several dependencies
+
+    { name = "regex-syntax", version = "0.6.29" },      # several dependencies
+    { name = "regex-syntax", version = "0.7.2" },       # regex v1.8.4
+
+    { name = "syn", version = "1.0.109" },  # several dependencies
+    { name = "syn", version = "2.0.23" },   # several dependencies
+
+    { name = "time", version = "0.1.45" },  # chrono v0.4.26
+    { name = "time", version = "0.3.22" },  # several dependencies
+
+    { name = "wasi", version = "0.10.0+wasi-snapshot-preview1" },   # time v0.1.45
+    { name = "wasi", version = "0.11.0+wasi-snapshot-preview1" }    # several dependencies
 ]
 
 [sources]
