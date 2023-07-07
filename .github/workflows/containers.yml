@@ -1,0 +1,24 @@
+name: 📦 Build Containers
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-core-service:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - uses: snapserv/action-container-builder@master
+        with:
+          target_repository: banyancomputer/core-service
+          build_dockerfile: Dockerfile.core
+          tag_with_ref: true
+          #target_registry_username: {{ secrets.DOCKER_REGISTRY_USERNAME }}
+          #target_registry_password: {{ secrets.DOCKER_REGISTRY_PASSWORD }}
+          #cache_repository: docker.pkg.github.com/${{ github.repository }}/my-image
+          #cache_registry_username: ${{ github.repository_owner }}
+          #cache_registry_password: ${{ secrets.GITHUB_TOKEN }}
