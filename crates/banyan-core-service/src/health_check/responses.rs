@@ -42,3 +42,16 @@ impl IntoResponse for Response {
         (status_code, Json(self)).into_response()
     }
 }
+
+#[derive(Serialize)]
+pub struct VersionResponse<'a> {
+    pub build_profile: &'a str,
+    pub features: Vec<&'a str>,
+    pub version: &'a str,
+}
+
+impl<'a> IntoResponse for VersionResponse<'a> {
+    fn into_response(self) -> axum::response::Response {
+        (StatusCode::OK, Json(self)).into_response()
+    }
+}

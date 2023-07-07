@@ -26,6 +26,7 @@ RUN cargo build -p $SERVICE --release
 
 # Copy in the actual service source code, and perform the release build
 # (install is release mode by default).
+COPY crates/$SERVICE/build.rs /usr/src/build/crates/$SERVICE/build.rs
 COPY crates/$SERVICE/src /usr/src/build/crates/$SERVICE/src
 RUN cargo install --path crates/$SERVICE/ --bins
 
