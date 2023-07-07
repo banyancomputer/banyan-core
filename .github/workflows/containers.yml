@@ -12,7 +12,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: snapserv/action-container-builder@master
+      - name: Build Core Service
+        uses: snapserv/action-container-builder@master
         with:
           target_repository: banyancomputer/core-service
           build_dockerfile: Dockerfile.core
