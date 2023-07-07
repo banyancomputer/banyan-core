@@ -5,16 +5,11 @@ on:
       - main
 
 jobs:
-  build-core-service:
+  build-containers:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
-      # todo: find a github action to handle this, I tried
-      # snapserv/action-container-builder but it's no longer maintained and
-      # broken in subtle ways.
-      - name: Build Core Service
-        run: |
-          docker build -t banyancomputer/core-server:latest -f Dockerfile.core .
+      - run: ./scripts/build_containers.sh
