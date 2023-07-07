@@ -15,7 +15,7 @@ pub async fn readiness_check(mut healthcheck_service: HealthCheckService) -> Hea
 pub async fn version() -> VersionResponse<'static> {
     VersionResponse {
         build_profile: env!("BUILD_PROFILE"),
-        features: env!("BUILD_FEATURES").split(",").collect(),
+        features: env!("BUILD_FEATURES").split(',').collect(),
         version: env!("REPO_VERSION"),
     }
 }
