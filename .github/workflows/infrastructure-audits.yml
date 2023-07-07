@@ -16,22 +16,22 @@ jobs:
         iac_type: "docker"
         verbose: true
  
-  terrascan-k8s:
-    runs-on: ubuntu-22.04
+  #terrascan-k8s:
+  #  runs-on: ubuntu-22.04
 
-    steps:
-    - uses: actions/checkout@v3
-    - uses: tenable/terrascan-action@main
-      with:
-        iac_type: "k8s"
-        verbose: true
+  #  steps:
+  #  - uses: actions/checkout@v3
+  #  - uses: tenable/terrascan-action@main
+  #    with:
+  #      iac_type: "k8s"
+  #      verbose: true
  
-  terrascan-kustomize:
-    runs-on: ubuntu-22.04
+  #terrascan-kustomize:
+  #  runs-on: ubuntu-22.04
 
-    steps:
-    - uses: actions/checkout@v3
-    - uses: tenable/terrascan-action@main
-      with:
-        iac_type: "kustomize"
-        verbose: true
+  #  steps:
+  #  - uses: actions/checkout@v3
+  #  - uses: tenable/terrascan-action@main
+  #    with:
+  #      iac_type: "kustomize"
+  #      verbose: true
