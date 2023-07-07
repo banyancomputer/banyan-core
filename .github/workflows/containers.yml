@@ -12,14 +12,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      # todo: find a github action to handle this, I tried
+      # snapserv/action-container-builder but it's no longer maintained and
+      # broken in subtle ways.
       - name: Build Core Service
-        uses: snapserv/action-container-builder@master
-        with:
-          target_repository: banyancomputer/core-service
-          build_dockerfile: Dockerfile.core
-          tag_with_ref: true
-          #target_registry_username: {{ secrets.DOCKER_REGISTRY_USERNAME }}
-          #target_registry_password: {{ secrets.DOCKER_REGISTRY_PASSWORD }}
-          #cache_repository: docker.pkg.github.com/${{ github.repository }}/my-image
-          #cache_registry_username: ${{ github.repository_owner }}
-          #cache_registry_password: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          docker build -t banyancomputer/core-server:latest -f Dockerfile.core .
