@@ -20,11 +20,9 @@ pub async fn fake_token() -> Response {
     };
 
     let key = EncodingKey::from_secret(TESTING_API_KEY.as_ref());
-    let token_contents = encode(&Header::default(), &api_token, &key)
-        .map_err(|_| AuthError)
-        .map_err(|ae| {
-            return ErrorResponse::from(ae).into_response();
-        });
 
-    (StatusCode::OK, token_contents).into_response()
+    match encode(&Header::default(), &api_token, &key) {
+        Ok(token_contents) => (StatusCode::OK, token_contents).into_response(),
+        Err(_) => ErrorResponse::from(AuthError).into_response(),
+    }
 }

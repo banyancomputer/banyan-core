@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 pub const EXPIRATION_WINDOW_SECS: u64 = 900;
 
 // todo: extract this from state, populate this from the env
-pub const TESTING_API_KEY: &'static str = "This key will come from the environment";
+pub const TESTING_API_KEY: &str = "This key will come from the environment";
 
 #[derive(Deserialize, Serialize)]
 pub struct ApiToken {
