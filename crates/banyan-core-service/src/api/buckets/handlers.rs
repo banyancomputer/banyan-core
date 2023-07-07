@@ -11,7 +11,10 @@ use crate::api::buckets::requests::*;
 use crate::api::buckets::responses::*;
 use crate::extractors::ApiToken;
 
-pub async fn create(_api_token: ApiToken, extract::Json(new_bucket): extract::Json<CreateBucket>) -> Response {
+pub async fn create(
+    _api_token: ApiToken,
+    extract::Json(new_bucket): extract::Json<CreateBucket>,
+) -> Response {
     if let Err(errors) = new_bucket.validate() {
         return (
             StatusCode::BAD_REQUEST,

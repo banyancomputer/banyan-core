@@ -1,17 +1,15 @@
 use std::fmt::{self, Display, Formatter};
 
 use axum::async_trait;
-use axum::extract::{FromRequestParts, TypedHeader};
 use axum::extract::rejection::TypedHeaderRejection;
+use axum::extract::{FromRequestParts, TypedHeader};
 use axum::headers::authorization::Bearer;
 use axum::headers::Authorization;
 use axum::http::request::Parts;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::{Json, RequestPartsExt};
-use jsonwebtoken::{
-    decode, Algorithm, DecodingKey, Validation,
-};
+use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
 use serde::{Deserialize, Serialize};
 
 // Allow 15 minute token windows for now, this is likely to change in the future
@@ -106,18 +104,19 @@ impl ApiKeyAuthorizationError {
         use jsonwebtoken::errors::ErrorKind::*;
 
         let kind = match err.kind() {
-            Base64(_) | InvalidAudience | InvalidIssuer | InvalidSubject | InvalidToken | MissingAlgorithm | MissingRequiredClaim(_) => {
-                ApiKeyAuthorizationErrorKind::FormatError(err)
-            },
-            ExpiredSignature | ImmatureSignature | InvalidAlgorithm | InvalidAlgorithmName | InvalidSignature => {
-                ApiKeyAuthorizationErrorKind::MaliciousConstruction(err)
-            },
+            Base64(_)
+            | InvalidAudience
+            | InvalidIssuer
+            | InvalidSubject
+            | InvalidToken
+            | MissingAlgorithm
+            | MissingRequiredClaim(_) => ApiKeyAuthorizationErrorKind::FormatError(err),
+            ExpiredSignature | ImmatureSignature | InvalidAlgorithm | InvalidAlgorithmName
+            | InvalidSignature => ApiKeyAuthorizationErrorKind::MaliciousConstruction(err),
             InvalidEcdsaKey | InvalidKeyFormat | InvalidRsaKey(_) => {
                 ApiKeyAuthorizationErrorKind::InternalCryptographyIssue(err)
-            },
-            _ => {
-                ApiKeyAuthorizationErrorKind::UnknownTokenError(err)
             }
+            _ => ApiKeyAuthorizationErrorKind::UnknownTokenError(err),
         };
 
         Self { kind }
