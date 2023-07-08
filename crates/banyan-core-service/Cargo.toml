@@ -7,6 +7,7 @@ license = "LicenseRef-LICENSE.txt"
 [dependencies]
 anyhow = "^1"
 chrono = { version = "0.4.26", features = ["serde"] }
+pem = "^1.1"
 rand = "^0.8"
 serde = { version = "^1", features = ["derive"] }
 serde_json = "^1"
@@ -25,6 +26,9 @@ tracing = "^0.1"
 tracing-appender = "^0.2"
 tracing-futures = { version = "^0.2", default-features = false, features = ["std-future"] }
 tracing-subscriber = { version = "^0.3", default-features = false, features = ["ansi", "env-filter", "fmt", "local-time", "time", "tracing"] }
+ring = "0.16.20"
+spki = { version = "0.7.2", features = ["pem", "fingerprint", "sha2"] }
+simple_asn1 = "0.6.2"
 
 [dev-dependencies]
 proptest = "^1.1"
