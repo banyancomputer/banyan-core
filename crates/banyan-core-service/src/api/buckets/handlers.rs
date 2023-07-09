@@ -67,7 +67,14 @@ pub async fn publish_metadata(
     _api_token: ApiToken,
     Path(_bucket_id): Path<Uuid>,
     _if_match: Option<TypedHeader<IfMatch>>,
+    _body_stream: BodyStream,
 ) -> Response {
+    // todo: authorization
+
+    let file_name = format!("{}.car", Uuid::new_v4());
+    let file_handle = File::create(std::path::Path::new(&file_name)).await?;
+    let mut _write_buffer = BufWriter::new(file_handle);
+
     (StatusCode::OK, "todo").into_response()
 }
 
