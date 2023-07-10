@@ -157,16 +157,16 @@ pub fn encode_ecdsa_private_key(private_key: &Document) -> Result<String, Crypto
     Ok(pem::encode(&pem))
 }
 
-//pub fn decode_ecdsa_private_key(data: Vec<u8>) -> Result<EcdsaKeyPair, CryptoError> {
-//    let pem_data = pem::parse(data).map_err(CryptoError::invalid_pem)?;
-//
-//    if pem_data.tag != "EC PRIVATE KEY" {
-//        return Err(CryptoError::not_private_key());
-//    }
-//
-//    EcdsaKeyPair::from_pkcs8(&ECDSA_P256_SHA256_FIXED_SIGNING, pem_data.contents.as_ref())
-//        .map_err(CryptoError::invalid_key_type)
-//}
+pub fn decode_ecdsa_private_key(data: &[u8]) -> Result<EcdsaKeyPair, CryptoError> {
+    let pem_data = pem::parse(data).map_err(CryptoError::invalid_pem)?;
+
+    if pem_data.tag != "ECDSA PRIVATE KEY" {
+        return Err(CryptoError::not_private_key());
+    }
+
+    EcdsaKeyPair::from_pkcs8(&ECDSA_P256_SHA256_FIXED_SIGNING, pem_data.contents.as_ref())
+        .map_err(CryptoError::invalid_key_type)
+}
 
 pub fn generate_ecdh_key_pair() -> Result<EphemeralPrivateKey, CryptoError> {
     let rng = SystemRandom::new();
@@ -201,6 +201,8 @@ mod tests {
     fn test_ecdsa_key_lifecycle() {
         let private_key = generate_ecdsa_key_pair().expect("generation to succeed");
 
-        let _encoded_private_key = encode_ecdsa_private_key(&private_key).expect("private key encoding to succeed");
+        let encoded_private_key = encode_ecdsa_private_key(&private_key).expect("private key encoding to succeed");
+        let _decoded_private_key = decode_ecdsa_private_key(&encoded_private_key.as_ref()).expect("private key decoding to succeed");
+        //assert_eq!(private_key.as_ref(), encoded_private_key.as_ref(), "decoded private key should match the original");
     }
 }
