@@ -4,7 +4,9 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::TypedHeader;
 use chrono::{DateTime, FixedOffset, Utc};
+use futures_util::TryStreamExt;
 use object_store::ObjectStore;
+use tokio::io::{AsyncWrite, AsyncWriteExt};
 use uuid::Uuid;
 use validify::Validate;
 
@@ -73,11 +75,11 @@ pub async fn publish_metadata(
     // todo: authorization
     // todo: If-Match matches existing version abort
 
-    let file_name = format!("{}.car", Uuid::new_v4());
+    let file_name = format!("{bucket_id}/{}.car", Uuid::new_v4());
 
     let store = match object_store::local::LocalFileSystem::new_with_prefix("./uploads") {
         Ok(s) => s,
-        Err(err) => {
+        Err(_err) => {
             return (StatusCode::INTERNAL_SERVER_ERROR, "unable to access upload store").into_response();
         }
     };
@@ -85,23 +87,42 @@ pub async fn publish_metadata(
     let file_path = object_store::path::Path::from(file_name.as_str());
     let (upload_id, mut writer) = match store.put_multipart(&file_path).await {
         Ok(mp) => mp,
-        Err(err) => {
+        Err(_err) => {
             return (StatusCode::INTERNAL_SERVER_ERROR, "unable to store uploaded file").into_response();
         }
     };
 
-    //match  handle_upload(&mut writer, body_stream).await {
-    //}
+    let file_hash = match handle_upload(&mut writer, body_stream).await {
+        Ok(fh) => {
+            writer.shutdown().await.expect("upload finalization to succeed");
+            fh
+        },
+        Err(_err) => {
+            store.abort_multipart(&file_path, &upload_id).await.expect("aborting to success");
+            return (StatusCode::INTERNAL_SERVER_ERROR, "unable to process upload").into_response();
+        }
+    };
 
-    (StatusCode::OK, "todo").into_response()
+    (StatusCode::OK, file_hash).into_response()
 }
 
-//async fn handle_upload(
-//    writer: &mut Box<dyn AsynxWrite + Unpin + Send>,
-//    mut stream: BodyStream,
-//) -> Result<String, String> {
-//    todo!()
-//}
+async fn handle_upload(
+    writer: &mut Box<dyn AsyncWrite + Unpin + Send>,
+    mut stream: BodyStream,
+) -> Result<String, ()> {
+    let mut hasher = blake3::Hasher::new();
+
+    while let Some(chunk) = stream.try_next().await.transpose() {
+        let chunk = chunk.expect("an available chunk (todo remove this)");
+
+        hasher.update(&chunk);
+        writer.write_all(&chunk).await.expect("the write to succeed (todo remove this)");
+    }
+
+    let hash = hasher.finalize();
+
+    Ok(hash.to_string())
+}
 
 pub async fn show(
     _api_token: ApiToken,

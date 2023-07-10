@@ -30,6 +30,8 @@ ring = "0.16.20"
 spki = { version = "0.7.2", features = ["pem", "fingerprint", "sha2"] }
 simple_asn1 = "0.6.2"
 object_store = "0.6.1"
+blake3 = "1.4.1"
+futures-util = "0.3.28"
 
 [dev-dependencies]
 proptest = "^1.1"
