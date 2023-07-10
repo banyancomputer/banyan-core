@@ -29,6 +29,7 @@ tracing-subscriber = { version = "^0.3", default-features = false, features = ["
 ring = "0.16.20"
 spki = { version = "0.7.2", features = ["pem", "fingerprint", "sha2"] }
 simple_asn1 = "0.6.2"
+object_store = "0.6.1"
 
 [dev-dependencies]
 proptest = "^1.1"

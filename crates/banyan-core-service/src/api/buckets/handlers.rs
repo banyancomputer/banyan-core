@@ -1,9 +1,10 @@
-use axum::extract::{self, Path};
+use axum::extract::{self, BodyStream, Path};
 use axum::headers::{ETag, IfMatch, IfNoneMatch};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::TypedHeader;
 use chrono::{DateTime, FixedOffset, Utc};
+use object_store::ObjectStore;
 use uuid::Uuid;
 use validify::Validate;
 
@@ -65,18 +66,42 @@ pub async fn index(_api_token: ApiToken) -> Response {
 
 pub async fn publish_metadata(
     _api_token: ApiToken,
-    Path(_bucket_id): Path<Uuid>,
+    Path(bucket_id): Path<Uuid>,
     _if_match: Option<TypedHeader<IfMatch>>,
-    _body_stream: BodyStream,
+    body_stream: BodyStream,
 ) -> Response {
     // todo: authorization
+    // todo: If-Match matches existing version abort
 
     let file_name = format!("{}.car", Uuid::new_v4());
-    let file_handle = File::create(std::path::Path::new(&file_name)).await?;
-    let mut _write_buffer = BufWriter::new(file_handle);
+
+    let store = match object_store::local::LocalFileSystem::new_with_prefix("./uploads") {
+        Ok(s) => s,
+        Err(err) => {
+            return (StatusCode::INTERNAL_SERVER_ERROR, "unable to access upload store").into_response();
+        }
+    };
+
+    let file_path = object_store::path::Path::from(file_name.as_str());
+    let (upload_id, mut writer) = match store.put_multipart(&file_path).await {
+        Ok(mp) => mp,
+        Err(err) => {
+            return (StatusCode::INTERNAL_SERVER_ERROR, "unable to store uploaded file").into_response();
+        }
+    };
+
+    //match  handle_upload(&mut writer, body_stream).await {
+    //}
 
     (StatusCode::OK, "todo").into_response()
 }
+
+//async fn handle_upload(
+//    writer: &mut Box<dyn AsynxWrite + Unpin + Send>,
+//    mut stream: BodyStream,
+//) -> Result<String, String> {
+//    todo!()
+//}
 
 pub async fn show(
     _api_token: ApiToken,

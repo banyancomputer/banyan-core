@@ -1,6 +1,12 @@
 #![allow(dead_code)]
 use std::error::Error;
 
+use pem::Pem;
+use ring::agreement::{EphemeralPrivateKey, PublicKey, X25519};
+use ring::rand::SystemRandom;
+use simple_asn1::{ASN1Block, ASN1EncodeErr};
+//use spki::SubjectPublicKeyInfo;
+
 pub fn collect_error_messages(base_error: impl Error) -> Vec<String> {
     let mut errors = vec![base_error.to_string()];
     let mut source = base_error.source();
@@ -73,12 +79,6 @@ enum CryptoErrorKind {
     NotPrivateKey,
     NotPublicKey,
 }
-
-use pem::Pem;
-use ring::agreement::{EphemeralPrivateKey, PublicKey, X25519};
-use ring::rand::SystemRandom;
-use simple_asn1::{ASN1Block, ASN1EncodeErr};
-use spki::SubjectPublicKeyInfo;
 
 //pub fn public_from_pem(data: Vec<u8>) -> Result<String, CryptoError> {
 //    let pem_data = pem::parse(data).map_err(CryptoError::invalid_pem)?;
