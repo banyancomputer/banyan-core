@@ -80,7 +80,11 @@ pub async fn publish_metadata(
     let store = match object_store::local::LocalFileSystem::new_with_prefix("./uploads") {
         Ok(s) => s,
         Err(_err) => {
-            return (StatusCode::INTERNAL_SERVER_ERROR, "unable to access upload store").into_response();
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "unable to access upload store",
+            )
+                .into_response();
         }
     };
 
@@ -88,18 +92,32 @@ pub async fn publish_metadata(
     let (upload_id, mut writer) = match store.put_multipart(&file_path).await {
         Ok(mp) => mp,
         Err(_err) => {
-            return (StatusCode::INTERNAL_SERVER_ERROR, "unable to store uploaded file").into_response();
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "unable to store uploaded file",
+            )
+                .into_response();
         }
     };
 
     let file_hash = match handle_upload(&mut writer, body_stream).await {
         Ok(fh) => {
-            writer.shutdown().await.expect("upload finalization to succeed");
+            writer
+                .shutdown()
+                .await
+                .expect("upload finalization to succeed");
             fh
-        },
+        }
         Err(_err) => {
-            store.abort_multipart(&file_path, &upload_id).await.expect("aborting to success");
-            return (StatusCode::INTERNAL_SERVER_ERROR, "unable to process upload").into_response();
+            store
+                .abort_multipart(&file_path, &upload_id)
+                .await
+                .expect("aborting to success");
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "unable to process upload",
+            )
+                .into_response();
         }
     };
 
@@ -116,7 +134,10 @@ async fn handle_upload(
         let chunk = chunk.expect("an available chunk (todo remove this)");
 
         hasher.update(&chunk);
-        writer.write_all(&chunk).await.expect("the write to succeed (todo remove this)");
+        writer
+            .write_all(&chunk)
+            .await
+            .expect("the write to succeed (todo remove this)");
     }
 
     let hash = hasher.finalize();
