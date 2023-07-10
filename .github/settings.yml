@@ -45,6 +45,9 @@ teams:
   # High level change management is controlled by members in this authorized group
   - name: change-management-owners
     permission: admin
+  # There are some devops related files in this repo, allow them to make changes
+  - name: devops
+    permission: push
   # Main developers of this repository
   - name: internal-engineers
     permission: push
