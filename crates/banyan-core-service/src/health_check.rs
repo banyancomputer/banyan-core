@@ -12,6 +12,7 @@ mod service;
 
 pub use error::Error as HealthCheckError;
 pub use responses::Response as HealthCheckResponse;
+pub use responses::VersionResponse;
 pub use service::Service as HealthCheckService;
 
 // requests to the healthcheck endpoints shouldn't contain anything other than headers, anything
@@ -28,6 +29,7 @@ pub fn router() -> Router {
     Router::new()
         .route("/healthz", get(handlers::liveness_check))
         .route("/readyz", get(handlers::readiness_check))
+        .route("/version", get(handlers::version))
         .layer(RequestBodyLimitLayer::new(REQUEST_BODY_LIMIT))
         .layer(cors_layer)
 }
