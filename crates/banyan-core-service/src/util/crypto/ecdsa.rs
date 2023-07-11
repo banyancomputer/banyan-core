@@ -49,7 +49,7 @@ mod tests {
 
         let encoded_private_key =
             encode_private_key(&private_key).expect("private key encoding to succeed");
-        let _decoded_private_key = decode_private_key(&encoded_private_key.as_ref())
+        let _decoded_private_key = decode_private_key(encoded_private_key.as_ref())
             .expect("private key decoding to succeed");
         //assert_eq!(private_key.as_ref(), encoded_private_key.as_ref(), "decoded private key should match the original");
     }

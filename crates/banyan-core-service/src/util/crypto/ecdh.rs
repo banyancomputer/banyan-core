@@ -76,7 +76,7 @@ mod tests {
 
         let encoded_public_key =
             encode_public_key(&public_key).expect("public key encoding to succeed");
-        let decoded_public_key = decode_public_key(&encoded_public_key.as_ref())
+        let decoded_public_key = decode_public_key(encoded_public_key.as_ref())
             .expect("public key decoding to succeed");
         assert_eq!(
             public_key.as_ref(),
