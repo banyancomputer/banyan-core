@@ -60,7 +60,7 @@ pub fn encode_public_key(public_key: &PublicKey) -> Result<String, CryptoError> 
 
 pub fn generate() -> Result<EphemeralPrivateKey, CryptoError> {
     let rng = SystemRandom::new();
-    EphemeralPrivateKey::generate(&X25519, &rng).map_err(|_| { CryptoError::key_gen_failed() })
+    EphemeralPrivateKey::generate(&X25519, &rng).map_err(|_| CryptoError::key_gen_failed())
 }
 
 #[cfg(test)]
@@ -70,10 +70,18 @@ mod tests {
     #[test]
     fn test_key_lifecycle() {
         let private_key = generate().expect("generation to succeed");
-        let public_key = private_key.compute_public_key().expect("to generate public key");
+        let public_key = private_key
+            .compute_public_key()
+            .expect("to generate public key");
 
-        let encoded_public_key = encode_public_key(&public_key).expect("public key encoding to succeed");
-        let decoded_public_key = decode_public_key(&encoded_public_key.as_ref()).expect("public key decoding to succeed");
-        assert_eq!(public_key.as_ref(), decoded_public_key.bytes(), "decoded public key should match the original");
+        let encoded_public_key =
+            encode_public_key(&public_key).expect("public key encoding to succeed");
+        let decoded_public_key = decode_public_key(&encoded_public_key.as_ref())
+            .expect("public key decoding to succeed");
+        assert_eq!(
+            public_key.as_ref(),
+            decoded_public_key.bytes(),
+            "decoded public key should match the original"
+        );
     }
 }
