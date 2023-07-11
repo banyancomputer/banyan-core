@@ -1,3 +1,5 @@
+use std::fmt::{self, Display, Formatter};
+
 #[derive(Debug)]
 #[non_exhaustive]
 pub struct CryptoError {

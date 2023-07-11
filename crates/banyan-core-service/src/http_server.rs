@@ -18,7 +18,9 @@ use tower_http::validate_request::ValidateRequestHeaderLayer;
 use tower_http::{LatencyUnit, ServiceBuilderExt};
 use tracing::Level;
 
+use crate::app_state::AppState;
 use crate::{api, health_check};
+use crate::config::Config;
 
 // todo: might want a longer timeout in some parts of the API and I'd like to be able customize a
 // few layers eventually such as CORS and request timeouts but that's for something down the line
@@ -69,7 +71,7 @@ async fn not_found_handler() -> impl IntoResponse {
     )
 }
 
-pub async fn run() -> anyhow::Result<()> {
+pub async fn run(config: Config) -> anyhow::Result<()> {
     let sensitive_headers: Arc<[_]> = Arc::new([
         header::AUTHORIZATION,
         header::COOKIE,
@@ -103,7 +105,9 @@ pub async fn run() -> anyhow::Result<()> {
             sensitive_headers,
         ));
 
+    let app_state = AppState::try_from(config)?;
     let root_router = Router::new()
+        .with_state(app_state)
         .nest("/api/v1", api::router())
         .nest("/_status", health_check::router())
         .fallback(not_found_handler);

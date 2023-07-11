@@ -4,6 +4,7 @@ use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::{EnvFilter, Layer};
 
 mod api;
+mod app_state;
 mod config;
 mod extractors;
 mod health_check;
@@ -25,8 +26,7 @@ async fn main() -> anyhow::Result<()> {
     tracing_subscriber::registry().with(stderr_layer).init();
 
     let config = config::parse_arguments()?;
-    tracing::info!(config = ?config, "parsed config");
-    http_server::run().await?;
+    http_server::run(config).await?;
 
     Ok(())
 }
