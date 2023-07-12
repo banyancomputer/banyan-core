@@ -25,6 +25,8 @@ async fn main() -> anyhow::Result<()> {
 
     tracing_subscriber::registry().with(stderr_layer).init();
 
+    util::crypto::ecdh::tmp_working_bits();
+
     let config = config::parse_arguments()?;
     http_server::run(config).await?;
 

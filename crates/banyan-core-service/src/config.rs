@@ -21,7 +21,7 @@ pub fn parse_arguments() -> Result<Config, pico_args::Error> {
             .unwrap_or("./session-key.pem".into()),
 
         upload_directory: args
-            .opt_value_from_str("--data")?
-            .unwrap_or("./data".into()),
+            .opt_value_from_str("--upload-dir")?
+            .unwrap_or("./uploads".into()),
     })
 }

@@ -19,7 +19,9 @@ impl TryFrom<Config> for AppState {
         LocalFileSystem::new_with_prefix(&cfg.upload_directory)
             .map_err(StateError::inaccessible_upload_directory)?;
 
-        Ok(Self { upload_directory: cfg.upload_directory.clone() })
+        Ok(Self {
+            upload_directory: cfg.upload_directory.clone(),
+        })
     }
 }
 

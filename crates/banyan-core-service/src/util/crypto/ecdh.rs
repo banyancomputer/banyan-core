@@ -4,6 +4,91 @@ use ring::rand::SystemRandom;
 
 use crate::util::crypto::CryptoError;
 
+pub fn tmp_working_bits() {
+    let group = match openssl::ec::EcGroup::from_curve_name(openssl::nid::Nid::SECP384R1) {
+        Ok(g) => g,
+        Err(err) => {
+            tracing::error!("unable to lookup group curve name: {err:?}");
+            return;
+        }
+    };
+
+    let primary_pkey: openssl::pkey::PKey<_> = match openssl::ec::EcKey::generate(&group) {
+        Ok(eck) => match eck.try_into() {
+            Ok(pk) => pk,
+            Err(err) => {
+                tracing::error!("unable to convert eckey to pkey??? {err:?}");
+                return;
+            }
+        },
+        Err(err) => {
+            tracing::error!("unable to generate private key: {err:?}");
+            return;
+        }
+    };
+
+    let ephemeral_eckey = match openssl::ec::EcKey::generate(&group) {
+        Ok(eck) => eck,
+        Err(err) => {
+            tracing::error!("unable to generate ephemeral key: {err:?}");
+            return;
+        }
+    };
+
+    let ephemeral_public = {
+        let mut ctx = match openssl::bn::BigNumContext::new() {
+            Ok(c) => c,
+            Err(err) => {
+                tracing::error!("failed to create big num context: {err:?}");
+                return;
+            }
+        };
+
+        match ephemeral_eckey.public_key().to_bytes(
+            &group,
+            openssl::ec::PointConversionForm::COMPRESSED,
+            &mut ctx,
+        ) {
+            Ok(pubkey) => pubkey,
+            Err(err) => {
+                tracing::error!("unable to calculate ephemeral public key: {err:?}");
+                return;
+            }
+        }
+    };
+
+    let ephemeral_pkey: openssl::pkey::PKey<_> = match ephemeral_eckey.try_into() {
+        Ok(pk) => pk,
+        Err(err) => {
+            tracing::error!("unable to convert eckey to pkey??? {err:?}");
+            return;
+        }
+    };
+
+    let mut deriver = match openssl::derive::Deriver::new(&ephemeral_pkey) {
+        Ok(d) => d,
+        Err(err) => {
+            tracing::error!("unable to initialize deriver: {err:?}");
+            return;
+        }
+    };
+
+    if let Err(err) = deriver.set_peer(&primary_pkey) {
+        tracing::error!("unable to set peer as part of the exchange: {err:?}");
+        return;
+    }
+
+    let secret = match deriver.derive_to_vec() {
+        Ok(s) => s,
+        Err(err) => {
+            tracing::error!("unable to calculate shared secret: {err:?}");
+            return;
+        }
+    };
+
+    tracing::info!("calculated secret: {secret:?}");
+}
+
 pub fn decode_public_key(data: &[u8]) -> Result<UnparsedPublicKey<Vec<u8>>, CryptoError> {
     let pem_data = pem::parse(data).map_err(CryptoError::invalid_pem)?;
 
@@ -76,8 +161,8 @@ mod tests {
 
         let encoded_public_key =
             encode_public_key(&public_key).expect("public key encoding to succeed");
-        let decoded_public_key = decode_public_key(encoded_public_key.as_ref())
-            .expect("public key decoding to succeed");
+        let decoded_public_key =
+            decode_public_key(encoded_public_key.as_ref()).expect("public key decoding to succeed");
         assert_eq!(
             public_key.as_ref(),
             decoded_public_key.bytes(),
