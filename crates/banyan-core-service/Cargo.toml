@@ -34,7 +34,7 @@ tracing-appender = "^0.2"
 tracing-futures = { version = "^0.2", default-features = false, features = ["std-future"] }
 tracing-subscriber = { version = "^0.3", default-features = false, features = ["ansi", "env-filter", "fmt", "local-time", "time", "tracing"] }
 pico-args = "0.5.0"
-openssl = { version = "0.10.55", features = ["vendored"] }
+openssl = { version = "^0.10", features = ["v110"] }
 
 [dev-dependencies]
 proptest = "^1.1"
