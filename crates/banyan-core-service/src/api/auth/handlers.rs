@@ -9,19 +9,23 @@ use crate::extractors::{ApiToken, EXPIRATION_WINDOW_SECS, TESTING_API_KEY};
 
 pub async fn fake_token() -> Response {
     let api_token = ApiToken {
-        audience: "banyan-core".into(),
-        subject: Uuid::new_v4().to_string(),
+        nonce: Some("todo-generate-random-none".to_string()),
 
         expiration: get_current_timestamp() + EXPIRATION_WINDOW_SECS,
         not_before: get_current_timestamp(),
 
-        attenuation: vec![],
-        proofs: vec![],
+        audience: "did:key:{some-kind-of-banyan-identity}".into(),
+        subject: Uuid::new_v4().to_string(),
     };
 
     let key = EncodingKey::from_secret(TESTING_API_KEY.as_ref());
 
-    match encode(&Header::default(), &api_token, &key) {
+    let token_header = Header {
+        kid: Some("key fingerprint for identity".to_string()),
+        ..Default::default()
+    };
+
+    match encode(&token_header, &api_token, &key) {
         Ok(token_contents) => (StatusCode::OK, token_contents).into_response(),
         Err(_) => ErrorResponse::from(AuthError).into_response(),
     }

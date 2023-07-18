@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fmt::{self, Display, Formatter};
 
 use axum::async_trait;
@@ -9,7 +10,7 @@ use axum::http::request::Parts;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::{Json, RequestPartsExt};
-use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
+use jsonwebtoken::{decode, decode_header, Algorithm, DecodingKey, Validation};
 use serde::{Deserialize, Serialize};
 
 // Allow 15 minute token windows for now, this is likely to change in the future
@@ -21,12 +22,8 @@ pub const TESTING_API_KEY: &str = "This key will come from the environment";
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ApiToken {
-    #[serde(rename = "aud")]
-    pub audience: String,
-
-    // todo: may be able to get more structured about the subject to go along with attenuations.
-    #[serde(rename = "sub")]
-    pub subject: String,
+    #[serde(rename = "nnc")]
+    pub nonce: Option<String>,
 
     #[serde(rename = "exp")]
     pub expiration: u64,
@@ -34,11 +31,12 @@ pub struct ApiToken {
     #[serde(rename = "nbf")]
     pub not_before: u64,
 
-    #[serde(default, skip_serializing_if = "Vec::is_empty", rename = "att")]
-    pub attenuation: Vec<Attenuation>,
+    #[serde(rename = "aud")]
+    pub audience: String,
 
-    #[serde(default, skip_serializing_if = "Vec::is_empty", rename = "prf")]
-    pub proofs: Vec<String>,
+    // todo: may be able to get more structured about the subject to go along with attenuations.
+    #[serde(rename = "sub")]
+    pub subject: String,
 }
 
 #[async_trait]
@@ -67,9 +65,19 @@ where
         // Require all of our keys except for the attestations and proofs
         token_validator.set_required_spec_claims(&["aud", "exp", "nbf", "sub"]);
 
+        let token = bearer.token();
+
+        let header_data = decode_header(&token)
+            .map_err(ApiKeyAuthorizationError::decode_failed)?;
+
+        let looked_up_key = match header_data.kid {
+            Some(key_id) => key_id.to_string(),
+            None => return Err(ApiKeyAuthorizationError::unidentified_key()),
+        };
+
         // todo: we probably want to use device keys to sign this instead of a
         // static AES key, this works for now
-        let token_data = decode::<ApiToken>(bearer.token(), &key, &token_validator)
+        let token_data = decode::<ApiToken>(token, &key, &token_validator)
             .map_err(ApiKeyAuthorizationError::decode_failed)?;
 
         let claims = token_data.claims;
@@ -129,6 +137,12 @@ impl ApiKeyAuthorizationError {
             kind: ApiKeyAuthorizationErrorKind::MissingHeader(err),
         }
     }
+
+    fn unidentified_key() -> Self {
+        Self {
+            kind: ApiKeyAuthorizationErrorKind::UnidentifiedKey,
+        }
+    }
 }
 
 impl Display for ApiKeyAuthorizationError {
@@ -142,6 +156,7 @@ impl Display for ApiKeyAuthorizationError {
             MaliciousConstruction(_) => "the provided token was invalid in a way that indicates an attack is likely occurring",
             MissingHeader(_) => "no Authorization header was present in request to protected route",
             NeverValid => "authorization token doesn't become valid until after it has already expired",
+            UnidentifiedKey => "header didn't include kid required to lookup the appropriate authentication mechanism",
             UnknownTokenError(_) => "an unexpected error edge case occurred around an authentation token",
         };
 
@@ -184,16 +199,6 @@ enum ApiKeyAuthorizationErrorKind {
     MaliciousConstruction(jsonwebtoken::errors::Error),
     MissingHeader(TypedHeaderRejection),
     NeverValid,
+    UnidentifiedKey,
     UnknownTokenError(jsonwebtoken::errors::Error),
-}
-
-// todo: might want to define this format tighter, good enough for now
-#[derive(Deserialize, Serialize)]
-#[serde(deny_unknown_fields)]
-pub struct Attenuation {
-    #[serde(rename = "with")]
-    pub target_entity: String,
-
-    #[serde(rename = "can")]
-    pub permission: String,
 }
