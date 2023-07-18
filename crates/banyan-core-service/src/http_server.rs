@@ -3,6 +3,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use axum::error_handling::HandleErrorLayer;
+use axum::extract::DefaultBodyLimit;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::{Json, Router};
@@ -100,6 +101,7 @@ pub async fn run(config: Config) -> anyhow::Result<()> {
         .set_x_request_id(MakeRequestUuid)
         .layer(trace_layer)
         .propagate_x_request_id()
+        .layer(DefaultBodyLimit::disable())
         .layer(ValidateRequestHeaderLayer::accept("application/json"))
         .layer(SetSensitiveResponseHeadersLayer::from_shared(
             sensitive_headers,
