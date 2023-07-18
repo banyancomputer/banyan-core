@@ -21,7 +21,7 @@ pub const TESTING_API_KEY: &str = "This key will come from the environment";
 
 static KEY_ID_VALIDATOR: OnceLock<regex::Regex> = OnceLock::new();
 
-const KEY_REGEX: &str = r"^[0-9a-f]]{2}(:[0-9a-f]]{2}){19}%";
+const KEY_REGEX: &str = r"^[0-9a-f]{2}(:[0-9a-f]{2}){19}$";
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]

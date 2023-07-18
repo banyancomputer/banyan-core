@@ -1,4 +1,4 @@
-use axum::extract::{self, BodyStream, Path};
+use axum::extract::{self, Multipart, Path};
 use axum::headers::{ETag, IfMatch, IfNoneMatch};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
@@ -70,7 +70,7 @@ pub async fn publish_metadata(
     _api_token: ApiToken,
     Path(bucket_id): Path<Uuid>,
     _if_match: Option<TypedHeader<IfMatch>>,
-    body_stream: BodyStream,
+    multipart: Multipart,
 ) -> Response {
     // todo: authorization
     // todo: If-Match matches existing version abort
@@ -100,7 +100,7 @@ pub async fn publish_metadata(
         }
     };
 
-    let file_hash = match handle_upload(&mut writer, body_stream).await {
+    let file_hash = match handle_upload(&mut writer, multipart).await {
         Ok(fh) => {
             writer
                 .shutdown()
@@ -126,23 +126,29 @@ pub async fn publish_metadata(
 
 async fn handle_upload(
     writer: &mut Box<dyn AsyncWrite + Unpin + Send>,
-    mut stream: BodyStream,
+    mut multipart: Multipart,
 ) -> Result<String, ()> {
-    let mut hasher = blake3::Hasher::new();
+    while let Some(field) = multipart.next_field().await.transpose() {
+        let mut field = field.expect("field to be readable (todo remove this)");
+        tracing::info!(name = ?field.name(), file_name = ?field.file_name(), content_type = ?field.content_type(), "received field during multipart upload");
 
-    while let Some(chunk) = stream.try_next().await.transpose() {
-        let chunk = chunk.expect("an available chunk (todo remove this)");
+        let mut hasher = blake3::Hasher::new();
 
-        hasher.update(&chunk);
-        writer
-            .write_all(&chunk)
-            .await
-            .expect("the write to succeed (todo remove this)");
+        while let Some(chunk) = field.try_next().await.transpose() {
+            let chunk = chunk.expect("an available chunk (todo remove this)");
+
+            hasher.update(&chunk);
+            writer
+                .write_all(&chunk)
+                .await
+                .expect("the write to succeed (todo remove this)");
+        }
+
+        let hash = hasher.finalize();
+        tracing::info!("generated hash for uploaded data: {hash}");
     }
 
-    let hash = hasher.finalize();
-
-    Ok(hash.to_string())
+    Ok("things".to_string())
 }
 
 pub async fn show(

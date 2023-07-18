@@ -21,7 +21,7 @@ pub async fn fake_token() -> Response {
     let key = EncodingKey::from_secret(TESTING_API_KEY.as_ref());
 
     let token_header = Header {
-        kid: Some("key fingerprint for identity".to_string()),
+        kid: Some("4e:12:43:bd:22:c6:6e:76:c2:ba:9e:dd:c1:f9:13:94:e5:7f:9f:83".to_string()),
         ..Default::default()
     };
 
