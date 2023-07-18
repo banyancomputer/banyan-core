@@ -28,7 +28,7 @@ async fn main() -> anyhow::Result<()> {
     tracing_subscriber::registry().with(stderr_layer).init();
 
     let config = config::parse_arguments()?;
-    let app_state = AppState::try_from(config)?;
+    let app_state = AppState::from_config(&config).await?;
 
     http_server::run(app_state).await?;
 

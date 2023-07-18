@@ -1,12 +1,14 @@
-use std::fmt::{self, Display, Formatter};
 use std::path::PathBuf;
 
+use axum::extract::FromRef;
 use object_store::local::LocalFileSystem;
 use sqlx::sqlite::SqlitePool;
 
 mod database;
+mod state_error;
 
 use crate::config::Config;
+pub use state_error::StateError;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -14,60 +16,24 @@ pub struct AppState {
     pub upload_directory: PathBuf,
 }
 
-impl TryFrom<Config> for AppState {
-    type Error = StateError;
-
-    fn try_from(cfg: Config) -> Result<Self, Self::Error> {
+impl AppState {
+    pub(crate) async fn from_config(config: &Config) -> Result<Self, StateError> {
         // Do a test setup to make sure the upload directory exists and is writable as an early
         // sanity check
-        LocalFileSystem::new_with_prefix(&cfg.upload_directory)
+        LocalFileSystem::new_with_prefix(&config.upload_directory)
             .map_err(StateError::inaccessible_upload_directory)?;
 
+        let database_pool = database::setup_pool(&config.database_url).await?;
+
         Ok(Self {
-            database_pool: database::setup_pool(&cfg.database_url)?,
-            upload_directory: cfg.upload_directory.clone(),
+            database_pool,
+            upload_directory: config.upload_directory.clone(),
         })
     }
 }
 
-#[derive(Debug)]
-#[non_exhaustive]
-pub struct StateError {
-    kind: StateErrorKind,
-}
-
-impl StateError {
-    fn inaccessible_upload_directory(err: object_store::Error) -> Self {
-        Self {
-            kind: StateErrorKind::InaccessibleUploadDirectory(err),
-        }
+impl FromRef<AppState> for SqlitePool {
+    fn from_ref(state: &AppState) -> Self {
+        state.database_pool.clone()
     }
-}
-
-impl Display for StateError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        use StateErrorKind::*;
-
-        let msg = match self.kind {
-            InaccessibleUploadDirectory(_) => "service upload directory isn't available",
-        };
-
-        f.write_str(msg)
-    }
-}
-
-impl std::error::Error for StateError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        use StateErrorKind::*;
-
-        match &self.kind {
-            InaccessibleUploadDirectory(err) => Some(err),
-        }
-    }
-}
-
-#[derive(Debug)]
-#[non_exhaustive]
-enum StateErrorKind {
-    InaccessibleUploadDirectory(object_store::Error),
 }
