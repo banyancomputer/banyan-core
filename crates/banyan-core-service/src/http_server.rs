@@ -109,9 +109,9 @@ pub async fn run(config: Config) -> anyhow::Result<()> {
 
     let app_state = AppState::try_from(config)?;
     let root_router = Router::new()
+        .nest("/api/v1", api::router(app_state.clone()))
+        .nest("/_status", health_check::router(app_state.clone()))
         .with_state(app_state)
-        .nest("/api/v1", api::router())
-        .nest("/_status", health_check::router())
         .fallback(not_found_handler);
 
     let addr: SocketAddr = "[::]:3000".parse()?;

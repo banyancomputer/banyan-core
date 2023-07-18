@@ -15,11 +15,13 @@ pub use responses::Response as HealthCheckResponse;
 pub use responses::VersionResponse;
 pub use service::Service as HealthCheckService;
 
+use crate::app_state::AppState;
+
 // requests to the healthcheck endpoints shouldn't contain anything other than headers, anything
 // larger should be rejected.
 const REQUEST_BODY_LIMIT: usize = 1_024;
 
-pub fn router() -> Router {
+pub fn router(state: AppState) -> Router<AppState> {
     let cors_layer = CorsLayer::new()
         .allow_methods(vec![Method::GET])
         .allow_headers(vec![ACCEPT, ORIGIN])
@@ -30,6 +32,7 @@ pub fn router() -> Router {
         .route("/healthz", get(handlers::liveness_check))
         .route("/readyz", get(handlers::readiness_check))
         .route("/version", get(handlers::version))
+        .with_state(state)
         .layer(RequestBodyLimitLayer::new(REQUEST_BODY_LIMIT))
         .layer(cors_layer)
 }

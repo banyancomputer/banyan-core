@@ -9,9 +9,10 @@ use tower_http::cors::{Any, CorsLayer};
 mod auth;
 mod buckets;
 
+use crate::app_state::AppState;
 use crate::util::collect_error_messages;
 
-pub fn router() -> Router {
+pub fn router(state: AppState) -> Router<AppState> {
     // todo: Ideally this would have a wrapper method to allow per route method configuration or
     // even better something that inspected the route matches and applied the correct method config
     // for that path...
@@ -23,8 +24,9 @@ pub fn router() -> Router {
         .allow_credentials(false);
 
     Router::new()
-        .nest("/auth", auth::router())
-        .nest("/buckets", buckets::router())
+        .nest("/auth", auth::router(state.clone()))
+        .nest("/buckets", buckets::router(state.clone()))
+        .with_state(state)
         .layer(cors_layer)
 }
 

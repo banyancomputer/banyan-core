@@ -12,7 +12,7 @@ use validify::Validate;
 
 use crate::api::buckets::requests::*;
 use crate::api::buckets::responses::*;
-use crate::extractors::ApiToken;
+use crate::extractors::{ApiToken, DataStore};
 
 pub async fn create(
     _api_token: ApiToken,
@@ -70,25 +70,15 @@ pub async fn publish_metadata(
     _api_token: ApiToken,
     Path(bucket_id): Path<Uuid>,
     _if_match: Option<TypedHeader<IfMatch>>,
+    store: DataStore,
     stream: BodyStream,
 ) -> Response {
     // todo: authorization
     // todo: If-Match matches existing version abort
 
     let file_name = format!("{bucket_id}/{}.car", Uuid::new_v4());
-
-    let store = match object_store::local::LocalFileSystem::new_with_prefix("./uploads") {
-        Ok(s) => s,
-        Err(_err) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "unable to access upload store",
-            )
-                .into_response();
-        }
-    };
-
     let file_path = object_store::path::Path::from(file_name.as_str());
+
     let (upload_id, mut writer) = match store.put_multipart(&file_path).await {
         Ok(mp) => mp,
         Err(_err) => {

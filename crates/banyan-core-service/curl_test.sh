@@ -9,6 +9,8 @@ cat <<EOF | curl -s -H "Authorization: Bearer ${API_TOKEN}" -H "Content-Type: ap
 
 This data file was generated at $(date +%s.%N) or $(date).
 
-$(fortune)
+Your fortune (if available):
+
+$(fortune 2>/dev/null || echo "No fortune for you...")
 EOF
 echo

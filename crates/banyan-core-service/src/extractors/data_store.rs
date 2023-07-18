@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use axum::async_trait;
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
@@ -6,7 +8,16 @@ use object_store::local::LocalFileSystem;
 
 use crate::app_state::AppState;
 
-pub struct DataStore(pub LocalFileSystem);
+#[derive(Debug)]
+pub struct DataStore(LocalFileSystem);
+
+impl Deref for DataStore {
+    type Target = LocalFileSystem;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 #[async_trait]
 impl FromRequestParts<AppState> for DataStore {
