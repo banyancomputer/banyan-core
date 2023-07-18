@@ -2,11 +2,15 @@ use std::fmt::{self, Display, Formatter};
 use std::path::PathBuf;
 
 use object_store::local::LocalFileSystem;
+use sqlx::sqlite::SqlitePool;
+
+mod database;
 
 use crate::config::Config;
 
 #[derive(Clone)]
 pub struct AppState {
+    database_pool: SqlitePool,
     pub upload_directory: PathBuf,
 }
 
@@ -20,6 +24,7 @@ impl TryFrom<Config> for AppState {
             .map_err(StateError::inaccessible_upload_directory)?;
 
         Ok(Self {
+            database_pool: database::setup_pool(&cfg.database_url)?,
             upload_directory: cfg.upload_directory.clone(),
         })
     }

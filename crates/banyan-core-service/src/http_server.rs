@@ -20,7 +20,6 @@ use tower_http::{LatencyUnit, ServiceBuilderExt};
 use tracing::Level;
 
 use crate::app_state::AppState;
-use crate::config::Config;
 use crate::{api, health_check};
 
 // todo: might want a longer timeout in some parts of the API and I'd like to be able customize a
@@ -72,7 +71,7 @@ async fn not_found_handler() -> impl IntoResponse {
     )
 }
 
-pub async fn run(config: Config) -> anyhow::Result<()> {
+pub async fn run(app_state: AppState) -> anyhow::Result<()> {
     let sensitive_headers: Arc<[_]> = Arc::new([
         header::AUTHORIZATION,
         header::COOKIE,
@@ -107,7 +106,6 @@ pub async fn run(config: Config) -> anyhow::Result<()> {
             sensitive_headers,
         ));
 
-    let app_state = AppState::try_from(config)?;
     let root_router = Router::new()
         .nest("/api/v1", api::router(app_state.clone()))
         .nest("/_status", health_check::router(app_state.clone()))

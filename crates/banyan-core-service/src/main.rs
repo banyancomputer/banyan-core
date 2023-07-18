@@ -11,6 +11,8 @@ mod health_check;
 mod http_server;
 mod util;
 
+use app_state::AppState;
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let (non_blocking_writer, _guard) = tracing_appender::non_blocking(std::io::stderr());
@@ -26,7 +28,9 @@ async fn main() -> anyhow::Result<()> {
     tracing_subscriber::registry().with(stderr_layer).init();
 
     let config = config::parse_arguments()?;
-    http_server::run(config).await?;
+    let app_state = AppState::try_from(config)?;
+
+    http_server::run(app_state).await?;
 
     Ok(())
 }
