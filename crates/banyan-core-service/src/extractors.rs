@@ -1,5 +1,5 @@
 mod api_token;
-mod upload_store;
+mod data_store;
 
 pub use api_token::{ApiToken, EXPIRATION_WINDOW_SECS, TESTING_API_KEY};
-pub use upload_store::UploadStore;
+pub use data_store::DataStore;

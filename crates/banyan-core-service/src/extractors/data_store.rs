@@ -6,10 +6,10 @@ use object_store::local::LocalFileSystem;
 
 use crate::app_state::AppState;
 
-pub struct UploadStore(pub LocalFileSystem);
+pub struct DataStore(pub LocalFileSystem);
 
 #[async_trait]
-impl FromRequestParts<AppState> for UploadStore {
+impl FromRequestParts<AppState> for DataStore {
     type Rejection = (StatusCode, String);
 
     async fn from_request_parts(
@@ -21,6 +21,6 @@ impl FromRequestParts<AppState> for UploadStore {
             Err(err) => return Err((StatusCode::INTERNAL_SERVER_ERROR, err.to_string())),
         };
 
-        Ok(UploadStore(store))
+        Ok(Self(store))
     }
 }
