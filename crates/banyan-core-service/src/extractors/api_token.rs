@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::sync::OnceLock;
 use std::fmt::{self, Display, Formatter};
 
 use axum::async_trait;
@@ -18,6 +19,10 @@ pub const EXPIRATION_WINDOW_SECS: u64 = 900;
 
 // todo: extract this from state, populate this from the env
 pub const TESTING_API_KEY: &str = "This key will come from the environment";
+
+static KEY_ID_VALIDATOR: OnceLock<regex::Regex> = OnceLock::new();
+
+const KEY_REGEX: &'static str = r"^[0-9a-f]]{2}(:[0-9a-f]]{2}){19}%";
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -47,6 +52,8 @@ where
     type Rejection = ApiKeyAuthorizationError;
 
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
+        let key_regex = KEY_ID_VALIDATOR.get_or_init(|| regex::Regex::new(KEY_REGEX).unwrap());
+
         let TypedHeader(Authorization(bearer)) = parts
             .extract::<TypedHeader<Authorization<Bearer>>>()
             .await
@@ -60,7 +67,7 @@ where
 
         // Restrict audience as our clients will use the same API key for authorization to multiple
         // services
-        token_validator.set_audience(&["banyan-core"]);
+        token_validator.set_audience(&["did:key:{some-kind-of-banyan-identity}"]);
 
         // Require all of our keys except for the attestations and proofs
         token_validator.set_required_spec_claims(&["aud", "exp", "nbf", "sub"]);
@@ -70,8 +77,9 @@ where
         let header_data = decode_header(&token)
             .map_err(ApiKeyAuthorizationError::decode_failed)?;
 
-        let looked_up_key = match header_data.kid {
-            Some(key_id) => key_id.to_string(),
+        let key_id = match header_data.kid {
+            Some(key_id) if key_regex.is_match(key_id.as_str()) => key_id,
+            Some(_) => return Err(ApiKeyAuthorizationError::bad_key_format()),
             None => return Err(ApiKeyAuthorizationError::unidentified_key()),
         };
 
@@ -110,6 +118,12 @@ pub struct ApiKeyAuthorizationError {
 }
 
 impl ApiKeyAuthorizationError {
+    fn bad_key_format() -> Self {
+        Self {
+            kind: ApiKeyAuthorizationErrorKind::BadKeyFormat,
+        }
+    }
+
     fn decode_failed(err: jsonwebtoken::errors::Error) -> Self {
         use jsonwebtoken::errors::ErrorKind::*;
 
@@ -150,6 +164,7 @@ impl Display for ApiKeyAuthorizationError {
         use ApiKeyAuthorizationErrorKind::*;
 
         let msg = match self.kind {
+            BadKeyFormat => "key format in JWT header wasn't valid",
             ExtremeTokenValidity => "the provided token's validity range is outside our allowed range",
             FormatError(_) => "format of the provide bearer token didn't meet our requirements",
             InternalCryptographyIssue(_) => "there was an internal cryptographic issue due too a code or configuration issue",
@@ -193,6 +208,7 @@ impl IntoResponse for ApiKeyAuthorizationError {
 
 #[derive(Debug)]
 enum ApiKeyAuthorizationErrorKind {
+    BadKeyFormat,
     ExtremeTokenValidity,
     FormatError(jsonwebtoken::errors::Error),
     InternalCryptographyIssue(jsonwebtoken::errors::Error),
