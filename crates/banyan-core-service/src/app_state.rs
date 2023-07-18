@@ -23,7 +23,7 @@ impl AppState {
         LocalFileSystem::new_with_prefix(&config.upload_directory)
             .map_err(StateError::inaccessible_upload_directory)?;
 
-        let database_pool = database::setup_pool(&config.database_url).await?;
+        let database_pool = database::setup(&config.database_url).await?;
 
         Ok(Self {
             database_pool,
