@@ -14,14 +14,14 @@ pub fn parse_arguments() -> Result<Config, pico_args::Error> {
     Ok(Config {
         database_url: args
             .opt_value_from_str("--db-url")?
-            .unwrap_or("sqlite://./uploads/server.db".into()),
+            .unwrap_or("sqlite://./data/server.db".into()),
 
         signing_key: args
             .opt_value_from_str("--signing-key")?
-            .unwrap_or("./signing-key.pem".into()),
+            .unwrap_or("./data/signing-key.pem".into()),
 
         upload_directory: args
             .opt_value_from_str("--upload-dir")?
-            .unwrap_or("./uploads".into()),
+            .unwrap_or("./data/uploads".into()),
     })
 }

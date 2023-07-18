@@ -13,6 +13,8 @@ use axum::{Json, RequestPartsExt};
 use jsonwebtoken::{decode, decode_header, Algorithm, DecodingKey, Validation};
 use serde::{Deserialize, Serialize};
 
+use crate::extractors::DbConn;
+
 // Allow 15 minute token windows for now, this is likely to change in the future
 pub const EXPIRATION_WINDOW_SECS: u64 = 900;
 
@@ -38,7 +40,6 @@ pub struct ApiToken {
     #[serde(rename = "aud")]
     pub audience: String,
 
-    // todo: may be able to get more structured about the subject to go along with attenuations.
     #[serde(rename = "sub")]
     pub subject: String,
 }
@@ -46,11 +47,12 @@ pub struct ApiToken {
 #[async_trait]
 impl<S> FromRequestParts<S> for ApiToken
 where
+    DbConn: FromRequestParts<S>,
     S: Send + Sync,
 {
     type Rejection = ApiKeyAuthorizationError;
 
-    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
+    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
         let key_regex = KEY_ID_VALIDATOR.get_or_init(|| regex::Regex::new(KEY_REGEX).unwrap());
 
         let TypedHeader(Authorization(bearer)) = parts
@@ -79,6 +81,10 @@ where
             Some(_) => return Err(ApiKeyAuthorizationError::bad_key_format()),
             None => return Err(ApiKeyAuthorizationError::unidentified_key()),
         };
+
+        // todo: consume and wrap the error type correctly
+        let _db_conn = DbConn::from_request_parts(parts, state).await
+            .map_err(|_| ApiKeyAuthorizationError::database_unavailable())?;
 
         // todo: we probably want to use device keys to sign this instead of a
         // static AES key, this works for now
@@ -118,6 +124,12 @@ impl ApiKeyAuthorizationError {
     fn bad_key_format() -> Self {
         Self {
             kind: ApiKeyAuthorizationErrorKind::BadKeyFormat,
+        }
+    }
+
+    fn database_unavailable() -> Self {
+        Self {
+            kind: ApiKeyAuthorizationErrorKind::DatabaseUnavailable,
         }
     }
 
@@ -162,6 +174,7 @@ impl Display for ApiKeyAuthorizationError {
 
         let msg = match self.kind {
             BadKeyFormat => "key format in JWT header wasn't valid",
+            DatabaseUnavailable => "unable to lookup identity in database",
             ExtremeTokenValidity => "the provided token's validity range is outside our allowed range",
             FormatError(_) => "format of the provide bearer token didn't meet our requirements",
             InternalCryptographyIssue(_) => "there was an internal cryptographic issue due too a code or configuration issue",
@@ -206,6 +219,7 @@ impl IntoResponse for ApiKeyAuthorizationError {
 #[derive(Debug)]
 enum ApiKeyAuthorizationErrorKind {
     BadKeyFormat,
+    DatabaseUnavailable,
     ExtremeTokenValidity,
     FormatError(jsonwebtoken::errors::Error),
     InternalCryptographyIssue(jsonwebtoken::errors::Error),

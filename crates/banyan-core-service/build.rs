@@ -35,6 +35,9 @@ fn report_repository_version() {
 }
 
 fn main() {
+    println!("cargo:rerun-if-changed=build.rs");
+    println!("cargo:rerun-if-changed=migrations");
+
     report_repository_version();
     report_build_profile();
     report_enabled_features();
