@@ -27,9 +27,9 @@ RUN cargo build -p $SERVICE --release
 # Copy in the actual service source code, and perform the release build
 # (install is release mode by default).
 COPY crates/$SERVICE/build.rs /usr/src/build/crates/$SERVICE/build.rs
+COPY crates/$SERVICE/migrations /usr/src/build/crates/$SERVICE/migrations
 COPY crates/$SERVICE/src /usr/src/build/crates/$SERVICE/src
 RUN cargo install --path crates/$SERVICE/ --bins
-
 
 # Use an absolutely minimal container with the barest permissions to limit
 # sources of security vulnerabilities, and ensure that any security issues are

@@ -227,42 +227,22 @@ dependencies = [
 name = "banyan-staging-service"
 version = "0.1.0"
 dependencies = [
- "anyhow",
- "axum",
- "http",
- "proptest",
- "rand",
- "serde",
- "serde_json",
  "tokio",
- "tower",
- "tower-http",
  "tracing",
  "tracing-appender",
  "tracing-futures",
  "tracing-subscriber",
- "uuid",
 ]
 
 [[package]]
 name = "banyan-storage-provider-service"
 version = "0.1.0"
 dependencies = [
- "anyhow",
- "axum",
- "http",
- "proptest",
- "rand",
- "serde",
- "serde_json",
  "tokio",
- "tower",
- "tower-http",
  "tracing",
  "tracing-appender",
  "tracing-futures",
  "tracing-subscriber",
- "uuid",
 ]
 
 [[package]]

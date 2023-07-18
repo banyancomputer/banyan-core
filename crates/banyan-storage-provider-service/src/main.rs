@@ -3,11 +3,8 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::{EnvFilter, Layer};
 
-mod error;
-mod http;
-
 #[tokio::main]
-async fn main() -> anyhow::Result<()> {
+async fn main() {
     let (non_blocking_writer, _guard) = tracing_appender::non_blocking(std::io::stderr());
     let env_filter = EnvFilter::builder()
         .with_default_directive(Level::INFO.into())
@@ -19,8 +16,4 @@ async fn main() -> anyhow::Result<()> {
         .with_filter(env_filter);
 
     tracing_subscriber::registry().with(stderr_layer).init();
-
-    http::serve().await?;
-
-    Ok(())
 }
