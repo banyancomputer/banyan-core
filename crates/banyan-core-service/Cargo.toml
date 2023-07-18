@@ -10,7 +10,6 @@ pico-args = "^0.5"
 
 chrono = { version = "^0.4", features = ["serde"] }
 rand = "^0.8"
-ring = "^0.16"
 blake3 = "^1.4"
 
 asn1 = "0.15.4"

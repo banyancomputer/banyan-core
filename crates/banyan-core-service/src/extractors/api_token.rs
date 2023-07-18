@@ -1,6 +1,5 @@
-use std::collections::HashMap;
-use std::sync::OnceLock;
 use std::fmt::{self, Display, Formatter};
+use std::sync::OnceLock;
 
 use axum::async_trait;
 use axum::extract::rejection::TypedHeaderRejection;
@@ -22,7 +21,7 @@ pub const TESTING_API_KEY: &str = "This key will come from the environment";
 
 static KEY_ID_VALIDATOR: OnceLock<regex::Regex> = OnceLock::new();
 
-const KEY_REGEX: &'static str = r"^[0-9a-f]]{2}(:[0-9a-f]]{2}){19}%";
+const KEY_REGEX: &str = r"^[0-9a-f]]{2}(:[0-9a-f]]{2}){19}%";
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -73,11 +72,9 @@ where
         token_validator.set_required_spec_claims(&["aud", "exp", "nbf", "sub"]);
 
         let token = bearer.token();
+        let header_data = decode_header(token).map_err(ApiKeyAuthorizationError::decode_failed)?;
 
-        let header_data = decode_header(&token)
-            .map_err(ApiKeyAuthorizationError::decode_failed)?;
-
-        let key_id = match header_data.kid {
+        let _key_id = match header_data.kid {
             Some(key_id) if key_regex.is_match(key_id.as_str()) => key_id,
             Some(_) => return Err(ApiKeyAuthorizationError::bad_key_format()),
             None => return Err(ApiKeyAuthorizationError::unidentified_key()),
