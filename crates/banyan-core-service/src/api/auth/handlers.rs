@@ -7,7 +7,7 @@ use crate::api::auth::AuthError;
 use crate::api::ErrorResponse;
 use crate::extractors::{ApiToken, EXPIRATION_WINDOW_SECS, TESTING_API_KEY};
 
-pub async fn fake_token() -> Response {
+pub async fn fake_register() -> Response {
     let api_token = ApiToken {
         nonce: Some("todo-generate-random-none".to_string()),
 

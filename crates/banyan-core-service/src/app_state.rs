@@ -13,22 +13,27 @@ pub use state_error::StateError;
 #[derive(Clone)]
 pub struct AppState {
     database_pool: SqlitePool,
-    pub upload_directory: PathBuf,
+    upload_directory: PathBuf,
 }
 
 impl AppState {
-    pub(crate) async fn from_config(config: &Config) -> Result<Self, StateError> {
+    pub async fn from_config(config: &Config) -> Result<Self, StateError> {
         // Do a test setup to make sure the upload directory exists and is writable as an early
         // sanity check
-        LocalFileSystem::new_with_prefix(&config.upload_directory)
+        let upload_directory = config.upload_directory().clone();
+        LocalFileSystem::new_with_prefix(&upload_directory)
             .map_err(StateError::inaccessible_upload_directory)?;
 
-        let database_pool = database::setup(&config.database_url).await?;
+        let database_pool = database::setup(config.database_url()).await?;
 
         Ok(Self {
             database_pool,
-            upload_directory: config.upload_directory.clone(),
+            upload_directory,
         })
+    }
+
+    pub fn upload_directory(&self) -> &PathBuf {
+        &self.upload_directory
     }
 }
 
