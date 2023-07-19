@@ -34,7 +34,9 @@ pub async fn fake_register() -> Response {
 }
 
 pub async fn register_device_key(
-    extract::Json(_new_device_key): extract::Json<RegisterDeviceKey>,
+    extract::Json(new_device_key): extract::Json<RegisterDeviceKey>,
 ) -> Response {
+    let _public_key_to_register = new_device_key.public_key();
+
     (StatusCode::NOT_IMPLEMENTED, "todo").into_response()
 }
