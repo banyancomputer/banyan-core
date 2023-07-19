@@ -13,6 +13,8 @@ use axum::{Json, RequestPartsExt};
 use jsonwebtoken::{decode, decode_header, Algorithm, DecodingKey, Validation};
 use serde::{Deserialize, Serialize};
 
+use crate::extractors::DbConn;
+
 // Allow 15 minute token windows for now, this is likely to change in the future
 pub const EXPIRATION_WINDOW_SECS: u64 = 900;
 
@@ -42,13 +44,10 @@ pub struct ApiToken {
     pub subject: String,
 }
 
-use sqlx::SqlitePool;
-use axum::extract::FromRef;
-
 #[async_trait]
 impl<S> FromRequestParts<S> for ApiToken
 where
-    SqlitePool: FromRef<S>,
+    DbConn: FromRequestParts<S>,
     S: Send + Sync,
 {
     type Rejection = ApiKeyAuthorizationError;
@@ -83,9 +82,9 @@ where
             None => return Err(ApiKeyAuthorizationError::unidentified_key()),
         };
 
-        let db_conn = SqlitePool::from_ref(state);
+        let mut db_conn = DbConn::from_request_parts(parts, state).await.map_err(|_| ApiKeyAuthorizationError::database_unavailable())?;
         let _row = sqlx::query!("SELECT account_id, public_key FROM device_api_keys WHERE fingerprint = $1", key_id)
-            .fetch_one(&db_conn)
+            .fetch_one(&mut *db_conn.0)
             .await
             // todo: proper error mapping
             .map_err(|_| ApiKeyAuthorizationError::database_unavailable())?;
