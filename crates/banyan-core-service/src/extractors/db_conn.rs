@@ -12,9 +12,17 @@ where
 {
     type Rejection = (http::StatusCode, String);
 
-    async fn from_request_parts(_parts: &mut http::request::Parts, state: &S) -> Result<Self, Self::Rejection> {
+    async fn from_request_parts(
+        _parts: &mut http::request::Parts,
+        state: &S,
+    ) -> Result<Self, Self::Rejection> {
         let pool = SqlitePool::from_ref(state);
-        let conn = pool.acquire().await.map_err(|_| (http::StatusCode::INTERNAL_SERVER_ERROR, "something failed".to_string()))?;
+        let conn = pool.acquire().await.map_err(|_| {
+            (
+                http::StatusCode::INTERNAL_SERVER_ERROR,
+                "something failed".to_string(),
+            )
+        })?;
         Ok(Self(conn))
     }
 }

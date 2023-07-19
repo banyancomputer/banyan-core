@@ -82,12 +82,17 @@ where
             None => return Err(ApiKeyAuthorizationError::unidentified_key()),
         };
 
-        let mut db_conn = DbConn::from_request_parts(parts, state).await.map_err(|_| ApiKeyAuthorizationError::database_unavailable())?;
-        let _row = sqlx::query!("SELECT account_id, public_key FROM device_api_keys WHERE fingerprint = $1", key_id)
-            .fetch_one(&mut *db_conn.0)
+        let mut db_conn = DbConn::from_request_parts(parts, state)
             .await
-            // todo: proper error mapping
             .map_err(|_| ApiKeyAuthorizationError::database_unavailable())?;
+        let _row = sqlx::query!(
+            "SELECT account_id, public_key FROM device_api_keys WHERE fingerprint = $1",
+            key_id
+        )
+        .fetch_one(&mut *db_conn.0)
+        .await
+        // todo: proper error mapping
+        .map_err(|_| ApiKeyAuthorizationError::database_unavailable())?;
 
         // todo: we probably want to use device keys to sign this instead of a
         // static AES key, this works for now
