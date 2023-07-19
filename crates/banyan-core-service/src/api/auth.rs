@@ -1,4 +1,4 @@
-use axum::routing::get;
+use axum::routing::{get, post};
 use axum::Router;
 
 mod error;
@@ -13,5 +13,6 @@ use crate::app_state::AppState;
 pub fn router(state: AppState) -> Router<AppState> {
     Router::new()
         .route("/fake_register", get(handlers::fake_register))
+        .route("/register_device_key", post(handlers::register_device_key))
         .with_state(state)
 }

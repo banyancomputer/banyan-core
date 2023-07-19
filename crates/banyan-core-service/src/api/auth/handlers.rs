@@ -1,10 +1,12 @@
+use axum::extract;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use jsonwebtoken::{encode, get_current_timestamp, EncodingKey, Header};
 use uuid::Uuid;
 
-use crate::api::auth::AuthError;
 use crate::api::ErrorResponse;
+use crate::api::auth::AuthError;
+use crate::api::auth::requests::RegisterDeviceKey;
 use crate::extractors::{ApiToken, EXPIRATION_WINDOW_SECS, TESTING_API_KEY};
 
 pub async fn fake_register() -> Response {
@@ -29,4 +31,10 @@ pub async fn fake_register() -> Response {
         Ok(token_contents) => (StatusCode::OK, token_contents).into_response(),
         Err(_) => ErrorResponse::from(AuthError).into_response(),
     }
+}
+
+pub async fn register_device_key(
+    extract::Json(_new_device_key): extract::Json<RegisterDeviceKey>,
+) -> Response {
+    (StatusCode::NOT_IMPLEMENTED, "todo").into_response()
 }
