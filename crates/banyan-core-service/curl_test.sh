@@ -25,14 +25,17 @@ KEY_REG_DATA="{\"public_key\":\"$(cat ${PUBLIC_EC_CLIENT_KEY_PATH} | sed ':a;N;$
 REGISTERED_FINGERPRINT="$(curl -s -H "Content-Type: application/json" -H "Authorization: Bearer ${ACCOUNT_TOKEN}" -X POST -d "${KEY_REG_DATA}" ${BASE_HOST}/api/v1/auth/register_device_key | jq -r .fingerprint)"
 
 # Some dirty stuff to generate a JWT using only bash tooling...
-HEADER="$(echo "{\"typ\":\"JWT\",\"alg\":\"ES384\",\"kid\":\"${REGISTERED_FINGERPRINT}\"}" | base64 -w 0)"
+HEADER="$(echo "{\"typ\":\"JWT\",\"alg\":\"ES384\",\"kid\":\"${REGISTERED_FINGERPRINT}\"}" | base64 -w 0 | tr '+/' '-_ sed 's/=*$//')"
 NONCE="$(openssl rand -hex 8)" # Should be 8 random bytes hex encoded
 EXPIRATION_UNIX_TIME="$(($(date +%s) + 600))"
-TOKEN_BODY="$(echo "{\"nnc\":\"${NONCE}\",\"exp\":${EXPIRATION_UNIX_TIME},\"nbf\":$(date +%s),\"aud\":\"banyan-platform\",\"sub\":\"${ACCOUNT_ID}\"}" | base64 -w 0)"
+TOKEN_BODY="$(echo "{\"nnc\":\"${NONCE}\",\"exp\":${EXPIRATION_UNIX_TIME},\"nbf\":$(date +%s),\"aud\":\"banyan-platform\",\"sub\":\"${ACCOUNT_ID}\"}" | base64 -w 0 | tr '+/' '-_' | sed 's/=*$//')"
 SIGNED_BODY="$(echo "${HEADER}.${TOKEN_BODY}")"
-SIGNATURE=$(echo -e ${SIGNED_BODY} | openssl dgst -sha384 -binary -sign ${TMP_CERT_DIR}/private.ec.key | base64 -w 0)
+SIGNATURE=$(echo -e ${SIGNED_BODY} | openssl dgst -sha384 -binary -sign ${TMP_CERT_DIR}/private.ec.key | base64 -w 0 | tr '+/' '-_' | sed 's/=*$//')
 
 AUTH_TOKEN="${SIGNED_BODY}.${SIGNATURE}"
+
+echo ${AUTH_TOKEN}
+echo
 
 
 # Create a bucket using device key authentication (associated to account) and an initial public encryption key
