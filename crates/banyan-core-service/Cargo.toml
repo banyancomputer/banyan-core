@@ -8,13 +8,12 @@ license = "LicenseRef-LICENSE.txt"
 anyhow = "^1"
 pico-args = "^0.5"
 
-chrono = { version = "^0.4", features = ["serde"] }
-rand = "^0.8"
-ring = "^0.16"
-
 asn1 = "^0.15"
 blake3 = "^1.4"
+chrono = { version = "^0.4", features = ["serde"] }
+openssl = { version = "^0.10", features = ["vendored"] }
 pem = "^2"
+rand = "^0.8"
 regex = "^1.9"
 serde = { version = "^1", features = ["derive"] }
 serde_json = "^1"
@@ -27,6 +26,7 @@ tokio = { version = "^1", features = ["macros", "net", "rt", "rt-multi-thread", 
 axum = { version = "^0.6", features = ["headers", "http2", "multipart", "tracing"] }
 http = "^0.2"
 jsonwebtoken = "^8.3"
+sqlx = { version = "^0.7", default-features = false, features = ["macros", "migrate", "sqlite", "runtime-tokio"] }
 tower = { version = "^0.4", features = ["timeout", "load-shed", "limit", "util"] }
 tower-http = { version = "^0.4", features = ["auth", "cors", "limit", "fs", "propagate-header", "request-id", "sensitive-headers", "set-header", "util", "trace", "validate-request"] }
 validify = "^1.0"
@@ -35,7 +35,6 @@ tracing = "^0.1"
 tracing-appender = "^0.2"
 tracing-futures = { version = "^0.2", default-features = false, features = ["std-future"] }
 tracing-subscriber = { version = "^0.3", default-features = false, features = ["ansi", "env-filter", "fmt", "local-time", "time", "tracing"] }
-sqlx = { version = "^0.7", default-features = false, features = ["macros", "migrate", "sqlite", "runtime-tokio"] }
 
 [dev-dependencies]
 proptest = "^1.1"

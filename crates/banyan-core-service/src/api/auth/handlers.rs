@@ -3,6 +3,10 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use jsonwebtoken::{encode, get_current_timestamp, Algorithm, Header};
 
+use openssl::bn::BigNumContext;
+use openssl::ec::PointConversionForm;
+use openssl::pkey::PKey;
+
 use crate::api::auth::AuthError;
 use crate::api::auth::models::*;
 use crate::api::auth::requests::*;
@@ -43,7 +47,10 @@ pub async fn fake_register(mut db_conn: DbConn, signing_key: SigningKey) -> Resp
 
     match encode(&header, &api_token, &signing_key.0) {
         Ok(token) => Json(NewAccount { id: created_account.id, token }).into_response(),
-        Err(_) => ErrorResponse::from(AuthError).into_response(),
+        Err(err) => {
+            tracing::error!("unable to encode jwt: {err}");
+            ErrorResponse::from(AuthError).into_response()
+        },
     }
 }
 
@@ -55,20 +62,18 @@ pub async fn register_device_key(
     let account_id = api_token.subject;
     let public_key_to_register = new_device_key.public_key();
 
-    let device_key_pem = match pem::parse(public_key_to_register.as_bytes()) {
-        Ok(dkp) => dkp,
-        Err(err) => {
-            return (StatusCode::BAD_REQUEST, err.to_string()).into_response();
-        }
-    };
+    let parsed_public_key = PKey::public_key_from_pem(public_key_to_register.as_ref()).expect("parsing public key");
+    let ec_key = parsed_public_key.ec_key().unwrap();
+    let ec_group = ec_key.group();
+    let mut big_num_context = BigNumContext::new().expect("big number context");
 
-    if device_key_pem.tag() != "PUBLIC KEY" {
-        return (StatusCode::BAD_REQUEST, "not public key").into_response();
-    }
-
-    // todo: fingerprint is wrong
-    let public_key_der_bytes = device_key_pem.into_contents();
-    let fingerprint = public_key_der_bytes.iter().map(|byte| format!("{byte:02x}")).collect::<Vec<String>>().join(":");
+    let raw_compressed_bytes = ec_key.public_key().to_bytes(&ec_group, PointConversionForm::COMPRESSED, &mut big_num_context).expect("pub key bytes");
+    let fingerprint_bytes = openssl::sha::sha1(&raw_compressed_bytes);
+    let fingerprint = fingerprint_bytes
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<Vec<String>>()
+        .join(":");
 
     let maybe_device_key = sqlx::query_as!(
         CreatedDeviceKey,

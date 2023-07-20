@@ -3,8 +3,9 @@ use std::path::PathBuf;
 use axum::extract::FromRef;
 use jsonwebtoken::{DecodingKey, EncodingKey};
 use object_store::local::LocalFileSystem;
-use ring::rand::SystemRandom;
-use ring::signature::{EcdsaKeyPair, KeyPair, ECDSA_P384_SHA384_FIXED_SIGNING};
+use openssl::ec::{EcGroup, EcKey};
+use openssl::nid::Nid;
+use openssl::pkey::{PKey, Private};
 use sqlx::sqlite::SqlitePool;
 
 mod database;
@@ -67,35 +68,26 @@ impl FromRef<AppState> for SqlitePool {
 }
 
 fn load_or_create_service_key(path: &PathBuf) -> Result<(EncodingKey, DecodingKey), StateError> {
-    if !path.exists() {
-        let rng = SystemRandom::new();
-        let key = EcdsaKeyPair::generate_pkcs8(&ECDSA_P384_SHA384_FIXED_SIGNING, &rng)
-            .map_err(|_| StateError::service_keygen_failed())?;
+    let ec_group = EcGroup::from_curve_name(Nid::SECP384R1).expect("openssl support of the EC group to remain valid");
 
-        let pem = pem::Pem::new("ECDSA PRIVATE KEY".to_string(), key.as_ref());
+    let service_private_key = if !path.exists() {
+        let ec_key = EcKey::generate(&ec_group).expect("openssl private EC key generation");
+        let pkey_private: PKey<Private> = ec_key.try_into().expect("openssl internal type conversion");
 
-        std::fs::write(path, pem::encode(&pem)).map_err(StateError::write_service_key)?;
+        let private_pem = pkey_private.private_key_to_pem_pkcs8().expect("openssl private pem export");
+        std::fs::write(path, &private_pem).map_err(StateError::write_service_key)?;
+
+        pkey_private
+    } else {
+        let pem_bytes = std::fs::read(path).map_err(StateError::read_service_key)?;
+        PKey::private_key_from_pem(pem_bytes.as_ref()).expect("loading private key")
     };
 
-    let service_key_bytes = std::fs::read(path).map_err(StateError::read_service_key)?;
+    let private_pem_bytes = service_private_key.private_key_to_pem_pkcs8().expect("convert private key to private pem bytes");
+    let encoding_key = EncodingKey::from_ec_pem(private_pem_bytes.as_ref()).expect("loading ec pem key");
 
-    let service_key_pem =
-        pem::parse(service_key_bytes).map_err(|_| StateError::invalid_service_key())?;
-
-    if service_key_pem.tag() != "ECDSA PRIVATE KEY" {
-        return Err(StateError::invalid_service_key());
-    }
-
-    let private_key_der_bytes = service_key_pem.into_contents();
-
-    let ekp = EcdsaKeyPair::from_pkcs8(
-        &ECDSA_P384_SHA384_FIXED_SIGNING,
-        private_key_der_bytes.as_ref(),
-    )
-    .map_err(|_| StateError::invalid_service_key())?;
-
-    let encoding_key = EncodingKey::from_ec_der(private_key_der_bytes.as_ref());
-    let decoding_key = DecodingKey::from_ec_der(ekp.public_key().as_ref());
+    let public_pem_bytes = service_private_key.public_key_to_pem().expect("convert private key to public pem bytes");
+    let decoding_key = DecodingKey::from_ec_pem(public_pem_bytes.as_ref()).expect("loading ec pem key");
 
     Ok((encoding_key, decoding_key))
 }
