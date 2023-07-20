@@ -31,8 +31,8 @@ CREATE TABLE device_api_keys (
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE UNIQUE INDEX idx_device_api_keys_on_unique_fingerprint
-  ON device_api_keys(fingerprint);
+CREATE UNIQUE INDEX idx_device_api_keys_on_unique_account_id_fingerprint
+  ON device_api_keys(account_id, fingerprint);
 
 CREATE TABLE buckets (
   -- Dirty hack to generate UUIDs

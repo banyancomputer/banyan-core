@@ -129,19 +129,19 @@ pub struct ApiKeyAuthorizationError {
 }
 
 impl ApiKeyAuthorizationError {
-    fn bad_key_format() -> Self {
+    pub fn bad_key_format() -> Self {
         Self {
             kind: ApiKeyAuthorizationErrorKind::BadKeyFormat,
         }
     }
 
-    fn database_unavailable() -> Self {
+    pub fn database_unavailable() -> Self {
         Self {
             kind: ApiKeyAuthorizationErrorKind::DatabaseUnavailable,
         }
     }
 
-    fn decode_failed(err: jsonwebtoken::errors::Error) -> Self {
+    pub fn decode_failed(err: jsonwebtoken::errors::Error) -> Self {
         use jsonwebtoken::errors::ErrorKind::*;
 
         let kind = match err.kind() {
@@ -163,13 +163,13 @@ impl ApiKeyAuthorizationError {
         Self { kind }
     }
 
-    fn missing_header(err: TypedHeaderRejection) -> Self {
+    pub fn missing_header(err: TypedHeaderRejection) -> Self {
         Self {
             kind: ApiKeyAuthorizationErrorKind::MissingHeader(err),
         }
     }
 
-    fn unidentified_key() -> Self {
+    pub fn unidentified_key() -> Self {
         Self {
             kind: ApiKeyAuthorizationErrorKind::UnidentifiedKey,
         }

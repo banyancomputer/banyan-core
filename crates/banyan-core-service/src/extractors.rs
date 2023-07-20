@@ -1,9 +1,11 @@
 mod api_token;
 mod data_store;
 mod db_conn;
+mod fake_token;
 mod signing_key;
 
 pub use api_token::{ApiToken, EXPIRATION_WINDOW_SECS, TESTING_API_KEY};
 pub use data_store::DataStore;
 pub use db_conn::DbConn;
+pub use fake_token::FakeToken;
 pub use signing_key::SigningKey;

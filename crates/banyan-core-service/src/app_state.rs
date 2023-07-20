@@ -4,7 +4,7 @@ use axum::extract::FromRef;
 use jsonwebtoken::{DecodingKey, EncodingKey};
 use object_store::local::LocalFileSystem;
 use ring::rand::SystemRandom;
-use ring::signature::{EcdsaKeyPair, KeyPair, ECDSA_P256_SHA256_FIXED_SIGNING};
+use ring::signature::{EcdsaKeyPair, KeyPair, ECDSA_P384_SHA384_FIXED_SIGNING};
 use sqlx::sqlite::SqlitePool;
 
 mod database;
@@ -69,7 +69,7 @@ impl FromRef<AppState> for SqlitePool {
 fn load_or_create_service_key(path: &PathBuf) -> Result<(EncodingKey, DecodingKey), StateError> {
     if !path.exists() {
         let rng = SystemRandom::new();
-        let key = EcdsaKeyPair::generate_pkcs8(&ECDSA_P256_SHA256_FIXED_SIGNING, &rng)
+        let key = EcdsaKeyPair::generate_pkcs8(&ECDSA_P384_SHA384_FIXED_SIGNING, &rng)
             .map_err(|_| StateError::service_keygen_failed())?;
 
         let pem = pem::Pem::new("ECDSA PRIVATE KEY".to_string(), key.as_ref());
@@ -89,7 +89,7 @@ fn load_or_create_service_key(path: &PathBuf) -> Result<(EncodingKey, DecodingKe
     let private_key_der_bytes = service_key_pem.into_contents();
 
     let ekp = EcdsaKeyPair::from_pkcs8(
-        &ECDSA_P256_SHA256_FIXED_SIGNING,
+        &ECDSA_P384_SHA384_FIXED_SIGNING,
         private_key_der_bytes.as_ref(),
     )
     .map_err(|_| StateError::invalid_service_key())?;
