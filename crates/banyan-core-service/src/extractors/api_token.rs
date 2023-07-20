@@ -41,11 +41,16 @@ pub struct ApiToken {
     pub subject: String,
 }
 
+#[derive(sqlx::FromRow)]
+struct DbKey {
+    account_id: String,
+    public_key: String,
+}
+
 #[async_trait]
 impl<S> FromRequestParts<S> for ApiToken
 where
     DbConn: FromRequestParts<S>,
-    DecodingKey: FromRef<S>,
     S: Send + Sync,
 {
     type Rejection = ApiKeyAuthorizationError;
@@ -58,7 +63,6 @@ where
             .await
             .map_err(ApiKeyAuthorizationError::missing_header)?;
 
-        let key = DecodingKey::from_ref(state);
         let mut token_validator = Validation::new(Algorithm::ES384);
 
         // Allow +/- 20 sec clock skew off the expiration and not before time
@@ -66,14 +70,13 @@ where
 
         // Restrict audience as our clients will use the same API key for authorization to multiple
         // services
-        token_validator.set_audience(&["banyan-platform"]);
+        //token_validator.set_audience(&["banyan-platform"]);
 
         // Require all of our keys except for the attestations and proofs
-        token_validator.set_required_spec_claims(&["aud", "exp", "nbf", "sub"]);
+        //token_validator.set_required_spec_claims(&["aud", "exp", "nbf", "sub"]);
 
         let token = bearer.token();
         let header_data = decode_header(token).map_err(ApiKeyAuthorizationError::decode_failed)?;
-        tracing::info!("{header_data:?}, {token:?}");
 
         let key_id = match header_data.kid {
             Some(key_id) if key_regex.is_match(key_id.as_str()) => key_id,
@@ -84,7 +87,8 @@ where
         let mut db_conn = DbConn::from_request_parts(parts, state)
             .await
             .map_err(|_| ApiKeyAuthorizationError::database_unavailable())?;
-        let _row = sqlx::query!(
+        let db_key = sqlx::query_as!(
+            DbKey,
             "SELECT account_id, public_key FROM device_api_keys WHERE fingerprint = $1",
             key_id
         )
@@ -92,6 +96,8 @@ where
         .await
         // todo: proper error mapping
         .map_err(|_| ApiKeyAuthorizationError::database_unavailable())?;
+
+        let key = DecodingKey::from_ec_pem(db_key.public_key.as_bytes()).expect("success");
 
         // todo: we probably want to use device keys to sign this instead of a
         // static AES key, this works for now

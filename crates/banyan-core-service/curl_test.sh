@@ -32,7 +32,7 @@ TOKEN_BODY="$(echo "{\"nnc\":\"${NONCE}\",\"exp\":${EXPIRATION_UNIX_TIME},\"nbf\
 SIGNED_BODY="$(echo "${HEADER}.${TOKEN_BODY}")"
 SIGNATURE=$(echo -e ${SIGNED_BODY} | openssl dgst -sha384 -binary -sign ${TMP_CERT_DIR}/private.ec.key | base64 -w 0)
 
-AUTH_TOKEN="${TOKEN_BODY}.${SIGNATURE}"
+AUTH_TOKEN="${SIGNED_BODY}.${SIGNATURE}"
 
 
 # Create a bucket using device key authentication (associated to account) and an initial public encryption key
@@ -46,7 +46,7 @@ AUTH_TOKEN="${TOKEN_BODY}.${SIGNATURE}"
 # Publish new metadata for the bucket using the device key
 # Retrieve metadata for the bucket using device key, it should succeed and match the most recent version
 
-cat <<EOF | curl -s -H "Authorization: Bearer ${ACCOUNT_TOKEN}" -H "Content-Type: application/vnd.ipld.car; version=2" --data-binary "@-" ${BASE_HOST}/api/v1/buckets/${BUCKET_ID}/publish
+cat <<EOF | curl -s -H "Authorization: Bearer ${AUTH_TOKEN}" -H "Content-Type: application/vnd.ipld.car; version=2" --data-binary "@-" ${BASE_HOST}/api/v1/buckets/${BUCKET_ID}/publish
 # This should be a CARv2 file, but alas its just a placeholder x
 
 This data file was generated at $(date +%s.%N) or $(date).
