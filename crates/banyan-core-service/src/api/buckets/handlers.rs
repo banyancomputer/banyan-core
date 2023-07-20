@@ -1,8 +1,8 @@
 use axum::extract::{self, BodyStream, Path};
-use axum::headers::{ETag, IfNoneMatch};
+//use axum::headers::{ETag, IfNoneMatch};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use axum::TypedHeader;
+//use axum::TypedHeader;
 use futures_util::TryStreamExt;
 use object_store::ObjectStore;
 use tokio::io::{AsyncWrite, AsyncWriteExt};
@@ -177,20 +177,20 @@ async fn handle_upload(
 }
 
 pub async fn show(
-    //_api_token: ApiToken,
+    _api_token: ApiToken,
     Path(bucket_id): Path<Uuid>,
-    if_none_match: Option<TypedHeader<IfNoneMatch>>,
+    //if_none_match: Option<TypedHeader<IfNoneMatch>>,
 ) -> Response {
-    if let Some(TypedHeader(etag_hdr)) = if_none_match {
-        let current_etag: ETag = "\"bafybeihdwdcefgh4dqkjv67uzcmw7ojee6xedzdetojuzjevtenxquvyku\""
-            .parse()
-            .expect("valid etag");
+    //if let Some(TypedHeader(etag_hdr)) = if_none_match {
+    //    let current_etag: ETag = "\"bafybeihdwdcefgh4dqkjv67uzcmw7ojee6xedzdetojuzjevtenxquvyku\""
+    //        .parse()
+    //        .expect("valid etag");
 
-        if etag_hdr.precondition_passes(&current_etag) {
-            tracing::info!("would return not modified");
-            return (StatusCode::NOT_MODIFIED, "hasn't changed").into_response();
-        }
-    }
+    //    if etag_hdr.precondition_passes(&current_etag) {
+    //        tracing::info!("would return not modified");
+    //        return (StatusCode::NOT_MODIFIED, "hasn't changed").into_response();
+    //    }
+    //}
 
     let bucket = DetailedBucket {
         id: bucket_id.to_string(),
@@ -202,16 +202,14 @@ pub async fn show(
         ),
         public_keys: vec![
             PublicKeySummary {
-                fingerprint: "0b:9e:89:30:d9:3d:36:17:f6:ca:43:ad:bf:b7:8f:32:97:40:39:f2"
-                    .to_string(),
-                status: PublicKeyStatus::Approved(ProtectedKey(
-                    "YSBzZWNyZXQga2V5IGVuY3J5cHRlZCB3aXRoIGEgcHVibGljIGtleQo=".to_string(),
-                )),
+                approved: true,
+                fingerprint: "<pending>".to_string(),
+                public_key: "<full public key>".to_string(),
             },
             PublicKeySummary {
-                fingerprint: "a3:b5:9e:5f:e8:84:ee:1f:34:d9:8e:ef:85:8e:3f:b6:62:ac:10:4a"
-                    .to_string(),
-                status: PublicKeyStatus::Pending,
+                approved: false,
+                fingerprint: "<pending>".to_string(),
+                public_key: "<full public key>".to_string(),
             },
         ],
     };

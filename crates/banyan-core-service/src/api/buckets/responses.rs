@@ -31,17 +31,11 @@ pub struct MinimalBucket {
 }
 
 #[derive(Serialize)]
-pub struct ProtectedKey(pub String);
-
-#[derive(Serialize)]
 pub struct PublicKeySummary {
+    pub approved: bool,
     pub fingerprint: String,
-    pub status: PublicKeyStatus,
+    pub public_key: String,
 }
 
 #[derive(Serialize)]
-#[serde(rename_all = "snake_case")]
-pub enum PublicKeyStatus {
-    Approved(ProtectedKey),
-    Pending,
-}
+pub struct ProtectedKey(pub String);
