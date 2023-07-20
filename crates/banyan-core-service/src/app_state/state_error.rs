@@ -25,9 +25,15 @@ impl StateError {
         }
     }
 
-    pub(super) fn invalid_service_key() -> Self {
+    pub(super) fn key_loading(err: openssl::error::ErrorStack) -> Self {
         Self {
-            kind: StateErrorKind::InvalidServiceKey,
+            kind: StateErrorKind::KeyLoading(err),
+        }
+    }
+
+    pub(super) fn loading_state_keys(err: jsonwebtoken::errors::Error) -> Self {
+        Self {
+            kind: StateErrorKind::LoadingStateKeys(err),
         }
     }
 
@@ -43,9 +49,9 @@ impl StateError {
         }
     }
 
-    pub(super) fn service_keygen_failed() -> Self {
+    pub(super) fn service_keygen_failed(err: openssl::error::ErrorStack) -> Self {
         Self {
-            kind: StateErrorKind::ServiceKeygenFailed,
+            kind: StateErrorKind::ServiceKeygenFailed(err),
         }
     }
 
@@ -64,11 +70,12 @@ impl Display for StateError {
             BadDatabaseUrl(_) => "provided database URL wasn't usable",
             DatabaseUnavailable(_) => "unable to make use of the configured database",
             InaccessibleUploadDirectory(_) => "service upload directory isn't available",
-            InvalidServiceKey => "provided service key is not a valid format",
+            KeyLoading(_) => "unable to load service keys",
+            LoadingStateKeys(_) => "unable to load service key into signing and verification keys",
             MigrationsFailed(_) => "failed to run migrations against configured database",
             ReadServiceKey(_) => "unable to read service key from provided location",
-            ServiceKeygenFailed => "unable to create new ECDSA service key",
-            WriteServiceKey(_) => "unable to write service key to provided location",
+            ServiceKeygenFailed(_) => "unable to create new ECDSA service key",
+            WriteServiceKey(_) => "unable to persist geneated service key to disk",
         };
 
         f.write_str(msg)
@@ -84,8 +91,11 @@ impl std::error::Error for StateError {
             DatabaseUnavailable(err) => Some(err),
             InaccessibleUploadDirectory(err) => Some(err),
             MigrationsFailed(err) => Some(err),
-            // todo: more types through here
-            _ => None,
+            KeyLoading(err) => Some(err),
+            LoadingStateKeys(err) => Some(err),
+            ReadServiceKey(err) => Some(err),
+            ServiceKeygenFailed(err) => Some(err),
+            WriteServiceKey(err) => Some(err),
         }
     }
 }
@@ -96,9 +106,10 @@ enum StateErrorKind {
     BadDatabaseUrl(sqlx::Error),
     DatabaseUnavailable(sqlx::Error),
     InaccessibleUploadDirectory(object_store::Error),
-    InvalidServiceKey,
+    KeyLoading(openssl::error::ErrorStack),
+    LoadingStateKeys(jsonwebtoken::errors::Error),
     MigrationsFailed(sqlx::migrate::MigrateError),
     ReadServiceKey(std::io::Error),
-    ServiceKeygenFailed,
+    ServiceKeygenFailed(openssl::error::ErrorStack),
     WriteServiceKey(std::io::Error),
 }

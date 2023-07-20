@@ -68,26 +68,44 @@ impl FromRef<AppState> for SqlitePool {
 }
 
 fn load_or_create_service_key(path: &PathBuf) -> Result<(EncodingKey, DecodingKey), StateError> {
-    let ec_group = EcGroup::from_curve_name(Nid::SECP384R1).expect("openssl support of the EC group to remain valid");
-
     let service_private_key = if !path.exists() {
-        let ec_key = EcKey::generate(&ec_group).expect("openssl private EC key generation");
-        let pkey_private: PKey<Private> = ec_key.try_into().expect("openssl internal type conversion");
+        let ec_group = EcGroup::from_curve_name(Nid::SECP384R1)
+            .map_err(StateError::service_keygen_failed)?;
 
-        let private_pem = pkey_private.private_key_to_pem_pkcs8().expect("openssl private pem export");
-        std::fs::write(path, &private_pem).map_err(StateError::write_service_key)?;
+        let ec_key = EcKey::generate(&ec_group)
+            .map_err(StateError::service_keygen_failed)?;
+
+        let pkey_private: PKey<Private> = ec_key
+            .try_into()
+            .map_err(StateError::service_keygen_failed)?;
+
+        let private_pem = pkey_private
+            .private_key_to_pem_pkcs8()
+            .map_err(StateError::service_keygen_failed)?;
+
+        std::fs::write(path, &private_pem)
+            .map_err(StateError::write_service_key)?;
 
         pkey_private
     } else {
-        let pem_bytes = std::fs::read(path).map_err(StateError::read_service_key)?;
-        PKey::private_key_from_pem(pem_bytes.as_ref()).expect("loading private key")
+        let pem_bytes = std::fs::read(path)
+            .map_err(StateError::read_service_key)?;
+
+        PKey::private_key_from_pem(pem_bytes.as_ref())
+            .map_err(StateError::key_loading)?
     };
 
-    let private_pem_bytes = service_private_key.private_key_to_pem_pkcs8().expect("convert private key to private pem bytes");
-    let encoding_key = EncodingKey::from_ec_pem(private_pem_bytes.as_ref()).expect("loading ec pem key");
+    let private_pem_bytes = service_private_key
+        .private_key_to_pem_pkcs8()
+        .map_err(StateError::key_loading)?;
+    let encoding_key = EncodingKey::from_ec_pem(private_pem_bytes.as_ref())
+        .map_err(StateError::loading_state_keys)?;
 
-    let public_pem_bytes = service_private_key.public_key_to_pem().expect("convert private key to public pem bytes");
-    let decoding_key = DecodingKey::from_ec_pem(public_pem_bytes.as_ref()).expect("loading ec pem key");
+    let public_pem_bytes = service_private_key
+        .public_key_to_pem()
+        .map_err(StateError::key_loading)?;
+    let decoding_key = DecodingKey::from_ec_pem(public_pem_bytes.as_ref())
+        .map_err(StateError::loading_state_keys)?;
 
     Ok((encoding_key, decoding_key))
 }

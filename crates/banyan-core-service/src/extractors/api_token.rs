@@ -3,7 +3,7 @@ use std::sync::OnceLock;
 
 use axum::async_trait;
 use axum::extract::rejection::TypedHeaderRejection;
-use axum::extract::{FromRef, FromRequestParts, TypedHeader};
+use axum::extract::{FromRequestParts, TypedHeader};
 use axum::headers::authorization::Bearer;
 use axum::headers::Authorization;
 use axum::http::request::Parts;
@@ -70,10 +70,10 @@ where
 
         // Restrict audience as our clients will use the same API key for authorization to multiple
         // services
-        //token_validator.set_audience(&["banyan-platform"]);
+        token_validator.set_audience(&["banyan-platform"]);
 
         // Require all of our keys except for the attestations and proofs
-        //token_validator.set_required_spec_claims(&["aud", "exp", "nbf", "sub"]);
+        token_validator.set_required_spec_claims(&["aud", "exp", "nbf", "sub"]);
 
         let token = bearer.token();
         let header_data = decode_header(token).map_err(ApiKeyAuthorizationError::decode_failed)?;
@@ -87,6 +87,7 @@ where
         let mut db_conn = DbConn::from_request_parts(parts, state)
             .await
             .map_err(|_| ApiKeyAuthorizationError::database_unavailable())?;
+
         let db_key = sqlx::query_as!(
             DbKey,
             "SELECT account_id, public_key FROM device_api_keys WHERE fingerprint = $1",
@@ -121,6 +122,12 @@ where
                     kind: ApiKeyAuthorizationErrorKind::NeverValid,
                 });
             }
+        }
+
+        if db_key.account_id != claims.subject {
+            return Err(ApiKeyAuthorizationError {
+                kind: ApiKeyAuthorizationErrorKind::MismatchedSubject,
+            });
         }
 
         Ok(claims)
@@ -192,6 +199,7 @@ impl Display for ApiKeyAuthorizationError {
             FormatError(_) => "format of the provide bearer token didn't meet our requirements",
             InternalCryptographyIssue(_) => "there was an internal cryptographic issue due too a code or configuration issue",
             MaliciousConstruction(_) => "the provided token was invalid in a way that indicates an attack is likely occurring",
+            MismatchedSubject => "token had a valid signature but the key was not owned by the represented subject",
             MissingHeader(_) => "no Authorization header was present in request to protected route",
             NeverValid => "authorization token doesn't become valid until after it has already expired",
             UnidentifiedKey => "header didn't include kid required to lookup the appropriate authentication mechanism",
@@ -238,6 +246,7 @@ enum ApiKeyAuthorizationErrorKind {
     InternalCryptographyIssue(jsonwebtoken::errors::Error),
     MaliciousConstruction(jsonwebtoken::errors::Error),
     MissingHeader(TypedHeaderRejection),
+    MismatchedSubject,
     NeverValid,
     UnidentifiedKey,
     UnknownTokenError(jsonwebtoken::errors::Error),

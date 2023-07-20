@@ -2,4 +2,10 @@
 
 set -o errexit
 
-cargo sqlx prepare --database-url sqlite://$(pwd)/data/server.db -- --all-targets --all-features --tests
+# Relative paths don't work reliably with sqlx
+export DATABASE_URL="sqlite://$(pwd)/data/server.db"
+
+rm -f data/server.db* &>/dev/null
+
+sqlx database setup
+cargo sqlx prepare -- --all-targets --all-features --tests
