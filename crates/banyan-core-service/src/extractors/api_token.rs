@@ -3,7 +3,7 @@ use std::sync::OnceLock;
 
 use axum::async_trait;
 use axum::extract::rejection::TypedHeaderRejection;
-use axum::extract::{FromRequestParts, TypedHeader};
+use axum::extract::{FromRef, FromRequestParts, TypedHeader};
 use axum::headers::authorization::Bearer;
 use axum::headers::Authorization;
 use axum::http::request::Parts;
@@ -17,9 +17,6 @@ use crate::extractors::DbConn;
 
 // Allow 15 minute token windows for now, this is likely to change in the future
 pub const EXPIRATION_WINDOW_SECS: u64 = 900;
-
-// todo: extract this from state, populate this from the env
-pub const TESTING_API_KEY: &str = "This key will come from the environment";
 
 static KEY_ID_VALIDATOR: OnceLock<regex::Regex> = OnceLock::new();
 
@@ -48,6 +45,7 @@ pub struct ApiToken {
 impl<S> FromRequestParts<S> for ApiToken
 where
     DbConn: FromRequestParts<S>,
+    DecodingKey: FromRef<S>,
     S: Send + Sync,
 {
     type Rejection = ApiKeyAuthorizationError;
@@ -60,21 +58,22 @@ where
             .await
             .map_err(ApiKeyAuthorizationError::missing_header)?;
 
-        let key = DecodingKey::from_secret(TESTING_API_KEY.as_ref());
-        let mut token_validator = Validation::new(Algorithm::HS256);
+        let key = DecodingKey::from_ref(state);
+        let mut token_validator = Validation::new(Algorithm::ES384);
 
         // Allow +/- 20 sec clock skew off the expiration and not before time
         token_validator.leeway = 20;
 
         // Restrict audience as our clients will use the same API key for authorization to multiple
         // services
-        token_validator.set_audience(&["did:key:{some-kind-of-banyan-identity}"]);
+        token_validator.set_audience(&["banyan-platform"]);
 
         // Require all of our keys except for the attestations and proofs
         token_validator.set_required_spec_claims(&["aud", "exp", "nbf", "sub"]);
 
         let token = bearer.token();
         let header_data = decode_header(token).map_err(ApiKeyAuthorizationError::decode_failed)?;
+        tracing::info!("{header_data:?}, {token:?}");
 
         let key_id = match header_data.kid {
             Some(key_id) if key_regex.is_match(key_id.as_str()) => key_id,
