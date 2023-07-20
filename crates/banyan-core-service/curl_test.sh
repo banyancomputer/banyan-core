@@ -36,15 +36,14 @@ echo "Expected: ${FINGERPRINT}, Actual: ${REGISTERED_FINGERPRINT}"
 # Publish new metadata for the bucket using the device key
 # Retrieve metadata for the bucket using device key, it should succeed and match the most recent version
 
-#API_TOKEN="$(curl -s ${BASE_HOST}/api/v1/auth/fake_token)"
-#cat <<EOF | curl -s -H "Authorization: Bearer ${API_TOKEN}" -H "Content-Type: application/vnd.ipld.car; version=2" --data-binary "@-" ${BASE_HOST}/api/v1/buckets/${BUCKET_ID}/publish
-## This should be a CARv2 file, but alas its just a placeholder x  
-#
-#This data file was generated at $(date +%s.%N) or $(date).
-#
-#Your fortune (if available):
-#
-#$(fortune 2>/dev/null || echo "No fortune for you...")
-#EOF
-#echo
+cat <<EOF | curl -s -H "Authorization: Bearer ${ACCOUNT_TOKEN}" -H "Content-Type: application/vnd.ipld.car; version=2" --data-binary "@-" ${BASE_HOST}/api/v1/buckets/${BUCKET_ID}/publish
+# This should be a CARv2 file, but alas its just a placeholder x
+
+This data file was generated at $(date +%s.%N) or $(date).
+
+Your fortune (if available):
+
+$(fortune 2>/dev/null || echo "No fortune for you...")
+EOF
+echo
 
