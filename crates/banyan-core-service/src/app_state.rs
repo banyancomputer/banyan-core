@@ -69,11 +69,10 @@ impl FromRef<AppState> for SqlitePool {
 
 fn load_or_create_service_key(path: &PathBuf) -> Result<(EncodingKey, DecodingKey), StateError> {
     let service_private_key = if !path.exists() {
-        let ec_group = EcGroup::from_curve_name(Nid::SECP384R1)
-            .map_err(StateError::service_keygen_failed)?;
+        let ec_group =
+            EcGroup::from_curve_name(Nid::SECP384R1).map_err(StateError::service_keygen_failed)?;
 
-        let ec_key = EcKey::generate(&ec_group)
-            .map_err(StateError::service_keygen_failed)?;
+        let ec_key = EcKey::generate(&ec_group).map_err(StateError::service_keygen_failed)?;
 
         let pkey_private: PKey<Private> = ec_key
             .try_into()
@@ -83,16 +82,13 @@ fn load_or_create_service_key(path: &PathBuf) -> Result<(EncodingKey, DecodingKe
             .private_key_to_pem_pkcs8()
             .map_err(StateError::service_keygen_failed)?;
 
-        std::fs::write(path, &private_pem)
-            .map_err(StateError::write_service_key)?;
+        std::fs::write(path, private_pem).map_err(StateError::write_service_key)?;
 
         pkey_private
     } else {
-        let pem_bytes = std::fs::read(path)
-            .map_err(StateError::read_service_key)?;
+        let pem_bytes = std::fs::read(path).map_err(StateError::read_service_key)?;
 
-        PKey::private_key_from_pem(pem_bytes.as_ref())
-            .map_err(StateError::key_loading)?
+        PKey::private_key_from_pem(pem_bytes.as_ref()).map_err(StateError::key_loading)?
     };
 
     let private_pem_bytes = service_private_key

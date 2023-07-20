@@ -16,7 +16,7 @@ use crate::extractors::{ApiToken, DataStore, DbConn};
 
 pub async fn create(
     api_token: ApiToken,
-    mut db_conn: DbConn, 
+    mut db_conn: DbConn,
     extract::Json(new_bucket): extract::Json<CreateBucket>,
 ) -> Response {
     if let Err(errors) = new_bucket.validate() {
@@ -47,6 +47,22 @@ pub async fn create(
                 .into_response();
         }
     };
+
+    if sqlx::query_as!(
+        CreatedResource,
+        r#"INSERT INTO bucket_keys (bucket_id, approved) VALUES ($1, true) RETURNING id;"#,
+        created_bucket.id,
+    )
+    .fetch_one(&mut *db_conn.0)
+    .await
+    .is_err()
+    {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "unable to create public key associated with bucket",
+        )
+            .into_response();
+    }
 
     let response = MinimalBucket {
         id: created_bucket.id,

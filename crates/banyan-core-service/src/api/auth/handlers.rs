@@ -7,12 +7,12 @@ use openssl::bn::BigNumContext;
 use openssl::ec::PointConversionForm;
 use openssl::pkey::PKey;
 
-use crate::api::auth::AuthError;
 use crate::api::auth::models::*;
 use crate::api::auth::requests::*;
 use crate::api::auth::responses::*;
+use crate::api::auth::AuthError;
 use crate::api::ErrorResponse;
-use crate::extractors::{FakeToken, DbConn, SigningKey};
+use crate::extractors::{DbConn, FakeToken, SigningKey};
 
 const FAKE_REGISTRATION_MAXIMUM_DURATION: u64 = 60 * 60 * 24 * 28; // four weeks, should be good enough between env resets
 
@@ -46,28 +46,40 @@ pub async fn fake_register(mut db_conn: DbConn, signing_key: SigningKey) -> Resp
     };
 
     match encode(&header, &api_token, &signing_key.0) {
-        Ok(token) => Json(NewAccount { id: created_account.id, token }).into_response(),
+        Ok(token) => Json(NewAccount {
+            id: created_account.id,
+            token,
+        })
+        .into_response(),
         Err(err) => {
             tracing::error!("unable to encode jwt: {err}");
             ErrorResponse::from(AuthError).into_response()
-        },
+        }
     }
 }
 
 pub async fn register_device_key(
     api_token: FakeToken,
-    mut db_conn: DbConn, 
+    mut db_conn: DbConn,
     extract::Json(new_device_key): extract::Json<RegisterDeviceKey>,
 ) -> Response {
     let account_id = api_token.subject;
     let public_key_to_register = new_device_key.public_key();
 
-    let parsed_public_key = PKey::public_key_from_pem(public_key_to_register.as_ref()).expect("parsing public key");
+    let parsed_public_key =
+        PKey::public_key_from_pem(public_key_to_register.as_ref()).expect("parsing public key");
     let ec_key = parsed_public_key.ec_key().unwrap();
     let ec_group = ec_key.group();
     let mut big_num_context = BigNumContext::new().expect("big number context");
 
-    let raw_compressed_bytes = ec_key.public_key().to_bytes(&ec_group, PointConversionForm::COMPRESSED, &mut big_num_context).expect("pub key bytes");
+    let raw_compressed_bytes = ec_key
+        .public_key()
+        .to_bytes(
+            ec_group,
+            PointConversionForm::COMPRESSED,
+            &mut big_num_context,
+        )
+        .expect("pub key bytes");
     let fingerprint_bytes = openssl::sha::sha1(&raw_compressed_bytes);
     let fingerprint = fingerprint_bytes
         .iter()
@@ -100,5 +112,6 @@ pub async fn register_device_key(
         id: created_device_key.id,
         account_id,
         fingerprint,
-    }).into_response()
+    })
+    .into_response()
 }
