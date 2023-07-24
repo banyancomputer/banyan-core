@@ -1,0 +1,8 @@
+.main {
+	height: 100vh;
+	background-color: #f7f7f7;
+}
+
+.main > section {
+	padding: 32px;
+}
