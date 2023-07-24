@@ -5,31 +5,7 @@ import ECCKeystore from 'banyan-webcrypto-experiment/ecc/keystore';
 import { clear as clearIdb } from 'banyan-webcrypto-experiment/idb';
 import { useSession } from 'next-auth/react';
 import { Session } from 'next-auth';
-// import { TombFS, WasmBlockStore, PrivateKey } from 'tomb-wasm-experimental';
-// // Initialize the tombFs when the keystore is initialized
-// 	// TODO: This will need to be called differently at some point! We should be passing the privateKey to the tombFs constructor
-// 	useEffect(() => {
-// 		const initTombFs = async () => {
-// 			if (!keystore) {
-// 				return;
-// 			}
-// 			// This is going to be initialized based on the bucket the user is currently in
-// 			const blockstoreUrl = "https://raw.githubusercontent.com/ipld/go-car/master/v2/testdata/sample-v2-indexless.car";
-// 			// This should NOT exist -- the privateKey should just be Crypto Key retrieved from keyStore!
-// 			const privateKeyUrl = "https://gist.githubusercontent.com/organizedgrime/f292f28a6ea39cea5fd1b844c51da4fb/raw/wrapping_key.pem";
 
-// 			let fs: TombFS | null = null;
-// 			try {
-// 				const bs = await WasmBlockStore.new(blockstoreUrl);
-// 				const pkey = await PrivateKey.new(privateKeyUrl);
-// 				fs = await TombFS.new(bs, pkey);
-// 			}
-// 			catch (err) {
-// 				console.error(err);
-// 			};
-// 			setFs(fs);
-// 		}
-// 	}, [keystoreInitialized]);
 const KEY_STORE_NAME_PREFIX = 'key-store';
 const EXCHANGE_KEY_PAIR_NAME = 'exchange-key-pair';
 const WRITE_KEY_PAIR_NAME = 'write-key-pair';
@@ -42,7 +18,7 @@ export const KeystoreContext = createContext<{
 	isRegistered: boolean;
 	// Whether the user's keystore has been initialized
 	keystoreInitialized: boolean;
-
+	
 	// External Methods
 
 	// Initialize a keystore based on the user's passphrase
@@ -117,6 +93,8 @@ export const KeystoreProvider = ({ children }: any) => {
 			check(session);
 		}
 	}, [session]);
+
+	
 
 	/* Methods */
 
