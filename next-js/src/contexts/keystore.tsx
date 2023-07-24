@@ -18,7 +18,7 @@ export const KeystoreContext = createContext<{
 	isRegistered: boolean;
 	// Whether the user's keystore has been initialized
 	keystoreInitialized: boolean;
-	
+
 	// External Methods
 
 	// Initialize a keystore based on the user's passphrase
@@ -93,8 +93,6 @@ export const KeystoreProvider = ({ children }: any) => {
 			check(session);
 		}
 	}, [session]);
-
-	
 
 	/* Methods */
 
