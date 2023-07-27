@@ -3,6 +3,7 @@ use axum::Router;
 
 mod error;
 mod handlers;
+mod models;
 mod requests;
 mod responses;
 

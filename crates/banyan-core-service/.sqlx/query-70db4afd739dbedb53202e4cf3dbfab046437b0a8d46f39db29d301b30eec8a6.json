@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO device_api_keys (account_id, fingerprint, public_key) VALUES ($1, $2, $3) RETURNING id;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "70db4afd739dbedb53202e4cf3dbfab046437b0a8d46f39db29d301b30eec8a6"
+}

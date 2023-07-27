@@ -1,0 +1,11 @@
+#!/bin/bash
+
+set -o errexit
+
+# Relative paths don't work reliably with sqlx
+export DATABASE_URL="sqlite://$(pwd)/data/server.db"
+
+rm -f data/server.db* &>/dev/null
+
+sqlx database setup
+cargo sqlx prepare -- --all-targets --all-features --tests

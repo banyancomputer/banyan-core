@@ -18,9 +18,6 @@ use crate::extractors::DbConn;
 // Allow 15 minute token windows for now, this is likely to change in the future
 pub const EXPIRATION_WINDOW_SECS: u64 = 900;
 
-// todo: extract this from state, populate this from the env
-pub const TESTING_API_KEY: &str = "This key will come from the environment";
-
 static KEY_ID_VALIDATOR: OnceLock<regex::Regex> = OnceLock::new();
 
 const KEY_REGEX: &str = r"^[0-9a-f]{2}(:[0-9a-f]{2}){19}$";
@@ -44,6 +41,12 @@ pub struct ApiToken {
     pub subject: String,
 }
 
+#[derive(sqlx::FromRow)]
+struct DbKey {
+    account_id: String,
+    public_key: String,
+}
+
 #[async_trait]
 impl<S> FromRequestParts<S> for ApiToken
 where
@@ -60,15 +63,14 @@ where
             .await
             .map_err(ApiKeyAuthorizationError::missing_header)?;
 
-        let key = DecodingKey::from_secret(TESTING_API_KEY.as_ref());
-        let mut token_validator = Validation::new(Algorithm::HS256);
+        let mut token_validator = Validation::new(Algorithm::ES384);
 
         // Allow +/- 20 sec clock skew off the expiration and not before time
         token_validator.leeway = 20;
 
         // Restrict audience as our clients will use the same API key for authorization to multiple
         // services
-        token_validator.set_audience(&["did:key:{some-kind-of-banyan-identity}"]);
+        token_validator.set_audience(&["banyan-platform"]);
 
         // Require all of our keys except for the attestations and proofs
         token_validator.set_required_spec_claims(&["aud", "exp", "nbf", "sub"]);
@@ -85,7 +87,9 @@ where
         let mut db_conn = DbConn::from_request_parts(parts, state)
             .await
             .map_err(|_| ApiKeyAuthorizationError::database_unavailable())?;
-        let _row = sqlx::query!(
+
+        let db_key = sqlx::query_as!(
+            DbKey,
             "SELECT account_id, public_key FROM device_api_keys WHERE fingerprint = $1",
             key_id
         )
@@ -93,6 +97,8 @@ where
         .await
         // todo: proper error mapping
         .map_err(|_| ApiKeyAuthorizationError::database_unavailable())?;
+
+        let key = DecodingKey::from_ec_pem(db_key.public_key.as_bytes()).expect("success");
 
         // todo: we probably want to use device keys to sign this instead of a
         // static AES key, this works for now
@@ -118,6 +124,12 @@ where
             }
         }
 
+        if db_key.account_id != claims.subject {
+            return Err(ApiKeyAuthorizationError {
+                kind: ApiKeyAuthorizationErrorKind::MismatchedSubject,
+            });
+        }
+
         Ok(claims)
     }
 }
@@ -129,19 +141,19 @@ pub struct ApiKeyAuthorizationError {
 }
 
 impl ApiKeyAuthorizationError {
-    fn bad_key_format() -> Self {
+    pub fn bad_key_format() -> Self {
         Self {
             kind: ApiKeyAuthorizationErrorKind::BadKeyFormat,
         }
     }
 
-    fn database_unavailable() -> Self {
+    pub fn database_unavailable() -> Self {
         Self {
             kind: ApiKeyAuthorizationErrorKind::DatabaseUnavailable,
         }
     }
 
-    fn decode_failed(err: jsonwebtoken::errors::Error) -> Self {
+    pub fn decode_failed(err: jsonwebtoken::errors::Error) -> Self {
         use jsonwebtoken::errors::ErrorKind::*;
 
         let kind = match err.kind() {
@@ -163,13 +175,13 @@ impl ApiKeyAuthorizationError {
         Self { kind }
     }
 
-    fn missing_header(err: TypedHeaderRejection) -> Self {
+    pub fn missing_header(err: TypedHeaderRejection) -> Self {
         Self {
             kind: ApiKeyAuthorizationErrorKind::MissingHeader(err),
         }
     }
 
-    fn unidentified_key() -> Self {
+    pub fn unidentified_key() -> Self {
         Self {
             kind: ApiKeyAuthorizationErrorKind::UnidentifiedKey,
         }
@@ -187,6 +199,7 @@ impl Display for ApiKeyAuthorizationError {
             FormatError(_) => "format of the provide bearer token didn't meet our requirements",
             InternalCryptographyIssue(_) => "there was an internal cryptographic issue due too a code or configuration issue",
             MaliciousConstruction(_) => "the provided token was invalid in a way that indicates an attack is likely occurring",
+            MismatchedSubject => "token had a valid signature but the key was not owned by the represented subject",
             MissingHeader(_) => "no Authorization header was present in request to protected route",
             NeverValid => "authorization token doesn't become valid until after it has already expired",
             UnidentifiedKey => "header didn't include kid required to lookup the appropriate authentication mechanism",
@@ -233,6 +246,7 @@ enum ApiKeyAuthorizationErrorKind {
     InternalCryptographyIssue(jsonwebtoken::errors::Error),
     MaliciousConstruction(jsonwebtoken::errors::Error),
     MissingHeader(TypedHeaderRejection),
+    MismatchedSubject,
     NeverValid,
     UnidentifiedKey,
     UnknownTokenError(jsonwebtoken::errors::Error),
