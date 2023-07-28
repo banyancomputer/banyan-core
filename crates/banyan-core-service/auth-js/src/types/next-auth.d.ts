@@ -8,11 +8,5 @@ declare module 'next-auth' {
 	interface Session {
 		// The Account's provider identifier (this is just <provider>:<providerAccountId>)
 		providerId: string;
-		// // The user's private key material escrowed to our Auth Service
-		// escrowedDeviceBlob: string | null;
-		// // The user's public key material for escrowed ecdh private key material
-		// apiKeyPem: string | null;
-		// // The user's public key material for escrowed ecdsa private key material
-		// encryptionKeyPem: string | null;
 	}
 }

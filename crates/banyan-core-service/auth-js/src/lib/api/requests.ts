@@ -11,27 +11,3 @@ export interface EscrowDevice {
 	api_key_pem: string;
 	encryption_key_pem: string;
 }
-
-// /**
-//  * Attempt to register a Device Public Key with a User
-//  * @param device_public_key - the attributes of the public key to be created
-//  */
-// export interface RegisterDeviceApiKey {
-//     device_public_key: Partial<DevicePublicKey>;
-// }
-
-// /**
-//  * Authorize a Device Public Key with a User
-//  */
-// export interface AuthorizeDevicePublicKey {
-//     // TODO: is id better for this?
-//     device_public_key_ecdsa_fingerprint: string;
-// }
-
-// /**
-//  * Deny or remove a Device Public Key from a User
-//  */
-// export interface DeleteDevicePublicKey {
-//     // TODO: is id better for this?
-//     device_public_key_ecdsa_fingerprint: string;
-// }
