@@ -7,32 +7,14 @@ services:
       target: runner
     volumes:
       - .:/app
-    # depends_on:
-    #   - db
     command: yarn dev
     ports:
       - '3000:3000'
     environment:
       NODE_ENV: development
       DB_PATH: /app/db.sqlite
-      # DB_HOST: db
-      # DB_PORT: 5432
-      # DB_USERNAME: postgres
-      # DB_PASSWORD: postgres
-      # DB_NAME: postgres
     env_file:
       - .env.dev
-  # # Our Postgres service
-  # db:
-  #   image: postgres:15-alpine
-  #   restart: always
-  #   environment:
-  #     - POSTGRES_USER=postgres
-  #     - POSTGRES_PASSWORD=postgres
-  #   ports:
-  #     - '5432:5432'
-  #   volumes:
-  #     - db:/var/lib/postgresql/data/
 
 volumes:
   db:

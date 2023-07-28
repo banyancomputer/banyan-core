@@ -11,6 +11,9 @@ import { signOut } from 'next-auth/react';
 
 // NOTE: we need to dynamically import the TombBucket module in order to use its wasm
 import dynamic from 'next/dynamic';
+// import { ClientApi } from '@/lib/api/auth';
+import { AccountFactory, DeviceApiKeyFactory } from '@/lib/db';
+import { DeviceApiKey, EscrowedDevice } from '@/lib/interfaces';
 const TombBucket = dynamic(
 	() => import('@/components/tomb/bucket/TombBucket'),
 	{ ssr: false }
@@ -19,11 +22,18 @@ const TombBucket = dynamic(
 export async function getServerSideProps(context: any) {
 	// If the user has a session, serve the page
 	// @ts-ignore
-	const session = await getServerSession(context.req, context.res, authOptions);
+	const session: Session = await getServerSession(context.req, context.res, authOptions);
 	if (session) {
+		const providerId = session.providerId;
+		const account_id = await AccountFactory.idFromProviderId(providerId);
+		const deviceApiKeys = await DeviceApiKeyFactory.readAllByAccountId(account_id);
+		const escrowedDevice = await AccountFactory.readEscrowedDevice(account_id);
 		return {
 			// Just return empty props for now, eventually we'll pass more data
-			props: {},
+			props: {
+				escrowedDevice: JSON.parse(JSON.stringify(escrowedDevice)),
+				deviceApiKeys: JSON.parse(JSON.stringify(deviceApiKeys)),
+			},
 		};
 	}
 	// If no session, redirect to login
@@ -35,12 +45,17 @@ export async function getServerSideProps(context: any) {
 	};
 }
 
-export interface IHomePage {}
+export interface IHomePage {
+	escrowedDevice: EscrowedDevice | null;
+	deviceApiKeys: DeviceApiKey[] | null;
+}
 
-const HomePage: NextPageWithLayout<IHomePage> = () => {
+const HomePage: NextPageWithLayout<IHomePage> = ({
+	escrowedDevice,
+	deviceApiKeys,
+}) => {
 	const { data: session } = useSession();
 	const {
-		isRegistered,
 		initializeKeystore,
 		keystoreInitialized,
 		getFingerprint,
@@ -60,12 +75,7 @@ const HomePage: NextPageWithLayout<IHomePage> = () => {
 
 	const handleInitializeKeystore = () => {
 		console.log('Acccount: Initializing keystore with passkey');
-		if (!session) {
-			console.error('Acccount: User not logged in');
-			setError('User not logged in');
-			return;
-		}
-		initializeKeystore(session, passkey)
+		initializeKeystore(passkey)
 			.then(() => {
 				console.log('Acccount: Keystore initialized');
 				setError(null);
@@ -97,9 +107,8 @@ const HomePage: NextPageWithLayout<IHomePage> = () => {
 			{/* NextAuth Session Information */}
 			<div>
 				<h1> Signed in as {session?.user?.email} </h1>
-				<p> User ID: {session?.userId} </p>
-				<p> Seesion Provider: {session?.provider} </p>
-				<p> Session Provider Account Id: {session?.providerAccountId} </p>
+				<p> Account ID: {session?.providerId} </p>
+				{/* <p> Escrowed Blob: {session?.escrowedDeviceBlob} </p> */}
 				<Button
 					colorScheme="blue"
 					variant="solid"
@@ -132,7 +141,7 @@ const HomePage: NextPageWithLayout<IHomePage> = () => {
 							<h2> Keystore Not Initialized </h2>
 							{/* Key pair derivation / recovery form */}
 							<div>
-								{isRegistered ? (
+								{ escrowedDevice ? (
 									<p> Enter your passkey to recover your key pair </p>
 								) : (
 									<p>
@@ -168,6 +177,16 @@ const HomePage: NextPageWithLayout<IHomePage> = () => {
 					)}
 				</div>
 			</div>
+			<div className="flex flex-col gap-2 p-6">
+				<h1>Device API Keys</h1>
+				{deviceApiKeys?.map((deviceApiKey: DeviceApiKey) => (
+					<div key={deviceApiKey.id}>
+						<p>Device API Key ID: {deviceApiKey.fingerprint}</p>
+						<p>Device API Key: {deviceApiKey.pem}</p>
+					</div>
+				))}
+			</div>
+			
 			<div className="flex flex-col gap-2 p-6">
 				<h1> Tomb Wasm stuff </h1>
 				<TombBucket />

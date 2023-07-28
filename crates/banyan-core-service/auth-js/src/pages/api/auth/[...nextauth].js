@@ -1,11 +1,18 @@
 import NextAuth from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
-import { TypeORMAdapter } from '@auth/typeorm-adapter';
-import { connection, AllowedEmailFactory } from '@/lib/db';
+import SequelizeAdapter from '@auth/sequelize-adapter';
+import client, { models } from '@/lib/db/models';
+import { AllowedEmailFactory } from '@/lib/db';
+import { joinProviderId } from '@/lib/utils';
 
 export const authOptions = {
 	debug: process.env.NODE_ENV === 'development',
-	adapter: TypeORMAdapter(connection),
+	adapter: SequelizeAdapter(client, {
+		models,
+		// Note: always set synchronize: false. Use the logic at:
+		// @/lib/db/models/index to update the sync status.
+		synchronize: false,
+	}),
 	providers: [
 		GoogleProvider({
 			clientId: process.env.GOOGLE_CLIENT_ID,
@@ -20,16 +27,20 @@ export const authOptions = {
 		// Set new data in the token from the jwt callback
 		async jwt({ token, account }) {
 			if (account) {
-				token.provider = account.provider;
-				token.providerAccountId = account.providerAccountId;
+				console.log('Account: ', account);
+				token.providerId = joinProviderId(account.provider, account.providerAccountId);
+				token.escrowedDeviceBlob = account.escrowed_device_blob;
+				token.apiKeyPem = account.api_key_pem;
+				token.encryptionKeyPem = account.encryption_key_pem;
 			}
 			return token;
 		},
 
 		async session({ session, token }) {
-			session.userId = `${token.provider}-${token.providerAccountId}`;
-			session.provider = token.provider;
-			session.providerAccountId = token.providerAccountId;
+			session.providerId = token.providerId;
+			session.escrowedDeviceBlob = token.escrowedDeviceBlob;
+			session.apiKeyPem = token.apiKeyPem;
+			session.encryptionKeyPem = token.encryptionKeyPem;
 			return session;
 		},
 
@@ -38,13 +49,6 @@ export const authOptions = {
 			if (account.provider !== 'google') {
 				return false;
 			}
-			console.log(
-				'Sign in callback: ',
-				'\nAccount -> ',
-				account,
-				'\nProfile -> ',
-				profile
-			);
 			const allowed = await AllowedEmailFactory.readByEmail(profile.email);
 			return !!allowed;
 		},

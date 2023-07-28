@@ -20,22 +20,34 @@ ACCOUNT_ID="$(echo "${REGISTER_RESPONSE}" | jq -r .id)"
 ACCOUNT_TOKEN="$(echo "${REGISTER_RESPONSE}" | jq -r .token)"
 
 # Register a device key using regular authentication token
-KEY_REG_DATA="{\"public_key\":\"$(cat ${PUBLIC_EC_CLIENT_KEY_PATH} | sed ':a;N;$!ba;s/\n/\\n/g')\"}"
+# Linux
+# KEY_REG_DATA="{\"public_key\":\"$(cat ${PUBLIC_EC_CLIENT_KEY_PATH} | sed ':a;N;$!ba;s/\n/\\n/g')\"}"
+# MacOS
+KEY_REG_DATA="{\"public_key\":\"$(cat ${PUBLIC_EC_CLIENT_KEY_PATH} | sed -e ':a' -e 'N' -e '$!ba' -e 's/\n/\\n/g')\"}"
 REGISTERED_FINGERPRINT="$(curl -s -H "Content-Type: application/json" -H "Authorization: Bearer ${ACCOUNT_TOKEN}" -X POST -d "${KEY_REG_DATA}" ${BASE_HOST}/api/v1/auth/register_device_key | jq -r .fingerprint)"
 
 # Some dirty stuff to generate a JWT using only bash tooling...
-HEADER="$(echo "{\"typ\":\"JWT\",\"alg\":\"ES384\",\"kid\":\"${REGISTERED_FINGERPRINT}\"}" | base64 -w 0 | tr '+/' '-_' | tr -d '=')"
+# Linux
+# HEADER="$(echo "{\"typ\":\"JWT\",\"alg\":\"ES384\",\"kid\":\"${REGISTERED_FINGERPRINT}\"}" | base64 -w 0 | tr '+/' '-_' | tr -d '=')"
+# MacOS
+HEADER="$(echo "{\"typ\":\"JWT\",\"alg\":\"ES384\",\"kid\":\"${REGISTERED_FINGERPRINT}\"}" | base64 | tr '+/' '-_' | tr -d '=')"
 # Should be 8 random bytes hex encoded
 NONCE="$(openssl rand -hex 8)"
 EXPIRATION_UNIX_TIME="$(($(date +%s) + 600))"
-TOKEN_BODY="$(echo "{\"nnc\":\"${NONCE}\",\"exp\":${EXPIRATION_UNIX_TIME},\"nbf\":$(date +%s),\"aud\":\"banyan-platform\",\"sub\":\"${ACCOUNT_ID}\"}" | base64 -w 0 | tr '+/' '-_' | tr -d '=')"
+# Linux
+# TOKEN_BODY="$(echo "{\"nnc\":\"${NONCE}\",\"exp\":${EXPIRATION_UNIX_TIME},\"nbf\":$(date +%s),\"aud\":\"banyan-platform\",\"sub\":\"${ACCOUNT_ID}\"}" | base64 -w 0 | tr '+/' '-_' | tr -d '=')"
+# MacOS
+TOKEN_BODY="$(echo "{\"nnc\":\"${NONCE}\",\"exp\":${EXPIRATION_UNIX_TIME},\"nbf\":$(date +%s),\"aud\":\"banyan-platform\",\"sub\":\"${ACCOUNT_ID}\"}" | base64 | tr '+/' '-_' | tr -d '=')"
 SIGNED_BODY="$(echo "${HEADER}.${TOKEN_BODY}")"
 
 # Note: This signature generation isn't quite working yet, example generation
 # in rust is available in src/api/auth/handlers.rs (see fake_register, though
 # the format is of the header and body of the token are correct here in this
 # script).
-SIGNATURE=$(echo -e ${SIGNED_BODY} | openssl dgst -sha384 -binary -sign ${TMP_CERT_DIR}/private.ec.key | base64 -w 0 | tr '+/' '-_' | tr -d '=')
+# Linux
+# SIGNATURE=$(echo -e ${SIGNED_BODY} | openssl dgst -sha384 -binary -sign ${TMP_CERT_DIR}/private.ec.key | base64 -w 0 | tr '+/' '-_' | tr -d '=')
+# MacOS
+SIGNATURE=$(echo -e ${SIGNED_BODY} | openssl dgst -sha384 -binary -sign ${TMP_CERT_DIR}/private.ec.key | base64 | tr '+/' '-_' | tr -d '=')
 
 AUTH_TOKEN="${SIGNED_BODY}.${SIGNATURE}"
 

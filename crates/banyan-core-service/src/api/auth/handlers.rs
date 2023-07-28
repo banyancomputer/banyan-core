@@ -53,7 +53,7 @@ pub async fn fake_register(mut db_conn: DbConn, signing_key: SigningKey) -> Resp
         .into_response(),
         Err(err) => {
             tracing::error!("unable to encode jwt: {err}");
-            ErrorResponse::from(AuthError).into_response()
+            ErrorResponse::from(AuthError {}).into_response()
         }
     }
 }

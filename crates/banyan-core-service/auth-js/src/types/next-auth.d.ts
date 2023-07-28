@@ -6,11 +6,13 @@ declare module 'next-auth' {
 	//  * Returned by `useSession`, `getSession` and received as a prop on the `SessionProvider` React Context
 	//  */
 	interface Session {
-		// The user's id in the database
-		userId: string;
-		// The provider used to sign in
-		provider: string;
-		// The provider's unique identifier for the user
-		providerAccountId: string;
+		// The Account's provider identifier (this is just <provider>:<providerAccountId>)
+		providerId: string;
+		// // The user's private key material escrowed to our Auth Service
+		// escrowedDeviceBlob: string | null;
+		// // The user's public key material for escrowed ecdh private key material
+		// apiKeyPem: string | null;
+		// // The user's public key material for escrowed ecdsa private key material
+		// encryptionKeyPem: string | null;
 	}
 }

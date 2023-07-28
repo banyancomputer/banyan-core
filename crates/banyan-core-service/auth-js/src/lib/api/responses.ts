@@ -1,20 +1,11 @@
-import {
-	EscrowedDeviceKeyPair,
-	DevicePublicKey,
-} from '@/lib/db/entities/index';
+import { EscrowedDevice, DeviceApiKey } from "../interfaces";
 
-/**
- * Respond with a user's escrowed key pair
- * @param escrowed_key - the attributes of the escrowed key to be created
- */
-export interface EscrowDeviceKeyPair {
-	escrowed_device_key_pair: EscrowedDeviceKeyPair;
+export interface GetEscrowedDevice {
+    escrowed_device: EscrowedDevice;
+    api_key_pem: string;
+	encryption_key_pem: string;
 }
 
-/**
- * Attempt to register a Device Public Key with a User
- * @param device_public_key - the attributes of the public key to be created
- */
-export interface RegisterDevicePublicKey {
-	device_public_key: DevicePublicKey;
+export interface GetDeviceApiKeys {
+    device_api_keys: DeviceApiKeyAttributes[];
 }

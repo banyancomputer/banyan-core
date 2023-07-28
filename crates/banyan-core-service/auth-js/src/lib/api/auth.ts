@@ -7,56 +7,79 @@ import * as responses from './responses';
 export class ClientApi {
 	url: string;
 	constructor(url?: string) {
-		this.url = url ?? '/api'
+		this.url = url ?? '/api';
 	}
 
 	/* Escrowed Key Lifecycle */
 
-	public escrowKeyPair = async (
-		request: requests.EscrowDeviceKeyPair
-	): Promise<responses.EscrowDeviceKeyPair> => {
-		const url = `${this.url}/auth/keys/escrow`;
+	/**
+	 * Initialize (or update) an Account with an Escrowed Device Key Pair and Associated public keys
+	 * @param escrowed_device - the escrowed device key material to be associated with the user's account
+	 */
+	public escrowDevice = async (
+		request: requests.EscrowDevice
+	): Promise<void> => {
+		const url = `${this.url}/auth/device/escrow`;
 		const body = JSON.stringify(request);
 		const opts = {
 			method: 'POST',
 			body,
 		};
-		return await fetchJson<responses.EscrowDeviceKeyPair>(url, opts);
+		const result = await fetchStatus(url, opts);
+		if (result !== 200) {
+			throw new Error('Error escrowing key pair');
+		}
 	};
 
-	public readEscrowedKeyPair =
-		async (): Promise<responses.EscrowDeviceKeyPair> => {
-			const url = `${this.url}/auth/keys/escrow`;
-			const opts = {
-				method: 'GET',
-			};
-			return await fetchJson<responses.EscrowDeviceKeyPair>(url, opts);
-		};
-
-	/* Public Key Lifecycle */
-
-	public registerDevicePublicKey = async (
-		request: requests.RegisterDevicePublicKey
-	): Promise<responses.RegisterDevicePublicKey> => {
-		const url = `${this.url}/auth/keys/public`;
-		const body = JSON.stringify(request);
+	/**
+	 * Get the escrowed key material for a user
+	 */
+	public readEscrowedDevice = async (): Promise<responses.GetEscrowedDevice | null> => {
+		const url = `${this.url}/auth/device/escrow`;
 		const opts = {
-			method: 'PUT',
-			body,
+			method: 'GET',
 		};
-		return await fetchJson<responses.RegisterDevicePublicKey>(url, opts);
+		const result = await fetchJson<responses.GetEscrowedDevice>(url, opts).catch(
+			(e) => {
+				console.log('Error reading escrowed key material: ', e);
+				return null;
+			}
+		);
+		return result
 	};
 
-	public deleteDevicePublicKey = async (
-		request: requests.DeleteDevicePublicKey
-	): Promise<number> => {
-		const url = `${this.url}/auth/keys/public`;
-		const body = JSON.stringify(request);
+	/* Api Key Lifecycle */
+
+	/**
+	 * Register a device api key for a user
+	 * @param fingerprint - the fingerprint of the device
+	 * @param pem - the public key of the device
+	 * @return void
+	 */
+	public registerDeviceApiKey = async (
+		fingerprint: string,
+		pem: string
+	): Promise<void> => {
+		const url = `${this.url}/auth/device/resgister?fingerpint=${fingerprint}&pem=${pem}`;
 		const opts = {
-			method: 'DELETE',
-			body,
+			method: 'GET',
 		};
-		return await fetchStatus(url, opts);
+		await fetchStatus(url, opts).catch((e) => {
+			console.log('Error registering device api key: ', e);
+			throw new Error('Error registering device api key');
+		});
+	};
+
+	/**
+	 * Get the device api keys for a user
+	 * @return the device api keys for a user
+	 */
+	public readDeviceApiKeys = async (): Promise<responses.GetDeviceApiKeys> => {
+		const url = `${this.url}/auth/device`;
+		const opts = {
+			method: 'GET',
+		};
+		return await fetchJson<responses.GetDeviceApiKeys>(url, opts);
 	};
 }
 
