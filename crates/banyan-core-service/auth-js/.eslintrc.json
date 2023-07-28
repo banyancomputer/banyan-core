@@ -1,0 +1,12 @@
+// TODO: This needs fixing!
+// We use minimal linting rules here at the moment.
+// We should much more opinionated about linting rules.
+{
+	"parser": "@typescript-eslint/parser",
+	"rules": {
+		// suppress errors for missing 'import React' in files
+		"react/react-in-jsx-scope": "off",
+		"react/prop-types": 0,
+		"@typescript-eslint/no-explicit-any": "off"
+	}
+}
