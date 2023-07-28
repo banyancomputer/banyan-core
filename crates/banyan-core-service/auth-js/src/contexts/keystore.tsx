@@ -69,7 +69,7 @@ export const KeystoreProvider = ({ children }: any) => {
 			const ks = await ECCKeystore.init({ storeName });
 			setKeystore(ks);
 		};
-		
+
 		if (session) {
 			createKeystore(session);
 			// getEscrowedDevice(session);
@@ -183,7 +183,9 @@ export const KeystoreProvider = ({ children }: any) => {
 			passkey_salt: passkey_salt,
 		};
 		const api_key_pem = publicPemWrap(wrapped_ecdsa_key_pair.publicKeyStr);
-		const encryption_key_pem = publicPemWrap(wrapped_ecdh_key_pair.publicKeyStr);
+		const encryption_key_pem = publicPemWrap(
+			wrapped_ecdh_key_pair.publicKeyStr
+		);
 
 		await api
 			.escrowDevice({

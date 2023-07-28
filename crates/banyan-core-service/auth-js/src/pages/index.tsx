@@ -22,11 +22,17 @@ const TombBucket = dynamic(
 export async function getServerSideProps(context: any) {
 	// If the user has a session, serve the page
 	// @ts-ignore
-	const session: Session = await getServerSession(context.req, context.res, authOptions);
+	const session: Session = await getServerSession(
+		context.req,
+		context.res,
+		authOptions
+	);
 	if (session) {
 		const providerId = session.providerId;
 		const account_id = await AccountFactory.idFromProviderId(providerId);
-		const deviceApiKeys = await DeviceApiKeyFactory.readAllByAccountId(account_id);
+		const deviceApiKeys = await DeviceApiKeyFactory.readAllByAccountId(
+			account_id
+		);
 		const escrowedDevice = await AccountFactory.readEscrowedDevice(account_id);
 		return {
 			// Just return empty props for now, eventually we'll pass more data
@@ -141,7 +147,7 @@ const HomePage: NextPageWithLayout<IHomePage> = ({
 							<h2> Keystore Not Initialized </h2>
 							{/* Key pair derivation / recovery form */}
 							<div>
-								{ escrowedDevice ? (
+								{escrowedDevice ? (
 									<p> Enter your passkey to recover your key pair </p>
 								) : (
 									<p>
@@ -186,7 +192,7 @@ const HomePage: NextPageWithLayout<IHomePage> = ({
 					</div>
 				))}
 			</div>
-			
+
 			<div className="flex flex-col gap-2 p-6">
 				<h1> Tomb Wasm stuff </h1>
 				<TombBucket />

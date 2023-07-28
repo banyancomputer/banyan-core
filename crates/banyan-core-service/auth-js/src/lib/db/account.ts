@@ -36,7 +36,8 @@ export const AccountFactory = {
 				throw new Error('Account not found');
 			}
 
-			const { escrowed_device_blob, encryption_key_pem, api_key_pem } = account as Partial<AccountAttributes>;
+			const { escrowed_device_blob, encryption_key_pem, api_key_pem } =
+				account as Partial<AccountAttributes>;
 			if (!escrowed_device_blob || !encryption_key_pem || !api_key_pem) {
 				return null;
 			}
@@ -47,7 +48,6 @@ export const AccountFactory = {
 			};
 		});
 	},
-
 
 	updateEscrowedDevice: async (
 		account_id: string,

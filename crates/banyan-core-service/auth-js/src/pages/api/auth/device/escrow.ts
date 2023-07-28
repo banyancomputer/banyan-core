@@ -33,7 +33,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 
 		const provider_id = session.providerId;
 		console.log('Provider ID: ', provider_id);
-		
+
 		// Find the account in the database
 		const account_id = await AccountFactory.idFromProviderId(provider_id);
 		console.log('Account ID: ', account_id);
@@ -93,10 +93,9 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 
 	// Handle GET request
 	if (req.method === 'GET') {
-
 		const provider_id = session.providerId;
 		console.log('Provider ID: ', provider_id);
-		
+
 		// Find the account in the database
 		const account_id = await AccountFactory.idFromProviderId(provider_id);
 		console.log('Account ID: ', account_id);
@@ -117,7 +116,9 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 				res.status(404).send('not found'); // Not Found
 				return;
 			}
-			res.status(200).send({ escrowed_device, api_key_pem, encryption_key_pem });
+			res
+				.status(200)
+				.send({ escrowed_device, api_key_pem, encryption_key_pem });
 		} catch (e) {
 			console.log('Error reading escrowed device: ', e);
 			res

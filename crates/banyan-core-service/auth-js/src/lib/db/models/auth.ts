@@ -22,25 +22,27 @@ export interface AccountAttributes {
 const AccountModel = (
 	sequelize: Sequelize
 ): ModelDefined<AccountAttributes, {}> => {
-	const Account = sequelize.define('Account', {
-		...models.Account,
-		escrowed_device_blob: {
-			type: DataTypes.STRING,
-			allowNull: true,
+	const Account = sequelize.define(
+		'Account',
+		{
+			...models.Account,
+			escrowed_device_blob: {
+				type: DataTypes.STRING,
+				allowNull: true,
+			},
+			encryption_key_pem: {
+				type: DataTypes.STRING,
+				allowNull: true,
+			},
+			api_key_pem: {
+				type: DataTypes.STRING,
+				allowNull: true,
+			},
 		},
-		encryption_key_pem: {
-			type: DataTypes.STRING,
-			allowNull: true,
-		},
-		api_key_pem: {
-			type: DataTypes.STRING,
-			allowNull: true,
-		},
-	},
-	{
-		createdAt: false,
-		updatedAt: false,
-	}
+		{
+			createdAt: false,
+			updatedAt: false,
+		}
 	);
 
 	return Account;

@@ -19,7 +19,6 @@ Account.hasMany(DeviceApiKey, {
 	onDelete: 'CASCADE',
 });
 
-
 export const models = {
 	AllowedEmail,
 	Account,

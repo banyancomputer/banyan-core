@@ -34,19 +34,21 @@ export class ClientApi {
 	/**
 	 * Get the escrowed key material for a user
 	 */
-	public readEscrowedDevice = async (): Promise<responses.GetEscrowedDevice | null> => {
-		const url = `${this.url}/auth/device/escrow`;
-		const opts = {
-			method: 'GET',
-		};
-		const result = await fetchJson<responses.GetEscrowedDevice>(url, opts).catch(
-			(e) => {
+	public readEscrowedDevice =
+		async (): Promise<responses.GetEscrowedDevice | null> => {
+			const url = `${this.url}/auth/device/escrow`;
+			const opts = {
+				method: 'GET',
+			};
+			const result = await fetchJson<responses.GetEscrowedDevice>(
+				url,
+				opts
+			).catch((e) => {
 				console.log('Error reading escrowed key material: ', e);
 				return null;
-			}
-		);
-		return result
-	};
+			});
+			return result;
+		};
 
 	/* Api Key Lifecycle */
 

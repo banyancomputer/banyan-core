@@ -15,70 +15,74 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 	}
 
 	if (req.method === 'GET') {
-        // Get the fingerprint and pem from the query string
-        const { fingerprint, pem } = req.query;
-        if (!fingerprint || !pem) {
-            res.status(400).send('bad request'); // Bad Request
-            return;
-        }
+		// Get the fingerprint and pem from the query string
+		const { fingerprint, pem } = req.query;
+		if (!fingerprint || !pem) {
+			res.status(400).send('bad request'); // Bad Request
+			return;
+		}
 
-        // TODO: Validate the pem
-        // TODO: Validate the fingerprint
+		// TODO: Validate the pem
+		// TODO: Validate the fingerprint
 
-        // Check if the device api key already exists
-        const maybeDeviceApiKey = await DeviceApiKeyFactory.readByFingerprint(fingerprint as string);
-        if (maybeDeviceApiKey) {
-            res.status(409).send('conflict'); // Conflict
-            return;
-        }
+		// Check if the device api key already exists
+		const maybeDeviceApiKey = await DeviceApiKeyFactory.readByFingerprint(
+			fingerprint as string
+		);
+		if (maybeDeviceApiKey) {
+			res.status(409).send('conflict'); // Conflict
+			return;
+		}
 
-        // Create the device api key
-        const provider_id = session.providerId;
-        const account_id = await AccountFactory.idFromProviderId(provider_id);
-        if (!account_id) {
-            res.status(404).send('not found'); // Not Found
-            return;
-        }
-        const deviceApiKey = {
-            account_id,
-            fingerprint: fingerprint as string,
-            pem: pem as string,
-        };
-        try {
-            await DeviceApiKeyFactory.create(deviceApiKey);
-        } catch (e) {
-            console.log('Error creating device api key: ', e);
-            res.status(500).send('internal server error'); // Bad Request
-            return;
-        }
-        res.status(200).send({}); // Bad Request
-        return;
-    }
+		// Create the device api key
+		const provider_id = session.providerId;
+		const account_id = await AccountFactory.idFromProviderId(provider_id);
+		if (!account_id) {
+			res.status(404).send('not found'); // Not Found
+			return;
+		}
+		const deviceApiKey = {
+			account_id,
+			fingerprint: fingerprint as string,
+			pem: pem as string,
+		};
+		try {
+			await DeviceApiKeyFactory.create(deviceApiKey);
+		} catch (e) {
+			console.log('Error creating device api key: ', e);
+			res.status(500).send('internal server error'); // Bad Request
+			return;
+		}
+		res.status(200).send({}); // Bad Request
+		return;
+	}
 
 	if (req.method === 'DELETE') {
-		let { fingerprint } =
-			req.query
+		let { fingerprint } = req.query;
 
-        if (!fingerprint) {
-            res.status(400).send('bad request'); // Bad Request
-            return;
-        }
+		if (!fingerprint) {
+			res.status(400).send('bad request'); // Bad Request
+			return;
+		}
 
-        // Get the user's account id
-        const provider_id = session.providerId;
-        const account_id = await AccountFactory.idFromProviderId(provider_id);
-        if (!account_id) {
-            res.status(404).send('not found'); // Not Found
-            return;
-        }
-        
-        try {
-            await DeviceApiKeyFactory.deleteByAccountIdAndFingerprint(account_id, fingerprint as string);
-        } catch (e) {
-            console.log('Error deleting device api key: ', e);
-            res.status(500).send('internal server error'); // Bad Request
-            return;
-        }
+		// Get the user's account id
+		const provider_id = session.providerId;
+		const account_id = await AccountFactory.idFromProviderId(provider_id);
+		if (!account_id) {
+			res.status(404).send('not found'); // Not Found
+			return;
+		}
+
+		try {
+			await DeviceApiKeyFactory.deleteByAccountIdAndFingerprint(
+				account_id,
+				fingerprint as string
+			);
+		} catch (e) {
+			console.log('Error deleting device api key: ', e);
+			res.status(500).send('internal server error'); // Bad Request
+			return;
+		}
 
 		res.status(200).send({}); // Bad Request
 		return;

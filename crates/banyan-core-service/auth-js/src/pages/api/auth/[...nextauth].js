@@ -28,7 +28,10 @@ export const authOptions = {
 		async jwt({ token, account }) {
 			if (account) {
 				console.log('Account: ', account);
-				token.providerId = joinProviderId(account.provider, account.providerAccountId);
+				token.providerId = joinProviderId(
+					account.provider,
+					account.providerAccountId
+				);
 				token.escrowedDeviceBlob = account.escrowed_device_blob;
 				token.apiKeyPem = account.api_key_pem;
 				token.encryptionKeyPem = account.encryption_key_pem;

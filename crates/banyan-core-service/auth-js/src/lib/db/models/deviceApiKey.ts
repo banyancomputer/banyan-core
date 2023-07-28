@@ -1,7 +1,7 @@
 import { Sequelize, DataTypes, Model, ModelDefined } from 'sequelize';
 import { v4 as uuidv4 } from 'uuid';
 import { validateOrReject } from 'class-validator';
-import { DeviceApiKey as DeviceApiKeyAttributes } from '@/lib/interfaces'
+import { DeviceApiKey as DeviceApiKeyAttributes } from '@/lib/interfaces';
 
 interface DeviceApiKeyInstance
 	extends Model<DeviceApiKeyAttributes>,
