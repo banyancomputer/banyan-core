@@ -44,7 +44,28 @@ GOOGLE_CLIENT_ID=<client_id>
 GOOGLE_CLIENT_SECRET=<client_secret>
 ```
 
-### Running with Docker
+### Running the Development Server
+
+Make sure to create a `.env.dev` file as described above.
+
+Run the core server from the rust project:
+
+```bash
+cd .. && cargo run
+```
+
+This should set up the database and run the server.
+
+
+Run the frontend:
+
+```bash
+yarn dev
+```
+
+This should start the frontend server on port 3000.
+
+<!-- ### Running with Docker
 
 Build a development docker image:
 
@@ -62,4 +83,4 @@ If you have a properly configured `.env.dev` file, the frontend will be availabl
 
 ### Running Dev Server Locally
 
-You can run this project locally without docker, if you prefer, but I'm not going to document that here. You will need to run Postgres locally and point your NextJs app at it, as demonstrated in the `docker-compose.yml` file.
+You can run this project locally without docker, if you prefer, but I'm not going to document that here. You will need to run Postgres locally and point your NextJs app at it, as demonstrated in the `docker-compose.yml` file. -->
