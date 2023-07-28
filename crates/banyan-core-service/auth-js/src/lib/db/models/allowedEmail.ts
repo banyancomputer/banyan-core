@@ -40,7 +40,7 @@ const AllowedEmailModel = (
 
 			hooks: {
 				beforeCreate: async (allowedEmail: AllowedEmailInstance) => {
-					await allowedEmail.addId();
+					// await allowedEmail.addId();
 					await allowedEmail.validate();
 				},
 				beforeUpdate: async (allowedEmail: AllowedEmailInstance) => {
@@ -51,9 +51,9 @@ const AllowedEmailModel = (
 		}
 	);
 
-	AllowedEmail.prototype.addId = async function () {
-		this.id = uuidv4();
-	};
+	// AllowedEmail.prototype.addId = async function () {
+	// 	this.id = uuidv4();
+	// };
 
 	AllowedEmail.prototype.validate = async function () {
 		await validateOrReject(this);

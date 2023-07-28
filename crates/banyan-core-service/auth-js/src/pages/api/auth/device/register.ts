@@ -4,6 +4,7 @@ import { DeviceApiKeyFactory } from '@/lib/db';
 import { authOptions } from '@/pages/api/auth/[...nextauth]';
 import { Session } from 'next-auth';
 import { AccountFactory } from '@/lib/db';
+import { FINGERPRINT_REGEX, PEM_REGEX } from '@/lib/utils';
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
 	// Get the user's session
@@ -14,17 +15,40 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 		res.status(401).send({}); // Unauthorized
 	}
 
+    // Get the user's account id
+    const provider_id = session.providerId;
+    const account_id = await AccountFactory.idFromProviderId(provider_id);
+    if (!account_id) {
+        res.status(404).send('account not found'); // Not Found
+        return;
+    }
+
+    const { fingerprint, pem } = req.query;
+
+    if (fingerprint && pem) {
+        if (
+            typeof fingerprint !== 'string' ||
+            !FINGERPRINT_REGEX.test(fingerprint)
+        ) {
+            res.status(400).send('bad request -- bad fingerprint'); // Bad Request
+            return;
+        }
+        if (
+            typeof pem !== 'string' ||
+            !PEM_REGEX.test(pem)
+        ) {
+            console.log('Bad pem: ', pem);
+            console.log('Regex: ', PEM_REGEX.test(pem as string));
+            res.status(400).send('bad request -- bad pem'); // Bad Request
+            return;
+        }
+        // TODO: Check if the fingerprint matches the pem
+    } else {
+        res.status(400).send('bad request -- missing fingerprint or pem'); // Bad Request
+        return;
+    }
+
 	if (req.method === 'GET') {
-		// Get the fingerprint and pem from the query string
-		const { fingerprint, pem } = req.query;
-		if (!fingerprint || !pem) {
-			res.status(400).send('bad request'); // Bad Request
-			return;
-		}
-
-		// TODO: Validate the pem
-		// TODO: Validate the fingerprint
-
 		// Check if the device api key already exists
 		const maybeDeviceApiKey = await DeviceApiKeyFactory.readByFingerprint(
 			fingerprint as string
@@ -43,8 +67,8 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 		}
 		const deviceApiKey = {
 			account_id,
-			fingerprint: fingerprint as string,
-			pem: pem as string,
+			fingerprint,
+			pem
 		};
 		try {
 			await DeviceApiKeyFactory.create(deviceApiKey);
@@ -53,38 +77,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 			res.status(500).send('internal server error'); // Bad Request
 			return;
 		}
-		res.status(200).send({}); // Bad Request
-		return;
-	}
-
-	if (req.method === 'DELETE') {
-		let { fingerprint } = req.query;
-
-		if (!fingerprint) {
-			res.status(400).send('bad request'); // Bad Request
-			return;
-		}
-
-		// Get the user's account id
-		const provider_id = session.providerId;
-		const account_id = await AccountFactory.idFromProviderId(provider_id);
-		if (!account_id) {
-			res.status(404).send('not found'); // Not Found
-			return;
-		}
-
-		try {
-			await DeviceApiKeyFactory.deleteByAccountIdAndFingerprint(
-				account_id,
-				fingerprint as string
-			);
-		} catch (e) {
-			console.log('Error deleting device api key: ', e);
-			res.status(500).send('internal server error'); // Bad Request
-			return;
-		}
-
-		res.status(200).send({}); // Bad Request
+		res.status(200).send(deviceApiKey); // Bad Request
 		return;
 	}
 };

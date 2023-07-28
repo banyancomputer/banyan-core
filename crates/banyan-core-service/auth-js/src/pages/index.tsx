@@ -1,6 +1,6 @@
 import { NextPageWithLayout } from '@/pages/page';
 import { useSession } from 'next-auth/react';
-import { getServerSession } from 'next-auth';
+import { Session, getServerSession } from 'next-auth';
 import { useEffect, useState } from 'react';
 import { useKeystore } from '@/contexts/keystore';
 import { Button, FormControl } from '@chakra-ui/react';
@@ -21,8 +21,8 @@ const TombBucket = dynamic(
 
 export async function getServerSideProps(context: any) {
 	// If the user has a session, serve the page
-	// @ts-ignore
-	const session: Session = await getServerSession(
+	const session: Session | null= await getServerSession(
+		// @ts-ignore
 		context.req,
 		context.res,
 		authOptions

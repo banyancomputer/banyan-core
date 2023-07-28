@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../[...nextauth]';
 import { AccountFactory, DeviceApiKeyFactory } from '@/lib/db';
 import { Session } from 'next-auth';
+import { FINGERPRINT_REGEX } from '@/lib/utils';
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
 	// Get the user's session
@@ -13,37 +14,65 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 		res.status(401).send({}); // Unauthorized
 	}
 
+    // Get the user's account id
+    const provider_id = session.providerId;
+    const account_id = await AccountFactory.idFromProviderId(provider_id);
+    if (!account_id) {
+        res.status(404).send('account not found'); // Not Found
+        return;
+    }
+
+    let fingerprint = req.query.fingerprint;
+    if (fingerprint) {
+        if (
+            typeof fingerprint !== 'string' ||
+            !FINGERPRINT_REGEX.test(fingerprint)
+        ) {
+            res.status(400).send('bad request'); // Bad Request
+            return;
+        }
+    }
+
 	// Handle Get request
 	if (req.method === 'GET') {
 		// Get the fingerprint from the query string
 		const { fingerprint } = req.query;
 
 		// Get a specific device api key if a fingerprint is provided
-		if (fingerprint) {
-			const deviceApiKey = await DeviceApiKeyFactory.readByFingerprint(
-				fingerprint as string
+		if (!fingerprint) {      
+			const deviceApiKeys = await DeviceApiKeyFactory.readAllByAccountId(
+				account_id
 			);
-			if (!deviceApiKey) {
-				res.status(404).send('not found'); // Not Found
-				return;
-			}
-			res.status(200).send(deviceApiKey);
+			res.status(200).send(deviceApiKeys);
 			return;
 		}
-
-		// Get the user's account id
-		const provider_id = session.providerId;
-		const account_id = await AccountFactory.idFromProviderId(provider_id);
-		if (!account_id) {
+        const deviceApiKey = await DeviceApiKeyFactory.readByFingerprint(
+			fingerprint as string
+		);
+		if (!deviceApiKey) {
 			res.status(404).send('not found'); // Not Found
 			return;
 		}
-
-		// Get all device api keys for the user
-		const deviceApiKeys = await DeviceApiKeyFactory.readAllByAccountId(
-			account_id
-		);
-		res.status(200).send(deviceApiKeys);
+		res.status(200).send(deviceApiKey);
+		return;
+    }
+    
+    if (req.method === 'DELETE') {
+		if (!fingerprint) {
+			res.status(400).send('bad request'); // Bad Request
+			return;
+		}
+		try {
+			await DeviceApiKeyFactory.deleteByAccountIdAndFingerprint(
+				account_id,
+				fingerprint 
+			);
+		} catch (e) {
+			console.log('Error deleting device api key: ', e);
+			res.status(500).send('internal server error'); // Bad Request
+			return;
+		}
+		res.status(200).send({}); // Bad Request
 		return;
 	}
 

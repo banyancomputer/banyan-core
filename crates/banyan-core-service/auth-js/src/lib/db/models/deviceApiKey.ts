@@ -1,12 +1,11 @@
 import { Sequelize, DataTypes, Model, ModelDefined } from 'sequelize';
-import { v4 as uuidv4 } from 'uuid';
 import { validateOrReject } from 'class-validator';
 import { DeviceApiKey as DeviceApiKeyAttributes } from '@/lib/interfaces';
+import { FINGERPRINT_REGEX, PEM_REGEX } from '@/lib/utils';
 
 interface DeviceApiKeyInstance
 	extends Model<DeviceApiKeyAttributes>,
 		DeviceApiKeyAttributes {
-	addId(): Promise<void>;
 	validate(): Promise<void>;
 }
 
@@ -40,7 +39,6 @@ const DeviceApiKeyModel = (
 			updatedAt: false,
 			hooks: {
 				beforeCreate: async (deviceApiKey: DeviceApiKeyInstance) => {
-					await deviceApiKey.addId();
 					await deviceApiKey.validate();
 				},
 				beforeUpdate: async (deviceApiKey: DeviceApiKeyInstance) => {
@@ -60,12 +58,22 @@ const DeviceApiKeyModel = (
 		}
 	);
 
-	DeviceApiKey.prototype.addId = async function () {
-		this.id = uuidv4();
-	};
-
 	DeviceApiKey.prototype.validate = async function () {
-		// TODO: better validation for PEM
+		if (
+			typeof this.pem !== 'string' ||
+			!this.pem.match(PEM_REGEX)
+		) {
+			throw new Error('invalid pem');
+		}
+		if (
+			typeof this.fingerprint !== 'string' ||
+			!this.fingerprint.match(FINGERPRINT_REGEX)
+		) {
+			console.log(this.fingerprint);
+			console.log(FINGERPRINT_REGEX);
+			console.log(this.fingerprint.match(FINGERPRINT_REGEX));
+			throw new Error('invalid fingerprint');
+		}
 		await validateOrReject(this);
 	};
 

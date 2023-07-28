@@ -61,15 +61,12 @@ export class ClientApi {
 	public registerDeviceApiKey = async (
 		fingerprint: string,
 		pem: string
-	): Promise<void> => {
+	): Promise<responses.RegisterDeviceApiKey> => {
 		const url = `${this.url}/auth/device/resgister?fingerpint=${fingerprint}&pem=${pem}`;
 		const opts = {
 			method: 'GET',
 		};
-		await fetchStatus(url, opts).catch((e) => {
-			console.log('Error registering device api key: ', e);
-			throw new Error('Error registering device api key');
-		});
+		return await fetchJson<responses.RegisterDeviceApiKey>(url, opts);
 	};
 
 	/**
