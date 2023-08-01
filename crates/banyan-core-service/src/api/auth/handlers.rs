@@ -7,10 +7,7 @@ use openssl::bn::BigNumContext;
 use openssl::ec::PointConversionForm;
 use openssl::pkey::PKey;
 
-use crate::api::auth::models::*;
-use crate::api::auth::requests::*;
-use crate::api::auth::responses::*;
-use crate::api::auth::AuthError;
+use crate::api::auth::{AuthError, models, requests, responses};
 use crate::api::ErrorResponse;
 use crate::extractors::{DbConn, FakeToken, SigningKey};
 
@@ -18,7 +15,7 @@ const FAKE_REGISTRATION_MAXIMUM_DURATION: u64 = 60 * 60 * 24 * 28; // four weeks
 
 pub async fn fake_register(mut db_conn: DbConn, signing_key: SigningKey) -> Response {
     let maybe_account = sqlx::query_as!(
-        CreatedAccount,
+        models::CreatedAccount,
         r#"INSERT INTO accounts DEFAULT VALUES RETURNING id;"#
     )
     .fetch_one(&mut *db_conn.0)
@@ -46,7 +43,7 @@ pub async fn fake_register(mut db_conn: DbConn, signing_key: SigningKey) -> Resp
     };
 
     match encode(&header, &api_token, &signing_key.0) {
-        Ok(token) => Json(NewAccount {
+        Ok(token) => Json(responses::NewAccount {
             id: created_account.id,
             token,
         })
@@ -61,7 +58,7 @@ pub async fn fake_register(mut db_conn: DbConn, signing_key: SigningKey) -> Resp
 pub async fn register_device_key(
     api_token: FakeToken,
     mut db_conn: DbConn,
-    extract::Json(new_device_key): extract::Json<RegisterDeviceKey>,
+    extract::Json(new_device_key): extract::Json<requests::RegisterDeviceKey>,
 ) -> Response {
     let account_id = api_token.subject;
     let public_key_to_register = new_device_key.public_key();
@@ -88,7 +85,7 @@ pub async fn register_device_key(
         .join(":");
 
     let maybe_device_key = sqlx::query_as!(
-        CreatedDeviceKey,
+        models::CreatedDeviceKey,
         r#"INSERT INTO device_api_keys (account_id, fingerprint, public_key) VALUES ($1, $2, $3) RETURNING id;"#,
         account_id,
         fingerprint,
@@ -108,7 +105,7 @@ pub async fn register_device_key(
         }
     };
 
-    Json(NewDeviceKey {
+    Json(responses::NewDeviceKey {
         id: created_device_key.id,
         account_id,
         fingerprint,

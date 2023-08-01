@@ -40,8 +40,8 @@ SIGNATURE=$(echo -e ${SIGNED_BODY} | openssl dgst -sha384 -binary -sign ${TMP_CE
 AUTH_TOKEN="${SIGNED_BODY}.${SIGNATURE}"
 
 # Create a bucket using device key authentication (associated to account) and an initial public encryption key
-BUCKET_CREATION_PAYLOAD="{\"friendly_name\":\"Sweet Interactive Bucket\","type":\"interactive\",\"initial_public_key\":\"<replace with ec signing key>\"}"
-BUCKET_CREATION_RESPONSE="$(curl -s -H "Authorization: Bearer ${AUTH_TOKEN}" -X POST -d "${BUCKET_CREATION_PAYLOAD}" ${BASE_HOST}/api/v1/buckets)"
+BUCKET_CREATION_PAYLOAD="{\"friendly_name\":\"Sweet Interactive Bucket\",\"type\":\"interactive\",\"initial_public_key\":\"<replace with ec signing key>\"}"
+BUCKET_CREATION_RESPONSE="$(curl -s -H "Authorization: Bearer ${AUTH_TOKEN}" -H "Content-Type: application/json" -X POST -d "${BUCKET_CREATION_PAYLOAD}" ${BASE_HOST}/api/v1/buckets)"
 BUCKET_ID="$(echo ${BUCKET_CREATION_RESPONSE} | jq -r .id)"
 echo "Created bucket ID: ${BUCKET_ID}"
 

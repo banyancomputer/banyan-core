@@ -77,6 +77,8 @@ impl CarBuffer {
             return Ok(None);
         }
 
+        tracing::info!("parsing things out of the car file woo");
+
         // todo: process data buffer
         let _ = self.as_slice();
         self.state = BufferState::Done;

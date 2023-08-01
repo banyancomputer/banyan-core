@@ -38,10 +38,10 @@ pub async fn create(
 
     let created_bucket = match maybe_bucket {
         Ok(cb) => cb,
-        Err(_) => {
+        Err(err) => {
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                "unable to create new bucket",
+                format!("unable to create new bucket: {err}"),
             )
                 .into_response();
         }
