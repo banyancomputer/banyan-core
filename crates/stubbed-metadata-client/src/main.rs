@@ -1,10 +1,28 @@
-use jsonwebtoken::EncodingKey;
+use jsonwebtoken::{get_current_timestamp, Algorithm, Header, EncodingKey};
 use openssl::bn::BigNumContext;
 use openssl::ec::{EcGroup, EcKey, PointConversionForm};
 use openssl::hash::MessageDigest;
 use openssl::nid::Nid;
 use openssl::pkey::{PKey, Private, Public};
 use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Serialize)]
+struct ApiToken {
+    #[serde(rename = "nnc")]
+    pub nonce: Option<String>,
+
+    #[serde(rename = "exp")]
+    pub expiration: u64,
+
+    #[serde(rename = "nbf")]
+    pub not_before: u64,
+
+    #[serde(rename = "aud")]
+    pub audience: String,
+
+    #[serde(rename = "sub")]
+    pub subject: String,
+}
 
 #[derive(Debug, Deserialize)]
 struct AccountCreationResponse {
@@ -89,20 +107,14 @@ async fn main() {
             .join(":")
     };
 
-    // We need the private pem bytes for use with jsonwebtoken's EncodingKey
-    let private_pem_bytes = private_key.private_key_to_pem_pkcs8().unwrap();
-
     // We need the public pem bytes to register with the API
-    let public_pem_bytes = private_key.public_key_to_pem().unwrap();
-
-    // Create an encoding key with the private key
-    let jwt_signing_key = EncodingKey::from_ec_pem(private_pem_bytes.as_ref()).unwrap();
+    let public_pem = String::from_utf8_lossy(&private_key.public_key_to_pem().unwrap()).to_string();
 
     let bearer_val = format!("Bearer {}", fake_account_response.token);
     let temp_account_bearer_header = reqwest::header::HeaderValue::from_str(&bearer_val).unwrap();
 
     let device_reg_req = DeviceKeyRegistrationRequest {
-        public_key: String::from_utf8_lossy(&public_pem_bytes).to_string(),
+        public_key: public_pem.clone(),
     };
 
     // register client/device ec keys POST a struct to /api/v1/auth/register_device_key
@@ -118,7 +130,32 @@ async fn main() {
         .await
         .unwrap();
 
-    println!("{device_key_reg_response:?}");
+    // We need the private pem bytes for use with jsonwebtoken's EncodingKey
+    let private_pem = String::from_utf8_lossy(&private_key.private_key_to_pem_pkcs8().unwrap()).to_string();
+
+    // Create an encoding key with the private key
+    let jwt_signing_key = EncodingKey::from_ec_pem(private_pem.as_bytes()).unwrap();
+
+    let expiring_jwt = {
+        let api_token = ApiToken {
+            // todo: generate random string here
+            nonce: None,
+
+            audience: "banyan-platform".to_string(),
+            subject: fake_account_response.id.clone(),
+
+            expiration: get_current_timestamp() + 870,
+            not_before: get_current_timestamp() - 30,
+        };
+
+        let bearer_header = Header {
+            alg: Algorithm::ES384,
+            kid: Some(fingerprint.clone()),
+            ..Default::default()
+        };
+
+        jsonwebtoken::encode(&bearer_header, &api_token, &jwt_signing_key).unwrap()
+    };
 
     // create bucket POST a struct to /api/v1/buckets
     //  * uses a signed bearer token from the client/device key
