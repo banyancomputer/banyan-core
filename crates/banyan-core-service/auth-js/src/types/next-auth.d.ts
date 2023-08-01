@@ -7,6 +7,8 @@ declare module 'next-auth' {
 	//  */
 	interface Session {
 		// The Account's provider identifier (this is just <provider>:<providerAccountId>)
+		// You can use this to search for an account by provider and providerAccountId
+		// See lib/db/account.ts for more details
 		providerId: string;
 		// // The user's private key material escrowed to our Auth Service
 		// escrowedDeviceBlob: string | null;

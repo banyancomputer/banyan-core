@@ -1,5 +1,5 @@
 import { AllowedEmail } from './models';
-import { AllowedEmailAttributes } from './models/allowedEmail';
+import { AllowedEmail as AllowedEmailAttributes } from '@/lib/interfaces';
 
 export const AllowedEmailFactory = {
 	create: async (attrs: Partial<AllowedEmailAttributes> = {}) => {

@@ -1,7 +1,5 @@
 import { Account } from './models';
-import { EscrowedDevice } from '../interfaces';
 import { splitProviderId } from '../utils';
-import { AccountAttributes } from './models/auth';
 
 export const AccountFactory = {
 	/**

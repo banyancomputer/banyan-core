@@ -12,7 +12,7 @@ import { signOut } from 'next-auth/react';
 // NOTE: we need to dynamically import the TombBucket module in order to use its wasm
 import dynamic from 'next/dynamic';
 // import { ClientApi } from '@/lib/api/auth';
-import { AccountFactory, DeviceApiKeyFactory } from '@/lib/db';
+import { AccountFactory, DeviceApiKeyFactory, EscrowedDeviceFactory } from '@/lib/db';
 import { DeviceApiKey, EscrowedDevice } from '@/lib/interfaces';
 const TombBucket = dynamic(
 	() => import('@/components/tomb/bucket/TombBucket'),
@@ -21,12 +21,18 @@ const TombBucket = dynamic(
 
 export async function getServerSideProps(context: any) {
 	// If the user has a session, serve the page
-	// @ts-ignore
-	const session: Session = await getServerSession(context.req, context.res, authOptions);
+	const session: Session | null= await getServerSession(
+		// @ts-ignore
+		context.req,
+		context.res,
+		authOptions
+	);
 	if (session) {
 		const providerId = session.providerId;
 		const account_id = await AccountFactory.idFromProviderId(providerId);
-		const deviceApiKeys = await DeviceApiKeyFactory.readAllByAccountId(account_id);
+		const deviceApiKeys = await DeviceApiKeyFactory.readAllByAccountId(
+			account_id
+		);
 		const escrowedDevice = await AccountFactory.readEscrowedDevice(account_id);
 		return {
 			// Just return empty props for now, eventually we'll pass more data
@@ -58,20 +64,11 @@ const HomePage: NextPageWithLayout<IHomePage> = ({
 	const {
 		initializeKeystore,
 		keystoreInitialized,
-		getFingerprint,
 		purgeKeystore,
 	} = useKeystore();
 	const [passkey, setPasskey] = useState<string>('');
 	const [fingerprint, setFingerprint] = useState<string>('');
 	const [error, setError] = useState<string | null>(null);
-
-	useEffect(() => {
-		if (keystoreInitialized) {
-			getFingerprint()
-				.then((fingerprint) => setFingerprint(fingerprint))
-				.catch((err) => setError(err.message));
-		}
-	}, [keystoreInitialized]);
 
 	const handleInitializeKeystore = () => {
 		console.log('Acccount: Initializing keystore with passkey');
@@ -125,7 +122,6 @@ const HomePage: NextPageWithLayout<IHomePage> = ({
 					{keystoreInitialized ? (
 						<>
 							<h2> Keystore Initialized </h2>
-							<p> Public Key Fingerprint: {fingerprint} </p>
 							<Button
 								colorScheme="red"
 								variant="solid"
