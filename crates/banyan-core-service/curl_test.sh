@@ -3,6 +3,7 @@
 set -o errexit
 set -o pipefail
 
+AUTH_HOST="http://127.0.0.1:3000"
 BASE_HOST="http://127.0.0.1:3000"
 
 TMP_CERT_DIR="/tmp/ec_certs_gen"
@@ -12,6 +13,8 @@ PUBLIC_EC_CLIENT_KEY_PATH="${TMP_CERT_DIR}/public.ec.pem"
 mkdir -p $(dirname "${PRIVATE_EC_CLIENT_KEY_PATH}")
 openssl ecparam -name secp384r1 -genkey -noout -out "${PRIVATE_EC_CLIENT_KEY_PATH}" 2>/dev/null
 openssl ec -in "${PRIVATE_EC_CLIENT_KEY_PATH}" -pubout -out "${PUBLIC_EC_CLIENT_KEY_PATH}" 2>/dev/null
+
+firefox ${AUTH_HOST}/api/device/register?fing
 
 # Register account, get generic authentication token
 REGISTER_RESPONSE="$(curl -s -H "Content-Type: application/json" ${BASE_HOST}/api/v1/auth/fake_register)"

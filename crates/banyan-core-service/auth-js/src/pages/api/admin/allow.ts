@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { AllowedEmailFactory } from '@/lib/db';
+import { Sequelize, UniqueConstraintError } from 'sequelize';
 
 // TODO: This can not be used in production. This route is being kept around for testing purposes.
 // Eventually we will need a better solution for adding allowed alpha users / admin management in general.
@@ -27,6 +28,10 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 		try {
 			allowed = await AllowedEmailFactory.create(data);
 		} catch (e) {
+			if (e instanceof UniqueConstraintError) {
+				res.status(409).send('conflict'); // Conflict
+				return;
+			}
 			console.log('Error allowed login: ', e);
 			res.status(500).send('internal server error'); // Bad Request
 			return;

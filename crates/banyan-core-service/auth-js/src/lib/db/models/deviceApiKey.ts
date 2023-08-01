@@ -1,11 +1,13 @@
 import { Sequelize, DataTypes, Model, ModelDefined } from 'sequelize';
 import { validateOrReject } from 'class-validator';
 import { DeviceApiKey as DeviceApiKeyAttributes } from '@/lib/interfaces';
-import { FINGERPRINT_REGEX, PEM_REGEX } from '@/lib/utils';
+import { isPem, isPrettyFingerprint, prettyFingerprintApiKeyPem} from '@/lib/utils';
+import { BadModelFormat } from './errors';
 
 interface DeviceApiKeyInstance
 	extends Model<DeviceApiKeyAttributes>,
 		DeviceApiKeyAttributes {
+	generateFingerprint(): Promise<void>;
 	validate(): Promise<void>;
 }
 
@@ -20,7 +22,7 @@ const DeviceApiKeyModel = (
 				defaultValue: DataTypes.UUIDV4,
 				primaryKey: true,
 			},
-			account_id: {
+			accountId: {
 				type: DataTypes.STRING,
 				allowNull: false,
 			},
@@ -35,44 +37,41 @@ const DeviceApiKeyModel = (
 			},
 		},
 		{
-			createdAt: false,
-			updatedAt: false,
+			createdAt: false, // don't need these
+			updatedAt: false, // don't need these
+			underscored: true, // use snake_case rather than camelCase for db read / write
 			hooks: {
 				beforeCreate: async (deviceApiKey: DeviceApiKeyInstance) => {
-					await deviceApiKey.validate();
+					await deviceApiKey.generateFingerprint();
+					await deviceApiKey.validate().catch((err) => {
+						throw new BadModelFormat(err);
+					});
 				},
 				beforeUpdate: async (deviceApiKey: DeviceApiKeyInstance) => {
-					await deviceApiKey.validate();
+					await deviceApiKey.validate().catch((err) => {
+						throw new BadModelFormat(err);
+					});
 				},
 			},
 			tableName: 'device_api_keys',
-			indexes: [
-				{
-					fields: ['account_id'],
-				},
-				{
-					fields: ['ecdsa_fingerprint'],
-					unique: true,
-				},
-			],
 		}
 	);
 
+	/** Generate the fingerprint from the PEM */
+	DeviceApiKey.prototype.generateFingerprint = async function () {
+		this.fingerprint = await prettyFingerprintApiKeyPem(this.pem);
+	};
+
 	DeviceApiKey.prototype.validate = async function () {
-		if (
-			typeof this.pem !== 'string' ||
-			!this.pem.match(PEM_REGEX)
-		) {
+		if (!isPem(this.pem)) {
 			throw new Error('invalid pem');
 		}
-		if (
-			typeof this.fingerprint !== 'string' ||
-			!this.fingerprint.match(FINGERPRINT_REGEX)
-		) {
-			console.log(this.fingerprint);
-			console.log(FINGERPRINT_REGEX);
-			console.log(this.fingerprint.match(FINGERPRINT_REGEX));
+		if (!isPrettyFingerprint(this.fingerprint)) {
 			throw new Error('invalid fingerprint');
+		}
+		const pemFingerprint = await prettyFingerprintApiKeyPem(this.pem);
+		if (!pemFingerprint || pemFingerprint !== this.fingerprint) {
+            throw new Error('api key fingerprint does not match api key pem');
 		}
 		await validateOrReject(this);
 	};

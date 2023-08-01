@@ -10,9 +10,9 @@ export const DeviceApiKeyFactory = {
 		return DeviceApiKey.create(attrs);
 	},
 
-	readAllByAccountId: async (account_id: string) => {
+	readAllByAccountId: async (accountId: string) => {
 		return DeviceApiKey.findAll({
-			where: { account_id },
+			where: { accountId },
 		});
 	},
 
@@ -23,12 +23,12 @@ export const DeviceApiKeyFactory = {
 	},
 
 	deleteByAccountIdAndFingerprint: async (
-		account_id: string,
+		accountId: string,
 		fingerprint: string
 	) => {
 		return DeviceApiKey.destroy({
 			where: {
-				account_id,
+				accountId,
 				fingerprint,
 			},
 		});

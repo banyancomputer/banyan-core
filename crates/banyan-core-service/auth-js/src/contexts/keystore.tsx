@@ -1,11 +1,15 @@
 import { createContext, useState, useEffect, useContext } from 'react';
 import { ClientApi } from '@/lib/api/auth';
-import { EscrowedDevice } from '@/lib/interfaces';
+import { DeviceApiKey, EscrowedDevice } from '@/lib/interfaces';
 import ECCKeystore from 'banyan-webcrypto-experiment/ecc/keystore';
-import { clear as clearIdb } from 'banyan-webcrypto-experiment/idb';
+import * as KeyStore from 'banyan-webcrypto-experiment/keystore/index';
+import {
+	fingerprintEcPublicKey,
+	prettyFingerprint,
+} from 'banyan-webcrypto-experiment/utils';
 import { useSession } from 'next-auth/react';
 import { Session } from 'next-auth';
-import { publicPemWrap, publicPemUnwrap } from '@/lib/utils';
+import { publicPemWrap, publicPemUnwrap, prettyFingerprintApiKeyPem } from '@/lib/utils';
 
 const KEY_STORE_NAME_PREFIX = 'key-store';
 const EXCHANGE_KEY_PAIR_NAME = 'exchange-key-pair';
@@ -24,13 +28,10 @@ export const KeystoreContext = createContext<{
 	initializeKeystore: (passkey: string) => Promise<void>;
 	// Purge the keystore from storage
 	purgeKeystore: () => Promise<void>;
-	// Get the public key's fingerprint
-	getFingerprint: () => Promise<string>;
 }>({
 	keystoreInitialized: false,
 	initializeKeystore: async (passkey: string) => {},
 	purgeKeystore: async () => {},
-	getFingerprint: async () => '',
 });
 
 export const KeystoreProvider = ({ children }: any) => {
@@ -47,8 +48,6 @@ export const KeystoreProvider = ({ children }: any) => {
 	const [escrowedDevice, setEscrowedDevice] = useState<EscrowedDevice | null>(
 		null
 	);
-	const [apiKeyPem, setApiKeyPem] = useState<string | null>(null);
-	const [encryptionKeyPem, setEncryptionKeyPem] = useState<string | null>(null);
 	const [error, setError] = useState<string | null>(null);
 
 	/* Effects */
@@ -66,13 +65,16 @@ export const KeystoreProvider = ({ children }: any) => {
 			// Initialize a keystore pointed by the user's uid
 			const storeName = KEY_STORE_NAME_PREFIX + '-' + session.providerId;
 			// Defaults are fine here
-			const ks = await ECCKeystore.init({ storeName });
+			const ks = (await KeyStore.init({ 
+				escrowKeyName: ESCROW_KEY_NAME,
+				writeKeyPairName: WRITE_KEY_PAIR_NAME,
+				exchangeKeyPairName: EXCHANGE_KEY_PAIR_NAME,
+				storeName 
+			})) as ECCKeystore;
 			setKeystore(ks);
 		};
-
 		if (session) {
 			createKeystore(session);
-			// getEscrowedDevice(session);
 		}
 	}, [session]);
 
@@ -90,13 +92,11 @@ export const KeystoreProvider = ({ children }: any) => {
 			return false;
 		};
 		const getEscrowedDevice = async () => {
-			const resp = await api.readEscrowedDevice().catch((err) => {
+			const resp = (await api.readEscrowedDevice().catch((err) => {
 				return undefined;
-			});
+			})) as EscrowedDevice | undefined;
 			if (resp) {
-				setEscrowedDevice(resp.escrowed_device);
-				setEncryptionKeyPem(resp.encryption_key_pem);
-				setApiKeyPem(resp.api_key_pem);
+				setEscrowedDevice(resp);
 			}
 		};
 		if (keystore) {
@@ -108,41 +108,15 @@ export const KeystoreProvider = ({ children }: any) => {
 		}
 	}, [keystore]);
 
-	// // Set the isRegistered state if the user has an encrypted private key in the db
-	// useEffect(() => {
-	// 	const check = async (session: Session) => {
-	// 		const resp = await api.readEscrowedKeyPair().catch((err) => {
-	// 			return undefined;
-	// 		});
-	// 		if (resp) {
-	// 			setIsRegistered(true);
-	// 			setEscrowedDeviceKeyPair(resp.escrowed_device_key_pair);
-	// 		}
-	// 	};
-	// 	if (session) {
-	// 		check(session);
-	// 	}
-	// }, [session]);
-
 	/* Methods */
 
 	// Initialize a keystore based on the user's passphrase
 	const initializeKeystore = async (passkey: string): Promise<void> => {
-		if (escrowedDevice && encryptionKeyPem && apiKeyPem) {
-			console.log('Initializing keystore with recovered escrowed data');
-			await recoverKeystore(passkey);
+		if (escrowedDevice) {
+			await recoverDevice(passkey);
 		} else {
-			console.log('Registering user');
-			await escrowKeystore(passkey);
+			await escrowDevice(passkey);
 		}
-	};
-
-	// Get the ecdsa public key's fingerprint
-	const getFingerprint = async (): Promise<string> => {
-		if (!keystore) {
-			throw new Error('Keystore not initialized');
-		}
-		return await keystore.fingerprintPublicWriteKey();
 	};
 
 	// Purge the keystore from storage
@@ -151,18 +125,16 @@ export const KeystoreProvider = ({ children }: any) => {
 			throw new Error('Keystore not initialized');
 		}
 		await keystore.destroy();
-		await clearIdb();
+		await KeyStore.clear();
 		setKeystore(null);
 		setKeystoreInitialized(false);
 		setEscrowedDevice(null);
-		setEncryptionKeyPem(null);
-		setApiKeyPem(null);
 	};
 
 	/* Helpers */
 
 	// Register a new user in firestore
-	const escrowKeystore = async (passphrase: string): Promise<void> => {
+	const escrowDevice = async (passphrase: string): Promise<void> => {
 		if (!keystore) {
 			throw new Error('Keystore not initialized');
 		}
@@ -170,96 +142,107 @@ export const KeystoreProvider = ({ children }: any) => {
 		await keystore.genExchangeKeyPair();
 		await keystore.genWriteKeyPair();
 		// Derive a new passkey for the user -- this generates a random salt
-		const passkey_salt = await keystore.deriveEscrowKey(passphrase);
-		const wrapped_ecdh_key_pair =
-			await keystore.exportEscrowedExchangeKeyPair();
-		const wrapped_ecdsa_key_pair = await keystore.exportEscrowedWriteKeyPair();
+		const passKeySalt = await keystore.deriveEscrowKey(passphrase);
+		const apiKeyPair = await keystore.getWriteKeyPair();
 
-		const escrowed_device = {
-			ecdsa_fingerprint: await keystore.fingerprintPublicWriteKey(),
-			ecdh_fingerprint: await keystore.fingerprintPublicExchangeKey(),
-			wrapped_ecdsa_pkcs8: wrapped_ecdsa_key_pair.wrappedPrivateKeyStr,
-			wrapped_ecdh_pkcs8: wrapped_ecdh_key_pair.wrappedPrivateKeyStr,
-			passkey_salt: passkey_salt,
-		};
-		const api_key_pem = publicPemWrap(wrapped_ecdsa_key_pair.publicKeyStr);
-		const encryption_key_pem = publicPemWrap(
-			wrapped_ecdh_key_pair.publicKeyStr
-		);
+		const apiKeyFingerprint = await fingerprintEcPublicKey(
+			apiKeyPair.publicKey as CryptoKey
+		).then((fingerprint) => prettyFingerprint(fingerprint));
+		const apiKeySpki = await keystore.exportPublicWriteKey()
+		const apiKeyPem = publicPemWrap(apiKeySpki);
+		const encryptionKeyPem = await keystore.exportPublicExchangeKey()
+			.then((key) => key)
+			.then((key) => publicPemWrap(key));
 
+		const wrappedApiKey = await keystore.exportEscrowedPrivateWriteKey();
+		const wrappedEncryptionKey = await keystore.exportEscrowedPrivateExchangeKey();
+
+		// Escrow the user's private key material
 		await api
 			.escrowDevice({
-				escrowed_device,
-				api_key_pem,
-				encryption_key_pem,
+				apiKeyPem,
+				encryptionKeyPem,
+				wrappedApiKey,
+				wrappedEncryptionKey,
+				passKeySalt, 	
 			})
-			.then(() => {
-				setEscrowedDevice(escrowed_device);
-				setEncryptionKeyPem(encryption_key_pem);
-				setApiKeyPem(api_key_pem);
+			.then((resp) => {
+				setEscrowedDevice(resp);
 			})
 			.catch((err) => {
 				setError(err.message);
 				setEscrowedDevice(null);
-				setEncryptionKeyPem(null);
-				setApiKeyPem(null);
 				throw new Error(err.message);
 			});
+
+		console.log("Registering device:")
+		console.log("apiKeySpki: " + apiKeySpki)
+
+		// Register the user's public key material
+		await api
+			.registerDeviceApiKey(apiKeySpki)
+			.then((resp: DeviceApiKey) => {
+				console.log("Registered device:")
+				console.log("apiKeyPem: " + resp.pem);
+				console.log("apiKeyFingerprint: " + resp.fingerprint);
+				if (resp.fingerprint !== apiKeyFingerprint) {
+					setError('Fingerprint mismatch');
+					throw new Error('Fingerprint mismatch');
+				}
+			})
+			.catch((err) => {
+				setError(err.message);
+				throw new Error(err.message);
+			});
+
+		setKeystoreInitialized(true);
 	};
 
-	const recoverKeystore = async (passphrase: string) => {
+	// Recovers a device's private key material from escrow
+	const recoverDevice = async (passphrase: string) => {
 		if (!keystore) {
 			throw new Error('Keystore not initialized');
 		}
-		if (!escrowedDevice || !encryptionKeyPem || !apiKeyPem) {
+		if (!escrowedDevice) {
 			throw new Error('Invalid escrowed data');
 		}
-
+		console.log("Recovering device:")
 		const {
-			passkey_salt,
-			wrapped_ecdsa_pkcs8,
-			wrapped_ecdh_pkcs8,
-			ecdsa_fingerprint,
+			apiKeyPem,
+			encryptionKeyPem,
+			wrappedApiKey,
+			wrappedEncryptionKey,
+			passKeySalt
 		} = escrowedDevice;
-		const ecdsa_spki = publicPemUnwrap(apiKeyPem);
-		const ecdh_spki = publicPemUnwrap(encryptionKeyPem);
 
-		await keystore.deriveEscrowKey(passphrase, passkey_salt);
-		await keystore.importEscrowedWriteKeyPair({
-			publicKeyStr: ecdsa_spki,
-			wrappedPrivateKeyStr: wrapped_ecdsa_pkcs8,
-		});
-		await keystore.importEscrowedExchangeKeyPair({
-			publicKeyStr: ecdh_spki,
-			wrappedPrivateKeyStr: wrapped_ecdh_pkcs8,
-		});
+		await keystore.deriveEscrowKey(passphrase, passKeySalt);
 
-		// Check that the keystore is valid
-		// Check that the fingerprint matches
-		const fingerprint = await keystore.fingerprintPublicWriteKey();
-		if (fingerprint !== ecdsa_fingerprint) {
-			setError(
-				'Keystore is invalid: ' + fingerprint + ' != ' + ecdsa_fingerprint
-			);
-			throw new Error(
-				'Keystore is invalid: ' + fingerprint + ' != ' + ecdsa_fingerprint
-			);
-		}
+		const apiKeySpki = publicPemUnwrap(apiKeyPem);
+		const encryptionKeySpki = publicPemUnwrap(encryptionKeyPem);
+
+		console.log("apiKeySpki: " + apiKeySpki)
+		await keystore.importEscrowedWriteKeyPair(
+			apiKeySpki,
+			wrappedApiKey
+		);
+		console.log("encryptionKeySpki: " + encryptionKeySpki);
+		await keystore.importEscrowedExchangeKeyPair(
+			encryptionKeySpki,
+			wrappedEncryptionKey
+		);
+
+		/* Validate the keystore */
 
 		const msg = 'hello world';
 
-		const ciphertext = await keystore.encrypt(msg, ecdh_spki, passkey_salt);
-		const plaintext = await keystore.decrypt(
-			ciphertext,
-			ecdh_spki,
-			passkey_salt
-		);
+		const ciphertext = await keystore.encrypt(msg, encryptionKeySpki, passKeySalt);
+		const plaintext = await keystore.decrypt(ciphertext, encryptionKeySpki, passKeySalt);
 		if (plaintext !== msg) {
 			setError('Keystore is invalid: ' + plaintext + ' != ' + msg);
 			throw new Error('Keystore is invalid: ' + plaintext + ' != ' + msg);
 		}
 		const signature = await keystore.sign(msg);
-		const verified = await keystore.verify(msg, signature, ecdsa_spki);
+		const verified = await keystore.verify(msg, signature, apiKeySpki); 
 		if (!verified) {
 			setError('Keystore is invalid (signature)');
 			throw new Error('Keystore is invalid (signature)');
@@ -271,7 +254,6 @@ export const KeystoreProvider = ({ children }: any) => {
 			value={{
 				keystoreInitialized,
 				initializeKeystore,
-				getFingerprint,
 				purgeKeystore,
 			}}
 		>

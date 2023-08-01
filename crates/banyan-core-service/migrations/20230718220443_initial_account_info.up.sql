@@ -24,12 +24,6 @@ CREATE TABLE accounts (
     substr(lower(hex(randomblob(2))), 2) || '-6' ||
     substr(lower(hex(randomblob(6))), 2)
   ),
-  --- The escrowed device blob for the user's web device (contains encrypted private keys)
-  escrowed_device_blob TEXT,
-  --- The public encryption key for the escrowed device
-  encryption_key_pem TEXT,
-  --- The public signing key for the escrowed device
-  api_key_pem TEXT,
   userId TEXT NOT NULL,
   type TEXT NOT NULL,
   provider TEXT NOT NULL,
@@ -85,7 +79,34 @@ CREATE TABLE allowed_emails (
   email TEXT NOT NULL UNIQUE
 );
 
--- Device API keys
+-- Mggration for Escrowed Devices
+CREATE TABLE escrowed_devices (
+  id TEXT PRIMARY KEY DEFAULT (
+    lower(hex(randomblob(4))) || '-' ||
+    lower(hex(randomblob(2))) || '-4' ||
+    substr(lower(hex(randomblob(2))), 2) || '-a' ||
+    substr(lower(hex(randomblob(2))), 2) || '-6' ||
+    substr(lower(hex(randomblob(6))), 2)
+  ),
+
+  account_id TEXT NOT NULL
+    REFERENCES accounts(id)
+    ON DELETE CASCADE,
+  
+  api_key_pem TEXT NOT NULL,
+  encryption_key_pem TEXT NOT NULL,
+  wrapped_api_key TEXT NOT NULL,
+  wrapped_encryption_key TEXT NOT NULL,
+  pass_key_salt TEXT NOT NULL,
+
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE UNIQUE INDEX idx_escrowed_device_keys_on_unique_account_id
+  ON escrowed_devices(account_id);
+
+-- Migrations for Device API keys
 CREATE TABLE device_api_keys (
   -- Dirty hack to generate UUIDs
   id TEXT PRIMARY KEY DEFAULT (

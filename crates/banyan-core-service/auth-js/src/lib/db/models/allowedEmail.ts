@@ -1,11 +1,7 @@
 import { Sequelize, DataTypes, Model, ModelDefined } from 'sequelize';
-import { v4 as uuidv4 } from 'uuid';
 import { validateOrReject } from 'class-validator';
-
-export interface AllowedEmailAttributes {
-	id: string;
-	email: string;
-}
+import { BadModelFormat } from './errors';
+import { AllowedEmail as AllowedEmailAttributes } from '@/lib/interfaces';
 
 interface AllowedEmailInstance
 	extends Model<AllowedEmailAttributes>,
@@ -35,25 +31,24 @@ const AllowedEmailModel = (
 			},
 		},
 		{
-			createdAt: false,
-			updatedAt: false,
-
+			createdAt: false, // don't need these
+			updatedAt: false, // don't need these
+			underscored: true, // use snake_case rather than camelCase for db read / write
 			hooks: {
 				beforeCreate: async (allowedEmail: AllowedEmailInstance) => {
-					// await allowedEmail.addId();
-					await allowedEmail.validate();
+					await allowedEmail.validate().catch((err) => {
+						throw new BadModelFormat(err);
+					});
 				},
 				beforeUpdate: async (allowedEmail: AllowedEmailInstance) => {
-					await allowedEmail.validate();
+					await allowedEmail.validate().catch((err) => {
+						throw new BadModelFormat(err);
+					});
 				},
 			},
 			tableName: 'allowed_emails',
 		}
 	);
-
-	// AllowedEmail.prototype.addId = async function () {
-	// 	this.id = uuidv4();
-	// };
 
 	AllowedEmail.prototype.validate = async function () {
 		await validateOrReject(this);
