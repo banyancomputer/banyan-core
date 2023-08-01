@@ -9,15 +9,13 @@ use tokio::io::{AsyncWrite, AsyncWriteExt};
 use uuid::Uuid;
 use validify::Validate;
 
-use crate::api::buckets::models::*;
-use crate::api::buckets::requests::*;
-use crate::api::buckets::responses::*;
+use crate::api::buckets::{models, requests, responses};
 use crate::extractors::{ApiToken, DataStore, DbConn};
 
 pub async fn create(
     api_token: ApiToken,
     mut db_conn: DbConn,
-    extract::Json(new_bucket): extract::Json<CreateBucket>,
+    extract::Json(new_bucket): extract::Json<requests::CreateBucket>,
 ) -> Response {
     if let Err(errors) = new_bucket.validate() {
         return (
@@ -28,7 +26,7 @@ pub async fn create(
     }
 
     let maybe_bucket = sqlx::query_as!(
-        CreatedResource,
+        models::CreatedResource,
         r#"INSERT INTO buckets (account_id, friendly_name, type) VALUES ($1, $2, $3) RETURNING id;"#,
         api_token.subject,
         new_bucket.friendly_name,
@@ -49,7 +47,7 @@ pub async fn create(
     };
 
     if sqlx::query_as!(
-        CreatedResource,
+        models::CreatedResource,
         r#"INSERT INTO bucket_keys (bucket_id, approved) VALUES ($1, true) RETURNING id;"#,
         created_bucket.id,
     )
@@ -65,7 +63,7 @@ pub async fn create(
             .into_response();
     }
 
-    let response = MinimalBucket {
+    let response = responses::MinimalBucket {
         id: created_bucket.id,
 
         friendly_name: new_bucket.friendly_name,
@@ -87,20 +85,20 @@ pub async fn destroy(
 
 pub async fn index(_api_token: ApiToken) -> Response {
     let bucket_list = vec![
-        MinimalBucket {
+        responses::MinimalBucket {
             id: "79bfee96-0a93-4f79-87d1-212675823d6a".to_string(),
 
             friendly_name: "test interactive bucket".to_string(),
-            r#type: BucketType::Interactive,
+            r#type: responses::BucketType::Interactive,
 
             root_cid: Some(
                 "zadi4hiDbg6A7Vu2Ac3ASKwLpYKvhNzDFkRevbf16VmZRRELL".to_string(),
             ),
         },
-        MinimalBucket {
+        responses::MinimalBucket {
             id: "7bce1c56-71b9-4147-80d4-7519a7e98bd3".to_string(),
             friendly_name: "test backup bucket".to_string(),
-            r#type: BucketType::Backup,
+            r#type: responses::BucketType::Backup,
             root_cid: Some("zb38SMDS42ghmnjuNbazvSxcSSmW5F2mkkgNUBJNtg7B6SZum".to_string()),
         },
     ];
@@ -193,21 +191,21 @@ pub async fn show(
     //    }
     //}
 
-    let bucket = DetailedBucket {
+    let bucket = responses::DetailedBucket {
         id: bucket_id.to_string(),
         friendly_name: "test interactive bucket".to_string(),
-        r#type: BucketType::Interactive,
+        r#type: responses::BucketType::Interactive,
 
         root_cid: Some(
             "bafybeihdwdcefgh4dqkjv67uzcmw7ojee6xedzdetojuzjevtenxquvyku".to_string(),
         ),
         public_keys: vec![
-            PublicKeySummary {
+            responses::PublicKeySummary {
                 approved: true,
                 fingerprint: "<pending>".to_string(),
                 public_key: "<full public key>".to_string(),
             },
-            PublicKeySummary {
+            responses::PublicKeySummary {
                 approved: false,
                 fingerprint: "<pending>".to_string(),
                 public_key: "<full public key>".to_string(),
