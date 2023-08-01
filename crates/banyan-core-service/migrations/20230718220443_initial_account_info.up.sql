@@ -162,5 +162,10 @@ CREATE TABLE bucket_keys (
     REFERENCES buckets(id)
     ON DELETE CASCADE,
 
+  pem TEXT NOT NULL,
+
   approved BOOLEAN NOT NULL DEFAULT false
 );
+
+create UNIQUE INDEX idx_bucket_keys_on_unique_bucket_id
+  ON bucket_keys(bucket_id);

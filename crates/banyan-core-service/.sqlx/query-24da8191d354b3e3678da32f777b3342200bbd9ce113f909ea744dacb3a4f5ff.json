@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "INSERT INTO device_api_keys (account_id, fingerprint, public_key) VALUES ($1, $2, $3) RETURNING id;",
+  "query": "INSERT INTO device_api_keys (account_id, fingerprint, pem) VALUES ($1, $2, $3) RETURNING id;",
   "describe": {
     "columns": [
       {
@@ -16,5 +16,5 @@
       false
     ]
   },
-  "hash": "70db4afd739dbedb53202e4cf3dbfab046437b0a8d46f39db29d301b30eec8a6"
+  "hash": "24da8191d354b3e3678da32f777b3342200bbd9ce113f909ea744dacb3a4f5ff"
 }
