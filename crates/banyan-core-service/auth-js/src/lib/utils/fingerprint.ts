@@ -8,21 +8,10 @@ export const prettyFingerprintApiKeyPem = async (pem: string): Promise<string> =
 };
 
 export const prettyFingerprintApiKeySpki = async (spki: string): Promise<string> => {
-	// convert the spki to an ArrayBuffer
-	const binaryString = atob(spki);
-  const buffer = new Uint8Array(binaryString.length);
-  for (let i = 0; i < binaryString.length; i++) {
-    buffer[i] = binaryString.charCodeAt(i);
-  }
-
-  console.log('buffer: ', buffer);
-  
-  
-	
 	return await webcrypto.subtle
 		.importKey(
 			'spki',
-			buffer.buffer,
+			base64ToArrBuf(spki),
 			{
 				name: 'ECDSA',
 				namedCurve: 'P-384',

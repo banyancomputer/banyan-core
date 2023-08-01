@@ -31,7 +31,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 		return;
 	}
 	const spki = b64UrlDecode(urlSpki as string);
-	console.log('spki: ', spki);
+	
 	// Get the fingerprint from the spki
 	const fingerprint = await prettyFingerprintApiKeySpki(spki);
 

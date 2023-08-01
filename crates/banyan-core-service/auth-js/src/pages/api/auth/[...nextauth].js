@@ -9,8 +9,8 @@ export const authOptions = {
 	debug: process.env.NODE_ENV === 'development',
 	adapter: SequelizeAdapter(client, {
 		models,
-		// Note: always set synchronize: false. Use the logic at:
-		// @/lib/db/models/index to update the sync status.
+		// Note: always set synchronize: false.
+		// Rely on sqlx to handle migrations. 
 		synchronize: false,
 	}),
 	providers: [
@@ -21,6 +21,7 @@ export const authOptions = {
 	],
 	session: {
 		// Use JSON Web Tokens for session instead of database sessions.
+		// TODO: Do we even need the sessions table?
 		strategy: 'jwt',
 	},
 	callbacks: {
@@ -28,19 +29,16 @@ export const authOptions = {
 		async jwt({ token, account }) {
 			if (account) {
 				console.log('Account: ', account);
-				token.providerId = joinProviderId(account.provider, account.providerAccountId);
-				token.escrowedDeviceBlob = account.escrowed_device_blob;
-				token.apiKeyPem = account.api_key_pem;
-				token.encryptionKeyPem = account.encryption_key_pem;
+				token.providerId = joinProviderId(
+					account.provider,
+					account.providerAccountId
+				);
 			}
 			return token;
 		},
 
 		async session({ session, token }) {
 			session.providerId = token.providerId;
-			session.escrowedDeviceBlob = token.escrowedDeviceBlob;
-			session.apiKeyPem = token.apiKeyPem;
-			session.encryptionKeyPem = token.encryptionKeyPem;
 			return session;
 		},
 
