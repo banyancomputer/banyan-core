@@ -12,7 +12,11 @@ import { signOut } from 'next-auth/react';
 // NOTE: we need to dynamically import the TombBucket module in order to use its wasm
 import dynamic from 'next/dynamic';
 // import { ClientApi } from '@/lib/api/auth';
-import { AccountFactory, DeviceApiKeyFactory, EscrowedDeviceFactory } from '@/lib/db';
+import {
+	AccountFactory,
+	DeviceApiKeyFactory,
+	EscrowedDeviceFactory,
+} from '@/lib/db';
 import { DeviceApiKey, EscrowedDevice } from '@/lib/interfaces';
 const TombBucket = dynamic(
 	() => import('@/components/tomb/bucket/TombBucket'),
@@ -29,7 +33,7 @@ export async function getServerSideProps(context: any) {
 	);
 	if (session) {
 		const providerId = session.providerId;
-		try { 
+		try {
 			const account_id = await AccountFactory.idFromProviderId(providerId);
 			const deviceApiKeys = await DeviceApiKeyFactory.readAllByAccountId(
 				account_id
@@ -73,11 +77,8 @@ const HomePage: NextPageWithLayout<IHomePage> = ({
 	deviceApiKeys,
 }) => {
 	const { data: session } = useSession();
-	const {
-		initializeKeystore,
-		keystoreInitialized,
-		purgeKeystore,
-	} = useKeystore();
+	const { initializeKeystore, keystoreInitialized, purgeKeystore } =
+		useKeystore();
 	const [passkey, setPasskey] = useState<string>('');
 	const [fingerprint, setFingerprint] = useState<string>('');
 	const [error, setError] = useState<string | null>(null);

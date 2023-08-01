@@ -2,7 +2,11 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../[...nextauth]';
 import * as errors from '@/lib/db/models/errors';
-import { AccountFactory, DeviceApiKeyFactory, EscrowedDeviceFactory } from '@/lib/db';
+import {
+	AccountFactory,
+	DeviceApiKeyFactory,
+	EscrowedDeviceFactory,
+} from '@/lib/db';
 import { Session } from 'next-auth';
 import { EscrowedDevice } from '@/lib/interfaces';
 

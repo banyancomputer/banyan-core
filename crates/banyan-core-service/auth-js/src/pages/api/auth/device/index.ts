@@ -24,10 +24,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 
 	let fingerprint = req.query.fingerprint;
 	if (fingerprint) {
-		if (
-			typeof fingerprint !== 'string' ||
-			!isPrettyFingerprint(fingerprint)
-		) {
+		if (typeof fingerprint !== 'string' || !isPrettyFingerprint(fingerprint)) {
 			res.status(400).send('bad request'); // Bad Request
 			return;
 		}

@@ -2,7 +2,11 @@ import { Sequelize, DataTypes, ModelDefined, Model } from 'sequelize';
 import { validateOrReject } from 'class-validator';
 import { EscrowedDevice as EscrowedDeviceAttributes } from '@/lib/interfaces';
 import { BadModelFormat } from './errors';
-import { isPem, isPrettyFingerprint, prettyFingerprintApiKeyPem } from '@/lib/utils';
+import {
+	isPem,
+	isPrettyFingerprint,
+	prettyFingerprintApiKeyPem,
+} from '@/lib/utils';
 
 interface EscrowedDeviceInstance
 	extends Model<EscrowedDeviceAttributes>,
@@ -25,10 +29,10 @@ const EscrowedDeviceModel = (
 				type: DataTypes.STRING,
 				allowNull: false,
 			},
-            apiKeyPem: {
-                type: DataTypes.STRING,
-                allowNull: false,
-            },
+			apiKeyPem: {
+				type: DataTypes.STRING,
+				allowNull: false,
+			},
 			encryptionKeyPem: {
 				type: DataTypes.STRING,
 				allowNull: false,
@@ -67,13 +71,13 @@ const EscrowedDeviceModel = (
 	);
 
 	EscrowedDevice.prototype.validate = async function () {
-        if (!isPem(this.apiKeyPem)) {
-            console.log('invalid api key pem');
-            console.log(this.apiKeyPem);
-            console.log(typeof this.apiKeyPem);
-            console.log(isPem(this.apiKeyPem));
-            throw new Error('invalid api key pem');
-        }
+		if (!isPem(this.apiKeyPem)) {
+			console.log('invalid api key pem');
+			console.log(this.apiKeyPem);
+			console.log(typeof this.apiKeyPem);
+			console.log(isPem(this.apiKeyPem));
+			throw new Error('invalid api key pem');
+		}
 		if (!isPem(this.encryptionKeyPem)) {
 			throw new Error('invalid encryption key pem');
 		}

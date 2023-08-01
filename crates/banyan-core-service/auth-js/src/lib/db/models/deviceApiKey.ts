@@ -1,7 +1,11 @@
 import { Sequelize, DataTypes, Model, ModelDefined } from 'sequelize';
 import { validateOrReject } from 'class-validator';
 import { DeviceApiKey as DeviceApiKeyAttributes } from '@/lib/interfaces';
-import { isPem, isPrettyFingerprint, prettyFingerprintApiKeyPem} from '@/lib/utils';
+import {
+	isPem,
+	isPrettyFingerprint,
+	prettyFingerprintApiKeyPem,
+} from '@/lib/utils';
 import { BadModelFormat } from './errors';
 
 interface DeviceApiKeyInstance
@@ -71,7 +75,7 @@ const DeviceApiKeyModel = (
 		}
 		const pemFingerprint = await prettyFingerprintApiKeyPem(this.pem);
 		if (!pemFingerprint || pemFingerprint !== this.fingerprint) {
-            throw new Error('api key fingerprint does not match api key pem');
+			throw new Error('api key fingerprint does not match api key pem');
 		}
 		await validateOrReject(this);
 	};

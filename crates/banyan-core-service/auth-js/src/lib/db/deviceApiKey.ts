@@ -2,10 +2,6 @@ import { DeviceApiKey as DeviceApiKeyAttributes } from '@/lib/interfaces';
 import { DeviceApiKey } from './models';
 
 export const DeviceApiKeyFactory = {
-	build: async (attrs: Partial<DeviceApiKeyAttributes> = {}) => {
-		return DeviceApiKey.build(attrs);
-	},
-
 	create: async (attrs: Partial<DeviceApiKeyAttributes> = {}) => {
 		return DeviceApiKey.create(attrs);
 	},

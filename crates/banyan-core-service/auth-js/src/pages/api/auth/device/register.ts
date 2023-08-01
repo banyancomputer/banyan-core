@@ -4,7 +4,7 @@ import { DeviceApiKeyFactory } from '@/lib/db';
 import { authOptions } from '@/pages/api/auth/[...nextauth]';
 import { Session } from 'next-auth';
 import { AccountFactory } from '@/lib/db';
-import { prettyFingerprintApiKeySpki, publicPemWrap } from '@/lib/utils'; 
+import { prettyFingerprintApiKeySpki, publicPemWrap } from '@/lib/utils';
 import * as errors from '@/lib/db/models/errors';
 import { b64UrlDecode } from '@/lib/utils/b64';
 
@@ -31,7 +31,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 		return;
 	}
 	const spki = b64UrlDecode(urlSpki as string);
-	
+
 	// Get the fingerprint from the spki
 	const fingerprint = await prettyFingerprintApiKeySpki(spki);
 

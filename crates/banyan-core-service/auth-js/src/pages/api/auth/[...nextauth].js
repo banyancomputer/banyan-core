@@ -10,7 +10,7 @@ export const authOptions = {
 	adapter: SequelizeAdapter(client, {
 		models,
 		// Note: always set synchronize: false.
-		// Rely on sqlx to handle migrations. 
+		// Rely on sqlx to handle migrations.
 		synchronize: false,
 	}),
 	providers: [

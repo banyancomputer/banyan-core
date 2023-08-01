@@ -5,4 +5,4 @@ export class BadModelFormat extends Error {
 		super(message);
 		this.name = 'BadModelFormat';
 	}
-} 
+}
