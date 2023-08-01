@@ -10,6 +10,7 @@ use uuid::Uuid;
 use validify::Validate;
 
 use crate::api::buckets::{models, requests, responses};
+use crate::api::buckets::car_buffer::CarBuffer;
 use crate::extractors::{ApiToken, DataStore, DbConn};
 
 pub async fn create(
@@ -160,10 +161,25 @@ async fn handle_upload(
 ) -> Result<String, ()> {
     let mut hasher = blake3::Hasher::new();
 
+    let mut car_buffer = CarBuffer::new();
+
     while let Some(chunk) = stream.try_next().await.transpose() {
         let chunk = chunk.expect("an available chunk (todo remove this)");
 
         hasher.update(&chunk);
+        car_buffer.add_chunk(&chunk);
+
+        match car_buffer.parse() {
+            Ok(Some(_md)) => {
+                // todo: we have our metadata, do any validation we need to here
+            }
+            Ok(None) => (),
+            Err(err) => {
+                tracing::error!("received car buffer error: {err}");
+                return Err(());
+            }
+        }
+
         writer
             .write_all(&chunk)
             .await

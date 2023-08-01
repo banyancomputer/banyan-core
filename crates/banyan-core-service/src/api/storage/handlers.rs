@@ -16,16 +16,15 @@ pub async fn create_authorization(
             .into_response();
     }
 
-    todo!()
-
     //(StatusCode::OK, axum::Json(response)).into_response()
+    (StatusCode::OK, "todo").into_response()
 }
 
 pub async fn current_authorizations(
     _api_token: ApiToken,
     mut _db_conn: DbConn,
 ) -> Response {
-    todo!()
+    (StatusCode::OK, "todo").into_response()
 }
 
 pub async fn revoke_authorization(
