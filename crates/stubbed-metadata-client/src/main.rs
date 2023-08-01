@@ -31,6 +31,23 @@ struct AccountCreationResponse {
 }
 
 #[derive(Debug, Serialize)]
+struct BucketCreationRequest {
+    friendly_name: String,
+    r#type: String,
+    initial_public_key: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct BucketCreationResponse {
+    id: String,
+
+    friendly_name: String,
+    r#type: String,
+
+    root_cid: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
 struct DeviceKeyRegistrationRequest {
     public_key: String,
 }
@@ -40,6 +57,22 @@ struct DeviceKeyRegistrationResponse {
     id: String,
     account_id: String,
     fingerprint: String,
+}
+
+#[derive(Debug, Serialize)]
+struct MetadataPublishRequest {
+    data_size: usize,
+}
+
+#[derive(Debug, Deserialize)]
+struct MetadataPublishResponse {
+    storage: DataStorageDetails,
+}
+
+#[derive(Debug, Deserialize)]
+struct DataStorageDetails {
+    authorization_ticket: String,
+    hosts: Vec<String>
 }
 
 #[tokio::main]
@@ -110,9 +143,6 @@ async fn main() {
     // We need the public pem bytes to register with the API
     let public_pem = String::from_utf8_lossy(&private_key.public_key_to_pem().unwrap()).to_string();
 
-    let bearer_val = format!("Bearer {}", fake_account_response.token);
-    let temp_account_bearer_header = reqwest::header::HeaderValue::from_str(&bearer_val).unwrap();
-
     let device_reg_req = DeviceKeyRegistrationRequest {
         public_key: public_pem.clone(),
     };
@@ -121,7 +151,7 @@ async fn main() {
     //  * uses account token as bearer token in authorization header
     let device_key_reg_response: DeviceKeyRegistrationResponse = http_client
         .post("http://127.0.0.1:3000/api/v1/auth/register_device_key")
-        .header("Authorization", temp_account_bearer_header)
+        .bearer_auth(&fake_account_response.token)
         .json(&device_reg_req)
         .send()
         .await
@@ -130,9 +160,11 @@ async fn main() {
         .await
         .unwrap();
 
+    assert_eq!(fake_account_response.id, device_key_reg_response.account_id);
+    assert_eq!(fingerprint, device_key_reg_response.fingerprint);
+
     // We need the private pem bytes for use with jsonwebtoken's EncodingKey
     let private_pem = String::from_utf8_lossy(&private_key.private_key_to_pem_pkcs8().unwrap()).to_string();
-
     // Create an encoding key with the private key
     let jwt_signing_key = EncodingKey::from_ec_pem(private_pem.as_bytes()).unwrap();
 
@@ -157,16 +189,59 @@ async fn main() {
         jsonwebtoken::encode(&bearer_header, &api_token, &jwt_signing_key).unwrap()
     };
 
-    // create bucket POST a struct to /api/v1/buckets
-    //  * uses a signed bearer token from the client/device key
-    //  * will get use the bucket uuid
+    // Create bucket POST a struct to /api/v1/buckets
+    let bucket_creation_req = BucketCreationRequest {
+        friendly_name: "A simple test interactive bucket".to_string(),
+        r#type: "interactive".to_string(),
+        initial_public_key: public_pem.clone(),
+    };
+
+    let bucket_creation_resp: BucketCreationResponse = http_client
+        .post("http://127.0.0.1:3000/api/v1/buckets")
+        .bearer_auth(&expiring_jwt)
+        .json(&bucket_creation_req)
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+
+    assert_eq!(bucket_creation_req.friendly_name, bucket_creation_resp.friendly_name);
+    assert_eq!(bucket_creation_req.r#type, bucket_creation_resp.r#type);
+
 
     // publish bucket metadata to /api/v1/buckets/{uuid]/publish
-    //  * needs to be switched to multipart, we need to post a struct with this as well with the
-    //    size of the data storage needed
-    //  * should want content type "application/vnd.ipld.car; version=2"
     //  * should read and validate the key metadata to ensure expected keys are present
     //  * should scan the car file for number of blocks contained and return that
     //  * metadata should be in a pending state until data has been received by storage host
     //  * will return a storage grant for the bucket/metadata with the storage host
+    let multipart_json_data = serde_json::to_string(&MetadataPublishRequest {
+        data_size: 1_342_100,
+    }).unwrap();
+
+    // todo: need to workaround reqwest's multipart limitations
+
+    //let multipart_json = reqwest::multipart::Part::bytes(multipart_json_data.as_bytes().to_vec())
+    //    .mime_str("application/json")
+    //    .unwrap();
+
+    //let multipart_car_data = "some random contents for the car file...";
+    //let multipart_car = reqwest::multipart::Part::bytes(multipart_car_data.as_bytes().to_vec())
+    //    .mime_str("application/vnd.ipld.car; version=2")
+    //    .unwrap();
+
+    //let publish_response: MetadataPublishResponse = http_client
+    //    .post(format!("http://127.0.0.1:3000/api/v1/buckets/{}/publish", bucket_creation_resp.id))
+    //    .bearer_auth(&expiring_jwt)
+    //    .multipart(reqwest::multipart::Form::part(multipart_json))
+    //    .multipart(reqwest::multipart::Form::part(multipart_car))
+    //    .send()
+    //    .await
+    //    .unwrap()
+    //    .json()
+    //    .await
+    //    .unwrap();
+
+    println!("{publish_response:?}");
 }
