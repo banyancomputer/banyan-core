@@ -57,6 +57,7 @@ pub async fn create(
     .await
     .is_err()
     {
+        // todo: should try to delete created bucket
         return (
             StatusCode::INTERNAL_SERVER_ERROR,
             "unable to create public key associated with bucket",
@@ -70,7 +71,7 @@ pub async fn create(
         friendly_name: new_bucket.friendly_name,
         r#type: new_bucket.r#type,
 
-        meta_data_cid: None,
+        root_cid: None,
     };
 
     (StatusCode::OK, axum::Json(response)).into_response()
@@ -92,15 +93,15 @@ pub async fn index(_api_token: ApiToken) -> Response {
             friendly_name: "test interactive bucket".to_string(),
             r#type: BucketType::Interactive,
 
-            meta_data_cid: Some(
-                "bafybeihdwdcefgh4dqkjv67uzcmw7ojee6xedzdetojuzjevtenxquvyku".to_string(),
+            root_cid: Some(
+                "zadi4hiDbg6A7Vu2Ac3ASKwLpYKvhNzDFkRevbf16VmZRRELL".to_string(),
             ),
         },
         MinimalBucket {
             id: "7bce1c56-71b9-4147-80d4-7519a7e98bd3".to_string(),
             friendly_name: "test backup bucket".to_string(),
             r#type: BucketType::Backup,
-            meta_data_cid: Some("QmdfTbBqBPQ7VNxZEYEj14VmRuZBkqFbiwReogJgS1zR1n".to_string()),
+            root_cid: Some("zb38SMDS42ghmnjuNbazvSxcSSmW5F2mkkgNUBJNtg7B6SZum".to_string()),
         },
     ];
 
@@ -197,7 +198,7 @@ pub async fn show(
         friendly_name: "test interactive bucket".to_string(),
         r#type: BucketType::Interactive,
 
-        meta_data_cid: Some(
+        root_cid: Some(
             "bafybeihdwdcefgh4dqkjv67uzcmw7ojee6xedzdetojuzjevtenxquvyku".to_string(),
         ),
         public_keys: vec![

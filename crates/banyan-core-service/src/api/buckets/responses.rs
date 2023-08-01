@@ -15,7 +15,7 @@ pub struct DetailedBucket {
     pub r#type: BucketType,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub meta_data_cid: Option<String>,
+    pub root_cid: Option<String>,
     pub public_keys: Vec<PublicKeySummary>,
 }
 
@@ -27,7 +27,7 @@ pub struct MinimalBucket {
     pub r#type: BucketType,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub meta_data_cid: Option<String>,
+    pub root_cid: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -36,6 +36,3 @@ pub struct PublicKeySummary {
     pub fingerprint: String,
     pub public_key: String,
 }
-
-#[derive(Serialize)]
-pub struct ProtectedKey(pub String);
