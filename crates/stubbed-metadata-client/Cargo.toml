@@ -1,0 +1,14 @@
+[package]
+name = "stubbed-metadata-client"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+jsonwebtoken = "8.3.0"
+openssl = "^0.10"
+pem = "^2"
+reqwest = { version = "^0.11", features = ["json", "stream"], default-features = false }
+serde = { version = "^1", features = ["derive"] }
+serde_json = "^1"
+tokio = { version = "^1", features = ["macros", "rt-multi-thread"] }
+uuid = { version = "^1.3", features = ["fast-rng", "serde", "v4"] }
