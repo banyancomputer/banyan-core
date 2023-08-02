@@ -21,7 +21,7 @@ pub const EXPIRATION_WINDOW_SECS: u64 = 900;
 static KEY_ID_VALIDATOR: OnceLock<regex::Regex> = OnceLock::new();
 const KEY_ID_REGEX: &str = r"^[0-9a-f]{2}(:[0-9a-f]{2}){19}$";
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ApiToken {
     #[serde(rename = "nnc")]
