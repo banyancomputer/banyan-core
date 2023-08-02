@@ -49,8 +49,9 @@ pub async fn create(
 
     if sqlx::query_as!(
         models::CreatedResource,
-        r#"INSERT INTO bucket_keys (bucket_id, approved) VALUES ($1, true) RETURNING id;"#,
+        r#"INSERT INTO bucket_keys (bucket_id, approved, pem) VALUES ($1, true, $2) RETURNING id;"#,
         created_bucket.id,
+        new_bucket.initial_public_key,
     )
     .fetch_one(&mut *db_conn.0)
     .await

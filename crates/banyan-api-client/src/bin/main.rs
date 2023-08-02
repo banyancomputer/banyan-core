@@ -57,7 +57,8 @@ async fn main() {
             r#type: BucketType::Interactive,
             initial_public_key: "ECDH public key pem formatted bits".to_string(),
         })
-        .await;
+        .await
+        .unwrap();
 
     println!("{bucket_info:?}");
 

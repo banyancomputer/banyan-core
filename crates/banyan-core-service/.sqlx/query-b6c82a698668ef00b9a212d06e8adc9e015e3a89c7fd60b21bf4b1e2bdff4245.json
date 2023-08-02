@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "INSERT INTO bucket_keys (bucket_id, approved) VALUES ($1, true) RETURNING id;",
+  "query": "INSERT INTO bucket_keys (bucket_id, approved, pem) VALUES ($1, true, $2) RETURNING id;",
   "describe": {
     "columns": [
       {
@@ -10,11 +10,11 @@
       }
     ],
     "parameters": {
-      "Right": 1
+      "Right": 2
     },
     "nullable": [
       false
     ]
   },
-  "hash": "2cb75f93bf4e2f9d974020bb2b63f4cfed869c85ae54f443af37b25b96bff40d"
+  "hash": "b6c82a698668ef00b9a212d06e8adc9e015e3a89c7fd60b21bf4b1e2bdff4245"
 }
