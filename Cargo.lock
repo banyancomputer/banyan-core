@@ -198,11 +198,11 @@ dependencies = [
  "jsonwebtoken",
  "openssl",
  "pem 2.0.1",
+ "rand",
  "reqwest",
  "serde",
  "serde_json",
  "tokio",
- "url",
  "uuid",
 ]
 

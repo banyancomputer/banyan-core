@@ -9,7 +9,7 @@ use crate::requests::ApiRequest;
 struct BearerToken;
 
 pub struct Client {
-    base_url: url::Url,
+    base_url: reqwest::Url,
     client: reqwest::Client,
 
     ec_key: Option<EncodingKey>,
