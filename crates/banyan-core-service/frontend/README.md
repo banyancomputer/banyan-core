@@ -1,6 +1,6 @@
-# Tomb-WWW
+# Banyan Core Service Frontend 
 
-Experimental frontend for Tomb.
+Core service frontend for the Banyan project.
 
 ## Dependencies
 

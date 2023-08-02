@@ -30,7 +30,8 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 		res.status(400).send('bad request -- missing spki'); // Bad Request
 		return;
 	}
-	const spki = b64UrlDecode(urlSpki as string);
+	
+	const spki = b64UrlDecode(urlSpki);
 
 	// Get the fingerprint from the spki
 	const fingerprint = await prettyFingerprintApiKeySpki(spki);

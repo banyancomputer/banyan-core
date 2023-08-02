@@ -21,7 +21,7 @@ pub const EXPIRATION_WINDOW_SECS: u64 = 900;
 static KEY_ID_VALIDATOR: OnceLock<regex::Regex> = OnceLock::new();
 const KEY_ID_REGEX: &str = r"^[0-9a-f]{2}(:[0-9a-f]{2}){19}$";
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 #[serde(deny_unknown_fields)]
 pub struct ApiToken {
     #[serde(rename = "nnc")]
@@ -46,6 +46,11 @@ struct DeviceApiKey {
     pem: String,
 }
 
+#[derive(sqlx::FromRow)]
+struct Account {
+    email: Option<String>,
+}
+
 #[async_trait]
 impl<S> FromRequestParts<S> for ApiToken
 where
@@ -61,7 +66,6 @@ where
             .extract::<TypedHeader<Authorization<Bearer>>>()
             .await
             .map_err(ApiKeyAuthorizationError::missing_header)?;
-
         let mut token_validator = Validation::new(Algorithm::ES384);
 
         // Allow +/- 20 sec clock skew off the expiration and not before time
@@ -94,8 +98,7 @@ where
         )
         .fetch_one(&mut *db_conn.0)
         .await
-        // todo: proper error mapping
-        .map_err(|_| ApiKeyAuthorizationError::database_unavailable())?;
+        .map_err(|err| ApiKeyAuthorizationError::device_api_key_not_found(err))?;
 
         let key = DecodingKey::from_ec_pem(db_device_api_key.pem.as_bytes()).expect("success");
 
@@ -123,7 +126,24 @@ where
             }
         }
 
-        if db_device_api_key.account_id != claims.subject {
+        let account = sqlx::query_as!(
+            Account,
+            "SELECT u.email
+            FROM accounts AS a
+            INNER JOIN users AS u ON a.userId = u.id
+            WHERE a.id = $1",
+            db_device_api_key.account_id
+        )
+        .fetch_one(&mut *db_conn.0)
+        .await
+        .map_err(|err| match err {
+            sqlx::Error::RowNotFound => ApiKeyAuthorizationError::account_info_not_found(err),
+            _ => ApiKeyAuthorizationError::email_not_found(),
+        })?;
+        let account_email = account.email.ok_or_else(|| {
+            ApiKeyAuthorizationError::email_not_found()
+        })?;
+        if account_email != claims.subject {
             return Err(ApiKeyAuthorizationError {
                 kind: ApiKeyAuthorizationErrorKind::MismatchedSubject,
             });
@@ -185,6 +205,24 @@ impl ApiKeyAuthorizationError {
             kind: ApiKeyAuthorizationErrorKind::UnidentifiedKey,
         }
     }
+
+    pub fn device_api_key_not_found(err: sqlx::Error) -> Self {
+        Self {
+            kind: ApiKeyAuthorizationErrorKind::DeviceApiKeyNotFound(err),
+        }
+    }
+
+    pub fn account_info_not_found(err: sqlx::Error) -> Self {
+        Self {
+            kind: ApiKeyAuthorizationErrorKind::AccountInfoNotFound(err),
+        }
+    }
+
+    pub fn email_not_found() -> Self {
+        Self {
+            kind: ApiKeyAuthorizationErrorKind::EmailNotFound,
+        }
+    }
 }
 
 impl Display for ApiKeyAuthorizationError {
@@ -194,6 +232,9 @@ impl Display for ApiKeyAuthorizationError {
         let msg = match self.kind {
             BadKeyFormat => "key format in JWT header wasn't valid",
             DatabaseUnavailable => "unable to lookup identity in database",
+            DeviceApiKeyNotFound(_) => "unable to lookup device API key in database",
+            AccountInfoNotFound(_) => "unable to lookup account info in database",
+            EmailNotFound => "unable to lookup email in database",
             ExtremeTokenValidity => "the provided token's validity range is outside our allowed range",
             FormatError(_) => "format of the provide bearer token didn't meet our requirements",
             InternalCryptographyIssue(_) => "there was an internal cryptographic issue due too a code or configuration issue",
@@ -219,6 +260,9 @@ impl std::error::Error for ApiKeyAuthorizationError {
             MaliciousConstruction(err) => Some(err),
             MissingHeader(err) => Some(err),
             UnknownTokenError(err) => Some(err),
+            DeviceApiKeyNotFound(err) => Some(err),
+            AccountInfoNotFound(err) => Some(err),
+            EmailNotFound => None,
             _ => None,
         }
     }
@@ -240,6 +284,9 @@ impl IntoResponse for ApiKeyAuthorizationError {
 enum ApiKeyAuthorizationErrorKind {
     BadKeyFormat,
     DatabaseUnavailable,
+    DeviceApiKeyNotFound(sqlx::Error),
+    AccountInfoNotFound(sqlx::Error),
+    EmailNotFound,
     ExtremeTokenValidity,
     FormatError(jsonwebtoken::errors::Error),
     InternalCryptographyIssue(jsonwebtoken::errors::Error),

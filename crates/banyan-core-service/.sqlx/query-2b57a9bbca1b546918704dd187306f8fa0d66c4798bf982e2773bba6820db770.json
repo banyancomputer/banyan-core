@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT u.email\n            FROM accounts AS a\n            INNER JOIN users AS u ON a.userId = u.id\n            WHERE a.id = $1",
+  "describe": {
+    "columns": [
+      {
+        "name": "email",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "2b57a9bbca1b546918704dd187306f8fa0d66c4798bf982e2773bba6820db770"
+}
