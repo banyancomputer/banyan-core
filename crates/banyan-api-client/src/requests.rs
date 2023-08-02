@@ -8,6 +8,6 @@ pub trait ApiRequest {
     type ResponseType: DeserializeOwned;
     type ErrorType: DeserializeOwned + Error + Send + Sync + 'static;
 
-    fn build_request(&self, base_url: &url::Url) -> reqwest::RequestBuilder;
+    fn build_request(&self, base_url: &url::Url, client: &reqwest::Client) -> reqwest::RequestBuilder;
     fn requires_authentication(&self) -> bool;
 }

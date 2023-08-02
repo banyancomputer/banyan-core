@@ -10,18 +10,47 @@ struct BearerToken;
 
 pub struct Client {
     base_url: url::Url,
+    client: reqwest::Client,
 
     ec_key: Option<EncodingKey>,
     bearer_token: Option<BearerToken>,
 }
 
 impl Client {
+    fn bearer_token(&self) -> Option<String> {
+        todo!()
+    }
+
+    pub fn new(base_url: reqwest::Url) -> Self {
+        let mut default_headers = reqwest::header::HeaderMap::new();
+        default_headers.insert("Content-Type", reqwest::header::HeaderValue::from_static("application/json"));
+
+        let mut client = reqwest::Client::builder()
+            .default_headers(default_headers)
+            .user_agent("banyan-api-client/0.1.0")
+            .build()
+            .unwrap();
+
+        Self {
+            base_url,
+            client,
+
+            ec_key: None,
+            bearer_token: None,
+        }
+    }
+
     pub async fn call<T: ApiRequest>(&self, request: T) -> Result<T::ResponseType, ClientError> {
         if request.requires_authentication() && !self.has_authentication() {
-            return Err(ClientError::auth_required());
+            return Err(ClientError::auth_unavailable());
         }
 
-        let request_builder = request.build_request(&self.base_url);
+        let mut request_builder = request.build_request(&self.base_url, &self.client);
+
+        if request.requires_authentication() {
+            request_builder = request_builder.bearer_auth(self.bearer_token().unwrap());
+        }
+
         let response = request_builder.send().await.map_err(ClientError::http_error)?;
 
         if response.status().is_success() {
@@ -52,9 +81,9 @@ pub struct ClientError {
 }
 
 impl ClientError {
-    fn auth_required() -> Self {
+    fn auth_unavailable() -> Self {
         Self {
-            kind: ClientErrorKind::AuthRequired,
+            kind: ClientErrorKind::AuthUnavailable,
         }
     }
 
@@ -82,7 +111,7 @@ impl From<Box<dyn std::error::Error + Send + Sync + 'static>> for ClientError {
 #[non_exhaustive]
 enum ClientErrorKind {
     ApiResponseError(Box<dyn std::error::Error + Send + Sync + 'static>),
-    AuthRequired,
+    AuthUnavailable,
     HttpClientError(reqwest::Error),
     ResponseFormatError(reqwest::Error),
 }
