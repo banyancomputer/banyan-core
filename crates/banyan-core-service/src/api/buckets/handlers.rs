@@ -69,8 +69,6 @@ pub async fn create(
 
         friendly_name: new_bucket.friendly_name,
         r#type: new_bucket.r#type,
-
-        root_cid: None,
     };
 
     (StatusCode::OK, axum::Json(response)).into_response()
@@ -88,17 +86,13 @@ pub async fn index(_api_token: ApiToken) -> Response {
     let bucket_list = vec![
         responses::MinimalBucket {
             id: "79bfee96-0a93-4f79-87d1-212675823d6a".to_string(),
-
             friendly_name: "test interactive bucket".to_string(),
             r#type: responses::BucketType::Interactive,
-
-            root_cid: Some("zadi4hiDbg6A7Vu2Ac3ASKwLpYKvhNzDFkRevbf16VmZRRELL".to_string()),
         },
         responses::MinimalBucket {
             id: "7bce1c56-71b9-4147-80d4-7519a7e98bd3".to_string(),
             friendly_name: "test backup bucket".to_string(),
             r#type: responses::BucketType::Backup,
-            root_cid: Some("zb38SMDS42ghmnjuNbazvSxcSSmW5F2mkkgNUBJNtg7B6SZum".to_string()),
         },
     ];
 
@@ -210,7 +204,6 @@ pub async fn show(
         friendly_name: "test interactive bucket".to_string(),
         r#type: responses::BucketType::Interactive,
 
-        root_cid: Some("bafybeihdwdcefgh4dqkjv67uzcmw7ojee6xedzdetojuzjevtenxquvyku".to_string()),
         public_keys: vec![
             responses::PublicKeySummary {
                 approved: true,

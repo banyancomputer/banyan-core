@@ -155,6 +155,7 @@ impl Display for FakeRegisterDeviceKeyError {
 impl Error for FakeRegisterDeviceKeyError {}
 
 #[derive(Debug, Deserialize)]
+#[non_exhaustive]
 #[serde(tag = "type", rename_all = "snake_case")]
 enum FakeRegisterDeviceKeyErrorKind {
     InvalidPublicKey,

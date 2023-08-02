@@ -5,10 +5,13 @@ use reqwest::{Client, RequestBuilder, Url};
 use serde::de::DeserializeOwned;
 use serde::Deserialize;
 
+mod common;
 mod create_bucket;
 mod whoami;
 
-pub use whoami::{WhoAmI, WhoAmIResponse};
+pub use common::*;
+pub use create_bucket::*;
+pub use whoami::*;
 
 pub trait ApiRequest {
     type ResponseType: DeserializeOwned;

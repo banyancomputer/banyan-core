@@ -1,25 +1,6 @@
 use banyan_api_client::prelude::*;
 use jsonwebtoken::EncodingKey;
 
-//use serde::{Deserialize, Serialize};
-
-//#[derive(Debug, Serialize)]
-//struct BucketCreationRequest {
-//    friendly_name: String,
-//    r#type: String,
-//    initial_public_key: String,
-//}
-//
-//#[derive(Debug, Deserialize)]
-//struct BucketCreationResponse {
-//    id: String,
-//
-//    friendly_name: String,
-//    r#type: String,
-//
-//    root_cid: Option<String>,
-//}
-
 //#[derive(Debug, Serialize)]
 //struct MetadataPublishRequest {
 //    data_size: usize,
@@ -71,26 +52,14 @@ async fn main() {
 
     println!("{authenticated_info:?}");
 
-    //// Create bucket POST a struct to /api/v1/buckets
-    //let bucket_creation_req = BucketCreationRequest {
-    //    friendly_name: "A simple test interactive bucket".to_string(),
-    //    r#type: "interactive".to_string(),
-    //    initial_public_key: public_pem.clone(),
-    //};
+    let bucket_info = api_client.call(CreateBucket {
+            friendly_name: "Testing Interactive Bucket".to_string(),
+            r#type: BucketType::Interactive,
+            initial_public_key: "ECDH public key pem formatted bits".to_string(),
+        })
+        .await;
 
-    //let bucket_creation_resp: BucketCreationResponse = http_client
-    //    .post("http://127.0.0.1:3001/api/v1/buckets")
-    //    .bearer_auth(&expiring_jwt)
-    //    .json(&bucket_creation_req)
-    //    .send()
-    //    .await
-    //    .unwrap()
-    //    .json()
-    //    .await
-    //    .unwrap();
-
-    //assert_eq!(bucket_creation_req.friendly_name, bucket_creation_resp.friendly_name);
-    //assert_eq!(bucket_creation_req.r#type, bucket_creation_resp.r#type);
+    println!("{bucket_info:?}");
 
     //// publish bucket metadata to /api/v1/buckets/{uuid]/publish
     ////  * should read and validate the key metadata to ensure expected keys are present
