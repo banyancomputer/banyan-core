@@ -4,6 +4,7 @@ use uuid::Uuid;
 
 use crate::requests::{ApiRequest, InfallibleError};
 
+#[derive(Debug)]
 pub struct WhoAmI;
 
 impl ApiRequest for WhoAmI {
@@ -20,7 +21,7 @@ impl ApiRequest for WhoAmI {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct WhoAmIResponse {
     pub account_id: Uuid,
 }

@@ -1,10 +1,11 @@
 use jsonwebtoken::{get_current_timestamp, EncodingKey};
+use uuid::Uuid;
 
 use crate::api_token::ApiToken;
 use crate::requests::ApiRequest;
 
 pub struct Credentials {
-    account_id: String,
+    account_id: Uuid,
     fingerprint: String,
     signing_key: EncodingKey,
 }
@@ -25,7 +26,7 @@ impl Client {
             // Either expired or not yet generated
             _ => {
                 if let Some(credentials) = &self.credentials {
-                    let api_token = ApiToken::new("banyan-platform", &credentials.account_id);
+                    let api_token = ApiToken::new("banyan-platform", &credentials.account_id.to_string());
                     let expiration = api_token.expiration();
                     let signed_token =
                         api_token.sign(&credentials.fingerprint, &credentials.signing_key);
@@ -42,7 +43,7 @@ impl Client {
 
     pub fn set_credentials(
         &mut self,
-        account_id: String,
+        account_id: Uuid,
         fingerprint: String,
         signing_key: EncodingKey,
     ) {

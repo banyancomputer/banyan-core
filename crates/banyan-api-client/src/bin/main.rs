@@ -1,14 +1,8 @@
 use banyan_api_client::prelude::*;
+use jsonwebtoken::EncodingKey;
 
-//use jsonwebtoken::{get_current_timestamp, Algorithm, Header, EncodingKey};
 //use serde::{Deserialize, Serialize};
 
-//#[derive(Debug, Deserialize)]
-//struct AccountCreationResponse {
-//    id: String,
-//    token: String,
-//}
-//
 //#[derive(Debug, Serialize)]
 //struct BucketCreationRequest {
 //    friendly_name: String,
@@ -25,29 +19,17 @@ use banyan_api_client::prelude::*;
 //
 //    root_cid: Option<String>,
 //}
-//
-//#[derive(Debug, Serialize)]
-//struct DeviceKeyRegistrationRequest {
-//    public_key: String,
-//}
-//
-//#[derive(Debug, Deserialize)]
-//struct DeviceKeyRegistrationResponse {
-//    id: String,
-//    account_id: String,
-//    fingerprint: String,
-//}
-//
+
 //#[derive(Debug, Serialize)]
 //struct MetadataPublishRequest {
 //    data_size: usize,
 //}
-//
+
 //#[derive(Debug, Deserialize)]
 //struct MetadataPublishResponse {
 //    storage: DataStorageDetails,
 //}
-//
+
 //#[derive(Debug, Deserialize)]
 //struct DataStorageDetails {
 //    authorization_ticket: String,
@@ -79,33 +61,15 @@ async fn main() {
     assert_eq!(account_info.id, device_key_info.account_id);
     assert_eq!(fingerprint, device_key_info.fingerprint);
 
-    //// We need the private pem bytes for use with jsonwebtoken's EncodingKey
-    //let private_pem = String::from_utf8_lossy(&private_key.private_key_to_pem_pkcs8().unwrap()).to_string();
-    //// Create an encoding key with the private key
-    //let jwt_signing_key = EncodingKey::from_ec_pem(private_pem.as_bytes()).unwrap();
+    let jwt_signing_key = EncodingKey::from_ec_pem(private_pem.as_bytes()).unwrap();
+    api_client.set_credentials(account_info.id, fingerprint, jwt_signing_key);
 
-    // From here on out we should be using the client instead of our jank bits
+    let authenticated_info = api_client
+        .call(WhoAmI)
+        .await
+        .unwrap();
 
-    //let expiring_jwt = {
-    //    let api_token = ApiToken {
-    //        // todo: generate random string here
-    //        nonce: None,
-
-    //        audience: "banyan-platform".to_string(),
-    //        subject: fake_account_response.id.clone(),
-
-    //        expiration: get_current_timestamp() + 870,
-    //        not_before: get_current_timestamp() - 30,
-    //    };
-
-    //    let bearer_header = Header {
-    //        alg: Algorithm::ES384,
-    //        kid: Some(fingerprint.clone()),
-    //        ..Default::default()
-    //    };
-
-    //    jsonwebtoken::encode(&bearer_header, &api_token, &jwt_signing_key).unwrap()
-    //};
+    println!("{authenticated_info:?}");
 
     //// Create bucket POST a struct to /api/v1/buckets
     //let bucket_creation_req = BucketCreationRequest {
@@ -159,6 +123,4 @@ async fn main() {
     //    .json()
     //    .await
     //    .unwrap();
-
-    //println!("{publish_response:?}");
 }
