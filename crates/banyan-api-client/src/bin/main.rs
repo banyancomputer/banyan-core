@@ -66,73 +66,18 @@ async fn main() {
     let private_pem = banyan_api_client::fake::create_private_ec_pem();
     let public_pem = banyan_api_client::fake::public_from_private(&private_pem);
 
-    let account_info = api_client
+    let device_key_info = api_client
         .call(banyan_api_client::fake::FakeRegisterDeviceKey {
             token: account_info.token,
-            public_key: public_pem,
+            public_key: public_pem.clone(),
         })
         .await
         .unwrap();
 
-    //// Calculate our fingerprint
-    //let fingerprint: String = {
-    //    let ec_group = EcGroup::from_curve_name(Nid::SECP384R1).unwrap();
-    //    let mut big_num_ctx = BigNumContext::new().unwrap();
+    let fingerprint = banyan_api_client::fake::fingerprint_public_pem(public_pem.as_str());
 
-    //    let ec_pub_key = public_key.ec_key().unwrap();
-    //    let pub_key_bytes = ec_pub_key
-    //        .public_key()
-    //        .to_bytes(
-    //            &ec_group,
-    //            PointConversionForm::COMPRESSED,
-    //            &mut big_num_ctx,
-    //        )
-    //        .unwrap();
-
-    //    let fingerprint_bytes = openssl::sha::sha1(&pub_key_bytes);
-
-    //    fingerprint_bytes
-    //        .iter()
-    //        .map(|byte| format!("{byte:02x}"))
-    //        .collect::<Vec<String>>()
-    //        .join(":")
-    //};
-
-    //// We need the public pem bytes to register with the API
-    //let public_pem = String::from_utf8_lossy(&private_key.public_key_to_pem().unwrap()).to_string();
-
-    //let device_reg_req = DeviceKeyRegistrationRequest {
-    //    public_key: public_pem.clone(),
-    //};
-
-    //// register client/device ec keys POST a struct to /api/v1/auth/register_device_key
-    ////  * uses account token as bearer token in authorization header
-    //let device_raw_response = http_client
-    //    .post("http://127.0.0.1:3001/api/v1/auth/register_device_key")
-    //    .bearer_auth(&fake_account_response.token)
-    //    .json(&device_reg_req)
-    //    .send()
-    //    .await
-    //    .unwrap();
-
-    //let device_key_reg_response: DeviceKeyRegistrationResponse = device_raw_response
-    //    .json()
-    //    .await
-    //    .unwrap();
-
-    //let device_key_reg_response: DeviceKeyRegistrationResponse = http_client
-    //    .post("http://127.0.0.1:3001/api/v1/auth/register_device_key")
-    //    .bearer_auth(&fake_account_response.token)
-    //    .json(&device_reg_req)
-    //    .send()
-    //    .await
-    //    .unwrap()
-    //    .json()
-    //    .await
-    //    .unwrap();
-
-    //assert_eq!(fake_account_response.id, device_key_reg_response.account_id);
-    //assert_eq!(fingerprint, device_key_reg_response.fingerprint);
+    assert_eq!(account_info.id, device_key_info.account_id);
+    assert_eq!(fingerprint, device_key_info.fingerprint);
 
     //// We need the private pem bytes for use with jsonwebtoken's EncodingKey
     //let private_pem = String::from_utf8_lossy(&private_key.private_key_to_pem_pkcs8().unwrap()).to_string();

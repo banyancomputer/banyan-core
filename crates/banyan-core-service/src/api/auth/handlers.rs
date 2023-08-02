@@ -40,8 +40,6 @@ pub async fn create_fake_account(mut db_conn: DbConn, signing_key: SigningKey) -
     .fetch_one(&mut *db_conn.0)
     .await;
 
-    tracing::warn!("{maybe_account:?}");
-
     let created_account = match maybe_account {
         Ok(ca) => ca,
         Err(_) => {
@@ -53,8 +51,6 @@ pub async fn create_fake_account(mut db_conn: DbConn, signing_key: SigningKey) -
         }
     };
 
-    tracing::warn!("{created_account:?}");
-
     let api_token = FakeToken {
         expiration: get_current_timestamp() + FAKE_REGISTRATION_MAXIMUM_DURATION,
         subject: created_account.id.clone(),
@@ -64,8 +60,6 @@ pub async fn create_fake_account(mut db_conn: DbConn, signing_key: SigningKey) -
         alg: Algorithm::ES384,
         ..Default::default()
     };
-
-    tracing::warn!("building");
 
     match encode(&header, &api_token, &signing_key.0) {
         Ok(token) => Json(responses::NewAccount {

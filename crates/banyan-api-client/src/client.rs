@@ -143,9 +143,16 @@ impl ClientBuilder {
     }
 }
 
+impl Default for ClientBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Debug)]
 #[non_exhaustive]
 pub struct ClientError {
+    #[allow(dead_code)]
     kind: ClientErrorKind,
 }
 

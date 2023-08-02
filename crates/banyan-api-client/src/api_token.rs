@@ -51,6 +51,6 @@ impl ApiToken {
             ..Default::default()
         };
 
-        jsonwebtoken::encode(&bearer_header, &self, &signing_key).unwrap()
+        jsonwebtoken::encode(&bearer_header, &self, signing_key).unwrap()
     }
 }

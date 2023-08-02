@@ -14,7 +14,10 @@ use crate::app_state::AppState;
 pub fn router(state: AppState) -> Router<AppState> {
     Router::new()
         .route("/create_fake_account", get(handlers::create_fake_account))
-        .route("/fake_register_device_key", post(handlers::fake_register_device_key))
+        .route(
+            "/fake_register_device_key",
+            post(handlers::fake_register_device_key),
+        )
         .route("/whoami", get(handlers::whoami))
         .with_state(state)
 }
