@@ -6,7 +6,6 @@ use http::Method;
 use serde::Serialize;
 use tower_http::cors::{Any, CorsLayer};
 
-mod auth;
 mod buckets;
 
 use crate::app_state::AppState;
@@ -24,7 +23,6 @@ pub fn router(state: AppState) -> Router<AppState> {
         .allow_credentials(false);
 
     Router::new()
-        .nest("/auth", auth::router(state.clone()))
         .nest("/buckets", buckets::router(state.clone()))
         .with_state(state)
         .layer(cors_layer)
@@ -53,5 +51,4 @@ macro_rules! from_error_impl {
     };
 }
 
-from_error_impl!(auth::AuthError);
 from_error_impl!(buckets::BucketError);
