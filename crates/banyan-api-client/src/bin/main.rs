@@ -1,7 +1,8 @@
+use banyan_api_client::*;
+
 use jsonwebtoken::{get_current_timestamp, Algorithm, Header, EncodingKey};
 use openssl::bn::BigNumContext;
 use openssl::ec::{EcGroup, EcKey, PointConversionForm};
-use openssl::hash::MessageDigest;
 use openssl::nid::Nid;
 use openssl::pkey::{PKey, Private, Public};
 use serde::{Deserialize, Serialize};
@@ -106,6 +107,8 @@ async fn main() {
         let ec_key = EcKey::generate(&ec_group).unwrap();
         ec_key.try_into().unwrap()
     };
+
+    let _client_builder = ClientBuilder::new();
 
     // Get the public key so we can calculate the fingerprint
     let public_key: PKey<Public> = {
@@ -243,5 +246,5 @@ async fn main() {
     //    .await
     //    .unwrap();
 
-    println!("{publish_response:?}");
+    //println!("{publish_response:?}");
 }

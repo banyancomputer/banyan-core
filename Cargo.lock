@@ -192,6 +192,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "banyan-api-client"
+version = "0.1.0"
+dependencies = [
+ "jsonwebtoken",
+ "openssl",
+ "pem 2.0.1",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tokio",
+ "url",
+ "uuid",
+]
+
+[[package]]
 name = "banyan-core-service"
 version = "0.1.0"
 dependencies = [
@@ -2255,20 +2270,6 @@ checksum = "db3737bde7edce97102e0e2b15365bf7a20bfdb5f60f4f9e8d7004258a51a8da"
 dependencies = [
  "unicode-bidi",
  "unicode-normalization",
-]
-
-[[package]]
-name = "stubbed-metadata-client"
-version = "0.1.0"
-dependencies = [
- "jsonwebtoken",
- "openssl",
- "pem 2.0.1",
- "reqwest",
- "serde",
- "serde_json",
- "tokio",
- "uuid",
 ]
 
 [[package]]
