@@ -1,159 +1,122 @@
 use banyan_api_client::prelude::*;
 
-use jsonwebtoken::{get_current_timestamp, Algorithm, Header, EncodingKey};
-use openssl::bn::BigNumContext;
-use openssl::ec::{EcGroup, EcKey, PointConversionForm};
-use openssl::nid::Nid;
-use openssl::pkey::{PKey, Private, Public};
-use serde::{Deserialize, Serialize};
+//use jsonwebtoken::{get_current_timestamp, Algorithm, Header, EncodingKey};
+//use openssl::bn::BigNumContext;
+//use openssl::ec::{EcGroup, EcKey, PointConversionForm};
+//use openssl::nid::Nid;
+//use openssl::pkey::{PKey, Private, Public};
+//use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Deserialize)]
-struct AccountCreationResponse {
-    id: String,
-    token: String,
-}
-
-#[derive(Debug, Serialize)]
-struct ApiToken {
-    #[serde(rename = "nnc")]
-    pub nonce: Option<String>,
-
-    #[serde(rename = "exp")]
-    pub expiration: u64,
-
-    #[serde(rename = "nbf")]
-    pub not_before: u64,
-
-    #[serde(rename = "aud")]
-    pub audience: String,
-
-    #[serde(rename = "sub")]
-    pub subject: String,
-}
-
-#[derive(Debug, Serialize)]
-struct BucketCreationRequest {
-    friendly_name: String,
-    r#type: String,
-    initial_public_key: String,
-}
-
-#[derive(Debug, Deserialize)]
-struct BucketCreationResponse {
-    id: String,
-
-    friendly_name: String,
-    r#type: String,
-
-    root_cid: Option<String>,
-}
-
-#[derive(Debug, Serialize)]
-struct DeviceKeyRegistrationRequest {
-    public_key: String,
-}
-
-#[derive(Debug, Deserialize)]
-struct DeviceKeyRegistrationResponse {
-    id: String,
-    account_id: String,
-    fingerprint: String,
-}
-
-#[derive(Debug, Serialize)]
-struct MetadataPublishRequest {
-    data_size: usize,
-}
-
-#[derive(Debug, Deserialize)]
-struct MetadataPublishResponse {
-    storage: DataStorageDetails,
-}
-
-#[derive(Debug, Deserialize)]
-struct DataStorageDetails {
-    authorization_ticket: String,
-    hosts: Vec<String>
-}
+//#[derive(Debug, Deserialize)]
+//struct AccountCreationResponse {
+//    id: String,
+//    token: String,
+//}
+//
+//#[derive(Debug, Serialize)]
+//struct BucketCreationRequest {
+//    friendly_name: String,
+//    r#type: String,
+//    initial_public_key: String,
+//}
+//
+//#[derive(Debug, Deserialize)]
+//struct BucketCreationResponse {
+//    id: String,
+//
+//    friendly_name: String,
+//    r#type: String,
+//
+//    root_cid: Option<String>,
+//}
+//
+//#[derive(Debug, Serialize)]
+//struct DeviceKeyRegistrationRequest {
+//    public_key: String,
+//}
+//
+//#[derive(Debug, Deserialize)]
+//struct DeviceKeyRegistrationResponse {
+//    id: String,
+//    account_id: String,
+//    fingerprint: String,
+//}
+//
+//#[derive(Debug, Serialize)]
+//struct MetadataPublishRequest {
+//    data_size: usize,
+//}
+//
+//#[derive(Debug, Deserialize)]
+//struct MetadataPublishResponse {
+//    storage: DataStorageDetails,
+//}
+//
+//#[derive(Debug, Deserialize)]
+//struct DataStorageDetails {
+//    authorization_ticket: String,
+//    hosts: Vec<String>
+//}
 
 #[tokio::main]
 async fn main() {
-    let mut default_headers = reqwest::header::HeaderMap::new();
-    default_headers.insert("Content-Type", reqwest::header::HeaderValue::from_static("application/json"));
+    let mut api_client = ClientBuilder::new().build().unwrap();
 
-    let http_client = reqwest::Client::builder()
-        .default_headers(default_headers)
-        .user_agent("banyan-test-client/v0.1")
-        .build()
-        .unwrap();
-
-    // get fake account (get /api/v1/auth/fake_register)
-    //  * will get us account id and account token
-    let fake_raw_response = http_client
-        .get("http://127.0.0.1:3001/api/v1/auth/fake_register")
-        .send()
-        .await
-        .unwrap();
-
-    println!("frr: {:?}", fake_raw_response.text().await.unwrap());
-
-    //let fake_account_response: AccountCreationResponse = fake_raw_response
-    //    .json()
-    //    .await
-    //    .unwrap();
+    let response = api_client.call(banyan_api_client::fake::RegisterFakeAccount).await.unwrap();
+    println!("{response:?}");
 
     // create client/device ec keys
 
     // Get us just the private client/device key we want to be able to get anything we need just
     // from this.
-    let private_key: PKey<Private> = {
-        let ec_group = EcGroup::from_curve_name(Nid::SECP384R1).unwrap();
-        let ec_key = EcKey::generate(&ec_group).unwrap();
-        ec_key.try_into().unwrap()
-    };
+    //let private_key: PKey<Private> = {
+    //    let ec_group = EcGroup::from_curve_name(Nid::SECP384R1).unwrap();
+    //    let ec_key = EcKey::generate(&ec_group).unwrap();
+    //    ec_key.try_into().unwrap()
+    //};
 
-    // Get the public key so we can calculate the fingerprint
-    let public_key: PKey<Public> = {
-        let ec_group = EcGroup::from_curve_name(Nid::SECP384R1).unwrap();
-        let priv_ec_key = private_key.ec_key().unwrap();
-        let pub_ec_key: EcKey<Public> = EcKey::from_public_key(&ec_group, priv_ec_key.public_key()).unwrap();
+    //// Get the public key so we can calculate the fingerprint
+    //let public_key: PKey<Public> = {
+    //    let ec_group = EcGroup::from_curve_name(Nid::SECP384R1).unwrap();
+    //    let priv_ec_key = private_key.ec_key().unwrap();
+    //    let pub_ec_key: EcKey<Public> = EcKey::from_public_key(&ec_group, priv_ec_key.public_key()).unwrap();
 
-        PKey::from_ec_key(pub_ec_key).unwrap()
-    };
+    //    PKey::from_ec_key(pub_ec_key).unwrap()
+    //};
 
-    // Calculate our fingerprint
-    let fingerprint: String = {
-        let ec_group = EcGroup::from_curve_name(Nid::SECP384R1).unwrap();
-        let mut big_num_ctx = BigNumContext::new().unwrap();
+    //// Calculate our fingerprint
+    //let fingerprint: String = {
+    //    let ec_group = EcGroup::from_curve_name(Nid::SECP384R1).unwrap();
+    //    let mut big_num_ctx = BigNumContext::new().unwrap();
 
-        let ec_pub_key = public_key.ec_key().unwrap();
-        let pub_key_bytes = ec_pub_key
-            .public_key()
-            .to_bytes(
-                &ec_group,
-                PointConversionForm::COMPRESSED,
-                &mut big_num_ctx,
-            )
-            .unwrap();
+    //    let ec_pub_key = public_key.ec_key().unwrap();
+    //    let pub_key_bytes = ec_pub_key
+    //        .public_key()
+    //        .to_bytes(
+    //            &ec_group,
+    //            PointConversionForm::COMPRESSED,
+    //            &mut big_num_ctx,
+    //        )
+    //        .unwrap();
 
-        let fingerprint_bytes = openssl::sha::sha1(&pub_key_bytes);
+    //    let fingerprint_bytes = openssl::sha::sha1(&pub_key_bytes);
 
-        fingerprint_bytes
-            .iter()
-            .map(|byte| format!("{byte:02x}"))
-            .collect::<Vec<String>>()
-            .join(":")
-    };
+    //    fingerprint_bytes
+    //        .iter()
+    //        .map(|byte| format!("{byte:02x}"))
+    //        .collect::<Vec<String>>()
+    //        .join(":")
+    //};
 
-    // We need the public pem bytes to register with the API
-    let public_pem = String::from_utf8_lossy(&private_key.public_key_to_pem().unwrap()).to_string();
+    //// We need the public pem bytes to register with the API
+    //let public_pem = String::from_utf8_lossy(&private_key.public_key_to_pem().unwrap()).to_string();
 
-    let device_reg_req = DeviceKeyRegistrationRequest {
-        public_key: public_pem.clone(),
-    };
+    //let device_reg_req = DeviceKeyRegistrationRequest {
+    //    public_key: public_pem.clone(),
+    //};
 
-    // register client/device ec keys POST a struct to /api/v1/auth/register_device_key
-    //  * uses account token as bearer token in authorization header
+    //// register client/device ec keys POST a struct to /api/v1/auth/register_device_key
+    ////  * uses account token as bearer token in authorization header
     //let device_raw_response = http_client
     //    .post("http://127.0.0.1:3001/api/v1/auth/register_device_key")
     //    .bearer_auth(&fake_account_response.token)
@@ -181,16 +144,12 @@ async fn main() {
     //assert_eq!(fake_account_response.id, device_key_reg_response.account_id);
     //assert_eq!(fingerprint, device_key_reg_response.fingerprint);
 
-    // We need the private pem bytes for use with jsonwebtoken's EncodingKey
+    //// We need the private pem bytes for use with jsonwebtoken's EncodingKey
     //let private_pem = String::from_utf8_lossy(&private_key.private_key_to_pem_pkcs8().unwrap()).to_string();
-    // Create an encoding key with the private key
+    //// Create an encoding key with the private key
     //let jwt_signing_key = EncodingKey::from_ec_pem(private_pem.as_bytes()).unwrap();
 
     // From here on out we should be using the client instead of our jank bits
-
-    //let client_builder = ClientBuilder::new()
-    //    .with_encoding_key(jwt_signing_key)
-    //    .build();
 
     //let expiring_jwt = {
     //    let api_token = ApiToken {

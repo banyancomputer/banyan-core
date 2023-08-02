@@ -1,31 +1,57 @@
-use jsonwebtoken::EncodingKey;
+use jsonwebtoken::{get_current_timestamp, EncodingKey};
 
+use crate::api_token::ApiToken;
 use crate::requests::ApiRequest;
 
-//pub type Request = Box<dyn ApiRequest>;
-//
-//pub type Response = Box<dyn ApiResponse>;
-
-struct BearerToken;
+pub struct Credentials {
+    account_id: String,
+    fingerprint: String,
+    signing_key: EncodingKey,
+}
 
 pub struct Client {
     base_url: reqwest::Url,
     client: reqwest::Client,
 
-    encoding_key: Option<EncodingKey>,
-    bearer_token: Option<BearerToken>,
+    bearer_token: Option<(u64, String)>,
+    credentials: Option<Credentials>,
 }
 
 impl Client {
-    fn bearer_token(&self) -> Option<String> {
-        todo!()
+    fn bearer_token(&mut self) -> Option<String> {
+        match &self.bearer_token {
+            // Good to go
+            Some((exp, token)) if exp <= &((get_current_timestamp() - 15)) => Some(token.clone()),
+            // Either expired or not yet generated
+            _ => {
+                if let Some(credentials) = &self.credentials {
+                    let api_token = ApiToken::new("banyan-platform", &credentials.account_id);
+                    let expiration = api_token.expiration();
+                    let signed_token = api_token.sign(&credentials.fingerprint, &credentials.signing_key);
+
+                    self.bearer_token = Some((expiration, signed_token.clone()));
+
+                    return Some(signed_token);
+                }
+
+                None
+            },
+        }
     }
 
-    pub fn new(base_url: reqwest::Url, encoding_key: Option<EncodingKey>) -> Self {
+    pub fn set_credentials(&mut self, account_id: String, fingerprint: String, signing_key: EncodingKey) {
+        self.credentials = Some(Credentials {
+            account_id,
+            fingerprint,
+            signing_key,
+        });
+    }
+
+    pub fn new(base_url: reqwest::Url, credentials: Option<Credentials>) -> Self {
         let mut default_headers = reqwest::header::HeaderMap::new();
         default_headers.insert("Content-Type", reqwest::header::HeaderValue::from_static("application/json"));
 
-        let mut client = reqwest::Client::builder()
+        let client = reqwest::Client::builder()
             .default_headers(default_headers)
             .user_agent("banyan-api-client/0.1.0")
             .build()
@@ -35,12 +61,12 @@ impl Client {
             base_url,
             client,
 
-            encoding_key,
             bearer_token: None,
+            credentials,
         }
     }
 
-    pub async fn call<T: ApiRequest>(&self, request: T) -> Result<T::ResponseType, ClientError> {
+    pub async fn call<T: ApiRequest>(&mut self, request: T) -> Result<T::ResponseType, ClientError> {
         if request.requires_authentication() && !self.has_authentication() {
             return Err(ClientError::auth_unavailable());
         }
@@ -48,7 +74,8 @@ impl Client {
         let mut request_builder = request.build_request(&self.base_url, &self.client);
 
         if request.requires_authentication() {
-            request_builder = request_builder.bearer_auth(self.bearer_token().unwrap());
+            let bearer_token = self.bearer_token().unwrap();
+            request_builder = request_builder.bearer_auth(bearer_token);
         }
 
         let response = request_builder.send().await.map_err(ClientError::http_error)?;
@@ -63,35 +90,35 @@ impl Client {
     }
 
     fn has_authentication(&self) -> bool {
-        self.encoding_key.is_some()
+        self.credentials.is_some()
     }
 }
 
 pub struct ClientBuilder {
     base_url: reqwest::Url,
-    encoding_key: Option<EncodingKey>,
+    credentials: Option<Credentials>,
 }
 
 impl ClientBuilder {
-    pub fn build(mut self) -> Result<Client, &'static str> {
-        Ok(Client::new(self.base_url, self.encoding_key))
+    pub fn credentials(mut self, credentials: Credentials) -> Self {
+        self.credentials = Some(credentials);
+        self
+    }
+
+    pub fn build(self) -> Result<Client, &'static str> {
+        Ok(Client::new(self.base_url, self.credentials))
+    }
+
+    pub fn base_url(mut self, url: reqwest::Url) -> Self {
+        self.base_url = url;
+        self
     }
 
     pub fn new() -> Self {
         Self {
             base_url: reqwest::Url::parse("http://127.0.0.1:3001").unwrap(),
-            encoding_key: None,
+            credentials: None,
         }
-    }
-
-    pub fn with_base_url(mut self, url: reqwest::Url) -> Self {
-        self.base_url = url;
-        self
-    }
-
-    pub fn with_encoding_key(mut self, encoding_key: EncodingKey) -> Self {
-        self.encoding_key = Some(encoding_key);
-        self
     }
 }
 

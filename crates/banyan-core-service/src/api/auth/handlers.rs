@@ -13,7 +13,7 @@ use crate::extractors::{ApiToken, DbConn, FakeToken, SigningKey};
 
 const FAKE_REGISTRATION_MAXIMUM_DURATION: u64 = 60 * 60 * 24 * 28; // four weeks, should be good enough between env resets
 
-pub async fn fake_register(mut db_conn: DbConn, signing_key: SigningKey) -> Response {
+pub async fn create_fake_account(mut db_conn: DbConn, signing_key: SigningKey) -> Response {
     let maybe_account = sqlx::query_as!(
         models::CreatedAccount,
         r#"INSERT INTO accounts DEFAULT VALUES RETURNING id;"#
