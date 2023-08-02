@@ -93,7 +93,7 @@ where
         )
         .fetch_one(&mut *db_conn.0)
         .await
-        .map_err(|err| ApiKeyAuthorizationError::device_api_key_not_found(err))?;
+        .map_err(ApiKeyAuthorizationError::device_api_key_not_found)?;
 
         let key = DecodingKey::from_ec_pem(db_device_api_key.pem.as_bytes()).expect("success");
 
