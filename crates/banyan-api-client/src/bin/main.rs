@@ -1,21 +1,7 @@
+use std::path::PathBuf;
+
 use banyan_api_client::prelude::*;
 use jsonwebtoken::EncodingKey;
-
-//#[derive(Debug, Serialize)]
-//struct MetadataPublishRequest {
-//    data_size: usize,
-//}
-
-//#[derive(Debug, Deserialize)]
-//struct MetadataPublishResponse {
-//    storage: DataStorageDetails,
-//}
-
-//#[derive(Debug, Deserialize)]
-//struct DataStorageDetails {
-//    authorization_ticket: String,
-//    hosts: Vec<String>
-//}
 
 #[tokio::main]
 async fn main() {
@@ -62,35 +48,13 @@ async fn main() {
 
     println!("{bucket_info:?}");
 
-    //// publish bucket metadata to /api/v1/buckets/{uuid]/publish
-    ////  * should read and validate the key metadata to ensure expected keys are present
-    ////  * should scan the car file for number of blocks contained and return that
-    ////  * metadata should be in a pending state until data has been received by storage host
-    ////  * will return a storage grant for the bucket/metadata with the storage host
-    //let multipart_json_data = serde_json::to_string(&MetadataPublishRequest {
-    //    data_size: 1_342_100,
-    //}).unwrap();
+    let publish_details = api_client.call(PublishBucketMetadata {
+            bucket_id: bucket_info.id.clone(),
+            metadata_path: PathBuf::from("./path/to/file.car"),
+            expected_data_size: 1_567_129,
+        })
+        .await
+        .unwrap();
 
-    // todo: need to workaround reqwest's multipart limitations
-
-    //let multipart_json = reqwest::multipart::Part::bytes(multipart_json_data.as_bytes().to_vec())
-    //    .mime_str("application/json")
-    //    .unwrap();
-
-    //let multipart_car_data = "some random contents for the car file...";
-    //let multipart_car = reqwest::multipart::Part::bytes(multipart_car_data.as_bytes().to_vec())
-    //    .mime_str("application/vnd.ipld.car; version=2")
-    //    .unwrap();
-
-    //let publish_response: MetadataPublishResponse = http_client
-    //    .post(format!("http://127.0.0.1:3001/api/v1/buckets/{}/publish", bucket_creation_resp.id))
-    //    .bearer_auth(&expiring_jwt)
-    //    .multipart(reqwest::multipart::Form::part(multipart_json))
-    //    .multipart(reqwest::multipart::Form::part(multipart_car))
-    //    .send()
-    //    .await
-    //    .unwrap()
-    //    .json()
-    //    .await
-    //    .unwrap();
+    println!("{publish_details:?}");
 }

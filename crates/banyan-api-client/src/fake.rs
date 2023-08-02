@@ -99,10 +99,15 @@ impl ApiRequest for FakeRegisterDeviceKey {
             public_key: self.public_key.clone(),
         };
 
-        let req_builder = inner_req.build_request(base_url, client);
+        let full_url = base_url
+            .join("/api/v1/auth/fake_register_device_key")
+            .unwrap();
 
         // We have to setup our own auth as we're not using the normal one for this request...
-        req_builder.bearer_auth(&self.token)
+        client
+            .post(full_url)
+            .bearer_auth(&self.token)
+            .json(&inner_req)
     }
 
     fn requires_authentication(&self) -> bool {
@@ -113,22 +118,6 @@ impl ApiRequest for FakeRegisterDeviceKey {
 #[derive(Debug, Serialize)]
 struct FakeRegisterDeviceKeyRequest {
     public_key: String,
-}
-
-impl ApiRequest for FakeRegisterDeviceKeyRequest {
-    type ResponseType = FakeRegisterDeviceKeyResponse;
-    type ErrorType = FakeRegisterDeviceKeyError;
-
-    fn build_request(&self, base_url: &Url, client: &Client) -> RequestBuilder {
-        let full_url = base_url
-            .join("/api/v1/auth/fake_register_device_key")
-            .unwrap();
-        client.post(full_url).json(self)
-    }
-
-    fn requires_authentication(&self) -> bool {
-        false
-    }
 }
 
 #[derive(Debug, Deserialize)]

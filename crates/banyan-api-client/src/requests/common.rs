@@ -6,3 +6,12 @@ pub enum BucketType {
     Backup,
     Interactive,
 }
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum MetadataState {
+    WaitingForData,
+    Current,
+    Outdated,
+    Deleted,
+}

@@ -7,10 +7,12 @@ use serde::Deserialize;
 
 mod common;
 mod create_bucket;
+mod publish_bucket_metadata;
 mod whoami;
 
 pub use common::*;
 pub use create_bucket::*;
+pub use publish_bucket_metadata::*;
 pub use whoami::*;
 
 pub trait ApiRequest {
