@@ -41,11 +41,6 @@ curl -X POST \
 
 7. Navigate to [http://localhost:3000](http://localhost:3000) in your browser. Login with google.
 
-8. Set you user email in the env
-```bash
-export USER_EMAIL=<your_google_email>
-```
-
 ## Running Tests
 ### prepare test scripts
 ```bash
@@ -59,7 +54,13 @@ Register a device to use for testing:
 ./scripts/register_test.sh
 ```
 
-Run the auth test:
+You should see a JSON response that contains an account id in your browser.
+Make sure to export the account id as an environment variable:
+```bash
+export ACCOUNT_ID=<account_id>
+```
+
+Now you can run the auth test:
 ```bash
 ./scripts/auth_test.sh
 ```
