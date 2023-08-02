@@ -1,4 +1,4 @@
-use banyan_api_client::*;
+use banyan_api_client::prelude::*;
 
 use jsonwebtoken::{get_current_timestamp, Algorithm, Header, EncodingKey};
 use openssl::bn::BigNumContext;
@@ -6,6 +6,12 @@ use openssl::ec::{EcGroup, EcKey, PointConversionForm};
 use openssl::nid::Nid;
 use openssl::pkey::{PKey, Private, Public};
 use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Deserialize)]
+struct AccountCreationResponse {
+    id: String,
+    token: String,
+}
 
 #[derive(Debug, Serialize)]
 struct ApiToken {
@@ -23,12 +29,6 @@ struct ApiToken {
 
     #[serde(rename = "sub")]
     pub subject: String,
-}
-
-#[derive(Debug, Deserialize)]
-struct AccountCreationResponse {
-    id: String,
-    token: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -89,14 +89,18 @@ async fn main() {
 
     // get fake account (get /api/v1/auth/fake_register)
     //  * will get us account id and account token
-    let fake_account_response: AccountCreationResponse = http_client
-        .get("http://127.0.0.1:3000/api/v1/auth/fake_register")
+    let fake_raw_response = http_client
+        .get("http://127.0.0.1:3001/api/v1/auth/fake_register")
         .send()
         .await
-        .unwrap()
-        .json()
-        .await
         .unwrap();
+
+    println!("frr: {:?}", fake_raw_response.text().await.unwrap());
+
+    //let fake_account_response: AccountCreationResponse = fake_raw_response
+    //    .json()
+    //    .await
+    //    .unwrap();
 
     // create client/device ec keys
 
@@ -107,8 +111,6 @@ async fn main() {
         let ec_key = EcKey::generate(&ec_group).unwrap();
         ec_key.try_into().unwrap()
     };
-
-    let _client_builder = ClientBuilder::new();
 
     // Get the public key so we can calculate the fingerprint
     let public_key: PKey<Public> = {
@@ -152,76 +154,95 @@ async fn main() {
 
     // register client/device ec keys POST a struct to /api/v1/auth/register_device_key
     //  * uses account token as bearer token in authorization header
-    let device_key_reg_response: DeviceKeyRegistrationResponse = http_client
-        .post("http://127.0.0.1:3000/api/v1/auth/register_device_key")
-        .bearer_auth(&fake_account_response.token)
-        .json(&device_reg_req)
-        .send()
-        .await
-        .unwrap()
-        .json()
-        .await
-        .unwrap();
+    //let device_raw_response = http_client
+    //    .post("http://127.0.0.1:3001/api/v1/auth/register_device_key")
+    //    .bearer_auth(&fake_account_response.token)
+    //    .json(&device_reg_req)
+    //    .send()
+    //    .await
+    //    .unwrap();
 
-    assert_eq!(fake_account_response.id, device_key_reg_response.account_id);
-    assert_eq!(fingerprint, device_key_reg_response.fingerprint);
+    //let device_key_reg_response: DeviceKeyRegistrationResponse = device_raw_response
+    //    .json()
+    //    .await
+    //    .unwrap();
+
+    //let device_key_reg_response: DeviceKeyRegistrationResponse = http_client
+    //    .post("http://127.0.0.1:3001/api/v1/auth/register_device_key")
+    //    .bearer_auth(&fake_account_response.token)
+    //    .json(&device_reg_req)
+    //    .send()
+    //    .await
+    //    .unwrap()
+    //    .json()
+    //    .await
+    //    .unwrap();
+
+    //assert_eq!(fake_account_response.id, device_key_reg_response.account_id);
+    //assert_eq!(fingerprint, device_key_reg_response.fingerprint);
 
     // We need the private pem bytes for use with jsonwebtoken's EncodingKey
-    let private_pem = String::from_utf8_lossy(&private_key.private_key_to_pem_pkcs8().unwrap()).to_string();
+    //let private_pem = String::from_utf8_lossy(&private_key.private_key_to_pem_pkcs8().unwrap()).to_string();
     // Create an encoding key with the private key
-    let jwt_signing_key = EncodingKey::from_ec_pem(private_pem.as_bytes()).unwrap();
+    //let jwt_signing_key = EncodingKey::from_ec_pem(private_pem.as_bytes()).unwrap();
 
-    let expiring_jwt = {
-        let api_token = ApiToken {
-            // todo: generate random string here
-            nonce: None,
+    // From here on out we should be using the client instead of our jank bits
 
-            audience: "banyan-platform".to_string(),
-            subject: fake_account_response.id.clone(),
+    //let client_builder = ClientBuilder::new()
+    //    .with_encoding_key(jwt_signing_key)
+    //    .build();
 
-            expiration: get_current_timestamp() + 870,
-            not_before: get_current_timestamp() - 30,
-        };
+    //let expiring_jwt = {
+    //    let api_token = ApiToken {
+    //        // todo: generate random string here
+    //        nonce: None,
 
-        let bearer_header = Header {
-            alg: Algorithm::ES384,
-            kid: Some(fingerprint.clone()),
-            ..Default::default()
-        };
+    //        audience: "banyan-platform".to_string(),
+    //        subject: fake_account_response.id.clone(),
 
-        jsonwebtoken::encode(&bearer_header, &api_token, &jwt_signing_key).unwrap()
-    };
+    //        expiration: get_current_timestamp() + 870,
+    //        not_before: get_current_timestamp() - 30,
+    //    };
 
-    // Create bucket POST a struct to /api/v1/buckets
-    let bucket_creation_req = BucketCreationRequest {
-        friendly_name: "A simple test interactive bucket".to_string(),
-        r#type: "interactive".to_string(),
-        initial_public_key: public_pem.clone(),
-    };
+    //    let bearer_header = Header {
+    //        alg: Algorithm::ES384,
+    //        kid: Some(fingerprint.clone()),
+    //        ..Default::default()
+    //    };
 
-    let bucket_creation_resp: BucketCreationResponse = http_client
-        .post("http://127.0.0.1:3000/api/v1/buckets")
-        .bearer_auth(&expiring_jwt)
-        .json(&bucket_creation_req)
-        .send()
-        .await
-        .unwrap()
-        .json()
-        .await
-        .unwrap();
+    //    jsonwebtoken::encode(&bearer_header, &api_token, &jwt_signing_key).unwrap()
+    //};
 
-    assert_eq!(bucket_creation_req.friendly_name, bucket_creation_resp.friendly_name);
-    assert_eq!(bucket_creation_req.r#type, bucket_creation_resp.r#type);
+    //// Create bucket POST a struct to /api/v1/buckets
+    //let bucket_creation_req = BucketCreationRequest {
+    //    friendly_name: "A simple test interactive bucket".to_string(),
+    //    r#type: "interactive".to_string(),
+    //    initial_public_key: public_pem.clone(),
+    //};
+
+    //let bucket_creation_resp: BucketCreationResponse = http_client
+    //    .post("http://127.0.0.1:3001/api/v1/buckets")
+    //    .bearer_auth(&expiring_jwt)
+    //    .json(&bucket_creation_req)
+    //    .send()
+    //    .await
+    //    .unwrap()
+    //    .json()
+    //    .await
+    //    .unwrap();
+
+    //assert_eq!(bucket_creation_req.friendly_name, bucket_creation_resp.friendly_name);
+    //assert_eq!(bucket_creation_req.r#type, bucket_creation_resp.r#type);
 
 
-    // publish bucket metadata to /api/v1/buckets/{uuid]/publish
-    //  * should read and validate the key metadata to ensure expected keys are present
-    //  * should scan the car file for number of blocks contained and return that
-    //  * metadata should be in a pending state until data has been received by storage host
-    //  * will return a storage grant for the bucket/metadata with the storage host
-    let multipart_json_data = serde_json::to_string(&MetadataPublishRequest {
-        data_size: 1_342_100,
-    }).unwrap();
+    //// publish bucket metadata to /api/v1/buckets/{uuid]/publish
+    ////  * should read and validate the key metadata to ensure expected keys are present
+    ////  * should scan the car file for number of blocks contained and return that
+    ////  * metadata should be in a pending state until data has been received by storage host
+    ////  * will return a storage grant for the bucket/metadata with the storage host
+    //let multipart_json_data = serde_json::to_string(&MetadataPublishRequest {
+    //    data_size: 1_342_100,
+    //}).unwrap();
 
     // todo: need to workaround reqwest's multipart limitations
 
@@ -235,7 +256,7 @@ async fn main() {
     //    .unwrap();
 
     //let publish_response: MetadataPublishResponse = http_client
-    //    .post(format!("http://127.0.0.1:3000/api/v1/buckets/{}/publish", bucket_creation_resp.id))
+    //    .post(format!("http://127.0.0.1:3001/api/v1/buckets/{}/publish", bucket_creation_resp.id))
     //    .bearer_auth(&expiring_jwt)
     //    .multipart(reqwest::multipart::Form::part(multipart_json))
     //    .multipart(reqwest::multipart::Form::part(multipart_car))

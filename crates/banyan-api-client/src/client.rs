@@ -12,7 +12,7 @@ pub struct Client {
     base_url: reqwest::Url,
     client: reqwest::Client,
 
-    ec_key: Option<EncodingKey>,
+    encoding_key: Option<EncodingKey>,
     bearer_token: Option<BearerToken>,
 }
 
@@ -21,7 +21,7 @@ impl Client {
         todo!()
     }
 
-    pub fn new(base_url: reqwest::Url) -> Self {
+    pub fn new(base_url: reqwest::Url, encoding_key: Option<EncodingKey>) -> Self {
         let mut default_headers = reqwest::header::HeaderMap::new();
         default_headers.insert("Content-Type", reqwest::header::HeaderValue::from_static("application/json"));
 
@@ -35,7 +35,7 @@ impl Client {
             base_url,
             client,
 
-            ec_key: None,
+            encoding_key,
             bearer_token: None,
         }
     }
@@ -63,18 +63,39 @@ impl Client {
     }
 
     fn has_authentication(&self) -> bool {
-        self.ec_key.is_some()
+        self.encoding_key.is_some()
     }
 }
 
-pub struct ClientBuilder;
+pub struct ClientBuilder {
+    base_url: reqwest::Url,
+    encoding_key: Option<EncodingKey>,
+}
 
 impl ClientBuilder {
+    pub fn build(mut self) -> Result<Client, &'static str> {
+        Ok(Client::new(self.base_url, self.encoding_key))
+    }
+
     pub fn new() -> Self {
-        Self
+        Self {
+            base_url: reqwest::Url::parse("http://127.0.0.1:3001").unwrap(),
+            encoding_key: None,
+        }
+    }
+
+    pub fn with_base_url(mut self, url: reqwest::Url) -> Self {
+        self.base_url = url;
+        self
+    }
+
+    pub fn with_encoding_key(mut self, encoding_key: EncodingKey) -> Self {
+        self.encoding_key = Some(encoding_key);
+        self
     }
 }
 
+#[derive(Debug)]
 #[non_exhaustive]
 pub struct ClientError {
     kind: ClientErrorKind,
@@ -108,6 +129,7 @@ impl From<Box<dyn std::error::Error + Send + Sync + 'static>> for ClientError {
     }
 }
 
+#[derive(Debug)]
 #[non_exhaustive]
 enum ClientErrorKind {
     ApiResponseError(Box<dyn std::error::Error + Send + Sync + 'static>),

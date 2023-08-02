@@ -1,4 +1,3 @@
 mod client;
+pub mod prelude;
 mod requests;
-
-pub use client::ClientBuilder;

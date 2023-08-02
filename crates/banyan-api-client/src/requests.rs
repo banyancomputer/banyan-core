@@ -6,6 +6,8 @@ use serde::de::DeserializeOwned;
 mod create_bucket;
 mod whoami;
 
+pub use whoami::{WhoAmI, WhoAmIError, WhoAmIResponse};
+
 pub trait ApiRequest {
     type ResponseType: DeserializeOwned;
     type ErrorType: DeserializeOwned + Error + Send + Sync + 'static;
