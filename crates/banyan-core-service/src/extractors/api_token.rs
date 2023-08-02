@@ -61,7 +61,6 @@ where
             .extract::<TypedHeader<Authorization<Bearer>>>()
             .await
             .map_err(ApiKeyAuthorizationError::missing_header)?;
-
         let mut token_validator = Validation::new(Algorithm::ES384);
 
         // Allow +/- 20 sec clock skew off the expiration and not before time
@@ -94,8 +93,7 @@ where
         )
         .fetch_one(&mut *db_conn.0)
         .await
-        // todo: proper error mapping
-        .map_err(|_| ApiKeyAuthorizationError::database_unavailable())?;
+        .map_err(ApiKeyAuthorizationError::device_api_key_not_found)?;
 
         let key = DecodingKey::from_ec_pem(db_device_api_key.pem.as_bytes()).expect("success");
 
@@ -185,6 +183,12 @@ impl ApiKeyAuthorizationError {
             kind: ApiKeyAuthorizationErrorKind::UnidentifiedKey,
         }
     }
+
+    pub fn device_api_key_not_found(err: sqlx::Error) -> Self {
+        Self {
+            kind: ApiKeyAuthorizationErrorKind::DeviceApiKeyNotFound(err),
+        }
+    }
 }
 
 impl Display for ApiKeyAuthorizationError {
@@ -194,6 +198,7 @@ impl Display for ApiKeyAuthorizationError {
         let msg = match self.kind {
             BadKeyFormat => "key format in JWT header wasn't valid",
             DatabaseUnavailable => "unable to lookup identity in database",
+            DeviceApiKeyNotFound(_) => "unable to lookup device API key in database",
             ExtremeTokenValidity => "the provided token's validity range is outside our allowed range",
             FormatError(_) => "format of the provide bearer token didn't meet our requirements",
             InternalCryptographyIssue(_) => "there was an internal cryptographic issue due too a code or configuration issue",
@@ -219,6 +224,7 @@ impl std::error::Error for ApiKeyAuthorizationError {
             MaliciousConstruction(err) => Some(err),
             MissingHeader(err) => Some(err),
             UnknownTokenError(err) => Some(err),
+            DeviceApiKeyNotFound(err) => Some(err),
             _ => None,
         }
     }
@@ -240,6 +246,7 @@ impl IntoResponse for ApiKeyAuthorizationError {
 enum ApiKeyAuthorizationErrorKind {
     BadKeyFormat,
     DatabaseUnavailable,
+    DeviceApiKeyNotFound(sqlx::Error),
     ExtremeTokenValidity,
     FormatError(jsonwebtoken::errors::Error),
     InternalCryptographyIssue(jsonwebtoken::errors::Error),
