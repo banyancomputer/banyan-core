@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT account_id, public_key FROM device_api_keys WHERE fingerprint = $1",
+  "query": "SELECT account_id, pem FROM device_api_keys WHERE fingerprint = $1",
   "describe": {
     "columns": [
       {
@@ -9,7 +9,7 @@
         "type_info": "Text"
       },
       {
-        "name": "public_key",
+        "name": "pem",
         "ordinal": 1,
         "type_info": "Text"
       }
@@ -22,5 +22,5 @@
       false
     ]
   },
-  "hash": "f227a65211b7e337520df4fa4a64c29ed84c0ae28039ef17ab1ed04e02f61c79"
+  "hash": "07b14e4f522ad40e01a10499460a3a81db965a914c639c39e64346cf32eccf18"
 }

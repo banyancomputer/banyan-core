@@ -34,7 +34,7 @@ pub struct MinimalBucket {
 pub struct PublicKeySummary {
     pub approved: bool,
     pub fingerprint: String,
-    pub public_key: String,
+    pub pem: String,
 }
 
 #[derive(Serialize)]
