@@ -112,7 +112,7 @@ pub async fn run(app_state: AppState) -> anyhow::Result<()> {
         .with_state(app_state)
         .fallback(not_found_handler);
 
-    let addr: SocketAddr = "[::]:3000".parse()?;
+    let addr: SocketAddr = "[::]:3001".parse()?;
     let app = middleware_stack.service(root_router);
 
     tracing::info!(addr = ?addr, "server listening");

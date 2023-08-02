@@ -61,10 +61,10 @@ pub async fn register_device_key(
     extract::Json(new_device_key): extract::Json<requests::RegisterDeviceKey>,
 ) -> Response {
     let account_id = api_token.subject;
-    let public_key_to_register = new_device_key.public_key();
+    let pem_to_register = new_device_key.public_key();
 
     let parsed_public_key =
-        PKey::public_key_from_pem(public_key_to_register.as_ref()).expect("parsing public key");
+        PKey::public_key_from_pem(pem_to_register.as_ref()).expect("parsing public key");
     let ec_key = parsed_public_key.ec_key().unwrap();
     let ec_group = ec_key.group();
     let mut big_num_context = BigNumContext::new().expect("big number context");
@@ -86,10 +86,10 @@ pub async fn register_device_key(
 
     let maybe_device_key = sqlx::query_as!(
         models::CreatedDeviceKey,
-        r#"INSERT INTO device_api_keys (account_id, fingerprint, public_key) VALUES ($1, $2, $3) RETURNING id;"#,
+        r#"INSERT INTO device_api_keys (account_id, fingerprint, pem) VALUES ($1, $2, $3) RETURNING id;"#,
         account_id,
         fingerprint,
-        public_key_to_register
+        pem_to_register
     )
     .fetch_one(&mut *db_conn.0)
     .await;

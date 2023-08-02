@@ -219,12 +219,12 @@ pub async fn show(
             responses::PublicKeySummary {
                 approved: true,
                 fingerprint: "<pending>".to_string(),
-                public_key: "<full public key>".to_string(),
+                pem: "<full public key>".to_string(),
             },
             responses::PublicKeySummary {
                 approved: false,
                 fingerprint: "<pending>".to_string(),
-                public_key: "<full public key>".to_string(),
+                pem: "<full public key>".to_string(),
             },
         ],
     };

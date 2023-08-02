@@ -19,8 +19,7 @@ use crate::extractors::DbConn;
 pub const EXPIRATION_WINDOW_SECS: u64 = 900;
 
 static KEY_ID_VALIDATOR: OnceLock<regex::Regex> = OnceLock::new();
-
-const KEY_REGEX: &str = r"^[0-9a-f]{2}(:[0-9a-f]{2}){19}$";
+const KEY_ID_REGEX: &str = r"^[0-9a-f]{2}(:[0-9a-f]{2}){19}$";
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -42,9 +41,9 @@ pub struct ApiToken {
 }
 
 #[derive(sqlx::FromRow)]
-struct DbKey {
+struct DeviceApiKey {
     account_id: String,
-    public_key: String,
+    pem: String,
 }
 
 #[async_trait]
@@ -56,7 +55,7 @@ where
     type Rejection = ApiKeyAuthorizationError;
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        let key_regex = KEY_ID_VALIDATOR.get_or_init(|| regex::Regex::new(KEY_REGEX).unwrap());
+        let key_regex = KEY_ID_VALIDATOR.get_or_init(|| regex::Regex::new(KEY_ID_REGEX).unwrap());
 
         let TypedHeader(Authorization(bearer)) = parts
             .extract::<TypedHeader<Authorization<Bearer>>>()
@@ -88,9 +87,9 @@ where
             .await
             .map_err(|_| ApiKeyAuthorizationError::database_unavailable())?;
 
-        let db_key = sqlx::query_as!(
-            DbKey,
-            "SELECT account_id, public_key FROM device_api_keys WHERE fingerprint = $1",
+        let db_device_api_key = sqlx::query_as!(
+            DeviceApiKey,
+            "SELECT account_id, pem FROM device_api_keys WHERE fingerprint = $1",
             key_id
         )
         .fetch_one(&mut *db_conn.0)
@@ -98,7 +97,7 @@ where
         // todo: proper error mapping
         .map_err(|_| ApiKeyAuthorizationError::database_unavailable())?;
 
-        let key = DecodingKey::from_ec_pem(db_key.public_key.as_bytes()).expect("success");
+        let key = DecodingKey::from_ec_pem(db_device_api_key.pem.as_bytes()).expect("success");
 
         // todo: we probably want to use device keys to sign this instead of a
         // static AES key, this works for now
@@ -124,7 +123,7 @@ where
             }
         }
 
-        if db_key.account_id != claims.subject {
+        if db_device_api_key.account_id != claims.subject {
             return Err(ApiKeyAuthorizationError {
                 kind: ApiKeyAuthorizationErrorKind::MismatchedSubject,
             });

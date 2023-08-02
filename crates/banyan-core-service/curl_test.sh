@@ -3,7 +3,8 @@
 set -o errexit
 set -o pipefail
 
-BASE_HOST="http://127.0.0.1:3000"
+AUTH_HOST="http://127.0.0.1:3000"
+BASE_HOST="http://127.0.0.1:3001"
 
 TMP_CERT_DIR="/tmp/ec_certs_gen"
 PRIVATE_EC_CLIENT_KEY_PATH="${TMP_CERT_DIR}/private.ec.key"

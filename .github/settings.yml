@@ -51,3 +51,6 @@ teams:
   # Main developers of this repository
   - name: internal-engineers
     permission: push
+  # Allow external contractors we've allowed to push to this repo
+  - name: external-contractors
+    permission: push
