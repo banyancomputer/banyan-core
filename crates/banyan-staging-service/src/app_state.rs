@@ -20,9 +20,7 @@ impl AppState {
         LocalFileSystem::new_with_prefix(&upload_directory)
             .map_err(StateError::inaccessible_upload_directory)?;
 
-        Ok(Self {
-            upload_directory,
-        })
+        Ok(Self { upload_directory })
     }
 
     pub fn upload_directory(&self) -> &PathBuf {

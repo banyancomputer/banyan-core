@@ -31,7 +31,7 @@ impl std::error::Error for StateError {
         use StateErrorKind::*;
 
         match &self.kind {
-           InaccessibleUploadDirectory(err) => Some(err),
+            InaccessibleUploadDirectory(err) => Some(err),
         }
     }
 }
