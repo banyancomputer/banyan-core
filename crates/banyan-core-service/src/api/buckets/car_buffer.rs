@@ -24,7 +24,11 @@ impl CarBuffer {
         self.state = match std::mem::replace(&mut self.state, BufferState::Empty) {
             // This is the first chunk
             BufferState::Empty => {
-                let data = bytes.clone().into_iter().take(SCANNED_CAR_CAPACITY).collect();
+                let data = bytes
+                    .clone()
+                    .into_iter()
+                    .take(SCANNED_CAR_CAPACITY)
+                    .collect();
                 BufferState::Buffering(data)
             }
             // We've already some data, we just need to extend it to cover as much as possible
@@ -36,7 +40,7 @@ impl CarBuffer {
                 vec.extend(bytes.slice(0..consumable_bytes));
 
                 BufferState::Buffering(vec)
-            },
+            }
             _ => panic!("we already checked for done"),
         };
     }

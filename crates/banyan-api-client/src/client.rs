@@ -21,13 +21,14 @@ impl Client {
     fn bearer_token(&mut self) -> Option<String> {
         match &self.bearer_token {
             // Good to go
-            Some((exp, token)) if exp <= &((get_current_timestamp() - 15)) => Some(token.clone()),
+            Some((exp, token)) if exp <= &(get_current_timestamp() - 15) => Some(token.clone()),
             // Either expired or not yet generated
             _ => {
                 if let Some(credentials) = &self.credentials {
                     let api_token = ApiToken::new("banyan-platform", &credentials.account_id);
                     let expiration = api_token.expiration();
-                    let signed_token = api_token.sign(&credentials.fingerprint, &credentials.signing_key);
+                    let signed_token =
+                        api_token.sign(&credentials.fingerprint, &credentials.signing_key);
 
                     self.bearer_token = Some((expiration, signed_token.clone()));
 
@@ -35,11 +36,16 @@ impl Client {
                 }
 
                 None
-            },
+            }
         }
     }
 
-    pub fn set_credentials(&mut self, account_id: String, fingerprint: String, signing_key: EncodingKey) {
+    pub fn set_credentials(
+        &mut self,
+        account_id: String,
+        fingerprint: String,
+        signing_key: EncodingKey,
+    ) {
         self.credentials = Some(Credentials {
             account_id,
             fingerprint,
@@ -49,7 +55,10 @@ impl Client {
 
     pub fn new(base_url: reqwest::Url, credentials: Option<Credentials>) -> Self {
         let mut default_headers = reqwest::header::HeaderMap::new();
-        default_headers.insert("Content-Type", reqwest::header::HeaderValue::from_static("application/json"));
+        default_headers.insert(
+            "Content-Type",
+            reqwest::header::HeaderValue::from_static("application/json"),
+        );
 
         let client = reqwest::Client::builder()
             .default_headers(default_headers)
@@ -66,7 +75,10 @@ impl Client {
         }
     }
 
-    pub async fn call<T: ApiRequest>(&mut self, request: T) -> Result<T::ResponseType, ClientError> {
+    pub async fn call<T: ApiRequest>(
+        &mut self,
+        request: T,
+    ) -> Result<T::ResponseType, ClientError> {
         if request.requires_authentication() && !self.has_authentication() {
             return Err(ClientError::auth_unavailable());
         }
@@ -78,12 +90,21 @@ impl Client {
             request_builder = request_builder.bearer_auth(bearer_token);
         }
 
-        let response = request_builder.send().await.map_err(ClientError::http_error)?;
+        let response = request_builder
+            .send()
+            .await
+            .map_err(ClientError::http_error)?;
 
         if response.status().is_success() {
-            response.json::<T::ResponseType>().await.map_err(ClientError::bad_format)
+            response
+                .json::<T::ResponseType>()
+                .await
+                .map_err(ClientError::bad_format)
         } else {
-            let err = response.json::<T::ErrorType>().await.map_err(ClientError::bad_format)?;
+            let err = response
+                .json::<T::ErrorType>()
+                .await
+                .map_err(ClientError::bad_format)?;
             let err = Box::new(err) as Box<dyn std::error::Error + Send + Sync + 'static>;
             Err(ClientError::from(err))
         }

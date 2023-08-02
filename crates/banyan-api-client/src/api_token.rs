@@ -1,6 +1,6 @@
-use jsonwebtoken::{get_current_timestamp, Algorithm, Header, EncodingKey};
-use rand::Rng;
+use jsonwebtoken::{get_current_timestamp, Algorithm, EncodingKey, Header};
 use rand::distributions::Alphanumeric;
+use rand::Rng;
 use serde::Serialize;
 
 #[derive(Debug, Serialize)]

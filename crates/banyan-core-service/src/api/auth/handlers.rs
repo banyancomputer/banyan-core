@@ -7,7 +7,7 @@ use openssl::bn::BigNumContext;
 use openssl::ec::PointConversionForm;
 use openssl::pkey::PKey;
 
-use crate::api::auth::{AuthError, models, requests, responses};
+use crate::api::auth::{models, requests, responses, AuthError};
 use crate::api::ErrorResponse;
 use crate::extractors::{ApiToken, DbConn, FakeToken, SigningKey};
 
@@ -113,9 +113,7 @@ pub async fn register_device_key(
     .into_response()
 }
 
-pub async fn whoami(
-    api_token: ApiToken,
-) -> Response {
+pub async fn whoami(api_token: ApiToken) -> Response {
     let response = responses::WhoAmI {
         account_id: api_token.subject(),
     };

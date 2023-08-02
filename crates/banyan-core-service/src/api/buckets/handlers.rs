@@ -9,8 +9,8 @@ use tokio::io::{AsyncWrite, AsyncWriteExt};
 use uuid::Uuid;
 use validify::Validate;
 
-use crate::api::buckets::{models, requests, responses};
 use crate::api::buckets::car_buffer::CarBuffer;
+use crate::api::buckets::{models, requests, responses};
 use crate::extractors::{ApiToken, DataStore, DbConn};
 
 pub async fn create(
@@ -92,9 +92,7 @@ pub async fn index(_api_token: ApiToken) -> Response {
             friendly_name: "test interactive bucket".to_string(),
             r#type: responses::BucketType::Interactive,
 
-            root_cid: Some(
-                "zadi4hiDbg6A7Vu2Ac3ASKwLpYKvhNzDFkRevbf16VmZRRELL".to_string(),
-            ),
+            root_cid: Some("zadi4hiDbg6A7Vu2Ac3ASKwLpYKvhNzDFkRevbf16VmZRRELL".to_string()),
         },
         responses::MinimalBucket {
             id: "7bce1c56-71b9-4147-80d4-7519a7e98bd3".to_string(),
@@ -212,9 +210,7 @@ pub async fn show(
         friendly_name: "test interactive bucket".to_string(),
         r#type: responses::BucketType::Interactive,
 
-        root_cid: Some(
-            "bafybeihdwdcefgh4dqkjv67uzcmw7ojee6xedzdetojuzjevtenxquvyku".to_string(),
-        ),
+        root_cid: Some("bafybeihdwdcefgh4dqkjv67uzcmw7ojee6xedzdetojuzjevtenxquvyku".to_string()),
         public_keys: vec![
             responses::PublicKeySummary {
                 approved: true,
