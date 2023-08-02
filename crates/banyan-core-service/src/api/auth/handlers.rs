@@ -9,7 +9,7 @@ use openssl::pkey::PKey;
 
 use crate::api::auth::{AuthError, models, requests, responses};
 use crate::api::ErrorResponse;
-use crate::extractors::{DbConn, FakeToken, SigningKey};
+use crate::extractors::{ApiToken, DbConn, FakeToken, SigningKey};
 
 const FAKE_REGISTRATION_MAXIMUM_DURATION: u64 = 60 * 60 * 24 * 28; // four weeks, should be good enough between env resets
 
@@ -111,4 +111,14 @@ pub async fn register_device_key(
         fingerprint,
     })
     .into_response()
+}
+
+pub async fn whoami(
+    api_token: ApiToken,
+) -> Response {
+    let response = responses::WhoAmI {
+        account_id: api_token.subject(),
+    };
+
+    (StatusCode::OK, Json(response)).into_response()
 }

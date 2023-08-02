@@ -15,5 +15,6 @@ pub fn router(state: AppState) -> Router<AppState> {
     Router::new()
         .route("/fake_register", get(handlers::fake_register))
         .route("/register_device_key", post(handlers::register_device_key))
+        .route("/whoami", get(handlers::whoami))
         .with_state(state)
 }

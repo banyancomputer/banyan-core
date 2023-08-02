@@ -40,10 +40,10 @@ pub struct ApiToken {
     pub subject: String,
 }
 
-#[derive(sqlx::FromRow)]
-struct DeviceApiKey {
-    account_id: String,
-    pem: String,
+impl ApiToken {
+    pub fn subject(&self) -> String {
+        self.subject.clone()
+    }
 }
 
 #[async_trait]
@@ -249,4 +249,10 @@ enum ApiKeyAuthorizationErrorKind {
     NeverValid,
     UnidentifiedKey,
     UnknownTokenError(jsonwebtoken::errors::Error),
+}
+
+#[derive(sqlx::FromRow)]
+struct DeviceApiKey {
+    account_id: String,
+    pem: String,
 }
