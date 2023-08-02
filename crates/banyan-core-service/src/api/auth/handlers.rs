@@ -14,12 +14,33 @@ use crate::extractors::{ApiToken, DbConn, FakeToken, SigningKey};
 const FAKE_REGISTRATION_MAXIMUM_DURATION: u64 = 60 * 60 * 24 * 28; // four weeks, should be good enough between env resets
 
 pub async fn create_fake_account(mut db_conn: DbConn, signing_key: SigningKey) -> Response {
-    let maybe_account = sqlx::query_as!(
-        models::CreatedAccount,
-        r#"INSERT INTO accounts DEFAULT VALUES RETURNING id;"#
+    let maybe_user = sqlx::query_as!(
+        models::CreatedResource,
+        r#"INSERT INTO users DEFAULT VALUES RETURNING id;"#,
     )
     .fetch_one(&mut *db_conn.0)
     .await;
+
+    let created_user = match maybe_user {
+        Ok(cu) => cu,
+        Err(_) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "unable to create new user",
+            )
+                .into_response();
+        }
+    };
+
+    let maybe_account = sqlx::query_as!(
+        models::CreatedResource,
+        r#"INSERT INTO accounts (userId, type, provider, providerAccountId) VALUES (?, "oauth", "not-google", 100033331337) RETURNING id;"#,
+        created_user.id,
+    )
+    .fetch_one(&mut *db_conn.0)
+    .await;
+
+    tracing::warn!("{maybe_account:?}");
 
     let created_account = match maybe_account {
         Ok(ca) => ca,
@@ -32,6 +53,8 @@ pub async fn create_fake_account(mut db_conn: DbConn, signing_key: SigningKey) -
         }
     };
 
+    tracing::warn!("{created_account:?}");
+
     let api_token = FakeToken {
         expiration: get_current_timestamp() + FAKE_REGISTRATION_MAXIMUM_DURATION,
         subject: created_account.id.clone(),
@@ -41,6 +64,8 @@ pub async fn create_fake_account(mut db_conn: DbConn, signing_key: SigningKey) -
         alg: Algorithm::ES384,
         ..Default::default()
     };
+
+    tracing::warn!("building");
 
     match encode(&header, &api_token, &signing_key.0) {
         Ok(token) => Json(responses::NewAccount {
