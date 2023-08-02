@@ -55,7 +55,7 @@ pub async fn create_fake_account(mut db_conn: DbConn, signing_key: SigningKey) -
     }
 }
 
-pub async fn register_device_key(
+pub async fn fake_register_device_key(
     api_token: FakeToken,
     mut db_conn: DbConn,
     extract::Json(new_device_key): extract::Json<requests::RegisterDeviceKey>,

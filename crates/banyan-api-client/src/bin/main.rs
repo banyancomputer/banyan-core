@@ -58,26 +58,21 @@ use banyan_api_client::prelude::*;
 async fn main() {
     let mut api_client = ClientBuilder::new().build().unwrap();
 
-    let _account_info = api_client
+    let account_info = api_client
         .call(banyan_api_client::fake::RegisterFakeAccount)
         .await
         .unwrap();
 
-    let _private_pem = banyan_api_client::fake::create_private_ec_pem();
+    let private_pem = banyan_api_client::fake::create_private_ec_pem();
+    let public_pem = banyan_api_client::fake::public_from_private(&private_pem);
 
-    // create client/device ec keys
-
-    // Get us just the private client/device key we want to be able to get anything we need just
-    // from this.
-
-    //// Get the public key so we can calculate the fingerprint
-    //let public_key: PKey<Public> = {
-    //    let ec_group = EcGroup::from_curve_name(Nid::SECP384R1).unwrap();
-    //    let priv_ec_key = private_key.ec_key().unwrap();
-    //    let pub_ec_key: EcKey<Public> = EcKey::from_public_key(&ec_group, priv_ec_key.public_key()).unwrap();
-
-    //    PKey::from_ec_key(pub_ec_key).unwrap()
-    //};
+    let account_info = api_client
+        .call(banyan_api_client::fake::FakeRegisterDeviceKey {
+            token: account_info.token,
+            public_key: public_pem,
+        })
+        .await
+        .unwrap();
 
     //// Calculate our fingerprint
     //let fingerprint: String = {
