@@ -1,17 +1,19 @@
 use axum::extract::{self, BodyStream, Path};
 //use axum::headers::{ETag, IfNoneMatch};
+use axum::headers::ContentType;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-//use axum::TypedHeader;
+use axum::TypedHeader;
 use futures_util::TryStreamExt;
 use object_store::ObjectStore;
+use multer::Multipart;
 use tokio::io::{AsyncWrite, AsyncWriteExt};
 use uuid::Uuid;
 use validify::Validate;
 
 use crate::api::buckets::car_buffer::CarBuffer;
 use crate::api::buckets::{models, requests, responses};
-use crate::extractors::{ApiToken, DataStore, DbConn};
+use crate::extractors::{ApiToken, DataStore, DbConn, JsonMultipartUpload};
 
 pub async fn create(
     api_token: ApiToken,
@@ -76,7 +78,7 @@ pub async fn create(
 }
 
 pub async fn destroy(
-    //_api_token: ApiToken,
+    _api_token: ApiToken,
     Path(_bucket_id): Path<Uuid>,
     //_if_match: Option<TypedHeader<IfMatch>>,
 ) -> Response {
@@ -100,89 +102,124 @@ pub async fn index(_api_token: ApiToken) -> Response {
     (StatusCode::OK, axum::Json(bucket_list)).into_response()
 }
 
+#[derive(Debug)]
+enum MetadataUploadState {
+    WaitingForDetails,
+    WaitingForUpload,
+}
+
 pub async fn publish_metadata(
-    //_api_token: ApiToken,
+    _api_token: ApiToken,
     Path(bucket_id): Path<Uuid>,
     //_if_match: Option<TypedHeader<IfMatch>>,
     store: DataStore,
-    stream: BodyStream,
 ) -> Response {
     // todo: authorization
     // todo: If-Match matches existing version abort
 
-    let file_name = format!("{bucket_id}/{}.car", Uuid::new_v4());
-    let file_path = object_store::path::Path::from(file_name.as_str());
+    //while let Some(res_field) = multipart.next_field().await.transpose() {
+    //    let field = match res_field {
+    //        Ok(f) => f,
+    //        Err(err) => {
+    //            return (StatusCode::BAD_REQUEST, format!("unknown error receiving field: {err}")).into_response();
+    //        }
+    //    };
 
-    let (upload_id, mut writer) = match store.put_multipart(&file_path).await {
-        Ok(mp) => mp,
-        Err(_err) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "unable to store uploaded file",
-            )
-                .into_response();
-        }
-    };
+    //    let content_type = match field.content_type() {
+    //        Some(ct) => ct,
+    //        None => {
+    //            return (StatusCode::BAD_REQUEST, "multipart fields must contain content types").into_response();
+    //        }
+    //    };
 
-    let file_hash = match handle_upload(&mut writer, stream).await {
-        Ok(fh) => {
-            writer
-                .shutdown()
-                .await
-                .expect("upload finalization to succeed");
-            fh
-        }
-        Err(_err) => {
-            store
-                .abort_multipart(&file_path, &upload_id)
-                .await
-                .expect("aborting to success");
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "unable to process upload",
-            )
-                .into_response();
-        }
-    };
+    //    match upload_state {
+    //        MetadataUploadState::WaitingForDetails => {
+    //            if content_type != "application/json" {
+    //                return (StatusCode::BAD_REQUEST, "first field must be JSON").into_response();
+    //            }
 
-    (StatusCode::OK, file_hash).into_response()
+    //            // todo: process body as stream, limit the size of the 
+
+    //            upload_state = MetadataUploadState::WaitingForUpload;
+    //        }
+    //        MetadataUploadState::WaitingForUpload => {
+    //            let file_name = format!("{bucket_id}/{}.car", Uuid::new_v4());
+    //            let file_path = object_store::path::Path::from(file_name.as_str());
+
+    //            let (upload_id, mut writer) = match store.put_multipart(&file_path).await {
+    //                Ok(mp) => mp,
+    //                Err(_err) => {
+    //                    return (
+    //                        StatusCode::INTERNAL_SERVER_ERROR,
+    //                        "unable to store uploaded file",
+    //                        )
+    //                        .into_response();
+    //                }
+    //            };
+
+    //            let file_hash = match handle_metadata_upload(&mut writer, stream).await {
+    //                Ok(fh) => {
+    //                    writer
+    //                        .shutdown()
+    //                        .await
+    //                        .expect("upload finalization to succeed");
+    //                    fh
+    //                }
+    //                Err(_err) => {
+    //                    store
+    //                        .abort_multipart(&file_path, &upload_id)
+    //                        .await
+    //                        .expect("aborting to success");
+    //                    return (
+    //                        StatusCode::INTERNAL_SERVER_ERROR,
+    //                        "unable to process upload",
+    //                        )
+    //                        .into_response();
+    //                }
+    //            };
+
+    //            return (StatusCode::OK, file_hash).into_response();
+    //        }
+    //    }
+    //}
+
+    (StatusCode::OK, "placeholder").into_response()
 }
 
-async fn handle_upload(
-    writer: &mut Box<dyn AsyncWrite + Unpin + Send>,
-    mut stream: BodyStream,
-) -> Result<String, ()> {
-    let mut hasher = blake3::Hasher::new();
-
-    let mut car_buffer = CarBuffer::new();
-
-    while let Some(chunk) = stream.try_next().await.transpose() {
-        let chunk = chunk.expect("an available chunk (todo remove this)");
-
-        hasher.update(&chunk);
-        car_buffer.add_chunk(&chunk);
-
-        match car_buffer.parse() {
-            Ok(Some(_md)) => {
-                // todo: we have our metadata, do any validation we need to here
-            }
-            Ok(None) => (),
-            Err(err) => {
-                tracing::error!("received car buffer error: {err}");
-                return Err(());
-            }
-        }
-
-        writer
-            .write_all(&chunk)
-            .await
-            .expect("the write to succeed (todo remove this)");
-    }
-
-    let hash = hasher.finalize();
-
-    Ok(hash.to_string())
-}
+//async fn handle_metadata_upload(
+//    writer: &mut Box<dyn AsyncWrite + Unpin + Send>,
+//    mut stream: BodyStream,
+//) -> Result<String, ()> {
+//    let mut car_buffer = CarBuffer::new();
+//    let mut hasher = blake3::Hasher::new();
+//
+//    while let Some(chunk) = stream.try_next().await.transpose() {
+//        let chunk = chunk.expect("an available chunk (todo remove this)");
+//
+//        hasher.update(&chunk);
+//        car_buffer.add_chunk(&chunk);
+//
+//        match car_buffer.parse() {
+//            Ok(Some(_md)) => {
+//                // todo: we have our metadata, do any validation we need to here
+//            }
+//            Ok(None) => (),
+//            Err(err) => {
+//                tracing::error!("received car buffer error: {err}");
+//                return Err(());
+//            }
+//        }
+//
+//        writer
+//            .write_all(&chunk)
+//            .await
+//            .expect("the write to succeed (todo remove this)");
+//    }
+//
+//    let hash = hasher.finalize();
+//
+//    Ok(hash.to_string())
+//}
 
 pub async fn show(
     _api_token: ApiToken,

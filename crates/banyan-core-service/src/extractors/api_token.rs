@@ -214,6 +214,7 @@ impl Display for ApiKeyAuthorizationError {
     }
 }
 
+// dunno if this is needed...
 impl std::error::Error for ApiKeyAuthorizationError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         use ApiKeyAuthorizationErrorKind::*;
