@@ -138,7 +138,6 @@ pub async fn publish_metadata(
     // todo: validate name is request-data (request_data_field.name())
     // todo: validate type is application/json (request_data_field.content_type())
     let pbmr_bytes = request_data_field.bytes().await.unwrap();
-    tracing::info!("pbmr_bytes: {}", String::from_utf8_lossy(&pbmr_bytes));
     let _data: requests::PublishBucketMetadataRequest =
         serde_json::from_slice(&pbmr_bytes).unwrap();
 
