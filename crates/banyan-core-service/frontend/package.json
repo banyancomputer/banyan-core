@@ -1,66 +1,65 @@
 {
-	"name": "banyan-www",
-	"version": "0.0.0",
-	"private": true,
-	"engines": {
-		"node": ">=14.0.0",
-		"yarn": ">=1.22.0",
-		"npm": "please-use-yarn"
-	},
-	"scripts": {
-		"build": "next build",
-		"start": "next start",
-		"lint": "next lint",
-		"prettier": "prettier --write .",
-		"format": "prettier --write .",
-		"dev": "cross-env NODE_OPTIONS='--inspect' NODE_ENV='development' next dev",
-		"prod": "cross-env NODE_ENV='production' next start"
-	},
-	"dependencies": {
-		"@auth/sequelize-adapter": "^1.0.1",
-		"@auth/typeorm-adapter": "^1.0.1",
-		"@chakra-ui/icons": "^2.0.17",
-		"@chakra-ui/react": "^2.5.2",
-		"@emotion/react": "^11.10.6",
-		"@emotion/styled": "^11.10.6",
-		"@types/node": "18.15.5",
-		"@types/react": "18.0.28",
-		"@types/react-dom": "18.0.11",
-		"banyan-webcrypto-experiment": "^1.0.0",
-		"class-validator": "^0.14.0",
-		"daisyui": "^2.51.5",
-		"dashify": "^2.0.0",
-		"eslint": "8.36.0",
-		"eslint-config-next": "13.2.4",
-		"framer-motion": "^10.8.5",
-		"next": "13.2.4",
-		"next-auth": "^4.22.3",
-		"nookies": "^2.5.2",
-		"one-webcrypto": "^1.0.3",
-		"react": "18.2.0",
-		"react-data-table-component": "^7.5.3",
-		"react-dom": "18.2.0",
-		"react-icons": "^4.8.0",
-		"sequelize": "^6.32.1",
-		"sqlite3": "^5.1.6",
-		"styled-components": "^5.3.9",
-		"tomb-wasm-experimental": "^1.1.0",
-		"typeorm": "^0.3.17",
-		"typescript": "^5.1.6",
-		"uint8arrays": "^3.0.0",
-		"uuid": "^9.0.0",
-		"validator": "^13.9.0"
-	},
-	"devDependencies": {
-		"@types/uuid": "^9.0.2",
-		"@types/validator": "^13.7.14",
-		"@typescript-eslint/eslint-plugin": "^5.57.0",
-		"autoprefixer": "^10.4.14",
-		"babel-eslint": "^10.1.0",
-		"cross-env": "^7.0.3",
-		"env-cmd": "^10.1.0",
-		"postcss": "^8.4.21",
-		"prettier": "^2.8.6",
-		"tailwindcss": "^3.2.7"
-	}
+  "name": "Banyan",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@reduxjs/toolkit": "1.9.5",
+    "@types/node": "16.18.39",
+    "@types/react": "18.2.18",
+    "@types/react-dom": "18.2.7",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-redux": "8.1.2",
+    "react-router-dom": "6.14.2",
+    "typescript": "4.9.5"
+  },
+  "scripts": {
+    "lint": "eslint --fix --ext .js,.ts,.tsx .",
+    "dev": "tsc && vite build --watch --mode development",
+    "build": "tsc && vite build --mode production",
+    "start": " vite",
+    "test": "jest --config=jest.config.js"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "5.16.5",
+    "@testing-library/react": "13.3.0",
+    "@testing-library/user-event": "13.5.0",
+    "@types/jest": "27.5.2",
+    "@types/node": "16.11.56",
+    "@types/react": "18.0.18",
+    "@types/react-dom": "18.0.6",
+    "@typescript-eslint/eslint-plugin": "6.2.1",
+    "@typescript-eslint/parser": "6.2.1",
+    "@vitejs/plugin-react": "4.0.4",
+    "autoprefixer": "10.4.14",
+    "daisyui": "3.5.1",
+    "eslint": "8.45.0",
+    "eslint-plugin-import": "2.28.0",
+    "eslint-plugin-unicorn": "48.0.1",
+    "identity-obj-proxy": "3.0.0",
+    "postcss": "8.4.27",
+    "tailwindcss": "3.3.3",
+    "ts-jest": "27.1.4",
+    "typescript": "4.6.4",
+    "vite": "4.4.7",
+    "vite-plugin-compression": "0.5.1"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
 }
