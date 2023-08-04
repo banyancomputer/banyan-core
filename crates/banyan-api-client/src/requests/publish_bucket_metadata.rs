@@ -1,5 +1,4 @@
 use std::error::Error;
-use std::path::PathBuf;
 use std::fmt::{self, Display, Formatter};
 
 use reqwest::{Client, RequestBuilder, Url};
@@ -9,35 +8,49 @@ use uuid::Uuid;
 use crate::requests::{ApiRequest, MetadataState};
 
 #[derive(Debug)]
-pub struct PublishBucketMetadata {
+pub struct PublishBucketMetadata<S>
+where
+    reqwest::Body: From<S>,
+{
     pub bucket_id: Uuid,
-    pub metadata_path: PathBuf,
+
     pub expected_data_size: usize,
+    pub metadata_cid: String,
+    pub root_cid: String,
+
+    pub metadata_stream: S,
 }
 
-impl ApiRequest for PublishBucketMetadata {
+impl<S> ApiRequest for PublishBucketMetadata<S>
+where
+    reqwest::Body: From<S>,
+{
     type ResponseType = PublishBucketMetadataResponse;
     type ErrorType = PublishBucketMetadataError;
 
-    fn build_request(&self, base_url: &Url, client: &Client) -> RequestBuilder {
+    fn build_request(self, base_url: &Url, client: &Client) -> RequestBuilder {
         let pbm_req = PublishBucketMetadataRequest {
             data_size: self.expected_data_size,
+            metadata_cid: self.metadata_cid,
+            root_cid: self.root_cid,
         };
 
-        let full_url = base_url.join(format!("/api/v1/buckets/{}/publish", self.bucket_id).as_str()).unwrap();
+        let url = base_url.join(format!("/api/v1/buckets/{}/publish", self.bucket_id).as_str()).unwrap();
 
-        // todo: need to workaround reqwest's multipart limitations
+        let multipart_json_data = serde_json::to_string(&pbm_req).unwrap();
+        let multipart_json = reqwest::multipart::Part::bytes(multipart_json_data.as_bytes().to_vec())
+            .mime_str("application/json")
+            .unwrap();
 
-        //let multipart_json = reqwest::multipart::Part::bytes(multipart_json_data.as_bytes().to_vec())
-        //    .mime_str("application/json")
-        //    .unwrap();
+        let multipart_car = reqwest::multipart::Part::stream(self.metadata_stream)
+            .mime_str("application/vnd.ipld.car; version=2")
+            .unwrap();
 
-        //let multipart_car_data = "some random contents for the car file...";
-        //let multipart_car = reqwest::multipart::Part::bytes(multipart_car_data.as_bytes().to_vec())
-        //    .mime_str("application/vnd.ipld.car; version=2")
-        //    .unwrap();
+        let multipart_form = reqwest::multipart::Form::new()
+            .part("request-data", multipart_json)
+            .part("car-upload", multipart_car);
 
-        client.post(full_url).json(&pbm_req)
+        client.post(url).multipart(multipart_form)
     }
 
     fn requires_authentication(&self) -> bool {
@@ -48,6 +61,8 @@ impl ApiRequest for PublishBucketMetadata {
 #[derive(Debug, Serialize)]
 struct PublishBucketMetadataRequest {
     data_size: usize,
+    metadata_cid: String,
+    root_cid: String,
 }
 
 #[derive(Debug, Deserialize)]

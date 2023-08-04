@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use banyan_api_client::prelude::*;
 use jsonwebtoken::EncodingKey;
 
@@ -48,10 +46,25 @@ async fn main() {
 
     println!("{bucket_info:?}");
 
+    // Can be anything that can be turned into a streaming reqwest::Body including file IO,
+    // network, etc. These chunks are simulating a TryStream as a static fixture. All the pieces
+    // will be consumed one by one and be present in the request directly.
+    let chunks: Vec<Result<_, ::std::io::Error>> = vec![
+        Ok("PRAGMA BITS\n"),
+        Ok("Some other car things\n"),
+        Ok("and sure lets throw in an index"),
+    ];
+    let raw_stream = futures::stream::iter(chunks);
+    let metadata_stream = reqwest::Body::wrap_stream(raw_stream);
+
     let publish_details = api_client.call(PublishBucketMetadata {
             bucket_id: bucket_info.id.clone(),
-            metadata_path: PathBuf::from("./path/to/file.car"),
+
             expected_data_size: 1_567_129,
+            metadata_cid: "a real CID I promise!".to_string(),
+            root_cid: "rooty McCIDFace".to_string(),
+
+            metadata_stream,
         })
         .await
         .unwrap();

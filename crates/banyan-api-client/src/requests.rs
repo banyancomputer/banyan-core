@@ -7,11 +7,13 @@ use serde::Deserialize;
 
 mod common;
 mod create_bucket;
+mod delete_bucket;
 mod publish_bucket_metadata;
 mod whoami;
 
 pub use common::*;
 pub use create_bucket::*;
+pub use delete_bucket::*;
 pub use publish_bucket_metadata::*;
 pub use whoami::*;
 
@@ -19,7 +21,7 @@ pub trait ApiRequest {
     type ResponseType: DeserializeOwned;
     type ErrorType: DeserializeOwned + Error + Send + Sync + 'static;
 
-    fn build_request(&self, base_url: &Url, client: &Client) -> RequestBuilder;
+    fn build_request(self, base_url: &Url, client: &Client) -> RequestBuilder;
     fn requires_authentication(&self) -> bool;
 }
 

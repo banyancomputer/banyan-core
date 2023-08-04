@@ -18,11 +18,11 @@ impl ApiRequest for CreateBucket {
     type ResponseType = CreateBucketResponse;
     type ErrorType = CreateBucketError;
 
-    fn build_request(&self, base_url: &Url, client: &Client) -> RequestBuilder {
+    fn build_request(self, base_url: &Url, client: &Client) -> RequestBuilder {
         let full_url = base_url
             .join("/api/v1/buckets")
             .unwrap();
-        client.post(full_url).json(self)
+        client.post(full_url).json(&self)
     }
 
     fn requires_authentication(&self) -> bool {

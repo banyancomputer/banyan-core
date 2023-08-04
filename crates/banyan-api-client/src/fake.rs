@@ -68,7 +68,7 @@ impl ApiRequest for RegisterFakeAccount {
     type ResponseType = RegisterFakeAccountResponse;
     type ErrorType = InfallibleError;
 
-    fn build_request(&self, base_url: &Url, client: &Client) -> RequestBuilder {
+    fn build_request(self, base_url: &Url, client: &Client) -> RequestBuilder {
         let full_url = base_url.join("/api/v1/auth/create_fake_account").unwrap();
         client.get(full_url)
     }
@@ -94,9 +94,9 @@ impl ApiRequest for FakeRegisterDeviceKey {
     type ResponseType = FakeRegisterDeviceKeyResponse;
     type ErrorType = FakeRegisterDeviceKeyError;
 
-    fn build_request(&self, base_url: &Url, client: &Client) -> RequestBuilder {
+    fn build_request(self, base_url: &Url, client: &Client) -> RequestBuilder {
         let inner_req = FakeRegisterDeviceKeyRequest {
-            public_key: self.public_key.clone(),
+            public_key: self.public_key,
         };
 
         let full_url = base_url

@@ -195,6 +195,7 @@ dependencies = [
 name = "banyan-api-client"
 version = "0.1.0"
 dependencies = [
+ "futures",
  "jsonwebtoken",
  "openssl",
  "pem 2.0.1",

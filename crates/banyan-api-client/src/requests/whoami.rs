@@ -11,7 +11,7 @@ impl ApiRequest for WhoAmI {
     type ResponseType = WhoAmIResponse;
     type ErrorType = InfallibleError;
 
-    fn build_request(&self, base_url: &Url, client: &Client) -> RequestBuilder {
+    fn build_request(self, base_url: &Url, client: &Client) -> RequestBuilder {
         let full_url = base_url.join("/api/v1/auth/whoami").unwrap();
         client.get(full_url)
     }

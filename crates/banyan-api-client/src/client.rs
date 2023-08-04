@@ -84,9 +84,10 @@ impl Client {
             return Err(ClientError::auth_unavailable());
         }
 
+        let add_authentication = request.requires_authentication();
         let mut request_builder = request.build_request(&self.base_url, &self.client);
 
-        if request.requires_authentication() {
+        if add_authentication {
             let bearer_token = self.bearer_token().unwrap();
             request_builder = request_builder.bearer_auth(bearer_token);
         }
