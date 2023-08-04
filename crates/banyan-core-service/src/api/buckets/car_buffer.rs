@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use bytes::Bytes;
 
 // We only look through the first MiB for the keys section. It's considered badly formed if not
@@ -53,17 +55,11 @@ impl CarBuffer {
     }
 
     fn is_done(&self) -> bool {
-        match &self.state {
-            BufferState::Done => true,
-            _ => false,
-        }
+        matches!(&self.state, BufferState::Done)
     }
 
     pub fn is_ready(&self) -> bool {
-        match &self.state {
-            BufferState::Buffering(_) => true,
-            _ => false,
-        }
+        matches!(&self.state, BufferState::Buffering(_))
     }
 
     pub fn new() -> Self {

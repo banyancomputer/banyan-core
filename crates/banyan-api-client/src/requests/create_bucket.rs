@@ -19,9 +19,7 @@ impl ApiRequest for CreateBucket {
     type ErrorType = CreateBucketError;
 
     fn build_request(self, base_url: &Url, client: &Client) -> RequestBuilder {
-        let full_url = base_url
-            .join("/api/v1/buckets")
-            .unwrap();
+        let full_url = base_url.join("/api/v1/buckets").unwrap();
         client.post(full_url).json(&self)
     }
 

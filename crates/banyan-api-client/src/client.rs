@@ -26,7 +26,8 @@ impl Client {
             // Either expired or not yet generated
             _ => {
                 if let Some(credentials) = &self.credentials {
-                    let api_token = ApiToken::new("banyan-platform", &credentials.account_id.to_string());
+                    let api_token =
+                        ApiToken::new("banyan-platform", &credentials.account_id.to_string());
                     let expiration = api_token.expiration();
                     let signed_token =
                         api_token.sign(&credentials.fingerprint, &credentials.signing_key);

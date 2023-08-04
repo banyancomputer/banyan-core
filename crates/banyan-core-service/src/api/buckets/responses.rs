@@ -45,7 +45,4 @@ pub struct PublishBucketMetadataResponse {
 #[serde(rename_all = "snake_case")]
 pub enum MetadataState {
     Pending,
-    Current,
-    Outdated,
-    Deleted,
 }

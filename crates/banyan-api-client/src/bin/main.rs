@@ -42,20 +42,19 @@ async fn register_fake_account() -> Account {
 #[tokio::main]
 async fn main() {
     let account = register_fake_account().await;
-    let jwt_signing_key = EncodingKey::from_ec_pem(account.device_private_key_pem.as_bytes()).unwrap();
+    let jwt_signing_key =
+        EncodingKey::from_ec_pem(account.device_private_key_pem.as_bytes()).unwrap();
 
     let mut api_client = ClientBuilder::default().build().expect("client");
     api_client.set_credentials(account.id, account.fingerprint, jwt_signing_key);
 
     // Query who the API thinks we're authenticated as
-    let authenticated_info = api_client
-        .call(WhoAmI)
-        .await
-        .unwrap();
+    let authenticated_info = api_client.call(WhoAmI).await.unwrap();
     println!("{authenticated_info:?}");
 
     // Create a new interactive bucket
-    let bucket_info = api_client.call(CreateBucket {
+    let bucket_info = api_client
+        .call(CreateBucket {
             friendly_name: "Testing Interactive Bucket".to_string(),
             r#type: BucketType::Interactive,
             initial_public_key: "ECDH public key pem formatted bits".to_string(),
@@ -77,7 +76,8 @@ async fn main() {
     let raw_stream = futures::stream::iter(chunks);
     let metadata_stream = reqwest::Body::wrap_stream(raw_stream);
 
-    let publish_details = api_client.call(PublishBucketMetadata {
+    let publish_details = api_client
+        .call(PublishBucketMetadata {
             bucket_id: bucket_info.id.clone(),
 
             expected_data_size: 1_567_129,

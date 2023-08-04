@@ -35,12 +35,15 @@ where
             root_cid: self.root_cid,
         };
 
-        let url = base_url.join(format!("/api/v1/buckets/{}/publish", self.bucket_id).as_str()).unwrap();
+        let url = base_url
+            .join(format!("/api/v1/buckets/{}/publish", self.bucket_id).as_str())
+            .unwrap();
 
         let multipart_json_data = serde_json::to_string(&pbm_req).unwrap();
-        let multipart_json = reqwest::multipart::Part::bytes(multipart_json_data.as_bytes().to_vec())
-            .mime_str("application/json")
-            .unwrap();
+        let multipart_json =
+            reqwest::multipart::Part::bytes(multipart_json_data.as_bytes().to_vec())
+                .mime_str("application/json")
+                .unwrap();
 
         let multipart_car = reqwest::multipart::Part::stream(self.metadata_stream)
             .mime_str("application/vnd.ipld.car; version=2")

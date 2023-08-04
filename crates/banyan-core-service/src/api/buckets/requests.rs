@@ -12,6 +12,7 @@ pub struct CreateBucket {
 }
 
 #[derive(Clone, Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct PublishBucketMetadataRequest {
     data_size: usize,
     metadata_cid: String,

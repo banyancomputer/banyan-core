@@ -114,7 +114,6 @@ pub async fn publish_metadata(
 
     Path(bucket_id): Path<Uuid>,
     //_if_match: Option<TypedHeader<IfMatch>>,
-
     store: DataStore,
 
     TypedHeader(content_type): TypedHeader<ContentType>,
@@ -127,10 +126,11 @@ pub async fn publish_metadata(
     let boundary = multer::parse_boundary(mime_ct).unwrap();
     let constraints = multer::Constraints::new()
         .allowed_fields(vec!["request-data", "car-upload"])
-        .size_limit(multer::SizeLimit::new()
-                    .for_field("request-data", REQUEST_DATA_SIZE_LIMIT)
-                    .for_field("car-upload", CAR_DATA_SIZE_LIMIT)
-                   );
+        .size_limit(
+            multer::SizeLimit::new()
+                .for_field("request-data", REQUEST_DATA_SIZE_LIMIT)
+                .for_field("car-upload", CAR_DATA_SIZE_LIMIT),
+        );
 
     let mut multipart = multer::Multipart::with_constraints(body, boundary, constraints);
 
@@ -139,7 +139,8 @@ pub async fn publish_metadata(
     // todo: validate type is application/json (request_data_field.content_type())
     let pbmr_bytes = request_data_field.bytes().await.unwrap();
     tracing::info!("pbmr_bytes: {}", String::from_utf8_lossy(&pbmr_bytes));
-    let _data: requests::PublishBucketMetadataRequest = serde_json::from_slice(&pbmr_bytes).unwrap();
+    let _data: requests::PublishBucketMetadataRequest =
+        serde_json::from_slice(&pbmr_bytes).unwrap();
 
     // todo: validate / store data
 
@@ -157,12 +158,12 @@ pub async fn publish_metadata(
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "unable to store uploaded file",
-                )
+            )
                 .into_response();
         }
     };
 
-    let file_hash = match handle_metadata_upload(car_stream, &mut writer).await {
+    let _file_hash = match handle_metadata_upload(car_stream, &mut writer).await {
         Ok(fh) => {
             writer
                 .shutdown()
@@ -178,7 +179,7 @@ pub async fn publish_metadata(
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "unable to process upload",
-                )
+            )
                 .into_response();
         }
     };
@@ -197,7 +198,7 @@ pub async fn publish_metadata(
 async fn handle_metadata_upload<S>(
     mut stream: S,
     writer: &mut Box<dyn AsyncWrite + Unpin + Send>,
-) -> Result<String, ()> 
+) -> Result<String, ()>
 where
     S: TryStream<Ok = bytes::Bytes> + Unpin,
     S::Error: std::error::Error,
