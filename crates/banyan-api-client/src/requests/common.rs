@@ -10,7 +10,7 @@ pub enum BucketType {
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum MetadataState {
-    WaitingForData,
+    Pending,
     Current,
     Outdated,
     Deleted,
