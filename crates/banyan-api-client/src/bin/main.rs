@@ -1,9 +1,15 @@
 use banyan_api_client::prelude::*;
 use jsonwebtoken::EncodingKey;
+use uuid::Uuid;
 
-#[tokio::main]
-async fn main() {
-    let mut api_client = ClientBuilder::new().build().unwrap();
+struct Account {
+    id: Uuid,
+    device_private_key_pem: String,
+    fingerprint: String,
+}
+
+async fn register_fake_account() -> Account {
+    let mut api_client = ClientBuilder::default().build().expect("client");
 
     let account_info = api_client
         .call(banyan_api_client::fake::RegisterFakeAccount)
@@ -26,16 +32,29 @@ async fn main() {
     assert_eq!(account_info.id, device_key_info.account_id);
     assert_eq!(fingerprint, device_key_info.fingerprint);
 
-    let jwt_signing_key = EncodingKey::from_ec_pem(private_pem.as_bytes()).unwrap();
-    api_client.set_credentials(account_info.id, fingerprint, jwt_signing_key);
+    Account {
+        id: account_info.id,
+        device_private_key_pem: private_pem,
+        fingerprint,
+    }
+}
 
+#[tokio::main]
+async fn main() {
+    let account = register_fake_account().await;
+    let jwt_signing_key = EncodingKey::from_ec_pem(account.device_private_key_pem.as_bytes()).unwrap();
+
+    let mut api_client = ClientBuilder::default().build().expect("client");
+    api_client.set_credentials(account.id, account.fingerprint, jwt_signing_key);
+
+    // Query who the API thinks we're authenticated as
     let authenticated_info = api_client
         .call(WhoAmI)
         .await
         .unwrap();
-
     println!("{authenticated_info:?}");
 
+    // Create a new interactive bucket
     let bucket_info = api_client.call(CreateBucket {
             friendly_name: "Testing Interactive Bucket".to_string(),
             r#type: BucketType::Interactive,
@@ -43,8 +62,9 @@ async fn main() {
         })
         .await
         .unwrap();
-
     println!("{bucket_info:?}");
+
+    // Publish a metadata file to the bucket we just created
 
     // Can be anything that can be turned into a streaming reqwest::Body including file IO,
     // network, etc. These chunks are simulating a TryStream as a static fixture. All the pieces
