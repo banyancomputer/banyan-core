@@ -21,11 +21,17 @@ pub async fn download(
 ) -> Response {
     let metadata_file_name = format!("{metadata_id}.car");
 
-
     let mut headers = HeaderMap::new();
 
-    headers.insert(http::header::CONTENT_TYPE, HeaderValue::from_static("application/vnd.ipld.car; version=2"));
-    headers.insert(http::header::CONTENT_DISPOSITION, HeaderValue::from_str(&format!("attachment; filename=\"{metadata_file_name}\"").as_str()).unwrap());
+    headers.insert(
+        http::header::CONTENT_TYPE,
+        HeaderValue::from_static("application/vnd.ipld.car; version=2"),
+    );
+    headers.insert(
+        http::header::CONTENT_DISPOSITION,
+        HeaderValue::from_str(&format!("attachment; filename=\"{metadata_file_name}\"").as_str())
+            .unwrap(),
+    );
 
     (StatusCode::OK, headers, "<metadata car file>").into_response()
 }
