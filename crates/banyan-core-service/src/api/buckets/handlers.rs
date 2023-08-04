@@ -1,10 +1,10 @@
 use axum::extract::{self, BodyStream, Path};
 //use axum::headers::{ETag, IfNoneMatch};
 use axum::headers::ContentType;
-use axum::http::StatusCode;
+use axum::http::{HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::TypedHeader;
-use futures_util::TryStreamExt;
+use futures::TryStreamExt;
 use object_store::ObjectStore;
 use multer::Multipart;
 use tokio::io::{AsyncWrite, AsyncWriteExt};
@@ -13,7 +13,7 @@ use validify::Validate;
 
 use crate::api::buckets::car_buffer::CarBuffer;
 use crate::api::buckets::{models, requests, responses};
-use crate::extractors::{ApiToken, DataStore, DbConn, JsonMultipartUpload};
+use crate::extractors::{ApiToken, DataStore, DbConn};
 
 pub async fn create(
     api_token: ApiToken,
@@ -102,22 +102,47 @@ pub async fn index(_api_token: ApiToken) -> Response {
     (StatusCode::OK, axum::Json(bucket_list)).into_response()
 }
 
-#[derive(Debug)]
-enum MetadataUploadState {
-    WaitingForDetails,
-    WaitingForUpload,
-}
+// This is just the metadata car file, 128MiB for that is just a rough (what I think is generous)
+// limit. We can revist this if its insufficient.
+const CAR_DATA_SIZE_LIMIT: u64 = 128 * 1_024 * 1_024;
+
+// Limit on the size of the data portion of these upload requests to protect the server from
+// malicious use, 100KiB should be more than enough for now.
+const REQUEST_DATA_SIZE_LIMIT: u64 = 100 * 1_024;
 
 pub async fn publish_metadata(
     _api_token: ApiToken,
+
     Path(bucket_id): Path<Uuid>,
     //_if_match: Option<TypedHeader<IfMatch>>,
+
     store: DataStore,
+
+    TypedHeader(content_type): TypedHeader<ContentType>,
+    body: BodyStream,
 ) -> Response {
     // todo: authorization
     // todo: If-Match matches existing version abort
 
-    //while let Some(res_field) = multipart.next_field().await.transpose() {
+    let mime_ct = mime::Mime::from(content_type);
+    let boundary = multer::parse_boundary(mime_ct).unwrap();
+    let constraints = multer::Constraints::new()
+        .allowed_fields(vec!["request-data", "car-upload"])
+        .size_limit(multer::SizeLimit::new()
+                    .for_field("request-data", REQUEST_DATA_SIZE_LIMIT)
+                    .for_field("car-upload", CAR_DATA_SIZE_LIMIT)
+                   );
+
+    let mut multipart = multer::Multipart::with_constraints(body, boundary, constraints);
+
+    let request_data_field = multipart.next_field().await.unwrap().unwrap();
+    // validate name is request-data (request_data_field.name())
+    // validate type is application/json (request_data_field.content_type())
+    let pbmr_bytes = request_data_field.bytes().await.unwrap();
+    let data: requests::PublishBucketMetadataRequest = serde_json::from_slice(&pbmr_bytes).unwrap();
+
+    tracing::info!("read pbr data: {data:?}");
+
     //    let field = match res_field {
     //        Ok(f) => f,
     //        Err(err) => {

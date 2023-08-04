@@ -10,3 +10,10 @@ pub struct CreateBucket {
     pub r#type: BucketType,
     pub initial_public_key: String,
 }
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct PublishBucketMetadataRequest {
+    data_size: usize,
+    metadata_cid: String,
+    root_cid: String,
+}

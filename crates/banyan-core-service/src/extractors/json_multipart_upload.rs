@@ -1,42 +1,48 @@
 use std::fmt::{self, Display, Formatter};
+use std::pin::Pin;
+use std::task::{Context, Poll};
 
-use axum::async_trait;
-use axum::extract::{FromRequest, Request};
-use axum::http::StatusCode;
-use axum::response::IntoResponse;
+use axum::{async_trait, RequestExt};
+use axum::body::{Body, Bytes, HttpBody};
+use axum::extract::{BodyStream, FromRequest};
+use axum::http::{Request, StatusCode};
+use axum::http::header::{HeaderMap, CONTENT_TYPE};
+use axum::response::{IntoResponse, Response};
+use futures::stream::Stream;
 
 #[derive(Debug)]
-pub struct JsonMultipartUpload {
-    inner: multer::Multipart<'static>,
+pub struct JsonMultipartUpload<T> {
+    pub json: T,
+    pub car_stream: BodyStream,
 }
 
 #[async_trait]
-impl<S> FromRequest<S> for JsonMultipartUpload
+impl<T, S, B> FromRequest<T, S, B> for JsonMultipartUpload<T>
 where
+    B: HttpBody + Send + 'static,
     S: Send + Sync,
+    T: serde::de::DeserializeOwned,
 {
-    type Rejection = JsonMultipartUploadRejection;
+    type Rejection = ();
 
-    async fn from_request(req: Request, _state: &S) -> Result<Self, Self::Rejection> {
-        todo!()
-    }
-}
+    async fn from_request(req: Request<B>, _state: &S) -> Result<Self, Self::Rejection> {
+        let boundary = parse_boundary(req.headers()).ok_or(())?;
+        let (parts, stream) = req.into_parts();
 
-#[derive(Debug)]
-pub struct JsonMultipartUploadRejection(String);
+        let constraints = multer::Constraints::new()
+            .allowed_fields(vec!["request-data", "car-upload"])
+            .size_limit(multer::SizeLimit::new()
+                .for_field("request-data", REQUEST_DATA_SIZE_LIMIT)
+                .for_field("car-upload", CAR_DATA_SIZE_LIMIT)
+            );
 
-impl Display for JsonMultipartUploadRejection {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        f.write(self.0)
-    }
-}
+        let multipart = multer::Multipart::with_constraints(stream, boundary, constraints);
 
-// dunno if this is needed...
-impl std::error::Error for JsonMultipartUploadRejection {}
+        let car_stream_field = multipart.next_field().await.unwrap();
+        // validate name is car-upload (request_data_field.name())
+        // validate type is "application/vnd.ipld.car; version=2" (request_data_field.content_type())
+        let car_stream = BodyStream::from_request(Request::from_parts(parts.clone(), car_stream_field));
 
-impl IntoResponse for JsonMultipartUploadRejection {
-    fn into_response(self) -> axum::response::Response {
-        let err_msg = serde_json::json!({ "error": self.to_string() });
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
+        Ok(Self { data, car_stream })
     }
 }
