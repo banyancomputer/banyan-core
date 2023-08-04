@@ -1,6 +1,7 @@
 use axum::extract::Path;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
+use http::{HeaderMap, HeaderValue};
 use uuid::Uuid;
 
 use crate::extractors::ApiToken;
@@ -16,9 +17,17 @@ pub async fn destroy(
 pub async fn download(
     _api_token: ApiToken,
     Path(_bucket_id): Path<Uuid>,
-    Path(_metadata_id): Path<Uuid>,
+    Path(metadata_id): Path<Uuid>,
 ) -> Response {
-    (StatusCode::NOT_FOUND, ()).into_response()
+    let metadata_file_name = format!("{metadata_id}.car");
+
+
+    let mut headers = HeaderMap::new();
+
+    headers.insert(http::header::CONTENT_TYPE, HeaderValue::from_static("application/vnd.ipld.car; version=2"));
+    headers.insert(http::header::CONTENT_DISPOSITION, HeaderValue::from_str(&format!("attachment; filename=\"{metadata_file_name}\"").as_str()).unwrap());
+
+    (StatusCode::OK, headers, "<metadata car file>").into_response()
 }
 
 pub async fn index(_api_token: ApiToken, Path(_bucket_id): Path<Uuid>) -> Response {
