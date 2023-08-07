@@ -1,32 +1,24 @@
-import { DeviceApiKey as DeviceApiKeyAttributes } from '@/lib/interfaces';
 import { DeviceApiKey } from './models';
+import { DeviceApiKey as DeviceApiKeyAttributes } from '@/lib/interfaces';
 
 export const DeviceApiKeyFactory = {
-	create: async (attrs: Partial<DeviceApiKeyAttributes> = {}) => {
-		return DeviceApiKey.create(attrs);
-	},
+    create: async(attrs: Partial<DeviceApiKeyAttributes> = {}) => DeviceApiKey.create(attrs),
 
-	readAllByAccountId: async (accountId: string) => {
-		return DeviceApiKey.findAll({
-			where: { accountId },
-		});
-	},
+    readAllByAccountId: async(accountId: string) => DeviceApiKey.findAll({
+        where: { accountId },
+    }),
 
-	readByFingerprint: async (fingerprint: string) => {
-		return DeviceApiKey.findOne({
-			where: { fingerprint },
-		});
-	},
+    readByFingerprint: async(fingerprint: string) => DeviceApiKey.findOne({
+        where: { fingerprint },
+    }),
 
-	deleteByAccountIdAndFingerprint: async (
-		accountId: string,
-		fingerprint: string
-	) => {
-		return DeviceApiKey.destroy({
-			where: {
-				accountId,
-				fingerprint,
-			},
-		});
-	},
+    deleteByAccountIdAndFingerprint: async(
+        accountId: string,
+        fingerprint: string
+    ) => DeviceApiKey.destroy({
+        where: {
+            accountId,
+            fingerprint,
+        },
+    }),
 };

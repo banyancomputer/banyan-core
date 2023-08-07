@@ -1,11 +1,10 @@
 export const splitProviderId = (providerId: string): [string, string] => {
-	const [provider, providerAccountId] = providerId.split(':');
-	return [provider, providerAccountId];
+    const [provider, providerAccountId] = providerId.split(':');
+
+    return [provider, providerAccountId];
 };
 
 export const joinProviderId = (
-	provider: string,
-	providerAccountId: string
-): string => {
-	return `${provider}:${providerAccountId}`;
-};
+    provider: string,
+    providerAccountId: string
+): string => `${provider}:${providerAccountId}`;
