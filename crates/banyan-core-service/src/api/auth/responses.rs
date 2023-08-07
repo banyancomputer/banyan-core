@@ -12,3 +12,8 @@ pub struct NewDeviceKey {
     pub account_id: String,
     pub fingerprint: String,
 }
+
+#[derive(Serialize)]
+pub struct WhoAmI {
+    pub account_id: String,
+}

@@ -1,11 +1,11 @@
 use sqlx::FromRow;
 
-#[derive(FromRow)]
-pub struct CreatedAccount {
+#[derive(Debug, FromRow)]
+pub struct CreatedResource {
     pub id: String,
 }
 
-#[derive(FromRow)]
+#[derive(Debug, FromRow)]
 pub struct CreatedDeviceKey {
     pub id: String,
 }
