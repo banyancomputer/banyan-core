@@ -24,22 +24,28 @@ module.exports = {
 			boxShadow: {
 				blue: '0px 4px 0px rgba(37, 99, 235, 0.35)',
 			},
+			height: {
+				navbar: '72px'
+			},
 			colors: {
 				blue: {
 					100: '#DBEAFE',
 					600: '#2563EB',
 					900: '#1E3A8A',
 				},
+				yellow: {
+					primary: '#FFECC5'
+				}
 			},
 			fontFamily: {
-				sans: ['UncutSans'],
+				sans: ['Inter'],
 			},
 			fontSize: {
-				mobileNav: ['24px', { lineHeight: '24px' }],
+				xs: ['14px', { lineHeight: '20px'}],
+				sm: ['16px', { lineHeight: '24px' }],
+				m: ['18px', { lineHeight: '26px' }],
 				deviceCode: ['30px', { lineHeight: '36px' }],
 				xxs: ['12px', { lineHeight: '16px' }],
-				xs: ['13px', { lineHeight: '24px', letterSpacing: '0.1em' }],
-				sm: ['16px', { lineHeight: '24px' }],
 				base: ['20px', { lineHeight: '28px' }],
 				lg: ['24px', { lineHeight: '32px' }],
 				xl: ['38px', { lineHeight: '48px' }],

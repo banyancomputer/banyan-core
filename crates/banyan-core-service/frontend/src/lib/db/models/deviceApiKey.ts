@@ -1,11 +1,8 @@
 import { Sequelize, DataTypes, Model, ModelDefined } from 'sequelize';
 import { validateOrReject } from 'class-validator';
+
 import { DeviceApiKey as DeviceApiKeyAttributes } from '@/lib/interfaces';
-import {
-	isPem,
-	isPrettyFingerprint,
-	prettyFingerprintApiKeyPem,
-} from '@/lib/utils';
+import { isPem,	isPrettyFingerprint, prettyFingerprintApiKeyPem } from '@/utils';
 import { BadModelFormat } from './errors';
 
 interface DeviceApiKeyInstance

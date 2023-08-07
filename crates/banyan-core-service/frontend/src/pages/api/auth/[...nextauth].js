@@ -3,7 +3,7 @@ import GoogleProvider from 'next-auth/providers/google';
 import SequelizeAdapter from '@auth/sequelize-adapter';
 import client, { models } from '@/lib/db/models';
 import { AllowedEmailFactory } from '@/lib/db';
-import { joinProviderId } from '@/lib/utils';
+import { joinProviderId } from '@/utils';
 
 export const authOptions = {
 	debug: process.env.NODE_ENV === 'development',

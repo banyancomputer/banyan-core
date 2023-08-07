@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../[...nextauth]';
 import { AccountFactory, DeviceApiKeyFactory } from '@/lib/db';
 import { Session } from 'next-auth';
-import { isPrettyFingerprint } from '@/lib/utils';
+import { isPrettyFingerprint } from '@/utils';
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
 	// Get the user's session

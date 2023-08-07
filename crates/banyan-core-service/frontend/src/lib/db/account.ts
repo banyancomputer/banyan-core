@@ -1,5 +1,5 @@
 import { Account } from './models';
-import { splitProviderId } from '../utils';
+import { splitProviderId } from '../../utils';
 
 export const AccountFactory = {
 	/**

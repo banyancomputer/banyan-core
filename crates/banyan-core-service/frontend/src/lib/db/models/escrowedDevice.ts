@@ -6,7 +6,7 @@ import {
 	isPem,
 	isPrettyFingerprint,
 	prettyFingerprintApiKeyPem,
-} from '@/lib/utils';
+} from '@/utils';
 
 interface EscrowedDeviceInstance
 	extends Model<EscrowedDeviceAttributes>,

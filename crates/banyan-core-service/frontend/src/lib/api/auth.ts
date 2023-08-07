@@ -1,5 +1,5 @@
 import { EscrowedDevice, DeviceApiKey } from '@/lib/interfaces';
-import { b64UrlEncode } from '../utils/b64';
+import { b64UrlEncode } from '../../utils/b64';
 
 /**
  * API Client for our web client against our NextAuth server

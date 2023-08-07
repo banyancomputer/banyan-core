@@ -1,9 +1,10 @@
-import '@/styles/globals.css';
 import type { AppProps } from 'next/app';
 import { NextPageWithLayout } from '@/pages/page';
 import { KeystoreProvider } from '@/contexts/keystore';
 import { ChakraProvider } from '@chakra-ui/react';
 import { SessionProvider } from 'next-auth/react';
+
+import '@static/styles/globals.css';
 
 interface AppPropsWithLayout extends AppProps {
 	Component: NextPageWithLayout;
