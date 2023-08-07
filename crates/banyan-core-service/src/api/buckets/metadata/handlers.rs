@@ -29,7 +29,7 @@ pub async fn download(
     );
     headers.insert(
         http::header::CONTENT_DISPOSITION,
-        HeaderValue::from_str(&format!("attachment; filename=\"{metadata_file_name}\"").as_str())
+        HeaderValue::from_str(format!("attachment; filename=\"{metadata_file_name}\"").as_str())
             .unwrap(),
     );
 

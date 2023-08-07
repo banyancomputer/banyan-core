@@ -78,7 +78,7 @@ async fn main() {
 
     let publish_details = api_client
         .call(PublishBucketMetadata {
-            bucket_id: bucket_info.id.clone(),
+            bucket_id: bucket_info.id,
 
             expected_data_size: 1_567_129,
             metadata_cid: "a real CID I promise!".to_string(),
