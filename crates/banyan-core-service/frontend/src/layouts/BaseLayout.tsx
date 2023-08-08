@@ -20,13 +20,13 @@ const BaseLayout: React.FC<IBaseLayout> = ({ children }) => {
         }
     }, [data, router]);
 
-    return <main className="h-screen font-sans">
+    return <main className="flex flex-col h-screen font-sans">
         <Header />
-        <section className="flex h-full">
+        <section className="flex flex-grow">
             {router.pathname !== '/key-management' &&
-				<Navigation />
+                <Navigation />
             }
-            <div>
+            <div className="flex-grow">
                 {children}
             </div>
         </section>

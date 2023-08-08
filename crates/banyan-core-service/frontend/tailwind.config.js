@@ -25,23 +25,29 @@ module.exports = {
 				blue: '0px 4px 0px rgba(37, 99, 235, 0.35)',
 			},
 			height: {
-				navbar: '72px'
+				navbar: '72px',
 			},
 			colors: {
 				blue: {
+					primary: '#3E8CDA',
 					100: '#DBEAFE',
 					600: '#2563EB',
 					900: '#1E3A8A',
 				},
-				yellow: {
-					primary: '#FFECC5'
-				}
+				navigation: {
+					primary: '#FFECC5',
+					secondary: '#fff8e7',
+					text: '#30374F',
+					textSecondary: '#7D89B0',
+					border: '#EFC163',
+				},
 			},
 			fontFamily: {
 				sans: ['Inter'],
 			},
 			fontSize: {
-				xs: ['14px', { lineHeight: '20px'}],
+				xxs: ['12px', { lineHeight: '18px' }],
+				xs: ['14px', { lineHeight: '20px' }],
 				sm: ['16px', { lineHeight: '24px' }],
 				m: ['18px', { lineHeight: '26px' }],
 				deviceCode: ['30px', { lineHeight: '36px' }],
@@ -61,7 +67,7 @@ module.exports = {
 				xs: '360px',
 			},
 			width: {
-				narrowModal: '327px',
+				navbar: '280px',
 				wideModal: '471px',
 			},
 			zIndex: {

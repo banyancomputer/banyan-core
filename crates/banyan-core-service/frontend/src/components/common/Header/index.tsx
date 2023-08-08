@@ -52,13 +52,17 @@ export const Header = () => {
                     onClick={toggleVisibility}
                     ref={controlsRef}
                 >
-                    <Image
-                        className="rounded-full"
-                        src={data?.user?.image || ''}
-                        width={40}
-                        height={40}
-                        alt="User Avatar"
-                    />
+                    {data?.user?.image ?
+                        <Image
+                            className='rounded-full'
+                            src={data?.user?.image}
+                            width={40}
+                            height={40}
+                            alt='User Avatar'
+                        />
+                        :
+                        null
+                    }
                     {isLogoutButtonVisible &&
                         <div
                             className="absolute right-0 -bottom-12 w-36 h-10 flex items-center shadow-xl p-2 rounded-xl text-xs font-semibold  bg-white cursor-pointer hover:bg-slate-100"
