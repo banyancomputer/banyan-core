@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+    font-family: "Inter";
+    font-style: normal;
+    font-display: swap;
+    src: url("../fonts/Inter.ttf") format("truetype");
+};
+
 h1,
 h2,
 h3 {
@@ -93,4 +100,14 @@ input {
 
 .label-text-alt {
 	@apply text-sm;
+}
+
+*::-webkit-scrollbar {
+        margin-right: 5px;
+        width: 8px;
+    }
+
+*::-webkit-scrollbar-thumb {
+    border-radius: 8px;
+    background-color: #686868;
 }

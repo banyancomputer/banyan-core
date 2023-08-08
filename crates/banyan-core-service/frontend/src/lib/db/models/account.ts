@@ -1,26 +1,27 @@
 import { models } from '@auth/sequelize-adapter';
-import { Sequelize, ModelDefined, Model } from 'sequelize';
+import { Model, ModelDefined, Sequelize } from 'sequelize';
 import { Account as AccountAttributes } from '@/lib/interfaces';
 
 interface AccountInstance extends Model<AccountAttributes>, AccountAttributes {
-	validate(): Promise<void>;
+    validate(): Promise<void>;
 }
 
 const AccountModel = (
-	sequelize: Sequelize
+    sequelize: Sequelize
 ): ModelDefined<AccountAttributes, {}> => {
-	const Account = sequelize.define<AccountInstance>(
-		'Account',
-		{
-			...models.Account,
-		},
-		{
-			createdAt: false,
-			updatedAt: false,
-			tableName: 'accounts',
-		}
-	);
-	return Account;
+    const Account = sequelize.define<AccountInstance>(
+        'Account',
+        {
+            ...models.Account,
+        },
+        {
+            createdAt: false,
+            updatedAt: false,
+            tableName: 'accounts',
+        }
+    );
+
+    return Account;
 };
 
 export default AccountModel;

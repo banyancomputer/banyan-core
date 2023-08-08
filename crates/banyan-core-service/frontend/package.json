@@ -10,7 +10,7 @@
 	"scripts": {
 		"build": "next build",
 		"start": "next start",
-		"lint": "next lint",
+		"lint": "eslint --fix --ext .js,.ts,.tsx .",
 		"prettier": "prettier --write .",
 		"format": "prettier --write .",
 		"dev": "cross-env NODE_OPTIONS='--inspect' NODE_ENV='development' next dev",
@@ -59,6 +59,7 @@
 		"babel-eslint": "^10.1.0",
 		"cross-env": "^7.0.3",
 		"env-cmd": "^10.1.0",
+		"eslint-plugin-unicorn": "^48.0.1",
 		"postcss": "^8.4.21",
 		"prettier": "^2.8.6",
 		"tailwindcss": "^3.2.7"

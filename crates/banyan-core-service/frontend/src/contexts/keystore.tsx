@@ -13,7 +13,7 @@ import {
 	publicPemWrap,
 	publicPemUnwrap,
 	prettyFingerprintApiKeyPem,
-} from '@/lib/utils';
+} from '@/utils';
 
 const KEY_STORE_NAME_PREFIX = 'key-store';
 const EXCHANGE_KEY_PAIR_NAME = 'exchange-key-pair';
@@ -34,8 +34,8 @@ export const KeystoreContext = createContext<{
 	purgeKeystore: () => Promise<void>;
 }>({
 	keystoreInitialized: false,
-	initializeKeystore: async (passkey: string) => {},
-	purgeKeystore: async () => {},
+	initializeKeystore: async (passkey: string) => { },
+	purgeKeystore: async () => { },
 });
 
 export const KeystoreProvider = ({ children }: any) => {
