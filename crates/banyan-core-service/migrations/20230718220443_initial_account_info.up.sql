@@ -92,7 +92,7 @@ CREATE TABLE escrowed_devices (
   account_id TEXT NOT NULL
     REFERENCES accounts(id)
     ON DELETE CASCADE,
-  
+
   api_key_pem TEXT NOT NULL,
   encryption_key_pem TEXT NOT NULL,
   wrapped_api_key TEXT NOT NULL,

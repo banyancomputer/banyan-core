@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "INSERT INTO bucket_keys (bucket_id, approved) VALUES ($1, true) RETURNING id;",
+  "query": "INSERT INTO accounts (userId, type, provider, providerAccountId) VALUES (?, \"oauth\", \"not-google\", 100033331337) RETURNING id;",
   "describe": {
     "columns": [
       {
@@ -16,5 +16,5 @@
       false
     ]
   },
-  "hash": "2cb75f93bf4e2f9d974020bb2b63f4cfed869c85ae54f443af37b25b96bff40d"
+  "hash": "723ff33d59d2ad3cf2e044683ace0d29dca5fe3b5b29f6bd89f0ff9754e4f183"
 }

@@ -14,8 +14,6 @@ pub struct DetailedBucket {
     pub friendly_name: String,
     pub r#type: BucketType,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub meta_data_cid: Option<String>,
     pub public_keys: Vec<PublicKeySummary>,
 }
 
@@ -25,9 +23,6 @@ pub struct MinimalBucket {
 
     pub friendly_name: String,
     pub r#type: BucketType,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub meta_data_cid: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -37,5 +32,17 @@ pub struct PublicKeySummary {
     pub pem: String,
 }
 
-#[derive(Serialize)]
-pub struct ProtectedKey(pub String);
+#[derive(Debug, Serialize)]
+pub struct PublishBucketMetadataResponse {
+    pub id: String,
+    pub state: MetadataState,
+
+    pub storage_host: String,
+    pub storage_authorization: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum MetadataState {
+    Pending,
+}

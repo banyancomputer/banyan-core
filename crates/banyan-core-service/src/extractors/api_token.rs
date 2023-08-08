@@ -40,10 +40,10 @@ pub struct ApiToken {
     pub subject: String,
 }
 
-#[derive(sqlx::FromRow)]
-struct DeviceApiKey {
-    account_id: String,
-    pem: String,
+impl ApiToken {
+    pub fn subject(&self) -> String {
+        self.subject.clone()
+    }
 }
 
 #[async_trait]
@@ -214,6 +214,7 @@ impl Display for ApiKeyAuthorizationError {
     }
 }
 
+// dunno if this is needed...
 impl std::error::Error for ApiKeyAuthorizationError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         use ApiKeyAuthorizationErrorKind::*;
@@ -256,4 +257,10 @@ enum ApiKeyAuthorizationErrorKind {
     NeverValid,
     UnidentifiedKey,
     UnknownTokenError(jsonwebtoken::errors::Error),
+}
+
+#[derive(sqlx::FromRow)]
+struct DeviceApiKey {
+    account_id: String,
+    pem: String,
 }

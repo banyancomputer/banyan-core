@@ -7,19 +7,35 @@ use openssl::bn::BigNumContext;
 use openssl::ec::PointConversionForm;
 use openssl::pkey::PKey;
 
-use crate::api::auth::models::*;
-use crate::api::auth::requests::*;
-use crate::api::auth::responses::*;
-use crate::api::auth::AuthError;
+use crate::api::auth::{models, requests, responses, AuthError};
 use crate::api::ErrorResponse;
-use crate::extractors::{DbConn, FakeToken, SigningKey};
+use crate::extractors::{ApiToken, DbConn, FakeToken, SigningKey};
 
 const FAKE_REGISTRATION_MAXIMUM_DURATION: u64 = 60 * 60 * 24 * 28; // four weeks, should be good enough between env resets
 
-pub async fn fake_register(mut db_conn: DbConn, signing_key: SigningKey) -> Response {
+pub async fn create_fake_account(mut db_conn: DbConn, signing_key: SigningKey) -> Response {
+    let maybe_user = sqlx::query_as!(
+        models::CreatedResource,
+        r#"INSERT INTO users DEFAULT VALUES RETURNING id;"#,
+    )
+    .fetch_one(&mut *db_conn.0)
+    .await;
+
+    let created_user = match maybe_user {
+        Ok(cu) => cu,
+        Err(_) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "unable to create new user",
+            )
+                .into_response();
+        }
+    };
+
     let maybe_account = sqlx::query_as!(
-        CreatedAccount,
-        r#"INSERT INTO accounts DEFAULT VALUES RETURNING id;"#
+        models::CreatedResource,
+        r#"INSERT INTO accounts (userId, type, provider, providerAccountId) VALUES (?, "oauth", "not-google", 100033331337) RETURNING id;"#,
+        created_user.id,
     )
     .fetch_one(&mut *db_conn.0)
     .await;
@@ -46,7 +62,7 @@ pub async fn fake_register(mut db_conn: DbConn, signing_key: SigningKey) -> Resp
     };
 
     match encode(&header, &api_token, &signing_key.0) {
-        Ok(token) => Json(NewAccount {
+        Ok(token) => Json(responses::NewAccount {
             id: created_account.id,
             token,
         })
@@ -58,10 +74,10 @@ pub async fn fake_register(mut db_conn: DbConn, signing_key: SigningKey) -> Resp
     }
 }
 
-pub async fn register_device_key(
+pub async fn fake_register_device_key(
     api_token: FakeToken,
     mut db_conn: DbConn,
-    extract::Json(new_device_key): extract::Json<RegisterDeviceKey>,
+    extract::Json(new_device_key): extract::Json<requests::RegisterDeviceKey>,
 ) -> Response {
     let account_id = api_token.subject;
     let pem_to_register = new_device_key.public_key();
@@ -88,7 +104,7 @@ pub async fn register_device_key(
         .join(":");
 
     let maybe_device_key = sqlx::query_as!(
-        CreatedDeviceKey,
+        models::CreatedDeviceKey,
         r#"INSERT INTO device_api_keys (account_id, fingerprint, pem) VALUES ($1, $2, $3) RETURNING id;"#,
         account_id,
         fingerprint,
@@ -108,10 +124,18 @@ pub async fn register_device_key(
         }
     };
 
-    Json(NewDeviceKey {
+    Json(responses::NewDeviceKey {
         id: created_device_key.id,
         account_id,
         fingerprint,
     })
     .into_response()
+}
+
+pub async fn whoami(api_token: ApiToken) -> Response {
+    let response = responses::WhoAmI {
+        account_id: api_token.subject(),
+    };
+
+    (StatusCode::OK, Json(response)).into_response()
 }
