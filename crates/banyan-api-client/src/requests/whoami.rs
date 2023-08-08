@@ -1,7 +1,7 @@
+use crate::{ApiRequest, InfallibleError};
 use reqwest::{Client, RequestBuilder, Url};
 use serde::Deserialize;
 use uuid::Uuid;
-use crate::{ApiRequest, InfallibleError};
 
 #[derive(Debug)]
 pub struct WhoAmI;

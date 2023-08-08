@@ -1,21 +1,17 @@
-use std::error::Error;
-use std::fmt::{self, Display, Formatter};
 use reqwest::{Client, RequestBuilder, Url};
 use serde::de::DeserializeOwned;
 use serde::Deserialize;
+use std::error::Error;
+use std::fmt::{self, Display, Formatter};
 
-mod requests;
-pub mod fake;
-mod client;
 mod api_token;
+mod client;
+pub mod fake;
 pub mod prelude;
+mod requests;
 
 // pub use common::*;
-pub use requests::{
-    common::*,
-    publish_bucket_metadata::*,
-    whoami::*
-};
+pub use requests::{common::*, publish_bucket_metadata::*, whoami::*};
 
 pub trait ApiRequest {
     type ResponseType: DeserializeOwned;

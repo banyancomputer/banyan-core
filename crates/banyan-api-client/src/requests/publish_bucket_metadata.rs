@@ -7,7 +7,6 @@ use uuid::Uuid;
 
 use crate::{ApiRequest, MetadataState};
 
-
 #[derive(Debug)]
 pub struct PublishBucketMetadata<S>
 where

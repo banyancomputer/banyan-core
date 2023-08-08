@@ -1,5 +1,5 @@
+use bac::prelude::{bucket::CreateBucket, *};
 use banyan_api_client as bac;
-use bac::prelude::{*, bucket::CreateBucket};
 use jsonwebtoken::EncodingKey;
 use uuid::Uuid;
 
@@ -46,7 +46,10 @@ async fn main() {
     let jwt_signing_key =
         EncodingKey::from_ec_pem(account.device_private_key_pem.as_bytes()).unwrap();
     let mut api_client = ClientBuilder::default().build().expect("client");
-    println!("account example: {:?} | {:?} | {:?}", account.id, account.fingerprint, account.device_private_key_pem);
+    println!(
+        "account example: {:?} | {:?} | {:?}",
+        account.id, account.fingerprint, account.device_private_key_pem
+    );
     api_client.set_credentials(account.id, account.fingerprint, jwt_signing_key);
 
     // Query who the API thinks we're authenticated as

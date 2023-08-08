@@ -1,13 +1,13 @@
 use std::error::Error;
 use std::fmt::{self, Display, Formatter};
 
+use crate::{ApiRequest, InfallibleError};
 use openssl::ec::{EcGroup, EcKey};
 use openssl::nid::Nid;
 use openssl::pkey::{PKey, Private, Public};
 use reqwest::{Client, RequestBuilder, Url};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use crate::{ApiRequest, InfallibleError};
 
 pub fn create_private_ec_pem() -> String {
     let private_key: PKey<Private> = {

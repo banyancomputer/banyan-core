@@ -1,10 +1,10 @@
 use std::error::Error;
 use std::fmt::{self, Display, Formatter};
 
+use crate::{ApiRequest, BucketType};
 use reqwest::{Client, RequestBuilder, Url};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use crate::{BucketType, ApiRequest};
 
 #[derive(Debug, Serialize)]
 pub struct CreateBucket {
