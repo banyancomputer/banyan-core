@@ -1,4 +1,5 @@
-use banyan_api_client::prelude::*;
+use banyan_api_client as bac;
+use bac::prelude::{*, bucket::CreateBucket};
 use jsonwebtoken::EncodingKey;
 use uuid::Uuid;
 
@@ -12,22 +13,22 @@ async fn register_fake_account() -> Account {
     let mut api_client = ClientBuilder::default().build().expect("client");
 
     let account_info = api_client
-        .call(banyan_api_client::fake::RegisterFakeAccount)
+        .call(bac::fake::RegisterFakeAccount)
         .await
         .unwrap();
 
-    let private_pem = banyan_api_client::fake::create_private_ec_pem();
-    let public_pem = banyan_api_client::fake::public_from_private(&private_pem);
+    let private_pem = bac::fake::create_private_ec_pem();
+    let public_pem = bac::fake::public_from_private(&private_pem);
 
     let device_key_info = api_client
-        .call(banyan_api_client::fake::FakeRegisterDeviceKey {
+        .call(bac::fake::FakeRegisterDeviceKey {
             token: account_info.token,
             public_key: public_pem.clone(),
         })
         .await
         .unwrap();
 
-    let fingerprint = banyan_api_client::fake::fingerprint_public_pem(public_pem.as_str());
+    let fingerprint = bac::fake::fingerprint_public_pem(public_pem.as_str());
 
     assert_eq!(account_info.id, device_key_info.account_id);
     assert_eq!(fingerprint, device_key_info.fingerprint);
@@ -44,8 +45,8 @@ async fn main() {
     let account = register_fake_account().await;
     let jwt_signing_key =
         EncodingKey::from_ec_pem(account.device_private_key_pem.as_bytes()).unwrap();
-
     let mut api_client = ClientBuilder::default().build().expect("client");
+    println!("account example: {:?} | {:?} | {:?}", account.id, account.fingerprint, account.device_private_key_pem);
     api_client.set_credentials(account.id, account.fingerprint, jwt_signing_key);
 
     // Query who the API thinks we're authenticated as

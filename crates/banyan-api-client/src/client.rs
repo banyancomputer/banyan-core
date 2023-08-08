@@ -1,8 +1,7 @@
 use jsonwebtoken::{get_current_timestamp, EncodingKey};
 use uuid::Uuid;
 
-use crate::api_token::ApiToken;
-use crate::requests::ApiRequest;
+use crate::{ApiRequest, api_token::ApiToken};
 
 pub struct Credentials {
     account_id: Uuid,

@@ -5,7 +5,7 @@ use reqwest::{Client, RequestBuilder, Url};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::requests::ApiRequest;
+use crate::ApiRequest;
 
 #[derive(Debug, Serialize)]
 pub struct DeleteBucket {

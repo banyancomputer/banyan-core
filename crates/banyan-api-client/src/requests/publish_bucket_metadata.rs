@@ -5,7 +5,8 @@ use reqwest::{Client, RequestBuilder, Url};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::requests::{ApiRequest, MetadataState};
+use crate::{ApiRequest, MetadataState};
+
 
 #[derive(Debug)]
 pub struct PublishBucketMetadata<S>

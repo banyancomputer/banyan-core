@@ -7,8 +7,7 @@ use openssl::pkey::{PKey, Private, Public};
 use reqwest::{Client, RequestBuilder, Url};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-
-use crate::requests::{ApiRequest, InfallibleError};
+use crate::{ApiRequest, InfallibleError};
 
 pub fn create_private_ec_pem() -> String {
     let private_key: PKey<Private> = {

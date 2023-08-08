@@ -4,8 +4,7 @@ use std::fmt::{self, Display, Formatter};
 use reqwest::{Client, RequestBuilder, Url};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-
-use crate::requests::{ApiRequest, BucketType};
+use crate::{BucketType, ApiRequest};
 
 #[derive(Debug, Serialize)]
 pub struct CreateBucket {
