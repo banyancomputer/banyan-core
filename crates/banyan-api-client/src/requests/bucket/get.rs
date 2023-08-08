@@ -6,6 +6,7 @@ use std::{
     fmt::{self, Display, Formatter},
 };
 use uuid::Uuid;
+use super::BucketInfoResponse;
 
 #[derive(Debug, Serialize)]
 pub struct GetBucket {
@@ -13,7 +14,7 @@ pub struct GetBucket {
 }
 
 impl ApiRequest for GetBucket {
-    type ResponseType = GetBucketResponse;
+    type ResponseType = BucketInfoResponse;
     type ErrorType = GetBucketError;
 
     fn build_request(self, base_url: &Url, client: &Client) -> RequestBuilder {
@@ -27,9 +28,6 @@ impl ApiRequest for GetBucket {
         true
     }
 }
-
-#[derive(Debug, Deserialize)]
-pub struct GetBucketResponse {}
 
 #[derive(Debug, Deserialize)]
 #[non_exhaustive]

@@ -8,15 +8,65 @@ pub use delete::DeleteBucket;
 pub use get::GetBucket;
 pub use list::ListBuckets;
 
+use serde::Deserialize;
+use uuid::Uuid;
+use crate::BucketType;
+
+#[derive(Debug, Deserialize, PartialEq)]
+pub struct BucketInfoResponse {
+    pub id: Uuid,
+    pub friendly_name: String,
+    pub r#type: BucketType,
+}
+
 #[cfg(test)]
 mod test {
-    use jsonwebtoken::EncodingKey;
-    use crate::{prelude::{bucket::*, test::{register_fake_account, fake_authenticated_client}}, client::{ClientBuilder, ClientError}, WhoAmI, BucketType, PublishBucketMetadata};
+    use crate::{prelude::{bucket::*, test::fake_authenticated_client}, client::ClientError, BucketType, PublishBucketMetadata};
+    
     #[tokio::test]
-    async fn list() {
+    async fn create() -> Result<(), ClientError> {
         let mut api_client = fake_authenticated_client().await;
-        
-        
+        let friendly_name = "test interactive bucket".to_string();
+        let response = api_client.call(CreateBucket {
+            friendly_name: friendly_name.clone(),
+            r#type: BucketType::Interactive,
+            initial_public_key: "ECDH public key pem formatted bits".to_string(),
+        }).await?;
+
+        assert_eq!(friendly_name, response.friendly_name);
+        assert_eq!(BucketType::Interactive, response.r#type);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn create_get() -> Result<(), ClientError> {
+        let mut api_client = fake_authenticated_client().await;
+        let friendly_name = "test interactive bucket".to_string();
+        let response1 = api_client.call(CreateBucket {
+            friendly_name: friendly_name.clone(),
+            r#type: BucketType::Interactive,
+            initial_public_key: "ECDH public key pem formatted bits".to_string(),
+        }).await?;
+
+        let response2 = api_client.call(GetBucket {
+            bucket_id: response1.id,
+        }).await?;
+
+        assert_eq!(response1, response2);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn list() -> Result<(), ClientError> {
+        let mut api_client = fake_authenticated_client().await;
+        let buckets = api_client.call(ListBuckets{
+
+        }).await?;
+
+        println!("{buckets:?}");
+
+        Ok(())
     }
 
     #[tokio::test]

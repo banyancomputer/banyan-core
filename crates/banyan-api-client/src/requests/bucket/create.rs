@@ -4,7 +4,7 @@ use std::fmt::{self, Display, Formatter};
 use crate::{ApiRequest, BucketType};
 use reqwest::{Client, RequestBuilder, Url};
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
+use super::BucketInfoResponse;
 
 #[derive(Debug, Serialize)]
 pub struct CreateBucket {
@@ -14,7 +14,7 @@ pub struct CreateBucket {
 }
 
 impl ApiRequest for CreateBucket {
-    type ResponseType = CreateBucketResponse;
+    type ResponseType = BucketInfoResponse;
     type ErrorType = CreateBucketError;
 
     fn build_request(self, base_url: &Url, client: &Client) -> RequestBuilder {
@@ -27,13 +27,6 @@ impl ApiRequest for CreateBucket {
     }
 }
 
-#[derive(Debug, Deserialize)]
-pub struct CreateBucketResponse {
-    pub id: Uuid,
-
-    pub friendly_name: String,
-    pub r#type: BucketType,
-}
 
 #[derive(Debug, Deserialize)]
 #[non_exhaustive]
