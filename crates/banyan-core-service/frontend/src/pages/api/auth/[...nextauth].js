@@ -2,7 +2,7 @@ import NextAuth from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import SequelizeAdapter from '@auth/sequelize-adapter';
 import client, { models } from '@/lib/db/models';
-import { AllowedEmailFactory } from '@/lib/db';
+import { AccountFactory, AllowedEmailFactory } from '@/lib/db';
 import { joinProviderId } from '@/utils';
 
 export const authOptions = {
@@ -40,6 +40,9 @@ export const authOptions = {
 
         async session({ session, token }) {
             session.providerId = token.providerId;
+            session.accountId = await AccountFactory.idFromProviderId(
+                token.providerId
+            );
 
             return session;
         },

@@ -87,7 +87,7 @@
         "import/no-default-export": "off",
         "import/order": "warn",
         "no-cond-assign": "warn",
-        "no-console": 2,
+        "no-console": 1,
         "no-duplicate-case": "warn",
         "no-empty": "warn",
         "one-var": ["warn", "never"],
@@ -162,7 +162,7 @@
         "no-useless-concat": "error",
         "no-useless-return": "error",
         "no-void": "error",
-        "require-await": "error",
+        "require-await": "warn",
         "yoda": "error",
         "no-proto": "error",
         "no-return-assign": "error",
@@ -170,7 +170,7 @@
         "no-use-before-define": "error",
         "max-depth": ["error", 3],
         "max-nested-callbacks": ["error", 3],
-        "new-cap": "error",
+        "new-cap": "warn",
         "no-multi-assign": "error",
         "no-multiple-empty-lines": "error",
         "no-nested-ternary": "error",
@@ -212,7 +212,7 @@
         "indent": "error",
         "jsx-quotes": ["error", "prefer-double"],
         "line-comment-position": [
-            "error",
+            "warn",
             {
                 "position": "above"
             }

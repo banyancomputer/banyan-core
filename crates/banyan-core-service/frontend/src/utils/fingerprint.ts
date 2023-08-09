@@ -6,14 +6,6 @@ import {
 } from 'banyan-webcrypto-experiment/lib/utils';
 import { publicPemUnwrap } from './pem';
 
-export const prettyFingerprintApiKeyPem = async(
-    pem: string
-): Promise<string> => {
-    const publicSpki = publicPemUnwrap(pem);
-
-    return await prettyFingerprintApiKeySpki(publicSpki);
-};
-
 export const prettyFingerprintApiKeySpki = async(
     spki: string
 ): Promise<string> => await webcrypto.subtle
@@ -29,3 +21,11 @@ export const prettyFingerprintApiKeySpki = async(
     )
     .then((key) => fingerprintEcPublicKey(key))
     .then((fingerprintBytes) => prettyFingerprint(fingerprintBytes));
+
+export const prettyFingerprintApiKeyPem = async(
+    pem: string
+): Promise<string> => {
+    const publicSpki = publicPemUnwrap(pem);
+
+    return await prettyFingerprintApiKeySpki(publicSpki);
+};

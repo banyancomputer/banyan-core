@@ -1,9 +1,8 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { getServerSession } from 'next-auth/next';
 import { Session } from 'next-auth';
-import { DeviceApiKeyFactory } from '@/lib/db';
+import { AccountFactory, DeviceApiKeyFactory } from '@/lib/db';
 import { authOptions } from '@/pages/api/auth/[...nextauth]';
-import { AccountFactory } from '@/lib/db';
 import { prettyFingerprintApiKeySpki, publicPemWrap } from '@/utils';
 import * as errors from '@/lib/db/models/errors';
 import { b64UrlDecode } from '@/utils/b64';
