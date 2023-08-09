@@ -40,9 +40,9 @@ export const authOptions = {
 
         async session({ session, token }) {
             session.providerId = token.providerId;
-			session.accountId = await AccountFactory.idFromProviderId(
-				token.providerId
-			);
+            session.accountId = await AccountFactory.idFromProviderId(
+                token.providerId
+            );
 
             return session;
         },

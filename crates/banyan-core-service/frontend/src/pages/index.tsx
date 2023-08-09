@@ -2,12 +2,11 @@ import React, { useEffect, useState } from 'react';
 
 import BaseLayout from '@layouts/BaseLayout';
 import { NextPageWithLayout } from './page';
-
-import { Add, Upload } from '@static/images/buckets';
 import TombBucket from '@/components/Bucket/TombBucket';
 
-const Buckets: NextPageWithLayout = () => {
+import { Add, Upload } from '@static/images/buckets';
 
+const Buckets: NextPageWithLayout = () => {
     const uploadFile = (event: React.ChangeEvent<HTMLInputElement>) => { };
 
     return (
@@ -38,7 +37,7 @@ const Buckets: NextPageWithLayout = () => {
                     onChange={uploadFile}
                 />
             </label>
-            <TombBucket bucket_id='test' />
+            <TombBucket bucket_id="test" />
         </section>
     );
 };

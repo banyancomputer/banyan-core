@@ -54,11 +54,11 @@ export const Header = () => {
                 >
                     {data?.user?.image ?
                         <Image
-                            className='rounded-full'
+                            className="rounded-full"
                             src={data?.user?.image}
                             width={40}
                             height={40}
-                            alt='User Avatar'
+                            alt="User Avatar"
                         />
                         :
                         null
