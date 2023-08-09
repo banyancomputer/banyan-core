@@ -3,7 +3,7 @@ use axum::extract::{self, BodyStream, Path};
 use axum::headers::ContentType;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use axum::TypedHeader;
+use axum::{TypedHeader, Json};
 use futures::{TryStream, TryStreamExt};
 use object_store::ObjectStore;
 use tokio::io::{AsyncWrite, AsyncWriteExt};
@@ -81,7 +81,7 @@ pub async fn destroy(
     Path(_bucket_id): Path<Uuid>,
     //_if_match: Option<TypedHeader<IfMatch>>,
 ) -> Response {
-    (StatusCode::OK, "todo").into_response()
+    (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!({"status": "still TODO"})),).into_response()
 }
 
 pub async fn index(_api_token: ApiToken) -> Response {

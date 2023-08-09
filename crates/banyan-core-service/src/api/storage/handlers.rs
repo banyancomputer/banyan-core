@@ -17,14 +17,14 @@ pub async fn create_authorization(
     }
 
     //(StatusCode::OK, axum::Json(response)).into_response()
-    (StatusCode::OK, "todo").into_response()
+    (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!({"status": "still TODO"})),).into_response()
 }
 
 pub async fn current_authorizations(
     _api_token: ApiToken,
     mut _db_conn: DbConn,
 ) -> Response {
-    (StatusCode::OK, "todo").into_response()
+    (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!({"status": "still TODO"})),).into_response()
 }
 
 pub async fn revoke_authorization(
@@ -32,5 +32,5 @@ pub async fn revoke_authorization(
     Path(_auth_id): Path<Uuid>,
     mut _db_conn: DbConn,
 ) -> Response {
-    (StatusCode::OK, "todo").into_response()
+    (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!({"status": "still TODO"})),).into_response()
 }

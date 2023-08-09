@@ -76,6 +76,8 @@ where
         let token = bearer.token();
         let header_data = decode_header(token).map_err(ApiKeyAuthorizationError::decode_failed)?;
 
+        println!("header data: {:?}", header_data);
+
         let key_id = match header_data.kid {
             Some(key_id) if key_regex.is_match(key_id.as_str()) => key_id,
             Some(_) => return Err(ApiKeyAuthorizationError::bad_key_format()),
@@ -236,7 +238,7 @@ impl IntoResponse for ApiKeyAuthorizationError {
         // Report to the CLI, not to the end user. Don't give attackers knowledge of what we didn't
         // like about their request
         use crate::util::collect_error_messages;
-        tracing::error!("authentication failed: {:?}", &collect_error_messages(self));
+        tracing::error!("{{ \"error\": \"authentication failed: {:?}\" }}", &collect_error_messages(self));
 
         let err_msg = serde_json::json!({ "status": "not authorized" });
         (StatusCode::UNAUTHORIZED, Json(err_msg)).into_response()
