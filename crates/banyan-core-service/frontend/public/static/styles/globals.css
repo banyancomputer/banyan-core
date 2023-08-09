@@ -3,11 +3,11 @@
 @tailwind utilities;
 
 @font-face {
-    font-family: "Inter";
-    font-style: normal;
-    font-display: swap;
-    src: url("../fonts/Inter.ttf") format("truetype");
-};
+	font-family: 'Inter';
+	font-style: normal;
+	font-display: swap;
+	src: url('../fonts/Inter.ttf') format('truetype');
+}
 
 h1,
 h2,
@@ -103,11 +103,11 @@ input {
 }
 
 *::-webkit-scrollbar {
-        margin-right: 5px;
-        width: 8px;
-    }
+	margin-right: 5px;
+	width: 8px;
+}
 
 *::-webkit-scrollbar-thumb {
-    border-radius: 8px;
-    background-color: #686868;
+	border-radius: 8px;
+	background-color: #686868;
 }

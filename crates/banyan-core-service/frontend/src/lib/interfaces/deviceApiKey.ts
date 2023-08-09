@@ -7,8 +7,8 @@
  * @property pem - the device's public ecdsa key in PEM format
  */
 export interface DeviceApiKey {
-    id: string;
-    accountId: string;
-    fingerprint: string;
-    pem: string;
+	id: string;
+	accountId: string;
+	fingerprint: string;
+	pem: string;
 }

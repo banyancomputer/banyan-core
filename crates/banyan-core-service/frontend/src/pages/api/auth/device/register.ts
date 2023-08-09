@@ -8,67 +8,67 @@ import { prettyFingerprintApiKeySpki, publicPemWrap } from '@/utils';
 import * as errors from '@/lib/db/models/errors';
 import { b64UrlDecode } from '@/utils/b64';
 
-export default async(req: NextApiRequest, res: NextApiResponse) => {
-    // Get the user's session
-    // TODO: Fix this ts-ignore s.t. we can type check session
-    // @ts-ignore
-    const session: Session = await getServerSession(req, res, authOptions);
-    if (!session) {
-        res.status(401).send({}); // Unauthorized
-    }
+export default async (req: NextApiRequest, res: NextApiResponse) => {
+	// Get the user's session
+	// TODO: Fix this ts-ignore s.t. we can type check session
+	// @ts-ignore
+	const session: Session = await getServerSession(req, res, authOptions);
+	if (!session) {
+		res.status(401).send({}); // Unauthorized
+	}
 
-    // Get the user's account id
-    const providerId = session.providerId;
-    const accountId = await AccountFactory.idFromProviderId(providerId);
-    if (!accountId) {
-        res.status(404).send('account not found'); // Not Found
+	// Get the user's account id
+	const providerId = session.providerId;
+	const accountId = await AccountFactory.idFromProviderId(providerId);
+	if (!accountId) {
+		res.status(404).send('account not found'); // Not Found
 
-        return;
-    }
+		return;
+	}
 
-    const urlSpki = req.query.spki;
-    if (!urlSpki || typeof urlSpki !== 'string') {
-        res.status(400).send('bad request -- missing spki'); // Bad Request
+	const urlSpki = req.query.spki;
+	if (!urlSpki || typeof urlSpki !== 'string') {
+		res.status(400).send('bad request -- missing spki'); // Bad Request
 
-        return;
-    }
-    const spki = b64UrlDecode(urlSpki as string);
+		return;
+	}
+	const spki = b64UrlDecode(urlSpki as string);
 
-    // Get the fingerprint from the spki
-    const fingerprint = await prettyFingerprintApiKeySpki(spki);
+	// Get the fingerprint from the spki
+	const fingerprint = await prettyFingerprintApiKeySpki(spki);
 
-    if (req.method === 'GET') {
-        // Check if the device api key already exists
-        const maybeDeviceApiKey = await DeviceApiKeyFactory.readByFingerprint(
-            fingerprint as string
-        );
-        if (maybeDeviceApiKey) {
-            res.status(409).send('conflict'); // Conflict
+	if (req.method === 'GET') {
+		// Check if the device api key already exists
+		const maybeDeviceApiKey = await DeviceApiKeyFactory.readByFingerprint(
+			fingerprint as string
+		);
+		if (maybeDeviceApiKey) {
+			res.status(409).send('conflict'); // Conflict
 
-            return;
-        }
+			return;
+		}
 
-        const pem = publicPemWrap(spki);
+		const pem = publicPemWrap(spki);
 
-        const deviceApiKey = {
-            accountId,
-            fingerprint,
-            pem,
-        };
+		const deviceApiKey = {
+			accountId,
+			fingerprint,
+			pem,
+		};
 
-        try {
-            await DeviceApiKeyFactory.create(deviceApiKey);
-        } catch (e: any) {
-            if (e.name === errors.BadModelFormat.name) {
-                res.status(400).send('bad request -- bad format'); // Bad Request
+		try {
+			await DeviceApiKeyFactory.create(deviceApiKey);
+		} catch (e: any) {
+			if (e.name === errors.BadModelFormat.name) {
+				res.status(400).send('bad request -- bad format'); // Bad Request
 
-                return;
-            }
-            console.log('Error creating device api key: ', e);
-            res.status(500).send('internal server error'); // Bad Request
+				return;
+			}
+			console.log('Error creating device api key: ', e);
+			res.status(500).send('internal server error'); // Bad Request
 
-            return;
-        }
-        res.status(200).send(deviceApiKey); // Bad Request
-    }
+			return;
+		}
+		res.status(200).send(deviceApiKey); // Bad Request
+	}
 };

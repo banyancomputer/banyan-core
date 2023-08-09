@@ -11,11 +11,11 @@
  * @property passKeySalt - the salt used to derive the user's pass key, when used in conjunction with the user's pass key.
  */
 export interface EscrowedDevice {
-    id: string;
-    accountId: string;
-    apiKeyPem: string;
-    encryptionKeyPem: string;
-    wrappedApiKey: string;
-    wrappedEncryptionKey: string;
-    passKeySalt: string;
+	id: string;
+	accountId: string;
+	apiKeyPem: string;
+	encryptionKeyPem: string;
+	wrappedApiKey: string;
+	wrappedEncryptionKey: string;
+	passKeySalt: string;
 }

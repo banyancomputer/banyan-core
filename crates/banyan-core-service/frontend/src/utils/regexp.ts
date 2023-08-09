@@ -4,4 +4,5 @@ const PUBLIC_PEM_REGEX =
 
 export const isPem = (pem: string): boolean => PUBLIC_PEM_REGEX.test(pem);
 
-export const isPrettyFingerprint = (fingerprint: string): boolean => PRETTY_FINGERPRINT_REGEX.test(fingerprint);
+export const isPrettyFingerprint = (fingerprint: string): boolean =>
+	PRETTY_FINGERPRINT_REGEX.test(fingerprint);

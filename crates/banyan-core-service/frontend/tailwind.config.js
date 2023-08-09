@@ -25,7 +25,7 @@ module.exports = {
 				blue: '0px 4px 0px rgba(37, 99, 235, 0.35)',
 			},
 			height: {
-				navbar: '72px'
+				navbar: '72px',
 			},
 			colors: {
 				blue: {
@@ -34,14 +34,14 @@ module.exports = {
 					900: '#1E3A8A',
 				},
 				yellow: {
-					primary: '#FFECC5'
-				}
+					primary: '#FFECC5',
+				},
 			},
 			fontFamily: {
 				sans: ['Inter'],
 			},
 			fontSize: {
-				xs: ['14px', { lineHeight: '20px'}],
+				xs: ['14px', { lineHeight: '20px' }],
 				sm: ['16px', { lineHeight: '24px' }],
 				m: ['18px', { lineHeight: '26px' }],
 				deviceCode: ['30px', { lineHeight: '36px' }],

@@ -44,7 +44,7 @@
 		"sequelize": "^6.32.1",
 		"sqlite3": "^5.1.6",
 		"styled-components": "^5.3.9",
-		"tomb-wasm-experimental": "^1.1.0",
+		"tomb-wasm-experimental": "2.0.0",
 		"typeorm": "^0.3.17",
 		"typescript": "^5.1.6",
 		"uint8arrays": "^3.0.0",

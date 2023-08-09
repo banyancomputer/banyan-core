@@ -21,7 +21,7 @@
 			"@static/*": ["./public/static/*"],
 			"@utils/*": ["./src/utils/*"],
 			"@components/*": ["./src/components/*"],
-			"@layouts/*": ["./src/layouts/*"],
+			"@layouts/*": ["./src/layouts/*"]
 		}
 	},
 	"typeRoots": ["./node_modules/@types", "./src/@types"],
