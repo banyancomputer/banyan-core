@@ -1,38 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { PrivateKey, TombFS, WasmBlockStore } from 'tomb-wasm-experimental';
 
 import BaseLayout from '@layouts/BaseLayout';
 import { NextPageWithLayout } from './page';
 
 import { Add, Upload } from '@static/images/buckets';
-
-// This is going to be initialized based on the bucket the user is currently in
-const blockstoreUrl =
-    'https://raw.githubusercontent.com/ipld/go-car/master/v2/testdata/sample-v2-indexless.car';
-// This should NOT exist -- the privateKey should just be Crypto Key retrieved from keyStore!
-const privateKeyUrl =
-    'https://gist.githubusercontent.com/organizedgrime/f292f28a6ea39cea5fd1b844c51da4fb/raw/wrapping_key.pem';
+import TombBucket from '@/components/Bucket/TombBucket';
 
 const Buckets: NextPageWithLayout = () => {
-    const [fs, setFs] = useState<TombFS | null>(null);
 
     const uploadFile = (event: React.ChangeEvent<HTMLInputElement>) => { };
-
-    // Initialize the tombFs
-    useEffect(() => {
-        const initTombFs = async() => {
-            let fs: TombFS | null = null;
-            try {
-                const bs = await WasmBlockStore.new(blockstoreUrl);
-                const pkey = await PrivateKey.new(privateKeyUrl);
-                fs = await TombFS.new(pkey, bs);
-            } catch (err) {
-                console.error(err);
-            }
-            setFs(fs);
-        };
-        initTombFs();
-    }, []);
 
     return (
         <section className="py-9 px-4">
@@ -62,6 +38,7 @@ const Buckets: NextPageWithLayout = () => {
                     onChange={uploadFile}
                 />
             </label>
+            <TombBucket bucket_id='test' />
         </section>
     );
 };

@@ -1,5 +1,4 @@
-import { createContext, useState, useEffect, useContext } from 'react';
-import { ClientApi } from '@/lib/api/auth';
+import { createContext, useContext, useEffect, useState } from 'react';
 import { DeviceApiKey, EscrowedDevice } from '@/lib/interfaces';
 import ECCKeystore from 'banyan-webcrypto-experiment/ecc/keystore';
 import * as KeyStore from 'banyan-webcrypto-experiment/keystore/index';
@@ -9,10 +8,10 @@ import {
 } from 'banyan-webcrypto-experiment/utils';
 import { useSession } from 'next-auth/react';
 import { Session } from 'next-auth';
+import { ClientApi } from '@/lib/api/auth';
 import {
 	publicPemWrap,
 	publicPemUnwrap,
-	prettyFingerprintApiKeyPem,
 } from '@/utils';
 
 const KEY_STORE_NAME_PREFIX = 'key-store';
@@ -30,12 +29,22 @@ export const KeystoreContext = createContext<{
 
 	// Initialize a keystore based on the user's passphrase
 	initializeKeystore: (passkey: string) => Promise<void>;
+	// Get the user's Encryption Key Pair
+	getEncryptionKey: () => Promise<CryptoKeyPair>;
+	// Get the user's API Key Pair
+	getApiKey: () => Promise<CryptoKeyPair>;
 	// Purge the keystore from storage
 	purgeKeystore: () => Promise<void>;
 }>({
 	keystoreInitialized: false,
-	initializeKeystore: async (passkey: string) => { },
-	purgeKeystore: async () => { },
+	getEncryptionKey: async () => {
+		throw new Error('Keystore not initialized');
+	},
+	getApiKey: async () => {
+		throw new Error('Keystore not initialized');
+	},
+	initializeKeystore: async (passkey: string) => {},
+	purgeKeystore: async () => {},
 });
 
 export const KeystoreProvider = ({ children }: any) => {
@@ -67,7 +76,7 @@ export const KeystoreProvider = ({ children }: any) => {
 	useEffect(() => {
 		const createKeystore = async (session: Session) => {
 			// Initialize a keystore pointed by the user's uid
-			const storeName = KEY_STORE_NAME_PREFIX + '-' + session.providerId;
+			const storeName = `${KEY_STORE_NAME_PREFIX}-${session.providerId}`;
 			// Defaults are fine here
 			const ks = (await KeyStore.init({
 				escrowKeyName: ESCROW_KEY_NAME,
@@ -91,14 +100,16 @@ export const KeystoreProvider = ({ children }: any) => {
 				(await ks.keyPairExists(WRITE_KEY_PAIR_NAME))
 			) {
 				setKeystoreInitialized(true);
+
 				return true;
 			}
+
 			return false;
 		};
 		const getEscrowedDevice = async () => {
-			const resp = (await api.readEscrowedDevice().catch((err) => {
-				return undefined;
-			})) as EscrowedDevice | undefined;
+			const resp = (await api
+				.readEscrowedDevice()
+				.catch((err) => undefined)) as EscrowedDevice | undefined;
 			if (resp) {
 				setEscrowedDevice(resp);
 			}
@@ -121,6 +132,24 @@ export const KeystoreProvider = ({ children }: any) => {
 		} else {
 			await escrowDevice(passkey);
 		}
+	};
+
+	// Get the user's Encryption Key Pair
+	const getEncryptionKey = async (): Promise<CryptoKeyPair> => {
+		if (!keystore || !keystoreInitialized) {
+			throw new Error('Keystore not initialized');
+		}
+
+		return await keystore.getExchangeKeyPair();
+	};
+
+	// Get the user's API Key Pair
+	const getApiKey = async (): Promise<CryptoKeyPair> => {
+		if (!keystore || !keystoreInitialized) {
+			throw new Error('Keystore not initialized');
+		}
+
+		return await keystore.getWriteKeyPair();
 	};
 
 	// Purge the keystore from storage
@@ -182,15 +211,15 @@ export const KeystoreProvider = ({ children }: any) => {
 			});
 
 		console.log('Registering device:');
-		console.log('apiKeySpki: ' + apiKeySpki);
+		console.log(`apiKeySpki: ${apiKeySpki}`);
 
 		// Register the user's public key material
 		await api
 			.registerDeviceApiKey(apiKeySpki)
 			.then((resp: DeviceApiKey) => {
 				console.log('Registered device:');
-				console.log('apiKeyPem: ' + resp.pem);
-				console.log('apiKeyFingerprint: ' + resp.fingerprint);
+				console.log(`apiKeyPem: ${resp.pem}`);
+				console.log(`apiKeyFingerprint: ${resp.fingerprint}`);
 				if (resp.fingerprint !== apiKeyFingerprint) {
 					setError('Fingerprint mismatch');
 					throw new Error('Fingerprint mismatch');
@@ -226,9 +255,9 @@ export const KeystoreProvider = ({ children }: any) => {
 		const apiKeySpki = publicPemUnwrap(apiKeyPem);
 		const encryptionKeySpki = publicPemUnwrap(encryptionKeyPem);
 
-		console.log('apiKeySpki: ' + apiKeySpki);
+		console.log(`apiKeySpki: ${apiKeySpki}`);
 		await keystore.importEscrowedWriteKeyPair(apiKeySpki, wrappedApiKey);
-		console.log('encryptionKeySpki: ' + encryptionKeySpki);
+		console.log(`encryptionKeySpki: ${encryptionKeySpki}`);
 		await keystore.importEscrowedExchangeKeyPair(
 			encryptionKeySpki,
 			wrappedEncryptionKey
@@ -249,8 +278,8 @@ export const KeystoreProvider = ({ children }: any) => {
 			passKeySalt
 		);
 		if (plaintext !== msg) {
-			setError('Keystore is invalid: ' + plaintext + ' != ' + msg);
-			throw new Error('Keystore is invalid: ' + plaintext + ' != ' + msg);
+			setError(`Keystore is invalid: ${plaintext} != ${msg}`);
+			throw new Error(`Keystore is invalid: ${plaintext} != ${msg}`);
 		}
 		const signature = await keystore.sign(msg);
 		const verified = await keystore.verify(msg, signature, apiKeySpki);
@@ -264,6 +293,8 @@ export const KeystoreProvider = ({ children }: any) => {
 		<KeystoreContext.Provider
 			value={{
 				keystoreInitialized,
+				getEncryptionKey,
+				getApiKey,
 				initializeKeystore,
 				purgeKeystore,
 			}}

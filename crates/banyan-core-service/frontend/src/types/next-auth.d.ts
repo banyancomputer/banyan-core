@@ -10,5 +10,6 @@ declare module 'next-auth' {
         // You can use this to search for an account by provider and providerAccountId
         // See lib/db/account.ts for more details
         providerId: string;
+        accountId: string;
     }
 }
