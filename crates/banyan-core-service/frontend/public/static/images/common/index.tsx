@@ -26,3 +26,10 @@ export const Folder = () => <svg width="24" height="24" viewBox="0 0 24 24" fill
 export const Cross = () => <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M15 5L5 15M5 5L15 15" stroke="#30374F" strokeWidth="1.66667" strokeLinecap="round" strokeLinejoin="round" />
 </svg>;
+
+export const Dots = () => <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M10.0013 10.832C10.4615 10.832 10.8346 10.4589 10.8346 9.9987C10.8346 9.53846 10.4615 9.16536 10.0013 9.16536C9.54106 9.16536 9.16797 9.53846 9.16797 9.9987C9.16797 10.4589 9.54106 10.832 10.0013 10.832Z" stroke="#7D89B0" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M10.0013 4.9987C10.4615 4.9987 10.8346 4.6256 10.8346 4.16536C10.8346 3.70513 10.4615 3.33203 10.0013 3.33203C9.54106 3.33203 9.16797 3.70513 9.16797 4.16536C9.16797 4.6256 9.54106 4.9987 10.0013 4.9987Z" stroke="#7D89B0" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M10.0013 16.6654C10.4615 16.6654 10.8346 16.2923 10.8346 15.832C10.8346 15.3718 10.4615 14.9987 10.0013 14.9987C9.54106 14.9987 9.16797 15.3718 9.16797 15.832C9.16797 16.2923 9.54106 16.6654 10.0013 16.6654Z" stroke="#7D89B0" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
+</svg>;
+

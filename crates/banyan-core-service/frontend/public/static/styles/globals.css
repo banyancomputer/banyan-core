@@ -104,7 +104,7 @@ input {
 
 *::-webkit-scrollbar {
         margin-right: 5px;
-        width: 8px;
+        width: 6px;
     }
 
 *::-webkit-scrollbar-thumb {

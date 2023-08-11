@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { signOut, useSession } from 'next-auth/react';
 
-import { otsideClickHandler } from '@/utils';
+import { popupClickHandler } from '@/utils';
 
 import { Input } from '../Input';
 
@@ -19,7 +19,7 @@ export const Header = () => {
     };
 
     useEffect(() => {
-        const listener = otsideClickHandler(controlsRef.current!, setIsLogoutButtonVisible);
+        const listener = popupClickHandler(controlsRef.current!, setIsLogoutButtonVisible);
         document.addEventListener('click', listener);
 
         return () => {
@@ -28,7 +28,7 @@ export const Header = () => {
     }, [controlsRef]);
 
     return (
-        <header className="flex items-center justify-between border-b-2 border-c h-navbar px-4">
+        <header className="flex items-center justify-between border-b-2 border-c p-4">
             <Link href="/" className="font-semibold text-m flex-grow" >
                 Banyan Computer
             </Link>
@@ -41,10 +41,10 @@ export const Header = () => {
                 <Link href="/key-management" className="font-semibold text-nav mr-4" >
                     Manage Key Access
                 </Link>
-                <Link href="/">
+                <Link href="/settings">
                     <Settings />
                 </Link>
-                <Link href="/">
+                <Link href="/faq">
                     <Question />
                 </Link>
                 <div
