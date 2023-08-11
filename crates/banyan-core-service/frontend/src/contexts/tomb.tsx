@@ -1,20 +1,23 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { TombWasm } from 'tomb-wasm-experimental';
+import { TombWasm } from 'tomb-wasm';
 import { useSession } from 'next-auth/react';
-import { webcrypto } from 'one-webcrypto';
 import { useKeystore } from './keystore';
+import { Mutex } from 'async-mutex';
+
+// TODO: Better typing for tomb-wasm
+
 const TombContext = createContext<{
 	tombInitialized: boolean;
-	tomb: TombWasm | null;
+
+    // Banyan Api methods
+
 
 	// Bucket Api
 	loadBucket: (bucket_id: string) => Promise<void>;
-	// TODO: better typing
 	unlockBucket: (bucket_id: string) => Promise<void>;
 	lsBucket: (bucket_id: string, path: string) => Promise<any>;
 }>({
 	tombInitialized: false,
-	tomb: null,
 	loadBucket: async (bucket_id: string) => {},
 	unlockBucket: async (bucket_id: string) => {},
 	lsBucket: async (bucket_id: string, path: string) => {},
@@ -31,25 +34,28 @@ export const TombProvider = ({ children }: any) => {
 	const [tombInitialized, setTombInitialized] = useState<boolean>(false);
 	// Our tomb client
 	const [tomb, setTomb] = useState<TombWasm | null>(null);
+	// A mutex to prevent concurrent tomb operations -- wasm is not thread-safe
+	const tombMutex = new Mutex();
+
+    /* Effect Hooks */
 
 	// Load the tomb-wasm module
 	useEffect(() => {
-		import('tomb-wasm-experimental').then((module) => {
+		import('tomb-wasm').then((module) => {
 			setTombModule(module);
 		});
 	}, []);
 
-	// Initialize the tomb client
+	// Initialize the tomb client when the keystore is ready
 	useEffect(() => {
 		const initTomb = async () => {
 			try {
-				const wrappingKey = await getEncryptionKey();
 				const apiKey = await getApiKey();
 				const tomb_wasm: any = tombModule?.TombWasm;
 				const tomb = await new tomb_wasm(
-					wrappingKey?.privateKey,
 					apiKey?.privateKey,
 					session?.accountId,
+                    // TODO: Make this configurable
 					'localhost:8080'
 				);
 				setTomb(tomb);
@@ -70,31 +76,46 @@ export const TombProvider = ({ children }: any) => {
 	}, [tombModule, keystoreInitialized, session?.accountId]);
 
 	const loadBucket = async (bucket_id: string) => {
-		if (tomb) {
-			await tomb.loadBucket(bucket_id);
-		}
+		await tombMethod(async (t) => {
+			await t.load(bucket_id);
+		});
 	};
 
 	const unlockBucket = async (bucket_id: string) => {
-		if (tomb) {
+		await tombMethod(async (t) => {
 			const encryptionKey = await getEncryptionKey();
-			await tomb.unlockBucket(bucket_id, encryptionKey.privateKey);
-		}
+			await t.unlock(bucket_id, encryptionKey.privateKey);
+		});
 	};
 
 	const lsBucket = async (bucket_id: string, path: string) => {
-		if (tomb) {
-			const contents = await tomb.lsBucket(bucket_id, path);
-
+		return await tombMethod(async (t) => {
+			const contents = await t.ls(bucket_id, path);
 			return contents;
+		});
+	};
+
+
+    /* Helper Methods */
+
+    const tombMethod = async (call: (tomb: TombWasm) => Promise<any>) => {
+		if (tomb) {
+			const release = await tombMutex.acquire();
+			try {
+				const result = await call(tomb);
+				return result;
+			} catch (err) {
+				console.error(err);
+			} finally {
+				release();
+			}
 		}
 	};
 
-	// TODO: Add more Bindings to tomb-wasm
 
 	return (
 		<TombContext.Provider
-			value={{ tombInitialized, tomb, loadBucket, unlockBucket, lsBucket }}
+			value={{ tombInitialized, loadBucket, unlockBucket, lsBucket }}
 		>
 			{children}
 		</TombContext.Provider>

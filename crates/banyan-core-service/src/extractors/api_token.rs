@@ -24,7 +24,10 @@ const KEY_ID_REGEX: &str = r"^[0-9a-f]{2}(:[0-9a-f]{2}){19}$";
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ApiToken {
-    #[serde(rename = "nnc")]
+    #[serde(rename = "iat")]
+    pub issued_at: u64,
+
+    #[serde(rename = "nonce")]
     pub nonce: Option<String>,
 
     #[serde(rename = "exp")]
@@ -71,7 +74,7 @@ where
         token_validator.set_audience(&["banyan-platform"]);
 
         // Require all of our keys except for the attestations and proofs
-        token_validator.set_required_spec_claims(&["aud", "exp", "nbf", "sub"]);
+        token_validator.set_required_spec_claims(&["aud", "exp", "nbf", "sub", "iat"]);
 
         let token = bearer.token();
         let header_data = decode_header(token).map_err(ApiKeyAuthorizationError::decode_failed)?;

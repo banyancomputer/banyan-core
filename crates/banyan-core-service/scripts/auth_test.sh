@@ -31,7 +31,7 @@ EXPIRATION_UNIX_TIME="$(($(date +%s) + 600))"
 AUTH_TOKEN=$(node scripts/js/jwt.js ${PRIVATE_EC_CLIENT_KEY_PATH} ${REGISTERED_FINGERPRINT} ES384 '{"nnc":"'"${NONCE}"'","exp":'"${EXPIRATION_UNIX_TIME}"',"nbf":'"$(date +%s)"',"aud":"banyan-platform","sub":"'"${ACCOUNT_ID}"'"}')
 
 # Create a bucket using device key authentication (associated to account) and an initial public encryption key
-BUCKET_CREATION_PAYLOAD="{\"friendly_name\":\"Sweet Interactive Bucket\","type":\"interactive\",\"initial_public_key\":\"${PUBLIC_EC_CLIENT_KEY_PEM}\"}"
+BUCKET_CREATION_PAYLOAD="{\"name\":\"Sweet Interactive Bucket\","type":\"interactive\",\"initial_public_key\":\"${PUBLIC_EC_CLIENT_KEY_PEM}\"}"
 CHECK="$(curl -s -o /dev/null -w "%{http_code}" -H "Content-Type: application/json" -H "Authorization: Bearer ${AUTH_TOKEN}" -X POST -d "${BUCKET_CREATION_PAYLOAD}" ${BASE_HOST}/api/v1/buckets)"
 if [ "$CHECK" == "401" ]; then
   echo "Failed Auth"

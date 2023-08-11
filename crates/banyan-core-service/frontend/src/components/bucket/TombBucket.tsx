@@ -11,6 +11,7 @@ const TombBucket: React.FC<ITombBucket> = ({ bucket_id }) => {
 	// TODO: Respond to path changes
 	const [path, setPath] = useState<string>('/');
 	const [ls, setLs] = useState<any[]>([]);
+    // const [ls1 , setLs1] = useState<any[]>([]);
 
 	// Initialize the tombFs
 	useEffect(() => {

@@ -29,9 +29,9 @@ pub async fn create(
 
     let maybe_bucket = sqlx::query_as!(
         models::CreatedResource,
-        r#"INSERT INTO buckets (account_id, friendly_name, type) VALUES ($1, $2, $3) RETURNING id;"#,
+        r#"INSERT INTO buckets (account_id, name, type) VALUES ($1, $2, $3) RETURNING id;"#,
         api_token.subject,
-        new_bucket.friendly_name,
+        new_bucket.name,
         new_bucket.r#type,
     )
     .fetch_one(&mut *db_conn.0)
@@ -69,7 +69,7 @@ pub async fn create(
     let response = responses::MinimalBucket {
         id: created_bucket.id,
 
-        friendly_name: new_bucket.friendly_name,
+        name: new_bucket.name,
         r#type: new_bucket.r#type,
     };
 
@@ -88,12 +88,12 @@ pub async fn index(_api_token: ApiToken) -> Response {
     let bucket_list = vec![
         responses::MinimalBucket {
             id: "79bfee96-0a93-4f79-87d1-212675823d6a".to_string(),
-            friendly_name: "test interactive bucket".to_string(),
+            name: "test interactive bucket".to_string(),
             r#type: responses::BucketType::Interactive,
         },
         responses::MinimalBucket {
             id: "7bce1c56-71b9-4147-80d4-7519a7e98bd3".to_string(),
-            friendly_name: "test backup bucket".to_string(),
+            name: "test backup bucket".to_string(),
             r#type: responses::BucketType::Backup,
         },
     ];
@@ -251,7 +251,7 @@ pub async fn show(
 
     let bucket = responses::DetailedBucket {
         id: bucket_id.to_string(),
-        friendly_name: "test interactive bucket".to_string(),
+        name: "test interactive bucket".to_string(),
         r#type: responses::BucketType::Interactive,
 
         public_keys: vec![

@@ -11,7 +11,7 @@ pub enum BucketType {
 #[derive(Serialize)]
 pub struct DetailedBucket {
     pub id: String,
-    pub friendly_name: String,
+    pub name: String,
     pub r#type: BucketType,
 
     pub public_keys: Vec<PublicKeySummary>,
@@ -21,7 +21,7 @@ pub struct DetailedBucket {
 pub struct MinimalBucket {
     pub id: String,
 
-    pub friendly_name: String,
+    pub name: String,
     pub r#type: BucketType,
 }
 

@@ -143,12 +143,14 @@ CREATE TABLE buckets (
     REFERENCES accounts(id)
     ON DELETE CASCADE,
 
-  friendly_name VARCHAR(128),
+  name VARCHAR(128),
+
+  -- TODO: Make this an enum
   type VARCHAR(32) NOT NULL
 );
 
-CREATE UNIQUE INDEX idx_buckets_on_unique_account_id_friendly_name
-  ON buckets(account_id, friendly_name);
+CREATE UNIQUE INDEX idx_buckets_on_unique_account_id_name
+  ON buckets(account_id, name);
 
 CREATE TABLE bucket_keys (
   id TEXT PRIMARY KEY DEFAULT (

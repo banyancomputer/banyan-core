@@ -8,9 +8,10 @@ const Buckets: NextPageWithLayout = () => (
 		<div className="flex flex-col gap-2 p-6">
 			<h1> Tomb Wasm stuff </h1>
 			<TombBucket bucket_id="test" />
+			<TombBucket bucket_id="test2" />
 		</div>
 	</div>
 );
 export default Buckets;
 
-Buckets.getLayout = (page) => <BaseLayout>{page}</BaseLayout>;
+Buckets.getLayout = (page: any) => <BaseLayout>{page}</BaseLayout>;
