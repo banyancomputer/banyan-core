@@ -14,6 +14,7 @@ module.exports = {
 			},
 			width: {
 				navbar: '280px',
+				uploadFileModal: '400px'
 			},
 			colors: {
 				blue: {
@@ -36,6 +37,9 @@ module.exports = {
 			},
 			fontFamily: {
 				sans: ['Inter'],
+			},
+			fontWeight: {
+				medium: 500
 			},
 			fontSize: {
 				xxs: ['12px', { lineHeight: '18px' }],

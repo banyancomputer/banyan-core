@@ -5,12 +5,18 @@ import { NextPageWithLayout } from './page';
 import { BucketTable } from '@/components/Buckets/BucketsTable';
 
 import { useTomb } from '@/contexts/tomb';
+import { useModal } from '@/contexts/modals';
 
 import { Add, Upload } from '@static/images/buckets';
+import { UploadFileModal } from '@/components/common/Modal/UploadFileModal';
 
 const Buckets: NextPageWithLayout = () => {
-    const uploadFile = (event: React.ChangeEvent<HTMLInputElement>) => { };
+    const { openModal } = useModal()
     const { buckets } = useTomb();
+
+    const uploadFile = () => {
+        openModal(<UploadFileModal />)
+    };
 
     return (
         <section className="py-9 px-4">
@@ -18,29 +24,25 @@ const Buckets: NextPageWithLayout = () => {
                 <h2 className="text-xl font-semibold">
                     My Buckets
                 </h2>
-                <label className="flex gap-2 w-40 items-center justify-center py-2 px-4 font-semibold cursor-pointer rounded-lg bg-blue-primary text-white">
+                <button
+                    className="flex gap-2 w-40 items-center justify-center py-2 px-4 font-semibold cursor-pointer rounded-lg bg-blue-primary text-white"
+                    onClick={uploadFile}
+                >
                     <Add />
                     Upload
-                    <input
-                        type="file"
-                        className="hidden"
-                        onChange={uploadFile}
-                    />
-                </label>
+                </button>
             </div>
             <BucketTable buckets={buckets} />
-            <label className="mt-10 flex flex-col items-center justify-center gap-4 px-6 py-4 border-2 border-c rounded-xl  text-xs cursor-pointer">
+            <div
+                className="mt-10 flex flex-col items-center justify-center gap-4 px-6 py-4 border-2 border-c rounded-xl  text-xs cursor-pointer"
+                onClick={uploadFile}
+            >
                 <Upload />
                 <span className="text-gray-600">
                     <span className="font-semibold text-black">Click to upload </span>
                     or drag and drop
                 </span>
-                <input
-                    type="file"
-                    className="hidden"
-                    onChange={uploadFile}
-                />
-            </label>
+            </div>
         </section>
     );
 };

@@ -4,6 +4,8 @@ import { SessionProvider } from 'next-auth/react';
 import { NextPageWithLayout } from '@/pages/page';
 import { KeystoreProvider } from '@/contexts/keystore';
 import { TombProvider } from '@/contexts/tomb';
+import { ModalProvider } from '@/contexts/modals';
+import { Modal } from '@/components/common/Modal';
 
 import '@static/styles/globals.css';
 
@@ -22,11 +24,14 @@ export default function App({
             {/*  Tomb Provider for access to User's Keystore + TombFs */}
             <KeystoreProvider>
                 <TombProvider>
-                    {/* Chakra Provider for access to Chakra UI components */}
-                    <ChakraProvider>
-                        {/* Get the layout and render the component :) */}
-                        {getLayout(<Component {...pageProps} />)}
-                    </ChakraProvider>
+                    <ModalProvider>
+                        <ChakraProvider>
+                            <Modal />
+                            {/* Chakra Provider for access to Chakra UI components */}
+                            {/* Get the layout and render the component :) */}
+                            {getLayout(<Component {...pageProps} />)}
+                        </ChakraProvider>
+                    </ModalProvider>
                 </TombProvider>
             </KeystoreProvider>
         </SessionProvider>
