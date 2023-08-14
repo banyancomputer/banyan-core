@@ -103,7 +103,7 @@ const HomePage: NextPageWithLayout<IHomePage> = ({
 
     return (
         <>
-            <div className="flex flex-col gap-2 p-6">
+            <div className="flex flex-col gap-2 p-6" id="key-management">
                 <h1 className="text-xl">Keystore context</h1>
                 <div>
                     {keystoreInitialized ?
@@ -116,20 +116,20 @@ const HomePage: NextPageWithLayout<IHomePage> = ({
                                 w={40}
                                 onClick={handlePurgeKeystore}
                             >
-								Purge Keystore
+                                Purge Keystore
                             </Button>
                         </>
-					 :
+                        :
                         <>
                             <h2> Keystore Not Initialized </h2>
                             {/* Key pair derivation / recovery form */}
                             <div>
                                 {escrowedDevice ?
                                     <p> Enter your passkey to recover your key pair </p>
-								 :
+                                    :
                                     <p>
                                         {' '}
-										Derive a new key pair from a passkey -- don't forget it!{' '}
+                                        Derive a new key pair from a passkey -- don't forget it!{' '}
                                     </p>
                                 }
                                 <FormControl>
@@ -152,7 +152,7 @@ const HomePage: NextPageWithLayout<IHomePage> = ({
                                         w={40}
                                         onClick={handleInitializeKeystore}
                                     >
-										Initialize Keystore
+                                        Initialize Keystore
                                     </Button>
                                 </FormControl>
                             </div>

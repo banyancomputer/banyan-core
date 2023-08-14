@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useTomb } from '@/contexts/tomb';
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from 'next/router';
 
-import { ArrowDown, Cross, Directory, Folder } from '@static/images/common';
+import { useTomb } from '@/contexts/tomb';
 import { convertFileSize } from '@/utils/storage';
+
+import { ArrowDown, Cross, Directory } from '@static/images/common';
 
 export const Navigation = () => {
     /** TODO: replace by data from api. */
@@ -15,7 +16,7 @@ export const Navigation = () => {
     const router = useRouter();
     const bucketId = searchParams.get('id');
     const { buckets, trash, usedStorage } = useTomb();
-    const [isBucketsVisible, setIsBucketsVisible] = useState(false);
+    const [isBucketsVisible, setIsBucketsVisible] = useState(true);
     const [isStorageBlockVisible, setIsStorageBlockVisible] = useState(true);
 
     const toggleBucketsVisibility = (event: React.MouseEvent<HTMLDivElement>) => {
@@ -73,7 +74,7 @@ export const Navigation = () => {
                     href="/trash"
                     className={`flex items-center justify-between  gap-2 py-2 px-3 w-full h-10 cursor-pointer rounded-md ${router.pathname === '/trash' && 'bg-navigation-secondary'}`}
                 >
-                    <Folder />
+                    <Directory />
                     <span className="flex-grow">
                         Trash
                     </span>

@@ -28,8 +28,22 @@ export const Cross = () => <svg width="20" height="20" viewBox="0 0 20 20" fill=
 </svg>;
 
 export const Dots = () => <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M10.0013 10.832C10.4615 10.832 10.8346 10.4589 10.8346 9.9987C10.8346 9.53846 10.4615 9.16536 10.0013 9.16536C9.54106 9.16536 9.16797 9.53846 9.16797 9.9987C9.16797 10.4589 9.54106 10.832 10.0013 10.832Z" stroke="#7D89B0" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
-    <path d="M10.0013 4.9987C10.4615 4.9987 10.8346 4.6256 10.8346 4.16536C10.8346 3.70513 10.4615 3.33203 10.0013 3.33203C9.54106 3.33203 9.16797 3.70513 9.16797 4.16536C9.16797 4.6256 9.54106 4.9987 10.0013 4.9987Z" stroke="#7D89B0" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
-    <path d="M10.0013 16.6654C10.4615 16.6654 10.8346 16.2923 10.8346 15.832C10.8346 15.3718 10.4615 14.9987 10.0013 14.9987C9.54106 14.9987 9.16797 15.3718 9.16797 15.832C9.16797 16.2923 9.54106 16.6654 10.0013 16.6654Z" stroke="#7D89B0" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M10.0013 10.832C10.4615 10.832 10.8346 10.4589 10.8346 9.9987C10.8346 9.53846 10.4615 9.16536 10.0013 9.16536C9.54106 9.16536 9.16797 9.53846 9.16797 9.9987C9.16797 10.4589 9.54106 10.832 10.0013 10.832Z" stroke="#7D89B0" strokeWidth="1.66667" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M10.0013 4.9987C10.4615 4.9987 10.8346 4.6256 10.8346 4.16536C10.8346 3.70513 10.4615 3.33203 10.0013 3.33203C9.54106 3.33203 9.16797 3.70513 9.16797 4.16536C9.16797 4.6256 9.54106 4.9987 10.0013 4.9987Z" stroke="#7D89B0" strokeWidth="1.66667" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M10.0013 16.6654C10.4615 16.6654 10.8346 16.2923 10.8346 15.832C10.8346 15.3718 10.4615 14.9987 10.0013 14.9987C9.54106 14.9987 9.16797 15.3718 9.16797 15.832C9.16797 16.2923 9.54106 16.6654 10.0013 16.6654Z" stroke="#7D89B0" strokeWidth="1.66667" strokeLinecap="round" strokeLinejoin="round" />
 </svg>;
+
+export const CloseModal = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M18 6L6 18M6 6L18 18" stroke="#5D6B98" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+</svg>;
+
+export const Trash = () => <svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect x="4" y="4" width="48" height="48" rx="24" fill="#EFF1F5"/>
+<path d="M32 22V21.2C32 20.0799 32 19.5198 31.782 19.092C31.5903 18.7157 31.2843 18.4097 30.908 18.218C30.4802 18 29.9201 18 28.8 18H27.2C26.0799 18 25.5198 18 25.092 18.218C24.7157 18.4097 24.4097 18.7157 24.218 19.092C24 19.5198 24 20.0799 24 21.2V22M26 27.5V32.5M30 27.5V32.5M19 22H37M35 22V33.2C35 34.8802 35 35.7202 34.673 36.362C34.3854 36.9265 33.9265 37.3854 33.362 37.673C32.7202 38 31.8802 38 30.2 38H25.8C24.1198 38 23.2798 38 22.638 37.673C22.0735 37.3854 21.6146 36.9265 21.327 36.362C21 35.7202 21 34.8802 21 33.2V22" stroke="#111322" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="4" y="4" width="48" height="48" rx="24" stroke="white" stroke-width="8"/>
+</svg>
+
+
+
+
 

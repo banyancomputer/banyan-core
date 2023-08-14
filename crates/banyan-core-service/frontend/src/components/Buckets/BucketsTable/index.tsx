@@ -7,9 +7,9 @@ import { FileActionsCell } from './FileActionsCell';
 import { BucketActionsCell } from './BucketActionsCell ';
 
 export const BucketTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) =>
-    <div className="max-h-[calc(100vh-367px)] overflow-x-auto border-2 border-c rounded-xl" >
+    <div className="max-h-[calc(100vh-367px)] overflow-x-auto border-2 border-gray-200 rounded-xl" >
         <table className="table table-pin-rows w-full text-gray-600 rounded-xl shadow-thead">
-            <thead className="border-b-table-cellBackground text-xxs bg-table-headBackground">
+            <thead className="border-b-table-cellBackground text-xxs font-normal bg-table-headBackground">
                 <tr className="border-b-table-cellBackground">
                     <th className="p-3 text-left">Bucket Name</th>
                     <th className="p-3 text-left">Name</th>
