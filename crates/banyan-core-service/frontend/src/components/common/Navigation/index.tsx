@@ -1,55 +1,64 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/router';
 
-import { MockBucket } from '@/lib/interfaces/bucket';
+import { useTomb } from '@/contexts/tomb';
+import { convertFileSize } from '@/utils/storage';
 
-import { ArrowDown, Cross, Directory, Folder } from '@static/images/common';
+import { ArrowDown, Cross, Directory } from '@static/images/common';
 
 export const Navigation = () => {
-    const [isBucketsVisible, setIsBucketsVisible] = useState(false);
+    /** TODO: replace by data from api. */
+    const MOCK_STORAGE_LIMIT = 2e+13;
+
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const bucketId = searchParams.get('id');
+    const { buckets, trash, usedStorage } = useTomb();
+    const [isBucketsVisible, setIsBucketsVisible] = useState(true);
     const [isStorageBlockVisible, setIsStorageBlockVisible] = useState(true);
 
-    const toggleBucketsVisibility = () => {
+    const toggleBucketsVisibility = (event: React.MouseEvent<HTMLDivElement>) => {
+        event.stopPropagation();
+        event.preventDefault();
         setIsBucketsVisible(prev => !prev);
     };
+
     const toggleStorageVisibility = () => {
         setIsStorageBlockVisible(prev => !prev);
     };
 
-    /** TODO: delete after  api connection. */
-    const MOCK_BUCKETS = [
-        new MockBucket('', 'Test1', ''),
-        new MockBucket('', 'Test2', ''),
-        new MockBucket('', 'Test3', ''),
-    ];
-
     return (
         <nav className="flex flex-col w-navbar bg-navigation-primary py-8 px-4 text-navigation-text border-r-2 border-r-navigation-border font-bold">
             <div className="flex-grow">
-                <div
-                    onClick={toggleBucketsVisibility}
-                    className="flex items-center justify-between gap-2 py-2 px-3 w-full h-10 rounded-md bg-navigation-secondary cursor-pointer"
+                <Link
+                    href={'/'}
+                    className={`flex items-center justify-between gap-2 py-2 px-3 w-full h-10  cursor-pointer rounded-md ${router.pathname === '/' && 'bg-navigation-secondary'}`}
                 >
                     <Directory />
                     <span className="flex-grow">
                         My Buckets
                     </span>
                     <span className="px-2 py-1 bg-navigation-text text-navigation-secondary rounded-full text-xxs font-medium">
-                        1,189
+                        {buckets.map(bucket => bucket.files.length).reduce((accumulator, currentValue) => accumulator + currentValue, 0)}
                     </span>
-                    <span>
+                    <span
+                        onClick={toggleBucketsVisibility}
+                        className={`${isBucketsVisible && 'rotate-180'} `}
+                    >
                         <ArrowDown />
                     </span>
-                </div>
+                </Link>
                 {
                     isBucketsVisible &&
                     <ul className="mt-3 mb-3 flex-col gap-2 px-4">
                         {
-                            MOCK_BUCKETS.map((bucket, index) =>
-                                <li>
+                            buckets.map(bucket =>
+                                <li key={bucket.id}>
                                     <Link
-                                        href={`/${bucket.id}`}
-                                        className="flex items-center justify-between gap-2 py-2 px-3 w-full h-10  cursor-pointer"
+                                        href={`/bucket/${bucket.id}`}
+                                        className={`flex items-center justify-between gap-2 py-2 px-3 w-full h-10  cursor-pointer rounded-md ${bucketId === bucket.id && 'bg-navigation-secondary'}`}
                                     >
                                         <Directory />
                                         <span className="flex-grow">
@@ -62,15 +71,15 @@ export const Navigation = () => {
                     </ul>
                 }
                 <Link
-                    href="/"
-                    className="flex items-center justify-between  gap-2 py-2 px-3 w-full h-10 cursor-pointer"
+                    href="/trash"
+                    className={`flex items-center justify-between  gap-2 py-2 px-3 w-full h-10 cursor-pointer rounded-md ${router.pathname === '/trash' && 'bg-navigation-secondary'}`}
                 >
-                    <Folder />
+                    <Directory />
                     <span className="flex-grow">
                         Trash
                     </span>
-                    <span className="px-2 py-1 bg-navigation-secondary text-navigation-textSecondary rounded-full text-xxs font-normal">
-                        54
+                    <span className="px-2 py-1 bg-navigation-text text-navigation-secondary rounded-full text-xxs font-normal">
+                        {trash.files.length}
                     </span>
                 </Link>
             </div>
@@ -82,7 +91,8 @@ export const Navigation = () => {
                             <Cross />
                         </button>
                     </span>
-                    <span className="text-xs font-normal">You’ve used 18 out of 20 TB.</span>
+                    <span className="text-xs font-normal">You’ve used <span className="uppercase">{convertFileSize(usedStorage)}</span> out of 20 TB.</span>
+                    <progress className="progress w-56" value={usedStorage} max={MOCK_STORAGE_LIMIT}></progress>
                 </div>
             }
             <div className="flex flex-col mt-6 pl-2 pt-3 pr-8 border-t-2 border-gray-200">

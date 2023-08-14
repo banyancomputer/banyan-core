@@ -1,17 +1,22 @@
+export interface BucketFile {
+    name: string;
+    metadata: {
+        created: string;
+        modified: string;
+        size: number;
+    };
+}
 export interface Bucket {
     id: string;
     name: string;
-    type: 'Backup' | 'Interactive';
-    metadata: string;
+    bucket_type: string;
+    files: BucketFile[];
 };
 
 
-/** TODO: delete after connection to backend */
 export class MockBucket {
-    constructor(
-        public id: string,
-        public name: string,
-        public type: string,
-        metadata: string = ''
-    ) { }
+    public id = '';
+    public name = '';
+    public bucket_type = '';
+    public files = [];
 }

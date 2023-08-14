@@ -2,42 +2,47 @@ import React, { useEffect, useState } from 'react';
 
 import BaseLayout from '@layouts/BaseLayout';
 import { NextPageWithLayout } from './page';
-import TombBucket from '@/components/Bucket/TombBucket';
+import { BucketTable } from '@/components/Buckets/BucketsTable';
+import { UploadFileModal } from '@/components/common/Modal/UploadFileModal';
+
+import { useTomb } from '@/contexts/tomb';
+import { useModal } from '@/contexts/modals';
 
 import { Add, Upload } from '@static/images/buckets';
 
 const Buckets: NextPageWithLayout = () => {
-    const uploadFile = (event: React.ChangeEvent<HTMLInputElement>) => { };
+    const { openModal } = useModal()
+    const { buckets } = useTomb();
+
+    const uploadFile = () => {
+        openModal(<UploadFileModal />)
+    };
 
     return (
-        <section className="py-9 px-4">
+        <section className="py-9 px-4" id='buckets'>
             <div className="mb-4 flex w-full justify-between items-center">
                 <h2 className="text-xl font-semibold">
                     My Buckets
                 </h2>
-                <label className="flex gap-2 w-40 items-center justify-center py-2 px-4 font-semibold cursor-pointer rounded-lg bg-blue-primary text-white">
+                <button
+                    className="btn-primary gap-2 w-40 py-2 px-4"
+                    onClick={uploadFile}
+                >
                     <Add />
                     Upload
-                    <input
-                        type="file"
-                        className="hidden"
-                        onChange={uploadFile}
-                    />
-                </label>
+                </button>
             </div>
-            <label className="mt-10 flex flex-col items-center justify-center gap-4 px-6 py-4 border-2 border-c rounded-xl  text-xs cursor-pointer">
+            <BucketTable buckets={buckets} />
+            <div
+                className="mt-10 flex flex-col items-center justify-center gap-4 px-6 py-4 border-2 border-c rounded-xl  text-xs cursor-pointer"
+                onClick={uploadFile}
+            >
                 <Upload />
                 <span className="text-gray-600">
                     <span className="font-semibold text-black">Click to upload </span>
                     or drag and drop
                 </span>
-                <input
-                    type="file"
-                    className="hidden"
-                    onChange={uploadFile}
-                />
-            </label>
-            <TombBucket bucket_id="test" />
+            </div>
         </section>
     );
 };

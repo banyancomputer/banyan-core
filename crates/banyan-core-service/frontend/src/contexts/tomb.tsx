@@ -1,100 +1,150 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { ReactNode, createContext, useContext, useEffect, useState } from 'react';
 import { TombWasm } from 'tomb-wasm-experimental';
 import { useSession } from 'next-auth/react';
-import { webcrypto } from 'one-webcrypto';
 import { useKeystore } from './keystore';
-const TombContext = createContext<{
-    tombInitialized: boolean;
+import { Bucket, BucketFile, MockBucket } from '@/lib/interfaces/bucket';
+import { Mutex } from 'async-mutex';
+
+interface TombInterface {
     tomb: TombWasm | null;
-
-    // Bucket Api
-    loadBucket:(bucket_id: string) => Promise<void>;
-    // TODO: better typing
+    buckets: Bucket[];
+    usedStorage: number;
+    trash: Bucket;
+    loadBucket: (bucket_id: string) => Promise<void>;
     unlockBucket: (bucket_id: string) => Promise<void>;
-    lsBucket: (bucket_id: string, path: string) => Promise<any>;
-		}>({
-	tombInitialized: false,
-	tomb: null,
-	loadBucket: async (bucket_id: string) => {},
-	unlockBucket: async (bucket_id: string) => {},
-	lsBucket: async (bucket_id: string, path: string) => {},
-});
+    getBuckets: () => Promise<Bucket[]>;
+    getTrashBucket: () => Promise<Bucket>;
+    getUsedStorage: () => Promise<BigInt>;
+    getFiles: (bucket_id: string, path: string) => Promise<BucketFile[]>;
+    setBuckets: React.Dispatch<React.SetStateAction<Bucket[]>>;
+};
 
-export const TombProvider = ({ children }: any) => {
+const tombMutex = new Mutex();
+
+const TombContext = createContext<TombInterface>({} as TombInterface);
+
+export const TombProvider = ({ children }: { children: ReactNode }) => {
     // The active user's session
     const { data: session } = useSession();
     // The active user's keystore
-    const { keystoreInitialized, getApiKey, getEncryptionKey } = useKeystore();
-    // Our tomb-wasm module -- needs to be loaded asynchronously
-    const [tombModule, setTombModule] = useState<any | null>(null);
-    // Whether the tomb client has been initialized
-    const [tombInitialized, setTombInitialized] = useState<boolean>(false);
-    // Our tomb client
+    const { keystoreInitialized, getEncryptionKey } = useKeystore();
     const [tomb, setTomb] = useState<TombWasm | null>(null);
+    const [buckets, setBuckets] = useState<Bucket[]>([]);
+    const [trash, setTrash] = useState<Bucket>(new MockBucket());
+    const [usedStorage, setUsedStorage] = useState<number>(0);
+
+    /** Prevents rust recursion error. */
+    const mutex = async(calllack: (tomb: TombWasm) => Promise<any>) => {
+        if (tomb) {
+            const release = await tombMutex.acquire();
+            try {
+                return await calllack(tomb);
+            } catch (err) {
+                console.error('err', err);
+            } finally {
+                release();
+            }
+        }
+    };
 
     // Load the tomb-wasm module
-    useEffect(() => {
-        import('tomb-wasm-experimental').then((module) => {
-            setTombModule(module);
-        });
-    }, []);
-
-    // Initialize the tomb client
-    useEffect(() => {
-        const initTomb = async() => {
-            try {
-                const wrappingKey = await getEncryptionKey();
-                const apiKey = await getApiKey();
-                const tomb_wasm: any = tombModule?.TombWasm;
-                const tomb = await new tomb_wasm(
-                    wrappingKey?.privateKey,
-                    apiKey?.privateKey,
-                    session?.accountId,
-                    'localhost:8080'
-                );
-                setTomb(tomb);
-                setTombInitialized(true);
-            } catch (err) {
-                console.error(err);
-            }
-            console.log('Tomb initialized');
-        };
-        if (tombModule && keystoreInitialized && session?.accountId) {
-            initTomb();
-        } else {
-            console.log('Tomb not initialized');
-            console.log('tombModule: ', tombModule);
-            console.log('keystoreInitialized: ', keystoreInitialized);
-            console.log('session?.accountId: ', session?.accountId);
-        }
-    }, [tombModule, keystoreInitialized, session?.accountId]);
-
     const loadBucket = async(bucket_id: string) => {
-        if (tomb) {
-            await tomb.loadBucket(bucket_id);
-        }
+        await mutex(async tomb => {
+            await tomb.load(bucket_id);
+        });
     };
 
     const unlockBucket = async(bucket_id: string) => {
-        if (tomb) {
+        await mutex(async tomb => {
             const encryptionKey = await getEncryptionKey();
-            await tomb.unlockBucket(bucket_id, encryptionKey.privateKey);
-        }
+            await tomb.unlock(bucket_id, encryptionKey.privateKey);
+        });
     };
 
-    const lsBucket = async(bucket_id: string, path: string) => {
+    const getFiles = async(bucket_id: string, path: string) => {
         if (tomb) {
-            const contents = await tomb.lsBucket(bucket_id, path);
+            await loadBucket(bucket_id);
+            await unlockBucket(bucket_id);
 
-            return contents;
+            return await tomb.ls(bucket_id, path);
         }
+
+        return [];
+    };
+    const getBuckets = async() => {
+        if (tomb) {
+            return await tomb.getBuckets();
+        }
+
+        return [];
+    };
+    const getUsedStorage = async() => {
+        if (tomb) {
+            return +(await tomb.getTotalStorage()).toString();
+        }
+
+        return 0;
     };
 
-    // TODO: Add more Bindings to tomb-wasm
+    const getTrashBucket: () => Promise<MockBucket> = async() => {
+        if (tomb) {
+            return await tomb.getTrashBucket();
+        }
+
+        return new MockBucket();
+    };
+
+    // Initialize the tomb client
+    useEffect(() => {
+        if (!keystoreInitialized || !session?.accountId) { return; }
+
+        (async() => {
+            try {
+                const wrappingKey = await getEncryptionKey();
+                const TombWasm = (await import('tomb-wasm-experimental')).TombWasm;
+                const tomb = await new TombWasm(
+                    wrappingKey.privateKey,
+                    session.accountId,
+                    'localhost:3000'
+                );
+                setTomb(tomb);
+            } catch (err) {
+                console.error(err);
+            }
+        })();
+    }, [keystoreInitialized, session?.accountId]);
+
+    useEffect(() => {
+        if (tomb) {
+            (async() => {
+                try {
+                    const buckets = await getBuckets();
+                    setBuckets(buckets.map(bucket => ({ ...bucket, files: [] })));
+                    const storage = await getUsedStorage();
+                    setUsedStorage(storage);
+                    const trash = await getTrashBucket();
+                    const files = await getFiles(trash.id, '/');
+                    setTrash({ ...trash, files });
+                } catch (error: any) { };
+            })();
+        };
+    }, [tomb]);
+
+    useEffect(() => {
+        (async() => {
+            if (tomb) {
+                for (const bucket of buckets) {
+                    const id = bucket.id;
+                    const files = await getFiles(id, '/');
+                    setBuckets(buckets => buckets.map(bucket => bucket.id === id ? { ...bucket, files } : bucket));
+                }
+            }
+        })();
+    }, [tomb, buckets.length]);
 
     return (
         <TombContext.Provider
-            value={{ tombInitialized, tomb, loadBucket, unlockBucket, lsBucket }}
+            value={{ tomb, buckets, trash, usedStorage, setBuckets, getBuckets, loadBucket, unlockBucket, getFiles, getTrashBucket, getUsedStorage }}
         >
             {children}
         </TombContext.Provider>
