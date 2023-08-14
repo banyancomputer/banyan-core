@@ -1,6 +1,8 @@
 use serde::Deserialize;
 use validify::Validify;
 
+/* Requests that require a Json body */
+
 #[derive(Clone, Debug, Deserialize, Validify)]
 pub struct CreateDeviceApiKey {
     pem: String,

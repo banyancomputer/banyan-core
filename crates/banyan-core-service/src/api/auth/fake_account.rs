@@ -1,4 +1,4 @@
-use axum::routing::{post};
+use axum::routing::post;
 use axum::Router;
 
 mod handlers;

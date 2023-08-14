@@ -1,10 +1,11 @@
-use axum::extract::{self, Json};
+use axum::extract::{self, Json, Path};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
 use openssl::bn::BigNumContext;
 use openssl::ec::PointConversionForm;
 use openssl::pkey::PKey;
+use uuid::Uuid;
 
 use crate::db::models;
 use crate::extractors::{ApiToken, DbConn};
@@ -19,6 +20,7 @@ pub async fn create(
 ) -> Response {
     let account_id = api_token.subject;
     let pem = create_device_api_key.pem();
+
     let parsed_public_key =
         PKey::public_key_from_pem(pem.as_ref()).expect("parsing public key");
     let ec_key = parsed_public_key.ec_key().unwrap();
@@ -65,6 +67,122 @@ pub async fn create(
         id: created_device_key.id,
         account_id,
         fingerprint,
+    })
+    .into_response()
+}
+
+// #[axum::debug_handler]
+pub async fn read(
+    api_token: ApiToken,
+    mut db_conn: DbConn,
+    Path(device_api_key_id): Path<Uuid>,
+) -> impl IntoResponse {
+    let account_id = api_token.subject;
+    let id = device_api_key_id.to_string();
+
+    let maybe_device_key = sqlx::query_as!(
+        models::DeviceApiKey,
+        r#"SELECT id as "id!", account_id, fingerprint, pem FROM device_api_keys WHERE id = $1 AND account_id = $2;"#,
+        id,
+        account_id
+    )
+    .fetch_one(&mut *db_conn.0)
+    .await;
+
+    let device_key = match maybe_device_key {
+        Ok(dk) => dk,
+        Err(err) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("unable to read device key: {err}"),
+            )
+                .into_response();
+        }
+    };
+
+    Json(responses::ReadDeviceApiKey {
+        id: device_key.id,
+        account_id,
+        fingerprint: device_key.fingerprint,
+        pem: device_key.pem,
+    })
+    .into_response()
+}
+
+pub async fn read_all(
+    api_token: ApiToken,
+    mut db_conn: DbConn,
+) -> impl IntoResponse {
+    let account_id = api_token.subject;
+    let maybe_device_keys = sqlx::query_as!(
+        models::DeviceApiKey,
+        r#"SELECT id as "id!", account_id, fingerprint, pem FROM device_api_keys WHERE account_id = $1;"#,
+        account_id
+    )
+    .fetch_all(&mut *db_conn.0)
+    .await;
+
+    let device_keys = match maybe_device_keys {
+        Ok(dks) => dks,
+        Err(err) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("unable to read device keys: {err}"),
+            )
+                .into_response();
+        }
+    };
+
+    // Json(responses::ReadAllDeviceApiKeys {
+    //     device_api_keys: device_keys.into_iter().map(|dk| responses::ReadDeviceApiKey {
+    //         id: dk.id,
+    //         account_id: dk.account_id.clone(),
+    //         fingerprint: dk.fingerprint,
+    //         pem: dk.pem,
+    //     }).collect(),
+    // })
+    // .into_response()
+    Json(responses::ReadAllDeviceApiKeys(device_keys.into_iter().map(|dk| responses::ReadDeviceApiKey {
+            id: dk.id,
+            account_id: dk.account_id.clone(),
+            fingerprint: dk.fingerprint,
+            pem: dk.pem,
+        }).collect())
+    ).into_response()
+}
+
+pub async fn delete(
+    api_token: ApiToken,
+    mut db_conn: DbConn,
+    Path(device_api_key_id): Path<Uuid>
+) -> impl IntoResponse {
+    let account_id = api_token.subject;
+    let id = device_api_key_id.to_string();
+
+    let maybe_device_key = sqlx::query_as!(
+        models::DeviceApiKey,
+        r#"DELETE FROM device_api_keys WHERE id = $1 AND account_id = $2 RETURNING id as "id!", account_id, fingerprint, pem;"#,
+        id,
+        account_id
+    )
+    .fetch_one(&mut *db_conn.0)
+    .await;
+
+    let device_key = match maybe_device_key {
+        Ok(dk) => dk,
+        Err(err) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("unable to delete device key: {err}"),
+            )
+                .into_response();
+        }
+    };
+
+    Json(responses::DeleteDeviceApiKey {
+        id: device_key.id,
+        account_id,
+        fingerprint: device_key.fingerprint,
     })
     .into_response()
 }

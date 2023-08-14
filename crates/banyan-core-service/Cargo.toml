@@ -23,7 +23,7 @@ object_store = "^0.6"
 futures = "^0.3"
 tokio = { version = "^1", features = ["macros", "net", "rt", "rt-multi-thread", "signal", "sync", "time"] }
 
-axum = { version = "^0.6", features = ["headers", "http2", "multipart", "tracing"] }
+axum = { version = "^0.6", features = ["macros", "headers", "http2", "multipart", "tracing"] }
 http = "^0.2"
 jsonwebtoken = "^8.3"
 sqlx = { version = "^0.7", default-features = false, features = ["macros", "migrate", "sqlite", "runtime-tokio"] }
