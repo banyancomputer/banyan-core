@@ -1,4 +1,5 @@
-use sqlx::FromRow;
+use serde::{Deserialize, Serialize};
+use sqlx::{FromRow, Type};
 
 /// Catch all get id of created resource
 #[derive(Debug, FromRow)]
@@ -6,7 +7,7 @@ pub struct CreatedResource {
     pub id: String,
 }
 
-/// DeviceApiKey
+/// DeviceApiKey - used to authenticate API requests from devices
 #[derive(Debug, FromRow)]
 pub struct DeviceApiKey {
     pub id: String,
@@ -14,3 +15,57 @@ pub struct DeviceApiKey {
     pub fingerprint: String,
     pub pem: String,
 }
+
+#[derive(Clone, Debug, Deserialize, Serialize, Type)]
+#[serde(rename_all = "snake_case")]
+#[sqlx(rename_all = "lowercase")]
+/// Bucket type
+pub enum BucketType {
+    Backup,
+    Interactive,
+}
+
+impl From<String> for BucketType {
+    fn from(s: String) -> Self {
+        match s.as_str() {
+            "backup" => BucketType::Backup,
+            "interactive" => BucketType::Interactive,
+            _ => panic!("invalid bucket type"),
+        }
+    }
+}
+
+/// Bucket - data associated with a bucket
+#[derive(Debug, FromRow)]
+pub struct Bucket {
+    pub id: String,
+    pub account_id: String,
+    pub name: String,
+    pub r#type: BucketType,
+}
+
+// TODO: should we add the account_id to this?
+/// BucketKey - data associated with a bucket key
+#[derive(Serialize)]
+pub struct BucketKey{
+    pub id: String,
+    pub bucket_id: String,
+    pub approved: bool,
+    pub pem: String,
+}
+
+/// MetadataState - state of metadata
+#[derive(Debug, Serialize, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum BucketMetadataState {
+    Pending,
+}
+
+/// Metadata - data associated with the metadata for a bucket
+#[derive(Debug, Serialize, FromRow)]
+pub struct BucketMetadata {
+    pub id: String,
+    pub state: BucketMetadataState,
+    // TODO: what are the other fields?
+}
+

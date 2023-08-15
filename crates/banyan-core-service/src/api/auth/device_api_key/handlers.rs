@@ -1,6 +1,6 @@
 use axum::extract::{self, Json, Path};
 use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response};
+use axum::response::IntoResponse;
 
 use openssl::bn::BigNumContext;
 use openssl::ec::PointConversionForm;
@@ -17,7 +17,7 @@ pub async fn create(
     api_token: ApiToken,
     mut db_conn: DbConn,
     extract::Json(create_device_api_key): extract::Json<requests::CreateDeviceApiKey>,
-) -> Response {
+) -> impl IntoResponse {
     let account_id = api_token.subject;
     let pem = create_device_api_key.pem();
 
@@ -65,13 +65,11 @@ pub async fn create(
 
     Json(responses::CreateDeviceApiKey {
         id: created_device_key.id,
-        account_id,
         fingerprint,
     })
     .into_response()
 }
 
-// #[axum::debug_handler]
 pub async fn read(
     api_token: ApiToken,
     mut db_conn: DbConn,
@@ -102,13 +100,13 @@ pub async fn read(
 
     Json(responses::ReadDeviceApiKey {
         id: device_key.id,
-        account_id,
         fingerprint: device_key.fingerprint,
         pem: device_key.pem,
     })
     .into_response()
 }
 
+// TODO: pagination
 pub async fn read_all(
     api_token: ApiToken,
     mut db_conn: DbConn,
@@ -133,18 +131,8 @@ pub async fn read_all(
         }
     };
 
-    // Json(responses::ReadAllDeviceApiKeys {
-    //     device_api_keys: device_keys.into_iter().map(|dk| responses::ReadDeviceApiKey {
-    //         id: dk.id,
-    //         account_id: dk.account_id.clone(),
-    //         fingerprint: dk.fingerprint,
-    //         pem: dk.pem,
-    //     }).collect(),
-    // })
-    // .into_response()
-    Json(responses::ReadAllDeviceApiKeys(device_keys.into_iter().map(|dk| responses::ReadDeviceApiKey {
+    Json(responses::ReadDeviceApiKeys(device_keys.into_iter().map(|dk| responses::ReadDeviceApiKey {
             id: dk.id,
-            account_id: dk.account_id.clone(),
             fingerprint: dk.fingerprint,
             pem: dk.pem,
         }).collect())
@@ -181,7 +169,6 @@ pub async fn delete(
 
     Json(responses::DeleteDeviceApiKey {
         id: device_key.id,
-        account_id,
         fingerprint: device_key.fingerprint,
     })
     .into_response()

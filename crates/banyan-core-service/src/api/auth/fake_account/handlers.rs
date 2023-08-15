@@ -1,6 +1,6 @@
 use axum::extract::{self, Json};
 use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response};
+use axum::response::IntoResponse;
 
 use openssl::bn::BigNumContext;
 use openssl::ec::PointConversionForm;
@@ -15,7 +15,7 @@ use crate::api::auth::fake_account::{requests, responses};
 pub async fn create(
     mut db_conn: DbConn,
     extract::Json(create_fake_account): extract::Json<requests::CreateFakeAccount>,
-) -> Response {
+) -> impl IntoResponse {
     // Create a new user
     let maybe_user = sqlx::query_as!(
         models::CreatedResource,

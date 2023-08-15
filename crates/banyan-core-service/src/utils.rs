@@ -1,3 +1,5 @@
+pub mod car_buffer;
+
 use std::error::Error;
 
 pub fn collect_error_messages(base_error: impl Error) -> Vec<String> {

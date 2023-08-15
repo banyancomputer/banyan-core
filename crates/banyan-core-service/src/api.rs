@@ -7,10 +7,10 @@ use serde::Serialize;
 use tower_http::cors::{Any, CorsLayer};
 
 mod auth;
-// mod buckets;
+mod buckets;
 
 use crate::app_state::AppState;
-use crate::util::collect_error_messages;
+use crate::utils::collect_error_messages;
 
 pub fn router(state: AppState) -> Router<AppState> {
     // todo: Ideally this would have a wrapper method to allow per route method configuration or
@@ -25,7 +25,7 @@ pub fn router(state: AppState) -> Router<AppState> {
 
     Router::new()
         .nest("/auth", auth::router(state.clone()))
-        // .nest("/buckets", buckets::router(state.clone()))
+        .nest("/buckets", buckets::router(state.clone()))
         .with_state(state)
         .layer(cors_layer)
 }
@@ -54,4 +54,4 @@ macro_rules! from_error_impl {
 }
 
 from_error_impl!(auth::AuthError);
-// from_error_impl!(buckets::BucketError);
+from_error_impl!(buckets::BucketError);

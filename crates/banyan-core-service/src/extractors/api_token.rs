@@ -238,7 +238,7 @@ impl IntoResponse for ApiKeyAuthorizationError {
     fn into_response(self) -> axum::response::Response {
         // Report to the CLI, not to the end user. Don't give attackers knowledge of what we didn't
         // like about their request
-        use crate::util::collect_error_messages;
+        use crate::utils::collect_error_messages;
         tracing::error!("authentication failed: {:?}", &collect_error_messages(self));
 
         let err_msg = serde_json::json!({ "status": "not authorized" });
