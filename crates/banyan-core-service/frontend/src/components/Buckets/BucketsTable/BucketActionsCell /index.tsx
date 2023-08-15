@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { HiDotsVertical } from "react-icons/hi"
 
 import { Bucket } from '@/lib/interfaces/bucket';
 import { popupClickHandler } from '@/utils';
 
-import { Dots } from '@static/images/common';
 
 export const BucketActionsCell: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const actionsRef = useRef<HTMLDivElement | null>(null);
@@ -19,6 +19,6 @@ export const BucketActionsCell: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     }, [actionsRef]);
 
     return (
-        <div className="flex justify-end cursor-pointer "><Dots /></div>
+        <div className="flex justify-end cursor-pointer "><HiDotsVertical fill='#7f8ab0' size="20px" /></div>
     );
 };

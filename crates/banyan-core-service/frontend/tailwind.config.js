@@ -14,7 +14,7 @@ module.exports = {
 			},
 			width: {
 				navbar: '280px',
-				uploadFileModal: '400px'
+				uploadFileModal: '400px',
 			},
 			colors: {
 				blue: {
@@ -40,7 +40,7 @@ module.exports = {
 				sans: ['Inter'],
 			},
 			fontWeight: {
-				medium: 500
+				medium: 500,
 			},
 			fontSize: {
 				xxs: ['12px', { lineHeight: '18px' }],
@@ -59,6 +59,9 @@ module.exports = {
 			},
 			zIndex: {
 				max: '1000',
+			},
+			borderWidth: {
+				1: '1px',
 			},
 		},
 	},

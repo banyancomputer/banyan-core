@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useModal } from '@/contexts/modals';
-import { CloseModal } from '@static/images/common';
+import { IoMdClose } from "react-icons/io"
 
 export const Modal = () => {
     const { modalState: { content }, closeModal } = useModal();
@@ -24,7 +24,7 @@ export const Modal = () => {
                             className='absolute right-6 top-6'
                             onClick={closeModal}
                         >
-                            <CloseModal />
+                            <IoMdClose fill="#4A5578" size="20px" />
                         </button>
                         {content}
                     </div>
