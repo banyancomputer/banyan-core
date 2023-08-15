@@ -2,11 +2,14 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from 'next/router';
+import { FiChevronDown, FiTrash2 } from "react-icons/fi"
+import { IoMdClose } from "react-icons/io"
 
 import { useTomb } from '@/contexts/tomb';
 import { convertFileSize } from '@/utils/storage';
 
-import { ArrowDown, Cross, Directory } from '@static/images/common';
+import { Directory } from '@static/images/common';
+import { useIntl } from 'react-intl';
 
 export const Navigation = () => {
     /** TODO: replace by data from api. */
@@ -18,6 +21,7 @@ export const Navigation = () => {
     const { buckets, trash, usedStorage } = useTomb();
     const [isBucketsVisible, setIsBucketsVisible] = useState(true);
     const [isStorageBlockVisible, setIsStorageBlockVisible] = useState(true);
+    const { messages } = useIntl();
 
     const toggleBucketsVisibility = (event: React.MouseEvent<HTMLDivElement>) => {
         event.stopPropagation();
@@ -38,7 +42,7 @@ export const Navigation = () => {
                 >
                     <Directory />
                     <span className="flex-grow">
-                        My Buckets
+                        {`${messages.myBuckets}`}
                     </span>
                     <span className="px-2 py-1 bg-navigation-text text-navigation-secondary rounded-full text-xxs font-medium">
                         {buckets.map(bucket => bucket.files.length).reduce((accumulator, currentValue) => accumulator + currentValue, 0)}
@@ -47,7 +51,7 @@ export const Navigation = () => {
                         onClick={toggleBucketsVisibility}
                         className={`${isBucketsVisible && 'rotate-180'} `}
                     >
-                        <ArrowDown />
+                        <FiChevronDown size="20px" stroke='#5D6B98' />
                     </span>
                 </Link>
                 {
@@ -74,9 +78,9 @@ export const Navigation = () => {
                     href="/trash"
                     className={`flex items-center justify-between  gap-2 py-2 px-3 w-full h-10 cursor-pointer rounded-md ${router.pathname === '/trash' && 'bg-navigation-secondary'}`}
                 >
-                    <Directory />
+                    <FiTrash2 size="24px" stroke='#5e6c97' />
                     <span className="flex-grow">
-                        Trash
+                        {`${messages.trash}`}
                     </span>
                     <span className="px-2 py-1 bg-navigation-text text-navigation-secondary rounded-full text-xxs font-normal">
                         {trash.files.length}
@@ -86,18 +90,19 @@ export const Navigation = () => {
             {isStorageBlockVisible &&
                 <div className="bg-white rounded-lg p-4">
                     <span className="flex justify-between items-center ">
-                        Storage
+                        {`${messages.storage}`}
                         <button onClick={toggleStorageVisibility}>
-                            <Cross />
+                            <IoMdClose size="20px" />
                         </button>
                     </span>
-                    <span className="text-xs font-normal">You’ve used <span className="uppercase">{convertFileSize(usedStorage)}</span> out of 20 TB.</span>
-                    <progress className="progress w-56" value={usedStorage} max={MOCK_STORAGE_LIMIT}></progress>
+                    <span className="text-xs font-normal">{`${messages.youHaveUsed}`} <span className="uppercase">{convertFileSize(usedStorage)}</span> {`${messages.outOf}`} 20 TB.</span>
+                    <progress className="progress w-full" value={usedStorage} max={MOCK_STORAGE_LIMIT}></progress>
+                    <button className='mt-2 text-xs'>{`${messages.upgradePlan}`}</button>
                 </div>
             }
             <div className="flex flex-col mt-6 pl-2 pt-3 pr-8 border-t-2 border-gray-200">
                 <span>Banyan Computer</span>
-                <span className="font-normal">Decentralized Storage</span>
+                <span className="font-normal">{`${messages.decentralizedStorage}`}</span>
             </div>
         </nav>
     );

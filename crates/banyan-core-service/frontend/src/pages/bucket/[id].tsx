@@ -1,12 +1,15 @@
 import React, { useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useIntl } from 'react-intl';
+import { IoMdAdd } from "react-icons/io";
+
 import { useTomb } from '@/contexts/tomb';
 
 import BaseLayout from '@/layouts/BaseLayout';
 import { NextPageWithLayout } from '../page';
 import { BucketTable } from '@/components/Buckets/BucketsTable';
 
-import { Add, Upload } from '@static/images/buckets';
+import { Upload } from '@static/images/buckets';
 
 const Bucket: NextPageWithLayout = () => {
     const searchParams = useSearchParams();
@@ -15,6 +18,7 @@ const Bucket: NextPageWithLayout = () => {
     const selectedBucket = useMemo(() => buckets.find(bucket => bucket.id === bucketId), [buckets, bucketId]);
 
     const uploadFile = (event: React.ChangeEvent<HTMLInputElement>) => { };
+    const { messages } = useIntl();
 
     return (
         <section className="py-9 px-4">
@@ -23,8 +27,8 @@ const Bucket: NextPageWithLayout = () => {
                     {selectedBucket?.name}
                 </h2>
                 <label className="flex gap-2 w-40 items-center justify-center py-2 px-4 font-semibold cursor-pointer rounded-lg bg-blue-primary text-white">
-                    <Add />
-          Upload
+                    <IoMdAdd fill="#fff" size="20px" />
+                    {`${messages.upload}`}
                     <input
                         type="file"
                         className="hidden"
@@ -36,8 +40,8 @@ const Bucket: NextPageWithLayout = () => {
             <label className="mt-10 flex flex-col items-center justify-center gap-4 px-6 py-4 border-2 border-c rounded-xl  text-xs cursor-pointer">
                 <Upload />
                 <span className="text-gray-600">
-                    <span className="font-semibold text-black">Click to upload </span>
-          or drag and drop
+                    <b className="text-gray-900">{`${messages.clickToUpload}`} </b>
+                    {`${messages.orDragAndDrop}`}
                 </span>
                 <input
                     type="file"

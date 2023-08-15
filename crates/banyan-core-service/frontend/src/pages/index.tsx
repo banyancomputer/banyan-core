@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { useIntl } from 'react-intl';
+import { IoMdAdd } from "react-icons/io"
 
 import BaseLayout from '@layouts/BaseLayout';
 import { NextPageWithLayout } from './page';
@@ -8,11 +10,12 @@ import { UploadFileModal } from '@/components/common/Modal/UploadFileModal';
 import { useTomb } from '@/contexts/tomb';
 import { useModal } from '@/contexts/modals';
 
-import { Add, Upload } from '@static/images/buckets';
+import { Upload } from '@static/images/buckets';
 
 const Buckets: NextPageWithLayout = () => {
-    const { openModal } = useModal()
+    const { openModal } = useModal();
     const { buckets } = useTomb();
+    const { messages } = useIntl();
 
     const uploadFile = () => {
         openModal(<UploadFileModal />)
@@ -22,14 +25,14 @@ const Buckets: NextPageWithLayout = () => {
         <section className="py-9 px-4" id='buckets'>
             <div className="mb-4 flex w-full justify-between items-center">
                 <h2 className="text-xl font-semibold">
-                    My Buckets
+                    {`${messages.myBuckets}`}
                 </h2>
                 <button
                     className="btn-primary gap-2 w-40 py-2 px-4"
                     onClick={uploadFile}
                 >
-                    <Add />
-                    Upload
+                    <IoMdAdd fill="#fff" size="20px" />
+                    {`${messages.upload}`}
                 </button>
             </div>
             <BucketTable buckets={buckets} />
@@ -39,8 +42,8 @@ const Buckets: NextPageWithLayout = () => {
             >
                 <Upload />
                 <span className="text-gray-600">
-                    <span className="font-semibold text-black">Click to upload </span>
-                    or drag and drop
+                    <b className="text-gray-900">{`${messages.clickToUpload}`} </b>
+                    {`${messages.orDragAndDrop}`}
                 </span>
             </div>
         </section>
