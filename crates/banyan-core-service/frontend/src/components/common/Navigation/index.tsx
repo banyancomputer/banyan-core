@@ -34,7 +34,7 @@ export const Navigation = () => {
     };
 
     return (
-        <nav className="flex flex-col w-navbar bg-navigation-primary py-8 px-4 text-navigation-text border-r-2 border-r-navigation-border font-bold">
+        <nav className="flex flex-col w-navbar min-w-navbar bg-navigation-primary py-8 px-4 text-navigation-text border-r-2 border-r-navigation-border font-bold">
             <div className="flex-grow">
                 <Link
                     href={'/'}
@@ -100,7 +100,7 @@ export const Navigation = () => {
                     <button className='mt-2 text-xs'>{`${messages.upgradePlan}`}</button>
                 </div>
             }
-            <div className="flex flex-col mt-6 pl-2 pt-3 pr-8 border-t-2 border-gray-200">
+            <div className="flex flex-col mt-6 pl-2 pt-3 pr-8 border-t-2 border-gray-200 text-gray-600">
                 <span>Banyan Computer</span>
                 <span className="font-normal">{`${messages.decentralizedStorage}`}</span>
             </div>

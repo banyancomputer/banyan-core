@@ -24,7 +24,7 @@ export const Modal = () => {
                             className='absolute right-6 top-6'
                             onClick={closeModal}
                         >
-                            <IoMdClose fill="#4A5578" size="20px" />
+                            <IoMdClose fill="#4A5578" size="24px" />
                         </button>
                         {content}
                     </div>

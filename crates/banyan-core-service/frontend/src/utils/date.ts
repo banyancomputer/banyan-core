@@ -1,4 +1,4 @@
-export const getDateLabel = (timestapm: string) => {
+export const getDateLabel = (timestapm: number) => {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const date = new Date(timestapm);
 

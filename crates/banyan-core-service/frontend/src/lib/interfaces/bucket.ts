@@ -20,3 +20,10 @@ export class MockBucket {
     public bucket_type = '';
     public files = [];
 }
+
+export interface BucketSnapshot {
+    id: string,
+    bucket_id: string,
+    snapshot_type: string,
+    version: string
+}

@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { useIntl } from 'react-intl';
 
 import { useModal } from '@/contexts/modals';
-import { Bucket } from '@/lib/interfaces/bucket'
+import { BucketFile } from '@/lib/interfaces/bucket'
 
-export const RenameBucketModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
+export const RenameFileModal: React.FC<{ file: BucketFile }> = ({ file }) => {
     const { closeModal } = useModal();
     const { messages } = useIntl();
     const [newName, setNewName] = useState('');
@@ -12,13 +12,13 @@ export const RenameBucketModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     return (
         <div className='w-modal flex flex-col gap-8' >
             <div>
-                <h4 className='text-m font-semibold '>{`${messages.renameBucket}`}</h4>
+                <h4 className='text-m font-semibold '>{`${messages.renameFile}`}</h4>
             </div>
             <div>
                 <label>
-                    {`${messages.bucketName}`}
+                    {`${messages.fileName}`}
                     <input
-                        className='mt-2 input w-full h-11 py-3 px-4 rounded-lg border-gray-400 focus:outline-none'
+                        className='mt-2 input w-full h-11 py-3 px-4 rounded-lg border-gray-300 shadow-sm focus:outline-none'
                         type="text"
                         placeholder={`${messages.enterNewBucketName}`}
                         value={newName}
