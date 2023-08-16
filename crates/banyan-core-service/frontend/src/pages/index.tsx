@@ -4,7 +4,7 @@ import { IoMdAdd } from "react-icons/io"
 
 import BaseLayout from '@layouts/BaseLayout';
 import { NextPageWithLayout } from './page';
-import { BucketTable } from '@/components/Buckets/BucketsTable';
+import { BucketsTable } from '@/components/Buckets/BucketsTable';
 import { UploadFileModal } from '@/components/common/Modal/UploadFileModal';
 
 import { useTomb } from '@/contexts/tomb';
@@ -35,7 +35,7 @@ const Buckets: NextPageWithLayout = () => {
                     {`${messages.upload}`}
                 </button>
             </div>
-            <BucketTable buckets={buckets} />
+            <BucketsTable buckets={buckets} />
             <div
                 className="mt-10 flex flex-col items-center justify-center gap-4 px-6 py-4 border-2 border-c rounded-xl  text-xs cursor-pointer"
                 onClick={uploadFile}

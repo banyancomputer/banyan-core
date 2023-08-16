@@ -26,5 +26,13 @@
 	"cancel": "Cancel",
 	"wantToEmpty": "Are you sure you want to empty",
 	"filesWillBeDeletedPermanently": "Files will be deleted permanently",
-	"upgradePlan": "Upgrade Plan"
+	"upgradePlan": "Upgrade Plan",
+	"fileName": "File name",
+	"dateDeleted": "Date deleted",
+	"owner": "Owner",
+	"trashIsEmpty": "Trash is empty",
+	"trashIsFull": "Trash is full",
+	"clickToEmptyTrash": "Click to empty trash",
+	"emptyTrash": "Empty trash"
+
 }

@@ -34,7 +34,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     const [usedStorage, setUsedStorage] = useState<number>(0);
 
     /** Prevents rust recursion error. */
-    const mutex = async(calllack: (tomb: TombWasm) => Promise<any>) => {
+    const mutex = async (calllack: (tomb: TombWasm) => Promise<any>) => {
         if (tomb) {
             const release = await tombMutex.acquire();
             try {
@@ -48,57 +48,42 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     };
 
     // Load the tomb-wasm module
-    const loadBucket = async(bucket_id: string) => {
+    const loadBucket = async (bucket_id: string) => {
         await mutex(async tomb => {
             await tomb.load(bucket_id);
         });
     };
 
-    const unlockBucket = async(bucket_id: string) => {
+    const unlockBucket = async (bucket_id: string) => {
         await mutex(async tomb => {
             const encryptionKey = await getEncryptionKey();
             await tomb.unlock(bucket_id, encryptionKey.privateKey);
         });
     };
 
-    const getFiles = async(bucket_id: string, path: string) => {
-        if (tomb) {
-            await loadBucket(bucket_id);
-            await unlockBucket(bucket_id);
+    const getFiles = async (bucket_id: string, path: string) => {
+        await loadBucket(bucket_id);
+        await unlockBucket(bucket_id);
 
-            return await tomb.ls(bucket_id, path);
-        }
-
-        return [];
+        return await tomb!.ls(bucket_id, path);
     };
-    const getBuckets = async() => {
-        if (tomb) {
-            return await tomb.getBuckets();
-        }
-
-        return [];
+    const getBuckets = async () => {
+        return await tomb!.getBuckets();
     };
-    const getUsedStorage = async() => {
-        if (tomb) {
-            return +(await tomb.getTotalStorage()).toString();
-        }
-
-        return 0;
+    const getUsedStorage = async () => {
+        return +(await tomb!.getTotalStorage()).toString();
     };
 
-    const getTrashBucket: () => Promise<MockBucket> = async() => {
-        if (tomb) {
-            return await tomb.getTrashBucket();
-        }
+    const getTrashBucket: () => Promise<MockBucket> = async () => {
+        return await tomb!.getTrashBucket();
 
-        return new MockBucket();
     };
 
     // Initialize the tomb client
     useEffect(() => {
         if (!keystoreInitialized || !session?.accountId) { return; }
 
-        (async() => {
+        (async () => {
             try {
                 const wrappingKey = await getEncryptionKey();
                 const TombWasm = (await import('tomb-wasm-experimental')).TombWasm;
@@ -116,7 +101,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
     useEffect(() => {
         if (tomb) {
-            (async() => {
+            (async () => {
                 try {
                     const buckets = await getBuckets();
                     setBuckets(buckets.map(bucket => ({ ...bucket, files: [] })));
@@ -131,7 +116,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     }, [tomb]);
 
     useEffect(() => {
-        (async() => {
+        (async () => {
             if (tomb) {
                 for (const bucket of buckets) {
                     const id = bucket.id;

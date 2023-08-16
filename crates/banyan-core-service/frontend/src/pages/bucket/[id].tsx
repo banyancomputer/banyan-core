@@ -7,7 +7,7 @@ import { useTomb } from '@/contexts/tomb';
 
 import BaseLayout from '@/layouts/BaseLayout';
 import { NextPageWithLayout } from '../page';
-import { BucketTable } from '@/components/Buckets/BucketsTable';
+import { BucketsTable } from '@/components/Buckets/BucketsTable';
 
 import { Upload } from '@static/images/buckets';
 
@@ -36,7 +36,7 @@ const Bucket: NextPageWithLayout = () => {
                     />
                 </label>
             </div>
-            <BucketTable buckets={selectedBucket ? [selectedBucket] : []} />
+            <BucketsTable buckets={selectedBucket ? [selectedBucket] : []} />
             <label className="mt-10 flex flex-col items-center justify-center gap-4 px-6 py-4 border-2 border-c rounded-xl  text-xs cursor-pointer">
                 <Upload />
                 <span className="text-gray-600">

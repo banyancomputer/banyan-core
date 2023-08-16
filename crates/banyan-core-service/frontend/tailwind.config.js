@@ -16,6 +16,9 @@ module.exports = {
 				navbar: '280px',
 				uploadFileModal: '400px',
 			},
+			minWidth: {
+				navbar: '280px',
+			},
 			colors: {
 				blue: {
 					primary: '#3E8CDA',
