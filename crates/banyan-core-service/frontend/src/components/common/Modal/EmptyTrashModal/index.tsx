@@ -9,7 +9,7 @@ export const EmptyTrashModal = () => {
     const { messages } = useIntl();
 
     return (
-        <div className='w-uploadFileModal flex flex-col gap-5'>
+        <div className='w-modal flex flex-col gap-5'>
             <FiTrash2 size="24px" stroke='#5e6c97' />
             <div>
                 <h4 className='text-m font-semibold'>{`${messages.deleteBucket}`}</h4>

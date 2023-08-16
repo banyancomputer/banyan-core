@@ -14,7 +14,8 @@ module.exports = {
 			},
 			width: {
 				navbar: '280px',
-				uploadFileModal: '400px',
+				modal: '400px',
+				snapshotsModal: '530px',
 			},
 			minWidth: {
 				navbar: '280px',

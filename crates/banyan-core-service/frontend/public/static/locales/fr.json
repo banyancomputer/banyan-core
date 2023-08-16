@@ -33,5 +33,18 @@
 	"trashIsEmpty": "La corbeille est vide",
 	"trashIsFull": "La corbeille est pleine",
 	"clickToEmptyTrash": "Cliquez pour vider la corbeille",
-	"emptyTrash": "Poubelle vide"
+	"emptyTrash": "Poubelle vide",
+	"versions": "Versions",
+	"stayUpToDate": "Restez à jour avec l'historique des versions de stockage de fichiers",
+	"close": "Fermer",
+	"renameBucket": "Renommer le bucket",
+	"save": "Enregistrer",
+	"enterNewBucketName": "Entrez un nouveau nom",
+	"takeColdSnapshot": "Prendre un instantané froid",
+	"doYouWantToTakeSnapshot": "Voulez-vous prendre un instantané froid",
+	"renameFile": "Renommer le fichier",
+	"moveTo": "Déménager à",
+	"selectWhereToMove": "Veuillez sélectionner l'endroit où vous souhaitez déplacer votre fichier",
+	"selectInTheList": "Sélectionnez dans la liste",
+	"folder": "Dossier"
 }

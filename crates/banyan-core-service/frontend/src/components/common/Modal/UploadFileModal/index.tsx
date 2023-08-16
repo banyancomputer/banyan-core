@@ -23,7 +23,7 @@ export const UploadFileModal = () => {
     };
 
     return (
-        <div className='w-uploadFileModal flex flex-col gap-4'>
+        <div className='w-modal flex flex-col gap-4'>
             <div>
                 <h4 className='text-m font-semibold '>{`${messages.uploadFiles}`}</h4>
                 <p className='mt-2 text-gray-600'>

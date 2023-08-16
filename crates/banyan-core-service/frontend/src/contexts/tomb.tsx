@@ -2,7 +2,7 @@ import React, { ReactNode, createContext, useContext, useEffect, useState } from
 import { TombWasm } from 'tomb-wasm-experimental';
 import { useSession } from 'next-auth/react';
 import { useKeystore } from './keystore';
-import { Bucket, BucketFile, MockBucket } from '@/lib/interfaces/bucket';
+import { Bucket, BucketFile, BucketSnapshot, MockBucket } from '@/lib/interfaces/bucket';
 import { Mutex } from 'async-mutex';
 
 interface TombInterface {
@@ -14,7 +14,8 @@ interface TombInterface {
     unlockBucket: (bucket_id: string) => Promise<void>;
     getBuckets: () => Promise<Bucket[]>;
     getTrashBucket: () => Promise<Bucket>;
-    getUsedStorage: () => Promise<BigInt>;
+    getUsedStorage: () => Promise<number>;
+    getBucketShapshots: (id: string) => Promise<BucketSnapshot[]>;
     getFiles: (bucket_id: string, path: string) => Promise<BucketFile[]>;
     setBuckets: React.Dispatch<React.SetStateAction<Bucket[]>>;
 };
@@ -70,13 +71,16 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     const getBuckets = async () => {
         return await tomb!.getBuckets();
     };
+
+    const getBucketShapshots = async (id: string) => {
+        return await tomb!.getBucketSnapshots(id);
+    };
     const getUsedStorage = async () => {
         return +(await tomb!.getTotalStorage()).toString();
     };
 
     const getTrashBucket: () => Promise<MockBucket> = async () => {
         return await tomb!.getTrashBucket();
-
     };
 
     // Initialize the tomb client
@@ -129,7 +133,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
     return (
         <TombContext.Provider
-            value={{ tomb, buckets, trash, usedStorage, setBuckets, getBuckets, loadBucket, unlockBucket, getFiles, getTrashBucket, getUsedStorage }}
+            value={{ tomb, buckets, trash, usedStorage, setBuckets, getBuckets, getBucketShapshots, loadBucket, unlockBucket, getFiles, getTrashBucket, getUsedStorage }}
         >
             {children}
         </TombContext.Provider>
