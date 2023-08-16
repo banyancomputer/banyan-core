@@ -22,11 +22,11 @@ use tracing::Level;
 use crate::app_state::AppState;
 use crate::{api, health_check};
 
-// todo: might want a longer timeout in some parts of the API and I'd like to be able customize a
+// TODO: might want a longer timeout in some parts of the API and I'd like to be able customize a
 // few layers eventually such as CORS and request timeouts but that's for something down the line
 const REQUEST_TIMEOUT_SECS: u64 = 90;
 
-// todo: probably want better fallback error pages...
+// TODO: probably want better fallback error pages...
 async fn handle_error(error: tower::BoxError) -> impl IntoResponse {
     if error.is::<tower::timeout::error::Elapsed>() {
         return (StatusCode::REQUEST_TIMEOUT, "request timeout".to_owned());
@@ -39,7 +39,7 @@ async fn handle_error(error: tower::BoxError) -> impl IntoResponse {
         );
     }
 
-    // todo: I want to log the error chain, but there is some weird trait shenangigans that need to
+    // TODO: I want to log the error chain, but there is some weird trait shenangigans that need to
     // be worked through to call the collect_error_messages function
     tracing::error!(error_msg = %error, "unhandled error");
 
@@ -57,7 +57,7 @@ async fn graceful_shutdown_blocker() {
     let mut sig_term_handler =
         unix::signal(unix::SignalKind::terminate()).expect("to be able to install signal handler");
 
-    // todo: need to follow k8s signal handling rules for these different signals
+    // TODO: need to follow k8s signal handling rules for these different signals
     tokio::select! {
         _ = sig_int_handler.recv() => tracing::debug!("gracefully exiting on an interrupt signal"),
         _ = sig_term_handler.recv() => tracing::debug!("gracefully exiting on an terminate signal"),

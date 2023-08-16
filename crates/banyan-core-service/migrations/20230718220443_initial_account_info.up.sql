@@ -67,6 +67,8 @@ CREATE TABLE verification_tokens (
   expires TEXT NOT NULL
 );
 
+-- Migration for WebUI data
+
 -- Migration for table specifying allow-listed emails for alpha
 CREATE TABLE allowed_emails (
   id TEXT PRIMARY KEY DEFAULT (
@@ -106,6 +108,8 @@ CREATE TABLE escrowed_devices (
 CREATE UNIQUE INDEX idx_escrowed_device_keys_on_unique_account_id
   ON escrowed_devices(account_id);
 
+-- Businesss Logic Tables
+
 -- Migrations for Device API keys
 CREATE TABLE device_api_keys (
   -- Dirty hack to generate UUIDs
@@ -130,6 +134,7 @@ CREATE TABLE device_api_keys (
 CREATE UNIQUE INDEX idx_device_api_keys_on_unique_fingerprint
   ON device_api_keys(fingerprint);
 
+-- Migrations for Buckets
 CREATE TABLE buckets (
   -- Dirty hack to generate UUIDs
   id TEXT PRIMARY KEY DEFAULT (
@@ -149,9 +154,10 @@ CREATE TABLE buckets (
   type VARCHAR(32) NOT NULL
 );
 
-CREATE UNIQUE INDEX idx_buckets_on_unique_account_id_name
+CREATE UNIQUE INDEX idx_buckets_on_unique_account_id_and_name
   ON buckets(account_id, name);
 
+-- Migrations for Bucket Keys
 CREATE TABLE bucket_keys (
   id TEXT PRIMARY KEY DEFAULT (
     lower(hex(randomblob(4))) || '-' ||
@@ -169,5 +175,41 @@ CREATE TABLE bucket_keys (
   approved BOOLEAN NOT NULL DEFAULT false
 );
 
-create INDEX idx_bucket_keys_on_unique_bucket_id
+CREATE INDEX idx_bucket_keys_on_bucket_id
   ON bucket_keys(bucket_id);
+
+-- Migrations for Bucket Metadata
+CREATE TABLE bucket_metadata (
+  id TEXT PRIMARY KEY DEFAULT (
+    lower(hex(randomblob(4))) || '-' ||
+    lower(hex(randomblob(2))) || '-4' ||
+    substr(lower(hex(randomblob(2))), 2) || '-a' ||
+    substr(lower(hex(randomblob(2))), 2) || '-6' ||
+    substr(lower(hex(randomblob(6))), 2)),
+
+  bucket_id TEXT NOT NULL
+    REFERENCES buckets(id)
+    ON DELETE CASCADE,
+
+  -- Description of the data
+  -- The root CID of this version of the bucket
+  root_cid TEXT NOT NULL,
+  -- The CID of the metadata for this version of the bucket
+  metadata_cid TEXT NOT NULL,
+  -- The size of the data pointed at by the root CID 
+  data_size INTEGER NOT NULL,
+
+  -- Description of the metadata CAR file
+  size INTEGER,
+  hash TEXT,
+
+  -- The state of the metadata
+  -- TODO: Make this an enum
+  state VARCHAR(32) NOT NULL,
+
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_bucket_metadata_on_bucket_id
+  ON bucket_metadata(bucket_id);

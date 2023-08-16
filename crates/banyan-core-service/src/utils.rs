@@ -1,4 +1,5 @@
 pub mod car_buffer;
+pub mod bucket_metadata_upload;
 
 use std::error::Error;
 

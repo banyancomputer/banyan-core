@@ -100,7 +100,7 @@ where
 
         let key = DecodingKey::from_ec_pem(db_device_api_key.pem.as_bytes()).expect("success");
 
-        // todo: we probably want to use device keys to sign this instead of a
+        // TODO: we probably want to use device keys to sign this instead of a
         // static AES key, this works for now
         let token_data = decode::<ApiToken>(token, &key, &token_validator)
             .map_err(ApiKeyAuthorizationError::decode_failed)?;

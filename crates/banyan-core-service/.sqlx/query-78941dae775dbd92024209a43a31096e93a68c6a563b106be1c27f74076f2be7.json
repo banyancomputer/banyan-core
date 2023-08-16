@@ -1,0 +1,74 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id as \"id!\", bucket_id, root_cid, metadata_cid, data_size, state, size as \"size!\", hash as \"hash!\", created_at, updated_at\n        FROM bucket_metadata WHERE id = $1 AND bucket_id = $2;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id!",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "bucket_id",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "root_cid",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "metadata_cid",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "data_size",
+        "ordinal": 4,
+        "type_info": "Int64"
+      },
+      {
+        "name": "state",
+        "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "size!",
+        "ordinal": 6,
+        "type_info": "Int64"
+      },
+      {
+        "name": "hash!",
+        "ordinal": 7,
+        "type_info": "Text"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 8,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "updated_at",
+        "ordinal": 9,
+        "type_info": "Datetime"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "78941dae775dbd92024209a43a31096e93a68c6a563b106be1c27f74076f2be7"
+}

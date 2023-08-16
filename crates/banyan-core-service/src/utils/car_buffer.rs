@@ -79,11 +79,11 @@ impl CarBuffer {
 
         tracing::info!("parsing things out of the car file woo");
 
-        // todo: process data buffer
+        // TODO: process data buffer
         let _ = self.as_slice();
         self.state = BufferState::Done;
 
-        // todo: return something useful
+        // TODO: return something useful
         Ok(Some(()))
     }
 }
