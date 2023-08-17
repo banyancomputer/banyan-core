@@ -1,6 +1,5 @@
-
-use serde::Serialize;
 use crate::db::models::BucketMetadataState;
+use serde::Serialize;
 
 #[derive(Debug, Serialize)]
 pub struct PushBucketMetadataResponse {

@@ -21,8 +21,7 @@ pub async fn create(
     let account_id = api_token.subject;
     let pem = create_device_api_key.pem();
 
-    let parsed_public_key =
-        PKey::public_key_from_pem(pem.as_ref()).expect("parsing public key");
+    let parsed_public_key = PKey::public_key_from_pem(pem.as_ref()).expect("parsing public key");
     let ec_key = parsed_public_key.ec_key().unwrap();
     let ec_group = ec_key.group();
     let mut big_num_context = BigNumContext::new().expect("big number context");
@@ -107,10 +106,7 @@ pub async fn read(
 }
 
 // TODO: pagination
-pub async fn read_all(
-    api_token: ApiToken,
-    mut db_conn: DbConn,
-) -> impl IntoResponse {
+pub async fn read_all(api_token: ApiToken, mut db_conn: DbConn) -> impl IntoResponse {
     let account_id = api_token.subject;
     let maybe_device_keys = sqlx::query_as!(
         models::DeviceApiKey,
@@ -131,18 +127,23 @@ pub async fn read_all(
         }
     };
 
-    Json(responses::ReadDeviceApiKeys(device_keys.into_iter().map(|dk| responses::ReadDeviceApiKey {
-            id: dk.id,
-            fingerprint: dk.fingerprint,
-            pem: dk.pem,
-        }).collect())
-    ).into_response()
+    Json(responses::ReadDeviceApiKeys(
+        device_keys
+            .into_iter()
+            .map(|dk| responses::ReadDeviceApiKey {
+                id: dk.id,
+                fingerprint: dk.fingerprint,
+                pem: dk.pem,
+            })
+            .collect(),
+    ))
+    .into_response()
 }
 
 pub async fn delete(
     api_token: ApiToken,
     mut db_conn: DbConn,
-    Path(device_api_key_id): Path<Uuid>
+    Path(device_api_key_id): Path<Uuid>,
 ) -> impl IntoResponse {
     let account_id = api_token.subject;
     let id = device_api_key_id.to_string();

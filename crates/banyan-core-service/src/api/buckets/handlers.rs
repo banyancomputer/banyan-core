@@ -4,8 +4,8 @@ use axum::response::IntoResponse;
 use uuid::Uuid;
 use validify::Validate;
 
+use crate::api::buckets::{keys, requests, responses};
 use crate::db::*;
-use crate::api::buckets::{requests, responses, keys};
 use crate::extractors::{ApiToken, DbConn};
 
 /// Initialze a new bucket with initial key material
@@ -78,10 +78,7 @@ pub async fn create(
 
 // TODO: pagination
 /// Read all buckets associated with the calling account
-pub async fn read_all(
-    api_token: ApiToken,
-    mut db_conn: DbConn,
-) -> impl IntoResponse { 
+pub async fn read_all(api_token: ApiToken, mut db_conn: DbConn) -> impl IntoResponse {
     let account_id = api_token.subject;
     let maybe_buckets = sqlx::query_as!(
         models::Bucket,
@@ -102,13 +99,14 @@ pub async fn read_all(
         }
     };
 
-    let buckets = buckets.into_iter().map(|bucket| {
-        responses::ReadBucket {
+    let buckets = buckets
+        .into_iter()
+        .map(|bucket| responses::ReadBucket {
             id: bucket.id,
             name: bucket.name,
             r#type: bucket.r#type,
-        }
-    }).collect::<Vec<_>>();
+        })
+        .collect::<Vec<_>>();
     let buckets = responses::ReadBuckets(buckets);
     Json(buckets).into_response()
 }
@@ -149,7 +147,6 @@ pub async fn read(
     Json(bucket).into_response()
 }
 
-
 pub async fn delete(
     api_token: ApiToken,
     mut db_conn: DbConn,
@@ -182,4 +179,3 @@ pub async fn delete(
 
     Json(bucket).into_response()
 }
-

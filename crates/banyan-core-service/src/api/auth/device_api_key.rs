@@ -1,4 +1,4 @@
-use axum::routing::{get, post, delete};
+use axum::routing::{delete, get, post};
 use axum::Router;
 
 mod handlers;

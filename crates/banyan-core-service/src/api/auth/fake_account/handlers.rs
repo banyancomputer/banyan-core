@@ -101,5 +101,6 @@ pub async fn create(
 
     Json(responses::CreateFakeAccount {
         id: created_account.id,
-    }).into_response()
+    })
+    .into_response()
 }

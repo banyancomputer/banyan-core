@@ -22,7 +22,7 @@ pub struct AppState {
     verification_key: DecodingKey,
 
     bucket_metadata_upload_directory: PathBuf,
-    
+
     storage_host_url: String,
 }
 
@@ -37,7 +37,7 @@ impl AppState {
         let database_pool = database::setup(config.database_url()).await?;
         let (signing_key, verification_key) =
             load_or_create_service_key(config.signing_key_path())?;
-        
+
         let storage_host_url = config.storage_host_url().to_string();
 
         Ok(Self {

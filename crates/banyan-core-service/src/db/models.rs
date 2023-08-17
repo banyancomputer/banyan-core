@@ -49,7 +49,7 @@ pub struct Bucket {
 // TODO: should we add the account_id to this?
 /// BucketKey - data associated with a bucket key
 #[derive(Serialize)]
-pub struct BucketKey{
+pub struct BucketKey {
     pub id: String,
     pub bucket_id: String,
     pub approved: bool,
@@ -65,7 +65,7 @@ pub enum BucketMetadataState {
     Pending,
     Current,
     Outdated,
-    Deleted
+    Deleted,
 }
 
 impl Display for BucketMetadataState {
@@ -115,4 +115,3 @@ pub struct BucketMetadata {
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
 }
-

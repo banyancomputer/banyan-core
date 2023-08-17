@@ -4,8 +4,8 @@ use axum::response::IntoResponse;
 use uuid::Uuid;
 use validify::Validate;
 
-use crate::db::*;
 use crate::api::buckets::keys::{requests, responses};
+use crate::db::*;
 use crate::extractors::{ApiToken, DbConn};
 
 /// Initialze a new bucket key for the specified bucket
@@ -62,7 +62,7 @@ pub async fn create(
     let created_bucket_key = match maybe_bucket_key {
         Ok(cbk) => responses::CreateBucketKey {
             id: cbk.id,
-            approved: false
+            approved: false,
         },
         Err(err) => {
             return (
@@ -118,11 +118,13 @@ pub async fn read_all(
 
     let bucket_keys = match maybe_bucket_keys {
         Ok(bks) => responses::ReadAllBucketKeys(
-            bks.into_iter().map(|bk| responses::ReadBucketKey {
-                id: bk.id,
-                approved: bk.approved,
-                pem: bk.pem,
-            }).collect()
+            bks.into_iter()
+                .map(|bk| responses::ReadBucketKey {
+                    id: bk.id,
+                    approved: bk.approved,
+                    pem: bk.pem,
+                })
+                .collect(),
         ),
         Err(err) => {
             return (

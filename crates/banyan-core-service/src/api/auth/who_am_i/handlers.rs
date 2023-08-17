@@ -2,7 +2,6 @@ use axum::extract::Json;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 
-
 use crate::api::auth::who_am_i::responses;
 use crate::extractors::ApiToken;
 

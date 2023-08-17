@@ -15,7 +15,7 @@ pub struct ReadDeviceApiKey {
 }
 
 #[derive(Clone, Debug, Serialize)]
-pub struct ReadDeviceApiKeys(pub Vec<ReadDeviceApiKey>); 
+pub struct ReadDeviceApiKeys(pub Vec<ReadDeviceApiKey>);
 
 #[derive(Clone, Debug, Serialize, Validify)]
 pub struct DeleteDeviceApiKey {

@@ -1,18 +1,18 @@
-use axum::extract::{BodyStream, Path, Json};
+use axum::body::StreamBody;
+use axum::extract::{BodyStream, Json, Path};
 use axum::headers::ContentType;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::body::StreamBody;
 use axum::TypedHeader;
+use http::{HeaderMap, HeaderValue};
 use object_store::ObjectStore;
 use tokio::io::AsyncWriteExt;
-use http::{HeaderMap, HeaderValue};
 use uuid::Uuid;
 
-use crate::utils::bucket_metadata_upload::handle_bucket_metadata_upload;
-use crate::db::models;
 use crate::api::buckets::metadata::{requests, responses};
+use crate::db::models;
 use crate::extractors::{ApiToken, DataStore, DbConn, StorageHost};
+use crate::utils::bucket_metadata_upload::handle_bucket_metadata_upload;
 
 /// Upload data size limit for CAR file uploads
 const REQUEST_DATA_SIZE_LIMIT: u64 = 100 * 1_024;
@@ -71,7 +71,8 @@ pub async fn push(
     // TODO: validate name is request-data (request_data_field.name())
     // TODO: validate type is application/json (request_data_field.content_type())
     let request_data_bytes = request_data_field.bytes().await.unwrap();
-    let request_data: requests::PushBucketMetadataRequest = serde_json::from_slice(&request_data_bytes).unwrap();
+    let request_data: requests::PushBucketMetadataRequest =
+        serde_json::from_slice(&request_data_bytes).unwrap();
     // TODO: Validata that the account is allowed to store `request_data.data_size` bytes
 
     let i_size = request_data.data_size as i64;
@@ -105,7 +106,11 @@ pub async fn push(
     // TODO: validate name is car-upload (request_data_field.name())
     // TODO: validate type is "application/vnd.ipld.car; version=2" (request_data_field.content_type())
 
-    let file_name = format!("{bucket_id}/{bucket_metadata_id}.car", bucket_id = bucket_id, bucket_metadata_id = bucket_metadata_resource.id);
+    let file_name = format!(
+        "{bucket_id}/{bucket_metadata_id}.car",
+        bucket_id = bucket_id,
+        bucket_metadata_id = bucket_metadata_resource.id
+    );
     let file_path = object_store::path::Path::from(file_name.as_str());
 
     let (upload_id, mut writer) = match store.put_multipart(&file_path).await {
@@ -134,7 +139,7 @@ pub async fn push(
                             storage_authorization: "N/A".to_string(),
                         }),
                     )
-                    .into_response();
+                        .into_response();
                 }
                 Err(err) => {
                     return (
@@ -228,7 +233,7 @@ pub async fn pull(
         Ok(b) => b,
         Err(err) => {
             return (
-                 StatusCode::INTERNAL_SERVER_ERROR,
+                StatusCode::INTERNAL_SERVER_ERROR,
                 format!("unable to read bucket: {err}"),
             )
                 .into_response();
@@ -255,7 +260,11 @@ pub async fn pull(
     };
 
     // Try opening the file for reading
-    let file_name = format!("{bucket_id}/{bucket_metadata_id}.car", bucket_id = bucket_id, bucket_metadata_id = bucket_metadata_id);
+    let file_name = format!(
+        "{bucket_id}/{bucket_metadata_id}.car",
+        bucket_id = bucket_id,
+        bucket_metadata_id = bucket_metadata_id
+    );
     let file_path = object_store::path::Path::from(file_name.as_str());
     let reader = match store.get(&file_path).await {
         Ok(r) => r,
@@ -278,8 +287,7 @@ pub async fn pull(
     );
     headers.insert(
         http::header::CONTENT_DISPOSITION,
-        HeaderValue::from_str(format!("attachment; filename=\"{file_name}\"").as_str())
-            .unwrap(),
+        HeaderValue::from_str(format!("attachment; filename=\"{file_name}\"").as_str()).unwrap(),
     );
 
     let body = StreamBody::new(stream);
@@ -290,7 +298,7 @@ pub async fn pull(
 pub async fn read(
     api_token: ApiToken,
     mut db_conn: DbConn,
-    Path((bucket_id, bucket_metadata_id)): Path<(Uuid, Uuid)>
+    Path((bucket_id, bucket_metadata_id)): Path<(Uuid, Uuid)>,
 ) -> impl IntoResponse {
     let account_id = api_token.subject;
     let bucket_id = bucket_id.to_string();
@@ -307,7 +315,7 @@ pub async fn read(
         Ok(b) => b,
         Err(err) => {
             return (
-                 StatusCode::INTERNAL_SERVER_ERROR,
+                StatusCode::INTERNAL_SERVER_ERROR,
                 format!("unable to read bucket: {err}"),
             )
                 .into_response();
@@ -366,7 +374,7 @@ pub async fn read_all(
         Ok(b) => b,
         Err(err) => {
             return (
-                 StatusCode::INTERNAL_SERVER_ERROR,
+                StatusCode::INTERNAL_SERVER_ERROR,
                 format!("unable to read bucket: {err}"),
             )
                 .into_response();
@@ -384,15 +392,17 @@ pub async fn read_all(
 
     let bucket_metadata = match maybe_bucket_metadata {
         Ok(bm) => responses::ReadAllBucketMetadataResponse(
-            bm.into_iter().map(|bm| responses::ReadBucketMetadataResponse {
-                id: bm.id.to_string(),
-                root_cid: bm.root_cid,
-                metadata_cid: bm.metadata_cid,
-                data_size: bm.data_size,
-                state: bm.state,
-                created_at: bm.created_at.timestamp(),
-                updated_at: bm.updated_at.timestamp(),
-            }).collect()
+            bm.into_iter()
+                .map(|bm| responses::ReadBucketMetadataResponse {
+                    id: bm.id.to_string(),
+                    root_cid: bm.root_cid,
+                    metadata_cid: bm.metadata_cid,
+                    data_size: bm.data_size,
+                    state: bm.state,
+                    created_at: bm.created_at.timestamp(),
+                    updated_at: bm.updated_at.timestamp(),
+                })
+                .collect(),
         ),
         Err(err) => {
             return (
@@ -406,7 +416,7 @@ pub async fn read_all(
     (StatusCode::OK, axum::Json(bucket_metadata)).into_response()
 }
 
-pub async fn  delete(
+pub async fn delete(
     _api_token: ApiToken,
     Path(_bucket_id): Path<Uuid>,
     Path(_metadata_id): Path<Uuid>,

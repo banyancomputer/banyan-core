@@ -1,7 +1,7 @@
+use crate::api::buckets::keys;
+use crate::db::models::*;
 use serde::Serialize;
 use sqlx::FromRow;
-use crate::db::models::*;
-use crate::api::buckets::keys;
 
 #[derive(Serialize)]
 pub struct CreateBucket {

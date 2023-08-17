@@ -3,7 +3,7 @@ use serde::Serialize;
 #[derive(Serialize)]
 pub struct CreateBucketKey {
     pub id: String,
-    pub approved: bool, 
+    pub approved: bool,
 }
 
 #[derive(Debug, Serialize)]
