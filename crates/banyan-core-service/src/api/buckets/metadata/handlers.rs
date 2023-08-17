@@ -271,7 +271,7 @@ pub async fn pull(
         Err(_) => {
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("unable to read bucket metadata"),
+                format!("unable to read bucket metadata").to_string(),
             )
                 .into_response();
         }
