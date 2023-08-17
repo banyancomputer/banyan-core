@@ -268,10 +268,10 @@ pub async fn pull(
     let file_path = object_store::path::Path::from(file_name.as_str());
     let reader = match store.get(&file_path).await {
         Ok(r) => r,
-        Err(_) => {
+        Err(err) => {
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("unable to read bucket metadata").to_string(),
+                format!("unable to read bucket: {err}"),
             )
                 .into_response();
         }
