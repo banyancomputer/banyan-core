@@ -1,26 +1,275 @@
-use axum::extract::Path;
+use axum::extract::{BodyStream, Path, Json};
+use axum::headers::ContentType;
 use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response};
+use axum::response::IntoResponse;
+use axum::body::StreamBody;
+use axum::TypedHeader;
+use object_store::ObjectStore;
+use tokio::io::AsyncWriteExt;
 use http::{HeaderMap, HeaderValue};
 use uuid::Uuid;
 
-use crate::extractors::ApiToken;
+use crate::utils::bucket_metadata_upload::handle_bucket_metadata_upload;
+use crate::db::models;
+use crate::api::buckets::metadata::{requests, responses};
+use crate::extractors::{ApiToken, DataStore, DbConn, StorageHost};
 
-pub async fn destroy(
-    _api_token: ApiToken,
-    Path(_bucket_id): Path<Uuid>,
-    Path(_metadata_id): Path<Uuid>,
-) -> Response {
-    (StatusCode::NO_CONTENT, ()).into_response()
+/// Upload data size limit for CAR file uploads
+const REQUEST_DATA_SIZE_LIMIT: u64 = 100 * 1_024;
+/// Upload size limit for CAR files
+const CAR_DATA_SIZE_LIMIT: u64 = 128 * 1_024 * 1_024;
+
+/// Handle a request to push new metadata to a bucket
+pub async fn push(
+    api_token: ApiToken,
+    mut db_conn: DbConn,
+    store: DataStore,
+    storage_host: StorageHost,
+    Path(bucket_id): Path<Uuid>,
+    TypedHeader(content_type): TypedHeader<ContentType>,
+    body: BodyStream,
+) -> impl IntoResponse {
+    let account_id = api_token.subject;
+    let bucket_id = bucket_id.to_string();
+    // Make sure the calling user owns the bucket
+    let maybe_bucket = sqlx::query_as!(
+        models::CreatedResource,
+        r#"SELECT id as "id!" FROM buckets WHERE id = $1 AND account_id = $2;"#,
+        bucket_id,
+        account_id
+    )
+    .fetch_one(&mut *db_conn.0)
+    .await;
+
+    match maybe_bucket {
+        Ok(b) => b,
+        Err(err) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("unable to read bucket: {err}"),
+            )
+                .into_response();
+        }
+    };
+
+    // TODO: Check if the uploaded version exists. If-Match matches existing version abort with 409
+
+    // Read the body from the request, checking for size limits
+    let mime_ct = mime::Mime::from(content_type);
+    let boundary = multer::parse_boundary(mime_ct).unwrap();
+    let constraints = multer::Constraints::new()
+        .allowed_fields(vec!["request-data", "car-upload"])
+        .size_limit(
+            multer::SizeLimit::new()
+                .for_field("request-data", REQUEST_DATA_SIZE_LIMIT)
+                .for_field("car-upload", CAR_DATA_SIZE_LIMIT),
+        );
+    let mut multipart = multer::Multipart::with_constraints(body, boundary, constraints);
+
+    // Process the request data
+    let request_data_field = multipart.next_field().await.unwrap().unwrap();
+    // TODO: validate name is request-data (request_data_field.name())
+    // TODO: validate type is application/json (request_data_field.content_type())
+    let request_data_bytes = request_data_field.bytes().await.unwrap();
+    let request_data: requests::PushBucketMetadataRequest = serde_json::from_slice(&request_data_bytes).unwrap();
+    // TODO: Validata that the account is allowed to store `request_data.data_size` bytes
+
+    let i_size = request_data.data_size as i64;
+    let maybe_bucket_metadata_resource = sqlx::query_as!(
+        models::CreatedResource,
+        r#"INSERT INTO bucket_metadata (bucket_id, root_cid, metadata_cid, data_size, state)
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING id as "id!";"#,
+        bucket_id,
+        request_data.root_cid,
+        request_data.metadata_cid,
+        i_size,
+        models::BucketMetadataState::Uploading
+    )
+    .fetch_one(&mut *db_conn.0)
+    .await;
+
+    let bucket_metadata_resource = match maybe_bucket_metadata_resource {
+        Ok(bm) => bm,
+        Err(err) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("unable to create bucket metadata: {err}"),
+            )
+                .into_response();
+        }
+    };
+
+    // Process the upload
+    let car_stream = multipart.next_field().await.unwrap().unwrap();
+    // TODO: validate name is car-upload (request_data_field.name())
+    // TODO: validate type is "application/vnd.ipld.car; version=2" (request_data_field.content_type())
+
+    let file_name = format!("{bucket_id}/{bucket_metadata_id}.car", bucket_id = bucket_id, bucket_metadata_id = bucket_metadata_resource.id);
+    let file_path = object_store::path::Path::from(file_name.as_str());
+
+    let (upload_id, mut writer) = match store.put_multipart(&file_path).await {
+        // If we created the writer, go ahead and do the upload
+        Ok(mp) => mp,
+        // Otherwise, try marking the update as failed
+        Err(_) => {
+            // Try and mark the upload as failed
+            let maybe_failed_bucket_metadata_upload = sqlx::query!(
+                r#"UPDATE bucket_metadata SET state = $1 WHERE id = $2;"#,
+                models::BucketMetadataState::UploadFailed,
+                bucket_metadata_resource.id
+            )
+            .execute(&mut *db_conn.0)
+            .await;
+
+            // Return the correct response based on the result of the update
+            match maybe_failed_bucket_metadata_upload {
+                Ok(_) => {
+                    return (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        Json(responses::PushBucketMetadataResponse {
+                            id: bucket_metadata_resource.id.to_string(),
+                            state: models::BucketMetadataState::UploadFailed,
+                            storage_host: "N/A".to_string(),
+                            storage_authorization: "N/A".to_string(),
+                        }),
+                    )
+                    .into_response();
+                }
+                Err(err) => {
+                    return (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        format!("unable to update bucket metadata: {err}"),
+                    )
+                        .into_response();
+                }
+            };
+        }
+    };
+
+    // Try and upload the file
+    let (hash, size) = match handle_bucket_metadata_upload(car_stream, &mut writer).await {
+        Ok(fh) => {
+            writer
+                .shutdown()
+                .await
+                .expect("upload finalization to succeed");
+            fh
+        }
+        Err(_) => {
+            store
+                .abort_multipart(&file_path, &upload_id)
+                .await
+                .expect("aborting to success");
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "unable to process upload",
+            )
+                .into_response();
+        }
+    };
+
+    // Mark the upload as complete and fill in the size and hash
+    let i_size = size as i64;
+    let bucket_state = models::BucketMetadataState::Pending;
+    let bucket_state_string = bucket_state.to_string();
+    let maybe_updated_bucket_metadata = sqlx::query_as!(
+        models::CreatedResource,
+        r#"UPDATE bucket_metadata SET state = $1, size = $2, hash = $3 WHERE id = $4 RETURNING id as "id!";"#,
+        bucket_state_string,
+        i_size,
+        hash,
+        bucket_metadata_resource.id
+    )
+    .fetch_one(&mut *db_conn.0)
+    .await;
+
+    let updated_bucket_metadata = match maybe_updated_bucket_metadata {
+        Ok(bm) => bm,
+        Err(err) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("unable to update bucket metadata: {err}"),
+            )
+                .into_response();
+        }
+    };
+
+    let response = responses::PushBucketMetadataResponse {
+        id: updated_bucket_metadata.id.to_string(),
+        state: models::BucketMetadataState::Pending,
+        storage_host: storage_host.as_string(),
+        // TODO: this should be a JWT
+        storage_authorization: "TODO: JWT here".to_string(),
+    };
+
+    (StatusCode::OK, axum::Json(response)).into_response()
 }
 
-pub async fn download(
-    _api_token: ApiToken,
-    Path(_bucket_id): Path<Uuid>,
-    Path(metadata_id): Path<Uuid>,
-) -> Response {
-    let metadata_file_name = format!("{metadata_id}.car");
+/// Handle a request to pull metadata from a bucket
+pub async fn pull(
+    api_token: ApiToken,
+    mut db_conn: DbConn,
+    store: DataStore,
+    Path((bucket_id, bucket_metadata_id)): Path<(Uuid, Uuid)>,
+) -> impl IntoResponse {
+    let account_id = api_token.subject;
+    let bucket_id = bucket_id.to_string();
+    let bucket_metadata_id = bucket_metadata_id.to_string();
+    let maybe_bucket = sqlx::query_as!(
+        models::CreatedResource,
+        r#"SELECT id as "id!" FROM buckets WHERE id = $1 AND account_id = $2;"#,
+        bucket_id,
+        account_id
+    )
+    .fetch_one(&mut *db_conn.0)
+    .await;
+    match maybe_bucket {
+        Ok(b) => b,
+        Err(err) => {
+            return (
+                 StatusCode::INTERNAL_SERVER_ERROR,
+                format!("unable to read bucket: {err}"),
+            )
+                .into_response();
+        }
+    };
+    // Make sure the metadata exists
+    let maybe_bucket_metadata = sqlx::query_as!(
+        models::CreatedResource,
+        r#"SELECT id as "id!" FROM bucket_metadata WHERE id = $1 AND bucket_id = $2;"#,
+        bucket_metadata_id,
+        bucket_id
+    )
+    .fetch_one(&mut *db_conn.0)
+    .await;
+    match maybe_bucket_metadata {
+        Ok(bm) => bm,
+        Err(err) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("unable to read bucket metadata: {err}"),
+            )
+                .into_response();
+        }
+    };
 
+    // Try opening the file for reading
+    let file_name = format!("{bucket_id}/{bucket_metadata_id}.car", bucket_id = bucket_id, bucket_metadata_id = bucket_metadata_id);
+    let file_path = object_store::path::Path::from(file_name.as_str());
+    let reader = match store.get(&file_path).await {
+        Ok(r) => r,
+        Err(_) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("unable to read bucket metadata"),
+            )
+                .into_response();
+        }
+    };
+    let stream = reader.into_stream();
+
+    // Create the headers for the response
     let mut headers = HeaderMap::new();
 
     headers.insert(
@@ -29,52 +278,147 @@ pub async fn download(
     );
     headers.insert(
         http::header::CONTENT_DISPOSITION,
-        HeaderValue::from_str(format!("attachment; filename=\"{metadata_file_name}\"").as_str())
+        HeaderValue::from_str(format!("attachment; filename=\"{file_name}\"").as_str())
             .unwrap(),
     );
 
-    (StatusCode::OK, headers, "<metadata car file>").into_response()
+    let body = StreamBody::new(stream);
+
+    (StatusCode::OK, headers, body).into_response()
 }
 
-pub async fn index(_api_token: ApiToken, Path(_bucket_id): Path<Uuid>) -> Response {
-    let response = serde_json::json!([
-        { "id": "e627f0cc-1cfc-42fb-a8cb-23a57edc4594", "metadata_size": 1_187, "state": "pending" },
-        { "id": "8d834721-c707-41cb-937e-ccbf5eb2102a", "metadata_size": 41_378, "state": "current" },
-        { "id": "4b35955f-8a10-4b97-b9d3-857fde03106a", "metadata_size": 41_378, "state": "snapshot" },
-    ]);
+pub async fn read(
+    api_token: ApiToken,
+    mut db_conn: DbConn,
+    Path((bucket_id, bucket_metadata_id)): Path<(Uuid, Uuid)>
+) -> impl IntoResponse {
+    let account_id = api_token.subject;
+    let bucket_id = bucket_id.to_string();
+    let bucket_metadata_id = bucket_metadata_id.to_string();
+    let maybe_bucket = sqlx::query_as!(
+        models::CreatedResource,
+        r#"SELECT id as "id!" FROM buckets WHERE id = $1 AND account_id = $2;"#,
+        bucket_id,
+        account_id
+    )
+    .fetch_one(&mut *db_conn.0)
+    .await;
+    match maybe_bucket {
+        Ok(b) => b,
+        Err(err) => {
+            return (
+                 StatusCode::INTERNAL_SERVER_ERROR,
+                format!("unable to read bucket: {err}"),
+            )
+                .into_response();
+        }
+    };
+    // Make sure the metadata exists
+    let maybe_bucket_metadata = sqlx::query_as!(
+        models::BucketMetadata,
+        r#"SELECT id as "id!", bucket_id, root_cid, metadata_cid, data_size, state, size as "size!", hash as "hash!", created_at, updated_at
+        FROM bucket_metadata WHERE id = $1 AND bucket_id = $2;"#,
+        bucket_metadata_id,
+        bucket_id
+    )
+    .fetch_one(&mut *db_conn.0)
+    .await;
 
-    (StatusCode::OK, axum::Json(response)).into_response()
+    let bucket_metadata = match maybe_bucket_metadata {
+        Ok(bm) => responses::ReadBucketMetadataResponse {
+            id: bm.id.to_string(),
+            root_cid: bm.root_cid,
+            metadata_cid: bm.metadata_cid,
+            data_size: bm.data_size,
+            state: bm.state,
+            created_at: bm.created_at.timestamp(),
+            updated_at: bm.updated_at.timestamp(),
+        },
+        Err(err) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("unable to read bucket metadata: {err}"),
+            )
+                .into_response();
+        }
+    };
+
+    (StatusCode::OK, axum::Json(bucket_metadata)).into_response()
 }
 
-pub async fn show(
+/// Read all uploaded metadata for a bucket
+pub async fn read_all(
+    api_token: ApiToken,
+    mut db_conn: DbConn,
+    Path(bucket_id): Path<Uuid>,
+) -> impl IntoResponse {
+    let account_id = api_token.subject;
+    let bucket_id = bucket_id.to_string();
+    let maybe_bucket = sqlx::query_as!(
+        models::CreatedResource,
+        r#"SELECT id as "id!" FROM buckets WHERE id = $1 AND account_id = $2;"#,
+        bucket_id,
+        account_id
+    )
+    .fetch_one(&mut *db_conn.0)
+    .await;
+    match maybe_bucket {
+        Ok(b) => b,
+        Err(err) => {
+            return (
+                 StatusCode::INTERNAL_SERVER_ERROR,
+                format!("unable to read bucket: {err}"),
+            )
+                .into_response();
+        }
+    };
+    // Make sure the metadata exists
+    let maybe_bucket_metadata = sqlx::query_as!(
+        models::BucketMetadata,
+        r#"SELECT id as "id!", bucket_id, root_cid, metadata_cid, data_size, state, size as "size!", hash as "hash!", created_at, updated_at
+        FROM bucket_metadata WHERE bucket_id = $1;"#,
+        bucket_id
+    )
+    .fetch_all(&mut *db_conn.0)
+    .await;
+
+    let bucket_metadata = match maybe_bucket_metadata {
+        Ok(bm) => responses::ReadAllBucketMetadataResponse(
+            bm.into_iter().map(|bm| responses::ReadBucketMetadataResponse {
+                id: bm.id.to_string(),
+                root_cid: bm.root_cid,
+                metadata_cid: bm.metadata_cid,
+                data_size: bm.data_size,
+                state: bm.state,
+                created_at: bm.created_at.timestamp(),
+                updated_at: bm.updated_at.timestamp(),
+            }).collect()
+        ),
+        Err(err) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("unable to read bucket metadata: {err}"),
+            )
+                .into_response();
+        }
+    };
+
+    (StatusCode::OK, axum::Json(bucket_metadata)).into_response()
+}
+
+pub async fn  delete(
     _api_token: ApiToken,
     Path(_bucket_id): Path<Uuid>,
-    Path(metadata_id): Path<Uuid>,
-) -> Response {
-    let response = serde_json::json!({
-        "id": metadata_id,
-        "state": "pending",
-
-        "data_size": 1_567_120,
-        "metadata_size": 78_120,
-
-        "published_at": "20230804T171200+Z",
-
-        "authorized_public_keys": [
-            "98:01:73:9d:aa:e4:4e:c5:29:3d:4e:1f:53:d3:f4:d2:d4:26:d9:1c",
-        ],
-        "storage_providers": [
-            "http://127.0.0.1:3002",
-        ],
-    });
-
-    (StatusCode::OK, axum::Json(response)).into_response()
+    Path(_metadata_id): Path<Uuid>,
+) -> impl IntoResponse {
+    // TODO: Implement
+    (StatusCode::NO_CONTENT, ()).into_response()
 }
 
 pub async fn snapshot(
     _api_token: ApiToken,
     Path(_bucket_id): Path<Uuid>,
     Path(_metadata_id): Path<Uuid>,
-) -> Response {
+) -> impl IntoResponse {
     (StatusCode::UNAUTHORIZED, ()).into_response()
 }

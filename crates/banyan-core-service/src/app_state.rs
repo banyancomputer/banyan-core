@@ -21,31 +21,40 @@ pub struct AppState {
     signing_key: EncodingKey,
     verification_key: DecodingKey,
 
-    upload_directory: PathBuf,
+    bucket_metadata_upload_directory: PathBuf,
+    
+    storage_host_url: String,
 }
 
 impl AppState {
     pub async fn from_config(config: &Config) -> Result<Self, StateError> {
         // Do a test setup to make sure the upload directory exists and is writable as an early
         // sanity check
-        let upload_directory = config.upload_directory().clone();
-        LocalFileSystem::new_with_prefix(&upload_directory)
+        let bucket_metadata_upload_directory = config.bucket_metadata_upload_directory().clone();
+        LocalFileSystem::new_with_prefix(&bucket_metadata_upload_directory)
             .map_err(StateError::inaccessible_upload_directory)?;
 
         let database_pool = database::setup(config.database_url()).await?;
         let (signing_key, verification_key) =
             load_or_create_service_key(config.signing_key_path())?;
+        
+        let storage_host_url = config.storage_host_url().to_string();
 
         Ok(Self {
             database_pool,
             signing_key,
             verification_key,
-            upload_directory,
+            bucket_metadata_upload_directory,
+            storage_host_url,
         })
     }
 
-    pub fn upload_directory(&self) -> &PathBuf {
-        &self.upload_directory
+    pub fn bucket_metadata_upload_directory(&self) -> &PathBuf {
+        &self.bucket_metadata_upload_directory
+    }
+
+    pub fn storage_host_url(&self) -> &str {
+        &self.storage_host_url
     }
 }
 

@@ -1,3 +1,6 @@
+pub mod car_buffer;
+pub mod bucket_metadata_upload;
+
 use std::error::Error;
 
 pub fn collect_error_messages(base_error: impl Error) -> Vec<String> {

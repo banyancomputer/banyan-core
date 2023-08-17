@@ -10,16 +10,16 @@ mod auth;
 mod buckets;
 
 use crate::app_state::AppState;
-use crate::util::collect_error_messages;
+use crate::utils::collect_error_messages;
 
 pub fn router(state: AppState) -> Router<AppState> {
-    // todo: Ideally this would have a wrapper method to allow per route method configuration or
+    // TODO: Ideally this would have a wrapper method to allow per route method configuration or
     // even better something that inspected the route matches and applied the correct method config
     // for that path...
     let cors_layer = CorsLayer::new()
         .allow_methods(vec![Method::GET, Method::DELETE, Method::POST, Method::PUT])
         .allow_headers(vec![AUTHORIZATION, ACCEPT, ORIGIN])
-        // todo: add domain as a config option and make this configurable
+        // TODO: add domain as a config option and make this configurable
         .allow_origin(Any)
         .allow_credentials(false);
 
