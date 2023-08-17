@@ -21,6 +21,7 @@
 	"bucketType": "Bucket Type",
 	"lastEdited": "Last Edited",
 	"fileSize": "File Size",
+	"files": "Files",
 	"deleteBucket": "Delete bucket",
 	"delete": "Delete",
 	"cancel": "Cancel",

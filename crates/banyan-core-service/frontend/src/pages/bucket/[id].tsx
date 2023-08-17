@@ -10,6 +10,7 @@ import { NextPageWithLayout } from '../page';
 import { BucketsTable } from '@/components/Buckets/BucketsTable';
 
 import { Upload } from '@static/images/buckets';
+import { BucketTable } from '@/components/Buckets/BucketTable';
 
 const Bucket: NextPageWithLayout = () => {
     const searchParams = useSearchParams();
@@ -36,19 +37,9 @@ const Bucket: NextPageWithLayout = () => {
                     />
                 </label>
             </div>
-            <BucketsTable buckets={selectedBucket ? [selectedBucket] : []} />
-            <label className="mt-10 flex flex-col items-center justify-center gap-4 px-6 py-4 border-2 border-c rounded-xl  text-xs cursor-pointer">
-                <Upload />
-                <span className="text-gray-600">
-                    <b className="text-gray-900">{`${messages.clickToUpload}`} </b>
-                    {`${messages.orDragAndDrop}`}
-                </span>
-                <input
-                    type="file"
-                    className="hidden"
-                    onChange={uploadFile}
-                />
-            </label>
+            {selectedBucket &&
+                <BucketTable bucket={selectedBucket} />
+            }
         </section>
     );
 };

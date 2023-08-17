@@ -1,33 +1,20 @@
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useIntl } from 'react-intl';
 
-import { Bucket, BucketFile } from '@/lib/interfaces/bucket';
+import { Bucket } from '@/lib/interfaces/bucket';
 import { getDateLabel } from '@/utils/date';
 import { convertFileSize } from '@/utils/storage';
-import { FileActionsCell } from '../../Buckets/BucketsTable/FileActionsCell';
+import { FileActionsCell } from '../BucketsTable/FileActionsCell';
 import { FileIcon } from '@/components/common/FileIcon';
 import { SortCell } from '@/components/common/SortCell';
 
-export const TrashTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
-    const { messages } = useIntl();
-    const [selectedFiles, setSelectedFiles] = useState<Array<BucketFile>>([]);
+export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
+    const searchParams = useSearchParams();
+    const bucketId = searchParams.get('id');
     /** Created to prevent sotring logic affect initial buckets array */
     const [bucketCopy, setBucketCopy] = useState(bucket);
-
-    const selectFile = (selectedFile: BucketFile) => {
-        if (selectedFiles.includes(selectedFile)) {
-            setSelectedFiles(files => files.filter(file => file !== selectedFile));
-        } else {
-            setSelectedFiles(files => [...files, selectedFile]);
-        }
-    };
-
-    const selectAll = () => {
-        selectedFiles.length === bucket.files.length ?
-            setSelectedFiles([])
-            :
-            setSelectedFiles(bucket.files)
-    };
+    const { messages } = useIntl();
     const [sortState, setSortState] = useState<{ criteria: string, direction: "ASC" | "DESC" | '' }>({ criteria: '', direction: '' });
 
     const sort = (criteria: string) => {
@@ -57,8 +44,12 @@ export const TrashTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         setBucketCopy(bucket);
     }, [bucket]);
 
+    useEffect(() => {
+        setSortState({ criteria: '', direction: '' });
+    }, [bucketId]);
+
     return (
-        <div className="max-h-[calc(100vh-367px)] w-fit overflow-x-auto border-2 border-gray-200 rounded-xl" >
+        <div className="max-h-[calc(100vh-210px)] w-fit overflow-x-auto border-2 border-gray-200 rounded-xl" >
             <div className='px-5 py-6 text-m font-semibold border-b-2 border-gray-200'>
                 {`${messages.files}`}
             </div>
@@ -67,12 +58,6 @@ export const TrashTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                     <thead className="border-b-table-cellBackground text-xxs font-normal ">
                         <tr className="border-b-table-cellBackground bg-table-headBackground font-normal">
                             <th className="flex items-center gap-3 px-6 py-4 text-left font-medium">
-                                <input
-                                    onChange={selectAll}
-                                    type="checkbox"
-                                    checked={selectedFiles.length === bucket.files.length}
-                                    className="checkbox border-gray-600"
-                                />
                                 <SortCell
                                     criteria='name'
                                     onChange={sort}
@@ -82,10 +67,10 @@ export const TrashTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                             </th>
                             <th className="px-6 py-4 text-left font-medium w-36">
                                 <SortCell
-                                    criteria='deleted'
+                                    criteria='modified'
                                     onChange={sort}
                                     sortState={sortState}
-                                    text={`${messages.dateDeleted}`}
+                                    text={`${messages.lastEdited}`}
                                 />
                             </th>
                             <th className="px-6 py-4 text-left font-medium w-24">
@@ -104,15 +89,9 @@ export const TrashTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                             bucketCopy.files.map((file, index) =>
                                 <tr key={index}>
                                     <td className="px-6 py-4 flex items-center gap-3">
-                                        <input
-                                            onChange={() => selectFile(file)}
-                                            type="checkbox"
-                                            checked={selectedFiles.includes(file)}
-                                            className="checkbox border-gray-600"
-                                        />
                                         <FileIcon fileName={file.name} className='p-2 bg-gray-200 rounded-full' />{file.name}
                                     </td>
-                                    <td className="px-6 py-4">{getDateLabel(Date.now())}</td>
+                                    <td className="px-6 py-4">{getDateLabel(+file.metadata.modified)}</td>
                                     <td className="px-6 py-4">{convertFileSize(file.metadata.size)}</td>
                                     <td className="px-6 py-4"><FileActionsCell file={file} /></td>
                                 </tr>

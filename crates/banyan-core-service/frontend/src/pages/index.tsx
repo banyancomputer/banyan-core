@@ -36,16 +36,6 @@ const Buckets: NextPageWithLayout = () => {
                 </button>
             </div>
             <BucketsTable buckets={buckets} />
-            <div
-                className="mt-10 flex flex-col items-center justify-center gap-4 px-6 py-4 border-2 border-c rounded-xl  text-xs cursor-pointer"
-                onClick={uploadFile}
-            >
-                <Upload />
-                <span className="text-gray-600">
-                    <b className="text-gray-900">{`${messages.clickToUpload}`} </b>
-                    {`${messages.orDragAndDrop}`}
-                </span>
-            </div>
         </section>
     );
 };

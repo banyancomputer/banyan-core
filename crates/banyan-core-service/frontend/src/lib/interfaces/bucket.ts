@@ -1,6 +1,8 @@
 export interface BucketFile {
+    [key: string]: any;
     name: string;
     metadata: {
+        [key: string]:string | number;
         created: string;
         modified: string;
         size: number;

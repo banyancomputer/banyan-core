@@ -21,6 +21,7 @@
 	"bucketType": "Type de godet",
 	"lastEdited": "Dernière modification",
 	"fileSize": "Taille du fichier",
+	"files": "Des dossiers",
 	"deleteBucket": "Supprimer le compartiment",
 	"delete": "Supprimer",
 	"cancel": "Annuler",

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useIntl } from 'react-intl';
-import { FiArrowLeft } from "react-icons/fi"
+import { FiArrowLeft } from "react-icons/fi";
 import { useModal } from '@/contexts/modals';
 import { Select } from '@chakra-ui/react';
 
