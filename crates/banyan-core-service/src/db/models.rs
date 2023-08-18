@@ -37,6 +37,27 @@ impl From<String> for BucketType {
     }
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize, Type)]
+#[serde(rename_all = "snake_case")]
+#[sqlx(rename_all = "lowercase")]
+/// Storage Class
+pub enum StorageClass {
+    Hot,
+    Warm,
+    Cold,
+}
+
+impl From<String> for StorageClass {
+    fn from(s: String) -> Self {
+        match s.as_str() {
+            "hot" => StorageClass::Hot,
+            "warm" => StorageClass::Warm,
+            "cold" => StorageClass::Cold,
+            _ => panic!("invalid storage class"),
+        }
+    }
+}
+
 /// Bucket - data associated with a bucket
 #[derive(Debug, FromRow)]
 pub struct Bucket {
@@ -44,6 +65,7 @@ pub struct Bucket {
     pub account_id: String,
     pub name: String,
     pub r#type: BucketType,
+    pub storage_class: StorageClass,
 }
 
 // TODO: should we add the account_id to this?
@@ -114,4 +136,24 @@ pub struct BucketMetadata {
 
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
+}
+
+
+// /// MetadataSnapshotState - state of a snapshot on cold storage
+// #[derive(Debug, Serialize, Type)]
+// pub enum MetadataSnapshotState {
+//     Holding,
+//     Sealing,
+//     Sealed,
+//     Expired,
+// }
+
+/// Snapshot of a piece of metadata
+#[derive(Debug, Serialize, FromRow)]
+pub struct MetadataSnapshot {
+    pub id: String,
+    pub metadata_cid: String,
+    pub deal_id: String,
+    // TODO: Shouldwe be tracking ita path to Filecoin?
+    pub created_at: chrono::NaiveDateTime,
 }

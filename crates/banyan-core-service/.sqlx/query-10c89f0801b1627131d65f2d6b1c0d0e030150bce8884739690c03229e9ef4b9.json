@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id as \"id!\", account_id, name, type FROM buckets WHERE id = $1 AND account_id = $2",
+  "query": "SELECT id as \"id!\", account_id, name, type, storage_class FROM buckets WHERE id = $1 AND account_id = $2",
   "describe": {
     "columns": [
       {
@@ -22,6 +22,11 @@
         "name": "type",
         "ordinal": 3,
         "type_info": "Text"
+      },
+      {
+        "name": "storage_class",
+        "ordinal": 4,
+        "type_info": "Text"
       }
     ],
     "parameters": {
@@ -31,8 +36,9 @@
       true,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "3a53945b648731ab832213d21d39559f84d69ec75b94a0db88baed12e4e72e27"
+  "hash": "10c89f0801b1627131d65f2d6b1c0d0e030150bce8884739690c03229e9ef4b9"
 }

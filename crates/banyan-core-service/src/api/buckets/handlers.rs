@@ -8,7 +8,7 @@ use crate::api::buckets::{keys, requests, responses};
 use crate::db::*;
 use crate::extractors::{ApiToken, DbConn};
 
-/// Initialze a new bucket with initial key material
+/// Initialze a new bucket with initial key material.
 pub async fn create(
     api_token: ApiToken,
     mut db_conn: DbConn,
@@ -24,10 +24,11 @@ pub async fn create(
 
     let maybe_bucket = sqlx::query_as!(
         models::CreatedResource,
-        r#"INSERT INTO buckets (account_id, name, type) VALUES ($1, $2, $3) RETURNING id;"#,
+        r#"INSERT INTO buckets (account_id, name, type, storage_class) VALUES ($1, $2, $3, $4) RETURNING id;"#,
         api_token.subject,
         new_bucket.name,
         new_bucket.r#type,
+        new_bucket.storage_class,
     )
     .fetch_one(&mut *db_conn.0)
     .await;
@@ -67,6 +68,7 @@ pub async fn create(
         id: created_bucket.id,
         name: new_bucket.name,
         r#type: new_bucket.r#type,
+        storage_class: new_bucket.storage_class,
         initial_bucket_key: keys::responses::CreateBucketKey {
             id: created_key.id,
             approved: true,
@@ -82,7 +84,7 @@ pub async fn read_all(api_token: ApiToken, mut db_conn: DbConn) -> impl IntoResp
     let account_id = api_token.subject;
     let maybe_buckets = sqlx::query_as!(
         models::Bucket,
-        r#"SELECT id as "id!", account_id, name, type FROM buckets WHERE account_id = $1"#,
+        r#"SELECT id as "id!", account_id, name, type, storage_class FROM buckets WHERE account_id = $1"#,
         account_id,
     )
     .fetch_all(&mut *db_conn.0)
@@ -105,6 +107,7 @@ pub async fn read_all(api_token: ApiToken, mut db_conn: DbConn) -> impl IntoResp
             id: bucket.id,
             name: bucket.name,
             r#type: bucket.r#type,
+            storage_class: bucket.storage_class,
         })
         .collect::<Vec<_>>();
     let buckets = responses::ReadBuckets(buckets);
@@ -122,7 +125,7 @@ pub async fn read(
     let bucket_id = bucket_id.to_string();
     let maybe_bucket = sqlx::query_as!(
         models::Bucket,
-        r#"SELECT id as "id!", account_id, name, type FROM buckets WHERE id = $1 AND account_id = $2"#,
+        r#"SELECT id as "id!", account_id, name, type, storage_class FROM buckets WHERE id = $1 AND account_id = $2"#,
         bucket_id,
         account_id,
     )
@@ -134,6 +137,7 @@ pub async fn read(
             id: bucket.id,
             name: bucket.name,
             r#type: bucket.r#type,
+            storage_class: bucket.storage_class,
         },
         Err(err) => {
             return (
@@ -156,7 +160,7 @@ pub async fn delete(
     let bucket_id = bucket_id.to_string();
     let maybe_bucket = sqlx::query_as!(
         models::Bucket,
-        r#"DELETE FROM buckets WHERE id = $1 AND account_id = $2 RETURNING id as "id!", account_id, name, type"#,
+        r#"DELETE FROM buckets WHERE id = $1 AND account_id = $2 RETURNING id as "id!", account_id, name, type, storage_class"#,
         bucket_id,
         account_id,
     )
@@ -166,7 +170,6 @@ pub async fn delete(
         Ok(bucket) => responses::DeleteBucket {
             id: bucket.id,
             name: bucket.name,
-            r#type: bucket.r#type,
         },
         Err(err) => {
             return (
@@ -178,4 +181,94 @@ pub async fn delete(
     };
 
     Json(bucket).into_response()
+}
+
+/// Query the size of a bucket from its metadata in the current state
+pub async fn get_usage(
+    api_token: ApiToken,
+    mut db_conn: DbConn,
+    Path(bucket_id): Path<Uuid>,
+) -> impl IntoResponse {
+    let account_id = api_token.subject;
+    let bucket_id = bucket_id.to_string();
+    let maybe_bucket = sqlx::query_as!(
+        models::CreatedResource,
+        r#"SELECT id as "id!" FROM buckets WHERE id = $1 AND account_id = $2"#,
+        bucket_id,
+        account_id,
+    )
+    .fetch_one(&mut *db_conn.0)
+    .await;
+
+    // Query metadata with this bucket id in the current state. Sum the data_size field
+    match maybe_bucket {
+        Ok(bucket) => bucket,
+        Err(err) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("unable to read bucket: {err}"),
+            )
+                .into_response();
+        }
+    };
+
+    let maybe_usage = sqlx::query_as!(
+        responses::GetUsage,
+        r#"SELECT SUM(data_size) as "size!" FROM bucket_metadata WHERE bucket_id = $1 AND state = 'current'"#,
+        bucket_id,
+    )
+    .fetch_one(&mut *db_conn.0)
+    .await;
+
+    let usage = match maybe_usage {
+        Ok(usage) => usage,
+        Err(err) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("unable to read bucket: {err}"),
+            )
+                .into_response();
+        }
+    };
+
+    Json(usage).into_response()
+}
+
+/// Get the total storage used by the account
+pub async fn get_total_usage(
+    api_token: ApiToken,
+    mut db_conn: DbConn,
+) -> impl IntoResponse {
+    let account_id = api_token.subject;
+
+    // Joining on all buckets for the account, joining on metadata for each bucket, 
+    // get the sum of the data_size field from metadata in the current state
+    let maybe_total_usage = sqlx::query_as!(
+        responses::GetUsage,
+        r#"SELECT SUM(data_size) as "size!" FROM bucket_metadata JOIN buckets ON bucket_metadata.bucket_id = buckets.id WHERE buckets.account_id = $1 AND bucket_metadata.state = 'current'"#,
+        account_id,
+    )
+    .fetch_one(&mut *db_conn.0)
+    .await;
+
+    // let maybe_usage = sqlx::query_as!(
+    //     responses::GetUsage,
+    //     r#"SELECT SUM(data_size) as "size!" FROM bucket_metadata WHERE account_id = $1 AND state = 'current'"#,
+    //     account_id,
+    // )
+    // .fetch_one(&mut *db_conn.0)
+    // .await;
+
+    let total_usage = match maybe_total_usage {
+        Ok(usage) => usage,
+        Err(err) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("unable to read bucket: {err}"),
+            )
+                .into_response();
+        }
+    };
+
+    Json(total_usage).into_response()
 }

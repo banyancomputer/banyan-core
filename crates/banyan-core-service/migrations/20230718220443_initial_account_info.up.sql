@@ -151,7 +151,10 @@ CREATE TABLE buckets (
   name VARCHAR(128) NOT NULL,
 
   -- TODO: Make this an enum
-  type VARCHAR(32) NOT NULL
+  type VARCHAR(32) NOT NULL,
+
+  -- TODO: Make this an enum
+  storage_class VARCHAR(32) NOT NULL
 );
 
 CREATE UNIQUE INDEX idx_buckets_on_unique_account_id_and_name
@@ -213,3 +216,30 @@ CREATE TABLE bucket_metadata (
 
 CREATE INDEX idx_bucket_metadata_on_bucket_id
   ON bucket_metadata(bucket_id);
+
+
+-- Migrations for Snapshots
+CREATE TABLE snapshots (
+  id TEXT PRIMARY KEY DEFAULT (
+    lower(hex(randomblob(4))) || '-' ||
+    lower(hex(randomblob(2))) || '-4' ||
+    substr(lower(hex(randomblob(2))), 2) || '-a' ||
+    substr(lower(hex(randomblob(2))), 2) || '-6' ||
+    substr(lower(hex(randomblob(6))), 2)),
+
+  metadata_id TEXT NOT NULL
+    REFERENCES buckets(id)
+    ON DELETE CASCADE,
+
+  -- Filecoin deal id
+  deal_cid TEXT NOT NULL,
+
+  -- The state of the snapshot
+  state VARCHAR(32) NOT NULL,
+  
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_snapshots_on_metadata_id
+  ON snapshots(metadata_id);

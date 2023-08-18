@@ -8,6 +8,7 @@ pub struct CreateBucket {
     pub id: String,
     pub name: String,
     pub r#type: BucketType,
+    pub storage_class: StorageClass,
     pub initial_bucket_key: keys::responses::CreateBucketKey,
 }
 
@@ -16,6 +17,7 @@ pub struct ReadBucket {
     pub id: String,
     pub name: String,
     pub r#type: BucketType,
+    pub storage_class: StorageClass,
 }
 
 #[derive(Serialize)]
@@ -25,5 +27,9 @@ pub struct ReadBuckets(pub Vec<ReadBucket>);
 pub struct DeleteBucket {
     pub id: String,
     pub name: String,
-    pub r#type: BucketType,
+}
+
+#[derive(Serialize)]
+pub struct GetUsage {
+    pub size: i64
 }

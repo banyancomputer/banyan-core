@@ -17,6 +17,8 @@ pub fn router(state: AppState) -> Router<AppState> {
     Router::new()
         .route("/", post(handlers::create))
         .route("/", get(handlers::read_all))
+        .route("/usage", get(handlers::get_total_usage))
+        .route("/:bucket_id/usage", get(handlers::get_usage))
         .route("/:bucket_id", get(handlers::read))
         .route("/:bucket_id", delete(handlers::delete))
         .nest("/:bucket_id/keys", keys::router(state.clone()))

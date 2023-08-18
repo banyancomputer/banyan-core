@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT SUM(data_size) as \"size!\" FROM bucket_metadata WHERE bucket_id = $1 AND state = 'current'",
+  "describe": {
+    "columns": [
+      {
+        "name": "size!",
+        "ordinal": 0,
+        "type_info": "Int64"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "3add5cf81a298be88aa19924503d1cc136b23c6605bb43200c976c13efcdad22"
+}
