@@ -1,6 +1,6 @@
 import React from 'react';
 import { useIntl } from 'react-intl';
-import { IoMdAdd } from "react-icons/io"
+import { IoMdAdd } from "react-icons/io";
 
 import BaseLayout from '@layouts/BaseLayout';
 import { NextPageWithLayout } from './page';
@@ -10,15 +10,13 @@ import { UploadFileModal } from '@/components/common/Modal/UploadFileModal';
 import { useTomb } from '@/contexts/tomb';
 import { useModal } from '@/contexts/modals';
 
-import { Upload } from '@static/images/buckets';
-
 const Buckets: NextPageWithLayout = () => {
     const { openModal } = useModal();
     const { buckets } = useTomb();
     const { messages } = useIntl();
 
     const uploadFile = () => {
-        openModal(<UploadFileModal />)
+        openModal(<UploadFileModal />);
     };
 
     return (

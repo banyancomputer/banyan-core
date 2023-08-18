@@ -5,9 +5,10 @@ import { useIntl } from 'react-intl';
 import { Bucket } from '@/lib/interfaces/bucket';
 import { getDateLabel } from '@/utils/date';
 import { convertFileSize } from '@/utils/storage';
-import { FileActionsCell } from '../BucketsTable/FileActionsCell';
+import { ActionsCell } from '../ActionsCell';
 import { FileIcon } from '@/components/common/FileIcon';
 import { SortCell } from '@/components/common/SortCell';
+import { FileActions } from '@/components/Buckets/FileActions';
 
 export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const searchParams = useSearchParams();
@@ -93,7 +94,9 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                                     </td>
                                     <td className="px-6 py-4">{getDateLabel(+file.metadata.modified)}</td>
                                     <td className="px-6 py-4">{convertFileSize(file.metadata.size)}</td>
-                                    <td className="px-6 py-4"><FileActionsCell file={file} /></td>
+                                    <td className="px-6 py-4">
+                                        <ActionsCell actions={<FileActions bucket={bucket} file={file} />} />
+                                    </td>
                                 </tr>
                             )
                         }

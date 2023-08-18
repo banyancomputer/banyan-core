@@ -2,14 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { useIntl } from 'react-intl';
 
 
-import { BucketActionsCell } from './BucketActionsCell ';
-import { FileActionsCell } from './FileActionsCell';
+import { ActionsCell } from '../ActionsCell';
 
 import { getDateLabel } from '@/utils/date';
 import { Bucket as IBucket } from '@/lib/interfaces/bucket';
 import { convertFileSize } from '@/utils/storage';
 import { FileIcon } from '../../common/FileIcon';
 import { SortCell } from '@/components/common/SortCell';
+import { FileActions } from '@/components/Buckets/FileActions';
+import { BucketActions } from '../BucketActions';
 
 export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
 
@@ -91,7 +92,9 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
                                 <td className="px-3 py-4">{bucket.bucket_type}</td>
                                 <td className="px-3 py-4"></td>
                                 <td className="px-3 py-4"></td>
-                                <td className="px-3 py-4"><BucketActionsCell bucket={bucket} /></td>
+                                <td className="px-3 py-4">
+                                    <ActionsCell actions={<BucketActions bucket={bucket} />} />
+                                </td>
                             </tr>
                             {
                                 bucket.files.map((file, index) =>
@@ -102,7 +105,7 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
                                         <td className="px-3 py-4"></td>
                                         <td className="px-3 py-4">{getDateLabel(Number(file.metadata.modified))}</td>
                                         <td className="px-3 py-4">{convertFileSize(file.metadata.size)}</td>
-                                        <td className="px-3 py-4"><FileActionsCell file={file} /></td>
+                                        <td className="px-3 py-4"><ActionsCell actions={<FileActions bucket={bucket} file={file} />} /></td>
                                     </tr>
                                 )
                             }

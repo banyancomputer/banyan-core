@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from 'next/router';
 import { FiChevronDown, FiTrash2 } from "react-icons/fi"
-import { IoMdClose } from "react-icons/io"
+import { IoIosAdd, IoMdClose } from "react-icons/io";
 
 import { useTomb } from '@/contexts/tomb';
 import { convertFileSize } from '@/utils/storage';
@@ -34,7 +34,7 @@ export const Navigation = () => {
     };
 
     return (
-        <nav className="flex flex-col w-navbar min-w-navbar bg-navigation-primary py-8 px-4 text-navigation-text border-r-2 border-r-navigation-border font-bold">
+        <nav className="flex flex-col w-navbar min-w-navbar bg-navigation-primary py-8 px-4 text-navigation-text border-r-2 border-r-navigation-border font-semibold">
             <div className="flex-grow">
                 <Link
                     href={'/'}
@@ -86,6 +86,10 @@ export const Navigation = () => {
                         {trash.files.length}
                     </span>
                 </Link>
+                <button className='mt-2 flex items-center gap-3 py-2 px-3'>
+                    <IoIosAdd size="24px" fill='#5D6B98' />
+                    {`${messages.newBucket}`}
+                </button>
             </div>
             {isStorageBlockVisible &&
                 <div className="bg-white rounded-lg p-4">
@@ -97,7 +101,6 @@ export const Navigation = () => {
                     </span>
                     <span className="text-xs font-normal">{`${messages.youHaveUsed}`} <span className="uppercase">{convertFileSize(usedStorage)}</span> {`${messages.outOf}`} 20 TB.</span>
                     <progress className="progress w-full" value={usedStorage} max={MOCK_STORAGE_LIMIT}></progress>
-                    <button className='mt-2 text-xs'>{`${messages.upgradePlan}`}</button>
                 </div>
             }
             <div className="flex flex-col mt-6 pl-2 pt-3 pr-8 border-t-2 border-gray-200 text-gray-600">

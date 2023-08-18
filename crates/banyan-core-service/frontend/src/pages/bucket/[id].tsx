@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { useIntl } from 'react-intl';
 import { IoMdAdd } from "react-icons/io";
 
@@ -7,9 +8,6 @@ import { useTomb } from '@/contexts/tomb';
 
 import BaseLayout from '@/layouts/BaseLayout';
 import { NextPageWithLayout } from '../page';
-import { BucketsTable } from '@/components/Buckets/BucketsTable';
-
-import { Upload } from '@static/images/buckets';
 import { BucketTable } from '@/components/Buckets/BucketTable';
 
 const Bucket: NextPageWithLayout = () => {
@@ -25,7 +23,9 @@ const Bucket: NextPageWithLayout = () => {
         <section className="py-9 px-4">
             <div className="mb-4 flex w-full justify-between items-center">
                 <h2 className="text-xl font-semibold">
-                    {selectedBucket?.name}
+                    <Link href="/">{`${messages.myBuckets}`}</Link>
+                    {' > '}
+                    <Link href={`/bucket/${bucketId}`}>{selectedBucket?.name}</Link>
                 </h2>
                 <label className="flex gap-2 w-40 items-center justify-center py-2 px-4 font-semibold cursor-pointer rounded-lg bg-blue-primary text-white">
                     <IoMdAdd fill="#fff" size="20px" />

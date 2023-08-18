@@ -4,9 +4,10 @@ import { useIntl } from 'react-intl';
 import { Bucket, BucketFile } from '@/lib/interfaces/bucket';
 import { getDateLabel } from '@/utils/date';
 import { convertFileSize } from '@/utils/storage';
-import { FileActionsCell } from '../../Buckets/BucketsTable/FileActionsCell';
+import { ActionsCell } from '../../Buckets/ActionsCell';
 import { FileIcon } from '@/components/common/FileIcon';
 import { SortCell } from '@/components/common/SortCell';
+import { TrashFileActions } from '../TrashFileActions';
 
 export const TrashTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const { messages } = useIntl();
@@ -114,7 +115,9 @@ export const TrashTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                                     </td>
                                     <td className="px-6 py-4">{getDateLabel(Date.now())}</td>
                                     <td className="px-6 py-4">{convertFileSize(file.metadata.size)}</td>
-                                    <td className="px-6 py-4"><FileActionsCell file={file} /></td>
+                                    <td className="px-6 py-4">
+                                        <ActionsCell actions={<TrashFileActions bucket={bucket} file={file} />} />
+                                    </td>
                                 </tr>
                             )
                         }
