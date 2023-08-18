@@ -28,7 +28,7 @@ impl FromRequestParts<AppState> for DataStore {
         app_state: &AppState,
     ) -> Result<Self, Self::Rejection> {
         let store =
-            match LocalFileSystem::new_with_prefix(app_state.bucket_metadata_upload_directory()) {
+            match LocalFileSystem::new_with_prefix(app_state.metadata_upload_directory()) {
                 Ok(s) => s,
                 Err(err) => return Err((StatusCode::INTERNAL_SERVER_ERROR, err.to_string())),
             };

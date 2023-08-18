@@ -181,8 +181,8 @@ CREATE TABLE bucket_keys (
 CREATE INDEX idx_bucket_keys_on_bucket_id
   ON bucket_keys(bucket_id);
 
--- Migrations for Bucket Metadata
-CREATE TABLE bucket_metadata (
+-- Migrations for Metadata
+CREATE TABLE metadata (
   id TEXT PRIMARY KEY DEFAULT (
     lower(hex(randomblob(4))) || '-' ||
     lower(hex(randomblob(2))) || '-4' ||
@@ -214,8 +214,8 @@ CREATE TABLE bucket_metadata (
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_bucket_metadata_on_bucket_id
-  ON bucket_metadata(bucket_id);
+CREATE INDEX idx_metadata_on_bucket_id
+  ON metadata(bucket_id);
 
 
 -- Migrations for Snapshots
@@ -232,11 +232,8 @@ CREATE TABLE snapshots (
     ON DELETE CASCADE,
 
   -- Filecoin deal id
-  deal_cid TEXT NOT NULL,
+  deal_id TEXT,
 
-  -- The state of the snapshot
-  state VARCHAR(32) NOT NULL,
-  
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

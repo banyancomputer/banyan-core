@@ -12,8 +12,7 @@ use uuid::Uuid;
 use crate::api::buckets::metadata::{requests, responses};
 use crate::db::models;
 use crate::extractors::{ApiToken, DataStore, DbConn, StorageHost};
-use crate::utils::bucket_metadata_upload::handle_bucket_metadata_upload;
-use crate::api::buckets::responses::GetUsage;
+use crate::utils::metadata_upload::handle_metadata_upload;
 
 /// Upload data size limit for CAR file uploads
 const REQUEST_DATA_SIZE_LIMIT: u64 = 100 * 1_024;
@@ -73,26 +72,26 @@ pub async fn push(
     // TODO: validate name is request-data (request_data_field.name())
     // TODO: validate type is application/json (request_data_field.content_type())
     let request_data_bytes = request_data_field.bytes().await.unwrap();
-    let request_data: requests::PushBucketMetadataRequest =
+    let request_data: requests::PushMetadataRequest =
         serde_json::from_slice(&request_data_bytes).unwrap();
     // TODO: Validata that the account is allowed to store `request_data.data_size` bytes
 
     let i_size = request_data.data_size as i64;
-    let maybe_bucket_metadata_resource = sqlx::query_as!(
+    let maybe_metadata_resource = sqlx::query_as!(
         models::CreatedResource,
-        r#"INSERT INTO bucket_metadata (bucket_id, root_cid, metadata_cid, data_size, state)
+        r#"INSERT INTO metadata (bucket_id, root_cid, metadata_cid, data_size, state)
         VALUES ($1, $2, $3, $4, $5)
         RETURNING id as "id!";"#,
         bucket_id,
         request_data.root_cid,
         request_data.metadata_cid,
         i_size,
-        models::BucketMetadataState::Uploading
+        models::MetadataState::Uploading
     )
     .fetch_one(&mut *db_conn.0)
     .await;
 
-    let bucket_metadata_resource = match maybe_bucket_metadata_resource {
+    let metadata_resource = match maybe_metadata_resource {
         Ok(bm) => bm,
         Err(err) => {
             return (
@@ -109,9 +108,9 @@ pub async fn push(
     // TODO: validate type is "application/vnd.ipld.car; version=2" (request_data_field.content_type())
 
     let file_name = format!(
-        "{bucket_id}/{bucket_metadata_id}.car",
+        "{bucket_id}/{metadata_id}.car",
         bucket_id = bucket_id,
-        bucket_metadata_id = bucket_metadata_resource.id
+        metadata_id = metadata_resource.id
     );
     let file_path = object_store::path::Path::from(file_name.as_str());
 
@@ -121,22 +120,22 @@ pub async fn push(
         // Otherwise, try marking the update as failed
         Err(_) => {
             // Try and mark the upload as failed
-            let maybe_failed_bucket_metadata_upload = sqlx::query!(
-                r#"UPDATE bucket_metadata SET state = $1 WHERE id = $2;"#,
-                models::BucketMetadataState::UploadFailed,
-                bucket_metadata_resource.id
+            let maybe_failed_metadata_upload = sqlx::query!(
+                r#"UPDATE metadata SET state = $1 WHERE id = $2;"#,
+                models::MetadataState::UploadFailed,
+                metadata_resource.id
             )
             .execute(&mut *db_conn.0)
             .await;
 
             // Return the correct response based on the result of the update
-            match maybe_failed_bucket_metadata_upload {
+            match maybe_failed_metadata_upload {
                 Ok(_) => {
                     return (
                         StatusCode::INTERNAL_SERVER_ERROR,
-                        Json(responses::PushBucketMetadataResponse {
-                            id: bucket_metadata_resource.id.to_string(),
-                            state: models::BucketMetadataState::UploadFailed,
+                        Json(responses::PushMetadataResponse {
+                            id: metadata_resource.id.to_string(),
+                            state: models::MetadataState::UploadFailed,
                             storage_host: "N/A".to_string(),
                             storage_authorization: "N/A".to_string(),
                         }),
@@ -155,7 +154,7 @@ pub async fn push(
     };
 
     // Try and upload the file
-    let (hash, size) = match handle_bucket_metadata_upload(car_stream, &mut writer).await {
+    let (hash, size) = match handle_metadata_upload(car_stream, &mut writer).await {
         Ok(fh) => {
             writer
                 .shutdown()
@@ -178,20 +177,20 @@ pub async fn push(
 
     // Mark the upload as complete and fill in the size and hash
     let i_size = size as i64;
-    let bucket_state = models::BucketMetadataState::Pending;
+    let bucket_state = models::MetadataState::Pending;
     let bucket_state_string = bucket_state.to_string();
-    let maybe_updated_bucket_metadata = sqlx::query_as!(
+    let maybe_updated_metadata = sqlx::query_as!(
         models::CreatedResource,
-        r#"UPDATE bucket_metadata SET state = $1, size = $2, hash = $3 WHERE id = $4 RETURNING id as "id!";"#,
+        r#"UPDATE metadata SET state = $1, size = $2, hash = $3 WHERE id = $4 RETURNING id as "id!";"#,
         bucket_state_string,
         i_size,
         hash,
-        bucket_metadata_resource.id
+        metadata_resource.id
     )
     .fetch_one(&mut *db_conn.0)
     .await;
 
-    let updated_bucket_metadata = match maybe_updated_bucket_metadata {
+    let updated_metadata = match maybe_updated_metadata {
         Ok(bm) => bm,
         Err(err) => {
             return (
@@ -202,9 +201,9 @@ pub async fn push(
         }
     };
 
-    let response = responses::PushBucketMetadataResponse {
-        id: updated_bucket_metadata.id.to_string(),
-        state: models::BucketMetadataState::Pending,
+    let response = responses::PushMetadataResponse {
+        id: updated_metadata.id.to_string(),
+        state: models::MetadataState::Pending,
         storage_host: storage_host.as_string(),
         // TODO: this should be a JWT
         storage_authorization: "TODO: JWT here".to_string(),
@@ -218,11 +217,11 @@ pub async fn pull(
     api_token: ApiToken,
     mut db_conn: DbConn,
     store: DataStore,
-    Path((bucket_id, bucket_metadata_id)): Path<(Uuid, Uuid)>,
+    Path((bucket_id, metadata_id)): Path<(Uuid, Uuid)>,
 ) -> impl IntoResponse {
     let account_id = api_token.subject;
     let bucket_id = bucket_id.to_string();
-    let bucket_metadata_id = bucket_metadata_id.to_string();
+    let metadata_id = metadata_id.to_string();
     let maybe_bucket = sqlx::query_as!(
         models::CreatedResource,
         r#"SELECT id as "id!" FROM buckets WHERE id = $1 AND account_id = $2;"#,
@@ -242,15 +241,15 @@ pub async fn pull(
         }
     };
     // Make sure the metadata exists
-    let maybe_bucket_metadata = sqlx::query_as!(
+    let maybe_metadata = sqlx::query_as!(
         models::CreatedResource,
-        r#"SELECT id as "id!" FROM bucket_metadata WHERE id = $1 AND bucket_id = $2;"#,
-        bucket_metadata_id,
+        r#"SELECT id as "id!" FROM metadata WHERE id = $1 AND bucket_id = $2;"#,
+        metadata_id,
         bucket_id
     )
     .fetch_one(&mut *db_conn.0)
     .await;
-    match maybe_bucket_metadata {
+    match maybe_metadata {
         Ok(bm) => bm,
         Err(err) => {
             return (
@@ -263,9 +262,9 @@ pub async fn pull(
 
     // Try opening the file for reading
     let file_name = format!(
-        "{bucket_id}/{bucket_metadata_id}.car",
+        "{bucket_id}/{metadata_id}.car",
         bucket_id = bucket_id,
-        bucket_metadata_id = bucket_metadata_id
+        metadata_id = metadata_id
     );
     let file_path = object_store::path::Path::from(file_name.as_str());
     let reader = match store.get(&file_path).await {
@@ -300,11 +299,11 @@ pub async fn pull(
 pub async fn read(
     api_token: ApiToken,
     mut db_conn: DbConn,
-    Path((bucket_id, bucket_metadata_id)): Path<(Uuid, Uuid)>,
+    Path((bucket_id, metadata_id)): Path<(Uuid, Uuid)>,
 ) -> impl IntoResponse {
     let account_id = api_token.subject;
     let bucket_id = bucket_id.to_string();
-    let bucket_metadata_id = bucket_metadata_id.to_string();
+    let metadata_id = metadata_id.to_string();
     let maybe_bucket = sqlx::query_as!(
         models::CreatedResource,
         r#"SELECT id as "id!" FROM buckets WHERE id = $1 AND account_id = $2;"#,
@@ -324,18 +323,18 @@ pub async fn read(
         }
     };
     // Make sure the metadata exists
-    let maybe_bucket_metadata = sqlx::query_as!(
-        models::BucketMetadata,
+    let maybe_metadata = sqlx::query_as!(
+        models::Metadata,
         r#"SELECT id as "id!", bucket_id, root_cid, metadata_cid, data_size, state, size as "size!", hash as "hash!", created_at, updated_at
-        FROM bucket_metadata WHERE id = $1 AND bucket_id = $2;"#,
-        bucket_metadata_id,
+        FROM metadata WHERE id = $1 AND bucket_id = $2;"#,
+        metadata_id,
         bucket_id
     )
     .fetch_one(&mut *db_conn.0)
     .await;
 
-    let bucket_metadata = match maybe_bucket_metadata {
-        Ok(bm) => responses::ReadBucketMetadataResponse {
+    let metadata = match maybe_metadata {
+        Ok(bm) => responses::ReadMetadataResponse {
             id: bm.id.to_string(),
             root_cid: bm.root_cid,
             metadata_cid: bm.metadata_cid,
@@ -353,7 +352,7 @@ pub async fn read(
         }
     };
 
-    (StatusCode::OK, axum::Json(bucket_metadata)).into_response()
+    (StatusCode::OK, axum::Json(metadata)).into_response()
 }
 
 /// Read all uploaded metadata for a bucket
@@ -383,19 +382,19 @@ pub async fn read_all(
         }
     };
     // Make sure the metadata exists
-    let maybe_bucket_metadata = sqlx::query_as!(
-        models::BucketMetadata,
+    let maybe_metadata = sqlx::query_as!(
+        models::Metadata,
         r#"SELECT id as "id!", bucket_id, root_cid, metadata_cid, data_size, state, size as "size!", hash as "hash!", created_at, updated_at
-        FROM bucket_metadata WHERE bucket_id = $1;"#,
+        FROM metadata WHERE bucket_id = $1;"#,
         bucket_id
     )
     .fetch_all(&mut *db_conn.0)
     .await;
 
-    let bucket_metadata = match maybe_bucket_metadata {
-        Ok(bm) => responses::ReadAllBucketMetadataResponse(
+    let metadata = match maybe_metadata {
+        Ok(bm) => responses::ReadAllMetadataResponse(
             bm.into_iter()
-                .map(|bm| responses::ReadBucketMetadataResponse {
+                .map(|bm| responses::ReadMetadataResponse {
                     id: bm.id.to_string(),
                     root_cid: bm.root_cid,
                     metadata_cid: bm.metadata_cid,
@@ -415,7 +414,7 @@ pub async fn read_all(
         }
     };
 
-    (StatusCode::OK, axum::Json(bucket_metadata)).into_response()
+    (StatusCode::OK, axum::Json(metadata)).into_response()
 }
 
 pub async fn delete(
@@ -427,10 +426,3 @@ pub async fn delete(
     (StatusCode::NO_CONTENT, ()).into_response()
 }
 
-pub async fn snapshot(
-    _api_token: ApiToken,
-    Path(_bucket_id): Path<Uuid>,
-    Path(_metadata_id): Path<Uuid>,
-) -> impl IntoResponse {
-    (StatusCode::UNAUTHORIZED, ()).into_response()
-}

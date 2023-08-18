@@ -11,10 +11,9 @@ pub fn router(state: AppState) -> Router<AppState> {
     Router::new()
         .route("/", post(handlers::push).get(handlers::read_all))
         .route(
-            "/:bucket_metadata_id",
+            "/:metadata_id",
             get(handlers::read).delete(handlers::delete),
         )
-        .route("/:bucket_metadata_id/pull", get(handlers::pull))
-        .route("/:bucket_metadata_id/snapshot", get(handlers::snapshot))
+        .route("/:metadata_id/pull", get(handlers::pull))
         .with_state(state)
 }

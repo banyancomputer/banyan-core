@@ -214,7 +214,7 @@ pub async fn get_usage(
 
     let maybe_usage = sqlx::query_as!(
         responses::GetUsage,
-        r#"SELECT SUM(data_size) as "size!" FROM bucket_metadata WHERE bucket_id = $1 AND state = 'current'"#,
+        r#"SELECT SUM(data_size) as "size!" FROM metadata WHERE bucket_id = $1 AND state = 'current'"#,
         bucket_id,
     )
     .fetch_one(&mut *db_conn.0)
@@ -245,7 +245,7 @@ pub async fn get_total_usage(
     // get the sum of the data_size field from metadata in the current state
     let maybe_total_usage = sqlx::query_as!(
         responses::GetUsage,
-        r#"SELECT SUM(data_size) as "size!" FROM bucket_metadata JOIN buckets ON bucket_metadata.bucket_id = buckets.id WHERE buckets.account_id = $1 AND bucket_metadata.state = 'current'"#,
+        r#"SELECT SUM(data_size) as "size!" FROM metadata JOIN buckets ON metadata.bucket_id = buckets.id WHERE buckets.account_id = $1 AND metadata.state = 'current'"#,
         account_id,
     )
     .fetch_one(&mut *db_conn.0)
@@ -253,7 +253,7 @@ pub async fn get_total_usage(
 
     // let maybe_usage = sqlx::query_as!(
     //     responses::GetUsage,
-    //     r#"SELECT SUM(data_size) as "size!" FROM bucket_metadata WHERE account_id = $1 AND state = 'current'"#,
+    //     r#"SELECT SUM(data_size) as "size!" FROM metadata WHERE account_id = $1 AND state = 'current'"#,
     //     account_id,
     // )
     // .fetch_one(&mut *db_conn.0)

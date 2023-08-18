@@ -78,10 +78,10 @@ pub struct BucketKey {
     pub pem: String,
 }
 
-/// BucketMetadataState - state of metadata for a bucket
+/// MetadataState - state of metadata for a bucket
 #[derive(Debug, Serialize, Type)]
 #[serde(rename_all = "snake_case")]
-pub enum BucketMetadataState {
+pub enum MetadataState {
     Uploading,
     UploadFailed,
     Pending,
@@ -90,29 +90,29 @@ pub enum BucketMetadataState {
     Deleted,
 }
 
-impl Display for BucketMetadataState {
+impl Display for MetadataState {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            BucketMetadataState::Uploading => write!(f, "uploading"),
-            BucketMetadataState::UploadFailed => write!(f, "upload_failed"),
-            BucketMetadataState::Pending => write!(f, "pending"),
-            BucketMetadataState::Current => write!(f, "current"),
-            BucketMetadataState::Outdated => write!(f, "outdated"),
-            BucketMetadataState::Deleted => write!(f, "deleted"),
+            MetadataState::Uploading => write!(f, "uploading"),
+            MetadataState::UploadFailed => write!(f, "upload_failed"),
+            MetadataState::Pending => write!(f, "pending"),
+            MetadataState::Current => write!(f, "current"),
+            MetadataState::Outdated => write!(f, "outdated"),
+            MetadataState::Deleted => write!(f, "deleted"),
         }
     }
 }
 
-impl From<String> for BucketMetadataState {
+impl From<String> for MetadataState {
     fn from(s: String) -> Self {
         println!("s: {}", s);
         match s.as_str() {
-            "Uploading" => BucketMetadataState::Uploading,
-            "pload_failed" => BucketMetadataState::UploadFailed,
-            "pending" => BucketMetadataState::Pending,
-            "current" => BucketMetadataState::Current,
-            "outdated" => BucketMetadataState::Outdated,
-            "deleted" => BucketMetadataState::Deleted,
+            "Uploading" => MetadataState::Uploading,
+            "pload_failed" => MetadataState::UploadFailed,
+            "pending" => MetadataState::Pending,
+            "current" => MetadataState::Current,
+            "outdated" => MetadataState::Outdated,
+            "deleted" => MetadataState::Deleted,
             _ => panic!("invalid bucket metadata state"),
         }
     }
@@ -120,7 +120,7 @@ impl From<String> for BucketMetadataState {
 
 /// Bucket Metadata - data associated with the metadata for a bucket
 #[derive(Debug, Serialize, FromRow)]
-pub struct BucketMetadata {
+pub struct Metadata {
     pub id: String,
     pub bucket_id: String,
 
@@ -128,7 +128,7 @@ pub struct BucketMetadata {
     pub metadata_cid: String,
 
     pub data_size: i64,
-    pub state: BucketMetadataState,
+    pub state: MetadataState,
 
     // These are only set on successful uploads
     pub size: Option<i64>,
@@ -150,9 +150,9 @@ pub struct BucketMetadata {
 
 /// Snapshot of a piece of metadata
 #[derive(Debug, Serialize, FromRow)]
-pub struct MetadataSnapshot {
+pub struct Snapshot {
     pub id: String,
-    pub metadata_cid: String,
+    pub metadata_id: String,
     pub deal_id: String,
     // TODO: Shouldwe be tracking ita path to Filecoin?
     pub created_at: chrono::NaiveDateTime,

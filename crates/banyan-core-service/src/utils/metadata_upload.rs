@@ -3,7 +3,7 @@ use tokio::io::{AsyncWrite, AsyncWriteExt};
 
 use crate::utils::car_buffer::CarBuffer;
 
-pub async fn handle_bucket_metadata_upload<S>(
+pub async fn handle_metadata_upload<S>(
     mut stream: S,
     writer: &mut Box<dyn AsyncWrite + Unpin + Send>,
 ) -> Result<(String, usize), ()>

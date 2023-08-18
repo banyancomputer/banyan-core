@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id as \"id!\", bucket_id, root_cid, metadata_cid, data_size, state, size as \"size!\", hash as \"hash!\", created_at, updated_at\n        FROM bucket_metadata WHERE id = $1 AND bucket_id = $2;",
+  "query": "SELECT id as \"id!\", bucket_id, root_cid, metadata_cid, data_size, state, size as \"size!\", hash as \"hash!\", created_at, updated_at\n        FROM metadata WHERE id = $1 AND bucket_id = $2;",
   "describe": {
     "columns": [
       {
@@ -70,5 +70,5 @@
       false
     ]
   },
-  "hash": "78941dae775dbd92024209a43a31096e93a68c6a563b106be1c27f74076f2be7"
+  "hash": "0c6aa37b47c51d36ceb3d3e14a6b06631cf5fe44f9bbcb28e4f49efbf92235e9"
 }

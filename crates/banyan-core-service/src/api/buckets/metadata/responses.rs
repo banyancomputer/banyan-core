@@ -1,24 +1,24 @@
-use crate::db::models::BucketMetadataState;
+use crate::db::models::MetadataState;
 use serde::Serialize;
 
 #[derive(Debug, Serialize)]
-pub struct PushBucketMetadataResponse {
+pub struct PushMetadataResponse {
     pub id: String,
-    pub state: BucketMetadataState,
+    pub state: MetadataState,
     pub storage_host: String,
     pub storage_authorization: String,
 }
 
 #[derive(Debug, Serialize)]
-pub struct ReadBucketMetadataResponse {
+pub struct ReadMetadataResponse {
     pub id: String,
     pub root_cid: String,
     pub metadata_cid: String,
     pub data_size: i64,
-    pub state: BucketMetadataState,
+    pub state: MetadataState,
     pub created_at: i64,
     pub updated_at: i64,
 }
 
 #[derive(Debug, Serialize)]
-pub struct ReadAllBucketMetadataResponse(pub Vec<ReadBucketMetadataResponse>);
+pub struct ReadAllMetadataResponse(pub Vec<ReadMetadataResponse>);

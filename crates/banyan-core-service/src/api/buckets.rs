@@ -8,6 +8,7 @@ mod responses;
 
 mod keys;
 mod metadata;
+mod snapshots;
 
 pub use error::Error as BucketError;
 
@@ -23,5 +24,6 @@ pub fn router(state: AppState) -> Router<AppState> {
         .route("/:bucket_id", delete(handlers::delete))
         .nest("/:bucket_id/keys", keys::router(state.clone()))
         .nest("/:bucket_id/metadata", metadata::router(state.clone()))
+        .nest("/:bucket_id/snapshots", snapshots::router(state.clone()))
         .with_state(state)
 }
