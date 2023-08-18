@@ -228,14 +228,10 @@ CREATE TABLE snapshots (
     substr(lower(hex(randomblob(6))), 2)),
 
   metadata_id TEXT NOT NULL
-    REFERENCES buckets(id)
+    REFERENCES metadata(id)
     ON DELETE CASCADE,
-
-  -- Filecoin deal id
-  deal_id TEXT,
-
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+  
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX idx_snapshots_on_metadata_id

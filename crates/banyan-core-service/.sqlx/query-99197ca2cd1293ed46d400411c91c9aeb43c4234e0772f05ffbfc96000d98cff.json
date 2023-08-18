@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT \n            s.id as \"id!\",\n            s.metadata_id as \"metadata_id!\",\n            s.created_at as \"created_at!\"\n        FROM \n            snapshots s\n        INNER JOIN \n            metadata m ON m.id = s.metadata_id\n        WHERE \n            m.bucket_id = $1;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id!",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "metadata_id!",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "created_at!",
+        "ordinal": 2,
+        "type_info": "Datetime"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "99197ca2cd1293ed46d400411c91c9aeb43c4234e0772f05ffbfc96000d98cff"
+}

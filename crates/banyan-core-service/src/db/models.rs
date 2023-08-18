@@ -138,21 +138,10 @@ pub struct Metadata {
     pub updated_at: chrono::NaiveDateTime,
 }
 
-// /// MetadataSnapshotState - state of a snapshot on cold storage
-// #[derive(Debug, Serialize, Type)]
-// pub enum MetadataSnapshotState {
-//     Holding,
-//     Sealing,
-//     Sealed,
-//     Expired,
-// }
-
 /// Snapshot of a piece of metadata
 #[derive(Debug, Serialize, FromRow)]
 pub struct Snapshot {
     pub id: String,
     pub metadata_id: String,
-    pub deal_id: String,
-    // TODO: Shouldwe be tracking ita path to Filecoin?
     pub created_at: chrono::NaiveDateTime,
 }
