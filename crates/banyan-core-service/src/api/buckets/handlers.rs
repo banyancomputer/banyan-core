@@ -235,14 +235,9 @@ pub async fn get_usage(
 }
 
 /// Get the total storage used by the account
-pub async fn get_total_usage(
-    api_token: ApiToken,
-    mut db_conn: DbConn,
-) -> impl IntoResponse {
+pub async fn get_total_usage(api_token: ApiToken, mut db_conn: DbConn) -> impl IntoResponse {
     let account_id = api_token.subject;
 
-    // Joining on all buckets for the account, joining on metadata for each bucket, 
-    // get the sum of the data_size field from metadata in the current state
     let maybe_total_usage = sqlx::query_as!(
         responses::GetUsage,
         r#"SELECT SUM(data_size) as "size!" FROM metadata JOIN buckets ON metadata.bucket_id = buckets.id WHERE buckets.account_id = $1 AND metadata.state = 'current'"#,
@@ -250,15 +245,6 @@ pub async fn get_total_usage(
     )
     .fetch_one(&mut *db_conn.0)
     .await;
-
-    // let maybe_usage = sqlx::query_as!(
-    //     responses::GetUsage,
-    //     r#"SELECT SUM(data_size) as "size!" FROM metadata WHERE account_id = $1 AND state = 'current'"#,
-    //     account_id,
-    // )
-    // .fetch_one(&mut *db_conn.0)
-    // .await;
-
     let total_usage = match maybe_total_usage {
         Ok(usage) => usage,
         Err(err) => {
@@ -269,6 +255,13 @@ pub async fn get_total_usage(
                 .into_response();
         }
     };
-
     Json(total_usage).into_response()
+}
+
+pub async fn get_usage_limit(_api_token: ApiToken) -> impl IntoResponse {
+    Json(responses::GetUsage {
+        // 5 TiB
+        size: 5 * 1024 * 1024 * 1024 * 1024,
+    })
+    .into_response()
 }

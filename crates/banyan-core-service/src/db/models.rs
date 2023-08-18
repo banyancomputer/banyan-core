@@ -138,7 +138,6 @@ pub struct Metadata {
     pub updated_at: chrono::NaiveDateTime,
 }
 
-
 // /// MetadataSnapshotState - state of a snapshot on cold storage
 // #[derive(Debug, Serialize, Type)]
 // pub enum MetadataSnapshotState {

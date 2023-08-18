@@ -51,7 +51,7 @@ pub async fn push(
                 .into_response();
         }
     };
-    
+
     // TODO: Check if the uploaded version exists. If-Match matches existing version abort with 409
     // TODO: Check if the upload exceeds the user's storage quota. If so, abort with 413
 
@@ -425,4 +425,3 @@ pub async fn delete(
     // TODO: Implement
     (StatusCode::NO_CONTENT, ()).into_response()
 }
-

@@ -4,4 +4,4 @@ use serde::Deserialize;
 #[allow(dead_code)]
 pub struct CreateSnapshotRequest {
     pub metadata_id: String,
-} 
+}

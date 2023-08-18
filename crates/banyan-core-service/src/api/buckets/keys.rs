@@ -1,4 +1,4 @@
-use axum::routing::{delete, get, post};
+use axum::routing::get;
 use axum::Router;
 
 mod handlers;
@@ -9,9 +9,10 @@ use crate::app_state::AppState;
 
 pub fn router(state: AppState) -> Router<AppState> {
     Router::new()
-        .route("/", post(handlers::create))
-        .route("/", get(handlers::read_all))
-        .route("/:bucket_key_id", get(handlers::read))
-        .route("/:bucket_key_id", delete(handlers::delete))
+        .route("/", get(handlers::read_all).post(handlers::create))
+        .route(
+            "/:bucket_key_id",
+            get(handlers::read).delete(handlers::delete),
+        )
         .with_state(state)
 }

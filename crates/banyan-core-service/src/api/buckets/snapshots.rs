@@ -1,4 +1,4 @@
-use axum::routing::{get, post};
+use axum::routing::get;
 use axum::Router;
 
 mod handlers;
@@ -9,8 +9,8 @@ use crate::app_state::AppState;
 
 pub fn router(state: AppState) -> Router<AppState> {
     Router::new()
-        .route("/", post(handlers::create).get(handlers::read_all))
-        .route("/:snapshot_id",get(handlers::read))
+        .route("/", get(handlers::read_all).post(handlers::create))
+        .route("/:snapshot_id", get(handlers::read))
         .route("/:snapshot_id/pull", get(handlers::pull))
         .with_state(state)
 }
