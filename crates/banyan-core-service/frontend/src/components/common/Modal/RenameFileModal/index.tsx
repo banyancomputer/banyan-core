@@ -2,12 +2,20 @@ import React, { useState } from 'react';
 import { useIntl } from 'react-intl';
 
 import { useModal } from '@/contexts/modals';
-import { BucketFile } from '@/lib/interfaces/bucket'
+import { Bucket, BucketFile } from '@/lib/interfaces/bucket'
+import { useTomb } from '@/contexts/tomb';
 
-export const RenameFileModal: React.FC<{ file: BucketFile }> = ({ file }) => {
+export const RenameFileModal: React.FC<{ bucket: Bucket, file: BucketFile }> = ({ bucket, file }) => {
     const { closeModal } = useModal();
+    const { renameFile } = useTomb();
     const { messages } = useIntl();
     const [newName, setNewName] = useState('');
+
+    const save = async () => {
+        try {
+            renameFile(bucket.id, file.name, newName);
+        } catch (error: any) { }
+    }
 
     return (
         <div className='w-modal flex flex-col gap-8' >
@@ -33,7 +41,10 @@ export const RenameFileModal: React.FC<{ file: BucketFile }> = ({ file }) => {
                 >
                     {`${messages.cancel}`}
                 </button>
-                <button className='btn-primary flex-grow py-3 px-4'>{`${messages.save}`}</button>
+                <button
+                    className='btn-primary flex-grow py-3 px-4'
+                    onClick={save}
+                >{`${messages.save}`}</button>
             </div>
         </div >
     )

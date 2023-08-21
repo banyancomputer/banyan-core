@@ -21,6 +21,7 @@
 	"bucketType": "Type de godet",
 	"lastEdited": "Dernière modification",
 	"fileSize": "Taille du fichier",
+	"files": "Des dossiers",
 	"deleteBucket": "Supprimer le compartiment",
 	"delete": "Supprimer",
 	"cancel": "Annuler",
@@ -46,5 +47,15 @@
 	"moveTo": "Déménager à",
 	"selectWhereToMove": "Veuillez sélectionner l'endroit où vous souhaitez déplacer votre fichier",
 	"selectInTheList": "Sélectionnez dans la liste",
-	"folder": "Dossier"
+	"folder": "Dossier",
+	"newBucket": "Nouveau seau",
+	"download": "Télécharger",
+	"copyLink": "Copier le lien",
+	"makeCopy": "Faire une copie",
+	"rename": "Renommer",
+	"remove": "Retirer",
+	"viewFileVersions": "Afficher les versions de fichier",
+	"viewBucketVersions": "Afficher les versions de compartiment",
+	"deleteHotData": "Supprimer les données chaudes"
+
 }

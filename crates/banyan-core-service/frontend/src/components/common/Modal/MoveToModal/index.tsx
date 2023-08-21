@@ -1,10 +1,11 @@
 import React from 'react';
 import { useIntl } from 'react-intl';
-import { FiArrowLeft } from "react-icons/fi"
+import { FiArrowLeft } from "react-icons/fi";
 import { useModal } from '@/contexts/modals';
 import { Select } from '@chakra-ui/react';
+import { BucketFile } from '@/lib/interfaces/bucket';
 
-export const MoveToModal = () => {
+export const MoveToModal: React.FC<{ file: BucketFile }> = ({ file }) => {
     const { messages } = useIntl();
     const { closeModal } = useModal();
 

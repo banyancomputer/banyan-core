@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useIntl } from 'react-intl';
-import { AiOutlineFile } from "react-icons/ai"
-import { FiDownload } from "react-icons/fi"
+import { AiOutlineFile } from "react-icons/ai";
+import { FiDownload } from "react-icons/fi";
 
 import { useTomb } from '@/contexts/tomb';
 import { BucketSnapshot } from '@/lib/interfaces/bucket';
@@ -19,14 +19,10 @@ export const BucketSnapshotsModal: React.FC<{ bucketId: string }> = ({ bucketId 
 
         (async () => {
             try {
-
                 const snapshots = await getBucketShapshots('3');
-                console.log(snapshots);
-
                 setSnapshots(snapshots)
             } catch (error: any) {
                 console.log(error);
-
             }
         })()
     }, [tomb])
