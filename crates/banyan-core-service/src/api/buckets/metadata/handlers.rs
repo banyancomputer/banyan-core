@@ -177,7 +177,9 @@ pub async fn push(
 
     // Mark the upload as complete and fill in the size and hash
     let i_size = size as i64;
-    let bucket_state = models::MetadataState::Pending;
+    // TODO: Eventually this should use pending
+    // let bucket_state = models::MetadataState::Pending;
+    let bucket_state = models::MetadataState::Current;
     let bucket_state_string = bucket_state.to_string();
     let maybe_updated_metadata = sqlx::query_as!(
         models::CreatedResource,
