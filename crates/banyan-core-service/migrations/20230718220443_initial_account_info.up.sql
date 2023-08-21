@@ -203,8 +203,8 @@ CREATE TABLE metadata (
   data_size INTEGER NOT NULL,
 
   -- Description of the metadata CAR file
-  size INTEGER,
-  hash TEXT,
+  metadata_size INTEGER,
+  metadata_hash TEXT,
 
   -- The state of the metadata
   -- TODO: Make this an enum

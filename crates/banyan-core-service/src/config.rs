@@ -16,10 +16,6 @@ pub fn parse_arguments() -> Result<Config, pico_args::Error> {
         metadata_upload_directory: args
             .opt_value_from_str("--upload-dir")?
             .unwrap_or("./data/uploads".into()),
-
-        storage_host_url: args
-            .opt_value_from_str("--storage-host-url")?
-            .unwrap_or("http://localhost:3002".into()),
     })
 }
 
@@ -28,7 +24,6 @@ pub struct Config {
     database_url: String,
     signing_key_path: PathBuf,
     metadata_upload_directory: PathBuf,
-    storage_host_url: String,
 }
 
 impl Config {
@@ -42,9 +37,5 @@ impl Config {
 
     pub fn metadata_upload_directory(&self) -> &PathBuf {
         &self.metadata_upload_directory
-    }
-
-    pub fn storage_host_url(&self) -> &str {
-        self.storage_host_url.as_str()
     }
 }

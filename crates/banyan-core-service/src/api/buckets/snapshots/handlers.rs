@@ -72,7 +72,7 @@ pub async fn create(
                 format!("unable to create snapshot: {err}"),
             )
                 .into_response();
-        },
+        }
     };
     // Make sure the snapshot exists -- join metadata on the bucket id
     let maybe_response = sqlx::query_as!(
@@ -159,7 +159,7 @@ pub async fn read_all(
                 .map(|s| responses::ReadSnapshotResponse {
                     id: s.id,
                     metadata_id: s.metadata_id,
-                    created_at: s.created_at.timestamp()
+                    created_at: s.created_at.timestamp(),
                 })
                 .collect(),
         ),
@@ -179,13 +179,11 @@ pub async fn read_all(
 pub async fn restore(
     api_token: ApiToken,
     mut db_conn: DbConn,
-    Path((bucket_id, snapshot_id)): Path<(Uuid, Uuid)>
+    Path((bucket_id, snapshot_id)): Path<(Uuid, Uuid)>,
 ) -> impl IntoResponse {
     let account_id = api_token.subject;
     let bucket_id = bucket_id.to_string();
     let snapshot_id = snapshot_id.to_string();
-    println!("bucket_id: {}", bucket_id);
-    println!("snapshot_id: {}", snapshot_id);
 
     // Check that the bucket exists
     let maybe_bucket = sqlx::query_as!(
@@ -206,7 +204,6 @@ pub async fn restore(
                 .into_response();
         }
     };
-    println!("bucket exists");
     // Check that the snapshot exists
     let maybe_snapshot = sqlx::query_as!(
         models::Snapshot,
@@ -225,7 +222,6 @@ pub async fn restore(
                 .into_response();
         }
     };
-    println!("snapshot exists");
     // Make sure the metadata specified in the snapshot exists, and points to this bucket
     let maybe_metadata = sqlx::query_as!(
         models::CreatedResource,
@@ -245,7 +241,6 @@ pub async fn restore(
                 .into_response();
         }
     };
-    println!("metadata exists");
 
     // TODO: This is incomplete behavior!
     // Set the metadata state to current
@@ -267,6 +262,5 @@ pub async fn restore(
                 .into_response();
         }
     };
-    println!("metadata updated");
     Json(response).into_response()
 }

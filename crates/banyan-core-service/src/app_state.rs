@@ -22,8 +22,6 @@ pub struct AppState {
     verification_key: DecodingKey,
 
     metadata_upload_directory: PathBuf,
-
-    storage_host_url: String,
 }
 
 impl AppState {
@@ -38,23 +36,16 @@ impl AppState {
         let (signing_key, verification_key) =
             load_or_create_service_key(config.signing_key_path())?;
 
-        let storage_host_url = config.storage_host_url().to_string();
-
         Ok(Self {
             database_pool,
             signing_key,
             verification_key,
             metadata_upload_directory,
-            storage_host_url,
         })
     }
 
     pub fn metadata_upload_directory(&self) -> &PathBuf {
         &self.metadata_upload_directory
-    }
-
-    pub fn storage_host_url(&self) -> &str {
-        &self.storage_host_url
     }
 }
 

@@ -11,20 +11,21 @@ use uuid::Uuid;
 
 use crate::api::buckets::metadata::{requests, responses};
 use crate::db::models;
-use crate::extractors::{ApiToken, DataStore, DbConn, StorageHost};
+use crate::extractors::{ApiToken, DataStore, DbConn};
 use crate::utils::metadata_upload::handle_metadata_upload;
 
 /// Upload data size limit for CAR file uploads
 const REQUEST_DATA_SIZE_LIMIT: u64 = 100 * 1_024;
 /// Upload size limit for CAR files
 const CAR_DATA_SIZE_LIMIT: u64 = 128 * 1_024 * 1_024;
+/// Storage Host
+const STORAGE_HOST: &str = "http://localhost:3002";
 
 /// Handle a request to push new metadata to a bucket
 pub async fn push(
     api_token: ApiToken,
     mut db_conn: DbConn,
     store: DataStore,
-    storage_host: StorageHost,
     Path(bucket_id): Path<Uuid>,
     TypedHeader(content_type): TypedHeader<ContentType>,
     body: BodyStream,
@@ -154,7 +155,8 @@ pub async fn push(
     };
 
     // Try and upload the file
-    let (hash, size) = match handle_metadata_upload(car_stream, &mut writer).await {
+    let (metadata_hash, metadata_size) = match handle_metadata_upload(car_stream, &mut writer).await
+    {
         Ok(fh) => {
             writer
                 .shutdown()
@@ -176,17 +178,17 @@ pub async fn push(
     };
 
     // Mark the upload as complete and fill in the size and hash
-    let i_size = size as i64;
+    let i_metadata_size = metadata_size as i64;
     // TODO: Eventually this should use pending
     // let bucket_state = models::MetadataState::Pending;
     let bucket_state = models::MetadataState::Current;
     let bucket_state_string = bucket_state.to_string();
     let maybe_updated_metadata = sqlx::query_as!(
         models::CreatedResource,
-        r#"UPDATE metadata SET state = $1, size = $2, hash = $3 WHERE id = $4 RETURNING id as "id!";"#,
+        r#"UPDATE metadata SET state = $1, metadata_size = $2, metadata_hash = $3 WHERE id = $4 RETURNING id as "id!";"#,
         bucket_state_string,
-        i_size,
-        hash,
+        i_metadata_size,
+        metadata_hash,
         metadata_resource.id
     )
     .fetch_one(&mut *db_conn.0)
@@ -205,8 +207,8 @@ pub async fn push(
 
     let response = responses::PushMetadataResponse {
         id: updated_metadata.id.to_string(),
-        state: models::MetadataState::Pending,
-        storage_host: storage_host.as_string(),
+        state: models::MetadataState::Current,
+        storage_host: STORAGE_HOST.to_string(),
         // TODO: this should be a JWT
         storage_authorization: "TODO: JWT here".to_string(),
     };
@@ -327,7 +329,7 @@ pub async fn read(
     // Make sure the metadata exists
     let maybe_metadata = sqlx::query_as!(
         models::Metadata,
-        r#"SELECT id as "id!", bucket_id, root_cid, metadata_cid, data_size, state, size as "size!", hash as "hash!", created_at, updated_at
+        r#"SELECT id as "id!", bucket_id, root_cid, metadata_cid, data_size, state, metadata_size as "metadata_size!", metadata_hash as "metadata_hash!", created_at, updated_at
         FROM metadata WHERE id = $1 AND bucket_id = $2;"#,
         metadata_id,
         bucket_id
@@ -386,7 +388,7 @@ pub async fn read_all(
     // Make sure the metadata exists
     let maybe_metadata = sqlx::query_as!(
         models::Metadata,
-        r#"SELECT id as "id!", bucket_id, root_cid, metadata_cid, data_size, state, size as "size!", hash as "hash!", created_at, updated_at
+        r#"SELECT id as "id!", bucket_id, root_cid, metadata_cid, data_size, state, metadata_size as "metadata_size!", metadata_hash as "metadata_hash!", created_at, updated_at
         FROM metadata WHERE bucket_id = $1;"#,
         bucket_id
     )

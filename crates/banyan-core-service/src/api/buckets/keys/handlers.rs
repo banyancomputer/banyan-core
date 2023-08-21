@@ -57,8 +57,6 @@ pub async fn create(
     .fetch_one(&mut *db_conn.0)
     .await;
 
-    println!("maybe_bucket_key: {:?}", maybe_bucket_key);
-
     let created_bucket_key = match maybe_bucket_key {
         Ok(cbk) => responses::CreateBucketKey {
             id: cbk.id,

@@ -105,7 +105,6 @@ impl Display for MetadataState {
 
 impl From<String> for MetadataState {
     fn from(s: String) -> Self {
-        println!("s: {}", s);
         match s.as_str() {
             "Uploading" => MetadataState::Uploading,
             "pload_failed" => MetadataState::UploadFailed,
@@ -131,8 +130,8 @@ pub struct Metadata {
     pub state: MetadataState,
 
     // These are only set on successful uploads
-    pub size: Option<i64>,
-    pub hash: Option<String>,
+    pub metadata_size: Option<i64>,
+    pub metadata_hash: Option<String>,
 
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,

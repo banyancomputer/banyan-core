@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "UPDATE metadata SET state = $1, size = $2, hash = $3 WHERE id = $4 RETURNING id as \"id!\";",
+  "query": "UPDATE metadata SET state = $1, metadata_size = $2, metadata_hash = $3 WHERE id = $4 RETURNING id as \"id!\";",
   "describe": {
     "columns": [
       {
@@ -16,5 +16,5 @@
       true
     ]
   },
-  "hash": "a0511eb1315d76aa9ac9bce48e38fa82f6de23a9cf07a102c6f7dda1bcf77803"
+  "hash": "317293cc53fa088b9aff68430d831ffdb09ccf3768e17ce1ec140ae1e73a975a"
 }
