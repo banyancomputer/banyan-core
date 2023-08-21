@@ -21,6 +21,7 @@
 	"bucketType": "Bucket Type",
 	"lastEdited": "Last Edited",
 	"fileSize": "File Size",
+	"files": "Files",
 	"deleteBucket": "Delete bucket",
 	"delete": "Delete",
 	"cancel": "Cancel",
@@ -46,6 +47,15 @@
 	"moveTo": "Move to",
 	"selectWhereToMove": "Please select where you would like to move your file",
 	"selectInTheList": "Select in the list",
-	"folder": "Folder"
+	"folder": "Folder",
+	"newBucket": "New Bucket",
+	"download": "Download",
+	"copyLink": "Copy link",
+	"makeCopy": "Make a copy",
+	"rename": "Rename",
+	"remove": "Remove",
+	"viewFileVersions": "View file versions",
+	"viewBucketVersions": "View bucket versions",
+	"deleteHotData": "Delete hot data"
 
 }

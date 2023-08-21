@@ -1,6 +1,6 @@
 import React from 'react';
 import { useIntl } from 'react-intl';
-import { IoMdAdd } from "react-icons/io"
+import { IoMdAdd } from "react-icons/io";
 
 import BaseLayout from '@layouts/BaseLayout';
 import { NextPageWithLayout } from './page';
@@ -10,15 +10,13 @@ import { UploadFileModal } from '@/components/common/Modal/UploadFileModal';
 import { useTomb } from '@/contexts/tomb';
 import { useModal } from '@/contexts/modals';
 
-import { Upload } from '@static/images/buckets';
-
 const Buckets: NextPageWithLayout = () => {
     const { openModal } = useModal();
     const { buckets } = useTomb();
     const { messages } = useIntl();
 
     const uploadFile = () => {
-        openModal(<UploadFileModal />)
+        openModal(<UploadFileModal />);
     };
 
     return (
@@ -36,16 +34,6 @@ const Buckets: NextPageWithLayout = () => {
                 </button>
             </div>
             <BucketsTable buckets={buckets} />
-            <div
-                className="mt-10 flex flex-col items-center justify-center gap-4 px-6 py-4 border-2 border-c rounded-xl  text-xs cursor-pointer"
-                onClick={uploadFile}
-            >
-                <Upload />
-                <span className="text-gray-600">
-                    <b className="text-gray-900">{`${messages.clickToUpload}`} </b>
-                    {`${messages.orDragAndDrop}`}
-                </span>
-            </div>
         </section>
     );
 };

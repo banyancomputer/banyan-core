@@ -2,8 +2,8 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import ECCKeystore from 'banyan-webcrypto-experiment/ecc/keystore';
 import * as KeyStore from 'banyan-webcrypto-experiment/keystore/index';
 import {
-	fingerprintEcPublicKey,
-	prettyFingerprint,
+    fingerprintEcPublicKey,
+    prettyFingerprint,
 } from 'banyan-webcrypto-experiment/utils';
 import { useSession } from 'next-auth/react';
 import { Session } from 'next-auth';
@@ -28,23 +28,23 @@ export const KeystoreContext = createContext<{
     // External Methods
 
     // Initialize a keystore based on the user's passphrase
-    initializeKeystore:(passkey: string) => Promise<void>;
+    initializeKeystore: (passkey: string) => Promise<void>;
     // Get the user's Encryption Key Pair
     getEncryptionKey: () => Promise<CryptoKeyPair>;
     // Get the user's API Key Pair
     getApiKey: () => Promise<CryptoKeyPair>;
     // Purge the keystore from storage
     purgeKeystore: () => Promise<void>;
-	    }>({
-	keystoreInitialized: false,
-	getEncryptionKey: async () => {
-		throw new Error('Keystore not initialized');
-	},
-	getApiKey: async () => {
-		throw new Error('Keystore not initialized');
-	},
-	initializeKeystore: async (passkey: string) => {},
-	purgeKeystore: async () => {},
+}>({
+    keystoreInitialized: false,
+    getEncryptionKey: async () => {
+        throw new Error('Keystore not initialized');
+    },
+    getApiKey: async () => {
+        throw new Error('Keystore not initialized');
+    },
+    initializeKeystore: async (passkey: string) => { },
+    purgeKeystore: async () => { },
 });
 
 export const KeystoreProvider = ({ children }: any) => {
@@ -52,15 +52,12 @@ export const KeystoreProvider = ({ children }: any) => {
     const { data: session } = useSession();
 
     // External State
-    const [keystoreInitialized, setKeystoreInitialized] =
-		useState<boolean>(false);
+    const [keystoreInitialized, setKeystoreInitialized] = useState<boolean>(false);
 
     // Internal State
     const api = new ClientApi();
     const [keystore, setKeystore] = useState<ECCKeystore | null>(null);
-    const [escrowedDevice, setEscrowedDevice] = useState<EscrowedDevice | null>(
-        null
-    );
+    const [escrowedDevice, setEscrowedDevice] = useState<EscrowedDevice | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     /* Effects */
@@ -74,7 +71,7 @@ export const KeystoreProvider = ({ children }: any) => {
 
     // Set the keystore and escrowedDevice state based on the session
     useEffect(() => {
-        const createKeystore = async(session: Session) => {
+        const createKeystore = async (session: Session) => {
             // Initialize a keystore pointed by the user's uid
             const storeName = `${KEY_STORE_NAME_PREFIX}-${session.providerId}`;
             // Defaults are fine here
@@ -93,11 +90,11 @@ export const KeystoreProvider = ({ children }: any) => {
 
     // Decide whether the user's keystore has been initialized
     useEffect(() => {
-        const tryInitKeystore = async(ks: ECCKeystore) => {
+        const tryInitKeystore = async (ks: ECCKeystore) => {
             if (
                 (await ks.keyExists(ESCROW_KEY_NAME)) &&
-				await ks.keyPairExists(EXCHANGE_KEY_PAIR_NAME) &&
-				await ks.keyPairExists(WRITE_KEY_PAIR_NAME)
+                await ks.keyPairExists(EXCHANGE_KEY_PAIR_NAME) &&
+                await ks.keyPairExists(WRITE_KEY_PAIR_NAME)
             ) {
                 setKeystoreInitialized(true);
 
@@ -106,7 +103,7 @@ export const KeystoreProvider = ({ children }: any) => {
 
             return false;
         };
-        const getEscrowedDevice = async() => {
+        const getEscrowedDevice = async () => {
             const resp = (await api
                 .readEscrowedDevice()
                 .catch((err) => undefined)) as EscrowedDevice | undefined;
@@ -126,7 +123,7 @@ export const KeystoreProvider = ({ children }: any) => {
     /* Methods */
 
     // Initialize a keystore based on the user's passphrase
-    const initializeKeystore = async(passkey: string): Promise<void> => {
+    const initializeKeystore = async (passkey: string): Promise<void> => {
         if (escrowedDevice) {
             await recoverDevice(passkey);
         } else {
@@ -135,7 +132,7 @@ export const KeystoreProvider = ({ children }: any) => {
     };
 
     // Get the user's Encryption Key Pair
-    const getEncryptionKey = async(): Promise<CryptoKeyPair> => {
+    const getEncryptionKey = async (): Promise<CryptoKeyPair> => {
         if (!keystore || !keystoreInitialized) {
             throw new Error('Keystore not initialized');
         }
@@ -144,7 +141,7 @@ export const KeystoreProvider = ({ children }: any) => {
     };
 
     // Get the user's API Key Pair
-    const getApiKey = async(): Promise<CryptoKeyPair> => {
+    const getApiKey = async (): Promise<CryptoKeyPair> => {
         if (!keystore || !keystoreInitialized) {
             throw new Error('Keystore not initialized');
         }
@@ -153,7 +150,7 @@ export const KeystoreProvider = ({ children }: any) => {
     };
 
     // Purge the keystore from storage
-    const purgeKeystore = async(): Promise<void> => {
+    const purgeKeystore = async (): Promise<void> => {
         if (!keystore) {
             throw new Error('Keystore not initialized');
         }
@@ -167,7 +164,7 @@ export const KeystoreProvider = ({ children }: any) => {
     /* Helpers */
 
     // Register a new user in firestore
-    const escrowDevice = async(passphrase: string): Promise<void> => {
+    const escrowDevice = async (passphrase: string): Promise<void> => {
         if (!keystore) {
             throw new Error('Keystore not initialized');
         }
@@ -190,7 +187,7 @@ export const KeystoreProvider = ({ children }: any) => {
 
         const wrappedApiKey = await keystore.exportEscrowedPrivateWriteKey();
         const wrappedEncryptionKey =
-			await keystore.exportEscrowedPrivateExchangeKey();
+            await keystore.exportEscrowedPrivateExchangeKey();
 
         // Escrow the user's private key material
         await api
@@ -234,7 +231,7 @@ export const KeystoreProvider = ({ children }: any) => {
     };
 
     // Recovers a device's private key material from escrow
-    const recoverDevice = async(passphrase: string) => {
+    const recoverDevice = async (passphrase: string) => {
         if (!keystore) {
             throw new Error('Keystore not initialized');
         }
