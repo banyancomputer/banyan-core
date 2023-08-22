@@ -234,5 +234,5 @@ CREATE TABLE snapshots (
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_snapshots_on_metadata_id
+CREATE UNIQUE INDEX idx_snapshots_on_unique_metadata_id
   ON snapshots(metadata_id);
