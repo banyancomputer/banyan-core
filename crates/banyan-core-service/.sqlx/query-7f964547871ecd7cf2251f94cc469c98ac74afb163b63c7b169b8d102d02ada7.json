@@ -1,10 +1,10 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id as \"id!\", metadata_id as \"metadata_id!\", created_at as \"created_at!\" FROM snapshots WHERE id = $1;",
+  "query": "SELECT id, metadata_id as \"metadata_id!\", created_at as \"created_at!\" FROM snapshots WHERE id = $1;",
   "describe": {
     "columns": [
       {
-        "name": "id!",
+        "name": "id",
         "ordinal": 0,
         "type_info": "Text"
       },
@@ -23,10 +23,10 @@
       "Right": 1
     },
     "nullable": [
-      true,
+      false,
       false,
       false
     ]
   },
-  "hash": "70c16933b8e53673420dff9d27a32825c9aa21d154bb549165e18c025ff5cf79"
+  "hash": "7f964547871ecd7cf2251f94cc469c98ac74afb163b63c7b169b8d102d02ada7"
 }

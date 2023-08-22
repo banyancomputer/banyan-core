@@ -1,10 +1,10 @@
 {
   "db_name": "SQLite",
-  "query": "DELETE FROM device_api_keys WHERE id = $1 AND account_id = $2 RETURNING id as \"id!\", account_id, fingerprint, pem;",
+  "query": "SELECT id, account_id, name, type, storage_class FROM buckets WHERE account_id = $1",
   "describe": {
     "columns": [
       {
-        "name": "id!",
+        "name": "id",
         "ordinal": 0,
         "type_info": "Text"
       },
@@ -14,25 +14,31 @@
         "type_info": "Text"
       },
       {
-        "name": "fingerprint",
+        "name": "name",
         "ordinal": 2,
         "type_info": "Text"
       },
       {
-        "name": "pem",
+        "name": "type",
         "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "storage_class",
+        "ordinal": 4,
         "type_info": "Text"
       }
     ],
     "parameters": {
-      "Right": 2
+      "Right": 1
     },
     "nullable": [
-      true,
+      false,
+      false,
       false,
       false,
       false
     ]
   },
-  "hash": "64db7a4e7ef0172c4c583fa73347d69f17713dc786d604591d6218ea9dc14ba2"
+  "hash": "2a0ddf65e449f6606266bd5415e79a63ea0941254f82f6aeb0c0e7b2066ba224"
 }

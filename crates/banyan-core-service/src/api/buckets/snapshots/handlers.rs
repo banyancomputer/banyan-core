@@ -19,7 +19,7 @@ pub async fn create(
     // Make sure the calling user owns the bucket
     let maybe_bucket = sqlx::query_as!(
         models::CreatedResource,
-        r#"SELECT id as "id!" FROM buckets WHERE id = $1 AND account_id = $2;"#,
+        r#"SELECT id FROM buckets WHERE id = $1 AND account_id = $2;"#,
         bucket_id,
         account_id
     )
@@ -38,7 +38,7 @@ pub async fn create(
     // Make sure the snapshot belongs to the bucket
     let maybe_metadata = sqlx::query_as!(
         models::CreatedResource,
-        r#"SELECT id as "id!" FROM metadata WHERE id = $1 AND bucket_id = $2;"#,
+        r#"SELECT id FROM metadata WHERE id = $1 AND bucket_id = $2;"#,
         metadata_id,
         bucket_id
     )
@@ -59,7 +59,7 @@ pub async fn create(
         models::CreatedResource,
         r#"INSERT INTO snapshots (metadata_id)
         VALUES ($1)
-        RETURNING id as "id!";"#,
+        RETURNING id;"#,
         metadata_id
     )
     .fetch_one(&mut *db_conn.0)
@@ -78,7 +78,7 @@ pub async fn create(
     let maybe_response = sqlx::query_as!(
         models::Snapshot,
         r#"SELECT 
-            s.id as "id!",
+            s.id,
             s.metadata_id as "metadata_id!",
             s.created_at as "created_at!"
         FROM 
@@ -117,7 +117,7 @@ pub async fn read_all(
     let bucket_id = bucket_id.to_string();
     let maybe_bucket = sqlx::query_as!(
         models::CreatedResource,
-        r#"SELECT id as "id!" FROM buckets WHERE id = $1 AND account_id = $2;"#,
+        r#"SELECT id FROM buckets WHERE id = $1 AND account_id = $2;"#,
         bucket_id,
         account_id
     )
@@ -139,7 +139,7 @@ pub async fn read_all(
     let maybe_snapshots = sqlx::query_as!(
         models::Snapshot,
         r#"SELECT 
-            s.id as "id!",
+            s.id,
             s.metadata_id as "metadata_id!",
             s.created_at as "created_at!"
         FROM 
@@ -188,7 +188,7 @@ pub async fn restore(
     // Check that the bucket exists
     let maybe_bucket = sqlx::query_as!(
         models::CreatedResource,
-        r#"SELECT id as "id!" FROM buckets WHERE id = $1 AND account_id = $2;"#,
+        r#"SELECT id FROM buckets WHERE id = $1 AND account_id = $2;"#,
         bucket_id,
         account_id
     )
@@ -207,7 +207,7 @@ pub async fn restore(
     // Check that the snapshot exists
     let maybe_snapshot = sqlx::query_as!(
         models::Snapshot,
-        r#"SELECT id as "id!", metadata_id as "metadata_id!", created_at as "created_at!" FROM snapshots WHERE id = $1;"#,
+        r#"SELECT id, metadata_id as "metadata_id!", created_at as "created_at!" FROM snapshots WHERE id = $1;"#,
         snapshot_id,
     )
     .fetch_one(&mut *db_conn.0)
@@ -225,7 +225,7 @@ pub async fn restore(
     // Make sure the metadata specified in the snapshot exists, and points to this bucket
     let maybe_metadata = sqlx::query_as!(
         models::CreatedResource,
-        r#"SELECT id as "id!" FROM metadata WHERE id = $1 AND bucket_id = $2;"#,
+        r#"SELECT id FROM metadata WHERE id = $1 AND bucket_id = $2;"#,
         snapshot.metadata_id,
         bucket_id
     )

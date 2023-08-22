@@ -1,10 +1,10 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id as \"id!\", account_id, fingerprint, pem FROM device_api_keys WHERE account_id = $1;",
+  "query": "SELECT id, account_id, fingerprint, pem FROM device_api_keys WHERE account_id = $1;",
   "describe": {
     "columns": [
       {
-        "name": "id!",
+        "name": "id",
         "ordinal": 0,
         "type_info": "Text"
       },
@@ -28,11 +28,11 @@
       "Right": 1
     },
     "nullable": [
-      true,
+      false,
       false,
       false,
       false
     ]
   },
-  "hash": "67633b8e98626be369c252a5dc2c6bd6ccc8f8d5304b2503e3790bd08eb05e50"
+  "hash": "7390d5bfade1a1313d3ced7a2bc72036f3b218608ade6517ffd460695222754a"
 }

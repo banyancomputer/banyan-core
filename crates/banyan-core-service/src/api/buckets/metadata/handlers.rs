@@ -35,7 +35,7 @@ pub async fn push(
     // Make sure the calling user owns the bucket
     let maybe_bucket = sqlx::query_as!(
         models::CreatedResource,
-        r#"SELECT id as "id!" FROM buckets WHERE id = $1 AND account_id = $2;"#,
+        r#"SELECT id FROM buckets WHERE id = $1 AND account_id = $2;"#,
         bucket_id,
         account_id
     )
@@ -82,7 +82,7 @@ pub async fn push(
         models::CreatedResource,
         r#"INSERT INTO metadata (bucket_id, root_cid, metadata_cid, data_size, state)
         VALUES ($1, $2, $3, $4, $5)
-        RETURNING id as "id!";"#,
+        RETURNING id;"#,
         bucket_id,
         request_data.root_cid,
         request_data.metadata_cid,
@@ -185,7 +185,7 @@ pub async fn push(
     let bucket_state_string = bucket_state.to_string();
     let maybe_updated_metadata = sqlx::query_as!(
         models::CreatedResource,
-        r#"UPDATE metadata SET state = $1, metadata_size = $2, metadata_hash = $3 WHERE id = $4 RETURNING id as "id!";"#,
+        r#"UPDATE metadata SET state = $1, metadata_size = $2, metadata_hash = $3 WHERE id = $4 RETURNING id;"#,
         bucket_state_string,
         i_metadata_size,
         metadata_hash,
@@ -228,7 +228,7 @@ pub async fn pull(
     let metadata_id = metadata_id.to_string();
     let maybe_bucket = sqlx::query_as!(
         models::CreatedResource,
-        r#"SELECT id as "id!" FROM buckets WHERE id = $1 AND account_id = $2;"#,
+        r#"SELECT id FROM buckets WHERE id = $1 AND account_id = $2;"#,
         bucket_id,
         account_id
     )
@@ -247,7 +247,7 @@ pub async fn pull(
     // Make sure the metadata exists
     let maybe_metadata = sqlx::query_as!(
         models::CreatedResource,
-        r#"SELECT id as "id!" FROM metadata WHERE id = $1 AND bucket_id = $2;"#,
+        r#"SELECT id FROM metadata WHERE id = $1 AND bucket_id = $2;"#,
         metadata_id,
         bucket_id
     )
@@ -310,7 +310,7 @@ pub async fn read(
     let metadata_id = metadata_id.to_string();
     let maybe_bucket = sqlx::query_as!(
         models::CreatedResource,
-        r#"SELECT id as "id!" FROM buckets WHERE id = $1 AND account_id = $2;"#,
+        r#"SELECT id FROM buckets WHERE id = $1 AND account_id = $2;"#,
         bucket_id,
         account_id
     )
@@ -329,7 +329,7 @@ pub async fn read(
     // Make sure the metadata exists
     let maybe_metadata = sqlx::query_as!(
         models::Metadata,
-        r#"SELECT id as "id!", bucket_id, root_cid, metadata_cid, data_size, state, metadata_size as "metadata_size!", metadata_hash as "metadata_hash!", created_at, updated_at
+        r#"SELECT id, bucket_id, root_cid, metadata_cid, data_size, state, metadata_size as "metadata_size!", metadata_hash as "metadata_hash!", created_at, updated_at
         FROM metadata WHERE id = $1 AND bucket_id = $2;"#,
         metadata_id,
         bucket_id
@@ -369,7 +369,7 @@ pub async fn read_all(
     let bucket_id = bucket_id.to_string();
     let maybe_bucket = sqlx::query_as!(
         models::CreatedResource,
-        r#"SELECT id as "id!" FROM buckets WHERE id = $1 AND account_id = $2;"#,
+        r#"SELECT id FROM buckets WHERE id = $1 AND account_id = $2;"#,
         bucket_id,
         account_id
     )
@@ -388,7 +388,7 @@ pub async fn read_all(
     // Make sure the metadata exists
     let maybe_metadata = sqlx::query_as!(
         models::Metadata,
-        r#"SELECT id as "id!", bucket_id, root_cid, metadata_cid, data_size, state, metadata_size as "metadata_size!", metadata_hash as "metadata_hash!", created_at, updated_at
+        r#"SELECT id, bucket_id, root_cid, metadata_cid, data_size, state, metadata_size as "metadata_size!", metadata_hash as "metadata_hash!", created_at, updated_at
         FROM metadata WHERE bucket_id = $1;"#,
         bucket_id
     )

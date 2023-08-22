@@ -2,7 +2,7 @@
 
 -- Migration for users table
 CREATE TABLE users (
-  id TEXT PRIMARY KEY DEFAULT (
+  id TEXT NOT NULL PRIMARY KEY DEFAULT (
     lower(hex(randomblob(4))) || '-' ||
     lower(hex(randomblob(2))) || '-4' ||
     substr(lower(hex(randomblob(2))), 2) || '-a' ||
@@ -17,7 +17,7 @@ CREATE TABLE users (
 
 -- Migration for accounts table
 CREATE TABLE accounts (
-  id TEXT PRIMARY KEY DEFAULT (
+  id TEXT NOT NULL PRIMARY KEY DEFAULT (
     lower(hex(randomblob(4))) || '-' ||
     lower(hex(randomblob(2))) || '-4' ||
     substr(lower(hex(randomblob(2))), 2) || '-a' ||
@@ -40,7 +40,7 @@ CREATE TABLE accounts (
 
 -- Migration for sessions table
 CREATE TABLE sessions (
-  id TEXT PRIMARY KEY DEFAULT (
+  id TEXT NOT NULL PRIMARY KEY DEFAULT (
     lower(hex(randomblob(4))) || '-' ||
     lower(hex(randomblob(2))) || '-4' ||
     substr(lower(hex(randomblob(2))), 2) || '-a' ||
@@ -55,7 +55,7 @@ CREATE TABLE sessions (
 
 -- Migration for verification_tokens table
 CREATE TABLE verification_tokens (
-  id TEXT PRIMARY KEY DEFAULT (
+  id TEXT NOT NULL PRIMARY KEY DEFAULT (
     lower(hex(randomblob(4))) || '-' ||
     lower(hex(randomblob(2))) || '-4' ||
     substr(lower(hex(randomblob(2))), 2) || '-a' ||
@@ -71,7 +71,7 @@ CREATE TABLE verification_tokens (
 
 -- Migration for table specifying allow-listed emails for alpha
 CREATE TABLE allowed_emails (
-  id TEXT PRIMARY KEY DEFAULT (
+  id TEXT NOT NULL PRIMARY KEY DEFAULT (
     lower(hex(randomblob(4))) || '-' ||
     lower(hex(randomblob(2))) || '-4' ||
     substr(lower(hex(randomblob(2))), 2) || '-a' ||
@@ -83,7 +83,7 @@ CREATE TABLE allowed_emails (
 
 -- Mggration for Escrowed Devices
 CREATE TABLE escrowed_devices (
-  id TEXT PRIMARY KEY DEFAULT (
+  id TEXT NOT NULL PRIMARY KEY DEFAULT (
     lower(hex(randomblob(4))) || '-' ||
     lower(hex(randomblob(2))) || '-4' ||
     substr(lower(hex(randomblob(2))), 2) || '-a' ||
@@ -113,7 +113,7 @@ CREATE UNIQUE INDEX idx_escrowed_device_keys_on_unique_account_id
 -- Migrations for Device API keys
 CREATE TABLE device_api_keys (
   -- Dirty hack to generate UUIDs
-  id TEXT PRIMARY KEY DEFAULT (
+  id TEXT NOT NULL PRIMARY KEY DEFAULT (
     lower(hex(randomblob(4))) || '-' ||
     lower(hex(randomblob(2))) || '-4' ||
     substr(lower(hex(randomblob(2))), 2) || '-a' ||
@@ -137,7 +137,7 @@ CREATE UNIQUE INDEX idx_device_api_keys_on_unique_fingerprint
 -- Migrations for Buckets
 CREATE TABLE buckets (
   -- Dirty hack to generate UUIDs
-  id TEXT PRIMARY KEY DEFAULT (
+  id TEXT NOT NULL PRIMARY KEY DEFAULT (
     lower(hex(randomblob(4))) || '-' ||
     lower(hex(randomblob(2))) || '-4' ||
     substr(lower(hex(randomblob(2))), 2) || '-a' ||
@@ -162,7 +162,7 @@ CREATE UNIQUE INDEX idx_buckets_on_unique_account_id_and_name
 
 -- Migrations for Bucket Keys
 CREATE TABLE bucket_keys (
-  id TEXT PRIMARY KEY DEFAULT (
+  id TEXT NOT NULL PRIMARY KEY DEFAULT (
     lower(hex(randomblob(4))) || '-' ||
     lower(hex(randomblob(2))) || '-4' ||
     substr(lower(hex(randomblob(2))), 2) || '-a' ||
@@ -183,7 +183,7 @@ CREATE INDEX idx_bucket_keys_on_bucket_id
 
 -- Migrations for Metadata
 CREATE TABLE metadata (
-  id TEXT PRIMARY KEY DEFAULT (
+  id TEXT NOT NULL PRIMARY KEY DEFAULT (
     lower(hex(randomblob(4))) || '-' ||
     lower(hex(randomblob(2))) || '-4' ||
     substr(lower(hex(randomblob(2))), 2) || '-a' ||
@@ -220,7 +220,7 @@ CREATE INDEX idx_metadata_on_bucket_id
 
 -- Migrations for Snapshots
 CREATE TABLE snapshots (
-  id TEXT PRIMARY KEY DEFAULT (
+  id TEXT NOT NULL PRIMARY KEY DEFAULT (
     lower(hex(randomblob(4))) || '-' ||
     lower(hex(randomblob(2))) || '-4' ||
     substr(lower(hex(randomblob(2))), 2) || '-a' ||

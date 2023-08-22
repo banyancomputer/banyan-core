@@ -1,10 +1,10 @@
 {
   "db_name": "SQLite",
-  "query": "INSERT INTO snapshots (metadata_id)\n        VALUES ($1)\n        RETURNING id as \"id!\";",
+  "query": "INSERT INTO snapshots (metadata_id)\n        VALUES ($1)\n        RETURNING id;",
   "describe": {
     "columns": [
       {
-        "name": "id!",
+        "name": "id",
         "ordinal": 0,
         "type_info": "Text"
       }
@@ -16,5 +16,5 @@
       false
     ]
   },
-  "hash": "efa081632bf8d5c78699f96c4ab63f35c5255ecd9656baa06c6334e802361a89"
+  "hash": "06e3e0d35810208e3880f5d28f6be8e5084a9d02107c8460e580f50df5a5c381"
 }

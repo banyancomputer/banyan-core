@@ -79,7 +79,7 @@ pub async fn read(
 
     let maybe_device_key = sqlx::query_as!(
         models::DeviceApiKey,
-        r#"SELECT id as "id!", account_id, fingerprint, pem FROM device_api_keys WHERE id = $1 AND account_id = $2;"#,
+        r#"SELECT id, account_id, fingerprint, pem FROM device_api_keys WHERE id = $1 AND account_id = $2;"#,
         id,
         account_id
     )
@@ -110,7 +110,7 @@ pub async fn read_all(api_token: ApiToken, mut db_conn: DbConn) -> impl IntoResp
     let account_id = api_token.subject;
     let maybe_device_keys = sqlx::query_as!(
         models::DeviceApiKey,
-        r#"SELECT id as "id!", account_id, fingerprint, pem FROM device_api_keys WHERE account_id = $1;"#,
+        r#"SELECT id, account_id, fingerprint, pem FROM device_api_keys WHERE account_id = $1;"#,
         account_id
     )
     .fetch_all(&mut *db_conn.0)
@@ -150,7 +150,7 @@ pub async fn delete(
 
     let maybe_device_key = sqlx::query_as!(
         models::DeviceApiKey,
-        r#"DELETE FROM device_api_keys WHERE id = $1 AND account_id = $2 RETURNING id as "id!", account_id, fingerprint, pem;"#,
+        r#"DELETE FROM device_api_keys WHERE id = $1 AND account_id = $2 RETURNING id, account_id, fingerprint, pem;"#,
         id,
         account_id
     )

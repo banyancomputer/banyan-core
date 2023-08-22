@@ -84,7 +84,7 @@ pub async fn read_all(api_token: ApiToken, mut db_conn: DbConn) -> impl IntoResp
     let account_id = api_token.subject;
     let maybe_buckets = sqlx::query_as!(
         models::Bucket,
-        r#"SELECT id as "id!", account_id, name, type, storage_class FROM buckets WHERE account_id = $1"#,
+        r#"SELECT id, account_id, name, type, storage_class FROM buckets WHERE account_id = $1"#,
         account_id,
     )
     .fetch_all(&mut *db_conn.0)
@@ -125,7 +125,7 @@ pub async fn read(
     let bucket_id = bucket_id.to_string();
     let maybe_bucket = sqlx::query_as!(
         models::Bucket,
-        r#"SELECT id as "id!", account_id, name, type, storage_class FROM buckets WHERE id = $1 AND account_id = $2"#,
+        r#"SELECT id, account_id, name, type, storage_class FROM buckets WHERE id = $1 AND account_id = $2"#,
         bucket_id,
         account_id,
     )
@@ -160,7 +160,7 @@ pub async fn delete(
     let bucket_id = bucket_id.to_string();
     let maybe_bucket = sqlx::query_as!(
         models::Bucket,
-        r#"DELETE FROM buckets WHERE id = $1 AND account_id = $2 RETURNING id as "id!", account_id, name, type, storage_class"#,
+        r#"DELETE FROM buckets WHERE id = $1 AND account_id = $2 RETURNING id, account_id, name, type, storage_class"#,
         bucket_id,
         account_id,
     )
@@ -193,7 +193,7 @@ pub async fn get_usage(
     let bucket_id = bucket_id.to_string();
     let maybe_bucket = sqlx::query_as!(
         models::CreatedResource,
-        r#"SELECT id as "id!" FROM buckets WHERE id = $1 AND account_id = $2"#,
+        r#"SELECT id FROM buckets WHERE id = $1 AND account_id = $2"#,
         bucket_id,
         account_id,
     )

@@ -22,7 +22,7 @@ pub async fn create(
     // Make sure the calling user owns the bucket
     let maybe_bucket = sqlx::query_as!(
         models::CreatedResource,
-        r#"SELECT id as "id!" FROM buckets WHERE id = $1 AND account_id = $2;"#,
+        r#"SELECT id FROM buckets WHERE id = $1 AND account_id = $2;"#,
         bucket_id,
         account_id
     )
@@ -88,7 +88,7 @@ pub async fn read_all(
     // Make sure the calling user owns the bucket
     let maybe_bucket = sqlx::query_as!(
         models::CreatedResource,
-        r#"SELECT id as "id!" FROM buckets WHERE id = $1 AND account_id = $2;"#,
+        r#"SELECT id FROM buckets WHERE id = $1 AND account_id = $2;"#,
         bucket_id,
         account_id
     )
@@ -108,7 +108,7 @@ pub async fn read_all(
 
     let maybe_bucket_keys = sqlx::query_as!(
         models::BucketKey,
-        r#"SELECT id as "id!", bucket_id, approved, pem FROM bucket_keys WHERE bucket_id = $1;"#,
+        r#"SELECT id, bucket_id, approved, pem FROM bucket_keys WHERE bucket_id = $1;"#,
         bucket_id,
     )
     .fetch_all(&mut *db_conn.0)
@@ -150,7 +150,7 @@ pub async fn read(
     // Make sure the calling user owns the bucket
     let maybe_bucket = sqlx::query_as!(
         models::CreatedResource,
-        r#"SELECT id as "id!" FROM buckets WHERE id = $1 AND account_id = $2;"#,
+        r#"SELECT id FROM buckets WHERE id = $1 AND account_id = $2;"#,
         bucket_id,
         account_id
     )
@@ -170,7 +170,7 @@ pub async fn read(
 
     let maybe_bucket_key = sqlx::query_as!(
         models::BucketKey,
-        r#"SELECT id as "id!", bucket_id, approved, pem FROM bucket_keys WHERE id = $1 AND bucket_id = $2;"#,
+        r#"SELECT id, bucket_id, approved, pem FROM bucket_keys WHERE id = $1 AND bucket_id = $2;"#,
         bucket_key_id,
         bucket_id,
     )
@@ -206,7 +206,7 @@ pub async fn delete(
 
     let maybe_bucket = sqlx::query_as!(
         models::CreatedResource,
-        r#"SELECT id as "id!" FROM buckets WHERE id = $1 AND account_id = $2;"#,
+        r#"SELECT id FROM buckets WHERE id = $1 AND account_id = $2;"#,
         bucket_id,
         account_id
     )
@@ -226,7 +226,7 @@ pub async fn delete(
 
     let maybe_bucket_key = sqlx::query_as!(
         models::BucketKey,
-        r#"DELETE FROM bucket_keys WHERE id = $1 AND bucket_id = $2 RETURNING id as "id!", bucket_id, approved, pem;"#,
+        r#"DELETE FROM bucket_keys WHERE id = $1 AND bucket_id = $2 RETURNING id, bucket_id, approved, pem;"#,
         bucket_key_id,
         bucket_id,
     )
