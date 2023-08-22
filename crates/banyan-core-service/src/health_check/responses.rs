@@ -5,7 +5,7 @@ use axum::response::IntoResponse;
 use serde::Serialize;
 
 use crate::health_check::HealthCheckError;
-use crate::util::collect_error_messages;
+use crate::utils::collect_error_messages;
 
 #[derive(Serialize)]
 #[serde(rename_all = "snake_case", tag = "status")]

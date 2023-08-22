@@ -1,48 +1,35 @@
-use serde::{Deserialize, Serialize};
-
-#[derive(Clone, Debug, Deserialize, Serialize, sqlx::Type)]
-#[serde(rename_all = "snake_case")]
-#[sqlx(rename_all = "lowercase")]
-pub enum BucketType {
-    Backup,
-    Interactive,
-}
+use crate::api::buckets::keys;
+use crate::db::models::*;
+use serde::Serialize;
+use sqlx::FromRow;
 
 #[derive(Serialize)]
-pub struct DetailedBucket {
+pub struct CreateBucket {
     pub id: String,
-    pub friendly_name: String,
+    pub name: String,
     pub r#type: BucketType,
-
-    pub public_keys: Vec<PublicKeySummary>,
+    pub storage_class: StorageClass,
+    pub initial_bucket_key: keys::responses::CreateBucketKey,
 }
 
-#[derive(Serialize)]
-pub struct MinimalBucket {
+#[derive(Serialize, FromRow)]
+pub struct ReadBucket {
     pub id: String,
-
-    pub friendly_name: String,
+    pub name: String,
     pub r#type: BucketType,
+    pub storage_class: StorageClass,
 }
 
 #[derive(Serialize)]
-pub struct PublicKeySummary {
-    pub approved: bool,
-    pub fingerprint: String,
-    pub pem: String,
-}
+pub struct ReadBuckets(pub Vec<ReadBucket>);
 
-#[derive(Debug, Serialize)]
-pub struct PublishBucketMetadataResponse {
+#[derive(Serialize)]
+pub struct DeleteBucket {
     pub id: String,
-    pub state: MetadataState,
-
-    pub storage_host: String,
-    pub storage_authorization: String,
+    pub name: String,
 }
 
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "snake_case")]
-pub enum MetadataState {
-    Pending,
+#[derive(Serialize)]
+pub struct GetUsage {
+    pub size: i64,
 }

@@ -13,7 +13,7 @@ pub fn parse_arguments() -> Result<Config, pico_args::Error> {
             .opt_value_from_str("--signing-key")?
             .unwrap_or("./data/signing-key.pem".into()),
 
-        upload_directory: args
+        metadata_upload_directory: args
             .opt_value_from_str("--upload-dir")?
             .unwrap_or("./data/uploads".into()),
     })
@@ -23,7 +23,7 @@ pub fn parse_arguments() -> Result<Config, pico_args::Error> {
 pub struct Config {
     database_url: String,
     signing_key_path: PathBuf,
-    upload_directory: PathBuf,
+    metadata_upload_directory: PathBuf,
 }
 
 impl Config {
@@ -35,7 +35,7 @@ impl Config {
         &self.signing_key_path
     }
 
-    pub fn upload_directory(&self) -> &PathBuf {
-        &self.upload_directory
+    pub fn metadata_upload_directory(&self) -> &PathBuf {
+        &self.metadata_upload_directory
     }
 }

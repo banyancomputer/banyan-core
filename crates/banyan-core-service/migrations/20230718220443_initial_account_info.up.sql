@@ -2,7 +2,7 @@
 
 -- Migration for users table
 CREATE TABLE users (
-  id TEXT PRIMARY KEY DEFAULT (
+  id TEXT NOT NULL PRIMARY KEY DEFAULT (
     lower(hex(randomblob(4))) || '-' ||
     lower(hex(randomblob(2))) || '-4' ||
     substr(lower(hex(randomblob(2))), 2) || '-a' ||
@@ -17,7 +17,7 @@ CREATE TABLE users (
 
 -- Migration for accounts table
 CREATE TABLE accounts (
-  id TEXT PRIMARY KEY DEFAULT (
+  id TEXT NOT NULL PRIMARY KEY DEFAULT (
     lower(hex(randomblob(4))) || '-' ||
     lower(hex(randomblob(2))) || '-4' ||
     substr(lower(hex(randomblob(2))), 2) || '-a' ||
@@ -40,7 +40,7 @@ CREATE TABLE accounts (
 
 -- Migration for sessions table
 CREATE TABLE sessions (
-  id TEXT PRIMARY KEY DEFAULT (
+  id TEXT NOT NULL PRIMARY KEY DEFAULT (
     lower(hex(randomblob(4))) || '-' ||
     lower(hex(randomblob(2))) || '-4' ||
     substr(lower(hex(randomblob(2))), 2) || '-a' ||
@@ -55,7 +55,7 @@ CREATE TABLE sessions (
 
 -- Migration for verification_tokens table
 CREATE TABLE verification_tokens (
-  id TEXT PRIMARY KEY DEFAULT (
+  id TEXT NOT NULL PRIMARY KEY DEFAULT (
     lower(hex(randomblob(4))) || '-' ||
     lower(hex(randomblob(2))) || '-4' ||
     substr(lower(hex(randomblob(2))), 2) || '-a' ||
@@ -67,9 +67,11 @@ CREATE TABLE verification_tokens (
   expires TEXT NOT NULL
 );
 
+-- Migration for WebUI data
+
 -- Migration for table specifying allow-listed emails for alpha
 CREATE TABLE allowed_emails (
-  id TEXT PRIMARY KEY DEFAULT (
+  id TEXT NOT NULL PRIMARY KEY DEFAULT (
     lower(hex(randomblob(4))) || '-' ||
     lower(hex(randomblob(2))) || '-4' ||
     substr(lower(hex(randomblob(2))), 2) || '-a' ||
@@ -81,7 +83,7 @@ CREATE TABLE allowed_emails (
 
 -- Mggration for Escrowed Devices
 CREATE TABLE escrowed_devices (
-  id TEXT PRIMARY KEY DEFAULT (
+  id TEXT NOT NULL PRIMARY KEY DEFAULT (
     lower(hex(randomblob(4))) || '-' ||
     lower(hex(randomblob(2))) || '-4' ||
     substr(lower(hex(randomblob(2))), 2) || '-a' ||
@@ -106,10 +108,12 @@ CREATE TABLE escrowed_devices (
 CREATE UNIQUE INDEX idx_escrowed_device_keys_on_unique_account_id
   ON escrowed_devices(account_id);
 
+-- Businesss Logic Tables
+
 -- Migrations for Device API keys
 CREATE TABLE device_api_keys (
   -- Dirty hack to generate UUIDs
-  id TEXT PRIMARY KEY DEFAULT (
+  id TEXT NOT NULL PRIMARY KEY DEFAULT (
     lower(hex(randomblob(4))) || '-' ||
     lower(hex(randomblob(2))) || '-4' ||
     substr(lower(hex(randomblob(2))), 2) || '-a' ||
@@ -130,9 +134,10 @@ CREATE TABLE device_api_keys (
 CREATE UNIQUE INDEX idx_device_api_keys_on_unique_fingerprint
   ON device_api_keys(fingerprint);
 
+-- Migrations for Buckets
 CREATE TABLE buckets (
   -- Dirty hack to generate UUIDs
-  id TEXT PRIMARY KEY DEFAULT (
+  id TEXT NOT NULL PRIMARY KEY DEFAULT (
     lower(hex(randomblob(4))) || '-' ||
     lower(hex(randomblob(2))) || '-4' ||
     substr(lower(hex(randomblob(2))), 2) || '-a' ||
@@ -143,15 +148,21 @@ CREATE TABLE buckets (
     REFERENCES accounts(id)
     ON DELETE CASCADE,
 
-  friendly_name VARCHAR(128),
-  type VARCHAR(32) NOT NULL
+  name VARCHAR(128) NOT NULL,
+
+  -- TODO: Make this an enum
+  type VARCHAR(32) NOT NULL,
+
+  -- TODO: Make this an enum
+  storage_class VARCHAR(32) NOT NULL
 );
 
-CREATE UNIQUE INDEX idx_buckets_on_unique_account_id_friendly_name
-  ON buckets(account_id, friendly_name);
+CREATE UNIQUE INDEX idx_buckets_on_unique_account_id_and_name
+  ON buckets(account_id, name);
 
+-- Migrations for Bucket Keys
 CREATE TABLE bucket_keys (
-  id TEXT PRIMARY KEY DEFAULT (
+  id TEXT NOT NULL PRIMARY KEY DEFAULT (
     lower(hex(randomblob(4))) || '-' ||
     lower(hex(randomblob(2))) || '-4' ||
     substr(lower(hex(randomblob(2))), 2) || '-a' ||
@@ -167,5 +178,61 @@ CREATE TABLE bucket_keys (
   approved BOOLEAN NOT NULL DEFAULT false
 );
 
-create UNIQUE INDEX idx_bucket_keys_on_unique_bucket_id
+CREATE INDEX idx_bucket_keys_on_bucket_id
   ON bucket_keys(bucket_id);
+
+-- Migrations for Metadata
+CREATE TABLE metadata (
+  id TEXT NOT NULL PRIMARY KEY DEFAULT (
+    lower(hex(randomblob(4))) || '-' ||
+    lower(hex(randomblob(2))) || '-4' ||
+    substr(lower(hex(randomblob(2))), 2) || '-a' ||
+    substr(lower(hex(randomblob(2))), 2) || '-6' ||
+    substr(lower(hex(randomblob(6))), 2)),
+
+  bucket_id TEXT NOT NULL
+    REFERENCES buckets(id)
+    ON DELETE CASCADE,
+
+  -- Description of the data
+  -- The root CID of this version of the bucket
+  root_cid TEXT NOT NULL,
+  -- The CID of the metadata for this version of the bucket
+  metadata_cid TEXT NOT NULL,
+  -- The size of the data pointed at by the root CID 
+  data_size INTEGER NOT NULL,
+
+  -- Description of the metadata CAR file
+  metadata_size INTEGER,
+  metadata_hash TEXT,
+
+  -- The state of the metadata
+  -- TODO: Make this an enum
+  state VARCHAR(32) NOT NULL,
+
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_metadata_on_bucket_id
+  ON metadata(bucket_id);
+
+
+-- Migrations for Snapshots
+CREATE TABLE snapshots (
+  id TEXT NOT NULL PRIMARY KEY DEFAULT (
+    lower(hex(randomblob(4))) || '-' ||
+    lower(hex(randomblob(2))) || '-4' ||
+    substr(lower(hex(randomblob(2))), 2) || '-a' ||
+    substr(lower(hex(randomblob(2))), 2) || '-6' ||
+    substr(lower(hex(randomblob(6))), 2)),
+
+  metadata_id TEXT NOT NULL
+    REFERENCES metadata(id)
+    ON DELETE CASCADE,
+  
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE UNIQUE INDEX idx_snapshots_on_unique_metadata_id
+  ON snapshots(metadata_id);

@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO metadata (bucket_id, root_cid, metadata_cid, data_size, state)\n        VALUES ($1, $2, $3, $4, $5)\n        RETURNING id;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "051b83c27314d575c8bc085999212d82daceda4308c2c5e6f1beab224d30a13f"
+}

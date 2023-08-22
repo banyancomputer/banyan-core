@@ -10,7 +10,7 @@ where
     SqlitePool: FromRef<S>,
     S: Send + Sync,
 {
-    // todo: better error
+    // TODO: better error
     type Rejection = (http::StatusCode, String);
 
     async fn from_request_parts(

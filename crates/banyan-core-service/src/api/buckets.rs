@@ -1,13 +1,14 @@
-use axum::routing::{get, post};
+use axum::routing::{delete, get, post};
 use axum::Router;
 
-mod car_buffer;
 mod error;
 mod handlers;
-mod metadata;
-mod models;
 mod requests;
 mod responses;
+
+mod keys;
+mod metadata;
+mod snapshots;
 
 pub use error::Error as BucketError;
 
@@ -15,9 +16,15 @@ use crate::app_state::AppState;
 
 pub fn router(state: AppState) -> Router<AppState> {
     Router::new()
-        .route("/", get(handlers::index).post(handlers::create))
-        .route("/:bucket_id", get(handlers::show).delete(handlers::destroy))
-        .route("/:bucket_id/publish", post(handlers::publish_metadata))
+        .route("/", post(handlers::create))
+        .route("/", get(handlers::read_all))
+        .route("/usage", get(handlers::get_total_usage))
+        .route("/usage_limit", get(handlers::get_usage_limit))
+        .route("/:bucket_id/usage", get(handlers::get_usage))
+        .route("/:bucket_id", get(handlers::read))
+        .route("/:bucket_id", delete(handlers::delete))
+        .nest("/:bucket_id/keys", keys::router(state.clone()))
         .nest("/:bucket_id/metadata", metadata::router(state.clone()))
+        .nest("/:bucket_id/snapshots", snapshots::router(state.clone()))
         .with_state(state)
 }

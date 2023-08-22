@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "INSERT INTO buckets (account_id, friendly_name, type) VALUES ($1, $2, $3) RETURNING id;",
+  "query": "INSERT INTO buckets (account_id, name, type, storage_class) VALUES ($1, $2, $3, $4) RETURNING id;",
   "describe": {
     "columns": [
       {
@@ -10,11 +10,11 @@
       }
     ],
     "parameters": {
-      "Right": 3
+      "Right": 4
     },
     "nullable": [
       false
     ]
   },
-  "hash": "5e19b85bc2656975bdf2d29874f4e299b8973c273cff56b1033d7ecf8c7714d9"
+  "hash": "8e2b919a950a3acc83313065523fbcb135e055e9d154052582f666eece025ed4"
 }

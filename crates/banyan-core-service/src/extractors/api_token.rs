@@ -24,7 +24,10 @@ const KEY_ID_REGEX: &str = r"^[0-9a-f]{2}(:[0-9a-f]{2}){19}$";
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ApiToken {
-    #[serde(rename = "nnc")]
+    #[serde(rename = "iat")]
+    pub issued_at: u64,
+
+    #[serde(rename = "nonce")]
     pub nonce: Option<String>,
 
     #[serde(rename = "exp")]
@@ -71,7 +74,7 @@ where
         token_validator.set_audience(&["banyan-platform"]);
 
         // Require all of our keys except for the attestations and proofs
-        token_validator.set_required_spec_claims(&["aud", "exp", "nbf", "sub"]);
+        token_validator.set_required_spec_claims(&["aud", "exp", "nbf", "sub", "iat"]);
 
         let token = bearer.token();
         let header_data = decode_header(token).map_err(ApiKeyAuthorizationError::decode_failed)?;
@@ -97,7 +100,7 @@ where
 
         let key = DecodingKey::from_ec_pem(db_device_api_key.pem.as_bytes()).expect("success");
 
-        // todo: we probably want to use device keys to sign this instead of a
+        // TODO: we probably want to use device keys to sign this instead of a
         // static AES key, this works for now
         let token_data = decode::<ApiToken>(token, &key, &token_validator)
             .map_err(ApiKeyAuthorizationError::decode_failed)?;
@@ -235,7 +238,7 @@ impl IntoResponse for ApiKeyAuthorizationError {
     fn into_response(self) -> axum::response::Response {
         // Report to the CLI, not to the end user. Don't give attackers knowledge of what we didn't
         // like about their request
-        use crate::util::collect_error_messages;
+        use crate::utils::collect_error_messages;
         tracing::error!("authentication failed: {:?}", &collect_error_messages(self));
 
         let err_msg = serde_json::json!({ "status": "not authorized" });

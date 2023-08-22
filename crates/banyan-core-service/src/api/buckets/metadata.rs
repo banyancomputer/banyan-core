@@ -1,22 +1,19 @@
 use axum::routing::{get, post};
 use axum::Router;
 
-//mod error;
 mod handlers;
-//mod models;
-//mod requests;
-//mod responses;
+mod requests;
+mod responses;
 
 use crate::app_state::AppState;
 
 pub fn router(state: AppState) -> Router<AppState> {
     Router::new()
-        .route("/", get(handlers::index))
+        .route("/", post(handlers::push).get(handlers::read_all))
         .route(
             "/:metadata_id",
-            get(handlers::show).delete(handlers::destroy),
+            get(handlers::read).delete(handlers::delete),
         )
-        .route("/:metadata_id/download", get(handlers::download))
-        .route("/:metadata_id/snapshot", post(handlers::snapshot))
+        .route("/:metadata_id/pull", get(handlers::pull))
         .with_state(state)
 }
