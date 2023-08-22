@@ -7,6 +7,7 @@ use validify::Validate;
 use crate::api::buckets::{keys, requests, responses};
 use crate::db::*;
 use crate::extractors::{ApiToken, DbConn};
+use crate::utils::db;
 
 /// Initialze a new bucket with initial key material.
 pub async fn create(
@@ -82,16 +83,18 @@ pub async fn create(
 /// Read all buckets associated with the calling account
 pub async fn read_all(api_token: ApiToken, mut db_conn: DbConn) -> impl IntoResponse {
     let account_id = api_token.subject;
-    let maybe_buckets = sqlx::query_as!(
-        models::Bucket,
-        r#"SELECT id, account_id, name, type, storage_class FROM buckets WHERE account_id = $1"#,
-        account_id,
-    )
-    .fetch_all(&mut *db_conn.0)
-    .await;
-
-    let buckets = match maybe_buckets {
-        Ok(buckets) => buckets,
+    let response = match db::read_all_buckets(&account_id, &mut db_conn).await {
+        Ok(buckets) => responses::ReadBuckets(
+            buckets
+                .into_iter()
+                .map(|bucket| responses::ReadBucket {
+                    id: bucket.id,
+                    name: bucket.name,
+                    r#type: bucket.r#type,
+                    storage_class: bucket.storage_class,
+                })
+                .collect::<Vec<_>>(),
+        ),
         Err(err) => {
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
@@ -100,18 +103,7 @@ pub async fn read_all(api_token: ApiToken, mut db_conn: DbConn) -> impl IntoResp
                 .into_response();
         }
     };
-
-    let buckets = buckets
-        .into_iter()
-        .map(|bucket| responses::ReadBucket {
-            id: bucket.id,
-            name: bucket.name,
-            r#type: bucket.r#type,
-            storage_class: bucket.storage_class,
-        })
-        .collect::<Vec<_>>();
-    let buckets = responses::ReadBuckets(buckets);
-    Json(buckets).into_response()
+    Json(response).into_response()
 }
 
 // TODO: Should this be authenticated or not?
@@ -123,16 +115,7 @@ pub async fn read(
 ) -> impl IntoResponse {
     let account_id = api_token.subject;
     let bucket_id = bucket_id.to_string();
-    let maybe_bucket = sqlx::query_as!(
-        models::Bucket,
-        r#"SELECT id, account_id, name, type, storage_class FROM buckets WHERE id = $1 AND account_id = $2"#,
-        bucket_id,
-        account_id,
-    )
-    .fetch_one(&mut *db_conn.0)
-    .await;
-
-    let bucket = match maybe_bucket {
+    let response = match db::read_bucket(&account_id, &bucket_id, &mut db_conn).await {
         Ok(bucket) => responses::ReadBucket {
             id: bucket.id,
             name: bucket.name,
@@ -147,8 +130,7 @@ pub async fn read(
                 .into_response();
         }
     };
-
-    Json(bucket).into_response()
+    Json(response).into_response()
 }
 
 pub async fn delete(

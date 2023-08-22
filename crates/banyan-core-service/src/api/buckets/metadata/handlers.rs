@@ -12,6 +12,7 @@ use uuid::Uuid;
 use crate::api::buckets::metadata::{requests, responses};
 use crate::db::models;
 use crate::extractors::{ApiToken, DataStore, DbConn};
+use crate::utils::db;
 use crate::utils::metadata_upload::handle_metadata_upload;
 
 /// Upload data size limit for CAR file uploads
@@ -32,25 +33,20 @@ pub async fn push(
 ) -> impl IntoResponse {
     let account_id = api_token.subject;
     let bucket_id = bucket_id.to_string();
-    // Make sure the calling user owns the bucket
-    let maybe_bucket = sqlx::query_as!(
-        models::CreatedResource,
-        r#"SELECT id FROM buckets WHERE id = $1 AND account_id = $2;"#,
-        bucket_id,
-        account_id
-    )
-    .fetch_one(&mut *db_conn.0)
-    .await;
-
-    match maybe_bucket {
-        Ok(b) => b,
-        Err(err) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("unable to read bucket: {err}"),
-            )
-                .into_response();
-        }
+    match db::authorize_bucket(&account_id, &bucket_id, &mut db_conn).await {
+        Ok(_) => {}
+        Err(err) => match err {
+            sqlx::Error::RowNotFound => {
+                return (StatusCode::NOT_FOUND, format!("bucket not found: {err}")).into_response();
+            }
+            _ => {
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("unable to read bucket: {err}"),
+                )
+                    .into_response()
+            }
+        },
     };
 
     // TODO: Check if the uploaded version exists. If-Match matches existing version abort with 409
@@ -226,42 +222,37 @@ pub async fn pull(
     let account_id = api_token.subject;
     let bucket_id = bucket_id.to_string();
     let metadata_id = metadata_id.to_string();
-    let maybe_bucket = sqlx::query_as!(
-        models::CreatedResource,
-        r#"SELECT id FROM buckets WHERE id = $1 AND account_id = $2;"#,
-        bucket_id,
-        account_id
-    )
-    .fetch_one(&mut *db_conn.0)
-    .await;
-    match maybe_bucket {
-        Ok(b) => b,
-        Err(err) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("unable to read bucket: {err}"),
-            )
-                .into_response();
-        }
+    match db::authorize_bucket(&account_id, &bucket_id, &mut db_conn).await {
+        Ok(_) => {}
+        Err(err) => match err {
+            sqlx::Error::RowNotFound => {
+                return (StatusCode::NOT_FOUND, format!("bucket not found: {err}")).into_response();
+            }
+            _ => {
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("unable to read bucket: {err}"),
+                )
+                    .into_response()
+            }
+        },
     };
     // Make sure the metadata exists
-    let maybe_metadata = sqlx::query_as!(
-        models::CreatedResource,
-        r#"SELECT id FROM metadata WHERE id = $1 AND bucket_id = $2;"#,
-        metadata_id,
-        bucket_id
-    )
-    .fetch_one(&mut *db_conn.0)
-    .await;
-    match maybe_metadata {
-        Ok(bm) => bm,
-        Err(err) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("unable to read bucket metadata: {err}"),
-            )
-                .into_response();
-        }
+    match db::authorize_metadata(&bucket_id, &metadata_id, &mut db_conn).await {
+        Ok(_) => {}
+        Err(err) => match err {
+            sqlx::Error::RowNotFound => {
+                return (StatusCode::NOT_FOUND, format!("metadata not found: {err}"))
+                    .into_response();
+            }
+            _ => {
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("unable to read metadata: {err}"),
+                )
+                    .into_response()
+            }
+        },
     };
 
     // Try opening the file for reading
@@ -308,36 +299,23 @@ pub async fn read(
     let account_id = api_token.subject;
     let bucket_id = bucket_id.to_string();
     let metadata_id = metadata_id.to_string();
-    let maybe_bucket = sqlx::query_as!(
-        models::CreatedResource,
-        r#"SELECT id FROM buckets WHERE id = $1 AND account_id = $2;"#,
-        bucket_id,
-        account_id
-    )
-    .fetch_one(&mut *db_conn.0)
-    .await;
-    match maybe_bucket {
-        Ok(b) => b,
-        Err(err) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("unable to read bucket: {err}"),
-            )
-                .into_response();
-        }
+    match db::authorize_bucket(&account_id, &bucket_id, &mut db_conn).await {
+        Ok(_) => {}
+        Err(err) => match err {
+            sqlx::Error::RowNotFound => {
+                return (StatusCode::NOT_FOUND, format!("bucket not found: {err}")).into_response();
+            }
+            _ => {
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("unable to read bucket: {err}"),
+                )
+                    .into_response()
+            }
+        },
     };
-    // Make sure the metadata exists
-    let maybe_metadata = sqlx::query_as!(
-        models::Metadata,
-        r#"SELECT id, bucket_id, root_cid, metadata_cid, data_size, state, metadata_size as "metadata_size!", metadata_hash as "metadata_hash!", created_at, updated_at
-        FROM metadata WHERE id = $1 AND bucket_id = $2;"#,
-        metadata_id,
-        bucket_id
-    )
-    .fetch_one(&mut *db_conn.0)
-    .await;
-
-    let metadata = match maybe_metadata {
+    // Read the metadata
+    let response = match db::read_metadata(&bucket_id, &metadata_id, &mut db_conn).await {
         Ok(bm) => responses::ReadMetadataResponse {
             id: bm.id.to_string(),
             root_cid: bm.root_cid,
@@ -347,16 +325,21 @@ pub async fn read(
             created_at: bm.created_at.timestamp(),
             updated_at: bm.updated_at.timestamp(),
         },
-        Err(err) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("unable to read bucket metadata: {err}"),
-            )
-                .into_response();
-        }
+        Err(err) => match err {
+            sqlx::Error::RowNotFound => {
+                return (StatusCode::NOT_FOUND, format!("metadata not found: {err}"))
+                    .into_response();
+            }
+            _ => {
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("unable to read metadata: {err}"),
+                )
+                    .into_response()
+            }
+        },
     };
-
-    (StatusCode::OK, axum::Json(metadata)).into_response()
+    (StatusCode::OK, axum::Json(response)).into_response()
 }
 
 /// Read all uploaded metadata for a bucket
@@ -367,35 +350,22 @@ pub async fn read_all(
 ) -> impl IntoResponse {
     let account_id = api_token.subject;
     let bucket_id = bucket_id.to_string();
-    let maybe_bucket = sqlx::query_as!(
-        models::CreatedResource,
-        r#"SELECT id FROM buckets WHERE id = $1 AND account_id = $2;"#,
-        bucket_id,
-        account_id
-    )
-    .fetch_one(&mut *db_conn.0)
-    .await;
-    match maybe_bucket {
-        Ok(b) => b,
-        Err(err) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("unable to read bucket: {err}"),
-            )
-                .into_response();
-        }
+    match db::authorize_bucket(&account_id, &bucket_id, &mut db_conn).await {
+        Ok(_) => {}
+        Err(err) => match err {
+            sqlx::Error::RowNotFound => {
+                return (StatusCode::NOT_FOUND, format!("bucket not found: {err}")).into_response();
+            }
+            _ => {
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("unable to read bucket: {err}"),
+                )
+                    .into_response()
+            }
+        },
     };
-    // Make sure the metadata exists
-    let maybe_metadata = sqlx::query_as!(
-        models::Metadata,
-        r#"SELECT id, bucket_id, root_cid, metadata_cid, data_size, state, metadata_size as "metadata_size!", metadata_hash as "metadata_hash!", created_at, updated_at
-        FROM metadata WHERE bucket_id = $1;"#,
-        bucket_id
-    )
-    .fetch_all(&mut *db_conn.0)
-    .await;
-
-    let metadata = match maybe_metadata {
+    let response = match db::read_all_metadata(&bucket_id, &mut db_conn).await {
         Ok(bm) => responses::ReadAllMetadataResponse(
             bm.into_iter()
                 .map(|bm| responses::ReadMetadataResponse {
@@ -409,16 +379,74 @@ pub async fn read_all(
                 })
                 .collect(),
         ),
-        Err(err) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("unable to read bucket metadata: {err}"),
-            )
-                .into_response();
-        }
+        Err(err) => match err {
+            sqlx::Error::RowNotFound => {
+                return (StatusCode::NOT_FOUND, format!("metadata not found: {err}"))
+                    .into_response();
+            }
+            _ => {
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("unable to read metadata: {err}"),
+                )
+                    .into_response()
+            }
+        },
     };
+    (StatusCode::OK, axum::Json(response)).into_response()
+}
 
-    (StatusCode::OK, axum::Json(metadata)).into_response()
+/// Read the current metadata for a bucket or return 404 if there is no current metadata
+pub async fn read_current(
+    api_token: ApiToken,
+    mut db_conn: DbConn,
+    Path(bucket_id): Path<Uuid>,
+) -> impl IntoResponse {
+    let account_id = api_token.subject;
+    let bucket_id = bucket_id.to_string();
+    match db::authorize_bucket(&account_id, &bucket_id, &mut db_conn).await {
+        Ok(_) => {}
+        Err(err) => match err {
+            sqlx::Error::RowNotFound => {
+                return (StatusCode::NOT_FOUND, format!("bucket not found: {err}")).into_response();
+            }
+            _ => {
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("unable to read bucket: {err}"),
+                )
+                    .into_response()
+            }
+        },
+    };
+    let response = match db::read_current_metadata(&bucket_id, &mut db_conn).await {
+        Ok(bm) => responses::ReadMetadataResponse {
+            id: bm.id.to_string(),
+            root_cid: bm.root_cid,
+            metadata_cid: bm.metadata_cid,
+            data_size: bm.data_size,
+            state: bm.state,
+            created_at: bm.created_at.timestamp(),
+            updated_at: bm.updated_at.timestamp(),
+        },
+        Err(err) => match err {
+            sqlx::Error::RowNotFound => {
+                return (
+                    StatusCode::NOT_FOUND,
+                    format!("current metadata not found: {err}"),
+                )
+                    .into_response();
+            }
+            _ => {
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("unable to read current metadata: {err}"),
+                )
+                    .into_response()
+            }
+        },
+    };
+    (StatusCode::OK, axum::Json(response)).into_response()
 }
 
 pub async fn delete(
