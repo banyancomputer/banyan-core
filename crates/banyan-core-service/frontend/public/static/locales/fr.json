@@ -56,6 +56,17 @@
 	"remove": "Retirer",
 	"viewFileVersions": "Afficher les versions de fichier",
 	"viewBucketVersions": "Afficher les versions de compartiment",
-	"deleteHotData": "Supprimer les données chaudes"
+	"deleteHotData": "Supprimer les données chaudes",
+	"locationForKey": "Emplacement pour cette clé à utiliser",
+	"client": "Cliente",
+	"fingerprint": "Empreinte digitale",
+	"status": "Statut",
+	"approveAccess": "Approuver l'accès",
+	"removeAccess": "Supprimer l'accès",
+	"rejectAccess": "Refuser la demande d'accès",
+	"approved": "Approuvé",
+	"noAccess": "Pas d'accès",
+	"wantToApproveAccess": "Êtes-vous sûr de vouloir approuver l'accès ",
+	"removeAccessDescription": "La suppression de l'accès signifie que vous n'aurez plus accès à ces données à l'avenir, toutes les données précédemment téléchargées vous seront toujours accessibles mais ne seront plus synchronisées"
 
 }

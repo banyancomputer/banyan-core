@@ -16,6 +16,10 @@ module.exports = {
 				navbar: '280px',
 				modal: '400px',
 				snapshotsModal: '530px',
+				keyManagement: '1128px',
+			},
+			padding: {
+				keyManagement: '72px',
 			},
 			minWidth: {
 				navbar: '280px',

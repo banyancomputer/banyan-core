@@ -56,6 +56,17 @@
 	"remove": "Remove",
 	"viewFileVersions": "View file versions",
 	"viewBucketVersions": "View bucket versions",
-	"deleteHotData": "Delete hot data"
+	"deleteHotData": "Delete hot data",
+	"locationForKey": "Location for this key to be used",
+	"client": "Client",
+	"fingerprint": "Fingerprint",
+	"status": "Status",
+	"approveAccess": "Approve access",
+	"removeAccess": "Remove access",
+	"rejectAccess": "Reject access request",
+	"approved": "Approved",
+	"noAccess": "No access",
+	"wantToApproveAccess": "Are you sure you want to approve access ",
+	"removeAccessDescription": "Removing Access means that you will not have future access to this data, any previously downloaded data is still accessible to you but will no longer be synced"
 
 }
