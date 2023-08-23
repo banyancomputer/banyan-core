@@ -7,6 +7,7 @@ use validify::Validate;
 use crate::api::buckets::keys::{requests, responses};
 use crate::db::*;
 use crate::extractors::{ApiToken, DbConn};
+use crate::utils::db;
 
 /// Initialze a new bucket key for the specified bucket
 pub async fn create(
@@ -17,33 +18,27 @@ pub async fn create(
 ) -> impl IntoResponse {
     let account_id = api_token.subject;
     let bucket_id = bucket_id.to_string();
-
-    // TODO: Does this need to be authorized?
-    // Make sure the calling user owns the bucket
-    let maybe_bucket = sqlx::query_as!(
-        models::CreatedResource,
-        r#"SELECT id FROM buckets WHERE id = $1 AND account_id = $2;"#,
-        bucket_id,
-        account_id
-    )
-    .fetch_one(&mut *db_conn.0)
-    .await;
-
-    match maybe_bucket {
-        Ok(b) => b,
-        Err(err) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("unable to read bucket: {err}"),
-            )
-                .into_response();
-        }
-    };
+    match db::authorize_bucket(&account_id, &bucket_id, &mut db_conn).await {
+        Ok(_) => {}
+        Err(err) => match err {
+            sqlx::Error::RowNotFound => {
+                return (StatusCode::NOT_FOUND, format!("bucket not found: {err}")).into_response();
+            }
+            _ => {
+                tracing::error!("unable to read bucket: {err}");
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "internal server error".to_string(),
+                )
+                    .into_response();
+            }
+        },
+    }
 
     if let Err(errors) = new_bucket_key.validate() {
         return (
             StatusCode::BAD_REQUEST,
-            format!("errors: {:?}", errors.errors()),
+            format!("invalid bucket key: {:?}", errors.errors()),
         )
             .into_response();
     };
@@ -63,9 +58,10 @@ pub async fn create(
             approved: false,
         },
         Err(err) => {
+            tracing::error!("unable to create new bucket key: {err}");
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("unable to create new bucket key: {err}"),
+                "internal server error".to_string(),
             )
                 .into_response();
         }
@@ -83,57 +79,52 @@ pub async fn read_all(
 ) -> impl IntoResponse {
     let account_id = api_token.subject;
     let bucket_id = bucket_id.to_string();
-
-    // TODO: Does this need to be authorized?
-    // Make sure the calling user owns the bucket
-    let maybe_bucket = sqlx::query_as!(
-        models::CreatedResource,
-        r#"SELECT id FROM buckets WHERE id = $1 AND account_id = $2;"#,
-        bucket_id,
-        account_id
-    )
-    .fetch_one(&mut *db_conn.0)
-    .await;
-
-    match maybe_bucket {
-        Ok(b) => b,
-        Err(err) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("unable to read bucket: {err}"),
-            )
-                .into_response();
-        }
-    };
-
-    let maybe_bucket_keys = sqlx::query_as!(
-        models::BucketKey,
-        r#"SELECT id, bucket_id, approved, pem FROM bucket_keys WHERE bucket_id = $1;"#,
-        bucket_id,
-    )
-    .fetch_all(&mut *db_conn.0)
-    .await;
-
-    let bucket_keys = match maybe_bucket_keys {
-        Ok(bks) => responses::ReadAllBucketKeys(
-            bks.into_iter()
-                .map(|bk| responses::ReadBucketKey {
-                    id: bk.id,
-                    approved: bk.approved,
-                    pem: bk.pem,
+    match db::authorize_bucket(&account_id, &bucket_id, &mut db_conn).await {
+        Ok(_) => {}
+        Err(err) => match err {
+            sqlx::Error::RowNotFound => {
+                return (StatusCode::NOT_FOUND, format!("bucket not found: {err}")).into_response();
+            }
+            _ => {
+                tracing::error!("unable to read bucket: {err}");
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "internal server error".to_string(),
+                )
+                    .into_response();
+            }
+        },
+    }
+    let response = match db::read_all_bucket_keys(&bucket_id, &mut db_conn).await {
+        Ok(bucket_keys) => responses::ReadAllBucketKeys(
+            bucket_keys
+                .into_iter()
+                .map(|bucket_key| responses::ReadBucketKey {
+                    id: bucket_key.id,
+                    approved: bucket_key.approved,
+                    pem: bucket_key.pem,
                 })
                 .collect(),
         ),
-        Err(err) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("unable to read bucket keys: {err}"),
-            )
-                .into_response();
-        }
+        Err(err) => match err {
+            sqlx::Error::RowNotFound => {
+                return (
+                    StatusCode::NOT_FOUND,
+                    format!("bucket keys not found: {err}"),
+                )
+                    .into_response();
+            }
+            _ => {
+                tracing::error!("unable to read bucket keys: {err}");
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "internal server error".to_string(),
+                )
+                    .into_response();
+            }
+        },
     };
-
-    Json(bucket_keys).into_response()
+    Json(response).into_response()
 }
 
 /// Read a specific bucket key for the specified bucket
@@ -145,54 +136,47 @@ pub async fn read(
     let account_id = api_token.subject;
     let bucket_id = bucket_id.to_string();
     let bucket_key_id = bucket_key_id.to_string();
-
-    // TODO: Does this need to be authorized?
-    // Make sure the calling user owns the bucket
-    let maybe_bucket = sqlx::query_as!(
-        models::CreatedResource,
-        r#"SELECT id FROM buckets WHERE id = $1 AND account_id = $2;"#,
-        bucket_id,
-        account_id
-    )
-    .fetch_one(&mut *db_conn.0)
-    .await;
-
-    match maybe_bucket {
-        Ok(b) => b,
-        Err(err) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("unable to read bucket: {err}"),
-            )
-                .into_response();
-        }
-    };
-
-    let maybe_bucket_key = sqlx::query_as!(
-        models::BucketKey,
-        r#"SELECT id, bucket_id, approved, pem FROM bucket_keys WHERE id = $1 AND bucket_id = $2;"#,
-        bucket_key_id,
-        bucket_id,
-    )
-    .fetch_one(&mut *db_conn.0)
-    .await;
-
-    let bucket_key = match maybe_bucket_key {
-        Ok(bk) => responses::ReadBucketKey {
-            id: bk.id,
-            approved: bk.approved,
-            pem: bk.pem,
+    match db::authorize_bucket(&account_id, &bucket_id, &mut db_conn).await {
+        Ok(_) => {}
+        Err(err) => match err {
+            sqlx::Error::RowNotFound => {
+                return (StatusCode::NOT_FOUND, format!("bucket not found: {err}")).into_response();
+            }
+            _ => {
+                tracing::error!("unable to read bucket: {err}");
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "internal server error".to_string(),
+                )
+                    .into_response();
+            }
         },
-        Err(err) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("unable to read bucket key: {err}"),
-            )
-                .into_response();
-        }
+    }
+    let response = match db::read_bucket_key(&bucket_id, &bucket_key_id, &mut db_conn).await {
+        Ok(bucket_key) => responses::ReadBucketKey {
+            id: bucket_key.id,
+            approved: bucket_key.approved,
+            pem: bucket_key.pem,
+        },
+        Err(err) => match err {
+            sqlx::Error::RowNotFound => {
+                return (
+                    StatusCode::NOT_FOUND,
+                    format!("bucket key not found: {err}"),
+                )
+                    .into_response();
+            }
+            _ => {
+                tracing::error!("unable to read bucket key: {err}");
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "internal server error".to_string(),
+                )
+                    .into_response();
+            }
+        },
     };
-
-    Json(bucket_key).into_response()
+    Json(response).into_response()
 }
 
 pub async fn delete(
@@ -203,49 +187,44 @@ pub async fn delete(
     let account_id = api_token.subject;
     let bucket_id = bucket_id.to_string();
     let bucket_key_id = bucket_key_id.to_string();
-
-    let maybe_bucket = sqlx::query_as!(
-        models::CreatedResource,
-        r#"SELECT id FROM buckets WHERE id = $1 AND account_id = $2;"#,
-        bucket_id,
-        account_id
-    )
-    .fetch_one(&mut *db_conn.0)
-    .await;
-
-    match maybe_bucket {
-        Ok(b) => b,
-        Err(err) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("unable to read bucket: {err}"),
-            )
-                .into_response();
-        }
-    };
-
-    let maybe_bucket_key = sqlx::query_as!(
-        models::BucketKey,
-        r#"DELETE FROM bucket_keys WHERE id = $1 AND bucket_id = $2 RETURNING id, bucket_id, approved, pem;"#,
-        bucket_key_id,
-        bucket_id,
-    )
-    .fetch_one(&mut *db_conn.0)
-    .await;
-
-    let bucket_key = match maybe_bucket_key {
-        Ok(bk) => responses::DeleteBucketKey {
-            id: bk.id,
-            approved: bk.approved,
+    match db::authorize_bucket(&account_id, &bucket_id, &mut db_conn).await {
+        Ok(_) => {}
+        Err(err) => match err {
+            sqlx::Error::RowNotFound => {
+                return (StatusCode::NOT_FOUND, format!("bucket not found: {err}")).into_response();
+            }
+            _ => {
+                tracing::error!("unable to read bucket: {err}");
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "internal server error".to_string(),
+                )
+                    .into_response();
+            }
         },
-        Err(err) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("unable to delete bucket key: {err}"),
-            )
-                .into_response();
-        }
+    }
+    let response = match db::delete_bucket_key(&bucket_id, &bucket_key_id, &mut db_conn).await {
+        Ok(bucket_key) => responses::DeleteBucketKey {
+            id: bucket_key.id,
+            approved: bucket_key.approved,
+        },
+        Err(err) => match err {
+            sqlx::Error::RowNotFound => {
+                return (
+                    StatusCode::NOT_FOUND,
+                    format!("bucket key not found: {err}"),
+                )
+                    .into_response();
+            }
+            _ => {
+                tracing::error!("unable to delete bucket key: {err}");
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "internal server error".to_string(),
+                )
+                    .into_response();
+            }
+        },
     };
-
-    Json(bucket_key).into_response()
+    Json(response).into_response()
 }
