@@ -72,6 +72,10 @@
     "wasDeleted": "a été supprimé",
     "wasRenamed": "a été renommé",
     "snapshotWasTaken": "Un snapshot à froid a été pris",
-    "trashWasCleaned": "Les fichiers de la “Corbeille” ont été supprimés"
+    "trashWasCleaned": "Les fichiers de la “Corbeille” ont été supprimés",
+	"fileWasRenamed": "Le fichier a été renommé",
+    "fileWasMoved": "Le fichier a été déplacé",
+    "copyOf": "Copie de",
+    "linkWasCopied": "Le lien a été copié"
 
 }
