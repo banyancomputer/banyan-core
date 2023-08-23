@@ -53,7 +53,6 @@ export const Header = () => {
             <Input
                 placeholder={`${messages.search}`}
                 icon={<FiSearch size="20px" stroke="#4A5578" />}
-                onChange={() => { }}
             />
             <div className="flex flex-grow items-center justify-end gap-6">
                 <Link href="/key-management" className="font-semibold text-nav mr-4" >
