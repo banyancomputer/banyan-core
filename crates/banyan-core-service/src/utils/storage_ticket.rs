@@ -1,0 +1,1 @@
+/// Generate a JWT that acts as a storage ticket

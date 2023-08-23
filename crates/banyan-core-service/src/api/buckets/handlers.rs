@@ -41,7 +41,7 @@ pub async fn create(
                 if db_err.is_unique_violation() {
                     return (
                         StatusCode::CONFLICT,
-                        format!("bucket with that name already exists"),
+                        "bucket with that name already exists".to_string(),
                     )
                         .into_response();
                 } else {
