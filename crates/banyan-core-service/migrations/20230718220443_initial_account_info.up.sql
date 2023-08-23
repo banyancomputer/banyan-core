@@ -236,3 +236,35 @@ CREATE TABLE snapshots (
 
 CREATE UNIQUE INDEX idx_snapshots_on_unique_metadata_id
   ON snapshots(metadata_id);
+   
+-- Migration for Storage Hosts
+CREATE TABLE storage_hosts (
+  id TEXT NOT NULL PRIMARY KEY DEFAULT (
+    lower(hex(randomblob(4))) || '-' ||
+    lower(hex(randomblob(2))) || '-4' ||
+    substr(lower(hex(randomblob(2))), 2) || '-a' ||
+    substr(lower(hex(randomblob(2))), 2) || '-6' ||
+    substr(lower(hex(randomblob(6))), 2)),
+
+  -- Friendly name for the host
+  name VARCHAR(128) NOT NULL UNIQUE,
+
+  -- The host's url
+  url TEXT NOT NULL,
+
+  -- The host's available storage capacity (in bytes)
+  capacity INTEGER NOT NULL,
+
+  -- The host's public key (PEM format)
+  pem TEXT NOT NULL
+);
+
+-- Create Default Storage Host
+INSERT INTO storage_hosts (id, name, url, capacity, pem)
+VALUES (
+  '846db58a-d5f5-4388-9bfe-667b385aacc8',
+  'banyan-staging',
+  'https://staging.storage.banyan.computer/',
+  549755813888000,
+  "-----BEGIN PUBLIC KEY-----\nMHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEZzVwDCZdaMJzX5CRaI7HgUGsMti7zsUZ\nKnhBQDda3ErqZSTCNy4TMf35yeLbzeGSqCmOPsvCuH8O30s3QQg30hcHUeUoEZE0\ndQRlKBv+5PpcPdWWVUG50E8fB8+1EChE\n-----END PUBLIC KEY-----"
+);
