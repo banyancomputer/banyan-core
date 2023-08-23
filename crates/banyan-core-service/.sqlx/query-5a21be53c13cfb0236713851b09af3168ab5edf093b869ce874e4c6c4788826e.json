@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT \n            COALESCE(SUM(m.data_size), 0) as \"data_size!\",\n            COALESCE(SUM(m.metadata_size), 0) as \"metadata_size!\"\n        FROM \n            metadata m\n        INNER JOIN \n            buckets b ON b.id = m.bucket_id\n        WHERE \n            b.account_id = $1 AND m.state IN ('current', 'pending');",
+  "describe": {
+    "columns": [
+      {
+        "name": "data_size!",
+        "ordinal": 0,
+        "type_info": "Int"
+      },
+      {
+        "name": "metadata_size!",
+        "ordinal": 1,
+        "type_info": "Int"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "5a21be53c13cfb0236713851b09af3168ab5edf093b869ce874e4c6c4788826e"
+}

@@ -144,3 +144,13 @@ pub struct Snapshot {
     pub metadata_id: String,
     pub created_at: chrono::NaiveDateTime,
 }
+
+/// Storage Host
+#[derive(Debug, Serialize, FromRow)]
+pub struct StorageHost {
+    pub id: String,
+    pub name: String,
+    pub url: String,
+    pub available_storage: i64,
+    pub pem: String,
+}

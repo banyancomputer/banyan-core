@@ -1,3 +1,5 @@
+use serde::Serialize;
+
 use crate::db::models;
 use crate::extractors::DbConn;
 
@@ -408,4 +410,112 @@ pub async fn read_all_snapshots(
             _ => Err(err),
         },
     }
+}
+
+
+/// Read storage host by name.
+/// # Arguments
+/// * `name` - The name of the storage host to read.
+/// * `db_conn` - The database connection to use.
+/// # Return Type
+/// Returns the storage host if it exists, otherwise returns an error.
+pub async fn read_storage_host(
+    name: &str,
+    db_conn: &mut DbConn,
+) -> Result<models::StorageHost, sqlx::Error> {
+    let maybe_storage_host = sqlx::query_as!(
+        models::StorageHost,
+        r#"SELECT id, name, url, available_storage, pem FROM storage_hosts WHERE name = $1;"#,
+        name,
+    )
+    .fetch_one(&mut *db_conn.0)
+    .await;
+    match maybe_storage_host {
+        Ok(storage_host) => Ok(storage_host),
+        Err(err) => match err {
+            sqlx::Error::RowNotFound => Err(sqlx::Error::RowNotFound),
+            _ => Err(err)
+        }
+    }
+}
+
+/// Read the current data + metadata usage of the given account id.
+/// This is the sum of all data_size and metadata_size for all metadata associated 
+/// with the account in the current or pending state.
+/// # Arguments
+/// * `account_id` - The id of the account to read.
+/// * `db_conn` - The database connection to use.
+/// # Return Type
+/// Returns the current data usage if it exists, otherwise returns an error.
+pub async fn read_current_total_usage(
+    account_id: &str,
+    db_conn: &mut DbConn,
+) -> Result<u64, sqlx::Error> {
+    let maybe_data_usage = sqlx::query_as!(
+        GetTotalUsage,
+        r#"SELECT 
+            COALESCE(SUM(m.data_size), 0) as "data_size!",
+            COALESCE(SUM(m.metadata_size), 0) as "metadata_size!"
+        FROM 
+            metadata m
+        INNER JOIN 
+            buckets b ON b.id = m.bucket_id
+        WHERE 
+            b.account_id = $1 AND m.state IN ('current', 'pending');"#,
+        account_id,
+    )
+    .fetch_one(&mut *db_conn.0)
+    .await;
+    match maybe_data_usage {
+        Ok(data_usage) => Ok((data_usage.data_size + data_usage.metadata_size) as u64),
+        Err(err) => match err {
+            sqlx::Error::RowNotFound => Err(sqlx::Error::RowNotFound),
+            _ => Err(err)
+        }
+    }
+}
+
+/// Read how much data a account has stored on the whole platform.
+/// This is the sum of all data_size for all metadata associated with the account in the current or pending state.
+/// # Arguments
+/// * `account_id` - The id of the account to read.
+/// * `db_conn` - The database connection to use.
+/// # Return Type
+/// Returns the current data usage if it exists, otherwise returns an error.
+pub async fn read_current_data_usage(
+    account_id: &str
+    , db_conn: &mut DbConn
+) -> Result<u64, sqlx::Error> {
+    let maybe_data_usage = sqlx::query_as!(
+        GetDataUsage, 
+        r#"SELECT 
+            COALESCE(SUM(m.data_size), 0) as "data_size!"
+        FROM
+            metadata m
+        INNER JOIN
+            buckets b ON b.id = m.bucket_id
+        WHERE
+            b.account_id = $1 AND m.state IN ('current', 'pending');"#,
+        account_id,
+    )
+    .fetch_one(&mut *db_conn.0)
+    .await;
+    match maybe_data_usage {
+        Ok(data_usage) => Ok(data_usage.data_size as u64),
+        Err(err) => match err {
+            sqlx::Error::RowNotFound => Err(sqlx::Error::RowNotFound),
+            _ => Err(err)
+        }
+    }
+}
+
+#[derive(Serialize)]
+struct GetTotalUsage {
+    pub data_size: i64,
+    pub metadata_size: i64,
+}
+
+#[derive(Serialize)]
+struct GetDataUsage {
+    pub data_size: i64,
 }

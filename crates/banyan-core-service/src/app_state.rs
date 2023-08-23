@@ -17,10 +17,8 @@ pub use state_error::StateError;
 #[derive(Clone)]
 pub struct AppState {
     database_pool: SqlitePool,
-
     signing_key: EncodingKey,
     verification_key: DecodingKey,
-
     metadata_upload_directory: PathBuf,
 }
 

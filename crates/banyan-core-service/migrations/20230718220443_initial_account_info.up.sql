@@ -253,14 +253,17 @@ CREATE TABLE storage_hosts (
   url TEXT NOT NULL,
 
   -- The host's available storage capacity (in bytes)
-  capacity INTEGER NOT NULL,
+  available_storage INTEGER NOT NULL,
 
   -- The host's public key (PEM format)
   pem TEXT NOT NULL
 );
 
+CREATE UNIQUE INDEX idx_storage_hosts_on_unique_name
+  ON storage_hosts(name);
+
 -- Create Default Storage Host
-INSERT INTO storage_hosts (id, name, url, capacity, pem)
+INSERT INTO storage_hosts (id, name, url, available_storage, pem)
 VALUES (
   '846db58a-d5f5-4388-9bfe-667b385aacc8',
   'banyan-staging',
