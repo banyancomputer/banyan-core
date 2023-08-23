@@ -18,7 +18,7 @@ pub async fn create(
     if let Err(errors) = new_bucket.validate() {
         return (
             StatusCode::BAD_REQUEST,
-            format!("errors: {:?}", errors.errors()),
+            format!("invalid bucket creation request: {:?}", errors.errors()),
         )
             .into_response();
     }
@@ -36,13 +36,32 @@ pub async fn create(
 
     let created_bucket = match maybe_bucket {
         Ok(cb) => cb,
-        Err(err) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("unable to create new bucket: {err}"),
-            )
-                .into_response();
-        }
+        Err(err) => match err {
+            sqlx::Error::Database(db_err) => {
+                if db_err.is_unique_violation() {
+                    return (
+                        StatusCode::CONFLICT,
+                        format!("bucket with that name already exists"),
+                    )
+                        .into_response();
+                } else {
+                    tracing::error!("unable to create bucket: {db_err}");
+                    return (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        format!("internal server error"),
+                    )
+                        .into_response();
+                }
+            }
+            _ => {
+                tracing::error!("unable to create bucket: {err}");
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("internal server error"),
+                )
+                    .into_response();
+            }
+        },
     };
 
     let maybe_key = sqlx::query_as!(
@@ -57,9 +76,10 @@ pub async fn create(
     let created_key = match maybe_key {
         Ok(ck) => ck,
         Err(err) => {
+            tracing::error!("unable to create bucket key: {err}");
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("unable to create public key associated with bucket: {err}"),
+                format!("internal server error"),
             )
                 .into_response();
         }
@@ -95,13 +115,19 @@ pub async fn read_all(api_token: ApiToken, mut db_conn: DbConn) -> impl IntoResp
                 })
                 .collect::<Vec<_>>(),
         ),
-        Err(err) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("unable to read buckets: {err}"),
-            )
-                .into_response();
-        }
+        Err(err) => match err {
+            sqlx::Error::RowNotFound => {
+                return (StatusCode::NOT_FOUND, format!("bucket not found: {err}")).into_response();
+            }
+            _ => {
+                tracing::error!("unable to read bucket: {err}");
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("internal server error"),
+                )
+                    .into_response();
+            }
+        },
     };
     Json(response).into_response()
 }
@@ -122,13 +148,19 @@ pub async fn read(
             r#type: bucket.r#type,
             storage_class: bucket.storage_class,
         },
-        Err(err) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("unable to read bucket: {err}"),
-            )
-                .into_response();
-        }
+        Err(err) => match err {
+            sqlx::Error::RowNotFound => {
+                return (StatusCode::NOT_FOUND, format!("bucket not found: {err}")).into_response();
+            }
+            _ => {
+                tracing::error!("unable to read bucket: {err}");
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("internal server error"),
+                )
+                    .into_response();
+            }
+        },
     };
     Json(response).into_response()
 }
@@ -140,29 +172,27 @@ pub async fn delete(
 ) -> impl IntoResponse {
     let account_id = api_token.subject;
     let bucket_id = bucket_id.to_string();
-    let maybe_bucket = sqlx::query_as!(
-        models::Bucket,
-        r#"DELETE FROM buckets WHERE id = $1 AND account_id = $2 RETURNING id, account_id, name, type, storage_class"#,
-        bucket_id,
-        account_id,
-    )
-    .fetch_one(&mut *db_conn.0)
-    .await;
-    let bucket = match maybe_bucket {
+    let response = match db::delete_bucket(&account_id, &bucket_id, &mut db_conn).await {
         Ok(bucket) => responses::DeleteBucket {
             id: bucket.id,
             name: bucket.name,
         },
-        Err(err) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("unable to delete bucket: {err}"),
-            )
-                .into_response();
-        }
+        Err(err) => match err {
+            sqlx::Error::RowNotFound => {
+                return (StatusCode::NOT_FOUND, format!("bucket not found: {err}")).into_response();
+            }
+            _ => {
+                tracing::error!("unable to delete bucket: {err}");
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("internal server error"),
+                )
+                    .into_response();
+            }
+        },
     };
 
-    Json(bucket).into_response()
+    Json(response).into_response()
 }
 
 /// Query the size of a bucket from its metadata in the current state
@@ -173,26 +203,22 @@ pub async fn get_usage(
 ) -> impl IntoResponse {
     let account_id = api_token.subject;
     let bucket_id = bucket_id.to_string();
-    let maybe_bucket = sqlx::query_as!(
-        models::CreatedResource,
-        r#"SELECT id FROM buckets WHERE id = $1 AND account_id = $2"#,
-        bucket_id,
-        account_id,
-    )
-    .fetch_one(&mut *db_conn.0)
-    .await;
-
-    // Query metadata with this bucket id in the current state. Sum the data_size field
-    match maybe_bucket {
-        Ok(bucket) => bucket,
-        Err(err) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("unable to read bucket: {err}"),
-            )
-                .into_response();
-        }
-    };
+    match db::authorize_bucket(&account_id, &bucket_id, &mut db_conn).await {
+        Ok(_) => {}
+        Err(err) => match err {
+            sqlx::Error::RowNotFound => {
+                return (StatusCode::NOT_FOUND, format!("bucket not found: {err}")).into_response();
+            }
+            _ => {
+                tracing::error!("unable to read bucket: {err}");
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("internal server error"),
+                )
+                    .into_response();
+            }
+        },
+    }
 
     let maybe_usage = sqlx::query_as!(
         responses::GetUsage,
@@ -205,9 +231,10 @@ pub async fn get_usage(
     let usage = match maybe_usage {
         Ok(usage) => usage,
         Err(err) => {
+            tracing::error!("unable to read usage: {err}");
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("unable to read bucket: {err}"),
+                format!("internal server error"),
             )
                 .into_response();
         }
@@ -230,9 +257,10 @@ pub async fn get_total_usage(api_token: ApiToken, mut db_conn: DbConn) -> impl I
     let total_usage = match maybe_total_usage {
         Ok(usage) => usage,
         Err(err) => {
+            tracing::error!("unable to read total usage: {err}");
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("unable to read bucket: {err}"),
+                format!("internal server error"),
             )
                 .into_response();
         }

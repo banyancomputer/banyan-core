@@ -24,11 +24,12 @@ pub async fn create(
                 return (StatusCode::NOT_FOUND, format!("bucket not found: {err}")).into_response();
             }
             _ => {
+                tracing::error!("unable to read bucket: {err}");
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("unable to read bucket: {err}"),
+                    format!("internal server error"),
                 )
-                    .into_response()
+                    .into_response();
             }
         },
     }
@@ -40,11 +41,12 @@ pub async fn create(
                     .into_response();
             }
             _ => {
+                tracing::error!("unable to read metadata: {err}");
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("unable to read metadata: {err}"),
+                    format!("internal server error"),
                 )
-                    .into_response()
+                    .into_response();
             }
         },
     }
@@ -55,9 +57,10 @@ pub async fn create(
             created_at: snapshot.created_at.timestamp(),
         },
         Err(err) => {
+            tracing::error!("unable to create snapshot: {err}");
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("unable to create snapshot: {err}"),
+                format!("internal server error"),
             )
                 .into_response();
         }
@@ -80,11 +83,12 @@ pub async fn read_all(
                 return (StatusCode::NOT_FOUND, format!("bucket not found: {err}")).into_response();
             }
             _ => {
+                tracing::error!("unable to read bucket: {err}");
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("unable to read bucket: {err}"),
+                    format!("internal server error"),
                 )
-                    .into_response()
+                    .into_response();
             }
         },
     }
@@ -105,11 +109,12 @@ pub async fn read_all(
                     .into_response();
             }
             _ => {
+                tracing::error!("unable to read snapshot: {err}");
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("unable to read snapshot: {err}"),
+                    format!("internal server error"),
                 )
-                    .into_response()
+                    .into_response();
             }
         },
     };
@@ -134,11 +139,12 @@ pub async fn restore(
                 return (StatusCode::NOT_FOUND, format!("bucket not found: {err}")).into_response();
             }
             _ => {
+                tracing::error!("unable to read bucket: {err}");
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("unable to read bucket: {err}"),
+                    format!("internal server error"),
                 )
-                    .into_response()
+                    .into_response();
             }
         },
     }
@@ -151,11 +157,12 @@ pub async fn restore(
                     .into_response();
             }
             _ => {
+                tracing::error!("unable to read snapshot: {err}");
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("unable to read snapshot: {err}"),
+                    format!("internal server error"),
                 )
-                    .into_response()
+                    .into_response();
             }
         },
     };
@@ -172,9 +179,10 @@ pub async fn restore(
             metadata_id: snapshot.metadata_id,
         },
         Err(err) => {
+            tracing::error!("unable to update metadata: {err}");
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("unable to restore snapshot: {err}"),
+                format!("internal server error"),
             )
                 .into_response();
         }

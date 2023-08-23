@@ -25,11 +25,12 @@ pub async fn create(
                 return (StatusCode::NOT_FOUND, format!("bucket not found: {err}")).into_response();
             }
             _ => {
+                tracing::error!("unable to read bucket: {err}");
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("unable to read bucket: {err}"),
+                    format!("internal server error"),
                 )
-                    .into_response()
+                    .into_response();
             }
         },
     }
@@ -37,7 +38,7 @@ pub async fn create(
     if let Err(errors) = new_bucket_key.validate() {
         return (
             StatusCode::BAD_REQUEST,
-            format!("errors: {:?}", errors.errors()),
+            format!("invalid bucket key: {:?}", errors.errors()),
         )
             .into_response();
     };
@@ -57,9 +58,10 @@ pub async fn create(
             approved: false,
         },
         Err(err) => {
+            tracing::error!("unable to create new bucket key: {err}");
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("unable to create new bucket key: {err}"),
+                format!("internal server error"),
             )
                 .into_response();
         }
@@ -84,11 +86,12 @@ pub async fn read_all(
                 return (StatusCode::NOT_FOUND, format!("bucket not found: {err}")).into_response();
             }
             _ => {
+                tracing::error!("unable to read bucket: {err}");
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("unable to read bucket: {err}"),
+                    format!("internal server error"),
                 )
-                    .into_response()
+                    .into_response();
             }
         },
     }
@@ -112,9 +115,10 @@ pub async fn read_all(
                     .into_response();
             }
             _ => {
+                tracing::error!("unable to read bucket keys: {err}");
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("unable to read bucket key: {err}"),
+                    format!("internal server error"),
                 )
                     .into_response();
             }
@@ -139,11 +143,12 @@ pub async fn read(
                 return (StatusCode::NOT_FOUND, format!("bucket not found: {err}")).into_response();
             }
             _ => {
+                tracing::error!("unable to read bucket: {err}");
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("unable to read bucket: {err}"),
+                    format!("internal server error"),
                 )
-                    .into_response()
+                    .into_response();
             }
         },
     }
@@ -162,9 +167,10 @@ pub async fn read(
                     .into_response();
             }
             _ => {
+                tracing::error!("unable to read bucket key: {err}");
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("unable to read bucket key: {err}"),
+                    format!("internal server error"),
                 )
                     .into_response();
             }
@@ -188,11 +194,12 @@ pub async fn delete(
                 return (StatusCode::NOT_FOUND, format!("bucket not found: {err}")).into_response();
             }
             _ => {
+                tracing::error!("unable to read bucket: {err}");
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("unable to read bucket: {err}"),
+                    format!("internal server error"),
                 )
-                    .into_response()
+                    .into_response();
             }
         },
     }
@@ -210,9 +217,10 @@ pub async fn delete(
                     .into_response();
             }
             _ => {
+                tracing::error!("unable to delete bucket key: {err}");
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("unable to read bucket key: {err}"),
+                    format!("internal server error"),
                 )
                     .into_response();
             }

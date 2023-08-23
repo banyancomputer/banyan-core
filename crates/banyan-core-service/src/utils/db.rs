@@ -58,6 +58,33 @@ pub async fn read_all_buckets(
     }
 }
 
+/// Delete a bucket by id and account_id and return it.
+/// Implements an authorized delete of a bucket by id and account_id.
+/// # Arguments
+/// * `account_id` - The account_id of the account that owns the bucket.
+/// * `bucket_id` - The id of the bucket to delete.
+/// * `db_conn` - The database connection to use.
+/// # Return Type
+/// Returns the bucket if it exists and is owned by the given account_id, otherwise returns an error.
+pub async fn delete_bucket(
+    account_id: &str,
+    bucket_id: &str,
+    db_conn: &mut DbConn,
+) -> Result<models::Bucket, sqlx::Error> {
+    let maybe_bucket = sqlx::query_as!(
+        models::Bucket,
+        r#"DELETE FROM buckets WHERE id = $1 AND account_id = $2 RETURNING id, account_id, name, type, storage_class"#,
+        bucket_id,
+        account_id,
+    )
+    .fetch_one(&mut *db_conn.0)
+    .await;
+    match maybe_bucket {
+        Ok(bucket) => Ok(bucket),
+        Err(err) => Err(err),
+    }
+}
+
 /// Authorize the given account_id to read the given bucket_id.
 /// # Arguments
 /// * `account_id` - The account_id of the account that owns the bucket.
