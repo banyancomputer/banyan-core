@@ -67,6 +67,11 @@
 	"approved": "Approuvé",
 	"noAccess": "Pas d'accès",
 	"wantToApproveAccess": "Êtes-vous sûr de vouloir approuver l'accès ",
-	"removeAccessDescription": "La suppression de l'accès signifie que vous n'aurez plus accès à ces données à l'avenir, toutes les données précédemment téléchargées vous seront toujours accessibles mais ne seront plus synchronisées"
+	"removeAccessDescription": "La suppression de l'accès signifie que vous n'aurez plus accès à ces données à l'avenir, toutes les données précédemment téléchargées vous seront toujours accessibles mais ne seront plus synchronisées",
+	"bucket": "Seau",
+    "wasDeleted": "a été supprimé",
+    "wasRenamed": "a été renommé",
+    "snapshotWasTaken": "Un snapshot à froid a été pris",
+    "trashWasCleaned": "Les fichiers de la “Corbeille” ont été supprimés"
 
 }

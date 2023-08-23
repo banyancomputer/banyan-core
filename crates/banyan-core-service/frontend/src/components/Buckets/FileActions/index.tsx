@@ -9,6 +9,7 @@ import { Bucket, BucketFile } from '@/lib/interfaces/bucket';
 import { useModal } from '@/contexts/modals';
 import { MoveToModal } from '../../common/Modal/MoveToModal';
 import { RenameFileModal } from '../../common/Modal/RenameFileModal';
+import { ToastNotifications } from '@/utils/toastNotifications';
 
 export class FileAction {
     constructor(
@@ -31,7 +32,7 @@ export const FileActions: React.FC<{ bucket: Bucket, file: BucketFile }> = ({ bu
     };
     const copyLink = async () => {
         try {
-
+            ToastNotifications.notify(`${messages.linkWasCopied}`, <AiOutlineLink size="20px" />);
         } catch (error: any) { }
 
     };
@@ -40,7 +41,7 @@ export const FileActions: React.FC<{ bucket: Bucket, file: BucketFile }> = ({ bu
     };
     const makeCopy = async () => {
         try {
-
+            ToastNotifications.notify(`${messages.copyOf} ${file.name} ${messages.wasCreated}`, <AiOutlineLink size="20px" />);
         } catch (error: any) { }
 
     };

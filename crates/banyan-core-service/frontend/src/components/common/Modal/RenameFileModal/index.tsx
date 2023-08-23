@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useIntl } from 'react-intl';
+import { MdDone } from 'react-icons/md';
 
 import { useModal } from '@/contexts/modals';
 import { Bucket, BucketFile } from '@/lib/interfaces/bucket'
 import { useTomb } from '@/contexts/tomb';
+import { ToastNotifications } from '@/utils/toastNotifications';
 
 export const RenameFileModal: React.FC<{ bucket: Bucket, file: BucketFile }> = ({ bucket, file }) => {
     const { closeModal } = useModal();
@@ -13,7 +15,8 @@ export const RenameFileModal: React.FC<{ bucket: Bucket, file: BucketFile }> = (
 
     const save = async () => {
         try {
-            renameFile(bucket.id, file.name, newName);
+            await renameFile(bucket.id, file.name, newName);
+            ToastNotifications.notify(`${messages.fileWasRenamed}`, <MdDone size="20px" />);
         } catch (error: any) { }
     }
 

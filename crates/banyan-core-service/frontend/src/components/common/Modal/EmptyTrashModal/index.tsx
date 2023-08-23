@@ -3,10 +3,15 @@ import { useIntl } from 'react-intl'
 import { FiTrash2 } from "react-icons/fi"
 
 import { useModal } from '@/contexts/modals';
+import { ToastNotifications } from '@/utils/toastNotifications';
 
 export const EmptyTrashModal = () => {
     const { closeModal } = useModal();
     const { messages } = useIntl();
+
+    const clearTrash = async () => {
+        ToastNotifications.notify(`${messages.trashWasCleaned}`, <FiTrash2 size="20px" />);
+    }
 
     return (
         <div className='w-modal flex flex-col gap-5'>
@@ -24,7 +29,12 @@ export const EmptyTrashModal = () => {
                 >
                     {`${messages.cancel}`}
                 </button>
-                <button className='btn-primary flex-grow py-3 px-4'>{`${messages.delete}`}</button>
+                <button
+                    className='btn-primary flex-grow py-3 px-4'
+                    onClick={clearTrash}
+                >
+                    {`${messages.delete}`}
+                </button>
             </div>
         </div>
     )

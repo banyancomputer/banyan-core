@@ -1,20 +1,20 @@
 import React from 'react';
 import { useIntl } from 'react-intl';
-import { FiDownload, FiEdit, FiTrash2 } from 'react-icons/fi';
+import { FiEdit, FiTrash2, FiUpload } from 'react-icons/fi';
 import { HiOutlineLightningBolt } from "react-icons/hi";
 import { MdRestore } from "react-icons/md";
 import { BsBoxSeam } from "react-icons/bs";
 
 import { FileAction } from '../../Buckets/FileActions';
-import { useTomb } from '@/contexts/tomb';
 import { Bucket } from '@/lib/interfaces/bucket';
 import { useModal } from '@/contexts/modals';
 import { BucketSnapshotsModal } from '@/components/common/Modal/BucketSnapshotsModal';
 import { RenameBucketModal } from '@/components/common/Modal/RenameBucketModal';
+import { DeleteBucketModal } from '@/components/common/Modal/DeleteBucketModal';
+import { TakeSnapshotModal } from '@/components/common/Modal/TakeSnapshotModal';
 
 export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const { messages } = useIntl();
-    const { createSnapshot } = useTomb();
     const { openModal } = useModal();
 
     const download = async () => {
@@ -25,7 +25,7 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
 
     const takeSnapshot = async () => {
         try {
-            await createSnapshot(bucket.id);
+            openModal(<TakeSnapshotModal bucket={bucket} />)
         } catch (error: any) { }
     };
 
@@ -47,12 +47,13 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
 
     const deleteBucket = async () => {
         try {
+            openModal(<DeleteBucketModal bucket={bucket} />);
 
         } catch (error: any) { }
     };
 
     const acrions = [
-        new FileAction(`${messages.upload}`, <FiDownload size="18px" />, download),
+        new FileAction(`${messages.upload}`, <FiUpload size="18px" />, download),
         new FileAction(`${messages.takeColdSnapshot}`, <HiOutlineLightningBolt size="18px" />, takeSnapshot),
         new FileAction(`${messages.viewBucketVersions}`, <MdRestore size="18px" />, viewBucketVersions),
         new FileAction(`${messages.rename}`, <FiEdit size="18px" />, rename),

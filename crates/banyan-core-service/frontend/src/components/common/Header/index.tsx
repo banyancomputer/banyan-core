@@ -66,7 +66,7 @@ export const Header = () => {
                     <FiSettings size="20px" stroke="#4A5578" />
                     {isLanguageControlsVisible &&
                         <div
-                            className='absolute top-full left-1/2 -translate-x-1/2 flex flex-col gap-1  rounded-xl bg-white shadow-xld overflow-hidden'
+                            className='absolute top-full left-1/2 -translate-x-1/2 flex flex-col gap-1  rounded-xl bg-white shadow-xld overflow-hidden shadow-md'
                         >{
                                 locales?.map(language =>
                                     <Link

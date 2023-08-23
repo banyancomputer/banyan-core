@@ -15,6 +15,7 @@ import en from "@static/locales/en.json";
 import fr from "@static/locales/fr.json";
 
 import '@static/styles/globals.css';
+import { Notifications } from '@/components/common/Notifications';
 
 const TRANSLATES: Record<string, Record<string, string>> = {
     en,
@@ -40,6 +41,7 @@ export default function App({
                     <ModalProvider>
                         <ChakraProvider>
                             <IntlProvider locale={locale} messages={TRANSLATES[locale]} >
+                                <Notifications />
                                 <Modal />
                                 {/* Chakra Provider for access to Chakra UI components */}
                                 {/* Get the layout and render the component :) */}

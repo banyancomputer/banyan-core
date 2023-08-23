@@ -16,7 +16,7 @@ interface TombInterface {
     trash: Bucket;
     loadBucket: (id: string) => Promise<void>;
     unlockBucket: (id: string) => Promise<void>;
-    createSnapshot: (id: string) => Promise<void>;
+    takeColdSnapshot: (id: string) => Promise<void>;
     syncBucket: (id: string) => Promise<void>;
     getBuckets: () => Promise<Bucket[]>;
     createDirectory: (id: string, name: string) => Promise<void>;
@@ -29,6 +29,7 @@ interface TombInterface {
     getBucketKeys: (id: string) => Promise<BucketKey[]>;
     getFiles: (id: string, path: string) => Promise<BucketFile[]>;
     purgeSnapshot: (id: string) => void;
+    deleteBucket: (id: string) => void;
     setBuckets: React.Dispatch<React.SetStateAction<Bucket[]>>;
     approveBucketAccess: (id: string) => Promise<void>;
     removeBucketAccess: (id: string) => Promise<void>;
@@ -93,6 +94,10 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         })
     };
 
+    const deleteBucket = async (id: string) => {
+        return await tomb!.deleteBucket(id);
+    };
+
     const getBucketShapshots = async (id: string) => {
         return await tomb!.getBucketSnapshots(id);
     };
@@ -110,7 +115,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         return +(await tomb!.getTotalStorage()).toString();
     };
 
-    const createSnapshot = async (id: string) => {
+    const takeColdSnapshot = async (id: string) => {
         await tomb!.snapshot(id)
     };
 
@@ -196,10 +201,10 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
             value={{
                 tomb, buckets, trash, usedStorage,
                 setBuckets, getBuckets, getBucketShapshots, loadBucket,
-                unlockBucket, getFiles, getTrashBucket, createSnapshot,
+                unlockBucket, getFiles, getTrashBucket, takeColdSnapshot,
                 getUsedStorage, createDirectory, uploadFile, renameFile,
                 getMetadata, syncBucket, getBucketKeys, purgeSnapshot,
-                removeBucketAccess, approveBucketAccess
+                removeBucketAccess, approveBucketAccess, deleteBucket
             }}
         >
             {children}

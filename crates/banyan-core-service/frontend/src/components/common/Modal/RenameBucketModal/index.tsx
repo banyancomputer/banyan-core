@@ -1,13 +1,24 @@
 import React, { useState } from 'react';
 import { useIntl } from 'react-intl';
+import { MdDone } from "react-icons/md"
 
 import { useModal } from '@/contexts/modals';
 import { Bucket } from '@/lib/interfaces/bucket'
+import { useTomb } from '@/contexts/tomb';
+import { ToastNotifications } from '@/utils/toastNotifications';
 
 export const RenameBucketModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const { closeModal } = useModal();
     const { messages } = useIntl();
     const [newName, setNewName] = useState('');
+    const { } = useTomb();
+
+    const rename = async () => {
+        try {
+            /** TODO: add rename function after it will be added into tomb-wasm */
+            ToastNotifications.notify(`${messages.bucket} "${bucket.name}" ${messages.wasRenamed}`, <MdDone size="20px" />);
+        } catch (error: any) { };
+    }
 
     return (
         <div className='w-modal flex flex-col gap-8' >
@@ -33,7 +44,12 @@ export const RenameBucketModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                 >
                     {`${messages.cancel}`}
                 </button>
-                <button className='btn-primary flex-grow py-3 px-4'>{`${messages.save}`}</button>
+                <button
+                    className='btn-primary flex-grow py-3 px-4'
+                    onClick={rename}
+                >
+                    {`${messages.save}`}
+                </button>
             </div>
         </div >
     )

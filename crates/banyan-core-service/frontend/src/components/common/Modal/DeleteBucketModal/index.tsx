@@ -1,13 +1,23 @@
 import React from 'react';
 import { useIntl } from 'react-intl';
-import { FiTrash2 } from "react-icons/fi"
+import { FiTrash2 } from "react-icons/fi";
 
 import { Bucket } from '@/lib/interfaces/bucket';
 import { useModal } from '@/contexts/modals';
+import { useTomb } from '@/contexts/tomb';
+import { ToastNotifications } from '@/utils/toastNotifications';
 
 export const DeleteBucketModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
   const { closeModal } = useModal();
   const { messages } = useIntl();
+  const { deleteBucket } = useTomb();
+
+  const removeBucket = async () => {
+    try {
+      await deleteBucket(bucket.id);
+      ToastNotifications.notify(`${messages.bucket} "${bucket.name}" ${messages.wasDeleted}`, <FiTrash2 size="20px" />);
+    } catch (error: any) { };
+  };
 
   return (
     <div className='w-modal flex flex-col gap-5'>
@@ -25,7 +35,12 @@ export const DeleteBucketModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         >
           {`${messages.cancel}`}
         </button>
-        <button className='btn-primary flex-grow py-3 px-4'>{`${messages.delete}`}</button>
+        <button
+          className='btn-primary flex-grow py-3 px-4'
+          onClick={removeBucket}
+        >
+          {`${messages.delete}`}
+        </button>
       </div>
     </div>
   )
