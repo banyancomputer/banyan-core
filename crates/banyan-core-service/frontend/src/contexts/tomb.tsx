@@ -30,6 +30,8 @@ interface TombInterface {
     getFiles: (id: string, path: string) => Promise<BucketFile[]>;
     purgeSnapshot: (id: string) => void;
     setBuckets: React.Dispatch<React.SetStateAction<Bucket[]>>;
+    approveBucketAccess: (id: string) => Promise<void>;
+    removeBucketAccess: (id: string) => Promise<void>;
 };
 
 const tombMutex = new Mutex();
@@ -80,15 +82,28 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
         return await tomb!.ls(id, path);
     };
+
     const getBuckets = async () => {
         return await tomb!.getBuckets();
     };
 
     const getBucketKeys = async (id: string) => {
-        return await tomb!.getBucketKeys(id);
+        return await mutex(async tomb => {
+            return await tomb!.getBucketKeys(id);
+        })
     };
+
     const getBucketShapshots = async (id: string) => {
         return await tomb!.getBucketSnapshots(id);
+    };
+
+    const approveBucketAccess = async (id: string) => {
+        await tomb!.approveBucketAccess(id);
+    };
+
+    const removeBucketAccess = async (id: string) => {
+        /** TODO:  connect removeBucketAccess method when in will be implemented.  */
+        // return await tomb!.approveBucketAccess(id);
     };
 
     const getUsedStorage = async () => {
@@ -169,7 +184,8 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
                 for (const bucket of buckets) {
                     const id = bucket.id;
                     const files = await getFiles(id, '/');
-                    setBuckets(buckets => buckets.map(bucket => bucket.id === id ? { ...bucket, files } : bucket));
+                    const keys = await getBucketKeys(id);
+                    setBuckets(buckets => buckets.map(bucket => bucket.id === id ? { ...bucket, files, keys } : bucket));
                 }
             }
         })();
@@ -182,7 +198,8 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
                 setBuckets, getBuckets, getBucketShapshots, loadBucket,
                 unlockBucket, getFiles, getTrashBucket, createSnapshot,
                 getUsedStorage, createDirectory, uploadFile, renameFile,
-                getMetadata, syncBucket, getBucketKeys
+                getMetadata, syncBucket, getBucketKeys, purgeSnapshot,
+                removeBucketAccess, approveBucketAccess
             }}
         >
             {children}

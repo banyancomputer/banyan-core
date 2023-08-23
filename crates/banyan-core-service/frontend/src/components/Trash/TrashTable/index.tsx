@@ -64,7 +64,7 @@ export const TrashTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                 {`${messages.files}`}
             </div>
             <div >
-                <table className="table table-pin-rows w-full text-gray-600 rounded-xl shadow-thead table-fixed ">
+                <table className="table table-pin-rows w-full text-gray-600 rounded-xl  table-fixed ">
                     <thead className="border-b-table-cellBackground text-xxs font-normal ">
                         <tr className="border-b-table-cellBackground bg-table-headBackground font-normal">
                             <th className="flex items-center gap-3 px-6 py-4 text-left font-medium">

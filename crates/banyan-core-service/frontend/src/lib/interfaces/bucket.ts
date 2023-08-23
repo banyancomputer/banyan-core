@@ -7,12 +7,21 @@ export interface BucketFile {
         modified: string;
         size: number;
     };
-}
+};
+
+export interface BucketKey {
+    id: string;
+    bucket_id: string;
+    pem: string;
+    approved: boolean;
+};
+
 export interface Bucket {
     id: string;
     name: string;
     bucket_type: string;
     files: BucketFile[];
+    keys: BucketKey[]
 };
 
 export interface Metadata {
@@ -32,6 +41,7 @@ export class MockBucket {
     public name = '';
     public bucket_type = '';
     public files = [];
+    public keys = [];
 };
 
 export interface BucketSnapshot {
@@ -40,10 +50,3 @@ export interface BucketSnapshot {
     snapshot_type: string,
     version: string
 };
-
-export interface BucketKey {
-    id: string;
-    bucket_id: string;
-    pem: string;
-    approved: boolean;
-}
