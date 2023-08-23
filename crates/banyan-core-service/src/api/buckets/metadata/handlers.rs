@@ -43,7 +43,7 @@ pub async fn push(
                 tracing::error!("unable to read bucket: {err}");
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("internal server error"),
+                    "internal server error".to_string(),
                 )
                     .into_response();
             }
@@ -95,7 +95,7 @@ pub async fn push(
             tracing::error!("unable to create new metadata resource: {err}");
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("internal server error"),
+                "internal server error".to_string(),
             )
                 .into_response();
         }
@@ -145,7 +145,7 @@ pub async fn push(
                     tracing::error!("unable to mark metadata upload as failed: {err}");
                     return (
                         StatusCode::INTERNAL_SERVER_ERROR,
-                        format!("internal server error"),
+                        "internal server error".to_string(),
                     )
                         .into_response();
                 }
@@ -200,7 +200,7 @@ pub async fn push(
             tracing::error!("unable to update bucket metadata after push: {err}");
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("internal server error"),
+                "internal server error".to_string(),
             )
                 .into_response();
         }
@@ -237,7 +237,7 @@ pub async fn pull(
                 tracing::error!("unable to read bucket: {err}");
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("internal server error"),
+                    "internal server error".to_string(),
                 )
                     .into_response();
             }
@@ -255,7 +255,7 @@ pub async fn pull(
                 tracing::error!("unable to read metadata: {err}");
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("internal server error"),
+                    "internal server error".to_string(),
                 )
                     .into_response();
             }
@@ -275,7 +275,7 @@ pub async fn pull(
             tracing::error!("unable to read metadata file: {err}");
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("internal server error"),
+                "internal server error".to_string(),
             )
                 .into_response();
         }
@@ -317,7 +317,7 @@ pub async fn read(
                 tracing::error!("unable to read bucket: {err}");
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("internal server error"),
+                    "internal server error".to_string(),
                 )
                     .into_response();
             }
@@ -343,7 +343,7 @@ pub async fn read(
                 tracing::error!("unable to read metadata: {err}");
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("internal server error"),
+                    "internal server error".to_string(),
                 )
                     .into_response();
             }
@@ -370,7 +370,7 @@ pub async fn read_all(
                 tracing::error!("unable to read bucket: {err}");
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("internal server error"),
+                    "internal server error".to_string(),
                 )
                     .into_response();
             }
@@ -399,7 +399,7 @@ pub async fn read_all(
                 tracing::error!("unable to read metadata: {err}");
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("internal server error"),
+                    "internal server error".to_string(),
                 )
                     .into_response();
             }
@@ -426,7 +426,7 @@ pub async fn read_current(
                 tracing::error!("unable to read bucket: {err}");
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("internal server error"),
+                    "internal server error".to_string(),
                 )
                     .into_response();
             }
@@ -454,7 +454,7 @@ pub async fn read_current(
                 tracing::error!("unable to read current metadata: {err}");
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("internal server error"),
+                    "internal server error".to_string(),
                 )
                     .into_response();
             }

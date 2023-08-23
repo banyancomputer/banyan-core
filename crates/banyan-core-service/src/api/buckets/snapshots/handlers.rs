@@ -27,7 +27,7 @@ pub async fn create(
                 tracing::error!("unable to read bucket: {err}");
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("internal server error"),
+                    "internal server error".to_string(),
                 )
                     .into_response();
             }
@@ -44,7 +44,7 @@ pub async fn create(
                 tracing::error!("unable to read metadata: {err}");
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("internal server error"),
+                    "internal server error".to_string(),
                 )
                     .into_response();
             }
@@ -60,7 +60,7 @@ pub async fn create(
             tracing::error!("unable to create snapshot: {err}");
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("internal server error"),
+                "internal server error".to_string(),
             )
                 .into_response();
         }
@@ -86,7 +86,7 @@ pub async fn read_all(
                 tracing::error!("unable to read bucket: {err}");
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("internal server error"),
+                    "internal server error".to_string(),
                 )
                     .into_response();
             }
@@ -112,7 +112,7 @@ pub async fn read_all(
                 tracing::error!("unable to read snapshot: {err}");
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("internal server error"),
+                    "internal server error".to_string(),
                 )
                     .into_response();
             }
@@ -142,7 +142,7 @@ pub async fn restore(
                 tracing::error!("unable to read bucket: {err}");
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("internal server error"),
+                    "internal server error".to_string(),
                 )
                     .into_response();
             }
@@ -160,7 +160,7 @@ pub async fn restore(
                 tracing::error!("unable to read snapshot: {err}");
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("internal server error"),
+                    "internal server error".to_string(),
                 )
                     .into_response();
             }
@@ -182,7 +182,7 @@ pub async fn restore(
             tracing::error!("unable to update metadata: {err}");
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("internal server error"),
+                "internal server error".to_string(),
             )
                 .into_response();
         }

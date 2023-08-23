@@ -48,7 +48,7 @@ pub async fn create(
                     tracing::error!("unable to create bucket: {db_err}");
                     return (
                         StatusCode::INTERNAL_SERVER_ERROR,
-                        format!("internal server error"),
+                        "internal server error".to_string(),
                     )
                         .into_response();
                 }
@@ -57,7 +57,7 @@ pub async fn create(
                 tracing::error!("unable to create bucket: {err}");
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("internal server error"),
+                    "internal server error".to_string(),
                 )
                     .into_response();
             }
@@ -79,7 +79,7 @@ pub async fn create(
             tracing::error!("unable to create bucket key: {err}");
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("internal server error"),
+                "internal server error".to_string(),
             )
                 .into_response();
         }
@@ -123,7 +123,7 @@ pub async fn read_all(api_token: ApiToken, mut db_conn: DbConn) -> impl IntoResp
                 tracing::error!("unable to read bucket: {err}");
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("internal server error"),
+                    "internal server error".to_string(),
                 )
                     .into_response();
             }
@@ -156,7 +156,7 @@ pub async fn read(
                 tracing::error!("unable to read bucket: {err}");
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("internal server error"),
+                    "internal server error".to_string(),
                 )
                     .into_response();
             }
@@ -185,7 +185,7 @@ pub async fn delete(
                 tracing::error!("unable to delete bucket: {err}");
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("internal server error"),
+                    "internal server error".to_string(),
                 )
                     .into_response();
             }
@@ -213,7 +213,7 @@ pub async fn get_usage(
                 tracing::error!("unable to read bucket: {err}");
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("internal server error"),
+                    "internal server error".to_string(),
                 )
                     .into_response();
             }
@@ -234,7 +234,7 @@ pub async fn get_usage(
             tracing::error!("unable to read usage: {err}");
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("internal server error"),
+                "internal server error".to_string(),
             )
                 .into_response();
         }
@@ -260,7 +260,7 @@ pub async fn get_total_usage(api_token: ApiToken, mut db_conn: DbConn) -> impl I
             tracing::error!("unable to read total usage: {err}");
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("internal server error"),
+                "internal server error".to_string(),
             )
                 .into_response();
         }
