@@ -4,6 +4,8 @@ import { useRouter } from 'next/router';
 import { ChakraProvider } from '@chakra-ui/react';
 import { SessionProvider } from 'next-auth/react';
 
+import en from '@static/locales/en.json';
+import fr from '@static/locales/fr.json';
 import { NextPageWithLayout } from '@/pages/page';
 import { KeystoreProvider } from '@/contexts/keystore';
 import { TombProvider } from '@/contexts/tomb';
@@ -11,15 +13,13 @@ import { ModalProvider } from '@/contexts/modals';
 
 import { Modal } from '@/components/common/Modal';
 
-import en from "@static/locales/en.json";
-import fr from "@static/locales/fr.json";
 
 import '@static/styles/globals.css';
 import { Notifications } from '@/components/common/Notifications';
 
 const TRANSLATES: Record<string, Record<string, string>> = {
     en,
-    fr
+    fr,
 };
 
 interface AppPropsWithLayout extends AppProps {

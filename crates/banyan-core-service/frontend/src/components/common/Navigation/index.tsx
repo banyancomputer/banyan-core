@@ -2,14 +2,14 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from 'next/router';
-import { FiChevronDown, FiTrash2 } from "react-icons/fi"
-import { IoIosAdd, IoMdClose } from "react-icons/io";
+import { FiChevronDown, FiTrash2 } from 'react-icons/fi';
+import { IoIosAdd, IoMdClose } from 'react-icons/io';
+import { useIntl } from 'react-intl';
 
 import { useTomb } from '@/contexts/tomb';
 import { convertFileSize } from '@/utils/storage';
 
 import { Directory } from '@static/images/common';
-import { useIntl } from 'react-intl';
 
 export const Navigation = () => {
     /** TODO: replace by data from api. */
@@ -51,7 +51,7 @@ export const Navigation = () => {
                         onClick={toggleBucketsVisibility}
                         className={`${isBucketsVisible && 'rotate-180'} `}
                     >
-                        <FiChevronDown size="20px" stroke='#5D6B98' />
+                        <FiChevronDown size="20px" stroke="#5D6B98" />
                     </span>
                 </Link>
                 {
@@ -78,7 +78,7 @@ export const Navigation = () => {
                     href="/trash"
                     className={`flex items-center justify-between  gap-2 py-2 px-3 w-full h-10 cursor-pointer rounded-md ${router.pathname === '/trash' && 'bg-navigation-secondary'}`}
                 >
-                    <FiTrash2 size="24px" stroke='#5e6c97' />
+                    <FiTrash2 size="24px" stroke="#5e6c97" />
                     <span className="flex-grow">
                         {`${messages.trash}`}
                     </span>
@@ -86,8 +86,8 @@ export const Navigation = () => {
                         {trash.files.length}
                     </span>
                 </Link>
-                <button className='mt-2 flex items-center gap-3 py-2 px-3'>
-                    <IoIosAdd size="24px" fill='#5D6B98' />
+                <button className="mt-2 flex items-center gap-3 py-2 px-3">
+                    <IoIosAdd size="24px" fill="#5D6B98" />
                     {`${messages.newBucket}`}
                 </button>
             </div>

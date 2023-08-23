@@ -22,33 +22,31 @@ export const UploadFileModal = () => {
     console.log(selectedBucket);
 
 
-    const upload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        if (!event.target.files || !selectedBucket) return;
+    const upload = async(event: React.ChangeEvent<HTMLInputElement>) => {
+        if (!event.target.files || !selectedBucket) { return; }
 
         try {
             const file = Array.from(event.target.files)[0];
-            await uploadFile(selectedBucket, '/', file)
-
+            await uploadFile(selectedBucket, '/', file);
         } catch (error: any) {
             console.log(error);
-
         }
     };
 
     return (
-        <div className='w-modal flex flex-col gap-4'>
+        <div className="w-modal flex flex-col gap-4">
             <div>
-                <h4 className='text-m font-semibold '>{`${messages.uploadFiles}`}</h4>
-                <p className='mt-2 text-gray-600'>
+                <h4 className="text-m font-semibold ">{`${messages.uploadFiles}`}</h4>
+                <p className="mt-2 text-gray-600">
                     {`${messages.chooseFilesToUpload}`}
                 </p>
             </div>
             <div>
-                <span className='inline-block mb-1 text-xs font-normal'>{`${messages.selectBucket}`}:</span>
+                <span className="inline-block mb-1 text-xs font-normal">{`${messages.selectBucket}`}:</span>
                 <Select
-                    variant='outline'
+                    variant="outline"
                     placeholder={`${messages.selectBucket}`}
-                    className='font-normal text-sm'
+                    className="font-normal text-sm"
                     onChange={selectBucket}
                 >
                     {buckets.map(bucket =>
@@ -62,9 +60,9 @@ export const UploadFileModal = () => {
                 </Select>
             </div>
             <div>
-                <span className='inline-block mb-1 text-xs font-normal'>{`${messages.selectFolder}`}:</span>
+                <span className="inline-block mb-1 text-xs font-normal">{`${messages.selectFolder}`}:</span>
                 <Select
-                    variant='outline'
+                    variant="outline"
                     placeholder={`${messages.selectFolder}`}
                     value={selectedFolder}
                     onChange={selectFolder}
@@ -83,5 +81,5 @@ export const UploadFileModal = () => {
                 />
             </label>
         </div>
-    )
-}
+    );
+};

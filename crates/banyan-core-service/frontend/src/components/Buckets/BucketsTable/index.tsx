@@ -1,26 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import { useIntl } from 'react-intl';
 
-
 import { ActionsCell } from '../ActionsCell';
+import { SortCell } from '@/components/common/SortCell';
+import { FileActions } from '@/components/Buckets/FileActions';
+import { FileIcon } from '../../common/FileIcon';
 
+import { BucketActions } from '../BucketActions';
 import { getDateLabel } from '@/utils/date';
 import { Bucket as IBucket } from '@/lib/interfaces/bucket';
 import { convertFileSize } from '@/utils/storage';
-import { FileIcon } from '../../common/FileIcon';
-import { SortCell } from '@/components/common/SortCell';
-import { FileActions } from '@/components/Buckets/FileActions';
-import { BucketActions } from '../BucketActions';
 
 export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
-
     const { messages } = useIntl();
     /** Created to prevent sotring logic affect initial buckets array */
     const [bucketsCopy, setBucketsCopy] = useState(buckets);
-    const [sortState, setSortState] = useState<{ criteria: string, direction: "ASC" | "DESC" | '' }>({ criteria: '', direction: '' });
+    const [sortState, setSortState] = useState<{ criteria: string; direction: 'ASC' | 'DESC' | '' }>({ criteria: '', direction: '' });
 
     const sort = (criteria: string) => {
-        setSortState(prev => ({ criteria, direction: prev.direction === "ASC" ? "DESC" : "ASC" }));
+        setSortState(prev => ({ criteria, direction: prev.direction === 'ASC' ? 'DESC' : 'ASC' }));
     };
 
     useEffect(() => {
@@ -29,7 +27,7 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
                 const files = [...bucket.files];
                 files.sort((a, b) => sortState.direction !== 'ASC' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name));
 
-                return { ...bucket, files }
+                return { ...bucket, files };
             }));
 
             return;
@@ -39,7 +37,7 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
             const files = [...bucket.files];
             files.sort((a, b) => sortState.direction !== 'ASC' ? Number(a.metadata[sortState.criteria]) - Number(b.metadata[sortState.criteria]) : Number(b.metadata[sortState.criteria]) - Number(a.metadata[sortState.criteria]));
 
-            return { ...bucket, files }
+            return { ...bucket, files };
         }));
     }, [sortState, buckets]);
 
@@ -55,7 +53,7 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
                         <th className="p-3 text-left font-medium">{`${messages.bucketName}`}</th>
                         <th className="p-3 text-left font-medium">
                             <SortCell
-                                criteria='name'
+                                criteria="name"
                                 onChange={sort}
                                 sortState={sortState}
                                 text={`${messages.name}`}
@@ -65,7 +63,7 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
                         <th className="p-3 text-left font-medium">{`${messages.bucketType}`}</th>
                         <th className="p-3 text-left font-medium">
                             <SortCell
-                                criteria='lastEdited'
+                                criteria="lastEdited"
                                 onChange={sort}
                                 sortState={sortState}
                                 text={`${messages.lastEdited}`}
@@ -73,7 +71,7 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
                         </th>
                         <th className="p-3 text-left font-medium">
                             <SortCell
-                                criteria='fileSize'
+                                criteria="fileSize"
                                 onChange={sort}
                                 sortState={sortState}
                                 text={`${messages.fileSize}`}
@@ -114,6 +112,6 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
                 </tbody>
             </table >
         </div>
-    )
-}
+    );
+};
 
