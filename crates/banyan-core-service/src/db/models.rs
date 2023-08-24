@@ -106,13 +106,13 @@ impl Display for MetadataState {
 impl From<String> for MetadataState {
     fn from(s: String) -> Self {
         match s.as_str() {
-            "Uploading" => MetadataState::Uploading,
-            "pload_failed" => MetadataState::UploadFailed,
+            "uploading" => MetadataState::Uploading,
+            "upload_failed" => MetadataState::UploadFailed,
             "pending" => MetadataState::Pending,
             "current" => MetadataState::Current,
             "outdated" => MetadataState::Outdated,
             "deleted" => MetadataState::Deleted,
-            _ => panic!("invalid bucket metadata state"),
+            _ => panic!("invalid bucket metadata state: {}", s),
         }
     }
 }
