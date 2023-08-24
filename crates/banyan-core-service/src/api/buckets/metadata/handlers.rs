@@ -1,5 +1,5 @@
 use axum::body::StreamBody;
-use axum::extract::{BodyStream, Json, Path};
+use axum::extract::{BodyStream, Path};
 use axum::headers::ContentType;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
@@ -82,7 +82,7 @@ pub async fn push(
     let request_data: requests::PushMetadataRequest =
         serde_json::from_slice(&request_data_bytes).unwrap();
 
-    /* 2. Create a tentative row for the new metadata  */
+    /* 2. Create a tentative row for the new metadata. We need to do this in order to get a created resource */
 
     let expected_data_size = request_data.expected_data_size as i64;
     let maybe_metadata_resource = sqlx::query_as!(
@@ -135,23 +135,18 @@ pub async fn push(
             )
             .execute(&mut *db_conn.0)
             .await;
-            // TODO: This should be updated to not reveal the error to the user
             // Return the correct response based on the result of the update
             match maybe_failed_metadata_upload {
                 Ok(_) => {
+                    tracing::error!("could not open writer to metadata file <id: {}>", metadata_resource.id);
                     return (
                         StatusCode::INTERNAL_SERVER_ERROR,
-                        Json(responses::PushMetadataResponse {
-                            id: metadata_resource.id.to_string(),
-                            state: models::MetadataState::UploadFailed,
-                            storage_host: None,
-                            storage_authorization: None,
-                        }),
+                        "internal server error".to_string(),
                     )
                         .into_response();
                 }
                 Err(err) => {
-                    tracing::error!("unable to mark metadata upload as failed: {err}");
+                    tracing::error!("could not open writer to metadata file <id: {}> and unable to mark metadata upload as failed: {}", metadata_resource.id, err);
                     return (
                         StatusCode::INTERNAL_SERVER_ERROR,
                         "internal server error".to_string(),
