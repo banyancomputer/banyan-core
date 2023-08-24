@@ -13,7 +13,7 @@ use crate::utils::db;
 pub async fn create(
     api_token: ApiToken,
     mut db_conn: DbConn,
-    extract::Json(new_bucket): extract::Json<requests::CreateBucket>,
+    Json(new_bucket): extract::Json<requests::CreateBucket>,
 ) -> impl IntoResponse {
     if let Err(errors) = new_bucket.validate() {
         return (

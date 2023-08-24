@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "INSERT INTO metadata (bucket_id, root_cid, metadata_cid, data_size, state)\n        VALUES ($1, $2, $3, $4, $5)\n        RETURNING id;",
+  "query": "INSERT INTO metadata (bucket_id, root_cid, metadata_cid, expected_data_size, state)\n        VALUES ($1, $2, $3, $4, $5)\n        RETURNING id;",
   "describe": {
     "columns": [
       {
@@ -16,5 +16,5 @@
       false
     ]
   },
-  "hash": "051b83c27314d575c8bc085999212d82daceda4308c2c5e6f1beab224d30a13f"
+  "hash": "75788295bd88f54a3e1784ffdb4c0c34bc703af53f7dff8f0fe8ff2cec53c7a1"
 }

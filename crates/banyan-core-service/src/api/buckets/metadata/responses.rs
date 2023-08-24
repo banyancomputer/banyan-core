@@ -5,8 +5,8 @@ use serde::Serialize;
 pub struct PushMetadataResponse {
     pub id: String,
     pub state: MetadataState,
-    pub storage_host: String,
-    pub storage_authorization: String,
+    pub storage_host: Option<String>,
+    pub storage_authorization: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
