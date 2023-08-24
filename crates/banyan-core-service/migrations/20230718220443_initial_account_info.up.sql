@@ -199,8 +199,11 @@ CREATE TABLE metadata (
   root_cid TEXT NOT NULL,
   -- The CID of the metadata for this version of the bucket
   metadata_cid TEXT NOT NULL,
-  -- The size of the data pointed at by the root CID 
-  data_size INTEGER NOT NULL,
+
+  -- What the client states as their expected data size on pushing metadata
+  expected_data_size INTEGER NOT NULL,
+  -- The size of the data pointed at by the root CID
+  data_size INTEGER,
 
   -- Description of the metadata CAR file
   metadata_size INTEGER,
@@ -258,6 +261,9 @@ CREATE TABLE storage_hosts (
   -- The host's available storage capacity (in bytes)
   available_storage INTEGER NOT NULL,
 
+  -- The fingerprint of the host's public key
+  fingerprint VARCHAR(50) NOT NULL,
+
   -- The host's public key (PEM format)
   pem TEXT NOT NULL
 );
@@ -266,12 +272,14 @@ CREATE UNIQUE INDEX idx_storage_hosts_on_unique_name
   ON storage_hosts(name);
 
 -- Create Default Storage Host
-INSERT INTO storage_hosts (id, name, url, available_storage, pem)
+INSERT INTO storage_hosts (id, name, url, used_storage, available_storage, fingerprint, pem)
 VALUES (
   '846db58a-d5f5-4388-9bfe-667b385aacc8',
   'banyan-staging',
   'https://staging.storage.banyan.computer/',
   0,
   549755813888000,
+  -- Note: this is not a correct fingerprint
+  "14:b6:e6:d7:f5:59:d5:df:30:76:20:28:9f:90:84:89:cc:5d:f7:7e",
   "-----BEGIN PUBLIC KEY-----\nMHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEZzVwDCZdaMJzX5CRaI7HgUGsMti7zsUZ\nKnhBQDda3ErqZSTCNy4TMf35yeLbzeGSqCmOPsvCuH8O30s3QQg30hcHUeUoEZE0\ndQRlKBv+5PpcPdWWVUG50E8fB8+1EChE\n-----END PUBLIC KEY-----"
 );

@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE metadata SET state = $1, data_size = $2 WHERE id = $3 RETURNING id;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "8cea1ac640214c6c54b97e927beeb5b9c7a0e7b7d57a57beaa5497d89eb779b1"
+}
