@@ -84,16 +84,16 @@ pub async fn push(
 
     /* 2. Create a tentative row for the new metadata  */
 
-    let i_size = request_data.data_size as i64;
+    let expected_data_size = request_data.data_size as i64;
     let maybe_metadata_resource = sqlx::query_as!(
         models::CreatedResource,
-        r#"INSERT INTO metadata (bucket_id, root_cid, metadata_cid, data_size, state)
+        r#"INSERT INTO metadata (bucket_id, root_cid, metadata_cid, expected_data_size, state)
         VALUES ($1, $2, $3, $4, $5)
         RETURNING id;"#,
         bucket_id,
         request_data.root_cid,
         request_data.metadata_cid,
-        i_size,
+        expected_data_size,
         models::MetadataState::Uploading
     )
     .fetch_one(&mut *db_conn.0)

@@ -199,8 +199,11 @@ CREATE TABLE metadata (
   root_cid TEXT NOT NULL,
   -- The CID of the metadata for this version of the bucket
   metadata_cid TEXT NOT NULL,
-  -- The size of the data pointed at by the root CID 
-  data_size INTEGER NOT NULL,
+
+  -- What the client states as their expected data size on pushing metadata
+  expected_data_size INTEGER NOT NULL,
+  -- The size of the data pointed at by the root CID
+  data_size INTEGER,
 
   -- Description of the metadata CAR file
   metadata_size INTEGER,

@@ -214,7 +214,7 @@ pub async fn read_metadata(
 ) -> Result<models::Metadata, sqlx::Error> {
     let maybe_metadata = sqlx::query_as!(
         models::Metadata,
-        r#"SELECT id, bucket_id, root_cid, metadata_cid, data_size, state, metadata_size as "metadata_size!", metadata_hash as "metadata_hash!", created_at, updated_at
+        r#"SELECT id, bucket_id, root_cid, metadata_cid, expected_data_size, data_size as "data_size!", state, metadata_size as "metadata_size!", metadata_hash as "metadata_hash!", created_at, updated_at
         FROM metadata WHERE id = $1 AND bucket_id = $2;"#,
         metadata_id,
         bucket_id,
@@ -271,7 +271,7 @@ pub async fn read_all_metadata(
 ) -> Result<Vec<models::Metadata>, sqlx::Error> {
     let maybe_metadata = sqlx::query_as!(
         models::Metadata,
-        r#"SELECT id, bucket_id, root_cid, metadata_cid, data_size, state, metadata_size as "metadata_size!", metadata_hash as "metadata_hash!", created_at, updated_at
+        r#"SELECT id, bucket_id, root_cid, metadata_cid, expected_data_size, data_size as "data_size!", state, metadata_size as "metadata_size!", metadata_hash as "metadata_hash!", created_at, updated_at
         FROM metadata WHERE bucket_id = $1;"#,
         bucket_id,
     )
@@ -298,7 +298,7 @@ pub async fn read_current_metadata(
 ) -> Result<models::Metadata, sqlx::Error> {
     let maybe_metadata = sqlx::query_as!(
         models::Metadata,
-        r#"SELECT id, bucket_id, root_cid, metadata_cid, data_size, state, metadata_size as "metadata_size!", metadata_hash as "metadata_hash!", created_at, updated_at
+        r#"SELECT id, bucket_id, root_cid, metadata_cid, expected_data_size, data_size as "data_size!", state, metadata_size as "metadata_size!", metadata_hash as "metadata_hash!", created_at, updated_at
         FROM metadata WHERE bucket_id = $1 AND state = 'current';"#,
         bucket_id,
     )
@@ -467,7 +467,7 @@ pub async fn read_usage(
             sqlx::query_as!(
                 GetTotalUsage,
                 r#"SELECT 
-                    COALESCE(SUM(m.data_size), 0) as "data_size!",
+                    COALESCE(SUM(COALESCE(m.data_size, m.expected_data_size)), 0) as "data_size!",
                     COALESCE(SUM(m.metadata_size), 0) as "metadata_size!"
                 FROM
                     metadata m
@@ -539,7 +539,7 @@ pub async fn read_data_usage(
             sqlx::query_as!(
                 GetUsage,
                 r#"SELECT 
-                    COALESCE(SUM(m.data_size), 0) as "size!"
+                    COALESCE(SUM(COALESCE(m.data_size, m.expected_data_size)), 0) as "size!"
                 FROM
                     metadata m
                 INNER JOIN

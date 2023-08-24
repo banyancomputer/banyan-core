@@ -126,6 +126,7 @@ pub struct Metadata {
     pub root_cid: String,
     pub metadata_cid: String,
 
+    pub expected_data_size: i64,
     pub data_size: i64,
     pub state: MetadataState,
 
