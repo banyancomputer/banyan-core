@@ -127,6 +127,10 @@ pub async fn push(
         Ok(mp) => mp,
         // Otherwise, try marking the update as failed
         Err(_) => {
+            tracing::error!(
+                "could not open writer to metadata file <id: {}>",
+                metadata_resource.id
+            );
             // Try and mark the upload as failed
             let maybe_failed_metadata_upload = sqlx::query!(
                 r#"UPDATE metadata SET state = $1 WHERE id = $2;"#,
@@ -138,7 +142,6 @@ pub async fn push(
             // Return the correct response based on the result of the update
             match maybe_failed_metadata_upload {
                 Ok(_) => {
-                    tracing::error!("could not open writer to metadata file <id: {}>", metadata_resource.id);
                     return (
                         StatusCode::INTERNAL_SERVER_ERROR,
                         "internal server error".to_string(),
@@ -146,7 +149,7 @@ pub async fn push(
                         .into_response();
                 }
                 Err(err) => {
-                    tracing::error!("could not open writer to metadata file <id: {}> and unable to mark metadata upload as failed: {}", metadata_resource.id, err);
+                    tracing::error!("unable to mark metadata upload as failed: {err}");
                     return (
                         StatusCode::INTERNAL_SERVER_ERROR,
                         "internal server error".to_string(),
