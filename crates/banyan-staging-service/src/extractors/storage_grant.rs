@@ -2,12 +2,10 @@ use axum::async_trait;
 use axum::extract::{FromRef, FromRequestParts};
 use axum::http::request::Parts;
 use axum::http::StatusCode;
-use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::app::GrantVerificationKey;
 
-#[derive(Deserialize, Serialize)]
 pub struct StorageGrant {
     client_id: Uuid,
     client_fingerprint: String,
