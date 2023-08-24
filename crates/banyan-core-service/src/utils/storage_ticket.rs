@@ -44,7 +44,7 @@ struct Claims {
 /// * signing_key - The signing key to use for the storage ticket
 /// # Returns
 /// The storage ticket as a JWT string
-pub fn generate(
+pub fn generate_storage_ticket(
     account_id: &str,
     fingerprint: &str,
     storage_host_name: &str,
@@ -65,11 +65,13 @@ pub fn generate(
     let claims = Claims {
         issued_at: chrono::Utc::now().timestamp() as u64,
         nonce,
-        expiration: (chrono::Utc::now() + chrono::Duration::seconds(STORAGE_TICKET_DURATION as i64)).timestamp() as u64,
-        not_before: (chrono::Utc::now() - chrono::Duration::seconds(STORAGE_TICKET_LEEWAY as i64)).timestamp() as u64,
+        expiration: (chrono::Utc::now() + chrono::Duration::seconds(STORAGE_TICKET_DURATION as i64))
+            .timestamp() as u64,
+        not_before: (chrono::Utc::now() - chrono::Duration::seconds(STORAGE_TICKET_LEEWAY as i64))
+            .timestamp() as u64,
         audience: storage_host_name.to_string(),
         subject: format!("{}@{}", account_id, fingerprint),
-        capabilities
+        capabilities,
     };
     jsonwebtoken::encode(&header, &claims, &signing_key.0)
 }

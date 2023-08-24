@@ -6,7 +6,7 @@ use crate::utils::car_buffer::CarBuffer;
 pub async fn handle_metadata_upload<S>(
     mut stream: S,
     writer: &mut Box<dyn AsyncWrite + Unpin + Send>,
-) -> Result<(String, usize), ()>
+) -> Result<(String, u64), ()>
 where
     S: TryStream<Ok = bytes::Bytes> + Unpin,
     S::Error: std::error::Error,
@@ -21,18 +21,7 @@ where
         hasher.update(&chunk);
         car_buffer.add_chunk(&chunk);
         bytes_written += chunk.len();
-
-        //match car_buffer.parse() {
-        //    Ok(Some(_md)) => {
-        //        // TODO: we have our metadata, do any validation we need to here
-        //    }
-        //    Ok(None) => (),
-        //    Err(err) => {
-        //        tracing::error!("received car buffer error: {err}");
-        //        return Err(());
-        //    }
-        //}
-
+        
         writer
             .write_all(&chunk)
             .await
@@ -41,5 +30,5 @@ where
 
     let hash = hasher.finalize();
 
-    Ok((hash.to_string(), bytes_written))
+    Ok((hash.to_string(), bytes_written as u64))
 }

@@ -11,10 +11,10 @@ use uuid::Uuid;
 
 use crate::api::buckets::metadata::{requests, responses};
 use crate::db::models;
-use crate::extractors::{ApiToken, DataStore, DbConn, ApiTokenKid, SigningKey};
+use crate::extractors::{ApiToken, ApiTokenKid, DataStore, DbConn, SigningKey};
 use crate::utils::db;
-use crate::utils::storage_ticket::generate as generate_storage_ticket;
 use crate::utils::metadata_upload::handle_metadata_upload;
+use crate::utils::storage_ticket::generate_storage_ticket;
 
 /// Usage limit for all accounts (5 TiB)
 const ACCOUNT_STORAGE_QUOTA: u64 = 5 * 1_024 * 1_024 * 1_024 * 1_024;
@@ -82,7 +82,7 @@ pub async fn push(
         serde_json::from_slice(&request_data_bytes).unwrap();
 
     /* 2. Create a tentative row for the new metadata  */
-    
+
     let i_size = request_data.data_size as i64;
     let maybe_metadata_resource = sqlx::query_as!(
         models::CreatedResource,
@@ -184,9 +184,14 @@ pub async fn push(
     };
 
     /* 4. Now that we know the size of metadata, Check if the upload exceeds the user's storage quota. If so, abort with 413 */
-    
-    // Get how much storage the user is currently using across the platform
-    let current_usage = match db::read_current_total_usage(&account_id, &mut db_conn).await {
+
+    // Read how metadata and data the use has in the current and pending states across all buckets
+    let metadata_states = vec![
+        models::MetadataState::Current,
+        models::MetadataState::Pending,
+    ];
+    let bucket_ids = None;
+    let current_usage = match db::read_usage(&account_id, metadata_states, bucket_ids, &mut db_conn).await {
         Ok(usage) => usage,
         Err(err) => {
             tracing::error!("unable to read account storage usage: {err}");
@@ -198,10 +203,10 @@ pub async fn push(
         }
     };
     // Based on how much stuff there planning on pushing, reject the upload if it would exceed the quota
-    // Expected usage is their current usage plus the size of the metadata they're uploading plus
-    // the size of the data they want to upload to a host
-    if (current_usage + metadata_size as u64 + request_data.data_size as u64) > ACCOUNT_STORAGE_QUOTA {
-        let request_size = request_data.data_size as u64;
+    // Expected usage is their current usage plus the size of the metadata they're uploading plus the size of the data they want to upload to a host
+    let data_size = request_data.data_size as u64;
+    let expected_usage = current_usage + metadata_size + data_size;
+    if expected_usage > ACCOUNT_STORAGE_QUOTA {
         // Mark the upload as failed
         let maybe_failed_metadata_upload = sqlx::query!(
             r#"UPDATE metadata SET state = $1 WHERE id = $2;"#,
@@ -227,7 +232,7 @@ pub async fn push(
             format!(
                 "account storage quota exceeded: {current_usage} + {request_size} > {ACCOUNT_STORAGE_QUOTA}",
                 current_usage = current_usage,
-                request_size = request_size,
+                request_size = data_size + metadata_size,
                 ACCOUNT_STORAGE_QUOTA = ACCOUNT_STORAGE_QUOTA
             ),
         )
@@ -237,23 +242,22 @@ pub async fn push(
     /* 5. Ah yes! They can indeed store this data. Mark the upload as complete and put it in the appropriate state */
 
     // Mark the upload as complete and fill in the size and hash
-    let i_metadata_size = metadata_size as i64;
     // TODO: Eventually this should use pending
     // let bucket_state = models::MetadataState::Pending;
-    let bucket_state = models::MetadataState::Current;
-    let bucket_state_string = bucket_state.to_string();
+    let metadata_state = models::MetadataState::Current.to_string();
+    let metadata_size = metadata_size as i64;
     let maybe_updated_metadata = sqlx::query_as!(
         models::CreatedResource,
         r#"UPDATE metadata SET state = $1, metadata_size = $2, metadata_hash = $3 WHERE id = $4 RETURNING id;"#,
-        bucket_state_string,
-        i_metadata_size,
+        metadata_state,
+        metadata_size,
         metadata_hash,
         metadata_resource.id
     )
     .fetch_one(&mut *db_conn.0)
     .await;
     let updated_metadata = match maybe_updated_metadata {
-        Ok(bm) => bm,
+        Ok(cr) => cr,
         Err(err) => {
             tracing::error!("unable to update bucket metadata after push: {err}");
             return (
@@ -265,8 +269,15 @@ pub async fn push(
     };
 
     /* 6. Determine a storage host we can point them too. Determine what they're expected usage on that host will be after upload */
-    // Since we only have one storage host, this is easy, just query datasize
-    let data_usage = match db::read_current_data_usage(&account_id, &mut db_conn).await {
+    
+    // Since we only have one storage host, this is easy
+    // Query the database for the current and pending data usage for the account
+    let metadata_states = vec![
+        models::MetadataState::Current,
+        models::MetadataState::Pending,
+    ];
+    let bucket_ids = None;
+    let data_usage = match db::read_data_usage(&account_id, metadata_states, bucket_ids, &mut db_conn).await {
         Ok(usage) => usage,
         Err(err) => {
             tracing::error!("unable to read account data usage: {err}");
@@ -277,9 +288,9 @@ pub async fn push(
                 .into_response();
         }
     };
-    // data_usage is in bytes, round up to the nearest 100 MiB
+    // Round up to the nearest 100 MiB
     let data_usage = (data_usage + 100 * 1_024 * 1_024 - 1) / (100 * 1_024 * 1_024);
-    // Pull a storage host from the database. We only have one right now, so this is easy
+    // Read a storage host from the database. We only have one right now, so this is easy
     let storage_host = match db::read_storage_host(STORAGE_HOST, &mut db_conn).await {
         Ok(sh) => sh,
         Err(err) => {
@@ -294,13 +305,14 @@ pub async fn push(
     // TODO: Check if the storage host is full. If so, abort with 503
 
     /* 7. Generate a JWT for the storage host and return it to the user */
+
     let storage_authorization = match generate_storage_ticket(
         &account_id,
         api_token_kid,
         &storage_host.name,
         &storage_host.url,
         data_usage,
-        &signing_key
+        &signing_key,
     ) {
         Ok(ticket) => ticket,
         Err(err) => {

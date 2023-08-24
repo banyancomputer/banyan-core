@@ -195,7 +195,7 @@ pub async fn delete(
     Json(response).into_response()
 }
 
-/// Query the size of a bucket from its metadata in the current state
+/// Return the current DATA usage for the bucket. Query metadata in the current state of the bucket
 pub async fn get_usage(
     api_token: ApiToken,
     mut db_conn: DbConn,
@@ -220,52 +220,54 @@ pub async fn get_usage(
         },
     }
 
-    let maybe_usage = sqlx::query_as!(
-        responses::GetUsage,
-        r#"SELECT SUM(data_size) as "size!" FROM metadata WHERE bucket_id = $1 AND state = 'current'"#,
-        bucket_id,
-    )
-    .fetch_one(&mut *db_conn.0)
-    .await;
-
-    let usage = match maybe_usage {
-        Ok(usage) => usage,
-        Err(err) => {
-            tracing::error!("unable to read usage: {err}");
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "internal server error".to_string(),
-            )
-                .into_response();
-        }
+    // Observable usage is sum of data in current state for the requested bucket
+    let metadata_states = vec![models::MetadataState::Current];
+    let bucket_ids = Some(vec![bucket_id]);
+    let response = match db::read_data_usage(&account_id, metadata_states, bucket_ids, &mut db_conn).await {
+        Ok(usage) => responses::GetUsage {
+            size: usage,
+        },
+        Err(err) => match err {
+            sqlx::Error::RowNotFound => {
+                return (StatusCode::NOT_FOUND, format!("bucket not found: {err}")).into_response();
+            }
+            _ => {
+                tracing::error!("unable to read bucket: {err}");
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "internal server error".to_string(),
+                )
+                    .into_response();
+            }
+        },
     };
-
-    Json(usage).into_response()
+    Json(response).into_response()
 }
 
-/// Get the total storage used by the account
+/// Return the current DATA usage for the account. Query metadata in the current state of the account
 pub async fn get_total_usage(api_token: ApiToken, mut db_conn: DbConn) -> impl IntoResponse {
     let account_id = api_token.subject;
-
-    let maybe_total_usage = sqlx::query_as!(
-        responses::GetUsage,
-        r#"SELECT SUM(data_size) as "size!" FROM metadata JOIN buckets ON metadata.bucket_id = buckets.id WHERE buckets.account_id = $1 AND metadata.state = 'current'"#,
-        account_id,
-    )
-    .fetch_one(&mut *db_conn.0)
-    .await;
-    let total_usage = match maybe_total_usage {
-        Ok(usage) => usage,
-        Err(err) => {
-            tracing::error!("unable to read total usage: {err}");
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "internal server error".to_string(),
-            )
-                .into_response();
-        }
+    let metadata_states = vec![models::MetadataState::Current];
+    let bucket_ids = None;
+    let response = match db::read_data_usage(&account_id, metadata_states, bucket_ids, &mut db_conn).await {
+        Ok(usage) => responses::GetUsage {
+            size: usage,
+        },
+        Err(err) => match err {
+            sqlx::Error::RowNotFound => {
+                return (StatusCode::NOT_FOUND, format!("bucket not found: {err}")).into_response();
+            }
+            _ => {
+                tracing::error!("unable to read bucket: {err}");
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "internal server error".to_string(),
+                )
+                    .into_response();
+            }
+        },
     };
-    Json(total_usage).into_response()
+    Json(response).into_response()
 }
 
 pub async fn get_usage_limit(_api_token: ApiToken) -> impl IntoResponse {

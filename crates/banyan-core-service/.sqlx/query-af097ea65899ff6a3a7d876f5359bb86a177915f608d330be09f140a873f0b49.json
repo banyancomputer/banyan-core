@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT \n                COALESCE(SUM(m.data_size), 0) as \"size!\"\n            FROM\n                metadata m\n            INNER JOIN\n                buckets b ON b.id = m.bucket_id\n            WHERE\n                b.account_id = $1 AND m.state IN ($2);",
+  "describe": {
+    "columns": [
+      {
+        "name": "size!",
+        "ordinal": 0,
+        "type_info": "Int"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "af097ea65899ff6a3a7d876f5359bb86a177915f608d330be09f140a873f0b49"
+}

@@ -98,6 +98,7 @@ fn load_or_create_service_key(path: &PathBuf) -> Result<(EncodingKey, DecodingKe
     let public_pem_bytes = service_private_key
         .public_key_to_pem()
         .map_err(StateError::key_loading)?;
+
     let decoding_key = DecodingKey::from_ec_pem(public_pem_bytes.as_ref())
         .map_err(StateError::loading_state_keys)?;
 

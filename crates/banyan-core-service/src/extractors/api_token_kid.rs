@@ -44,7 +44,8 @@ where
             .map_err(ApiKeyIdAuthorizationError::missing_header)?;
 
         let token = bearer.token();
-        let header_data = decode_header(token).map_err(ApiKeyIdAuthorizationError::decode_failed)?;
+        let header_data =
+            decode_header(token).map_err(ApiKeyIdAuthorizationError::decode_failed)?;
 
         let kid = match header_data.kid {
             Some(key_id) if key_regex.is_match(key_id.as_str()) => key_id,
@@ -160,4 +161,3 @@ enum ApiKeyIdAuthorizationErrorKind {
     UnidentifiedKey,
     UnknownTokenError(jsonwebtoken::errors::Error),
 }
-
