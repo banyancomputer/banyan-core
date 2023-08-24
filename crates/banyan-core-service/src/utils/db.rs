@@ -424,7 +424,7 @@ pub async fn read_storage_host(
 ) -> Result<models::StorageHost, sqlx::Error> {
     let maybe_storage_host = sqlx::query_as!(
         models::StorageHost,
-        r#"SELECT id, name, url, available_storage, pem FROM storage_hosts WHERE name = $1;"#,
+        r#"SELECT id, name, url, used_storage, available_storage, fingerprint, pem FROM storage_hosts WHERE name = $1;"#,
         name,
     )
     .fetch_one(&mut *db_conn.0)

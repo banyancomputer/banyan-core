@@ -5,6 +5,7 @@ use serde::Serialize;
 
 mod auth;
 mod buckets;
+mod storage;
 
 use crate::app_state::AppState;
 use crate::utils::collect_error_messages;
@@ -19,6 +20,7 @@ pub fn router(state: AppState) -> Router<AppState> {
     Router::new()
         .nest("/auth", auth::router(state.clone()))
         .nest("/buckets", buckets::router(state.clone()))
+        .nest("/storage", storage::router(state.clone()))
         .with_state(state)
         .layer(cors_layer)
 }

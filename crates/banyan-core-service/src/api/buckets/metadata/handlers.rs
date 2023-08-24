@@ -244,9 +244,7 @@ pub async fn push(
     /* 5. Ah yes! They can indeed store this data. Mark the upload as complete and put it in the appropriate state */
 
     // Mark the upload as complete and fill in the size and hash
-    // TODO: Eventually this should use pending
-    // let bucket_state = models::MetadataState::Pending;
-    let metadata_state = models::MetadataState::Current.to_string();
+    let metadata_state = models::MetadataState::Pending;
     let metadata_size = metadata_size as i64;
     let maybe_updated_metadata = sqlx::query_as!(
         models::CreatedResource,
@@ -330,7 +328,7 @@ pub async fn push(
 
     let response = responses::PushMetadataResponse {
         id: updated_metadata.id.to_string(),
-        state: models::MetadataState::Current,
+        state: models::MetadataState::Pending,
         storage_host: storage_host.url,
         storage_authorization,
     };
