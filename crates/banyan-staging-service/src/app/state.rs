@@ -5,14 +5,14 @@ use jwt_simple::prelude::*;
 use object_store::local::LocalFileSystem;
 use sha2::Digest;
 
-use crate::app::{Config, Error};
+use crate::app::{Config, Error, GrantVerificationKey, PlatformAuthKey};
 use crate::database::{config_database, Db};
 
 #[derive(Clone)]
 pub struct State {
     database: Db,
-    grant_verification_key: Arc<ES384PublicKey>,
-    platform_auth_key: Arc<ES384KeyPair>,
+    grant_verification_key: GrantVerificationKey,
+    platform_auth_key: PlatformAuthKey,
 }
 
 impl State {
@@ -33,14 +33,18 @@ impl State {
         let pem = String::from_utf8_lossy(&key_bytes);
         let auth_raw = ES384KeyPair::from_pem(&pem).map_err(Error::invalid_key)?;
         let fingerprint = fingerprint_key(&auth_raw);
-        let platform_auth_key = Arc::new(auth_raw.with_key_id(&fingerprint));
+        let platform_auth_key = auth_raw.with_key_id(&fingerprint);
 
         // Parse the public grant verification key (this will be the one coming from the platform)
         let key_bytes = std::fs::read(config.grant_verification_key_path()).map_err(Error::unreadable_key)?;
         let pem = String::from_utf8_lossy(&key_bytes);
-        let grant_verification_key = Arc::new(ES384PublicKey::from_pem(&pem).map_err(Error::invalid_key)?);
+        let grant_verification_key = ES384PublicKey::from_pem(&pem).map_err(Error::invalid_key)?;
 
-        Ok(Self { database, grant_verification_key, platform_auth_key })
+        Ok(Self {
+            database,
+            grant_verification_key: GrantVerificationKey::new(grant_verification_key),
+            platform_auth_key: PlatformAuthKey::new(platform_auth_key),
+        })
     }
 }
 
@@ -50,11 +54,17 @@ impl axum::extract::FromRef<State> for Db {
     }
 }
 
-//impl axum::extract::FromRef<State> for Arc<ES384KeyPair> {
-//    fn from_ref(state: &State) -> Self {
-//        state.jwt_key.clone()
-//    }
-//}
+impl axum::extract::FromRef<State> for GrantVerificationKey {
+    fn from_ref(state: &State) -> Self {
+        state.grant_verification_key.clone()
+    }
+}
+
+impl axum::extract::FromRef<State> for PlatformAuthKey {
+    fn from_ref(state: &State) -> Self {
+        state.platform_auth_key.clone()
+    }
+}
 
 fn fingerprint_key(keys: &ES384KeyPair) -> String {
     let public_key = keys.key_pair().public_key();
