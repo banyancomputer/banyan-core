@@ -14,7 +14,7 @@ struct Claims {
     #[serde(rename = "iat")]
     pub issued_at: u64,
 
-    #[serde(rename = "nonce")]
+    #[serde(rename = "nnc")]
     pub nonce: String,
 
     #[serde(rename = "exp")]
