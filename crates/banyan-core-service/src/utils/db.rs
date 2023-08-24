@@ -1,3 +1,5 @@
+use serde::Serialize;
+
 use crate::db::models;
 use crate::extractors::DbConn;
 
@@ -408,4 +410,183 @@ pub async fn read_all_snapshots(
             _ => Err(err),
         },
     }
+}
+
+/// Read storage host by name.
+/// # Arguments
+/// * `name` - The name of the storage host to read.
+/// * `db_conn` - The database connection to use.
+/// # Return Type
+/// Returns the storage host if it exists, otherwise returns an error.
+pub async fn read_storage_host(
+    name: &str,
+    db_conn: &mut DbConn,
+) -> Result<models::StorageHost, sqlx::Error> {
+    let maybe_storage_host = sqlx::query_as!(
+        models::StorageHost,
+        r#"SELECT id, name, url, available_storage, pem FROM storage_hosts WHERE name = $1;"#,
+        name,
+    )
+    .fetch_one(&mut *db_conn.0)
+    .await;
+    match maybe_storage_host {
+        Ok(storage_host) => Ok(storage_host),
+        Err(err) => match err {
+            sqlx::Error::RowNotFound => Err(sqlx::Error::RowNotFound),
+            _ => Err(err),
+        },
+    }
+}
+
+/// Read the data + metadata usage of the given account id.
+/// This is the sum of all data_size and metadata_size for all metadata associated with the account.
+/// # Arguments
+/// * `account_id` - The id of the account to read.
+/// * `metadata_states` - The states of the metadata to include in the usage calculation.
+/// * `bucket_ids` - The ids of the buckets to include in the usage calculation. If empty, all buckets are included.
+/// * `db_conn` - The database connection to use.
+/// # Return Type
+/// Returns the current data usage if it exists, otherwise returns an error.
+pub async fn read_usage(
+    account_id: &str,
+    metadata_states: Vec<models::MetadataState>,
+    bucket_ids: Option<Vec<String>>,
+    db_conn: &mut DbConn,
+) -> Result<u64, sqlx::Error> {
+    let states = format!(
+        "\'{}\'",
+        metadata_states
+            .iter()
+            .map(|state| state.to_string())
+            .collect::<Vec<String>>()
+            .join("', '")
+    );
+    let maybe_usage = match bucket_ids {
+        Some(bucket_ids) => {
+            let bucket_ids = format!("\'{}\'", bucket_ids.join("', '"));
+            sqlx::query_as!(
+                GetTotalUsage,
+                r#"SELECT 
+                    COALESCE(SUM(m.data_size), 0) as "data_size!",
+                    COALESCE(SUM(m.metadata_size), 0) as "metadata_size!"
+                FROM
+                    metadata m
+                INNER JOIN
+                    buckets b ON b.id = m.bucket_id
+                WHERE
+                    b.account_id = $1 AND m.state IN ($2) AND b.id IN ($3);"#,
+                account_id,
+                states,
+                bucket_ids
+            )
+            .fetch_one(&mut *db_conn.0)
+            .await
+        }
+        None => {
+            sqlx::query_as!(
+                GetTotalUsage,
+                r#"SELECT 
+                COALESCE(SUM(m.data_size), 0) as "data_size!",
+                COALESCE(SUM(m.metadata_size), 0) as "metadata_size!"
+            FROM
+                metadata m
+            INNER JOIN
+                buckets b ON b.id = m.bucket_id
+            WHERE
+                b.account_id = $1 AND m.state IN ($2);"#,
+                account_id,
+                states
+            )
+            .fetch_one(&mut *db_conn.0)
+            .await
+        }
+    };
+    match maybe_usage {
+        Ok(usage) => Ok(usage.data_size as u64 + usage.metadata_size as u64),
+        Err(err) => match err {
+            sqlx::Error::RowNotFound => Err(sqlx::Error::RowNotFound),
+            _ => Err(err),
+        },
+    }
+}
+
+/// Read the data usage of the given account id.
+/// This is the sum of all data_size for all metadata associated with the account.
+/// # Arguments
+/// * `account_id` - The id of the account to read.
+/// * `metadata_states` - The states of the metadata to include in the usage calculation.
+/// * `bucket_ids` - The ids of the buckets to include in the usage calculation. If empty, all buckets are included.
+/// * `db_conn` - The database connection to use.
+/// # Return Type
+/// Returns the data usage if it exists, otherwise returns an error.
+pub async fn read_data_usage(
+    account_id: &str,
+    metadata_states: Vec<models::MetadataState>,
+    bucket_ids: Option<Vec<String>>,
+    db_conn: &mut DbConn,
+) -> Result<u64, sqlx::Error> {
+    let states = format!(
+        "\'{}\'",
+        metadata_states
+            .iter()
+            .map(|state| state.to_string())
+            .collect::<Vec<String>>()
+            .join("', '")
+    );
+    let maybe_data_usage = match bucket_ids {
+        Some(bucket_ids) => {
+            let bucket_ids = format!("\'{}\'", bucket_ids.join("', '"));
+            sqlx::query_as!(
+                GetUsage,
+                r#"SELECT 
+                    COALESCE(SUM(m.data_size), 0) as "size!"
+                FROM
+                    metadata m
+                INNER JOIN
+                    buckets b ON b.id = m.bucket_id
+                WHERE
+                    b.account_id = $1 AND m.state IN ($2) AND b.id IN ($3);"#,
+                account_id,
+                states,
+                bucket_ids
+            )
+            .fetch_one(&mut *db_conn.0)
+            .await
+        }
+        None => {
+            sqlx::query_as!(
+                GetUsage,
+                r#"SELECT 
+                COALESCE(SUM(m.data_size), 0) as "size!"
+            FROM
+                metadata m
+            INNER JOIN
+                buckets b ON b.id = m.bucket_id
+            WHERE
+                b.account_id = $1 AND m.state IN ($2);"#,
+                account_id,
+                states
+            )
+            .fetch_one(&mut *db_conn.0)
+            .await
+        }
+    };
+    match maybe_data_usage {
+        Ok(usage) => Ok(usage.size as u64),
+        Err(err) => match err {
+            sqlx::Error::RowNotFound => Err(sqlx::Error::RowNotFound),
+            _ => Err(err),
+        },
+    }
+}
+
+#[derive(Serialize)]
+struct GetTotalUsage {
+    pub data_size: i64,
+    pub metadata_size: i64,
+}
+
+#[derive(Serialize)]
+struct GetUsage {
+    pub size: i64,
 }
