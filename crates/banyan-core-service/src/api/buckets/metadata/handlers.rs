@@ -26,6 +26,7 @@ const CAR_DATA_SIZE_LIMIT: u64 = 128 * 1_024 * 1_024;
 const STORAGE_HOST: &str = "banyan-staging";
 
 /// Handle a request to push new metadata to a bucket
+#[allow(clippy::too_many_arguments)]
 pub async fn push(
     api_token: ApiToken,
     api_token_kid: ApiTokenKid,
@@ -191,17 +192,18 @@ pub async fn push(
         models::MetadataState::Pending,
     ];
     let bucket_ids = None;
-    let current_usage = match db::read_usage(&account_id, metadata_states, bucket_ids, &mut db_conn).await {
-        Ok(usage) => usage,
-        Err(err) => {
-            tracing::error!("unable to read account storage usage: {err}");
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "internal server error".to_string(),
-            )
-                .into_response();
-        }
-    };
+    let current_usage =
+        match db::read_usage(&account_id, metadata_states, bucket_ids, &mut db_conn).await {
+            Ok(usage) => usage,
+            Err(err) => {
+                tracing::error!("unable to read account storage usage: {err}");
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "internal server error".to_string(),
+                )
+                    .into_response();
+            }
+        };
     // Based on how much stuff there planning on pushing, reject the upload if it would exceed the quota
     // Expected usage is their current usage plus the size of the metadata they're uploading plus the size of the data they want to upload to a host
     let data_size = request_data.data_size as u64;
@@ -269,7 +271,7 @@ pub async fn push(
     };
 
     /* 6. Determine a storage host we can point them too. Determine what they're expected usage on that host will be after upload */
-    
+
     // Since we only have one storage host, this is easy
     // Query the database for the current and pending data usage for the account
     let metadata_states = vec![
@@ -277,17 +279,18 @@ pub async fn push(
         models::MetadataState::Pending,
     ];
     let bucket_ids = None;
-    let data_usage = match db::read_data_usage(&account_id, metadata_states, bucket_ids, &mut db_conn).await {
-        Ok(usage) => usage,
-        Err(err) => {
-            tracing::error!("unable to read account data usage: {err}");
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "internal server error".to_string(),
-            )
-                .into_response();
-        }
-    };
+    let data_usage =
+        match db::read_data_usage(&account_id, metadata_states, bucket_ids, &mut db_conn).await {
+            Ok(usage) => usage,
+            Err(err) => {
+                tracing::error!("unable to read account data usage: {err}");
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "internal server error".to_string(),
+                )
+                    .into_response();
+            }
+        };
     // Round up to the nearest 100 MiB
     let data_usage = (data_usage + 100 * 1_024 * 1_024 - 1) / (100 * 1_024 * 1_024);
     // Read a storage host from the database. We only have one right now, so this is easy

@@ -453,12 +453,14 @@ pub async fn read_usage(
     bucket_ids: Option<Vec<String>>,
     db_conn: &mut DbConn,
 ) -> Result<u64, sqlx::Error> {
-    let states = format!("\'{}\'",
+    let states = format!(
+        "\'{}\'",
         metadata_states
-        .iter()
-        .map(|state| state.to_string())
-        .collect::<Vec<String>>()
-        .join("', '"));
+            .iter()
+            .map(|state| state.to_string())
+            .collect::<Vec<String>>()
+            .join("', '")
+    );
     let maybe_usage = match bucket_ids {
         Some(bucket_ids) => {
             let bucket_ids = format!("\'{}\'", bucket_ids.join("', '"));
@@ -476,11 +478,14 @@ pub async fn read_usage(
                 account_id,
                 states,
                 bucket_ids
-            ).fetch_one(&mut *db_conn.0).await
+            )
+            .fetch_one(&mut *db_conn.0)
+            .await
         }
-        None => sqlx::query_as!(
-            GetTotalUsage,
-            r#"SELECT 
+        None => {
+            sqlx::query_as!(
+                GetTotalUsage,
+                r#"SELECT 
                 COALESCE(SUM(m.data_size), 0) as "data_size!",
                 COALESCE(SUM(m.metadata_size), 0) as "metadata_size!"
             FROM
@@ -489,9 +494,12 @@ pub async fn read_usage(
                 buckets b ON b.id = m.bucket_id
             WHERE
                 b.account_id = $1 AND m.state IN ($2);"#,
-            account_id,
-            states
-        ).fetch_one(&mut *db_conn.0).await,
+                account_id,
+                states
+            )
+            .fetch_one(&mut *db_conn.0)
+            .await
+        }
     };
     match maybe_usage {
         Ok(usage) => Ok(usage.data_size as u64 + usage.metadata_size as u64),
@@ -501,7 +509,6 @@ pub async fn read_usage(
         },
     }
 }
-
 
 /// Read the data usage of the given account id.
 /// This is the sum of all data_size for all metadata associated with the account.
@@ -518,12 +525,14 @@ pub async fn read_data_usage(
     bucket_ids: Option<Vec<String>>,
     db_conn: &mut DbConn,
 ) -> Result<u64, sqlx::Error> {
-    let states = format!("\'{}\'",
+    let states = format!(
+        "\'{}\'",
         metadata_states
-        .iter()
-        .map(|state| state.to_string())
-        .collect::<Vec<String>>()
-        .join("', '"));
+            .iter()
+            .map(|state| state.to_string())
+            .collect::<Vec<String>>()
+            .join("', '")
+    );
     let maybe_data_usage = match bucket_ids {
         Some(bucket_ids) => {
             let bucket_ids = format!("\'{}\'", bucket_ids.join("', '"));
@@ -540,11 +549,14 @@ pub async fn read_data_usage(
                 account_id,
                 states,
                 bucket_ids
-            ).fetch_one(&mut *db_conn.0).await
+            )
+            .fetch_one(&mut *db_conn.0)
+            .await
         }
-        None => sqlx::query_as!(
-            GetUsage,
-            r#"SELECT 
+        None => {
+            sqlx::query_as!(
+                GetUsage,
+                r#"SELECT 
                 COALESCE(SUM(m.data_size), 0) as "size!"
             FROM
                 metadata m
@@ -552,9 +564,12 @@ pub async fn read_data_usage(
                 buckets b ON b.id = m.bucket_id
             WHERE
                 b.account_id = $1 AND m.state IN ($2);"#,
-            account_id,
-            states
-        ).fetch_one(&mut *db_conn.0).await,
+                account_id,
+                states
+            )
+            .fetch_one(&mut *db_conn.0)
+            .await
+        }
     };
     match maybe_data_usage {
         Ok(usage) => Ok(usage.size as u64),

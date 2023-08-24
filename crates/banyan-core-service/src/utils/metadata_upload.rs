@@ -21,7 +21,7 @@ where
         hasher.update(&chunk);
         car_buffer.add_chunk(&chunk);
         bytes_written += chunk.len();
-        
+
         writer
             .write_all(&chunk)
             .await

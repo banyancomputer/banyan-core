@@ -223,10 +223,10 @@ pub async fn get_usage(
     // Observable usage is sum of data in current state for the requested bucket
     let metadata_states = vec![models::MetadataState::Current];
     let bucket_ids = Some(vec![bucket_id]);
-    let response = match db::read_data_usage(&account_id, metadata_states, bucket_ids, &mut db_conn).await {
-        Ok(usage) => responses::GetUsage {
-            size: usage,
-        },
+    let response = match db::read_data_usage(&account_id, metadata_states, bucket_ids, &mut db_conn)
+        .await
+    {
+        Ok(usage) => responses::GetUsage { size: usage },
         Err(err) => match err {
             sqlx::Error::RowNotFound => {
                 return (StatusCode::NOT_FOUND, format!("bucket not found: {err}")).into_response();
@@ -249,10 +249,10 @@ pub async fn get_total_usage(api_token: ApiToken, mut db_conn: DbConn) -> impl I
     let account_id = api_token.subject;
     let metadata_states = vec![models::MetadataState::Current];
     let bucket_ids = None;
-    let response = match db::read_data_usage(&account_id, metadata_states, bucket_ids, &mut db_conn).await {
-        Ok(usage) => responses::GetUsage {
-            size: usage,
-        },
+    let response = match db::read_data_usage(&account_id, metadata_states, bucket_ids, &mut db_conn)
+        .await
+    {
+        Ok(usage) => responses::GetUsage { size: usage },
         Err(err) => match err {
             sqlx::Error::RowNotFound => {
                 return (StatusCode::NOT_FOUND, format!("bucket not found: {err}")).into_response();
