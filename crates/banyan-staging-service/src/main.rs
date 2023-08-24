@@ -4,13 +4,12 @@ use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::{EnvFilter, Layer};
 
 //mod extractors;
-//mod http_server;
+//mod middleware;
 
 mod app;
 mod database;
 mod health_check;
-//mod http_server;
-//mod middleware;
+mod http_server;
 
 use app::{Config, Error, Version};
 
@@ -39,7 +38,7 @@ async fn main() -> Result<(), Error> {
     register_panic_logger();
 
     let config = Config::parse_cli_arguments()?;
-    //http_server::run(config).await?;
+    http_server::run(config).await?;
 
     tracing::info!("shutting down normally");
 

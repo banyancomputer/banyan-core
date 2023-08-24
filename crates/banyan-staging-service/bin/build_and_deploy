@@ -71,8 +71,10 @@ TimeoutStopSec=35
 ExecStartPre=rm -f %t/%n-pid %t/%n-cid
 ExecStartPre=podman load --input \${HOME}/${DEPLOY_IMAGE_ARCHIVE}/${IMAGE_BASE_NAME}.tar
 ExecStart=podman run -d --name ${SERVICE_NAME} --read-only --replace --restart=on-failure:3 --env-file \${HOME}/${DEPLOY_ENV}/${SERVICE_NAME} --mount type=bind,src=\${HOME}/${DEPLOY_PERSISTENT_DATA}/${SERVICE_NAME},dst=/data --userns keep-id:uid=65532,gid=65532 --network slirp4netns:allow_host_loopback=true --log-driver=k8s-file --log-opt max-size=128kb,path=\${HOME}/${DEPLOY_LOGS}/${SERVICE_NAME}/latest.log --hostname ${SERVICE_NAME}.svc.${DEPLOY_HOST} --publish [::1]:${SERVICE_PORT}:${SERVICE_PORT}/tcp --conmon-pidfile %t/%n-pid --cidfile %t/%n-cid ${FULL_IMAGE_NAME} ${SERVICE_ARGUMENTS}
-# We match the k8s container behavior of 30 seconds to kill
-ExecStop=podman stop -t 30 --cidfile %t/%n-cid
+# If we want to replicate the k8s behavior wait-drain-and-shutdown, this is what we'd use to stop the service
+#ExecStop=podman stop -t 30 --cidfile %t/%n-cid
+# These servers don't have alternate services picking up its downtime so we want to take the fast restart path
+ExecStop=podman kill --signal=SIGINT --cidfile %t/%n-cid
 PIDFile=%t/%n-pid
 
 [Install]

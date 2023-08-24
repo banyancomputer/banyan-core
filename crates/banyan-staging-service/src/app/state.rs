@@ -1,6 +1,3 @@
-use std::sync::Arc;
-
-use jwt_simple::algorithms::ECDSAP384PublicKeyLike;
 use jwt_simple::prelude::*;
 use object_store::local::LocalFileSystem;
 use sha2::Digest;

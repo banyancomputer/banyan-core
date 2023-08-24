@@ -17,9 +17,6 @@ pub trait DataSource {
 pub enum DataSourceError {
     #[error("one or more dependent services aren't available")]
     DependencyFailure,
-
-    #[error("service has received signal indicating it should shutdown")]
-    ShuttingDown,
 }
 
 pub type DynDataSource = Arc<dyn DataSource + Send + Sync>;
@@ -91,7 +88,6 @@ pub(crate) mod tests {
     pub(crate) enum MockReadiness {
         DependencyFailure,
         Ready,
-        ShuttingDown,
     }
 
     #[async_trait]
@@ -102,7 +98,6 @@ pub(crate) mod tests {
             match self {
                 DependencyFailure => Err(DataSourceError::DependencyFailure),
                 Ready => Ok(()),
-                ShuttingDown => Err(DataSourceError::ShuttingDown),
             }
         }
     }
