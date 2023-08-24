@@ -6,9 +6,9 @@ use tracing_subscriber::{EnvFilter, Layer};
 mod api;
 mod app;
 mod database;
+mod extractors;
 mod health_check;
 mod http_server;
-mod middleware;
 
 use app::{Config, Error, Version};
 
