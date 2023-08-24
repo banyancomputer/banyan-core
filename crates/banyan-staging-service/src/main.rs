@@ -3,6 +3,7 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::{EnvFilter, Layer};
 
+mod api;
 mod app;
 mod database;
 mod health_check;
