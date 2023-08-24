@@ -143,7 +143,7 @@ pub async fn run(config: Config) -> Result<(), Error> {
     let app = middleware_stack.service(root_router);
 
     tracing::info!(addr = ?config.listen_addr(), "server listening");
-    Server::bind(config.listen_addr())
+    Server::bind(&config.listen_addr())
         .serve(app.into_make_service())
         .with_graceful_shutdown(graceful_shutdown_blocker())
         .await?;

@@ -24,12 +24,12 @@ impl Config {
         self.db_url.as_ref().map(String::as_ref)
     }
 
-    pub fn grant_verification_key_path(&self) -> &PathBuf {
-        &self.grant_verification_key_path
+    pub fn grant_verification_key_path(&self) -> PathBuf {
+        self.grant_verification_key_path.clone()
     }
 
-    pub fn listen_addr(&self) -> &SocketAddr {
-        &self.listen_addr
+    pub fn listen_addr(&self) -> SocketAddr {
+        self.listen_addr.clone()
     }
 
     pub fn log_level(&self) -> Level {
@@ -91,11 +91,11 @@ impl Config {
         })
     }
 
-    pub fn platform_auth_key_path(&self) -> &PathBuf {
-        &self.platform_auth_key_path
+    pub fn platform_auth_key_path(&self) -> PathBuf {
+        self.platform_auth_key_path.clone()
     }
 
-    pub fn upload_directory(&self) -> &PathBuf {
-        &self.upload_directory
+    pub fn upload_directory(&self) -> PathBuf {
+        self.upload_directory.clone()
     }
 }

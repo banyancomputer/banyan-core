@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use jwt_simple::prelude::*;
 use object_store::local::LocalFileSystem;
 use sha2::Digest;
@@ -8,8 +10,11 @@ use crate::database::{config_database, Db};
 #[derive(Clone)]
 pub struct State {
     database: Db,
+
     grant_verification_key: GrantVerificationKey,
     platform_auth_key: PlatformAuthKey,
+
+    upload_directory: PathBuf,
 }
 
 impl State {
@@ -39,9 +44,16 @@ impl State {
 
         Ok(Self {
             database,
+
             grant_verification_key: GrantVerificationKey::new(grant_verification_key),
             platform_auth_key: PlatformAuthKey::new(platform_auth_key),
+
+            upload_directory: config.upload_directory(),
         })
+    }
+
+    pub fn upload_directory(&self) -> PathBuf {
+        self.upload_directory.clone()
     }
 }
 

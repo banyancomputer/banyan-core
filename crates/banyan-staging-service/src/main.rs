@@ -3,13 +3,11 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::{EnvFilter, Layer};
 
-//mod extractors;
-//mod middleware;
-
 mod app;
 mod database;
 mod health_check;
 mod http_server;
+mod middleware;
 
 use app::{Config, Error, Version};
 

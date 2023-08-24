@@ -6,12 +6,12 @@ use axum::http::request::Parts;
 use axum::http::StatusCode;
 use object_store::local::LocalFileSystem;
 
-use crate::app_state::AppState;
+use crate::app::State;
 
 #[derive(Debug)]
-pub struct DataStore(LocalFileSystem);
+pub struct UploadStore(LocalFileSystem);
 
-impl Deref for DataStore {
+impl Deref for UploadStore {
     type Target = LocalFileSystem;
 
     fn deref(&self) -> &Self::Target {
@@ -20,14 +20,14 @@ impl Deref for DataStore {
 }
 
 #[async_trait]
-impl FromRequestParts<AppState> for DataStore {
+impl FromRequestParts<State> for UploadStore {
     type Rejection = (StatusCode, String);
 
     async fn from_request_parts(
         _parts: &mut Parts,
-        app_state: &AppState,
+        state: &State,
     ) -> Result<Self, Self::Rejection> {
-        let store = match LocalFileSystem::new_with_prefix(app_state.upload_directory()) {
+        let store = match LocalFileSystem::new_with_prefix(state.upload_directory()) {
             Ok(s) => s,
             Err(err) => return Err((StatusCode::INTERNAL_SERVER_ERROR, err.to_string())),
         };
