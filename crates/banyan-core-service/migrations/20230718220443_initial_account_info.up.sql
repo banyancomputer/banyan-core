@@ -252,6 +252,9 @@ CREATE TABLE storage_hosts (
   -- The host's url
   url TEXT NOT NULL,
 
+  -- The host's currently used storage capacity (in bytes)
+  used_storage INTEGER NOT NULL,
+
   -- The host's available storage capacity (in bytes)
   available_storage INTEGER NOT NULL,
 
@@ -268,6 +271,7 @@ VALUES (
   '846db58a-d5f5-4388-9bfe-667b385aacc8',
   'banyan-staging',
   'https://staging.storage.banyan.computer/',
+  0,
   549755813888000,
   "-----BEGIN PUBLIC KEY-----\nMHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEZzVwDCZdaMJzX5CRaI7HgUGsMti7zsUZ\nKnhBQDda3ErqZSTCNy4TMf35yeLbzeGSqCmOPsvCuH8O30s3QQg30hcHUeUoEZE0\ndQRlKBv+5PpcPdWWVUG50E8fB8+1EChE\n-----END PUBLIC KEY-----"
 );
