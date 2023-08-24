@@ -14,13 +14,18 @@ pub struct Config {
 
     db_url: Option<String>,
 
-    jwt_key_path: PathBuf,
+    platform_auth_key_path: PathBuf,
+    grant_verification_key_path: PathBuf,
     upload_directory: PathBuf,
 }
 
 impl Config {
     pub fn db_url(&self) -> Option<&str> {
         self.db_url.as_ref().map(String::as_ref)
+    }
+
+    pub fn grant_verification_key_path(&self) -> &PathBuf {
+        &self.grant_verification_key_path
     }
 
     pub fn listen_addr(&self) -> &SocketAddr {
@@ -34,14 +39,14 @@ impl Config {
     pub fn parse_cli_arguments() -> Result<Self, Error> {
         let mut args = Arguments::from_env();
 
-        if args.subcommand().unwrap() == Some("generate".to_string()) {
-            let jwt_key_path: PathBuf = args
-                .opt_value_from_str("--session-key")?
-                .unwrap_or("./data/session.key".into());
+        if args.subcommand().unwrap() == Some("generate-auth".to_string()) {
+            let key_path: PathBuf = args
+                .opt_value_from_str("--path")?
+                .unwrap_or("./data/platform-auth.key".into());
 
-            tracing::info!("generating new session key at {jwt_key_path:?}");
+            tracing::info!("generating new platform key at {key_path:?}");
 
-            let _new_session_key = ES384KeyPair::generate();
+            let _new_key = ES384KeyPair::generate();
 
             // todo: write the session key out to the path
             // todo: make sure this doesn't overwrite an existing key
@@ -62,9 +67,13 @@ impl Config {
         let db_url = args
             .opt_value_from_str("--db-url")?;
 
-        let jwt_key_path: PathBuf = args
-            .opt_value_from_str("--session-key")?
-            .unwrap_or("./data/session.key".into());
+        let platform_auth_key_path: PathBuf = args
+            .opt_value_from_str("--platform-key")?
+            .unwrap_or("./data/platform-auth.key".into());
+
+        let grant_verification_key_path: PathBuf = args
+            .opt_value_from_str("--grant-verifier")?
+            .unwrap_or("./data/verifier.pub".into());
 
         let upload_directory = args
             .opt_value_from_str("--upload-dir")?
@@ -76,13 +85,14 @@ impl Config {
 
             db_url,
 
-            jwt_key_path,
+            platform_auth_key_path,
+            grant_verification_key_path,
             upload_directory,
         })
     }
 
-    pub fn jwt_key_path(&self) -> &PathBuf {
-        &self.jwt_key_path
+    pub fn platform_auth_key_path(&self) -> &PathBuf {
+        &self.platform_auth_key_path
     }
 
     pub fn upload_directory(&self) -> &PathBuf {
