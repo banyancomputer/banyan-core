@@ -91,15 +91,31 @@ where
             None => return Err(Self::Rejection::SubjectMissing),
         };
 
+        let (client_id, client_fingerprint) = match key_validator().captures(&grant_subject) {
+            Some(matches) => {
+                let id_str: &str = matches.get(1).expect("captures should be guaranteed").as_str();
+                let id = Uuid::parse_str(id_str).expect("already validated the format");
+
+                let finger_str: &str = matches.get(1).expect("captures should be guaranteed").as_str();
+
+                (id, finger_str.to_owned())
+            }
+            None => return Err(Self::Rejection::SubjectInvalid),
+        };
+
         // todo: need to take in the domain the provider will be running as to lookup expectedUsage
         // what we were authorized as but we can fake it for now by assuming we're the only one
         // present.
+        let authorized_data_size = match claims.custom.capabilities.get("https://staging.storage.banyan.computer/") {
+            Some(ads) => ads.authorized_amount,
+            None => return Err(StorageGrantError::WrongTarget),
+        };
 
         let grant = StorageGrant {
-            client_id: Uuid::new_v4(),
-            client_fingerprint: "03:4a:11:4f:ff:08:83:ad:4a:fc:72:b3:ce:50:1b:df:d8:40:63:d7".to_string(),
+            client_id,
+            client_fingerprint,
 
-            authorized_data_size: 100_000,
+            authorized_data_size,
         };
 
         Ok(grant)
@@ -125,6 +141,9 @@ pub enum StorageGrantError {
 
     #[error("storage token grant failed validation")]
     ValidationFailed(jwt_simple::Error),
+
+    #[error("storage token grant was not intended for this server")]
+    WrongTarget,
 }
 
 impl IntoResponse for StorageGrantError {
@@ -149,6 +168,11 @@ impl IntoResponse for StorageGrantError {
                 let err_msg = serde_json::json!({ "msg": "storage grant was not accepted" });
                 (StatusCode::UNAUTHORIZED, Json(err_msg)).into_response()
             }
+            WrongTarget => {
+                tracing::error!("{self}");
+                let err_msg = serde_json::json!({ "msg": "storage grant ticket is for another storage provider" });
+                (StatusCode::UNAUTHORIZED, Json(err_msg)).into_response()
+            }
         }
     }
 }
@@ -156,8 +180,14 @@ impl IntoResponse for StorageGrantError {
 #[derive(Deserialize, Serialize)]
 struct TokenAuthorizations {
     #[serde(rename="cap")]
-    capabilities: HashMap<String, usize>,
+    capabilities: HashMap<String, Usage>,
 
     #[serde(rename="nnc")]
     nonce: Option<String>,
+}
+
+#[derive(Deserialize, Serialize)]
+struct Usage {
+    #[serde(rename="expectedUsage")]
+    authorized_amount: usize,
 }
