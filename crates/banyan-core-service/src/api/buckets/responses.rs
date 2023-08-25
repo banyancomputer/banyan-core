@@ -31,5 +31,5 @@ pub struct DeleteBucket {
 
 #[derive(Serialize)]
 pub struct GetUsage {
-    pub size: i64,
+    pub size: u64,
 }

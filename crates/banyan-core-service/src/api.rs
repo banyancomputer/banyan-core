@@ -1,13 +1,11 @@
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::{Json, Router};
-use http::header::{ACCEPT, AUTHORIZATION, ORIGIN};
-use http::Method;
 use serde::Serialize;
-use tower_http::cors::{Any, CorsLayer};
 
 mod auth;
 mod buckets;
+mod storage;
 
 use crate::app_state::AppState;
 use crate::utils::collect_error_messages;
@@ -16,16 +14,13 @@ pub fn router(state: AppState) -> Router<AppState> {
     // TODO: Ideally this would have a wrapper method to allow per route method configuration or
     // even better something that inspected the route matches and applied the correct method config
     // for that path...
-    let cors_layer = CorsLayer::new()
-        .allow_methods(vec![Method::GET, Method::DELETE, Method::POST, Method::PUT])
-        .allow_headers(vec![AUTHORIZATION, ACCEPT, ORIGIN])
-        // TODO: add domain as a config option and make this configurable
-        .allow_origin(Any)
-        .allow_credentials(false);
+    // TODO: Find the right cors config for this
+    let cors_layer = tower_http::cors::CorsLayer::very_permissive();
 
     Router::new()
         .nest("/auth", auth::router(state.clone()))
         .nest("/buckets", buckets::router(state.clone()))
+        .nest("/storage", storage::router(state.clone()))
         .with_state(state)
         .layer(cors_layer)
 }

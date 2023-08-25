@@ -106,13 +106,13 @@ impl Display for MetadataState {
 impl From<String> for MetadataState {
     fn from(s: String) -> Self {
         match s.as_str() {
-            "Uploading" => MetadataState::Uploading,
-            "pload_failed" => MetadataState::UploadFailed,
+            "uploading" => MetadataState::Uploading,
+            "upload_failed" => MetadataState::UploadFailed,
             "pending" => MetadataState::Pending,
             "current" => MetadataState::Current,
             "outdated" => MetadataState::Outdated,
             "deleted" => MetadataState::Deleted,
-            _ => panic!("invalid bucket metadata state"),
+            _ => panic!("invalid bucket metadata state: {}", s),
         }
     }
 }
@@ -126,6 +126,7 @@ pub struct Metadata {
     pub root_cid: String,
     pub metadata_cid: String,
 
+    pub expected_data_size: i64,
     pub data_size: i64,
     pub state: MetadataState,
 
@@ -143,4 +144,16 @@ pub struct Snapshot {
     pub id: String,
     pub metadata_id: String,
     pub created_at: chrono::NaiveDateTime,
+}
+
+/// Storage Host
+#[derive(Debug, Serialize, FromRow)]
+pub struct StorageHost {
+    pub id: String,
+    pub name: String,
+    pub url: String,
+    pub used_storage: i64,
+    pub available_storage: i64,
+    pub fingerprint: String,
+    pub pem: String,
 }
