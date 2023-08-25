@@ -50,7 +50,7 @@ impl IntoResponse for AuthenticatedClientError {
     fn into_response(self) -> Response {
         use AuthenticatedClientError::*;
 
-        match self {
+        match &self {
             Placeholder => {
                 tracing::error!("a placeholder error occurred extracting the authenticated client");
                 let err_msg = serde_json::json!({ "msg": "here there be dragons" });
