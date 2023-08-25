@@ -17,7 +17,7 @@ pub struct Config {
     db_url: Option<String>,
 
     platform_auth_key_path: PathBuf,
-    grant_verification_key_path: PathBuf,
+    platform_verification_key_path: PathBuf,
     upload_directory: PathBuf,
 }
 
@@ -26,8 +26,8 @@ impl Config {
         self.db_url.as_ref().map(String::as_ref)
     }
 
-    pub fn grant_verification_key_path(&self) -> PathBuf {
-        self.grant_verification_key_path.clone()
+    pub fn platform_verification_key_path(&self) -> PathBuf {
+        self.platform_verification_key_path.clone()
     }
 
     pub fn listen_addr(&self) -> SocketAddr {
@@ -74,12 +74,12 @@ impl Config {
             .opt_value_from_str("--db-url")?;
 
         let platform_auth_key_path: PathBuf = args
-            .opt_value_from_str("--platform-key")?
+            .opt_value_from_str("--auth-key")?
             .unwrap_or("./data/platform-auth.key".into());
 
-        let grant_verification_key_path: PathBuf = args
-            .opt_value_from_str("--grant-verifier")?
-            .unwrap_or("./data/verifier.pub".into());
+        let platform_verification_key_path: PathBuf = args
+            .opt_value_from_str("--verifier-key")?
+            .unwrap_or("./data/platform-verifier.pub".into());
 
         let upload_directory = args
             .opt_value_from_str("--upload-dir")?
@@ -92,7 +92,7 @@ impl Config {
             db_url,
 
             platform_auth_key_path,
-            grant_verification_key_path,
+            platform_verification_key_path,
             upload_directory,
         })
     }

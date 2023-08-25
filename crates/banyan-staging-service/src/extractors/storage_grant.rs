@@ -4,7 +4,7 @@ use axum::http::request::Parts;
 use axum::http::StatusCode;
 use uuid::Uuid;
 
-use crate::app::GrantVerificationKey;
+use crate::app::PlatformVerificationKey;
 
 pub struct StorageGrant {
     client_id: Uuid,
@@ -30,7 +30,7 @@ impl StorageGrant {
 #[async_trait]
 impl<S> FromRequestParts<S> for StorageGrant
 where
-    GrantVerificationKey: FromRef<S>,
+    PlatformVerificationKey: FromRef<S>,
     S: Sync,
 {
     type Rejection = (StatusCode, String);
@@ -39,7 +39,7 @@ where
         _parts: &mut Parts,
         state: &S,
     ) -> Result<Self, Self::Rejection> {
-        let _verification_key = GrantVerificationKey::from_ref(state);
+        let _verification_key = PlatformVerificationKey::from_ref(state);
 
         let grant = StorageGrant {
             client_id: Uuid::new_v4(),

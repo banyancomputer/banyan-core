@@ -4,14 +4,14 @@ use jwt_simple::prelude::*;
 use object_store::local::LocalFileSystem;
 use sha2::Digest;
 
-use crate::app::{Config, Error, GrantVerificationKey, PlatformAuthKey};
+use crate::app::{Config, Error, PlatformVerificationKey, PlatformAuthKey};
 use crate::database::{config_database, Db};
 
 #[derive(Clone)]
 pub struct State {
     database: Db,
 
-    grant_verification_key: GrantVerificationKey,
+    platform_verification_key: PlatformVerificationKey,
     platform_auth_key: PlatformAuthKey,
 
     upload_directory: PathBuf,
@@ -38,14 +38,14 @@ impl State {
         let platform_auth_key = auth_raw.with_key_id(&fingerprint);
 
         // Parse the public grant verification key (this will be the one coming from the platform)
-        let key_bytes = std::fs::read(config.grant_verification_key_path()).map_err(Error::unreadable_key)?;
+        let key_bytes = std::fs::read(config.platform_verification_key_path()).map_err(Error::unreadable_key)?;
         let pem = String::from_utf8_lossy(&key_bytes);
-        let grant_verification_key = ES384PublicKey::from_pem(&pem).map_err(Error::invalid_key)?;
+        let platform_verification_key = ES384PublicKey::from_pem(&pem).map_err(Error::invalid_key)?;
 
         Ok(Self {
             database,
 
-            grant_verification_key: GrantVerificationKey::new(grant_verification_key),
+            platform_verification_key: PlatformVerificationKey::new(platform_verification_key),
             platform_auth_key: PlatformAuthKey::new(platform_auth_key),
 
             upload_directory: config.upload_directory(),
@@ -63,9 +63,9 @@ impl axum::extract::FromRef<State> for Db {
     }
 }
 
-impl axum::extract::FromRef<State> for GrantVerificationKey {
+impl axum::extract::FromRef<State> for PlatformVerificationKey {
     fn from_ref(state: &State) -> Self {
-        state.grant_verification_key.clone()
+        state.platform_verification_key.clone()
     }
 }
 
