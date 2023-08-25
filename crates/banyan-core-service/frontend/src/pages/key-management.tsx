@@ -1,8 +1,8 @@
 
 import BaseLayout from '@layouts/BaseLayout';
+import { useIntl } from 'react-intl';
 import { NextPageWithLayout } from '@/pages/page';
 import { useTomb } from '@/contexts/tomb';
-import { useIntl } from 'react-intl';
 import { KeyManagementTable } from '@/components/KeyManagement/KeyManagementTable';
 
 const HomePage: NextPageWithLayout = () => {

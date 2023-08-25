@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react';
 import { useKeystore } from './keystore';
 import {
     Bucket, BucketFile, BucketKey,
-    BucketSnapshot, Metadata, MockBucket
+    BucketSnapshot, Metadata, MockBucket,
 } from '@/lib/interfaces/bucket';
 
 interface TombInterface {
@@ -16,7 +16,7 @@ interface TombInterface {
     trash: Bucket;
     loadBucket: (id: string) => Promise<void>;
     unlockBucket: (id: string) => Promise<void>;
-    createSnapshot: (id: string) => Promise<void>;
+    takeColdSnapshot: (id: string) => Promise<void>;
     syncBucket: (id: string) => Promise<void>;
     getBuckets: () => Promise<Bucket[]>;
     createDirectory: (id: string, name: string) => Promise<void>;
@@ -29,6 +29,7 @@ interface TombInterface {
     getBucketKeys: (id: string) => Promise<BucketKey[]>;
     getFiles: (id: string, path: string) => Promise<BucketFile[]>;
     purgeSnapshot: (id: string) => void;
+    deleteBucket: (id: string) => void;
     setBuckets: React.Dispatch<React.SetStateAction<Bucket[]>>;
     approveBucketAccess: (id: string) => Promise<void>;
     removeBucketAccess: (id: string) => Promise<void>;
@@ -49,7 +50,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     const [usedStorage, setUsedStorage] = useState<number>(0);
 
     /** Prevents rust recursion error. */
-    const mutex = async (calllack: (tomb: TombWasm) => Promise<any>) => {
+    const mutex = async(calllack: (tomb: TombWasm) => Promise<any>) => {
         if (tomb) {
             const release = await tombMutex.acquire();
             try {
@@ -63,90 +64,78 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     };
 
     // Load the tomb-wasm module
-    const loadBucket = async (id: string) => {
+    const loadBucket = async(id: string) => {
         await mutex(async tomb => {
             await tomb.load(id);
         });
     };
 
-    const unlockBucket = async (id: string) => {
+    const unlockBucket = async(id: string) => {
         await mutex(async tomb => {
             const encryptionKey = await getEncryptionKey();
             await tomb.unlock(id, encryptionKey.privateKey);
         });
     };
 
-    const getFiles = async (id: string, path: string) => {
+    const getFiles = async(id: string, path: string) => {
         await loadBucket(id);
         await unlockBucket(id);
 
         return await tomb!.ls(id, path);
     };
 
-    const getBuckets = async () => {
-        return await tomb!.getBuckets();
-    };
+    const getBuckets = async() => await tomb!.getBuckets();
 
-    const getBucketKeys = async (id: string) => {
-        return await mutex(async tomb => {
-            return await tomb!.getBucketKeys(id);
-        })
-    };
+    const getBucketKeys = async(id: string) => await mutex(async tomb => await tomb!.getBucketKeys(id));
 
-    const getBucketShapshots = async (id: string) => {
-        return await tomb!.getBucketSnapshots(id);
-    };
+    const deleteBucket = async(id: string) => await tomb!.deleteBucket(id);
 
-    const approveBucketAccess = async (id: string) => {
+    const getBucketShapshots = async(id: string) => await tomb!.getBucketSnapshots(id);
+
+    const approveBucketAccess = async(id: string) => {
         await tomb!.approveBucketAccess(id);
     };
 
-    const removeBucketAccess = async (id: string) => {
+    const removeBucketAccess = async(id: string) => {
         /** TODO:  connect removeBucketAccess method when in will be implemented.  */
         // return await tomb!.approveBucketAccess(id);
     };
 
-    const getUsedStorage = async () => {
-        return +(await tomb!.getTotalStorage()).toString();
+    const getUsedStorage = async() => +(await tomb!.getTotalStorage()).toString();
+
+    const takeColdSnapshot = async(id: string) => {
+        await tomb!.snapshot(id);
     };
 
-    const createSnapshot = async (id: string) => {
-        await tomb!.snapshot(id)
+    const getMetadata = async(id: string, path: string) => await tomb!.getMetadata(id, path);
+
+    const purgeSnapshot = async(id: string) => {
+        await tomb!.purgeSnapshot(id);
     };
 
-    const getMetadata = async (id: string, path: string) => {
-        return await tomb!.getMetadata(id, path)
+    const createDirectory = async(id: string, name: string) => {
+        await tomb!.createDirectory(id, `/${name}`);
     };
 
-    const purgeSnapshot = async (id: string) => {
-        await tomb!.purgeSnapshot(id)
+    const syncBucket = async(id: string) => {
+        await tomb!.syncBucket(id);
     };
 
-    const createDirectory = async (id: string, name: string) => {
-        await tomb!.createDirectory(id, `/${name}`)
+    const uploadFile = async(id: string, path: string, file: any) => {
+        await tomb!.upload(id, path, file);
     };
 
-    const syncBucket = async (id: string) => {
-        await tomb!.syncBucket(id)
+    const renameFile = async(id: string, path: string, newPath: string) => {
+        await tomb!.rename(id, path, newPath);
     };
 
-    const uploadFile = async (id: string, path: string, file: any) => {
-        await tomb!.upload(id, path, file)
-    };
-
-    const renameFile = async (id: string, path: string, newPath: string) => {
-        await tomb!.rename(id, path, newPath)
-    };
-
-    const getTrashBucket: () => Promise<MockBucket> = async () => {
-        return await tomb!.getTrashBucket();
-    };
+    const getTrashBucket: () => Promise<MockBucket> = async() => await tomb!.getTrashBucket();
 
     // Initialize the tomb client
     useEffect(() => {
         if (!keystoreInitialized || !session?.accountId) { return; }
 
-        (async () => {
+        (async() => {
             try {
                 const wrappingKey = await getEncryptionKey();
                 const TombWasm = (await import('tomb-wasm-experimental')).TombWasm;
@@ -164,7 +153,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
     useEffect(() => {
         if (tomb) {
-            (async () => {
+            (async() => {
                 try {
                     const buckets = await getBuckets();
                     setBuckets(buckets.map(bucket => ({ ...bucket, files: [] })));
@@ -179,7 +168,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     }, [tomb]);
 
     useEffect(() => {
-        (async () => {
+        (async() => {
             if (tomb) {
                 for (const bucket of buckets) {
                     const id = bucket.id;
@@ -196,10 +185,10 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
             value={{
                 tomb, buckets, trash, usedStorage,
                 setBuckets, getBuckets, getBucketShapshots, loadBucket,
-                unlockBucket, getFiles, getTrashBucket, createSnapshot,
+                unlockBucket, getFiles, getTrashBucket, takeColdSnapshot,
                 getUsedStorage, createDirectory, uploadFile, renameFile,
                 getMetadata, syncBucket, getBucketKeys, purgeSnapshot,
-                removeBucketAccess, approveBucketAccess
+                removeBucketAccess, approveBucketAccess, deleteBucket,
             }}
         >
             {children}

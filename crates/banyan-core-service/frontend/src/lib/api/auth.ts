@@ -1,6 +1,22 @@
 import { b64UrlEncode } from '../../utils/b64';
 import { DeviceApiKey, EscrowedDevice } from '@/lib/interfaces';
 
+async function fetchJson<T>(url: string, opts?: {}): Promise<T> {
+    try {
+        const response = await fetch(url, {
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            ...opts,
+        });
+        const data = await response.json();
+
+        return data as T;
+    } catch (error) {
+        throw error;
+    }
+};
+
 /**
  * API Client for our web client against our NextAuth server
  */
@@ -77,21 +93,6 @@ export class ClientApi {
     };
 }
 
-async function fetchJson<T>(url: string, opts?: {}): Promise<T> {
-    try {
-        const response = await fetch(url, {
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            ...opts,
-        });
-        const data = await response.json();
-
-        return data as T;
-    } catch (error) {
-        throw error;
-    }
-}
 
 async function fetchStatus(url: string, opts?: {}): Promise<number> {
     try {

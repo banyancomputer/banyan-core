@@ -1,5 +1,5 @@
 import React, { ReactElement, useEffect, useRef, useState } from 'react';
-import { HiDotsVertical } from "react-icons/hi"
+import { HiDotsVertical } from 'react-icons/hi';
 
 import { popupClickHandler } from '@/utils';
 
@@ -9,7 +9,7 @@ export const ActionsCell: React.FC<{ actions: ReactElement }> = ({ actions }) =>
 
     const toggleActionsVisibility = () => {
         setIsActionsVisible(prev => !prev);
-    }
+    };
 
     useEffect(() => {
         const listener = popupClickHandler(actionsRef.current!, setIsActionsVisible);
@@ -26,10 +26,10 @@ export const ActionsCell: React.FC<{ actions: ReactElement }> = ({ actions }) =>
             ref={actionsRef}
             onClick={toggleActionsVisibility}
         >
-            <HiDotsVertical fill='#7f8ab0' size="20px" />
+            <HiDotsVertical fill="#7f8ab0" size="20px" />
 
             {isActionsVisible &&
-                <div className='absolute right-0 top-6'>{actions}</div>
+                <div className="absolute right-0 top-6">{actions}</div>
             }
         </div>
     );

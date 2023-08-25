@@ -4,8 +4,8 @@ import Image from 'next/image';
 import { signOut, useSession } from 'next-auth/react';
 import { useIntl } from 'react-intl';
 import { useRouter } from 'next/router';
-import { AiOutlineQuestionCircle } from "react-icons/ai"
-import { FiSettings, FiSearch } from "react-icons/fi"
+import { AiOutlineQuestionCircle } from 'react-icons/ai';
+import { FiSearch, FiSettings } from 'react-icons/fi';
 
 import { popupClickHandler } from '@/utils';
 
@@ -59,21 +59,21 @@ export const Header = () => {
                     {`${messages.manageKeyAccess}`}
                 </Link>
                 <div
-                    className='relative cursor-pointer'
+                    className="relative cursor-pointer"
                     onClick={toggleLanguageVisibility}
                     ref={languagesControlsRef}
                 >
                     <FiSettings size="20px" stroke="#4A5578" />
                     {isLanguageControlsVisible &&
                         <div
-                            className='absolute top-full left-1/2 -translate-x-1/2 flex flex-col gap-1  rounded-xl bg-white shadow-xld overflow-hidden'
+                            className="absolute top-full left-1/2 -translate-x-1/2 flex flex-col gap-1  rounded-xl bg-white shadow-xld overflow-hidden shadow-md"
                         >{
                                 locales?.map(language =>
                                     <Link
                                         key={language}
                                         href={window.location.pathname.replace(locale || '', '')}
                                         locale={language}
-                                        className='p-2 hover:bg-slate-100'
+                                        className="p-2 hover:bg-slate-100"
                                     >
                                         {language}
                                     </Link>

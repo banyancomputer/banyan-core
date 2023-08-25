@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useIntl } from 'react-intl';
 
+import { KeyActions } from '../KeyActions';
 import { Bucket } from '@/lib/interfaces/bucket';
 import { ActionsCell } from '@/components/Buckets/ActionsCell';
-import { KeyActions } from '../KeyActions';
 
 export const KeyManagementTable: React.FC<{ buckets: Bucket[] }> = ({ buckets }) => {
     const { messages } = useIntl();
@@ -23,7 +23,7 @@ export const KeyManagementTable: React.FC<{ buckets: Bucket[] }> = ({ buckets })
                         <th className="py-3 px-6 w-32 text-left font-medium">
                             {`${messages.status}`}
                         </th>
-                        <th className='w-16'></th>
+                        <th className="w-16"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -54,6 +54,6 @@ export const KeyManagementTable: React.FC<{ buckets: Bucket[] }> = ({ buckets })
                 </tbody>
             </table >
         </div>
-    )
-}
+    );
+};
 

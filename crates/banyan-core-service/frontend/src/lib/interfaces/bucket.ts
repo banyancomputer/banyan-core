@@ -21,7 +21,7 @@ export interface Bucket {
     name: string;
     bucket_type: string;
     files: BucketFile[];
-    keys: BucketKey[]
+    keys: BucketKey[];
 };
 
 export interface Metadata {
@@ -45,8 +45,8 @@ export class MockBucket {
 };
 
 export interface BucketSnapshot {
-    id: string,
-    bucket_id: string,
-    snapshot_type: string,
-    version: string
+    id: string;
+    bucket_id: string;
+    snapshot_type: string;
+    version: string;
 };
