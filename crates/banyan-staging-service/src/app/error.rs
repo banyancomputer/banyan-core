@@ -17,11 +17,18 @@ pub enum Error {
     #[error("session key provided could not be parsed as a PEM encoded ES384 private key")]
     InvalidSessionKey(jwt_simple::Error),
 
+    #[error("unable to write new platform auth key")]
+    PlatformAuthWriteError(std::io::Error),
+
     #[error("provided session key was unable to be read")]
     UnreadableSessionKey(std::io::Error),
 }
 
 impl Error {
+    pub fn auth_write_failed(err: std::io::Error) -> Self {
+        Self::PlatformAuthWriteError(err)
+    }
+
     pub fn invalid_key(err: jwt_simple::Error) -> Self {
         Self::InvalidSessionKey(err)
     }

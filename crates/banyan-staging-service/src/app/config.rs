@@ -1,3 +1,5 @@
+use std::fs::OpenOptions;
+use std::io::Write;
 use std::net::{IpAddr, Ipv6Addr, SocketAddr};
 use std::path::PathBuf;
 
@@ -46,10 +48,14 @@ impl Config {
 
             tracing::info!("generating new platform key at {key_path:?}");
 
-            let _new_key = ES384KeyPair::generate();
+            let mut file = OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(key_path)
+                .map_err(Error::auth_write_failed)?;
 
-            // todo: write the session key out to the path
-            // todo: make sure this doesn't overwrite an existing key
+            let new_key = ES384KeyPair::generate().to_pem().unwrap();
+            file.write_all(new_key.as_bytes()).map_err(Error::auth_write_failed)?;
 
             tracing::info!("key generation complete");
 
