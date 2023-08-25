@@ -20,8 +20,6 @@ use crate::database::Db;
 /// we'll reject the token even if its otherwise valid.
 const MAXIMUM_TOKEN_AGE: u64 = 900;
 
-static KEY_ID_PATTERN: &str = r"^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})@([0-9a-f]{2}(:[0-9a-f]{2}){19})$";
-
 pub struct AuthenticatedClient {
     device_id: Uuid,
     fingerprint: String,

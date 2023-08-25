@@ -12,15 +12,10 @@ use jwt_simple::prelude::*;
 use uuid::Uuid;
 
 use crate::app::PlatformVerificationKey;
+use crate::extractors::key_validator;
 
 // todo: will need a way for a client to refresh their storage grant
 const MAXIMUM_GRANT_AGE: u64 = 900;
-
-#[derive(Deserialize, Serialize)]
-struct TokenAuthorizations {
-    #[serde(rename="cap")]
-    capabilities: HashMap<String, usize>,
-}
 
 pub struct StorageGrant {
     client_id: Uuid,
@@ -72,9 +67,29 @@ where
 
         let verification_key = PlatformVerificationKey::from_ref(state);
 
-        let _claims = verification_key
+        let claims = verification_key
             .verify_token::<TokenAuthorizations>(&raw_token, Some(verification_options))
             .map_err(|err| Self::Rejection::ValidationFailed(err))?;
+
+        // annoyingly jwt-simple doesn't use the correct encoding for this...
+        match (claims.nonce, claims.custom.nonce) {
+            (_, Some(nnc)) => {
+                if nnc.len() < 12 {
+                    return Err(Self::Rejection::InsufficientNonce);
+                }
+            }
+            (Some(nnc), _) => {
+                if nnc.len() < 12 {
+                    return Err(Self::Rejection::InsufficientNonce);
+                }
+            }
+            _ => return Err(Self::Rejection::NonceMissing),
+        }
+
+        let grant_subject = match claims.subject {
+            Some(gs) => gs.clone(),
+            None => return Err(Self::Rejection::SubjectMissing),
+        };
 
         // todo: need to take in the domain the provider will be running as to lookup expectedUsage
         // what we were authorized as but we can fake it for now by assuming we're the only one
@@ -93,8 +108,20 @@ where
 
 #[derive(Debug, thiserror::Error)]
 pub enum StorageGrantError {
+    #[error("token's nonce was not sufficiently long")]
+    InsufficientNonce,
+
     #[error("no bearer authorization header found in request")]
     MissingHeader(TypedHeaderRejection),
+
+    #[error("token didn't include a nonce")]
+    NonceMissing,
+
+    #[error("subject contained in the storage token didn't match our format")]
+    SubjectInvalid,
+
+    #[error("storage token was missing a subject")]
+    SubjectMissing,
 
     #[error("storage token grant failed validation")]
     ValidationFailed(jwt_simple::Error),
@@ -105,6 +132,11 @@ impl IntoResponse for StorageGrantError {
         use StorageGrantError::*;
 
         match &self {
+            InsufficientNonce | NonceMissing | SubjectInvalid | SubjectMissing => {
+                tracing::error!("{self}");
+                let err_msg = serde_json::json!({ "msg": "storage grant was not accepted" });
+                (StatusCode::UNAUTHORIZED, Json(err_msg)).into_response()
+            }
             MissingHeader(err) => {
                 // todo: add sources as data event tag
                 tracing::error!("{self}: {err}");
@@ -119,4 +151,13 @@ impl IntoResponse for StorageGrantError {
             }
         }
     }
+}
+
+#[derive(Deserialize, Serialize)]
+struct TokenAuthorizations {
+    #[serde(rename="cap")]
+    capabilities: HashMap<String, usize>,
+
+    #[serde(rename="nnc")]
+    nonce: Option<String>,
 }

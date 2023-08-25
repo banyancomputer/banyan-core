@@ -14,8 +14,8 @@ pub enum Error {
     #[error("unable to access upload directory")]
     InaccessibleUploadDirectory(object_store::Error),
 
-    #[error("session key provided could not be parsed as a PEM encoded ES384 private key")]
-    InvalidSessionKey(jwt_simple::Error),
+    #[error("authentication key provided could not be loaded")]
+    BadAuthenticationKey(jwt_simple::Error),
 
     #[error("unable to write new platform auth key")]
     PlatformAuthWriteError(std::io::Error),
@@ -30,7 +30,7 @@ impl Error {
     }
 
     pub fn invalid_key(err: jwt_simple::Error) -> Self {
-        Self::InvalidSessionKey(err)
+        Self::BadAuthenticationKey(err)
     }
 
     pub fn inaccessible_upload_directory(err: object_store::Error) -> Self {
