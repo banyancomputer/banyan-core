@@ -5,7 +5,7 @@ use axum::async_trait;
 use axum::extract::{FromRef, FromRequestParts};
 use http::request::Parts;
 
-use crate::database::{Db, DbPool};
+use crate::database::{Database, Executor};
 
 #[async_trait]
 pub trait DataSource {
@@ -17,6 +17,9 @@ pub trait DataSource {
 pub enum DataSourceError {
     #[error("one or more dependent services aren't available")]
     DependencyFailure,
+
+    #[error("service has received signal indicating it should shutdown")]
+    ShuttingDown,
 }
 
 pub type DynDataSource = Arc<dyn DataSource + Send + Sync>;
@@ -39,24 +42,28 @@ impl Deref for StateDataSource {
 }
 
 struct DbSource {
-    db: Db,
+    db: Database,
 }
 
 #[async_trait]
 impl DataSource for DbSource {
     async fn is_ready(&self) -> Result<(), DataSourceError> {
-        match &self.db {
+        match self.db.ex() {
             #[cfg(feature = "postgres")]
-            Db::Postgres(pdb) => {
-                let mut _conn = pdb.direct().await.map_err(|_| DataSourceError::DependencyFailure)?;
-                // Can't do this yet... Need to implement a passthrough Pool trait on the
-                // TxExecutor for this to run...
-                //let _ = sqlx::query_as!(i32, "SELECT 1 as id;").fetch_one(&mut conn).await.map_err(|_| DataSourceError::DependencyFailure)?;
-            }
+            Executor::Postgres(ref mut conn) => {
+                let _ = sqlx::query("SELECT 1 as id;")
+                    .fetch_one(conn)
+                    .await
+                    .map_err(|_| DataSourceError::DependencyFailure)?;
+            },
+
             #[cfg(feature = "sqlite")]
-            Db::Sqlite(pdb) => {
-                let _conn = pdb.direct().await.map_err(|_| DataSourceError::DependencyFailure)?;
-            }
+            Executor::Sqlite(ref mut conn) => {
+                let _ = sqlx::query("SELECT 1 as id;")
+                    .fetch_one(conn)
+                    .await
+                    .map_err(|_| DataSourceError::DependencyFailure)?;
+            },
         }
 
         Ok(())
@@ -66,7 +73,7 @@ impl DataSource for DbSource {
 #[async_trait]
 impl<S> FromRequestParts<S> for StateDataSource
 where
-    Db: FromRef<S>,
+    Database: FromRef<S>,
     S: Send + Sync,
 {
     type Rejection = ();
@@ -75,8 +82,7 @@ where
         _parts: &mut Parts,
         state: &S,
     ) -> Result<Self, Self::Rejection> {
-        let db = Db::from_ref(state);
-        Ok(StateDataSource(std::sync::Arc::new(DbSource { db })))
+        Ok(StateDataSource(Arc::new(DbSource { db: Database::from_ref(state) })))
     }
 }
 
@@ -88,6 +94,7 @@ pub(crate) mod tests {
     pub(crate) enum MockReadiness {
         DependencyFailure,
         Ready,
+        ShuttingDown,
     }
 
     #[async_trait]
@@ -98,6 +105,7 @@ pub(crate) mod tests {
             match self {
                 DependencyFailure => Err(DataSourceError::DependencyFailure),
                 Ready => Ok(()),
+                ShuttingDown => Err(DataSourceError::ShuttingDown),
             }
         }
     }

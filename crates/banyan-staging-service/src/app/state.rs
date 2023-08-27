@@ -5,11 +5,11 @@ use object_store::local::LocalFileSystem;
 use sha2::Digest;
 
 use crate::app::{Config, Error, PlatformVerificationKey, PlatformAuthKey};
-use crate::database::{config_database, Db};
+use crate::database::{self, Database};
 
 #[derive(Clone)]
 pub struct State {
-    database: Db,
+    database: Database,
 
     platform_verification_key: PlatformVerificationKey,
     platform_auth_key: PlatformAuthKey,
@@ -26,8 +26,18 @@ impl State {
         LocalFileSystem::new_with_prefix(&upload_directory)
             .map_err(Error::inaccessible_upload_directory)?;
 
+        let db_url = match config.db_url() {
+            Some(du) => du.to_string(),
+            None => {
+                match std::env::var("DATABASE_URL") {
+                    Ok(du) => du,
+                    Err(_) => "sqlite://:memory:".to_string(),
+                }
+            }
+        };
+
         // Configure the database instance we're going use
-        let database = config_database(&config).await?;
+        let database = database::connect(&db_url).await?;
 
         // Parse the platform authentication key (this will be used to communicate with the
         // metadata service).
@@ -57,7 +67,7 @@ impl State {
     }
 }
 
-impl axum::extract::FromRef<State> for Db {
+impl axum::extract::FromRef<State> for Database {
     fn from_ref(state: &State) -> Self {
         state.database.clone()
     }

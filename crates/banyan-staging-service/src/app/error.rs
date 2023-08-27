@@ -1,4 +1,4 @@
-use crate::database::DatabaseSetupError;
+use crate::database::DbError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -9,7 +9,7 @@ pub enum Error {
     AxumServerError(#[from] hyper::Error),
 
     #[error("failed to initial the database")]
-    DatabaseFailure(#[from] DatabaseSetupError),
+    DatabaseFailure(#[from] DbError),
 
     #[error("unable to access upload directory")]
     InaccessibleUploadDirectory(object_store::Error),

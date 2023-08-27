@@ -13,7 +13,7 @@ use jwt_simple::prelude::*;
 use regex::Regex;
 use uuid::Uuid;
 
-use crate::database::Db;
+use crate::database::Database;
 
 /// Defines the maximum length of time we consider any individual token valid in seconds. If the
 /// expiration is still in the future, but it was issued more than this many seconds in the past
@@ -28,7 +28,7 @@ pub struct AuthenticatedClient {
 #[async_trait]
 impl<S> FromRequestParts<S> for AuthenticatedClient
 where
-    Db: FromRef<S>,
+    Database: FromRef<S>,
     S: Send + Sync,
 {
     type Rejection = AuthenticatedClientError;
