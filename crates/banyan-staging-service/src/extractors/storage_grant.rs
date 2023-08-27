@@ -18,6 +18,8 @@ use crate::extractors::key_validator;
 const MAXIMUM_GRANT_AGE: u64 = 900;
 
 pub struct StorageGrant {
+    id: Uuid,
+
     client_id: Uuid,
     client_fingerprint: String,
 
@@ -29,12 +31,16 @@ impl StorageGrant {
         self.authorized_data_size
     }
 
-    fn client_id(&self) -> &Uuid {
-        &self.client_id
+    fn client_id(&self) -> Uuid {
+        self.client_id
     }
 
     fn client_fingerprint(&self) -> &str {
         &self.client_fingerprint
+    }
+
+    fn id(&self) -> Uuid {
+        self.id
     }
 }
 
@@ -71,7 +77,8 @@ where
             .verify_token::<TokenAuthorizations>(&raw_token, Some(verification_options))
             .map_err(|err| Self::Rejection::ValidationFailed(err))?;
 
-        // annoyingly jwt-simple doesn't use the correct encoding for this...
+        // annoyingly jwt-simple doesn't use the correct encoding for this... we can support both
+        // though and maybe we can fix upstream so it follows the spec
         match (claims.nonce, claims.custom.nonce) {
             (_, Some(nnc)) => {
                 if nnc.len() < 12 {
@@ -112,6 +119,8 @@ where
         };
 
         let grant = StorageGrant {
+            id: claims.custom.id,
+
             client_id,
             client_fingerprint,
 
@@ -179,6 +188,8 @@ impl IntoResponse for StorageGrantError {
 
 #[derive(Deserialize, Serialize)]
 struct TokenAuthorizations {
+    id: Uuid,
+
     #[serde(rename="cap")]
     capabilities: HashMap<String, Usage>,
 
