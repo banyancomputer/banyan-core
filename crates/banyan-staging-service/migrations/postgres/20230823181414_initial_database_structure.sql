@@ -5,6 +5,9 @@ CREATE TABLE clients (
 
   current_storage_grant_id UUID REFERENCES storage_grants(id),
 
+  fingerprint VARCHAR(64) NOT NULL,
+  public_key TEXT NOT NULL,
+
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 );
 

@@ -27,19 +27,19 @@ pub struct StorageGrant {
 }
 
 impl StorageGrant {
-    fn authorized_data_size(&self) -> usize {
+    pub fn authorized_data_size(&self) -> usize {
         self.authorized_data_size
     }
 
-    fn client_id(&self) -> Uuid {
+    pub fn client_id(&self) -> Uuid {
         self.client_id
     }
 
-    fn client_fingerprint(&self) -> &str {
+    pub fn client_fingerprint(&self) -> &str {
         &self.client_fingerprint
     }
 
-    fn id(&self) -> Uuid {
+    pub fn id(&self) -> Uuid {
         self.id
     }
 }

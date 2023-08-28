@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use axum::{async_trait, Json, RequestPartsExt};
 use axum::extract::{FromRef, FromRequestParts, TypedHeader};
 use axum::extract::rejection::TypedHeaderRejection;
@@ -11,6 +13,14 @@ use crate::database::Database as StateDb;
 
 #[derive(Debug)]
 pub struct Database(StateDb);
+
+impl Deref for Database {
+    type Target = StateDb;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 #[async_trait]
 impl<S> FromRequestParts<S> for Database
