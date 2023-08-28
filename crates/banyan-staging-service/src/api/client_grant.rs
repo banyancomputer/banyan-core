@@ -23,11 +23,26 @@ pub async fn handler(
     grant: StorageGrant,
     Json(request): Json<GrantRequest>,
 ) -> Response {
-    let maybe_existing_user = existing_grant_user(&database, &grant).await.map_err(|err| return GrantError::Database(err).into_response());
-    //let grant_user_id = match 
-    //    Ok(Some(uuid)) => uuid,
+    let maybe_existing_user = existing_grant_user(&database, &grant)
+        .await
+        .map_err(|err| GrantError::Database(err));
 
-    //};
+    let grant_user_id = match maybe_existing_user {
+        Ok(Some(uuid)) => uuid,
+        Ok(None) => {
+            let maybe_new_user = create_grant_user(&database, &grant, request)
+                .await
+                .map_err(|err| return GrantError::Database(err).into_response());
+
+            match maybe_new_user {
+                Ok(uid) => uid,
+                Err(err) => return err.into_response(),
+            }
+        }
+        Err(err) => {
+            return err.into_response();
+        }
+    };
 
     let msg = serde_json::json!({"msg": "success"});
     (StatusCode::NO_CONTENT, axum::Json(msg)).into_response()
@@ -38,6 +53,40 @@ use sqlx::FromRow;
 #[derive(FromRow)]
 struct BareId {
     id: String,
+}
+
+async fn create_grant_user(database: &Database, grant: &StorageGrant, request: GrantRequest) -> DbResult<Uuid> {
+    match database.ex() {
+        #[cfg(feature = "postgres")]
+        Executor::Postgres(ref mut conn) => {
+            use crate::database::postgres;
+
+            let user_id: BareId = sqlx::query_as("INSERT INTO clients (platform_id, fingerprint, public_key) VALUES ($1, $2, $3) RETURNING id;")
+                .bind(grant.client_id().to_string())
+                .bind(grant.client_fingerprint())
+                .bind(request.public_key)
+                .fetch_one(conn)
+                .await
+                .map_err(postgres::map_sqlx_error)?;
+
+            Ok(Uuid::parse_str(&user_id.id).unwrap())
+        }
+
+        #[cfg(feature = "sqlite")]
+        Executor::Sqlite(ref mut conn) => {
+            use crate::database::sqlite;
+
+            let user_id: BareId = sqlx::query_as("INSERT INTO clients (platform_id, fingerprint, public_key) VALUES ($1, $2, $3) RETURNING id;")
+                .bind(grant.client_id().to_string())
+                .bind(grant.client_fingerprint())
+                .bind(request.public_key)
+                .fetch_one(conn)
+                .await
+                .map_err(sqlite::map_sqlx_error)?;
+
+            Ok(Uuid::parse_str(&user_id.id).unwrap())
+        }
+    }
 }
 
 async fn existing_grant_user(database: &Database, grant: &StorageGrant) -> DbResult<Option<Uuid>> {

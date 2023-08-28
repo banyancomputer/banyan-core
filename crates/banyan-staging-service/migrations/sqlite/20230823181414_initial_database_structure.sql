@@ -8,6 +8,7 @@ CREATE TABLE clients (
   ),
 
   current_storage_grant_id UUID REFERENCES storage_grants(id),
+  platform_id TEXT NOT NULL,
 
   fingerprint VARCHAR(64) NOT NULL,
   public_key TEXT NOT NULL,
