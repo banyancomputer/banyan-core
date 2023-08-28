@@ -7,15 +7,15 @@ use super::data_source::*;
 pub async fn handler(data_src: StateDataSource) -> Response {
     match data_src.is_ready().await {
         Ok(_) => {
-            let msg = serde_json::json!({"status": "ok"});
+            let msg = serde_json::json!({"msg": "ok"});
             (StatusCode::OK, Json(msg)).into_response()
         },
         Err(DataSourceError::DependencyFailure) => {
-            let msg = serde_json::json!({"status": "failure", "message": "one or more dependencies aren't available"});
+            let msg = serde_json::json!({"msg": "one or more dependencies aren't available"});
             (StatusCode::SERVICE_UNAVAILABLE, Json(msg)).into_response()
         },
         Err(DataSourceError::ShuttingDown) => {
-            let msg = serde_json::json!({"status": "failure", "message": "service is shutting down"});
+            let msg = serde_json::json!({"msg": "service is shutting down"});
             (StatusCode::SERVICE_UNAVAILABLE, Json(msg)).into_response()
         },
     }
