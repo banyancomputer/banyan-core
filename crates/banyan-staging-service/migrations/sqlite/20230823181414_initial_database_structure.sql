@@ -7,14 +7,15 @@ CREATE TABLE clients (
     substr(lower(hex(randomblob(6))), 2)
   ),
 
-  current_storage_grant_id UUID REFERENCES storage_grants(id),
   platform_id TEXT NOT NULL,
-
   fingerprint VARCHAR(64) NOT NULL,
   public_key TEXT NOT NULL,
 
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 );
+
+CREATE UNIQUE INDEX idx_clients_on_fingerprint
+  ON clients(fingerprint);
 
 CREATE TABLE storage_grants (
   id TEXT NOT NULL PRIMARY KEY DEFAULT (
@@ -25,8 +26,12 @@ CREATE TABLE storage_grants (
     substr(lower(hex(randomblob(6))), 2)
   ),
 
-  remote_id UUID NOT NULL,
-  client_id UUID NOT NULL REFERENCES clients(id),
+  client_id TEXT NOT NULL REFERENCES clients(id),
+  remote_grant_id TEXT NOT NULL,
+  allowed_storage INT NOT NULL DEFAULT 0,
 
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 );
+
+CREATE UNIQUE INDEX idx_storage_grants_on_remote_grant_id
+  ON storage_grants(remote_grant_id);

@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::app::State as AppState;
-use crate::database::{DbError, DbResult, Executor};
+use crate::database::{BareId, DbError, DbResult, Executor};
 use crate::extractors::{Database, StorageGrant};
 
 #[derive(Deserialize, Serialize)]
@@ -28,15 +28,11 @@ pub async fn handler(
         Err(err) => return err.into_response(),
     };
 
-    let msg = serde_json::json!({"msg": "success"});
-    (StatusCode::NO_CONTENT, axum::Json(msg)).into_response()
-}
+    if let Err(err) = create_storage_grant(grant_user_id, &database, &grant).await {
+        return err.into_response();
+    }
 
-use sqlx::FromRow;
-
-#[derive(FromRow)]
-struct BareId {
-    id: String,
+    (StatusCode::NO_CONTENT, ()).into_response()
 }
 
 async fn ensure_grant_user(database: &Database, grant: &StorageGrant, request: GrantRequest) -> Result<Uuid, GrantError> {
@@ -114,8 +110,53 @@ async fn existing_grant_user(database: &Database, grant: &StorageGrant) -> Resul
     }
 }
 
+async fn create_storage_grant(client_id: Uuid, database: &Database, grant: &StorageGrant) -> Result<Uuid, GrantError> {
+    match database.ex() {
+        #[cfg(feature = "postgres")]
+        Executor::Postgres(ref mut conn) => {
+            use crate::database::postgres;
+
+            let grant_id: DbResult<BareId> = sqlx::query_as("INSERT INTO storage_grants (client_id, remote_grant_id, allowed_storage) VALUES ($1, $2, $3) RETURNING id;")
+                .bind(client_id.to_string())
+                .bind(grant.id().to_string())
+                .bind(grant.authorized_data_size() as i64)
+                .fetch_one(conn)
+                .await
+                .map_err(postgres::map_sqlx_error);
+
+            match grant_id {
+                Ok(gid) => Ok(Uuid::parse_str(gid.id.as_str()).unwrap()),
+                Err(DbError::RecordExists) => Err(GrantError::AlreadyRecorded),
+                Err(err) => Err(GrantError::Database(err)),
+            }
+        }
+
+        #[cfg(feature = "sqlite")]
+        Executor::Sqlite(ref mut conn) => {
+            use crate::database::sqlite;
+
+            let grant_id: DbResult<BareId> = sqlx::query_as("INSERT INTO storage_grants (client_id, remote_grant_id, allowed_storage) VALUES ($1, $2, $3) RETURNING id;")
+                .bind(client_id.to_string())
+                .bind(grant.id().to_string())
+                .bind(grant.authorized_data_size() as i64)
+                .fetch_one(conn)
+                .await
+                .map_err(sqlite::map_sqlx_error);
+
+            match grant_id {
+                Ok(gid) => Ok(Uuid::parse_str(gid.id.as_str()).unwrap()),
+                Err(DbError::RecordExists) => Err(GrantError::AlreadyRecorded),
+                Err(err) => Err(GrantError::Database(err)),
+            }
+        }
+    }
+}
+
 #[derive(Debug, thiserror::Error)]
 enum GrantError {
+    #[error("provided storage grant has already been recorded")]
+    AlreadyRecorded,
+
     #[error("database issue occurred")]
     Database(#[from] DbError),
 }
@@ -125,6 +166,10 @@ impl IntoResponse for GrantError {
         use GrantError::*;
 
         match &self {
+            AlreadyRecorded => {
+                let err_msg = serde_json::json!({ "msg": "{self}" });
+                (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
+            }
             Database(err) => {
                 tracing::error!(error = ?err, "a database error occurred");
                 let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });

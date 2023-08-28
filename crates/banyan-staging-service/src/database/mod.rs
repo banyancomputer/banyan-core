@@ -2,12 +2,19 @@ use std::fmt::Debug;
 use std::sync::Arc;
 
 use axum::async_trait;
+use sqlx::FromRow;
 
 //#[cfg(all(feature = "postgres", feature = "sqlite"))]
 //compile_error!("Database selection features `postgres` and `sqlite` are mutually exclusive, you cannot enable both!");
 
 #[cfg(not(any(feature = "postgres", feature = "sqlite")))]
 compile_error!("You must enable at least one database features: `postgres` or `sqlite`");
+
+// todo: should be a UUID but Sqlite needs a from UUID implementation
+#[derive(FromRow)]
+pub struct BareId {
+    pub id: String,
+}
 
 pub type Database = Arc<dyn Db + Send + Sync>;
 
