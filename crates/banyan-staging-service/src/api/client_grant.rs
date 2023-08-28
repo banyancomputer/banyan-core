@@ -23,25 +23,9 @@ pub async fn handler(
     grant: StorageGrant,
     Json(request): Json<GrantRequest>,
 ) -> Response {
-    let maybe_existing_user = existing_grant_user(&database, &grant)
-        .await
-        .map_err(|err| GrantError::Database(err));
-
-    let grant_user_id = match maybe_existing_user {
-        Ok(Some(uuid)) => uuid,
-        Ok(None) => {
-            let maybe_new_user = create_grant_user(&database, &grant, request)
-                .await
-                .map_err(|err| return GrantError::Database(err).into_response());
-
-            match maybe_new_user {
-                Ok(uid) => uid,
-                Err(err) => return err.into_response(),
-            }
-        }
-        Err(err) => {
-            return err.into_response();
-        }
+    let grant_user_id = match ensure_grant_user(&database, &grant, request).await {
+        Ok(gui) => gui,
+        Err(err) => return err.into_response(),
     };
 
     let msg = serde_json::json!({"msg": "success"});
@@ -55,7 +39,14 @@ struct BareId {
     id: String,
 }
 
-async fn create_grant_user(database: &Database, grant: &StorageGrant, request: GrantRequest) -> DbResult<Uuid> {
+async fn ensure_grant_user(database: &Database, grant: &StorageGrant, request: GrantRequest) -> Result<Uuid, GrantError> {
+    match existing_grant_user(&database, &grant).await? {
+        Some(uuid) => Ok(uuid),
+        None => create_grant_user(&database, &grant, request).await,
+    }
+}
+
+async fn create_grant_user(database: &Database, grant: &StorageGrant, request: GrantRequest) -> Result<Uuid, GrantError> {
     match database.ex() {
         #[cfg(feature = "postgres")]
         Executor::Postgres(ref mut conn) => {
@@ -67,7 +58,8 @@ async fn create_grant_user(database: &Database, grant: &StorageGrant, request: G
                 .bind(request.public_key)
                 .fetch_one(conn)
                 .await
-                .map_err(postgres::map_sqlx_error)?;
+                .map_err(postgres::map_sqlx_error)
+                .map_err(|err| GrantError::Database(err))?;
 
             Ok(Uuid::parse_str(&user_id.id).unwrap())
         }
@@ -82,14 +74,15 @@ async fn create_grant_user(database: &Database, grant: &StorageGrant, request: G
                 .bind(request.public_key)
                 .fetch_one(conn)
                 .await
-                .map_err(sqlite::map_sqlx_error)?;
+                .map_err(sqlite::map_sqlx_error)
+                .map_err(|err| GrantError::Database(err))?;
 
             Ok(Uuid::parse_str(&user_id.id).unwrap())
         }
     }
 }
 
-async fn existing_grant_user(database: &Database, grant: &StorageGrant) -> DbResult<Option<Uuid>> {
+async fn existing_grant_user(database: &Database, grant: &StorageGrant) -> Result<Option<Uuid>, GrantError> {
     match database.ex() {
         #[cfg(feature = "postgres")]
         Executor::Postgres(ref mut conn) => {
@@ -99,7 +92,8 @@ async fn existing_grant_user(database: &Database, grant: &StorageGrant) -> DbRes
                 .bind(grant.client_fingerprint())
                 .fetch_optional(conn)
                 .await
-                .map_err(postgres::map_sqlx_error)?;
+                .map_err(postgres::map_sqlx_error)
+                .map_err(|err| GrantError::Database(err))?;
 
             Ok(user_id.map(|b| Uuid::parse_str(b.id.as_str()).unwrap()))
         }
@@ -112,7 +106,8 @@ async fn existing_grant_user(database: &Database, grant: &StorageGrant) -> DbRes
                 .bind(grant.client_fingerprint())
                 .fetch_optional(conn)
                 .await
-                .map_err(sqlite::map_sqlx_error)?;
+                .map_err(sqlite::map_sqlx_error)
+                .map_err(|err| GrantError::Database(err))?;
 
             Ok(user_id.map(|b| Uuid::parse_str(b.id.as_str()).unwrap()))
         }
