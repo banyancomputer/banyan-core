@@ -18,7 +18,7 @@ pub struct GrantRequest {
 #[axum::debug_handler]
 pub async fn handler(
     // this weirdly needs to be present even though we don't use it
-    State(_state): State<AppState>,
+    _: State<AppState>,
     database: Database,
     grant: StorageGrant,
     Json(request): Json<GrantRequest>,
