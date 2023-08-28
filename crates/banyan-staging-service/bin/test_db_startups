@@ -11,6 +11,11 @@ if which docker &> /dev/null; then
   CONTAINER_RUNTIME="docker"
 fi
 
+function postgres_init() {
+  ${CONTAINER_RUNTIME} run -d --rm -e POSTGRES_PASSWORD=superuser_pass --replace -p ${POSTGRES_PORT}:5432 --name db-boot-test docker.io/library/postgres:alpine
+  sleep 5
+}
+
 function postgres_setup() {
   cat << EOS | ${CONTAINER_RUNTIME} exec -i --user postgres db-boot-test psql
 CREATE ROLE test_user WITH LOGIN PASSWORD 'test_password';
@@ -20,12 +25,7 @@ EOS
   export DATABASE_URL="postgres://test_user:test_password@127.0.0.1:${POSTGRES_PORT}/test_db"
 
   cargo build
-  timeout 30 cargo run --no-default-features --features postgres || /bin/true
-}
-
-function postgres_init() {
-  ${CONTAINER_RUNTIME} run -d --rm -e POSTGRES_PASSWORD=superuser_pass --replace -p ${POSTGRES_PORT}:5432 --name db-boot-test docker.io/library/postgres:alpine
-  sleep 2.5
+  timeout 20 cargo run --no-default-features --features postgres || /bin/true
 }
 
 function postgres_teardown() {
@@ -36,11 +36,11 @@ function sqlite_setup() {
   export DATABASE_URL="sqlite://:memory:"
 
   cargo build
-  timeout 30 cargo run --no-default-features --features sqlite || /bin/true
+  timeout 20 cargo run --no-default-features --features sqlite || /bin/true
 }
-
-sqlite_setup
 
 postgres_init
 postgres_setup
 postgres_teardown
+
+sqlite_setup
