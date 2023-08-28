@@ -3,6 +3,7 @@ use std::sync::OnceLock;
 use regex::Regex;
 
 pub mod authenticated_client;
+pub mod database;
 pub mod storage_grant;
 pub mod upload_store;
 
@@ -15,5 +16,6 @@ pub fn key_validator() -> &'static Regex {
 }
 
 pub use authenticated_client::AuthenticatedClient;
+pub use database::Database;
 pub use storage_grant::StorageGrant;
 pub use upload_store::UploadStore;

@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use std::sync::Arc;
 
 use axum::async_trait;
@@ -38,7 +39,7 @@ pub async fn connect(db_url: &str) -> DbResult<Database> {
 }
 
 #[async_trait]
-pub trait Db {
+pub trait Db: Debug {
     fn ex(&self) -> Executor;
 
     async fn begin(&self) -> DbResult<TxExecutor>;
@@ -193,7 +194,7 @@ pub mod postgres {
         }
     }
 
-    #[derive(Clone)]
+    #[derive(Clone, Debug)]
     pub struct PostgresDb {
         pool: PgPool,
     }
@@ -275,7 +276,7 @@ pub mod sqlite {
 
     static MIGRATOR: Migrator = sqlx::migrate!("migrations/sqlite");
 
-    #[derive(Clone)]
+    #[derive(Clone, Debug)]
     pub struct SqliteDb {
         pool: SqlitePool,
     }

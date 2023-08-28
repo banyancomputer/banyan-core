@@ -7,7 +7,7 @@ use tower_http::limit::RequestBodyLimitLayer;
 
 mod data_source;
 mod liveness;
-mod readiness;
+pub mod readiness;
 mod version;
 
 use crate::app::State;
