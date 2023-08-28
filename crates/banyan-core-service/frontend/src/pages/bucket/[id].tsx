@@ -2,12 +2,12 @@ import React, { useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useIntl } from 'react-intl';
-import { IoMdAdd } from "react-icons/io";
+import { IoMdAdd } from 'react-icons/io';
 
+import { NextPageWithLayout } from '../page';
 import { useTomb } from '@/contexts/tomb';
 
 import BaseLayout from '@/layouts/BaseLayout';
-import { NextPageWithLayout } from '../page';
 import { BucketTable } from '@/components/Buckets/BucketTable';
 
 const Bucket: NextPageWithLayout = () => {

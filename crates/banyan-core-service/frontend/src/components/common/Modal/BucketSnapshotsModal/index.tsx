@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useIntl } from 'react-intl';
-import { AiOutlineFile } from "react-icons/ai";
-import { FiDownload } from "react-icons/fi";
+import { AiOutlineFile } from 'react-icons/ai';
+import { FiDownload } from 'react-icons/fi';
 
 import { useTomb } from '@/contexts/tomb';
 import { BucketSnapshot } from '@/lib/interfaces/bucket';
@@ -15,35 +15,35 @@ export const BucketSnapshotsModal: React.FC<{ bucketId: string }> = ({ bucketId 
     const { messages } = useIntl();
 
     useEffect(() => {
-        if (!tomb) return;
+        if (!tomb) { return; }
 
-        (async () => {
+        (async() => {
             try {
                 const snapshots = await getBucketShapshots('3');
-                setSnapshots(snapshots)
+                setSnapshots(snapshots);
             } catch (error: any) {
                 console.log(error);
             }
-        })()
-    }, [tomb])
+        })();
+    }, [tomb]);
 
     return (
-        <div className='w-snapshotsModal flex flex-col gap-8' >
+        <div className="w-snapshotsModal flex flex-col gap-8" >
             <div>
-                <h4 className='text-m font-semibold '>{`${messages.versions}`}</h4>
-                <p className='mt-2 text-gray-600'>
+                <h4 className="text-m font-semibold ">{`${messages.versions}`}</h4>
+                <p className="mt-2 text-gray-600">
                     {`${messages.stayUpToDate}`}
                 </p>
             </div>
-            <div className='flex flex-col gap-3'>
+            <div className="flex flex-col gap-3">
                 {snapshots.map(snapshot =>
                     <div
-                        className='flex align-middle gap-3 px-3 py-2  border-1 border-navigation-border rounded-xl text-xs'
+                        className="flex align-middle gap-3 px-3 py-2  border-1 border-navigation-border rounded-xl text-xs"
                         key={snapshot.id}
                     >
-                        <div className='flex align-middle gap-2 flex-grow'>
+                        <div className="flex align-middle gap-2 flex-grow">
                             <AiOutlineFile size="20px" />
-                            <span className='font-semibold'>
+                            <span className="font-semibold">
                                 {snapshot.version} Version
                             </span>
                         </div>
@@ -57,11 +57,11 @@ export const BucketSnapshotsModal: React.FC<{ bucketId: string }> = ({ bucketId 
                 )}
             </div>
             <button
-                className='btn-primary py-2 text-xs'
+                className="btn-primary py-2 text-xs"
                 onClick={closeModal}
             >
                 {`${messages.close}`}
             </button>
         </div>
-    )
-}
+    );
+};

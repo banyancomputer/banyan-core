@@ -1,6 +1,6 @@
 import React from 'react';
 import { useIntl } from 'react-intl';
-import { IoMdAdd } from "react-icons/io";
+import { IoMdAdd } from 'react-icons/io';
 
 import BaseLayout from '@layouts/BaseLayout';
 import { NextPageWithLayout } from './page';
@@ -20,7 +20,7 @@ const Buckets: NextPageWithLayout = () => {
     };
 
     return (
-        <section className="py-9 px-4" id='buckets'>
+        <section className="py-9 px-4" id="buckets">
             <div className="mb-4 flex w-full justify-between items-center">
                 <h2 className="text-xl font-semibold">
                     {`${messages.myBuckets}`}

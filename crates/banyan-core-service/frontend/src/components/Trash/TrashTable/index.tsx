@@ -4,14 +4,15 @@ import { useIntl } from 'react-intl';
 import { Bucket, BucketFile } from '@/lib/interfaces/bucket';
 import { getDateLabel } from '@/utils/date';
 import { convertFileSize } from '@/utils/storage';
+
 import { ActionsCell } from '../../Buckets/ActionsCell';
+import { TrashFileActions } from '../TrashFileActions';
 import { FileIcon } from '@/components/common/FileIcon';
 import { SortCell } from '@/components/common/SortCell';
-import { TrashFileActions } from '../TrashFileActions';
 
 export const TrashTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const { messages } = useIntl();
-    const [selectedFiles, setSelectedFiles] = useState<Array<BucketFile>>([]);
+    const [selectedFiles, setSelectedFiles] = useState<BucketFile[]>([]);
     /** Created to prevent sotring logic affect initial buckets array */
     const [bucketCopy, setBucketCopy] = useState(bucket);
 
@@ -27,12 +28,12 @@ export const TrashTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         selectedFiles.length === bucket.files.length ?
             setSelectedFiles([])
             :
-            setSelectedFiles(bucket.files)
+            setSelectedFiles(bucket.files);
     };
-    const [sortState, setSortState] = useState<{ criteria: string, direction: "ASC" | "DESC" | '' }>({ criteria: '', direction: '' });
+    const [sortState, setSortState] = useState<{ criteria: string; direction: 'ASC' | 'DESC' | '' }>({ criteria: '', direction: '' });
 
     const sort = (criteria: string) => {
-        setSortState(prev => ({ criteria, direction: prev.direction === "ASC" ? "DESC" : "ASC" }));
+        setSortState(prev => ({ criteria, direction: prev.direction === 'ASC' ? 'DESC' : 'ASC' }));
     };
 
     useEffect(() => {
@@ -41,15 +42,14 @@ export const TrashTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                 const files = [...bucket.files];
                 files.sort((a, b) => sortState.direction !== 'ASC' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name));
 
-                return { ...bucket, files }
+                return { ...bucket, files };
             });
-
         } else {
             setBucketCopy(bucket => {
                 const files = [...bucket.files];
                 files.sort((a, b) => sortState.direction !== 'ASC' ? Number(a.metadata[sortState.criteria]) - Number(b.metadata[sortState.criteria]) : Number(b.metadata[sortState.criteria]) - Number(a.metadata[sortState.criteria]));
 
-                return { ...bucket, files }
+                return { ...bucket, files };
             });
         }
     }, [sortState, bucket]);
@@ -60,7 +60,7 @@ export const TrashTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
 
     return (
         <div className="max-h-[calc(100vh-367px)] w-fit overflow-x-auto border-2 border-gray-200 rounded-xl" >
-            <div className='px-5 py-6 text-m font-semibold border-b-2 border-gray-200'>
+            <div className="px-5 py-6 text-m font-semibold border-b-2 border-gray-200">
                 {`${messages.files}`}
             </div>
             <div >
@@ -75,7 +75,7 @@ export const TrashTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                                     className="checkbox border-gray-600"
                                 />
                                 <SortCell
-                                    criteria='name'
+                                    criteria="name"
                                     onChange={sort}
                                     sortState={sortState}
                                     text={`${messages.name}`}
@@ -83,7 +83,7 @@ export const TrashTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                             </th>
                             <th className="px-6 py-4 text-left font-medium w-36">
                                 <SortCell
-                                    criteria='deleted'
+                                    criteria="deleted"
                                     onChange={sort}
                                     sortState={sortState}
                                     text={`${messages.dateDeleted}`}
@@ -91,7 +91,7 @@ export const TrashTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                             </th>
                             <th className="px-6 py-4 text-left font-medium w-24">
                                 <SortCell
-                                    criteria='fileSize'
+                                    criteria="fileSize"
                                     onChange={sort}
                                     sortState={sortState}
                                     text={`${messages.fileSize}`}
@@ -111,7 +111,7 @@ export const TrashTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                                             checked={selectedFiles.includes(file)}
                                             className="checkbox border-gray-600"
                                         />
-                                        <FileIcon fileName={file.name} className='p-2 bg-gray-200 rounded-full' />{file.name}
+                                        <FileIcon fileName={file.name} className="p-2 bg-gray-200 rounded-full" />{file.name}
                                     </td>
                                     <td className="px-6 py-4">{getDateLabel(Date.now())}</td>
                                     <td className="px-6 py-4">{convertFileSize(file.metadata.size)}</td>
@@ -125,5 +125,5 @@ export const TrashTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                 </table >
             </div>
         </div>
-    )
-}
+    );
+};

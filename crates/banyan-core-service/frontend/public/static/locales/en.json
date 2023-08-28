@@ -67,6 +67,15 @@
 	"approved": "Approved",
 	"noAccess": "No access",
 	"wantToApproveAccess": "Are you sure you want to approve access ",
-	"removeAccessDescription": "Removing Access means that you will not have future access to this data, any previously downloaded data is still accessible to you but will no longer be synced"
-
+	"removeAccessDescription": "Removing Access means that you will not have future access to this data, any previously downloaded data is still accessible to you but will no longer be synced",
+	"bucket": "Bucket",
+	"wasDeleted": "was deleted",
+	"wasRenamed": "was renamed",
+	"wasCreated": "was created",
+	"snapshotWasTaken": "Cold snapshot was taken",
+	"trashWasCleaned": "Files from “Trash” were deleted",
+	"fileWasRenamed": "File was renamed",
+	"fileWasMoved": "File was moved",
+	"copyOf": "Copy of",
+	"linkWasCopied": "Link was copied"
 }
