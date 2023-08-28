@@ -7,7 +7,7 @@ CREATE TABLE clients (
   fingerprint VARCHAR(64) NOT NULL,
   public_key TEXT NOT NULL,
 
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE UNIQUE INDEX idx_clients_on_fingerprint
@@ -32,26 +32,23 @@ CREATE TABLE uploads (
   client_id TEXT NOT NULL REFERENCES clients(id),
   metadata_id TEXT NOT NULL,
 
-  reported_size INTEGER NOT NULL CONSTRAINT reported_size_positive (reported_size >= 0),
-  final_size INTEGER NOT NULL CONSTRAINT final_size_positive (reported_size >= 0),
+  reported_size INTEGER NOT NULL CHECK (reported_size >= 0) CONSTRAINT reported_size_positive,
+  final_size INTEGER NOT NULL CHECK (reported_size >= 0) CONSTRAINT final_size_positive,
 
   file_path VARCHAR(128) NOT NULL,
-  state VARCHAR(32) NOT NULL
-    CONSTRAINT state_in_list (
-      state IN ('started', 'failed', 'indexing', 'complete')
-    ),
+  state VARCHAR(32) NOT NULL CHECK (state IN ('started', 'indexing', 'complete', 'failed')) CONSTRAINT state_in_list,
 
   started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  finished_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  finished_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE UNIQUE INDEX idx_blocks_on_cid
-  ON blocks(cid);
+CREATE UNIQUE INDEX idx_uploads_on_metadata_id
+  ON uploads(metadata_id);
 
 CREATE TABLE blocks (
   id UUID DEFAULT uuid_generate_v4() NOT NULL PRIMARY KEY,
   cid VARCHAR(64) NOT NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE UNIQUE INDEX idx_blocks_on_cid
@@ -61,10 +58,10 @@ CREATE TABLE uploads_blocks (
   upload_id TEXT NOT NULL REFERENCES uploads(id),
   block_id TEXT NOT NULL REFERENCES blocks(id),
 
-  byte_offset INTEGER NOT NULL CONSTRAINT byte_offset_positive (byte_offset >= 0),
-  data_length: INTEGER NOT NULL CONSTRAINT data_length_positive (data_length >= 0),
+  byte_offset INTEGER NOT NULL CHECK (byte_offset >= 0) CONSTRAINT byte_offset_positive,
+  data_length INTEGER NOT NULL CHECK (data_length >= 0) CONSTRAINT data_length_positive,
 
-  associated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  associated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE UNIQUE INDEX idx_uploads_blocks_on_upload_id_block_id

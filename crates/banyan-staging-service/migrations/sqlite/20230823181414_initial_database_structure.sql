@@ -71,7 +71,6 @@ CREATE TABLE blocks (
   ),
 
   cid VARCHAR(64) NOT NULL,
-
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
