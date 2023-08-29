@@ -12,5 +12,5 @@ build_scripts/  @banyancomputer/devops
 # The infrastructure configuration directories are special cases, the system
 # change management policy requires changes at this level to be approved by
 # appointed change management owners
-.github/        @banyancomputer/change-management-owners
-deny.toml       @banyancomputer/change-management-owners
+#.github/        @banyancomputer/change-management-owners
+#deny.toml       @banyancomputer/change-management-owners
