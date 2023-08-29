@@ -54,6 +54,9 @@ pub trait Db: Debug {
 
 #[derive(Debug, thiserror::Error)]
 pub enum DbError {
+    #[error("query to database contained invalid syntax")]
+    BadSyntax(sqlx::Error),
+
     #[error("unable to load data from database, appears to be invalid")]
     CorruptData(sqlx::Error),
 
@@ -258,6 +261,7 @@ pub mod postgres {
                 match db_err.downcast_ref::<PgDatabaseError>().code() {
                     "23503" /* foreign key violation */ => DbError::RecordNotFound,
                     "23505" /* unique violation */ => DbError::RecordExists,
+                    "42601" /* syntax error */ => DbError::BadSyntax(err),
                     "53300" /* too many connections */ => DbError::DatabaseUnavailable(err),
                     _ => DbError::InternalError(err),
                 }

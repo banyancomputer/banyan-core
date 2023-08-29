@@ -29,21 +29,21 @@ CREATE UNIQUE INDEX idx_storage_grants_on_remote_grant_id
 CREATE TABLE uploads (
   id UUID DEFAULT uuid_generate_v4() NOT NULL PRIMARY KEY,
 
---  client_id UUID NOT NULL REFERENCES clients(id),
+  client_id UUID NOT NULL REFERENCES clients(id),
   metadata_id UUID NOT NULL,
 
---  reported_size INTEGER NOT NULL CHECK (reported_size >= 0) CONSTRAINT reported_size_positive,
---  final_size INTEGER NOT NULL CHECK (reported_size >= 0) CONSTRAINT final_size_positive,
+  reported_size INTEGER NOT NULL CHECK (reported_size >= 0),
+  final_size INTEGER NOT NULL CHECK (reported_size >= 0),
 
---  file_path VARCHAR(128) NOT NULL,
---  state VARCHAR(32) NOT NULL CHECK (state IN ('started', 'indexing', 'complete', 'failed')) CONSTRAINT state_in_list,
+  file_path VARCHAR(128) NOT NULL,
+  state VARCHAR(32) NOT NULL CHECK (state IN ('started', 'indexing', 'complete', 'failed')),
 
   started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   finished_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
---CREATE UNIQUE INDEX idx_uploads_on_metadata_id
---  ON uploads(metadata_id);
+CREATE UNIQUE INDEX idx_uploads_on_metadata_id
+  ON uploads(metadata_id);
 
 CREATE TABLE blocks (
   id UUID DEFAULT uuid_generate_v4() NOT NULL PRIMARY KEY,
@@ -58,8 +58,8 @@ CREATE TABLE uploads_blocks (
   upload_id UUID NOT NULL REFERENCES uploads(id),
   block_id UUID NOT NULL REFERENCES blocks(id),
 
-  --byte_offset INTEGER NOT NULL CHECK (byte_offset >= 0) CONSTRAINT byte_offset_positive,
-  --data_length INTEGER NOT NULL CHECK (data_length >= 0) CONSTRAINT data_length_positive,
+  byte_offset INTEGER NOT NULL CHECK (byte_offset >= 0),
+  data_length INTEGER NOT NULL CHECK (data_length >= 0),
 
   associated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
