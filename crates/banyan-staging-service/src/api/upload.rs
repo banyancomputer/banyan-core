@@ -79,7 +79,7 @@ pub async fn handler(
     // TODO: validate type is "application/vnd.ipld.car; version=2" (request_data_field.content_type())
 
     let store_path = object_store::path::Path::from(tmp_file_path.as_str());
-    let (_multipart_resume_id, mut writer) = match store.put_multipart(&store_path).await {
+    let (multipart_resume_id, mut writer) = match store.put_multipart(&store_path).await {
         Ok(mp) => mp,
         Err(err) => {
             handle_failed_upload(&db, upload_id, &tmp_file_path).await;
@@ -87,18 +87,20 @@ pub async fn handler(
         }
     };
 
-    let _ =  process_upload_stream(car_field, &mut writer).await?;
-    //    Ok(sr) => {
-    //        //writer.shutdown().await.map_err(
-    //    }
-    //}
-
-    // handle upload
-    //      * if it goes over content length produce a warning
-
-    handle_successful_upload(&db, &store, upload_id, &tmp_file_path).await?;
-
-    Ok((StatusCode::NO_CONTENT, ()).into_response())
+    match process_upload_stream(reported_body_length as usize, car_field, &mut writer).await {
+        Ok(sr) => {
+            writer.shutdown().await.map_err(UploadStreamError::WriteFailed)?;
+            handle_successful_upload(&db, &store, sr, upload_id, &tmp_file_path).await?;
+            Ok((StatusCode::NO_CONTENT, ()).into_response())
+        }
+        Err(err) => {
+            // todo: we don't care in the response if this fails, but if it does we will want to
+            // clean it up in the future which should be handled by a background task
+            let _ = store.abort_multipart(&store_path, &multipart_resume_id).await;
+            handle_failed_upload(&db, upload_id, &tmp_file_path).await;
+            Err(err.into())
+        }
+    }
 }
 
 async fn handle_failed_upload(db: &Database, upload_id: Uuid, _file_path: &str) {
@@ -110,7 +112,7 @@ async fn handle_failed_upload(db: &Database, upload_id: Uuid, _file_path: &str) 
     // todo: should try and clean up the file if it was created
 }
 
-async fn handle_successful_upload(_db: &Database, _store: &UploadStore, _upload_id: Uuid, _file_path: &str) -> Result<(), UploadError> {
+async fn handle_successful_upload(_db: &Database, _store: &UploadStore, _storage_result: StoreResult, _upload_id: Uuid, _file_path: &str) -> Result<(), UploadError> {
     // todo: move the file to its final resting place
     // todo: mark upload as successful
     // todo: should enqueue background task to notify the platform
@@ -214,6 +216,7 @@ struct StoreResult {
 }
 
 async fn process_upload_stream<S>(
+    expected_size: usize,
     mut stream: S,
     writer: &mut Box<dyn AsyncWrite + Unpin + Send>,
 ) -> Result<StoreResult, UploadStreamError>
@@ -223,11 +226,17 @@ where
     let mut car_buffer = car_buffer::CarBuffer::new();
     let mut hasher = blake3::Hasher::new();
     let mut bytes_written = 0;
+    let mut warning_issued = false;
 
     while let Some(chunk) = stream.try_next().await.map_err(UploadStreamError::ReadFailed)? {
         hasher.update(&chunk);
         car_buffer.add_chunk(&chunk);
         bytes_written += chunk.len();
+
+        if bytes_written > expected_size && !warning_issued {
+            warning_issued = true;
+            tracing::warn!("client is streaming more data than was claimed to be present in the upload");
+        }
 
         writer
             .write_all(&chunk)
