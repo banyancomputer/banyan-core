@@ -30,6 +30,12 @@ pub struct AuthenticatedClient {
     consumed_storage: usize,
 }
 
+impl AuthenticatedClient {
+    pub fn remaining_storage(&self) -> usize {
+        self.authorized_storage - self.consumed_storage
+    }
+}
+
 #[async_trait]
 impl<S> FromRequestParts<S> for AuthenticatedClient
 where

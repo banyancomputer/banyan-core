@@ -22,17 +22,12 @@ pub async fn handler(
     database: Database,
     grant: StorageGrant,
     Json(request): Json<GrantRequest>,
-) -> Response {
-    let grant_user_id = match ensure_grant_user(&database, &grant, request).await {
-        Ok(gui) => gui,
-        Err(err) => return err.into_response(),
-    };
+) -> Result<Response, GrantError> {
+    let grant_user_id = ensure_grant_user(&database, &grant, request).await?;
 
-    if let Err(err) = create_storage_grant(grant_user_id, &database, &grant).await {
-        return err.into_response();
-    }
+    create_storage_grant(grant_user_id, &database, &grant).await?;
 
-    (StatusCode::NO_CONTENT, ()).into_response()
+    Ok((StatusCode::NO_CONTENT, ()).into_response())
 }
 
 async fn ensure_grant_user(
@@ -170,7 +165,7 @@ async fn create_storage_grant(
 }
 
 #[derive(Debug, thiserror::Error)]
-enum GrantError {
+pub enum GrantError {
     #[error("provided storage grant has already been recorded")]
     AlreadyRecorded,
 
@@ -184,7 +179,7 @@ impl IntoResponse for GrantError {
 
         match &self {
             AlreadyRecorded => {
-                let err_msg = serde_json::json!({ "msg": "{self}" });
+                let err_msg = serde_json::json!({ "msg": format!("{self}") });
                 (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
             }
             Database(err) => {
