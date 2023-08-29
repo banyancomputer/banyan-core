@@ -1,7 +1,28 @@
+use axum::response::{IntoResponse, Response};
+use http::StatusCode;
 use serde::Serialize;
 
 use crate::db::models;
 use crate::extractors::DbConn;
+
+/// Process an SQLX error in a reusable format for responding with error messages
+pub fn sqlx_error_to_response(err: sqlx::Error, operation: &str, resource: &str) -> Response {
+    match err {
+        sqlx::Error::RowNotFound => (
+            StatusCode::NOT_FOUND,
+            format!("{} not found: {}", resource, err),
+        )
+            .into_response(),
+        _ => {
+            tracing::error!("unable to {} {}: {}", operation, resource, err);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "internal server error".to_string(),
+            )
+                .into_response()
+        }
+    }
+}
 
 /// Pull the bucket from the database by id and account_id and return it.
 /// Implements an authorized read of a bucket by id and account_id.
