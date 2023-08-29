@@ -74,24 +74,41 @@ pub async fn handler(
         .map_err(UploadError::DataFieldUnavailable)?
         .ok_or(UploadError::DataFieldMissing)?;
 
+    // TODO: validate name is car-upload (request_data_field.name())
+    // TODO: validate type is "application/vnd.ipld.car; version=2" (request_data_field.content_type())
+
     let store_path = object_store::path::Path::from(tmp_file_path.as_str());
     let (_multipart_resume_id, mut writer) = match store.put_multipart(&store_path).await {
         Ok(mp) => mp,
         Err(err) => {
-            // attempt to report the upload as failed, but that fails we'll need to handle it in a
-            // future clean-up task. todo: should actually just enqueue and entire clean up process
-            // and report this as failed there...
-            let _ = record_upload_failed(&db, upload_id).await;
+            handle_failed_upload(&db, upload_id, &tmp_file_path).await;
             return Err(UploadError::StoreUnavailable(err));
         }
     };
 
-    // during upload, if it goes over content length warn and start watching remaining authorized
-    // storage
-    // if upload errors clean up files and record the failure in the database with the uploaded amount
-    // if upload succeeds queue task to report back to platform
+    // handle upload
+    //      * if it goes over content length produce a warning
+
+    handle_successful_upload(&db, upload_id, &tmp_file_path).await?;
 
     Ok((StatusCode::NO_CONTENT, ()).into_response())
+}
+
+async fn handle_failed_upload(db: &Database, upload_id: Uuid, _file_path: &str) {
+    // attempt to report the upload as failed, but that fails we'll need to handle it in a
+    // future clean-up task. todo: should actually just enqueue and entire clean up process
+    // and report this as failed there...
+    let _ = record_upload_failed(&db, upload_id).await;
+
+    // todo: should try and clean up the file if it was created
+}
+
+async fn handle_successful_upload(_db: &Database, _upload_id: Uuid, _file_path: &str) -> Result<(), UploadError> {
+    // todo: move the file to its final resting place
+    // todo: mark upload as successful
+    // todo: should enqueue background task to notify the platform
+
+    Ok(())
 }
 
 async fn record_upload_beginning(db: &Database, client_id: Uuid, metadata_id: Uuid, reported_size: u64) -> Result<(Uuid, String), UploadError> {
