@@ -35,6 +35,8 @@ CREATE TABLE storage_grants (
 
 CREATE UNIQUE INDEX idx_storage_grants_on_remote_grant_id
   ON storage_grants(remote_grant_id);
+CREATE INDEX idx_storage_grants_on_created_at
+  ON storage_grants(created_at);
 
 CREATE TABLE uploads (
   id TEXT NOT NULL PRIMARY KEY DEFAULT (
@@ -58,6 +60,8 @@ CREATE TABLE uploads (
   finished_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE INDEX idx_uploads_on_client_id
+  ON uploads(client_id);
 CREATE UNIQUE INDEX idx_uploads_on_metadata_id
   ON uploads(metadata_id);
 

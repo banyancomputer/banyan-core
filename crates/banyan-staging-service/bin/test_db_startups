@@ -43,4 +43,4 @@ postgres_init
 postgres_setup
 postgres_teardown
 
-#sqlite_setup
+sqlite_setup

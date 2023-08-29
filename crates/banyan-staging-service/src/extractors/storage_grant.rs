@@ -12,7 +12,7 @@ use jwt_simple::prelude::*;
 use uuid::Uuid;
 
 use crate::app::PlatformVerificationKey;
-use crate::extractors::key_validator;
+use crate::extractors::paired_id_validator;
 
 // todo: will need a way for a client to refresh their storage grant
 const MAXIMUM_GRANT_AGE: u64 = 900;
@@ -98,7 +98,7 @@ where
             None => return Err(Self::Rejection::SubjectMissing),
         };
 
-        let (client_id, client_fingerprint) = match key_validator().captures(&grant_subject) {
+        let (client_id, client_fingerprint) = match paired_id_validator().captures(&grant_subject) {
             Some(matches) => {
                 let id_str: &str = matches.get(1).expect("captures should be guaranteed").as_str();
                 let id = Uuid::parse_str(id_str).expect("already validated the format");
