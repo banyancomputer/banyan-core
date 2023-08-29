@@ -134,3 +134,28 @@ pub async fn delete(
         Err(err) => sqlx_error_to_response(err, "delete", "bucket key"),
     }
 }
+
+/// Approve a Bucket Key for future use
+pub async fn approve(
+    api_token: ApiToken,
+    mut db_conn: DbConn,
+    Path((bucket_id, bucket_key_id)): Path<(Uuid, Uuid)>,
+) -> impl IntoResponse {
+    let account_id = api_token.subject;
+    let bucket_id = bucket_id.to_string();
+    let bucket_key_id = bucket_key_id.to_string();
+    // Ensure this Account is allowed to read this Bucket
+    if let Err(err) = db::authorize_bucket(&account_id, &bucket_id, &mut db_conn).await {
+        // Return error response if not
+        return sqlx_error_to_response(err, "read", "bucket");
+    }
+    // Try to delete the Bucket Key, respond based on success
+    match db::delete_bucket_key(&bucket_id, &bucket_key_id, &mut db_conn).await {
+        Ok(bucket_key) => Json(responses::DeleteBucketKey {
+            id: bucket_key.id,
+            approved: bucket_key.approved,
+        })
+        .into_response(),
+        Err(err) => sqlx_error_to_response(err, "delete", "bucket key"),
+    }
+}
