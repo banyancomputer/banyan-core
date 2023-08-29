@@ -1,13 +1,13 @@
 use std::collections::HashSet;
 use std::sync::OnceLock;
 
-use axum::{async_trait, Json, RequestPartsExt};
-use axum::extract::{FromRef, FromRequestParts, TypedHeader};
 use axum::extract::rejection::TypedHeaderRejection;
-use axum::headers::Authorization;
+use axum::extract::{FromRef, FromRequestParts, TypedHeader};
 use axum::headers::authorization::Bearer;
+use axum::headers::Authorization;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
+use axum::{async_trait, Json, RequestPartsExt};
 use http::request::Parts;
 use jwt_simple::prelude::*;
 use regex::Regex;
@@ -46,7 +46,8 @@ where
 
         let raw_token = bearer.token();
 
-        let unvalidated_header = Token::decode_metadata(&raw_token).map_err(|err| Self::Rejection::CorruptHeader(err))?;
+        let unvalidated_header =
+            Token::decode_metadata(raw_token).map_err(Self::Rejection::CorruptHeader)?;
         let key_id = match unvalidated_header.key_id() {
             Some(kid) if fingerprint_validator().is_match(kid) => kid.to_string(),
             Some(_) => return Err(Self::Rejection::InvalidKeyId),
@@ -57,7 +58,7 @@ where
 
         let client_id = id_from_fingerprint(&database, &key_id).await?;
         let client_verification_key = ES384PublicKey::from_pem(&client_id.public_key)
-            .map_err(|err| Self::Rejection::CorruptDatabaseKey(err))?;
+            .map_err(Self::Rejection::CorruptDatabaseKey)?;
 
         let verification_options = VerificationOptions {
             accept_future: false,
@@ -68,8 +69,8 @@ where
         };
 
         let claims = client_verification_key
-            .verify_token::<TokenClaims>(&raw_token, Some(verification_options))
-            .map_err(|err| Self::Rejection::ValidationFailed(err))?;
+            .verify_token::<TokenClaims>(raw_token, Some(verification_options))
+            .map_err(Self::Rejection::ValidationFailed)?;
 
         // annoyingly jwt-simple doesn't use the correct encoding for this... we can support both
         // though and maybe we can fix upstream so it follows the spec
@@ -96,7 +97,6 @@ where
             Err(err) => return Err(Self::Rejection::CorruptPlatformId(err)),
         };
 
-
         Ok(AuthenticatedClient {
             platform_id,
             fingerprint: key_id,
@@ -107,18 +107,23 @@ where
     }
 }
 
-pub async fn id_from_fingerprint(db: &Database, fingerprint: &str) -> Result<RemoteId, AuthenticatedClientError> {
+pub async fn id_from_fingerprint(
+    db: &Database,
+    fingerprint: &str,
+) -> Result<RemoteId, AuthenticatedClientError> {
     match db.ex() {
         #[cfg(feature = "postgres")]
         Executor::Postgres(ref mut conn) => {
             use crate::database::postgres;
 
-            let maybe_remote_id: Option<RemoteId> = sqlx::query_as("SELECT id, platform_id, public_key FROM clients WHERE fingerprint = $1;")
-                .bind(fingerprint)
-                .fetch_optional(conn)
-                .await
-                .map_err(postgres::map_sqlx_error)
-                .map_err(|err| AuthenticatedClientError::DbFailure(err))?;
+            let maybe_remote_id: Option<RemoteId> = sqlx::query_as(
+                "SELECT id, platform_id, public_key FROM clients WHERE fingerprint = $1;",
+            )
+            .bind(fingerprint)
+            .fetch_optional(conn)
+            .await
+            .map_err(postgres::map_sqlx_error)
+            .map_err(AuthenticatedClientError::DbFailure)?;
 
             match maybe_remote_id {
                 Some(id) => Ok(id),
@@ -130,12 +135,14 @@ pub async fn id_from_fingerprint(db: &Database, fingerprint: &str) -> Result<Rem
         Executor::Sqlite(ref mut conn) => {
             use crate::database::sqlite;
 
-            let maybe_remote_id: Option<RemoteId> = sqlx::query_as("SELECT id, platform_id, public_key FROM clients WHERE fingerprint = $1;")
-                .bind(fingerprint)
-                .fetch_optional(conn)
-                .await
-                .map_err(sqlite::map_sqlx_error)
-                .map_err(|err| AuthenticatedClientError::DbFailure(err))?;
+            let maybe_remote_id: Option<RemoteId> = sqlx::query_as(
+                "SELECT id, platform_id, public_key FROM clients WHERE fingerprint = $1;",
+            )
+            .bind(fingerprint)
+            .fetch_optional(conn)
+            .await
+            .map_err(sqlite::map_sqlx_error)
+            .map_err(AuthenticatedClientError::DbFailure)?;
 
             match maybe_remote_id {
                 Some(id) => Ok(id),
@@ -190,7 +197,8 @@ impl IntoResponse for AuthenticatedClientError {
             }
             CorruptDatabaseKey(_) | CorruptPlatformId(_) | DbFailure(_) => {
                 tracing::error!("{self}");
-                let err_msg = serde_json::json!({ "msg": "service is experiencing internal issues" });
+                let err_msg =
+                    serde_json::json!({ "msg": "service is experiencing internal issues" });
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
             }
             MissingHeader | UnknownFingerprint => {
@@ -215,6 +223,6 @@ pub struct RemoteId {
 
 #[derive(Deserialize, Serialize)]
 pub struct TokenClaims {
-    #[serde(rename="nnc")]
+    #[serde(rename = "nnc")]
     nonce: Option<String>,
 }

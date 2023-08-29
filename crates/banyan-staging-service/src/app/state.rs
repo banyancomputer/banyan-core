@@ -1,10 +1,11 @@
+use std::fmt::Write;
 use std::path::PathBuf;
 
 use jwt_simple::prelude::*;
 use object_store::local::LocalFileSystem;
 use sha2::Digest;
 
-use crate::app::{Config, Error, PlatformVerificationKey, PlatformAuthKey};
+use crate::app::{Config, Error, PlatformAuthKey, PlatformVerificationKey};
 use crate::database::{self, Database};
 
 #[derive(Clone)]
@@ -24,16 +25,14 @@ impl State {
         // which wouldn't be a bad idea...
         let upload_directory = config.upload_directory().clone();
         LocalFileSystem::new_with_prefix(&upload_directory)
-            .map_err(Error::inaccessible_upload_directory)?;
+            .map_err(Error::InaccessibleUploadDirectory)?;
 
         let db_url = match config.db_url() {
             Some(du) => du.to_string(),
-            None => {
-                match std::env::var("DATABASE_URL") {
-                    Ok(du) => du,
-                    Err(_) => "sqlite://:memory:".to_string(),
-                }
-            }
+            None => match std::env::var("DATABASE_URL") {
+                Ok(du) => du,
+                Err(_) => "sqlite://:memory:".to_string(),
+            },
         };
 
         // Configure the database instance we're going use
@@ -41,16 +40,19 @@ impl State {
 
         // Parse the platform authentication key (this will be used to communicate with the
         // metadata service).
-        let key_bytes = std::fs::read(config.platform_auth_key_path()).map_err(Error::unreadable_key)?;
+        let key_bytes =
+            std::fs::read(config.platform_auth_key_path()).map_err(Error::UnreadableSessionKey)?;
         let pem = String::from_utf8_lossy(&key_bytes);
-        let auth_raw = ES384KeyPair::from_pem(&pem).map_err(Error::invalid_key)?;
+        let auth_raw = ES384KeyPair::from_pem(&pem).map_err(Error::BadAuthenticationKey)?;
         let fingerprint = fingerprint_key(&auth_raw);
         let platform_auth_key = auth_raw.with_key_id(&fingerprint);
 
         // Parse the public grant verification key (this will be the one coming from the platform)
-        let key_bytes = std::fs::read(config.platform_verification_key_path()).map_err(Error::unreadable_key)?;
+        let key_bytes = std::fs::read(config.platform_verification_key_path())
+            .map_err(Error::UnreadableSessionKey)?;
         let pem = String::from_utf8_lossy(&key_bytes);
-        let platform_verification_key = ES384PublicKey::from_pem(&pem).map_err(Error::invalid_key)?;
+        let platform_verification_key =
+            ES384PublicKey::from_pem(&pem).map_err(Error::BadAuthenticationKey)?;
 
         Ok(Self {
             database,
@@ -98,8 +100,8 @@ fn fingerprint_key(keys: &ES384KeyPair) -> String {
     hasher.update(compressed_point);
     let hashed_bytes = hasher.finalize();
 
-    hashed_bytes
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect()
+    hashed_bytes.iter().fold(String::new(), |mut output, byte| {
+        let _ = write!(output, "{byte:02x}");
+        output
+    })
 }

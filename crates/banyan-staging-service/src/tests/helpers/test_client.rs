@@ -1,14 +1,14 @@
 #![allow(dead_code)]
 use std::net::{SocketAddr, TcpListener};
 
-use axum::BoxError;
 use axum::body::HttpBody;
+use axum::BoxError;
 use bytes::Bytes;
 use http::header::{HeaderName, HeaderValue};
 use http::{Request, StatusCode};
 use hyper::{Body, Server};
-use tower::Service;
 use tower::make::Shared;
+use tower::Service;
 
 pub struct TestClient {
     client: reqwest::Client,

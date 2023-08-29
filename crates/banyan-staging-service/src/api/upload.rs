@@ -1,12 +1,15 @@
+use axum::extract::BodyStream;
+use axum::headers::ContentType;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
+use axum::TypedHeader;
 
 use crate::extractors::{AuthenticatedClient, Database, UploadStore};
 
 pub async fn handler(
     _db: Database,
     _client: AuthenticatedClient,
-    _store: UploadStore
+    _store: UploadStore,
     TypedHeader(_content_type): TypedHeader<ContentType>,
     _body: BodyStream,
 ) -> Response {

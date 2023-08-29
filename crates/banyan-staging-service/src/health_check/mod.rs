@@ -1,7 +1,7 @@
-use axum::Router;
 use axum::routing::get;
-use http::Method;
+use axum::Router;
 use http::header::{ACCEPT, ORIGIN};
+use http::Method;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::limit::RequestBodyLimitLayer;
 

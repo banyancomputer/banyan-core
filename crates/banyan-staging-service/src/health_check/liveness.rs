@@ -1,6 +1,6 @@
-use axum::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
+use axum::Json;
 
 /// This is a very simple handler that always returns with a valid response. It's intended to be
 /// used by external healthchecks to see whether the service is "alive". Failing this check for any

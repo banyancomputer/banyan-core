@@ -55,7 +55,7 @@ impl DataSource for DbSource {
                     .fetch_one(conn)
                     .await
                     .map_err(|_| DataSourceError::DependencyFailure)?;
-            },
+            }
 
             #[cfg(feature = "sqlite")]
             Executor::Sqlite(ref mut conn) => {
@@ -63,7 +63,7 @@ impl DataSource for DbSource {
                     .fetch_one(conn)
                     .await
                     .map_err(|_| DataSourceError::DependencyFailure)?;
-            },
+            }
         }
 
         Ok(())
@@ -78,11 +78,10 @@ where
 {
     type Rejection = ();
 
-    async fn from_request_parts(
-        _parts: &mut Parts,
-        state: &S,
-    ) -> Result<Self, Self::Rejection> {
-        Ok(StateDataSource(Arc::new(DbSource { db: Database::from_ref(state) })))
+    async fn from_request_parts(_parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+        Ok(StateDataSource(Arc::new(DbSource {
+            db: Database::from_ref(state),
+        })))
     }
 }
 

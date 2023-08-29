@@ -32,5 +32,6 @@ pub async fn not_found_handler() -> Response {
     (
         StatusCode::NOT_FOUND,
         Json(serde_json::json!({"status": "not found"})),
-    ).into_response()
+    )
+        .into_response()
 }

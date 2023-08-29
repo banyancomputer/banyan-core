@@ -52,18 +52,16 @@ async fn main() -> Result<(), Error> {
 /// prevent the panic from taking out the service but ensures that it and any available information
 /// is properly reported using the standard logging mechanism.
 fn register_panic_logger() {
-    std::panic::set_hook(Box::new(|panic| {
-        match panic.location() {
-            Some(loc) => {
-                tracing::error!(
-                    message = %panic,
-                    panic.file = loc.file(),
-                    panic.line = loc.line(),
-                    panic.column = loc.column(),
-                );
-            },
-            None => tracing::error!(message = %panic),
+    std::panic::set_hook(Box::new(|panic| match panic.location() {
+        Some(loc) => {
+            tracing::error!(
+                message = %panic,
+                panic.file = loc.file(),
+                panic.line = loc.line(),
+                panic.column = loc.column(),
+            );
         }
+        None => tracing::error!(message = %panic),
     }));
 }
 

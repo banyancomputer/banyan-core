@@ -36,7 +36,7 @@ fn report_repository_version() {
                 .unwrap();
 
             String::from_utf8(git_describe.stdout).unwrap()
-        },
+        }
     };
 
     println!("cargo:rustc-env=REPO_VERSION={}", version);

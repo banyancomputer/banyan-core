@@ -31,11 +31,11 @@ impl Config {
     }
 
     pub fn listen_addr(&self) -> SocketAddr {
-        self.listen_addr.clone()
+        self.listen_addr
     }
 
     pub fn log_level(&self) -> Level {
-        self.log_level.clone()
+        self.log_level
     }
 
     pub fn parse_cli_arguments() -> Result<Self, Error> {
@@ -52,10 +52,11 @@ impl Config {
                 .write(true)
                 .create_new(true)
                 .open(key_path)
-                .map_err(Error::auth_write_failed)?;
+                .map_err(Error::PlatformAuthFailedWrite)?;
 
             let new_key = ES384KeyPair::generate().to_pem().unwrap();
-            file.write_all(new_key.as_bytes()).map_err(Error::auth_write_failed)?;
+            file.write_all(new_key.as_bytes())
+                .map_err(Error::PlatformAuthFailedWrite)?;
 
             tracing::info!("key generation complete");
 
@@ -70,8 +71,7 @@ impl Config {
             .opt_value_from_str("--log-level")?
             .unwrap_or(Level::INFO);
 
-        let db_url = args
-            .opt_value_from_str("--db-url")?;
+        let db_url = args.opt_value_from_str("--db-url")?;
 
         let platform_auth_key_path: PathBuf = args
             .opt_value_from_str("--auth-key")?

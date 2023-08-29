@@ -28,14 +28,14 @@ pub async fn connect(db_url: &str) -> DbResult<Database> {
     // healthcheck and database extractor... Maybe this state belongs on the database executor
     // itself...
 
-    #[cfg(feature="postgres")]
+    #[cfg(feature = "postgres")]
     if db_url.starts_with("postgres://") {
         let db = postgres::PostgresDb::connect(db_url).await?;
         db.migrate().await?;
         return Ok(Arc::new(db));
     }
 
-    #[cfg(feature="sqlite")]
+    #[cfg(feature = "sqlite")]
     if db_url.starts_with("sqlite://") {
         let db = sqlite::SqliteDb::connect(db_url).await?;
         db.migrate().await?;
@@ -79,10 +79,10 @@ pub enum DbError {
 pub type DbResult<T = ()> = Result<T, DbError>;
 
 pub enum Executor {
-    #[cfg(feature="postgres")]
+    #[cfg(feature = "postgres")]
     Postgres(postgres::PostgresExecutor),
 
-    #[cfg(feature="sqlite")]
+    #[cfg(feature = "sqlite")]
     Sqlite(sqlite::SqliteExecutor),
 }
 
@@ -95,24 +95,24 @@ impl TxExecutor {
 
     pub async fn commit(self) -> DbResult {
         match self.0 {
-            #[cfg(feature="postgres")]
+            #[cfg(feature = "postgres")]
             Executor::Postgres(e) => e.commit().await,
 
-            #[cfg(feature="sqlite")]
+            #[cfg(feature = "sqlite")]
             Executor::Sqlite(e) => e.commit().await,
         }
     }
 }
 
-#[cfg(feature="postgres")]
+#[cfg(feature = "postgres")]
 pub mod postgres {
     use std::str::FromStr;
 
     use axum::async_trait;
     use futures::future::BoxFuture;
-    use sqlx::Transaction;
     use sqlx::migrate::Migrator;
     use sqlx::postgres::{PgConnectOptions, PgDatabaseError, PgPool, Postgres};
+    use sqlx::Transaction;
 
     use super::{Db, DbError, DbResult, Executor, TxExecutor};
 
@@ -211,8 +211,8 @@ pub mod postgres {
 
     impl PostgresDb {
         pub async fn connect(url: &str) -> Result<Self, DbError> {
-            let connection_options = PgConnectOptions::from_str(&url)
-                .map_err(|err| DbError::DatabaseUnavailable(err))?
+            let connection_options = PgConnectOptions::from_str(url)
+                .map_err(DbError::DatabaseUnavailable)?
                 .application_name(env!("CARGO_PKG_NAME"))
                 .statement_cache_capacity(250);
 
@@ -223,7 +223,7 @@ pub mod postgres {
                 .max_connections(16)
                 .connect_with(connection_options)
                 .await
-                .map_err(|err| DbError::DatabaseUnavailable(err))?;
+                .map_err(DbError::DatabaseUnavailable)?;
 
             Ok(Self { pool })
         }
@@ -232,7 +232,7 @@ pub mod postgres {
             MIGRATOR
                 .run(&self.pool)
                 .await
-                .map_err(|err| DbError::MigrationFailed(err))
+                .map_err(DbError::MigrationFailed)
         }
     }
 
@@ -265,7 +265,7 @@ pub mod postgres {
                     "53300" /* too many connections */ => DbError::DatabaseUnavailable(err),
                     _ => DbError::InternalError(err),
                 }
-            },
+            }
             sqlx::Error::PoolTimedOut => DbError::DatabaseUnavailable(err),
             sqlx::Error::RowNotFound => DbError::RecordNotFound,
             err => DbError::InternalError(err),
@@ -273,15 +273,17 @@ pub mod postgres {
     }
 }
 
-#[cfg(feature="sqlite")]
+#[cfg(feature = "sqlite")]
 pub mod sqlite {
     use std::str::FromStr;
 
     use axum::async_trait;
     use futures::future::BoxFuture;
-    use sqlx::Transaction;
     use sqlx::migrate::Migrator;
-    use sqlx::sqlite::{Sqlite, SqliteConnectOptions, SqliteJournalMode, SqlitePool, SqliteSynchronous};
+    use sqlx::sqlite::{
+        Sqlite, SqliteConnectOptions, SqliteJournalMode, SqlitePool, SqliteSynchronous,
+    };
+    use sqlx::Transaction;
 
     use super::{Db, DbError, DbResult, Executor, TxExecutor};
 
@@ -295,7 +297,7 @@ pub mod sqlite {
     impl SqliteDb {
         pub async fn connect(url: &str) -> DbResult<Self> {
             let connection_options = SqliteConnectOptions::from_str(url)
-                .map_err(|err| DbError::DatabaseUnavailable(err))?
+                .map_err(DbError::DatabaseUnavailable)?
                 .create_if_missing(true)
                 .journal_mode(SqliteJournalMode::Wal)
                 .statement_cache_capacity(250)
@@ -308,7 +310,7 @@ pub mod sqlite {
                 .max_connections(16)
                 .connect_with(connection_options)
                 .await
-                .map_err(|err| DbError::DatabaseUnavailable(err))?;
+                .map_err(DbError::DatabaseUnavailable)?;
 
             Ok(Self { pool })
         }
@@ -317,7 +319,7 @@ pub mod sqlite {
             MIGRATOR
                 .run(&self.pool)
                 .await
-                .map_err(|err| DbError::MigrationFailed(err))
+                .map_err(DbError::MigrationFailed)
         }
 
         pub fn typed_ex(&self) -> SqliteExecutor {
@@ -427,7 +429,9 @@ pub mod sqlite {
         match err {
             sqlx::Error::ColumnDecode { .. } => DbError::CorruptData(err),
             sqlx::Error::RowNotFound => DbError::RecordNotFound,
-            err if err.to_string().contains("FOREIGN KEY constraint failed") => DbError::RecordNotFound,
+            err if err.to_string().contains("FOREIGN KEY constraint failed") => {
+                DbError::RecordNotFound
+            }
             err if err.to_string().contains("UNIQUE constraint failed") => DbError::RecordExists,
             err => DbError::InternalError(err),
         }

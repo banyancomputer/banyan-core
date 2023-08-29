@@ -1,6 +1,6 @@
-use axum::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
+use axum::Json;
 
 use super::data_source::*;
 
@@ -9,15 +9,15 @@ pub async fn handler(data_src: StateDataSource) -> Response {
         Ok(_) => {
             let msg = serde_json::json!({"msg": "ok"});
             (StatusCode::OK, Json(msg)).into_response()
-        },
+        }
         Err(DataSourceError::DependencyFailure) => {
             let msg = serde_json::json!({"msg": "one or more dependencies aren't available"});
             (StatusCode::SERVICE_UNAVAILABLE, Json(msg)).into_response()
-        },
+        }
         Err(DataSourceError::ShuttingDown) => {
             let msg = serde_json::json!({"msg": "service is shutting down"});
             (StatusCode::SERVICE_UNAVAILABLE, Json(msg)).into_response()
-        },
+        }
     }
 }
 
@@ -34,7 +34,10 @@ mod tests {
         let response = handler(StateDataSource::new(Arc::new(MockReadiness::Ready))).await;
         assert_eq!(response.status(), StatusCode::OK);
 
-        let response = handler(StateDataSource::new(Arc::new(MockReadiness::DependencyFailure))).await;
+        let response = handler(StateDataSource::new(Arc::new(
+            MockReadiness::DependencyFailure,
+        )))
+        .await;
         assert_eq!(response.status(), StatusCode::SERVICE_UNAVAILABLE);
 
         let response = handler(StateDataSource::new(Arc::new(MockReadiness::ShuttingDown))).await;
