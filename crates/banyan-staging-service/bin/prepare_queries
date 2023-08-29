@@ -1,0 +1,53 @@
+#!/bin/bash
+
+set -o errexit
+
+cd $(dirname %0)
+
+POSTGRES_PORT=6782
+
+# Relative paths don't work reliably with sqlx
+SQLITE_URL="sqlite://$(pwd)/data/server.db"
+
+CONTAINER_RUNTIME="podman"
+if which docker &> /dev/null; then
+  CONTAINER_RUNTIME="docker"
+fi
+
+function postgres_setup() {
+  cat << EOS | ${CONTAINER_RUNTIME} exec -i --user postgres sqlx-migration-pg psql
+CREATE ROLE test_user WITH LOGIN PASSWORD 'test_password';
+CREATE DATABASE test_db WITH OWNER test_user;
+EOS
+
+  PG_URL="postgres://test_user:test_password@127.0.0.1:${POSTGRES_PORT}/test_db"
+
+  sqlx database setup --database-url ${PG_URL} --source ./migrations/postgres
+  cargo sqlx prepare --database-url ${PG_URL} -- --no-default-features \
+    --features postgres --tests
+}
+
+function postgres_init() {
+  ${CONTAINER_RUNTIME} run -d --rm -e POSTGRES_PASSWORD=superuser_pass --replace -p ${POSTGRES_PORT}:5432 --name sqlx-migration-pg docker.io/library/postgres:alpine
+  sleep 2.5
+}
+
+function postgres_teardown() {
+  ${CONTAINER_RUNTIME} kill sqlx-migration-pg || true
+}
+
+function sqlite_setup() {
+  mkdir -p data
+  rm -f data/server.db* &>/dev/null
+
+  sqlx database setup --database-url ${SQLITE_URL} --source ./migrations/sqlite \
+    --sqlite-create-db-wal true
+  cargo sqlx prepare --database-url ${SQLITE_URL} -- --no-default-features \
+    --features sqlite --tests
+}
+
+sqlite_setup
+
+postgres_init
+postgres_setup
+postgres_teardown

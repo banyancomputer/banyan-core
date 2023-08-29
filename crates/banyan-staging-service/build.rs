@@ -8,12 +8,14 @@ fn report_build_profile() {
 fn report_enabled_features() {
     let mut enabled_features: Vec<&str> = Vec::new();
 
-    // NOTE: When features are added or removed, they need to be manually listed here
-    //#[cfg(feature = "development")]
-    //enabled_features.push("development");
+    if cfg!(feature = "postgres") {
+        enabled_features.push("postgres");
+    }
 
-    // Mostly here to prevent a mut warning from showing up with no available features but also
-    // kind of useful...
+    if cfg!(feature = "sqlite") {
+        enabled_features.push("sqlite");
+    }
+
     if enabled_features.is_empty() {
         enabled_features.push("none");
     }
@@ -25,20 +27,36 @@ fn report_enabled_features() {
 }
 
 fn report_repository_version() {
-    let git_describe = std::process::Command::new("git")
-        .args(["describe", "--always", "--dirty", "--long", "--tags"])
-        .output()
-        .unwrap();
+    let version = match std::env::var("CI_BUILD_REF") {
+        Ok(val) if !val.is_empty() => val,
+        _ => {
+            let git_describe = std::process::Command::new("git")
+                .args(["describe", "--always", "--dirty", "--long", "--tags"])
+                .output()
+                .unwrap();
 
-    let long_version = String::from_utf8(git_describe.stdout).unwrap();
-    println!("cargo:rustc-env=REPO_VERSION={}", long_version);
+            String::from_utf8(git_describe.stdout).unwrap()
+        }
+    };
+
+    println!("cargo:rustc-env=REPO_VERSION={}", version);
 }
 
 fn main() {
+    // When this script changes, the changes will likely affect the produced binary (or why is it
+    // being done here)? Not sure why this isn't the default but here it is...
     println!("cargo:rerun-if-changed=build.rs");
+
+    // Because we're including tags, commit IDs, and dirty status we want to build a new binary
+    // with the correct information when we make a commit or tag a commit.
+    println!("cargo:rerun-if-changed=.git/refs/heads");
+    println!("cargo:rerun-if-changed=.git/refs/tags");
+
+    // Migrations lie outside of our normal source but are both embedded in our code, and our code
+    // is dependent on the changes they represent. We should be building when this changes
     println!("cargo:rerun-if-changed=migrations");
 
-    report_repository_version();
     report_build_profile();
     report_enabled_features();
+    report_repository_version();
 }

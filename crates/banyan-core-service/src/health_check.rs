@@ -29,10 +29,10 @@ pub fn router(state: AppState) -> Router<AppState> {
         .allow_credentials(false);
 
     Router::new()
+        .layer(cors_layer)
+        .layer(RequestBodyLimitLayer::new(REQUEST_BODY_LIMIT))
         .route("/healthz", get(handlers::liveness_check))
         .route("/readyz", get(handlers::readiness_check))
         .route("/version", get(handlers::version))
         .with_state(state)
-        .layer(RequestBodyLimitLayer::new(REQUEST_BODY_LIMIT))
-        .layer(cors_layer)
 }
