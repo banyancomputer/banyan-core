@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use axum::extract::{BodyStream, Json};
 use axum::headers::{ContentLength, ContentType};
 use axum::http::StatusCode;
@@ -6,7 +8,7 @@ use axum::TypedHeader;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::database::BareId;
+use crate::database::{BareId, DbError, Executor};
 use crate::extractors::{AuthenticatedClient, Database, UploadStore};
 
 /// Limit on the size of the JSON request that accompanies an upload.
@@ -46,7 +48,6 @@ pub async fn handler(
 
     let mut multipart = multer::Multipart::with_constraints(body, boundary, constraints);
 
-    // Process the request data
     let request_data = multipart
         .next_field()
         .await
@@ -63,6 +64,9 @@ pub async fn handler(
 
     let _upload_id = record_upload_beginning(&db, client.id(), request.metadata_id, reported_body_length).await?;
 
+    // todo: should make sure I have a clean up task that watches for failed uploads and handles
+    // them appropriately
+
     // record that an upload is in progress
     // collect upload in a temporary directory
     // during upload, if it goes over content length warn and start watching remaining authorized
@@ -73,15 +77,67 @@ pub async fn handler(
     Ok((StatusCode::NO_CONTENT, ()).into_response())
 }
 
-async fn record_upload_beginning(_db: &Database, _client_id: Uuid, _metadata_id: Uuid, _reported_size: u64) -> Result<Uuid, UploadError> {
-    // "INSERT INTO uploads (client_id, metadata_id, reported_size, file_path, state) VALUES
-    // (client.id, request.metadata_id, reported_body_length,
-    // "uploading/{client.id}/{request.metadata_id}.car", 'started') RETURNING id;
-    todo!()
+async fn record_upload_beginning(db: &Database, client_id: Uuid, metadata_id: Uuid, reported_size: u64) -> Result<(Uuid, PathBuf), UploadError> {
+    let mut tmp_upload_path = PathBuf::new();
+
+    tmp_upload_path.push("uploading");
+    tmp_upload_path.push(client_id.to_string());
+    tmp_upload_path.push(format!("{metadata_id}.car"));
+
+    let upload_id: Uuid = match db.ex() {
+        #[cfg(feature = "postgres")]
+        Executor::Postgres(ref mut conn) => {
+            use crate::database::postgres;
+
+            let bare_upload_id: BareId = sqlx::query_as(r#"
+                    INSERT INTO
+                        uploads (client_id, metadata_id, reported_size, file_path, state)
+                        VALUES ($1, $2, $3, $4, 'started')
+                        RETURNING id;
+                "#)
+                .bind(client_id.to_string())
+                .bind(metadata_id.to_string())
+                .bind(reported_size as i64)
+                .bind(tmp_upload_path.display().to_string())
+                .fetch_one(conn)
+                .await
+                .map_err(postgres::map_sqlx_error)
+                .map_err(UploadError::Database)?;
+
+            Uuid::parse_str(&bare_upload_id.id).unwrap()
+        }
+
+        #[cfg(feature = "sqlite")]
+        Executor::Sqlite(ref mut conn) => {
+            use crate::database::sqlite;
+
+            let bare_upload_id: BareId = sqlx::query_as(r#"
+                    INSERT INTO
+                        uploads (client_id, metadata_id, reported_size, file_path, state)
+                        VALUES ($1, $2, $3, $4, 'started')
+                        RETURNING id;
+                "#)
+                .bind(client_id.to_string())
+                .bind(metadata_id.to_string())
+                .bind(reported_size as i64)
+                .bind(tmp_upload_path.display().to_string())
+                .fetch_one(conn)
+                .await
+                .map_err(sqlite::map_sqlx_error)
+                .map_err(UploadError::Database)?;
+
+            Uuid::parse_str(&bare_upload_id.id).unwrap()
+        }
+    };
+
+    Ok((upload_id, tmp_upload_path))
 }
 
 #[derive(Debug, thiserror::Error)]
 pub enum UploadError {
+    #[error("a database error occurred during an upload")]
+    Database(DbError),
+
     #[error("account is not authorized to store {0} bytes, {1} bytes are still authorized")]
     InsufficientAuthorizedStorage(u64, u64),
 
@@ -100,6 +156,11 @@ impl IntoResponse for UploadError {
         use UploadError::*;
 
         match &self {
+            Database(_) => {
+                tracing::error!("{self}");
+                let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
+            }
             InvalidRequestData(_) | RequestFieldUnavailable(_) | RequestFieldMissing => {
                 let err_msg = serde_json::json!({ "msg": format!("{self}") });
                 (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
