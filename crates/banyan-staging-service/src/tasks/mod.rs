@@ -169,7 +169,7 @@ impl MemoryTaskStore {
             };
 
             // any task that has already ended isn't considered for uniqueness checks
-            if !matches!(task.state, TaskState::New | TaskState::InProgress { .. }) {
+            if !matches!(task.state, TaskState::New | TaskState::InProgress) {
                 continue;
             }
 
@@ -195,6 +195,8 @@ impl TaskStore for MemoryTaskStore {
 
         if let Some(new_key) = &unique_key {
             if MemoryTaskStore::is_key_present(conn, new_key).await {
+                // todo: may want a mode where the new payload replaces the old one but maintains
+                // its queue position...
                 return Ok(None);
             }
         }
