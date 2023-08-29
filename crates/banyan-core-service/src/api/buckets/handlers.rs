@@ -23,11 +23,25 @@ pub async fn create(
             .into_response()
     } else {
         // Create the Bucket
-        match db::create_bucket(&api_token.subject, &new_bucket.name, &new_bucket.r#type, &new_bucket.storage_class, &mut db_conn).await {
+        match db::create_bucket(
+            &api_token.subject,
+            &new_bucket.name,
+            &new_bucket.r#type,
+            &new_bucket.storage_class,
+            &mut db_conn,
+        )
+        .await
+        {
             // If we successfully created the resource
             Ok(bucket_resource) => {
                 // Create the initial Bucket Key
-                match db::create_bucket_key(&bucket_resource.id, &new_bucket.initial_bucket_key_pem, &mut db_conn).await {
+                match db::create_bucket_key(
+                    &bucket_resource.id,
+                    &new_bucket.initial_bucket_key_pem,
+                    &mut db_conn,
+                )
+                .await
+                {
                     // If we successfully created that too
                     Ok(key_resource) => {
                         // Create a response
@@ -41,14 +55,14 @@ pub async fn create(
                                 approved: true,
                             },
                         };
-    
+
                         // Return it
                         (StatusCode::OK, Json(response)).into_response()
-                    },
-                    Err(err) => sqlx_error_to_response(err, "create", "new bucket key")
+                    }
+                    Err(err) => sqlx_error_to_response(err, "create", "new bucket key"),
                 }
-            },
-            Err(err) => sqlx_error_to_response(err, "create", "bucket")
+            }
+            Err(err) => sqlx_error_to_response(err, "create", "bucket"),
         }
     }
 }
@@ -58,8 +72,7 @@ pub async fn create(
 pub async fn read_all(api_token: ApiToken, mut db_conn: DbConn) -> impl IntoResponse {
     let account_id = api_token.subject;
     match db::read_all_buckets(&account_id, &mut db_conn).await {
-        Ok(buckets) => 
-            Json(responses::ReadBuckets(
+        Ok(buckets) => Json(responses::ReadBuckets(
             buckets
                 .into_iter()
                 .map(|bucket| responses::ReadBucket {
@@ -69,8 +82,9 @@ pub async fn read_all(api_token: ApiToken, mut db_conn: DbConn) -> impl IntoResp
                     storage_class: bucket.storage_class,
                 })
                 .collect::<Vec<_>>(),
-            )).into_response(),
-        Err(err) => sqlx_error_to_response(err, "read", "all buckets")
+        ))
+        .into_response(),
+        Err(err) => sqlx_error_to_response(err, "read", "all buckets"),
     }
 }
 
@@ -84,15 +98,14 @@ pub async fn read(
     let account_id = api_token.subject;
     let bucket_id = bucket_id.to_string();
     match db::read_bucket(&account_id, &bucket_id, &mut db_conn).await {
-        Ok(bucket) => {
-            Json(responses::ReadBucket {
-                id: bucket.id,
-                name: bucket.name,
-                r#type: bucket.r#type,
-                storage_class: bucket.storage_class,
-            }).into_response()
-        },
-        Err(err) => sqlx_error_to_response(err, "read", "bucket")
+        Ok(bucket) => Json(responses::ReadBucket {
+            id: bucket.id,
+            name: bucket.name,
+            r#type: bucket.r#type,
+            storage_class: bucket.storage_class,
+        })
+        .into_response(),
+        Err(err) => sqlx_error_to_response(err, "read", "bucket"),
     }
 }
 
@@ -108,7 +121,8 @@ pub async fn delete(
         Ok(bucket) => Json(responses::DeleteBucket {
             id: bucket.id,
             name: bucket.name,
-        }).into_response(),
+        })
+        .into_response(),
         Err(err) => sqlx_error_to_response(err, "delete", "bucket"),
     }
 }
@@ -132,7 +146,7 @@ pub async fn get_usage(
         // Read the data usage
         match db::read_data_usage(&account_id, metadata_states, bucket_ids, &mut db_conn).await {
             Ok(usage) => Json(responses::GetUsage { size: usage }).into_response(),
-            Err(err) => sqlx_error_to_response(err, "get", "bucket usage")
+            Err(err) => sqlx_error_to_response(err, "get", "bucket usage"),
         }
     }
 }
@@ -144,7 +158,7 @@ pub async fn get_total_usage(api_token: ApiToken, mut db_conn: DbConn) -> impl I
     let bucket_ids = None;
     match db::read_data_usage(&account_id, metadata_states, bucket_ids, &mut db_conn).await {
         Ok(usage) => Json(responses::GetUsage { size: usage }).into_response(),
-        Err(err) =>sqlx_error_to_response(err, "get", "total bucket usage")
+        Err(err) => sqlx_error_to_response(err, "get", "total bucket usage"),
     }
 }
 

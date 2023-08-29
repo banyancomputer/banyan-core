@@ -142,16 +142,15 @@ pub async fn approve(
         // Return error response if not
         sqlx_error_to_response(err, "read", "bucket")
     } else {
-
         // If we can successfully read the key from the database
         match db::read_bucket_key(&bucket_id, &bucket_key_id, &mut db_conn).await {
             Ok(bucket_key) => {
                 // If this Bucket Key is already approved
                 if bucket_key.approved {
-                    // Tell the user there is nothing to o 
+                    // Tell the user there is nothing to do
                     (
                         StatusCode::BAD_REQUEST,
-                        format!("Bucket Key is already approved."),
+                        "Bucket Key is already approved.".to_string(),
                     )
                         .into_response()
                 } else {
@@ -160,12 +159,13 @@ pub async fn approve(
                         Ok(bucket_key) => Json(responses::ApproveBucketKey {
                             id: bucket_key.id,
                             approved: bucket_key.approved,
-                            pem: bucket_key.pem
-                        }).into_response(),
+                            pem: bucket_key.pem,
+                        })
+                        .into_response(),
                         Err(err) => sqlx_error_to_response(err, "approve", "bucket key"),
                     }
                 }
-            },
+            }
             Err(err) => sqlx_error_to_response(err, "read", "bucket key"),
         }
     }
@@ -193,7 +193,7 @@ pub async fn reject(
                     // Tell the user to call Delete instead
                     (
                         StatusCode::BAD_REQUEST,
-                        format!("Bucket Key is already approved. Delete it to reject it."),
+                        "Bucket Key is already approved. Delete it to reject it.".to_string(),
                     )
                         .into_response()
                 } else {
@@ -202,11 +202,12 @@ pub async fn reject(
                         Ok(bucket_key) => Json(responses::DeleteBucketKey {
                             id: bucket_key.id,
                             approved: bucket_key.approved,
-                        }).into_response(),
+                        })
+                        .into_response(),
                         Err(err) => sqlx_error_to_response(err, "reject", "bucket key"),
                     }
                 }
-            },
+            }
             Err(err) => sqlx_error_to_response(err, "read", "bucket key"),
         }
     }

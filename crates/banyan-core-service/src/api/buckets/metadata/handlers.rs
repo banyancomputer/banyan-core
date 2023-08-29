@@ -263,7 +263,7 @@ pub async fn push(
                 return (
                     StatusCode::OK,
                     axum::Json(responses::PushMetadataResponse {
-                        id: cr.id.to_string(),
+                        id: cr.id,
                         state: models::MetadataState::Current,
                         storage_host: None,
                         storage_authorization: None,

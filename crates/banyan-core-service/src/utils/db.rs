@@ -1,4 +1,4 @@
-use crate::db::models::{self, CreatedResource, BucketType, StorageClass};
+use crate::db::models::{self, BucketType, CreatedResource, StorageClass};
 use crate::extractors::DbConn;
 use axum::response::{IntoResponse, Response};
 use http::StatusCode;
@@ -6,11 +6,11 @@ use serde::Serialize;
 
 /// Process an SQLX error in a reusable format for responding with error messages
 pub fn sqlx_error_to_response(err: sqlx::Error, operation: &str, resource: &str) -> Response {
-    let default =  (
+    let default = (
         StatusCode::INTERNAL_SERVER_ERROR,
         "internal server error".to_string(),
     )
-    .into_response();
+        .into_response();
 
     match err {
         sqlx::Error::Database(db_err) => {
@@ -19,13 +19,12 @@ pub fn sqlx_error_to_response(err: sqlx::Error, operation: &str, resource: &str)
                     StatusCode::CONFLICT,
                     format!("{} with that name already exists", resource),
                 )
-                .into_response()
-            }
-            else {
+                    .into_response()
+            } else {
                 tracing::error!("unable to {} {}: {}", operation, resource, db_err);
                 default
             }
-        },
+        }
         sqlx::Error::RowNotFound => (
             StatusCode::NOT_FOUND,
             format!("{} not found: {}", resource, err),
@@ -47,7 +46,7 @@ pub fn sqlx_error_to_response(err: sqlx::Error, operation: &str, resource: &str)
 /// * `storage_class` - The storage class of the bucket.
 /// * `db_conn` - The database connection to use.
 /// # Return Type
-/// Returns the created resource if successful, otherwise errors. 
+/// Returns the created resource if successful, otherwise errors.
 pub async fn create_bucket(
     account_id: &str,
     name: &str,
