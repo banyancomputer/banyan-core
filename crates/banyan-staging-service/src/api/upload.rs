@@ -5,6 +5,7 @@ use axum::headers::{ContentLength, ContentType};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::TypedHeader;
+use object_store::ObjectStore;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -22,7 +23,7 @@ pub struct UploadRequest {
 pub async fn handler(
     db: Database,
     client: AuthenticatedClient,
-    _store: UploadStore,
+    store: UploadStore,
     TypedHeader(content_len): TypedHeader<ContentLength>,
     TypedHeader(content_type): TypedHeader<ContentType>,
     body: BodyStream,
@@ -48,7 +49,7 @@ pub async fn handler(
 
     let mut multipart = multer::Multipart::with_constraints(body, boundary, constraints);
 
-    let request_data = multipart
+    let request_field = multipart
         .next_field()
         .await
         .map_err(UploadError::RequestFieldUnavailable)?
@@ -57,18 +58,34 @@ pub async fn handler(
     // TODO: validate name is request-data (request_data_field.name())
     // TODO: validate type is application/json (request_data_field.content_type())
 
-    let request: UploadRequest = request_data
+    let request: UploadRequest = request_field
         .json()
         .await
         .map_err(UploadError::InvalidRequestData)?;
 
-    let _upload_id = record_upload_beginning(&db, client.id(), request.metadata_id, reported_body_length).await?;
+    let (upload_id, tmp_file_path) = record_upload_beginning(&db, client.id(), request.metadata_id, reported_body_length).await?;
 
     // todo: should make sure I have a clean up task that watches for failed uploads and handles
     // them appropriately
 
-    // record that an upload is in progress
-    // collect upload in a temporary directory
+    let car_field = multipart
+        .next_field()
+        .await
+        .map_err(UploadError::DataFieldUnavailable)?
+        .ok_or(UploadError::DataFieldMissing)?;
+
+    let store_path = object_store::path::Path::from(tmp_file_path.as_str());
+    let (_multipart_resume_id, mut writer) = match store.put_multipart(&store_path).await {
+        Ok(mp) => mp,
+        Err(err) => {
+            // attempt to report the upload as failed, but that fails we'll need to handle it in a
+            // future clean-up task. todo: should actually just enqueue and entire clean up process
+            // and report this as failed there...
+            let _ = record_upload_failed(&db, upload_id).await;
+            return Err(UploadError::StoreUnavailable(err));
+        }
+    };
+
     // during upload, if it goes over content length warn and start watching remaining authorized
     // storage
     // if upload errors clean up files and record the failure in the database with the uploaded amount
@@ -77,12 +94,14 @@ pub async fn handler(
     Ok((StatusCode::NO_CONTENT, ()).into_response())
 }
 
-async fn record_upload_beginning(db: &Database, client_id: Uuid, metadata_id: Uuid, reported_size: u64) -> Result<(Uuid, PathBuf), UploadError> {
+async fn record_upload_beginning(db: &Database, client_id: Uuid, metadata_id: Uuid, reported_size: u64) -> Result<(Uuid, String), UploadError> {
     let mut tmp_upload_path = PathBuf::new();
 
     tmp_upload_path.push("uploading");
     tmp_upload_path.push(client_id.to_string());
     tmp_upload_path.push(format!("{metadata_id}.car"));
+
+    let tmp_upload_path = tmp_upload_path.display().to_string();
 
     let upload_id: Uuid = match db.ex() {
         #[cfg(feature = "postgres")]
@@ -98,7 +117,7 @@ async fn record_upload_beginning(db: &Database, client_id: Uuid, metadata_id: Uu
                 .bind(client_id.to_string())
                 .bind(metadata_id.to_string())
                 .bind(reported_size as i64)
-                .bind(tmp_upload_path.display().to_string())
+                .bind(&tmp_upload_path)
                 .fetch_one(conn)
                 .await
                 .map_err(postgres::map_sqlx_error)
@@ -120,7 +139,7 @@ async fn record_upload_beginning(db: &Database, client_id: Uuid, metadata_id: Uu
                 .bind(client_id.to_string())
                 .bind(metadata_id.to_string())
                 .bind(reported_size as i64)
-                .bind(tmp_upload_path.display().to_string())
+                .bind(&tmp_upload_path)
                 .fetch_one(conn)
                 .await
                 .map_err(sqlite::map_sqlx_error)
@@ -133,10 +152,48 @@ async fn record_upload_beginning(db: &Database, client_id: Uuid, metadata_id: Uu
     Ok((upload_id, tmp_upload_path))
 }
 
+async fn record_upload_failed(db: &Database, upload_id: Uuid) -> Result<(), UploadError> {
+    match db.ex() {
+        #[cfg(feature = "postgres")]
+        Executor::Postgres(ref mut conn) => {
+            use crate::database::postgres;
+
+            let _rows_affected: i32 = sqlx::query_scalar(r#"
+                    UPDATE uploads SET state = 'failed' WHERE id = $1;
+                "#)
+                .bind(upload_id.to_string())
+                .fetch_one(conn)
+                .await
+                .map_err(postgres::map_sqlx_error)?;
+        }
+
+        #[cfg(feature = "sqlite")]
+        Executor::Sqlite(ref mut conn) => {
+            use crate::database::sqlite;
+
+            let _rows_affected: i32 = sqlx::query_scalar(r#"
+                    UPDATE uploads SET state = 'failed' WHERE id = $1;
+                "#)
+                .bind(upload_id.to_string())
+                .fetch_one(conn)
+                .await
+                .map_err(sqlite::map_sqlx_error)?;
+        }
+    }
+
+    Ok(())
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum UploadError {
     #[error("a database error occurred during an upload")]
-    Database(DbError),
+    Database(#[from] DbError),
+
+    #[error("we expected a data field but received nothing")]
+    DataFieldMissing,
+
+    #[error("failed to acquire data field from body")]
+    DataFieldUnavailable(multer::Error),
 
     #[error("account is not authorized to store {0} bytes, {1} bytes are still authorized")]
     InsufficientAuthorizedStorage(u64, u64),
@@ -149,6 +206,9 @@ pub enum UploadError {
 
     #[error("we expected a request field but received nothing")]
     RequestFieldMissing,
+
+    #[error("unable to open store for properly authorized data upload: {0}")]
+    StoreUnavailable(object_store::Error),
 }
 
 impl IntoResponse for UploadError {
@@ -156,12 +216,12 @@ impl IntoResponse for UploadError {
         use UploadError::*;
 
         match &self {
-            Database(_) => {
+            Database(_) | StoreUnavailable(_) => {
                 tracing::error!("{self}");
                 let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
             }
-            InvalidRequestData(_) | RequestFieldUnavailable(_) | RequestFieldMissing => {
+            DataFieldUnavailable(_) | DataFieldMissing | InvalidRequestData(_) | RequestFieldUnavailable(_) | RequestFieldMissing => {
                 let err_msg = serde_json::json!({ "msg": format!("{self}") });
                 (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
             }

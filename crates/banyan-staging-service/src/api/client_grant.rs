@@ -51,7 +51,7 @@ async fn create_grant_user(
         Executor::Postgres(ref mut conn) => {
             use crate::database::postgres;
 
-            let user_id: BareId = sqlx::query_as("INSERT INTO clients (platform_id, fingerprint, public_key) VALUES ($1, $2, $3) RETURNING id;")
+            let user_id: String = sqlx::query_scalar("INSERT INTO clients (platform_id, fingerprint, public_key) VALUES ($1, $2, $3) RETURNING id;")
                 .bind(grant.client_id().to_string())
                 .bind(grant.client_fingerprint())
                 .bind(request.public_key)
@@ -60,14 +60,14 @@ async fn create_grant_user(
                 .map_err(postgres::map_sqlx_error)
                 .map_err(GrantError::Database)?;
 
-            Ok(Uuid::parse_str(&user_id.id).unwrap())
+            Ok(Uuid::parse_str(&user_id).unwrap())
         }
 
         #[cfg(feature = "sqlite")]
         Executor::Sqlite(ref mut conn) => {
             use crate::database::sqlite;
 
-            let user_id: BareId = sqlx::query_as("INSERT INTO clients (platform_id, fingerprint, public_key) VALUES ($1, $2, $3) RETURNING id;")
+            let user_id: String = sqlx::query_scalar("INSERT INTO clients (platform_id, fingerprint, public_key) VALUES ($1, $2, $3) RETURNING id;")
                 .bind(grant.client_id().to_string())
                 .bind(grant.client_fingerprint())
                 .bind(request.public_key)
@@ -76,7 +76,7 @@ async fn create_grant_user(
                 .map_err(sqlite::map_sqlx_error)
                 .map_err(GrantError::Database)?;
 
-            Ok(Uuid::parse_str(&user_id.id).unwrap())
+            Ok(Uuid::parse_str(&user_id).unwrap())
         }
     }
 }
