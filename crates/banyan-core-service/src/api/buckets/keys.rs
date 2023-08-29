@@ -14,5 +14,7 @@ pub fn router(state: AppState) -> Router<AppState> {
             "/:bucket_key_id",
             get(handlers::read).delete(handlers::delete),
         )
+        .route("/:bucket_key_id/approve", post(handlers::approve))
+        // .route("/:bucket_key_id/reject", post(handlers::delete))
         .with_state(state)
 }

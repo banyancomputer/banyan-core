@@ -1,8 +1,11 @@
+use std::borrow::BorrowMut;
+
 use axum::response::{IntoResponse, Response};
 use http::StatusCode;
 use serde::Serialize;
+use sqlx::{Acquire, Column, Executor, TypeInfo};
 
-use crate::db::models;
+use crate::db::models::{self, CreatedResource};
 use crate::extractors::DbConn;
 
 /// Process an SQLX error in a reusable format for responding with error messages
@@ -109,7 +112,30 @@ pub async fn authorize_bucket(
         account_id
     )
     .fetch_one(&mut *db_conn.0)
-    .await.map(|_| ())
+    .await
+    .map(|_| ())
+}
+
+/// Create a bucket key by its id and PEM
+/// # Arguments
+/// * `bucket_id` - The id of the bucket to insert this key in.
+/// * `pem` - The public PEM of the Key
+/// * `db_conn` - The database connection to use.
+/// # Return Type
+/// Returns the created resource if creation succeeds, otherwise returns an error.
+pub async fn create_bucket_key(
+    bucket_id: &str,
+    pem: &str,
+    db_conn: &mut DbConn,
+) -> Result<CreatedResource, sqlx::Error> {
+    sqlx::query_as!(
+        models::CreatedResource,
+        r#"INSERT INTO bucket_keys (bucket_id, approved, pem) VALUES ($1, false, $2) RETURNING id;"#,
+        bucket_id,
+        pem,
+    )
+    .fetch_one(&mut *db_conn.0)
+    .await
 }
 
 /// Read a bucket key by its id and authorize that it belongs to a given bucket_id.
@@ -175,7 +201,34 @@ pub async fn delete_bucket_key(
     .await
 }
 
-
+/// Approve a bucket key for use by its id and authorize that it belongs to a given bucket_id.
+/// # Arguments
+/// * `bucket_id` - The id of the bucket to read.
+/// * `bucket_key_id` - The id of the bucket key to read.
+/// * `db_conn` - The database connection to use.
+/// # Return Type
+/// Returns the bucket key if it exists and belongs to the given bucket_id, otherwise returns an error.
+pub async fn approve_bucket_key(
+    bucket_id: &str,
+    bucket_key_id: &str,
+    db_conn: &mut DbConn,
+) -> Result<models::BucketKey, sqlx::Error> {
+    // First, read the Bucket Key to ensure it's already in the database
+    let bucket_key = read_bucket_key(bucket_id, bucket_key_id, db_conn).await?;
+    // Perorm the update
+    sqlx::query_as!(
+        models::BucketKey,
+        r#"
+        UPDATE bucket_keys SET 
+        approved = true 
+        WHERE id = $1 AND bucket_id = $2 
+        RETURNING id, bucket_id, approved, pem;"#,
+        bucket_key.id,
+        bucket_key.bucket_id,
+    )
+    .fetch_one(&mut *db_conn.0)
+    .await
+}
 
 /// Read metadata from the database, checking if references a given bucket_id.
 /// # Arguments
@@ -219,7 +272,8 @@ pub async fn authorize_metadata(
         bucket_id,
     )
     .fetch_one(&mut *db_conn.0)
-    .await.map(|_| ())
+    .await
+    .map(|_| ())
 }
 
 /// Read all metadata from the database by a given bucket_id.
@@ -272,7 +326,7 @@ pub async fn create_snapshot(
     metadata_id: &str,
     db_conn: &mut DbConn,
 ) -> Result<models::Snapshot, sqlx::Error> {
-   sqlx::query_as!(
+    sqlx::query_as!(
         models::Snapshot,
         r#"INSERT INTO snapshots (metadata_id)
         VALUES ($1)
@@ -423,9 +477,9 @@ pub async fn read_usage(
             )
             .fetch_one(&mut *db_conn.0)
             .await
-            
         }
-    }.map(|usage| (usage.data_size + usage.metadata_size) as u64)
+    }
+    .map(|usage| (usage.data_size + usage.metadata_size) as u64)
 }
 
 /// Read the data usage of the given account id.
@@ -489,7 +543,8 @@ pub async fn read_data_usage(
             .fetch_one(&mut *db_conn.0)
             .await
         }
-    }.map(|usage| usage.size as u64)
+    }
+    .map(|usage| usage.size as u64)
 }
 
 #[derive(Serialize)]

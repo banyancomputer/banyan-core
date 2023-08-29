@@ -5,7 +5,6 @@ use uuid::Uuid;
 use validify::Validate;
 
 use crate::api::buckets::keys::{requests, responses};
-use crate::db::*;
 use crate::extractors::{ApiToken, DbConn};
 use crate::utils::db::{self, sqlx_error_to_response};
 
@@ -32,17 +31,7 @@ pub async fn create(
             .into_response();
     };
 
-    // Try to insert the new bucket key
-    let maybe_bucket_key = sqlx::query_as!(
-        models::CreatedResource,
-        r#"INSERT INTO bucket_keys (bucket_id, approved, pem) VALUES ($1, false, $2) RETURNING id;"#,
-        bucket_id,
-        new_bucket_key.pem,
-    )
-    .fetch_one(&mut *db_conn.0)
-    .await;
-
-    match maybe_bucket_key {
+    match db::create_bucket_key(&bucket_id, &new_bucket_key.pem, &mut db_conn).await {
         Ok(cbk) => Json(responses::CreateBucketKey {
             id: cbk.id,
             approved: false,
@@ -149,13 +138,14 @@ pub async fn approve(
         // Return error response if not
         return sqlx_error_to_response(err, "read", "bucket");
     }
-    // Try to delete the Bucket Key, respond based on success
-    match db::delete_bucket_key(&bucket_id, &bucket_key_id, &mut db_conn).await {
-        Ok(bucket_key) => Json(responses::DeleteBucketKey {
+    // Try to update the Bucket Key, respond based on success
+    match db::approve_bucket_key(&bucket_id, &bucket_key_id, &mut db_conn).await {
+        Ok(bucket_key) => Json(responses::ApproveBucketKey {
             id: bucket_key.id,
             approved: bucket_key.approved,
+            pem: bucket_key.pem
         })
         .into_response(),
-        Err(err) => sqlx_error_to_response(err, "delete", "bucket key"),
+        Err(err) => sqlx_error_to_response(err, "approve", "bucket key"),
     }
 }

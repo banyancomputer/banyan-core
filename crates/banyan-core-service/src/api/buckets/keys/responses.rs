@@ -21,3 +21,10 @@ pub struct DeleteBucketKey {
     pub id: String,
     pub approved: bool,
 }
+
+#[derive(Serialize)]
+pub struct ApproveBucketKey {
+    pub id: String,
+    pub approved: bool,
+    pub pem: String,
+}
