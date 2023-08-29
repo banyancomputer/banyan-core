@@ -45,7 +45,7 @@ pub async fn handler(
         .size_limit(
             multer::SizeLimit::new()
                 .for_field("request-data", UPLOAD_REQUEST_SIZE_LIMIT)
-                .for_field("car-upload", client.remaining_storage() as u64),
+                .for_field("car-upload", client.remaining_storage()),
         );
 
     let mut multipart = multer::Multipart::with_constraints(body, boundary, constraints);
@@ -64,7 +64,9 @@ pub async fn handler(
         .await
         .map_err(UploadError::InvalidRequestData)?;
 
-    let (upload_id, tmp_file_path) = record_upload_beginning(&db, client.id(), request.metadata_id, reported_body_length).await?;
+    let (upload_id, tmp_file_path) =
+        record_upload_beginning(&db, client.id(), request.metadata_id, reported_body_length)
+            .await?;
 
     // todo: should make sure I have a clean up task that watches for failed uploads and handles
     // them appropriately
@@ -82,45 +84,124 @@ pub async fn handler(
     let (multipart_resume_id, mut writer) = match store.put_multipart(&store_path).await {
         Ok(mp) => mp,
         Err(err) => {
-            handle_failed_upload(&db, upload_id, &tmp_file_path).await;
+            handle_failed_upload(&db, upload_id).await;
             return Err(UploadError::StoreUnavailable(err));
         }
     };
 
     match process_upload_stream(reported_body_length as usize, car_field, &mut writer).await {
         Ok(sr) => {
-            writer.shutdown().await.map_err(UploadStreamError::WriteFailed)?;
-            handle_successful_upload(&db, &store, sr, upload_id, &tmp_file_path).await?;
+            writer
+                .shutdown()
+                .await
+                .map_err(UploadStreamError::WriteFailed)?;
+            handle_successful_upload(&db, &store, sr, upload_id, &store_path).await?;
             Ok((StatusCode::NO_CONTENT, ()).into_response())
         }
         Err(err) => {
             // todo: we don't care in the response if this fails, but if it does we will want to
             // clean it up in the future which should be handled by a background task
-            let _ = store.abort_multipart(&store_path, &multipart_resume_id).await;
-            handle_failed_upload(&db, upload_id, &tmp_file_path).await;
+            let _ = store
+                .abort_multipart(&store_path, &multipart_resume_id)
+                .await;
+            handle_failed_upload(&db, upload_id).await;
             Err(err.into())
         }
     }
 }
 
-async fn handle_failed_upload(db: &Database, upload_id: Uuid, _file_path: &str) {
+async fn handle_failed_upload(db: &Database, upload_id: Uuid) {
     // attempt to report the upload as failed, but that fails we'll need to handle it in a
     // future clean-up task. todo: should actually just enqueue and entire clean up process
     // and report this as failed there...
-    let _ = record_upload_failed(&db, upload_id).await;
-
-    // todo: should try and clean up the file if it was created
+    let _ = record_upload_failed(db, upload_id).await;
 }
 
-async fn handle_successful_upload(_db: &Database, _store: &UploadStore, _storage_result: StoreResult, _upload_id: Uuid, _file_path: &str) -> Result<(), UploadError> {
-    // todo: move the file to its final resting place
-    // todo: mark upload as successful
+async fn handle_successful_upload(
+    db: &Database,
+    store: &UploadStore,
+    store_result: StoreResult,
+    upload_id: Uuid,
+    file_path: &object_store::path::Path,
+) -> Result<(), UploadError> {
+    let mut path_iter = file_path.parts();
+    // discard the uploading/ prefix
+    let _ = path_iter.next();
+    let mut final_path: object_store::path::Path = path_iter.collect();
+
+    // todo: validate the local store doesn't use copy to handle this as some of the other stores
+    // do...
+    if let Err(err) = store.rename_if_not_exists(file_path, &final_path).await {
+        // this is a weird error, its successfully written to our file store so we have it and can
+        // serve it we just want to make sure we don't update the path in the DB and clean it up
+        // later
+        tracing::error!("unable to rename upload, leaving it in place: {err}");
+        // todo: background a task to handle correcting this issue when it occurs
+        final_path = file_path.clone();
+    }
+
+    // todo: should definitely do a db transaction before the attempted rename, committing only if
+    // the rename is successfuly
+
+    match db.ex() {
+        #[cfg(feature = "postgres")]
+        Executor::Postgres(ref mut conn) => {
+            use crate::database::postgres;
+
+            let _rows_affected: i32 = sqlx::query_scalar(
+                r#"
+                    UPDATE uploads SET
+                            state = 'complete',
+                            final_size = $1,
+                            integrity_hash  = $2,
+                            file_path = $4
+                        WHERE id = $4;
+                "#,
+            )
+            .bind(store_result.size as i64)
+            .bind(store_result.integrity_hash)
+            .bind(final_path.to_string())
+            .bind(upload_id.to_string())
+            .fetch_one(conn)
+            .await
+            .map_err(postgres::map_sqlx_error)?;
+        }
+
+        #[cfg(feature = "sqlite")]
+        Executor::Sqlite(ref mut conn) => {
+            use crate::database::sqlite;
+
+            let _rows_affected: i32 = sqlx::query_scalar(
+                r#"
+                    UPDATE uploads SET
+                            state = 'complete',
+                            final_size = $1,
+                            integrity_hash  = $2,
+                            file_path = $4
+                        WHERE id = $4;
+                "#,
+            )
+            .bind(store_result.size as i64)
+            .bind(store_result.integrity_hash)
+            .bind(final_path.to_string())
+            .bind(upload_id.to_string())
+            .fetch_one(conn)
+            .await
+            .map_err(sqlite::map_sqlx_error)?;
+        }
+    }
+
     // todo: should enqueue background task to notify the platform
 
     Ok(())
 }
 
-async fn record_upload_beginning(db: &Database, client_id: Uuid, metadata_id: Uuid, reported_size: u64) -> Result<(Uuid, String), UploadError> {
+async fn record_upload_beginning(
+    db: &Database,
+    client_id: Uuid,
+    metadata_id: Uuid,
+    reported_size: u64,
+) -> Result<(Uuid, String), UploadError> {
     let mut tmp_upload_path = PathBuf::new();
 
     tmp_upload_path.push("uploading");
@@ -134,20 +215,22 @@ async fn record_upload_beginning(db: &Database, client_id: Uuid, metadata_id: Uu
         Executor::Postgres(ref mut conn) => {
             use crate::database::postgres;
 
-            let bare_upload_id: BareId = sqlx::query_as(r#"
+            let bare_upload_id: BareId = sqlx::query_as(
+                r#"
                     INSERT INTO
                         uploads (client_id, metadata_id, reported_size, file_path, state)
                         VALUES ($1, $2, $3, $4, 'started')
                         RETURNING id;
-                "#)
-                .bind(client_id.to_string())
-                .bind(metadata_id.to_string())
-                .bind(reported_size as i64)
-                .bind(&tmp_upload_path)
-                .fetch_one(conn)
-                .await
-                .map_err(postgres::map_sqlx_error)
-                .map_err(UploadError::Database)?;
+                "#,
+            )
+            .bind(client_id.to_string())
+            .bind(metadata_id.to_string())
+            .bind(reported_size as i64)
+            .bind(&tmp_upload_path)
+            .fetch_one(conn)
+            .await
+            .map_err(postgres::map_sqlx_error)
+            .map_err(UploadError::Database)?;
 
             Uuid::parse_str(&bare_upload_id.id).unwrap()
         }
@@ -156,20 +239,22 @@ async fn record_upload_beginning(db: &Database, client_id: Uuid, metadata_id: Uu
         Executor::Sqlite(ref mut conn) => {
             use crate::database::sqlite;
 
-            let bare_upload_id: BareId = sqlx::query_as(r#"
+            let bare_upload_id: BareId = sqlx::query_as(
+                r#"
                     INSERT INTO
                         uploads (client_id, metadata_id, reported_size, file_path, state)
                         VALUES ($1, $2, $3, $4, 'started')
                         RETURNING id;
-                "#)
-                .bind(client_id.to_string())
-                .bind(metadata_id.to_string())
-                .bind(reported_size as i64)
-                .bind(&tmp_upload_path)
-                .fetch_one(conn)
-                .await
-                .map_err(sqlite::map_sqlx_error)
-                .map_err(UploadError::Database)?;
+                "#,
+            )
+            .bind(client_id.to_string())
+            .bind(metadata_id.to_string())
+            .bind(reported_size as i64)
+            .bind(&tmp_upload_path)
+            .fetch_one(conn)
+            .await
+            .map_err(sqlite::map_sqlx_error)
+            .map_err(UploadError::Database)?;
 
             Uuid::parse_str(&bare_upload_id.id).unwrap()
         }
@@ -184,26 +269,30 @@ async fn record_upload_failed(db: &Database, upload_id: Uuid) -> Result<(), Uplo
         Executor::Postgres(ref mut conn) => {
             use crate::database::postgres;
 
-            let _rows_affected: i32 = sqlx::query_scalar(r#"
+            let _rows_affected: i32 = sqlx::query_scalar(
+                r#"
                     UPDATE uploads SET state = 'failed' WHERE id = $1;
-                "#)
-                .bind(upload_id.to_string())
-                .fetch_one(conn)
-                .await
-                .map_err(postgres::map_sqlx_error)?;
+                "#,
+            )
+            .bind(upload_id.to_string())
+            .fetch_one(conn)
+            .await
+            .map_err(postgres::map_sqlx_error)?;
         }
 
         #[cfg(feature = "sqlite")]
         Executor::Sqlite(ref mut conn) => {
             use crate::database::sqlite;
 
-            let _rows_affected: i32 = sqlx::query_scalar(r#"
+            let _rows_affected: i32 = sqlx::query_scalar(
+                r#"
                     UPDATE uploads SET state = 'failed' WHERE id = $1;
-                "#)
-                .bind(upload_id.to_string())
-                .fetch_one(conn)
-                .await
-                .map_err(sqlite::map_sqlx_error)?;
+                "#,
+            )
+            .bind(upload_id.to_string())
+            .fetch_one(conn)
+            .await
+            .map_err(sqlite::map_sqlx_error)?;
         }
     }
 
@@ -228,14 +317,20 @@ where
     let mut bytes_written = 0;
     let mut warning_issued = false;
 
-    while let Some(chunk) = stream.try_next().await.map_err(UploadStreamError::ReadFailed)? {
+    while let Some(chunk) = stream
+        .try_next()
+        .await
+        .map_err(UploadStreamError::ReadFailed)?
+    {
         hasher.update(&chunk);
         car_buffer.add_chunk(&chunk);
         bytes_written += chunk.len();
 
         if bytes_written > expected_size && !warning_issued {
             warning_issued = true;
-            tracing::warn!("client is streaming more data than was claimed to be present in the upload");
+            tracing::warn!(
+                "client is streaming more data than was claimed to be present in the upload"
+            );
         }
 
         writer
@@ -245,7 +340,10 @@ where
     }
 
     let integrity_hash = hasher.finalize().to_string();
-    Ok(StoreResult { integrity_hash, size: bytes_written })
+    Ok(StoreResult {
+        integrity_hash,
+        size: bytes_written,
+    })
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -271,11 +369,11 @@ pub enum UploadError {
     #[error("we expected a request field but received nothing")]
     RequestFieldMissing,
 
-    #[error("streaming car upload failed")]
-    StreamingFailed(#[from] UploadStreamError),
-
     #[error("unable to open store for properly authorized data upload: {0}")]
     StoreUnavailable(object_store::Error),
+
+    #[error("streaming car upload failed")]
+    StreamingFailed(#[from] UploadStreamError),
 }
 
 impl IntoResponse for UploadError {
@@ -288,7 +386,11 @@ impl IntoResponse for UploadError {
                 let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
             }
-            DataFieldUnavailable(_) | DataFieldMissing | InvalidRequestData(_) | RequestFieldUnavailable(_) | RequestFieldMissing => {
+            DataFieldUnavailable(_)
+            | DataFieldMissing
+            | InvalidRequestData(_)
+            | RequestFieldUnavailable(_)
+            | RequestFieldMissing => {
                 let err_msg = serde_json::json!({ "msg": format!("{self}") });
                 (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
             }
@@ -316,7 +418,9 @@ impl IntoResponse for UploadStreamError {
 
         match self {
             ReadFailed(_) => {
-                let err_msg = serde_json::json!({ "msg": format!("client stream went away before file upload was complete") });
+                let err_msg = serde_json::json!({
+                    "msg": format!("client stream went away before file upload was complete")
+                });
                 (StatusCode::UNPROCESSABLE_ENTITY, Json(err_msg)).into_response()
             }
             WriteFailed(err) => {

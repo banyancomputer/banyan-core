@@ -102,7 +102,11 @@ where
 
         // annoyingly jwt-simple doesn't use the correct encoding for this... we can support both
         // though and maybe we can fix upstream so it follows the spec
-        let nonce = claims.custom.nonce.or_else(|| claims.nonce).ok_or(Self::Rejection::BadNonce)?;
+        let nonce = claims
+            .custom
+            .nonce
+            .or(claims.nonce)
+            .ok_or(Self::Rejection::BadNonce)?;
         if nonce.len() < 12 {
             return Err(Self::Rejection::BadNonce);
         }

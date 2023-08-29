@@ -55,6 +55,7 @@ CREATE TABLE uploads (
 
   file_path VARCHAR(128) NOT NULL,
   state VARCHAR(32) NOT NULL CHECK (state IN ('started', 'indexing', 'complete', 'failed')) CONSTRAINT state_in_list,
+  integrity_hash VARCHAR(32),
 
   started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   finished_at TIMESTAMP
@@ -75,6 +76,8 @@ CREATE TABLE blocks (
   ),
 
   cid VARCHAR(64) NOT NULL,
+  platform_owner_id TEXT NOT NULL REFERENCES clients(platform_id),
+
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
