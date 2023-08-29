@@ -87,6 +87,7 @@ where
             _ => return Err(Self::Rejection::BadNonce),
         }
 
+        // todo: collect authorized and current storage amounts
         //"SELECT allowed_storage FROM storage_grants WHERE client_id = $1 ORDER BY created_at DESC LIMIT 1;" // $1 is the id column from the last one
         //"SELECT SUM(COALESCE(final_size, reported_size)) AS consumed_storage FROM uploads WHERE client_id = $1;"
 
