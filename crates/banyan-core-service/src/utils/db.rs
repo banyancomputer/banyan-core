@@ -1,30 +1,70 @@
-use std::borrow::BorrowMut;
-
+use crate::db::models::{self, CreatedResource, BucketType, StorageClass};
+use crate::extractors::DbConn;
 use axum::response::{IntoResponse, Response};
 use http::StatusCode;
 use serde::Serialize;
-use sqlx::{Acquire, Column, Executor, TypeInfo};
-
-use crate::db::models::{self, CreatedResource};
-use crate::extractors::DbConn;
 
 /// Process an SQLX error in a reusable format for responding with error messages
 pub fn sqlx_error_to_response(err: sqlx::Error, operation: &str, resource: &str) -> Response {
+    let default =  (
+        StatusCode::INTERNAL_SERVER_ERROR,
+        "internal server error".to_string(),
+    )
+    .into_response();
+
     match err {
+        sqlx::Error::Database(db_err) => {
+            if db_err.is_unique_violation() {
+                (
+                    StatusCode::CONFLICT,
+                    format!("{} with that name already exists", resource),
+                )
+                .into_response()
+            }
+            else {
+                tracing::error!("unable to {} {}: {}", operation, resource, db_err);
+                default
+            }
+        },
         sqlx::Error::RowNotFound => (
             StatusCode::NOT_FOUND,
             format!("{} not found: {}", resource, err),
         )
             .into_response(),
+        // Catch all others
         _ => {
             tracing::error!("unable to {} {}: {}", operation, resource, err);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "internal server error".to_string(),
-            )
-                .into_response()
+            default
         }
     }
+}
+
+/// Create a new Bucket in the database and return the created resource.
+/// Implements an authorized read of a bucket by id and account_id.
+/// # Arguments
+/// * `account_id` - The account_id of the account that owns the bucket.
+/// * `type` - The type of the bucket.
+/// * `storage_class` - The storage class of the bucket.
+/// * `db_conn` - The database connection to use.
+/// # Return Type
+/// Returns the created resource if successful, otherwise errors. 
+pub async fn create_bucket(
+    account_id: &str,
+    name: &str,
+    r#type: &BucketType,
+    storage_class: &StorageClass,
+    db_conn: &mut DbConn,
+) -> Result<CreatedResource, sqlx::Error> {
+    sqlx::query_as!(
+        models::CreatedResource,
+        r#"INSERT INTO buckets (account_id, name, type, storage_class) VALUES ($1, $2, $3, $4) RETURNING id;"#,
+        account_id,
+        name,
+        r#type,
+        storage_class,
+    )
+    .fetch_one(&mut *db_conn.0)
+    .await
 }
 
 /// Pull the bucket from the database by id and account_id and return it.
@@ -213,8 +253,6 @@ pub async fn approve_bucket_key(
     bucket_key_id: &str,
     db_conn: &mut DbConn,
 ) -> Result<models::BucketKey, sqlx::Error> {
-    // First, read the Bucket Key to ensure it's already in the database
-    let bucket_key = read_bucket_key(bucket_id, bucket_key_id, db_conn).await?;
     // Perorm the update
     sqlx::query_as!(
         models::BucketKey,
@@ -223,8 +261,8 @@ pub async fn approve_bucket_key(
         approved = true 
         WHERE id = $1 AND bucket_id = $2 
         RETURNING id, bucket_id, approved, pem;"#,
-        bucket_key.id,
-        bucket_key.bucket_id,
+        bucket_key_id,
+        bucket_id,
     )
     .fetch_one(&mut *db_conn.0)
     .await
