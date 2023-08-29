@@ -87,7 +87,7 @@ pub async fn handler(
         }
     };
 
-    //match process_upload_stream(car_field, &mut writer).await {
+    let _ =  process_upload_stream(car_field, &mut writer).await?;
     //    Ok(sr) => {
     //        //writer.shutdown().await.map_err(
     //    }
@@ -218,7 +218,7 @@ async fn process_upload_stream<S>(
     writer: &mut Box<dyn AsyncWrite + Unpin + Send>,
 ) -> Result<StoreResult, UploadStreamError>
 where
-    S: TryStream<Ok = bytes::Bytes, Error = std::io::Error> + Unpin,
+    S: TryStream<Ok = bytes::Bytes, Error = multer::Error> + Unpin,
 {
     let mut car_buffer = car_buffer::CarBuffer::new();
     let mut hasher = blake3::Hasher::new();
@@ -263,7 +263,7 @@ pub enum UploadError {
     RequestFieldMissing,
 
     #[error("streaming car upload failed")]
-    StreamingFailed(UploadStreamError),
+    StreamingFailed(#[from] UploadStreamError),
 
     #[error("unable to open store for properly authorized data upload: {0}")]
     StoreUnavailable(object_store::Error),
@@ -295,7 +295,7 @@ impl IntoResponse for UploadError {
 #[derive(Debug, thiserror::Error)]
 pub enum UploadStreamError {
     #[error("failed to read from client")]
-    ReadFailed(std::io::Error),
+    ReadFailed(multer::Error),
 
     #[error("failed to write to storage backend")]
     WriteFailed(std::io::Error),
