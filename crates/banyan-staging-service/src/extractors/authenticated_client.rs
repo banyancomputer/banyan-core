@@ -23,15 +23,37 @@ use crate::extractors::fingerprint_validator;
 const MAXIMUM_TOKEN_AGE: u64 = 900;
 
 pub struct AuthenticatedClient {
+    id: Uuid,
+
     platform_id: Uuid,
     fingerprint: String,
 
-    authorized_storage: usize,
-    consumed_storage: usize,
+    authorized_storage: u64,
+    consumed_storage: u64,
 }
 
 impl AuthenticatedClient {
-    pub fn remaining_storage(&self) -> usize {
+    pub fn authorized_storage(&self) -> u64 {
+        self.authorized_storage
+    }
+
+    pub fn consumed_storage(&self) -> u64 {
+        self.consumed_storage
+    }
+
+    pub fn fingerprint(&self) -> String {
+        self.fingerprint.clone()
+    }
+
+    pub fn id(&self) -> Uuid {
+        self.id
+    }
+
+    pub fn platform_id(&self) -> Uuid {
+        self.platform_id
+    }
+
+    pub fn remaining_storage(&self) -> u64 {
         self.authorized_storage - self.consumed_storage
     }
 }
@@ -80,23 +102,19 @@ where
 
         // annoyingly jwt-simple doesn't use the correct encoding for this... we can support both
         // though and maybe we can fix upstream so it follows the spec
-        match (claims.nonce, claims.custom.nonce) {
-            (_, Some(nnc)) => {
-                if nnc.len() < 12 {
-                    return Err(Self::Rejection::BadNonce);
-                }
-            }
-            (Some(nnc), _) => {
-                if nnc.len() < 12 {
-                    return Err(Self::Rejection::BadNonce);
-                }
-            }
-            _ => return Err(Self::Rejection::BadNonce),
+        let nonce = claims.custom.nonce.or_else(|| claims.nonce).ok_or(Self::Rejection::BadNonce)?;
+        if nonce.len() < 12 {
+            return Err(Self::Rejection::BadNonce);
         }
 
         // todo: collect authorized and current storage amounts
         //"SELECT allowed_storage FROM storage_grants WHERE client_id = $1 ORDER BY created_at DESC LIMIT 1;" // $1 is the id column from the last one
         //"SELECT SUM(COALESCE(final_size, reported_size)) AS consumed_storage FROM uploads WHERE client_id = $1;"
+
+        let internal_id = match Uuid::parse_str(&client_id.id) {
+            Ok(pi) => pi,
+            Err(err) => return Err(Self::Rejection::CorruptInternalId(err)),
+        };
 
         let platform_id = match Uuid::parse_str(&client_id.platform_id) {
             Ok(pi) => pi,
@@ -104,11 +122,14 @@ where
         };
 
         Ok(AuthenticatedClient {
+            id: internal_id,
+
             platform_id,
             fingerprint: key_id,
 
-            authorized_storage: 0,
-            consumed_storage: 0,
+            // placeholders for now
+            authorized_storage: 1_000_000,
+            consumed_storage: 25_000,
         })
     }
 }
@@ -169,6 +190,9 @@ pub enum AuthenticatedClientError {
     #[error("unable to decode bearer token metadata")]
     CorruptHeader(jwt_simple::Error),
 
+    #[error("database internal ID wasn't a valid UUID")]
+    CorruptInternalId(uuid::Error),
+
     #[error("database platform ID wasn't a valid UUID")]
     CorruptPlatformId(uuid::Error),
 
@@ -201,7 +225,7 @@ impl IntoResponse for AuthenticatedClientError {
                 let err_msg = serde_json::json!({ "msg": "invalid request" });
                 (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
             }
-            CorruptDatabaseKey(_) | CorruptPlatformId(_) | DbFailure(_) => {
+            CorruptDatabaseKey(_) | CorruptInternalId(_) | CorruptPlatformId(_) | DbFailure(_) => {
                 tracing::error!("{self}");
                 let err_msg =
                     serde_json::json!({ "msg": "service is experiencing internal issues" });

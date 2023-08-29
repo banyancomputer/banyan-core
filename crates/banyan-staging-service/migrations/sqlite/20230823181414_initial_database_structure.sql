@@ -51,13 +51,13 @@ CREATE TABLE uploads (
   metadata_id TEXT NOT NULL,
 
   reported_size INTEGER NOT NULL CHECK (reported_size >= 0) CONSTRAINT reported_size_positive,
-  final_size INTEGER NOT NULL CHECK (reported_size >= 0) CONSTRAINT final_size_positive,
+  final_size INTEGER NOT NULL DEFAULT 0 CHECK (reported_size >= 0) CONSTRAINT final_size_positive,
 
   file_path VARCHAR(128) NOT NULL,
   state VARCHAR(32) NOT NULL CHECK (state IN ('started', 'indexing', 'complete', 'failed')) CONSTRAINT state_in_list,
 
   started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  finished_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+  finished_at TIMESTAMP
 );
 
 CREATE INDEX idx_uploads_on_client_id
