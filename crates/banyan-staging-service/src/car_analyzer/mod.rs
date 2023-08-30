@@ -21,6 +21,8 @@ enum CarState {
         data_start: u64,
         data_end: u64,
         index_start: u64,
+
+        header_length: Option<u64>,
     },
     Block { // advances to each block until we reach data_end
         block_start: u64,
@@ -121,14 +123,38 @@ impl StreamingCarAnalyzer {
 
                     self.stream_offset += 40;
 
+                    let data_end = data_start + data_size;
+                    if data_end > CAR_FILE_UPPER_LIMIT {
+                        return Err(StreamingCarAnalyzerError::MaxCarSizeExceeded(data_end));
+                    }
+
+                    if index_start > CAR_FILE_UPPER_LIMIT {
+                        return Err(StreamingCarAnalyzerError::MaxCarSizeExceeded(index_start));
+                    }
+
                     self.state = CarState::CarV1Header {
                         data_start,
-                        data_end: data_start + data_size,
+                        data_end,
                         index_start,
+
+                        header_length: None,
                     };
                 }
-                CarState::CarV1Header { data_start, data_end, index_start } => {
-                    // todo: read varint in buffer to find out how large the header is
+                CarState::CarV1Header { data_start, data_end, index_start, mut header_length } => {
+                    let header_length = match header_length {
+                        Some(hl) => hl,
+                        None => {
+                            match try_read_varint_u64(&mut self.buffer)? {
+                                Some((hl, byte_len)) => {
+                                    header_length = Some(hl);
+                                    self.stream_offset += byte_len;
+
+                                    hl
+                                }
+                                None => return Ok(None),
+                            }
+                        }
+                    };
 
                     //if header_size >= CAR_HEADER_UPPER_LIMIT {
                     //    return Err(StreamingCarAnalyzerError::HeaderSegmentSizeExceeded(header_size));
@@ -188,6 +214,37 @@ pub enum StreamingCarAnalyzerError {
 
     #[error("received car file did not have the expected pragma")]
     PragmaMismatch,
+
+    #[error("a varint in the car file was larger than our acceptable value")]
+    ValueToLarge,
+}
+
+// We need to account for extra bytes here due to the encoding, for every 7 bits we add an extra 1
+// bit or ceil(64 / 7) + 64 = 74 bits. 74 bits pack into 10 bytes so that is the maximum number of
+// bytes we care about.
+const U64_MAX_ENCODED_LENGTH: usize = 10;
+
+fn try_read_varint_u64(buf: &mut BytesMut) -> Result<Option<(u64, u64)>, StreamingCarAnalyzerError> {
+    let mut result: u64 = 0;
+
+    // The length check doesn't make this loop very efficient but it should be sufficient for now
+    for i in 0..U64_MAX_ENCODED_LENGTH {
+        // We don't have enough data
+        if buf.len() <= i {
+            return Ok(None);
+        }
+
+        result |= u64::from(buf[i] & 0b0111_1111) << (i * 7);
+
+        // The leftmost bit being cleared indicates we're done with the decoding
+        if buf[i] & 0b1000_0000 == 0 {
+            let encoded_length = i + 1;
+            let _ = buf.split_to(encoded_length);
+            return Ok(Some((result, encoded_length as u64)));
+        }
+    }
+
+    Ok(None)
 }
 
 #[cfg(test)]
