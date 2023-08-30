@@ -11,6 +11,8 @@ pico-args = "^0.5"
 thiserror = "^1"
 tokio = { version = "^1", features = ["macros", "net", "rt", "rt-multi-thread", "signal", "sync", "time"] }
 
+blake3 = "^1"
+bytes = "^1"
 jwt-simple = "^0.11"
 mime = "^0.3"
 regex = { version = "^1", default-features = false, features = ["std"] }

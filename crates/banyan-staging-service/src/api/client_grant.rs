@@ -22,17 +22,12 @@ pub async fn handler(
     database: Database,
     grant: StorageGrant,
     Json(request): Json<GrantRequest>,
-) -> Response {
-    let grant_user_id = match ensure_grant_user(&database, &grant, request).await {
-        Ok(gui) => gui,
-        Err(err) => return err.into_response(),
-    };
+) -> Result<Response, GrantError> {
+    let grant_user_id = ensure_grant_user(&database, &grant, request).await?;
 
-    if let Err(err) = create_storage_grant(grant_user_id, &database, &grant).await {
-        return err.into_response();
-    }
+    create_storage_grant(grant_user_id, &database, &grant).await?;
 
-    (StatusCode::NO_CONTENT, ()).into_response()
+    Ok((StatusCode::NO_CONTENT, ()).into_response())
 }
 
 async fn ensure_grant_user(
@@ -56,7 +51,7 @@ async fn create_grant_user(
         Executor::Postgres(ref mut conn) => {
             use crate::database::postgres;
 
-            let user_id: BareId = sqlx::query_as("INSERT INTO clients (platform_id, fingerprint, public_key) VALUES ($1, $2, $3) RETURNING id;")
+            let user_id: String = sqlx::query_scalar("INSERT INTO clients (platform_id, fingerprint, public_key) VALUES ($1, $2, $3) RETURNING id;")
                 .bind(grant.client_id().to_string())
                 .bind(grant.client_fingerprint())
                 .bind(request.public_key)
@@ -65,14 +60,14 @@ async fn create_grant_user(
                 .map_err(postgres::map_sqlx_error)
                 .map_err(GrantError::Database)?;
 
-            Ok(Uuid::parse_str(&user_id.id).unwrap())
+            Ok(Uuid::parse_str(&user_id).unwrap())
         }
 
         #[cfg(feature = "sqlite")]
         Executor::Sqlite(ref mut conn) => {
             use crate::database::sqlite;
 
-            let user_id: BareId = sqlx::query_as("INSERT INTO clients (platform_id, fingerprint, public_key) VALUES ($1, $2, $3) RETURNING id;")
+            let user_id: String = sqlx::query_scalar("INSERT INTO clients (platform_id, fingerprint, public_key) VALUES ($1, $2, $3) RETURNING id;")
                 .bind(grant.client_id().to_string())
                 .bind(grant.client_fingerprint())
                 .bind(request.public_key)
@@ -81,7 +76,7 @@ async fn create_grant_user(
                 .map_err(sqlite::map_sqlx_error)
                 .map_err(GrantError::Database)?;
 
-            Ok(Uuid::parse_str(&user_id.id).unwrap())
+            Ok(Uuid::parse_str(&user_id).unwrap())
         }
     }
 }
@@ -170,7 +165,7 @@ async fn create_storage_grant(
 }
 
 #[derive(Debug, thiserror::Error)]
-enum GrantError {
+pub enum GrantError {
     #[error("provided storage grant has already been recorded")]
     AlreadyRecorded,
 
@@ -184,7 +179,7 @@ impl IntoResponse for GrantError {
 
         match &self {
             AlreadyRecorded => {
-                let err_msg = serde_json::json!({ "msg": "{self}" });
+                let err_msg = serde_json::json!({ "msg": format!("{self}") });
                 (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
             }
             Database(err) => {
