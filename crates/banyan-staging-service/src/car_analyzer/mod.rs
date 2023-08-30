@@ -189,3 +189,52 @@ pub enum StreamingCarAnalyzerError {
     #[error("received car file did not have the expected pragma")]
     PragmaMismatch,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn encode_v2_header(chars: u128, data_offset: u64, data_size: u64, index_offset: u64) -> Bytes {
+        let mut buffer = BytesMut::new();
+
+        buffer.extend_from_slice(&chars.to_le_bytes());
+        buffer.extend_from_slice(&data_offset.to_le_bytes());
+        buffer.extend_from_slice(&data_size.to_le_bytes());
+        buffer.extend_from_slice(&index_offset.to_le_bytes());
+
+        assert_eq!(buffer.len(), 40);
+        buffer.freeze()
+    }
+
+    #[test]
+    fn test_streaming_lifecycle() {
+        let mut sca = StreamingCarAnalyzer::new();
+        assert_eq!(sca.state, CarState::Pragma);
+
+        // No data shouldn't transition
+        assert!(sca.next().expect("still valid").is_none());
+        assert_eq!(sca.state, CarState::Pragma);
+
+        // Some data but still not enough, shouldn't transition
+        sca.add_chunk(&Bytes::from(&CARV2_PRAGMA[0..4])).unwrap();
+        assert!(sca.next().expect("still valid").is_none()); // no blocks yet
+        assert_eq!(sca.state, CarState::Pragma);
+
+        // The rest of the Pragma should do the trick
+        sca.add_chunk(&Bytes::from(&CARV2_PRAGMA[4..])).unwrap();
+        assert!(sca.next().expect("still valid").is_none()); // no blocks yet
+        assert_eq!(sca.state, CarState::CarV2Header);
+
+        let mut v2_header = encode_v2_header(0, 55, 128, 200);
+
+        // Some data but still not enough, shouldn't transition
+        sca.add_chunk(&v2_header.split_to(17)).unwrap();
+        assert!(sca.next().expect("still valid").is_none()); // no blocks yet
+        assert_eq!(sca.state, CarState::CarV2Header);
+
+        // The rest of the header
+        sca.add_chunk(&v2_header).unwrap();
+        assert!(sca.next().expect("still valid").is_none()); // no blocks yet
+        assert_eq!(sca.state, CarState::CarV1Header { data_start: 55, data_end: 183, index_start: 200 });
+    }
+}
