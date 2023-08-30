@@ -9,10 +9,14 @@ pub struct BlockMeta {
     length: usize,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 enum CarState {
+    Init,
+
+    NeedData(usize, Box<CarState>),
+    SkipUntil(usize, Box<CarState>),
+
     Header,
-    BlockScanning(usize),
     BlockStart,
     Indexes,
     Complete,
@@ -46,30 +50,35 @@ pub struct StreamingCarAnalyzer {
 
 impl StreamingCarAnalyzer {
     pub fn add_chunk(&mut self, bytes: &Bytes) {
-        self.hasher.update(&bytes);
+        match &self.state {
+            CarState::SkipUntil(desired_offset, next_state) => {
+                if (self.stream_offset + bytes.len()) < *desired_offset {
+                    self.stream_offset += bytes.len();
+                    return;
+                }
 
-        if let CarState::BlockScanning(desired_offset) = self.state {
-            // When scanning for blocks, we only care about the first few bytes of each block,
-            // we don't need to copy the actual block's data into our buffer
-            if (self.stream_offset + bytes.len()) < desired_offset {
-                self.state = CarState::BlockScanning(self.stream_offset - bytes.len());
-                self.stream_offset += bytes.len();
+                // This new data brings us up to our desired offset, copy in the relevant bytes we're
+                // looking for and transition our state to the next desired one. We are generally
+                // taking more data here than we'll probably need in the parser but we'd need a more
+                // complex handler to reduce that minor overhead.
+                let ignored_bytes = desired_offset - self.stream_offset;
 
-                return;
+                self.buffer.extend_from_slice(&bytes[ignored_bytes..]);
+                self.stream_offset += ignored_bytes;
+
+                self.state = *next_state.clone();
             }
+            // We save ourselves the necessity of an extra loop later on if we just advance this
+            // state here when we already know if its changing
+            CarState::NeedData(desired_bytes, next_state) => {
+                self.buffer.extend_from_slice(&bytes);
 
-            // This new data brings us up to the beginning of a new block, only copy in the
-            // bytes that are relevant for us. This is technically more than we need, it can be
-            // optimized in the future.
-            let ignored_bytes = desired_offset - self.stream_offset;
-            self.buffer.extend_from_slice(&bytes[ignored_bytes..]);
-            self.stream_offset += ignored_bytes;
-            self.state = CarState::BlockStart;
-        }
-
-        match self.state {
-            CarState::BlockScanning(_) => unreachable!("we already returned or transitioned by now"),
+                if *desired_bytes <= bytes.len() {
+                    self.state = *next_state.clone();
+                }
+            }
             _ => {
+                // For normal states we don't have to do anything other than copy the data
                 self.buffer.extend_from_slice(&bytes);
             }
         }
