@@ -3,6 +3,10 @@ use std::collections::HashSet;
 use blake3::Hasher;
 use bytes::{Bytes, BytesMut};
 
+const CAR_HEADER_UPPER_LIMIT: usize = 16 * 1024 * 1024; // Limit car headers to 16MiB
+
+const CAR_FILE_UPPER_LIMIT: usize = 32 * 1024 * 1024 * 1024; // We limit individual CAR files to 32GiB
+
 pub struct BlockMeta {
     cid: String,
     offset: usize,
@@ -49,12 +53,14 @@ pub struct StreamingCarAnalyzer {
 }
 
 impl StreamingCarAnalyzer {
-    pub fn add_chunk(&mut self, bytes: &Bytes) {
+    pub fn add_chunk(&mut self, bytes: &Bytes) -> Result<(), StreamingCarAnalyzerError> {
+        self.exceeds_buffer_limit(bytes.len())?;
+
         match &self.state {
             CarState::SkipUntil(desired_offset, next_state) => {
                 if (self.stream_offset + bytes.len()) < *desired_offset {
                     self.stream_offset += bytes.len();
-                    return;
+                    return Ok(());
                 }
 
                 // This new data brings us up to our desired offset, copy in the relevant bytes we're
@@ -82,12 +88,36 @@ impl StreamingCarAnalyzer {
                 self.buffer.extend_from_slice(&bytes);
             }
         }
+
+        Ok(())
+    }
+
+    fn exceeds_buffer_limit(&self, new_bytes: usize) -> Result<(), StreamingCarAnalyzerError> {
+        let new_byte_total = self.stream_offset + new_bytes;
+
+        if new_byte_total > CAR_FILE_UPPER_LIMIT {
+            return Err(StreamingCarAnalyzerError::MaxCarSizeExceeded(new_byte_total));
+        }
+
+        if matches!(self.state, CarState::Init) && new_byte_total > CAR_HEADER_UPPER_LIMIT {
+            return Err(StreamingCarAnalyzerError::HeaderSegmentSizeExceeded(new_byte_total));
+        }
+
+        // There is case here that isn't being covered, when we're in the NeedsData state and our
+        // target is the header we should also be checking to ensure our thresholds won't be
+        // exceeded. Rather than perform that check here I'm going to perform that check when
+        // transitioning to that state.
+        //
+        // I might actually just want to have a sub-parser responsible for the header to
+        // disambiguate the states...
+
+        Ok(())
     }
 
     pub fn new() -> Self {
         Self {
             buffer: BytesMut::new(),
-            state: CarState::Header,
+            state: CarState::Init,
             stream_offset: 0,
 
             known_roots: HashSet::new(),
@@ -119,6 +149,9 @@ impl StreamingCarAnalyzer {
 
 #[derive(Debug, thiserror::Error)]
 pub enum StreamingCarAnalyzerError {
-    #[error("placeholder")]
-    Placeholder,
+    #[error("received {0} bytes while still decoding the header which exceeds our allowed header sizes")]
+    HeaderSegmentSizeExceeded(usize),
+
+    #[error("received {0} bytes which exceeds our upper limit for an individual CAR upload")]
+    MaxCarSizeExceeded(usize),
 }

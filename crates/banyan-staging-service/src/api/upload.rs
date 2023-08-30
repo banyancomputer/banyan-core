@@ -317,7 +317,7 @@ where
         .await
         .map_err(UploadStreamError::ReadFailed)?
     {
-        car_analyzer.add_chunk(&chunk);
+        car_analyzer.add_chunk(&chunk)?;
         writer
             .write_all(&chunk)
             .await
