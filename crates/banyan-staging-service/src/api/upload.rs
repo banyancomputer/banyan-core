@@ -89,13 +89,13 @@ pub async fn handler(
         }
     };
 
-    match process_upload_stream(reported_body_length as usize, car_field, &mut writer).await {
-        Ok(sr) => {
+    match process_upload_stream(&db, reported_body_length as usize, car_field, &mut writer).await {
+        Ok(cr) => {
             writer
                 .shutdown()
                 .await
                 .map_err(UploadStreamError::WriteFailed)?;
-            handle_successful_upload(&db, &store, sr, upload_id, &store_path).await?;
+            handle_successful_upload(&db, &store, cr, upload_id, &store_path).await?;
             Ok((StatusCode::NO_CONTENT, ()).into_response())
         }
         Err(err) => {
@@ -120,7 +120,7 @@ async fn handle_failed_upload(db: &Database, upload_id: Uuid) {
 async fn handle_successful_upload(
     db: &Database,
     store: &UploadStore,
-    store_result: StoreResult,
+    car_report: car_analyzer::CarReport,
     upload_id: Uuid,
     file_path: &object_store::path::Path,
 ) -> Result<(), UploadError> {
@@ -158,8 +158,8 @@ async fn handle_successful_upload(
                         WHERE id = $4;
                 "#,
             )
-            .bind(store_result.size as i64)
-            .bind(store_result.integrity_hash)
+            .bind(car_report.total_size() as i64)
+            .bind(car_report.integrity_hash())
             .bind(final_path.to_string())
             .bind(upload_id.to_string())
             .fetch_one(conn)
@@ -181,8 +181,8 @@ async fn handle_successful_upload(
                         WHERE id = $4;
                 "#,
             )
-            .bind(store_result.size as i64)
-            .bind(store_result.integrity_hash)
+            .bind(car_report.total_size() as i64)
+            .bind(car_report.integrity_hash())
             .bind(final_path.to_string())
             .bind(upload_id.to_string())
             .fetch_one(conn)
@@ -299,22 +299,16 @@ async fn record_upload_failed(db: &Database, upload_id: Uuid) -> Result<(), Uplo
     Ok(())
 }
 
-struct StoreResult {
-    integrity_hash: String,
-    size: usize,
-}
-
 async fn process_upload_stream<S>(
+    _db: &Database,
     expected_size: usize,
     mut stream: S,
     writer: &mut Box<dyn AsyncWrite + Unpin + Send>,
-) -> Result<StoreResult, UploadStreamError>
+) -> Result<car_analyzer::CarReport, UploadStreamError>
 where
     S: TryStream<Ok = bytes::Bytes, Error = multer::Error> + Unpin,
 {
-    let mut car_buffer = car_buffer::CarBuffer::new();
-    let mut hasher = blake3::Hasher::new();
-    let mut bytes_written = 0;
+    let mut car_analyzer = car_analyzer::StreamingCarAnalyzer::new();
     let mut warning_issued = false;
 
     while let Some(chunk) = stream
@@ -322,28 +316,25 @@ where
         .await
         .map_err(UploadStreamError::ReadFailed)?
     {
-        hasher.update(&chunk);
-        car_buffer.add_chunk(&chunk);
-        bytes_written += chunk.len();
+        car_analyzer.add_chunk(&chunk);
+        writer
+            .write_all(&chunk)
+            .await
+            .map_err(UploadStreamError::WriteFailed)?;
 
-        if bytes_written > expected_size && !warning_issued {
+        while let Some(_block) = car_analyzer.next().await? {
+            // todo
+        }
+
+        if car_analyzer.seen_bytes() > expected_size && !warning_issued {
             warning_issued = true;
             tracing::warn!(
                 "client is streaming more data than was claimed to be present in the upload"
             );
         }
-
-        writer
-            .write_all(&chunk)
-            .await
-            .map_err(UploadStreamError::WriteFailed)?
     }
 
-    let integrity_hash = hasher.finalize().to_string();
-    Ok(StoreResult {
-        integrity_hash,
-        size: bytes_written,
-    })
+    Ok(car_analyzer.report()?)
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -405,6 +396,9 @@ impl IntoResponse for UploadError {
 
 #[derive(Debug, thiserror::Error)]
 pub enum UploadStreamError {
+    #[error("uploaded file was not a properly formatted car file")]
+    ParseError(#[from] car_analyzer::StreamingCarAnalyzerError),
+
     #[error("failed to read from client")]
     ReadFailed(multer::Error),
 
@@ -417,6 +411,12 @@ impl IntoResponse for UploadStreamError {
         use UploadStreamError::*;
 
         match self {
+            ParseError(_) => {
+                let err_msg = serde_json::json!({
+                    "msg": format!("car file was found to be invalid while being scanned during the upload"),
+                });
+                (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
+            }
             ReadFailed(_) => {
                 let err_msg = serde_json::json!({
                     "msg": format!("client stream went away before file upload was complete")
@@ -432,90 +432,68 @@ impl IntoResponse for UploadStreamError {
     }
 }
 
-mod car_buffer {
+mod car_analyzer {
+    use blake3::Hasher;
     use bytes::Bytes;
-    use futures::TryStreamExt;
 
-    // We only look through the first MiB for the keys section. It's considered badly formed if not
-    // found in that window.
-    const SCANNED_CAR_CAPACITY: usize = 1_048_576;
-
-    enum BufferState {
-        Buffering(Vec<u8>),
-        Done,
-        Empty,
+    pub struct BlockMeta {
+        cid: String,
+        offset: usize,
+        length: usize,
     }
 
-    pub struct CarBuffer {
-        state: BufferState,
+    pub struct CarReport {
+        integrity_hash: String,
+        total_size: usize,
     }
 
-    impl CarBuffer {
+    impl CarReport {
+        pub fn integrity_hash(&self) -> &str {
+            self.integrity_hash.as_str()
+        }
+
+        pub fn total_size(&self) -> usize {
+            self.total_size
+        }
+    }
+
+    pub struct StreamingCarAnalyzer {
+        hasher: blake3::Hasher,
+        offset: usize,
+    }
+
+    impl StreamingCarAnalyzer {
         pub fn add_chunk(&mut self, bytes: &Bytes) {
-            self.state = match std::mem::replace(&mut self.state, BufferState::Empty) {
-                // We don't need any extra data, just return
-                BufferState::Done => return,
-
-                // This is the first chunk
-                BufferState::Empty => {
-                    let data = bytes
-                        .clone()
-                        .into_iter()
-                        .take(SCANNED_CAR_CAPACITY)
-                        .collect();
-                    BufferState::Buffering(data)
-                }
-                // We've already some data, we just need to extend it to cover as much as possible
-                BufferState::Buffering(mut vec) => {
-                    let remaining_space = SCANNED_CAR_CAPACITY - vec.len();
-                    let consumable_bytes = remaining_space.min(bytes.len());
-
-                    // Add as many bytes as we can to the buffer
-                    vec.extend(bytes.slice(0..consumable_bytes));
-
-                    BufferState::Buffering(vec)
-                }
-            };
-        }
-
-        fn as_slice(&self) -> &[u8] {
-            match &self.state {
-                BufferState::Buffering(vec) => vec.as_slice(),
-                _ => &[],
-            }
-        }
-
-        fn is_done(&self) -> bool {
-            matches!(&self.state, BufferState::Done)
-        }
-
-        pub fn is_ready(&self) -> bool {
-            matches!(&self.state, BufferState::Buffering(_))
+            self.hasher.update(&bytes);
         }
 
         pub fn new() -> Self {
             Self {
-                state: BufferState::Empty,
+                offset: 0,
+                hasher: blake3::Hasher::new(),
             }
         }
 
-        pub fn parse(&mut self) -> Result<Option<()>, &str> {
-            if self.is_done() {
-                return Err("already finished");
-            }
-
-            if !self.is_ready() {
-                return Ok(None);
-            }
-
-            tracing::info!("parsing things out of the car file woo");
-
-            // TODO: process data buffer
-            let _ = self.as_slice();
-            self.state = BufferState::Done;
-
-            // TODO: return something useful
-            Ok(Some(()))
+        pub async fn next(&mut self) -> Result<Option<BlockMeta>, StreamingCarAnalyzerError> {
+            // todo
+            Ok(None)
         }
+
+        pub fn report(self) -> Result<CarReport, StreamingCarAnalyzerError> {
+            Ok(CarReport {
+                integrity_hash: self.hasher.finalize().to_string(),
+                total_size: self.offset,
+            })
+        }
+
+        pub fn seen_bytes(&self) -> usize {
+            self.offset
+        }
+    }
+
+    #[derive(Debug, thiserror::Error)]
+    pub enum StreamingCarAnalyzerError {
+        #[error("placeholder")]
+        Placeholder,
     }
 }
