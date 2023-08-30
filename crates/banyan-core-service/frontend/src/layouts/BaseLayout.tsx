@@ -10,15 +10,7 @@ export interface IBaseLayout {
 }
 
 const BaseLayout: React.FC<IBaseLayout> = ({ children }) => {
-    const { data, status } = useSession();
     const router = useRouter();
-
-    // Redirect to login page if user is not logged in
-    useEffect(() => {
-        if (!data && status !== String('loading')) {
-            router.push('/login').then(() => window.scrollTo(0, 0));
-        }
-    }, [data, router]);
 
     return <main className="flex flex-col h-screen font-sans">
         <Header />

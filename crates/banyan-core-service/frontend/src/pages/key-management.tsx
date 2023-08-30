@@ -5,6 +5,10 @@ import { NextPageWithLayout } from '@/pages/page';
 import { useTomb } from '@/contexts/tomb';
 import { KeyManagementTable } from '@/components/KeyManagement/KeyManagementTable';
 
+import getServerSideProps from '@/utils/session';
+
+export { getServerSideProps };
+
 const HomePage: NextPageWithLayout = () => {
     const { buckets } = useTomb();
     const { messages } = useIntl();

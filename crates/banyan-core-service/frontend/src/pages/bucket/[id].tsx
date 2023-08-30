@@ -11,6 +11,10 @@ import BaseLayout from '@/layouts/BaseLayout';
 import { BucketTable } from '@/components/Buckets/BucketTable';
 import { Fallback } from '@/components/common/Fallback';
 
+import getServerSideProps from '@/utils/session';
+
+export { getServerSideProps };
+
 const Bucket: NextPageWithLayout = () => {
     const searchParams = useSearchParams();
     const bucketId = searchParams.get('id');
