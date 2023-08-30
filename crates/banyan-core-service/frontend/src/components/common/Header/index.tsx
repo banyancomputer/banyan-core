@@ -10,6 +10,7 @@ import { FiSettings } from 'react-icons/fi';
 import { popupClickHandler } from '@/utils';
 
 import { Input } from '../Input';
+import { Logo } from '@static/images/common';
 
 export const Header = () => {
     const userControlsRef = useRef<HTMLDivElement | null>(null);
@@ -48,7 +49,7 @@ export const Header = () => {
     return (
         <header className="flex items-center justify-between border-b-2 border-c p-4">
             <Link href="/" className="font-semibold text-m flex-grow" >
-                Banyan Computer
+                <Logo />
             </Link>
             <Input />
             <div className="flex flex-grow items-center justify-end gap-6">
