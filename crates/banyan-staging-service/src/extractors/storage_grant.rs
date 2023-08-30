@@ -91,7 +91,7 @@ where
         }
 
         let grant_subject = match claims.subject {
-            Some(gs) => gs.clone(),
+            Some(gs) => gs,
             None => return Err(Self::Rejection::SubjectMissing),
         };
 

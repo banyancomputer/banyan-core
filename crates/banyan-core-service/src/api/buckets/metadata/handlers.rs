@@ -18,10 +18,13 @@ use crate::utils::storage_ticket::generate_storage_ticket;
 
 /// Usage limit for all accounts (5 TiB)
 const ACCOUNT_STORAGE_QUOTA: u64 = 5 * 1_024 * 1_024 * 1_024 * 1_024;
+
 /// Upload data size limit for CAR file uploads
 const REQUEST_DATA_SIZE_LIMIT: u64 = 100 * 1_024;
+
 /// Upload size limit for CAR files
 const CAR_DATA_SIZE_LIMIT: u64 = 128 * 1_024 * 1_024;
+
 /// Storage Host
 const STORAGE_HOST: &str = "banyan-staging";
 
