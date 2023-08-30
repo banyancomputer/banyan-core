@@ -11,11 +11,10 @@ import { KeystoreProvider } from '@/contexts/keystore';
 import { TombProvider } from '@/contexts/tomb';
 import { ModalProvider } from '@/contexts/modals';
 
+import { Notifications } from '@/components/common/Notifications';
 import { Modal } from '@/components/common/Modal';
 
-
 import '@static/styles/globals.css';
-import { Notifications } from '@/components/common/Notifications';
 
 const TRANSLATES: Record<string, Record<string, string>> = {
     en,

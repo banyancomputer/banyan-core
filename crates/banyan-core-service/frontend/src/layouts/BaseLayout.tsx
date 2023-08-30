@@ -1,4 +1,4 @@
-import { ReactElement, useEffect } from 'react';
+import { ReactElement, useEffect, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
 
@@ -11,11 +11,12 @@ export interface IBaseLayout {
 
 const BaseLayout: React.FC<IBaseLayout> = ({ children }) => {
     const router = useRouter();
+    const isNavigationVisible = useMemo(() => router.pathname === '/bucket/[id]' || router.pathname === '/' || router.pathname === '/trash', [router.pathname]);
 
-    return <main className="flex flex-col h-screen font-sans">
+    return <main className="flex flex-col h-screen font-sans bg-white">
         <Header />
         <section className="flex flex-grow">
-            {router.pathname !== '/key-management' &&
+            {isNavigationVisible &&
                 <Navigation />
             }
             <div className="flex-grow">

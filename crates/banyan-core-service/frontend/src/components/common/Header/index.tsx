@@ -5,7 +5,7 @@ import { signOut, useSession } from 'next-auth/react';
 import { useIntl } from 'react-intl';
 import { useRouter } from 'next/router';
 import { AiOutlineQuestionCircle } from 'react-icons/ai';
-import { FiSearch, FiSettings } from 'react-icons/fi';
+import { FiSettings } from 'react-icons/fi';
 
 import { popupClickHandler } from '@/utils';
 
@@ -50,10 +50,7 @@ export const Header = () => {
             <Link href="/" className="font-semibold text-m flex-grow" >
                 Banyan Computer
             </Link>
-            <Input
-                placeholder={`${messages.search}`}
-                icon={<FiSearch size="20px" stroke="#4A5578" />}
-            />
+            <Input />
             <div className="flex flex-grow items-center justify-end gap-6">
                 <Link href="/key-management" className="font-semibold text-nav mr-4" >
                     {`${messages.manageKeyAccess}`}

@@ -19,10 +19,10 @@ const Bucket: NextPageWithLayout = () => {
     const searchParams = useSearchParams();
     const bucketId = searchParams.get('id');
     const { buckets, areBucketsLoading } = useTomb();
+    const { messages } = useIntl();
     const selectedBucket = useMemo(() => buckets.find(bucket => bucket.id === bucketId), [buckets, bucketId]);
 
     const uploadFile = (event: React.ChangeEvent<HTMLInputElement>) => { };
-    const { messages } = useIntl();
 
     return (
         <section className="py-9 px-4">

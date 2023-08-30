@@ -4,13 +4,14 @@ import { useIntl } from 'react-intl';
 import { NextPageWithLayout } from '@/pages/page';
 import { useTomb } from '@/contexts/tomb';
 import { KeyManagementTable } from '@/components/KeyManagement/KeyManagementTable';
+import { Fallback } from '@/components/common/Fallback';
 
 import getServerSideProps from '@/utils/session';
 
 export { getServerSideProps };
 
 const HomePage: NextPageWithLayout = () => {
-    const { buckets } = useTomb();
+    const { buckets, areBucketsLoading } = useTomb();
     const { messages } = useIntl();
 
     return (
@@ -18,7 +19,9 @@ const HomePage: NextPageWithLayout = () => {
             <h2 className="text-xl font-semibold">
                 {`${messages.manageKeyAccess}`}
             </h2>
-            <KeyManagementTable buckets={buckets} />
+            <Fallback shouldRender={!areBucketsLoading}>
+                <KeyManagementTable buckets={buckets} />
+            </Fallback>
         </div>
     );
 };
