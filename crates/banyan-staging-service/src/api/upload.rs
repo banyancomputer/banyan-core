@@ -327,7 +327,7 @@ where
             // todo
         }
 
-        if car_analyzer.seen_bytes() > expected_size && !warning_issued {
+        if car_analyzer.seen_bytes() as usize > expected_size && !warning_issued {
             warning_issued = true;
             tracing::warn!(
                 "client is streaming more data than was claimed to be present in the upload"

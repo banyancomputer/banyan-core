@@ -1,33 +1,39 @@
-use std::collections::HashMap;
-
 use blake3::Hasher;
 use bytes::{Bytes, BytesMut};
 
-const CAR_HEADER_UPPER_LIMIT: usize = 16 * 1024 * 1024; // Limit car headers to 16MiB
+const CAR_HEADER_UPPER_LIMIT: u64 = 16 * 1024 * 1024; // Limit car headers to 16MiB
 
-const CAR_FILE_UPPER_LIMIT: usize = 32 * 1024 * 1024 * 1024; // We limit individual CAR files to 32GiB
+const CAR_FILE_UPPER_LIMIT: u64 = 32 * 1024 * 1024 * 1024; // We limit individual CAR files to 32GiB
+                                                             //
+const CARV2_PRAGMA: &[u8] = &[0x0a, 0xa1, 0x67, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x02];
 
 pub struct BlockMeta {
     cid: String,
-    offset: usize,
-    length: usize,
+    offset: u64,
+    length: u64,
 }
 
 #[derive(Clone, Debug)]
 enum CarState {
-    Init,
-    Header(usize),
-
-    BlockStart,
-    BlockSeekUntil(usize),
-
-    Indexes,
+    Pragma, // 11 bytes
+    CarV2Header, // 40 bytes
+    CarV1Header { // variable length, collects roots
+        data_start: u64,
+        data_end: u64,
+        index_start: u64,
+    },
+    Block { // advances to each block until we reach data_end
+        block_start: u64,
+        data_end: u64,
+        index_start: u64,
+    },
+    Index, // once we're in the indexes here we don't care anymore
     Complete,
 }
 
 pub struct CarReport {
     integrity_hash: String,
-    total_size: usize,
+    total_size: u64,
 }
 
 impl CarReport {
@@ -35,7 +41,7 @@ impl CarReport {
         self.integrity_hash.as_str()
     }
 
-    pub fn total_size(&self) -> usize {
+    pub fn total_size(&self) -> u64 {
         self.total_size
     }
 }
@@ -43,47 +49,24 @@ impl CarReport {
 pub struct StreamingCarAnalyzer {
     buffer: BytesMut,
     state: CarState,
-    stream_offset: usize,
+    stream_offset: u64,
 
     hasher: blake3::Hasher,
-
-    expecting_index: bool,
-    // todo: switch key type to fixed byte string...
-    known_roots: HashMap<String, bool>,
 }
 
 impl StreamingCarAnalyzer {
     pub fn add_chunk(&mut self, bytes: &Bytes) -> Result<(), StreamingCarAnalyzerError> {
-        self.exceeds_buffer_limit(bytes.len())?;
+        self.exceeds_buffer_limit(bytes.len() as u64)?;
 
-        match &self.state {
-            CarState::BlockSeekUntil(desired_offset) => {
-                if (self.stream_offset + bytes.len()) < *desired_offset {
-                    self.stream_offset += bytes.len();
-                    return Ok(());
-                }
-
-                // This new data brings us up to our desired offset, copy in the relevant bytes we're
-                // looking for and transition our state to the next desired one. We are generally
-                // taking more data here than we'll probably need in the parser but we'd need a more
-                // complex handler to reduce that minor overhead.
-                let ignored_bytes = desired_offset - self.stream_offset;
-
-                self.buffer.extend_from_slice(&bytes[ignored_bytes..]);
-                self.stream_offset += ignored_bytes;
-
-                self.state = CarState::BlockStart;
-            }
-            _ => {
-                // For normal states we don't have to do anything other than copy the data
-                self.buffer.extend_from_slice(&bytes);
-            }
-        }
+        // todo: we don't need to copy all the data depending on the state we're in, we can skip
+        // over some of it to save resources and abort earlier for invalid/excessive files, but for
+        // now let's just copy it all in to save dev time...
+        self.buffer.extend_from_slice(&bytes);
 
         Ok(())
     }
 
-    fn exceeds_buffer_limit(&self, new_bytes: usize) -> Result<(), StreamingCarAnalyzerError> {
+    fn exceeds_buffer_limit(&self, new_bytes: u64) -> Result<(), StreamingCarAnalyzerError> {
         let new_byte_total = self.stream_offset + new_bytes;
 
         if new_byte_total > CAR_FILE_UPPER_LIMIT {
@@ -96,52 +79,90 @@ impl StreamingCarAnalyzer {
     pub fn new() -> Self {
         Self {
             buffer: BytesMut::new(),
-            state: CarState::Init,
+            state: CarState::Pragma,
             stream_offset: 0,
 
             hasher: blake3::Hasher::new(),
-
-            expecting_index: false,
-            known_roots: HashMap::new(),
         }
     }
 
     pub async fn next(&mut self) -> Result<Option<BlockMeta>, StreamingCarAnalyzerError> {
-        match self.state {
-            CarState::Init => {
-                // read varint to indicate the length of the header, transition to Header(length)
-                // state, check if size exceeds our threshold
+        loop {
+            match &self.state {
+                CarState::Pragma => {
+                    if self.buffer.len() < 11 {
+                        return Ok(None);
+                    }
 
-                Ok(None)
-            }
-            CarState::Header(header_size) => {
-                if header_size >= CAR_HEADER_UPPER_LIMIT {
-                    return Err(StreamingCarAnalyzerError::HeaderSegmentSizeExceeded(header_size));
+                    let pragma_bytes = self.buffer.split_to(11);
+                    self.stream_offset += 11;
+
+                    if &pragma_bytes[..] != CARV2_PRAGMA {
+                        return Err(StreamingCarAnalyzerError::PragmaMismatch);
+                    }
+
+                    self.state = CarState::CarV2Header;
                 }
+                CarState::CarV2Header => {
+                    if self.buffer.len() < 40 {
+                        return Ok(None);
+                    }
 
-                if self.buffer.len() < header_size {
+                    let _capability_bytes = self.buffer.split_to(std::mem::size_of::<u128>());
+
+                    let data_start_bytes = self.buffer.split_to(std::mem::size_of::<u64>());
+                    let data_start = u64::from_le_bytes(data_start_bytes[..].try_into().expect("the exact size"));
+
+                    let data_size_bytes = self.buffer.split_to(std::mem::size_of::<u64>());
+                    let data_size = u64::from_le_bytes(data_size_bytes[..].try_into().expect("the exact size"));
+
+                    let index_start_bytes = self.buffer.split_to(std::mem::size_of::<u64>());
+                    let index_start = u64::from_le_bytes(index_start_bytes[..].try_into().expect("the exact size"));
+
+                    self.stream_offset += 40;
+
+                    self.state = CarState::CarV1Header {
+                        data_start,
+                        data_end: data_start + data_size,
+                        index_start,
+                    };
+                }
+                CarState::CarV1Header { data_start, data_end, index_start } => {
+                    // todo: read varint in buffer to find out how large the header is
+
+                    //if header_size >= CAR_HEADER_UPPER_LIMIT {
+                    //    return Err(StreamingCarAnalyzerError::HeaderSegmentSizeExceeded(header_size));
+                    //}
+
+                    // todo: decode dag-cbor inside of block
+                    // todo: parse out expected roots and record them
+
                     return Ok(None);
                 }
+                CarState::Block { block_start, data_end, index_start } => {
+                    // Skip to the beginning of the block if we're not already at the beginning of
+                    // one
+                    if self.stream_offset < *block_start {
+                        let skippable_bytes = block_start - self.stream_offset;
+                        let available_bytes = self.buffer.len() as u64;
 
-                // todo parse the header
-                self.stream_offset += header_size;
+                        let skipped_byte_count = available_bytes.min(skippable_bytes);
+                        let _ = self.buffer.split_to(skipped_byte_count as usize);
+                        self.stream_offset += skipped_byte_count;
 
-                // todo: need to set this to the beginning of the data blocks to skip over any
-                // padding, I'll get this from parsing the header...
-                self.state = CarState::BlockSeekUntil(self.stream_offset);
+                        // We didn't quite have enough data to make it to the beginning of the
+                        // block
+                        if self.stream_offset != *block_start {
+                            return Ok(None);
+                        }
+                    }
 
-                Ok(None)
+                    // todo: if there are enough bytes available... get the length and CID of the block
+                    // todo: if we get block data transition our state to the next block
+                    // todo: if we get block data return Ok(Some(data))
+                }
+                _ => return Ok(None),
             }
-            CarState::BlockStart => {
-                Ok(None)
-            }
-
-            // Waiting on more data, can't do anything yet, may need to check this anyway if I end
-            // up looping here to transition between multiple states in one next() call...
-            CarState::BlockSeekUntil(_) => Ok(None),
-
-            // Placeholder for all our states, get rid of
-            _ => Ok(None),
         }
     }
 
@@ -152,7 +173,7 @@ impl StreamingCarAnalyzer {
         })
     }
 
-    pub fn seen_bytes(&self) -> usize {
+    pub fn seen_bytes(&self) -> u64 {
         self.stream_offset
     }
 }
@@ -160,8 +181,11 @@ impl StreamingCarAnalyzer {
 #[derive(Debug, thiserror::Error)]
 pub enum StreamingCarAnalyzerError {
     #[error("received {0} bytes while still decoding the header which exceeds our allowed header sizes")]
-    HeaderSegmentSizeExceeded(usize),
+    HeaderSegmentSizeExceeded(u64),
 
     #[error("received {0} bytes which exceeds our upper limit for an individual CAR upload")]
-    MaxCarSizeExceeded(usize),
+    MaxCarSizeExceeded(u64),
+
+    #[error("received car file did not have the expected pragma")]
+    PragmaMismatch,
 }
