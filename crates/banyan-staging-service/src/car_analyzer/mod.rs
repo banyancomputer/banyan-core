@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::HashMap;
 
 use blake3::Hasher;
 use bytes::{Bytes, BytesMut};
@@ -16,12 +16,11 @@ pub struct BlockMeta {
 #[derive(Clone, Debug)]
 enum CarState {
     Init,
+    Header(usize),
 
-    NeedData(usize, Box<CarState>),
-    SkipUntil(usize, Box<CarState>),
-
-    Header,
     BlockStart,
+    BlockSeekUntil(usize),
+
     Indexes,
     Complete,
 }
@@ -48,8 +47,9 @@ pub struct StreamingCarAnalyzer {
 
     hasher: blake3::Hasher,
 
-    // todo: switch types to fixed byte string...
-    known_roots: HashSet<String>,
+    expecting_index: bool,
+    // todo: switch key type to fixed byte string...
+    known_roots: HashMap<String, bool>,
 }
 
 impl StreamingCarAnalyzer {
@@ -57,7 +57,7 @@ impl StreamingCarAnalyzer {
         self.exceeds_buffer_limit(bytes.len())?;
 
         match &self.state {
-            CarState::SkipUntil(desired_offset, next_state) => {
+            CarState::BlockSeekUntil(desired_offset) => {
                 if (self.stream_offset + bytes.len()) < *desired_offset {
                     self.stream_offset += bytes.len();
                     return Ok(());
@@ -72,16 +72,7 @@ impl StreamingCarAnalyzer {
                 self.buffer.extend_from_slice(&bytes[ignored_bytes..]);
                 self.stream_offset += ignored_bytes;
 
-                self.state = *next_state.clone();
-            }
-            // We save ourselves the necessity of an extra loop later on if we just advance this
-            // state here when we already know if its changing
-            CarState::NeedData(desired_bytes, next_state) => {
-                self.buffer.extend_from_slice(&bytes);
-
-                if *desired_bytes <= bytes.len() {
-                    self.state = *next_state.clone();
-                }
+                self.state = CarState::BlockStart;
             }
             _ => {
                 // For normal states we don't have to do anything other than copy the data
@@ -99,18 +90,6 @@ impl StreamingCarAnalyzer {
             return Err(StreamingCarAnalyzerError::MaxCarSizeExceeded(new_byte_total));
         }
 
-        if matches!(self.state, CarState::Init) && new_byte_total > CAR_HEADER_UPPER_LIMIT {
-            return Err(StreamingCarAnalyzerError::HeaderSegmentSizeExceeded(new_byte_total));
-        }
-
-        // There is case here that isn't being covered, when we're in the NeedsData state and our
-        // target is the header we should also be checking to ensure our thresholds won't be
-        // exceeded. Rather than perform that check here I'm going to perform that check when
-        // transitioning to that state.
-        //
-        // I might actually just want to have a sub-parser responsible for the header to
-        // disambiguate the states...
-
         Ok(())
     }
 
@@ -120,19 +99,50 @@ impl StreamingCarAnalyzer {
             state: CarState::Init,
             stream_offset: 0,
 
-            known_roots: HashSet::new(),
             hasher: blake3::Hasher::new(),
+
+            expecting_index: false,
+            known_roots: HashMap::new(),
         }
     }
 
     pub async fn next(&mut self) -> Result<Option<BlockMeta>, StreamingCarAnalyzerError> {
-        use CarState::*;
+        match self.state {
+            CarState::Init => {
+                // read varint to indicate the length of the header, transition to Header(length)
+                // state, check if size exceeds our threshold
 
-        //match self.state {
-        //    _ => (),
-        //}
+                Ok(None)
+            }
+            CarState::Header(header_size) => {
+                if header_size >= CAR_HEADER_UPPER_LIMIT {
+                    return Err(StreamingCarAnalyzerError::HeaderSegmentSizeExceeded(header_size));
+                }
 
-        Ok(None)
+                if self.buffer.len() < header_size {
+                    return Ok(None);
+                }
+
+                // todo parse the header
+                self.stream_offset += header_size;
+
+                // todo: need to set this to the beginning of the data blocks to skip over any
+                // padding, I'll get this from parsing the header...
+                self.state = CarState::BlockSeekUntil(self.stream_offset);
+
+                Ok(None)
+            }
+            CarState::BlockStart => {
+                Ok(None)
+            }
+
+            // Waiting on more data, can't do anything yet, may need to check this anyway if I end
+            // up looping here to transition between multiple states in one next() call...
+            CarState::BlockSeekUntil(_) => Ok(None),
+
+            // Placeholder for all our states, get rid of
+            _ => Ok(None),
+        }
     }
 
     pub fn report(self) -> Result<CarReport, StreamingCarAnalyzerError> {
