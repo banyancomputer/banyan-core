@@ -2,12 +2,13 @@ import React, { Dispatch, FC, ReactElement, ReactNode, SetStateAction, createCon
 
 export interface StateInterface {
     content: ReactNode | null;
+    onBack: null | (() => void);
 }
 
 interface ContextState {
     modalState: StateInterface;
     setModalState: Dispatch<SetStateAction<StateInterface>>;
-    openModal: (content: ReactNode) => void;
+    openModal: (content: ReactNode, onBack?: null | (() => void)) => void;
     closeModal: () => void;
 }
 
@@ -15,14 +16,16 @@ export const ModalContext = createContext<ContextState>({} as ContextState);
 
 const initialState: StateInterface = {
     content: null,
+    onBack: null
 };
 
 export const ModalProvider: FC<{ children: ReactNode }> = ({ children }) => {
     const [modalState, setModalState] = useState(initialState);
 
-    const openModal = (content: ReactNode) => {
+    const openModal = (content: ReactNode, onBack: null | (() => void) = null) => {
         setModalState({
             content,
+            onBack
         });
     };
 
