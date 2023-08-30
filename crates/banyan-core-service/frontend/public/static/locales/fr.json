@@ -74,8 +74,13 @@
     "snapshotWasTaken": "Un snapshot à froid a été pris",
     "trashWasCleaned": "Les fichiers de la “Corbeille” ont été supprimés",
 	"fileWasRenamed": "Le fichier a été renommé",
+	"fileWasDownloaded": "Le fichier a été téléchargé",
     "fileWasMoved": "Le fichier a été déplacé",
     "copyOf": "Copie de",
-    "linkWasCopied": "Le lien a été copié"
-
+    "linkWasCopied": "Le lien a été copié",
+	"downloading": "Téléchargement",
+	"create": "Créer",
+	"createNewBucket": "Créer un nouveau compartiment",
+	"createNewFolder": "Créer un nouveau dossier",
+	"folderName": "Nom du dossier"
 }

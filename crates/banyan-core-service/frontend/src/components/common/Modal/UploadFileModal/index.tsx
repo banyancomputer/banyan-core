@@ -1,36 +1,47 @@
 import React, { useState } from 'react';
 import { useIntl } from 'react-intl';
-import { Select } from '@chakra-ui/react';
 
 import { useTomb } from '@/contexts/tomb';
+import { useModal } from '@/contexts/modals';
+import { Select } from '../../Select';
+import { AddNewOption } from '../../Select/AddNewOption';
+import { CreateBucketModal } from '../CreateBucketModal';
+import { CreateFolderModal } from '../CreateFolderModal ';
 
 import { Upload } from '@static/images/buckets';
 
 export const UploadFileModal = () => {
     const { buckets, uploadFile } = useTomb();
+    const { openModal } = useModal();
     const { messages } = useIntl();
     const [selectedBucket, setSelectedBucket] = useState('');
     const [selectedFolder, setSelectedFolder] = useState('');
 
-    const selectBucket = (event: React.ChangeEvent<HTMLSelectElement>) => {
-        setSelectedBucket(event.target.value);
+    const selectBucket = (option: string) => {
+        setSelectedBucket(option);
     };
 
-    const selectFolder = (event: React.ChangeEvent<HTMLSelectElement>) => {
-        setSelectedFolder(event.target.value);
+    const selectFolder = (option: string) => {
+        setSelectedFolder(option);
     };
-    console.log(selectedBucket);
 
-
-    const upload = async(event: React.ChangeEvent<HTMLInputElement>) => {
+    const upload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         if (!event.target.files || !selectedBucket) { return; }
 
         try {
             const file = Array.from(event.target.files)[0];
-            await uploadFile(selectedBucket, '/', file);
+            await uploadFile(selectedBucket, selectedFolder, file);
         } catch (error: any) {
             console.log(error);
         }
+    };
+
+    const addNewBucket = () => {
+        openModal(<CreateBucketModal />, () => openModal(<UploadFileModal />));
+    };
+
+    const addNewFolder = () => {
+        openModal(<CreateFolderModal />, () => openModal(<UploadFileModal />));
     };
 
     return (
@@ -41,31 +52,24 @@ export const UploadFileModal = () => {
                     {`${messages.chooseFilesToUpload}`}
                 </p>
             </div>
-            <div>
+            <>
                 <span className="inline-block mb-1 text-xs font-normal">{`${messages.selectBucket}`}:</span>
                 <Select
-                    variant="outline"
-                    placeholder={`${messages.selectBucket}`}
-                    className="font-normal text-sm"
+                    selectedOption={selectedBucket}
                     onChange={selectBucket}
-                >
-                    {buckets.map(bucket =>
-                        <option
-                            key={bucket.id}
-                            value={bucket.id}
-                        >
-                            {bucket.name}
-                        </option>
-                    )}
-                </Select>
-            </div>
+                    options={buckets.map(bucket => ({ value: bucket.id, label: bucket.name }))}
+                    placeholder={`${messages.selectBucket}`}
+                    initialOption={<AddNewOption label={`${messages.createNewBucket}`} action={addNewBucket} />}
+                />
+            </>
             <div>
                 <span className="inline-block mb-1 text-xs font-normal">{`${messages.selectFolder}`}:</span>
                 <Select
-                    variant="outline"
+                    selectedOption={selectedFolder}
                     placeholder={`${messages.selectFolder}`}
-                    value={selectedFolder}
                     onChange={selectFolder}
+                    options={[]}
+                    initialOption={<AddNewOption label={`${messages.createNewFolder}`} action={addNewFolder} />}
                 />
             </div>
             <label className="mt-10 flex flex-col items-center justify-center gap-4 px-6 py-4 border-2 border-c rounded-xl  text-xs cursor-pointer">
