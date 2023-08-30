@@ -6,8 +6,11 @@ import { FiChevronDown, FiTrash2 } from 'react-icons/fi';
 import { IoIosAdd, IoMdClose } from 'react-icons/io';
 import { useIntl } from 'react-intl';
 
+import { CreateBucketModal } from '../Modal/CreateBucketModal';
+
 import { useTomb } from '@/contexts/tomb';
 import { convertFileSize } from '@/utils/storage';
+import { useModal } from '@/contexts/modals';
 
 import { Directory } from '@static/images/common';
 
@@ -22,7 +25,7 @@ export const Navigation = () => {
     const [isBucketsVisible, setIsBucketsVisible] = useState(true);
     const [isStorageBlockVisible, setIsStorageBlockVisible] = useState(true);
     const { messages } = useIntl();
-
+    const { openModal } = useModal()
     const toggleBucketsVisibility = (event: React.MouseEvent<HTMLDivElement>) => {
         event.stopPropagation();
         event.preventDefault();
@@ -32,6 +35,10 @@ export const Navigation = () => {
     const toggleStorageVisibility = () => {
         setIsStorageBlockVisible(prev => !prev);
     };
+
+    const createBucket = () => {
+        openModal(<CreateBucketModal />);
+    }
 
     return (
         <nav className="flex flex-col w-navbar min-w-navbar bg-navigation-primary py-8 px-4 text-navigation-text border-r-2 border-r-navigation-border font-semibold">
@@ -86,7 +93,10 @@ export const Navigation = () => {
                         {trash.files.length}
                     </span>
                 </Link>
-                <button className="mt-2 flex items-center gap-3 py-2 px-3">
+                <button
+                    onClick={createBucket}
+                    className="mt-2 flex items-center gap-3 py-2 px-3"
+                >
                     <IoIosAdd size="24px" fill="#5D6B98" />
                     {`${messages.newBucket}`}
                 </button>

@@ -1,12 +1,16 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { IoMdClose } from 'react-icons/io';
 import { useModal } from '@/contexts/modals';
+import { FiArrowLeft } from 'react-icons/fi';
 
 export const Modal = () => {
-    const { modalState: { content }, closeModal } = useModal();
+    const modalRef = useRef<HTMLDivElement | null>(null);
+    const { modalState: { content, onBack }, closeModal } = useModal();
 
-    const stopPropagation = (event: React.MouseEvent<HTMLDivElement>) => {
-        event.stopPropagation();
+    const close = (event: React.MouseEvent<HTMLDivElement>) => {
+        if (!modalRef.current!.contains(event.target as Node)) {
+            closeModal();
+        };
     };
 
     return (
@@ -14,12 +18,17 @@ export const Modal = () => {
             {content &&
                 <div
                     className="absolute w-screen h-screen bg flex items-center justify-center z-10 bg-slate-800 bg-opacity-80 backdrop-blur-sm"
-                    onClick={closeModal}
+                    onClick={close}
                 >
                     <div
                         className="relative p-6 bg-white rounded-xl"
-                        onClick={stopPropagation}
+                        ref={modalRef}
                     >
+                        {onBack &&
+                            <button onClick={onBack}>
+                                <FiArrowLeft size="24px" />
+                            </button>
+                        }
                         <button
                             className="absolute right-6 top-6"
                             onClick={closeModal}

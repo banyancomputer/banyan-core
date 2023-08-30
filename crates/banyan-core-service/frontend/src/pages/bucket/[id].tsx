@@ -9,11 +9,12 @@ import { useTomb } from '@/contexts/tomb';
 
 import BaseLayout from '@/layouts/BaseLayout';
 import { BucketTable } from '@/components/Buckets/BucketTable';
+import { Fallback } from '@/components/common/Fallback';
 
 const Bucket: NextPageWithLayout = () => {
     const searchParams = useSearchParams();
     const bucketId = searchParams.get('id');
-    const { buckets } = useTomb();
+    const { buckets, areBucketsLoading } = useTomb();
     const selectedBucket = useMemo(() => buckets.find(bucket => bucket.id === bucketId), [buckets, bucketId]);
 
     const uploadFile = (event: React.ChangeEvent<HTMLInputElement>) => { };
@@ -37,9 +38,11 @@ const Bucket: NextPageWithLayout = () => {
                     />
                 </label>
             </div>
-            {selectedBucket &&
-                <BucketTable bucket={selectedBucket} />
-            }
+            <Fallback shouldRender={!areBucketsLoading}>
+                {selectedBucket &&
+                    <BucketTable bucket={selectedBucket} />
+                }
+            </Fallback>
         </section>
     );
 };

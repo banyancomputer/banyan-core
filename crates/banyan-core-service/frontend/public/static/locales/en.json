@@ -15,7 +15,7 @@
 	"youHaveUsed": "You’ve used",
 	"outOf": "out of",
 	"decentralizedStorage": "Decentralized Storage",
-	"bucketName": "Bucket Name",
+	"bucketName": "Bucket name",
 	"name": "Name",
 	"storageClass": "Storage Class",
 	"bucketType": "Bucket Type",
@@ -75,7 +75,13 @@
 	"snapshotWasTaken": "Cold snapshot was taken",
 	"trashWasCleaned": "Files from “Trash” were deleted",
 	"fileWasRenamed": "File was renamed",
+	"fileWasDownloaded": "File was downloaded",
 	"fileWasMoved": "File was moved",
 	"copyOf": "Copy of",
-	"linkWasCopied": "Link was copied"
+	"linkWasCopied": "Link was copied",
+	"downloading": "Downloading",
+	"create": "Create",
+	"createNewBucket": "Create new bucket",
+	"createNewFolder": "Create new folder",
+	"folderName": "Folder name"
 }
