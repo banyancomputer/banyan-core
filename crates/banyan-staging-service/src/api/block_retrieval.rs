@@ -1,12 +1,12 @@
-use axum::Json;
 use axum::body::StreamBody;
 use axum::extract::Path;
 use axum::headers::{ContentLength, ContentType};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use object_store::{ObjectStore, GetOptions};
-use uuid::Uuid;
+use axum::Json;
 use cid::Cid;
+use object_store::{GetOptions, ObjectStore};
+use uuid::Uuid;
 
 use crate::database::{DbError, Executor};
 use crate::extractors::{AuthenticatedClient, Database, UploadStore};
@@ -68,7 +68,8 @@ pub async fn block_from_normalized_cid(
         Executor::Postgres(ref mut conn) => {
             use crate::database::postgres;
 
-            let maybe_block_id: Option<BlockDetails> = sqlx::query_as(r#"
+            let maybe_block_id: Option<BlockDetails> = sqlx::query_as(
+                r#"
                 SELECT
                         blocks.id AS id,
                         clients.platform_id AS platform_id,
@@ -80,7 +81,8 @@ pub async fn block_from_normalized_cid(
                         JOIN uploads ON uploads_blocks.upload_id = uploads.id
                         JOIN clients ON uploads.client_id = clients.id
                     WHERE b.cid = $1;
-            "#)
+            "#,
+            )
             .bind(normalized_cid)
             .fetch_optional(conn)
             .await
@@ -97,7 +99,8 @@ pub async fn block_from_normalized_cid(
         Executor::Sqlite(ref mut conn) => {
             use crate::database::sqlite;
 
-            let maybe_block_id: Option<BlockDetails> = sqlx::query_as(r#"
+            let maybe_block_id: Option<BlockDetails> = sqlx::query_as(
+                r#"
                 SELECT
                         blocks.id AS id,
                         clients.platform_id AS platform_id,
@@ -109,7 +112,8 @@ pub async fn block_from_normalized_cid(
                         JOIN uploads ON uploads_blocks.upload_id = uploads.id
                         JOIN clients ON uploads.client_id = clients.id
                     WHERE b.cid = $1;
-            "#)
+            "#,
+            )
             .bind(normalized_cid)
             .fetch_optional(conn)
             .await
