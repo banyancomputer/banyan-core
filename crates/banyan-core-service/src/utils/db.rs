@@ -4,6 +4,15 @@ use sqlx::FromRow;
 use crate::db::models;
 use crate::extractors::DbConn;
 
+pub async fn record_storage_grant(
+    storage_host_id: &str,
+    account_id: &str,
+    authorized_usage: u64,
+    db_conn: &mut DbConn,
+) -> Result<String, sqlx::Error> {
+    todo!()
+}
+
 /// Pull the bucket from the database by id and account_id and return it.
 /// Implements an authorized read of a bucket by id and account_id.
 /// # Arguments
