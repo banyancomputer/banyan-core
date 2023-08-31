@@ -337,56 +337,55 @@ where
             .map_err(UploadStreamError::WriteFailed)?;
 
         while let Some(block_meta) = car_analyzer.next().await? {
-            let block_id: Option<Uuid> = match block_meta.cid() {
-                Some(cid_bytes) => {
-                    // create block with cid_bytes returning the block_id
-                    match db.ex() {
-                        #[cfg(feature = "postgres")]
-                        Executor::Postgres(ref mut conn) => {
-                            use crate::database::postgres;
+            let cid_string = block_meta
+                .cid()
+                .to_string_of_base(cid::multibase::Base::Base64Url)
+                .expect("parsed cid to unparse");
 
-                            let cid_id: String = sqlx::query_scalar(
-                                r#"
-                                    INSERT INTO
-                                        blocks (cid, owner_id)
-                                        VALUES ($1, $2)
-                                        RETURNING id;
-                                "#,
-                            )
-                            // not the best encoding here... need to put it in a standard format...
-                            .bind(String::from_utf8_lossy(cid_bytes))
-                            .bind(client_id.to_string())
-                            .fetch_one(conn)
-                            .await
-                            .map_err(postgres::map_sqlx_error)?;
+            let block_id: Uuid = match db.ex() {
+                #[cfg(feature = "postgres")]
+                Executor::Postgres(ref mut conn) => {
+                    use crate::database::postgres;
 
-                            Some(Uuid::parse_str(&cid_id).unwrap())
-                        }
+                    let cid_id: String = sqlx::query_scalar(
+                        r#"
+                            INSERT INTO
+                                blocks (cid, owner_id)
+                                VALUES ($1, $2)
+                                RETURNING id;
+                        "#,
+                    )
+                    .bind(cid_string)
+                    .bind(client_id.to_string())
+                    .fetch_one(conn)
+                    .await
+                    .map_err(postgres::map_sqlx_error)?;
 
-                        #[cfg(feature = "sqlite")]
-                        Executor::Sqlite(ref mut conn) => {
-                            use crate::database::sqlite;
-
-                            let cid_id: String = sqlx::query_scalar(
-                                r#"
-                                    INSERT INTO
-                                        blocks (cid, owner_id)
-                                        VALUES ($1, $2)
-                                        RETURNING id;
-                                "#,
-                            )
-                            // not the best encoding here... need to put it in a standard format...
-                            .bind(String::from_utf8_lossy(cid_bytes))
-                            .bind(client_id.to_string())
-                            .fetch_one(conn)
-                            .await
-                            .map_err(sqlite::map_sqlx_error)?;
-
-                            Some(Uuid::parse_str(&cid_id).unwrap())
-                        }
-                    }
+                    Uuid::parse_str(&cid_id)
+                        .map_err(|_| UploadStreamError::DatabaseCorruption("cid uuid parsing"))?
                 }
-                None => None,
+
+                #[cfg(feature = "sqlite")]
+                Executor::Sqlite(ref mut conn) => {
+                    use crate::database::sqlite;
+
+                    let cid_id: String = sqlx::query_scalar(
+                        r#"
+                            INSERT INTO
+                                blocks (cid, owner_id)
+                                VALUES ($1, $2)
+                                RETURNING id;
+                        "#,
+                    )
+                    .bind(cid_string)
+                    .bind(client_id.to_string())
+                    .fetch_one(conn)
+                    .await
+                    .map_err(sqlite::map_sqlx_error)?;
+
+                    Uuid::parse_str(&cid_id)
+                        .map_err(|_| UploadStreamError::DatabaseCorruption("cid uuid parsing"))?
+                }
             };
 
             // create uploads_blocks row with the block information
@@ -403,7 +402,7 @@ where
                             "#,
                     )
                     .bind(upload_id.to_string())
-                    .bind(block_id.map(|bid| bid.to_string()))
+                    .bind(block_id.to_string())
                     .bind(block_meta.offset() as i64)
                     .bind(block_meta.length() as i64)
                     .execute(conn)
@@ -423,7 +422,7 @@ where
                             "#,
                     )
                     .bind(upload_id.to_string())
-                    .bind(block_id.map(|bid| bid.to_string()))
+                    .bind(block_id.to_string())
                     .bind(block_meta.offset() as i64)
                     .bind(block_meta.length() as i64)
                     .execute(conn)
@@ -503,6 +502,9 @@ impl IntoResponse for UploadError {
 
 #[derive(Debug, thiserror::Error)]
 pub enum UploadStreamError {
+    #[error("encountered invalid data from the database for {0}")]
+    DatabaseCorruption(&'static str),
+
     #[error("unable to record details about the stream in the database")]
     DatabaseFailure(#[from] DbError),
 
@@ -521,6 +523,11 @@ impl IntoResponse for UploadStreamError {
         use UploadStreamError::*;
 
         match self {
+            DatabaseCorruption(indicator) => {
+                tracing::error!("detected a corrupted reference in the database: {indicator}");
+                let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
+            }
             DatabaseFailure(err) => {
                 tracing::error!("recording block details in db failed: {err}");
                 let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
