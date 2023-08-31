@@ -1,5 +1,5 @@
 use blake3::Hasher;
-use bytes::{Bytes, BytesMut};
+use bytes::{BufMut, Bytes, BytesMut};
 
 const CAR_HEADER_UPPER_LIMIT: u64 = 16 * 1024 * 1024; // Limit car headers to 16MiB
 
@@ -13,7 +13,7 @@ pub struct BlockMeta {
     length: u64,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 enum CarState {
     Pragma, // 11 bytes
     CarV2Header, // 40 bytes
@@ -90,7 +90,7 @@ impl StreamingCarAnalyzer {
 
     pub async fn next(&mut self) -> Result<Option<BlockMeta>, StreamingCarAnalyzerError> {
         loop {
-            match &self.state {
+            match &mut self.state {
                 CarState::Pragma => {
                     if self.buffer.len() < 11 {
                         return Ok(None);
@@ -140,13 +140,13 @@ impl StreamingCarAnalyzer {
                         header_length: None,
                     };
                 }
-                CarState::CarV1Header { data_start, data_end, index_start, mut header_length } => {
+                CarState::CarV1Header { data_start, data_end, index_start, ref mut header_length } => {
                     let header_length = match header_length {
-                        Some(hl) => hl,
+                        Some(hl) => *hl,
                         None => {
                             match try_read_varint_u64(&mut self.buffer)? {
                                 Some((hl, byte_len)) => {
-                                    header_length = Some(hl);
+                                    *header_length = Some(hl);
                                     self.stream_offset += byte_len;
 
                                     hl
@@ -156,20 +156,26 @@ impl StreamingCarAnalyzer {
                         }
                     };
 
-                    //if header_size >= CAR_HEADER_UPPER_LIMIT {
-                    //    return Err(StreamingCarAnalyzerError::HeaderSegmentSizeExceeded(header_size));
-                    //}
+                    if header_length >= CAR_HEADER_UPPER_LIMIT {
+                        return Err(StreamingCarAnalyzerError::HeaderSegmentSizeExceeded(header_length));
+                    }
 
                     // todo: decode dag-cbor inside of block
-                    // todo: parse out expected roots and record them
+                    // todo: parse out expected roots and record them... can skip for now
 
-                    return Ok(None);
+                    // into the blocks!
+                    // note: we're implicitly skipping the padding here
+                    self.state = CarState::Block {
+                        block_start: *data_start,
+                        data_end: *data_end,
+                        index_start: *index_start,
+                    };
                 }
                 CarState::Block { block_start, data_end, index_start } => {
                     // Skip to the beginning of the block if we're not already at the beginning of
                     // one
                     if self.stream_offset < *block_start {
-                        let skippable_bytes = block_start - self.stream_offset;
+                        let skippable_bytes = *block_start - self.stream_offset;
                         let available_bytes = self.buffer.len() as u64;
 
                         let skipped_byte_count = available_bytes.min(skippable_bytes);
@@ -186,9 +192,15 @@ impl StreamingCarAnalyzer {
                     // todo: if there are enough bytes available... get the length and CID of the block
                     // todo: if we get block data transition our state to the next block
                     // todo: if we get block data return Ok(Some(data))
+
+                    return Ok(None);
                 }
                 _ => return Ok(None),
             }
+
+            // useful for diagnosing infinite state lockups
+            //println!("state updated without resolution, waiting two seconds before looping again {:?}", self.state);
+            //tokio::time::sleep(std::time::Duration::from_secs(2)).await;
         }
     }
 
@@ -263,35 +275,65 @@ mod tests {
         buffer.freeze()
     }
 
-    #[test]
-    fn test_streaming_lifecycle() {
+    fn encode_varint_u64(mut val: u64) -> Bytes {
+        let mut bytes = BytesMut::new();
+
+        loop {
+            let mut current_byte = (val & 0b0111_1111) as u8;   // take the lower 7 bits
+            val >>= 7;                                          // shift them away
+
+            if val > 0 {
+                // This isn't the last byte, set the high bit
+                current_byte |= 0b1000_0000;
+            }
+
+            // append our current byte to the byte list (this is doing the MSB to LSB conversion)
+            bytes.put_u8(current_byte);
+
+            // if nothing is remaining drop out of the loop
+            if val == 0 {
+                break;
+            }
+        }
+
+        bytes.freeze()
+    }
+
+    #[tokio::test]
+    async fn test_streaming_lifecycle() {
         let mut sca = StreamingCarAnalyzer::new();
         assert_eq!(sca.state, CarState::Pragma);
 
         // No data shouldn't transition
-        assert!(sca.next().expect("still valid").is_none());
+        assert!(sca.next().await.expect("still valid").is_none());
         assert_eq!(sca.state, CarState::Pragma);
 
         // Some data but still not enough, shouldn't transition
         sca.add_chunk(&Bytes::from(&CARV2_PRAGMA[0..4])).unwrap();
-        assert!(sca.next().expect("still valid").is_none()); // no blocks yet
+        assert!(sca.next().await.expect("still valid").is_none()); // no blocks yet
         assert_eq!(sca.state, CarState::Pragma);
 
         // The rest of the Pragma should do the trick
         sca.add_chunk(&Bytes::from(&CARV2_PRAGMA[4..])).unwrap();
-        assert!(sca.next().expect("still valid").is_none()); // no blocks yet
+        assert!(sca.next().await.expect("still valid").is_none()); // no blocks yet
         assert_eq!(sca.state, CarState::CarV2Header);
 
-        let mut v2_header = encode_v2_header(0, 55, 128, 200);
+        let mut v2_header = encode_v2_header(0, 172, 128, 320);
 
         // Some data but still not enough, shouldn't transition
         sca.add_chunk(&v2_header.split_to(17)).unwrap();
-        assert!(sca.next().expect("still valid").is_none()); // no blocks yet
+        assert!(sca.next().await.expect("still valid").is_none()); // no blocks yet
         assert_eq!(sca.state, CarState::CarV2Header);
 
         // The rest of the header
         sca.add_chunk(&v2_header).unwrap();
-        assert!(sca.next().expect("still valid").is_none()); // no blocks yet
-        assert_eq!(sca.state, CarState::CarV1Header { data_start: 55, data_end: 183, index_start: 200 });
+        assert!(sca.next().await.expect("still valid").is_none()); // no blocks yet
+        assert_eq!(sca.state, CarState::CarV1Header { data_start: 172, data_end: 300, index_start: 320, header_length: None });
+
+        sca.add_chunk(&encode_varint_u64(100)).unwrap();
+        sca.add_chunk(&Bytes::from([0u8; 100].as_slice())).unwrap();    // we don't actually inspect the header data here yet
+        sca.add_chunk(&Bytes::from([0u8; 20].as_slice())).unwrap();     // and the padding we calculated into the hardcoded numbers
+        assert!(sca.next().await.expect("still valid").is_none());    // no blocks yet... but we're right on the edge of one!
+        assert_eq!(sca.state, CarState::Block { block_start: 172, data_end: 300, index_start: 320 });
     }
 }
