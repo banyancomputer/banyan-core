@@ -3,6 +3,7 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 use blake3::Hasher;
 use bytes::{BufMut, Bytes, BytesMut};
+use cid::Cid;
 
 const CAR_HEADER_UPPER_LIMIT: u64 = 16 * 1024 * 1024; // Limit car headers to 16MiB
 
@@ -14,14 +15,14 @@ const CARV2_PRAGMA: &[u8] = &[
 
 #[derive(Debug, PartialEq)]
 pub struct BlockMeta {
-    cid: Option<Vec<u8>>,
+    cid: Cid,
     offset: u64,
     length: u64,
 }
 
 impl BlockMeta {
-    pub fn cid(&self) -> Option<&Vec<u8>> {
-        self.cid.as_ref()
+    pub fn cid(&self) -> &Cid {
+        &self.cid
     }
 
     pub fn length(&self) -> u64 {
@@ -265,37 +266,18 @@ impl StreamingCarAnalyzer {
                         },
                     };
 
-                    // CID format:
-                    // -> multibase-prefix, 1 byte (this is supposed to be varint, just check if its <= 0x2f
-                    // -> in the multibase-encoding of the prefixes choice... not ideal..., would be better without it... maybe I can enforce that...
-                    // -> multibase-codec, 1 byte CID version (this is supposed to be a varint, but just sanity check
-                    // -> multicodec-content-type, 1 byte codec identification (this is also supposed to be a varint)
-                    // -> some number of bytes based on the previous value
-
-                    // We don't know there is actually going to be three bytes, there might be zero
-                    // (an identity codec that's zero bytes long)... which would be two but its
-                    // safe enough for now since we don't use identity functions
-                    if self.buffer.len() < 3 {
+                    // 64-bytes is the longest reasonable CID we're going to care about it. We're
+                    // going to wait until we have that much then try and decode the CID from
+                    // there. The edge case here is if the total block length (CID included) is
+                    // less than 64-bytes we'll just wait for the entire block. The CID has to be
+                    // included and we'll decode it from there just as neatly.
+                    let minimum_cid_blocks = block_length.min(64) as usize;
+                    if self.buffer.len() < minimum_cid_blocks {
                         return Ok(None);
                     }
 
-                    // todo: I can actually cheat here and difer the decoding or pass on to another
-                    // library here by taking self.buffer.len().min(64) bytes, and then I can
-                    // probably just attempt to decode a cid from that buffer all at once...
-
-                    let cid: Option<Vec<u8>> = {
-                        // Going to cheat, we're only going to have a couple of values here so
-                        // I'm going to log them and hardcode them for now hahah
-                        tracing::warn!(
-                            "couldn't identify cid by byte IDs: {:?}",
-                            &self.buffer[..3]
-                        );
-                        // We couldn't identify the CID so we won't be able to index it but we
-                        // can still record the block information without the CID in the DB. We
-                        // can update our code later to parse weird CIDs and index them later
-                        // or normalize them to something else.
-                        None
-                    };
+                    let cid = Cid::read_bytes(&self.buffer[..minimum_cid_blocks]).unwrap();
+                    self.stream_offset += cid.encoded_len() as u64;
 
                     // This might be the end of all data, we'll check once we reach the block_start
                     // offset
@@ -407,6 +389,9 @@ fn try_read_varint_u64(
 mod tests {
     use super::*;
 
+    use cid::multihash::{Code, MultihashDigest};
+    use cid::Cid;
+
     fn encode_v2_header(chars: u128, data_offset: u64, data_size: u64, index_offset: u64) -> Bytes {
         let mut buffer = BytesMut::new();
 
@@ -462,7 +447,7 @@ mod tests {
         assert!(sca.next().await.expect("still valid").is_none()); // no blocks yet
         assert_eq!(sca.state, CarState::CarV2Header);
 
-        let mut v2_header = encode_v2_header(0, 172, 108, 320);
+        let mut v2_header = encode_v2_header(0, 172, 93, 290);
 
         // Some data but still not enough, shouldn't transition
         sca.add_chunk(&v2_header.split_to(17)).unwrap();
@@ -476,8 +461,8 @@ mod tests {
             sca.state,
             CarState::CarV1Header {
                 data_start: 172,
-                data_end: 280,
-                index_start: 320,
+                data_end: 265,
+                index_start: 290,
                 header_length: None
             }
         );
@@ -490,46 +475,54 @@ mod tests {
             sca.state,
             CarState::Block {
                 block_start: 172,
-                data_end: 280,
-                index_start: 320,
+                data_end: 265,
+                index_start: 290,
                 block_length: None
             }
         );
         assert_eq!(sca.stream_offset, 172); // It'll take us right up to next point we're looking for
 
-        sca.add_chunk(&encode_varint_u64(108)).unwrap();
-        sca.add_chunk(&Bytes::from([0u8; 3].as_slice())).unwrap(); // we need a few more bytes for CID parsing
+        let block_data = b"some internal blockity block data, this is real I promise";
+        // we'll use the identity codec for our data...
+        let block_cid = Cid::new_v1(0x00, Code::Sha3_256.digest(block_data));
+
+        sca.add_chunk(&encode_varint_u64(
+            (block_data.len() + block_cid.encoded_len()) as u64,
+        ))
+        .unwrap();
+        sca.add_chunk(&Bytes::from(block_cid.to_bytes())).unwrap();
+        sca.add_chunk(&Bytes::from(block_data.to_vec())).unwrap();
+
         let next_meta = Some(BlockMeta {
-            cid: None,
+            cid: block_cid,
             offset: 172,
-            length: 108,
+            length: 93,
         });
         assert_eq!(sca.next().await.expect("still valid"), next_meta);
         assert_eq!(
             sca.state,
             CarState::Block {
-                block_start: 280,
-                data_end: 280,
-                index_start: 320,
+                block_start: 265,
+                data_end: 265,
+                index_start: 290,
                 block_length: None
             }
         );
-        assert_eq!(sca.stream_offset, 173); // we only actually read one byte here, the rest will be dropped
+        assert_eq!(sca.stream_offset, 209); // we've only actually read the Cid, the data is still
+                                            // in the buffer
 
-        sca.add_chunk(&Bytes::from([0u8; 134].as_slice())).unwrap(); // take us into the padding
-                                                                     // past the data but before
-                                                                     // the indexes
+        sca.add_chunk(&Bytes::from([0u8; 10].as_slice())).unwrap(); // take us into the padding past the data but before the indexes
         assert!(sca.next().await.expect("still valid").is_none()); // we're at the end of the data, this should transition to indexes
-        assert_eq!(sca.state, CarState::Indexes { index_start: 320 });
-        assert_eq!(sca.stream_offset, 280); // we read right up to the start of the virtual end
+        assert_eq!(sca.state, CarState::Indexes { index_start: 290 });
+        assert_eq!(sca.stream_offset, 265); // we read right up to the start of the virtual end
                                             // block
 
         // take us past the index so we can complete
-        sca.add_chunk(&Bytes::from([0u8; 60].as_slice())).unwrap();
+        sca.add_chunk(&Bytes::from([0u8; 30].as_slice())).unwrap();
         assert!(sca.next().await.expect("still valid").is_none());
         assert_eq!(sca.state, CarState::Complete);
 
         let report = sca.report().unwrap();
-        assert_eq!(report.total_size, 370);
+        assert_eq!(report.total_size, 342);
     }
 }

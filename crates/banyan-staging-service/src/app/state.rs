@@ -91,7 +91,7 @@ impl axum::extract::FromRef<State> for PlatformAuthKey {
     }
 }
 
-fn fingerprint_key(keys: &ES384KeyPair) -> String {
+pub fn fingerprint_key(keys: &ES384KeyPair) -> String {
     let key_pair = keys.key_pair();
     let public_key = key_pair.public_key();
     let compressed_point = public_key.as_ref().to_encoded_point(true);

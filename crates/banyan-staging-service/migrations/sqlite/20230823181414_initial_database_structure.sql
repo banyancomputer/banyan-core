@@ -86,7 +86,7 @@ CREATE UNIQUE INDEX idx_blocks_on_cid
 
 CREATE TABLE uploads_blocks (
   upload_id TEXT NOT NULL REFERENCES uploads(id) ON DELETE CASCADE,
-  block_id TEXT REFERENCES blocks(id),
+  block_id UUID NOT NULL REFERENCES blocks(id) ON DELETE CASCADE,
 
   byte_offset INTEGER NOT NULL CHECK (byte_offset >= 0) CONSTRAINT byte_offset_positive,
   data_length INTEGER NOT NULL CHECK (data_length >= 0) CONSTRAINT data_length_positive,
@@ -95,7 +95,4 @@ CREATE TABLE uploads_blocks (
 );
 
 CREATE UNIQUE INDEX idx_uploads_blocks_on_upload_id_block_id
-  ON uploads_blocks(upload_id, block_id) WHERE block_id IS NOT NULL;
-
-CREATE INDEX idx_uploads_blocks_on_upload_id
-  ON uploads_blocks(upload_id) WHERE block_id IS NULL;
+  ON uploads_blocks(upload_id, block_id);
