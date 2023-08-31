@@ -13,7 +13,7 @@ use crate::api::buckets::metadata::{requests, responses};
 use crate::db::models;
 use crate::extractors::{ApiToken, ApiTokenKid, DataStore, DbConn, SigningKey};
 use crate::utils::db;
-use crate::utils::metadata_upload::handle_metadata_upload;
+use crate::utils::metadata_upload::{handle_metadata_upload, round_to_nearest_100_mib};
 use crate::utils::storage_ticket::generate_storage_ticket;
 
 /// Usage limit for all accounts (5 TiB)
@@ -189,13 +189,8 @@ pub async fn push(
     /* 4. Now that we know the size of metadata, Check if the upload exceeds the user's storage quota. If so, abort with 413 */
 
     // Read how metadata and data the use has in the current and pending states across all buckets
-    let metadata_states = vec![
-        models::MetadataState::Current,
-        models::MetadataState::Pending,
-    ];
-    let bucket_ids = None;
     let current_usage =
-        match db::read_usage(&account_id, metadata_states, bucket_ids, &mut db_conn).await {
+        match db::read_total_usage(&account_id, &mut db_conn).await {
             Ok(usage) => usage,
             Err(err) => {
                 tracing::error!("unable to read account storage usage: {err}");
@@ -335,13 +330,10 @@ pub async fn push(
 
     // Since we only have one storage host, this is easy
     // Query the database for the current and pending data usage for the account
-    let metadata_states = vec![
-        models::MetadataState::Current,
-        models::MetadataState::Pending,
-    ];
-    let bucket_ids = None;
     let data_usage =
-        match db::read_data_usage(&account_id, metadata_states, bucket_ids, &mut db_conn).await {
+        match db::read_total_data_usage(&account_id, &mut db_conn)
+            .await
+        {
             Ok(usage) => usage,
             Err(err) => {
                 tracing::error!("unable to read account data usage: {err}");
@@ -352,8 +344,9 @@ pub async fn push(
                     .into_response();
             }
         };
+        
     // Round up to the nearest 100 MiB
-    let data_usage = (data_usage + 100 * 1_024 * 1_024 - 1) / (100 * 1_024 * 1_024);
+    let data_usage = round_to_nearest_100_mib(data_usage);
     // Read a storage host from the database. We only have one right now, so this is easy
     let storage_host = match db::read_storage_host(STORAGE_HOST, &mut db_conn).await {
         Ok(sh) => sh,

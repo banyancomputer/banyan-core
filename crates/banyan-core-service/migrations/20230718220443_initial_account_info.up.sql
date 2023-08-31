@@ -270,16 +270,3 @@ CREATE TABLE storage_hosts (
 
 CREATE UNIQUE INDEX idx_storage_hosts_on_unique_name
   ON storage_hosts(name);
-
--- Create Default Storage Host
-INSERT INTO storage_hosts (id, name, url, used_storage, available_storage, fingerprint, pem)
-VALUES (
-  '846db58a-d5f5-4388-9bfe-667b385aacc8',
-  'banyan-staging',
-  'https://staging.storage.banyan.computer/',
-  0,
-  549755813888000,
-  -- Note: this is not a correct fingerprint
-  "14:b6:e6:d7:f5:59:d5:df:30:76:20:28:9f:90:84:89:cc:5d:f7:7e",
-  "-----BEGIN PUBLIC KEY-----\nMHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEZzVwDCZdaMJzX5CRaI7HgUGsMti7zsUZ\nKnhBQDda3ErqZSTCNy4TMf35yeLbzeGSqCmOPsvCuH8O30s3QQg30hcHUeUoEZE0\ndQRlKBv+5PpcPdWWVUG50E8fB8+1EChE\n-----END PUBLIC KEY-----"
-);

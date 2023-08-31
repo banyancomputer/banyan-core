@@ -53,7 +53,7 @@ pub fn generate_storage_ticket(
     signing_key: &SigningKey,
 ) -> Result<String, jsonwebtoken::errors::Error> {
     let mut available_storage_map = Map::new();
-    available_storage_map.insert("availableStorage".to_string(), available_storage.into());
+    available_storage_map.insert("available_storage".to_string(), available_storage.into());
     let mut capabilities = Map::new();
     capabilities.insert(storage_host_url.to_string(), available_storage_map.into());
     let nonce = rand::thread_rng()

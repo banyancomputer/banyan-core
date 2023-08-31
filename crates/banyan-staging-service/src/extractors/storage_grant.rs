@@ -18,9 +18,7 @@ use crate::extractors::paired_id_validator;
 const MAXIMUM_GRANT_AGE: u64 = 900;
 
 pub struct StorageGrant {
-    id: Uuid,
-
-    client_id: Uuid,
+    platform_id: Uuid,
     client_fingerprint: String,
 
     authorized_data_size: usize,
@@ -31,16 +29,12 @@ impl StorageGrant {
         self.authorized_data_size
     }
 
-    pub fn client_id(&self) -> Uuid {
-        self.client_id
+    pub fn platform_id(&self) -> Uuid {
+        self.platform_id
     }
 
     pub fn client_fingerprint(&self) -> &str {
         &self.client_fingerprint
-    }
-
-    pub fn id(&self) -> Uuid {
-        self.id
     }
 }
 
@@ -95,7 +89,7 @@ where
             None => return Err(Self::Rejection::SubjectMissing),
         };
 
-        let (client_id, client_fingerprint) = match paired_id_validator().captures(&grant_subject) {
+        let (platform_id, client_fingerprint) = match paired_id_validator().captures(&grant_subject) {
             Some(matches) => {
                 let id_str: &str = matches
                     .get(1)
@@ -119,16 +113,15 @@ where
         let authorized_data_size = match claims
             .custom
             .capabilities
-            .get("https://staging.storage.banyan.computer/")
+            // TODO: configure this
+            .get("http://127.0.0.1:3002")
         {
-            Some(ads) => ads.authorized_amount,
+            Some(ads) => ads.available_storage,
             None => return Err(StorageGrantError::WrongTarget),
         };
 
         let grant = StorageGrant {
-            id: claims.custom.id,
-
-            client_id,
+            platform_id,
             client_fingerprint,
 
             authorized_data_size,
@@ -193,10 +186,8 @@ impl IntoResponse for StorageGrantError {
     }
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 struct TokenAuthorizations {
-    id: Uuid,
-
     #[serde(rename = "cap")]
     capabilities: HashMap<String, Usage>,
 
@@ -204,8 +195,8 @@ struct TokenAuthorizations {
     nonce: Option<String>,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 struct Usage {
-    #[serde(rename = "expectedUsage")]
-    authorized_amount: usize,
+    #[serde(rename = "available_storage")]
+    available_storage: usize,
 }
