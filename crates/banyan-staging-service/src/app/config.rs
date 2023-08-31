@@ -42,7 +42,7 @@ impl Config {
         let mut args = Arguments::from_env();
 
         if args.subcommand().unwrap() == Some("generate-auth".to_string()) {
-            let key_path: PathBuf = args
+            let mut key_path: PathBuf = args
                 .opt_value_from_str("--path")?
                 .unwrap_or("./data/platform-auth.key".into());
 
@@ -51,12 +51,28 @@ impl Config {
             let mut file = OpenOptions::new()
                 .write(true)
                 .create_new(true)
-                .open(key_path)
+                .open(key_path.clone())
                 .map_err(Error::PlatformAuthFailedWrite)?;
 
-            let new_key = ES384KeyPair::generate().to_pem().unwrap();
-            file.write_all(new_key.as_bytes())
+            let private_new_key = ES384KeyPair::generate();
+            let new_key_pem = private_new_key.to_pem().unwrap();
+            file.write_all(new_key_pem.as_bytes())
                 .map_err(Error::PlatformAuthFailedWrite)?;
+
+            key_path.set_extension("public");
+
+            let public_new_key = private_new_key.public_key();
+            let public_pem = public_new_key.to_pem().unwrap();
+
+            let mut file = std::fs::File::create(key_path.clone()).unwrap();
+            file.write_all(public_pem.as_bytes()).unwrap();
+
+            key_path.set_extension("fingerprint");
+
+            let fingerprint = crate::app::state::fingerprint_key(&private_new_key);
+
+            let mut file = std::fs::File::create(key_path).unwrap();
+            file.write_all(fingerprint.as_bytes()).unwrap();
 
             tracing::info!("key generation complete");
 
