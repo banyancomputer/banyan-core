@@ -335,14 +335,44 @@ where
                         Executor::Postgres(ref mut conn) => {
                             use crate::database::postgres;
 
-                            todo!()
+                            let cid_id: String = sqlx::query_scalar(
+                                r#"
+                                    INSERT INTO
+                                        blocks (cid, owner_id)
+                                        VALUES ($1, $2)
+                                        RETURNING id;
+                                "#,
+                            )
+                            // not the best encoding here... need to put it in a standard format...
+                            .bind(String::from_utf8_lossy(cid_bytes))
+                            .bind(client_id.to_string())
+                            .fetch_one(conn)
+                            .await
+                            .map_err(postgres::map_sqlx_error)?;
+
+                            Some(Uuid::parse_str(&cid_id).unwrap())
                         }
 
                         #[cfg(feature = "sqlite")]
                         Executor::Sqlite(ref mut conn) => {
                             use crate::database::sqlite;
 
-                            todo!()
+                            let cid_id: String = sqlx::query_scalar(
+                                r#"
+                                    INSERT INTO
+                                        blocks (cid, owner_id)
+                                        VALUES ($1, $2)
+                                        RETURNING id;
+                                "#,
+                            )
+                            // not the best encoding here... need to put it in a standard format...
+                            .bind(String::from_utf8_lossy(cid_bytes))
+                            .bind(client_id.to_string())
+                            .fetch_one(conn)
+                            .await
+                            .map_err(sqlite::map_sqlx_error)?;
+
+                            Some(Uuid::parse_str(&cid_id).unwrap())
                         }
                     }
                 }
@@ -437,6 +467,9 @@ impl IntoResponse for UploadError {
 
 #[derive(Debug, thiserror::Error)]
 pub enum UploadStreamError {
+    #[error("unable to record details about the stream in the database")]
+    DatabaseFailure(#[from] DbError),
+
     #[error("uploaded file was not a properly formatted car file")]
     ParseError(#[from] StreamingCarAnalyzerError),
 
@@ -452,6 +485,11 @@ impl IntoResponse for UploadStreamError {
         use UploadStreamError::*;
 
         match self {
+            DatabaseFailure(err) => {
+                tracing::error!("recording block details in db failed: {err}");
+                let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
+            }
             ParseError(err) => err.into_response(),
             ReadFailed(_) => {
                 let err_msg = serde_json::json!({
