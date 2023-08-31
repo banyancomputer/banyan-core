@@ -54,7 +54,7 @@ CREATE TABLE blocks (
   id UUID DEFAULT uuid_generate_v4() NOT NULL PRIMARY KEY,
 
   cid VARCHAR(64) NOT NULL,
-  platform_owner_id TEXT NOT NULL REFERENCES clients(platform_id),
+  owner_id UUID NOT NULL REFERENCES clients(id),
 
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -63,8 +63,8 @@ CREATE UNIQUE INDEX idx_blocks_on_cid
   ON blocks(cid);
 
 CREATE TABLE uploads_blocks (
-  upload_id UUID NOT NULL REFERENCES uploads(id),
-  block_id UUID NOT NULL REFERENCES blocks(id),
+  upload_id UUID NOT NULL REFERENCES uploads(id) ON DELETE CASCADE,
+  block_id UUID REFERENCES blocks(id),
 
   byte_offset INTEGER NOT NULL CHECK (byte_offset >= 0),
   data_length INTEGER NOT NULL CHECK (data_length >= 0),
@@ -73,4 +73,7 @@ CREATE TABLE uploads_blocks (
 );
 
 CREATE UNIQUE INDEX idx_uploads_blocks_on_upload_id_block_id
-  ON uploads_blocks(upload_id, block_id);
+  ON uploads_blocks(upload_id, block_id) WHERE block_id IS NOT NULL;
+
+CREATE INDEX idx_uploads_blocks_on_upload_id
+  ON uploads_blocks(upload_id) WHERE block_id IS NULL;

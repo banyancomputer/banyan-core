@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 use tokio::io::{AsyncWrite, AsyncWriteExt};
 use uuid::Uuid;
 
+use crate::car_analyzer::{CarReport, StreamingCarAnalyzer, StreamingCarAnalyzerError};
 use crate::database::{BareId, DbError, Executor};
 use crate::extractors::{AuthenticatedClient, Database, UploadStore};
 
@@ -89,13 +90,22 @@ pub async fn handler(
         }
     };
 
-    match process_upload_stream(reported_body_length as usize, car_field, &mut writer).await {
-        Ok(sr) => {
+    match process_upload_stream(
+        &db,
+        client.id(),
+        upload_id,
+        reported_body_length as usize,
+        car_field,
+        &mut writer,
+    )
+    .await
+    {
+        Ok(cr) => {
             writer
                 .shutdown()
                 .await
                 .map_err(UploadStreamError::WriteFailed)?;
-            handle_successful_upload(&db, &store, sr, upload_id, &store_path).await?;
+            handle_successful_upload(&db, &store, cr, upload_id, &store_path).await?;
             Ok((StatusCode::NO_CONTENT, ()).into_response())
         }
         Err(err) => {
@@ -120,7 +130,7 @@ async fn handle_failed_upload(db: &Database, upload_id: Uuid) {
 async fn handle_successful_upload(
     db: &Database,
     store: &UploadStore,
-    store_result: StoreResult,
+    car_report: CarReport,
     upload_id: Uuid,
     file_path: &object_store::path::Path,
 ) -> Result<(), UploadError> {
@@ -158,8 +168,8 @@ async fn handle_successful_upload(
                         WHERE id = $4;
                 "#,
             )
-            .bind(store_result.size as i64)
-            .bind(store_result.integrity_hash)
+            .bind(car_report.total_size() as i64)
+            .bind(car_report.integrity_hash())
             .bind(final_path.to_string())
             .bind(upload_id.to_string())
             .fetch_one(conn)
@@ -181,8 +191,8 @@ async fn handle_successful_upload(
                         WHERE id = $4;
                 "#,
             )
-            .bind(store_result.size as i64)
-            .bind(store_result.integrity_hash)
+            .bind(car_report.total_size() as i64)
+            .bind(car_report.integrity_hash())
             .bind(final_path.to_string())
             .bind(upload_id.to_string())
             .fetch_one(conn)
@@ -299,22 +309,20 @@ async fn record_upload_failed(db: &Database, upload_id: Uuid) -> Result<(), Uplo
     Ok(())
 }
 
-struct StoreResult {
-    integrity_hash: String,
-    size: usize,
-}
-
 async fn process_upload_stream<S>(
+    db: &Database,
+
+    client_id: Uuid,
+    upload_id: Uuid,
     expected_size: usize,
+
     mut stream: S,
     writer: &mut Box<dyn AsyncWrite + Unpin + Send>,
-) -> Result<StoreResult, UploadStreamError>
+) -> Result<CarReport, UploadStreamError>
 where
     S: TryStream<Ok = bytes::Bytes, Error = multer::Error> + Unpin,
 {
-    let mut car_buffer = car_buffer::CarBuffer::new();
-    let mut hasher = blake3::Hasher::new();
-    let mut bytes_written = 0;
+    let mut car_analyzer = StreamingCarAnalyzer::new();
     let mut warning_issued = false;
 
     while let Some(chunk) = stream
@@ -322,28 +330,118 @@ where
         .await
         .map_err(UploadStreamError::ReadFailed)?
     {
-        hasher.update(&chunk);
-        car_buffer.add_chunk(&chunk);
-        bytes_written += chunk.len();
+        car_analyzer.add_chunk(&chunk)?;
+        writer
+            .write_all(&chunk)
+            .await
+            .map_err(UploadStreamError::WriteFailed)?;
 
-        if bytes_written > expected_size && !warning_issued {
+        while let Some(block_meta) = car_analyzer.next().await? {
+            let block_id: Option<Uuid> = match block_meta.cid() {
+                Some(cid_bytes) => {
+                    // create block with cid_bytes returning the block_id
+                    match db.ex() {
+                        #[cfg(feature = "postgres")]
+                        Executor::Postgres(ref mut conn) => {
+                            use crate::database::postgres;
+
+                            let cid_id: String = sqlx::query_scalar(
+                                r#"
+                                    INSERT INTO
+                                        blocks (cid, owner_id)
+                                        VALUES ($1, $2)
+                                        RETURNING id;
+                                "#,
+                            )
+                            // not the best encoding here... need to put it in a standard format...
+                            .bind(String::from_utf8_lossy(cid_bytes))
+                            .bind(client_id.to_string())
+                            .fetch_one(conn)
+                            .await
+                            .map_err(postgres::map_sqlx_error)?;
+
+                            Some(Uuid::parse_str(&cid_id).unwrap())
+                        }
+
+                        #[cfg(feature = "sqlite")]
+                        Executor::Sqlite(ref mut conn) => {
+                            use crate::database::sqlite;
+
+                            let cid_id: String = sqlx::query_scalar(
+                                r#"
+                                    INSERT INTO
+                                        blocks (cid, owner_id)
+                                        VALUES ($1, $2)
+                                        RETURNING id;
+                                "#,
+                            )
+                            // not the best encoding here... need to put it in a standard format...
+                            .bind(String::from_utf8_lossy(cid_bytes))
+                            .bind(client_id.to_string())
+                            .fetch_one(conn)
+                            .await
+                            .map_err(sqlite::map_sqlx_error)?;
+
+                            Some(Uuid::parse_str(&cid_id).unwrap())
+                        }
+                    }
+                }
+                None => None,
+            };
+
+            // create uploads_blocks row with the block information
+            match db.ex() {
+                #[cfg(feature = "postgres")]
+                Executor::Postgres(ref mut conn) => {
+                    use crate::database::postgres;
+
+                    sqlx::query(
+                        r#"
+                                INSERT INTO
+                                    uploads_blocks (upload_id, block_id, byte_offset, data_length)
+                                    VALUES ($1, $2, $3, $4);
+                            "#,
+                    )
+                    .bind(upload_id.to_string())
+                    .bind(block_id.map(|bid| bid.to_string()))
+                    .bind(block_meta.offset() as i64)
+                    .bind(block_meta.length() as i64)
+                    .execute(conn)
+                    .await
+                    .map_err(postgres::map_sqlx_error)?;
+                }
+
+                #[cfg(feature = "sqlite")]
+                Executor::Sqlite(ref mut conn) => {
+                    use crate::database::sqlite;
+
+                    sqlx::query(
+                        r#"
+                                INSERT INTO
+                                    uploads_blocks (upload_id, block_id, byte_offset, data_length)
+                                    VALUES ($1, $2, $3, $4);
+                            "#,
+                    )
+                    .bind(upload_id.to_string())
+                    .bind(block_id.map(|bid| bid.to_string()))
+                    .bind(block_meta.offset() as i64)
+                    .bind(block_meta.length() as i64)
+                    .execute(conn)
+                    .await
+                    .map_err(sqlite::map_sqlx_error)?;
+                }
+            };
+        }
+
+        if car_analyzer.seen_bytes() as usize > expected_size && !warning_issued {
             warning_issued = true;
             tracing::warn!(
                 "client is streaming more data than was claimed to be present in the upload"
             );
         }
-
-        writer
-            .write_all(&chunk)
-            .await
-            .map_err(UploadStreamError::WriteFailed)?
     }
 
-    let integrity_hash = hasher.finalize().to_string();
-    Ok(StoreResult {
-        integrity_hash,
-        size: bytes_written,
-    })
+    Ok(car_analyzer.report()?)
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -405,6 +503,12 @@ impl IntoResponse for UploadError {
 
 #[derive(Debug, thiserror::Error)]
 pub enum UploadStreamError {
+    #[error("unable to record details about the stream in the database")]
+    DatabaseFailure(#[from] DbError),
+
+    #[error("uploaded file was not a properly formatted car file")]
+    ParseError(#[from] StreamingCarAnalyzerError),
+
     #[error("failed to read from client")]
     ReadFailed(multer::Error),
 
@@ -417,6 +521,12 @@ impl IntoResponse for UploadStreamError {
         use UploadStreamError::*;
 
         match self {
+            DatabaseFailure(err) => {
+                tracing::error!("recording block details in db failed: {err}");
+                let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
+            }
+            ParseError(err) => err.into_response(),
             ReadFailed(_) => {
                 let err_msg = serde_json::json!({
                     "msg": format!("client stream went away before file upload was complete")
@@ -428,94 +538,6 @@ impl IntoResponse for UploadStreamError {
                 let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
             }
-        }
-    }
-}
-
-mod car_buffer {
-    use bytes::Bytes;
-    use futures::TryStreamExt;
-
-    // We only look through the first MiB for the keys section. It's considered badly formed if not
-    // found in that window.
-    const SCANNED_CAR_CAPACITY: usize = 1_048_576;
-
-    enum BufferState {
-        Buffering(Vec<u8>),
-        Done,
-        Empty,
-    }
-
-    pub struct CarBuffer {
-        state: BufferState,
-    }
-
-    impl CarBuffer {
-        pub fn add_chunk(&mut self, bytes: &Bytes) {
-            self.state = match std::mem::replace(&mut self.state, BufferState::Empty) {
-                // We don't need any extra data, just return
-                BufferState::Done => return,
-
-                // This is the first chunk
-                BufferState::Empty => {
-                    let data = bytes
-                        .clone()
-                        .into_iter()
-                        .take(SCANNED_CAR_CAPACITY)
-                        .collect();
-                    BufferState::Buffering(data)
-                }
-                // We've already some data, we just need to extend it to cover as much as possible
-                BufferState::Buffering(mut vec) => {
-                    let remaining_space = SCANNED_CAR_CAPACITY - vec.len();
-                    let consumable_bytes = remaining_space.min(bytes.len());
-
-                    // Add as many bytes as we can to the buffer
-                    vec.extend(bytes.slice(0..consumable_bytes));
-
-                    BufferState::Buffering(vec)
-                }
-            };
-        }
-
-        fn as_slice(&self) -> &[u8] {
-            match &self.state {
-                BufferState::Buffering(vec) => vec.as_slice(),
-                _ => &[],
-            }
-        }
-
-        fn is_done(&self) -> bool {
-            matches!(&self.state, BufferState::Done)
-        }
-
-        pub fn is_ready(&self) -> bool {
-            matches!(&self.state, BufferState::Buffering(_))
-        }
-
-        pub fn new() -> Self {
-            Self {
-                state: BufferState::Empty,
-            }
-        }
-
-        pub fn parse(&mut self) -> Result<Option<()>, &str> {
-            if self.is_done() {
-                return Err("already finished");
-            }
-
-            if !self.is_ready() {
-                return Ok(None);
-            }
-
-            tracing::info!("parsing things out of the car file woo");
-
-            // TODO: process data buffer
-            let _ = self.as_slice();
-            self.state = BufferState::Done;
-
-            // TODO: return something useful
-            Ok(Some(()))
         }
     }
 }
