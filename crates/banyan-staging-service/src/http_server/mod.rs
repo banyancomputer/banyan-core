@@ -140,10 +140,6 @@ pub async fn run(config: Config) -> Result<(), Error> {
 
     let state = State::from_config(&config).await?;
     let root_router = Router::new()
-        .route(
-            "/test",
-            axum::routing::get(health_check::readiness::handler),
-        )
         .nest("/api/v1", api::router(state.clone()))
         .nest("/_status", health_check::router(state.clone()))
         .with_state(state)
@@ -158,10 +154,3 @@ pub async fn run(config: Config) -> Result<(), Error> {
 
     Ok(())
 }
-
-//use crate::database::Database;
-//
-//#[axum::debug_handler]
-//pub async fn test_handler(_db: Database) -> axum::response::Response {
-//    todo!()
-//}
