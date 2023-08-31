@@ -1,9 +1,10 @@
 use axum::Json;
+use axum::body::StreamBody;
 use axum::extract::Path;
 use axum::headers::{ContentLength, ContentType};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use object_store::ObjectStore;
+use object_store::{ObjectStore, GetOptions};
 use uuid::Uuid;
 use cid::Cid;
 
@@ -13,7 +14,7 @@ use crate::extractors::{AuthenticatedClient, Database, UploadStore};
 pub async fn handler(
     db: Database,
     client: AuthenticatedClient,
-    _store: UploadStore,
+    store: UploadStore,
     Path(cid): Path<String>,
 ) -> Result<Response, BlockRetrievalError> {
     let cid = cid::Cid::try_from(cid).map_err(BlockRetrievalError::InvalidCid)?;
@@ -28,7 +29,24 @@ pub async fn handler(
         return Err(BlockRetrievalError::NotBlockOwner);
     }
 
-    Ok((StatusCode::NO_CONTENT, ()).into_response())
+    let byte_start = block_details.byte_offset as usize;
+    let byte_end = byte_start + (block_details.length as usize);
+    let byte_range = byte_start..byte_end;
+
+    let retrieval_options = GetOptions {
+        range: Some(byte_range),
+        ..Default::default()
+    };
+
+    let object_path = object_store::path::Path::from(block_details.file_path.as_str());
+    let handle = store
+        .get_opts(&object_path, retrieval_options)
+        .await
+        .map_err(BlockRetrievalError::RetrievalFailed)?;
+
+    // todo: content-length and content-disposition headers
+
+    Ok((StatusCode::OK, StreamBody::new(handle.into_stream())).into_response())
 }
 
 #[derive(sqlx::FromRow)]
@@ -117,6 +135,9 @@ pub enum BlockRetrievalError {
     #[error("authenticated user requested block not owned by them")]
     NotBlockOwner,
 
+    #[error("unable to pull block that should exist")]
+    RetrievalFailed(object_store::Error),
+
     #[error("requested block was not in our database")]
     UnknownBlock,
 }
@@ -128,6 +149,11 @@ impl IntoResponse for BlockRetrievalError {
         match &self {
             DbFailure(err) => {
                 tracing::warn!("db failure looking up block: {err}");
+                let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
+            }
+            RetrievalFailed(err) => {
+                tracing::error!("{self}: {err}");
                 let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
             }
