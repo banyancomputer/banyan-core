@@ -27,14 +27,11 @@ CREATE TABLE storage_grants (
   ),
 
   client_id TEXT NOT NULL REFERENCES clients(id),
-  remote_grant_id TEXT NOT NULL,
   allowed_storage INT NOT NULL DEFAULT 0,
 
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE UNIQUE INDEX idx_storage_grants_on_remote_grant_id
-  ON storage_grants(remote_grant_id);
 CREATE INDEX idx_storage_grants_on_created_at
   ON storage_grants(created_at);
 

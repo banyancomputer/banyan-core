@@ -22,10 +22,11 @@ pub async fn handler(
     grant: StorageGrant,
     Json(request): Json<GrantRequest>,
 ) -> Result<Response, GrantError> {
+    println!("grant: {:?}", grant);
     let grant_user_id = ensure_grant_user(&database, &grant, request).await?;
-
+    println!("grant_user_id: {:?}", grant_user_id);
     create_storage_grant(grant_user_id, &database, &grant).await?;
-
+    println!("storage grant created");
     Ok((StatusCode::NO_CONTENT, ()).into_response())
 }
 
@@ -127,7 +128,7 @@ async fn create_storage_grant(
         Executor::Postgres(ref mut conn) => {
             use crate::database::postgres;
 
-            let grant_id: DbResult<BareId> = sqlx::query_as("INSERT INTO storage_grants (client_id,  allowed_storage) VALUES ($1, $2, $3) RETURNING id;")
+            let grant_id: DbResult<BareId> = sqlx::query_as("INSERT INTO storage_grants (client_id,  allowed_storage) VALUES ($1, $2) RETURNING id;")
                 .bind(client_id.to_string())
                 .bind(grant.authorized_data_size() as i64)
                 .fetch_one(conn)
@@ -145,7 +146,7 @@ async fn create_storage_grant(
         Executor::Sqlite(ref mut conn) => {
             use crate::database::sqlite;
 
-            let grant_id: DbResult<BareId> = sqlx::query_as("INSERT INTO storage_grants (client_id, allowed_storage) VALUES ($1, $2, $3) RETURNING id;")
+            let grant_id: DbResult<BareId> = sqlx::query_as("INSERT INTO storage_grants (client_id, allowed_storage) VALUES ($1, $2) RETURNING id;")
                 .bind(client_id.to_string())
                 .bind(grant.authorized_data_size() as i64)
                 .fetch_one(conn)
