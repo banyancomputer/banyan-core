@@ -90,7 +90,7 @@ pub async fn handler(
         }
     };
 
-    match process_upload_stream(&db, reported_body_length as usize, car_field, &mut writer).await {
+    match process_upload_stream(&db, client.id(), reported_body_length as usize, car_field, &mut writer).await {
         Ok(cr) => {
             writer
                 .shutdown()
@@ -301,8 +301,11 @@ async fn record_upload_failed(db: &Database, upload_id: Uuid) -> Result<(), Uplo
 }
 
 async fn process_upload_stream<S>(
-    _db: &Database,
+    db: &Database,
+
+    client_id: Uuid,
     expected_size: usize,
+
     mut stream: S,
     writer: &mut Box<dyn AsyncWrite + Unpin + Send>,
 ) -> Result<CarReport, UploadStreamError>
@@ -323,8 +326,45 @@ where
             .await
             .map_err(UploadStreamError::WriteFailed)?;
 
-        while let Some(_block) = car_analyzer.next().await? {
-            // todo
+        while let Some(block_meta) = car_analyzer.next().await? {
+            let _cid_id: Option<Uuid> = match block_meta.cid() {
+                Some(cid_bytes) => {
+                    // create block with cid_bytes returning the block_id
+                    match db.ex() {
+                        #[cfg(feature = "postgres")]
+                        Executor::Postgres(ref mut conn) => {
+                            use crate::database::postgres;
+
+                            todo!()
+                        }
+
+                        #[cfg(feature = "sqlite")]
+                        Executor::Sqlite(ref mut conn) => {
+                            use crate::database::sqlite;
+
+                            todo!()
+                        }
+                    }
+                }
+                None => None,
+            };
+
+            // create uploads_blocks row with the block information
+            match db.ex() {
+                #[cfg(feature = "postgres")]
+                Executor::Postgres(ref mut conn) => {
+                    use crate::database::postgres;
+
+                    todo!()
+                }
+
+                #[cfg(feature = "sqlite")]
+                Executor::Sqlite(ref mut conn) => {
+                    use crate::database::sqlite;
+
+                    todo!()
+                }
+            };
         }
 
         if car_analyzer.seen_bytes() as usize > expected_size && !warning_issued {

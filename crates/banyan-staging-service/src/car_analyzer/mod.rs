@@ -19,6 +19,20 @@ pub struct BlockMeta {
     length: u64,
 }
 
+impl BlockMeta {
+    pub fn cid(&self) -> Option<&Vec<u8>> {
+        self.cid.as_ref()
+    }
+
+    pub fn length(&self) -> u64 {
+        self.length
+    }
+
+    pub fn offset(&self) -> u64 {
+        self.offset
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 enum CarState {
     Pragma,      // 11 bytes

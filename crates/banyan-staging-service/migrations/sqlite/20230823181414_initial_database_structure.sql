@@ -85,7 +85,7 @@ CREATE UNIQUE INDEX idx_blocks_on_cid
   ON blocks(cid);
 
 CREATE TABLE uploads_blocks (
-  upload_id TEXT NOT NULL REFERENCES uploads(id),
+  upload_id TEXT NOT NULL REFERENCES uploads(id) ON DELETE CASCADE,
   block_id TEXT REFERENCES blocks(id),
 
   byte_offset INTEGER NOT NULL CHECK (byte_offset >= 0) CONSTRAINT byte_offset_positive,
