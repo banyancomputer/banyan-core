@@ -279,6 +279,10 @@ impl StreamingCarAnalyzer {
                         return Ok(None);
                     }
 
+                    // todo: I can actually cheat here and difer the decoding or pass on to another
+                    // library here by taking self.buffer.len().min(64) bytes, and then I can
+                    // probably just attempt to decode a cid from that buffer all at once...
+
                     let cid: Option<Vec<u8>> = {
                         // Going to cheat, we're only going to have a couple of values here so
                         // I'm going to log them and hardcode them for now hahah
