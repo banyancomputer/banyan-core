@@ -11,6 +11,10 @@ import { useTomb } from '@/contexts/tomb';
 import { useModal } from '@/contexts/modals';
 import { Fallback } from '@/components/common/Fallback';
 
+import getServerSideProps from '@/utils/session';
+
+export { getServerSideProps };
+
 const Buckets: NextPageWithLayout = () => {
     const { openModal } = useModal();
     const { buckets, areBucketsLoading } = useTomb();

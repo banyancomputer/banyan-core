@@ -14,6 +14,10 @@ import { Fallback } from '@/components/common/Fallback';
 
 import emptyTrashIcon from '@static/images/trash/emptyTrashIcon.png';
 
+import getServerSideProps from '@/utils/session';
+
+export { getServerSideProps };
+
 const Trash: NextPageWithLayout = () => {
     const { trash, isTrashLoading } = useTomb();
     const { messages } = useIntl();

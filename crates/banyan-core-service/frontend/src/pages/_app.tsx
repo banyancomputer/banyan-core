@@ -3,6 +3,7 @@ import { IntlProvider } from 'react-intl';
 import { useRouter } from 'next/router';
 import { ChakraProvider } from '@chakra-ui/react';
 import { SessionProvider } from 'next-auth/react';
+import Head from 'next/head';
 
 import en from '@static/locales/en.json';
 import fr from '@static/locales/fr.json';
@@ -11,11 +12,10 @@ import { KeystoreProvider } from '@/contexts/keystore';
 import { TombProvider } from '@/contexts/tomb';
 import { ModalProvider } from '@/contexts/modals';
 
+import { Notifications } from '@/components/common/Notifications';
 import { Modal } from '@/components/common/Modal';
 
-
 import '@static/styles/globals.css';
-import { Notifications } from '@/components/common/Notifications';
 
 const TRANSLATES: Record<string, Record<string, string>> = {
     en,
@@ -43,6 +43,10 @@ export default function App({
                             <IntlProvider locale={locale} messages={TRANSLATES[locale]} >
                                 <Notifications />
                                 <Modal />
+                                <Head>
+                                    <title>Banyan</title>
+                                    <link rel="icon" href="/static/images/favicon.svg" sizes="any" />
+                                </Head>
                                 {/* Chakra Provider for access to Chakra UI components */}
                                 {/* Get the layout and render the component :) */}
                                 {getLayout(<Component {...pageProps} />)}
