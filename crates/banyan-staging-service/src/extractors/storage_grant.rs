@@ -17,6 +17,7 @@ use crate::extractors::paired_id_validator;
 // todo: will need a way for a client to refresh their storage grant
 const MAXIMUM_GRANT_AGE: u64 = 900;
 
+#[derive(Debug)]
 pub struct StorageGrant {
     platform_id: Uuid,
     client_fingerprint: String,
