@@ -140,7 +140,7 @@ pub async fn run(config: Config) -> Result<(), Error> {
 
     let state = State::from_config(&config).await?;
     let root_router = Router::new()
-        .nest("/api", api::router(state.clone()))
+        .nest("/api/v1", api::router(state.clone()))
         .nest("/_status", health_check::router(state.clone()))
         .with_state(state)
         .fallback(error_handlers::not_found_handler);

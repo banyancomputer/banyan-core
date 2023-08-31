@@ -221,11 +221,7 @@ pub async fn get_usage(
     }
 
     // Observable usage is sum of data in current state for the requested bucket
-    let metadata_states = vec![models::MetadataState::Current];
-    let bucket_ids = Some(vec![bucket_id]);
-    let response = match db::read_data_usage(&account_id, metadata_states, bucket_ids, &mut db_conn)
-        .await
-    {
+    let response = match db::read_bucket_data_usage(&bucket_id, &mut db_conn).await {
         Ok(usage) => responses::GetUsage { size: usage },
         Err(err) => match err {
             sqlx::Error::RowNotFound => {
@@ -247,11 +243,7 @@ pub async fn get_usage(
 /// Return the current DATA usage for the account. Query metadata in the current state of the account
 pub async fn get_total_usage(api_token: ApiToken, mut db_conn: DbConn) -> impl IntoResponse {
     let account_id = api_token.subject;
-    let metadata_states = vec![models::MetadataState::Current];
-    let bucket_ids = None;
-    let response = match db::read_data_usage(&account_id, metadata_states, bucket_ids, &mut db_conn)
-        .await
-    {
+    let response = match db::read_total_data_usage(&account_id, &mut db_conn).await {
         Ok(usage) => responses::GetUsage { size: usage },
         Err(err) => match err {
             sqlx::Error::RowNotFound => {
