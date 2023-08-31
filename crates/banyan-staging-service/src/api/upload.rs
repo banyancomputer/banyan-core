@@ -90,7 +90,7 @@ pub async fn handler(
         }
     };
 
-    match process_upload_stream(&db, client.id(), reported_body_length as usize, car_field, &mut writer).await {
+    match process_upload_stream(&db, client.id(), upload_id, reported_body_length as usize, car_field, &mut writer).await {
         Ok(cr) => {
             writer
                 .shutdown()
@@ -304,6 +304,7 @@ async fn process_upload_stream<S>(
     db: &Database,
 
     client_id: Uuid,
+    upload_id: Uuid,
     expected_size: usize,
 
     mut stream: S,
@@ -327,7 +328,7 @@ where
             .map_err(UploadStreamError::WriteFailed)?;
 
         while let Some(block_meta) = car_analyzer.next().await? {
-            let _cid_id: Option<Uuid> = match block_meta.cid() {
+            let block_id: Option<Uuid> = match block_meta.cid() {
                 Some(cid_bytes) => {
                     // create block with cid_bytes returning the block_id
                     match db.ex() {
@@ -385,14 +386,40 @@ where
                 Executor::Postgres(ref mut conn) => {
                     use crate::database::postgres;
 
-                    todo!()
+                    sqlx::query(
+                            r#"
+                                INSERT INTO
+                                    uploads_blocks (upload_id, block_id, byte_offset, data_length)
+                                    VALUES ($1, $2, $3, $4);
+                            "#,
+                        )
+                        .bind(upload_id.to_string())
+                        .bind(block_id.map(|bid| bid.to_string()))
+                        .bind(block_meta.offset() as i64)
+                        .bind(block_meta.length() as i64)
+                        .execute(conn)
+                        .await
+                        .map_err(postgres::map_sqlx_error)?;
                 }
 
                 #[cfg(feature = "sqlite")]
                 Executor::Sqlite(ref mut conn) => {
                     use crate::database::sqlite;
 
-                    todo!()
+                    sqlx::query(
+                            r#"
+                                INSERT INTO
+                                    uploads_blocks (upload_id, block_id, byte_offset, data_length)
+                                    VALUES ($1, $2, $3, $4);
+                            "#,
+                        )
+                        .bind(upload_id.to_string())
+                        .bind(block_id.map(|bid| bid.to_string()))
+                        .bind(block_meta.offset() as i64)
+                        .bind(block_meta.length() as i64)
+                        .execute(conn)
+                        .await
+                        .map_err(sqlite::map_sqlx_error)?;
                 }
             };
         }
