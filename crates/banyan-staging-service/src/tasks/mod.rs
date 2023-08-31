@@ -169,7 +169,7 @@ impl MemoryTaskStore {
             };
 
             // any task that has already ended isn't considered for uniqueness checks
-            if !matches!(task.state, TaskState::New | TaskState::InProgress { .. }) {
+            if !matches!(task.state, TaskState::New | TaskState::InProgress) {
                 continue;
             }
 
