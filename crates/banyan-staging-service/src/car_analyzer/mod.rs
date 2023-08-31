@@ -1,3 +1,6 @@
+use axum::Json;
+use axum::http::StatusCode;
+use axum::response::{IntoResponse, Response};
 use blake3::Hasher;
 use bytes::{BufMut, Bytes, BytesMut};
 
@@ -343,6 +346,13 @@ pub enum StreamingCarAnalyzerError {
 
     #[error("a varint in the car file was larger than our acceptable value")]
     ValueToLarge,
+}
+
+impl IntoResponse for StreamingCarAnalyzerError {
+    fn into_response(self) -> Response {
+        let err_msg = serde_json::json!({ "msg": self.to_string() });
+        (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
+    }
 }
 
 // We need to account for extra bytes here due to the encoding, for every 7 bits we add an extra 1

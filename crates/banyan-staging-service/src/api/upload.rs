@@ -412,12 +412,7 @@ impl IntoResponse for UploadStreamError {
         use UploadStreamError::*;
 
         match self {
-            ParseError(_) => {
-                let err_msg = serde_json::json!({
-                    "msg": format!("car file was found to be invalid while being scanned during the upload"),
-                });
-                (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
-            }
+            ParseError(err) => err.into_response(),
             ReadFailed(_) => {
                 let err_msg = serde_json::json!({
                     "msg": format!("client stream went away before file upload was complete")

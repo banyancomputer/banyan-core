@@ -9,10 +9,15 @@ import { UploadFileModal } from '@/components/common/Modal/UploadFileModal';
 
 import { useTomb } from '@/contexts/tomb';
 import { useModal } from '@/contexts/modals';
+import { Fallback } from '@/components/common/Fallback';
+
+import getServerSideProps from '@/utils/session';
+
+export { getServerSideProps };
 
 const Buckets: NextPageWithLayout = () => {
     const { openModal } = useModal();
-    const { buckets } = useTomb();
+    const { buckets, areBucketsLoading } = useTomb();
     const { messages } = useIntl();
 
     const uploadFile = () => {
@@ -33,7 +38,9 @@ const Buckets: NextPageWithLayout = () => {
                     {`${messages.upload}`}
                 </button>
             </div>
-            <BucketsTable buckets={buckets} />
+            <Fallback shouldRender={!areBucketsLoading}>
+                <BucketsTable buckets={buckets} />
+            </Fallback>
         </section>
     );
 };

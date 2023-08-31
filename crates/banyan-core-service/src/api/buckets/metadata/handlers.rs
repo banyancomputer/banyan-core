@@ -249,24 +249,46 @@ pub async fn push(
     // If not, update the metadata state to current and return a proper response
     // If so, update the metadata state to pending and continue
     if expected_data_size == 0 {
-        let metadata_state = models::MetadataState::Current.to_string();
+        let current_metadata_state = models::MetadataState::Current.to_string();
         let metadata_size = metadata_size as i64;
         let expected_data_size = expected_data_size as i64;
-        let maybe_updated_metadata = sqlx::query_as!(
+        let maybe_current_metadata = sqlx::query_as!(
             models::CreatedResource,
             r#"UPDATE metadata SET state = $1, metadata_size = $2, data_size = $3, metadata_hash = $4 WHERE id = $5 RETURNING id;"#,
-            metadata_state,
+            current_metadata_state,
             metadata_size,
             expected_data_size,
             metadata_hash,
             metadata_resource.id
         ).fetch_one(&mut *db_conn.0).await;
-        match maybe_updated_metadata {
-            Ok(cr) => {
+        let current_metadata = match maybe_current_metadata {
+            Ok(cr) => cr,
+            Err(err) => {
+                tracing::error!("unable to update bucket metadata after push: {err}");
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "internal server error".to_string(),
+                )
+                    .into_response();
+            }
+        };
+        // Set all current metadata to outdated, except for the one we just uploaded
+        let outdated_metadata_state = models::MetadataState::Outdated.to_string();
+        let maybe_outdated_metadata = sqlx::query!(
+            r#"UPDATE metadata SET state = $1 WHERE bucket_id = $2 AND id != $3 AND state = $4;"#,
+            outdated_metadata_state,
+            bucket_id,
+            metadata_resource.id,
+            current_metadata_state
+        )
+        .execute(&mut *db_conn.0)
+        .await;
+        match maybe_outdated_metadata {
+            Ok(_) => {
                 return (
                     StatusCode::OK,
                     axum::Json(responses::PushMetadataResponse {
-                        id: cr.id.to_string(),
+                        id: current_metadata.id.to_string(),
                         state: models::MetadataState::Current,
                         storage_host: None,
                         storage_authorization: None,
