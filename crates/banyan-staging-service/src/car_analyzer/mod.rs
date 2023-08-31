@@ -483,8 +483,8 @@ mod tests {
         assert_eq!(sca.stream_offset, 172); // It'll take us right up to next point we're looking for
 
         let block_data = b"some internal blockity block data, this is real I promise";
-        // we'll use the identity codec for our data...
-        let block_cid = Cid::new_v1(0x00, Code::Sha3_256.digest(block_data));
+        // we'll use the RAW codec for our data...
+        let block_cid = Cid::new_v1(0x55, Code::Sha3_256.digest(block_data));
 
         sca.add_chunk(&encode_varint_u64(
             (block_data.len() + block_cid.encoded_len()) as u64,

@@ -92,7 +92,6 @@ pub async fn handler(
 
     match process_upload_stream(
         &db,
-        client.id(),
         upload_id,
         reported_body_length as usize,
         car_field,
@@ -312,7 +311,6 @@ async fn record_upload_failed(db: &Database, upload_id: Uuid) -> Result<(), Uplo
 async fn process_upload_stream<S>(
     db: &Database,
 
-    client_id: Uuid,
     upload_id: Uuid,
     expected_size: usize,
 
@@ -350,16 +348,18 @@ where
                     let cid_id: String = sqlx::query_scalar(
                         r#"
                             INSERT INTO
-                                blocks (cid, owner_id)
+                                blocks (cid, data_length)
                                 VALUES ($1, $2)
                                 RETURNING id;
                         "#,
                     )
                     .bind(cid_string)
-                    .bind(client_id.to_string())
+                    .bind(block_meta.length() as i64)
                     .fetch_one(conn)
                     .await
                     .map_err(postgres::map_sqlx_error)?;
+
+                    // todo: need to support the case where the block already exists...
 
                     Uuid::parse_str(&cid_id)
                         .map_err(|_| UploadStreamError::DatabaseCorruption("cid uuid parsing"))?
@@ -372,16 +372,18 @@ where
                     let cid_id: String = sqlx::query_scalar(
                         r#"
                             INSERT INTO
-                                blocks (cid, owner_id)
+                                blocks (cid, data_length)
                                 VALUES ($1, $2)
                                 RETURNING id;
                         "#,
                     )
                     .bind(cid_string)
-                    .bind(client_id.to_string())
+                    .bind(block_meta.length() as i64)
                     .fetch_one(conn)
                     .await
                     .map_err(sqlite::map_sqlx_error)?;
+
+                    // todo: need to support the case where the block already exists...
 
                     Uuid::parse_str(&cid_id)
                         .map_err(|_| UploadStreamError::DatabaseCorruption("cid uuid parsing"))?
@@ -397,14 +399,13 @@ where
                     sqlx::query(
                         r#"
                                 INSERT INTO
-                                    uploads_blocks (upload_id, block_id, byte_offset, data_length)
-                                    VALUES ($1, $2, $3, $4);
+                                    uploads_blocks (upload_id, block_id, byte_offset)
+                                    VALUES ($1, $2, $3);
                             "#,
                     )
                     .bind(upload_id.to_string())
                     .bind(block_id.to_string())
                     .bind(block_meta.offset() as i64)
-                    .bind(block_meta.length() as i64)
                     .execute(conn)
                     .await
                     .map_err(postgres::map_sqlx_error)?;
@@ -417,14 +418,13 @@ where
                     sqlx::query(
                         r#"
                                 INSERT INTO
-                                    uploads_blocks (upload_id, block_id, byte_offset, data_length)
-                                    VALUES ($1, $2, $3, $4);
+                                    uploads_blocks (upload_id, block_id, byte_offset)
+                                    VALUES ($1, $2, $3);
                             "#,
                     )
                     .bind(upload_id.to_string())
                     .bind(block_id.to_string())
                     .bind(block_meta.offset() as i64)
-                    .bind(block_meta.length() as i64)
                     .execute(conn)
                     .await
                     .map_err(sqlite::map_sqlx_error)?;

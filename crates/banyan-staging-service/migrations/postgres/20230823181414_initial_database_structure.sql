@@ -51,7 +51,7 @@ CREATE TABLE blocks (
   id UUID DEFAULT uuid_generate_v4() NOT NULL PRIMARY KEY,
 
   cid VARCHAR(64) NOT NULL,
-  owner_id UUID NOT NULL REFERENCES clients(id),
+  data_length INTEGER NOT NULL CHECK (data_length >= 0),
 
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -64,7 +64,6 @@ CREATE TABLE uploads_blocks (
   block_id UUID NOT NULL REFERENCES blocks(id) ON DELETE CASCADE,
 
   byte_offset INTEGER NOT NULL CHECK (byte_offset >= 0),
-  data_length INTEGER NOT NULL CHECK (data_length >= 0),
 
   associated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
