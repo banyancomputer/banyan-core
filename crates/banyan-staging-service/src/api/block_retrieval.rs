@@ -12,7 +12,7 @@ use crate::extractors::{AuthenticatedClient, Database, UploadStore};
 
 pub async fn handler(
     db: Database,
-    _client: AuthenticatedClient,
+    client: AuthenticatedClient,
     _store: UploadStore,
     Path(cid): Path<String>,
 ) -> Result<Response, BlockRetrievalError> {
@@ -22,7 +22,11 @@ pub async fn handler(
         .to_string_of_base(cid::multibase::Base::Base64Url)
         .expect("parsed cid to unparse");
 
-    let _block = block_from_normalized_cid(&db, &normalized_cid).await?;
+    let block_details = block_from_normalized_cid(&db, &normalized_cid).await?;
+
+    if block_details.platform_id != client.platform_id().to_string() {
+        return Err(BlockRetrievalError::NotBlockOwner);
+    }
 
     Ok((StatusCode::NO_CONTENT, ()).into_response())
 }
@@ -110,6 +114,9 @@ pub enum BlockRetrievalError {
     #[error("request for invalid CID rejected")]
     InvalidCid(cid::Error),
 
+    #[error("authenticated user requested block not owned by them")]
+    NotBlockOwner,
+
     #[error("requested block was not in our database")]
     UnknownBlock,
 }
@@ -126,11 +133,16 @@ impl IntoResponse for BlockRetrievalError {
             }
             InvalidCid(err) => {
                 tracing::warn!("client attempted authenticated upload with invalid CID: {err}");
-                let err_msg = serde_json::json!({ "msg": format!("{self}") });
+                let err_msg = serde_json::json!({ "msg": format!("block not found") });
                 (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
             }
+            NotBlockOwner => {
+                tracing::warn!("client attempted to access block that wasn't theirs");
+                let err_msg = serde_json::json!({ "msg": format!("block not found") });
+                (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
+            }
             UnknownBlock => {
-                let err_msg = serde_json::json!({ "msg": format!("unknown block") });
+                let err_msg = serde_json::json!({ "msg": format!("block not found") });
                 (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
             }
         }
