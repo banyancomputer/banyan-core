@@ -90,7 +90,16 @@ pub async fn handler(
         }
     };
 
-    match process_upload_stream(&db, client.id(), upload_id, reported_body_length as usize, car_field, &mut writer).await {
+    match process_upload_stream(
+        &db,
+        client.id(),
+        upload_id,
+        reported_body_length as usize,
+        car_field,
+        &mut writer,
+    )
+    .await
+    {
         Ok(cr) => {
             writer
                 .shutdown()
@@ -387,19 +396,19 @@ where
                     use crate::database::postgres;
 
                     sqlx::query(
-                            r#"
+                        r#"
                                 INSERT INTO
                                     uploads_blocks (upload_id, block_id, byte_offset, data_length)
                                     VALUES ($1, $2, $3, $4);
                             "#,
-                        )
-                        .bind(upload_id.to_string())
-                        .bind(block_id.map(|bid| bid.to_string()))
-                        .bind(block_meta.offset() as i64)
-                        .bind(block_meta.length() as i64)
-                        .execute(conn)
-                        .await
-                        .map_err(postgres::map_sqlx_error)?;
+                    )
+                    .bind(upload_id.to_string())
+                    .bind(block_id.map(|bid| bid.to_string()))
+                    .bind(block_meta.offset() as i64)
+                    .bind(block_meta.length() as i64)
+                    .execute(conn)
+                    .await
+                    .map_err(postgres::map_sqlx_error)?;
                 }
 
                 #[cfg(feature = "sqlite")]
@@ -407,19 +416,19 @@ where
                     use crate::database::sqlite;
 
                     sqlx::query(
-                            r#"
+                        r#"
                                 INSERT INTO
                                     uploads_blocks (upload_id, block_id, byte_offset, data_length)
                                     VALUES ($1, $2, $3, $4);
                             "#,
-                        )
-                        .bind(upload_id.to_string())
-                        .bind(block_id.map(|bid| bid.to_string()))
-                        .bind(block_meta.offset() as i64)
-                        .bind(block_meta.length() as i64)
-                        .execute(conn)
-                        .await
-                        .map_err(sqlite::map_sqlx_error)?;
+                    )
+                    .bind(upload_id.to_string())
+                    .bind(block_id.map(|bid| bid.to_string()))
+                    .bind(block_meta.offset() as i64)
+                    .bind(block_meta.length() as i64)
+                    .execute(conn)
+                    .await
+                    .map_err(sqlite::map_sqlx_error)?;
                 }
             };
         }
