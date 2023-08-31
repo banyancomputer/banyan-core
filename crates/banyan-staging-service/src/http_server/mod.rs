@@ -144,7 +144,7 @@ pub async fn run(config: Config) -> Result<(), Error> {
             "/test",
             axum::routing::get(health_check::readiness::handler),
         )
-        .nest("/api", api::router(state.clone()))
+        .nest("/api/v1", api::router(state.clone()))
         .nest("/_status", health_check::router(state.clone()))
         .with_state(state)
         .fallback(error_handlers::not_found_handler);

@@ -15,7 +15,6 @@ pub struct GrantRequest {
     public_key: String,
 }
 
-#[axum::debug_handler]
 pub async fn handler(
     // this weirdly needs to be present even though we don't use it
     _: State<AppState>,
@@ -51,8 +50,8 @@ async fn create_grant_user(
         Executor::Postgres(ref mut conn) => {
             use crate::database::postgres;
 
-            let user_id: String = sqlx::query_scalar("INSERT INTO clients (platform_id, fingerprint, public_key) VALUES ($1, $2, $3) RETURNING id;")
-                .bind(grant.client_id().to_string())
+            let client_id : String = sqlx::query_scalar("INSERT INTO clients (platform_id, fingerprint, public_key) VALUES ($1, $2, $3) RETURNING id;")
+                .bind(grant.platform_id().to_string())
                 .bind(grant.client_fingerprint())
                 .bind(request.public_key)
                 .fetch_one(conn)
@@ -60,15 +59,15 @@ async fn create_grant_user(
                 .map_err(postgres::map_sqlx_error)
                 .map_err(GrantError::Database)?;
 
-            Ok(Uuid::parse_str(&user_id).unwrap())
+            Ok(Uuid::parse_str(&client_id).unwrap())
         }
 
         #[cfg(feature = "sqlite")]
         Executor::Sqlite(ref mut conn) => {
             use crate::database::sqlite;
 
-            let user_id: String = sqlx::query_scalar("INSERT INTO clients (platform_id, fingerprint, public_key) VALUES ($1, $2, $3) RETURNING id;")
-                .bind(grant.client_id().to_string())
+            let client_id: String = sqlx::query_scalar("INSERT INTO clients (platform_id, fingerprint, public_key) VALUES ($1, $2, $3) RETURNING id;")
+                .bind(grant.platform_id().to_string())
                 .bind(grant.client_fingerprint())
                 .bind(request.public_key)
                 .fetch_one(conn)
@@ -76,7 +75,7 @@ async fn create_grant_user(
                 .map_err(sqlite::map_sqlx_error)
                 .map_err(GrantError::Database)?;
 
-            Ok(Uuid::parse_str(&user_id).unwrap())
+            Ok(Uuid::parse_str(&client_id).unwrap())
         }
     }
 }
@@ -128,9 +127,8 @@ async fn create_storage_grant(
         Executor::Postgres(ref mut conn) => {
             use crate::database::postgres;
 
-            let grant_id: DbResult<BareId> = sqlx::query_as("INSERT INTO storage_grants (client_id, remote_grant_id, allowed_storage) VALUES ($1, $2, $3) RETURNING id;")
+            let grant_id: DbResult<BareId> = sqlx::query_as("INSERT INTO storage_grants (client_id,  allowed_storage) VALUES ($1, $2, $3) RETURNING id;")
                 .bind(client_id.to_string())
-                .bind(grant.id().to_string())
                 .bind(grant.authorized_data_size() as i64)
                 .fetch_one(conn)
                 .await
@@ -147,9 +145,8 @@ async fn create_storage_grant(
         Executor::Sqlite(ref mut conn) => {
             use crate::database::sqlite;
 
-            let grant_id: DbResult<BareId> = sqlx::query_as("INSERT INTO storage_grants (client_id, remote_grant_id, allowed_storage) VALUES ($1, $2, $3) RETURNING id;")
+            let grant_id: DbResult<BareId> = sqlx::query_as("INSERT INTO storage_grants (client_id, allowed_storage) VALUES ($1, $2, $3) RETURNING id;")
                 .bind(client_id.to_string())
-                .bind(grant.id().to_string())
                 .bind(grant.authorized_data_size() as i64)
                 .fetch_one(conn)
                 .await

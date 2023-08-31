@@ -95,7 +95,7 @@ impl Config {
 
         let platform_verification_key_path: PathBuf = args
             .opt_value_from_str("--verifier-key")?
-            .unwrap_or("./data/platform-verifier.pub".into());
+            .unwrap_or("./data/platform-verifier.public".into());
 
         let upload_directory = args
             .opt_value_from_str("--upload-dir")?
