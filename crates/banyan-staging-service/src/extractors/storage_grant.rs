@@ -89,7 +89,8 @@ where
             None => return Err(Self::Rejection::SubjectMissing),
         };
 
-        let (platform_id, client_fingerprint) = match paired_id_validator().captures(&grant_subject) {
+        let (platform_id, client_fingerprint) = match paired_id_validator().captures(&grant_subject)
+        {
             Some(matches) => {
                 let id_str: &str = matches
                     .get(1)

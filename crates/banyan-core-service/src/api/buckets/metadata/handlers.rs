@@ -189,18 +189,17 @@ pub async fn push(
     /* 4. Now that we know the size of metadata, Check if the upload exceeds the user's storage quota. If so, abort with 413 */
 
     // Read how metadata and data the use has in the current and pending states across all buckets
-    let current_usage =
-        match db::read_total_usage(&account_id, &mut db_conn).await {
-            Ok(usage) => usage,
-            Err(err) => {
-                tracing::error!("unable to read account storage usage: {err}");
-                return (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "internal server error".to_string(),
-                )
-                    .into_response();
-            }
-        };
+    let current_usage = match db::read_total_usage(&account_id, &mut db_conn).await {
+        Ok(usage) => usage,
+        Err(err) => {
+            tracing::error!("unable to read account storage usage: {err}");
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "internal server error".to_string(),
+            )
+                .into_response();
+        }
+    };
     // Based on how much stuff there planning on pushing, reject the upload if it would exceed the quota
     // Expected usage is their current usage plus the size of the metadata they're uploading plus the size of the data they want to upload to a host
     let expected_data_size = request_data.expected_data_size as u64;
@@ -330,21 +329,18 @@ pub async fn push(
 
     // Since we only have one storage host, this is easy
     // Query the database for the current and pending data usage for the account
-    let data_usage =
-        match db::read_total_data_usage(&account_id, &mut db_conn)
-            .await
-        {
-            Ok(usage) => usage,
-            Err(err) => {
-                tracing::error!("unable to read account data usage: {err}");
-                return (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "internal server error".to_string(),
-                )
-                    .into_response();
-            }
-        };
-        
+    let data_usage = match db::read_total_data_usage(&account_id, &mut db_conn).await {
+        Ok(usage) => usage,
+        Err(err) => {
+            tracing::error!("unable to read account data usage: {err}");
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "internal server error".to_string(),
+            )
+                .into_response();
+        }
+    };
+
     // Round up to the nearest 100 MiB
     let data_usage = round_to_nearest_100_mib(data_usage);
     // Read a storage host from the database. We only have one right now, so this is easy

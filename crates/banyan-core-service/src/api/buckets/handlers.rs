@@ -221,52 +221,44 @@ pub async fn get_usage(
     }
 
     // Observable usage is sum of data in current state for the requested bucket
-    let response =
-        match db::read_bucket_data_usage( &bucket_id, &mut db_conn)
-            .await
-        {
-            Ok(usage) => responses::GetUsage { size: usage },
-            Err(err) => match err {
-                sqlx::Error::RowNotFound => {
-                    return (StatusCode::NOT_FOUND, format!("bucket not found: {err}"))
-                        .into_response();
-                }
-                _ => {
-                    tracing::error!("unable to read bucket: {err}");
-                    return (
-                        StatusCode::INTERNAL_SERVER_ERROR,
-                        "internal server error".to_string(),
-                    )
-                        .into_response();
-                }
-            },
-        };
+    let response = match db::read_bucket_data_usage(&bucket_id, &mut db_conn).await {
+        Ok(usage) => responses::GetUsage { size: usage },
+        Err(err) => match err {
+            sqlx::Error::RowNotFound => {
+                return (StatusCode::NOT_FOUND, format!("bucket not found: {err}")).into_response();
+            }
+            _ => {
+                tracing::error!("unable to read bucket: {err}");
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "internal server error".to_string(),
+                )
+                    .into_response();
+            }
+        },
+    };
     Json(response).into_response()
 }
 
 /// Return the current DATA usage for the account. Query metadata in the current state of the account
 pub async fn get_total_usage(api_token: ApiToken, mut db_conn: DbConn) -> impl IntoResponse {
     let account_id = api_token.subject;
-    let response =
-        match db::read_total_data_usage(&account_id, &mut db_conn)
-            .await
-        {
-            Ok(usage) => responses::GetUsage { size: usage },
-            Err(err) => match err {
-                sqlx::Error::RowNotFound => {
-                    return (StatusCode::NOT_FOUND, format!("bucket not found: {err}"))
-                        .into_response();
-                }
-                _ => {
-                    tracing::error!("unable to read bucket: {err}");
-                    return (
-                        StatusCode::INTERNAL_SERVER_ERROR,
-                        "internal server error".to_string(),
-                    )
-                        .into_response();
-                }
-            },
-        };
+    let response = match db::read_total_data_usage(&account_id, &mut db_conn).await {
+        Ok(usage) => responses::GetUsage { size: usage },
+        Err(err) => match err {
+            sqlx::Error::RowNotFound => {
+                return (StatusCode::NOT_FOUND, format!("bucket not found: {err}")).into_response();
+            }
+            _ => {
+                tracing::error!("unable to read bucket: {err}");
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "internal server error".to_string(),
+                )
+                    .into_response();
+            }
+        },
+    };
     Json(response).into_response()
 }
 

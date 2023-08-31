@@ -37,7 +37,7 @@ where
 /// If the number of bytes is exactly between two 100 MiB boundaries, round up
 pub fn round_to_nearest_100_mib(bytes: u64) -> u64 {
     const ONE_HUNDRED_MIB: u64 = 100 * 1024 * 1024; // 100 * 1 MiB in bytes
-    
+
     let remainder = bytes % ONE_HUNDRED_MIB;
     let quotient = bytes / ONE_HUNDRED_MIB;
 
