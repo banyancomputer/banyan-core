@@ -279,6 +279,12 @@ impl StreamingCarAnalyzer {
                         },
                     };
 
+                    // We would need to pass this through our state if we want to do streaming
+                    // parsing on the block contents, but since we don't we can use the current
+                    // stream offset as a proxy for "just after the block length" we can avoid
+                    // storing it in state.
+                    let length_varint_len = self.stream_offset - block_start;
+
                     // 64-bytes is the longest reasonable CID we're going to care about it. We're
                     // going to wait until we have that much then try and decode the CID from
                     // there. The edge case here is if the total block length (CID included) is
@@ -290,25 +296,21 @@ impl StreamingCarAnalyzer {
                     }
 
                     let cid = Cid::read_bytes(&self.buffer[..minimum_cid_blocks]).unwrap();
+                    let cid_length = cid.encoded_len() as u64;
 
                     // This might be the end of all data, we'll check once we reach the block_start
                     // offset
                     self.state = CarState::Block {
-                        block_start: self.stream_offset + blk_len,
+                        block_start: block_start + length_varint_len + blk_len,
                         data_end: *data_end,
                         index_start: *index_start,
                         block_length: None,
                     };
 
-                    // We would need to pass this through our state if we want to do streaming
-                    // parsing on the block contents, but since we don't we can use the current
-                    // stream offset as a proxy for "just after the block length".
-                    let header_length = self.stream_offset - block_start;
-
                     return Ok(Some(BlockMeta {
                         cid,
-                        offset: block_start,
-                        length: header_length + blk_len,
+                        offset: block_start + length_varint_len + cid_length,
+                        length: blk_len - cid_length,
                     }));
                 }
                 CarState::Indexes { index_start } => {
@@ -563,8 +565,8 @@ mod tests {
 
         let next_meta = Some(BlockMeta {
             cid: block_cid,
-            offset: 171,
-            length: inner_block_size + length_bytes.len() as u64,
+            offset: 208,
+            length: inner_block_size - block_cid.encoded_len() as u64,
         });
         println!("{next_meta:?}");
         assert_eq!(sca.next().await.expect("still valid"), next_meta);
