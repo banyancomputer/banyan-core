@@ -11,7 +11,7 @@ import {
 
 interface TombInterface {
     tomb: TombWasm | null;
-    buckets: Bucket[];
+    buckets: WasmBucket[];
     mounts: Map<string, WasmMount>;
     usedStorage: number;
     usageLimit: number;
@@ -48,7 +48,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     // The active user's keystore
     const { keystoreInitialized, getEncryptionKey, getApiKey } = useKeystore();
     const [tomb, setTomb] = useState<TombWasm | null>(null);
-    const [buckets, setBuckets] = useState<Bucket[]>([]);
+    const [buckets, setBuckets] = useState<WasmBucket[]>([]);
     const [mounts, setMounts] = useState<Map<string, WasmMount>>(new Map());
     const [trash, setTrash] = useState<Bucket>(new MockBucket());
     const [usedStorage, setUsedStorage] = useState<number>(0);
@@ -86,6 +86,8 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
                     console.error(err);
                     return [];
                 });
+            console.log('buckets', buckets);
+
             setBuckets(buckets);
         })
         setAreBucketsLoading(false);
@@ -94,7 +96,16 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     const createBucket = async (name: string, storageClass: string, bucketType: string) => {
         await mutex(async tomb => {
             let key = await getEncryptionKey();
-            await tomb!.createBucket(name, storageClass, bucketType, key.privateKey);
+            console.log('creating bucket', name, storageClass, bucketType);
+            let wasm_bucket = await tomb.createBucket(name, storageClass, bucketType, key.publicKey);
+            console.log('wasm_bucket', wasm_bucket.id());
+            console.log('wasm_bucket', wasm_bucket.name());
+            console.log('mounting bucket');
+            let mount = await tomb.mount(wasm_bucket.id(), key);
+            console.log('mount', mount);
+            setBuckets([...buckets, wasm_bucket]);
+            let new_mounts = mounts.set(wasm_bucket.id(), mount);
+            setMounts(new_mounts);
         })
     };
 

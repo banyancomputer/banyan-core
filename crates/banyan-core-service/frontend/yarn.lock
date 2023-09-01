@@ -4910,10 +4910,10 @@ toggle-selection@^1.0.6:
   resolved "https://registry.yarnpkg.com/toggle-selection/-/toggle-selection-1.0.6.tgz#6e45b1263f2017fa0acc7d89d78b15b8bf77da32"
   integrity sha512-BiZS+C1OS8g/q2RRbJmy59xpyghNBqrr6k5L/uKBGRsTfxmu3ffiRnd8mlGPUVayg8pvfi5urfnu8TU7DVOkLQ==
 
-tomb-wasm-experimental@3.0.0:
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/tomb-wasm-experimental/-/tomb-wasm-experimental-3.0.0.tgz#2e8b550078d6c0cfc15564a6ea6bf4cc1532a73c"
-  integrity sha512-8/onFNLBlvjVH9B/cYveTQNoiFD8TAwL0Q2BI6uJ/pnizZThgG3ZAEju4QUurKLJKvSuUfB3BJqCbIPbY+MNMg==
+tomb-wasm-experimental@4.1.0:
+  version "4.1.0"
+  resolved "https://registry.yarnpkg.com/tomb-wasm-experimental/-/tomb-wasm-experimental-4.1.0.tgz#2d72b6ce3ac50da1777629534ba612d7b2ecee0f"
+  integrity sha512-jg66AbrTqxHOmLN0iiMupsz2XqyYyLTUZWW/O+quS57cQcao8z7s36qmzaTSdb+3khlFnvk/FYjkyKMkz3R6xg==
 
 toposort-class@^1.0.1:
   version "1.0.1"
