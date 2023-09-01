@@ -185,22 +185,40 @@ impl StreamingCarAnalyzer {
                     index_start,
                     ref mut header_length,
                 } => {
-                    let header_length = match header_length {
-                        Some(hl) => *hl,
-                        None => match try_read_varint_u64(&mut self.buffer)? {
-                            Some((hl, byte_len)) => {
-                                *header_length = Some(hl);
-                                self.stream_offset += byte_len;
+                    let data_start = *data_start;
 
-                                hl
+                    // Skip any padding or whitespace until the beginning of our header
+                    if self.stream_offset < data_start {
+                        let skippable_bytes = data_start - self.stream_offset;
+                        let available_bytes = self.buffer.len() as u64;
+
+                        let skipped_byte_count = available_bytes.min(skippable_bytes);
+                        let _ = self.buffer.split_to(skipped_byte_count as usize);
+                        self.stream_offset += skipped_byte_count;
+
+                        if self.stream_offset != data_start {
+                            return Ok(None);
+                        }
+                    }
+
+                    let hdr_len = match header_length {
+                        Some(l) => *l,
+                        None => match try_read_varint_u64(&self.buffer[..])? {
+                            Some((length, bytes_read)) => {
+                                *header_length = Some(length);
+
+                                self.stream_offset += bytes_read;
+                                let _ = self.buffer.split_to(bytes_read as usize);
+
+                                length
                             }
                             None => return Ok(None),
                         },
                     };
 
-                    if header_length >= CAR_HEADER_UPPER_LIMIT {
+                    if hdr_len >= CAR_HEADER_UPPER_LIMIT {
                         return Err(StreamingCarAnalyzerError::HeaderSegmentSizeExceeded(
-                            header_length,
+                            hdr_len,
                         ));
                     }
 
@@ -208,9 +226,8 @@ impl StreamingCarAnalyzer {
                     // todo: parse out expected roots and record them... can skip for now
 
                     // into the blocks!
-                    // note: we're implicitly skipping the padding here
                     self.state = CarState::Block {
-                        block_start: *data_start,
+                        block_start: self.stream_offset + hdr_len,
                         data_end: *data_end,
                         index_start: *index_start,
 
@@ -225,42 +242,38 @@ impl StreamingCarAnalyzer {
                 } => {
                     let block_start = *block_start;
 
-                    // Skip to the beginning of the block if we're not already at the beginning of
-                    // one
+                    // Skip any left over data and padding until we reach our goal
                     if self.stream_offset < block_start {
-                        let skippable_bytes = block_start - self.stream_offset;
-                        let available_bytes = self.buffer.len() as u64;
+                        let skippable_bytes = block_start - self.stream_offset; // 171 - 72 = 99
+                        let available_bytes = self.buffer.len() as u64; //
 
                         let skipped_byte_count = available_bytes.min(skippable_bytes);
                         let _ = self.buffer.split_to(skipped_byte_count as usize);
                         self.stream_offset += skipped_byte_count;
 
-                        // We didn't quite have enough data to make it to the beginning of the
-                        // block
                         if self.stream_offset != block_start {
                             return Ok(None);
                         }
                     }
 
-                    // It would be more optimal to have a streaming state we could move into once
-                    // we've extracted the CID that just skips over the data until we get to the
-                    // end of this. Doing this here results in unecessary amounts of copying that
-                    // could be cleaned up later.
                     if block_start == *data_end {
                         self.state = CarState::Indexes {
                             index_start: *index_start,
                         };
-                        return Ok(None);
+
+                        continue;
                     }
 
-                    let block_length = match block_length {
+                    let blk_len = match block_length {
                         Some(bl) => *bl,
-                        None => match try_read_varint_u64(&mut self.buffer)? {
-                            Some((bl, byte_len)) => {
-                                *block_length = Some(bl);
-                                self.stream_offset += byte_len;
+                        None => match try_read_varint_u64(&self.buffer[..])? {
+                            Some((length, bytes_read)) => {
+                                *block_length = Some(length);
 
-                                bl
+                                self.stream_offset += bytes_read;
+                                let _ = self.buffer.split_to(bytes_read as usize);
+
+                                length
                             }
                             None => return Ok(None),
                         },
@@ -271,27 +284,31 @@ impl StreamingCarAnalyzer {
                     // there. The edge case here is if the total block length (CID included) is
                     // less than 64-bytes we'll just wait for the entire block. The CID has to be
                     // included and we'll decode it from there just as neatly.
-                    let minimum_cid_blocks = block_length.min(64) as usize;
+                    let minimum_cid_blocks = blk_len.min(64) as usize;
                     if self.buffer.len() < minimum_cid_blocks {
                         return Ok(None);
                     }
 
                     let cid = Cid::read_bytes(&self.buffer[..minimum_cid_blocks]).unwrap();
-                    self.stream_offset += cid.encoded_len() as u64;
 
                     // This might be the end of all data, we'll check once we reach the block_start
                     // offset
                     self.state = CarState::Block {
-                        block_start: block_start + block_length,
+                        block_start: self.stream_offset + blk_len,
                         data_end: *data_end,
                         index_start: *index_start,
                         block_length: None,
                     };
 
+                    // We would need to pass this through our state if we want to do streaming
+                    // parsing on the block contents, but since we don't we can use the current
+                    // stream offset as a proxy for "just after the block length".
+                    let header_length = self.stream_offset - block_start;
+
                     return Ok(Some(BlockMeta {
                         cid,
                         offset: block_start,
-                        length: block_length,
+                        length: header_length + blk_len,
                     }));
                 }
                 CarState::Indexes { index_start } => {
@@ -360,9 +377,7 @@ impl IntoResponse for StreamingCarAnalyzerError {
 // bytes we care about.
 const U64_MAX_ENCODED_LENGTH: usize = 10;
 
-fn try_read_varint_u64(
-    buf: &mut BytesMut,
-) -> Result<Option<(u64, u64)>, StreamingCarAnalyzerError> {
+fn try_read_varint_u64(buf: &[u8]) -> Result<Option<(u64, u64)>, StreamingCarAnalyzerError> {
     let mut result: u64 = 0;
 
     // The length check doesn't make this loop very efficient but it should be sufficient for now
@@ -377,7 +392,6 @@ fn try_read_varint_u64(
         // The leftmost bit being cleared indicates we're done with the decoding
         if buf[i] & 0b1000_0000 == 0 {
             let encoded_length = i + 1;
-            let _ = buf.split_to(encoded_length);
             return Ok(Some((result, encoded_length as u64)));
         }
     }
@@ -428,6 +442,21 @@ mod tests {
         bytes.freeze()
     }
 
+    #[test]
+    fn test_varint_roundtrip() {
+        let reference_numbers: &[(u64, u64)] =
+            &[(0, 1), (100, 1), (1000, 2), (10000, 2), (100000000, 4)];
+        for (num, size) in reference_numbers.iter() {
+            let encoded_version = encode_varint_u64(*num).to_vec();
+            assert_eq!(
+                try_read_varint_u64(encoded_version.as_slice()).unwrap(),
+                Some((*num, *size))
+            );
+        }
+
+        assert_eq!(try_read_varint_u64(&[]).unwrap(), None);
+    }
+
     #[tokio::test]
     async fn test_streaming_lifecycle() {
         let mut sca = StreamingCarAnalyzer::new();
@@ -435,94 +464,134 @@ mod tests {
 
         // No data shouldn't transition
         assert!(sca.next().await.expect("still valid").is_none());
+        assert_eq!(sca.stream_offset, 0);
         assert_eq!(sca.state, CarState::Pragma);
+        assert_eq!(sca.buffer.len(), 0);
 
         // Some data but still not enough, shouldn't transition
         sca.add_chunk(&Bytes::from(&CARV2_PRAGMA[0..4])).unwrap();
         assert!(sca.next().await.expect("still valid").is_none()); // no blocks yet
+        assert_eq!(sca.stream_offset, 0);
         assert_eq!(sca.state, CarState::Pragma);
+        assert_eq!(sca.buffer.len(), 4);
 
         // The rest of the Pragma should do the trick
         sca.add_chunk(&Bytes::from(&CARV2_PRAGMA[4..])).unwrap();
         assert!(sca.next().await.expect("still valid").is_none()); // no blocks yet
+        assert_eq!(sca.stream_offset, 11);
         assert_eq!(sca.state, CarState::CarV2Header);
+        assert_eq!(sca.buffer.len(), 0);
 
-        let mut v2_header = encode_v2_header(0, 172, 93, 290);
+        // data size is missing the size of the CID...
+        let data_length = 1 + 99 + 1 + 36 + 57;
+        let mut v2_header = encode_v2_header(0, 71, data_length, 285);
 
         // Some data but still not enough, shouldn't transition
         sca.add_chunk(&v2_header.split_to(17)).unwrap();
         assert!(sca.next().await.expect("still valid").is_none()); // no blocks yet
+        assert_eq!(sca.stream_offset, 11);
         assert_eq!(sca.state, CarState::CarV2Header);
+        assert_eq!(sca.buffer.len(), 17);
 
         // The rest of the header
         sca.add_chunk(&v2_header).unwrap();
-        assert!(sca.next().await.expect("still valid").is_none()); // no blocks yet
-        assert_eq!(
-            sca.state,
-            CarState::CarV1Header {
-                data_start: 172,
-                data_end: 265,
-                index_start: 290,
-                header_length: None
-            }
-        );
+        assert_eq!(sca.buffer.len(), 40);
 
-        sca.add_chunk(&encode_varint_u64(100)).unwrap();
-        sca.add_chunk(&Bytes::from([0u8; 100].as_slice())).unwrap(); // we don't actually inspect the header data here yet
-        sca.add_chunk(&Bytes::from([0u8; 20].as_slice())).unwrap(); // and the padding we calculated into the hardcoded numbers
-        assert!(sca.next().await.expect("still valid").is_none()); // no blocks yet... but we're right on the edge of one!
-        assert_eq!(
-            sca.state,
-            CarState::Block {
-                block_start: 172,
-                data_end: 265,
-                index_start: 290,
-                block_length: None
-            }
-        );
-        assert_eq!(sca.stream_offset, 172); // It'll take us right up to next point we're looking for
+        let car_v1_header = CarState::CarV1Header {
+            data_start: 71,
+            data_end: 71 + data_length,
+            index_start: 285,
+            header_length: None,
+        };
+
+        assert!(sca.next().await.expect("still valid").is_none()); // no blocks yet
+        assert_eq!(sca.stream_offset, 51);
+        assert_eq!(sca.state, car_v1_header); // this is taking one too many bytes...
+        assert_eq!(sca.buffer.len(), 0);
+
+        // We should automatically consume all of the padding and take us up to our first byte in
+        // the car v1 header, which should also match the data_start value
+        sca.add_chunk(&Bytes::from([0u8; 20].as_slice())).unwrap();
+        assert_eq!(sca.buffer.len(), 20);
+
+        assert!(sca.next().await.expect("still valid").is_none());
+        assert_eq!(sca.stream_offset, 71);
+        assert_eq!(sca.state, car_v1_header);
+        assert_eq!(sca.buffer.len(), 0);
+
+        // We're next going to advance our state until we can read the length of the header, we
+        // don't care about the contents of the header so we're going to immediately start looking
+        // for the first block before we get past the header contents.
+        sca.add_chunk(&encode_varint_u64(99)).unwrap();
+        assert_eq!(sca.buffer.len(), 1); // 1 byte
+
+        // The parser will now know how long the header is, there is an intermediate state that is
+        // hidden due to the loop where we have the length in the CarV1Header state, but since
+        // we're not doing anything with that data we jump immediately to the first block...
+
+        assert!(sca.next().await.expect("still valid").is_none());
+        assert_eq!(sca.stream_offset, 72);
+
+        let first_block = CarState::Block {
+            block_start: 171,
+            data_end: 71 + data_length,
+            index_start: 71 + data_length + 20,
+            block_length: None,
+        };
+        assert_eq!(sca.state, first_block);
+        assert_eq!(sca.buffer.len(), 0);
+
+        // Add in all the bytes that make up our header and advance to the start of our first block
+        sca.add_chunk(&Bytes::from([0u8; 99].as_slice())).unwrap();
+        assert_eq!(sca.buffer.len(), 99);
+
+        assert!(sca.next().await.expect("still valid").is_none());
+        assert_eq!(sca.stream_offset, 171);
+        assert_eq!(sca.state, first_block);
+        assert_eq!(sca.buffer.len(), 0);
 
         let block_data = b"some internal blockity block data, this is real I promise";
         // we'll use the RAW codec for our data...
         let block_cid = Cid::new_v1(0x55, Code::Sha3_256.digest(block_data));
 
-        sca.add_chunk(&encode_varint_u64(
-            (block_data.len() + block_cid.encoded_len()) as u64,
-        ))
-        .unwrap();
+        let inner_block_size = (block_data.len() + block_cid.encoded_len()) as u64;
+        let length_bytes = encode_varint_u64(inner_block_size);
+
+        sca.add_chunk(&length_bytes).unwrap();
         sca.add_chunk(&Bytes::from(block_cid.to_bytes())).unwrap();
         sca.add_chunk(&Bytes::from(block_data.to_vec())).unwrap();
 
         let next_meta = Some(BlockMeta {
             cid: block_cid,
-            offset: 172,
-            length: 93,
+            offset: 171,
+            length: inner_block_size + length_bytes.len() as u64,
         });
+        println!("{next_meta:?}");
         assert_eq!(sca.next().await.expect("still valid"), next_meta);
         assert_eq!(
             sca.state,
             CarState::Block {
                 block_start: 265,
                 data_end: 265,
-                index_start: 290,
+                index_start: 285,
                 block_length: None
             }
         );
-        assert_eq!(sca.stream_offset, 209); // we've only actually read the Cid, the data is still
-                                            // in the buffer
+        assert_eq!(sca.stream_offset, 172); // we've read the length & CID but haven't advanced the stream
+                                            // offset yet
 
         sca.add_chunk(&Bytes::from([0u8; 10].as_slice())).unwrap(); // take us into the padding past the data but before the indexes
         assert!(sca.next().await.expect("still valid").is_none()); // we're at the end of the data, this should transition to indexes
-        assert_eq!(sca.state, CarState::Indexes { index_start: 290 });
-        assert_eq!(sca.stream_offset, 265); // we read right up to the start of the virtual end
+        assert_eq!(sca.state, CarState::Indexes { index_start: 285 });
+        assert_eq!(sca.stream_offset, 275); // we read right up to the start of the virtual end
                                             // block
 
         // take us past the index so we can complete
-        sca.add_chunk(&Bytes::from([0u8; 30].as_slice())).unwrap();
+        sca.add_chunk(&Bytes::from([0u8; 50].as_slice())).unwrap();
         assert!(sca.next().await.expect("still valid").is_none());
         assert_eq!(sca.state, CarState::Complete);
 
         let report = sca.report().unwrap();
-        assert_eq!(report.total_size, 342);
+        assert_eq!(report.total_size, 325);
     }
 }
