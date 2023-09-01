@@ -387,7 +387,7 @@ mod tests {
     use cid::multihash::{Code, MultihashDigest};
     use cid::Cid;
 
-    fn encode_v2_header(chars: , data_offset: u64, data_size: u64, index_offset: u64) -> Bytes {
+    fn encode_v2_header(chars: u128, data_offset: u64, data_size: u64, index_offset: u64) -> Bytes {
         let mut buffer = BytesMut::new();
 
         buffer.extend_from_slice(&chars.to_le_bytes());
