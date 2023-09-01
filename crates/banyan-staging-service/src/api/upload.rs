@@ -163,7 +163,7 @@ async fn handle_successful_upload(
                             state = 'complete',
                             final_size = $1,
                             integrity_hash  = $2,
-                        WHERE id = $4;
+                        WHERE id = $3;
                 "#,
             )
             .bind(car_report.total_size() as i64)
@@ -184,7 +184,7 @@ async fn handle_successful_upload(
                             state = 'complete',
                             final_size = $1,
                             integrity_hash  = $2,
-                        WHERE id = $4;
+                        WHERE id = $3;
                 "#,
             )
             .bind(car_report.total_size() as i64)
