@@ -19,10 +19,12 @@ interface TombInterface {
     isTrashLoading: boolean;
     areBucketsLoading: boolean;
     mountBucket: (id: string) => Promise<void>;
+    download: (bucketId: string, path: string[]) => Promise<ArrayBuffer | undefined>;
+    shareWith: (bucketId: string, key: string[]) => Promise<void>
     takeColdSnapshot: (id: string) => Promise<void>;
     getBuckets: () => Promise<void>;
     createBucket: (name: string, storageClass: string, bucketType: string) => Promise<void>;
-    createDirectory: (id: string, name: string) => Promise<void>;
+    createDirectory: (bucketId: string, path: string[]) => Promise<void>;
     uploadFile: (id: string, path: string, file: any) => Promise<void>;
     renameFile: (id: string, path: string, newPath: string) => Promise<void>;
     getTrashBucket: () => Promise<void>;
@@ -96,6 +98,10 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         })
     };
 
+    const download = async (bucketId: string, path: string[]) => await mounts.get(bucketId)?.readBytes(path);
+
+    const shareWith = async (bucketId: string, key: string[]) => await mounts.get(bucketId)?.shareWith('');
+
     const getBucketKeys = async (id: string) => await mutex(async tomb => await tomb!.listBucketKeys(id));
 
     const deleteBucket = async (id: string) => await tomb!.deleteBucket(id);
@@ -120,8 +126,8 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         // await tomb!.purgeSnapshot(id);
     };
 
-    const createDirectory = async (id: string, name: string) => {
-        // await tomb!.createDirectory(id, `/${name}`);
+    const createDirectory = async (bucketId: string, path: string[]) => {
+        await mounts.get(bucketId)?.mkdir(path);
     };
 
     const uploadFile = async (id: string, path: string, file: any) => {
@@ -132,7 +138,9 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         // await tomb!.rename(id, path, newPath);
     };
 
-    const takeColdSnapshot = async () => { }
+    const takeColdSnapshot = async (id: string) => {
+        mounts.get(id)?.snapshot();
+    }
 
     /** TODO: implement after adding to tomb-wasm */
     const getTrashBucket: () => Promise<void> = async () => {
@@ -168,8 +176,10 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
             (async () => {
                 try {
                     await getBuckets();
-                    const storage = await getUsedStorage();
-                    setUsedStorage(storage);
+                    const usedStorage = await getUsedStorage();
+                    const usageLimit = await getUsageLimit();
+                    setUsedStorage(usedStorage);
+                    setUsageLimit(usageLimit);
                 } catch (error: any) { };
             })();
         };
@@ -182,7 +192,8 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
                 getBuckets, getBucketShapshots, mountBucket, createBucket,
                 getTrashBucket, takeColdSnapshot, getUsedStorage, createDirectory,
                 uploadFile, renameFile, getBucketKeys, purgeSnapshot,
-                removeBucketAccess, approveBucketAccess, deleteBucket, getUsageLimit
+                removeBucketAccess, approveBucketAccess, deleteBucket, getUsageLimit,
+                shareWith, download
             }}
         >
             {children}

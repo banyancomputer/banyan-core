@@ -7,7 +7,7 @@ import BaseLayout from '@layouts/BaseLayout';
 import { authOptions } from './api/auth/[...nextauth]';
 import { NextPageWithLayout } from '@/pages/page';
 import { useKeystore } from '@/contexts/keystore';
-import { AccountFactory, DeviceApiKeyFactory, EscrowedDeviceFactory } from '@/lib/db';
+import { AccountFactory, EscrowedDeviceFactory } from '@/lib/db';
 import { DeviceApiKey, EscrowedDevice } from '@/lib/interfaces';
 // import { ClientApi } from '@/lib/api/auth';
 export async function getServerSideProps(context: any) {
@@ -22,7 +22,6 @@ export async function getServerSideProps(context: any) {
         try {
             const providerId = session.providerId;
             const account_id = await AccountFactory.idFromProviderId(providerId);
-            // const deviceApiKeys = await DeviceApiKeyFactory.readAllByAccountId(account_id);
             const escrowedDevice = await EscrowedDeviceFactory.readByAccountId(account_id);
             return {
                 // Just return empty props for now, eventually we'll pass more data

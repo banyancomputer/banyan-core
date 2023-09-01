@@ -15,13 +15,10 @@ import { useModal } from '@/contexts/modals';
 import { Directory } from '@static/images/common';
 
 export const Navigation = () => {
-    /** TODO: replace by data from api. */
-    const MOCK_STORAGE_LIMIT = 2e+13;
-
     const searchParams = useSearchParams();
     const router = useRouter();
     const bucketId = searchParams.get('id');
-    const { buckets, trash, usedStorage } = useTomb();
+    const { buckets, trash, usedStorage, usageLimit } = useTomb();
     const [isBucketsVisible, setIsBucketsVisible] = useState(false);
     const [isStorageBlockVisible, setIsStorageBlockVisible] = useState(true);
     const { messages } = useIntl();
@@ -115,8 +112,12 @@ export const Navigation = () => {
                             <IoMdClose size="20px" />
                         </button>
                     </span>
-                    <span className="text-xs font-normal">{`${messages.youHaveUsed}`} <span className="uppercase">{convertFileSize(usedStorage)}</span> {`${messages.outOf}`} 20 TB.</span>
-                    <progress className="progress w-full" value={usedStorage} max={MOCK_STORAGE_LIMIT}></progress>
+                    <span className="text-xs font-normal">{` ${messages.youHaveUsed} `}
+                        <span className="uppercase">{convertFileSize(usedStorage)}</span>
+                        {` ${messages.outOf} `}
+                        <span className="uppercase">{convertFileSize(usageLimit)}</span>.
+                    </span>
+                    <progress className="progress w-full" value={usedStorage} max={usageLimit}></progress>
                 </div>
             }
             <div className="flex flex-col mt-6 pl-2 pt-3 pr-8 border-t-2 border-gray-200 text-gray-600">
