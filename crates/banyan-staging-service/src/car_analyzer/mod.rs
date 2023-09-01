@@ -17,7 +17,7 @@ const CARV2_PRAGMA: &[u8] = &[
 pub struct BlockMeta {
     cid: Cid,
     offset: u64,
-    length: u128,
+    length: u64,
 }
 
 impl BlockMeta {
@@ -25,7 +25,7 @@ impl BlockMeta {
         &self.cid
     }
 
-    pub fn length(&self) -> u128 {
+    pub fn length(&self) -> u64 {
         self.length
     }
 
@@ -52,7 +52,7 @@ enum CarState {
         data_end: u64,
         index_start: u64,
 
-        block_length: Option<u128>,
+        block_length: Option<u64>,
     },
     Indexes {
         index_start: u64,
@@ -253,7 +253,7 @@ impl StreamingCarAnalyzer {
                     }
                     let block_length = match block_length {
                         Some(bl) => *bl,
-                        None => match try_read_varint_u128(&mut self.buffer)? {
+                        None => match try_read_varint_u64(&mut self.buffer)? {
                             Some((bl, byte_len)) => {
                                 *block_length = Some(bl);
                                 self.stream_offset += byte_len;
@@ -354,7 +354,6 @@ impl IntoResponse for StreamingCarAnalyzerError {
 // bit or ceil(64 / 7) + 64 = 74 bits. 74 bits pack into 10 bytes so that is the maximum number of
 // bytes we care about.
 const U64_MAX_ENCODED_LENGTH: usize = 10;
-const U128_MAX_ENCODED_LENGTH: usize = 20;
 
 fn try_read_varint_u64(
     buf: &mut BytesMut,
@@ -381,31 +380,6 @@ fn try_read_varint_u64(
     Ok(None)
 }
 
-fn try_read_varint_u128(
-    buf: &mut BytesMut,
-) -> Result<Option<(u128, u64)>, StreamingCarAnalyzerError> {
-    let mut result: u128 = 0;
-
-    // The length check doesn't make this loop very efficient but it should be sufficient for now
-    for i in 0..U128_MAX_ENCODED_LENGTH {
-        // We don't have enough data
-        if buf.len() <= i {
-            return Ok(None);
-        }
-
-        result |= u128::from(buf[i] & 0b0111_1111) << (i * 7);
-
-        // The leftmost bit being cleared indicates we're done with the decoding
-        if buf[i] & 0b1000_0000 == 0 {
-            let encoded_length = i + 1;
-            let _ = buf.split_to(encoded_length);
-            return Ok(Some((result, encoded_length as u64)));
-        }
-    }
-
-    Ok(None)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -413,7 +387,7 @@ mod tests {
     use cid::multihash::{Code, MultihashDigest};
     use cid::Cid;
 
-    fn encode_v2_header(chars: u128, data_offset: u64, data_size: u64, index_offset: u64) -> Bytes {
+    fn encode_v2_header(chars: , data_offset: u64, data_size: u64, index_offset: u64) -> Bytes {
         let mut buffer = BytesMut::new();
 
         buffer.extend_from_slice(&chars.to_le_bytes());
