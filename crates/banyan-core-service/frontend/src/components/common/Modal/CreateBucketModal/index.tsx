@@ -16,13 +16,13 @@ export const CreateBucketModal = () => {
         !!bucketType && !!storageClass && !!bucketName,
         [bucketName, storageClass, bucketName])
 
-    const bucketTypes = [
+    const storageClasses = [
         new Selectoption('Hot', 'hot'),
         new Selectoption('Warm', 'warm'),
         new Selectoption('Cold', 'cold'),
     ];
 
-    const storageClasses = [
+    const bucketTypes = [
         new Selectoption('Interactive', 'interactive'),
         new Selectoption('Backup', 'backup'),
     ];
