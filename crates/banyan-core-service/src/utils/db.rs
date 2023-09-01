@@ -25,17 +25,18 @@ pub async fn record_storage_grant(
         .fetch_one(&mut *db_conn.0)
         .await?;
 
-    sqlx::query_scalar!(r#"
+    sqlx::query!(r#"
             INSERT INTO
-                storage_hosts_metadata_storage_grants (storage_host_id, metadata_id, storage_grant_id)
-                VALUES ($1, $2, $3)
-                RETURNING id;"#,
+                storage_hosts_metadatas_storage_grants (storage_host_id, metadata_id, storage_grant_id)
+                VALUES ($1, $2, $3);"#,
             storage_host_id,
             metadata_id,
             storage_grant_id,
         )
-        .fetch_one(&mut *db_conn.0)
-        .await
+        .execute(&mut *db_conn.0)
+        .await?;
+
+    Ok(storage_grant_id)
 }
 
 /// Pull the bucket from the database by id and account_id and return it.
