@@ -20,6 +20,8 @@ const MAXIMUM_GRANT_AGE: u64 = 900;
 #[derive(Debug)]
 pub struct StorageGrant {
     platform_id: Uuid,
+    grant_id: Uuid,
+
     client_fingerprint: String,
 
     authorized_data_size: usize,
@@ -28,6 +30,10 @@ pub struct StorageGrant {
 impl StorageGrant {
     pub fn authorized_data_size(&self) -> usize {
         self.authorized_data_size
+    }
+
+    pub fn grant_id(&self) -> Uuid {
+        self.grant_id
     }
 
     pub fn platform_id(&self) -> Uuid {
