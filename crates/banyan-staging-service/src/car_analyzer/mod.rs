@@ -122,7 +122,6 @@ impl StreamingCarAnalyzer {
         }
     }
 
-
     pub async fn next(&mut self) -> Result<Option<BlockMeta>, StreamingCarAnalyzerError> {
         loop {
             match &mut self.state {
@@ -204,19 +203,17 @@ impl StreamingCarAnalyzer {
 
                     let hdr_len = match header_length {
                         Some(l) => *l,
-                        None => {
-                            match try_read_varint_u64(&self.buffer[..])? {
-                                Some((length, bytes_read)) => {
-                                    *header_length = Some(length);
+                        None => match try_read_varint_u64(&self.buffer[..])? {
+                            Some((length, bytes_read)) => {
+                                *header_length = Some(length);
 
-                                    self.stream_offset += bytes_read;
-                                    let _ = self.buffer.split_to(bytes_read as usize);
+                                self.stream_offset += bytes_read;
+                                let _ = self.buffer.split_to(bytes_read as usize);
 
-                                    length
-                                }
-                                None => return Ok(None),
+                                length
                             }
-                        }
+                            None => return Ok(None),
+                        },
                     };
 
                     if hdr_len >= CAR_HEADER_UPPER_LIMIT {
@@ -248,7 +245,7 @@ impl StreamingCarAnalyzer {
                     // Skip any left over data and padding until we reach our goal
                     if self.stream_offset < block_start {
                         let skippable_bytes = block_start - self.stream_offset; // 171 - 72 = 99
-                        let available_bytes = self.buffer.len() as u64; // 
+                        let available_bytes = self.buffer.len() as u64; //
 
                         let skipped_byte_count = available_bytes.min(skippable_bytes);
                         let _ = self.buffer.split_to(skipped_byte_count as usize);
@@ -269,19 +266,17 @@ impl StreamingCarAnalyzer {
 
                     let blk_len = match block_length {
                         Some(bl) => *bl,
-                        None => {
-                            match try_read_varint_u64(&self.buffer[..])? {
-                                Some((length, bytes_read)) => {
-                                    *block_length = Some(length);
+                        None => match try_read_varint_u64(&self.buffer[..])? {
+                            Some((length, bytes_read)) => {
+                                *block_length = Some(length);
 
-                                    self.stream_offset += bytes_read;
-                                    let _ = self.buffer.split_to(bytes_read as usize);
+                                self.stream_offset += bytes_read;
+                                let _ = self.buffer.split_to(bytes_read as usize);
 
-                                    length
-                                }
-                                None => return Ok(None),
+                                length
                             }
-                        }
+                            None => return Ok(None),
+                        },
                     };
 
                     // 64-bytes is the longest reasonable CID we're going to care about it. We're
@@ -382,9 +377,7 @@ impl IntoResponse for StreamingCarAnalyzerError {
 // bytes we care about.
 const U64_MAX_ENCODED_LENGTH: usize = 10;
 
-fn try_read_varint_u64(
-    buf: &[u8],
-) -> Result<Option<(u64, u64)>, StreamingCarAnalyzerError> {
+fn try_read_varint_u64(buf: &[u8]) -> Result<Option<(u64, u64)>, StreamingCarAnalyzerError> {
     let mut result: u64 = 0;
 
     // The length check doesn't make this loop very efficient but it should be sufficient for now
@@ -451,10 +444,14 @@ mod tests {
 
     #[test]
     fn test_varint_roundtrip() {
-        let reference_numbers: &[(u64, u64)] = &[(0, 1), (100, 1), (1000, 2), (10000, 2), (100000000, 4)];
+        let reference_numbers: &[(u64, u64)] =
+            &[(0, 1), (100, 1), (1000, 2), (10000, 2), (100000000, 4)];
         for (num, size) in reference_numbers.iter() {
             let encoded_version = encode_varint_u64(*num).to_vec();
-            assert_eq!(try_read_varint_u64(encoded_version.as_slice()).unwrap(), Some((*num, *size)));
+            assert_eq!(
+                try_read_varint_u64(encoded_version.as_slice()).unwrap(),
+                Some((*num, *size))
+            );
         }
 
         assert_eq!(try_read_varint_u64(&[]).unwrap(), None);
@@ -504,7 +501,7 @@ mod tests {
             data_start: 71,
             data_end: 71 + data_length,
             index_start: 285,
-            header_length: None
+            header_length: None,
         };
 
         assert!(sca.next().await.expect("still valid").is_none()); // no blocks yet
@@ -539,7 +536,7 @@ mod tests {
             block_start: 171,
             data_end: 71 + data_length,
             index_start: 71 + data_length + 20,
-            block_length: None
+            block_length: None,
         };
         assert_eq!(sca.state, first_block);
         assert_eq!(sca.buffer.len(), 0);
