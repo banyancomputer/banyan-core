@@ -70,7 +70,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         }
     };
 
-    // Load the tomb-wasm module
+    /** Returns bucket abstraction.  */
     const mountBucket = async (id: string) => {
         await mutex(async tomb => {
             let key = await getEncryptionKey();
@@ -78,6 +78,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         });
     };
 
+    /** Returns list of buckets. */
     const getBuckets = async () => {
         setAreBucketsLoading(true);
         await mutex(async tomb => {
@@ -91,6 +92,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         setAreBucketsLoading(false);
     };
 
+    /** Creates new bucket with recieved parameters of type and storag class. */
     const createBucket = async (name: string, storageClass: string, bucketType: string) => {
         await mutex(async tomb => {
             let key = await getEncryptionKey();
@@ -98,34 +100,41 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         })
     };
 
+    /** Retuns array buffer of selected file. */
     const download = async (bucketId: string, path: string[]) => await mounts.get(bucketId)?.readBytes(path);
 
-    const shareWith = async (bucketId: string, key: string[]) => await mounts.get(bucketId)?.shareWith('');
+    const shareWith = async (bucketId: string, key: string) => await mounts.get(bucketId)?.shareWith(key);
 
     const getBucketKeys = async (id: string) => await mutex(async tomb => await tomb!.listBucketKeys(id));
 
     const deleteBucket = async (id: string) => await tomb!.deleteBucket(id);
 
+    /** Returns list of snapshots for selected bucket */
     const getBucketShapshots = async (id: string) => await tomb!.listBucketSnapshots(id);
 
+    /** Approves access key for bucket */
     const approveBucketAccess = async (id: string) => {
         /** TODO:  connect approveBucketAccess method when in will be implemented.  */
         // await tomb!.approveBucketAccess(id);
     };
 
+    /** Deletes access key for bucket */
     const removeBucketAccess = async (id: string) => {
         /** TODO:  connect removeBucketAccess method when in will be implemented.  */
         // return await tomb!.approveBucketAccess(id);
     };
 
+    /** Returns used storage amount in bytes */
     const getUsedStorage = async () => +(await tomb!.getUsage()).toString();
 
+    /** Returns storage limit in bytes */
     const getUsageLimit = async () => +(await tomb!.getUsageLimit()).toString();
 
     const purgeSnapshot = async (id: string) => {
         // await tomb!.purgeSnapshot(id);
     };
 
+    /** Creates directory inside selected bucket */
     const createDirectory = async (bucketId: string, path: string[]) => {
         await mounts.get(bucketId)?.mkdir(path);
     };
@@ -138,6 +147,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         // await tomb!.rename(id, path, newPath);
     };
 
+    /** Creates bucket snapshot */
     const takeColdSnapshot = async (id: string) => {
         mounts.get(id)?.snapshot();
     }
