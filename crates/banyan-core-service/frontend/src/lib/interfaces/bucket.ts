@@ -19,7 +19,8 @@ export interface BucketKey {
 export interface Bucket {
     id: string;
     name: string;
-    bucket_type: string;
+    type: string;
+    storage_class: string;
     files: BucketFile[];
     keys: BucketKey[];
 };
@@ -39,7 +40,8 @@ export interface Metadata {
 export class MockBucket {
     public id = '';
     public name = '';
-    public bucket_type = '';
+    public type = '';
+    public storage_class = '';
     public files = [];
     public keys = [];
 };

@@ -22,13 +22,13 @@ export class FileAction {
 
 export const FileActions: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bucket, file }) => {
     const { messages } = useIntl();
-    const { } = useTomb();
+    const { download } = useTomb();
     const { openModal } = useModal();
 
-    const download = async () => {
+    const downloadFile = async () => {
         try {
             await ToastNotifications.promise(`${messages.downloading}...`, `${messages.fileWasDownloaded}`, <MdDone size="20px" />,
-                () => new Promise(resolve => setTimeout(resolve, 3000))
+                download(bucket.id, [`/${file.name}`])
             );
         } catch (error: any) { }
     };
@@ -63,7 +63,7 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bu
     };
 
     const acrions = [
-        new FileAction(`${messages.download}`, <FiDownload size="18px" />, download),
+        new FileAction(`${messages.download}`, <FiDownload size="18px" />, downloadFile),
         new FileAction(`${messages.copyLink}`, <AiOutlineLink size="18px" />, copyLink),
         new FileAction(`${messages.moveTo}`, <PiArrowsLeftRight size="18px" />, moveTo),
         new FileAction(`${messages.makeCopy}`, <PiCopySimple size="18px" />, makeCopy),

@@ -3,6 +3,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useIntl } from 'react-intl';
 import { IoMdAdd } from 'react-icons/io';
+import Image from 'next/image';
 
 import { NextPageWithLayout } from '../page';
 import { useTomb } from '@/contexts/tomb';
@@ -12,6 +13,8 @@ import { BucketTable } from '@/components/Buckets/BucketTable';
 import { Fallback } from '@/components/common/Fallback';
 
 import getServerSideProps from '@/utils/session';
+
+import emptyIcon from '@static/images/common/emptyIcon.png';
 
 export { getServerSideProps };
 
@@ -43,8 +46,13 @@ const Bucket: NextPageWithLayout = () => {
                 </label>
             </div>
             <Fallback shouldRender={!areBucketsLoading}>
-                {selectedBucket &&
+                {selectedBucket && selectedBucket.files.length ?
                     <BucketTable bucket={selectedBucket} />
+                    :
+                    <div className="h-full flex flex-col items-center justify-center saturate-0">
+                        <Image src={emptyIcon} alt="emptyIcon" />
+                        <p className="mt-4">{`${messages.bucketIsEmpty}`}</p>
+                    </div>
                 }
             </Fallback>
         </section>
