@@ -358,7 +358,7 @@ pub async fn push(
     // TODO: Check if the storage host is full. If so, abort with 503
 
     /* 7. Generate a JWT for the storage host and return it to the user */
-    let storage_grant_id = match db::record_storage_grant(&storage_host.id, &account_id, data_usage, &mut db_conn).await {
+    let storage_grant_id = match db::record_storage_grant(&storage_host.id, &account_id, &metadata_resource.id, data_usage, &mut db_conn).await {
         Ok(sgi) => sgi,
         Err(err) => {
             tracing::error!("unable record storage grant: {err}");
