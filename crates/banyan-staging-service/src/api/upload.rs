@@ -90,6 +90,8 @@ pub async fn handler(
         }
     };
 
+    println!("multipart_upload_id: {}", upload_id);
+    // println!("preparing to stream upload to: {}", tmp_file_path.display());
     match process_upload_stream(
         &db,
         upload_id,
@@ -108,6 +110,7 @@ pub async fn handler(
             Ok((StatusCode::NO_CONTENT, ()).into_response())
         }
         Err(err) => {
+            println!("upload failed -- error in car stream: {}", err);
             // todo: we don't care in the response if this fails, but if it does we will want to
             // clean it up in the future which should be handled by a background task
             let _ = store

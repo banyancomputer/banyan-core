@@ -100,7 +100,7 @@ where
                 let id = Uuid::parse_str(id_str).expect("already validated the format");
 
                 let finger_str: &str = matches
-                    .get(1)
+                    .get(2)
                     .expect("captures should be guaranteed")
                     .as_str();
 

@@ -17,7 +17,7 @@ const CARV2_PRAGMA: &[u8] = &[
 pub struct BlockMeta {
     cid: Cid,
     offset: u64,
-    length: u64,
+    length: u128,
 }
 
 impl BlockMeta {
@@ -25,7 +25,7 @@ impl BlockMeta {
         &self.cid
     }
 
-    pub fn length(&self) -> u64 {
+    pub fn length(&self) -> u128 {
         self.length
     }
 
@@ -52,7 +52,7 @@ enum CarState {
         data_end: u64,
         index_start: u64,
 
-        block_length: Option<u64>,
+        block_length: Option<u128>,
     },
     Indexes {
         index_start: u64,
@@ -191,7 +191,6 @@ impl StreamingCarAnalyzer {
                             Some((hl, byte_len)) => {
                                 *header_length = Some(hl);
                                 self.stream_offset += byte_len;
-
                                 hl
                             }
                             None => return Ok(None),
@@ -210,7 +209,7 @@ impl StreamingCarAnalyzer {
                     // into the blocks!
                     // note: we're implicitly skipping the padding here
                     self.state = CarState::Block {
-                        block_start: *data_start,
+                        block_start: *data_start + header_length,
                         data_end: *data_end,
                         index_start: *index_start,
 
@@ -252,14 +251,12 @@ impl StreamingCarAnalyzer {
                         };
                         return Ok(None);
                     }
-
                     let block_length = match block_length {
                         Some(bl) => *bl,
-                        None => match try_read_varint_u64(&mut self.buffer)? {
+                        None => match try_read_varint_u128(&mut self.buffer)? {
                             Some((bl, byte_len)) => {
                                 *block_length = Some(bl);
                                 self.stream_offset += byte_len;
-
                                 bl
                             }
                             None => return Ok(None),
@@ -275,14 +272,12 @@ impl StreamingCarAnalyzer {
                     if self.buffer.len() < minimum_cid_blocks {
                         return Ok(None);
                     }
-
                     let cid = Cid::read_bytes(&self.buffer[..minimum_cid_blocks]).unwrap();
                     self.stream_offset += cid.encoded_len() as u64;
-
                     // This might be the end of all data, we'll check once we reach the block_start
                     // offset
                     self.state = CarState::Block {
-                        block_start: block_start + block_length,
+                        block_start: block_start + block_length as u64,
                         data_end: *data_end,
                         index_start: *index_start,
                         block_length: None,
@@ -359,6 +354,7 @@ impl IntoResponse for StreamingCarAnalyzerError {
 // bit or ceil(64 / 7) + 64 = 74 bits. 74 bits pack into 10 bytes so that is the maximum number of
 // bytes we care about.
 const U64_MAX_ENCODED_LENGTH: usize = 10;
+const U128_MAX_ENCODED_LENGTH: usize = 20;
 
 fn try_read_varint_u64(
     buf: &mut BytesMut,
@@ -373,6 +369,31 @@ fn try_read_varint_u64(
         }
 
         result |= u64::from(buf[i] & 0b0111_1111) << (i * 7);
+
+        // The leftmost bit being cleared indicates we're done with the decoding
+        if buf[i] & 0b1000_0000 == 0 {
+            let encoded_length = i + 1;
+            let _ = buf.split_to(encoded_length);
+            return Ok(Some((result, encoded_length as u64)));
+        }
+    }
+
+    Ok(None)
+}
+
+fn try_read_varint_u128(
+    buf: &mut BytesMut,
+) -> Result<Option<(u128, u64)>, StreamingCarAnalyzerError> {
+    let mut result: u128 = 0;
+
+    // The length check doesn't make this loop very efficient but it should be sufficient for now
+    for i in 0..U128_MAX_ENCODED_LENGTH {
+        // We don't have enough data
+        if buf.len() <= i {
+            return Ok(None);
+        }
+
+        result |= u128::from(buf[i] & 0b0111_1111) << (i * 7);
 
         // The leftmost bit being cleared indicates we're done with the decoding
         if buf[i] & 0b1000_0000 == 0 {
