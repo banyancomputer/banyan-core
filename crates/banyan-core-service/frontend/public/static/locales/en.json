@@ -32,6 +32,8 @@
 	"dateDeleted": "Date deleted",
 	"owner": "Owner",
 	"trashIsEmpty": "Trash is empty",
+	"bucketIsEmpty": "Bucket is empty",
+	"noBuckets": "There are no buckets",
 	"trashIsFull": "Trash is full",
 	"clickToEmptyTrash": "Click to empty trash",
 	"emptyTrash": "Empty trash",

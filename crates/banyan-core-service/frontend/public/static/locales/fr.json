@@ -32,6 +32,8 @@
 	"dateDeleted": "Date de suppression",
 	"owner": "Propriétaire",
 	"trashIsEmpty": "La corbeille est vide",
+	"bucketIsEmpty": "Le seau est vide",
+	"noBuckets": "Il n'y a pas de seauxs",
 	"trashIsFull": "La corbeille est pleine",
 	"clickToEmptyTrash": "Cliquez pour vider la corbeille",
 	"emptyTrash": "Poubelle vide",

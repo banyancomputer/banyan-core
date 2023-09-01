@@ -12,7 +12,7 @@ import { useModal } from '@/contexts/modals';
 import { EmptyTrashModal } from '@/components/common/Modal/EmptyTrashModal';
 import { Fallback } from '@/components/common/Fallback';
 
-import emptyTrashIcon from '@static/images/trash/emptyTrashIcon.png';
+import emptyIcon from '@static/images/common/emptyIcon.png';
 
 import getServerSideProps from '@/utils/session';
 
@@ -62,7 +62,7 @@ const Trash: NextPageWithLayout = () => {
                     </>
                     :
                     <div className="h-full flex flex-col items-center justify-center saturate-0">
-                        <Image src={emptyTrashIcon} alt="EmptyTrashIcon" />
+                        <Image src={emptyIcon} alt="emptyIcon" />
                         <p className="mt-4">{`${messages.trashIsEmpty}`}</p>
                     </div>
                 }

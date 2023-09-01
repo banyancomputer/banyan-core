@@ -15,14 +15,11 @@ import { useModal } from '@/contexts/modals';
 import { Directory } from '@static/images/common';
 
 export const Navigation = () => {
-    /** TODO: replace by data from api. */
-    const MOCK_STORAGE_LIMIT = 2e+13;
-
     const searchParams = useSearchParams();
     const router = useRouter();
     const bucketId = searchParams.get('id');
-    const { buckets, trash, usedStorage } = useTomb();
-    const [isBucketsVisible, setIsBucketsVisible] = useState(true);
+    const { buckets, trash, usedStorage, usageLimit } = useTomb();
+    const [isBucketsVisible, setIsBucketsVisible] = useState(false);
     const [isStorageBlockVisible, setIsStorageBlockVisible] = useState(true);
     const { messages } = useIntl();
     const { openModal } = useModal()
@@ -38,7 +35,13 @@ export const Navigation = () => {
 
     const createBucket = () => {
         openModal(<CreateBucketModal />);
-    }
+    };
+
+    useEffect(() => {
+        if (isBucketsVisible) return;
+
+        buckets.length && setIsBucketsVisible(true);
+    }, [buckets])
 
     return (
         <nav className="flex flex-col w-navbar min-w-navbar bg-navigation-primary py-8 px-4 text-navigation-text border-r-2 border-r-navigation-border font-semibold">
@@ -51,12 +54,12 @@ export const Navigation = () => {
                     <span className="flex-grow">
                         {`${messages.myBuckets}`}
                     </span>
-                    <span className="px-2 py-1 bg-navigation-text text-navigation-secondary rounded-full text-xxs font-medium">
+                    <span className={`px-2 py-1 bg-navigation-text text-navigation-secondary rounded-full text-xxs font-medium ${!buckets.length && 'hidden'}`}>
                         {buckets.map(bucket => bucket.files.length).reduce((accumulator, currentValue) => accumulator + currentValue, 0)}
                     </span>
                     <span
                         onClick={toggleBucketsVisibility}
-                        className={`${isBucketsVisible && 'rotate-180'} `}
+                        className={`${isBucketsVisible && 'rotate-180'} ${!buckets.length && 'hidden'} `}
                     >
                         <FiChevronDown size="20px" stroke="#5D6B98" />
                     </span>
@@ -89,7 +92,7 @@ export const Navigation = () => {
                     <span className="flex-grow">
                         {`${messages.trash}`}
                     </span>
-                    <span className="px-2 py-1 bg-navigation-text text-navigation-secondary rounded-full text-xxs font-normal">
+                    <span className={`px-2 py-1 bg-navigation-text text-navigation-secondary rounded-full text-xxs font-normal ${!trash.files.length && 'hidden'}`}>
                         {trash.files.length}
                     </span>
                 </Link>
@@ -109,8 +112,12 @@ export const Navigation = () => {
                             <IoMdClose size="20px" />
                         </button>
                     </span>
-                    <span className="text-xs font-normal">{`${messages.youHaveUsed}`} <span className="uppercase">{convertFileSize(usedStorage)}</span> {`${messages.outOf}`} 20 TB.</span>
-                    <progress className="progress w-full" value={usedStorage} max={MOCK_STORAGE_LIMIT}></progress>
+                    <span className="text-xs font-normal">{` ${messages.youHaveUsed} `}
+                        <span className="uppercase">{convertFileSize(usedStorage)}</span>
+                        {` ${messages.outOf} `}
+                        <span className="uppercase">{convertFileSize(usageLimit)}</span>.
+                    </span>
+                    <progress className="progress w-full" value={usedStorage} max={usageLimit}></progress>
                 </div>
             }
             <div className="flex flex-col mt-6 pl-2 pt-3 pr-8 border-t-2 border-gray-200 text-gray-600">
