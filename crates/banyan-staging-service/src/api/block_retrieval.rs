@@ -117,10 +117,7 @@ pub async fn block_from_normalized_cid(
             .fetch_optional(conn)
             .await
             .map_err(sqlite::map_sqlx_error)
-            .map_err(|e| {
-                println!("Error: {:?}", e);
-                BlockRetrievalError::DbFailure(e)
-            })?;
+            .map_err(BlockRetrievalError::DbFailure)?;
             match maybe_block_id {
                 Some(id) => Ok(id),
                 None => Err(BlockRetrievalError::UnknownBlock),
