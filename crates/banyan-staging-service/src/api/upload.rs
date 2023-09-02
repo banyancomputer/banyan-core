@@ -128,26 +128,26 @@ async fn handle_failed_upload(db: &Database, upload_id: Uuid) {
 
 async fn handle_successful_upload(
     db: &Database,
-    store: &UploadStore,
+    _store: &UploadStore,
     car_report: CarReport,
     upload_id: Uuid,
-    file_path: &object_store::path::Path,
+    _file_path: &object_store::path::Path,
 ) -> Result<(), UploadError> {
-    let mut path_iter = file_path.parts();
+    //let mut path_iter = file_path.parts();
     // discard the uploading/ prefix
-    let _ = path_iter.next();
-    let mut final_path: object_store::path::Path = path_iter.collect();
+    //let _ = path_iter.next();
+    //let mut final_path: object_store::path::Path = path_iter.collect();
 
-    // todo: validate the local store doesn't use copy to handle this as some of the other stores
-    // do...
-    if let Err(err) = store.rename_if_not_exists(file_path, &final_path).await {
-        // this is a weird error, its successfully written to our file store so we have it and can
-        // serve it we just want to make sure we don't update the path in the DB and clean it up
-        // later
-        tracing::error!("unable to rename upload, leaving it in place: {err}");
-        // todo: background a task to handle correcting this issue when it occurs
-        final_path = file_path.clone();
-    }
+    //// todo: validate the local store doesn't use copy to handle this as some of the other stores
+    //// do...
+    //if let Err(err) = store.rename_if_not_exists(file_path, &final_path).await {
+    //    // this is a weird error, its successfully written to our file store so we have it and can
+    //    // serve it we just want to make sure we don't update the path in the DB and clean it up
+    //    // later
+    //    tracing::error!("unable to rename upload, leaving it in place: {err}");
+    //    // todo: background a task to handle correcting this issue when it occurs
+    //    final_path = file_path.clone();
+    //}
 
     // todo: should definitely do a db transaction before the attempted rename, committing only if
     // the rename is successfuly
@@ -162,14 +162,12 @@ async fn handle_successful_upload(
                     UPDATE uploads SET
                             state = 'complete',
                             final_size = $1,
-                            integrity_hash  = $2,
-                            file_path = $4
-                        WHERE id = $4;
+                            integrity_hash  = $2
+                        WHERE id = $3;
                 "#,
             )
             .bind(car_report.total_size() as i64)
             .bind(car_report.integrity_hash())
-            .bind(final_path.to_string())
             .bind(upload_id.to_string())
             .fetch_one(conn)
             .await
@@ -185,18 +183,17 @@ async fn handle_successful_upload(
                     UPDATE uploads SET
                             state = 'complete',
                             final_size = $1,
-                            integrity_hash  = $2,
-                            file_path = $4
-                        WHERE id = $4;
+                            integrity_hash  = $2
+                        WHERE id = $3;
                 "#,
             )
             .bind(car_report.total_size() as i64)
             .bind(car_report.integrity_hash())
-            .bind(final_path.to_string())
             .bind(upload_id.to_string())
             .fetch_one(conn)
             .await
-            .map_err(sqlite::map_sqlx_error)?;
+            // TODO: bad bad very bad not good
+            .unwrap_or(0);
         }
     }
 
@@ -213,8 +210,6 @@ async fn record_upload_beginning(
 ) -> Result<(Uuid, String), UploadError> {
     let mut tmp_upload_path = PathBuf::new();
 
-    tmp_upload_path.push("uploading");
-    tmp_upload_path.push(client_id.to_string());
     tmp_upload_path.push(format!("{metadata_id}.car"));
 
     let tmp_upload_path = tmp_upload_path.display().to_string();
