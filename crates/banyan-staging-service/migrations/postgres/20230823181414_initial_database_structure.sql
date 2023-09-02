@@ -17,11 +17,15 @@ CREATE TABLE storage_grants (
   id UUID DEFAULT uuid_generate_v4() NOT NULL PRIMARY KEY,
 
   client_id UUID NOT NULL REFERENCES clients(id),
+  grant_id UUID NOT NULL,
+
   allowed_storage INTEGER NOT NULL DEFAULT 0 CHECK (allowed_storage > 0),
 
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE UNIQUE INDEX idx_storage_grants_on_grant_id
+  ON storage_grants(grant_id);
 CREATE INDEX idx_storage_grants_on_created_at
   ON storage_grants(created_at);
 
