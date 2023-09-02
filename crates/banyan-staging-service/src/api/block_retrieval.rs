@@ -18,7 +18,6 @@ pub async fn handler(
     Path(cid): Path<String>,
 ) -> Result<Response, BlockRetrievalError> {
     let cid = cid::Cid::try_from(cid).map_err(BlockRetrievalError::InvalidCid)?;
-
     let normalized_cid = cid
         .to_string_of_base(cid::multibase::Base::Base64Url)
         .expect("parsed cid to unparse");
@@ -49,7 +48,7 @@ pub async fn handler(
     Ok((StatusCode::OK, StreamBody::new(handle.into_stream())).into_response())
 }
 
-#[derive(sqlx::FromRow)]
+#[derive(sqlx::FromRow, Debug)]
 pub struct BlockDetails {
     id: String,
     platform_id: String,
@@ -75,12 +74,12 @@ pub async fn block_from_normalized_cid(
                         clients.platform_id AS platform_id,
                         uploads.file_path AS file_path,
                         uploads_blocks.byte_offset AS byte_offset,
-                        blocks.data_length AS length,
+                        blocks.data_length AS length
                     FROM blocks
                         JOIN uploads_blocks ON blocks.id = uploads_blocks.block_id
                         JOIN uploads ON uploads_blocks.upload_id = uploads.id
                         JOIN clients ON uploads.client_id = clients.id
-                    WHERE b.cid = $1;
+                    WHERE blocks.cid = $1;
             "#,
             )
             .bind(normalized_cid)
@@ -106,20 +105,22 @@ pub async fn block_from_normalized_cid(
                         clients.platform_id AS platform_id,
                         uploads.file_path AS file_path,
                         uploads_blocks.byte_offset AS byte_offset,
-                        blocks.data_length AS length,
+                        blocks.data_length AS length
                     FROM blocks
                         JOIN uploads_blocks ON blocks.id = uploads_blocks.block_id
                         JOIN uploads ON uploads_blocks.upload_id = uploads.id
                         JOIN clients ON uploads.client_id = clients.id
-                    WHERE b.cid = $1;
+                    WHERE blocks.cid = $1;
             "#,
             )
             .bind(normalized_cid)
             .fetch_optional(conn)
             .await
             .map_err(sqlite::map_sqlx_error)
-            .map_err(BlockRetrievalError::DbFailure)?;
-
+            .map_err(|e| {
+                println!("Error: {:?}", e);
+                BlockRetrievalError::DbFailure(e)
+            })?;
             match maybe_block_id {
                 Some(id) => Ok(id),
                 None => Err(BlockRetrievalError::UnknownBlock),
