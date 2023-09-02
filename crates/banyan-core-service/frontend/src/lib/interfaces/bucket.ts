@@ -1,3 +1,5 @@
+import { WasmMount } from "tomb-wasm-experimental";
+
 export interface BucketFile {
     [key: string]: any;
     name: string;
@@ -19,8 +21,9 @@ export interface BucketKey {
 export interface Bucket {
     id: string;
     name: string;
-    type: string;
-    storage_class: string;
+    mount: WasmMount;
+    bucketType: string;
+    storageClass: string;
     files: BucketFile[];
     keys: BucketKey[];
 };
@@ -40,8 +43,9 @@ export interface Metadata {
 export class MockBucket {
     public id = '';
     public name = '';
-    public type = '';
-    public storage_class = '';
+    public bucketType = '';
+    public storageClass = '';
+    public mount = {} as WasmMount;
     public files = [];
     public keys = [];
 };
