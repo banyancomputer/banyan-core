@@ -13,17 +13,18 @@ pub async fn record_storage_grant(
 ) -> Result<String, sqlx::Error> {
     let authorized_usage = authorized_usage as i64;
 
-    let storage_grant_id: String = sqlx::query_scalar!(r#"
+    let storage_grant_id: String = sqlx::query_scalar!(
+        r#"
             INSERT INTO
                 storage_grants (storage_host_id, account_id, authorized_amount)
                 VALUES ($1, $2, $3)
                 RETURNING id;"#,
-            storage_host_id,
-            account_id,
-            authorized_usage,
-        )
-        .fetch_one(&mut *db_conn.0)
-        .await?;
+        storage_host_id,
+        account_id,
+        authorized_usage,
+    )
+    .fetch_one(&mut *db_conn.0)
+    .await?;
 
     sqlx::query!(r#"
             INSERT INTO

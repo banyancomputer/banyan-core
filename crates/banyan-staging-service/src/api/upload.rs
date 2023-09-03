@@ -303,8 +303,8 @@ async fn record_upload_failed(db: &Database, upload_id: &str) -> Result<(), Uplo
     Ok(())
 }
 
-use reqwest::{Client, Url};
 use reqwest::header::{HeaderMap, HeaderValue};
+use reqwest::{Client, Url};
 
 #[derive(Serialize)]
 struct MetadataSizeRequest {
@@ -316,7 +316,9 @@ async fn report_upload_to_platform(
     metadata_id: Uuid,
     report: &CarReport,
 ) -> Result<(), UploadError> {
-    let metadata_size = MetadataSizeRequest { data_size: report.total_size() };
+    let metadata_size = MetadataSizeRequest {
+        data_size: report.total_size(),
+    };
 
     let mut default_headers = HeaderMap::new();
     default_headers.insert("Content-Type", HeaderValue::from_static("application/json"));
@@ -341,6 +343,8 @@ async fn report_upload_to_platform(
 
     let bearer_token = auth_key.sign(claims).unwrap();
 
+    tracing::warn!("using bearer token: {bearer_token}");
+
     let request = client
         .post(report_endpoint)
         .json(&metadata_size)
@@ -349,7 +353,7 @@ async fn report_upload_to_platform(
     let response = request.send().await.unwrap();
 
     if response.status().is_success() {
-        return Ok(())
+        Ok(())
     } else {
         Err(UploadError::FailedReport(response.bytes().await.unwrap()))
     }

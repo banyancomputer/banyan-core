@@ -1,9 +1,9 @@
 use std::ops::Deref;
 use std::sync::Arc;
 
-use axum::{async_trait, Json, RequestPartsExt};
 use axum::extract::{FromRef, FromRequestParts, TypedHeader};
 use axum::http::request::Parts;
+use axum::{async_trait, Json, RequestPartsExt};
 use jwt_simple::prelude::*;
 
 #[derive(Clone)]

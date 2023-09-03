@@ -100,8 +100,9 @@ pub fn fingerprint_key(keys: &ES384KeyPair) -> String {
     hasher.update(compressed_point);
     let hashed_bytes = hasher.finalize();
 
-    hashed_bytes.iter().fold(String::new(), |mut output, byte| {
-        let _ = write!(output, "{byte:02x}");
-        output
-    })
+    hashed_bytes
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<Vec<_>>()
+        .join(":")
 }

@@ -33,9 +33,20 @@ pub async fn handler(
 
     let mut headers = axum::http::HeaderMap::new();
 
-    headers.insert(axum::http::header::CONTENT_TYPE, "application/octet-stream".parse().unwrap());
-    headers.insert(axum::http::header::CONTENT_DISPOSITION, "attachment; filename=\"{normalized_cid}.bin\"".parse().unwrap());
-    headers.insert(axum::http::header::CONTENT_LENGTH, byte_range.len().to_string().as_str().parse().unwrap());
+    headers.insert(
+        axum::http::header::CONTENT_TYPE,
+        "application/octet-stream".parse().unwrap(),
+    );
+    headers.insert(
+        axum::http::header::CONTENT_DISPOSITION,
+        "attachment; filename=\"{normalized_cid}.bin\""
+            .parse()
+            .unwrap(),
+    );
+    headers.insert(
+        axum::http::header::CONTENT_LENGTH,
+        byte_range.len().to_string().as_str().parse().unwrap(),
+    );
 
     // this isn't ideal as we have to load the entire block from memory, object_store does support
     // passing in the byte range using GetOptions to the get_opts method on the ObjectStore trait,
