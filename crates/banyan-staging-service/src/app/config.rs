@@ -41,11 +41,12 @@ impl Config {
     pub fn parse_cli_arguments() -> Result<Self, Error> {
         let mut args = Arguments::from_env();
 
-        if args.subcommand().unwrap() == Some("generate-auth".to_string()) {
-            let mut key_path: PathBuf = args
-                .opt_value_from_str("--path")?
-                .unwrap_or("./data/platform-auth.key".into());
+        let platform_auth_key_path: PathBuf = args
+            .opt_value_from_str("--auth-key")?
+            .unwrap_or("./data/platform-auth.key".into());
 
+        if args.contains("--generate-auth") {
+            let mut key_path = platform_auth_key_path.clone();
             tracing::info!("generating new platform key at {key_path:?}");
 
             let mut file = OpenOptions::new()
@@ -75,8 +76,6 @@ impl Config {
             file.write_all(fingerprint.as_bytes()).unwrap();
 
             tracing::info!("key generation complete");
-
-            std::process::exit(0);
         }
 
         let listen_addr = args
@@ -88,10 +87,6 @@ impl Config {
             .unwrap_or(Level::INFO);
 
         let db_url = args.opt_value_from_str("--db-url")?;
-
-        let platform_auth_key_path: PathBuf = args
-            .opt_value_from_str("--auth-key")?
-            .unwrap_or("./data/platform-auth.key".into());
 
         let platform_verification_key_path: PathBuf = args
             .opt_value_from_str("--verifier-key")?

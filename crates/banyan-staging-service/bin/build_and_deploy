@@ -10,7 +10,7 @@ DEPLOY_BASE_FOLDER="containers"
 
 SERVICE_NAME="${1:-banyan-staging-service}"
 SERVICE_PORT="${2:-3000}"
-SERVICE_ARGUMENTS="--port ${SERVICE_PORT}"
+SERVICE_ARGUMENTS="--listen [::1]:${SERVICE_PORT} --generate-auth --auth-key /data/platform-auth.key --verifier-key /data/platform-verifier.public --upload-dir /data/uploads"
 SERVICE_FEATURES="postgres"
 
 # Everything beyond this point isn't expected to be changed between services
