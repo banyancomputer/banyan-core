@@ -35,8 +35,8 @@ CREATE TABLE uploads (
   client_id UUID NOT NULL REFERENCES clients(id),
   metadata_id UUID NOT NULL,
 
-  reported_size INTEGER NOT NULL CHECK (reported_size >= 0) CONSTRAINT reported_size_positive,
-  final_size INTEGER CHECK (final_size IS NULL OR final_size >= 0) CONSTRAINT final_size_positive,
+  reported_size INTEGER NOT NULL CHECK (reported_size >= 0),
+  final_size INTEGER CHECK (final_size IS NULL OR final_size >= 0),
 
   file_path VARCHAR(128) NOT NULL,
   state VARCHAR(32) NOT NULL CHECK (state IN ('started', 'indexing', 'complete', 'failed')),
