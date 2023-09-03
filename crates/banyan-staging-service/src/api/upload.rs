@@ -104,7 +104,11 @@ pub async fn handler(
                 .shutdown()
                 .await
                 .map_err(UploadStreamError::WriteFailed)?;
-            handle_successful_upload(&db, &store, cr, upload_id, &store_path).await?;
+
+            handle_successful_upload(&db, &store, &cr, upload_id, &store_path).await?;
+            // todo: should be a background task
+            report_upload_to_platform(client.platform_id(), request.metadata_id, &cr).await?;
+
             Ok((StatusCode::NO_CONTENT, ()).into_response())
         }
         Err(err) => {
@@ -129,7 +133,7 @@ async fn handle_failed_upload(db: &Database, upload_id: Uuid) {
 async fn handle_successful_upload(
     db: &Database,
     _store: &UploadStore,
-    car_report: CarReport,
+    car_report: &CarReport,
     upload_id: Uuid,
     _file_path: &object_store::path::Path,
 ) -> Result<(), UploadError> {
@@ -192,12 +196,9 @@ async fn handle_successful_upload(
             .bind(upload_id.to_string())
             .fetch_one(conn)
             .await
-            // TODO: bad bad very bad not good
-            .unwrap_or(0);
+            .map_err(sqlite::map_sqlx_error)?;
         }
     }
-
-    // todo: should enqueue background task to notify the platform
 
     Ok(())
 }
@@ -300,6 +301,14 @@ async fn record_upload_failed(db: &Database, upload_id: Uuid) -> Result<(), Uplo
         }
     }
 
+    Ok(())
+}
+
+async fn report_upload_to_platform(_platform_id: Uuid, _metadata_id: Uuid, _report: &CarReport) -> Result<(), UploadError> {
+    // build up a token from the platform auth key
+    // build up a request to the platform
+    // create a reqwest client
+    // fire off the request to update the metadata status
     Ok(())
 }
 
