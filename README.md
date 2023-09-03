@@ -96,11 +96,12 @@ fake authentication provider is used by tests, it doesn't disable the normal
 authentication mechanism if you'd prefer to use that.
 
 In the next terminal bring up the staging service, from the root of the
-repository:
+repository. The address and port came from the assumption earlier that this is
+where the imported key's service lives.
 
 ````
 cd crates/banyan-staging-service
-cargo run -- --listen 127.0.0.1:3002
+cargo run -- --listen 127.0.0.1:3002 --db-url sqlite://./data/server.db
 ````
 
 Here we're listening on the address the script registered for the staging
