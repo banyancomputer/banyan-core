@@ -22,6 +22,7 @@ RUN cargo build --release
 COPY build.rs /usr/src/build/build.rs
 COPY migrations /usr/src/build/migrations
 COPY src /usr/src/build/src
+COPY .sqlx /usr/src/build/.sqlx
 
 # The container build environment doesn't have access to the entire git repo
 # only the immediate sources. We get around this by passing it into the build
