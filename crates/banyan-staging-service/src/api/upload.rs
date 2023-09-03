@@ -88,14 +88,14 @@ pub async fn handler(
     let (multipart_resume_id, mut writer) = match store.put_multipart(&store_path).await {
         Ok(mp) => mp,
         Err(err) => {
-            handle_failed_upload(&db, upload_id).await;
+            handle_failed_upload(&db, &upload_id).await;
             return Err(UploadError::StoreUnavailable(err));
         }
     };
 
     match process_upload_stream(
         &db,
-        upload_id,
+        &upload_id,
         reported_body_length as usize,
         car_field,
         &mut writer,
@@ -108,7 +108,7 @@ pub async fn handler(
                 .await
                 .map_err(UploadStreamError::WriteFailed)?;
 
-            handle_successful_upload(&db, &store, &cr, upload_id, &store_path).await?;
+            handle_successful_upload(&db, &store, &cr, &upload_id, &store_path).await?;
             // todo: should be a background task
             report_upload_to_platform(auth_key, request.metadata_id, &cr).await?;
 
@@ -120,13 +120,13 @@ pub async fn handler(
             let _ = store
                 .abort_multipart(&store_path, &multipart_resume_id)
                 .await;
-            handle_failed_upload(&db, upload_id).await;
+            handle_failed_upload(&db, &upload_id).await;
             Err(err.into())
         }
     }
 }
 
-async fn handle_failed_upload(db: &Database, upload_id: Uuid) {
+async fn handle_failed_upload(db: &Database, upload_id: &str) {
     // attempt to report the upload as failed, but that fails we'll need to handle it in a
     // future clean-up task. todo: should actually just enqueue and entire clean up process
     // and report this as failed there...
@@ -137,7 +137,7 @@ async fn handle_successful_upload(
     db: &Database,
     _store: &UploadStore,
     car_report: &CarReport,
-    upload_id: Uuid,
+    upload_id: &str,
     _file_path: &object_store::path::Path,
 ) -> Result<(), UploadError> {
     //let mut path_iter = file_path.parts();
@@ -164,7 +164,7 @@ async fn handle_successful_upload(
         Executor::Postgres(ref mut conn) => {
             use crate::database::postgres;
 
-            let _rows_affected: i32 = sqlx::query_scalar(
+            sqlx::query(
                 r#"
                     UPDATE uploads SET
                             state = 'complete',
@@ -175,8 +175,8 @@ async fn handle_successful_upload(
             )
             .bind(car_report.total_size() as i64)
             .bind(car_report.integrity_hash())
-            .bind(upload_id.to_string())
-            .fetch_one(conn)
+            .bind(upload_id)
+            .execute(conn)
             .await
             .map_err(postgres::map_sqlx_error)?;
         }
@@ -185,7 +185,7 @@ async fn handle_successful_upload(
         Executor::Sqlite(ref mut conn) => {
             use crate::database::sqlite;
 
-            let _rows_affected: i32 = sqlx::query_scalar(
+            sqlx::query(
                 r#"
                     UPDATE uploads SET
                             state = 'complete',
@@ -196,8 +196,8 @@ async fn handle_successful_upload(
             )
             .bind(car_report.total_size() as i64)
             .bind(car_report.integrity_hash())
-            .bind(upload_id.to_string())
-            .fetch_one(conn)
+            .bind(upload_id)
+            .execute(conn)
             .await
             .map_err(sqlite::map_sqlx_error)?;
         }
@@ -211,19 +211,19 @@ async fn record_upload_beginning(
     client_id: Uuid,
     metadata_id: Uuid,
     reported_size: u64,
-) -> Result<(Uuid, String), UploadError> {
+) -> Result<(String, String), UploadError> {
     let mut tmp_upload_path = PathBuf::new();
 
     tmp_upload_path.push(format!("{metadata_id}.car"));
 
     let tmp_upload_path = tmp_upload_path.display().to_string();
 
-    let upload_id: Uuid = match db.ex() {
+    let upload_id = match db.ex() {
         #[cfg(feature = "postgres")]
         Executor::Postgres(ref mut conn) => {
             use crate::database::postgres;
 
-            let bare_upload_id: BareId = sqlx::query_as(
+            sqlx::query_scalar(
                 r#"
                     INSERT INTO
                         uploads (client_id, metadata_id, reported_size, file_path, state)
@@ -238,16 +238,14 @@ async fn record_upload_beginning(
             .fetch_one(conn)
             .await
             .map_err(postgres::map_sqlx_error)
-            .map_err(UploadError::Database)?;
-
-            Uuid::parse_str(&bare_upload_id.id).unwrap()
+            .map_err(UploadError::Database)?
         }
 
         #[cfg(feature = "sqlite")]
         Executor::Sqlite(ref mut conn) => {
             use crate::database::sqlite;
 
-            let bare_upload_id: BareId = sqlx::query_as(
+            sqlx::query_scalar(
                 r#"
                     INSERT INTO
                         uploads (client_id, metadata_id, reported_size, file_path, state)
@@ -262,16 +260,14 @@ async fn record_upload_beginning(
             .fetch_one(conn)
             .await
             .map_err(sqlite::map_sqlx_error)
-            .map_err(UploadError::Database)?;
-
-            Uuid::parse_str(&bare_upload_id.id).unwrap()
+            .map_err(UploadError::Database)?
         }
     };
 
     Ok((upload_id, tmp_upload_path))
 }
 
-async fn record_upload_failed(db: &Database, upload_id: Uuid) -> Result<(), UploadError> {
+async fn record_upload_failed(db: &Database, upload_id: &str) -> Result<(), UploadError> {
     match db.ex() {
         #[cfg(feature = "postgres")]
         Executor::Postgres(ref mut conn) => {
@@ -282,7 +278,7 @@ async fn record_upload_failed(db: &Database, upload_id: Uuid) -> Result<(), Uplo
                     UPDATE uploads SET state = 'failed' WHERE id = $1;
                 "#,
             )
-            .bind(upload_id.to_string())
+            .bind(upload_id)
             .fetch_one(conn)
             .await
             .map_err(postgres::map_sqlx_error)?;
@@ -297,7 +293,7 @@ async fn record_upload_failed(db: &Database, upload_id: Uuid) -> Result<(), Uplo
                     UPDATE uploads SET state = 'failed' WHERE id = $1;
                 "#,
             )
-            .bind(upload_id.to_string())
+            .bind(upload_id)
             .fetch_one(conn)
             .await
             .map_err(sqlite::map_sqlx_error)?;
@@ -362,7 +358,7 @@ async fn report_upload_to_platform(
 async fn process_upload_stream<S>(
     db: &Database,
 
-    upload_id: Uuid,
+    upload_id: &str,
     expected_size: usize,
 
     mut stream: S,
@@ -454,7 +450,7 @@ where
                                     VALUES ($1, $2, $3);
                             "#,
                     )
-                    .bind(upload_id.to_string())
+                    .bind(upload_id)
                     .bind(block_id.to_string())
                     .bind(block_meta.offset() as i64)
                     .execute(conn)
@@ -473,7 +469,7 @@ where
                                     VALUES ($1, $2, $3);
                             "#,
                     )
-                    .bind(upload_id.to_string())
+                    .bind(upload_id)
                     .bind(block_id.to_string())
                     .bind(block_meta.offset() as i64)
                     .execute(conn)
@@ -496,7 +492,7 @@ where
 
 #[derive(Debug, thiserror::Error)]
 pub enum UploadError {
-    #[error("a database error occurred during an upload")]
+    #[error("a database error occurred during an upload {0}")]
     Database(#[from] DbError),
 
     #[error("we expected a data field but received nothing")]
