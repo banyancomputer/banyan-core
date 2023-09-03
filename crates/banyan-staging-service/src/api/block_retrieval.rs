@@ -37,15 +37,15 @@ pub async fn handler(
     headers.insert(axum::http::header::CONTENT_DISPOSITION, "attachment; filename=\"{normalized_cid}.bin\"".parse().unwrap());
     headers.insert(axum::http::header::CONTENT_LENGTH, byte_range.len().to_string().as_str().parse().unwrap());
 
-    tracing::info!("retrieving block in byte range: {byte_range:?}");
-
+    // this isn't ideal as we have to load the entire block from memory, object_store does support
+    // passing in the byte range using GetOptions to the get_opts method on the ObjectStore trait,
+    // however data in the "File" type explicitly ignores this range which is incredibly
+    // frustrating...
     let object_path = object_store::path::Path::from(block_details.file_path.as_str());
     let data = store
         .get_range(&object_path, byte_range)
         .await
         .map_err(BlockRetrievalError::RetrievalFailed)?;
-
-    tracing::info!("data retrieved: {data:?}");
 
     Ok((StatusCode::OK, headers, data).into_response())
 }
