@@ -17,7 +17,7 @@ pub struct Config {
     db_url: Option<String>,
 
     platform_auth_key_path: PathBuf,
-    platform_base_url: String,
+    platform_base_url: reqwest::Url,
     platform_verification_key_path: PathBuf,
 
     upload_directory: PathBuf,
@@ -28,7 +28,7 @@ impl Config {
         self.db_url.as_ref().map(String::as_ref)
     }
 
-    pub fn platform_base_url(&self) -> String {
+    pub fn platform_base_url(&self) -> reqwest::Url {
         self.platform_base_url.clone()
     }
 
@@ -96,7 +96,7 @@ impl Config {
 
         let platform_base_url = args
             .opt_value_from_str("--platform-url")?
-            .unwrap_or("http://127.0.0.1:3001".into());
+            .unwrap_or("http://127.0.0.1:3001".parse().unwrap());
 
         let db_url = args.opt_value_from_str("--db-url")?;
 

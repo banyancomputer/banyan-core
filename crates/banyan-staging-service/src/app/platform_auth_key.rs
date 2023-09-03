@@ -10,12 +10,12 @@ use crate::app::state::fingerprint_key;
 
 #[derive(Clone)]
 pub struct PlatformAuthKey {
-    base_url: String,
+    base_url: reqwest::Url,
     key: Arc<ES384KeyPair>,
 }
 
 impl PlatformAuthKey {
-    pub fn base_url(&self) -> String {
+    pub fn base_url(&self) -> reqwest::Url {
         self.base_url.clone()
     }
 
@@ -23,7 +23,7 @@ impl PlatformAuthKey {
         fingerprint_key(&self)
     }
 
-    pub fn new(base_url: String, key: ES384KeyPair) -> Self {
+    pub fn new(base_url: reqwest::Url, key: ES384KeyPair) -> Self {
         Self {
             base_url,
             key: Arc::new(key),

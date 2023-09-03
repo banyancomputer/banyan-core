@@ -110,7 +110,7 @@ pub async fn handler(
 
             handle_successful_upload(&db, &store, &cr, upload_id, &store_path).await?;
             // todo: should be a background task
-            report_upload_to_platform(auth_key, client.platform_id(), request.metadata_id, &cr).await?;
+            report_upload_to_platform(auth_key, request.metadata_id, &cr).await?;
 
             Ok((StatusCode::NO_CONTENT, ()).into_response())
         }
@@ -307,12 +307,43 @@ async fn record_upload_failed(db: &Database, upload_id: Uuid) -> Result<(), Uplo
     Ok(())
 }
 
-async fn report_upload_to_platform(_auth_key: PlatformAuthKey, _platform_id: Uuid, _metadata_id: Uuid, _report: &CarReport) -> Result<(), UploadError> {
-    // build up a token from the platform auth key
-    // build up a request to the platform
-    // create a reqwest client
-    // fire off the request to update the metadata status
-    Ok(())
+use reqwest::{Client, Url};
+use reqwest::header::{HeaderMap, HeaderValue};
+
+#[derive(Serialize)]
+struct MetadataSizeRequest {
+    data_size: u64,
+}
+
+async fn report_upload_to_platform(auth_key: PlatformAuthKey, metadata_id: Uuid, report: &CarReport) -> Result<(), UploadError> {
+    let metadata_size = MetadataSizeRequest { data_size: report.total_size() };
+
+    let mut default_headers = HeaderMap::new();
+    default_headers.insert("Content-Type", HeaderValue::from_static("application/json"));
+
+    let client = Client::builder()
+        .default_headers(default_headers)
+        .build()
+        .unwrap();
+
+    let report_endpoint = auth_key
+        .base_url()
+        .join(format!("/api/v1/storage/{}", metadata_id).as_str())
+        .unwrap();
+
+    let request = client
+        .post(report_endpoint)
+        .json(&metadata_size);
+
+    //request = request.bearer_auth(bearer_token);
+
+    let response = request.send().await.unwrap();
+
+    if response.status().is_success() {
+        return Ok(())
+    } else {
+        Err(UploadError::FailedReport(response.bytes().await.unwrap()))
+    }
 }
 
 async fn process_upload_stream<S>(
@@ -461,6 +492,9 @@ pub enum UploadError {
     #[error("failed to acquire data field from body")]
     DataFieldUnavailable(multer::Error),
 
+    #[error("failed to report upload status to platform")]
+    FailedReport(bytes::Bytes),
+
     #[error("account is not authorized to store {0} bytes, {1} bytes are still authorized")]
     InsufficientAuthorizedStorage(u64, u64),
 
@@ -485,7 +519,7 @@ impl IntoResponse for UploadError {
         use UploadError::*;
 
         match self {
-            Database(_) | StoreUnavailable(_) => {
+            Database(_) | FailedReport(_) | StoreUnavailable(_) => {
                 tracing::error!("{self}");
                 let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
