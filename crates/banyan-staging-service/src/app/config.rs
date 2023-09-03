@@ -76,6 +76,8 @@ impl Config {
             file.write_all(fingerprint.as_bytes()).unwrap();
 
             tracing::info!("key generation complete");
+
+            std::process::exit(0);
         }
 
         let listen_addr = args
