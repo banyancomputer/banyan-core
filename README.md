@@ -117,3 +117,6 @@ yard run dev
 
 You should now be able to open up your web-browser to
 [http://127.0.0.1:3000](http://127.0.0.1:3000), login, and use the platform.
+
+Note: It seems like the front end is not automatically creating and escrowing
+keys right now... So I couldn't get it working.
