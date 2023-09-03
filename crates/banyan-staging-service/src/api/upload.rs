@@ -6,11 +6,13 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::TypedHeader;
 use futures::{TryFutureExt, TryStream, TryStreamExt};
+use jwt_simple::prelude::*;
 use object_store::ObjectStore;
 use serde::{Deserialize, Serialize};
 use tokio::io::{AsyncWrite, AsyncWriteExt};
 use uuid::Uuid;
 
+use crate::app::PlatformAuthKey;
 use crate::car_analyzer::{CarReport, StreamingCarAnalyzer, StreamingCarAnalyzerError};
 use crate::database::{BareId, DbError, Executor};
 use crate::extractors::{AuthenticatedClient, Database, UploadStore};
@@ -27,6 +29,7 @@ pub async fn handler(
     db: Database,
     client: AuthenticatedClient,
     store: UploadStore,
+    auth_key: PlatformAuthKey,
     TypedHeader(content_len): TypedHeader<ContentLength>,
     TypedHeader(content_type): TypedHeader<ContentType>,
     body: BodyStream,
@@ -107,7 +110,7 @@ pub async fn handler(
 
             handle_successful_upload(&db, &store, &cr, upload_id, &store_path).await?;
             // todo: should be a background task
-            report_upload_to_platform(client.platform_id(), request.metadata_id, &cr).await?;
+            report_upload_to_platform(auth_key, client.platform_id(), request.metadata_id, &cr).await?;
 
             Ok((StatusCode::NO_CONTENT, ()).into_response())
         }
@@ -304,7 +307,7 @@ async fn record_upload_failed(db: &Database, upload_id: Uuid) -> Result<(), Uplo
     Ok(())
 }
 
-async fn report_upload_to_platform(_platform_id: Uuid, _metadata_id: Uuid, _report: &CarReport) -> Result<(), UploadError> {
+async fn report_upload_to_platform(_auth_key: PlatformAuthKey, _platform_id: Uuid, _metadata_id: Uuid, _report: &CarReport) -> Result<(), UploadError> {
     // build up a token from the platform auth key
     // build up a request to the platform
     // create a reqwest client

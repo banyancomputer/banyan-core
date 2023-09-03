@@ -58,7 +58,7 @@ impl State {
             database,
 
             platform_verification_key: PlatformVerificationKey::new(platform_verification_key),
-            platform_auth_key: PlatformAuthKey::new(platform_auth_key),
+            platform_auth_key: PlatformAuthKey::new(config.platform_base_url(), platform_auth_key),
 
             upload_directory: config.upload_directory(),
         })

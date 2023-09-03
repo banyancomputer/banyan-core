@@ -4,15 +4,30 @@ use std::sync::Arc;
 use axum::{async_trait, Json, RequestPartsExt};
 use axum::extract::{FromRef, FromRequestParts, TypedHeader};
 use axum::http::request::Parts;
-
 use jwt_simple::prelude::*;
 
+use crate::app::state::fingerprint_key;
+
 #[derive(Clone)]
-pub struct PlatformAuthKey(Arc<ES384KeyPair>);
+pub struct PlatformAuthKey {
+    base_url: String,
+    key: Arc<ES384KeyPair>,
+}
 
 impl PlatformAuthKey {
-    pub fn new(key: ES384KeyPair) -> Self {
-        Self(Arc::new(key))
+    pub fn base_url(&self) -> String {
+        self.base_url.clone()
+    }
+
+    pub fn fingerprint(&self) -> String {
+        fingerprint_key(&self)
+    }
+
+    pub fn new(base_url: String, key: ES384KeyPair) -> Self {
+        Self {
+            base_url,
+            key: Arc::new(key),
+        }
     }
 }
 
@@ -20,7 +35,7 @@ impl Deref for PlatformAuthKey {
     type Target = Arc<ES384KeyPair>;
 
     fn deref(&self) -> &Self::Target {
-        &self.0
+        &self.key
     }
 }
 
