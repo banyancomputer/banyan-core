@@ -315,7 +315,11 @@ struct MetadataSizeRequest {
     data_size: u64,
 }
 
-async fn report_upload_to_platform(auth_key: PlatformAuthKey, metadata_id: Uuid, report: &CarReport) -> Result<(), UploadError> {
+async fn report_upload_to_platform(
+    auth_key: PlatformAuthKey,
+    metadata_id: Uuid,
+    report: &CarReport,
+) -> Result<(), UploadError> {
     let metadata_size = MetadataSizeRequest { data_size: report.total_size() };
 
     let mut default_headers = HeaderMap::new();
@@ -331,11 +335,20 @@ async fn report_upload_to_platform(auth_key: PlatformAuthKey, metadata_id: Uuid,
         .join(format!("/api/v1/storage/{}", metadata_id).as_str())
         .unwrap();
 
+    let mut claims = Claims::create(Duration::from_secs(60))
+        .with_audiences(HashSet::from_strings(&["banyan-platform"]))
+        .with_subject("banyan-staging")
+        .invalid_before(Clock::now_since_epoch() - Duration::from_secs(30));
+
+    claims.create_nonce();
+    claims.issued_at = Some(Clock::now_since_epoch());
+
+    let bearer_token = auth_key.sign(claims).unwrap();
+
     let request = client
         .post(report_endpoint)
-        .json(&metadata_size);
-
-    //request = request.bearer_auth(bearer_token);
+        .json(&metadata_size)
+        .bearer_auth(bearer_token);
 
     let response = request.send().await.unwrap();
 

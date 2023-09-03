@@ -119,11 +119,11 @@ where
             }
         }
 
-        //if storage_host.name != claims.subject {
-        //    return Err(StorageHostKeyAuthorizationError {
-        //        kind: StorageHostKeyAuthorizationErrorKind::MismatchedSubject,
-        //    });
-        //}
+        if storage_host.name != claims.subject {
+            return Err(StorageHostKeyAuthorizationError {
+                kind: StorageHostKeyAuthorizationErrorKind::MismatchedSubject,
+            });
+        }
 
         Ok(claims)
     }

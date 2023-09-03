@@ -6,8 +6,6 @@ use axum::extract::{FromRef, FromRequestParts, TypedHeader};
 use axum::http::request::Parts;
 use jwt_simple::prelude::*;
 
-use crate::app::state::fingerprint_key;
-
 #[derive(Clone)]
 pub struct PlatformAuthKey {
     base_url: reqwest::Url,
@@ -17,10 +15,6 @@ pub struct PlatformAuthKey {
 impl PlatformAuthKey {
     pub fn base_url(&self) -> reqwest::Url {
         self.base_url.clone()
-    }
-
-    pub fn fingerprint(&self) -> String {
-        fingerprint_key(&self)
     }
 
     pub fn new(base_url: reqwest::Url, key: ES384KeyPair) -> Self {
