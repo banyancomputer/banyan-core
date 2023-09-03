@@ -8,7 +8,7 @@ cd $(dirname %0)
 DEPLOY_HOST="api.data.banyan.computer"
 DEPLOY_BASE_FOLDER="containers"
 
-SERVICE_NAME="${1:-banyan-staging-service}"
+SERVICE_NAME="${1:-banyan-core-service}"
 SERVICE_PORT="${2:-3001}"
 SERVICE_ARGUMENTS="--db-url /data/server.db --signing-key /data/signing-key.pem --upload-dir /data/uploads"
 
