@@ -1,7 +1,7 @@
 #!/bin/bash
 
 set -o errexit
-set -p nounset
+set -o nounset
 
 EMAIL_ADDRESS="${1:-}"
 
