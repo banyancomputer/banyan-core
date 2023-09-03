@@ -20,6 +20,8 @@ const MAXIMUM_GRANT_AGE: u64 = 900;
 #[derive(Debug)]
 pub struct StorageGrant {
     platform_id: Uuid,
+    grant_id: Uuid,
+
     client_fingerprint: String,
 
     authorized_data_size: usize,
@@ -28,6 +30,10 @@ pub struct StorageGrant {
 impl StorageGrant {
     pub fn authorized_data_size(&self) -> usize {
         self.authorized_data_size
+    }
+
+    pub fn grant_id(&self) -> Uuid {
+        self.grant_id
     }
 
     pub fn platform_id(&self) -> Uuid {
@@ -112,21 +118,26 @@ where
         // todo: need to take in the domain the provider will be running as to lookup expectedUsage
         // what we were authorized as but we can fake it for now by assuming we're the only one
         // present.
-        let authorized_data_size = match claims
+        let usage = match claims
             .custom
             .capabilities
             // TODO: configure this
             .get("http://127.0.0.1:3002")
         {
-            Some(ads) => ads.available_storage,
+            Some(u) => u,
             None => return Err(StorageGrantError::WrongTarget),
         };
 
+        let grant_id =
+            Uuid::parse_str(&usage.grant_id).map_err(|_| StorageGrantError::InvalidGrant)?;
+
         let grant = StorageGrant {
             platform_id,
+            grant_id,
+
             client_fingerprint,
 
-            authorized_data_size,
+            authorized_data_size: usage.available_storage,
         };
 
         Ok(grant)
@@ -137,6 +148,9 @@ where
 pub enum StorageGrantError {
     #[error("token's nonce was not sufficiently long")]
     InsufficientNonce,
+
+    #[error("grant ID was not a valid format")]
+    InvalidGrant,
 
     #[error("no bearer authorization header found in request")]
     MissingHeader(TypedHeaderRejection),
@@ -162,22 +176,22 @@ impl IntoResponse for StorageGrantError {
         use StorageGrantError::*;
 
         match &self {
-            InsufficientNonce | NonceMissing | SubjectInvalid | SubjectMissing => {
+            InsufficientNonce | InvalidGrant | NonceMissing | SubjectInvalid | SubjectMissing => {
                 tracing::error!("{self}");
                 let err_msg = serde_json::json!({ "msg": "storage grant was not accepted" });
-                (StatusCode::UNAUTHORIZED, Json(err_msg)).into_response()
+                (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
             }
             MissingHeader(err) => {
                 // todo: add sources as data event tag
                 tracing::error!("{self}: {err}");
                 let err_msg = serde_json::json!({ "msg": "storage grant was not accepted" });
-                (StatusCode::UNAUTHORIZED, Json(err_msg)).into_response()
+                (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
             }
             ValidationFailed(err) => {
                 // todo: add sources as data event tag
                 tracing::error!("{self}: {err}");
                 let err_msg = serde_json::json!({ "msg": "storage grant was not accepted" });
-                (StatusCode::UNAUTHORIZED, Json(err_msg)).into_response()
+                (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
             }
             WrongTarget => {
                 tracing::error!("{self}");
@@ -199,6 +213,6 @@ struct TokenAuthorizations {
 
 #[derive(Deserialize, Serialize, Debug)]
 struct Usage {
-    #[serde(rename = "available_storage")]
     available_storage: usize,
+    grant_id: String,
 }

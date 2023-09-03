@@ -27,11 +27,15 @@ CREATE TABLE storage_grants (
   ),
 
   client_id TEXT NOT NULL REFERENCES clients(id),
+  grant_id UUID NOT NULL,
+
   allowed_storage INT NOT NULL DEFAULT 0,
 
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE UNIQUE INDEX idx_storage_grants_on_grant_id
+  ON storage_grants(grant_id);
 CREATE INDEX idx_storage_grants_on_created_at
   ON storage_grants(created_at);
 
@@ -48,7 +52,7 @@ CREATE TABLE uploads (
   metadata_id TEXT NOT NULL,
 
   reported_size INTEGER NOT NULL CHECK (reported_size >= 0) CONSTRAINT reported_size_positive,
-  final_size INTEGER NOT NULL DEFAULT 0 CHECK (final_size >= 0) CONSTRAINT final_size_positive,
+  final_size INTEGER CHECK (final_size IS NULL OR final_size >= 0) CONSTRAINT final_size_positive,
 
   file_path VARCHAR(128) NOT NULL,
   state VARCHAR(32) NOT NULL CHECK (state IN ('started', 'indexing', 'complete', 'failed')) CONSTRAINT state_in_list,

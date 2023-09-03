@@ -17,13 +17,19 @@ pub struct Config {
     db_url: Option<String>,
 
     platform_auth_key_path: PathBuf,
+    platform_base_url: reqwest::Url,
     platform_verification_key_path: PathBuf,
+
     upload_directory: PathBuf,
 }
 
 impl Config {
     pub fn db_url(&self) -> Option<&str> {
         self.db_url.as_ref().map(String::as_ref)
+    }
+
+    pub fn platform_base_url(&self) -> reqwest::Url {
+        self.platform_base_url.clone()
     }
 
     pub fn platform_verification_key_path(&self) -> PathBuf {
@@ -41,11 +47,12 @@ impl Config {
     pub fn parse_cli_arguments() -> Result<Self, Error> {
         let mut args = Arguments::from_env();
 
-        if args.subcommand().unwrap() == Some("generate-auth".to_string()) {
-            let mut key_path: PathBuf = args
-                .opt_value_from_str("--path")?
-                .unwrap_or("./data/platform-auth.key".into());
+        let platform_auth_key_path: PathBuf = args
+            .opt_value_from_str("--auth-key")?
+            .unwrap_or("./data/platform-auth.key".into());
 
+        if args.contains("--generate-auth") {
+            let mut key_path = platform_auth_key_path.clone();
             tracing::info!("generating new platform key at {key_path:?}");
 
             let mut file = OpenOptions::new()
@@ -87,11 +94,11 @@ impl Config {
             .opt_value_from_str("--log-level")?
             .unwrap_or(Level::INFO);
 
-        let db_url = args.opt_value_from_str("--db-url")?;
+        let platform_base_url = args
+            .opt_value_from_str("--platform-url")?
+            .unwrap_or("http://127.0.0.1:3001".parse().unwrap());
 
-        let platform_auth_key_path: PathBuf = args
-            .opt_value_from_str("--auth-key")?
-            .unwrap_or("./data/platform-auth.key".into());
+        let db_url = args.opt_value_from_str("--db-url")?;
 
         let platform_verification_key_path: PathBuf = args
             .opt_value_from_str("--verifier-key")?
@@ -108,7 +115,9 @@ impl Config {
             db_url,
 
             platform_auth_key_path,
+            platform_base_url,
             platform_verification_key_path,
+
             upload_directory,
         })
     }
