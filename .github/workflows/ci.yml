@@ -14,6 +14,7 @@ jobs:
         with:
           profile: minimal
           toolchain: stable
+      - uses: Swatinem/rust-cache@v2
 
       - uses: actions-rs/cargo@v1
         with:
@@ -32,6 +33,7 @@ jobs:
           profile: minimal
           toolchain: stable
           components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
 
       - uses: actions-rs/cargo@v1
         with:
@@ -56,6 +58,7 @@ jobs:
           # Nightly is needed for code coverage collection
           toolchain: nightly
           override: true
+      - uses: Swatinem/rust-cache@v2
 
       - uses: actions-rs/cargo@v1
         name: Run all workspace tests
