@@ -110,6 +110,10 @@ pub async fn delete_bucket(
     bucket_id: &str,
     db_conn: &mut DbConn,
 ) -> Result<(), sqlx::Error> {
+    // delete does not tell us whether any rows existed, to return a 404 we need to see if its
+    // present or not. We'll cheat and use our read bucket method for this 404 check.
+    read_bucket(account_id, bucket_id, db_conn).await?;
+
     sqlx::query!(
         r#"DELETE FROM buckets WHERE id = $1 AND account_id = $2;"#,
         bucket_id,
