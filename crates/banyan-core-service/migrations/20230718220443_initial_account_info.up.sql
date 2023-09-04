@@ -220,7 +220,6 @@ CREATE TABLE metadata (
 CREATE INDEX idx_metadata_on_bucket_id
   ON metadata(bucket_id);
 
-
 -- Migrations for Snapshots
 CREATE TABLE snapshots (
   id TEXT NOT NULL PRIMARY KEY DEFAULT (
@@ -233,7 +232,7 @@ CREATE TABLE snapshots (
   metadata_id TEXT NOT NULL
     REFERENCES metadata(id)
     ON DELETE CASCADE,
-  
+
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -271,15 +270,24 @@ CREATE TABLE storage_hosts (
 CREATE UNIQUE INDEX idx_storage_hosts_on_unique_name
   ON storage_hosts(name);
 
--- Create Default Storage Host
-INSERT INTO storage_hosts (id, name, url, used_storage, available_storage, fingerprint, pem)
-VALUES (
-  '846db58a-d5f5-4388-9bfe-667b385aacc8',
-  'banyan-staging',
-  'https://staging.storage.banyan.computer/',
-  0,
-  549755813888000,
-  -- Note: this is not a correct fingerprint
-  "14:b6:e6:d7:f5:59:d5:df:30:76:20:28:9f:90:84:89:cc:5d:f7:7e",
-  "-----BEGIN PUBLIC KEY-----\nMHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEZzVwDCZdaMJzX5CRaI7HgUGsMti7zsUZ\nKnhBQDda3ErqZSTCNy4TMf35yeLbzeGSqCmOPsvCuH8O30s3QQg30hcHUeUoEZE0\ndQRlKBv+5PpcPdWWVUG50E8fB8+1EChE\n-----END PUBLIC KEY-----"
+CREATE TABLE storage_grants (
+  id TEXT NOT NULL PRIMARY KEY DEFAULT (
+    lower(hex(randomblob(4))) || '-' ||
+    lower(hex(randomblob(2))) || '-4' ||
+    substr(lower(hex(randomblob(2))), 2) || '-a' ||
+    substr(lower(hex(randomblob(2))), 2) || '-6' ||
+    substr(lower(hex(randomblob(6))), 2)),
+
+  storage_host_id TEXT NOT NULL REFERENCES storage_hosts(id),
+  account_id TEXT NOT NULL REFERENCES accounts(id),
+  authorized_amount INTEGER NOT NULL DEFAULT 0,
+
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  redeemed_at TIMESTAMP
+);
+
+CREATE TABLE storage_hosts_metadatas_storage_grants (
+  storage_host_id TEXT NOT NULL REFERENCES storage_hosts(id),
+  metadata_id TEXT NOT NULL REFERENCES metadata(id),
+  storage_grant_id TEXT REFERENCES storage_grants(id)
 );

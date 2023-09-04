@@ -133,33 +133,47 @@ pub async fn get_usage(
     mut db_conn: DbConn,
     Path(bucket_id): Path<Uuid>,
 ) -> impl IntoResponse {
-    let account_id = api_token.subject;
     let bucket_id = bucket_id.to_string();
-    // If this Account is not allowed to read this Bucket
-    if let Err(err) = db::authorize_bucket(&account_id, &bucket_id, &mut db_conn).await {
-        // Return error response if not
-        sqlx_error_to_response(err, "read", "bucket")
-    } else {
-        // Observable usage is sum of data in current state for the requested bucket
-        let metadata_states = vec![models::MetadataState::Current];
-        let bucket_ids = Some(vec![bucket_id]);
-        // Read the data usage
-        match db::read_data_usage(&account_id, metadata_states, bucket_ids, &mut db_conn).await {
-            Ok(usage) => Json(responses::GetUsage { size: usage }).into_response(),
-            Err(err) => sqlx_error_to_response(err, "get", "bucket usage"),
-        }
-    }
+    // Observable usage is sum of data in current state for the requested bucket
+    let response = match db::read_bucket_data_usage(&bucket_id, &mut db_conn).await {
+        Ok(usage) => responses::GetUsage { size: usage },
+        Err(err) => match err {
+            sqlx::Error::RowNotFound => {
+                return (StatusCode::NOT_FOUND, format!("bucket not found: {err}")).into_response();
+            }
+            _ => {
+                tracing::error!("unable to read bucket: {err}");
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "internal server error".to_string(),
+                )
+                    .into_response();
+            }
+        },
+    };
+    Json(response).into_response()
 }
 
 /// Return the current DATA usage for the account. Query metadata in the current state of the account
 pub async fn get_total_usage(api_token: ApiToken, mut db_conn: DbConn) -> impl IntoResponse {
     let account_id = api_token.subject;
-    let metadata_states = vec![models::MetadataState::Current];
-    let bucket_ids = None;
-    match db::read_data_usage(&account_id, metadata_states, bucket_ids, &mut db_conn).await {
-        Ok(usage) => Json(responses::GetUsage { size: usage }).into_response(),
-        Err(err) => sqlx_error_to_response(err, "get", "total bucket usage"),
-    }
+    let response = match db::read_total_data_usage(&account_id, &mut db_conn).await {
+        Ok(usage) => responses::GetUsage { size: usage },
+        Err(err) => match err {
+            sqlx::Error::RowNotFound => {
+                return (StatusCode::NOT_FOUND, format!("bucket not found: {err}")).into_response();
+            }
+            _ => {
+                tracing::error!("unable to read bucket: {err}");
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "internal server error".to_string(),
+                )
+                    .into_response();
+            }
+        },
+    };
+    Json(response).into_response()
 }
 
 pub async fn get_usage_limit(_api_token: ApiToken) -> impl IntoResponse {

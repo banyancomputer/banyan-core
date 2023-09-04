@@ -1,18 +1,25 @@
 import React from 'react';
 import { useIntl } from 'react-intl';
 import { IoMdAdd } from 'react-icons/io';
+import Image from 'next/image';
 
 import BaseLayout from '@layouts/BaseLayout';
 import { NextPageWithLayout } from './page';
 import { BucketsTable } from '@/components/Buckets/BucketsTable';
 import { UploadFileModal } from '@/components/common/Modal/UploadFileModal';
+import { Fallback } from '@/components/common/Fallback';
 
+import getServerSideProps from '@/utils/session';
 import { useTomb } from '@/contexts/tomb';
 import { useModal } from '@/contexts/modals';
 
+import emptyIcon from '@static/images/common/emptyIcon.png';
+
+export { getServerSideProps };
+
 const Buckets: NextPageWithLayout = () => {
     const { openModal } = useModal();
-    const { buckets } = useTomb();
+    const { buckets, areBucketsLoading } = useTomb();
     const { messages } = useIntl();
 
     const uploadFile = () => {
@@ -33,7 +40,16 @@ const Buckets: NextPageWithLayout = () => {
                     {`${messages.upload}`}
                 </button>
             </div>
-            <BucketsTable buckets={buckets} />
+            <Fallback shouldRender={!areBucketsLoading}>
+                {buckets.length ?
+                    <BucketsTable buckets={buckets} />
+                    :
+                    <div className="h-full flex flex-col items-center justify-center saturate-0">
+                        <Image src={emptyIcon} alt="emptyIcon" />
+                        <p className="mt-4">{`${messages.noBuckets}`}</p>
+                    </div>
+                }
+            </Fallback>
         </section>
     );
 };

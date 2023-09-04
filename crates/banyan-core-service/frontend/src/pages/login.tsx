@@ -12,10 +12,10 @@ const Login: NextPageWithLayout = () => {
     // Redirect to home page if user is logged in
     useEffect(() => {
         data &&
-			Router.push('/').then(() => window.scrollTo(0, 0));
+            Router.push('/').then(() => window.scrollTo(0, 0));
     }, [data]);
 
-    const handleLoginWithProvider = (provider: any) => async() => {
+    const handleLoginWithProvider = (provider: any) => async () => {
         try {
             await signIn(provider);
             Router.push('/').then(() => window.scrollTo(0, 0));
@@ -28,12 +28,12 @@ const Login: NextPageWithLayout = () => {
         <div>
             <div className="text-6xl font-semibold align-left mb-2">Log in</div>
             {error &&
-				// Error when login fails
-				<label htmlFor="registration" className="label">
-				    <span className="text-xxs !p-0 text-error text-left">
-						There was an issue logging you in. Please try again.
-				    </span>
-				</label>
+                // Error when login fails
+                <label htmlFor="registration" className="label">
+                    <span className="text-xxs !p-0 text-error text-left">
+                        There was an issue logging you in. Please try again.
+                    </span>
+                </label>
             }
             <div className="flex items-center mt-4">
                 <Button
@@ -43,7 +43,7 @@ const Login: NextPageWithLayout = () => {
                     w={40}
                     onClick={handleLoginWithProvider('google')}
                 >
-					Log in with Google
+                    Log in with Google
                 </Button>
             </div>
         </div>

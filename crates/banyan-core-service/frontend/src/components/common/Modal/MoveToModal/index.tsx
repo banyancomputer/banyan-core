@@ -1,31 +1,50 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useIntl } from 'react-intl';
-import { FiArrowLeft } from 'react-icons/fi';
 import { MdDone } from 'react-icons/md';
-import { Select } from '@chakra-ui/react';
+
 import { useModal } from '@/contexts/modals';
 import { BucketFile } from '@/lib/interfaces/bucket';
 import { ToastNotifications } from '@/utils/toastNotifications';
+import { useTomb } from '@/contexts/tomb';
+
+import { Select } from '../../Select';
+import { CreateBucketModal } from '../CreateBucketModal';
+import { CreateFolderModal } from '../CreateFolderModal ';
+import { UploadFileModal } from '../UploadFileModal';
+import { AddNewOption } from '../../Select/AddNewOption';
 
 export const MoveToModal: React.FC<{ file: BucketFile }> = ({ file }) => {
     const { messages } = useIntl();
-    const { closeModal } = useModal();
+    const { buckets } = useTomb();
+    const { closeModal, openModal } = useModal();
+    const [selectedBucket, setSelectedBucket] = useState('');
+    const [selectedFolder, setSelectedFolder] = useState('');
 
-    const move = async() => {
+    const move = async () => {
         try {
             ToastNotifications.notify(`${messages.fileWasMoved}`, <MdDone size="20px" />);
         } catch (error: any) { };
     };
 
+    const selectBucket = (option: string) => {
+        setSelectedBucket(option);
+    };
+
+    const selectFolder = (option: string) => {
+        setSelectedFolder(option);
+    };
+
+    const addNewBucket = () => {
+        openModal(<CreateBucketModal />, () => openModal(<UploadFileModal />));
+    };
+
+    const addNewFolder = () => {
+        openModal(<CreateFolderModal />, () => openModal(<UploadFileModal />));
+    };
+
     return (
         <div className="w-modal flex flex-col gap-6" >
             <div>
-                <button
-                    onClick={closeModal}
-                    className="mb-3"
-                >
-                    <FiArrowLeft size="24px" />
-                </button>
                 <h4 className="text-m font-semibold ">{`${messages.moveTo}`}</h4>
                 <p className="mt-2 text-gray-600">
                     {`${messages.selectWhereToMove}`}
@@ -34,17 +53,21 @@ export const MoveToModal: React.FC<{ file: BucketFile }> = ({ file }) => {
             <div>
                 <label className="inline-block mb-1 text-xs font-normal">{`${messages.selectInTheList}`}:</label>
                 <Select
-                    variant="outline"
-                    placeholder={`${messages.selectInTheList}`}
-                    className="font-normal text-sm"
-                >
-                </Select>
+                    selectedOption={selectedBucket}
+                    onChange={selectBucket}
+                    options={buckets.map(bucket => ({ value: bucket.id, label: bucket.name }))}
+                    placeholder={`${messages.selectBucket}`}
+                    initialOption={<AddNewOption label={`${messages.createNewBucket}`} action={addNewBucket} />}
+                />
             </div>
             <div>
                 <label className="inline-block mb-1 text-xs font-normal">{`${messages.folder}`}:</label>
                 <Select
-                    variant="outline"
+                    selectedOption={selectedFolder}
                     placeholder={`${messages.selectFolder}`}
+                    onChange={selectFolder}
+                    options={[]}
+                    initialOption={<AddNewOption label={`${messages.createNewFolder}`} action={addNewFolder} />}
                 />
             </div>
             <div className="mt-3 flex items-center gap-3 text-xs" >

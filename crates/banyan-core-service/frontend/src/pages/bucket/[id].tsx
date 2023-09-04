@@ -3,21 +3,29 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useIntl } from 'react-intl';
 import { IoMdAdd } from 'react-icons/io';
+import Image from 'next/image';
 
 import { NextPageWithLayout } from '../page';
 import { useTomb } from '@/contexts/tomb';
 
 import BaseLayout from '@/layouts/BaseLayout';
 import { BucketTable } from '@/components/Buckets/BucketTable';
+import { Fallback } from '@/components/common/Fallback';
+
+import getServerSideProps from '@/utils/session';
+
+import emptyIcon from '@static/images/common/emptyIcon.png';
+
+export { getServerSideProps };
 
 const Bucket: NextPageWithLayout = () => {
     const searchParams = useSearchParams();
     const bucketId = searchParams.get('id');
-    const { buckets } = useTomb();
+    const { buckets, areBucketsLoading } = useTomb();
+    const { messages } = useIntl();
     const selectedBucket = useMemo(() => buckets.find(bucket => bucket.id === bucketId), [buckets, bucketId]);
 
     const uploadFile = (event: React.ChangeEvent<HTMLInputElement>) => { };
-    const { messages } = useIntl();
 
     return (
         <section className="py-9 px-4">
@@ -37,9 +45,16 @@ const Bucket: NextPageWithLayout = () => {
                     />
                 </label>
             </div>
-            {selectedBucket &&
-                <BucketTable bucket={selectedBucket} />
-            }
+            <Fallback shouldRender={!areBucketsLoading}>
+                {selectedBucket && selectedBucket.files.length ?
+                    <BucketTable bucket={selectedBucket} />
+                    :
+                    <div className="h-full flex flex-col items-center justify-center saturate-0">
+                        <Image src={emptyIcon} alt="emptyIcon" />
+                        <p className="mt-4">{`${messages.bucketIsEmpty}`}</p>
+                    </div>
+                }
+            </Fallback>
         </section>
     );
 };

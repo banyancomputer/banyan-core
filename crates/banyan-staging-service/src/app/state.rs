@@ -58,7 +58,7 @@ impl State {
             database,
 
             platform_verification_key: PlatformVerificationKey::new(platform_verification_key),
-            platform_auth_key: PlatformAuthKey::new(platform_auth_key),
+            platform_auth_key: PlatformAuthKey::new(config.platform_base_url(), platform_auth_key),
 
             upload_directory: config.upload_directory(),
         })
@@ -91,7 +91,7 @@ impl axum::extract::FromRef<State> for PlatformAuthKey {
     }
 }
 
-fn fingerprint_key(keys: &ES384KeyPair) -> String {
+pub fn fingerprint_key(keys: &ES384KeyPair) -> String {
     let key_pair = keys.key_pair();
     let public_key = key_pair.public_key();
     let compressed_point = public_key.as_ref().to_encoded_point(true);
@@ -100,8 +100,9 @@ fn fingerprint_key(keys: &ES384KeyPair) -> String {
     hasher.update(compressed_point);
     let hashed_bytes = hasher.finalize();
 
-    hashed_bytes.iter().fold(String::new(), |mut output, byte| {
-        let _ = write!(output, "{byte:02x}");
-        output
-    })
+    hashed_bytes
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<Vec<_>>()
+        .join(":")
 }

@@ -1,8 +1,9 @@
-import React, { ReactElement } from 'react';
+import React, { ReactElement, useCallback } from 'react';
 import { useIntl } from 'react-intl';
 import { FiDownload, FiEdit, FiTrash2 } from 'react-icons/fi';
 import { AiOutlineLink } from 'react-icons/ai';
 import { PiArrowsLeftRight, PiCopySimple } from 'react-icons/pi';
+import { MdDone } from 'react-icons/md';
 
 import { MoveToModal } from '../../common/Modal/MoveToModal';
 import { RenameFileModal } from '../../common/Modal/RenameFileModal';
@@ -21,44 +22,48 @@ export class FileAction {
 
 export const FileActions: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bucket, file }) => {
     const { messages } = useIntl();
-    const { } = useTomb();
+    const { download } = useTomb();
     const { openModal } = useModal();
 
-    const download = async() => {
+    const downloadFile = async () => {
         try {
-
+            await ToastNotifications.promise(`${messages.downloading}...`, `${messages.fileWasDownloaded}`, <MdDone size="20px" />,
+                download(bucket.id, [`/${file.name}`])
+            );
         } catch (error: any) { }
     };
-    const copyLink = async() => {
+
+    const copyLink = async () => {
         try {
             ToastNotifications.notify(`${messages.linkWasCopied}`, <AiOutlineLink size="20px" />);
         } catch (error: any) { }
     };
+
     const moveTo = () => {
         openModal(<MoveToModal file={file} />);
     };
-    const makeCopy = async() => {
+    const makeCopy = async () => {
         try {
             ToastNotifications.notify(`${messages.copyOf} ${file.name} ${messages.wasCreated}`, <AiOutlineLink size="20px" />);
         } catch (error: any) { }
     };
-    const viewFileVersions = async() => {
+    const viewFileVersions = async () => {
         try {
 
         } catch (error: any) { }
     };
-    const rename = async() => {
+    const rename = async () => {
         openModal(<RenameFileModal bucket={bucket} file={file} />);
     };
 
-    const remove = async() => {
+    const remove = async () => {
         try {
 
         } catch (error: any) { }
     };
 
     const acrions = [
-        new FileAction(`${messages.download}`, <FiDownload size="18px" />, download),
+        new FileAction(`${messages.download}`, <FiDownload size="18px" />, downloadFile),
         new FileAction(`${messages.copyLink}`, <AiOutlineLink size="18px" />, copyLink),
         new FileAction(`${messages.moveTo}`, <PiArrowsLeftRight size="18px" />, moveTo),
         new FileAction(`${messages.makeCopy}`, <PiCopySimple size="18px" />, makeCopy),

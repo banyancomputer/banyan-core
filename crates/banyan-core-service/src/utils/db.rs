@@ -3,6 +3,7 @@ use crate::extractors::DbConn;
 use axum::response::{IntoResponse, Response};
 use http::StatusCode;
 use serde::Serialize;
+use sqlx::FromRow;
 
 /// Process an SQLX error in a reusable format for responding with error messages
 pub fn sqlx_error_to_response(err: sqlx::Error, operation: &str, resource: &str) -> Response {
@@ -64,6 +65,42 @@ pub async fn create_bucket(
     )
     .fetch_one(&mut *db_conn.0)
     .await
+}
+
+pub async fn record_storage_grant(
+    storage_host_id: &str,
+    account_id: &str,
+    metadata_id: &str,
+    authorized_usage: u64,
+    db_conn: &mut DbConn,
+) -> Result<String, sqlx::Error> {
+    let authorized_usage = authorized_usage as i64;
+
+    let storage_grant_id: String = sqlx::query_scalar!(
+        r#"
+            INSERT INTO
+                storage_grants (storage_host_id, account_id, authorized_amount)
+                VALUES ($1, $2, $3)
+                RETURNING id;"#,
+        storage_host_id,
+        account_id,
+        authorized_usage,
+    )
+    .fetch_one(&mut *db_conn.0)
+    .await?;
+
+    sqlx::query!(r#"
+            INSERT INTO
+                storage_hosts_metadatas_storage_grants (storage_host_id, metadata_id, storage_grant_id)
+                VALUES ($1, $2, $3);"#,
+            storage_host_id,
+            metadata_id,
+            storage_grant_id,
+        )
+        .execute(&mut *db_conn.0)
+        .await?;
+
+    Ok(storage_grant_id)
 }
 
 /// Pull the bucket from the database by id and account_id and return it.
@@ -454,134 +491,101 @@ pub async fn read_storage_host(
 }
 
 /// Read the data + metadata usage of the given account id.
-/// This is the sum of all data_size and metadata_size for all metadata associated with the account.
+/// This is the sum of all data_size and metadata_size for all metadata associated with the account in the 'pending' or 'current' state.
 /// # Arguments
 /// * `account_id` - The id of the account to read.
-/// * `metadata_states` - The states of the metadata to include in the usage calculation.
-/// * `bucket_ids` - The ids of the buckets to include in the usage calculation. If empty, all buckets are included.
 /// * `db_conn` - The database connection to use.
 /// # Return Type
 /// Returns the current data usage if it exists, otherwise returns an error.
-pub async fn read_usage(
-    account_id: &str,
-    metadata_states: Vec<models::MetadataState>,
-    bucket_ids: Option<Vec<String>>,
-    db_conn: &mut DbConn,
-) -> Result<u64, sqlx::Error> {
-    let states = format!(
-        "\'{}\'",
-        metadata_states
-            .iter()
-            .map(|state| state.to_string())
-            .collect::<Vec<String>>()
-            .join("', '")
-    );
-    match bucket_ids {
-        Some(bucket_ids) => {
-            let bucket_ids = format!("\'{}\'", bucket_ids.join("', '"));
-            sqlx::query_as!(
-                GetTotalUsage,
-                r#"SELECT 
-                    COALESCE(SUM(COALESCE(m.data_size, m.expected_data_size)), 0) as "data_size!",
-                    COALESCE(SUM(m.metadata_size), 0) as "metadata_size!"
-                FROM
-                    metadata m
-                INNER JOIN
-                    buckets b ON b.id = m.bucket_id
-                WHERE
-                    b.account_id = $1 AND m.state IN ($2) AND b.id IN ($3);"#,
-                account_id,
-                states,
-                bucket_ids
-            )
-            .fetch_one(&mut *db_conn.0)
-            .await
-        }
-        None => {
-            sqlx::query_as!(
-                GetTotalUsage,
-                r#"SELECT 
-                COALESCE(SUM(m.data_size), 0) as "data_size!",
-                COALESCE(SUM(m.metadata_size), 0) as "metadata_size!"
-            FROM
-                metadata m
-            INNER JOIN
-                buckets b ON b.id = m.bucket_id
-            WHERE
-                b.account_id = $1 AND m.state IN ($2);"#,
-                account_id,
-                states
-            )
-            .fetch_one(&mut *db_conn.0)
-            .await
-        }
+pub async fn read_total_usage(account_id: &str, db_conn: &mut DbConn) -> Result<u64, sqlx::Error> {
+    let maybe_usage = sqlx::query_as!(
+        GetTotalUsage,
+        r#"SELECT 
+            COALESCE(SUM(COALESCE(m.data_size, m.expected_data_size)), 0) as "data_size!",
+            COALESCE(SUM(m.metadata_size), 0) as "metadata_size!"
+        FROM
+            metadata m
+        INNER JOIN
+            buckets b ON b.id = m.bucket_id
+        WHERE
+            b.account_id = $1 AND m.state IN ('pending', 'current');"#,
+        account_id,
+    )
+    .fetch_one(&mut *db_conn.0)
+    .await;
+    match maybe_usage {
+        Ok(usage) => Ok(usage.data_size as u64 + usage.metadata_size as u64),
+        Err(err) => match err {
+            sqlx::Error::RowNotFound => Err(sqlx::Error::RowNotFound),
+            _ => Err(err),
+        },
     }
-    .map(|usage| (usage.data_size + usage.metadata_size) as u64)
 }
 
 /// Read the data usage of the given account id.
-/// This is the sum of all data_size for all metadata associated with the account.
+/// This is the sum of all data_size for all metadata associated with the account in the 'pending' or 'current' state.
 /// # Arguments
 /// * `account_id` - The id of the account to read.
-/// * `metadata_states` - The states of the metadata to include in the usage calculation.
-/// * `bucket_ids` - The ids of the buckets to include in the usage calculation. If empty, all buckets are included.
 /// * `db_conn` - The database connection to use.
 /// # Return Type
 /// Returns the data usage if it exists, otherwise returns an error.
-pub async fn read_data_usage(
+pub async fn read_total_data_usage(
     account_id: &str,
-    metadata_states: Vec<models::MetadataState>,
-    bucket_ids: Option<Vec<String>>,
     db_conn: &mut DbConn,
 ) -> Result<u64, sqlx::Error> {
-    let states = format!(
-        "\'{}\'",
-        metadata_states
-            .iter()
-            .map(|state| state.to_string())
-            .collect::<Vec<String>>()
-            .join("', '")
-    );
+    let maybe_data_usage = sqlx::query_as!(
+        GetUsage,
+        r#"SELECT
+            COALESCE(SUM(COALESCE(m.data_size, m.expected_data_size)), 0) as "size!"
+        FROM
+            metadata m
+        INNER JOIN
+            buckets b ON b.id = m.bucket_id
+        WHERE
+            b.account_id = $1 AND m.state IN ('pending', 'current');"#,
+        account_id,
+    )
+    .fetch_one(&mut *db_conn.0)
+    .await;
+    match maybe_data_usage {
+        Ok(usage) => Ok(usage.size as u64),
+        Err(err) => match err {
+            sqlx::Error::RowNotFound => Err(sqlx::Error::RowNotFound),
+            _ => Err(err),
+        },
+    }
+}
 
-    match bucket_ids {
-        Some(bucket_ids) => {
-            let bucket_ids = format!("\'{}\'", bucket_ids.join("', '"));
-            sqlx::query_as!(
-                GetUsage,
-                r#"SELECT 
-                    COALESCE(SUM(COALESCE(m.data_size, m.expected_data_size)), 0) as "size!"
+/// Read the data usage of a given bucket id.
+/// This is the sum of all data_size for all metadata associated with the bucket in the 'pending' or 'current' state.
+/// # Arguments
+/// * `bucket_id` - The id of the bucket to read.
+/// * `db_conn` - The database connection to use.
+/// # Return Type
+/// Returns the data usage if it exists, otherwise returns an error.
+pub async fn read_bucket_data_usage(
+    bucket_id: &str,
+    db_conn: &mut DbConn,
+) -> Result<u64, sqlx::Error> {
+    let maybe_data_usage = sqlx::query_as!(
+        GetUsage,
+        r#"SELECT
+                    COALESCE(SUM(m.data_size), 0) as "size!"
                 FROM
                     metadata m
-                INNER JOIN
-                    buckets b ON b.id = m.bucket_id
                 WHERE
-                    b.account_id = $1 AND m.state IN ($2) AND b.id IN ($3);"#,
-                account_id,
-                states,
-                bucket_ids
-            )
-            .fetch_one(&mut *db_conn.0)
-            .await
-        }
-        None => {
-            sqlx::query_as!(
-                GetUsage,
-                r#"SELECT 
-                COALESCE(SUM(m.data_size), 0) as "size!"
-            FROM
-                metadata m
-            INNER JOIN
-                buckets b ON b.id = m.bucket_id
-            WHERE
-                b.account_id = $1 AND m.state IN ($2);"#,
-                account_id,
-                states
-            )
-            .fetch_one(&mut *db_conn.0)
-            .await
-        }
+                    m.bucket_id = $1 AND m.state IN ('pending', 'current');"#,
+        bucket_id,
+    )
+    .fetch_one(&mut *db_conn.0)
+    .await;
+    match maybe_data_usage {
+        Ok(usage) => Ok(usage.size as u64),
+        Err(err) => match err {
+            sqlx::Error::RowNotFound => Err(sqlx::Error::RowNotFound),
+            _ => Err(err),
+        },
     }
-    .map(|usage| usage.size as u64)
 }
 
 #[derive(Serialize)]
@@ -590,7 +594,7 @@ struct GetTotalUsage {
     pub metadata_size: i64,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, FromRow)]
 struct GetUsage {
     pub size: i64,
 }

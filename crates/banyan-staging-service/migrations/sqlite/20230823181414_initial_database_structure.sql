@@ -27,14 +27,15 @@ CREATE TABLE storage_grants (
   ),
 
   client_id TEXT NOT NULL REFERENCES clients(id),
-  remote_grant_id TEXT NOT NULL,
+  grant_id UUID NOT NULL,
+
   allowed_storage INT NOT NULL DEFAULT 0,
 
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE UNIQUE INDEX idx_storage_grants_on_remote_grant_id
-  ON storage_grants(remote_grant_id);
+CREATE UNIQUE INDEX idx_storage_grants_on_grant_id
+  ON storage_grants(grant_id);
 CREATE INDEX idx_storage_grants_on_created_at
   ON storage_grants(created_at);
 
@@ -51,13 +52,14 @@ CREATE TABLE uploads (
   metadata_id TEXT NOT NULL,
 
   reported_size INTEGER NOT NULL CHECK (reported_size >= 0) CONSTRAINT reported_size_positive,
-  final_size INTEGER NOT NULL CHECK (reported_size >= 0) CONSTRAINT final_size_positive,
+  final_size INTEGER CHECK (final_size IS NULL OR final_size >= 0) CONSTRAINT final_size_positive,
 
   file_path VARCHAR(128) NOT NULL,
   state VARCHAR(32) NOT NULL CHECK (state IN ('started', 'indexing', 'complete', 'failed')) CONSTRAINT state_in_list,
+  integrity_hash VARCHAR(32),
 
   started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  finished_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+  finished_at TIMESTAMP
 );
 
 CREATE INDEX idx_uploads_on_client_id
@@ -75,6 +77,8 @@ CREATE TABLE blocks (
   ),
 
   cid VARCHAR(64) NOT NULL,
+  data_length INTEGER NOT NULL CHECK (data_length >= 0),
+
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -82,11 +86,10 @@ CREATE UNIQUE INDEX idx_blocks_on_cid
   ON blocks(cid);
 
 CREATE TABLE uploads_blocks (
-  upload_id TEXT NOT NULL REFERENCES uploads(id),
-  block_id TEXT NOT NULL REFERENCES blocks(id),
+  upload_id TEXT NOT NULL REFERENCES uploads(id) ON DELETE CASCADE,
+  block_id UUID NOT NULL REFERENCES blocks(id) ON DELETE CASCADE,
 
   byte_offset INTEGER NOT NULL CHECK (byte_offset >= 0) CONSTRAINT byte_offset_positive,
-  data_length INTEGER NOT NULL CHECK (data_length >= 0) CONSTRAINT data_length_positive,
 
   associated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

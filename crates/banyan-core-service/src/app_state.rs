@@ -89,6 +89,18 @@ fn load_or_create_service_key(path: &PathBuf) -> Result<(EncodingKey, DecodingKe
         PKey::private_key_from_pem(pem_bytes.as_ref()).map_err(StateError::key_loading)?
     };
 
+    // Write the public key next to the signing key
+    let mut public_key_path = path.clone();
+    public_key_path.set_extension("public");
+    if !public_key_path.exists() {
+        let public_pem_bytes = service_private_key
+            .public_key_to_pem()
+            .map_err(StateError::key_loading)?;
+
+        std::fs::write(&public_key_path, public_pem_bytes)
+            .map_err(StateError::write_service_key)?;
+    }
+
     let private_pem_bytes = service_private_key
         .private_key_to_pem_pkcs8()
         .map_err(StateError::key_loading)?;

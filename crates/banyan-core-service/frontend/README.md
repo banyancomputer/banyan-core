@@ -59,6 +59,8 @@ This should set up the database and run the server.
 Run the frontend:
 
 ```bash
+export DB_PATH=$(pwd)/../data/server.db
+source ./.env.dev
 yarn dev
 ```
 

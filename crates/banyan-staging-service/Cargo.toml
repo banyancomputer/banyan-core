@@ -11,6 +11,8 @@ pico-args = "^0.5"
 thiserror = "^1"
 tokio = { version = "^1", features = ["macros", "net", "rt", "rt-multi-thread", "signal", "sync", "time"] }
 
+blake3 = "^1"
+bytes = "^1"
 jwt-simple = "^0.11"
 mime = "^0.3"
 regex = { version = "^1", default-features = false, features = ["std"] }
@@ -24,6 +26,7 @@ http = "^0.2"
 hyper = "^0.14"
 multer = { version = "^2", features = ["json", "tokio", "tokio-io"] }
 object_store = "^0.6"
+reqwest = { version = "^0.11", default-features = false, features = ["json"] }
 sqlx = { version = "^0.7", default-features = false, features = ["macros", "migrate", "runtime-tokio", "tls-rustls"] }
 tower = { version = "^0.4", features = ["timeout", "load-shed", "limit", "util"] }
 tower-http = { version = "^0.4", features = ["auth", "cors", "limit", "fs", "propagate-header", "request-id", "sensitive-headers", "set-header", "util", "trace", "validate-request"] }
@@ -32,10 +35,11 @@ tracing = { version = "^0.1", features = ["max_level_debug", "release_max_level_
 tracing-appender = "^0.2"
 tracing-futures = { version = "^0.2", default-features = false, features = ["std-future"] }
 tracing-subscriber = { version = "^0.3", default-features = false, features = ["ansi", "env-filter", "fmt", "local-time", "time", "tracing"] }
+cid = "0.10.1"
 
 [dev-dependencies]
 bytes = "^1.4"
-reqwest = { version = "^0.11", default-features = false, features = ["json", "multipart", "stream"] }
+reqwest = { version = "^0.11", default-features = false, features = ["multipart", "stream"] }
 
 [features]
 default = ["postgres", "sqlite"]

@@ -46,6 +46,7 @@ struct Claims {
 /// The storage ticket as a JWT string
 pub fn generate_storage_ticket(
     account_id: &str,
+    grant_id: &str,
     fingerprint: &str,
     storage_host_name: &str,
     storage_host_url: &str,
@@ -53,15 +54,20 @@ pub fn generate_storage_ticket(
     signing_key: &SigningKey,
 ) -> Result<String, jsonwebtoken::errors::Error> {
     let mut available_storage_map = Map::new();
-    available_storage_map.insert("availableStorage".to_string(), available_storage.into());
+
+    available_storage_map.insert("available_storage".to_string(), available_storage.into());
+    available_storage_map.insert("grant_id".to_string(), grant_id.into());
+
     let mut capabilities = Map::new();
     capabilities.insert(storage_host_url.to_string(), available_storage_map.into());
+
     let nonce = rand::thread_rng()
         .sample_iter(&rand::distributions::Alphanumeric)
         .take(STORAGE_TICKET_NONCE_LENGTH)
         .map(char::from)
         .collect::<String>();
     let header = jsonwebtoken::Header::new(jsonwebtoken::Algorithm::ES384);
+
     let claims = Claims {
         issued_at: chrono::Utc::now().timestamp() as u64,
         nonce,
