@@ -4,9 +4,7 @@ use sqlx::FromRow;
 use crate::db::models;
 use crate::extractors::DbConn;
 
-pub async fn select_storage_host(
-    db_conn: &mut DbConn,
-) -> Result<models::StorageHost, sqlx::Error> {
+pub async fn select_storage_host(db_conn: &mut DbConn) -> Result<models::StorageHost, sqlx::Error> {
     sqlx::query_as!(
         models::StorageHost,
         r#"SELECT id, name, url, used_storage, available_storage, fingerprint, pem FROM storage_hosts ORDER BY RANDOM() LIMIT 1;"#,
