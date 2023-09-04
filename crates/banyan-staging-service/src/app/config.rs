@@ -6,6 +6,7 @@ use std::path::PathBuf;
 use jwt_simple::algorithms::ES384KeyPair;
 use pico_args::Arguments;
 use tracing::Level;
+use url::Url;
 
 use crate::app::Error;
 
@@ -15,6 +16,7 @@ pub struct Config {
     log_level: Level,
 
     db_url: Option<String>,
+    hostname: Url,
 
     platform_auth_key_path: PathBuf,
     platform_base_url: reqwest::Url,
@@ -26,6 +28,10 @@ pub struct Config {
 impl Config {
     pub fn db_url(&self) -> Option<&str> {
         self.db_url.as_ref().map(String::as_ref)
+    }
+
+    pub fn hostname(&self) -> Url {
+        self.hostname.clone()
     }
 
     pub fn platform_base_url(&self) -> reqwest::Url {
@@ -86,6 +92,10 @@ impl Config {
             std::process::exit(0);
         }
 
+        let hostname = args
+            .opt_value_from_str("--hostname")?
+            .unwrap_or("http://127.0.0.1:3002".parse().unwrap());
+
         let listen_addr = args
             .opt_value_from_str("--listen")?
             .unwrap_or(SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), 3000));
@@ -113,6 +123,7 @@ impl Config {
             log_level,
 
             db_url,
+            hostname,
 
             platform_auth_key_path,
             platform_base_url,
