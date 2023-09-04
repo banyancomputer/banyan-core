@@ -4,6 +4,15 @@ use sqlx::FromRow;
 use crate::db::models;
 use crate::extractors::DbConn;
 
+pub async fn select_storage_host(db_conn: &mut DbConn) -> Result<models::StorageHost, sqlx::Error> {
+    sqlx::query_as!(
+        models::StorageHost,
+        r#"SELECT id, name, url, used_storage, available_storage, fingerprint, pem FROM storage_hosts ORDER BY RANDOM() LIMIT 1;"#,
+    )
+    .fetch_one(&mut *db_conn.0)
+    .await
+}
+
 pub async fn record_storage_grant(
     storage_host_id: &str,
     account_id: &str,
@@ -109,19 +118,20 @@ pub async fn delete_bucket(
     account_id: &str,
     bucket_id: &str,
     db_conn: &mut DbConn,
-) -> Result<models::Bucket, sqlx::Error> {
-    let maybe_bucket = sqlx::query_as!(
-        models::Bucket,
-        r#"DELETE FROM buckets WHERE id = $1 AND account_id = $2 RETURNING id, account_id, name, type, storage_class"#,
+) -> Result<(), sqlx::Error> {
+    // delete does not tell us whether any rows existed, to return a 404 we need to see if its
+    // present or not. We'll cheat and use our read bucket method for this 404 check.
+    read_bucket(account_id, bucket_id, db_conn).await?;
+
+    sqlx::query!(
+        r#"DELETE FROM buckets WHERE id = $1 AND account_id = $2;"#,
         bucket_id,
         account_id,
     )
-    .fetch_one(&mut *db_conn.0)
-    .await;
-    match maybe_bucket {
-        Ok(bucket) => Ok(bucket),
-        Err(err) => Err(err),
-    }
+    .execute(&mut *db_conn.0)
+    .await?;
+
+    Ok(())
 }
 
 /// Authorize the given account_id to read the given bucket_id.
@@ -442,32 +452,6 @@ pub async fn read_all_snapshots(
     .await;
     match maybe_snapshots {
         Ok(snapshots) => Ok(snapshots),
-        Err(err) => match err {
-            sqlx::Error::RowNotFound => Err(sqlx::Error::RowNotFound),
-            _ => Err(err),
-        },
-    }
-}
-
-/// Read storage host by name.
-/// # Arguments
-/// * `name` - The name of the storage host to read.
-/// * `db_conn` - The database connection to use.
-/// # Return Type
-/// Returns the storage host if it exists, otherwise returns an error.
-pub async fn read_storage_host(
-    name: &str,
-    db_conn: &mut DbConn,
-) -> Result<models::StorageHost, sqlx::Error> {
-    let maybe_storage_host = sqlx::query_as!(
-        models::StorageHost,
-        r#"SELECT id, name, url, used_storage, available_storage, fingerprint, pem FROM storage_hosts WHERE name = $1;"#,
-        name,
-    )
-    .fetch_one(&mut *db_conn.0)
-    .await;
-    match maybe_storage_host {
-        Ok(storage_host) => Ok(storage_host),
         Err(err) => match err {
             sqlx::Error::RowNotFound => Err(sqlx::Error::RowNotFound),
             _ => Err(err),
