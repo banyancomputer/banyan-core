@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use jwt_simple::prelude::*;
 use object_store::local::LocalFileSystem;
 use sha2::Digest;
+use url::Url;
 
 use crate::app::{Config, Error, PlatformAuthKey, PlatformVerificationKey};
 use crate::database::{self, Database};
@@ -11,9 +12,11 @@ use crate::database::{self, Database};
 #[derive(Clone)]
 pub struct State {
     database: Database,
+    hostname: Url,
 
-    platform_verification_key: PlatformVerificationKey,
     platform_auth_key: PlatformAuthKey,
+    platform_base_url: reqwest::Url,
+    platform_verification_key: PlatformVerificationKey,
 
     upload_directory: PathBuf,
 }
@@ -56,12 +59,22 @@ impl State {
 
         Ok(Self {
             database,
+            hostname: config.hostname(),
 
+            platform_auth_key: PlatformAuthKey::new(config.platform_base_url(), platform_auth_key),
+            platform_base_url: config.platform_base_url(),
             platform_verification_key: PlatformVerificationKey::new(platform_verification_key),
-            platform_auth_key: PlatformAuthKey::new(platform_auth_key),
 
             upload_directory: config.upload_directory(),
         })
+    }
+
+    pub fn hostname(&self) -> Url {
+        self.hostname.clone()
+    }
+
+    pub fn platform_base_url(&self) -> Url {
+        self.platform_base_url.clone()
     }
 
     pub fn platform_verification_key(&self) -> PlatformVerificationKey {
@@ -100,8 +113,9 @@ pub fn fingerprint_key(keys: &ES384KeyPair) -> String {
     hasher.update(compressed_point);
     let hashed_bytes = hasher.finalize();
 
-    hashed_bytes.iter().fold(String::new(), |mut output, byte| {
-        let _ = write!(output, "{byte:02x}");
-        output
-    })
+    hashed_bytes
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<Vec<_>>()
+        .join(":")
 }

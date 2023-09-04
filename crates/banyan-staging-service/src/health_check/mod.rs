@@ -24,10 +24,10 @@ pub fn router(state: State) -> Router<State> {
         .allow_credentials(false);
 
     Router::new()
-        .layer(cors_layer)
-        .layer(RequestBodyLimitLayer::new(HEALTHCHECK_REQUEST_SIZE_LIMIT))
         .route("/healthz", get(liveness::handler))
         .route("/readyz", get(readiness::handler))
         .route("/version", get(version::handler))
+        .layer(cors_layer)
+        .layer(RequestBodyLimitLayer::new(HEALTHCHECK_REQUEST_SIZE_LIMIT))
         .with_state(state)
 }
