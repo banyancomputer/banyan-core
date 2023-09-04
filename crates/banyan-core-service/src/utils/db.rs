@@ -109,19 +109,16 @@ pub async fn delete_bucket(
     account_id: &str,
     bucket_id: &str,
     db_conn: &mut DbConn,
-) -> Result<models::Bucket, sqlx::Error> {
-    let maybe_bucket = sqlx::query_as!(
-        models::Bucket,
-        r#"DELETE FROM buckets WHERE id = $1 AND account_id = $2 RETURNING id, account_id, name, type, storage_class"#,
+) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        r#"DELETE FROM buckets WHERE id = $1 AND account_id = $2;"#,
         bucket_id,
         account_id,
     )
-    .fetch_one(&mut *db_conn.0)
-    .await;
-    match maybe_bucket {
-        Ok(bucket) => Ok(bucket),
-        Err(err) => Err(err),
-    }
+    .execute(&mut *db_conn.0)
+    .await?;
+
+    Ok(())
 }
 
 /// Authorize the given account_id to read the given bucket_id.
