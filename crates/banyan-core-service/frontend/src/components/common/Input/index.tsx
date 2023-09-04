@@ -25,9 +25,9 @@ export const Input = React.memo(() => {
 
     /** Ceates array of single-level elements to be able to go through them by search */
     useEffect(() => {
-        setSearchList(buckets.map(buclet =>
-            [...buclet.files.map(file => ({ label: file.name, path: `/bucket/${buclet.id}` })),
-            { label: buclet.name, path: `/bucket/${buclet.id}` }]
+        setSearchList(buckets.map(bucket =>
+            [...bucket?.files?.map(file => ({ label: file.name, path: `/bucket/${bucket.id}` })),
+            { label: bucket.name, path: `/bucket/${bucket.id}` }]
         ).flat()
         );
     }, [buckets]);

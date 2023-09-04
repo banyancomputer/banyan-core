@@ -45,6 +45,9 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
         setBucketsCopy(buckets);
     }, [buckets]);
 
+    console.log(buckets);
+    
+
     return (
         <div className="max-h-[calc(100vh-210px)] overflow-x-auto border-2 border-gray-200 rounded-xl" >
             <table className="table table-pin-rows w-full text-gray-600 rounded-xl ">
@@ -86,8 +89,8 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
                             <tr className="bg-table-cellBackground">
                                 <td className="px-3 py-4">{bucket.name}</td>
                                 <td className="px-3 py-4"></td>
-                                <td className="px-3 py-4"></td>
-                                <td className="px-3 py-4">{bucket.bucket_type}</td>
+                                <td className="px-3 py-4">{bucket.storageClass}</td>
+                                <td className="px-3 py-4">{bucket.bucketType}</td>
                                 <td className="px-3 py-4"></td>
                                 <td className="px-3 py-4"></td>
                                 <td className="px-3 py-4">
