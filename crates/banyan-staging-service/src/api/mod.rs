@@ -15,7 +15,7 @@ pub fn router(state: State) -> Router<State> {
         .allow_methods(vec![Method::GET])
         .allow_headers(vec![ACCEPT, ORIGIN])
         .allow_origin(vec![state.hostname().as_str().parse().unwrap()])
-        .allow_credentials(false);
+        .allow_credentials(true);
 
     Router::new()
         .route("/blocks/:block_id", get(block_retrieval::handler))
