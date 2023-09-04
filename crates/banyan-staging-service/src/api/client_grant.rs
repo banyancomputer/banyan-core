@@ -125,8 +125,9 @@ async fn create_storage_grant(
         Executor::Postgres(ref mut conn) => {
             use crate::database::postgres;
 
-            let grant_id: DbResult<BareId> = sqlx::query_as("INSERT INTO storage_grants (client_id,  allowed_storage) VALUES ($1, $2) RETURNING id;")
+            let grant_id: DbResult<BareId> = sqlx::query_as("INSERT INTO storage_grants (client_id, grant_id, allowed_storage) VALUES ($1, $2, $3) RETURNING id;")
                 .bind(client_id.to_string())
+                .bind(grant.grant_id().to_string())
                 .bind(grant.authorized_data_size() as i64)
                 .fetch_one(conn)
                 .await
@@ -143,8 +144,9 @@ async fn create_storage_grant(
         Executor::Sqlite(ref mut conn) => {
             use crate::database::sqlite;
 
-            let grant_id: DbResult<BareId> = sqlx::query_as("INSERT INTO storage_grants (client_id, allowed_storage) VALUES ($1, $2) RETURNING id;")
+            let grant_id: DbResult<BareId> = sqlx::query_as("INSERT INTO storage_grants (client_id, grant_id, allowed_storage) VALUES ($1, $2, $3) RETURNING id;")
                 .bind(client_id.to_string())
+                .bind(grant.grant_id().to_string())
                 .bind(grant.authorized_data_size() as i64)
                 .fetch_one(conn)
                 .await

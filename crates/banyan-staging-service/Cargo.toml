@@ -26,6 +26,7 @@ http = "^0.2"
 hyper = "^0.14"
 multer = { version = "^2", features = ["json", "tokio", "tokio-io"] }
 object_store = "^0.6"
+reqwest = { version = "^0.11", default-features = false, features = ["json"] }
 sqlx = { version = "^0.7", default-features = false, features = ["macros", "migrate", "runtime-tokio", "tls-rustls"] }
 tower = { version = "^0.4", features = ["timeout", "load-shed", "limit", "util"] }
 tower-http = { version = "^0.4", features = ["auth", "cors", "limit", "fs", "propagate-header", "request-id", "sensitive-headers", "set-header", "util", "trace", "validate-request"] }
@@ -38,7 +39,7 @@ cid = "0.10.1"
 
 [dev-dependencies]
 bytes = "^1.4"
-reqwest = { version = "^0.11", default-features = false, features = ["json", "multipart", "stream"] }
+reqwest = { version = "^0.11", default-features = false, features = ["multipart", "stream"] }
 
 [features]
 default = ["postgres", "sqlite"]

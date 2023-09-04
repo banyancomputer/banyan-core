@@ -112,9 +112,8 @@ where
             return Err(Self::Rejection::BadNonce);
         }
 
-        // todo: collect authorized and current storage amounts
-        //"SELECT allowed_storage FROM storage_grants WHERE client_id = $1 ORDER BY created_at DESC LIMIT 1;" // $1 is the id column from the last one
-        //"SELECT SUM(COALESCE(final_size, reported_size)) AS consumed_storage FROM uploads WHERE client_id = $1;"
+        let authorized_storage = current_authorized_storage(&database, &client_id.id).await?;
+        let consumed_storage = current_consumed_storage(&database, &client_id.id).await?;
 
         let internal_id = match Uuid::parse_str(&client_id.id) {
             Ok(pi) => pi,
@@ -132,10 +131,87 @@ where
             platform_id,
             fingerprint: key_id,
 
-            // placeholders for now
-            authorized_storage: 1_000_000,
-            consumed_storage: 25_000,
+            authorized_storage,
+            consumed_storage,
         })
+    }
+}
+
+pub async fn current_authorized_storage(
+    db: &Database,
+    client_id: &str,
+) -> Result<u64, AuthenticatedClientError> {
+    match db.ex() {
+        #[cfg(feature = "postgres")]
+        Executor::Postgres(ref mut conn) => {
+            use crate::database::postgres;
+
+            let maybe_allowed_storage: Option<i64> = sqlx::query_scalar(
+                "SELECT allowed_storage FROM storage_grants WHERE client_id = $1 ORDER BY created_at DESC LIMIT 1;",
+            )
+            .bind(client_id)
+            .fetch_optional(conn)
+            .await
+            .map_err(postgres::map_sqlx_error)
+            .map_err(AuthenticatedClientError::DbFailure)?;
+
+            Ok(maybe_allowed_storage.unwrap_or(0) as u64)
+        }
+
+        #[cfg(feature = "sqlite")]
+        Executor::Sqlite(ref mut conn) => {
+            use crate::database::sqlite;
+
+            let maybe_allowed_storage: Option<i64> = sqlx::query_scalar(
+                "SELECT allowed_storage FROM storage_grants WHERE client_id = $1 ORDER BY created_at DESC LIMIT 1;",
+            )
+            .bind(client_id)
+            .fetch_optional(conn)
+            .await
+            .map_err(sqlite::map_sqlx_error)
+            .map_err(AuthenticatedClientError::DbFailure)?;
+
+            Ok(maybe_allowed_storage.unwrap_or(0) as u64)
+        }
+    }
+}
+
+pub async fn current_consumed_storage(
+    db: &Database,
+    client_id: &str,
+) -> Result<u64, AuthenticatedClientError> {
+    match db.ex() {
+        #[cfg(feature = "postgres")]
+        Executor::Postgres(ref mut conn) => {
+            use crate::database::postgres;
+
+            let maybe_consumed_storage: Option<i64> = sqlx::query_scalar(
+                "SELECT SUM(COALESCE(final_size, reported_size)) AS consumed_storage FROM uploads WHERE client_id = $1;",
+            )
+            .bind(client_id)
+            .fetch_optional(conn)
+            .await
+            .map_err(postgres::map_sqlx_error)
+            .map_err(AuthenticatedClientError::DbFailure)?;
+
+            Ok(maybe_consumed_storage.unwrap_or(0) as u64)
+        }
+
+        #[cfg(feature = "sqlite")]
+        Executor::Sqlite(ref mut conn) => {
+            use crate::database::sqlite;
+
+            let maybe_consumed_storage: Option<i64> = sqlx::query_scalar(
+                "SELECT SUM(COALESCE(final_size, reported_size)) AS consumed_storage FROM uploads WHERE client_id = $1;",
+            )
+            .bind(client_id)
+            .fetch_optional(conn)
+            .await
+            .map_err(sqlite::map_sqlx_error)
+            .map_err(AuthenticatedClientError::DbFailure)?;
+
+            Ok(maybe_consumed_storage.unwrap_or(0) as u64)
+        }
     }
 }
 

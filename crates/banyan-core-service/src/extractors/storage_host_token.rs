@@ -19,7 +19,7 @@ use crate::extractors::DbConn;
 pub const EXPIRATION_WINDOW_SECS: u64 = 900;
 
 static KEY_ID_VALIDATOR: OnceLock<regex::Regex> = OnceLock::new();
-const KEY_ID_REGEX: &str = r"^[0-9a-f]{2}(:[0-9a-f]{2}){19}$";
+const KEY_ID_REGEX: &str = r"^[0-9a-f]{2}(:[0-9a-f]{2}){31}$";
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -37,7 +37,7 @@ pub struct StorageHostToken {
     pub not_before: u64,
 
     #[serde(rename = "aud")]
-    pub audience: String,
+    pub audience: Vec<String>,
 
     #[serde(rename = "sub")]
     pub subject: String,

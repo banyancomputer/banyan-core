@@ -23,7 +23,6 @@ pub async fn handler(
         .expect("parsed cid to unparse");
 
     let block_details = block_from_normalized_cid(&db, &normalized_cid).await?;
-
     if block_details.platform_id != client.platform_id().to_string() {
         return Err(BlockRetrievalError::NotBlockOwner);
     }
@@ -32,20 +31,34 @@ pub async fn handler(
     let byte_end = byte_start + (block_details.length as usize);
     let byte_range = byte_start..byte_end;
 
-    let retrieval_options = GetOptions {
-        range: Some(byte_range),
-        ..Default::default()
-    };
+    let mut headers = axum::http::HeaderMap::new();
 
+    headers.insert(
+        axum::http::header::CONTENT_TYPE,
+        "application/octet-stream".parse().unwrap(),
+    );
+    headers.insert(
+        axum::http::header::CONTENT_DISPOSITION,
+        "attachment; filename=\"{normalized_cid}.bin\""
+            .parse()
+            .unwrap(),
+    );
+    headers.insert(
+        axum::http::header::CONTENT_LENGTH,
+        byte_range.len().to_string().as_str().parse().unwrap(),
+    );
+
+    // this isn't ideal as we have to load the entire block from memory, object_store does support
+    // passing in the byte range using GetOptions to the get_opts method on the ObjectStore trait,
+    // however data in the "File" type explicitly ignores this range which is incredibly
+    // frustrating...
     let object_path = object_store::path::Path::from(block_details.file_path.as_str());
-    let handle = store
-        .get_opts(&object_path, retrieval_options)
+    let data = store
+        .get_range(&object_path, byte_range)
         .await
         .map_err(BlockRetrievalError::RetrievalFailed)?;
 
-    // todo: content-length and content-disposition headers
-
-    Ok((StatusCode::OK, StreamBody::new(handle.into_stream())).into_response())
+    Ok((StatusCode::OK, headers, data).into_response())
 }
 
 #[derive(sqlx::FromRow, Debug)]
