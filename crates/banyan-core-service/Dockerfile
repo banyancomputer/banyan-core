@@ -4,7 +4,6 @@
 FROM docker.io/library/rust:1.71.0 AS build
 
 ARG CI_BUILD_REF=
-ARG FEATURES=sqlite
 ARG SERVICE_NAME=banyan-core-service
 
 RUN mkdir -p /usr/src/build
@@ -16,13 +15,14 @@ WORKDIR /usr/src/build
 # changed.
 RUN cargo init --name $SERVICE_NAME
 COPY Cargo.toml Cargo.lock /usr/src/build
-RUN cargo build --release --no-default-features --features $FEATURES
+RUN cargo build --release
 
 # Copy in the actual service source code, and perform the release build
 # (install is release mode by default).
 COPY build.rs /usr/src/build/build.rs
 COPY migrations /usr/src/build/migrations
 COPY src /usr/src/build/src
+COPY .sqlx /usr/src/build/.sqlx
 
 # The container build environment doesn't have access to the entire git repo
 # only the immediate sources. We get around this by passing it into the build
