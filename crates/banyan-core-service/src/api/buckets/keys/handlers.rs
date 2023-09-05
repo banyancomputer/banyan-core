@@ -29,7 +29,7 @@ pub async fn create(
             StatusCode::BAD_REQUEST,
             format!("invalid bucket key: {:?}", errors.errors()),
         )
-        .into_response()
+            .into_response();
     }
 
     // Create the Bucket Key
@@ -40,7 +40,7 @@ pub async fn create(
         })
         .into_response(),
         Err(err) => CoreError::sqlx_error(err, "create", "bucket key").into_response(),
-    }    
+    }
 }
 
 // TODO: pagination
@@ -56,7 +56,7 @@ pub async fn read_all(
     if let Err(err) = db::authorize_bucket(&account_id, &bucket_id, &mut db_conn).await {
         // Return error response if not
         return CoreError::sqlx_error(err, "read", "bucket").into_response();
-    } 
+    }
 
     // Try to read all the Bucket Keys, respond based on success
     match db::read_all_bucket_keys(&bucket_id, &mut db_conn).await {
@@ -138,7 +138,7 @@ pub async fn reject(
     if let Err(err) = db::authorize_bucket(&account_id, &bucket_id, &mut db_conn).await {
         // Return error response if not
         return CoreError::sqlx_error(err, "read", "bucket").into_response();
-    } 
+    }
 
     // If we can successfully read the key from the database
     match db::read_bucket_key(&bucket_id, &bucket_key_id, &mut db_conn).await {
@@ -159,7 +159,9 @@ pub async fn reject(
                         approved: bucket_key.approved,
                     })
                     .into_response(),
-                    Err(err) => return CoreError::sqlx_error(err, "reject", "bucket key").into_response(),
+                    Err(err) => {
+                        return CoreError::sqlx_error(err, "reject", "bucket key").into_response()
+                    }
                 }
             }
         }

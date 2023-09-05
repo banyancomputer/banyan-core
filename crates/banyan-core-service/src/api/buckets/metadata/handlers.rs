@@ -10,7 +10,6 @@ use tokio::io::AsyncWriteExt;
 use uuid::Uuid;
 
 use crate::api::buckets::metadata::{requests, responses};
-use crate::api::default_response;
 use crate::db::models;
 use crate::error::CoreError;
 use crate::extractors::{ApiToken, ApiTokenKid, DataStore, DbConn, SigningKey};
@@ -94,7 +93,7 @@ pub async fn push(
         Ok(metadata) => metadata,
         Err(err) => {
             return CoreError::sqlx_error(err, "create", "metadata").into_response();
-        },
+        }
     };
 
     /* 3. Process the upload */
@@ -127,16 +126,11 @@ pub async fn push(
             .execute(&mut *db_conn.0)
             .await;
             // Return the correct response based on the result of the update
-            match maybe_failed_metadata_upload {
-                Ok(_) => {
-                    return (
-                        StatusCode::INTERNAL_SERVER_ERROR,
-                        "internal server error".to_string(),
-                    )
-                        .into_response();
-                }
-                Err(err) => { return CoreError::sqlx_error(err, "mark failed", "metadata upload").into_response(); }
-            };
+            return match maybe_failed_metadata_upload {
+                Ok(_) => CoreError::generic_error("upload", "metadata"),
+                Err(err) => CoreError::sqlx_error(err, "mark failed", "metadata upload"),
+            }
+            .into_response();
         }
     };
     // Try and upload the file
@@ -154,8 +148,7 @@ pub async fn push(
                 .abort_multipart(&file_path, &upload_id)
                 .await
                 .expect("aborting to success");
-            tracing::error!("unable to process upload");
-            return default_response();
+            return CoreError::default_error(Some("unable to process upload")).into_response();
         }
     };
 
@@ -165,8 +158,10 @@ pub async fn push(
     let current_usage = match db::read_total_usage(&account_id, &mut db_conn).await {
         Ok(usage) => usage,
         Err(err) => {
-            tracing::error!("unable to read account storage usage: {err}");
-            return default_response();
+            return CoreError::default_error(Some(&format!(
+                "unable to read account storage usage: {err}"
+            )))
+            .into_response();
         }
     };
     // Based on how much stuff there planning on pushing, reject the upload if it would exceed the quota
@@ -185,8 +180,11 @@ pub async fn push(
         match maybe_failed_metadata_upload {
             Ok(_) => {}
             Err(err) => {
-                tracing::error!("unable to mark metadata upload as failed: {err}");
-                return default_response();
+                return CoreError::default_error(Some(&format!(
+                    "unable to mark metadata upload as failed: {}",
+                    err
+                )))
+                .into_response();
             }
         };
         // Return the correct response based on the result of the update
@@ -223,12 +221,10 @@ pub async fn push(
         let current_metadata = match maybe_current_metadata {
             Ok(cr) => cr,
             Err(err) => {
-                tracing::error!("unable to update bucket metadata after push: {err}");
-                return (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "internal server error".to_string(),
-                )
-                    .into_response();
+                return CoreError::default_error(Some(&format!(
+                    "unable to update bucket metadata after push: {err}"
+                )))
+                .into_response();
             }
         };
         // Set all current metadata to outdated, except for the one we just uploaded
@@ -256,12 +252,10 @@ pub async fn push(
                     .into_response()
             }
             Err(err) => {
-                tracing::error!("unable to update bucket metadata after push: {err}");
-                return (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "internal server error".to_string(),
-                )
-                    .into_response();
+                return CoreError::default_error(Some(&format!(
+                    "unable to update bucket metadata after push: {err}"
+                )))
+                .into_response();
             }
         }
     }
@@ -281,8 +275,10 @@ pub async fn push(
     let updated_metadata = match maybe_updated_metadata {
         Ok(cr) => cr,
         Err(err) => {
-            tracing::error!("unable to update bucket metadata after push: {err}");
-            return default_response();
+            return CoreError::default_error(Some(&format!(
+                "unable to update bucket metadata after push: {err}"
+            )))
+            .into_response();
         }
     };
 
@@ -293,8 +289,10 @@ pub async fn push(
     let data_usage = match db::read_total_data_usage(&account_id, &mut db_conn).await {
         Ok(usage) => usage,
         Err(err) => {
-            tracing::error!("unable to read account data usage: {err}");
-            return default_response();
+            return CoreError::default_error(Some(&format!(
+                "unable to read account data usage: {err}"
+            )))
+            .into_response();
         }
     };
 
@@ -304,8 +302,8 @@ pub async fn push(
     let storage_host = match db::read_storage_host(STORAGE_HOST, &mut db_conn).await {
         Ok(sh) => sh,
         Err(err) => {
-            tracing::error!("unable to read storage host: {err}");
-            return default_response();
+            return CoreError::default_error(Some(&format!("unable to read storage host: {err}")))
+                .into_response();
         }
     };
     // TODO: Check if the storage host is full. If so, abort with 503
@@ -322,8 +320,8 @@ pub async fn push(
     {
         Ok(sgi) => sgi,
         Err(err) => {
-            tracing::error!("unable record storage grant: {err}");
-            return default_response();
+            return CoreError::default_error(Some(&format!("unable record storage grant: {err}")))
+                .into_response();
         }
     };
 
@@ -338,8 +336,10 @@ pub async fn push(
     ) {
         Ok(ticket) => ticket,
         Err(err) => {
-            tracing::error!("unable to generate storage ticket: {err}");
-            return default_response();
+            return CoreError::default_error(Some(&format!(
+                "unable to generate storage ticket: {err}"
+            )))
+            .into_response();
         }
     };
 
@@ -370,8 +370,8 @@ pub async fn pull(
                 return (StatusCode::NOT_FOUND, format!("bucket not found: {err}")).into_response();
             }
             _ => {
-                tracing::error!("unable to read bucket: {err}");
-                return default_response();
+                return CoreError::default_error(Some(&format!("unable to read bucket: {err}")))
+                    .into_response();
             }
         },
     };
@@ -384,8 +384,8 @@ pub async fn pull(
                     .into_response();
             }
             _ => {
-                tracing::error!("unable to read metadata: {err}");
-                return default_response();
+                return CoreError::default_error(Some(&format!("unable to read metadata: {err}")))
+                    .into_response();
             }
         },
     };
@@ -400,8 +400,8 @@ pub async fn pull(
     let reader = match store.get(&file_path).await {
         Ok(r) => r,
         Err(err) => {
-            tracing::error!("unable to read metadata file: {err}");
-            return default_response();
+            return CoreError::default_error(Some(&format!("unable to read metadata file: {err}")))
+                .into_response();
         }
     };
     let stream = reader.into_stream();
@@ -438,8 +438,8 @@ pub async fn read(
                 return (StatusCode::NOT_FOUND, format!("bucket not found: {err}")).into_response();
             }
             _ => {
-                tracing::error!("unable to read bucket: {err}");
-                return default_response();
+                return CoreError::default_error(Some(&format!("unable to read bucket: {err}")))
+                    .into_response();
             }
         },
     };
@@ -460,8 +460,8 @@ pub async fn read(
                     .into_response();
             }
             _ => {
-                tracing::error!("unable to read metadata: {err}");
-                return default_response();
+                return CoreError::default_error(Some(&format!("unable to read metadata: {err}")))
+                    .into_response();
             }
         },
     };
@@ -483,8 +483,8 @@ pub async fn read_all(
                 return (StatusCode::NOT_FOUND, format!("bucket not found: {err}")).into_response();
             }
             _ => {
-                tracing::error!("unable to read bucket: {err}");
-                return default_response();
+                return CoreError::default_error(Some(&format!("unable to read bucket: {err}")))
+                    .into_response();
             }
         },
     };
@@ -508,11 +508,7 @@ pub async fn read_all(
                     .into_response();
             }
             _ => {
-                tracing::error!("unable to read metadata: {err}");
-                return (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "internal server error".to_string(),
-                )
+                return CoreError::default_error(Some(&format!("unable to read metadata: {err}")))
                     .into_response();
             }
         },
@@ -535,11 +531,7 @@ pub async fn read_current(
                 return (StatusCode::NOT_FOUND, format!("bucket not found: {err}")).into_response();
             }
             _ => {
-                tracing::error!("unable to read bucket: {err}");
-                return (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "internal server error".to_string(),
-                )
+                return CoreError::default_error(Some(&format!("unable to read bucket: {err}")))
                     .into_response();
             }
         },
@@ -563,12 +555,10 @@ pub async fn read_current(
                     .into_response();
             }
             _ => {
-                tracing::error!("unable to read current metadata: {err}");
-                return (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "internal server error".to_string(),
-                )
-                    .into_response();
+                return CoreError::default_error(Some(&format!(
+                    "unable to read bucket metadata: {err}"
+                )))
+                .into_response();
             }
         },
     };

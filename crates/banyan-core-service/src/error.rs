@@ -7,7 +7,7 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 #[non_exhaustive]
 pub struct CoreError {
-    kind: CoreErrorKind
+    kind: CoreErrorKind,
 }
 
 impl Display for CoreError {
@@ -17,28 +17,40 @@ impl Display for CoreError {
 }
 
 impl CoreError {
-    /// Deault error 
+    /// Deault error
     fn default_response(message: Option<String>) -> Response {
         (
             StatusCode::INTERNAL_SERVER_ERROR,
             message.unwrap_or("internal server error".to_string()),
         )
-        .into_response()
+            .into_response()
     }
 
-    pub fn default_error(message: Option<String>) -> Self {
-        Self { kind: CoreErrorKind::Default(message) }
+    pub fn default_error(message: Option<&str>) -> Self {
+        Self {
+            kind: CoreErrorKind::Default(message.map(|v| v.to_string())),
+        }
     }
 
     pub fn sqlx_error(err: sqlx::Error, operation: &str, resource: &str) -> Self {
-        Self { kind: CoreErrorKind::Sqlx { err, operation: operation.to_string(), resource: resource.to_string() }}
+        Self {
+            kind: CoreErrorKind::Sqlx {
+                err,
+                operation: operation.to_string(),
+                resource: resource.to_string(),
+            },
+        }
     }
 
     pub fn generic_error(operation: &str, resource: &str) -> Self {
-        Self { kind: CoreErrorKind::Generic { operation: operation.to_string(), resource: resource.to_string() }}
+        Self {
+            kind: CoreErrorKind::Generic {
+                operation: operation.to_string(),
+                resource: resource.to_string(),
+            },
+        }
     }
 }
-
 
 #[derive(Debug)]
 pub enum CoreErrorKind {
@@ -46,28 +58,36 @@ pub enum CoreErrorKind {
     Default(Option<String>),
     /// SQLX Error
     Sqlx {
-        /// Error 
+        /// Error
         err: sqlx::Error,
         /// Operation
         operation: String,
         /// Resource
         resource: String,
     },
-    /// Generic 
+    /// Generic
     Generic {
         /// Operation
         operation: String,
         /// Resource
         resource: String,
-    }
+    },
 }
-
 
 impl IntoResponse for CoreError {
     fn into_response(self) -> axum::response::Response {
         match self.kind {
+            CoreErrorKind::Default(message) => {
+                let message = message.unwrap_or("internal server error".to_string());
+                tracing::error!("{message}");
+                Self::default_response(Some(message))
+            }
             // Sqlx Error
-            CoreErrorKind::Sqlx { err, operation, resource } => {
+            CoreErrorKind::Sqlx {
+                err,
+                operation,
+                resource,
+            } => {
                 tracing::error!("unable to {} {}", operation, resource);
                 match err {
                     sqlx::Error::Database(db_err) => {
@@ -77,7 +97,7 @@ impl IntoResponse for CoreError {
                                 StatusCode::CONFLICT,
                                 format!("{} with that name already exists", resource),
                             )
-                            .into_response()
+                                .into_response()
                         } else {
                             Self::default_response(None)
                         }
@@ -86,14 +106,12 @@ impl IntoResponse for CoreError {
                         StatusCode::NOT_FOUND,
                         format!("{} not found: {}", resource, err),
                     )
-                    .into_response(),
+                        .into_response(),
                     // Catch all others
-                    _ => {
-                        Self::default_response(None)
-                    }
+                    _ => Self::default_response(None),
                 }
-            },
-            _ => panic!()
+            }
+            _ => Self::default_response(None),
         }
     }
 }

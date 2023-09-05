@@ -9,11 +9,11 @@ mod api;
 mod app_state;
 mod config;
 mod db;
+mod error;
 mod extractors;
 mod health_check;
 mod http_server;
 mod utils;
-mod error;
 
 use app_state::AppState;
 

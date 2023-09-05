@@ -61,7 +61,7 @@ pub async fn create(
                     }
                     Err(err) => CoreError::sqlx_error(err, "create", "bucket key").into_response(),
                 }
-            },
+            }
             Err(err) => CoreError::sqlx_error(err, "create", "bucket").into_response(),
         }
     }
