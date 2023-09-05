@@ -44,7 +44,7 @@ starting the service up.
 
 ```
 cd ../banyan-core-service
-./scripts/add_storage_host.sh;
+./scripts/add_storage_host.sh
 ```
 
 The services should now be ready to interact with each other. The steps so far
@@ -55,8 +55,7 @@ setup as documented here.
 ## Front-End Setup
 
 This is only needed if you want to bring up the web interface locally. From the
-root of the repository. You'll also want to take care to replace `$YOUR_EMAIL`
-with the Google email you're going to try to use to login:
+root of the repository.
 
 ```
 cd crates/banyan-core-server/frontend
@@ -77,7 +76,8 @@ deeplink to the relevant
 page](https://console.cloud.google.com/apis/credentials/consent?authuser=3&project=core-services-a465d267)).
 
 The local DB also needs to allow the access, this needs to be done while the
-front end is running right now:
+front end is running right now. You'll also want to take care to replace
+`$YOUR_EMAIL` with the Google email you're going to try to use to login:
 
 ```
 ./scripts/allow_list.sh $YOUR_EMAIL
@@ -136,5 +136,4 @@ wasm-pack build --release
 rm -f ${BANYAN_CORE_CHECKOUT}/crates/banyan-core-service/frontend/tomb_build/
 cp -f pkg/* ${BANYAN_CORE_CHECKOUT}/crates/banyan-core-service/frontend/tomb_build/
 ```
-
 
