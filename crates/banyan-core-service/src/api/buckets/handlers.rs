@@ -1,6 +1,6 @@
 use axum::extract::{self, Json, Path};
 use axum::http::StatusCode;
-use axum::response::IntoResponse;
+use axum::response::{IntoResponse, Response};
 use uuid::Uuid;
 use validify::Validate;
 
@@ -114,22 +114,19 @@ pub async fn delete(
     api_token: ApiToken,
     mut db_conn: DbConn,
     Path(bucket_id): Path<Uuid>,
-) -> impl IntoResponse {
+) -> Response {
     let account_id = api_token.subject;
     let bucket_id = bucket_id.to_string();
-    match db::delete_bucket(&account_id, &bucket_id, &mut db_conn).await {
-        Ok(bucket) => Json(responses::DeleteBucket {
-            id: bucket.id,
-            name: bucket.name,
-        })
-        .into_response(),
-        Err(err) => CoreError::sqlx_error(err, "delete", "bucket").into_response(),
+    if let Err(err) = db::delete_bucket(&account_id, &bucket_id, &mut db_conn).await {
+        CoreError::sqlx_error(err, "delete", "bucket").into_response()
+    } else {
+        (StatusCode::NO_CONTENT, ()).into_response()
     }
 }
 
 /// Return the current DATA usage for the bucket. Query metadata in the current state of the bucket
 pub async fn get_usage(
-    api_token: ApiToken,
+    _api_token: ApiToken,
     mut db_conn: DbConn,
     Path(bucket_id): Path<Uuid>,
 ) -> impl IntoResponse {

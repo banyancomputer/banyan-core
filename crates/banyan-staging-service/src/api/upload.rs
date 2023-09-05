@@ -343,8 +343,6 @@ async fn report_upload_to_platform(
 
     let bearer_token = auth_key.sign(claims).unwrap();
 
-    tracing::warn!("using bearer token: {bearer_token}");
-
     let request = client
         .post(report_endpoint)
         .json(&metadata_size)

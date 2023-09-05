@@ -26,9 +26,6 @@ const REQUEST_DATA_SIZE_LIMIT: u64 = 100 * 1_024;
 /// Upload size limit for CAR files
 const CAR_DATA_SIZE_LIMIT: u64 = 128 * 1_024 * 1_024;
 
-/// Storage Host
-const STORAGE_HOST: &str = "banyan-staging";
-
 /// Handle a request to push new metadata to a bucket
 #[allow(clippy::too_many_arguments)]
 pub async fn push(
@@ -299,7 +296,7 @@ pub async fn push(
     // Round up to the nearest 100 MiB
     let data_usage = round_to_nearest_100_mib(data_usage);
     // Read a storage host from the database. We only have one right now, so this is easy
-    let storage_host = match db::read_storage_host(STORAGE_HOST, &mut db_conn).await {
+    let storage_host = match db::select_storage_host(&mut db_conn).await {
         Ok(sh) => sh,
         Err(err) => {
             return CoreError::default_error(Some(&format!("unable to read storage host: {err}")))

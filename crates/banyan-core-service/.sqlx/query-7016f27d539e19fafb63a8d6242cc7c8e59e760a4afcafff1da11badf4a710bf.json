@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, name, url, used_storage, available_storage, fingerprint, pem FROM storage_hosts WHERE name = $1;",
+  "query": "SELECT id, name, url, used_storage, available_storage, fingerprint, pem FROM storage_hosts ORDER BY RANDOM() LIMIT 1;",
   "describe": {
     "columns": [
       {
@@ -40,7 +40,7 @@
       }
     ],
     "parameters": {
-      "Right": 1
+      "Right": 0
     },
     "nullable": [
       false,
@@ -52,5 +52,5 @@
       false
     ]
   },
-  "hash": "27a7029076545bcb191306d7fe8dd2b670e8e6f313912e81798847a9a0e59293"
+  "hash": "7016f27d539e19fafb63a8d6242cc7c8e59e760a4afcafff1da11badf4a710bf"
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useIntl } from 'react-intl';
 
 import { useTomb } from '@/contexts/tomb';
@@ -12,10 +12,12 @@ import { Upload } from '@static/images/buckets';
 
 export const UploadFileModal = () => {
     const { buckets, uploadFile } = useTomb();
-    const { openModal } = useModal();
+    const { openModal, closeModal } = useModal();
     const { messages } = useIntl();
     const [selectedBucket, setSelectedBucket] = useState('');
     const [selectedFolder, setSelectedFolder] = useState('');
+    const [file, setFIle] = useState<File | null>(null);
+    const isUploadDataFilled = useMemo(() => Boolean(selectedBucket && file), [selectedBucket, file])
 
     const selectBucket = (option: string) => {
         setSelectedBucket(option);
@@ -25,15 +27,22 @@ export const UploadFileModal = () => {
         setSelectedFolder(option);
     };
 
-    const upload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        if (!event.target.files || !selectedBucket) { return; }
+    const handleChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (!event.target.files) { return; }
 
+        setFIle(Array.from(event.target.files)[0]);
+    };
+
+    const upload = async () => {
+        if (!file) return;
         try {
-            const file = Array.from(event.target.files)[0];
-            await uploadFile(selectedBucket, selectedFolder, file);
+            const arrayBuffer = await file.arrayBuffer();
+            await uploadFile(selectedBucket, selectedFolder ? [selectedFolder] : [], file.name, arrayBuffer);
+            closeModal();
         } catch (error: any) {
             console.log(error);
-        }
+
+        };
     };
 
     const addNewBucket = () => {
@@ -73,17 +82,39 @@ export const UploadFileModal = () => {
                 />
             </div>
             <label className="mt-10 flex flex-col items-center justify-center gap-4 px-6 py-4 border-2 border-c rounded-xl  text-xs cursor-pointer">
-                <Upload />
-                <span className="text-gray-600">
-                    <b className="text-gray-900">{`${messages.clickToUpload}`} </b>
-                    {`${messages.orDragAndDrop}`}
-                </span>
+                {file ?
+                    <span>{file.name}</span>
+                    :
+                    <>
+                        <Upload />
+                        <span className="text-gray-600">
+                            <b className="text-gray-900">{`${messages.clickToUpload}`} </b>
+                            {`${messages.orDragAndDrop}`}
+                        </span>
+                    </>
+                }
                 <input
                     type="file"
+                    multiple={false}
                     className="hidden"
-                    onChange={upload}
+                    onChange={handleChange}
                 />
             </label>
+            <div className="flex items-center gap-3 text-xs" >
+                <button
+                    className="btn-secondary flex-grow py-3 px-4"
+                    onClick={closeModal}
+                >
+                    {`${messages.cancel}`}
+                </button>
+                <button
+                    className="btn-primary flex-grow py-3 px-4"
+                    onClick={upload}
+                    disabled={!isUploadDataFilled}
+                >
+                    {`${messages.upload}`}
+                </button>
+            </div>
         </div>
     );
 };
