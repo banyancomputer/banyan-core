@@ -6,12 +6,11 @@ RUN apk add --no-cache libc6-compat
 
 RUN mkdir /app
 COPY package.json yarn.lock /app/
-COPY tomb_build /app/
+COPY tomb_build /app/tomb_build
 
 WORKDIR /app
 
 RUN yarn install
-RUN yarn global add next
 
 
 FROM base AS builder
