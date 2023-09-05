@@ -1,4 +1,5 @@
-import { ReactElement, useMemo } from 'react';
+import { ReactElement, useEffect, useMemo } from 'react';
+import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
 
 import { Header } from '@components/common/Header';

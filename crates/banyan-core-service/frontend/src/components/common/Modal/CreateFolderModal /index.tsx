@@ -5,20 +5,15 @@ import { MdDone } from 'react-icons/md';
 import { useModal } from '@/contexts/modals';
 import { useTomb } from '@/contexts/tomb';
 import { ToastNotifications } from '@/utils/toastNotifications';
-import { Bucket } from '@/lib/interfaces/bucket';
-import { useFolderLocation } from '@/hooks/useFolderLocation';
 
-export const CreateFolderModal: React.FC<{ bucket: Bucket, onSuccess?: () => void }> = ({ bucket, onSuccess = () => { } }) => {
-    const { closeModal, openModal } = useModal();
+export const CreateFolderModal = () => {
+    const { closeModal } = useModal();
     const { messages } = useIntl();
     const [newName, setNewName] = useState('');
-    const { createDirectory } = useTomb();
-    const folderLocation = useFolderLocation();
+    const { } = useTomb();
 
     const create = async () => {
         try {
-            await createDirectory(bucket, [...folderLocation, newName]);
-            onSuccess();
         } catch (error: any) { };
     };
 
