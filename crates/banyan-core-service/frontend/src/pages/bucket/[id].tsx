@@ -7,14 +7,13 @@ import Image from 'next/image';
 
 import { NextPageWithLayout } from '../page';
 import { useTomb } from '@/contexts/tomb';
+import { useModal } from '@/contexts/modals';
+import getServerSideProps from '@/utils/session';
 
 import BaseLayout from '@/layouts/BaseLayout';
 import { BucketTable } from '@/components/Buckets/BucketTable';
 import { Fallback } from '@/components/common/Fallback';
-
-import getServerSideProps from '@/utils/session';
-
-import emptyIcon from '@static/images/common/emptyIcon.png';
+import { UploadFileModal } from '@/components/common/Modal/UploadFileModal';
 
 export { getServerSideProps };
 
@@ -23,9 +22,12 @@ const Bucket: NextPageWithLayout = () => {
     const bucketId = searchParams.get('id');
     const { buckets, areBucketsLoading } = useTomb();
     const { messages } = useIntl();
+    const { openModal, closeModal } = useModal();
     const selectedBucket = useMemo(() => buckets.find(bucket => bucket.id === bucketId), [buckets, bucketId]);
 
-    const uploadFile = (event: React.ChangeEvent<HTMLInputElement>) => { };
+    const uploadFile = () => {
+        openModal(<UploadFileModal bucket={selectedBucket} />)
+    };
 
     return (
         <section className="py-9 px-4">
@@ -35,24 +37,17 @@ const Bucket: NextPageWithLayout = () => {
                     {' > '}
                     <Link href={`/bucket/${bucketId}`}>{selectedBucket?.name}</Link>
                 </h2>
-                <label className="flex gap-2 w-40 items-center justify-center py-2 px-4 font-semibold cursor-pointer rounded-lg bg-blue-primary text-white">
+                <button
+                    className="btn-primary gap-2 w-40 py-2 px-4"
+                    onClick={uploadFile}
+                >
                     <IoMdAdd fill="#fff" size="20px" />
                     {`${messages.upload}`}
-                    <input
-                        type="file"
-                        className="hidden"
-                        onChange={uploadFile}
-                    />
-                </label>
+                </button>
             </div>
             <Fallback shouldRender={!areBucketsLoading}>
-                {selectedBucket && selectedBucket.files.length ?
+                {selectedBucket &&
                     <BucketTable bucket={selectedBucket} />
-                    :
-                    <div className="h-full flex flex-col items-center justify-center saturate-0">
-                        <Image src={emptyIcon} alt="emptyIcon" />
-                        <p className="mt-4">{`${messages.bucketIsEmpty}`}</p>
-                    </div>
                 }
             </Fallback>
         </section>
