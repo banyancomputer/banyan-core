@@ -36,7 +36,8 @@ export const CreateBucketModal = () => {
 
     const create = async () => {
         try {
-            createBucket(bucketName, storageClass, bucketType);
+            await createBucket(bucketName, storageClass, bucketType);
+            closeModal();
         } catch (error: any) {
             console.log('createBucketError', error);
         };
