@@ -2,7 +2,7 @@ FROM docker.io/library/node:18-alpine AS base
 
 
 FROM base AS deps
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat sqlite
 
 RUN mkdir /app
 COPY package.json yarn.lock /app/
@@ -16,8 +16,8 @@ RUN yarn install
 FROM base AS builder
 WORKDIR /app
 
-COPY . .
 COPY --from=deps /app/node_modules /app/node_modules
+COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED 1
 
