@@ -1,8 +1,8 @@
 FROM docker.io/library/node:18-alpine AS base
+RUN apk add --no-cache libc6-compat sqlite
 
 
 FROM base AS deps
-RUN apk add --no-cache libc6-compat sqlite
 
 RUN mkdir /app
 COPY package.json yarn.lock /app/
