@@ -95,7 +95,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
                     mount,
                     id: bucket.id(),
                     name: bucket.name(),
-                    storageClass: bucket.storage_class(),
+                    storageClass: bucket.storageClass(),
                     bucketType: bucket.bucket_type(),
                     files: files || [],
                     keys,
