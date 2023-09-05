@@ -1,4 +1,4 @@
-import React, { ReactElement, useCallback, useMemo } from 'react';
+import React, { ReactElement, useCallback } from 'react';
 import { useIntl } from 'react-intl';
 import { FiDownload, FiEdit, FiTrash2 } from 'react-icons/fi';
 import { AiOutlineLink } from 'react-icons/ai';
@@ -11,8 +11,6 @@ import { useTomb } from '@/contexts/tomb';
 import { Bucket, BucketFile } from '@/lib/interfaces/bucket';
 import { useModal } from '@/contexts/modals';
 import { ToastNotifications } from '@/utils/toastNotifications';
-import { useFolderLocation } from '@/hooks/useFolderLocation';
-import { DeleteFileModal } from '@/components/common/Modal/DeleteFileModal';
 
 export class FileAction {
     constructor(
@@ -24,15 +22,13 @@ export class FileAction {
 
 export const FileActions: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bucket, file }) => {
     const { messages } = useIntl();
-    const { download, deleteFile } = useTomb();
+    const { download } = useTomb();
     const { openModal } = useModal();
-    const folredLoaction = useFolderLocation();
-    const bucketType = `${bucket.bucketType}_${bucket.storageClass}`;
 
     const downloadFile = async () => {
         try {
             await ToastNotifications.promise(`${messages.downloading}...`, `${messages.fileWasDownloaded}`, <MdDone size="20px" />,
-                download(bucket, [...folredLoaction, file.name])
+                download(bucket, [`/${file.name}`])
             );
         } catch (error: any) { }
     };
@@ -44,22 +40,11 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bu
     };
 
     const moveTo = () => {
-        openModal(<MoveToModal file={file} bucket={bucket} />);
+        openModal(<MoveToModal file={file} />);
     };
-
     const makeCopy = async () => {
         try {
             ToastNotifications.notify(`${messages.copyOf} ${file.name} ${messages.wasCreated}`, <AiOutlineLink size="20px" />);
-        } catch (error: any) { }
-    };
-
-    const rename = async () => {
-        openModal(<RenameFileModal bucket={bucket} file={file} />);
-    };
-
-    const remove = async () => {
-        try {
-            openModal(<DeleteFileModal bucket={bucket} file={file} />);
         } catch (error: any) { }
     };
     const viewFileVersions = async () => {
@@ -67,47 +52,29 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bu
 
         } catch (error: any) { }
     };
+    const rename = async () => {
+        openModal(<RenameFileModal bucket={bucket} file={file} />);
+    };
 
+    const remove = async () => {
+        try {
 
-    const downloadAction = useMemo(() => new FileAction(`${messages.download}`, <FiDownload size="18px" />, downloadFile), []);
-    const copyLinkdAction = useMemo(() => new FileAction(`${messages.copyLink}`, <AiOutlineLink size="18px" />, copyLink), []);
-    const moveToAction = useMemo(() => new FileAction(`${messages.moveTo}`, <PiArrowsLeftRight size="18px" />, moveTo), []);
-    const makeCopyAction = useMemo(() => new FileAction(`${messages.makeCopy}`, <PiCopySimple size="18px" />, makeCopy), []);
-    const vierFileVersionsAction = useMemo(() => new FileAction(`${messages.viewFileVersions}`, <AiOutlineLink size="18px" />, viewFileVersions), []);
-    const renameAction = useMemo(() => new FileAction(`${messages.rename}`, <FiEdit size="18px" />, rename), []);
-    const removeAction = useMemo(() => new FileAction(`${messages.remove}`, <FiTrash2 size="18px" />, remove), []);
+        } catch (error: any) { }
+    };
 
-    const hotInrecactiveActions = [
-        downloadAction, copyLinkdAction, moveToAction, makeCopyAction, renameAction, removeAction, vierFileVersionsAction
+    const acrions = [
+        new FileAction(`${messages.download}`, <FiDownload size="18px" />, downloadFile),
+        new FileAction(`${messages.copyLink}`, <AiOutlineLink size="18px" />, copyLink),
+        new FileAction(`${messages.moveTo}`, <PiArrowsLeftRight size="18px" />, moveTo),
+        new FileAction(`${messages.makeCopy}`, <PiCopySimple size="18px" />, makeCopy),
+        new FileAction(`${messages.viewFileVersions}`, <AiOutlineLink size="18px" />, viewFileVersions),
+        new FileAction(`${messages.rename}`, <FiEdit size="18px" />, rename),
+        new FileAction(`${messages.remove}`, <FiTrash2 size="18px" />, remove),
     ];
-    const warmInrecactiveActions = [
-        downloadAction, moveToAction, makeCopyAction, renameAction, removeAction
-    ];
-    const coldIntecactiveActions = [
-        vierFileVersionsAction
-    ];
-    const hotBackupActions = [
-        downloadAction, makeCopyAction
-    ];
-    const warmBackupActions = [
-        downloadAction
-    ];
-    const coldBackupActions = [
-        downloadAction
-    ];
-
-    const actions: Record<string, FileAction[]> = {
-        interactive_hot: hotInrecactiveActions,
-        interactive_warm: warmInrecactiveActions,
-        interactive_cold: coldIntecactiveActions,
-        backup_hot: hotBackupActions,
-        backup_warm: warmBackupActions,
-        backup_cold: coldBackupActions,
-    }
 
     return (
         <div className="relative w-48 text-xs font-medium bg-white rounded-xl shadow-md z-10 text-gray-900">{
-            actions[bucketType].map(action =>
+            acrions.map(action =>
                 <div
                     key={action.label}
                     className="w-full flex items-center gap-2 py-2 px-3 border-b-1 border-gray-200 transition-all hover:bg-slate-200"
