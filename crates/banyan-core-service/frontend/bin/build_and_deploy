@@ -5,13 +5,12 @@ set -o errexit
 cd $(dirname %0)
 
 # Should probably make these configurable or source them from the project...
-DEPLOY_HOST="distributor.data.banyan.computer"
+DEPLOY_HOST="alpha.data.banyan.computer"
 DEPLOY_BASE_FOLDER="containers"
 
-SERVICE_NAME="${1:-banyan-staging-service}"
-SERVICE_PORT="${2:-3000}"
-SERVICE_ARGUMENTS="--auth-key /data/platform-auth.key --domain ${DEPLOY_HOST} --verifier-key /data/platform-verifier.public --upload-dir /data/uploads --platform-url https://api.data.banyan.computer"
-SERVICE_FEATURES="postgres"
+SERVICE_NAME="${1:-temporary-frontend-server}"
+SERVICE_PORT="${2:-3002}"
+SERVICE_ARGUMENTS=""
 
 # Everything beyond this point isn't expected to be changed between services
 
@@ -46,12 +45,9 @@ if which docker &> /dev/null; then
 fi
 
 # Create the actual container
-cp -f ../../Cargo.lock ./
 ${CONTAINER_RUNTIME} build -t ${FULL_IMAGE_NAME} \
   --build-arg CI_BUILD_REF=${COMMIT_ID} \
-  --build-arg FEATURES=${SERVICE_FEATURES} \
   --build-arg SERVICE_NAME=${SERVICE_NAME} .
-rm -f Cargo.lock
 
 ${CONTAINER_RUNTIME} save -o ${TMP_IMAGE} ${FULL_IMAGE_NAME} &>/dev/null
 
@@ -72,7 +68,7 @@ Restart=on-failure
 TimeoutStopSec=35
 ExecStartPre=rm -f %t/%n-pid %t/%n-cid
 ExecStartPre=podman load --input \${HOME}/${DEPLOY_IMAGE_ARCHIVE}/${IMAGE_BASE_NAME}.tar
-ExecStart=podman run -d --name ${SERVICE_NAME} --read-only --replace --restart=on-failure:3 --env-file \${HOME}/${DEPLOY_ENV}/${SERVICE_NAME} --mount type=bind,src=\${HOME}/${DEPLOY_PERSISTENT_DATA}/${SERVICE_NAME},dst=/data --userns keep-id:uid=65532,gid=65532 --network slirp4netns:allow_host_loopback=true --log-driver=k8s-file --log-opt max-size=128kb,path=\${HOME}/${DEPLOY_LOGS}/${SERVICE_NAME}/latest.log --hostname ${SERVICE_NAME}.svc.${DEPLOY_HOST} --publish ${SERVICE_PORT}:3000/tcp --conmon-pidfile %t/%n-pid --cidfile %t/%n-cid ${FULL_IMAGE_NAME} ${SERVICE_ARGUMENTS}
+ExecStart=podman run -d --name ${SERVICE_NAME} --read-only --replace --restart=on-failure:3 --env-file \${HOME}/${DEPLOY_ENV}/${SERVICE_NAME} --mount type=bind,src=\${HOME}/${DEPLOY_PERSISTENT_DATA}/${SERVICE_NAME},dst=/data --userns keep-id:uid=1001,gid=1001 --network slirp4netns:allow_host_loopback=true --log-driver=k8s-file --log-opt max-size=128kb,path=\${HOME}/${DEPLOY_LOGS}/${SERVICE_NAME}/latest.log --hostname ${SERVICE_NAME}.svc.${DEPLOY_HOST} --publish ${SERVICE_PORT}:3000/tcp --conmon-pidfile %t/%n-pid --cidfile %t/%n-cid ${FULL_IMAGE_NAME} ${SERVICE_ARGUMENTS}
 # If we want to replicate the k8s behavior wait-drain-and-shutdown, this is what we'd use to stop the service
 #ExecStop=podman stop -t 30 --cidfile %t/%n-cid
 # These servers don't have alternate services picking up its downtime so we want to take the fast restart path

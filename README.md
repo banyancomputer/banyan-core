@@ -119,5 +119,16 @@ yard run dev
 You should now be able to open up your web-browser to
 [http://127.0.0.1:3000](http://127.0.0.1:3000), login, and use the platform.
 
-Note: It seems like the front end is not automatically creating and escrowing
-keys right now... So I couldn't get it working.
+## Updating Tomb WASM
+
+In the tomb repository go to the tomb-wasm sub-crate. Build it with the following command:
+
+```
+export BANYAN_CORE_CHECKOUT=~/workspace/banyan/banyan-core
+
+wasm-pack build --release
+rm -f ${BANYAN_CORE_CHECKOUT}/crates/banyan-core-service/frontend/tomb_build/
+cp -f pkg/* ${BANYAN_CORE_CHECKOUT}/crates/banyan-core-service/frontend/tomb_build/
+```
+
+
