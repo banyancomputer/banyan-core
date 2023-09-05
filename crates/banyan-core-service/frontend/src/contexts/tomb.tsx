@@ -23,6 +23,7 @@ interface TombInterface {
     getBuckets: () => Promise<void>;
     createBucket: (name: string, storageClass: string, bucketType: string) => Promise<void>;
     createDirectory: (bucket: Bucket, path: string[]) => Promise<void>;
+    deleteBucket: (id: string) => Promise<void>;
     uploadFile: (id: string, path: string[], name: string, file: any) => Promise<void>;
     renameFile: (id: string, path: string, newPath: string) => Promise<void>;
     getTrashBucket: () => Promise<void>;
@@ -94,8 +95,8 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
                     mount,
                     id: bucket.id(),
                     name: bucket.name(),
-                    storageClass: bucket.storage_class(),
-                    bucketType: bucket.bucket_type(),
+                    storageClass: bucket.storageClass(),
+                    bucketType: bucket.bucketType(),
                     files: files || [],
                     keys,
                 });
@@ -119,8 +120,8 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
                 mount,
                 id: wasmBucket.id(),
                 name: wasmBucket.name(),
-                storageClass: wasmBucket.storage_class(),
-                bucketType: wasmBucket.bucket_type(),
+                storageClass: wasmBucket.storageClass(),
+                bucketType: wasmBucket.bucketType(),
                 files: files || [],
                 keys,
             }
@@ -139,7 +140,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
     const getBucketKeys = async (id: string) => await tombMutex(async tomb => await tomb!.listBucketKeys(id));
 
-    // const deleteBucket = async (id: string) => await tomb.deleteBucket(id);
+    const deleteBucket = async (id: string) => await tombMutex(async tomb => await tomb!.deleteBucket(id));
 
     /** Returns list of snapshots for selected bucket */
     const getBucketShapshots = async (id: string) => await tombMutex(async tomb => await tomb!.listBucketSnapshots(id));
@@ -248,7 +249,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         <TombContext.Provider
             value={{
                 tomb, buckets, trash, usedStorage, usageLimit, areBucketsLoading, isTrashLoading,
-                getBuckets, getBucketShapshots, createBucket,
+                getBuckets, getBucketShapshots, createBucket, deleteBucket,
                 getTrashBucket, takeColdSnapshot, getUsedStorage, createDirectory,
                 uploadFile, renameFile, getBucketKeys, purgeSnapshot,
                 removeBucketAccess, approveBucketAccess, getUsageLimit,
