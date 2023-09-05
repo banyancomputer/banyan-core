@@ -44,7 +44,7 @@ starting the service up.
 
 ```
 cd ../banyan-core-service
-./scripts/add_storage_host.sh;
+./bin/add_storage_host.sh;
 ```
 
 The services should now be ready to interact with each other. The steps so far
@@ -61,7 +61,7 @@ with the Google email you're going to try to use to login:
 ```
 cd crates/banyan-core-server/frontend
 yarn install
-./scripts/allow_list.sh $YOUR_EMAIL
+./bin/allow_list.sh $YOUR_EMAIL
 cp .env.example .env.dev
 ```
 
