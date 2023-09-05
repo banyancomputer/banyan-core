@@ -96,7 +96,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
                     id: bucket.id(),
                     name: bucket.name(),
                     storageClass: bucket.storageClass(),
-                    bucketType: bucket.bucket_type(),
+                    bucketType: bucket.bucketType(),
                     files: files || [],
                     keys,
                 });
@@ -120,8 +120,8 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
                 mount,
                 id: wasmBucket.id(),
                 name: wasmBucket.name(),
-                storageClass: wasmBucket.storage_class(),
-                bucketType: wasmBucket.bucket_type(),
+                storageClass: wasmBucket.storageClass(),
+                bucketType: wasmBucket.bucketType(),
                 files: files || [],
                 keys,
             }
@@ -140,7 +140,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
     const getBucketKeys = async (id: string) => await tombMutex(async tomb => await tomb!.listBucketKeys(id));
 
-    const deleteBucket = async (id: string) => await tomb.deleteBucket(id);
+    const deleteBucket = async (id: string) => await tombMutex(async tomb => await tomb!.deleteBucket(id));
 
     /** Returns list of snapshots for selected bucket */
     const getBucketShapshots = async (id: string) => await tombMutex(async tomb => await tomb!.listBucketSnapshots(id));
