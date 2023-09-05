@@ -1,12 +1,12 @@
 import React, { ReactNode, createContext, useContext, useEffect, useState } from 'react';
-import { TombWasm, WasmBucket, WasmMount, WasmSnapshot } from 'tomb-wasm-experimental';
+import { TombWasm, WasmBucket, WasmMount } from 'tomb-wasm-experimental';
 import { Mutex } from 'async-mutex';
 import { useSession } from 'next-auth/react';
 
 import { useKeystore } from './keystore';
 import {
-    Bucket, BucketKey,
-    BucketSnapshot, MockBucket,
+    Bucket, BucketFile, BucketKey,
+    BucketSnapshot, Metadata, MockBucket,
 } from '@/lib/interfaces/bucket';
 
 interface TombInterface {
@@ -18,24 +18,21 @@ interface TombInterface {
     isTrashLoading: boolean;
     areBucketsLoading: boolean;
     download: (bucket: Bucket, path: string[]) => Promise<ArrayBuffer | undefined>;
-    shareWith: (bucket: Bucket, key: string) => Promise<void>
+    shareWith: (bucket: Bucket, key: string[]) => Promise<void>
     takeColdSnapshot: (bucket: Bucket) => Promise<void>;
     getBuckets: () => Promise<void>;
-    moveTo: (bucket: Bucket, from: string[], to: string[]) => Promise<void>;
     createBucket: (name: string, storageClass: string, bucketType: string) => Promise<void>;
     createDirectory: (bucket: Bucket, path: string[]) => Promise<void>;
+    deleteBucket: (id: string) => Promise<void>;
     uploadFile: (id: string, path: string[], name: string, file: any) => Promise<void>;
-    renameFile: (id: string, path: string[], newPath: string[]) => Promise<void>;
+    renameFile: (id: string, path: string, newPath: string) => Promise<void>;
     getTrashBucket: () => Promise<void>;
     getUsedStorage: () => Promise<number>;
     getUsageLimit: () => Promise<number>;
     getBucketShapshots: (id: string) => Promise<BucketSnapshot[]>;
     getBucketKeys: (id: string) => Promise<BucketKey[]>;
     purgeSnapshot: (id: string) => void;
-    deleteBucket: (id: string) => void;
-    deleteFile: (bucket: Bucket, path: string[]) => void;
     approveBucketAccess: (id: string) => Promise<void>;
-    restore: (bucket: Bucket, snapshot: WasmSnapshot) => Promise<void>;
     removeBucketAccess: (id: string) => Promise<void>;
 };
 
@@ -86,12 +83,14 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         setAreBucketsLoading(true);
         tombMutex(async tomb => {
             const wasm_buckets: WasmBucket[] = await tomb!.listBuckets();
+
             const buckets = [];
             let key = await getEncryptionKey();
             for (let bucket of wasm_buckets) {
                 const mount = await tomb.mount(bucket.id(), key);
                 const files = await mount.ls([]);
                 const keys = await tomb.listBucketKeys(bucket.id());
+
                 buckets.push({
                     mount,
                     id: bucket.id(),
@@ -134,13 +133,14 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     /** Retuns array buffer of selected file. */
     const download = async (bucket: Bucket, path: string[]) => await mountMutex(bucket, async mount => await mount!.readBytes(path));
 
-    /** Retuns array buffer of selected file. */
-    const restore = async (bucket: Bucket, snapshot: WasmSnapshot) => await mountMutex(bucket, async mount => await mount.restore(snapshot));
-
     /** Shares bucket with selected key. */
-    const shareWith = async (bucket: Bucket, key: string) => await mountMutex(bucket, async mount => await mount.shareWith(key));
+    const shareWith = async (bucket: Bucket, key: string[]) => await mountMutex(bucket, async mount => await console.log("todo"));
+
+    // const shareWith = async (bucketId: string, key: string) => await mounts.get(bucketId)?.shareWith(key);
 
     const getBucketKeys = async (id: string) => await tombMutex(async tomb => await tomb!.listBucketKeys(id));
+
+    const deleteBucket = async (id: string) => await tombMutex(async tomb => await tomb!.deleteBucket(id));
 
     /** Returns list of snapshots for selected bucket */
     const getBucketShapshots = async (id: string) => await tombMutex(async tomb => await tomb!.listBucketSnapshots(id));
@@ -167,12 +167,6 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         // await tomb.purgeSnapshot(id);
     };
 
-    /** Renames bucket */
-    const moveTo = async (bucket: Bucket, from: string[], to: string[]) => {
-        await mountMutex(bucket, async mount => {
-            await mount.mv(from, to);
-        });
-    };
     /** Creates directory inside selected bucket */
     const createDirectory = async (bucket: Bucket, path: string[]) => {
         await mountMutex(bucket, async mount => {
@@ -195,9 +189,9 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         } catch (error: any) {
             console.log('uploadError', error);
         }
-    };
+    }
 
-    const renameFile = async (id: string, path: string[], newPath: string[]) => {
+    const renameFile = async (id: string, path: string, newPath: string) => {
         // await tomb!.rename(id, path, newPath);
     };
 
@@ -206,7 +200,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         await mountMutex(bucket, async mount => {
             await mount.snapshot();
         });
-    };
+    }
 
     /** TODO: implement after adding to tomb-wasm */
     const getTrashBucket: () => Promise<void> = async () => {
@@ -215,23 +209,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         // const files = await getFiles(trash.id, '/');
         // setTrash({ ...trash, files });
         // setIsTrashLoading(false);
-    };
-
-
-    const deleteBucket = async (id: string) => {
-        await tomb?.deleteBucket(id);
-        await getBuckets();
-        const usedStorage = await getUsedStorage();
-        const usageLimit = await getUsageLimit();
-        setUsedStorage(usedStorage);
-        setUsageLimit(usageLimit);
-    };
-
-    const deleteFile = async (bucket: Bucket, path: string[]) => {
-        await mountMutex(bucket, async mount => {
-            await mount.rm(path);
-        });
-    };
+    }
 
     // Initialize the tomb client
     useEffect(() => {
@@ -275,7 +253,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
                 getTrashBucket, takeColdSnapshot, getUsedStorage, createDirectory,
                 uploadFile, renameFile, getBucketKeys, purgeSnapshot,
                 removeBucketAccess, approveBucketAccess, getUsageLimit,
-                shareWith, download, moveTo, restore, deleteFile
+                shareWith, download
             }}
         >
             {children}

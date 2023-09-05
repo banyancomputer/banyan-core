@@ -15,7 +15,6 @@ export const DeleteBucketModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const removeBucket = async() => {
         try {
             await deleteBucket(bucket.id);
-            closeModal();
             ToastNotifications.notify(`${messages.bucket} "${bucket.name}" ${messages.wasDeleted}`, <FiTrash2 size="20px" />);
         } catch (error: any) { };
     };
