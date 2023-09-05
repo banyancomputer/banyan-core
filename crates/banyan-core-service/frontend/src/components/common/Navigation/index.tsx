@@ -86,7 +86,7 @@ export const Navigation = () => {
                 }
                 <Link
                     href="/trash"
-                    className={`flex items-center justify-between  gap-2 py-2 px-3 w-full h-10 cursor-pointer rounded-md ${router.pathname === '/trash' && 'bg-navigation-secondary'}`}
+                    className={`flex items-center justify-between  gap-2 py-2 px-3 w-full h-10 cursor-pointer rounded-md ${router.pathname === '/trash' && 'bg-navigation-secondary'} hidden`}
                 >
                     <FiTrash2 size="24px" stroke="#5e6c97" />
                     <span className="flex-grow">
