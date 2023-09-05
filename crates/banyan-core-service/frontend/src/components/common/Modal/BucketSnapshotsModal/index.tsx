@@ -19,7 +19,7 @@ export const BucketSnapshotsModal: React.FC<{ bucketId: string }> = ({ bucketId 
 
         (async() => {
             try {
-                const snapshots = await getBucketShapshots('3');
+                const snapshots = await getBucketShapshots(bucketId);
                 setSnapshots(snapshots);
             } catch (error: any) {
                 console.log(error);
