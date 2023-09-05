@@ -5,9 +5,9 @@ use uuid::Uuid;
 use validify::Validate;
 
 use crate::api::buckets::{keys, requests, responses};
-use crate::db::*;
+use crate::error::CoreError;
 use crate::extractors::{ApiToken, DbConn};
-use crate::utils::db::{self, sqlx_error_to_response};
+use crate::utils::db;
 
 /// Initialze a new bucket with initial key material.
 pub async fn create(
@@ -59,10 +59,10 @@ pub async fn create(
                         // Return it
                         (StatusCode::OK, Json(response)).into_response()
                     }
-                    Err(err) => sqlx_error_to_response(err, "create", "new bucket key"),
+                    Err(err) => CoreError::sqlx_error(err, "create", "bucket key").into_response(),
                 }
-            }
-            Err(err) => sqlx_error_to_response(err, "create", "bucket"),
+            },
+            Err(err) => CoreError::sqlx_error(err, "create", "bucket").into_response(),
         }
     }
 }
@@ -84,7 +84,7 @@ pub async fn read_all(api_token: ApiToken, mut db_conn: DbConn) -> impl IntoResp
                 .collect::<Vec<_>>(),
         ))
         .into_response(),
-        Err(err) => sqlx_error_to_response(err, "read", "all buckets"),
+        Err(err) => CoreError::sqlx_error(err, "read", "all buckets").into_response(),
     }
 }
 
@@ -105,7 +105,7 @@ pub async fn read(
             storage_class: bucket.storage_class,
         })
         .into_response(),
-        Err(err) => sqlx_error_to_response(err, "read", "bucket"),
+        Err(err) => CoreError::sqlx_error(err, "read", "bucket").into_response(),
     }
 }
 
@@ -123,7 +123,7 @@ pub async fn delete(
             name: bucket.name,
         })
         .into_response(),
-        Err(err) => sqlx_error_to_response(err, "delete", "bucket"),
+        Err(err) => CoreError::sqlx_error(err, "delete", "bucket").into_response(),
     }
 }
 

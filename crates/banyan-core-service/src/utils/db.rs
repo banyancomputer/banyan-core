@@ -1,43 +1,7 @@
 use crate::db::models::{self, BucketType, CreatedResource, StorageClass};
 use crate::extractors::DbConn;
-use axum::response::{IntoResponse, Response};
-use http::StatusCode;
 use serde::Serialize;
 use sqlx::FromRow;
-
-/// Process an SQLX error in a reusable format for responding with error messages
-pub fn sqlx_error_to_response(err: sqlx::Error, operation: &str, resource: &str) -> Response {
-    let default = (
-        StatusCode::INTERNAL_SERVER_ERROR,
-        "internal server error".to_string(),
-    )
-        .into_response();
-
-    match err {
-        sqlx::Error::Database(db_err) => {
-            if db_err.is_unique_violation() {
-                (
-                    StatusCode::CONFLICT,
-                    format!("{} with that name already exists", resource),
-                )
-                    .into_response()
-            } else {
-                tracing::error!("unable to {} {}: {}", operation, resource, db_err);
-                default
-            }
-        }
-        sqlx::Error::RowNotFound => (
-            StatusCode::NOT_FOUND,
-            format!("{} not found: {}", resource, err),
-        )
-            .into_response(),
-        // Catch all others
-        _ => {
-            tracing::error!("unable to {} {}: {}", operation, resource, err);
-            default
-        }
-    }
-}
 
 /// Create a new Bucket in the database and return the created resource.
 /// Implements an authorized read of a bucket by id and account_id.

@@ -38,6 +38,7 @@ tracing-subscriber = { version = "^0.3", default-features = false, features = ["
 bytes = "1.4.0"
 multer = { version = "^2", features = ["json", "tokio", "tokio-io"] }
 mime = "^0.3"
+thiserror = "1.0.48"
 
 [dev-dependencies]
 proptest = "^1.1"

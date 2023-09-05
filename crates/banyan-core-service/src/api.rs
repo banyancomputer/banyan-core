@@ -1,5 +1,5 @@
 use axum::http::StatusCode;
-use axum::response::IntoResponse;
+use axum::response::{IntoResponse, Response};
 use axum::{Json, Router};
 use serde::Serialize;
 
@@ -9,6 +9,15 @@ mod storage;
 
 use crate::app_state::AppState;
 use crate::utils::collect_error_messages;
+
+
+pub fn default_response() -> Response {
+    (
+        StatusCode::INTERNAL_SERVER_ERROR,
+        "unable to process upload",
+    )
+    .into_response()
+}
 
 pub fn router(state: AppState) -> Router<AppState> {
     // TODO: Ideally this would have a wrapper method to allow per route method configuration or

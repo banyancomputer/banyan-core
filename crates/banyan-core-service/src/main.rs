@@ -1,3 +1,5 @@
+// #![feature(const_trait_impl)]
+
 use tracing::Level;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
@@ -11,6 +13,7 @@ mod extractors;
 mod health_check;
 mod http_server;
 mod utils;
+mod error;
 
 use app_state::AppState;
 
