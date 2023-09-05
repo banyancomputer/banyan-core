@@ -44,7 +44,7 @@ starting the service up.
 
 ```
 cd ../banyan-core-service
-./scripts/add_storage_host.sh
+./bin/add_storage_host.sh;
 ```
 
 The services should now be ready to interact with each other. The steps so far
@@ -60,6 +60,7 @@ root of the repository.
 ```
 cd crates/banyan-core-server/frontend
 yarn install
+./bin/allow_list.sh $YOUR_EMAIL
 cp .env.example .env.dev
 ```
 
@@ -74,14 +75,6 @@ OAuth2 project if we're still in the testing phase of our application. This
 needs to be done by someone with access to the Google Cloud Console ([direct
 deeplink to the relevant
 page](https://console.cloud.google.com/apis/credentials/consent?authuser=3&project=core-services-a465d267)).
-
-The local DB also needs to allow the access, this needs to be done while the
-front end is running right now. You'll also want to take care to replace
-`$YOUR_EMAIL` with the Google email you're going to try to use to login:
-
-```
-./scripts/allow_list.sh $YOUR_EMAIL
-```
 
 ## Bringing Up Services
 
