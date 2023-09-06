@@ -299,8 +299,11 @@ impl StreamingCarAnalyzer {
                         Ok(cid) => cid,
                         Err(err) => {
                             tracing::error!("uploaded car file contained an invalid CID: {err}");
-                            return Err(StreamingCarAnalyzerError::InvalidBlockCid(self.stream_offset, err));
-                        },
+                            return Err(StreamingCarAnalyzerError::InvalidBlockCid(
+                                self.stream_offset,
+                                err,
+                            ));
+                        }
                     };
                     let cid_length = cid.encoded_len() as u64;
 
