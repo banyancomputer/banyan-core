@@ -3,7 +3,7 @@ import { useIntl } from 'react-intl';
 
 import { KeyActions } from '../KeyActions';
 import { Bucket } from '@/lib/interfaces/bucket';
-import { ActionsCell } from '@/components/Buckets/ActionsCell';
+import { ActionsCell } from '@/components/common/ActionsCell';
 
 export const KeyManagementTable: React.FC<{ buckets: Bucket[] }> = ({ buckets }) => {
     const { messages } = useIntl();

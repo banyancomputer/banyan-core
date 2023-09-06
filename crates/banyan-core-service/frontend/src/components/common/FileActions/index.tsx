@@ -1,6 +1,6 @@
 import React, { ReactElement, useCallback, useMemo } from 'react';
 import { useIntl } from 'react-intl';
-import { FiDownload, FiEdit, FiTrash2 } from 'react-icons/fi';
+import { FiDownload, FiEdit, FiTrash2, FiUpload } from 'react-icons/fi';
 import { AiOutlineLink } from 'react-icons/ai';
 import { PiArrowsLeftRight, PiCopySimple } from 'react-icons/pi';
 import { MdDone } from 'react-icons/md';
@@ -13,6 +13,7 @@ import { useModal } from '@/contexts/modals';
 import { ToastNotifications } from '@/utils/toastNotifications';
 import { useFolderLocation } from '@/hooks/useFolderLocation';
 import { DeleteFileModal } from '@/components/common/Modal/DeleteFileModal';
+import { UploadFileModal } from '../Modal/UploadFileModal';
 
 export class FileAction {
     constructor(
@@ -28,6 +29,7 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bu
     const { openModal } = useModal();
     const folredLoaction = useFolderLocation();
     const bucketType = `${bucket.bucketType}_${bucket.storageClass}`;
+    const isFolder = file.type === 'dir';
 
     const downloadFile = async () => {
         try {
@@ -35,6 +37,9 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bu
                 download(bucket, [...folredLoaction, file.name])
             );
         } catch (error: any) { }
+    };
+    const uploadFile = () => {
+        openModal(<UploadFileModal bucket={bucket} />);
     };
 
     const copyLink = async () => {
@@ -96,17 +101,28 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bu
         downloadAction
     ];
 
-    const actions: Record<string, FileAction[]> = {
-        interactive_hot: hotInrecactiveActions,
-        interactive_warm: warmInrecactiveActions,
-        interactive_cold: coldIntecactiveActions,
-        backup_hot: hotBackupActions,
-        backup_warm: warmBackupActions,
-        backup_cold: coldBackupActions,
-    }
+    const actions: Record<string, FileAction[]> = isFolder ?
+        {
+            interactive_hot: [new FileAction(`${messages.upload}`, <FiUpload size="18px" />, uploadFile)],
+            interactive_warm: [new FileAction(`${messages.upload}`, <FiUpload size="18px" />, uploadFile)],
+            interactive_cold: [vierFileVersionsAction],
+            backup_hot: [],
+            backup_warm: [],
+            backup_cold: [],
+        }
+        :
+        {
+            interactive_hot: hotInrecactiveActions,
+            interactive_warm: warmInrecactiveActions,
+            interactive_cold: coldIntecactiveActions,
+            backup_hot: hotBackupActions,
+            backup_warm: warmBackupActions,
+            backup_cold: coldBackupActions,
+        }
 
     return (
-        <div className="relative w-48 text-xs font-medium bg-white rounded-xl shadow-md z-10 text-gray-900">{
+        <div className="fixed w-48 right-8 text-xs font-medium bg-white rounded-xl shadow-md z-10 text-gray-900">{
+
             actions[bucketType].map(action =>
                 <div
                     key={action.label}

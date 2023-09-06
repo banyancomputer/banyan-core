@@ -5,7 +5,7 @@ import { Bucket, BucketFile } from '@/lib/interfaces/bucket';
 import { getDateLabel } from '@/utils/date';
 import { convertFileSize } from '@/utils/storage';
 
-import { ActionsCell } from '../../Buckets/ActionsCell';
+import { ActionsCell } from '@components/common/ActionsCell';
 import { TrashFileActions } from '../TrashFileActions';
 import { FileIcon } from '@/components/common/FileIcon';
 import { SortCell } from '@/components/common/SortCell';
