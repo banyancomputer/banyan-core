@@ -9,4 +9,6 @@ pub struct PushMetadataRequest {
     pub expected_data_size: usize,
     /// The CID of the data the user wants to store in the bucket.
     pub root_cid: String,
+    /// Fingerprints of Public Keys which are being associated with a Bucket
+    pub valid_keys: Vec<String>
 }

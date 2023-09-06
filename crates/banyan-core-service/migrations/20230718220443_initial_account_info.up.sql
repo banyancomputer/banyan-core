@@ -168,13 +168,11 @@ CREATE TABLE bucket_keys (
     substr(lower(hex(randomblob(2))), 2) || '-a' ||
     substr(lower(hex(randomblob(2))), 2) || '-6' ||
     substr(lower(hex(randomblob(6))), 2)),
-
   bucket_id TEXT NOT NULL
     REFERENCES buckets(id)
     ON DELETE CASCADE,
-
   pem TEXT NOT NULL,
-
+  fingerprint TEXT NOT NULL,
   approved BOOLEAN NOT NULL DEFAULT false
 );
 

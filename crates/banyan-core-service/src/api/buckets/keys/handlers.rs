@@ -33,7 +33,7 @@ pub async fn create(
     }
 
     // Create the Bucket Key
-    match db::create_bucket_key(&bucket_id, &new_bucket_key.pem, &mut db_conn).await {
+    match db::create_bucket_key(&bucket_id, false, &new_bucket_key.pem, &mut db_conn).await {
         Ok(resource) => Json(responses::CreateBucketKey {
             id: resource.id,
             approved: false,
@@ -143,6 +143,7 @@ pub async fn reject(
     // If we can successfully read the key from the database
     match db::read_bucket_key(&bucket_id, &bucket_key_id, &mut db_conn).await {
         Ok(bucket_key) => {
+            tracing::info!("bucket key in question: {:?}", bucket_key);
             // If this Bucket Key is already approved
             if bucket_key.approved {
                 // Tell the user to call Delete instead

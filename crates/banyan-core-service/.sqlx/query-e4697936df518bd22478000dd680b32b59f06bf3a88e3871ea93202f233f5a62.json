@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n        UPDATE bucket_keys SET \n        approved = true \n        WHERE id = $1 AND bucket_id = $2 \n        RETURNING id, bucket_id, approved, pem;",
+  "query": "DELETE FROM bucket_keys WHERE id = $1 AND bucket_id = $2 RETURNING id, bucket_id, approved, pem, fingerprint;",
   "describe": {
     "columns": [
       {
@@ -22,6 +22,11 @@
         "name": "pem",
         "ordinal": 3,
         "type_info": "Text"
+      },
+      {
+        "name": "fingerprint",
+        "ordinal": 4,
+        "type_info": "Text"
       }
     ],
     "parameters": {
@@ -31,8 +36,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "89d778cd53e018666a09d0a7bf0bc81f3248f4b2886c9855ed7b045930764561"
+  "hash": "e4697936df518bd22478000dd680b32b59f06bf3a88e3871ea93202f233f5a62"
 }

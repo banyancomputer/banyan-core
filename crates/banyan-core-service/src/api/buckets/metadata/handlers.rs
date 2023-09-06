@@ -13,7 +13,7 @@ use crate::api::buckets::metadata::{requests, responses};
 use crate::db::models;
 use crate::error::CoreError;
 use crate::extractors::{ApiToken, ApiTokenKid, DataStore, DbConn, SigningKey};
-use crate::utils::db;
+use crate::utils::db::{self, approve_bucket_key};
 use crate::utils::metadata_upload::{handle_metadata_upload, round_to_nearest_100_mib};
 use crate::utils::storage_ticket::generate_storage_ticket;
 
@@ -68,6 +68,11 @@ pub async fn push(
     let request_data_bytes = request_data_field.bytes().await.unwrap();
     let request_data: requests::PushMetadataRequest =
         serde_json::from_slice(&request_data_bytes).unwrap();
+
+    /* 2. Now that the request is validated and the data extracted, approve any outstanding keys */
+    for pem in request_data.valid_keys {
+        let x = approve_bucket_key(&bucket_id, &pem, &mut db_conn).await.map_err(|err| CoreError::sqlx_error(err, "approve", "bucket key"));
+    }
 
     /* 2. Create a tentative row for the new metadata. We need to do this in order to get a created resource */
 

@@ -37,6 +37,7 @@ pub async fn create(
                 // Create the initial Bucket Key
                 match db::create_bucket_key(
                     &bucket_resource.id,
+                    true,
                     &new_bucket.initial_bucket_key_pem,
                     &mut db_conn,
                 )

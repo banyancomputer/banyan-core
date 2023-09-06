@@ -2,6 +2,7 @@ pub mod car_buffer;
 pub mod db;
 pub mod metadata_upload;
 pub mod storage_ticket;
+pub mod keys;
 
 use std::error::Error;
 

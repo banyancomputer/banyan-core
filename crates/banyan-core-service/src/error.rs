@@ -88,7 +88,7 @@ impl IntoResponse for CoreError {
                 operation,
                 resource,
             } => {
-                tracing::error!("unable to {} {}", operation, resource);
+                tracing::error!("unable to {operation} {resource} {{ {err} }}");
                 match err {
                     sqlx::Error::Database(db_err) => {
                         // If this is duplicate

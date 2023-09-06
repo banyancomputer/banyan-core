@@ -70,12 +70,13 @@ pub struct Bucket {
 
 // TODO: should we add the account_id to this?
 /// BucketKey - data associated with a bucket key
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 pub struct BucketKey {
     pub id: String,
     pub bucket_id: String,
     pub approved: bool,
     pub pem: String,
+    pub fingerprint: String
 }
 
 /// MetadataState - state of metadata for a bucket
