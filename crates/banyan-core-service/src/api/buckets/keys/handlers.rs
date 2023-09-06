@@ -8,6 +8,7 @@ use crate::api::buckets::keys::{requests, responses};
 use crate::error::CoreError;
 use crate::extractors::{ApiToken, DbConn};
 use crate::utils::db;
+use crate::utils::keys::pretty_fingerprint;
 
 /// Initialze a new bucket key for the specified bucket
 pub async fn create(
@@ -32,11 +33,13 @@ pub async fn create(
             .into_response();
     }
 
+    let fingerprint = pretty_fingerprint(&new_bucket_key.pem);
     // Create the Bucket Key
     match db::create_bucket_key(&bucket_id, false, &new_bucket_key.pem, &mut db_conn).await {
         Ok(resource) => Json(responses::CreateBucketKey {
             id: resource.id,
             approved: false,
+            fingerprint,
         })
         .into_response(),
         Err(err) => CoreError::sqlx_error(err, "create", "bucket key").into_response(),
@@ -67,6 +70,7 @@ pub async fn read_all(
                     id: bucket_key.id,
                     approved: bucket_key.approved,
                     pem: bucket_key.pem,
+                    fingerprint: bucket_key.fingerprint,
                 })
                 .collect(),
         ))
@@ -95,6 +99,7 @@ pub async fn read(
             id: bucket_key.id,
             approved: bucket_key.approved,
             pem: bucket_key.pem,
+            fingerprint: bucket_key.fingerprint,
         })
         .into_response(),
         Err(err) => CoreError::sqlx_error(err, "read", "bucket key").into_response(),

@@ -4,6 +4,7 @@ use serde::Serialize;
 pub struct CreateBucketKey {
     pub id: String,
     pub approved: bool,
+    pub fingerprint: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -11,6 +12,7 @@ pub struct ReadBucketKey {
     pub id: String,
     pub approved: bool,
     pub pem: String,
+    pub fingerprint: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -20,11 +22,4 @@ pub struct ReadAllBucketKeys(pub(crate) Vec<ReadBucketKey>);
 pub struct DeleteBucketKey {
     pub id: String,
     pub approved: bool,
-}
-
-#[derive(Serialize)]
-pub struct ApproveBucketKey {
-    pub id: String,
-    pub approved: bool,
-    pub pem: String,
 }
