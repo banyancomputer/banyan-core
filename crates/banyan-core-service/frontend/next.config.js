@@ -8,14 +8,15 @@ const nextConfig = {
 		localeDetection: false,
 		defaultLocale: 'en'
 	},
+	eslint: {
+		ignoreDuringBuilds: true,
+	},
+	output: 'standalone',
 	webpack(config) {
 		// Since Webpack 5 doesn't enable WebAssembly by default, we should do it manually
 		config.experiments = { ...config.experiments, asyncWebAssembly: true };
 
 		return config;
-	},
-	eslint: {
-		ignoreDuringBuilds: true,
 	},
 };
 

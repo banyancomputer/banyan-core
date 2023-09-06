@@ -295,7 +295,16 @@ impl StreamingCarAnalyzer {
                         return Ok(None);
                     }
 
-                    let cid = Cid::read_bytes(&self.buffer[..minimum_cid_blocks]).unwrap();
+                    let cid = match Cid::read_bytes(&self.buffer[..minimum_cid_blocks]) {
+                        Ok(cid) => cid,
+                        Err(err) => {
+                            tracing::error!("uploaded car file contained an invalid CID: {err}");
+                            return Err(StreamingCarAnalyzerError::InvalidBlockCid(
+                                self.stream_offset,
+                                err,
+                            ));
+                        }
+                    };
                     let cid_length = cid.encoded_len() as u64;
 
                     // This might be the end of all data, we'll check once we reach the block_start
@@ -356,6 +365,9 @@ pub enum StreamingCarAnalyzerError {
 
     #[error("parser wasn't finished with the data stream before it ended")]
     IncompleteData,
+
+    #[error("CID located at offset {0} was not valid")]
+    InvalidBlockCid(u64, cid::Error),
 
     #[error("received {0} bytes which exceeds our upper limit for an individual CAR upload")]
     MaxCarSizeExceeded(u64),

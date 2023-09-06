@@ -120,6 +120,7 @@ pub async fn delete(
 ) -> Response {
     let account_id = api_token.subject;
     let bucket_id = bucket_id.to_string();
+    // todo: need to delete all the hot data stored at various storage hosts
     if let Err(err) = db::delete_bucket(&account_id, &bucket_id, &mut db_conn).await {
         CoreError::sqlx_error(err, "delete", "bucket").into_response()
     } else {

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useIntl } from 'react-intl';
 import { IoMdAdd } from 'react-icons/io';
 import Image from 'next/image';
