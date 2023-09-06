@@ -71,7 +71,13 @@ pub async fn push(
 
     /* 2. Now that the request is validated and the data extracted, approve any outstanding keys */
     for pem in request_data.valid_keys {
-        let x = approve_bucket_key(&bucket_id, &pem, &mut db_conn).await.map_err(|err| CoreError::sqlx_error(err, "approve", "bucket key"));
+        // Return if we fail to approve any of them
+        if approve_bucket_key(&bucket_id, &pem, &mut db_conn)
+            .await
+            .is_err()
+        {
+            return CoreError::default_error(Some("failed to approve bucket key")).into_response();
+        }
     }
 
     /* 2. Create a tentative row for the new metadata. We need to do this in order to get a created resource */

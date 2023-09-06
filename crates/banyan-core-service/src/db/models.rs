@@ -76,7 +76,7 @@ pub struct BucketKey {
     pub bucket_id: String,
     pub approved: bool,
     pub pem: String,
-    pub fingerprint: String
+    pub fingerprint: String,
 }
 
 /// MetadataState - state of metadata for a bucket
