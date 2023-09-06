@@ -31,10 +31,10 @@ const BucketHeader: React.FC<{ selectedBucket: Bucket }> = ({ selectedBucket }) 
                 {' > '}
                 <Link href={`/bucket/${bucketId}`}>{selectedBucket?.name}</Link>
                 {folderLocation.map((folder, index) =>
-                    <>
+                    <React.Fragment key={index}>
                         {' > '}
-                        <Link href={`/bucket/${bucketId}?${folderLocation.slice(0, ++index).join('/')}`} key={index}>{folder}</Link>
-                    </>
+                        <Link href={`/bucket/${bucketId}?${folderLocation.slice(0, ++index).join('/')}`}>{folder}</Link>
+                    </React.Fragment>
                 )}
             </h2>
             <button

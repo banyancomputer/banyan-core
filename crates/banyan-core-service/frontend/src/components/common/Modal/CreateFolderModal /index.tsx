@@ -1,25 +1,23 @@
 import React, { useState } from 'react';
 import { useIntl } from 'react-intl';
-import { MdDone } from 'react-icons/md';
 
 import { useModal } from '@/contexts/modals';
 import { useTomb } from '@/contexts/tomb';
-import { ToastNotifications } from '@/utils/toastNotifications';
 import { Bucket } from '@/lib/interfaces/bucket';
-import { useFolderLocation } from '@/hooks/useFolderLocation';
 
-export const CreateFolderModal: React.FC<{ bucket: Bucket, onSuccess?: () => void }> = ({ bucket, onSuccess = () => { } }) => {
+export const CreateFolderModal: React.FC<{ bucket: Bucket, onSuccess?: () => void, path: string[] }> = ({ bucket, onSuccess = () => { }, path }) => {
     const { closeModal, openModal } = useModal();
     const { messages } = useIntl();
     const [newName, setNewName] = useState('');
-    const { createDirectory } = useTomb();
-    const folderLocation = useFolderLocation();
+    const { createDirectory, getBuckets } = useTomb();
 
     const create = async () => {
         try {
-            await createDirectory(bucket, [...folderLocation, newName]);
+            await createDirectory(bucket, [...path, newName]);
+            await getBuckets();
             onSuccess();
-        } catch (error: any) { };
+        } catch (error: any) {
+        };
     };
 
     return (

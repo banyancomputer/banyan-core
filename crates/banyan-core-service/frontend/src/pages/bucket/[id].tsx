@@ -12,7 +12,6 @@ import { useFolderLocation } from '@/hooks/useFolderLocation';
 import { Bucket } from '@/lib/interfaces/bucket';
 import BucketHeader from '@/components/Bucket/Header';
 
-
 export { getServerSideProps };
 
 const Bucket: NextPageWithLayout = () => {
@@ -30,7 +29,7 @@ const Bucket: NextPageWithLayout = () => {
                 setSelectedBucket(bucket => ({ ...bucket, files }));
             } catch (error: any) { };
         })()
-    }, [folderLocation])
+    }, [folderLocation, selectedBucket?.id])
 
     useEffect(() => {
         const bucket = buckets.find(bucket => bucket.id === bucketId)

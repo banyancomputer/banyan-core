@@ -6,27 +6,25 @@ import { useModal } from '@/contexts/modals';
 import { Select } from '../../Select';
 import { AddNewOption } from '../../Select/AddNewOption';
 import { CreateBucketModal } from '../CreateBucketModal';
-import { CreateFolderModal } from '../CreateFolderModal ';
 
 import { Upload } from '@static/images/buckets';
-import { useFolderLocation } from '@/hooks/useFolderLocation';
 import { Bucket } from '@/lib/interfaces/bucket';
+import { FolderSelect } from '../../FolderSelect';
 
 export const UploadFileModal: React.FC<{ bucket?: Bucket }> = ({ bucket }) => {
     const { buckets, uploadFile } = useTomb();
     const { openModal, closeModal } = useModal();
     const { messages } = useIntl();
     const [selectedBucket, setSelectedBucket] = useState(bucket?.id || '');
-    const [selectedFolder, setSelectedFolder] = useState('');
+    const [selectedFolder, setSelectedFolder] = useState<string[]>([]);
     const [file, setFIle] = useState<File | null>(null);
-    const folderLocation = useFolderLocation();
     const isUploadDataFilled = useMemo(() => Boolean(selectedBucket && file), [selectedBucket, file])
 
     const selectBucket = (option: string) => {
         setSelectedBucket(option);
     };
 
-    const selectFolder = (option: string) => {
+    const selectFolder = (option: string[]) => {
         setSelectedFolder(option);
     };
 
@@ -40,7 +38,7 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket }> = ({ bucket }) => {
         if (!file) return;
         try {
             const arrayBuffer = await file.arrayBuffer();
-            await uploadFile(selectedBucket, selectedFolder ? [selectedFolder] : [], file.name, arrayBuffer);
+            await uploadFile(selectedBucket, selectedFolder.length ? selectedFolder : [], file.name, arrayBuffer);
             closeModal();
         } catch (error: any) {
             console.log(error);
@@ -52,9 +50,6 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket }> = ({ bucket }) => {
         openModal(<CreateBucketModal />, () => openModal(<UploadFileModal />));
     };
 
-    const addNewFolder = () => {
-        openModal(<CreateFolderModal bucket={buckets.find(bucket => selectedBucket === bucket.id)!} />, () => openModal(<UploadFileModal />));
-    };
 
     return (
         <div className="w-modal flex flex-col gap-4">
@@ -80,12 +75,9 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket }> = ({ bucket }) => {
             {(selectedBucket || bucket) &&
                 <div>
                     <span className="inline-block mb-1 text-xs font-normal">{`${messages.selectFolder}`}:</span>
-                    <Select
-                        selectedOption={selectedFolder}
-                        placeholder={`${messages.selectFolder}`}
+                    <FolderSelect
                         onChange={selectFolder}
-                        options={[]}
-                        initialOption={<AddNewOption label={`${messages.createNewFolder}`} action={addNewFolder} />}
+                        selectedBucket={selectedBucket}
                     />
                 </div>
             }

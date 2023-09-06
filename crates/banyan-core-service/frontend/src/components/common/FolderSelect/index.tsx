@@ -1,0 +1,117 @@
+import React, { useEffect, useRef, useState } from 'react'
+import { Selectoption } from '../Select'
+import { useFolderLocation } from '@/hooks/useFolderLocation';
+import { useIntl } from 'react-intl';
+import { AddNewOption } from '../Select/AddNewOption';
+import { popupClickHandler } from '@/utils';
+import { FiChevronDown } from 'react-icons/fi';
+import { MdDone } from 'react-icons/md';
+import { useModal } from '@/contexts/modals';
+import { CreateFolderModal } from '../Modal/CreateFolderModal ';
+import { useTomb } from '@/contexts/tomb';
+import { UploadFileModal } from '../Modal/UploadFileModal';
+import { BucketFile } from '@/lib/interfaces/bucket';
+
+export interface FolderSelectProps {
+    onChange: (option: string[]) => void;
+    selectedBucket: string;
+    onFolderCreation?: () => void
+};
+
+export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBucket, onFolderCreation }) => {
+    const folderLocation = useFolderLocation();
+    const { buckets, uploadFile, tomb } = useTomb();
+    const selectRef = useRef<HTMLDivElement | null>(null);
+    const [isOptionstVisible, setIsOptionsVisible] = useState(false);
+    const [folder, setFolder] = useState(folderLocation);
+    const [folders, setFolders] = useState<BucketFile[]>([]);
+    const { openModal, closeModal } = useModal();
+    const { messages } = useIntl();
+
+    const toggleSelect = () => {
+        setIsOptionsVisible(prev => !prev);
+    };
+
+    const handleSelect = (option: string[]) => {
+        onChange(option);
+        setFolder(option)
+        setIsOptionsVisible(false);
+    };
+
+    const stopPropagation = (event: React.MouseEvent<HTMLUListElement>) => {
+        event.stopPropagation();
+    };
+
+    const goAbove = () => {
+        setFolder(prev => prev.slice(0, -1))
+    }
+
+    const addNewFolder = () => {
+        const action = onFolderCreation || (() => openModal(<UploadFileModal />));
+        openModal(<CreateFolderModal
+            path={folder}
+            bucket={buckets.find(bucket => selectedBucket === bucket.id)!}
+            onSuccess={() => openModal(<UploadFileModal bucket={buckets.find(bucket => bucket.id === selectedBucket)} />)}
+        />
+            , action);
+    };
+
+    useEffect(() => {
+        (async () => {
+            const bucket = buckets.find(bucket => bucket.id === selectedBucket)!;
+            const files = await bucket.mount.ls(folder);
+            setFolders(files.filter(file => file.type === 'dir'));
+        })()
+    }, [folder])
+
+    useEffect(() => {
+        const listener = popupClickHandler(selectRef.current!, setIsOptionsVisible);
+        document.addEventListener('click', listener);
+
+        return () => document.removeEventListener('click', listener);
+    }, [selectRef]);
+
+    return (
+        <div
+            ref={selectRef}
+            onClick={toggleSelect}
+            className="relative p-select flex justify-between items-center text-sm font-medium border-1 border-gray-200 rounded-lg shadow-sm cursor-pointer select-none"
+        >
+            <span className='overflow-hidden text-ellipsis'>
+                /{folder.join('/')}
+            </span>
+            <FiChevronDown
+                className={`${isOptionstVisible && 'rotate-180'}`}
+                stroke="#667085"
+                size="20px"
+            />
+            {isOptionstVisible &&
+                <ul
+                    onClick={stopPropagation}
+                    className='absolute left-0 top-full w-full mt-2 max-h-48 overflow-y-auto bg-white border-1 border-gray-200 rounded-lg shadow-sm z-10'
+                >
+                    {
+                        folder.length ? <li
+                            className='flex justify-between items-center p-select transition-all hover:bg-slate-200 cursor-pointer'
+                            onClick={goAbove}
+                        >
+                            ...
+                        </li>
+                            :
+                            null
+                    }
+                    <AddNewOption label={`${messages.createNewFolder}`} action={addNewFolder} />
+                    {folders.map((folderItem, index) =>
+                        <li
+                            className='flex justify-between items-center p-select transition-all hover:bg-slate-200 cursor-pointer'
+                            key={index}
+                            onClick={() => handleSelect([...folder, folderItem.name])}
+                        >
+                            {folderItem.name}
+                        </li>
+                    )}
+                </ul>
+            }
+        </div>
+    )
+}
