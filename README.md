@@ -44,7 +44,7 @@ starting the service up.
 
 ```
 cd ../banyan-core-service
-./scripts/add_storage_host.sh;
+./bin/add_storage_host.sh;
 ```
 
 The services should now be ready to interact with each other. The steps so far
@@ -55,13 +55,12 @@ setup as documented here.
 ## Front-End Setup
 
 This is only needed if you want to bring up the web interface locally. From the
-root of the repository. You'll also want to take care to replace `$YOUR_EMAIL`
-with the Google email you're going to try to use to login:
+root of the repository.
 
 ```
 cd crates/banyan-core-server/frontend
 yarn install
-./scripts/allow_list.sh $YOUR_EMAIL
+./bin/allow_list.sh $YOUR_EMAIL
 cp .env.example .env.dev
 ```
 
@@ -119,5 +118,15 @@ yard run dev
 You should now be able to open up your web-browser to
 [http://127.0.0.1:3000](http://127.0.0.1:3000), login, and use the platform.
 
-Note: It seems like the front end is not automatically creating and escrowing
-keys right now... So I couldn't get it working.
+## Updating Tomb WASM
+
+In the tomb repository go to the tomb-wasm sub-crate. Build it with the following command:
+
+```
+export BANYAN_CORE_CHECKOUT=~/workspace/banyan/banyan-core
+
+wasm-pack build --release
+rm -f ${BANYAN_CORE_CHECKOUT}/crates/banyan-core-service/frontend/tomb_build/
+cp -f pkg/* ${BANYAN_CORE_CHECKOUT}/crates/banyan-core-service/frontend/tomb_build/
+```
+

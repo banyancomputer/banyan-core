@@ -9,14 +9,17 @@ import { CreateBucketModal } from '../CreateBucketModal';
 import { CreateFolderModal } from '../CreateFolderModal ';
 
 import { Upload } from '@static/images/buckets';
+import { useFolderLocation } from '@/hooks/useFolderLocation';
+import { Bucket } from '@/lib/interfaces/bucket';
 
-export const UploadFileModal = () => {
+export const UploadFileModal: React.FC<{ bucket?: Bucket }> = ({ bucket }) => {
     const { buckets, uploadFile } = useTomb();
     const { openModal, closeModal } = useModal();
     const { messages } = useIntl();
-    const [selectedBucket, setSelectedBucket] = useState('');
+    const [selectedBucket, setSelectedBucket] = useState(bucket?.id || '');
     const [selectedFolder, setSelectedFolder] = useState('');
     const [file, setFIle] = useState<File | null>(null);
+    const folderLocation = useFolderLocation();
     const isUploadDataFilled = useMemo(() => Boolean(selectedBucket && file), [selectedBucket, file])
 
     const selectBucket = (option: string) => {
@@ -50,7 +53,7 @@ export const UploadFileModal = () => {
     };
 
     const addNewFolder = () => {
-        openModal(<CreateFolderModal />, () => openModal(<UploadFileModal />));
+        openModal(<CreateFolderModal bucket={buckets.find(bucket => selectedBucket === bucket.id)!} />, () => openModal(<UploadFileModal />));
     };
 
     return (
@@ -61,26 +64,31 @@ export const UploadFileModal = () => {
                     {`${messages.chooseFilesToUpload}`}
                 </p>
             </div>
-            <>
-                <span className="inline-block mb-1 text-xs font-normal">{`${messages.selectBucket}`}:</span>
-                <Select
-                    selectedOption={selectedBucket}
-                    onChange={selectBucket}
-                    options={buckets.map(bucket => ({ value: bucket.id, label: bucket.name }))}
-                    placeholder={`${messages.selectBucket}`}
-                    initialOption={<AddNewOption label={`${messages.createNewBucket}`} action={addNewBucket} />}
-                />
-            </>
-            <div>
-                <span className="inline-block mb-1 text-xs font-normal">{`${messages.selectFolder}`}:</span>
-                <Select
-                    selectedOption={selectedFolder}
-                    placeholder={`${messages.selectFolder}`}
-                    onChange={selectFolder}
-                    options={[]}
-                    initialOption={<AddNewOption label={`${messages.createNewFolder}`} action={addNewFolder} />}
-                />
-            </div>
+            {
+                !bucket &&
+                <div>
+                    <span className="inline-block mb-1 text-xs font-normal">{`${messages.selectBucket}`}:</span>
+                    <Select
+                        selectedOption={selectedBucket}
+                        onChange={selectBucket}
+                        options={buckets.map(bucket => ({ value: bucket.id, label: bucket.name }))}
+                        placeholder={`${messages.selectBucket}`}
+                        initialOption={<AddNewOption label={`${messages.createNewBucket}`} action={addNewBucket} />}
+                    />
+                </div>
+            }
+            {(selectedBucket || bucket) &&
+                <div>
+                    <span className="inline-block mb-1 text-xs font-normal">{`${messages.selectFolder}`}:</span>
+                    <Select
+                        selectedOption={selectedFolder}
+                        placeholder={`${messages.selectFolder}`}
+                        onChange={selectFolder}
+                        options={[]}
+                        initialOption={<AddNewOption label={`${messages.createNewFolder}`} action={addNewFolder} />}
+                    />
+                </div>
+            }
             <label className="mt-10 flex flex-col items-center justify-center gap-4 px-6 py-4 border-2 border-c rounded-xl  text-xs cursor-pointer">
                 {file ?
                     <span>{file.name}</span>

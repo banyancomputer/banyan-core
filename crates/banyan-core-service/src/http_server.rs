@@ -20,7 +20,7 @@ use tower_http::{LatencyUnit, ServiceBuilderExt};
 use tracing::Level;
 
 use crate::app_state::AppState;
-use crate::{api, health_check};
+use crate::{api, auth, health_check};
 
 // TODO: might want a longer timeout in some parts of the API and I'd like to be able customize a
 // few layers eventually such as CORS and request timeouts but that's for something down the line
@@ -71,7 +71,7 @@ async fn not_found_handler() -> impl IntoResponse {
     )
 }
 
-pub async fn run(app_state: AppState) -> anyhow::Result<()> {
+pub async fn run(app_state: AppState) {
     let sensitive_headers: Arc<[_]> = Arc::new([
         header::AUTHORIZATION,
         header::COOKIE,
@@ -108,11 +108,12 @@ pub async fn run(app_state: AppState) -> anyhow::Result<()> {
 
     let root_router = Router::new()
         .nest("/api/v1", api::router(app_state.clone()))
+        .nest("/auth", auth::router(app_state.clone()))
         .nest("/_status", health_check::router(app_state.clone()))
         .with_state(app_state)
         .fallback(not_found_handler);
 
-    let addr: SocketAddr = "[::]:3001".parse()?;
+    let addr: SocketAddr = "[::]:3001".parse().unwrap();
     let app = middleware_stack.service(root_router);
 
     tracing::info!(addr = ?addr, "server listening");
@@ -120,7 +121,6 @@ pub async fn run(app_state: AppState) -> anyhow::Result<()> {
     Server::bind(&addr)
         .serve(app.into_make_service())
         .with_graceful_shutdown(graceful_shutdown_blocker())
-        .await?;
-
-    Ok(())
+        .await
+        .unwrap();
 }

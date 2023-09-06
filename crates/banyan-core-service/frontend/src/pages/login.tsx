@@ -4,21 +4,25 @@ import { Button } from '@chakra-ui/react';
 
 import Router from 'next/router';
 import { NextPageWithLayout } from '@/pages/page';
+import { useKeystore } from '@/contexts/keystore';
 
 const Login: NextPageWithLayout = () => {
     const { data } = useSession();
     const [error, setError] = useState('');
+    const { keystoreInitialized } = useKeystore();
 
     // Redirect to home page if user is logged in
     useEffect(() => {
-        data &&
+        if (data && keystoreInitialized) {
             Router.push('/').then(() => window.scrollTo(0, 0));
-    }, [data]);
+        } else if (data) {
+            Router.push('/escrow').then(() => window.scrollTo(0, 0));
+        }
+    }, [data, keystoreInitialized]);
 
     const handleLoginWithProvider = (provider: any) => async () => {
         try {
             await signIn(provider);
-            Router.push('/').then(() => window.scrollTo(0, 0));
         } catch (err: any) {
             setError(err.message);
         }

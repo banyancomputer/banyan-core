@@ -2,21 +2,23 @@ import React from 'react';
 import { useIntl } from 'react-intl';
 import { FiTrash2 } from 'react-icons/fi';
 
-import { Bucket } from '@/lib/interfaces/bucket';
+import { Bucket, BucketFile } from '@/lib/interfaces/bucket';
 import { useModal } from '@/contexts/modals';
 import { useTomb } from '@/contexts/tomb';
 import { ToastNotifications } from '@/utils/toastNotifications';
+import { useFolderLocation } from '@/hooks/useFolderLocation';
 
-export const DeleteBucketModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
+export const DeleteFileModal: React.FC<{ bucket: Bucket, file: BucketFile }> = ({ bucket, file }) => {
     const { closeModal } = useModal();
     const { messages } = useIntl();
-    const { deleteBucket } = useTomb();
+    const { deleteFile } = useTomb();
+    const folderLocation = useFolderLocation();
 
-    const removeBucket = async() => {
+    const removeFile = async () => {
         try {
-            await deleteBucket(bucket.id);
+            await deleteFile(bucket, [...folderLocation, file.name]);
             closeModal();
-            ToastNotifications.notify(`${messages.bucket} "${bucket.name}" ${messages.wasDeleted}`, <FiTrash2 size="20px" />);
+            ToastNotifications.notify(`${messages.file} "${file.name}" ${messages.wasDeleted}`, <FiTrash2 size="20px" />);
         } catch (error: any) { };
     };
 
@@ -24,9 +26,9 @@ export const DeleteBucketModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         <div className="w-modal flex flex-col gap-5">
             <FiTrash2 size="24px" stroke="#5e6c97" />
             <div>
-                <h4 className="text-m font-semibold">{`${messages.deleteBucket}`}</h4>
+                <h4 className="text-m font-semibold">{`${messages.removeFile}`}</h4>
                 <p className="mt-2 text-gray-600">
-                    {`${messages.wantToEmpty}`} <b className="text-gray-900">{bucket.name}</b>? {`${messages.filesWillBeDeletedPermanently}`}.
+                    {`${messages.wantToMove}`} <b className="text-gray-900">{file.name}</b> {`${messages.toTrash}`}? <br /> {`${messages.filesWillBeMoved}`}.
                 </p>
             </div>
             <div className="mt-3 flex items-center gap-3 text-xs" >
@@ -38,7 +40,7 @@ export const DeleteBucketModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                 </button>
                 <button
                     className="btn-primary flex-grow py-3 px-4"
-                    onClick={removeBucket}
+                    onClick={removeFile}
                 >
                     {`${messages.delete}`}
                 </button>
