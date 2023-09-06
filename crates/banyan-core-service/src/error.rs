@@ -2,9 +2,8 @@ use std::fmt::Display;
 
 use axum::response::{IntoResponse, Response};
 use http::StatusCode;
-use thiserror::Error;
 
-#[derive(Error, Debug)]
+#[derive(Debug)]
 #[non_exhaustive]
 pub struct CoreError {
     kind: CoreErrorKind,
@@ -15,6 +14,8 @@ impl Display for CoreError {
         f.write_str(&format!("{:?}", self.kind))
     }
 }
+
+impl std::error::Error for CoreError {}
 
 impl CoreError {
     /// Deault error
