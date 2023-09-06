@@ -26,9 +26,9 @@ impl CoreError {
             .into_response()
     }
 
-    pub fn default_error(message: Option<&str>) -> Self {
+    pub fn default_error(message: &str) -> Self {
         Self {
-            kind: CoreErrorKind::Default(message.map(|v| v.to_string())),
+            kind: CoreErrorKind::Default(message.to_string()),
         }
     }
 
@@ -41,32 +41,16 @@ impl CoreError {
             },
         }
     }
-
-    pub fn generic_error(operation: &str, resource: &str) -> Self {
-        Self {
-            kind: CoreErrorKind::Generic {
-                operation: operation.to_string(),
-                resource: resource.to_string(),
-            },
-        }
-    }
 }
 
 #[derive(Debug)]
 pub enum CoreErrorKind {
-    /// Generic 500 Error with optional message
-    Default(Option<String>),
+    /// Generic 500 Error with message
+    Default(String),
     /// SQLX Error
     Sqlx {
         /// Error
         err: sqlx::Error,
-        /// Operation
-        operation: String,
-        /// Resource
-        resource: String,
-    },
-    /// Generic
-    Generic {
         /// Operation
         operation: String,
         /// Resource
@@ -78,7 +62,6 @@ impl IntoResponse for CoreError {
     fn into_response(self) -> axum::response::Response {
         match self.kind {
             CoreErrorKind::Default(message) => {
-                let message = message.unwrap_or("internal server error".to_string());
                 tracing::error!("{message}");
                 Self::default_response(Some(message))
             }
@@ -111,7 +94,6 @@ impl IntoResponse for CoreError {
                     _ => Self::default_response(None),
                 }
             }
-            _ => Self::default_response(None),
         }
     }
 }

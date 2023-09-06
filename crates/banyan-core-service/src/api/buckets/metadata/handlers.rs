@@ -76,7 +76,7 @@ pub async fn push(
             .await
             .is_err()
         {
-            return CoreError::default_error(Some("failed to approve bucket key")).into_response();
+            return CoreError::default_error("failed to approve bucket key").into_response();
         }
     }
 
@@ -135,7 +135,7 @@ pub async fn push(
             .await;
             // Return the correct response based on the result of the update
             return match maybe_failed_metadata_upload {
-                Ok(_) => CoreError::generic_error("upload", "metadata"),
+                Ok(_) => CoreError::default_error("failed to upload metadata"),
                 Err(err) => CoreError::sqlx_error(err, "mark failed", "metadata upload"),
             }
             .into_response();
@@ -156,7 +156,7 @@ pub async fn push(
                 .abort_multipart(&file_path, &upload_id)
                 .await
                 .expect("aborting to success");
-            return CoreError::default_error(Some("unable to process upload")).into_response();
+            return CoreError::default_error("unable to process upload").into_response();
         }
     };
 
@@ -166,9 +166,9 @@ pub async fn push(
     let current_usage = match db::read_total_usage(&account_id, &mut db_conn).await {
         Ok(usage) => usage,
         Err(err) => {
-            return CoreError::default_error(Some(&format!(
+            return CoreError::default_error(&format!(
                 "unable to read account storage usage: {err}"
-            )))
+            ))
             .into_response();
         }
     };
@@ -188,10 +188,10 @@ pub async fn push(
         match maybe_failed_metadata_upload {
             Ok(_) => {}
             Err(err) => {
-                return CoreError::default_error(Some(&format!(
+                return CoreError::default_error(&format!(
                     "unable to mark metadata upload as failed: {}",
                     err
-                )))
+                ))
                 .into_response();
             }
         };
@@ -229,9 +229,9 @@ pub async fn push(
         let current_metadata = match maybe_current_metadata {
             Ok(cr) => cr,
             Err(err) => {
-                return CoreError::default_error(Some(&format!(
+                return CoreError::default_error(&format!(
                     "unable to update bucket metadata after push: {err}"
-                )))
+                ))
                 .into_response();
             }
         };
@@ -260,9 +260,9 @@ pub async fn push(
                     .into_response()
             }
             Err(err) => {
-                return CoreError::default_error(Some(&format!(
+                return CoreError::default_error(&format!(
                     "unable to update bucket metadata after push: {err}"
-                )))
+                ))
                 .into_response();
             }
         }
@@ -283,9 +283,9 @@ pub async fn push(
     let updated_metadata = match maybe_updated_metadata {
         Ok(cr) => cr,
         Err(err) => {
-            return CoreError::default_error(Some(&format!(
+            return CoreError::default_error(&format!(
                 "unable to update bucket metadata after push: {err}"
-            )))
+            ))
             .into_response();
         }
     };
@@ -297,10 +297,8 @@ pub async fn push(
     let data_usage = match db::read_total_data_usage(&account_id, &mut db_conn).await {
         Ok(usage) => usage,
         Err(err) => {
-            return CoreError::default_error(Some(&format!(
-                "unable to read account data usage: {err}"
-            )))
-            .into_response();
+            return CoreError::default_error(&format!("unable to read account data usage: {err}"))
+                .into_response();
         }
     };
 
@@ -310,7 +308,7 @@ pub async fn push(
     let storage_host = match db::select_storage_host(&mut db_conn).await {
         Ok(sh) => sh,
         Err(err) => {
-            return CoreError::default_error(Some(&format!("unable to read storage host: {err}")))
+            return CoreError::default_error(&format!("unable to read storage host: {err}"))
                 .into_response();
         }
     };
@@ -328,7 +326,7 @@ pub async fn push(
     {
         Ok(sgi) => sgi,
         Err(err) => {
-            return CoreError::default_error(Some(&format!("unable record storage grant: {err}")))
+            return CoreError::default_error(&format!("unable record storage grant: {err}"))
                 .into_response();
         }
     };
@@ -344,10 +342,8 @@ pub async fn push(
     ) {
         Ok(ticket) => ticket,
         Err(err) => {
-            return CoreError::default_error(Some(&format!(
-                "unable to generate storage ticket: {err}"
-            )))
-            .into_response();
+            return CoreError::default_error(&format!("unable to generate storage ticket: {err}"))
+                .into_response();
         }
     };
 
@@ -378,7 +374,7 @@ pub async fn pull(
                 return (StatusCode::NOT_FOUND, format!("bucket not found: {err}")).into_response();
             }
             _ => {
-                return CoreError::default_error(Some(&format!("unable to read bucket: {err}")))
+                return CoreError::default_error(&format!("unable to read bucket: {err}"))
                     .into_response();
             }
         },
@@ -392,7 +388,7 @@ pub async fn pull(
                     .into_response();
             }
             _ => {
-                return CoreError::default_error(Some(&format!("unable to read metadata: {err}")))
+                return CoreError::default_error(&format!("unable to read metadata: {err}"))
                     .into_response();
             }
         },
@@ -408,7 +404,7 @@ pub async fn pull(
     let reader = match store.get(&file_path).await {
         Ok(r) => r,
         Err(err) => {
-            return CoreError::default_error(Some(&format!("unable to read metadata file: {err}")))
+            return CoreError::default_error(&format!("unable to read metadata file: {err}"))
                 .into_response();
         }
     };
@@ -446,7 +442,7 @@ pub async fn read(
                 return (StatusCode::NOT_FOUND, format!("bucket not found: {err}")).into_response();
             }
             _ => {
-                return CoreError::default_error(Some(&format!("unable to read bucket: {err}")))
+                return CoreError::default_error(&format!("unable to read bucket: {err}"))
                     .into_response();
             }
         },
@@ -468,7 +464,7 @@ pub async fn read(
                     .into_response();
             }
             _ => {
-                return CoreError::default_error(Some(&format!("unable to read metadata: {err}")))
+                return CoreError::default_error(&format!("unable to read metadata: {err}"))
                     .into_response();
             }
         },
@@ -491,7 +487,7 @@ pub async fn read_all(
                 return (StatusCode::NOT_FOUND, format!("bucket not found: {err}")).into_response();
             }
             _ => {
-                return CoreError::default_error(Some(&format!("unable to read bucket: {err}")))
+                return CoreError::default_error(&format!("unable to read bucket: {err}"))
                     .into_response();
             }
         },
@@ -516,7 +512,7 @@ pub async fn read_all(
                     .into_response();
             }
             _ => {
-                return CoreError::default_error(Some(&format!("unable to read metadata: {err}")))
+                return CoreError::default_error(&format!("unable to read metadata: {err}"))
                     .into_response();
             }
         },
@@ -539,7 +535,7 @@ pub async fn read_current(
                 return (StatusCode::NOT_FOUND, format!("bucket not found: {err}")).into_response();
             }
             _ => {
-                return CoreError::default_error(Some(&format!("unable to read bucket: {err}")))
+                return CoreError::default_error(&format!("unable to read bucket: {err}"))
                     .into_response();
             }
         },
@@ -563,10 +559,8 @@ pub async fn read_current(
                     .into_response();
             }
             _ => {
-                return CoreError::default_error(Some(&format!(
-                    "unable to read bucket metadata: {err}"
-                )))
-                .into_response();
+                return CoreError::default_error(&format!("unable to read bucket metadata: {err}"))
+                    .into_response();
             }
         },
     };
