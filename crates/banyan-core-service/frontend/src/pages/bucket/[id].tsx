@@ -6,7 +6,7 @@ import { useTomb } from '@/contexts/tomb';
 import getServerSideProps from '@/utils/session';
 
 import BaseLayout from '@/layouts/BaseLayout';
-import { BucketTable } from '@/components/Buckets/BucketTable';
+import { BucketTable } from '@/components/Bucket/BucketTable';
 import { Fallback } from '@/components/common/Fallback';
 import { useFolderLocation } from '@/hooks/useFolderLocation';
 import { Bucket } from '@/lib/interfaces/bucket';

@@ -2,14 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useIntl } from 'react-intl';
 
-import { ActionsCell } from '../ActionsCell';
+import { ActionsCell } from '@components/common/ActionsCell';
 import { Bucket } from '@/lib/interfaces/bucket';
 import { getDateLabel } from '@/utils/date';
 import { convertFileSize } from '@/utils/storage';
 import { FileIcon } from '@/components/common/FileIcon';
 import { SortCell } from '@/components/common/SortCell';
-import { FileActions } from '@/components/Buckets/FileActions';
-import { BucketActions } from '../BucketActions';
+import { FileActions } from '@/components/common/FileActions';
+import { BucketActions } from '@/components/common/BucketActions';
+import Link from 'next/link';
+import { useFolderLocation } from '@/hooks/useFolderLocation';
 
 export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const searchParams = useSearchParams();
@@ -18,6 +20,7 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const [bucketCopy, setBucketCopy] = useState(bucket);
     const { messages } = useIntl();
     const [sortState, setSortState] = useState<{ criteria: string; direction: 'ASC' | 'DESC' | '' }>({ criteria: '', direction: '' });
+    const folderLocation = useFolderLocation();
 
     const sort = (criteria: string) => {
         setSortState(prev => ({ criteria, direction: prev.direction === 'ASC' ? 'DESC' : 'ASC' }));
@@ -91,8 +94,19 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                         {
                             bucketCopy.files.map((file, index) =>
                                 <tr key={index}>
-                                    <td className="px-6 py-4 flex items-center gap-3">
-                                        <FileIcon fileName={file.name} className="p-2 bg-gray-200 rounded-full" />{file.name}
+                                    <td className="">
+                                        {file.type === 'dir' ?
+                                            <Link
+                                                href={`/bucket/${bucket.id}?${folderLocation.join('/') ? `${folderLocation.join('/')}/`: ''}${file.name}`}
+                                                className='px-6 py-4 flex items-center gap-3'
+                                            >
+                                                <FileIcon fileName={file.name} className="p-2 bg-gray-200 rounded-full" />{file.name}
+                                            </Link>
+                                            :
+                                            <span className='px-6 py-4 flex items-center gap-3'>
+                                                <FileIcon fileName={file.name} className="p-2 bg-gray-200 rounded-full" />{file.name}
+                                            </span>
+                                        }
                                     </td>
                                     <td className="px-6 py-4">{getDateLabel(+file.metadata.modified)}</td>
                                     <td className="px-6 py-4">{convertFileSize(file.metadata.size)}</td>

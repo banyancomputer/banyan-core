@@ -3,6 +3,7 @@ import { WasmMount } from "tomb-wasm-experimental";
 export interface BucketFile {
     [key: string]: any;
     name: string;
+    type: string;
     metadata: {
         [key: string]:string | number;
         created: string;

@@ -5,13 +5,14 @@ import { HiOutlineLightningBolt } from 'react-icons/hi';
 import { MdRestore, MdOutlineRestoreFromTrash } from 'react-icons/md';
 import { BsBoxSeam } from 'react-icons/bs';
 
-import { FileAction } from '../../Buckets/FileActions';
+import { FileAction } from '../FileActions';
 import { Bucket } from '@/lib/interfaces/bucket';
 import { useModal } from '@/contexts/modals';
 import { BucketSnapshotsModal } from '@/components/common/Modal/BucketSnapshotsModal';
 import { RenameBucketModal } from '@/components/common/Modal/RenameBucketModal';
 import { DeleteBucketModal } from '@/components/common/Modal/DeleteBucketModal';
 import { TakeSnapshotModal } from '@/components/common/Modal/TakeSnapshotModal';
+import { UploadFileModal } from '../Modal/UploadFileModal';
 
 export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const { messages } = useIntl();
@@ -20,7 +21,7 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
 
     const upload = async () => {
         try {
-
+            openModal(<UploadFileModal bucket={bucket} />);
         } catch (error: any) { }
     };
 

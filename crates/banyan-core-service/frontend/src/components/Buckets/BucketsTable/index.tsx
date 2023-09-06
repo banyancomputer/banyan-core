@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useIntl } from 'react-intl';
 
-import { ActionsCell } from '../ActionsCell';
-import { FileIcon } from '../../common/FileIcon';
-import { BucketActions } from '../BucketActions';
+import { ActionsCell } from '@components/common/ActionsCell';
+import { FileIcon } from '@components/common/FileIcon';
+import { BucketActions } from '@components/common/BucketActions';
 import { SortCell } from '@/components/common/SortCell';
-import { FileActions } from '@/components/Buckets/FileActions';
+import { FileActions } from '@/components/common/FileActions';
 
 import { getDateLabel } from '@/utils/date';
 import { Bucket as IBucket } from '@/lib/interfaces/bucket';
