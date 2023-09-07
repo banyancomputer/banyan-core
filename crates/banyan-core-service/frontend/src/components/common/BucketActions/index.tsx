@@ -101,13 +101,13 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const purgeAction = useMemo(() => new FileAction(`${messages.purgeColdKeys}`, <FiTrash2 size="18px" />, purgeColdKeys), []);
 
     const hotInrecactiveActions = [
-        uploadAction, createSnapshotAction, viewBucketSnapshotsAction, renameAction, deletedAction
+        uploadAction, createSnapshotAction, createFolderAction, viewBucketSnapshotsAction, renameAction, deletedAction
     ];
     const warmInrecactiveActions = [
-        uploadAction, createSnapshotAction, restoreColdVersionAction, viewBucketVersionsAction, deleteHotDatadAction, purgeAction
+        uploadAction, createSnapshotAction, createFolderAction, restoreColdVersionAction, viewBucketVersionsAction, deleteHotDatadAction, purgeAction
     ];
     const coldIntecactiveActions = [
-        viewBucketSnapshotsAction, renameAction, viewBucketVersionsAction, purgeAction
+        viewBucketSnapshotsAction, createFolderAction, renameAction, viewBucketVersionsAction, purgeAction
     ];
     const hotBackupActions = [
         createSnapshotAction, renameAction, viewBucketSnapshotsAction //deleteBackup
