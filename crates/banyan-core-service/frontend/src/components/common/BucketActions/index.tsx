@@ -5,6 +5,7 @@ import { HiOutlineLightningBolt } from 'react-icons/hi';
 import { MdRestore, MdOutlineRestoreFromTrash } from 'react-icons/md';
 import { BsBoxSeam } from 'react-icons/bs';
 import { PiFolderNotchPlusBold } from 'react-icons/pi';
+import { useRouter } from 'next/router';
 
 import { useModal } from '@/contexts/modals';
 import { Bucket } from '@/lib/interfaces/bucket';
@@ -25,6 +26,7 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const bucketType = `${bucket.bucketType}_${bucket.storageClass}`;
     const { selectedBucket, selectBucket, getSelectedBucketFiles } = useTomb();
     const folderLocation = useFolderLocation();
+    const router = useRouter();
 
     const upload = async () => {
         try {
@@ -99,13 +101,13 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const purgeAction = useMemo(() => new FileAction(`${messages.purgeColdKeys}`, <FiTrash2 size="18px" />, purgeColdKeys), []);
 
     const hotInrecactiveActions = [
-        uploadAction, createSnapshotAction, createFolderAction, viewBucketSnapshotsAction, renameAction, deletedAction
+        uploadAction, createSnapshotAction, viewBucketSnapshotsAction, renameAction, deletedAction
     ];
     const warmInrecactiveActions = [
-        uploadAction, createSnapshotAction, createFolderAction, restoreColdVersionAction, viewBucketVersionsAction, deleteHotDatadAction, purgeAction
+        uploadAction, createSnapshotAction, restoreColdVersionAction, viewBucketVersionsAction, deleteHotDatadAction, purgeAction
     ];
     const coldIntecactiveActions = [
-        viewBucketSnapshotsAction, createFolderAction, renameAction, viewBucketVersionsAction, purgeAction
+        viewBucketSnapshotsAction, renameAction, viewBucketVersionsAction, purgeAction
     ];
     const hotBackupActions = [
         createSnapshotAction, renameAction, viewBucketSnapshotsAction //deleteBackup
@@ -127,16 +129,28 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     }
 
     return (
-        <div className="fixed w-52 right-8 text-xs font-medium bg-white rounded-xl shadow-md z-10 text-gray-900">{
-            actions[bucketType].map(action =>
+        <div className="fixed w-52 right-8 text-xs font-medium bg-white rounded-xl shadow-md z-10 text-gray-900">
+            {router.pathname === '/bucket/[id]' ?
                 <div
-                    key={action.label}
+                    key={createFolderAction.label}
                     className="w-full flex items-center gap-2 py-2 px-3 border-b-1 border-gray-200 transition-all hover:bg-slate-200"
-                    onClick={action.value}
+                    onClick={createFolderAction.value}
                 >
-                    {action.icon} {action.label}
+                    {createFolderAction.icon} {createFolderAction.label}
                 </div>
-            )
-        }</div>
+                : null
+            }
+            {
+                actions[bucketType].map(action =>
+                    <div
+                        key={action.label}
+                        className="w-full flex items-center gap-2 py-2 px-3 border-b-1 border-gray-200 transition-all hover:bg-slate-200"
+                        onClick={action.value}
+                    >
+                        {action.icon} {action.label}
+                    </div>
+                )
+            }
+        </div>
     );
 };

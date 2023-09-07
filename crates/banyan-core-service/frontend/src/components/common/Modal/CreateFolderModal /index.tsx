@@ -4,6 +4,7 @@ import { useIntl } from 'react-intl';
 import { useModal } from '@/contexts/modals';
 import { useTomb } from '@/contexts/tomb';
 import { Bucket } from '@/lib/interfaces/bucket';
+import { ToastNotifications } from '@/utils/toastNotifications';
 
 export const CreateFolderModal: React.FC<{ bucket: Bucket, onSuccess?: () => void, path: string[] }> = ({ bucket, onSuccess = () => { }, path }) => {
     const { closeModal, openModal } = useModal();
@@ -17,6 +18,7 @@ export const CreateFolderModal: React.FC<{ bucket: Bucket, onSuccess?: () => voi
             await getBuckets();
             onSuccess();
         } catch (error: any) {
+            ToastNotifications.error(`${messages.creationError}`, `${messages.tryAgain}`, create);
         };
     };
 

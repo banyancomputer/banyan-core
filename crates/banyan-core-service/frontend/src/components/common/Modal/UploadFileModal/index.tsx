@@ -10,6 +10,7 @@ import { CreateBucketModal } from '../CreateBucketModal';
 import { Upload } from '@static/images/buckets';
 import { Bucket } from '@/lib/interfaces/bucket';
 import { FolderSelect } from '../../FolderSelect';
+import { ToastNotifications } from '@/utils/toastNotifications';
 
 export const UploadFileModal: React.FC<{ bucket?: Bucket }> = ({ bucket }) => {
     const { buckets, uploadFile } = useTomb();
@@ -41,8 +42,7 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket }> = ({ bucket }) => {
             await uploadFile(selectedBucket, selectedFolder.length ? selectedFolder : [], file.name, arrayBuffer);
             closeModal();
         } catch (error: any) {
-            console.log(error);
-
+            ToastNotifications.error(`${messages.uploadError}`, `${messages.tryAgain}`, upload);
         };
     };
 
