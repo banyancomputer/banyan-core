@@ -3,21 +3,25 @@ import { useIntl } from 'react-intl';
 import Link from 'next/link';
 import { IoMdClose } from 'react-icons/io';
 import { FiSearch } from 'react-icons/fi';
+import { useRouter } from 'next/router';
 
 import { useTomb } from '@/contexts/tomb';
+import { useFolderLocation } from '@/hooks/useFolderLocation';
 
 import { FileIcon } from '../FileIcon';
 
 interface SeatchOption {
     label: string;
     path: string;
-}
+};
 
 export const Input = React.memo(() => {
-    const { buckets } = useTomb();
+    const { buckets, selectedBucket } = useTomb();
     const [search, setSearch] = useState('');
     const [searchList, setSearchList] = useState<SeatchOption[]>([]);
     const { messages } = useIntl();
+    const { pathname } = useRouter();
+    const folderLocation = useFolderLocation();
 
     const clearSearch = () => {
         setSearch('');
@@ -25,12 +29,21 @@ export const Input = React.memo(() => {
 
     /** Ceates array of single-level elements to be able to go through them by search */
     useEffect(() => {
+        if (pathname === '/bucket/[id]') {
+            setSearchList(
+                selectedBucket ? [...selectedBucket.files?.map(file => ({ label: file.name, path: `/bucket/${selectedBucket?.id}?${folderLocation.join('/')}${file.type === 'dir' ? `${folderLocation.length ? `/${file.name}` : file.name}` : ''}` })),
+                { label: selectedBucket?.name, path: `/bucket/${selectedBucket?.id}` }
+                ] : []
+            )
+            return;
+        };
+
         setSearchList(buckets.map(bucket =>
-            [...bucket?.files?.map(file => ({ label: file.name, path: `/bucket/${bucket.id}` })),
+            [...bucket?.files?.map(file => ({ label: file.name, path: `/bucket/${bucket?.id}?${file.type === 'dir' ? `${file.name}` : ''}` })),
             { label: bucket.name, path: `/bucket/${bucket.id}` }]
         ).flat()
         );
-    }, [buckets]);
+    }, [buckets, selectedBucket, pathname]);
 
     return (
         <div className="flex relative flex-grow max-w-xl">

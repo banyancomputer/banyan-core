@@ -55,7 +55,7 @@ export const Navigation = () => {
                         {`${messages.myBuckets}`}
                     </span>
                     <span className={`px-2 py-1 bg-navigation-text text-navigation-secondary rounded-full text-xxs font-medium ${!buckets.length && 'hidden'}`}>
-                        {buckets.map(bucket => bucket.files.length).reduce((accumulator, currentValue) => accumulator + currentValue, 0)}
+                        {buckets.length}
                     </span>
                     <span
                         onClick={toggleBucketsVisibility}

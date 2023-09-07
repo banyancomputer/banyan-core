@@ -20,13 +20,13 @@ const Bucket: NextPageWithLayout = () => {
     const folderLocation = useFolderLocation();
 
     useEffect(() => {
-        if (!selectedBucket) return;
+        if (selectedBucket?.id !== bucketId) return;
         (async () => {
             try {
                 getSelectedBucketFiles(folderLocation);
             } catch (error: any) { };
         })()
-    }, [folderLocation, selectedBucket?.id])
+    }, [folderLocation, selectedBucket?.id]);
 
     useEffect(() => {
         const bucket = buckets.find(bucket => bucket.id === bucketId);
