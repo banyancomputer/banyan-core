@@ -27,7 +27,10 @@ export const MoveToModal: React.FC<{ file: BucketFile, bucket: Bucket }> = ({ fi
         try {
             await moveTo(bucket, [...folderLocation, file.name], [...selectedFolder, selectedBucket, file.name])
             ToastNotifications.notify(`${messages.fileWasMoved}`, <MdDone size="20px" />);
-        } catch (error: any) { };
+        } catch (error: any) {
+            ToastNotifications.error(`${messages.moveToError}`, `${messages.tryAgain}`, move);
+
+        };
     };
 
     // const selectBucket = (option: string) => {
