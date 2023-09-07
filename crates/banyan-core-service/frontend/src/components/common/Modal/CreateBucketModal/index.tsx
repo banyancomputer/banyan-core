@@ -4,6 +4,7 @@ import { useIntl } from 'react-intl';
 import { useModal } from '@/contexts/modals';
 import { useTomb } from '@/contexts/tomb';
 import { Select, Selectoption } from '../../Select';
+import { ToastNotifications } from '@/utils/toastNotifications';
 
 export const CreateBucketModal = () => {
     const { closeModal } = useModal();
@@ -39,7 +40,7 @@ export const CreateBucketModal = () => {
             await createBucket(bucketName, storageClass, bucketType);
             closeModal();
         } catch (error: any) {
-            console.log('createBucketError', error);
+            ToastNotifications.error(`${messages.creationError}`, `${messages.tryAgain}`, create);
         };
     };
 

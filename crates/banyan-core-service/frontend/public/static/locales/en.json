@@ -93,5 +93,13 @@
 	"create": "Create",
 	"createNewBucket": "Create new bucket",
 	"createNewFolder": "Create new folder",
-	"folderName": "Folder name"
+	"folderName": "Folder name",
+	"tryAgain": "Try again",
+	"deletionError": "There was an issue with deletion. Please try again",
+	"uploadError": "There was an issue with upload. Please try again",
+	"snapshotError": "There was an issue with your snapshot. Please try again.",
+	"moveToError": "There was an issue moving your file. Please try again.",
+	"editError": "There was an issue with your edit. Please try again.",
+	"creationError": "There was an issue creating your folder or bucket. Please try again.",
+	"accessUpdatesError": "There was an issue with access updates. Please try again."
 }

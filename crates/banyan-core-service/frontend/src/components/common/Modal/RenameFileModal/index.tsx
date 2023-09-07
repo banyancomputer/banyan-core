@@ -19,7 +19,9 @@ export const RenameFileModal: React.FC<{ bucket: Bucket; file: BucketFile }> = (
         try {
             await renameFile(bucket.id, [...folderLocation, file.name], [...folderLocation, newName]);
             ToastNotifications.notify(`${messages.fileWasRenamed}`, <MdDone size="20px" />);
-        } catch (error: any) { }
+        } catch (error: any) {
+            ToastNotifications.error(`${messages.editError}`, `${messages.tryAgain}`, save);
+        }
     };
 
     return (
