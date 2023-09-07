@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useIntl } from 'react-intl';
+import Image from 'next/image';
+import Link from 'next/link';
 
 import { ActionsCell } from '@components/common/ActionsCell';
 import { Bucket } from '@/lib/interfaces/bucket';
@@ -10,8 +12,9 @@ import { FileIcon } from '@/components/common/FileIcon';
 import { SortCell } from '@/components/common/SortCell';
 import { FileActions } from '@/components/common/FileActions';
 import { BucketActions } from '@/components/common/BucketActions';
-import Link from 'next/link';
 import { useFolderLocation } from '@/hooks/useFolderLocation';
+
+import emptyIcon from '@static/images/common/emptyIcon.png';
 
 export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const searchParams = useSearchParams();
@@ -97,7 +100,7 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                                     <td className="">
                                         {file.type === 'dir' ?
                                             <Link
-                                                href={`/bucket/${bucket.id}?${folderLocation.join('/') ? `${folderLocation.join('/')}/`: ''}${file.name}`}
+                                                href={`/bucket/${bucket.id}?${folderLocation.join('/') ? `${folderLocation.join('/')}/` : ''}${file.name}`}
                                                 className='px-6 py-4 flex items-center gap-3'
                                             >
                                                 <FileIcon fileName={file.name} className="p-2 bg-gray-200 rounded-full" />{file.name}
@@ -119,6 +122,14 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                     </tbody>
                 </table >
             </div>
+            {!bucketCopy.files.length ?
+                <div className="h-full flex m-12 flex-col items-center justify-center saturate-0">
+                    <Image src={emptyIcon} alt="emptyIcon" />
+                    <p className="mt-4">{`${messages.bucketIsEmpty}`}</p>
+                </div>
+                :
+                null
+            }
         </div>
     );
 };
