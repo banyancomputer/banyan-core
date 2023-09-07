@@ -2,7 +2,6 @@ use openssl::ec::{EcGroup, EcKey};
 use openssl::nid::Nid;
 use openssl::pkey::{PKey, Private, Public};
 
-#[allow(dead_code)]
 pub fn create_private_ec_pem() -> String {
     let private_key: PKey<Private> = {
         let ec_group = EcGroup::from_curve_name(Nid::SECP384R1).unwrap();
@@ -39,7 +38,6 @@ pub fn fingerprint_public_pem(public_pem: &str) -> String {
         .join(":")
 }
 
-#[allow(dead_code)]
 pub fn public_from_private(private_pem: &str) -> String {
     let private_key = PKey::private_key_from_pem(private_pem.as_bytes()).unwrap();
 

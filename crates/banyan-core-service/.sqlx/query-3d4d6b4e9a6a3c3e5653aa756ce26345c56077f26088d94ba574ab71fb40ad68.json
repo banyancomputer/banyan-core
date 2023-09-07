@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n        UPDATE bucket_keys SET \n        approved = true \n        WHERE pem = $1 AND bucket_id = $2 \n        RETURNING id, bucket_id, approved, pem, fingerprint;",
+  "query": "\n        UPDATE bucket_keys SET \n        approved = true \n        WHERE fingerprint = $1 AND bucket_id = $2 \n        RETURNING id, bucket_id, approved, pem, fingerprint;",
   "describe": {
     "columns": [
       {
@@ -40,5 +40,5 @@
       false
     ]
   },
-  "hash": "f705f45dbc2352305c3dd9b2e98792d9594dd6d0e0c9fb2ba6d6a698764c3f4a"
+  "hash": "3d4d6b4e9a6a3c3e5653aa756ce26345c56077f26088d94ba574ab71fb40ad68"
 }

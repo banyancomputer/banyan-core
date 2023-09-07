@@ -8,7 +8,7 @@ use crate::api::buckets::keys::{requests, responses};
 use crate::error::CoreError;
 use crate::extractors::{ApiToken, DbConn};
 use crate::utils::db;
-use crate::utils::keys::pretty_fingerprint;
+use crate::utils::keys::*;
 
 /// Initialze a new bucket key for the specified bucket
 pub async fn create(
@@ -33,7 +33,7 @@ pub async fn create(
             .into_response();
     }
 
-    let fingerprint = pretty_fingerprint(&new_bucket_key.pem);
+    let fingerprint = fingerprint_public_pem(&new_bucket_key.pem);
     // Create the Bucket Key
     match db::create_bucket_key(&bucket_id, false, &new_bucket_key.pem, &mut db_conn).await {
         Ok(resource) => Json(responses::CreateBucketKey {

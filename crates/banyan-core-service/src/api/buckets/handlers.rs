@@ -8,7 +8,7 @@ use crate::api::buckets::{keys, requests, responses};
 use crate::error::CoreError;
 use crate::extractors::{ApiToken, DbConn};
 use crate::utils::db;
-use crate::utils::keys::pretty_fingerprint;
+use crate::utils::keys::*;
 
 /// Initialze a new bucket with initial key material.
 pub async fn create(
@@ -55,7 +55,9 @@ pub async fn create(
                             initial_bucket_key: keys::responses::CreateBucketKey {
                                 id: key_resource.id,
                                 approved: true,
-                                fingerprint: pretty_fingerprint(&new_bucket.initial_bucket_key_pem),
+                                fingerprint: fingerprint_public_pem(
+                                    &new_bucket.initial_bucket_key_pem,
+                                ),
                             },
                         };
 

@@ -70,13 +70,10 @@ pub async fn push(
         serde_json::from_slice(&request_data_bytes).unwrap();
 
     /* 2. Now that the request is validated and the data extracted, approve any outstanding keys */
-    for pem in request_data.valid_keys {
+    for fingerprint in request_data.valid_keys {
         // Return if we fail to approve any of them
-        if approve_bucket_key(&bucket_id, &pem, &mut db_conn)
-            .await
-            .is_err()
-        {
-            return CoreError::default_error("failed to approve bucket key").into_response();
+        if let Err(err) = approve_bucket_key(&bucket_id, &fingerprint, &mut db_conn).await {
+            return CoreError::sqlx_error(err, "approve", "bucket key").into_response();
         }
     }
 

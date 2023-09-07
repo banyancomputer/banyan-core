@@ -1,6 +1,6 @@
 use crate::db::models::{self, BucketType, CreatedResource, StorageClass};
 use crate::extractors::DbConn;
-use crate::utils::keys::pretty_fingerprint;
+use crate::utils::keys::fingerprint_public_pem;
 use serde::Serialize;
 use sqlx::FromRow;
 
@@ -184,7 +184,8 @@ pub async fn create_bucket_key(
     pem: &str,
     db_conn: &mut DbConn,
 ) -> Result<CreatedResource, sqlx::Error> {
-    let fingerprint = pretty_fingerprint(pem);
+    let fingerprint = fingerprint_public_pem(pem);
+    tracing::info!("creating new bucketkey w fingerprint {fingerprint}");
     sqlx::query_as!(
         models::CreatedResource,
         r#"INSERT INTO bucket_keys (bucket_id, approved, pem, fingerprint) VALUES ($1, $2, $3, $4) RETURNING id;"#,
@@ -269,7 +270,7 @@ pub async fn delete_bucket_key(
 /// Returns the bucket key if it exists and belongs to the given bucket_id, otherwise returns an error.
 pub async fn approve_bucket_key(
     bucket_id: &str,
-    pem: &str,
+    fingerprint: &str,
     db_conn: &mut DbConn,
 ) -> Result<models::BucketKey, sqlx::Error> {
     // Perorm the update
@@ -278,9 +279,9 @@ pub async fn approve_bucket_key(
         r#"
         UPDATE bucket_keys SET 
         approved = true 
-        WHERE pem = $1 AND bucket_id = $2 
+        WHERE fingerprint = $1 AND bucket_id = $2 
         RETURNING id, bucket_id, approved, pem, fingerprint;"#,
-        pem,
+        fingerprint,
         bucket_id,
     )
     .fetch_one(&mut *db_conn.0)

@@ -1,6 +1,7 @@
-use banyan_api_client::prelude::*;
+use banyan_api_client::{prelude::*, keys::*};
 use jsonwebtoken::EncodingKey;
 use uuid::Uuid;
+
 
 struct Account {
     id: Uuid,
@@ -16,8 +17,8 @@ async fn register_fake_account() -> Account {
         .await
         .unwrap();
 
-    let private_pem = banyan_api_client::fake::create_private_ec_pem();
-    let public_pem = banyan_api_client::fake::public_from_private(&private_pem);
+    let private_pem = create_private_ec_pem();
+    let public_pem = public_from_private(&private_pem);
 
     let device_key_info = api_client
         .call(banyan_api_client::fake::FakeRegisterDeviceKey {
@@ -27,7 +28,7 @@ async fn register_fake_account() -> Account {
         .await
         .unwrap();
 
-    let fingerprint = banyan_api_client::fake::fingerprint_public_pem(public_pem.as_str());
+    let fingerprint = fingerprint_public_pem(public_pem.as_str());
 
     assert_eq!(account_info.id, device_key_info.account_id);
     assert_eq!(fingerprint, device_key_info.fingerprint);
