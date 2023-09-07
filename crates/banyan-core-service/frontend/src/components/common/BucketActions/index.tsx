@@ -4,20 +4,27 @@ import { FiEdit, FiTrash2, FiUpload } from 'react-icons/fi';
 import { HiOutlineLightningBolt } from 'react-icons/hi';
 import { MdRestore, MdOutlineRestoreFromTrash } from 'react-icons/md';
 import { BsBoxSeam } from 'react-icons/bs';
+import { PiFolderNotchPlusBold } from 'react-icons/pi';
+
+import { useModal } from '@/contexts/modals';
+import { Bucket } from '@/lib/interfaces/bucket';
+import { useFolderLocation } from '@/hooks/useFolderLocation';
+import { useTomb } from '@/contexts/tomb';
 
 import { FileAction } from '../FileActions';
-import { Bucket } from '@/lib/interfaces/bucket';
-import { useModal } from '@/contexts/modals';
 import { BucketSnapshotsModal } from '@/components/common/Modal/BucketSnapshotsModal';
 import { RenameBucketModal } from '@/components/common/Modal/RenameBucketModal';
 import { DeleteBucketModal } from '@/components/common/Modal/DeleteBucketModal';
 import { TakeSnapshotModal } from '@/components/common/Modal/TakeSnapshotModal';
 import { UploadFileModal } from '../Modal/UploadFileModal';
+import { CreateFolderModal } from '../Modal/CreateFolderModal ';
 
 export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const { messages } = useIntl();
-    const { openModal } = useModal();
+    const { openModal, closeModal } = useModal();
     const bucketType = `${bucket.bucketType}_${bucket.storageClass}`;
+    const { selectedBucket, selectBucket, getSelectedBucketFiles } = useTomb();
+    const folderLocation = useFolderLocation();
 
     const upload = async () => {
         try {
@@ -47,6 +54,17 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         openModal(<RenameBucketModal bucket={bucket} />);
     };
 
+    const createFolder = async () => {
+        if (!selectedBucket) return;
+
+        const onSuccess = async () => {
+            await getSelectedBucketFiles(folderLocation);
+            closeModal();
+        };
+
+        openModal(<CreateFolderModal bucket={bucket} path={folderLocation} onSuccess={onSuccess} />);
+    };
+
     const retoreColdVersion = async () => {
         try {
 
@@ -74,19 +92,20 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const viewBucketSnapshotsAction = useMemo(() => new FileAction(`${messages.viewColdSnapshots}`, <MdRestore size="18px" />, viewBucketSnapshots), []);
     const viewBucketVersionsAction = useMemo(() => new FileAction(`${messages.viewBucketVersions}`, <MdRestore size="18px" />, viewBucketVersions), []);
     const renameAction = useMemo(() => new FileAction(`${messages.rename}`, <FiEdit size="18px" />, rename), []);
+    const createFolderAction = useMemo(() => new FileAction(`${messages.createNewFolder}`, <PiFolderNotchPlusBold size="18px" />, createFolder), []);
     const restoreColdVersionAction = useMemo(() => new FileAction(`${messages.restoreCold}`, <MdOutlineRestoreFromTrash size="18px" />, retoreColdVersion), []);
     const deleteHotDatadAction = useMemo(() => new FileAction(`${messages.deleteHotData}`, <BsBoxSeam size="18px" />, deleteHotData), []);
     const deletedAction = useMemo(() => new FileAction(`${messages.delete}`, <FiTrash2 size="18px" />, deleteBucket), []);
     const purgeAction = useMemo(() => new FileAction(`${messages.purgeColdKeys}`, <FiTrash2 size="18px" />, purgeColdKeys), []);
 
     const hotInrecactiveActions = [
-        uploadAction, createSnapshotAction, viewBucketSnapshotsAction, renameAction, deletedAction
+        uploadAction, createSnapshotAction, createFolderAction, viewBucketSnapshotsAction, renameAction, deletedAction
     ];
     const warmInrecactiveActions = [
-        uploadAction, createSnapshotAction, restoreColdVersionAction, viewBucketVersionsAction, deleteHotDatadAction, purgeAction
+        uploadAction, createSnapshotAction, createFolderAction, restoreColdVersionAction, viewBucketVersionsAction, deleteHotDatadAction, purgeAction
     ];
     const coldIntecactiveActions = [
-        viewBucketSnapshotsAction, renameAction, viewBucketVersionsAction, purgeAction
+        viewBucketSnapshotsAction, createFolderAction, renameAction, viewBucketVersionsAction, purgeAction
     ];
     const hotBackupActions = [
         createSnapshotAction, renameAction, viewBucketSnapshotsAction //deleteBackup

@@ -13,18 +13,19 @@ import { CreateFolderModal } from '../CreateFolderModal ';
 import { UploadFileModal } from '../UploadFileModal';
 import { AddNewOption } from '../../Select/AddNewOption';
 import { useFolderLocation } from '@/hooks/useFolderLocation';
+import { FolderSelect } from '../../FolderSelect';
 
 export const MoveToModal: React.FC<{ file: BucketFile, bucket: Bucket }> = ({ file, bucket }) => {
     const { messages } = useIntl();
     const { moveTo } = useTomb();
     const { closeModal, openModal } = useModal();
     const [selectedBucket, setSelectedBucket] = useState('');
-    const [selectedFolder, setSelectedFolder] = useState('');
+    const [selectedFolder, setSelectedFolder] = useState<string[]>([]);
     const folderLocation = useFolderLocation();
 
     const move = async () => {
         try {
-            await moveTo(bucket, [...folderLocation, file.name], [...folderLocation, selectedBucket, file.name])
+            await moveTo(bucket, [...folderLocation, file.name], [...selectedFolder, selectedBucket, file.name])
             ToastNotifications.notify(`${messages.fileWasMoved}`, <MdDone size="20px" />);
         } catch (error: any) { };
     };
@@ -33,22 +34,13 @@ export const MoveToModal: React.FC<{ file: BucketFile, bucket: Bucket }> = ({ fi
     //     setSelectedBucket(option);
     // };
 
-    const selectFolder = (option: string) => {
+    const selectFolder = (option: string[]) => {
         setSelectedFolder(option);
     };
 
     // const addNewBucket = () => {
     //     openModal(<CreateBucketModal />, () => openModal(<MoveToModal bucket={bucket} file={file} />));
     // };
-
-    const addNewFolder = () => {
-        openModal(
-            <CreateFolderModal
-                bucket={bucket}
-                onSuccess={() => openModal(<MoveToModal bucket={bucket} file={file} />)}
-            />
-            , () => openModal(<MoveToModal bucket={bucket} file={file} />));
-    };
 
     return (
         <div className="w-modal flex flex-col gap-6" >
@@ -70,12 +62,10 @@ export const MoveToModal: React.FC<{ file: BucketFile, bucket: Bucket }> = ({ fi
             </div> */}
             <div>
                 <label className="inline-block mb-1 text-xs font-normal">{`${messages.folder}`}:</label>
-                <Select
-                    selectedOption={selectedFolder}
-                    placeholder={`${messages.selectFolder}`}
+                <FolderSelect
+                    selectedBucket={selectedBucket}
                     onChange={selectFolder}
-                    options={[]}
-                    initialOption={<AddNewOption label={`${messages.createNewFolder}`} action={addNewFolder} />}
+                    onFolderCreation={() => openModal(<MoveToModal bucket={bucket} file={file} />)}
                 />
             </div>
             <div className="mt-3 flex items-center gap-3 text-xs" >

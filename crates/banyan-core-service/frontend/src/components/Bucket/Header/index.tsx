@@ -7,14 +7,15 @@ import { IoMdAdd } from 'react-icons/io';
 
 import { UploadFileModal } from '@/components/common/Modal/UploadFileModal';
 
-import { Bucket } from '@/lib/interfaces/bucket';
 import { useFolderLocation } from '@/hooks/useFolderLocation';
 import { useModal } from '@/contexts/modals';
+import { useTomb } from '@/contexts/tomb';
 
-const BucketHeader: React.FC<{ selectedBucket: Bucket }> = ({ selectedBucket }) => {
+const BucketHeader = () => {
     const searchParams = useSearchParams();
     const { messages } = useIntl();
     const folderLocation = useFolderLocation();
+    const { selectedBucket } = useTomb();
     const bucketId = searchParams.get('id');
     const { openModal } = useModal();
 
@@ -31,10 +32,10 @@ const BucketHeader: React.FC<{ selectedBucket: Bucket }> = ({ selectedBucket }) 
                 {' > '}
                 <Link href={`/bucket/${bucketId}`}>{selectedBucket?.name}</Link>
                 {folderLocation.map((folder, index) =>
-                    <>
+                    <React.Fragment key={index}>
                         {' > '}
-                        <Link href={`/bucket/${bucketId}?${folderLocation.slice(0, ++index).join('/')}`} key={index}>{folder}</Link>
-                    </>
+                        <Link href={`/bucket/${bucketId}?${folderLocation.slice(0, ++index).join('/')}`}>{folder}</Link>
+                    </React.Fragment>
                 )}
             </h2>
             <button
