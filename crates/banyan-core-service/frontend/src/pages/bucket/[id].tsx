@@ -9,7 +9,6 @@ import BaseLayout from '@/layouts/BaseLayout';
 import { BucketTable } from '@/components/Bucket/BucketTable';
 import { Fallback } from '@/components/common/Fallback';
 import { useFolderLocation } from '@/hooks/useFolderLocation';
-import { Bucket } from '@/lib/interfaces/bucket';
 import BucketHeader from '@/components/Bucket/Header';
 
 export { getServerSideProps };
@@ -17,28 +16,26 @@ export { getServerSideProps };
 const Bucket: NextPageWithLayout = () => {
     const searchParams = useSearchParams();
     const bucketId = searchParams.get('id');
-    const { buckets, areBucketsLoading } = useTomb();
-    const [selectedBucket, setSelectedBucket] = useState<Bucket>(buckets.find(bucket => bucket.id === bucketId)!);
+    const { buckets, areBucketsLoading, selectedBucket, selectBucket, getSelectedBucketFiles } = useTomb();
     const folderLocation = useFolderLocation();
 
     useEffect(() => {
-        if (!selectedBucket) return;
+        if (selectedBucket?.id !== bucketId) return;
         (async () => {
             try {
-                const files = await selectedBucket?.mount.ls(folderLocation);
-                setSelectedBucket(bucket => ({ ...bucket, files }));
+                getSelectedBucketFiles(folderLocation);
             } catch (error: any) { };
         })()
-    }, [folderLocation, selectedBucket?.id])
+    }, [folderLocation, selectedBucket?.id]);
 
     useEffect(() => {
-        const bucket = buckets.find(bucket => bucket.id === bucketId)
-        bucket && setSelectedBucket({ ...bucket, files: [...bucket.files] });
-    }, [bucketId, buckets.length])
+        const bucket = buckets.find(bucket => bucket.id === bucketId);
+        bucket && selectBucket(bucket);
+    }, [bucketId, buckets.length]);
 
     return (
         <section className="py-9 px-4">
-            <BucketHeader selectedBucket={selectedBucket} />
+            <BucketHeader />
             <Fallback shouldRender={!areBucketsLoading}>
                 {selectedBucket &&
                     <BucketTable bucket={selectedBucket} />
