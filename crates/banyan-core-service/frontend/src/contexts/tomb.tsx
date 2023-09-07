@@ -17,6 +17,9 @@ interface TombInterface {
     trash: Bucket;
     isTrashLoading: boolean;
     areBucketsLoading: boolean;
+    selectedBucket: Bucket | null;
+    selectBucket: (bucket: Bucket) => void;
+    getSelectedBucketFiles: (path: string[]) => void;
     download: (bucket: Bucket, path: string[]) => Promise<ArrayBuffer | undefined>;
     shareWith: (bucket: Bucket, key: string) => Promise<void>
     takeColdSnapshot: (bucket: Bucket) => Promise<void>;
@@ -51,6 +54,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     const [tomb, setTomb] = useState<TombWasm | null>(null);
     const [buckets, setBuckets] = useState<Array<Bucket & { mount: WasmMount }>>([]);
     const [trash, setTrash] = useState<Bucket>(new MockBucket());
+    const [selectedBucket, setSelectedBucket] = useState<Bucket | null>(null);
     const [usedStorage, setUsedStorage] = useState<number>(0);
     const [usageLimit, setUsageLimit] = useState<number>(0);
     const [isTrashLoading, setIsTrashLoading] = useState<boolean>(true);
@@ -166,6 +170,18 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     const purgeSnapshot = async (id: string) => {
         // await tomb.purgeSnapshot(id);
     };
+    /** Sets selected bucket into state */
+    const selectBucket = async (bucket: Bucket) => {
+        setSelectedBucket(bucket);
+    };
+
+    /** Returns selected bucket state according to current folder location. */
+    const getSelectedBucketFiles = async (path: string[]) => {
+        if (!selectedBucket) return
+
+        const files = await selectedBucket?.mount.ls(path);
+        setSelectedBucket(bucket => bucket ? ({ ...bucket, files }) : bucket);
+    };
 
     /** Renames bucket */
     const moveTo = async (bucket: Bucket, from: string[], to: string[]) => {
@@ -270,10 +286,10 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     return (
         <TombContext.Provider
             value={{
-                tomb, buckets, trash, usedStorage, usageLimit, areBucketsLoading, isTrashLoading,
-                getBuckets, getBucketShapshots, createBucket, deleteBucket,
+                tomb, buckets, trash, usedStorage, usageLimit, areBucketsLoading, isTrashLoading, selectedBucket,
+                getBuckets, getBucketShapshots, createBucket, deleteBucket, selectBucket,
                 getTrashBucket, takeColdSnapshot, getUsedStorage, createDirectory,
-                uploadFile, renameFile, getBucketKeys, purgeSnapshot,
+                uploadFile, renameFile, getBucketKeys, purgeSnapshot, getSelectedBucketFiles,
                 removeBucketAccess, approveBucketAccess, getUsageLimit,
                 shareWith, download, moveTo, restore, deleteFile
             }}

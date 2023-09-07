@@ -5,7 +5,7 @@ import {
     AiOutlineFilePpt, AiOutlineFileText, AiOutlineFileWord,
     AiOutlineFileZip,
 } from 'react-icons/ai';
-import { PiFolderDuotone, PiFolderNotchBold } from 'react-icons/pi';
+import { PiFolderNotchBold } from 'react-icons/pi';
 
 export const FileIcon: React.FC<{ fileName: string; className?: string }> = ({ fileName, className }) => {
     const fileTypeMapper: Record<string, ReactElement> = {
