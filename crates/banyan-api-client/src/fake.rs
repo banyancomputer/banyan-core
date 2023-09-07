@@ -7,7 +7,6 @@ use uuid::Uuid;
 
 use crate::requests::{ApiRequest, InfallibleError};
 
-
 #[derive(Debug)]
 pub struct RegisterFakeAccount;
 

@@ -1,7 +1,6 @@
-use banyan_api_client::{prelude::*, keys::*};
+use banyan_api_client::{keys::*, prelude::*};
 use jsonwebtoken::EncodingKey;
 use uuid::Uuid;
-
 
 struct Account {
     id: Uuid,
