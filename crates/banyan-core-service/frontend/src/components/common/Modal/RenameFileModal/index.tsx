@@ -10,15 +10,17 @@ import { useFolderLocation } from '@/hooks/useFolderLocation';
 
 export const RenameFileModal: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bucket, file }) => {
     const { closeModal } = useModal();
-    const { renameFile } = useTomb();
+    const { moveTo, getSelectedBucketFiles } = useTomb();
     const { messages } = useIntl();
     const [newName, setNewName] = useState('');
     const folderLocation = useFolderLocation();
 
     const save = async () => {
         try {
-            await renameFile(bucket.id, [...folderLocation, file.name], [...folderLocation, newName]);
+            await moveTo(bucket, [...folderLocation, file.name], [...folderLocation, newName]);
             ToastNotifications.notify(`${messages.fileWasRenamed}`, <MdDone size="20px" />);
+            await getSelectedBucketFiles(folderLocation);
+            closeModal();
         } catch (error: any) {
             ToastNotifications.error(`${messages.editError}`, `${messages.tryAgain}`, save);
         }
