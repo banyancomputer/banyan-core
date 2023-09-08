@@ -104,9 +104,9 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bu
 
     const actions: Record<string, FileAction[]> = isFolder ?
         {
-            interactive_hot: [new FileAction(`${messages.upload}`, <FiUpload size="18px" />, uploadFile)],
-            interactive_warm: [new FileAction(`${messages.upload}`, <FiUpload size="18px" />, uploadFile)],
-            interactive_cold: [vierFileVersionsAction],
+            interactive_hot: [new FileAction(`${messages.upload}`, <FiUpload size="18px" />, uploadFile), moveToAction, renameAction],
+            interactive_warm: [new FileAction(`${messages.upload}`, <FiUpload size="18px" />, uploadFile), moveToAction, renameAction],
+            interactive_cold: [vierFileVersionsAction, moveToAction],
             backup_hot: [],
             backup_warm: [],
             backup_cold: [],

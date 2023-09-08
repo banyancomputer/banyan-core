@@ -7,26 +7,26 @@ import { Bucket, BucketFile } from '@/lib/interfaces/bucket';
 import { ToastNotifications } from '@/utils/toastNotifications';
 import { useTomb } from '@/contexts/tomb';
 
-import { Select } from '../../Select';
 import { CreateBucketModal } from '../CreateBucketModal';
 import { CreateFolderModal } from '../CreateFolderModal ';
 import { UploadFileModal } from '../UploadFileModal';
-import { AddNewOption } from '../../Select/AddNewOption';
 import { useFolderLocation } from '@/hooks/useFolderLocation';
 import { FolderSelect } from '../../FolderSelect';
 
 export const MoveToModal: React.FC<{ file: BucketFile, bucket: Bucket }> = ({ file, bucket }) => {
     const { messages } = useIntl();
-    const { moveTo } = useTomb();
+    const { moveTo, getSelectedBucketFiles } = useTomb();
     const { closeModal, openModal } = useModal();
-    const [selectedBucket, setSelectedBucket] = useState('');
+    // const [selectedBucket, setSelectedBucket] = useState('');
     const [selectedFolder, setSelectedFolder] = useState<string[]>([]);
     const folderLocation = useFolderLocation();
 
     const move = async () => {
         try {
-            await moveTo(bucket, [...folderLocation, file.name], [...selectedFolder, selectedBucket, file.name])
+            await moveTo(bucket, [...folderLocation, file.name], [...selectedFolder, file.name]);
             ToastNotifications.notify(`${messages.fileWasMoved}`, <MdDone size="20px" />);
+            await getSelectedBucketFiles(folderLocation);
+            closeModal();
         } catch (error: any) {
             ToastNotifications.error(`${messages.moveToError}`, `${messages.tryAgain}`, move);
 
@@ -66,7 +66,7 @@ export const MoveToModal: React.FC<{ file: BucketFile, bucket: Bucket }> = ({ fi
             <div>
                 <label className="inline-block mb-1 text-xs font-normal">{`${messages.folder}`}:</label>
                 <FolderSelect
-                    selectedBucket={selectedBucket}
+                    selectedBucket={bucket.id}
                     onChange={selectFolder}
                     onFolderCreation={() => openModal(<MoveToModal bucket={bucket} file={file} />)}
                 />
