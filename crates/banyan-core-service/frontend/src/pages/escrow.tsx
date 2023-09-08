@@ -59,6 +59,7 @@ const EscrowPage: NextPageWithLayout<IEscrowPage> = ({
     const { initializeKeystore, keystoreInitialized, purgeKeystore } = useKeystore();
     const [passkey, setPasskey] = useState<string>('');
     const [error, setError] = useState<string | null>(null);
+
     const handleInitializeKeystore = () => {
         console.log('Acccount: Initializing keystore with passkey');
         initializeKeystore(passkey)
@@ -71,6 +72,7 @@ const EscrowPage: NextPageWithLayout<IEscrowPage> = ({
                 setError(`Failed to initialize keystore: ${error.message}`);
             });
     };
+
     const handlePurgeKeystore = () => {
         console.log('Acccount: Purging keystore');
         if (!session) {
@@ -86,6 +88,7 @@ const EscrowPage: NextPageWithLayout<IEscrowPage> = ({
             })
             .catch((_) => setError('Acccount: Failed to purge keystore'));
     };
+
     return (
         <>
             <div className="flex flex-col gap-2 p-6" id="key-management">
