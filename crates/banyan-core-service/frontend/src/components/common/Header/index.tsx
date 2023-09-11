@@ -8,16 +8,19 @@ import { AiOutlineQuestionCircle } from 'react-icons/ai';
 import { FiSettings } from 'react-icons/fi';
 
 import { popupClickHandler } from '@/utils';
+import { useKeystore } from '@/contexts/keystore';
 
 import { Input } from '../Input';
+
 import { Logo } from '@static/images/common';
 
 export const Header = () => {
     const userControlsRef = useRef<HTMLDivElement | null>(null);
     const languagesControlsRef = useRef<HTMLDivElement | null>(null);
+    const { purgeKeystore } = useKeystore();
     const { messages } = useIntl();
     const { locales, locale } = useRouter();
-    const { data } = useSession();
+    const { data: session } = useSession();
     const [isLogoutButtonVisible, setIsLogoutButtonVisible] = useState(false);
     const [isLanguageControlsVisible, setIsLanguageControlsVisible] = useState(false);
 
@@ -26,6 +29,11 @@ export const Header = () => {
     };
     const toggleLanguageVisibility = () => {
         setIsLanguageControlsVisible(prev => !prev);
+    };
+
+    const logout = () => {
+        signOut();
+        purgeKeystore();
     };
 
     useEffect(() => {
@@ -87,10 +95,10 @@ export const Header = () => {
                     onClick={toggleLogoutVisibility}
                     ref={userControlsRef}
                 >
-                    {data?.user?.image ?
+                    {session?.user?.image ?
                         <Image
                             className="rounded-full"
-                            src={data?.user?.image}
+                            src={session?.user?.image}
                             width={40}
                             height={40}
                             alt="User Avatar"
@@ -101,7 +109,7 @@ export const Header = () => {
                     {isLogoutButtonVisible &&
                         <div
                             className="absolute right-0 -bottom-12 w-36 h-10 flex items-center shadow-xl p-2 rounded-xl text-xs font-semibold  bg-white cursor-pointer hover:bg-slate-100"
-                            onClick={() => signOut()}
+                            onClick={logout}
                         >
                             {`${messages.logout}`}
                         </div>

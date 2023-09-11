@@ -28,6 +28,7 @@ module.exports = {
 			},
 			minWidth: {
 				navbar: '280px',
+				login: '590px',
 			},
 			colors: {
 				blue: {
@@ -37,6 +38,7 @@ module.exports = {
 					600: '#2563EB',
 					900: '#1E3A8A',
 				},
+				login: '#F7F7F7',
 				navigation: {
 					primary: '#FFECC5',
 					secondary: '#fff8e7',
@@ -52,9 +54,6 @@ module.exports = {
 			fontFamily: {
 				sans: ['Inter'],
 			},
-			fontWeight: {
-				medium: 500,
-			},
 			fontSize: {
 				xxs: ['12px', { lineHeight: '18px' }],
 				xs: ['14px', { lineHeight: '20px' }],
@@ -66,6 +65,7 @@ module.exports = {
 				lg: ['24px', { lineHeight: '32px' }],
 				xl: ['38px', { lineHeight: '48px' }],
 				'2xl': ['50px', { lineHeight: '62px' }],
+				'3xl': ['64px', { lineHeight: '64px' }],
 			},
 			screens: {
 				xs: '360px',

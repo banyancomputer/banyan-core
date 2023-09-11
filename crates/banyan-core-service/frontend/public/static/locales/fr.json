@@ -99,5 +99,6 @@
 	"moveToError": "Un problème est survenu lors du déplacement de votre fichier. Veuillez réessayer.",
 	"editError": "Un problème est survenu avec votre modification. Veuillez réessayer.",
 	"creationError": "Un problème est survenu lors de la création de votre dossier ou compartiment. Veuillez réessayer.",
-	"accessUpdatesError": "Un problème est survenu avec les mises à jour d'accès. Veuillez réessayer."
+	"accessUpdatesError": "Un problème est survenu avec les mises à jour d'accès. Veuillez réessayer.",
+	"loginWithGoogle": "Connectez-vous avec Google"
 }
