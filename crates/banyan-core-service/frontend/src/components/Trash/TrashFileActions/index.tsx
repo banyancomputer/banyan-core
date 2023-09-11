@@ -4,35 +4,35 @@ import { FiTrash2 } from 'react-icons/fi';
 import { PiArrowsLeftRight } from 'react-icons/pi';
 
 import { MoveToModal } from '../../common/Modal/MoveToModal';
-import { FileAction } from '../../Buckets/FileActions';
+import { Action } from '../../common/FileActions';
 import { useTomb } from '@/contexts/tomb';
 import { Bucket, BucketFile } from '@/lib/interfaces/bucket';
 import { useModal } from '@/contexts/modals';
 
 
-export const TrashFileActions: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bucket, file }) => {
+export const TrashActions: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bucket, file }) => {
     const { messages } = useIntl();
     const { } = useTomb();
     const { openModal } = useModal();
 
     const moveTo = () => {
-        openModal(<MoveToModal file={file} />);
+        openModal(<MoveToModal bucket={bucket} file={file} />);
     };
-    const makeCopy = async() => {
+    const makeCopy = async () => {
         try {
 
         } catch (error: any) { }
     };
 
-    const remove = async() => {
+    const remove = async () => {
         try {
 
         } catch (error: any) { }
     };
 
     const acrions = [
-        new FileAction(`${messages.moveTo}`, <PiArrowsLeftRight size="18px" />, moveTo),
-        new FileAction(`${messages.remove}`, <FiTrash2 size="18px" />, remove),
+        new Action(`${messages.moveTo}`, <PiArrowsLeftRight size="18px" />, moveTo),
+        new Action(`${messages.remove}`, <FiTrash2 size="18px" />, remove),
     ];
 
     return (

@@ -6,7 +6,7 @@ import { getDateLabel } from '@/utils/date';
 import { convertFileSize } from '@/utils/storage';
 
 import { ActionsCell } from '@components/common/ActionsCell';
-import { TrashFileActions } from '../TrashFileActions';
+import { TrashActions } from '../TrashFileActions';
 import { FileIcon } from '@/components/common/FileIcon';
 import { SortCell } from '@/components/common/SortCell';
 
@@ -116,7 +116,7 @@ export const TrashTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                                     <td className="px-6 py-4">{getDateLabel(Date.now())}</td>
                                     <td className="px-6 py-4">{convertFileSize(file.metadata.size)}</td>
                                     <td className="px-6 py-4">
-                                        <ActionsCell actions={<TrashFileActions bucket={bucket} file={file} />} />
+                                        <ActionsCell actions={<TrashActions bucket={bucket} file={file} />} />
                                     </td>
                                 </tr>
                             )

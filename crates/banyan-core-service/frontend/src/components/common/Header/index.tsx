@@ -1,14 +1,17 @@
 import Link from 'next/link';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { ReactElement, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { signOut, useSession } from 'next-auth/react';
 import { useIntl } from 'react-intl';
 import { useRouter } from 'next/router';
 import { AiOutlineQuestionCircle } from 'react-icons/ai';
-import { FiSettings } from 'react-icons/fi';
+import { GrMailOption } from 'react-icons/gr';
+import { MdOutlineVpnKey } from 'react-icons/md';
+import { FiLogOut, FiSettings } from 'react-icons/fi';
 
 import { popupClickHandler } from '@/utils';
 import { useKeystore } from '@/contexts/keystore';
+import { Action } from '../FileActions';
 
 import { Input } from '../Input';
 
@@ -16,19 +19,20 @@ import { Logo } from '@static/images/common';
 
 export const Header = () => {
     const userControlsRef = useRef<HTMLDivElement | null>(null);
-    const languagesControlsRef = useRef<HTMLDivElement | null>(null);
+    const faqRef = useRef<HTMLDivElement | null>(null);
     const { purgeKeystore } = useKeystore();
     const { messages } = useIntl();
-    const { locales, locale } = useRouter();
+    const router = useRouter();
     const { data: session } = useSession();
-    const [isLogoutButtonVisible, setIsLogoutButtonVisible] = useState(false);
-    const [isLanguageControlsVisible, setIsLanguageControlsVisible] = useState(false);
+    const [areProfileOptionsVisible, setAreProfileOptionsVisible] = useState(false);
+    const [areFaqOpionsVisible, setAreFaqOpionsVisible] = useState(false);
 
-    const toggleLogoutVisibility = () => {
-        setIsLogoutButtonVisible(prev => !prev);
+    const toggleProfileOptionsVisibility = () => {
+        setAreProfileOptionsVisible(prev => !prev);
     };
-    const toggleLanguageVisibility = () => {
-        setIsLanguageControlsVisible(prev => !prev);
+
+    const toggleFaqOptionsVisibility = (event: any) => {
+        setAreFaqOpionsVisible(prev => !prev);
     };
 
     const logout = () => {
@@ -36,8 +40,20 @@ export const Header = () => {
         purgeKeystore();
     };
 
+    const goTo = (path: string) => {
+        return function () {
+            router.push(path);
+        }
+    };
+
+    const options = [
+        new Action(`${messages.settings}`, <FiSettings size="20px" />, goTo('/settings')),
+        new Action(`${messages.manageKeys}`, <MdOutlineVpnKey size="20px" />, goTo('/key-management')),
+        new Action(`${messages.logout}`, <FiLogOut size="20px" />, logout)
+    ];
+
     useEffect(() => {
-        const listener = popupClickHandler(userControlsRef.current!, setIsLogoutButtonVisible);
+        const listener = popupClickHandler(userControlsRef.current!, setAreProfileOptionsVisible);
         document.addEventListener('click', listener);
 
         return () => {
@@ -46,13 +62,13 @@ export const Header = () => {
     }, [userControlsRef]);
 
     useEffect(() => {
-        const listener = popupClickHandler(languagesControlsRef.current!, setIsLanguageControlsVisible);
+        const listener = popupClickHandler(faqRef.current!, setAreFaqOpionsVisible);
         document.addEventListener('click', listener);
 
         return () => {
             document.removeEventListener('click', listener);
         };
-    }, [languagesControlsRef]);
+    }, [faqRef]);
 
     return (
         <header className="flex items-center justify-between border-b-2 border-c p-4">
@@ -61,38 +77,38 @@ export const Header = () => {
             </Link>
             <Input />
             <div className="flex flex-grow items-center justify-end gap-6">
-                <Link href="/key-management" className="font-semibold text-nav mr-4" >
-                    {`${messages.manageKeyAccess}`}
-                </Link>
                 <div
-                    className="relative cursor-pointer"
-                    onClick={toggleLanguageVisibility}
-                    ref={languagesControlsRef}
+                    className='relative w-10 h-10 flex items-center justify-center transition-all rounded-lg cursor-pointer hover:bg-slate-200'
+                    ref={faqRef}
+                    onClick={toggleFaqOptionsVisibility}
                 >
-                    <FiSettings size="20px" stroke="#4A5578" />
-                    {isLanguageControlsVisible &&
+                    <AiOutlineQuestionCircle size="20px" fill="#4A5578" />
+                    {areFaqOpionsVisible &&
                         <div
-                            className="absolute top-full left-1/2 -translate-x-1/2 flex flex-col gap-1  rounded-xl bg-white shadow-xld overflow-hidden shadow-md"
-                        >{
-                                locales?.map(language =>
-                                    <Link
-                                        key={language}
-                                        href={window.location.pathname.replace(locale || '', '')}
-                                        locale={language}
-                                        className="p-2 hover:bg-slate-100"
-                                    >
-                                        {language}
-                                    </Link>
-                                )}
+                            className="absolute right-0 top-full w-36 flex flex-col items-stretch shadow-xl rounded-xl text-xs font-semibold overflow-hidden  bg-white cursor-pointer"
+                        >
+                            <a
+                                className="flex items-center gap-2 py-select px-3 transition-all hover:bg-slate-100"
+                                href='https://banyan8674.zendesk.com/hc/en-us'
+                                target='_blank'
+                            >
+                                <MdOutlineVpnKey />
+                                FAQ
+                            </a>
+                            <a
+                                href='mailto:support@banyan8674.zendesk.com'
+                                className="flex items-center gap-2 py-select px-3 transition-all hover:bg-slate-100"
+                                target='_blank'
+                            >
+                                <GrMailOption />
+                                {`${messages.contactUs}`}
+                            </a>
                         </div>
                     }
                 </div>
-                <Link href="/faq">
-                    <AiOutlineQuestionCircle size="20px" fill="#4A5578" />
-                </Link>
                 <div
                     className="relative w-10 h-10 border-2 rounded-full cursor-pointer "
-                    onClick={toggleLogoutVisibility}
+                    onClick={toggleProfileOptionsVisibility}
                     ref={userControlsRef}
                 >
                     {session?.user?.image ?
@@ -106,12 +122,19 @@ export const Header = () => {
                         :
                         null
                     }
-                    {isLogoutButtonVisible &&
+                    {areProfileOptionsVisible &&
                         <div
-                            className="absolute right-0 -bottom-12 w-36 h-10 flex items-center shadow-xl p-2 rounded-xl text-xs font-semibold  bg-white cursor-pointer hover:bg-slate-100"
-                            onClick={logout}
+                            className="absolute right-0 top-full w-36 flex flex-col items-stretch shadow-xl rounded-xl text-xs font-semibold overflow-hidden  bg-white cursor-pointer"
                         >
-                            {`${messages.logout}`}
+                            {options.map(option =>
+                                <div
+                                    className="flex items-center gap-2 py-select px-3 transition-all hover:bg-slate-100"
+                                    onClick={option.value}
+                                >
+                                    {option.icon}
+                                    {option.label}
+                                </div>
+                            )}
                         </div>
                     }
                 </div>

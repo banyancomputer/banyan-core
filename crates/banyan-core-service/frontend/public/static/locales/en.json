@@ -1,5 +1,5 @@
 {
-	"manageKeyAccess": "Manage Key Access",
+	"manageKeys": "Manage Keys",
 	"logout": "Log Out",
 	"upload": "Upload",
 	"chooseFilesToUpload": "Choose files for uploading from your device, or use drag & drop",
@@ -102,5 +102,7 @@
 	"editError": "There was an issue with your edit. Please try again.",
 	"creationError": "There was an issue creating your folder or bucket. Please try again.",
 	"accessUpdatesError": "There was an issue with access updates. Please try again.",
-	"loginWithGoogle": "Log in with Google"
+	"loginWithGoogle": "Log in with Google",
+	"contactUs": "Contact Us",
+	"settings": "Settings"
 }

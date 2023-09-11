@@ -12,7 +12,7 @@ import { Bucket } from '@/lib/interfaces/bucket';
 import { useFolderLocation } from '@/hooks/useFolderLocation';
 import { useTomb } from '@/contexts/tomb';
 
-import { FileAction } from '../FileActions';
+import { Action } from '../FileActions';
 import { BucketSnapshotsModal } from '@/components/common/Modal/BucketSnapshotsModal';
 import { RenameBucketModal } from '@/components/common/Modal/RenameBucketModal';
 import { DeleteBucketModal } from '@/components/common/Modal/DeleteBucketModal';
@@ -89,16 +89,16 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         } catch (error: any) { }
     };
 
-    const uploadAction = useMemo(() => new FileAction(`${messages.upload}`, <FiUpload size="18px" />, upload), []);
-    const createSnapshotAction = useMemo(() => new FileAction(`${messages.takeColdSnapshot}`, <HiOutlineLightningBolt size="18px" />, takeSnapshot), []);
-    const viewBucketSnapshotsAction = useMemo(() => new FileAction(`${messages.viewColdSnapshots}`, <MdRestore size="18px" />, viewBucketSnapshots), []);
-    const viewBucketVersionsAction = useMemo(() => new FileAction(`${messages.viewBucketVersions}`, <MdRestore size="18px" />, viewBucketVersions), []);
-    const renameAction = useMemo(() => new FileAction(`${messages.rename}`, <FiEdit size="18px" />, rename), []);
-    const createFolderAction = useMemo(() => new FileAction(`${messages.createNewFolder}`, <PiFolderNotchPlusBold size="18px" />, createFolder), []);
-    const restoreColdVersionAction = useMemo(() => new FileAction(`${messages.restoreCold}`, <MdOutlineRestoreFromTrash size="18px" />, retoreColdVersion), []);
-    const deleteHotDatadAction = useMemo(() => new FileAction(`${messages.deleteHotData}`, <BsBoxSeam size="18px" />, deleteHotData), []);
-    const deletedAction = useMemo(() => new FileAction(`${messages.delete}`, <FiTrash2 size="18px" />, deleteBucket), []);
-    const purgeAction = useMemo(() => new FileAction(`${messages.purgeColdKeys}`, <FiTrash2 size="18px" />, purgeColdKeys), []);
+    const uploadAction = useMemo(() => new Action(`${messages.upload}`, <FiUpload size="18px" />, upload), []);
+    const createSnapshotAction = useMemo(() => new Action(`${messages.takeColdSnapshot}`, <HiOutlineLightningBolt size="18px" />, takeSnapshot), []);
+    const viewBucketSnapshotsAction = useMemo(() => new Action(`${messages.viewColdSnapshots}`, <MdRestore size="18px" />, viewBucketSnapshots), []);
+    const viewBucketVersionsAction = useMemo(() => new Action(`${messages.viewBucketVersions}`, <MdRestore size="18px" />, viewBucketVersions), []);
+    const renameAction = useMemo(() => new Action(`${messages.rename}`, <FiEdit size="18px" />, rename), []);
+    const createFolderAction = useMemo(() => new Action(`${messages.createNewFolder}`, <PiFolderNotchPlusBold size="18px" />, createFolder), []);
+    const restoreColdVersionAction = useMemo(() => new Action(`${messages.restoreCold}`, <MdOutlineRestoreFromTrash size="18px" />, retoreColdVersion), []);
+    const deleteHotDatadAction = useMemo(() => new Action(`${messages.deleteHotData}`, <BsBoxSeam size="18px" />, deleteHotData), []);
+    const deletedAction = useMemo(() => new Action(`${messages.delete}`, <FiTrash2 size="18px" />, deleteBucket), []);
+    const purgeAction = useMemo(() => new Action(`${messages.purgeColdKeys}`, <FiTrash2 size="18px" />, purgeColdKeys), []);
 
     const hotInrecactiveActions = [
         uploadAction, createSnapshotAction, viewBucketSnapshotsAction, renameAction, deletedAction
@@ -119,7 +119,7 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         viewBucketSnapshotsAction, restoreColdVersionAction, renameAction, purgeAction
     ];
 
-    const actions: Record<string, FileAction[]> = {
+    const actions: Record<string, Action[]> = {
         interactive_hot: hotInrecactiveActions,
         interactive_warm: warmInrecactiveActions,
         interactive_cold: coldIntecactiveActions,

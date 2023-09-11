@@ -11,17 +11,11 @@ export const CreateBucketModal = () => {
     const { messages } = useIntl();
     const [bucketName, setBucketName] = useState('');
     const { createBucket } = useTomb();
-    const [bucketType, setBucketType] = useState('');
-    const [storageClass, setStorageClass] = useState('');
+    const [bucketType, setBucketType] = useState('interactive');
+    const [storageClass, setStorageClass] = useState('hot');
     const isBucketDataFilled = useMemo(() =>
         !!bucketType && !!storageClass && !!bucketName,
-        [bucketName, storageClass, bucketName])
-
-    const storageClasses = [
-        new Selectoption('Hot', 'hot'),
-        new Selectoption('Warm', 'warm'),
-        new Selectoption('Cold', 'cold'),
-    ];
+        [bucketName, storageClass, bucketName]);
 
     const bucketTypes = [
         new Selectoption('Interactive', 'interactive'),
@@ -31,9 +25,7 @@ export const CreateBucketModal = () => {
     const selectBucketType = (option: string) => {
         setBucketType(option);
     };
-    const selectStorageClass = (option: string) => {
-        setStorageClass(option);
-    };
+
 
     const create = async () => {
         try {
@@ -68,15 +60,6 @@ export const CreateBucketModal = () => {
                     onChange={selectBucketType}
                     options={bucketTypes}
                     placeholder={`${messages.bucketType}`}
-                />
-            </div>
-            <div>
-                <label className="inline-block mb-1 text-xs font-normal">{`${messages.storageClass}`}:</label>
-                <Select
-                    selectedOption={storageClass}
-                    onChange={selectStorageClass}
-                    options={storageClasses}
-                    placeholder={`${messages.storageClass}`}
                 />
             </div>
             <div className="flex items-center gap-3 text-xs" >
