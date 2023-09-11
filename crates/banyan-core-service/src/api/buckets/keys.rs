@@ -1,4 +1,4 @@
-use axum::routing::get;
+use axum::routing::{get, post};
 use axum::Router;
 
 mod handlers;
@@ -14,5 +14,6 @@ pub fn router(state: AppState) -> Router<AppState> {
             "/:bucket_key_id",
             get(handlers::read).delete(handlers::delete),
         )
+        .route("/:bucket_key_id/reject", post(handlers::reject))
         .with_state(state)
 }
