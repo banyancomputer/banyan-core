@@ -16,7 +16,7 @@ import { useFolderLocation } from '@/hooks/useFolderLocation';
 import { DeleteFileModal } from '@/components/common/Modal/DeleteFileModal';
 import { UploadFileModal } from '../Modal/UploadFileModal';
 
-export class FileAction {
+export class Action {
     constructor(
         public label: string,
         public icon: ReactElement,
@@ -75,13 +75,13 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bu
     };
 
 
-    const downloadAction = useMemo(() => new FileAction(`${messages.download}`, <FiDownload size="18px" />, downloadFile), []);
-    const copyLinkdAction = useMemo(() => new FileAction(`${messages.copyLink}`, <AiOutlineLink size="18px" />, copyLink), []);
-    const moveToAction = useMemo(() => new FileAction(`${messages.moveTo}`, <PiArrowsLeftRight size="18px" />, moveTo), []);
-    const makeCopyAction = useMemo(() => new FileAction(`${messages.makeCopy}`, <PiCopySimple size="18px" />, makeCopy), []);
-    const vierFileVersionsAction = useMemo(() => new FileAction(`${messages.viewFileVersions}`, <AiOutlineLink size="18px" />, viewFileVersions), []);
-    const renameAction = useMemo(() => new FileAction(`${messages.rename}`, <FiEdit size="18px" />, rename), []);
-    const removeAction = useMemo(() => new FileAction(`${messages.remove}`, <FiTrash2 size="18px" />, remove), []);
+    const downloadAction = useMemo(() => new Action(`${messages.download}`, <FiDownload size="18px" />, downloadFile), []);
+    const copyLinkdAction = useMemo(() => new Action(`${messages.copyLink}`, <AiOutlineLink size="18px" />, copyLink), []);
+    const moveToAction = useMemo(() => new Action(`${messages.moveTo}`, <PiArrowsLeftRight size="18px" />, moveTo), []);
+    const makeCopyAction = useMemo(() => new Action(`${messages.makeCopy}`, <PiCopySimple size="18px" />, makeCopy), []);
+    const vierFileVersionsAction = useMemo(() => new Action(`${messages.viewFileVersions}`, <AiOutlineLink size="18px" />, viewFileVersions), []);
+    const renameAction = useMemo(() => new Action(`${messages.rename}`, <FiEdit size="18px" />, rename), []);
+    const removeAction = useMemo(() => new Action(`${messages.remove}`, <FiTrash2 size="18px" />, remove), []);
 
     const hotInrecactiveActions = [
         downloadAction, copyLinkdAction, moveToAction, makeCopyAction, renameAction, removeAction, vierFileVersionsAction
@@ -102,10 +102,10 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bu
         downloadAction
     ];
 
-    const actions: Record<string, FileAction[]> = isFolder ?
+    const actions: Record<string, Action[]> = isFolder ?
         {
-            interactive_hot: [new FileAction(`${messages.upload}`, <FiUpload size="18px" />, uploadFile), moveToAction, renameAction],
-            interactive_warm: [new FileAction(`${messages.upload}`, <FiUpload size="18px" />, uploadFile), moveToAction, renameAction],
+            interactive_hot: [new Action(`${messages.upload}`, <FiUpload size="18px" />, uploadFile), moveToAction, renameAction],
+            interactive_warm: [new Action(`${messages.upload}`, <FiUpload size="18px" />, uploadFile), moveToAction, renameAction],
             interactive_cold: [vierFileVersionsAction, moveToAction],
             backup_hot: [],
             backup_warm: [],
