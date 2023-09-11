@@ -5,9 +5,10 @@ use uuid::Uuid;
 use validify::Validate;
 
 use crate::api::buckets::{keys, requests, responses};
-use crate::db::*;
+use crate::error::CoreError;
 use crate::extractors::{ApiToken, DbConn};
 use crate::utils::db;
+use crate::utils::keys::*;
 
 /// Initialze a new bucket with initial key material.
 pub async fn create(
@@ -16,95 +17,67 @@ pub async fn create(
     Json(new_bucket): extract::Json<requests::CreateBucket>,
 ) -> impl IntoResponse {
     if let Err(errors) = new_bucket.validate() {
-        return (
+        (
             StatusCode::BAD_REQUEST,
             format!("invalid bucket creation request: {:?}", errors.errors()),
         )
-            .into_response();
-    }
+            .into_response()
+    } else {
+        // Create the Bucket
+        match db::create_bucket(
+            &api_token.subject,
+            &new_bucket.name,
+            &new_bucket.r#type,
+            &new_bucket.storage_class,
+            &mut db_conn,
+        )
+        .await
+        {
+            // If we successfully created the resource
+            Ok(bucket_resource) => {
+                // Create the initial Bucket Key
+                match db::create_bucket_key(
+                    &bucket_resource.id,
+                    true,
+                    &new_bucket.initial_bucket_key_pem,
+                    &mut db_conn,
+                )
+                .await
+                {
+                    // If we successfully created that too
+                    Ok(key_resource) => {
+                        // Create a response
+                        let response = responses::CreateBucket {
+                            id: bucket_resource.id,
+                            name: new_bucket.name,
+                            r#type: new_bucket.r#type,
+                            storage_class: new_bucket.storage_class,
+                            initial_bucket_key: keys::responses::CreateBucketKey {
+                                id: key_resource.id,
+                                approved: true,
+                                fingerprint: fingerprint_public_pem(
+                                    &new_bucket.initial_bucket_key_pem,
+                                ),
+                            },
+                        };
 
-    let maybe_bucket = sqlx::query_as!(
-        models::CreatedResource,
-        r#"INSERT INTO buckets (account_id, name, type, storage_class) VALUES ($1, $2, $3, $4) RETURNING id;"#,
-        api_token.subject,
-        new_bucket.name,
-        new_bucket.r#type,
-        new_bucket.storage_class,
-    )
-    .fetch_one(&mut *db_conn.0)
-    .await;
-
-    let created_bucket = match maybe_bucket {
-        Ok(cb) => cb,
-        Err(err) => match err {
-            sqlx::Error::Database(db_err) => {
-                if db_err.is_unique_violation() {
-                    return (
-                        StatusCode::CONFLICT,
-                        "bucket with that name already exists".to_string(),
-                    )
-                        .into_response();
-                } else {
-                    tracing::error!("unable to create bucket: {db_err}");
-                    return (
-                        StatusCode::INTERNAL_SERVER_ERROR,
-                        "internal server error".to_string(),
-                    )
-                        .into_response();
+                        // Return it
+                        (StatusCode::OK, Json(response)).into_response()
+                    }
+                    Err(err) => CoreError::sqlx_error(err, "create", "bucket key").into_response(),
                 }
             }
-            _ => {
-                tracing::error!("unable to create bucket: {err}");
-                return (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "internal server error".to_string(),
-                )
-                    .into_response();
-            }
-        },
-    };
-
-    let maybe_key = sqlx::query_as!(
-        models::CreatedResource,
-        r#"INSERT INTO bucket_keys (bucket_id, approved, pem) VALUES ($1, true, $2) RETURNING id;"#,
-        created_bucket.id,
-        new_bucket.initial_bucket_key_pem,
-    )
-    .fetch_one(&mut *db_conn.0)
-    .await;
-
-    let created_key = match maybe_key {
-        Ok(ck) => ck,
-        Err(err) => {
-            tracing::error!("unable to create bucket key: {err}");
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "internal server error".to_string(),
-            )
-                .into_response();
+            Err(err) => CoreError::sqlx_error(err, "create", "bucket").into_response(),
         }
-    };
-
-    let response = responses::CreateBucket {
-        id: created_bucket.id,
-        name: new_bucket.name,
-        r#type: new_bucket.r#type,
-        storage_class: new_bucket.storage_class,
-        initial_bucket_key: keys::responses::CreateBucketKey {
-            id: created_key.id,
-            approved: true,
-        },
-    };
-
-    (StatusCode::OK, axum::Json(response)).into_response()
+    }
 }
 
 // TODO: pagination
 /// Read all buckets associated with the calling account
 pub async fn read_all(api_token: ApiToken, mut db_conn: DbConn) -> impl IntoResponse {
     let account_id = api_token.subject;
-    let response = match db::read_all_buckets(&account_id, &mut db_conn).await {
-        Ok(buckets) => responses::ReadBuckets(
+    match db::read_all_buckets(&account_id, &mut db_conn).await {
+        Ok(buckets) => Json(responses::ReadBuckets(
             buckets
                 .into_iter()
                 .map(|bucket| responses::ReadBucket {
@@ -114,22 +87,10 @@ pub async fn read_all(api_token: ApiToken, mut db_conn: DbConn) -> impl IntoResp
                     storage_class: bucket.storage_class,
                 })
                 .collect::<Vec<_>>(),
-        ),
-        Err(err) => match err {
-            sqlx::Error::RowNotFound => {
-                return (StatusCode::NOT_FOUND, format!("bucket not found: {err}")).into_response();
-            }
-            _ => {
-                tracing::error!("unable to read bucket: {err}");
-                return (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "internal server error".to_string(),
-                )
-                    .into_response();
-            }
-        },
-    };
-    Json(response).into_response()
+        ))
+        .into_response(),
+        Err(err) => CoreError::sqlx_error(err, "read", "all buckets").into_response(),
+    }
 }
 
 // TODO: Should this be authenticated or not?
@@ -141,30 +102,19 @@ pub async fn read(
 ) -> impl IntoResponse {
     let account_id = api_token.subject;
     let bucket_id = bucket_id.to_string();
-    let response = match db::read_bucket(&account_id, &bucket_id, &mut db_conn).await {
-        Ok(bucket) => responses::ReadBucket {
+    match db::read_bucket(&account_id, &bucket_id, &mut db_conn).await {
+        Ok(bucket) => Json(responses::ReadBucket {
             id: bucket.id,
             name: bucket.name,
             r#type: bucket.r#type,
             storage_class: bucket.storage_class,
-        },
-        Err(err) => match err {
-            sqlx::Error::RowNotFound => {
-                return (StatusCode::NOT_FOUND, format!("bucket not found: {err}")).into_response();
-            }
-            _ => {
-                tracing::error!("unable to read bucket: {err}");
-                return (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "internal server error".to_string(),
-                )
-                    .into_response();
-            }
-        },
-    };
-    Json(response).into_response()
+        })
+        .into_response(),
+        Err(err) => CoreError::sqlx_error(err, "read", "bucket").into_response(),
+    }
 }
 
+/// Delete a Bucket
 pub async fn delete(
     api_token: ApiToken,
     mut db_conn: DbConn,
@@ -172,53 +122,21 @@ pub async fn delete(
 ) -> Response {
     let account_id = api_token.subject;
     let bucket_id = bucket_id.to_string();
-
     // todo: need to delete all the hot data stored at various storage hosts
-
     if let Err(err) = db::delete_bucket(&account_id, &bucket_id, &mut db_conn).await {
-        match err {
-            sqlx::Error::RowNotFound => {
-                return (StatusCode::NOT_FOUND, format!("bucket not found: {err}")).into_response();
-            }
-            _ => {
-                tracing::error!("unable to delete bucket: {err}");
-                return (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "internal server error".to_string(),
-                )
-                    .into_response();
-            }
-        }
+        CoreError::sqlx_error(err, "delete", "bucket").into_response()
+    } else {
+        (StatusCode::NO_CONTENT, ()).into_response()
     }
-
-    (StatusCode::NO_CONTENT, ()).into_response()
 }
 
 /// Return the current DATA usage for the bucket. Query metadata in the current state of the bucket
 pub async fn get_usage(
-    api_token: ApiToken,
+    _api_token: ApiToken,
     mut db_conn: DbConn,
     Path(bucket_id): Path<Uuid>,
 ) -> impl IntoResponse {
-    let account_id = api_token.subject;
     let bucket_id = bucket_id.to_string();
-    match db::authorize_bucket(&account_id, &bucket_id, &mut db_conn).await {
-        Ok(_) => {}
-        Err(err) => match err {
-            sqlx::Error::RowNotFound => {
-                return (StatusCode::NOT_FOUND, format!("bucket not found: {err}")).into_response();
-            }
-            _ => {
-                tracing::error!("unable to read bucket: {err}");
-                return (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "internal server error".to_string(),
-                )
-                    .into_response();
-            }
-        },
-    }
-
     // Observable usage is sum of data in current state for the requested bucket
     let response = match db::read_bucket_data_usage(&bucket_id, &mut db_conn).await {
         Ok(usage) => responses::GetUsage { size: usage },
