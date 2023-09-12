@@ -20,7 +20,7 @@ import { useKeystore } from '@/contexts/keystore';
 export { getServerSideProps };
 
 const Buckets: NextPageWithLayout<IEscrowPage> = ({ escrowedDevice }) => {
-    const { openModal, openEscrowModal } = useModal();
+    const { closeModal, openModal, openEscrowModal } = useModal();
     const { buckets, areBucketsLoading } = useTomb();
     const { keystoreInitialized } = useKeystore();
     const { messages } = useIntl();
@@ -30,8 +30,11 @@ const Buckets: NextPageWithLayout<IEscrowPage> = ({ escrowedDevice }) => {
     };
 
     useEffect(() => {
-        if (keystoreInitialized) return;
-        openEscrowModal(!!escrowedDevice);
+        if (!keystoreInitialized) {
+            openEscrowModal(!!escrowedDevice);
+        } else {
+            closeModal();
+        };
     }, [keystoreInitialized]);
 
     return (

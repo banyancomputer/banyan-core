@@ -20,7 +20,7 @@ const Bucket: NextPageWithLayout<IEscrowPage> = ({ escrowedDevice }) => {
     const bucketId = searchParams.get('id');
     const { buckets, areBucketsLoading, selectedBucket, selectBucket, getSelectedBucketFiles } = useTomb();
     const folderLocation = useFolderLocation();
-    const { openEscrowModal } = useModal();
+    const { openEscrowModal, closeModal } = useModal();
     const { keystoreInitialized } = useKeystore();
 
     useEffect(() => {
@@ -38,8 +38,11 @@ const Bucket: NextPageWithLayout<IEscrowPage> = ({ escrowedDevice }) => {
     }, [bucketId, buckets.length]);
 
     useEffect(() => {
-        if (keystoreInitialized) return;
-        openEscrowModal(!!escrowedDevice);
+        if (!keystoreInitialized) {
+            openEscrowModal(!!escrowedDevice);
+        } else {
+            closeModal();
+        };
     }, [keystoreInitialized]);
 
     return (

@@ -9,12 +9,15 @@ import { useKeystore } from '@/contexts/keystore';
 export { getServerSideProps };
 
 const Settings: NextPageWithLayout<IEscrowPage> = ({ escrowedDevice }) => {
-    const { openEscrowModal } = useModal();
+    const { openEscrowModal, closeModal } = useModal();
     const { keystoreInitialized } = useKeystore();
 
     useEffect(() => {
-        if (keystoreInitialized) return;
-        openEscrowModal(!!escrowedDevice);
+        if (!keystoreInitialized) {
+            openEscrowModal(!!escrowedDevice);
+        } else {
+            closeModal();
+        };
     }, [keystoreInitialized]);
 
     return (

@@ -26,7 +26,7 @@ const Trash: NextPageWithLayout<IEscrowPage> = ({ escrowedDevice }) => {
     const { openModal } = useModal();
     const [isLabelVisible, setIsLabelVisible] = useState(true);
     const { keystoreInitialized } = useKeystore();
-    const { openEscrowModal } = useModal();
+    const { openEscrowModal, closeModal } = useModal();
 
     const closeLabel = () => {
         setIsLabelVisible(false);
@@ -37,8 +37,11 @@ const Trash: NextPageWithLayout<IEscrowPage> = ({ escrowedDevice }) => {
     };
 
     useEffect(() => {
-        if (keystoreInitialized) return;
-        openEscrowModal(!!escrowedDevice);
+        if (!keystoreInitialized) {
+            openEscrowModal(!!escrowedDevice);
+        } else {
+            closeModal();
+        };
     }, [keystoreInitialized]);
 
     return (

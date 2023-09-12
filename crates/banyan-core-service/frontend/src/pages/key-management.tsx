@@ -19,11 +19,14 @@ const HomePage: NextPageWithLayout<IEscrowPage> = ({ escrowedDevice }) => {
     const { buckets, areBucketsLoading } = useTomb();
     const { keystoreInitialized } = useKeystore();
     const { messages } = useIntl();
-    const { openEscrowModal } = useModal();
+    const { openEscrowModal, closeModal } = useModal();
 
     useEffect(() => {
-        if (keystoreInitialized) return;
-        openEscrowModal(!!escrowedDevice);
+        if (!keystoreInitialized) {
+            openEscrowModal(!!escrowedDevice);
+        } else {
+            closeModal();
+        };
     }, [keystoreInitialized]);
 
     return (
