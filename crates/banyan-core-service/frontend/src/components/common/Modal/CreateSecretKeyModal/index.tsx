@@ -83,7 +83,6 @@ export const CreateSecretKeyModal = () => {
             <button
                 type='submit'
                 className="btn-primary flex-grow py-select px-4"
-                onClick={confirm}
                 disabled={!isDataCorrect}
             >
                 {`${messages.confirm}`}
