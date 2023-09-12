@@ -87,7 +87,7 @@ pub async fn push(
         RETURNING id;"#,
         bucket_id,
         request_data.root_cid,
-        "",
+        request_data.metadata_cid,
         expected_data_size,
         models::MetadataState::Uploading
     )

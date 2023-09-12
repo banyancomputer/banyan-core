@@ -15,8 +15,8 @@ where
     pub bucket_id: Uuid,
 
     pub expected_data_size: usize,
-    pub metadata_cid: String,
     pub root_cid: String,
+    pub metadata_cid: String,
 
     pub metadata_stream: S,
 }
@@ -31,8 +31,8 @@ where
     fn build_request(self, base_url: &Url, client: &Client) -> RequestBuilder {
         let pbm_req = PublishBucketMetadataRequest {
             data_size: self.expected_data_size,
-            metadata_cid: self.metadata_cid,
             root_cid: self.root_cid,
+            metadata_cid: self.metadata_cid,
         };
 
         let url = base_url
@@ -64,8 +64,8 @@ where
 #[derive(Debug, Serialize)]
 struct PublishBucketMetadataRequest {
     data_size: usize,
-    metadata_cid: String,
     root_cid: String,
+    metadata_cid: String,
 }
 
 #[derive(Debug, Deserialize)]
