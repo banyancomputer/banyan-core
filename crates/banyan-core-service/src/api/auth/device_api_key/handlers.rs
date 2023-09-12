@@ -25,7 +25,6 @@ pub async fn create(
     let ec_key = parsed_public_key.ec_key().unwrap();
     let ec_group = ec_key.group();
     let mut big_num_context = BigNumContext::new().expect("big number context");
-
     let raw_compressed_bytes = ec_key
         .public_key()
         .to_bytes(

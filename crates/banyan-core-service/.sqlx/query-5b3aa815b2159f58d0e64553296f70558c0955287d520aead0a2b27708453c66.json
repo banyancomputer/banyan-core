@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, bucket_id, approved, pem FROM bucket_keys WHERE id = $1 AND bucket_id = $2;",
+  "query": "SELECT id, bucket_id, approved, pem, fingerprint FROM bucket_keys WHERE id = $1 AND bucket_id = $2;",
   "describe": {
     "columns": [
       {
@@ -22,6 +22,11 @@
         "name": "pem",
         "ordinal": 3,
         "type_info": "Text"
+      },
+      {
+        "name": "fingerprint",
+        "ordinal": 4,
+        "type_info": "Text"
       }
     ],
     "parameters": {
@@ -31,8 +36,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "a60db9847229b71e67e0381743981479e30c850f536df14b30d0e574863dc55e"
+  "hash": "5b3aa815b2159f58d0e64553296f70558c0955287d520aead0a2b27708453c66"
 }

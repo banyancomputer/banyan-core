@@ -1,8 +1,36 @@
+use crate::db::models::{self, BucketType, CreatedResource, StorageClass};
+use crate::extractors::DbConn;
+use crate::utils::keys::fingerprint_public_pem;
 use serde::Serialize;
 use sqlx::FromRow;
 
-use crate::db::models;
-use crate::extractors::DbConn;
+/// Create a new Bucket in the database and return the created resource.
+/// Implements an authorized read of a bucket by id and account_id.
+/// # Arguments
+/// * `account_id` - The account_id of the account that owns the bucket.
+/// * `type` - The type of the bucket.
+/// * `storage_class` - The storage class of the bucket.
+/// * `db_conn` - The database connection to use.
+/// # Return Type
+/// Returns the created resource if successful, otherwise errors.
+pub async fn create_bucket(
+    account_id: &str,
+    name: &str,
+    r#type: &BucketType,
+    storage_class: &StorageClass,
+    db_conn: &mut DbConn,
+) -> Result<CreatedResource, sqlx::Error> {
+    sqlx::query_as!(
+        models::CreatedResource,
+        r#"INSERT INTO buckets (account_id, name, type, storage_class) VALUES ($1, $2, $3, $4) RETURNING id;"#,
+        account_id,
+        name,
+        r#type,
+        storage_class,
+    )
+    .fetch_one(&mut *db_conn.0)
+    .await
+}
 
 pub async fn select_storage_host(db_conn: &mut DbConn) -> Result<models::StorageHost, sqlx::Error> {
     sqlx::query_as!(
@@ -62,21 +90,14 @@ pub async fn read_bucket(
     bucket_id: &str,
     db_conn: &mut DbConn,
 ) -> Result<models::Bucket, sqlx::Error> {
-    let maybe_bucket = sqlx::query_as!(
+    sqlx::query_as!(
         models::Bucket,
         r#"SELECT id, account_id, name, type, storage_class FROM buckets WHERE id = $1 AND account_id = $2"#,
         bucket_id,
         account_id,
     )
     .fetch_one(&mut *db_conn.0)
-    .await;
-    match maybe_bucket {
-        Ok(bucket) => Ok(bucket),
-        Err(err) => match err {
-            sqlx::Error::RowNotFound => Err(sqlx::Error::RowNotFound),
-            _ => Err(err),
-        },
-    }
+    .await
 }
 
 /// Pull all buckets from the database by account_id and return them.
@@ -90,20 +111,13 @@ pub async fn read_all_buckets(
     account_id: &str,
     db_conn: &mut DbConn,
 ) -> Result<Vec<models::Bucket>, sqlx::Error> {
-    let maybe_buckets = sqlx::query_as!(
+    sqlx::query_as!(
         models::Bucket,
         r#"SELECT id, account_id, name, type, storage_class FROM buckets WHERE account_id = $1"#,
         account_id,
     )
     .fetch_all(&mut *db_conn.0)
-    .await;
-    match maybe_buckets {
-        Ok(buckets) => Ok(buckets),
-        Err(err) => match err {
-            sqlx::Error::RowNotFound => Err(sqlx::Error::RowNotFound),
-            _ => Err(err),
-        },
-    }
+    .await
 }
 
 /// Delete a bucket by id and account_id and return it.
@@ -124,7 +138,7 @@ pub async fn delete_bucket(
     read_bucket(account_id, bucket_id, db_conn).await?;
 
     sqlx::query!(
-        r#"DELETE FROM buckets WHERE id = $1 AND account_id = $2;"#,
+        r#"DELETE FROM buckets WHERE id = $1 AND account_id = $2"#,
         bucket_id,
         account_id,
     )
@@ -146,21 +160,42 @@ pub async fn authorize_bucket(
     bucket_id: &str,
     db_conn: &mut DbConn,
 ) -> Result<(), sqlx::Error> {
-    let maybe_bucket = sqlx::query_as!(
+    sqlx::query_as!(
         models::CreatedResource,
         r#"SELECT id FROM buckets WHERE id = $1 AND account_id = $2;"#,
         bucket_id,
         account_id
     )
     .fetch_one(&mut *db_conn.0)
-    .await;
-    match maybe_bucket {
-        Ok(_) => Ok(()),
-        Err(err) => match err {
-            sqlx::Error::RowNotFound => Err(sqlx::Error::RowNotFound),
-            _ => Err(err),
-        },
-    }
+    .await
+    .map(|_| ())
+}
+
+/// Create a bucket key by its id and PEM
+/// # Arguments
+/// * `bucket_id` - The id of the bucket to insert this key in.
+/// * `pem` - The public PEM of the Key
+/// * `db_conn` - The database connection to use.
+/// # Return Type
+/// Returns the created resource if creation succeeds, otherwise returns an error.
+pub async fn create_bucket_key(
+    bucket_id: &str,
+    approved: bool,
+    pem: &str,
+    db_conn: &mut DbConn,
+) -> Result<CreatedResource, sqlx::Error> {
+    let fingerprint = fingerprint_public_pem(pem);
+    tracing::info!("creating new bucketkey w fingerprint {fingerprint}");
+    sqlx::query_as!(
+        models::CreatedResource,
+        r#"INSERT INTO bucket_keys (bucket_id, approved, pem, fingerprint) VALUES ($1, $2, $3, $4) RETURNING id;"#,
+        bucket_id,
+        approved,
+        pem,
+        fingerprint
+    )
+    .fetch_one(&mut *db_conn.0)
+    .await
 }
 
 /// Read a bucket key by its id and authorize that it belongs to a given bucket_id.
@@ -175,21 +210,14 @@ pub async fn read_bucket_key(
     bucket_key_id: &str,
     db_conn: &mut DbConn,
 ) -> Result<models::BucketKey, sqlx::Error> {
-    let maybe_bucket_key = sqlx::query_as!(
+    sqlx::query_as!(
         models::BucketKey,
-        r#"SELECT id, bucket_id, approved, pem FROM bucket_keys WHERE id = $1 AND bucket_id = $2;"#,
+        r#"SELECT id, bucket_id, approved, pem, fingerprint FROM bucket_keys WHERE id = $1 AND bucket_id = $2;"#,
         bucket_key_id,
         bucket_id,
     )
     .fetch_one(&mut *db_conn.0)
-    .await;
-    match maybe_bucket_key {
-        Ok(bucket_key) => Ok(bucket_key),
-        Err(err) => match err {
-            sqlx::Error::RowNotFound => Err(sqlx::Error::RowNotFound),
-            _ => Err(err),
-        },
-    }
+    .await
 }
 
 /// Read all bucket keys by a given bucket_id.
@@ -202,20 +230,13 @@ pub async fn read_all_bucket_keys(
     bucket_id: &str,
     db_conn: &mut DbConn,
 ) -> Result<Vec<models::BucketKey>, sqlx::Error> {
-    let maybe_bucket_keys = sqlx::query_as!(
+    sqlx::query_as!(
         models::BucketKey,
-        r#"SELECT id, bucket_id, approved, pem FROM bucket_keys WHERE bucket_id = $1;"#,
+        r#"SELECT id, bucket_id, approved, pem, fingerprint FROM bucket_keys WHERE bucket_id = $1;"#,
         bucket_id,
     )
     .fetch_all(&mut *db_conn.0)
-    .await;
-    match maybe_bucket_keys {
-        Ok(bucket_keys) => Ok(bucket_keys),
-        Err(err) => match err {
-            sqlx::Error::RowNotFound => Err(sqlx::Error::RowNotFound),
-            _ => Err(err),
-        },
-    }
+    .await
 }
 
 /// Delete a bucket key by its id and authorize that it belongs to a given bucket_id.
@@ -230,21 +251,41 @@ pub async fn delete_bucket_key(
     bucket_key_id: &str,
     db_conn: &mut DbConn,
 ) -> Result<models::BucketKey, sqlx::Error> {
-    let maybe_bucket_key = sqlx::query_as!(
+    sqlx::query_as!(
         models::BucketKey,
-        r#"DELETE FROM bucket_keys WHERE id = $1 AND bucket_id = $2 RETURNING id, bucket_id, approved, pem;"#,
+        r#"DELETE FROM bucket_keys WHERE id = $1 AND bucket_id = $2 RETURNING id, bucket_id, approved, pem, fingerprint;"#,
         bucket_key_id,
         bucket_id,
     )
     .fetch_one(&mut *db_conn.0)
-    .await;
-    match maybe_bucket_key {
-        Ok(bucket_key) => Ok(bucket_key),
-        Err(err) => match err {
-            sqlx::Error::RowNotFound => Err(sqlx::Error::RowNotFound),
-            _ => Err(err),
-        },
-    }
+    .await
+}
+
+/// Approve a bucket key for use by its id and authorize that it belongs to a given bucket_id.
+/// # Arguments
+/// * `bucket_id` - The id of the bucket to read.
+/// * `pem` - The public PEM of the Key
+/// * `db_conn` - The database connection to use.
+/// # Return Type
+/// Returns the bucket key if it exists and belongs to the given bucket_id, otherwise returns an error.
+pub async fn approve_bucket_key(
+    bucket_id: &str,
+    fingerprint: &str,
+    db_conn: &mut DbConn,
+) -> Result<models::BucketKey, sqlx::Error> {
+    // Perorm the update
+    sqlx::query_as!(
+        models::BucketKey,
+        r#"
+        UPDATE bucket_keys SET 
+        approved = true 
+        WHERE fingerprint = $1 AND bucket_id = $2 
+        RETURNING id, bucket_id, approved, pem, fingerprint;"#,
+        fingerprint,
+        bucket_id,
+    )
+    .fetch_one(&mut *db_conn.0)
+    .await
 }
 
 /// Read metadata from the database, checking if references a given bucket_id.
@@ -259,7 +300,7 @@ pub async fn read_metadata(
     metadata_id: &str,
     db_conn: &mut DbConn,
 ) -> Result<models::Metadata, sqlx::Error> {
-    let maybe_metadata = sqlx::query_as!(
+    sqlx::query_as!(
         models::Metadata,
         r#"SELECT id, bucket_id, root_cid, metadata_cid, expected_data_size, data_size as "data_size!", state, metadata_size as "metadata_size!", metadata_hash as "metadata_hash!", created_at, updated_at
         FROM metadata WHERE id = $1 AND bucket_id = $2;"#,
@@ -267,14 +308,7 @@ pub async fn read_metadata(
         bucket_id,
     )
     .fetch_one(&mut *db_conn.0)
-    .await;
-    match maybe_metadata {
-        Ok(metadata) => Ok(metadata),
-        Err(err) => match err {
-            sqlx::Error::RowNotFound => Err(sqlx::Error::RowNotFound),
-            _ => Err(err),
-        },
-    }
+    .await
 }
 
 /// Authorize access to the given metadata_id by checking if it references a given bucket_id.
@@ -289,21 +323,15 @@ pub async fn authorize_metadata(
     metadata_id: &str,
     db_conn: &mut DbConn,
 ) -> Result<(), sqlx::Error> {
-    let maybe_metadata = sqlx::query_as!(
+    sqlx::query_as!(
         models::CreatedResource,
         r#"SELECT id FROM metadata WHERE id = $1 AND bucket_id = $2;"#,
         metadata_id,
         bucket_id,
     )
     .fetch_one(&mut *db_conn.0)
-    .await;
-    match maybe_metadata {
-        Ok(_) => Ok(()),
-        Err(err) => match err {
-            sqlx::Error::RowNotFound => Err(sqlx::Error::RowNotFound),
-            _ => Err(err),
-        },
-    }
+    .await
+    .map(|_| ())
 }
 
 /// Read all metadata from the database by a given bucket_id.
@@ -316,21 +344,14 @@ pub async fn read_all_metadata(
     bucket_id: &str,
     db_conn: &mut DbConn,
 ) -> Result<Vec<models::Metadata>, sqlx::Error> {
-    let maybe_metadata = sqlx::query_as!(
+    sqlx::query_as!(
         models::Metadata,
         r#"SELECT id, bucket_id, root_cid, metadata_cid, expected_data_size, data_size as "data_size!", state, metadata_size as "metadata_size!", metadata_hash as "metadata_hash!", created_at, updated_at
         FROM metadata WHERE bucket_id = $1;"#,
         bucket_id,
     )
     .fetch_all(&mut *db_conn.0)
-    .await;
-    match maybe_metadata {
-        Ok(metadata) => Ok(metadata),
-        Err(err) => match err {
-            sqlx::Error::RowNotFound => Err(sqlx::Error::RowNotFound),
-            _ => Err(err),
-        },
-    }
+    .await
 }
 
 /// Read the current metadata from the database by a given bucket_id.
@@ -343,21 +364,14 @@ pub async fn read_current_metadata(
     bucket_id: &str,
     db_conn: &mut DbConn,
 ) -> Result<models::Metadata, sqlx::Error> {
-    let maybe_metadata = sqlx::query_as!(
+    sqlx::query_as!(
         models::Metadata,
         r#"SELECT id, bucket_id, root_cid, metadata_cid, expected_data_size, data_size as "data_size!", state, metadata_size as "metadata_size!", metadata_hash as "metadata_hash!", created_at, updated_at
         FROM metadata WHERE bucket_id = $1 AND state = 'current';"#,
         bucket_id,
     )
     .fetch_one(&mut *db_conn.0)
-    .await;
-    match maybe_metadata {
-        Ok(metadata) => Ok(metadata),
-        Err(err) => match err {
-            sqlx::Error::RowNotFound => Err(sqlx::Error::RowNotFound),
-            _ => Err(err),
-        },
-    }
+    .await
 }
 
 /// Create a snapshot and return the created resource.
@@ -370,7 +384,7 @@ pub async fn create_snapshot(
     metadata_id: &str,
     db_conn: &mut DbConn,
 ) -> Result<models::Snapshot, sqlx::Error> {
-    let maybe_snapshot = sqlx::query_as!(
+    sqlx::query_as!(
         models::Snapshot,
         r#"INSERT INTO snapshots (metadata_id)
         VALUES ($1)
@@ -378,11 +392,7 @@ pub async fn create_snapshot(
         metadata_id
     )
     .fetch_one(&mut *db_conn.0)
-    .await;
-    match maybe_snapshot {
-        Ok(snapshot) => Ok(snapshot),
-        Err(err) => Err(err),
-    }
+    .await
 }
 
 /// Read a snapshot by its id and authorize that its associated metadata belongs to a given bucket_id.
@@ -397,7 +407,7 @@ pub async fn read_snapshot(
     snapshot_id: &str,
     db_conn: &mut DbConn,
 ) -> Result<models::Snapshot, sqlx::Error> {
-    let maybe_snapshot = sqlx::query_as!(
+    sqlx::query_as!(
         models::Snapshot,
         r#"SELECT 
             s.id,
@@ -413,14 +423,7 @@ pub async fn read_snapshot(
         bucket_id
     )
     .fetch_one(&mut *db_conn.0)
-    .await;
-    match maybe_snapshot {
-        Ok(snapshot) => Ok(snapshot),
-        Err(err) => match err {
-            sqlx::Error::RowNotFound => Err(sqlx::Error::RowNotFound),
-            _ => Err(err),
-        },
-    }
+    .await
 }
 
 /// Read a snapshot by bucket_id and snapshot_id.
@@ -434,7 +437,7 @@ pub async fn read_all_snapshots(
     bucket_id: &str,
     db_conn: &mut DbConn,
 ) -> Result<Vec<models::Snapshot>, sqlx::Error> {
-    let maybe_snapshots = sqlx::query_as!(
+    sqlx::query_as!(
         models::Snapshot,
         r#"SELECT 
             s.id,
@@ -449,14 +452,7 @@ pub async fn read_all_snapshots(
         bucket_id
     )
     .fetch_all(&mut *db_conn.0)
-    .await;
-    match maybe_snapshots {
-        Ok(snapshots) => Ok(snapshots),
-        Err(err) => match err {
-            sqlx::Error::RowNotFound => Err(sqlx::Error::RowNotFound),
-            _ => Err(err),
-        },
-    }
+    .await
 }
 
 /// Read the data + metadata usage of the given account id.
