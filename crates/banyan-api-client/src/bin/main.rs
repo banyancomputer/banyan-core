@@ -81,8 +81,8 @@ async fn main() {
             bucket_id: bucket_info.id,
 
             expected_data_size: 1_567_129,
-            metadata_cid: "a real CID I promise!".to_string(),
             root_cid: "rooty McCIDFace".to_string(),
+            metadata_cid: "a real CID I promise!".to_string(),
 
             metadata_stream,
         })
