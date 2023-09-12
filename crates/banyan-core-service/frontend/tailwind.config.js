@@ -21,7 +21,7 @@ module.exports = {
 			},
 			padding: {
 				keyManagement: '72px',
-				select: '10px'
+				select: '10px',
 			},
 			minWidth: {
 				navbar: '280px',
@@ -38,6 +38,7 @@ module.exports = {
 					600: '#2563EB',
 					900: '#1E3A8A',
 				},
+				error: '#CB3535',
 				login: '#F7F7F7',
 				navigation: {
 					primary: '#FFECC5',

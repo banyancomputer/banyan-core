@@ -128,6 +128,7 @@ export const Header = () => {
                         >
                             {options.map(option =>
                                 <div
+                                    key={option.label}
                                     className="flex items-center gap-2 py-select px-3 transition-all hover:bg-slate-100"
                                     onClick={option.value}
                                 >

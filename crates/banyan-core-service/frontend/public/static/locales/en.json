@@ -104,5 +104,6 @@
 	"accessUpdatesError": "There was an issue with access updates. Please try again.",
 	"loginWithGoogle": "Log in with Google",
 	"contactUs": "Contact Us",
-	"settings": "Settings"
+	"settings": "Settings",
+	"AccessDenied": "This email address is not approved for Alpha; please use your alpha-approved email. If issues continue, contact sam@banyan.computer"
 }
