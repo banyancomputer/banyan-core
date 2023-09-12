@@ -15,7 +15,7 @@ interface SeatchOption {
     path: string;
 };
 
-export const Input = React.memo(() => {
+export const SearchInput = React.memo(() => {
     const { buckets, selectedBucket } = useTomb();
     const [search, setSearch] = useState('');
     const [searchList, setSearchList] = useState<SeatchOption[]>([]);

@@ -13,7 +13,7 @@ import { popupClickHandler } from '@/utils';
 import { useKeystore } from '@/contexts/keystore';
 import { Action } from '../FileActions';
 
-import { Input } from '../Input';
+import { SearchInput } from '../SearchInput';
 
 import { Logo } from '@static/images/common';
 
@@ -75,7 +75,7 @@ export const Header = () => {
             <Link href="/" className="font-semibold text-m flex-grow" >
                 <Logo />
             </Link>
-            <Input />
+            <SearchInput />
             <div className="flex flex-grow items-center justify-end gap-6">
                 <div
                     className='relative w-10 h-10 flex items-center justify-center transition-all rounded-lg cursor-pointer hover:bg-slate-200'
@@ -128,6 +128,7 @@ export const Header = () => {
                         >
                             {options.map(option =>
                                 <div
+                                    key={option.label}
                                     className="flex items-center gap-2 py-select px-3 transition-all hover:bg-slate-100"
                                     onClick={option.value}
                                 >

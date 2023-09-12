@@ -1,28 +1,32 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useIntl } from 'react-intl';
 import { FiAlertCircle, FiArrowRight } from 'react-icons/fi';
 import { IoMdClose } from 'react-icons/io';
 import Image from 'next/image';
 
-import { NextPageWithLayout } from './page';
 import BaseLayout from '@/layouts/BaseLayout';
-import { useTomb } from '@/contexts/tomb';
 import { TrashTable } from '@/components/Trash/TrashTable';
-import { useModal } from '@/contexts/modals';
 import { EmptyTrashModal } from '@/components/common/Modal/EmptyTrashModal';
 import { Fallback } from '@/components/common/Fallback';
 
-import emptyIcon from '@static/images/common/emptyIcon.png';
-
+import { NextPageWithLayout } from './page';
+import { useTomb } from '@/contexts/tomb';
 import getServerSideProps from '@/utils/session';
+import { IEscrowPage } from './escrow';
+import { useModal } from '@/contexts/modals';
+
+import emptyIcon from '@static/images/common/emptyIcon.png';
+import { useKeystore } from '@/contexts/keystore';
 
 export { getServerSideProps };
 
-const Trash: NextPageWithLayout = () => {
+const Trash: NextPageWithLayout<IEscrowPage> = ({ escrowedDevice }) => {
     const { trash, isTrashLoading } = useTomb();
     const { messages } = useIntl();
     const { openModal } = useModal();
     const [isLabelVisible, setIsLabelVisible] = useState(true);
+    const { keystoreInitialized, isLoading } = useKeystore();
+    const { openEscrowModal, closeModal } = useModal();
 
     const closeLabel = () => {
         setIsLabelVisible(false);
@@ -31,6 +35,14 @@ const Trash: NextPageWithLayout = () => {
     const emptyTrash = () => {
         openModal(<EmptyTrashModal />);
     };
+
+    useEffect(() => {
+        if (!keystoreInitialized && !isLoading) {
+            openEscrowModal(!!escrowedDevice);
+        } else {
+            closeModal();
+        };
+    }, [keystoreInitialized, isLoading]);
 
     return (
         <section className="py-9 px-4 h-full">
