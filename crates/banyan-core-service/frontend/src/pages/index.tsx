@@ -12,19 +12,27 @@ import { Fallback } from '@/components/common/Fallback';
 import getServerSideProps from '@/utils/session';
 import { useTomb } from '@/contexts/tomb';
 import { useModal } from '@/contexts/modals';
+import { IEscrowPage } from './escrow';
 
 import emptyIcon from '@static/images/common/emptyIcon.png';
+import { useKeystore } from '@/contexts/keystore';
 
 export { getServerSideProps };
 
-const Buckets: NextPageWithLayout = () => {
-    const { openModal } = useModal();
+const Buckets: NextPageWithLayout<IEscrowPage> = ({ escrowedDevice }) => {
+    const { openModal, openEscrowModal } = useModal();
     const { buckets, areBucketsLoading } = useTomb();
+    const { keystoreInitialized } = useKeystore();
     const { messages } = useIntl();
 
     const uploadFile = () => {
         openModal(<UploadFileModal />);
     };
+
+    useEffect(() => {
+        if (keystoreInitialized) return;
+        openEscrowModal(!!escrowedDevice);
+    }, [keystoreInitialized]);
 
     return (
         <section className="py-9 px-4" id="buckets">

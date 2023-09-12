@@ -9,45 +9,11 @@ import { NextPageWithLayout } from '@/pages/page';
 import { useKeystore } from '@/contexts/keystore';
 import { AccountFactory, EscrowedDeviceFactory } from '@/lib/db';
 import { DeviceApiKey, EscrowedDevice } from '@/lib/interfaces';
-// import { ClientApi } from '@/lib/api/auth';
-export async function getServerSideProps(context: any) {
-    // If the user has a session, serve the page
-    const session: Session | null = await getServerSession(
-        // @ts-ignore
-        context.req,
-        context.res,
-        authOptions
-    );
-    if (session) {
-        try {
-            const providerId = session.providerId;
-            const account_id = await AccountFactory.idFromProviderId(providerId);
-            const escrowedDevice = await EscrowedDeviceFactory.readByAccountId(account_id);
-            return {
-                // Just return empty props for now, eventually we'll pass more data
-                props: {
-                    escrowedDevice: JSON.parse(JSON.stringify(escrowedDevice)),
-                    // deviceApiKeys: JSON.parse(JSON.stringify(deviceApiKeys)),
-                },
-            };
-        } catch (error) {
-            console.error(error);
-            return {
-                props: {
-                    escrowedDevice: null,
-                    // deviceApiKeys: null,
-                },
-            };
-        }
-    }
-    // If no session, redirect to login
-    return {
-        redirect: {
-            destination: '/login',
-            permanent: false,
-        },
-    };
-}
+
+import getServerSideProps from '@/utils/session';
+
+export { getServerSideProps };
+
 export interface IEscrowPage {
     escrowedDevice: EscrowedDevice | null;
     // deviceApiKeys: DeviceApiKey[] | null;

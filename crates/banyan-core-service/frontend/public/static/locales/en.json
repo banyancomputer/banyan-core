@@ -105,5 +105,16 @@
 	"loginWithGoogle": "Log in with Google",
 	"contactUs": "Contact Us",
 	"settings": "Settings",
-	"AccessDenied": "This email address is not approved for Alpha; please use your alpha-approved email. If issues continue, contact sam@banyan.computer"
+	"AccessDenied": "This email address is not approved for Alpha; please use your alpha-approved email. If issues continue, contact sam@banyan.computer",
+	"createSecretKey": "Create a secret key",
+	"andEnterIntoTextField": "and enter into text field",
+	"secretKey": "Secret Key",
+	"confirmSecretKey": "Confirm secret key",
+	"keyRequirements": "Key must be at least 8 characters",
+	"remeberDevice": "Remember this device",
+	"enterPassphrase": "Enter passphrase",
+	"passphraseNotMatch": "The passphrase and its confirmation do not match",
+	"confirm": "Confirm",
+	"inputSecretKey": "Input secret key",
+	"enterSecretKey": "Enter the secret key into text field"
 }

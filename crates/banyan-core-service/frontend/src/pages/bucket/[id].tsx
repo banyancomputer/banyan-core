@@ -4,20 +4,24 @@ import { useSearchParams } from 'next/navigation';
 import { NextPageWithLayout } from '../page';
 import { useTomb } from '@/contexts/tomb';
 import getServerSideProps from '@/utils/session';
+import { IEscrowPage } from '../escrow';
 
 import BaseLayout from '@/layouts/BaseLayout';
 import { BucketTable } from '@/components/Bucket/BucketTable';
 import { Fallback } from '@/components/common/Fallback';
 import { useFolderLocation } from '@/hooks/useFolderLocation';
 import BucketHeader from '@/components/Bucket/Header';
+import { useModal } from '@/contexts/modals';
 
 export { getServerSideProps };
 
-const Bucket: NextPageWithLayout = () => {
+const Bucket: NextPageWithLayout<IEscrowPage> = ({ escrowedDevice }) => {
     const searchParams = useSearchParams();
     const bucketId = searchParams.get('id');
     const { buckets, areBucketsLoading, selectedBucket, selectBucket, getSelectedBucketFiles } = useTomb();
     const folderLocation = useFolderLocation();
+    const { openEscrowModal } = useModal();
+    const { keystoreInitialized } = useKeystore();
 
     useEffect(() => {
         if (selectedBucket?.id !== bucketId) return;
@@ -32,6 +36,11 @@ const Bucket: NextPageWithLayout = () => {
         const bucket = buckets.find(bucket => bucket.id === bucketId);
         bucket && selectBucket(bucket);
     }, [bucketId, buckets.length]);
+
+    useEffect(() => {
+        if (keystoreInitialized) return;
+        openEscrowModal(!!escrowedDevice);
+    }, [keystoreInitialized]);
 
     return (
         <section className="py-9 px-4">
@@ -48,3 +57,7 @@ const Bucket: NextPageWithLayout = () => {
 export default Bucket
 
 Bucket.getLayout = (page) => <BaseLayout>{page}</BaseLayout>;
+function useKeystore(): { keystoreInitialized: any; } {
+    throw new Error('Function not implemented.');
+}
+
