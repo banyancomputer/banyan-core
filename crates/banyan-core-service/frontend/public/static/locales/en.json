@@ -113,7 +113,7 @@
 	"keyRequirements": "Key must be at least 8 characters",
 	"remeberDevice": "Remember this device",
 	"enterPassphrase": "Enter passphrase",
-	"passphraseNotMatch": "The passphrase and its confirmation do not match",
+	"passphraseNotMatch": "The passphrases do not match, please try again",
 	"confirm": "Confirm",
 	"inputSecretKey": "Input secret key",
 	"enterSecretKey": "Enter the secret key into text field"

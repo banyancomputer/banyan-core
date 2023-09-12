@@ -10,15 +10,15 @@ export { getServerSideProps };
 
 const Settings: NextPageWithLayout<IEscrowPage> = ({ escrowedDevice }) => {
     const { openEscrowModal, closeModal } = useModal();
-    const { keystoreInitialized } = useKeystore();
+    const { keystoreInitialized, isLoading } = useKeystore();
 
     useEffect(() => {
-        if (!keystoreInitialized) {
+        if (!keystoreInitialized && !isLoading) {
             openEscrowModal(!!escrowedDevice);
         } else {
             closeModal();
         };
-    }, [keystoreInitialized]);
+    }, [keystoreInitialized, isLoading]);
 
     return (
         <div>Settings</div>

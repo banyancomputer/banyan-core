@@ -111,7 +111,7 @@
 	"keyRequirements": "La clé doit comporter au moins 8 caractères",
 	"remeberDevice": "Mémoriser cet appareil",
 	"enterPassphrase": "Saisir la phrase secrète",
-	"passphraseNotMatch": "La phrase secrète et sa confirmation ne correspondent pas",
+	"passphraseNotMatch": "Les phrases secrètes ne correspondent pas, veuillez réessayer",
 	"confirm": "Confirmer",
 	"inputSecretKey": "Saisir la clé secrète",
 	"enterSecretKey": "Saisir la clé secrète dans le champ de texte"

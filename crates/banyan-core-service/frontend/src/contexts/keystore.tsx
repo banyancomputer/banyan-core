@@ -35,6 +35,7 @@ export const KeystoreContext = createContext<{
     getApiKey: () => Promise<CryptoKeyPair>;
     // Purge the keystore from storage
     purgeKeystore: () => Promise<void>;
+    isLoading: boolean,
 }>({
     keystoreInitialized: false,
     getEncryptionKey: async () => {
@@ -45,6 +46,7 @@ export const KeystoreContext = createContext<{
     },
     initializeKeystore: async (passkey: string) => { },
     purgeKeystore: async () => { },
+    isLoading: false
 });
 
 export const KeystoreProvider = ({ children }: any) => {
@@ -53,6 +55,7 @@ export const KeystoreProvider = ({ children }: any) => {
 
     // External State
     const [keystoreInitialized, setKeystoreInitialized] = useState<boolean>(false);
+    const [isLoading, setIsLoading] = useState<boolean>(true);
 
     // Internal State
     const api = new ClientApi();
@@ -72,16 +75,19 @@ export const KeystoreProvider = ({ children }: any) => {
     // Set the keystore and escrowedDevice state based on the session
     useEffect(() => {
         const createKeystore = async (session: Session) => {
-            // Initialize a keystore pointed by the user's uid
-            const storeName = `${KEY_STORE_NAME_PREFIX}-${session.providerId}`;
-            // Defaults are fine here
-            const ks = (await KeyStore.init({
-                escrowKeyName: ESCROW_KEY_NAME,
-                writeKeyPairName: WRITE_KEY_PAIR_NAME,
-                exchangeKeyPairName: EXCHANGE_KEY_PAIR_NAME,
-                storeName,
-            })) as ECCKeystore;
-            setKeystore(ks);
+            try {
+
+                // Initialize a keystore pointed by the user's uid
+                const storeName = `${KEY_STORE_NAME_PREFIX}-${session.providerId}`;
+                // Defaults are fine here
+                const ks = (await KeyStore.init({
+                    escrowKeyName: ESCROW_KEY_NAME,
+                    writeKeyPairName: WRITE_KEY_PAIR_NAME,
+                    exchangeKeyPairName: EXCHANGE_KEY_PAIR_NAME,
+                    storeName,
+                })) as ECCKeystore;
+                setKeystore(ks);
+            } catch (error: any) { }
         };
         if (session) {
             createKeystore(session);
@@ -100,6 +106,7 @@ export const KeystoreProvider = ({ children }: any) => {
 
                 return true;
             }
+            setIsLoading(false);
 
             return false;
         };
@@ -294,6 +301,7 @@ export const KeystoreProvider = ({ children }: any) => {
                 getApiKey,
                 initializeKeystore,
                 purgeKeystore,
+                isLoading
             }}
         >
             {children}

@@ -12,6 +12,7 @@ import { Fallback } from '@/components/common/Fallback';
 import { useFolderLocation } from '@/hooks/useFolderLocation';
 import BucketHeader from '@/components/Bucket/Header';
 import { useModal } from '@/contexts/modals';
+import { useKeystore } from '@/contexts/keystore';
 
 export { getServerSideProps };
 
@@ -21,7 +22,7 @@ const Bucket: NextPageWithLayout<IEscrowPage> = ({ escrowedDevice }) => {
     const { buckets, areBucketsLoading, selectedBucket, selectBucket, getSelectedBucketFiles } = useTomb();
     const folderLocation = useFolderLocation();
     const { openEscrowModal, closeModal } = useModal();
-    const { keystoreInitialized } = useKeystore();
+    const { keystoreInitialized, isLoading } = useKeystore();
 
     useEffect(() => {
         if (selectedBucket?.id !== bucketId) return;
@@ -38,12 +39,12 @@ const Bucket: NextPageWithLayout<IEscrowPage> = ({ escrowedDevice }) => {
     }, [bucketId, buckets.length]);
 
     useEffect(() => {
-        if (!keystoreInitialized) {
+        if (!keystoreInitialized && !isLoading) {
             openEscrowModal(!!escrowedDevice);
         } else {
             closeModal();
         };
-    }, [keystoreInitialized]);
+    }, [keystoreInitialized, isLoading]);
 
     return (
         <section className="py-9 px-4">
@@ -60,7 +61,3 @@ const Bucket: NextPageWithLayout<IEscrowPage> = ({ escrowedDevice }) => {
 export default Bucket
 
 Bucket.getLayout = (page) => <BaseLayout>{page}</BaseLayout>;
-function useKeystore(): { keystoreInitialized: any; } {
-    throw new Error('Function not implemented.');
-}
-

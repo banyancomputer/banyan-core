@@ -25,7 +25,7 @@ const Trash: NextPageWithLayout<IEscrowPage> = ({ escrowedDevice }) => {
     const { messages } = useIntl();
     const { openModal } = useModal();
     const [isLabelVisible, setIsLabelVisible] = useState(true);
-    const { keystoreInitialized } = useKeystore();
+    const { keystoreInitialized, isLoading } = useKeystore();
     const { openEscrowModal, closeModal } = useModal();
 
     const closeLabel = () => {
@@ -37,12 +37,12 @@ const Trash: NextPageWithLayout<IEscrowPage> = ({ escrowedDevice }) => {
     };
 
     useEffect(() => {
-        if (!keystoreInitialized) {
+        if (!keystoreInitialized && !isLoading) {
             openEscrowModal(!!escrowedDevice);
         } else {
             closeModal();
         };
-    }, [keystoreInitialized]);
+    }, [keystoreInitialized, isLoading]);
 
     return (
         <section className="py-9 px-4 h-full">

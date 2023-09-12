@@ -22,7 +22,7 @@ export { getServerSideProps };
 const Buckets: NextPageWithLayout<IEscrowPage> = ({ escrowedDevice }) => {
     const { closeModal, openModal, openEscrowModal } = useModal();
     const { buckets, areBucketsLoading } = useTomb();
-    const { keystoreInitialized } = useKeystore();
+    const { keystoreInitialized, isLoading } = useKeystore();
     const { messages } = useIntl();
 
     const uploadFile = () => {
@@ -30,12 +30,12 @@ const Buckets: NextPageWithLayout<IEscrowPage> = ({ escrowedDevice }) => {
     };
 
     useEffect(() => {
-        if (!keystoreInitialized) {
+        if (!keystoreInitialized && !isLoading) {
             openEscrowModal(!!escrowedDevice);
         } else {
             closeModal();
         };
-    }, [keystoreInitialized]);
+    }, [keystoreInitialized, isLoading]);
 
     return (
         <section className="py-9 px-4" id="buckets">

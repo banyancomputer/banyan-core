@@ -17,17 +17,17 @@ export { getServerSideProps };
 
 const HomePage: NextPageWithLayout<IEscrowPage> = ({ escrowedDevice }) => {
     const { buckets, areBucketsLoading } = useTomb();
-    const { keystoreInitialized } = useKeystore();
+    const { keystoreInitialized, isLoading } = useKeystore();
     const { messages } = useIntl();
     const { openEscrowModal, closeModal } = useModal();
 
     useEffect(() => {
-        if (!keystoreInitialized) {
+        if (!keystoreInitialized && !isLoading) {
             openEscrowModal(!!escrowedDevice);
         } else {
             closeModal();
         };
-    }, [keystoreInitialized]);
+    }, [keystoreInitialized, isLoading]);
 
     return (
         <div className="flex flex-col gap-6 px-4 py-keyManagement w-keyManagement mx-auto">
