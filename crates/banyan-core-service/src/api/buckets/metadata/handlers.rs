@@ -2,6 +2,7 @@ use axum::body::StreamBody;
 use axum::extract::{BodyStream, Path};
 use axum::headers::ContentType;
 use axum::http::StatusCode;
+use axum::Json;
 use axum::response::IntoResponse;
 use axum::TypedHeader;
 use http::{HeaderMap, HeaderValue};
@@ -66,8 +67,12 @@ pub async fn push(
     // TODO: validate name is request-data (request_data_field.name())
     // TODO: validate type is application/json (request_data_field.content_type())
     let request_data_bytes = request_data_field.bytes().await.unwrap();
-    let request_data: requests::PushMetadataRequest =
-        serde_json::from_slice(&request_data_bytes).unwrap();
+    let request_data: requests::PushMetadataRequest = match serde_json::from_slice(&request_data_bytes) {
+        Ok(rdb) => rdb,
+        Err(err) => {
+            return (StatusCode::BAD_REQUEST, Json(serde_json::json!({"msg": format!("{err}")}))).into_response();
+        }
+    };
 
     /* 2. Now that the request is validated and the data extracted, approve any outstanding keys */
     for fingerprint in request_data.valid_keys {
@@ -561,6 +566,7 @@ pub async fn read_current(
             }
         },
     };
+
     (StatusCode::OK, axum::Json(response)).into_response()
 }
 
