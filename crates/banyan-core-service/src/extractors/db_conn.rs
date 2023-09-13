@@ -1,6 +1,6 @@
-use axum::{async_trait, Json};
 use axum::extract::{FromRef, FromRequestParts};
 use axum::response::{IntoResponse, Response};
+use axum::{async_trait, Json};
 use sqlx::sqlite::SqlitePool;
 
 pub struct DbConn(pub(crate) sqlx::pool::PoolConnection<sqlx::Sqlite>);
@@ -24,7 +24,8 @@ where
             (
                 http::StatusCode::INTERNAL_SERVER_ERROR,
                 Json(serde_json::json!({"msg": "failed to acquire database connection"})),
-            ).into_response()
+            )
+                .into_response()
         })?;
 
         Ok(Self(conn))

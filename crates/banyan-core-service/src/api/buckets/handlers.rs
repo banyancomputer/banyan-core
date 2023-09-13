@@ -20,7 +20,8 @@ pub async fn create(
         GenericError::new(
             StatusCode::BAD_REQUEST,
             format!("invalid bucket creation request: {:?}", errors.errors()),
-        ).into_response()
+        )
+        .into_response()
     } else {
         // Create the Bucket
         match db::create_bucket(
@@ -91,10 +92,8 @@ pub async fn read_all(api_token: ApiToken, mut db_conn: DbConn) -> Response {
         .into_response(),
         Err(err) => {
             tracing::error!("failed to read all buckets: {err}");
-            GenericError::new(
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "backend service issue",
-            ).into_response()
+            GenericError::new(StatusCode::INTERNAL_SERVER_ERROR, "backend service issue")
+                .into_response()
         }
     }
 }
@@ -118,10 +117,8 @@ pub async fn read(
         .into_response(),
         Err(err) => {
             tracing::error!("unable to delete bucket: {err}");
-            GenericError::new(
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "backend service issue",
-            ).into_response()
+            GenericError::new(StatusCode::INTERNAL_SERVER_ERROR, "backend service issue")
+                .into_response()
         }
     }
 }
@@ -137,10 +134,8 @@ pub async fn delete(
     // todo: need to delete all the hot data stored at various storage hosts
     if let Err(err) = db::delete_bucket(&account_id, &bucket_id, &mut db_conn).await {
         tracing::error!("failed to delete bucket: {err}");
-        GenericError::new(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "backend service issue",
-        ).into_response()
+        GenericError::new(StatusCode::INTERNAL_SERVER_ERROR, "backend service issue")
+            .into_response()
     } else {
         (StatusCode::NO_CONTENT, ()).into_response()
     }
@@ -157,21 +152,14 @@ pub async fn get_usage(
     // Observable usage is sum of data in current state for the requested bucket
     match db::read_bucket_data_usage(&bucket_id, &mut db_conn).await {
         Ok(usage) => Json(responses::GetUsage { size: usage }).into_response(),
-        Err(err) => {
-            match err {
-                sqlx::Error::RowNotFound => {
-                    GenericError::new(
-                        StatusCode::NOT_FOUND,
-                        "bucket not found",
-                    ).into_response()
-                }
-                _ => {
-                    tracing::error!("unable to read bucket: {err}");
-                    GenericError::new(
-                        StatusCode::INTERNAL_SERVER_ERROR,
-                        "backend service issue",
-                    ).into_response()
-                }
+        Err(err) => match err {
+            sqlx::Error::RowNotFound => {
+                GenericError::new(StatusCode::NOT_FOUND, "bucket not found").into_response()
+            }
+            _ => {
+                tracing::error!("unable to read bucket: {err}");
+                GenericError::new(StatusCode::INTERNAL_SERVER_ERROR, "backend service issue")
+                    .into_response()
             }
         },
     }
@@ -183,17 +171,12 @@ pub async fn get_total_usage(api_token: ApiToken, mut db_conn: DbConn) -> Respon
         Ok(usage) => Json(responses::GetUsage { size: usage }).into_response(),
         Err(err) => match err {
             sqlx::Error::RowNotFound => {
-                GenericError::new(
-                    StatusCode::NOT_FOUND,
-                    "bucket not found",
-                ).into_response()
+                GenericError::new(StatusCode::NOT_FOUND, "bucket not found").into_response()
             }
             _ => {
                 tracing::error!("unable to read bucket: {err}");
-                GenericError::new(
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "backend service issue",
-                ).into_response()
+                GenericError::new(StatusCode::INTERNAL_SERVER_ERROR, "backend service issue")
+                    .into_response()
             }
         },
     }
@@ -203,7 +186,8 @@ pub async fn get_usage_limit(_api_token: ApiToken) -> Response {
     Json(responses::GetUsage {
         // 5 TiB
         size: 5 * 1024 * 1024 * 1024 * 1024,
-    }).into_response()
+    })
+    .into_response()
 }
 
 pub struct GenericError {
@@ -213,7 +197,10 @@ pub struct GenericError {
 
 impl GenericError {
     pub fn new(code: StatusCode, msg: impl ToString) -> Self {
-        Self { code, msg: msg.to_string() }
+        Self {
+            code,
+            msg: msg.to_string(),
+        }
     }
 }
 
