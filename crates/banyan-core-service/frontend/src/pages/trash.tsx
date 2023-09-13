@@ -12,21 +12,17 @@ import { Fallback } from '@/components/common/Fallback';
 import { NextPageWithLayout } from './page';
 import { useTomb } from '@/contexts/tomb';
 import getServerSideProps from '@/utils/session';
-import { IEscrowPage } from './escrow';
 import { useModal } from '@/contexts/modals';
 
 import emptyIcon from '@static/images/common/emptyIcon.png';
-import { useKeystore } from '@/contexts/keystore';
 
 export { getServerSideProps };
 
-const Trash: NextPageWithLayout<IEscrowPage> = ({ escrowedDevice }) => {
+const Trash: NextPageWithLayout = () => {
     const { trash, isTrashLoading } = useTomb();
     const { messages } = useIntl();
     const { openModal } = useModal();
     const [isLabelVisible, setIsLabelVisible] = useState(true);
-    const { keystoreInitialized, isLoading } = useKeystore();
-    const { openEscrowModal, closeModal } = useModal();
 
     const closeLabel = () => {
         setIsLabelVisible(false);
@@ -35,14 +31,6 @@ const Trash: NextPageWithLayout<IEscrowPage> = ({ escrowedDevice }) => {
     const emptyTrash = () => {
         openModal(<EmptyTrashModal />);
     };
-
-    useEffect(() => {
-        if (!keystoreInitialized && !isLoading) {
-            openEscrowModal(!!escrowedDevice);
-        } else {
-            closeModal();
-        };
-    }, [keystoreInitialized, isLoading]);
 
     return (
         <section className="py-9 px-4 h-full">

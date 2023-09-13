@@ -36,6 +36,7 @@ export const KeystoreContext = createContext<{
     // Purge the keystore from storage
     purgeKeystore: () => Promise<void>;
     isLoading: boolean,
+    escrowedDevice: EscrowedDevice | null;
 }>({
     keystoreInitialized: false,
     getEncryptionKey: async () => {
@@ -46,7 +47,8 @@ export const KeystoreContext = createContext<{
     },
     initializeKeystore: async (passkey: string) => { },
     purgeKeystore: async () => { },
-    isLoading: false
+    isLoading: false,
+    escrowedDevice: null
 });
 
 export const KeystoreProvider = ({ children }: any) => {
@@ -301,7 +303,8 @@ export const KeystoreProvider = ({ children }: any) => {
                 getApiKey,
                 initializeKeystore,
                 purgeKeystore,
-                isLoading
+                isLoading,
+                escrowedDevice
             }}
         >
             {children}
