@@ -1,28 +1,18 @@
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import Router from 'next/router';
-import { Session, getServerSession } from 'next-auth';
 import { Button, FormControl } from '@chakra-ui/react';
 import BaseLayout from '@layouts/BaseLayout';
-import { authOptions } from './api/auth/[...nextauth]';
 import { NextPageWithLayout } from '@/pages/page';
 import { useKeystore } from '@/contexts/keystore';
-import { AccountFactory, EscrowedDeviceFactory } from '@/lib/db';
-import { DeviceApiKey, EscrowedDevice } from '@/lib/interfaces';
 
 import getServerSideProps from '@/utils/session';
 
 export { getServerSideProps };
 
-export interface IEscrowPage {
-    escrowedDevice: EscrowedDevice | null;
-    // deviceApiKeys: DeviceApiKey[] | null;
-}
-const EscrowPage: NextPageWithLayout<IEscrowPage> = ({
-    escrowedDevice,
-}) => {
+const EscrowPage: NextPageWithLayout = () => {
     const { data: session } = useSession();
-    const { initializeKeystore, keystoreInitialized, purgeKeystore } = useKeystore();
+    const { initializeKeystore, keystoreInitialized, purgeKeystore, escrowedDevice } = useKeystore();
     const [passkey, setPasskey] = useState<string>('');
     const [error, setError] = useState<string | null>(null);
 

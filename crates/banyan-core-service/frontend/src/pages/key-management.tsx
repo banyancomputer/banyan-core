@@ -9,25 +9,12 @@ import { KeyManagementTable } from '@/components/KeyManagement/KeyManagementTabl
 import { Fallback } from '@/components/common/Fallback';
 
 import getServerSideProps from '@/utils/session';
-import { IEscrowPage } from './escrow';
-import { useKeystore } from '@/contexts/keystore';
-import { useModal } from '@/contexts/modals';
 
 export { getServerSideProps };
 
-const HomePage: NextPageWithLayout<IEscrowPage> = ({ escrowedDevice }) => {
+const HomePage: NextPageWithLayout = () => {
     const { buckets, areBucketsLoading } = useTomb();
-    const { keystoreInitialized, isLoading } = useKeystore();
     const { messages } = useIntl();
-    const { openEscrowModal, closeModal } = useModal();
-
-    useEffect(() => {
-        if (!keystoreInitialized && !isLoading) {
-            openEscrowModal(!!escrowedDevice);
-        } else {
-            closeModal();
-        };
-    }, [keystoreInitialized, isLoading]);
 
     return (
         <div className="flex flex-col gap-6 px-4 py-keyManagement w-keyManagement mx-auto">

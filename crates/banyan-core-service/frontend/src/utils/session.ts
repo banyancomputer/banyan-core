@@ -19,24 +19,7 @@ export default async function getServerSideProps(context: any) {
             },
         };
     }
-
-    try {
-        const providerId = session.providerId;
-        const account_id = await AccountFactory.idFromProviderId(providerId);
-        const escrowedDevice = await EscrowedDeviceFactory.readByAccountId(account_id);
-
-        return {
-            props: {
-                escrowedDevice: JSON.parse(JSON.stringify(escrowedDevice)),
-            },
-        };
-    } catch (error) {
-        console.error(error);
-        return {
-            props: {
-                escrowedDevice: null,
-            },
-        };
+    return {
+        props: {}
     }
-
 }
