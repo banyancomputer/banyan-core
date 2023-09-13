@@ -100,11 +100,15 @@ export class TombWasm {
 /**
 * Create a new TombWasm instance
 * # Arguments
+*
 * * `web_signing_key` - The CryptoKeyPair to use for signing requests
 * * `account_id` - The id of the account to use
 * * `api_endpoint` - The API endpoint to use
+*
 * # Returns
+*
 * A new TombWasm instance
+*
 * Don't call it from multiple threads in parallel!
 * @param {any} web_signing_key
 * @param {string} account_id
@@ -112,40 +116,37 @@ export class TombWasm {
 */
   constructor(web_signing_key: any, account_id: string, api_endpoint: string);
 /**
-* Get the Total Usage for the current account, accounting for all buckets
-* # Returns
-* The total storage used by the account, in bytes
+* Get the total consume storage space for the current account in bytes
 * @returns {Promise<bigint>}
 */
   getUsage(): Promise<bigint>;
 /**
-* Get the Usage limit for the current account
-* # Returns
-* The storage limit for the account in bytes (this should be 5 TiB)
+* Get the current usage limit for the current account in bytes
 * @returns {Promise<bigint>}
 */
   getUsageLimit(): Promise<bigint>;
 /**
 * List the buckets for the current account
-* # Returns
-* An array of WasmBuckets
-* ```
 * @returns {Promise<Array<any>>}
 */
   listBuckets(): Promise<Array<any>>;
 /**
 * List bucket snapshots for a bucket
+*
 * # Arguments
+*
 * * `bucket_id` - The id of the bucket to list snapshots for
+*
 * # Returns an array WasmSnapshots
+*
 * ```json
 * [
-* {
-* "id": "uuid",
-* "bucket_id": "uuid",
-* "metadata_id": "string",
-* "created_at": "string",
-* }
+*   {
+*     "id": "ffc1dca2-5155-40be-adc6-c81eb7322fb8",
+*     "bucket_id": "f0c55cc7-4896-4ff3-95de-76422af271b2",
+*     "metadata_id": "05d063f1-1e3f-4876-8b16-aeb106af0eb0",
+*     "created_at": "2023-09-05T19:05:34Z"
+*   }
 * ]
 * ```
 * @param {string} bucket_id
@@ -229,18 +230,9 @@ export class TombWasm {
   mount(bucket_id: string, key: any): Promise<WasmMount>;
 }
 /**
-* Wrapper around a Bucket
 */
 export class WasmBucket {
   free(): void;
-/**
-* @returns {string}
-*/
-  name(): string;
-/**
-* @returns {string}
-*/
-  storageClass(): string;
 /**
 * @returns {string}
 */
@@ -249,16 +241,23 @@ export class WasmBucket {
 * @returns {string}
 */
   id(): string;
+/**
+* @returns {string}
+*/
+  name(): string;
+/**
+* @returns {string}
+*/
+  storageClass(): string;
 }
 /**
-* Wrapper around a BucketKey
 */
 export class WasmBucketKey {
   free(): void;
 /**
-* @returns {string}
+* @returns {boolean}
 */
-  id(): string;
+  approved(): boolean;
 /**
 * @returns {string}
 */
@@ -266,49 +265,58 @@ export class WasmBucketKey {
 /**
 * @returns {string}
 */
-  pem(): string;
+  id(): string;
 /**
-* @returns {boolean}
+* @returns {string}
 */
-  approved(): boolean;
+  pem(): string;
 }
 /**
 * Mount point for a Bucket in WASM
+*
 * Enables to call Fs methods on a Bucket, pulling metadata from a remote
 */
 export class WasmMount {
   free(): void;
+/**
+* Returns whether or not the bucket is dirty (this will be true when a file or directory has
+* been changed).
+* @returns {boolean}
+*/
+  dirty(): boolean;
 /**
 * Returns whether or not the bucket is locked
 * @returns {boolean}
 */
   locked(): boolean;
 /**
-* Returns whether or not the bucket is dirty
-* - when a file or dir is changed
-* @returns {boolean}
-*/
-  dirty(): boolean;
-/**
-* Ls the bucket at a path
+* List the contents of the bucket at a provided path
+*
 * # Arguments
+*
 * * `path_segments` - The path to ls (as an Array)
+*
 * # Returns
+*
 * The an Array of objects in the form of:
-* This is an instance of
+*
 * ```json
 * [
-* 0.{
-*    "name": "string",
-*   "entry_type": "string", (file | dir)
-*  "metadata": {
-*    "created": 0,
-*   "modified": 0,
-*  "size": 0,
-* "cid": "string"
-* }
+*   {
+*     "name": "string",
+*     "entry_type": "(file | dir)"
+*     "metadata": {
+*       "created": 0,
+*       "modified": 0,
+*       "size": 0,
+*       "cid": "string"
+*     }
+*   }
 * ]
+* ```
+*
 * # Errors
+*
 * * `Bucket is locked` - If the bucket is locked
 * @param {Array<any>} path_segments
 * @returns {Promise<Array<any>>}
@@ -424,7 +432,6 @@ export class WasmMount {
   restore(wasm_snapshot: WasmSnapshot): Promise<void>;
 }
 /**
-* A wrapper around a snapshot
 */
 export class WasmSnapshot {
   free(): void;

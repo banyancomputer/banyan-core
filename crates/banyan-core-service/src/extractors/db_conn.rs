@@ -1,5 +1,6 @@
-use axum::async_trait;
 use axum::extract::{FromRef, FromRequestParts};
+use axum::response::{IntoResponse, Response};
+use axum::{async_trait, Json};
 use sqlx::sqlite::SqlitePool;
 
 pub struct DbConn(pub(crate) sqlx::pool::PoolConnection<sqlx::Sqlite>);
@@ -11,7 +12,7 @@ where
     S: Send + Sync,
 {
     // TODO: better error
-    type Rejection = (http::StatusCode, String);
+    type Rejection = Response;
 
     async fn from_request_parts(
         _parts: &mut http::request::Parts,
@@ -22,8 +23,9 @@ where
         let conn = pool.acquire().await.map_err(|_| {
             (
                 http::StatusCode::INTERNAL_SERVER_ERROR,
-                "failed to acquire database connection".to_string(),
+                Json(serde_json::json!({"msg": "failed to acquire database connection"})),
             )
+                .into_response()
         })?;
 
         Ok(Self(conn))

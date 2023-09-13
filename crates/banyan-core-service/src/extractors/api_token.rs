@@ -241,7 +241,7 @@ impl IntoResponse for ApiKeyAuthorizationError {
         use crate::utils::collect_error_messages;
         tracing::error!("authentication failed: {:?}", &collect_error_messages(self));
 
-        let err_msg = serde_json::json!({ "status": "not authorized" });
+        let err_msg = serde_json::json!({ "msg": "not authorized" });
         (StatusCode::UNAUTHORIZED, Json(err_msg)).into_response()
     }
 }
