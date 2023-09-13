@@ -5,9 +5,10 @@ import { FiArrowLeft } from 'react-icons/fi';
 
 export const Modal = () => {
     const modalRef = useRef<HTMLDivElement | null>(null);
-    const { modalState: { content, onBack }, closeModal } = useModal();
+    const { modalState: { content, onBack, mandatory }, closeModal, } = useModal();
 
     const close = (event: React.MouseEvent<HTMLDivElement>) => {
+        if (mandatory) return;
         if (!modalRef.current!.contains(event.target as Node)) {
             closeModal();
         };
@@ -29,12 +30,14 @@ export const Modal = () => {
                                 <FiArrowLeft size="24px" />
                             </button>
                         }
-                        <button
-                            className="absolute right-6 top-6"
-                            onClick={closeModal}
-                        >
-                            <IoMdClose fill="#4A5578" size="24px" />
-                        </button>
+                        {!mandatory &&
+                            <button
+                                className="absolute right-6 top-6"
+                                onClick={closeModal}
+                            >
+                                <IoMdClose fill="#4A5578" size="24px" />
+                            </button>
+                        }
                         {content}
                     </div>
                 </div>

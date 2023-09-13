@@ -5,6 +5,7 @@ import React, { Dispatch, FC, ReactElement, ReactNode, SetStateAction, createCon
 export interface StateInterface {
     content: ReactNode | null;
     onBack: null | (() => void);
+    mandatory: boolean
 }
 
 interface ContextState {
@@ -19,23 +20,26 @@ export const ModalContext = createContext<ContextState>({} as ContextState);
 
 const initialState: StateInterface = {
     content: null,
-    onBack: null
+    onBack: null,
+    mandatory: false
 };
 
 export const ModalProvider: FC<{ children: ReactNode }> = ({ children }) => {
     const [modalState, setModalState] = useState(initialState);
 
-    const openModal = (content: ReactNode, onBack: null | (() => void) = null) => {
+    const openModal = (content: ReactNode, onBack: null | (() => void) = null, mandatory: boolean = false) => {
         setModalState({
             content,
-            onBack
+            onBack,
+            mandatory
         });
     };
 
     const openEscrowModal = (escrowed: boolean) => {
         setModalState({
             content: escrowed ? <EnterSecretKeyModal /> : <CreateSecretKeyModal />,
-            onBack: null
+            onBack: null,
+            mandatory: true
         })
     };
 
