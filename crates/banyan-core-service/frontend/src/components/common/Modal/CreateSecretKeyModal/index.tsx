@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { HiOutlineLightningBolt } from 'react-icons/hi';
 import { useIntl } from 'react-intl';
 import { useForm } from 'react-hook-form';
@@ -19,9 +19,10 @@ export const CreateSecretKeyModal = () => {
         handleSubmit,
         register,
         getValues,
+        trigger,
         watch
     } = useForm({
-        mode: 'onTouched',
+        mode: 'all',
         values: { keyphrase: '', keyphraseConfirmation: '' },
     });
     const { keyphrase, keyphraseConfirmation } = watch();
@@ -36,6 +37,12 @@ export const CreateSecretKeyModal = () => {
             console.log(`Failed to initialize keystore: ${error.message}`);
         };
     };
+
+    useEffect(() => {
+        if (!keyphraseConfirmation) return;
+
+        trigger('keyphraseConfirmation');
+    }, [keyphrase, keyphraseConfirmation])
 
     return (
         <form
@@ -82,7 +89,7 @@ export const CreateSecretKeyModal = () => {
             </div>
             <button
                 type='submit'
-                className="btn-primary flex-grow py-select px-4"
+                className="btn-primary flex-grow py-2.5 px-4"
                 disabled={!isDataCorrect}
             >
                 {`${messages.confirm}`}

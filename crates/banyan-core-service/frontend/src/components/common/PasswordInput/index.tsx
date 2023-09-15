@@ -18,6 +18,7 @@ export const PasswordInput: React.FC<{
         return (
             <div>
                 <input
+                    type='password'
                     className={`input w-full h-10 py-3 px-4 rounded-xl border-gray-400 focus:outline-none`}
                     value={value}
                     onChange={event => onChange(event.target.value)}
