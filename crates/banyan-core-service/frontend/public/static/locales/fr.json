@@ -102,7 +102,7 @@
 	"accessUpdatesError": "Un problème est survenu avec les mises à jour d'accès. Veuillez réessayer.",
 	"loginWithGoogle": "Connectez-vous avec Google",
 	"contactUs": "Contactez-nous",
-	"settings": "paramètres",
+	"settings": "Paramètres",
 	"AccessDenied": "Cette adresse e-mail n'est pas approuvée pour Alpha ; veuillez utiliser votre adresse e-mail approuvée par alpha. Si les problèmes persistent, contactez sam@banyan.computer",
 	"createSecretKey": "Créer une clé secrète",
 	"andEnterIntoTextField": "et entrez dans le champ de texte",
@@ -114,5 +114,14 @@
 	"passphraseNotMatch": "Les phrases secrètes ne correspondent pas, veuillez réessayer",
 	"confirm": "Confirmer",
 	"inputSecretKey": "Saisir la clé secrète",
-	"enterSecretKey": "Saisir la clé secrète dans le champ de texte"
+	"enterSecretKey": "Saisir la clé secrète dans le champ de texte",
+	"account": "Compte",
+	"profile": "Profil",
+	"appSettings": "Paramètres de l'application",
+	"billingAndPayments": "Facturation et paiements",
+	"services": "Services",
+	"theme": "Thème",
+	"selectTheme": "Sélectionnez entre les thèmes clair et sombre",
+	"language": "Langue",
+	"chooseLanguage": "Choisissez votre langue"
 }

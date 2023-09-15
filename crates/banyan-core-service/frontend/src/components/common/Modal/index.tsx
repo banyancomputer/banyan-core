@@ -1,14 +1,15 @@
 import React, { useEffect, useRef } from 'react';
 import { IoMdClose } from 'react-icons/io';
-import { useModal } from '@/contexts/modals';
 import { FiArrowLeft } from 'react-icons/fi';
+
+import { useModal } from '@/contexts/modals';
 
 export const Modal = () => {
     const modalRef = useRef<HTMLDivElement | null>(null);
-    const { modalState: { content, onBack, mandatory }, closeModal, } = useModal();
+    const { modalState: { content, onBack, mandatory }, closeModal } = useModal();
 
     const close = (event: React.MouseEvent<HTMLDivElement>) => {
-        if (mandatory) return;
+        if (mandatory) { return; }
         if (!modalRef.current!.contains(event.target as Node)) {
             closeModal();
         };

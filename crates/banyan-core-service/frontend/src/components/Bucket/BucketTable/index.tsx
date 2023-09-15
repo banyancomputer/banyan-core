@@ -14,7 +14,7 @@ import { FileActions } from '@/components/common/FileActions';
 import { BucketActions } from '@/components/common/BucketActions';
 import { useFolderLocation } from '@/hooks/useFolderLocation';
 
-import emptyIcon from '@static/images/common/emptyIcon.png';
+import emptyIcon from '@sta tic/images/common/emptyIcon.png';
 
 export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const searchParams = useSearchParams();
@@ -101,12 +101,12 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                                         {file.type === 'dir' ?
                                             <Link
                                                 href={`/bucket/${bucket.id}?${folderLocation.join('/') ? `${folderLocation.join('/')}/` : ''}${file.name}`}
-                                                className='px-6 py-4 flex items-center gap-3'
+                                                className="px-6 py-4 flex items-center gap-3"
                                             >
                                                 <FileIcon fileName={file.name} className="p-2 bg-gray-200 rounded-full" />{file.name}
                                             </Link>
                                             :
-                                            <span className='px-6 py-4 flex items-center gap-3'>
+                                            <span className="px-6 py-4 flex items-center gap-3">
                                                 <FileIcon fileName={file.name} className="p-2 bg-gray-200 rounded-full" />{file.name}
                                             </span>
                                         }

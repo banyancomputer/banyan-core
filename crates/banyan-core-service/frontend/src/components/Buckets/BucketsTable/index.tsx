@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useIntl } from 'react-intl';
+import { useRouter } from 'next/router';
 
 import { ActionsCell } from '@components/common/ActionsCell';
 import { FileIcon } from '@components/common/FileIcon';
@@ -10,7 +11,6 @@ import { FileActions } from '@/components/common/FileActions';
 import { getDateLabel } from '@/utils/date';
 import { BucketFile, Bucket as IBucket } from '@/lib/interfaces/bucket';
 import { convertFileSize } from '@/utils/storage';
-import { useRouter } from 'next/router';
 
 export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
     const { messages } = useIntl();
@@ -31,7 +31,7 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
         push(`/bucket/${bucket}`);
     };
     const goToFolder = (bucket: string, file: BucketFile) => {
-        if (file.type !== 'dir') return;
+        if (file.type !== 'dir') { return; }
 
         push(`/bucket/${bucket}?${file.name}`);
     };
@@ -120,7 +120,7 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
                                     <tr
                                         key={index}
                                         onClick={() => goToFolder(bucket.id, file)}
-                                        className='cursor-pointer'
+                                        className="cursor-pointer"
                                     >
                                         <td className="px-3 py-4"></td>
                                         <td className="px-3 py-4 flex items-center gap-3 "><FileIcon fileName={file.name} /> {file.name} </td>

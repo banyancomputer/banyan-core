@@ -21,7 +21,8 @@ module.exports = {
 			},
 			padding: {
 				keyManagement: '72px',
-				select: '10px',
+				'2.5': '10px',
+				'1.5': '6px',
 			},
 			minWidth: {
 				navbar: '280px',

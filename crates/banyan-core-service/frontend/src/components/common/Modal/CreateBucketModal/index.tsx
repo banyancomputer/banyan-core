@@ -1,9 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { useIntl } from 'react-intl';
 
+import { Select, Selectoption } from '../../Select';
 import { useModal } from '@/contexts/modals';
 import { useTomb } from '@/contexts/tomb';
-import { Select, Selectoption } from '../../Select';
 import { ToastNotifications } from '@/utils/toastNotifications';
 
 export const CreateBucketModal = () => {
@@ -15,7 +15,7 @@ export const CreateBucketModal = () => {
     const [storageClass, setStorageClass] = useState('hot');
     const isBucketDataFilled = useMemo(() =>
         !!bucketType && !!storageClass && !!bucketName,
-        [bucketName, storageClass, bucketName]);
+    [bucketName, storageClass, bucketName]);
 
     const bucketTypes = [
         new Selectoption('Interactive', 'interactive'),
@@ -27,7 +27,7 @@ export const CreateBucketModal = () => {
     };
 
 
-    const create = async () => {
+    const create = async() => {
         try {
             await createBucket(bucketName, storageClass, bucketType);
             closeModal();

@@ -20,12 +20,12 @@ const Bucket: NextPageWithLayout = () => {
     const folderLocation = useFolderLocation();
 
     useEffect(() => {
-        if (selectedBucket?.id !== bucketId) return;
-        (async () => {
+        if (selectedBucket?.id !== bucketId) { return; }
+        (async() => {
             try {
                 getSelectedBucketFiles(folderLocation);
             } catch (error: any) { };
-        })()
+        })();
     }, [folderLocation, selectedBucket?.id]);
 
     useEffect(() => {
@@ -45,6 +45,6 @@ const Bucket: NextPageWithLayout = () => {
     );
 };
 
-export default Bucket
+export default Bucket;
 
 Bucket.getLayout = (page) => <BaseLayout>{page}</BaseLayout>;

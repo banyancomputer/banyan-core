@@ -13,19 +13,19 @@ import { validateKeyphrase } from '@/utils/validation';
 export const EnterSecretKeyModal = () => {
     const { messages } = useIntl();
     const { initializeKeystore } = useKeystore();
-    const { closeModal } = useModal()
+    const { closeModal } = useModal();
     const {
         formState: { errors },
         handleSubmit,
         register,
-        watch
+        watch,
     } = useForm({
         mode: 'onTouched',
         values: { keyphrase: '' },
     });
     const { keyphrase } = watch();
 
-    const confirm = async () => {
+    const confirm = async() => {
         try {
             await initializeKeystore(keyphrase);
             closeModal();
@@ -37,7 +37,7 @@ export const EnterSecretKeyModal = () => {
 
     return (
         <form
-            className='w-modal flex flex-col gap-8'
+            className="w-modal flex flex-col gap-8"
             onSubmit={handleSubmit(confirm)}
         >
             <span className="p-3 w-min rounded-full bg-gray-200">
@@ -61,12 +61,12 @@ export const EnterSecretKeyModal = () => {
                 />
             </div>
             <button
-                type='submit'
-                className="btn-primary flex-grow py-select px-4"
+                type="submit"
+                className="btn-primary flex-grow py-2.5 px-4"
                 disabled={!keyphrase}
             >
                 {`${messages.confirm}`}
             </button>
         </form >
-    )
-}
+    );
+};

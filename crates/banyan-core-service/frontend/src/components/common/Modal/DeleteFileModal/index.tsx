@@ -8,13 +8,13 @@ import { useTomb } from '@/contexts/tomb';
 import { ToastNotifications } from '@/utils/toastNotifications';
 import { useFolderLocation } from '@/hooks/useFolderLocation';
 
-export const DeleteFileModal: React.FC<{ bucket: Bucket, file: BucketFile }> = ({ bucket, file }) => {
+export const DeleteFileModal: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bucket, file }) => {
     const { closeModal } = useModal();
     const { messages } = useIntl();
     const { deleteFile } = useTomb();
     const folderLocation = useFolderLocation();
 
-    const removeFile = async () => {
+    const removeFile = async() => {
         try {
             await deleteFile(bucket, [...folderLocation, file.name]);
             closeModal();

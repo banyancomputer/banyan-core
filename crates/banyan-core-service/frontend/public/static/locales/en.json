@@ -116,5 +116,14 @@
 	"passphraseNotMatch": "The passphrases do not match, please try again",
 	"confirm": "Confirm",
 	"inputSecretKey": "Input secret key",
-	"enterSecretKey": "Enter the secret key into text field"
+	"enterSecretKey": "Enter the secret key into text field",
+	"account": "Account",
+	"profile": "Profile",
+	"appSettings": "App Settings",
+	"billingAndPayments": "Billing & Payment",
+	"services": "Services",
+	"theme": "Theme",
+	"selectTheme": "Select between light and dark themes",
+	"language": "Language",
+	"chooseLanguage": "Choose your language"
 }
