@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useIntl } from 'react-intl';
 import { IoMdAdd } from 'react-icons/io';
 import Image from 'next/image';
@@ -25,11 +25,6 @@ const Buckets: NextPageWithLayout = () => {
     const uploadFile = () => {
         openModal(<UploadFileModal />);
     };
-
-    useEffect(() => {
-        console.error('ewfnjiewnjkewnjenw',  document.cookie);
-        
-    })
 
     return (
         <section className="py-9 px-4" id="buckets">

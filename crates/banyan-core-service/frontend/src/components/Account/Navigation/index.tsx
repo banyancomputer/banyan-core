@@ -15,11 +15,11 @@ export const AccountNavigation = () => {
     const { pathname } = useRouter();
 
     const links = [
-        new SettingsLink(`${messages.profile}`, '/account/profile'),
+        // new SettingsLink(`${messages.profile}`, '/account/profile'),
         new SettingsLink(`${messages.appSettings}`, '/account/settings'),
         new SettingsLink(`${messages.manageKeys}`, '/account/manage-keys'),
-        new SettingsLink(`${messages.billingAndPayments}`, '/account/billing'),
-        new SettingsLink(`${messages.services}`, '/account/services'),
+        // new SettingsLink(`${messages.billingAndPayments}`, '/account/billing'),
+        // new SettingsLink(`${messages.services}`, '/account/services'),
     ];
 
     return (

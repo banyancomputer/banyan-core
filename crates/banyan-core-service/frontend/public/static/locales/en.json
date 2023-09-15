@@ -134,6 +134,7 @@
 	"coldStorage": "Cold storage",
 	"hotStorage": "Hot storage",
 	"downloads": "Downloads",
-	"eggress": "Eggress",
-	"migrationFees": "Migration fees"
+	"egress": "Egress",
+	"migrationFees": "Migration fees",
+	"billing": "Billing"
 }

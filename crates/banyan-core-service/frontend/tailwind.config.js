@@ -40,6 +40,7 @@ module.exports = {
 					900: '#1E3A8A',
 				},
 				error: '#CB3535',
+				errorBanner: "#FFD7B2",
 				login: '#F7F7F7',
 				navigation: {
 					primary: '#FFECC5',

@@ -20,7 +20,7 @@ interface TombInterface {
     selectedBucket: Bucket | null;
     selectBucket: (bucket: Bucket) => void;
     getSelectedBucketFiles: (path: string[]) => void;
-    download: (bucket: Bucket, path: string[]) => Promise<ArrayBuffer | undefined>;
+    download: (bucket: Bucket, path: string[]) => Promise<void>;
     shareWith: (bucket: Bucket, key: string) => Promise<void>
     takeColdSnapshot: (bucket: Bucket) => Promise<void>;
     getBuckets: () => Promise<void>;
@@ -135,9 +135,24 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         })
     };
 
-    /** Retuns array buffer of selected file. */
-    const download = async (bucket: Bucket, path: string[]) => await mountMutex(bucket, async mount => await mount!.readBytes(path));
+    /** Downloads file. */
+    const download = async (bucket: Bucket, path: string[]) => {
+        const link = document.createElement('a');
+        const arrayBuffer: ArrayBuffer = await mountMutex(bucket, async mount => await mount!.readBytes(path));
+        const blob = new Blob([arrayBuffer], { type: 'application/octet-stream' });
+        const objectURL = URL.createObjectURL(blob);
+        link.href = objectURL;
+        link.download = `${blob.name}.${blob.type}`
+        document.body.appendChild(link);
+        link.click();
+    };
 
+    /** Copies file to clipboard. */
+    const copyToClipboard = async (bucket: Bucket, path: string[]) => {
+        const arrayBuffer: ArrayBuffer = await mountMutex(bucket, async mount => await mount!.readBytes(path));
+        const blob = new Blob([arrayBuffer], { type: 'application/octet-stream' });
+        // navigator.clipboard.write([new ClipboardItem({ '': blob })])
+    };
     /** Retuns array buffer of selected file. */
     const restore = async (bucket: Bucket, snapshot: WasmSnapshot) => await mountMutex(bucket, async mount => await mount.restore(snapshot));
 
