@@ -38,16 +38,9 @@ export function normalize(
   return cfg
 }
 
-// Attempt a structural clone of an ECC Key (required to store in IndexedDB)
-// If it throws an error, use RSA, otherwise use ECC
+// Throws if ECC is not enabled 
 export async function eccEnabled(): Promise<boolean> {
   const keypair = await ecc.genKeyPair(DEFAULT_ECC_CURVE, KeyUse.Exchange)
-
-  try {
-    await utils.structuralClone(keypair)
-  } catch (err) {
-    return false
-  }
   return true
 }
 
