@@ -123,5 +123,15 @@
 	"theme": "Thème",
 	"selectTheme": "Sélectionnez entre les thèmes clair et sombre",
 	"language": "Langue",
-	"chooseLanguage": "Choisissez votre langue"
+	"chooseLanguage": "Choisissez votre langue",
+	"manageKeyAccess": "Gérer l'accès aux clés",
+	"service": "Service",
+	"serviceCost": "Coût du service",
+	"dataQty": "Quantité de données",
+	"cost": "Coût",
+	"coldStorage": "Stockage à froid",
+	"hotStorage": "Stockage à chaud",
+	"downloads": "Téléchargements",
+	"eggress": "Égouttement",
+	"migrationFees": "Frais de migration"
 }

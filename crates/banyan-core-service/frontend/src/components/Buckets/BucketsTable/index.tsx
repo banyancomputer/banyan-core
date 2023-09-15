@@ -23,14 +23,15 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
         setSortState(prev => ({ criteria, direction: prev.direction === 'ASC' ? 'DESC' : 'ASC' }));
     };
 
-    const stopPropagation = (event: React.MouseEvent<HTMLTableDataCellElement>) => {
-        event.stopPropagation();
-    };
+    const goToBucket = (event: React.MouseEvent<HTMLTableRowElement>, bucket: string) => {
+        const target = event.target as HTMLDivElement;
+        if (target.id) return;
 
-    const goToBucket = (bucket: string) => {
         push(`/bucket/${bucket}`);
     };
-    const goToFolder = (bucket: string, file: BucketFile) => {
+    const goToFolder = (event: React.MouseEvent<HTMLTableRowElement>, bucket: string, file: BucketFile) => {
+        const target = event.target as HTMLDivElement;
+        if (target.id) return;
         if (file.type !== 'dir') { return; }
 
         push(`/bucket/${bucket}?${file.name}`);
@@ -100,7 +101,7 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
                         <React.Fragment key={bucket.id}>
                             <tr
                                 className="bg-table-cellBackground cursor-pointer"
-                                onClick={() => goToBucket(bucket.id)}
+                                onClick={event => goToBucket(event, bucket.id)}
                             >
                                 <td className="px-3 py-4">{bucket.name}</td>
                                 <td className="px-3 py-4"></td>
@@ -110,7 +111,6 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
                                 <td className="px-3 py-4"></td>
                                 <td
                                     className="px-3 py-4"
-                                    onClick={stopPropagation}
                                 >
                                     <ActionsCell actions={<BucketActions bucket={bucket} />} />
                                 </td>
@@ -119,7 +119,7 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
                                 bucket.files.map((file, index) =>
                                     <tr
                                         key={index}
-                                        onClick={() => goToFolder(bucket.id, file)}
+                                        onClick={event => goToFolder(event, bucket.id, file)}
                                         className="cursor-pointer"
                                     >
                                         <td className="px-3 py-4"></td>
@@ -130,7 +130,6 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
                                         <td className="px-3 py-4">{convertFileSize(file.metadata.size)}</td>
                                         <td
                                             className="px-3 py-4"
-                                            onClick={stopPropagation}
                                         >
                                             <ActionsCell actions={<FileActions bucket={bucket} file={file} />} />
                                         </td>

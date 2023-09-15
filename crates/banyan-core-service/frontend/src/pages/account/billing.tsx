@@ -5,7 +5,7 @@ import { NextPageWithLayout } from '../page';
 import SettingsLayout from '@/layouts/SettingsLayout';
 import { LanguageSelect } from '@/components/common/LanguageSelect';
 
-export const Settings: NextPageWithLayout = () => {
+export const Billing: NextPageWithLayout = () => {
     const { messages } = useIntl();
 
     return (
@@ -31,6 +31,6 @@ export const Settings: NextPageWithLayout = () => {
     );
 };
 
-export default Settings;
+export default Billing;
 
-Settings.getLayout = (page) => <SettingsLayout>{page}</SettingsLayout>;
+Billing.getLayout = (page) => <SettingsLayout>{page}</SettingsLayout>;

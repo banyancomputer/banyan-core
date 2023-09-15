@@ -14,7 +14,7 @@ import { FileActions } from '@/components/common/FileActions';
 import { BucketActions } from '@/components/common/BucketActions';
 import { useFolderLocation } from '@/hooks/useFolderLocation';
 
-import emptyIcon from '@sta tic/images/common/emptyIcon.png';
+import emptyIcon from '@static/images/common/emptyIcon.png';
 
 export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const searchParams = useSearchParams();

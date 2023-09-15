@@ -11,18 +11,18 @@ export const KeyActions: React.FC<{ bucket: Bucket; bucketKey: BucketKey }> = ({
     const { messages } = useIntl();
     const { openModal } = useModal();
 
-    const approveAccess = async() => {
+    const approveAccess = async () => {
         openModal(<ApproveBucketAccessModal bucketKey={bucketKey} />);
     };
 
-    const removeAccess = async() => {
+    const removeAccess = async () => {
         try {
             openModal(<RemoveBucketAccessModal bucketKey={bucketKey} />);
         } catch (error: any) { }
     };
 
     return (
-        <div className="relative w-52 text-xs font-medium bg-white rounded-xl shadow-md z-10 text-gray-900 overflow-hidden">
+        <div className="fixed right-8 w-52 text-xs font-medium bg-white rounded-xl shadow-md z-10 text-gray-900 overflow-hidden">
             {bucketKey.approved ?
                 <div
                     className="w-full gap-2 py-2 px-3 border-b-1 border-gray-200 transition-all hover:bg-slate-200"

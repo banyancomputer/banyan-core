@@ -22,11 +22,16 @@ export const ActionsCell: React.FC<{ actions: ReactElement }> = ({ actions }) =>
 
     return (
         <div
+            id='actionsCell'
             className="relative flex justify-end cursor-pointer"
             ref={actionsRef}
             onClick={toggleActionsVisibility}
         >
-            <HiDotsVertical fill="#7f8ab0" size="20px" />
+            <HiDotsVertical
+                fill="#7f8ab0"
+                size="20px"
+                className="pointer-events-none"
+            />
 
             {isActionsVisible &&
                 <div className="absolute right-0 top-6">{actions}</div>

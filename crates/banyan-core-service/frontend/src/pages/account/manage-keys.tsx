@@ -1,6 +1,4 @@
 
-import { useEffect } from 'react';
-import BaseLayout from '@layouts/BaseLayout';
 import { useIntl } from 'react-intl';
 
 import { NextPageWithLayout } from '@/pages/page';
@@ -9,16 +7,17 @@ import { KeyManagementTable } from '@/components/KeyManagement/KeyManagementTabl
 import { Fallback } from '@/components/common/Fallback';
 
 import getServerSideProps from '@/utils/session';
+import SettingsLayout from '@/layouts/SettingsLayout';
 
 export { getServerSideProps };
 
-const HomePage: NextPageWithLayout = () => {
+const ManageKeys: NextPageWithLayout = () => {
     const { buckets, areBucketsLoading } = useTomb();
     const { messages } = useIntl();
 
     return (
-        <div className="flex flex-col gap-6 px-4 py-keyManagement w-keyManagement mx-auto">
-            <h2 className="text-xl font-semibold">
+        <div className="flex flex-col gap-5 px-4">
+            <h2 className="text-lg font-semibold">
                 {`${messages.manageKeyAccess}`}
             </h2>
             <Fallback shouldRender={!areBucketsLoading}>
@@ -28,6 +27,6 @@ const HomePage: NextPageWithLayout = () => {
     );
 };
 
-export default HomePage;
+export default ManageKeys;
 
-HomePage.getLayout = (page) => <BaseLayout>{page}</BaseLayout>;
+ManageKeys.getLayout = (page) => <SettingsLayout>{page}</SettingsLayout>;

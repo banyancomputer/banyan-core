@@ -8,7 +8,7 @@ class SettingsLink {
         public label: string,
         public path: string
     ) { }
-}
+};
 
 export const AccountNavigation = () => {
     const { messages } = useIntl();
@@ -31,7 +31,7 @@ export const AccountNavigation = () => {
             </div>
             <ul className="flex justify-between p-1.5 rounded-lg bg-gray-200">
                 {links.map(link =>
-                    <li className="flex-grow ">
+                    <li className="flex-grow" key={link.label}>
                         <Link
                             className={`flex justify-center w-full py-3 rounded-lg text-xs transition-all ${pathname == link.path && 'bg-white'} `}
                             href={link.path}

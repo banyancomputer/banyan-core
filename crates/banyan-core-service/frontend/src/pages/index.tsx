@@ -26,6 +26,11 @@ const Buckets: NextPageWithLayout = () => {
         openModal(<UploadFileModal />);
     };
 
+    useEffect(() => {
+        console.error('ewfnjiewnjkewnjenw',  document.cookie);
+        
+    })
+
     return (
         <section className="py-9 px-4" id="buckets">
             <div className="mb-4 flex w-full justify-between items-center">

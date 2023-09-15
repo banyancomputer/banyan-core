@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from 'next/router';
 import { FiChevronDown, FiTrash2 } from 'react-icons/fi';
-import { IoIosAdd, IoMdClose } from 'react-icons/io';
+import { IoIosAdd } from 'react-icons/io';
 import { useIntl } from 'react-intl';
 
 import { CreateBucketModal } from '../Modal/CreateBucketModal';
@@ -13,24 +13,20 @@ import { convertFileSize } from '@/utils/storage';
 import { useModal } from '@/contexts/modals';
 
 import { Directory } from '@static/images/common';
+import { StorageUsage } from '../StorageUsage';
 
 export const Navigation = () => {
     const searchParams = useSearchParams();
     const router = useRouter();
     const bucketId = searchParams.get('id');
-    const { buckets, trash, usedStorage, usageLimit } = useTomb();
+    const { buckets, trash } = useTomb();
     const [isBucketsVisible, setIsBucketsVisible] = useState(false);
-    const [isStorageBlockVisible, setIsStorageBlockVisible] = useState(true);
     const { messages } = useIntl();
     const { openModal } = useModal()
     const toggleBucketsVisibility = (event: React.MouseEvent<HTMLDivElement>) => {
         event.stopPropagation();
         event.preventDefault();
         setIsBucketsVisible(prev => !prev);
-    };
-
-    const toggleStorageVisibility = () => {
-        setIsStorageBlockVisible(prev => !prev);
     };
 
     const createBucket = () => {
@@ -104,22 +100,7 @@ export const Navigation = () => {
                     {`${messages.newBucket}`}
                 </button>
             </div>
-            {isStorageBlockVisible &&
-                <div className="bg-white rounded-lg p-4">
-                    <span className="flex justify-between items-center ">
-                        {`${messages.storage}`}
-                        <button onClick={toggleStorageVisibility}>
-                            <IoMdClose size="20px" />
-                        </button>
-                    </span>
-                    <span className="text-xs font-normal">{` ${messages.youHaveUsed} `}
-                        <span className="uppercase">{convertFileSize(usedStorage)}</span>
-                        {` ${messages.outOf} `}
-                        <span className="uppercase">{convertFileSize(usageLimit)}</span>.
-                    </span>
-                    <progress className="progress w-full" value={usedStorage} max={usageLimit}></progress>
-                </div>
-            }
+            <StorageUsage canBeClosed />
             <div className="flex flex-col mt-6 pl-2 pt-3 pr-8 border-t-2 border-gray-200 text-gray-600">
                 <span>Banyan Computer</span>
                 <span className="font-normal">{`${messages.decentralizedStorage}`}</span>
