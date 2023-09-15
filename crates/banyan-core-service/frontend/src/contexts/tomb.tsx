@@ -257,11 +257,11 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
             try {
                 const apiKey = await getApiKey();
                 const TombWasm = (await import('tomb-wasm-experimental')).TombWasm;
-                const tomb = new TombWasm(
+                const tomb = (await new TombWasm(
                     apiKey,
                     session.accountId,
                     "http://127.0.0.1:3001"
-                );
+                ));
                 setTomb(tomb);
             } catch (err) {
                 console.error(err);
