@@ -23,3 +23,22 @@ export const publicPemUnwrap = (pem: string) => {
 
     return spki;
 };
+
+export const privatePemWrap = (pkcs8: string) => {
+    const pemHeader = '-----BEGIN PRIVATE KEY-----\n';
+    const pemFooter = '\n-----END PRIVATE KEY-----';
+    const chunkedPkcs8 = pkcs8.match(/.{1,64}/g);
+    if (!chunkedPkcs8) {
+        throw new Error('Could not chunk pkcs8');
+    }
+    const pem = pemHeader + chunkedPkcs8.join('\n') + pemFooter;
+    return pem;
+}
+
+export const privatePemUnwrap = (pem: string) => {
+    const pemHeader = /-----BEGIN PRIVATE KEY-----\n/;
+    const pemFooter = /\n-----END PRIVATE KEY-----/;
+    const chunkedPkcs8 = pem.replace(pemHeader, '').replace(pemFooter, '');
+    const pkcs8 = chunkedPkcs8.replace(/\n/g, '');
+    return pkcs8;
+}

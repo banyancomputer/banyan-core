@@ -43,6 +43,12 @@ INSERT INTO allowed_emails (email) VALUES ('${EMAIL_TO_ALLOW}');
 ESQL
 
 NEW_NEXTAUTH_SECRET="$(openssl rand -base64 9 | tr -dc 'a-zA-Z0-9' | cut -c1-12)"
-sed -i "s/^export NEXTAUTH_SECRET=.*/export NEXTAUTH_SECRET=${NEW_NEXTAUTH_SECRET}/" crates/banyan-core-service/frontend/.env.dev
+
+# If Linux
+if [ "$(uname)" == "Linux" ]; then
+  sed -i "s/^export NEXTAUTH_SECRET=.*/export NEXTAUTH_SECRET=${NEW_NEXTAUTH_SECRET}/" crates/banyan-core-service/frontend/.env.dev
+else
+  sed -i '' "s/^export NEXTAUTH_SECRET=.*/export NEXTAUTH_SECRET=${NEW_NEXTAUTH_SECRET}/" crates/banyan-core-service/frontend/.env.dev
+fi
 
 echo 'environment reset complete'

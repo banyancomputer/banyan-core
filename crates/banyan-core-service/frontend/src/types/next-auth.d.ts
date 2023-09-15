@@ -1,4 +1,5 @@
 import NextAuth from 'next-auth';
+import { EscrowedKeyMaterial } from '@/lib/crypto/types';
 
 // Note: see https://next-auth.js.org/getting-started/typescript#extend-default-interface-properties for more info on module augmentation in NextAuth
 declare module 'next-auth' {
@@ -11,5 +12,7 @@ declare module 'next-auth' {
         // See lib/db/account.ts for more details
         providerId: string;
         accountId: string;
+        // The user's escrowed key material
+        escrowedKeyMaterial: EscrowedKeyMaterial | null;
     }
 }
