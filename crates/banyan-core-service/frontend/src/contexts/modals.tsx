@@ -39,7 +39,7 @@ export const ModalProvider: FC<{ children: ReactNode }> = ({ children }) => {
         setModalState({
             content: escrowed ? <EnterSecretKeyModal /> : <CreateSecretKeyModal />,
             onBack: null,
-            mandatory: true,
+            mandatory: true
         })
     };
 

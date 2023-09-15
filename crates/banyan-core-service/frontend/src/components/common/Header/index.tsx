@@ -4,7 +4,6 @@ import Image from 'next/image';
 import { signOut, useSession } from 'next-auth/react';
 import { useIntl } from 'react-intl';
 import { useRouter } from 'next/router';
-import { destroyCookie } from 'nookies';
 import { AiOutlineQuestionCircle } from 'react-icons/ai';
 import { GrMailOption } from 'react-icons/gr';
 import { MdOutlineVpnKey } from 'react-icons/md';

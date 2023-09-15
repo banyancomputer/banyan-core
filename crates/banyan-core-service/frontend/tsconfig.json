@@ -25,6 +25,6 @@
 		}
 	},
 	"typeRoots": ["./node_modules/@types", "./src/@types"],
-	"include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "i18n.js", "src/pages/api/auth/[...nextauth].js"],
+	"include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "i18n.js"],
 	"exclude": ["node_modules"]
 }

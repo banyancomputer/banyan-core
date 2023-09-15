@@ -15,7 +15,6 @@ export const authOptions = {
 	}),
 	pages: {
 		signIn: '/login',
-		// TODO: is this right?
 		signOut: 'login',
 		error: '/login',
         verifyRequest: '/login'
