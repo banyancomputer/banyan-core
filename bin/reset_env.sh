@@ -21,7 +21,7 @@ rm -rf crates/banyan-core-service/data/s* \
 (cd crates/banyan-core-service; cargo build; timeout 3s cargo run || true)
 cp -f crates/banyan-core-service/data/signing-key.public crates/banyan-staging-service/data/platform-verifier.public
 
-(cd crates/banyan-staging-service; cargo build; timeout 10s cargo run -- --generate-auth)
+(cd crates/banyan-staging-service; cargo build; timeout 45s cargo run -- --generate-auth)
 
 #(cd crates/banyan-core-server/frontend; yarn install; source .env.dev; timeout 5s yarn run dev)
 
