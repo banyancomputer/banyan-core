@@ -8,7 +8,7 @@ use crate::utils::db;
 use crate::extractors::{ApiToken, DbConn};
 
 /// Currently all users have a capacity threshold of 5TiB
-const STATIC_USAGE_THRESHOLD: usize = 5 * 1024_usize.pow(4);
+const STATIC_USAGE_THRESHOLD: u64 = 5 * 1024_u64.pow(4);
 
 pub async fn handler(api_token: ApiToken, mut db_conn: DbConn) -> Result<Response, AccountInfoError> {
     let account_info = get_account_info(&mut db_conn, &api_token.subject()).await?;
@@ -18,7 +18,7 @@ pub async fn handler(api_token: ApiToken, mut db_conn: DbConn) -> Result<Respons
 // todo: change account_id type to Uuid
 async fn get_account_info(db_conn: &mut DbConn, account_id: &str) -> Result<AccountInfo, AccountInfoError> {
     let current_usage = match db::read_total_data_usage(account_id, db_conn).await {
-        Ok(usage) => usage as usize,
+        Ok(usage) => usage,
         Err(err) if matches!(err, sqlx::Error::RowNotFound) => return Err(AccountInfoError::NotFound),
         Err(err) => {
             tracing::error!("failed to retrieve account info from database: {err:?}");
@@ -34,8 +34,8 @@ async fn get_account_info(db_conn: &mut DbConn, account_id: &str) -> Result<Acco
 
 #[derive(Debug, Serialize)]
 struct AccountInfo {
-    current_usage: usize,
-    usage_limit: usize,
+    current_usage: u64,
+    usage_limit: u64,
 }
 
 #[derive(Debug, thiserror::Error)]
