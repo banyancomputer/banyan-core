@@ -3,6 +3,7 @@ use axum::response::IntoResponse;
 use axum::{Json, Router};
 use serde::Serialize;
 
+mod account;
 mod auth;
 mod buckets;
 mod storage;
@@ -18,6 +19,7 @@ pub fn router(state: AppState) -> Router<AppState> {
     let cors_layer = tower_http::cors::CorsLayer::very_permissive();
 
     Router::new()
+        .nest("/account", account::router(state.clone()))
         .nest("/auth", auth::router(state.clone()))
         .nest("/buckets", buckets::router(state.clone()))
         .nest("/storage", storage::router(state.clone()))
