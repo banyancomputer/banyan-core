@@ -19,6 +19,8 @@ use crate::extractors::DbConn;
 pub const EXPIRATION_WINDOW_SECS: u64 = 900;
 
 static KEY_ID_VALIDATOR: OnceLock<regex::Regex> = OnceLock::new();
+
+// Validation on a sha1 colon-delimited fingerprint
 const KEY_ID_REGEX: &str = r"^[0-9a-f]{2}(:[0-9a-f]{2}){19}$";
 
 #[derive(Deserialize, Serialize)]
@@ -37,10 +39,17 @@ pub struct ApiToken {
     pub not_before: u64,
 
     #[serde(rename = "aud")]
-    pub audience: String,
+    pub audience: Audience,
 
     #[serde(rename = "sub")]
     pub subject: String,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(untagged)]
+pub enum Audience {
+    Single(String),
+    Multiple(Vec<String>),
 }
 
 impl ApiToken {
