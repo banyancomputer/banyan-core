@@ -133,5 +133,8 @@
 	"hotStorage": "Stockage à chaud",
 	"downloads": "Téléchargements",
 	"eggress": "Sortie",
-	"migrationFees": "Frais de migration"
+	"billing": "Facturation",
+	"migrationFees": "Frais de migration",
+	"paymentIssue": "Il y a un problème avec votre mode de paiement",
+	"updatePaymentMethod": "Veuillez mettre à jour votre mode de paiement pour garantir un service continu"
 }
