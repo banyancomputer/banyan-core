@@ -132,7 +132,7 @@
 	"coldStorage": "Stockage à froid",
 	"hotStorage": "Stockage à chaud",
 	"downloads": "Téléchargements",
-	"eggress": "Sortie",
+	"egress": "Sortie",
 	"billing": "Facturation",
 	"migrationFees": "Frais de migration",
 	"paymentIssue": "Il y a un problème avec votre mode de paiement",

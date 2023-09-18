@@ -17,7 +17,7 @@ export const ServicesTable = () => {
         new Storage(`${messages.coldStorage}`),
         new Storage(`${messages.hotStorage}`),
         new Storage(`${messages.downloads}`),
-        new Storage(`${messages.eggress}`),
+        new Storage(`${messages.egress}`),
         new Storage(`${messages.migrationFees}`),
     ]
 
