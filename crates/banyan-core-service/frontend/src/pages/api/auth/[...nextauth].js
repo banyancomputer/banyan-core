@@ -2,7 +2,7 @@ import NextAuth from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import SequelizeAdapter from '@auth/sequelize-adapter';
 import client, { models } from '@/lib/db/models';
-import { AccountFactory, AllowedEmailFactory } from '@/lib/db';
+import { AccountFactory, AllowedEmailFactory, EscrowedDeviceFactory } from '@/lib/db';
 import { joinProviderId } from '@/utils';
 
 export const authOptions = {
@@ -34,13 +34,11 @@ export const authOptions = {
 		// Set new data in the token from the jwt callback
 		async jwt({ token, account }) {
 			if (account) {
-				console.log('Account: ', account);
 				token.providerId = joinProviderId(
 					account.provider,
 					account.providerAccountId
 				);
 			}
-
 			return token;
 		},
 
@@ -49,6 +47,21 @@ export const authOptions = {
 			session.accountId = await AccountFactory.idFromProviderId(
 				token.providerId
 			);
+			session.escrowedKeyMaterial = await EscrowedDeviceFactory.readByAccountId(
+				session.accountId
+			).then((device) => {
+				let escrowedDevice = device.toJSON();
+				return {
+					apiKeyPem: escrowedDevice.apiKeyPem,
+					encryptionKeyPem: escrowedDevice.encryptionKeyPem,
+					wrappedApiKey: escrowedDevice.wrappedApiKey,
+					wrappedEncryptionKey: escrowedDevice.wrappedEncryptionKey,
+					passKeySalt: escrowedDevice.passKeySalt
+				};
+			}).catch((_err) => {
+				// TODO: handle this error better
+				return null;
+			});
 
 			return session;
 		},

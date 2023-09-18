@@ -3,7 +3,7 @@ import {
     base64ToArrBuf,
     fingerprintEcPublicKey,
     prettyFingerprint,
-} from 'banyan-webcrypto-experiment/lib/utils';
+} from '@/lib/crypto/utils';
 import { publicPemUnwrap } from './pem';
 
 export const prettyFingerprintApiKeySpki = async(

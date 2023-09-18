@@ -1,5 +1,7 @@
 import { b64UrlEncode } from '../../utils/b64';
 import { DeviceApiKey, EscrowedDevice } from '@/lib/interfaces';
+import { EscrowedKeyMaterial } from '../crypto/types';
+import { publicPemUnwrap } from '@/utils';
 
 async function fetchJson<T>(url: string, opts?: {}): Promise<T> {
     try {
@@ -33,7 +35,7 @@ export class ClientApi {
 	 * @param escrowed_device - the escrowed device key material to be associated with the user's account
 	 */
     public escrowDevice = async(
-        request: Partial<EscrowedDevice>
+        request: EscrowedKeyMaterial 
     ): Promise<EscrowedDevice> => {
         const url = `${this.url}/auth/device/escrow`;
         const body = JSON.stringify(request);
@@ -69,7 +71,8 @@ export class ClientApi {
 	 * @param spki - the public key of the device's API key in PEM format
 	 * @return void
 	 */
-    public registerDeviceApiKey = async(spki: string): Promise<DeviceApiKey> => {
+    public registerDeviceApiKey = async(pem: string): Promise<DeviceApiKey> => {
+        const spki = publicPemUnwrap(pem);
         const urlSpki = b64UrlEncode(spki);
         const url = `${this.url}/auth/device/register?spki=${urlSpki}`;
         const opts = {
