@@ -21,6 +21,7 @@ interface TombInterface {
     selectBucket: (bucket: Bucket) => void;
     getSelectedBucketFiles: (path: string[]) => void;
     download: (bucket: Bucket, path: string[], name: string) => Promise<void>;
+    getFile: (bucket: Bucket, path: string[], name: string) => Promise<ArrayBuffer>;
     shareWith: (bucket: Bucket, key: string) => Promise<void>
     takeColdSnapshot: (bucket: Bucket) => Promise<void>;
     getBuckets: () => Promise<void>;
@@ -112,7 +113,6 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         });
     };
 
-
     /** Creates new bucket with recieved parameters of type and storag class. */
     const createBucket = async (name: string, storageClass: string, bucketType: string) => {
         await tombMutex(async tomb => {
@@ -135,10 +135,15 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         })
     };
 
+    /** Returns file as ArrayBuffer */
+    const getFile = async (bucket: Bucket, path: string[], name: string) => {
+        return await mountMutex(bucket, async mount => await mount!.readBytes([...path, name]));
+    };
+
     /** Downloads file. */
     const download = async (bucket: Bucket, path: string[], name: string) => {
         const link = document.createElement('a');
-        const arrayBuffer: ArrayBuffer = await mountMutex(bucket, async mount => await mount!.readBytes([...path, name]));
+        const arrayBuffer: ArrayBuffer = await getFile(bucket, path, name);
         const blob = new Blob([arrayBuffer], { type: 'application/octet-stream' });
         const objectURL = URL.createObjectURL(blob);
         link.href = objectURL;
@@ -148,8 +153,8 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     };
 
     /** Copies file to clipboard. */
-    const copyToClipboard = async (bucket: Bucket, path: string[]) => {
-        const arrayBuffer: ArrayBuffer = await mountMutex(bucket, async mount => await mount!.readBytes(path));
+    const copyToClipboard = async (bucket: Bucket, path: string[], name: string) => {
+        const arrayBuffer: ArrayBuffer = await getFile(bucket, path, name);
         const blob = new Blob([arrayBuffer], { type: 'application/octet-stream' });
         // navigator.clipboard.write([new ClipboardItem({ '': blob })])
     };
@@ -302,7 +307,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         <TombContext.Provider
             value={{
                 tomb, buckets, trash, usedStorage, usageLimit, areBucketsLoading, isTrashLoading, selectedBucket,
-                getBuckets, getBucketShapshots, createBucket, deleteBucket, selectBucket,
+                getBuckets, getBucketShapshots, createBucket, deleteBucket, selectBucket, getFile,
                 getTrashBucket, takeColdSnapshot, getUsedStorage, createDirectory,
                 uploadFile, renameFile, getBucketKeys, purgeSnapshot, getSelectedBucketFiles,
                 removeBucketAccess, approveBucketAccess, getUsageLimit,

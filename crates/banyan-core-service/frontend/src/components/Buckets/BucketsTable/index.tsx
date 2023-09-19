@@ -8,15 +8,20 @@ import { BucketActions } from '@components/common/BucketActions';
 import { SortCell } from '@/components/common/SortCell';
 import { FileActions } from '@/components/common/FileActions';
 
+import { useTomb } from '@/contexts/tomb';
 import { getDateLabel } from '@/utils/date';
-import { BucketFile, Bucket as IBucket } from '@/lib/interfaces/bucket';
+import { Bucket, BucketFile, Bucket as IBucket } from '@/lib/interfaces/bucket';
 import { convertFileSize } from '@/utils/storage';
+import { useFilePreview } from '@/contexts/filesPreview';
 
 export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
     const { messages } = useIntl();
     const { push } = useRouter();
     /** Created to prevent sotring logic affect initial buckets array */
     const [bucketsCopy, setBucketsCopy] = useState(buckets);
+    const { getFile } = useTomb();
+    const { openFile } = useFilePreview();
+
     const [sortState, setSortState] = useState<{ criteria: string; direction: 'ASC' | 'DESC' | '' }>({ criteria: '', direction: '' });
 
     const sort = (criteria: string) => {
@@ -29,12 +34,24 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
 
         push(`/bucket/${bucket}`);
     };
-    const goToFolder = (event: React.MouseEvent<HTMLTableRowElement>, bucket: string, file: BucketFile) => {
+
+    const handleClick = async (event: React.MouseEvent<HTMLTableRowElement>, bucket: Bucket, file: BucketFile) => {
         const target = event.target as HTMLDivElement;
         if (target.id) return;
-        if (file.type !== 'dir') { return; }
 
-        push(`/bucket/${bucket}?${file.name}`);
+        if (file.type === 'dir') {
+            push(`/bucket/${bucket.id}?${file.name}`);
+
+            return;
+        };
+
+        try {
+            const byteArray = await getFile(bucket, [], file.name);
+            openFile(byteArray, file.name);
+        } catch (error) {
+            console.log(error);
+        }
+
     };
 
     useEffect(() => {
@@ -119,7 +136,7 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
                                 bucket.files.map((file, index) =>
                                     <tr
                                         key={index}
-                                        onClick={event => goToFolder(event, bucket.id, file)}
+                                        onClick={event => handleClick(event, bucket, file)}
                                         className="cursor-pointer"
                                     >
                                         <td className="px-3 py-4"></td>

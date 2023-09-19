@@ -3,16 +3,19 @@ import { useSearchParams } from 'next/navigation';
 import { useIntl } from 'react-intl';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 
 import { ActionsCell } from '@components/common/ActionsCell';
-import { Bucket } from '@/lib/interfaces/bucket';
+import { Bucket, BucketFile } from '@/lib/interfaces/bucket';
 import { getDateLabel } from '@/utils/date';
 import { convertFileSize } from '@/utils/storage';
+import { useFilePreview } from '@/contexts/filesPreview';
 import { FileIcon } from '@/components/common/FileIcon';
 import { SortCell } from '@/components/common/SortCell';
 import { FileActions } from '@/components/common/FileActions';
 import { BucketActions } from '@/components/common/BucketActions';
 import { useFolderLocation } from '@/hooks/useFolderLocation';
+import { useTomb } from '@/contexts/tomb';
 
 import emptyIcon from '@static/images/common/emptyIcon.png';
 
@@ -22,11 +25,33 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     /** Created to prevent sotring logic affect initial buckets array */
     const [bucketCopy, setBucketCopy] = useState(bucket);
     const { messages } = useIntl();
+    const { getFile } = useTomb();
     const [sortState, setSortState] = useState<{ criteria: string; direction: 'ASC' | 'DESC' | '' }>({ criteria: '', direction: '' });
     const folderLocation = useFolderLocation();
+    const { push } = useRouter();
+    const { openFile } = useFilePreview();
 
     const sort = (criteria: string) => {
         setSortState(prev => ({ criteria, direction: prev.direction === 'ASC' ? 'DESC' : 'ASC' }));
+    };
+
+    const handleClick = async (event: React.MouseEvent<HTMLTableRowElement>, bucket: Bucket, file: BucketFile) => {
+        const target = event.target as HTMLDivElement;
+        if (target.id) return;
+
+        if (file.type === 'dir') {
+            push(`/bucket/${bucket.id}?${file.name}`);
+
+            return;
+        };
+
+        try {
+            const byteArray = await getFile(bucket, [], file.name);
+            openFile(byteArray, file.name);
+        } catch (error) {
+            console.log(error);
+        }
+
     };
 
     useEffect(() => {
@@ -96,20 +121,15 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                     <tbody>
                         {
                             bucketCopy.files.map((file, index) =>
-                                <tr key={index}>
-                                    <td className="">
-                                        {file.type === 'dir' ?
-                                            <Link
-                                                href={`/bucket/${bucket.id}?${folderLocation.join('/') ? `${folderLocation.join('/')}/` : ''}${file.name}`}
-                                                className="px-6 py-4 flex items-center gap-3"
-                                            >
-                                                <FileIcon fileName={file.name} className="p-2 bg-gray-200 rounded-full" />{file.name}
-                                            </Link>
-                                            :
-                                            <span className="px-6 py-4 flex items-center gap-3">
-                                                <FileIcon fileName={file.name} className="p-2 bg-gray-200 rounded-full" />{file.name}
-                                            </span>
-                                        }
+                                <tr
+                                    key={index}
+                                    onClick={event => handleClick(event, bucket, file)}
+                                    className='cursor-pointer'
+                                >
+                                    <td>
+                                        <span className="px-6 py-4 flex items-center gap-3">
+                                            <FileIcon fileName={file.name} className="p-2 bg-gray-200 rounded-full" />{file.name}
+                                        </span>
                                     </td>
                                     <td className="px-6 py-4">{getDateLabel(+file.metadata.modified)}</td>
                                     <td className="px-6 py-4">{convertFileSize(file.metadata.size)}</td>
