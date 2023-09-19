@@ -62,3 +62,27 @@ input {
     align-items: center;
     justify-content: center;
 }
+
+.react-pdf__Page__canvas {
+    border-radius: 16px;
+    margin-bottom: 32px;
+    overflow: hidden;
+}
+
+.preview-wrapper {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    padding: 35px 0px;
+};
+
+.photo-viewer-container {
+    width: unset !important;
+    height: unset !important;
+}
+
+.preview-file > img {
+    width: unset !important;
+    height: unset !important;
+    border-radius: 16px;
+}

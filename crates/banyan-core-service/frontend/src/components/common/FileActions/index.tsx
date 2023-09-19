@@ -35,7 +35,7 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bu
     const downloadFile = async () => {
         try {
             await ToastNotifications.promise(`${messages.downloading}...`, `${messages.fileWasDownloaded}`, <MdDone size="20px" />,
-                download(bucket, [...folredLoaction, file.name])
+                download(bucket, folredLoaction, file.name)
             );
         } catch (error: any) { }
     };

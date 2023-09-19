@@ -138,5 +138,6 @@
 	"migrationFees": "Migration fees",
 	"billing": "Billing",
 	"paymentIssue": "There is an issue with your payment method",
-	"updatePaymentMethod": "Please update your form of payment to ensure continued service"
+	"updatePaymentMethod": "Please update your form of payment to ensure continued service",
+	"backToFiles": "Back to all files"
 }

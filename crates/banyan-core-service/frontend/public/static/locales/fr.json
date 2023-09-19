@@ -136,5 +136,6 @@
 	"billing": "Facturation",
 	"migrationFees": "Frais de migration",
 	"paymentIssue": "Il y a un problème avec votre mode de paiement",
-	"updatePaymentMethod": "Veuillez mettre à jour votre mode de paiement pour garantir un service continu"
+	"updatePaymentMethod": "Veuillez mettre à jour votre mode de paiement pour garantir un service continu",
+	"backToFiles": "Retour à tous les fichiers"
 }

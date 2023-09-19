@@ -20,7 +20,7 @@ interface TombInterface {
     selectedBucket: Bucket | null;
     selectBucket: (bucket: Bucket) => void;
     getSelectedBucketFiles: (path: string[]) => void;
-    download: (bucket: Bucket, path: string[]) => Promise<void>;
+    download: (bucket: Bucket, path: string[], name: string) => Promise<void>;
     shareWith: (bucket: Bucket, key: string) => Promise<void>
     takeColdSnapshot: (bucket: Bucket) => Promise<void>;
     getBuckets: () => Promise<void>;
@@ -136,13 +136,13 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     };
 
     /** Downloads file. */
-    const download = async (bucket: Bucket, path: string[]) => {
+    const download = async (bucket: Bucket, path: string[], name: string) => {
         const link = document.createElement('a');
-        const arrayBuffer: ArrayBuffer = await mountMutex(bucket, async mount => await mount!.readBytes(path));
+        const arrayBuffer: ArrayBuffer = await mountMutex(bucket, async mount => await mount!.readBytes([...path, name]));
         const blob = new Blob([arrayBuffer], { type: 'application/octet-stream' });
         const objectURL = URL.createObjectURL(blob);
         link.href = objectURL;
-        link.download = `${blob.name}.${blob.type}`
+        link.download = name;
         document.body.appendChild(link);
         link.click();
     };
