@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { HiOutlineLightningBolt } from 'react-icons/hi';
 import { useIntl } from 'react-intl';
 import { useForm } from 'react-hook-form';
@@ -13,21 +13,22 @@ import { useModal } from '@/contexts/modals';
 export const CreateSecretKeyModal = () => {
     const { messages } = useIntl();
     const { initializeKeystore } = useKeystore();
-    const { closeModal } = useModal()
+    const { closeModal } = useModal();
     const {
         formState: { errors },
         handleSubmit,
         register,
         getValues,
-        watch
+        trigger,
+        watch,
     } = useForm({
-        mode: 'onTouched',
+        mode: 'all',
         values: { keyphrase: '', keyphraseConfirmation: '' },
     });
     const { keyphrase, keyphraseConfirmation } = watch();
     const isDataCorrect = !Object.keys(errors).length && !!keyphrase && !!keyphraseConfirmation && keyphraseConfirmation === keyphrase;
 
-    const confirm = async () => {
+    const confirm = async() => {
         try {
             await initializeKeystore(keyphrase);
             Router.reload();
@@ -37,9 +38,15 @@ export const CreateSecretKeyModal = () => {
         };
     };
 
+    useEffect(() => {
+        if (!keyphraseConfirmation) { return; }
+
+        trigger('keyphraseConfirmation');
+    }, [keyphrase, keyphraseConfirmation]);
+
     return (
         <form
-            className='w-modal flex flex-col gap-8'
+            className="w-modal flex flex-col gap-8"
             onSubmit={handleSubmit(confirm)}
         >
             <span className="p-3 w-min rounded-full bg-gray-200">
@@ -72,21 +79,21 @@ export const CreateSecretKeyModal = () => {
                         validate: (keyphraseConfirmation) => {
                             const { keyphrase } = getValues();
                             if (keyphrase !== keyphraseConfirmation) {
-                                return `${messages.passphraseNotMatch}`
+                                return `${messages.passphraseNotMatch}`;
                             }
 
                             return validateKeyphrase(`${messages.keyRequirements}`)(keyphraseConfirmation);
-                        }
+                        },
                     })}
                 />
             </div>
             <button
-                type='submit'
-                className="btn-primary flex-grow py-select px-4"
+                type="submit"
+                className="btn-primary flex-grow py-2.5 px-4"
                 disabled={!isDataCorrect}
             >
                 {`${messages.confirm}`}
             </button>
         </form >
-    )
-}
+    );
+};

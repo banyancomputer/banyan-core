@@ -46,9 +46,9 @@ const BucketHeader = () => {
                 {`${messages.upload}`}
             </button>
         </div>
-    )
-}
+    );
+};
 
 export default dynamic(() => Promise.resolve(BucketHeader), {
-    ssr: false
-})
+    ssr: false,
+});

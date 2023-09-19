@@ -18,17 +18,19 @@ module.exports = {
 				toast: '480px',
 				snapshotsModal: '530px',
 				keyManagement: '1128px',
+				filePreview: '70%',
 			},
 			padding: {
 				keyManagement: '72px',
-				select: '10px',
-			},
-			minWidth: {
-				navbar: '280px',
+				2.5: '10px',
+				1.5: '6px',
 			},
 			minWidth: {
 				navbar: '280px',
 				login: '590px',
+			},
+			maxWidth: {
+				filePreview: '952px',
 			},
 			colors: {
 				blue: {
@@ -39,6 +41,7 @@ module.exports = {
 					900: '#1E3A8A',
 				},
 				error: '#CB3535',
+				errorBanner: '#FFD7B2',
 				login: '#F7F7F7',
 				navigation: {
 					primary: '#FFECC5',

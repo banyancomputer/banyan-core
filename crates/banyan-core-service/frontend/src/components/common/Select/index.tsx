@@ -15,7 +15,7 @@ export interface SelectProps {
     selectedOption: string;
     onChange: (option: string) => void;
     placeholder: string;
-    initialOption?: ReactElement
+    initialOption?: ReactElement;
 };
 
 export const Select: React.FC<SelectProps> = ({ initialOption, onChange, options, placeholder, selectedOption }) => {
@@ -46,7 +46,7 @@ export const Select: React.FC<SelectProps> = ({ initialOption, onChange, options
         <div
             ref={selectRef}
             onClick={toggleSelect}
-            className="relative p-select flex justify-between items-center text-sm font-medium border-1 border-gray-200 rounded-lg shadow-sm cursor-pointer select-none"
+            className="relative p-2.5 flex justify-between items-center text-sm font-medium border-1 border-gray-200 rounded-lg shadow-sm cursor-pointer select-none"
         >
             {selectedOption ? options.find(option => option.value === selectedOption)?.label : placeholder}
             <FiChevronDown
@@ -57,12 +57,12 @@ export const Select: React.FC<SelectProps> = ({ initialOption, onChange, options
             {isOptionstVisible &&
                 <ul
                     onClick={stopPropagation}
-                    className='absolute left-0 top-12 w-full max-h-48 overflow-y-auto bg-white border-1 border-gray-200 rounded-lg shadow-sm z-10'
+                    className="absolute left-0 top-12 w-full max-h-48 overflow-y-auto bg-white border-1 border-gray-200 rounded-lg shadow-sm z-10"
                 >
                     {initialOption ? initialOption : null}
                     {options.map(option =>
                         <li
-                            className='flex justify-between items-center p-select transition-all hover:bg-slate-200 cursor-pointer'
+                            className="flex justify-between items-center p-2.5 transition-all hover:bg-slate-200 cursor-pointer"
                             key={option.value}
                             onClick={() => handleSelect(option)}
                         >
@@ -73,5 +73,5 @@ export const Select: React.FC<SelectProps> = ({ initialOption, onChange, options
                 </ul>
             }
         </div>
-    )
-}
+    );
+};

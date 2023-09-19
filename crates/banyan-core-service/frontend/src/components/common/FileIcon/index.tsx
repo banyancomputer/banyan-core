@@ -26,6 +26,13 @@ export const FileIcon: React.FC<{ fileName: string; className?: string }> = ({ f
     };
 
     return (
-        <div className={className}>{fileName.split('.')[1] ? (fileTypeMapper[fileName.split('.')[1]] || <AiOutlineFile size="24px" fill="#7D89B0" />): <PiFolderNotchBold size="24px" fill="#7D89B0" /> }</div>
+        <div className={className}>
+            {
+                fileName.split('.')[1] ?
+                    fileTypeMapper[fileName.split('.')[1]] || <AiOutlineFile size="24px" fill="#7D89B0" />
+                    :
+                    <PiFolderNotchBold size="24px" fill="#7D89B0" />
+            }
+        </div>
     );
 };

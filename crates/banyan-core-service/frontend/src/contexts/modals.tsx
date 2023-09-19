@@ -1,11 +1,11 @@
+import React, { Dispatch, FC, ReactElement, ReactNode, SetStateAction, createContext, useContext, useState } from 'react';
 import { CreateSecretKeyModal } from '@/components/common/Modal/CreateSecretKeyModal';
 import { EnterSecretKeyModal } from '@/components/common/Modal/EnterSecretKeyModal';
-import React, { Dispatch, FC, ReactElement, ReactNode, SetStateAction, createContext, useContext, useState } from 'react';
 
 export interface StateInterface {
     content: ReactNode | null;
     onBack: null | (() => void);
-    mandatory: boolean
+    mandatory: boolean;
 }
 
 interface ContextState {
@@ -21,7 +21,7 @@ export const ModalContext = createContext<ContextState>({} as ContextState);
 const initialState: StateInterface = {
     content: null,
     onBack: null,
-    mandatory: false
+    mandatory: false,
 };
 
 export const ModalProvider: FC<{ children: ReactNode }> = ({ children }) => {
@@ -31,7 +31,7 @@ export const ModalProvider: FC<{ children: ReactNode }> = ({ children }) => {
         setModalState({
             content,
             onBack,
-            mandatory
+            mandatory,
         });
     };
 
@@ -39,8 +39,8 @@ export const ModalProvider: FC<{ children: ReactNode }> = ({ children }) => {
         setModalState({
             content: escrowed ? <EnterSecretKeyModal /> : <CreateSecretKeyModal />,
             onBack: null,
-            mandatory: true
-        })
+            mandatory: true,
+        });
     };
 
     const closeModal = () => {

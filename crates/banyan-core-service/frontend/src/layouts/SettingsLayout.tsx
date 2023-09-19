@@ -1,18 +1,16 @@
 import { ReactElement, useEffect, useMemo } from 'react';
-import { useRouter } from 'next/router';
 
 import { Header } from '@components/common/Header';
 import { Navigation } from '@components/common/Navigation';
 import { useKeystore } from '@/contexts/keystore';
 import { useModal } from '@/contexts/modals';
+import { AccountNavigation } from '@/components/Account/Navigation';
 
 export interface IBaseLayout {
     children: ReactElement;
 }
 
-const BaseLayout: React.FC<IBaseLayout> = ({ children }) => {
-    const router = useRouter();
-    const isNavigationVisible = useMemo(() => router.pathname !== '/login', [router.pathname]);
+const SettingsLayout: React.FC<IBaseLayout> = ({ children }) => {
     const { keystoreInitialized, isLoading, escrowedDevice } = useKeystore();
     const { openEscrowModal } = useModal();
 
@@ -25,13 +23,12 @@ const BaseLayout: React.FC<IBaseLayout> = ({ children }) => {
     return <main className="flex flex-col h-screen font-sans bg-white">
         <Header />
         <section className="flex flex-grow">
-            {isNavigationVisible &&
-                <Navigation />
-            }
+            <Navigation />
             <div className="flex-grow">
+                <AccountNavigation />
                 {children}
             </div>
         </section>
     </main>;
 };
-export default BaseLayout;
+export default SettingsLayout;

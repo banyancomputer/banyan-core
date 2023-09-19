@@ -47,7 +47,7 @@ export const Header = () => {
     };
 
     const options = [
-        new Action(`${messages.settings}`, <FiSettings size="20px" />, goTo('/settings')),
+        new Action(`${messages.settings}`, <FiSettings size="20px" />, goTo('/account/settings')),
         new Action(`${messages.manageKeys}`, <MdOutlineVpnKey size="20px" />, goTo('/key-management')),
         new Action(`${messages.logout}`, <FiLogOut size="20px" />, logout)
     ];
@@ -88,7 +88,7 @@ export const Header = () => {
                             className="absolute right-0 top-full w-36 flex flex-col items-stretch shadow-xl rounded-xl text-xs font-semibold overflow-hidden  bg-white cursor-pointer"
                         >
                             <a
-                                className="flex items-center gap-2 py-select px-3 transition-all hover:bg-slate-100"
+                                className="flex items-center gap-2 py-2.5 px-3 transition-all hover:bg-slate-100"
                                 href='https://banyan8674.zendesk.com/hc/en-us'
                                 target='_blank'
                             >
@@ -97,7 +97,7 @@ export const Header = () => {
                             </a>
                             <a
                                 href='mailto:support@banyan8674.zendesk.com'
-                                className="flex items-center gap-2 py-select px-3 transition-all hover:bg-slate-100"
+                                className="flex items-center gap-2 py-2.5 px-3 transition-all hover:bg-slate-100"
                                 target='_blank'
                             >
                                 <GrMailOption />
@@ -129,7 +129,7 @@ export const Header = () => {
                             {options.map(option =>
                                 <div
                                     key={option.label}
-                                    className="flex items-center gap-2 py-select px-3 transition-all hover:bg-slate-100"
+                                    className="flex items-center gap-2 py-2.5 px-3 transition-all hover:bg-slate-100"
                                     onClick={option.value}
                                 >
                                     {option.icon}

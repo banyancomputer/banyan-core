@@ -75,7 +75,7 @@ export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBu
         <div
             ref={selectRef}
             onClick={toggleSelect}
-            className="relative p-select flex justify-between items-center text-sm font-medium border-1 border-gray-200 rounded-lg shadow-sm cursor-pointer select-none"
+            className="relative p-2.5 flex justify-between items-center text-sm font-medium border-1 border-gray-200 rounded-lg shadow-sm cursor-pointer select-none"
         >
             <span className='overflow-hidden text-ellipsis'>
                 /{folder.join('/')}
@@ -92,7 +92,7 @@ export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBu
                 >
                     {
                         folder.length ? <li
-                            className='flex justify-between items-center p-select transition-all hover:bg-slate-200 cursor-pointer'
+                            className='flex justify-between items-center p-2.5 transition-all hover:bg-slate-200 cursor-pointer'
                             onClick={goAbove}
                         >
                             ...
@@ -103,7 +103,7 @@ export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBu
                     <AddNewOption label={`${messages.createNewFolder}`} action={addNewFolder} />
                     {folders.map((folderItem, index) =>
                         <li
-                            className='flex justify-between items-center p-select transition-all hover:bg-slate-200 cursor-pointer'
+                            className='flex justify-between items-center p-2.5 transition-all hover:bg-slate-200 cursor-pointer'
                             key={index}
                             onClick={() => handleSelect([...folder, folderItem.name])}
                         >

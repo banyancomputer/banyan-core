@@ -1,4 +1,4 @@
-import { WasmMount } from "tomb-wasm-experimental";
+import { WasmMount } from 'tomb-wasm-experimental';
 
 export interface BucketFile {
     [key: string]: any;

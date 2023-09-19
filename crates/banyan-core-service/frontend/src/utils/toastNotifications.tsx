@@ -4,7 +4,6 @@ import { Id, toast } from 'react-toastify';
 
 /** Defines toast notifications with message, toast type and theme. */
 export class ToastNotifications {
-
     static notify(
         message: string,
         icon?: ReactElement,
@@ -27,10 +26,10 @@ export class ToastNotifications {
             callback,
             {
                 pending: {
-                    render() { return pendingMessage },
+                    render() { return pendingMessage; },
                 },
                 success: {
-                    render() { return successMessage },
+                    render() { return successMessage; },
                     icon: <span className="bg-gray-200 p-2 rounded-full">{icon}</span>,
                 },
             },
@@ -46,10 +45,10 @@ export class ToastNotifications {
 
     static error(message: string, buttonMessage: string, callback: () => void) {
         toast.error(
-            <div className='w-full flex flex-col items-start justify-between gap-2 text-xs'>
+            <div className="w-full flex flex-col items-start justify-between gap-2 text-xs">
                 {message}
                 <button
-                    className='text-gray-600'
+                    className="text-gray-600"
                     onClick={callback}
                 >
                     {buttonMessage}
@@ -61,7 +60,7 @@ export class ToastNotifications {
                 </span>,
                 hideProgressBar: true,
                 autoClose: 2000,
-                bodyStyle: { gap: '17px', fontFamily: 'Inter', padding: "0 6px", fontSize: '14px', fontWeight: 600, color: 'black' },
+                bodyStyle: { gap: '17px', fontFamily: 'Inter', padding: '0 6px', fontSize: '14px', fontWeight: 600, color: 'black' },
                 style: { padding: '16px', borderRadius: '12px', borderColor: '#7D89B0', borderWidth: '2px', width: '400px' },
             }
         );

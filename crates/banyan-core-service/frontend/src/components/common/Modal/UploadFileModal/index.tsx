@@ -1,16 +1,17 @@
 import React, { useMemo, useState } from 'react';
 import { useIntl } from 'react-intl';
 
-import { useTomb } from '@/contexts/tomb';
-import { useModal } from '@/contexts/modals';
 import { Select } from '../../Select';
 import { AddNewOption } from '../../Select/AddNewOption';
 import { CreateBucketModal } from '../CreateBucketModal';
+import { FolderSelect } from '../../FolderSelect';
+
+import { Bucket } from '@/lib/interfaces/bucket';
+import { useModal } from '@/contexts/modals';
+import { useTomb } from '@/contexts/tomb';
+import { ToastNotifications } from '@/utils/toastNotifications';
 
 import { Upload } from '@static/images/buckets';
-import { Bucket } from '@/lib/interfaces/bucket';
-import { FolderSelect } from '../../FolderSelect';
-import { ToastNotifications } from '@/utils/toastNotifications';
 
 export const UploadFileModal: React.FC<{ bucket?: Bucket }> = ({ bucket }) => {
     const { buckets, uploadFile } = useTomb();
@@ -19,7 +20,7 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket }> = ({ bucket }) => {
     const [selectedBucket, setSelectedBucket] = useState(bucket?.id || '');
     const [selectedFolder, setSelectedFolder] = useState<string[]>([]);
     const [file, setFIle] = useState<File | null>(null);
-    const isUploadDataFilled = useMemo(() => Boolean(selectedBucket && file), [selectedBucket, file])
+    const isUploadDataFilled = useMemo(() => Boolean(selectedBucket && file), [selectedBucket, file]);
 
     const selectBucket = (option: string) => {
         setSelectedBucket(option);
@@ -36,7 +37,7 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket }> = ({ bucket }) => {
     };
 
     const upload = async () => {
-        if (!file) return;
+        if (!file) { return; }
         try {
             const arrayBuffer = await file.arrayBuffer();
             await uploadFile(selectedBucket, selectedFolder.length ? selectedFolder : [], file.name, arrayBuffer);

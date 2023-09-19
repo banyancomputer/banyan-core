@@ -138,7 +138,7 @@ export const KeystoreProvider = ({ children }: any) => {
         if (!keystore) {
             createKeystore()
         }
-    }, []);
+    }, [keystore]);
 
     // Handle loading the escrowed key material from the Next Auth session
     // Occurs on update to the session context

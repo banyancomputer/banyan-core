@@ -1,6 +1,6 @@
-import { Session, getServerSession } from "next-auth";
+import { Session, getServerSession } from 'next-auth';
 import { authOptions } from '../pages/api/auth/[...nextauth]';
-import { AccountFactory, EscrowedDeviceFactory } from "@/lib/db";
+import { AccountFactory, EscrowedDeviceFactory } from '@/lib/db';
 
 export default async function getServerSideProps(context: any) {
     // If the user has a session, serve the page
@@ -19,7 +19,8 @@ export default async function getServerSideProps(context: any) {
             },
         };
     }
+
     return {
-        props: {}
-    }
+        props: {},
+    };
 }

@@ -11,9 +11,11 @@ import { NextPageWithLayout } from '@/pages/page';
 import { KeystoreProvider } from '@/contexts/keystore';
 import { TombProvider } from '@/contexts/tomb';
 import { ModalProvider } from '@/contexts/modals';
+import { FilePreviewProvider } from '@/contexts/filesPreview';
 
 import { Notifications } from '@/components/common/Notifications';
 import { Modal } from '@/components/common/Modal';
+import { FilePreview } from '@/components/common/FilePreview';
 
 import '@static/styles/globals.css';
 
@@ -39,19 +41,22 @@ export default function App({
             <KeystoreProvider>
                 <TombProvider>
                     <ModalProvider>
-                        <ChakraProvider>
-                            <IntlProvider locale={locale} messages={TRANSLATES[locale]} >
-                                <Notifications />
-                                <Modal />
-                                <Head>
-                                    <title>Banyan</title>
-                                    <link rel="icon" href="/static/images/favicon.svg" sizes="any" />
-                                </Head>
-                                {/* Chakra Provider for access to Chakra UI components */}
-                                {/* Get the layout and render the component :) */}
-                                {getLayout(<Component {...pageProps} />)}
-                            </IntlProvider>
-                        </ChakraProvider>
+                        <FilePreviewProvider>
+                            <ChakraProvider>
+                                <IntlProvider locale={locale} messages={TRANSLATES[locale]} >
+                                    <Notifications />
+                                    <Modal />
+                                    <FilePreview />
+                                    <Head>
+                                        <title>Banyan</title>
+                                        <link rel="icon" href="/static/images/favicon.svg" sizes="any" />
+                                    </Head>
+                                    {/* Chakra Provider for access to Chakra UI components */}
+                                    {/* Get the layout and render the component :) */}
+                                    {getLayout(<Component {...pageProps} />)}
+                                </IntlProvider>
+                            </ChakraProvider>
+                        </FilePreviewProvider>
                     </ModalProvider>
                 </TombProvider>
             </KeystoreProvider>
