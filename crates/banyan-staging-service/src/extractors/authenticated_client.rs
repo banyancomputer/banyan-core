@@ -91,7 +91,7 @@ where
         let verification_options = VerificationOptions {
             accept_future: false,
             // TODO: this might not be a quite right, but it's probably fine for now
-            allowed_audiences: Some(HashSet::from_strings(&["banyan-platform"])),
+            //allowed_audiences: Some(HashSet::from_strings(&["banyan-platform"])),
             max_validity: Some(Duration::from_secs(MAXIMUM_TOKEN_AGE)),
             time_tolerance: Some(Duration::from_secs(15)),
             ..Default::default()
