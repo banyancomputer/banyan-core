@@ -23,7 +23,7 @@ const UPLOAD_REQUEST_SIZE_LIMIT: u64 = 100 * 1_024;
 #[derive(Deserialize, Serialize)]
 pub struct UploadRequest {
     metadata_id: Uuid,
-    content_hash: String
+    content_hash: String,
 }
 
 pub async fn handler(
