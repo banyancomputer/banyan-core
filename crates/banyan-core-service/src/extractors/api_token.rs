@@ -71,7 +71,7 @@ where
 
         // Restrict audience as our clients will use the same API key for authorization to multiple
         // services
-        token_validator.set_audience(&["banyan-platform"]);
+        //token_validator.set_audience(&["banyan-platform"]);
 
         // Require all of our keys except for the attestations and proofs
         token_validator.set_required_spec_claims(&["aud", "exp", "nbf", "sub", "iat"]);

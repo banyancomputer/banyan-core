@@ -63,7 +63,7 @@ where
 
         let verification_options = VerificationOptions {
             accept_future: false,
-            allowed_audiences: Some(HashSet::from_strings(&["banyan-staging"])),
+            //allowed_audiences: Some(HashSet::from_strings(&["banyan-staging"])),
             max_validity: Some(Duration::from_secs(MAXIMUM_GRANT_AGE)),
             time_tolerance: Some(Duration::from_secs(15)),
             ..Default::default()
