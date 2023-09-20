@@ -51,7 +51,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     // The active user's session
     const { data: session } = useSession();
     // The active user's keystore
-    const { keystoreInitialized, getEncryptionKey, getApiKey } = useKeystore();
+    const { keystoreInitialized, getEncryptionKey, getApiKey, escrowedDevice } = useKeystore();
     const [tomb, setTomb] = useState<TombWasm | null>(null);
     const [buckets, setBuckets] = useState<Array<Bucket & { mount: WasmMount }>>([]);
     const [trash, setTrash] = useState<Bucket>(new MockBucket());
@@ -271,7 +271,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
     // Initialize the tomb client
     useEffect(() => {
-        if (!keystoreInitialized || !session?.accountId) { return; }
+        if (!keystoreInitialized || !session?.accountId || !escrowedDevice) { return; }
 
         (async () => {
             try {
@@ -287,7 +287,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
                 console.error(err);
             }
         })();
-    }, [keystoreInitialized, session?.accountId]);
+    }, [keystoreInitialized, session?.accountId, escrowedDevice]);
 
     useEffect(() => {
         if (tomb) {
