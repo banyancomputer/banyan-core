@@ -70,8 +70,6 @@ pub async fn handler(
         .map_err(UploadError::InvalidRequestData)?;
     let content_hash = request.content_hash;
 
-    println!("content_hash: {}", content_hash);
-
     let (upload_id, tmp_file_path) =
         record_upload_beginning(&db, client.id(), request.metadata_id, reported_body_length)
             .await?;
