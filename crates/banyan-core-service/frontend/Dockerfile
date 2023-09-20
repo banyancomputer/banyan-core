@@ -1,52 +1,31 @@
-FROM docker.io/library/node:18-alpine AS base
-RUN apk add --no-cache libc6-compat sqlite
-
-
-FROM base AS deps
+FROM docker.io/library/node:18-slim AS base
+RUN apt-get update -y && apt-get install sqlite3 -y
 
 RUN mkdir /app
 COPY package.json yarn.lock /app/
 COPY tomb_build /app/tomb_build
 
+ENV NEXT_TELEMETRY_DISABLED 1
+
 WORKDIR /app
 
 RUN yarn install
 
-
-FROM base AS builder
-WORKDIR /app
-
-COPY --from=deps /app/node_modules /app/node_modules
 COPY . .
 
-ENV NEXT_TELEMETRY_DISABLED 1
-
-RUN yarn build
-
-
-FROM base AS runner
-
-ENV NEXT_TELEMETRY_DISABLED 1
 ENV NODE_ENV production
+RUN yarn build
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-COPY --from=builder /app/public /app/public
-
-RUN mkdir /app/.next
 RUN chown nextjs:nodejs /app/.next
 
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone /app
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static /app/.next/static
-
 USER nextjs
-WORKDIR /app
 
-EXPOSE 3000
+#EXPOSE 3000
 
-ENV PORT 3000
-ENV HOSTNAME "0.0.0.0"
+#ENV PORT 3000
+#ENV HOSTNAME "0.0.0.0"
 
-
-CMD ["node", "server.js"]
+CMD ["yarn", "start"]

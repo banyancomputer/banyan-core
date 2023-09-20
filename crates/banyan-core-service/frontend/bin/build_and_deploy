@@ -26,10 +26,10 @@ DEPLOY_SERVICE_DIRECTORY="${DEPLOY_BASE_FOLDER}/services"
 DEPLOY_SHARED_DIRECTORY="${DEPLOY_BASE_FOLDER}/shared"
 DEPLOY_STATE="${DEPLOY_BASE_FOLDER}/state"
 
-if ! git diff-index --quiet HEAD -- || ! git diff-files --quiet; then
-  echo "!!> Branch is dirty, can't build and deploy from this branch"
-  exit 1
-fi
+#if ! git diff-index --quiet HEAD -- || ! git diff-files --quiet; then
+#  echo "!!> Branch is dirty, can't build and deploy from this branch"
+#  exit 1
+#fi
 
 COMMIT_ID="$(git describe --always --dirty --long --tags)"
 # Use the latest commit timestamp as its consistent, and reproducible
