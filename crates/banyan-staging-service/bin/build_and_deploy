@@ -106,54 +106,54 @@ nohup sh -c "\
   cp -f "${DEPLOY_SERVICE_DIRECTORY}/${SERVICE_NAME}/${VERSIONED_SVC_NAME}.service" "\${HOME}/.config/systemd/user/${SERVICE_NAME}.service"
   systemctl --user daemon-reload
 
-  if systemctl --user is-enabled --quiet ${SERVICE_NAME}.service; then
-    echo '##> Service is enabled lets meddle...'
+  #if systemctl --user is-enabled --quiet ${SERVICE_NAME}.service; then
+  #  echo '##> Service is enabled lets meddle...'
 
-    if systemctl --user is-active --quiet ${SERVICE_NAME}.service; then
-      echo '##> Service is running, attempting a restart...'
+  #  if systemctl --user is-active --quiet ${SERVICE_NAME}.service; then
+  #    echo '##> Service is running, attempting a restart...'
 
-      if ! systemctl --user restart ${SERVICE_NAME}.service &>/dev/null; then
-        echo '##> Service failed to start...'
+  #    if ! systemctl --user restart ${SERVICE_NAME}.service &>/dev/null; then
+  #      echo '##> Service failed to start...'
 
-        if [ -L "${DEPLOY_STATE}/${SERVICE_NAME}.service" ]; then
-          echo '##> Previous version available, attempting to revert...'
+  #      if [ -L "${DEPLOY_STATE}/${SERVICE_NAME}.service" ]; then
+  #        echo '##> Previous version available, attempting to revert...'
 
-          cp -Lf "${DEPLOY_STATE}/${SERVICE_NAME}.service" "\${HOME}/.config/systemd/user/${SERVICE_NAME}.service"
+  #        cp -Lf "${DEPLOY_STATE}/${SERVICE_NAME}.service" "\${HOME}/.config/systemd/user/${SERVICE_NAME}.service"
 
-          systemctl --user daemon-reload
-          systemctl --user restart ${SERVICE_NAME}.service
+  #        systemctl --user daemon-reload
+  #        systemctl --user restart ${SERVICE_NAME}.service
 
-          echo '##> Reverted successfully'
-        else
-          echo '##> No recovery version available'
-        fi
+  #        echo '##> Reverted successfully'
+  #      else
+  #        echo '##> No recovery version available'
+  #      fi
 
-        echo '##> Deploy failed'
-        exit 1
-      fi
+  #      echo '##> Deploy failed'
+  #      exit 1
+  #    fi
 
-      systemctl --user enable ${SERVICE_NAME}.service
+  #    systemctl --user enable ${SERVICE_NAME}.service
 
-      echo '##> Service appears to be healthy'
-    else
-      echo '##> Attempting to start failed service...'
-      systemctl --user start ${SERVICE_NAME}.service &>/dev/null
-      echo '##> Service successfully started'
-    fi
+  #    echo '##> Service appears to be healthy'
+  #  else
+  #    echo '##> Attempting to start failed service...'
+  #    systemctl --user start ${SERVICE_NAME}.service &>/dev/null
+  #    echo '##> Service successfully started'
+  #  fi
 
-    echo '##> Marking the new version as current'
+  #  echo '##> Marking the new version as current'
 
-    if [ -L "${DEPLOY_STATE}/${SERVICE_NAME}.service" ]; then
-      mv "${DEPLOY_STATE}/${SERVICE_NAME}.service" "${DEPLOY_STATE}/${SERVICE_NAME}.service.last"
-    fi
+  #  if [ -L "${DEPLOY_STATE}/${SERVICE_NAME}.service" ]; then
+  #    mv "${DEPLOY_STATE}/${SERVICE_NAME}.service" "${DEPLOY_STATE}/${SERVICE_NAME}.service.last"
+  #  fi
 
-    ln -frs "${DEPLOY_SERVICE_DIRECTORY}/${SERVICE_NAME}/${VERSIONED_SVC_NAME}.service" "${DEPLOY_STATE}/${SERVICE_NAME}.service"
+  #  ln -frs "${DEPLOY_SERVICE_DIRECTORY}/${SERVICE_NAME}/${VERSIONED_SVC_NAME}.service" "${DEPLOY_STATE}/${SERVICE_NAME}.service"
 
-    echo '##> Cleaning up old images...'
-    podman image prune -f
-  else
-    echo '##> Service isnt enabled not starting...'
-  fi
+  #  echo '##> Cleaning up old images...'
+  #  podman image prune -f
+  #else
+  #  echo '##> Service isnt enabled not starting...'
+  #fi
 "
 EOS
 
