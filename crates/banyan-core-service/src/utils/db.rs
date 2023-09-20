@@ -449,12 +449,12 @@ pub async fn read_current_metadata(
 pub async fn create_snapshot(
     metadata_id: &str,
     db_conn: &mut DbConn,
-) -> Result<models::Snapshot, sqlx::Error> {
+) -> Result<models::CreateSnapshot, sqlx::Error> {
     sqlx::query_as!(
-        models::Snapshot,
+        models::CreateSnapshot,
         r#"INSERT INTO snapshots (metadata_id)
         VALUES ($1)
-        RETURNING id, metadata_id, created_at;"#,
+        RETURNING id, created_at;"#,
         metadata_id
     )
     .fetch_one(&mut *db_conn.0)
@@ -478,6 +478,7 @@ pub async fn read_snapshot(
         r#"SELECT 
             s.id,
             s.metadata_id as "metadata_id!",
+            m.data_size as "size!",
             s.created_at as "created_at!"
         FROM 
             snapshots s
@@ -508,6 +509,7 @@ pub async fn read_all_snapshots(
         r#"SELECT 
             s.id,
             s.metadata_id as "metadata_id!",
+            m.data_size as "size!",
             s.created_at as "created_at!"
         FROM 
             snapshots s

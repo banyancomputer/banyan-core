@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "INSERT INTO snapshots (metadata_id)\n        VALUES ($1)\n        RETURNING id, metadata_id, created_at;",
+  "query": "INSERT INTO snapshots (metadata_id)\n        VALUES ($1)\n        RETURNING id, created_at;",
   "describe": {
     "columns": [
       {
@@ -9,13 +9,8 @@
         "type_info": "Text"
       },
       {
-        "name": "metadata_id",
-        "ordinal": 1,
-        "type_info": "Text"
-      },
-      {
         "name": "created_at",
-        "ordinal": 2,
+        "ordinal": 1,
         "type_info": "Datetime"
       }
     ],
@@ -24,9 +19,8 @@
     },
     "nullable": [
       false,
-      false,
       false
     ]
   },
-  "hash": "99a20bd3d4eb0e7c852e21116937882b6ca4af3d1f1374eb69c2417e83408b2c"
+  "hash": "fad0ad694a120cee713232e7de3d430a04487e3fddddb23c1e02169132b90186"
 }

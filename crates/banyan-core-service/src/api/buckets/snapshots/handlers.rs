@@ -99,6 +99,7 @@ pub async fn read_all(
                 .map(|s| responses::ReadSnapshotResponse {
                     id: s.id,
                     metadata_id: s.metadata_id,
+                    size: s.size,
                     created_at: s.created_at.timestamp(),
                 })
                 .collect(),
