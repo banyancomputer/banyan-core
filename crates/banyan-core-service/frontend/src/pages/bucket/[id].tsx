@@ -21,7 +21,7 @@ const Bucket: NextPageWithLayout = () => {
 
     useEffect(() => {
         if (selectedBucket?.id !== bucketId) { return; }
-        (async() => {
+        (async () => {
             try {
                 getSelectedBucketFiles(folderLocation);
             } catch (error: any) { };
@@ -32,6 +32,12 @@ const Bucket: NextPageWithLayout = () => {
         const bucket = buckets.find(bucket => bucket.id === bucketId);
         bucket && selectBucket(bucket);
     }, [bucketId, buckets.length]);
+
+    useEffect(() => {
+        return () => {
+            selectBucket(null);
+        };
+    }, []);
 
     return (
         <section className="py-9 px-4">
