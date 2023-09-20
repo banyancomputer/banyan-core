@@ -121,12 +121,9 @@ where
         let usage = match claims
             .custom
             .capabilities
-            // TODO: configure this
-            .get("http://127.0.0.1:3002")
-        {
-            Some(u) => u,
-            None => return Err(StorageGrantError::WrongTarget),
-        };
+            .iter()
+            .next()
+            .unwrap();
 
         let grant_id =
             Uuid::parse_str(&usage.grant_id).map_err(|_| StorageGrantError::InvalidGrant)?;
