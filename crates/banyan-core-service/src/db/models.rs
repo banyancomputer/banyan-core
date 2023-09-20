@@ -139,6 +139,13 @@ pub struct Metadata {
     pub updated_at: chrono::NaiveDateTime,
 }
 
+/// Bucket Metadata with Snapshot - data associated with the metadata for a bucket
+#[derive(Debug, Serialize, FromRow)]
+pub struct MetadataWithSnapshot {
+    pub metadata: Metadata,
+    pub snapshot_id: Option<String>,
+}
+
 /// Snapshot of a piece of metadata
 #[derive(Debug, Serialize, FromRow)]
 pub struct Snapshot {
