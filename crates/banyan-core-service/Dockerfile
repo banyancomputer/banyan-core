@@ -36,7 +36,7 @@ RUN mv /usr/local/cargo/bin/$SERVICE_NAME /usr/local/cargo/bin/service
 # Use an absolutely minimal container with the barest permissions to limit
 # sources of security vulnerabilities, and ensure that any security issues are
 # extremely scoped in how they can be exploited.
-FROM gcr.io/distroless/cc-debian11:nonroot
+FROM gcr.io/distroless/cc-debian11:nonroot-debug
 
 # Bring in just our final compiled artifact
 COPY --from=build /usr/local/cargo/bin/service /usr/bin/service
