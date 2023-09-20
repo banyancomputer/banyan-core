@@ -21,7 +21,6 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
     const [bucketsCopy, setBucketsCopy] = useState(buckets);
     const { getFile } = useTomb();
     const { openFile } = useFilePreview();
-
     const [sortState, setSortState] = useState<{ criteria: string; direction: 'ASC' | 'DESC' | '' }>({ criteria: '', direction: '' });
 
     const sort = (criteria: string) => {

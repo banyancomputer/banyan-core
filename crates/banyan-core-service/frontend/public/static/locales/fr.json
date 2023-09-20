@@ -137,5 +137,12 @@
 	"migrationFees": "Frais de migration",
 	"paymentIssue": "Il y a un problème avec votre mode de paiement",
 	"updatePaymentMethod": "Veuillez mettre à jour votre mode de paiement pour garantir un service continu",
-	"backToFiles": "Retour à tous les fichiers"
+	"backToFiles": "Retour à tous les fichiers",
+	"share": "Partager",
+	"requestCanceled": "Demande annulée",
+	"yourFile": "Votre dossier",
+	"hasBeenShared": "a été partagé avec",
+	"shareWith": "Partager avec",
+	"enterEmail": "Entrer l'adresse e-mail",
+	"recipientEmail": "Adresse e-mail du destinataire"
 }
