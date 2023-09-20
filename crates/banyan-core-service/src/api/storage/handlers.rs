@@ -35,7 +35,7 @@ pub async fn finalize_upload(
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "internal server error".to_string(),
             )
-                .into_response()
+                .into_response();
         }
     };
 
