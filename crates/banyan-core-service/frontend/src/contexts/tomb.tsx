@@ -22,7 +22,8 @@ interface TombInterface {
     getSelectedBucketFiles: (path: string[]) => void;
     download: (bucket: Bucket, path: string[], name: string) => Promise<void>;
     getFile: (bucket: Bucket, path: string[], name: string) => Promise<ArrayBuffer>;
-    shareWith: (bucket: Bucket, key: string) => Promise<void>
+    shareWith: (bucket: Bucket, key: string) => Promise<void>;
+    copyToClipboard: (bucket: Bucket, path: string[], name: string) => void;
     takeColdSnapshot: (bucket: Bucket) => Promise<void>;
     getBuckets: () => Promise<void>;
     moveTo: (bucket: Bucket, from: string[], to: string[]) => Promise<void>;
@@ -37,7 +38,7 @@ interface TombInterface {
     getBucketKeys: (id: string) => Promise<BucketKey[]>;
     purgeSnapshot: (id: string) => void;
     deleteBucket: (id: string) => void;
-    deleteFile: (bucket: Bucket, path: string[]) => void;
+    deleteFile: (bucket: Bucket, path: string[], name: string) => void;
     approveBucketAccess: (id: string) => Promise<void>;
     restore: (bucket: Bucket, snapshot: WasmSnapshot) => Promise<void>;
     removeBucketAccess: (id: string) => Promise<void>;
@@ -263,9 +264,10 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         setUsageLimit(usageLimit);
     };
 
-    const deleteFile = async (bucket: Bucket, path: string[]) => {
+    const deleteFile = async (bucket: Bucket, path: string[], name: string) => {
         await mountMutex(bucket, async mount => {
-            await mount.rm(path);
+            await mount.rm([...path, name]);
+            await getSelectedBucketFiles(path);
         });
     };
 
@@ -311,7 +313,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
                 getTrashBucket, takeColdSnapshot, getUsedStorage, createDirectory,
                 uploadFile, renameFile, getBucketKeys, purgeSnapshot, getSelectedBucketFiles,
                 removeBucketAccess, approveBucketAccess, getUsageLimit,
-                shareWith, download, moveTo, restore, deleteFile
+                shareWith, download, moveTo, restore, deleteFile, copyToClipboard
             }}
         >
             {children}

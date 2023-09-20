@@ -16,6 +16,7 @@ export const TakeSnapshotModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         try {
             await takeColdSnapshot(bucket);
             ToastNotifications.notify(`${messages.snapshotWasTaken}`, <HiOutlineLightningBolt size="20px" />);
+            closeModal();
         } catch (error: any) {
             closeModal();
             ToastNotifications.error(`${messages.snapshotError}`, `${messages.tryAgain}`, takeSnapshot);

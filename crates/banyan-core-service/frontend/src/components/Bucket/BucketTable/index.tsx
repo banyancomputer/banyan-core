@@ -35,23 +35,17 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         setSortState(prev => ({ criteria, direction: prev.direction === 'ASC' ? 'DESC' : 'ASC' }));
     };
 
-    const handleClick = async (event: React.MouseEvent<HTMLTableRowElement>, bucket: Bucket, file: BucketFile) => {
-        const target = event.target as HTMLDivElement;
-        if (target.id) return;
+    const goTofolder = (bucket: Bucket, file: BucketFile) => {
+        push(`/bucket/${bucket.id}?${file.name}`);
+    };
 
-        if (file.type === 'dir') {
-            push(`/bucket/${bucket.id}?${file.name}`);
-
-            return;
-        };
-
+    const previewFile = async (bucket: Bucket, file: BucketFile) => {
         try {
-            const byteArray = await getFile(bucket, [], file.name);
+            const byteArray = await getFile(bucket, folderLocation, file.name);
             openFile(byteArray, file.name);
         } catch (error) {
             console.log(error);
         }
-
     };
 
     useEffect(() => {
@@ -121,13 +115,9 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                     <tbody>
                         {
                             bucketCopy.files.map((file, index) =>
-                                <tr
-                                    key={index}
-                                    onClick={event => handleClick(event, bucket, file)}
-                                    className='cursor-pointer'
-                                >
-                                    <td>
-                                        <span className="px-6 py-4 flex items-center gap-3">
+                                <tr key={index}>
+                                    <td onClick={() => file.type === 'dir' ? goTofolder(bucket, file) : previewFile(bucket, file)}>
+                                        <span className="px-6 py-4 flex items-center gap-3 cursor-pointer">
                                             <FileIcon fileName={file.name} className="p-2 bg-gray-200 rounded-full" />{file.name}
                                         </span>
                                     </td>
@@ -140,7 +130,7 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                             )
                         }
                     </tbody>
-                </table >
+                </table>
             </div>
             {!bucketCopy.files.length ?
                 <div className="h-full flex m-12 flex-col items-center justify-center saturate-0">

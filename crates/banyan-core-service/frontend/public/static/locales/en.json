@@ -139,5 +139,12 @@
 	"billing": "Billing",
 	"paymentIssue": "There is an issue with your payment method",
 	"updatePaymentMethod": "Please update your form of payment to ensure continued service",
-	"backToFiles": "Back to all files"
+	"backToFiles": "Back to all files",
+	"share": "Share",
+	"requestCanceled": "Request cancelled",
+	"yourFile": "Your file",
+	"hasBeenShared": "has been shared with",
+	"shareWith": "Share With",
+	"enterEmail": "Enter email",
+	"recipientEmail": "Recipient email"
 }

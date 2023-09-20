@@ -14,9 +14,9 @@ export const DeleteFileModal: React.FC<{ bucket: Bucket; file: BucketFile }> = (
     const { deleteFile } = useTomb();
     const folderLocation = useFolderLocation();
 
-    const removeFile = async() => {
+    const removeFile = async () => {
         try {
-            await deleteFile(bucket, [...folderLocation, file.name]);
+            await deleteFile(bucket, [...folderLocation], file.name);
             closeModal();
             ToastNotifications.notify(`${messages.file} "${file.name}" ${messages.wasDeleted}`, <FiTrash2 size="20px" />);
         } catch (error: any) {
