@@ -27,12 +27,15 @@ export const BucketSnapshotsModal: React.FC<{ bucketId: string }> = ({ bucketId 
         })();
     }, [tomb]);
 
+    console.log(snapshots);
+    
+
     return (
         <div className="w-snapshotsModal flex flex-col gap-8" >
             <div>
-                <h4 className="text-m font-semibold ">{`${messages.versions}`}</h4>
+                <h4 className="text-m font-semibold ">{`${messages.viewColdSnapshots}`}</h4>
                 <p className="mt-2 text-gray-600">
-                    {`${messages.stayUpToDate}`}
+                    {`${messages.accessPreviousVersions}`}
                 </p>
             </div>
             <div className="flex flex-col gap-3">
@@ -44,15 +47,12 @@ export const BucketSnapshotsModal: React.FC<{ bucketId: string }> = ({ bucketId 
                         <div className="flex align-middle gap-2 flex-grow">
                             <AiOutlineFile size="20px" />
                             <span className="font-semibold">
-                                {snapshot.version} Version
+                                {snapshot.version} snapshot
                             </span>
                         </div>
                         <div>
                             {getDateLabel(Date.now())}
                         </div>
-                        <button className="ml-1">
-                            <FiDownload size="20px" stroke="#4A5578" />
-                        </button>
                     </div>
                 )}
             </div>
