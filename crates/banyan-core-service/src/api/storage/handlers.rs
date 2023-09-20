@@ -52,7 +52,7 @@ pub async fn finalize_upload(
     ).fetch_one(&mut *db_conn.0).await;
 
     match maybe_updated_metadata {
-        Ok(_) => (StatusCode::NO_CONTENT, "").into_response(),
+        Ok(_) => StatusCode::NO_CONTENT.into_response(),
         Err(err) => {
             tracing::error!("unable to update bucket metadata after push: {err}");
             (
