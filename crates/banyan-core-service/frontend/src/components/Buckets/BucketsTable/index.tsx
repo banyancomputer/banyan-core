@@ -35,23 +35,17 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
         push(`/bucket/${bucket}`);
     };
 
-    const handleClick = async (event: React.MouseEvent<HTMLTableRowElement>, bucket: Bucket, file: BucketFile) => {
-        const target = event.target as HTMLDivElement;
-        if (target.id) return;
+    const goTofolder = (bucket: Bucket, file: BucketFile) => {
+        push(`/bucket/${bucket.id}?${file.name}`);
+    };
 
-        if (file.type === 'dir') {
-            push(`/bucket/${bucket.id}?${file.name}`);
-
-            return;
-        };
-
+    const previewFile = async (bucket: Bucket, file: BucketFile) => {
         try {
             const byteArray = await getFile(bucket, [], file.name);
             openFile(byteArray, file.name);
         } catch (error) {
             console.log(error);
         }
-
     };
 
     useEffect(() => {
@@ -134,13 +128,14 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
                             </tr>
                             {
                                 bucket.files.map((file, index) =>
-                                    <tr
-                                        key={index}
-                                        onClick={event => handleClick(event, bucket, file)}
-                                        className="cursor-pointer"
-                                    >
+                                    <tr key={index}>
                                         <td className="px-3 py-4"></td>
-                                        <td className="px-3 py-4 flex items-center gap-3 "><FileIcon fileName={file.name} /> {file.name} </td>
+                                        <td
+                                            className="px-3 py-4 flex items-center gap-3 cursor-pointer"
+                                            onClick={() => file.type === 'dir' ? goTofolder(bucket, file) : previewFile(bucket, file)}
+                                        >
+                                            <FileIcon fileName={file.name} /> {file.name}
+                                        </td>
                                         <td className="px-3 py-4"></td>
                                         <td className="px-3 py-4"></td>
                                         <td className="px-3 py-4">{getDateLabel(Number(file.metadata.modified))}</td>

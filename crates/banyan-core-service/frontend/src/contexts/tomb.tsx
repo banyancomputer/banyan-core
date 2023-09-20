@@ -22,7 +22,8 @@ interface TombInterface {
     getSelectedBucketFiles: (path: string[]) => void;
     download: (bucket: Bucket, path: string[], name: string) => Promise<void>;
     getFile: (bucket: Bucket, path: string[], name: string) => Promise<ArrayBuffer>;
-    shareWith: (bucket: Bucket, key: string) => Promise<void>
+    shareWith: (bucket: Bucket, key: string) => Promise<void>;
+    copyToClipboard: (bucket: Bucket, path: string[], name: string) => void;
     takeColdSnapshot: (bucket: Bucket) => Promise<void>;
     getBuckets: () => Promise<void>;
     moveTo: (bucket: Bucket, from: string[], to: string[]) => Promise<void>;
@@ -267,6 +268,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         await mountMutex(bucket, async mount => {
             await mount.rm(path);
         });
+        getSelectedBucketFiles(path);
     };
 
     // Initialize the tomb client
@@ -311,7 +313,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
                 getTrashBucket, takeColdSnapshot, getUsedStorage, createDirectory,
                 uploadFile, renameFile, getBucketKeys, purgeSnapshot, getSelectedBucketFiles,
                 removeBucketAccess, approveBucketAccess, getUsageLimit,
-                shareWith, download, moveTo, restore, deleteFile
+                shareWith, download, moveTo, restore, deleteFile, copyToClipboard
             }}
         >
             {children}
