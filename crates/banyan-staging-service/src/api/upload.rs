@@ -399,6 +399,7 @@ where
                             INSERT INTO
                                 blocks (cid, data_length)
                                 VALUES ($1, $2)
+                                ON CONFLICT(cid) DO UPDATE SET data_length = $2 WHERE data_length <> $2
                                 RETURNING id;
                         "#,
                     )
@@ -423,6 +424,7 @@ where
                             INSERT INTO
                                 blocks (cid, data_length)
                                 VALUES ($1, $2)
+                                ON CONFLICT(cid) DO UPDATE SET data_length = $2 WHERE data_length <> $2
                                 RETURNING id;
                         "#,
                     )
