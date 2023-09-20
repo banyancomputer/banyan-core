@@ -148,9 +148,17 @@ pub struct MetadataWithSnapshot {
 
 /// Snapshot of a piece of metadata
 #[derive(Debug, Serialize, FromRow)]
+pub struct CreateSnapshot {
+    pub id: String,
+    pub created_at: chrono::NaiveDateTime,
+}
+
+/// Snapshot of a piece of metadata
+#[derive(Debug, Serialize, FromRow)]
 pub struct Snapshot {
     pub id: String,
     pub metadata_id: String,
+    pub size: i64,
     pub created_at: chrono::NaiveDateTime,
 }
 

@@ -84,13 +84,13 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bu
     const removeAction = useMemo(() => new Action(`${messages.remove}`, <FiTrash2 size="18px" />, remove), []);
 
     const hotInrecactiveActions = [
-        downloadAction, copyLinkdAction, moveToAction, makeCopyAction, renameAction, removeAction, vierFileVersionsAction
+        downloadAction, copyLinkdAction, moveToAction, makeCopyAction, renameAction, removeAction
     ];
     const warmInrecactiveActions = [
         downloadAction, moveToAction, makeCopyAction, renameAction, removeAction
     ];
     const coldIntecactiveActions = [
-        vierFileVersionsAction
+        downloadAction
     ];
     const hotBackupActions = [
         downloadAction, makeCopyAction

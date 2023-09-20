@@ -10,6 +10,7 @@ pub struct CreateSnapshotResponse {
 pub struct ReadSnapshotResponse {
     pub id: String,
     pub metadata_id: String,
+    pub size: i64,
     pub created_at: i64,
 }
 
