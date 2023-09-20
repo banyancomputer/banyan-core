@@ -49,7 +49,7 @@ pub async fn finalize_upload(
         bucket_id,
         current,
         metadata_id,
-    ).fetch_one(&mut *db_conn.0).await;
+    ).fetch_optional(&mut *db_conn.0).await;
 
     match maybe_updated_metadata {
         Ok(_) => StatusCode::NO_CONTENT.into_response(),
