@@ -38,7 +38,7 @@ interface TombInterface {
     getBucketKeys: (id: string) => Promise<BucketKey[]>;
     purgeSnapshot: (id: string) => void;
     deleteBucket: (id: string) => void;
-    deleteFile: (bucket: Bucket, path: string[]) => void;
+    deleteFile: (bucket: Bucket, path: string[], name: string) => void;
     approveBucketAccess: (id: string) => Promise<void>;
     restore: (bucket: Bucket, snapshot: WasmSnapshot) => Promise<void>;
     removeBucketAccess: (id: string) => Promise<void>;
@@ -264,11 +264,11 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         setUsageLimit(usageLimit);
     };
 
-    const deleteFile = async (bucket: Bucket, path: string[]) => {
+    const deleteFile = async (bucket: Bucket, path: string[], name: string) => {
         await mountMutex(bucket, async mount => {
-            await mount.rm(path);
+            await mount.rm([...path, name]);
+            await getSelectedBucketFiles(path);
         });
-        getSelectedBucketFiles(path);
     };
 
     // Initialize the tomb client
