@@ -18,7 +18,7 @@ interface TombInterface {
     isTrashLoading: boolean;
     areBucketsLoading: boolean;
     selectedBucket: Bucket | null;
-    selectBucket: (bucket: Bucket) => void;
+    selectBucket: (bucket: Bucket | null) => void;
     getSelectedBucketFiles: (path: string[]) => void;
     download: (bucket: Bucket, path: string[], name: string) => Promise<void>;
     getFile: (bucket: Bucket, path: string[], name: string) => Promise<ArrayBuffer>;
@@ -192,13 +192,13 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         // await tomb.purgeSnapshot(id);
     };
     /** Sets selected bucket into state */
-    const selectBucket = async (bucket: Bucket) => {
+    const selectBucket = async (bucket: Bucket | null) => {
         setSelectedBucket(bucket);
     };
 
     /** Returns selected bucket state according to current folder location. */
     const getSelectedBucketFiles = async (path: string[]) => {
-        if (!selectedBucket) return
+        if (!selectedBucket) return;
 
         const files = await selectedBucket?.mount.ls(path);
         setSelectedBucket(bucket => bucket ? ({ ...bucket, files }) : bucket);
@@ -223,6 +223,12 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         try {
             await bucket?.mount.add([...path, name], file);
             const files = await bucket?.mount.ls(path) || [];
+
+            if (selectedBucket) {
+                setSelectedBucket(bucket => bucket ? ({ ...bucket, files }) : bucket);
+                return;
+            };
+
             setBuckets(buckets => buckets.map(bucket => {
                 if (bucket.id === id) {
                     return ({ ...bucket, files: files })
