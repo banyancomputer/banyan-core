@@ -299,8 +299,8 @@ pub async fn read_metadata(
     bucket_id: &str,
     metadata_id: &str,
     db_conn: &mut DbConn,
-) -> Result<models::Metadata, sqlx::Error> {
-    sqlx::query_as!(
+) -> Result<models::MetadataWithSnapshot, sqlx::Error> {
+    let maybe_metadata = sqlx::query_as!(
         models::Metadata,
         r#"SELECT id, bucket_id, root_cid, metadata_cid, expected_data_size, data_size as "data_size!", state, metadata_size as "metadata_size!", metadata_hash as "metadata_hash!", created_at, updated_at
         FROM metadata WHERE id = $1 AND bucket_id = $2;"#,
@@ -308,7 +308,40 @@ pub async fn read_metadata(
         bucket_id,
     )
     .fetch_one(&mut *db_conn.0)
-    .await
+    .await;
+    let metadata = match maybe_metadata {
+        Ok(metadata) => metadata,
+        Err(err) => match err {
+            sqlx::Error::RowNotFound => return Err(sqlx::Error::RowNotFound),
+            _ => return Err(err),
+        },
+    };
+    let maybe_snapshot_id = sqlx::query_as!(
+        models::CreatedResource,
+        r#"SELECT 
+            s.id as "id"
+        FROM 
+            snapshots s
+        INNER JOIN 
+            metadata m ON m.id = s.metadata_id
+        WHERE 
+            m.id = $1 AND m.bucket_id = $2;"#,
+        metadata_id,
+        bucket_id
+    )
+    .fetch_optional(&mut *db_conn.0)
+    .await?;
+    let metadata_with_snapshot = match maybe_snapshot_id {
+        Some(cr) => models::MetadataWithSnapshot {
+            metadata,
+            snapshot_id: Some(cr.id),
+        },
+        None => models::MetadataWithSnapshot {
+            metadata,
+            snapshot_id: None,
+        },
+    };
+    Ok(metadata_with_snapshot)
 }
 
 /// Authorize access to the given metadata_id by checking if it references a given bucket_id.
@@ -363,15 +396,48 @@ pub async fn read_all_metadata(
 pub async fn read_current_metadata(
     bucket_id: &str,
     db_conn: &mut DbConn,
-) -> Result<models::Metadata, sqlx::Error> {
-    sqlx::query_as!(
+) -> Result<models::MetadataWithSnapshot, sqlx::Error> {
+    let maybe_metadata = sqlx::query_as!(
         models::Metadata,
         r#"SELECT id, bucket_id, root_cid, metadata_cid, expected_data_size, data_size as "data_size!", state, metadata_size as "metadata_size!", metadata_hash as "metadata_hash!", created_at, updated_at
         FROM metadata WHERE bucket_id = $1 AND state = 'current';"#,
         bucket_id,
     )
     .fetch_one(&mut *db_conn.0)
-    .await
+    .await;
+    let metadata = match maybe_metadata {
+        Ok(metadata) => metadata,
+        Err(err) => match err {
+            sqlx::Error::RowNotFound => return Err(sqlx::Error::RowNotFound),
+            _ => return Err(err),
+        },
+    };
+    let maybe_snapshot_id = sqlx::query_as!(
+        models::CreatedResource,
+        r#"SELECT 
+            s.id as "id"
+        FROM 
+            snapshots s
+        INNER JOIN 
+            metadata m ON m.id = s.metadata_id
+        WHERE 
+            m.id = $1 AND m.bucket_id = $2;"#,
+        metadata.id,
+        bucket_id
+    )
+    .fetch_optional(&mut *db_conn.0)
+    .await?;
+    let metadata_with_snapshot = match maybe_snapshot_id {
+        Some(cr) => models::MetadataWithSnapshot {
+            metadata,
+            snapshot_id: Some(cr.id),
+        },
+        None => models::MetadataWithSnapshot {
+            metadata,
+            snapshot_id: None,
+        },
+    };
+    Ok(metadata_with_snapshot)
 }
 
 /// Create a snapshot and return the created resource.
