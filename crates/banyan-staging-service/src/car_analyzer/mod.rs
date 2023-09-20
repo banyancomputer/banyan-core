@@ -372,6 +372,9 @@ pub enum StreamingCarAnalyzerError {
     #[error("received {0} bytes which exceeds our upper limit for an individual CAR upload")]
     MaxCarSizeExceeded(u64),
 
+    #[error("received car file did not have expected blake3 digest")]
+    MismatchedIntegrityHash,
+
     #[error("received car file did not have the expected pragma")]
     PragmaMismatch,
 

@@ -23,6 +23,7 @@ const UPLOAD_REQUEST_SIZE_LIMIT: u64 = 100 * 1_024;
 #[derive(Deserialize, Serialize)]
 pub struct UploadRequest {
     metadata_id: Uuid,
+    content_hash: String
 }
 
 pub async fn handler(
@@ -67,6 +68,7 @@ pub async fn handler(
         .json()
         .await
         .map_err(UploadError::InvalidRequestData)?;
+    let content_hash = request.content_hash;
 
     let (upload_id, tmp_file_path) =
         record_upload_beginning(&db, client.id(), request.metadata_id, reported_body_length)
@@ -98,6 +100,7 @@ pub async fn handler(
         &upload_id,
         reported_body_length as usize,
         car_field,
+        content_hash,
         &mut writer,
     )
     .await
@@ -362,8 +365,8 @@ async fn process_upload_stream<S>(
 
     upload_id: &str,
     expected_size: usize,
-
     mut stream: S,
+    content_hash: String,
     writer: &mut Box<dyn AsyncWrite + Unpin + Send>,
 ) -> Result<CarReport, UploadStreamError>
 where
@@ -371,12 +374,13 @@ where
 {
     let mut car_analyzer = StreamingCarAnalyzer::new();
     let mut warning_issued = false;
-
+    let mut hasher = blake3::Hasher::new();
     while let Some(chunk) = stream
         .try_next()
         .await
         .map_err(UploadStreamError::ReadFailed)?
     {
+        hasher.update(&chunk);
         car_analyzer.add_chunk(&chunk)?;
         writer
             .write_all(&chunk)
@@ -488,7 +492,12 @@ where
             );
         }
     }
-
+    let hash = hasher.finalize().to_string();
+    if hash != content_hash {
+        return Err(UploadStreamError::ParseError(
+            StreamingCarAnalyzerError::MismatchedIntegrityHash,
+        ));
+    }
     Ok(car_analyzer.report()?)
 }
 
