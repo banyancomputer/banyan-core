@@ -27,10 +27,7 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
         setSortState(prev => ({ criteria, direction: prev.direction === 'ASC' ? 'DESC' : 'ASC' }));
     };
 
-    const goToBucket = (event: React.MouseEvent<HTMLTableRowElement>, bucket: string) => {
-        const target = event.target as HTMLDivElement;
-        if (target.id) return;
-
+    const goToBucket = (bucket: string) => {
         push(`/bucket/${bucket}`);
     };
 
@@ -109,11 +106,11 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
                 <tbody>
                     {bucketsCopy.map(bucket =>
                         <React.Fragment key={bucket.id}>
-                            <tr
-                                className="bg-table-cellBackground cursor-pointer"
-                                onClick={event => goToBucket(event, bucket.id)}
-                            >
-                                <td className="px-3 py-4">{bucket.name}</td>
+                            <tr className="bg-table-cellBackground">
+                                <td
+                                    className="px-3 py-4  cursor-pointer"
+                                    onClick={() => goToBucket(bucket.id)}
+                                >{bucket.name}</td>
                                 <td className="px-3 py-4"></td>
                                 <td className="px-3 py-4">{bucket.storageClass}</td>
                                 <td className="px-3 py-4">{bucket.bucketType}</td>
