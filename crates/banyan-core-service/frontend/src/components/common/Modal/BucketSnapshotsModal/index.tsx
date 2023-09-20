@@ -27,9 +27,6 @@ export const BucketSnapshotsModal: React.FC<{ bucketId: string }> = ({ bucketId 
         })();
     }, [tomb]);
 
-    console.log(snapshots);
-    
-
     return (
         <div className="w-snapshotsModal flex flex-col gap-8" >
             <div>
