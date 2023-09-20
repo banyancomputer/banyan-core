@@ -118,7 +118,7 @@ where
         // todo: need to take in the domain the provider will be running as to lookup expectedUsage
         // what we were authorized as but we can fake it for now by assuming we're the only one
         // present.
-        let usage = match claims
+        let usage = claims
             .custom
             .capabilities
             .iter()
@@ -126,7 +126,7 @@ where
             .unwrap();
 
         let grant_id =
-            Uuid::parse_str(&usage.grant_id).map_err(|_| StorageGrantError::InvalidGrant)?;
+            Uuid::parse_str(&usage.1.grant_id).map_err(|_| StorageGrantError::InvalidGrant)?;
 
         let grant = StorageGrant {
             platform_id,
@@ -134,7 +134,7 @@ where
 
             client_fingerprint,
 
-            authorized_data_size: usage.available_storage,
+            authorized_data_size: usage.1.available_storage,
         };
 
         Ok(grant)
