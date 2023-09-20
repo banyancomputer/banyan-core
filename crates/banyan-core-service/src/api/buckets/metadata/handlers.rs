@@ -457,13 +457,14 @@ pub async fn read(
     // Read the metadata
     let response = match db::read_metadata(&bucket_id, &metadata_id, &mut db_conn).await {
         Ok(bm) => responses::ReadMetadataResponse {
-            id: bm.id.to_string(),
-            root_cid: bm.root_cid,
-            metadata_cid: bm.metadata_cid,
-            data_size: bm.data_size,
-            state: bm.state,
-            created_at: bm.created_at.timestamp(),
-            updated_at: bm.updated_at.timestamp(),
+            id: bm.metadata.id.to_string(),
+            root_cid: bm.metadata.root_cid,
+            metadata_cid: bm.metadata.metadata_cid,
+            data_size: bm.metadata.data_size,
+            state: bm.metadata.state,
+            created_at: bm.metadata.created_at.timestamp(),
+            updated_at: bm.metadata.updated_at.timestamp(),
+            snapshot_id: bm.snapshot_id,
         },
         Err(err) => match err {
             sqlx::Error::RowNotFound => {
@@ -510,6 +511,7 @@ pub async fn read_all(
                     state: bm.state,
                     created_at: bm.created_at.timestamp(),
                     updated_at: bm.updated_at.timestamp(),
+                    snapshot_id: None,
                 })
                 .collect(),
         ),
@@ -549,13 +551,14 @@ pub async fn read_current(
     };
     let response = match db::read_current_metadata(&bucket_id, &mut db_conn).await {
         Ok(bm) => responses::ReadMetadataResponse {
-            id: bm.id.to_string(),
-            root_cid: bm.root_cid,
-            metadata_cid: bm.metadata_cid,
-            data_size: bm.data_size,
-            state: bm.state,
-            created_at: bm.created_at.timestamp(),
-            updated_at: bm.updated_at.timestamp(),
+            id: bm.metadata.id.to_string(),
+            root_cid: bm.metadata.root_cid,
+            metadata_cid: bm.metadata.metadata_cid,
+            data_size: bm.metadata.data_size,
+            state: bm.metadata.state,
+            created_at: bm.metadata.created_at.timestamp(),
+            updated_at: bm.metadata.updated_at.timestamp(),
+            snapshot_id: bm.snapshot_id,
         },
         Err(err) => match err {
             sqlx::Error::RowNotFound => {
