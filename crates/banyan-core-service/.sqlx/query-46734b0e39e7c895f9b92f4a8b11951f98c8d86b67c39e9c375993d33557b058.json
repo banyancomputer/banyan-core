@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "UPDATE metadata SET state = $1, data_size = $2 WHERE id = $3 RETURNING id;",
+  "query": "UPDATE metadata SET state = $1 WHERE bucket_id = $2 AND state = $3 AND id != $4 RETURNING id;",
   "describe": {
     "columns": [
       {
@@ -10,11 +10,11 @@
       }
     ],
     "parameters": {
-      "Right": 3
+      "Right": 4
     },
     "nullable": [
       false
     ]
   },
-  "hash": "8cea1ac640214c6c54b97e927beeb5b9c7a0e7b7d57a57beaa5497d89eb779b1"
+  "hash": "46734b0e39e7c895f9b92f4a8b11951f98c8d86b67c39e9c375993d33557b058"
 }
