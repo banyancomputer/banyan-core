@@ -48,6 +48,8 @@ async fn create_grant_user(
         Executor::Postgres(ref mut conn) => {
             use crate::database::postgres;
 
+            tracing::info!(platform_id = ?grant.platform_id(), fingerprint = ?grant.client_fingerprint(), key = ?request.public_key, "query for PG is: INSERT INTO clients (platform_id, fingerprint, public_key) VALUES ($1::uuid, $2, $3) RETURNING id;");
+
             let client_id : String = sqlx::query_scalar("INSERT INTO clients (platform_id, fingerprint, public_key) VALUES ($1::uuid, $2, $3) RETURNING id;")
                 .bind(grant.platform_id().to_string())
                 .bind(grant.client_fingerprint())
