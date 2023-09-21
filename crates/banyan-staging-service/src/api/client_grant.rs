@@ -49,7 +49,7 @@ async fn create_grant_user(
             use crate::database::postgres;
 
             let client_id : String = sqlx::query_scalar("INSERT INTO clients (platform_id, fingerprint, public_key) VALUES ($1, $2, $3) RETURNING id;")
-                .bind(grant.platform_id().to_string())
+                .bind(grant.platform_id())
                 .bind(grant.client_fingerprint())
                 .bind(request.public_key)
                 .fetch_one(conn)
