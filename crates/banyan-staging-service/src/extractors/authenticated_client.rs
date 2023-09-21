@@ -189,16 +189,17 @@ pub async fn current_consumed_storage(
 
             tracing::info!("current consumed storage");
 
-            let maybe_consumed_storage: Option<i32> = sqlx::query_scalar(
-                "SELECT SUM(COALESCE(final_size, reported_size)) AS consumed_storage FROM uploads WHERE client_id = $1::uuid;",
-            )
-            .bind(client_id)
-            .fetch_optional(conn)
-            .await
-            .map_err(postgres::map_sqlx_error)
-            .map_err(AuthenticatedClientError::DbFailure)?;
+            //let maybe_consumed_storage: Option<i32> = sqlx::query_scalar(
+            //    "SELECT SUM(COALESCE(final_size, reported_size)) AS consumed_storage FROM uploads WHERE client_id = $1::uuid;",
+            //)
+            //.bind(client_id)
+            //.fetch_optional(conn)
+            //.await
+            //.map_err(postgres::map_sqlx_error)
+            //.map_err(AuthenticatedClientError::DbFailure)?;
 
-            Ok(maybe_consumed_storage.unwrap_or(0) as u64)
+            //Ok(maybe_consumed_storage.unwrap_or(0) as u64)
+            Ok(0)
         }
 
         #[cfg(feature = "sqlite")]
