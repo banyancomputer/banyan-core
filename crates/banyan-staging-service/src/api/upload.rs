@@ -351,7 +351,13 @@ async fn report_upload_to_platform(
         .json(&metadata_size)
         .bearer_auth(bearer_token);
 
-    let response = request.send().await.unwrap();
+    let response = match request.send().await {
+        Ok(resp) => resp,
+        Err(err) => {
+            tracing::error!("failed to send confirmation request to the banyan-platform");
+            return Err(UploadError::FailedReport(b"unable to connect"));
+        }
+    };
 
     if response.status().is_success() {
         Ok(())
