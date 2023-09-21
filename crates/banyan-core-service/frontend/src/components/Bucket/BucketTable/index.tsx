@@ -35,6 +35,7 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         setSortState(prev => ({ criteria, direction: prev.direction === 'ASC' ? 'DESC' : 'ASC' }));
     };
 
+    // TODO: this state is incorrect
     const goTofolder = (bucket: Bucket, file: BucketFile) => {
         push(`/bucket/${bucket.id}?${file.name}`);
     };
