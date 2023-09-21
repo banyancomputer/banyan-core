@@ -406,9 +406,10 @@ where
 
                     sqlx::query(
                         r#"
-                            INSERT OR IGNORE INTO
+                            INSERT INTO
                                 blocks (cid, data_length)
-                                VALUES ($1, $2);
+                                VALUES ($1, $2)
+                                ON CONFLICT(cid) DO NOTHING;
                         "#,
                     )
                     .bind(cid_string.clone())
