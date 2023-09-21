@@ -58,7 +58,7 @@ async fn create_grant_user(
                 .await
                 .map_err(|e| {
                     tracing::info!("error in create_grant_user: {e}");
-                    postgres::map_sqlx_error(r)
+                    postgres::map_sqlx_error(e)
                 })
                 //.map_err(postgres::map_sqlx_error)
                 .map_err(GrantError::Database)?;
@@ -100,7 +100,7 @@ async fn existing_grant_user(
                     .await
                     .map_err(|e| {
                         tracing::info!("error in existing_grant_user: {e}");
-                        postgres::map_sqlx_error(r)
+                        postgres::map_sqlx_error(e)
                     })
                     //.map_err(postgres::map_sqlx_error)
                     .map_err(GrantError::Database)?;
@@ -143,7 +143,7 @@ async fn create_storage_grant(
                 .await
                 .map_err(|e| {
                     tracing::info!("error in create_storage_grant: {e}");
-                    postgres::map_sqlx_error(r)
+                    postgres::map_sqlx_error(e)
                 });
                 //.map_err(postgres::map_sqlx_error);
 
