@@ -1,4 +1,4 @@
-use std::cellections::HashSet;
+use std::collections::HashSet;
 use std::sync::OnceLock;
 
 use axum::extract::rejection::TypedHeaderRejection;
