@@ -56,7 +56,11 @@ async fn create_grant_user(
                 .bind(request.public_key)
                 .fetch_one(conn)
                 .await
-                .map_err(postgres::map_sqlx_error)
+                .map_err(|e| {
+                    tracing::info!("error in create_grant_user: {e}");
+                    postgres::map_sqlx_error(r)
+                })
+                //.map_err(postgres::map_sqlx_error)
                 .map_err(GrantError::Database)?;
 
             Ok(Uuid::parse_str(&client_id).unwrap())
@@ -94,7 +98,11 @@ async fn existing_grant_user(
                     .bind(grant.client_fingerprint())
                     .fetch_optional(conn)
                     .await
-                    .map_err(postgres::map_sqlx_error)
+                    .map_err(|e| {
+                        tracing::info!("error in existing_grant_user: {e}");
+                        postgres::map_sqlx_error(r)
+                    })
+                    //.map_err(postgres::map_sqlx_error)
                     .map_err(GrantError::Database)?;
 
             Ok(user_id.map(|b| Uuid::parse_str(b.id.as_str()).unwrap()))
@@ -133,7 +141,11 @@ async fn create_storage_grant(
                 .bind(grant.authorized_data_size() as i64)
                 .fetch_one(conn)
                 .await
-                .map_err(postgres::map_sqlx_error);
+                .map_err(|e| {
+                    tracing::info!("error in create_storage_grant: {e}");
+                    postgres::map_sqlx_error(r)
+                });
+                //.map_err(postgres::map_sqlx_error);
 
             match grant_id {
                 Ok(gid) => Ok(Uuid::parse_str(gid.id.as_str()).unwrap()),
