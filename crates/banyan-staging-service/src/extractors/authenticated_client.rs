@@ -146,6 +146,8 @@ pub async fn current_authorized_storage(
         Executor::Postgres(ref mut conn) => {
             use crate::database::postgres;
 
+            tracing::info!("current authorized storage");
+
             let maybe_allowed_storage: Option<i32> = sqlx::query_scalar(
                 "SELECT allowed_storage FROM storage_grants WHERE client_id = $1::uuid ORDER BY created_at DESC LIMIT 1;",
             )
@@ -185,7 +187,9 @@ pub async fn current_consumed_storage(
         Executor::Postgres(ref mut conn) => {
             use crate::database::postgres;
 
-            let maybe_consumed_storage: Option<i64> = sqlx::query_scalar(
+            tracing::info!("current consumed storage");
+
+            let maybe_consumed_storage: Option<i32> = sqlx::query_scalar(
                 "SELECT SUM(COALESCE(final_size, reported_size)) AS consumed_storage FROM uploads WHERE client_id = $1::uuid;",
             )
             .bind(client_id)
@@ -223,6 +227,8 @@ pub async fn id_from_fingerprint(
         #[cfg(feature = "postgres")]
         Executor::Postgres(ref mut conn) => {
             use crate::database::postgres;
+
+            tracing::info!("id from fingerprint");
 
             let maybe_remote_id: Option<RemoteId> = sqlx::query_as(
                 "SELECT CAST(id AS TEXT) as id, CAST(platform_id AS TEXT) as platform_id, public_key FROM clients WHERE fingerprint = $1;",
