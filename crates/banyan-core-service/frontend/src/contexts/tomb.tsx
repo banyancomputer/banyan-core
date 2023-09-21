@@ -144,7 +144,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     /** Downloads file. */
     const download = async (bucket: Bucket, path: string[], name: string) => {
         const link = document.createElement('a');
-        const arrayBuffer: ArrayBuffer = await getFile(bucket, path, name);
+        const arrayBuffer: Uint8Array = await getFile(bucket, path, name);
         const blob = new Blob([arrayBuffer], { type: 'application/octet-stream' });
         const objectURL = URL.createObjectURL(blob);
         link.href = objectURL;
@@ -221,7 +221,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     const uploadFile = async (id: string, path: string[], name: string, file: ArrayBuffer) => {
         const bucket = buckets.find(bucket => bucket.id == id);
         try {
-            await bucket?.mount.add([...path, name], file);
+            await bucket?.mount.write([...path, name], file);
             const files = await bucket?.mount.ls(path) || [];
 
             if (selectedBucket) {
@@ -288,7 +288,8 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
                 const tomb = new TombWasm(
                     apiKey,
                     session.accountId,
-                    'https://api.data.banyan.computer'
+                    process.env.NEXT_PUBLIC_API_URL || 'https://api.data.banyan.computer',
+                    process.env.NEXT_PUBLIC_DATA_URL || 'https://distributor.data.banyan.computer',
                 );
                 setTomb(tomb);
             } catch (err) {

@@ -522,7 +522,8 @@ export class TombWasm {
     *
     * * `web_signing_key` - The CryptoKeyPair to use for signing requests
     * * `account_id` - The id of the account to use
-    * * `api_endpoint` - The API endpoint to use
+    * * `core_endpoint` - The API endpoint to use for core
+    * * `data_endpoint` - The API endpoint to use for data
     *
     * # Returns
     *
@@ -531,14 +532,17 @@ export class TombWasm {
     * Don't call it from multiple threads in parallel!
     * @param {any} web_signing_key
     * @param {string} account_id
-    * @param {string} api_endpoint
+    * @param {string} core_endpoint
+    * @param {string} data_endpoint
     */
-    constructor(web_signing_key, account_id, api_endpoint) {
+    constructor(web_signing_key, account_id, core_endpoint, data_endpoint) {
         const ptr0 = passStringToWasm0(account_id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(api_endpoint, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const ptr1 = passStringToWasm0(core_endpoint, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len1 = WASM_VECTOR_LEN;
-        const ret = wasm.tombwasm_new(addHeapObject(web_signing_key), ptr0, len0, ptr1, len1);
+        const ptr2 = passStringToWasm0(data_endpoint, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len2 = WASM_VECTOR_LEN;
+        const ret = wasm.tombwasm_new(addHeapObject(web_signing_key), ptr0, len0, ptr1, len1, ptr2, len2);
         return TombWasm.__wrap(ret);
     }
     /**
@@ -1084,10 +1088,10 @@ export class WasmMount {
         return takeObject(ret);
     }
     /**
-    * Add a file
+    * Write a file
     * # Arguments
-    * * `path_segments` - The path to add to (as an Array)
-    * * `content_buffer` - The content to add (as an ArrayBuffer)
+    * * `path_segments` - The path to write to (as an Array)
+    * * `content_buffer` - The content to write (as an ArrayBuffer)
     * # Returns
     * Promise<void> in js speak
     * # Errors
@@ -1098,8 +1102,8 @@ export class WasmMount {
     * @param {ArrayBuffer} content_buffer
     * @returns {Promise<void>}
     */
-    add(path_segments, content_buffer) {
-        const ret = wasm.wasmmount_add(this.__wbg_ptr, addHeapObject(path_segments), addHeapObject(content_buffer));
+    write(path_segments, content_buffer) {
+        const ret = wasm.wasmmount_write(this.__wbg_ptr, addHeapObject(path_segments), addHeapObject(content_buffer));
         return takeObject(ret);
     }
     /**
@@ -1113,7 +1117,7 @@ export class WasmMount {
     * A Promise<ArrayBuffer> in js speak
     * @param {Array<any>} path_segments
     * @param {string | undefined} _version
-    * @returns {Promise<ArrayBuffer>}
+    * @returns {Promise<Uint8Array>}
     */
     readBytes(path_segments, _version) {
         var ptr0 = isLikeNone(_version) ? 0 : passStringToWasm0(_version, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
@@ -1327,8 +1331,8 @@ export function __wbindgen_bigint_from_u64(arg0) {
     return addHeapObject(ret);
 };
 
-export function __wbg_wasmbucketkey_new(arg0) {
-    const ret = WasmBucketKey.__wrap(arg0);
+export function __wbindgen_object_clone_ref(arg0) {
+    const ret = getObject(arg0);
     return addHeapObject(ret);
 };
 
@@ -1342,23 +1346,14 @@ export function __wbg_wasmbucket_new(arg0) {
     return addHeapObject(ret);
 };
 
-export function __wbindgen_object_clone_ref(arg0) {
-    const ret = getObject(arg0);
-    return addHeapObject(ret);
-};
-
 export function __wbg_wasmmount_new(arg0) {
     const ret = WasmMount.__wrap(arg0);
     return addHeapObject(ret);
 };
 
-export function __wbindgen_string_get(arg0, arg1) {
-    const obj = getObject(arg1);
-    const ret = typeof(obj) === 'string' ? obj : undefined;
-    var ptr1 = isLikeNone(ret) ? 0 : passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    var len1 = WASM_VECTOR_LEN;
-    getInt32Memory0()[arg0 / 4 + 1] = len1;
-    getInt32Memory0()[arg0 / 4 + 0] = ptr1;
+export function __wbg_wasmbucketkey_new(arg0) {
+    const ret = WasmBucketKey.__wrap(arg0);
+    return addHeapObject(ret);
 };
 
 export function __wbindgen_number_new(arg0) {
@@ -1374,6 +1369,15 @@ export function __wbindgen_cb_drop(arg0) {
     }
     const ret = false;
     return ret;
+};
+
+export function __wbindgen_string_get(arg0, arg1) {
+    const obj = getObject(arg1);
+    const ret = typeof(obj) === 'string' ? obj : undefined;
+    var ptr1 = isLikeNone(ret) ? 0 : passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    var len1 = WASM_VECTOR_LEN;
+    getInt32Memory0()[arg0 / 4 + 1] = len1;
+    getInt32Memory0()[arg0 / 4 + 0] = ptr1;
 };
 
 export function __wbg_new_abda76e883ba8a5f() {
@@ -1907,11 +1911,6 @@ export function __wbg_newwithlength_e5d69174d6984cd7(arg0) {
     return addHeapObject(ret);
 };
 
-export function __wbg_buffer_f5b7059c439f330d(arg0) {
-    const ret = getObject(arg0).buffer;
-    return addHeapObject(ret);
-};
-
 export function __wbg_subarray_13db269f57aa838d(arg0, arg1, arg2) {
     const ret = getObject(arg0).subarray(arg1 >>> 0, arg2 >>> 0);
     return addHeapObject(ret);
@@ -1953,13 +1952,13 @@ export function __wbindgen_memory() {
     return addHeapObject(ret);
 };
 
-export function __wbindgen_closure_wrapper2905(arg0, arg1, arg2) {
-    const ret = makeMutClosure(arg0, arg1, 1185, __wbg_adapter_32);
+export function __wbindgen_closure_wrapper2910(arg0, arg1, arg2) {
+    const ret = makeMutClosure(arg0, arg1, 1189, __wbg_adapter_32);
     return addHeapObject(ret);
 };
 
-export function __wbindgen_closure_wrapper2959(arg0, arg1, arg2) {
-    const ret = makeMutClosure(arg0, arg1, 1197, __wbg_adapter_35);
+export function __wbindgen_closure_wrapper2964(arg0, arg1, arg2) {
+    const ret = makeMutClosure(arg0, arg1, 1201, __wbg_adapter_35);
     return addHeapObject(ret);
 };
 

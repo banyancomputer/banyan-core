@@ -103,7 +103,8 @@ export class TombWasm {
 *
 * * `web_signing_key` - The CryptoKeyPair to use for signing requests
 * * `account_id` - The id of the account to use
-* * `api_endpoint` - The API endpoint to use
+* * `core_endpoint` - The API endpoint to use for core
+* * `data_endpoint` - The API endpoint to use for data
 *
 * # Returns
 *
@@ -112,9 +113,10 @@ export class TombWasm {
 * Don't call it from multiple threads in parallel!
 * @param {any} web_signing_key
 * @param {string} account_id
-* @param {string} api_endpoint
+* @param {string} core_endpoint
+* @param {string} data_endpoint
 */
-  constructor(web_signing_key: any, account_id: string, api_endpoint: string);
+  constructor(web_signing_key: any, account_id: string, core_endpoint: string, data_endpoint: string);
 /**
 * Get the total consume storage space for the current account in bytes
 * @returns {Promise<bigint>}
@@ -357,10 +359,10 @@ export class WasmMount {
 */
   mkdir(path_segments: Array<any>): Promise<void>;
 /**
-* Add a file
+* Write a file
 * # Arguments
-* * `path_segments` - The path to add to (as an Array)
-* * `content_buffer` - The content to add (as an ArrayBuffer)
+* * `path_segments` - The path to write to (as an Array)
+* * `content_buffer` - The content to write (as an ArrayBuffer)
 * # Returns
 * Promise<void> in js speak
 * # Errors
@@ -371,7 +373,7 @@ export class WasmMount {
 * @param {ArrayBuffer} content_buffer
 * @returns {Promise<void>}
 */
-  add(path_segments: Array<any>, content_buffer: ArrayBuffer): Promise<void>;
+  write(path_segments: Array<any>, content_buffer: ArrayBuffer): Promise<void>;
 /**
 * Read a file from a mounted bucket
 *     Read / Download a File (takes a path to a file inside the bucket, not available for cold only buckets)
@@ -383,9 +385,9 @@ export class WasmMount {
 * A Promise<ArrayBuffer> in js speak
 * @param {Array<any>} path_segments
 * @param {string | undefined} _version
-* @returns {Promise<ArrayBuffer>}
+* @returns {Promise<Uint8Array>}
 */
-  readBytes(path_segments: Array<any>, _version?: string): Promise<ArrayBuffer>;
+  readBytes(path_segments: Array<any>, _version?: string): Promise<Uint8Array>;
 /**
 * Mv a file or directory
 * # Arguments
