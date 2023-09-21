@@ -272,6 +272,21 @@ export class WasmBucketKey {
   pem(): string;
 }
 /**
+* A wrapper around a bucket metadata
+*/
+export class WasmBucketMetadata {
+  free(): void;
+/**
+*/
+  readonly bucketId: string;
+/**
+*/
+  readonly id: string;
+/**
+*/
+  readonly snapshotId: string;
+}
+/**
 * Mount point for a Bucket in WASM
 *
 * Enables to call Fs methods on a Bucket, pulling metadata from a remote
@@ -289,6 +304,11 @@ export class WasmMount {
 * @returns {boolean}
 */
   locked(): boolean;
+/**
+* Returns the Metadata for the bucket
+* @returns {WasmBucketMetadata}
+*/
+  metadata(): WasmBucketMetadata;
 /**
 * List the contents of the bucket at a provided path
 *
@@ -411,15 +431,24 @@ export class WasmMount {
 */
   shareWith(bucket_key_id: string): Promise<void>;
 /**
+* Return boolean indiciating whether or not the currently mounted bucket is snapshotted
+* # Returns
+* A boolean
+* # Errors
+* * "missing metadata" - If the metadata is missing
+* @returns {boolean}
+*/
+  hasSnapshot(): boolean;
+/**
 * Snapshot a mounted bucket
 * # Returns
 * A Promise<void> in js speak
 * # Errors
 * * "missing metadata" - If the metadata is missing
 * * "could not snapshot" - If the snapshot fails
-* @returns {Promise<void>}
+* @returns {Promise<WasmSnapshot>}
 */
-  snapshot(): Promise<void>;
+  snapshot(): Promise<WasmSnapshot>;
 /**
 * Restore a mounted bucket
 * # Arguments
@@ -436,19 +465,18 @@ export class WasmMount {
 export class WasmSnapshot {
   free(): void;
 /**
-* @returns {string}
 */
-  id(): string;
+  readonly bucketId: string;
 /**
-* @returns {string}
 */
-  bucketId(): string;
+  readonly createdAt: bigint;
 /**
-* @returns {string}
 */
-  metadataId(): string;
+  readonly id: string;
 /**
-* @returns {bigint}
 */
-  dataSize(): bigint;
+  readonly metadataId: string;
+/**
+*/
+  readonly size: bigint;
 }

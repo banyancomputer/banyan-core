@@ -264,7 +264,7 @@ function getArrayU8FromWasm0(ptr, len) {
     ptr = ptr >>> 0;
     return getUint8Memory0().subarray(ptr / 1, ptr / 1 + len);
 }
-function __wbg_adapter_250(arg0, arg1, arg2, arg3) {
+function __wbg_adapter_256(arg0, arg1, arg2, arg3) {
     wasm.wasm_bindgen__convert__closures__invoke2_mut__h1c3c0aafea56a32b(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
 }
 
@@ -887,6 +887,88 @@ export class WasmBucketKey {
     }
 }
 /**
+* A wrapper around a bucket metadata
+*/
+export class WasmBucketMetadata {
+
+    static __wrap(ptr) {
+        ptr = ptr >>> 0;
+        const obj = Object.create(WasmBucketMetadata.prototype);
+        obj.__wbg_ptr = ptr;
+
+        return obj;
+    }
+
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+
+        return ptr;
+    }
+
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_wasmbucketmetadata_free(ptr);
+    }
+    /**
+    * @returns {string}
+    */
+    get id() {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.wasmbucketmetadata_id(retptr, this.__wbg_ptr);
+            var r0 = getInt32Memory0()[retptr / 4 + 0];
+            var r1 = getInt32Memory0()[retptr / 4 + 1];
+            deferred1_0 = r0;
+            deferred1_1 = r1;
+            return getStringFromWasm0(r0, r1);
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+        }
+    }
+    /**
+    * @returns {string}
+    */
+    get bucketId() {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.wasmbucketmetadata_bucket_id(retptr, this.__wbg_ptr);
+            var r0 = getInt32Memory0()[retptr / 4 + 0];
+            var r1 = getInt32Memory0()[retptr / 4 + 1];
+            deferred1_0 = r0;
+            deferred1_1 = r1;
+            return getStringFromWasm0(r0, r1);
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+        }
+    }
+    /**
+    * @returns {string}
+    */
+    get snapshotId() {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.wasmbucketmetadata_snapshot_id(retptr, this.__wbg_ptr);
+            var r0 = getInt32Memory0()[retptr / 4 + 0];
+            var r1 = getInt32Memory0()[retptr / 4 + 1];
+            deferred1_0 = r0;
+            deferred1_1 = r1;
+            return getStringFromWasm0(r0, r1);
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+        }
+    }
+}
+/**
 * Mount point for a Bucket in WASM
 *
 * Enables to call Fs methods on a Bucket, pulling metadata from a remote
@@ -928,6 +1010,25 @@ export class WasmMount {
     locked() {
         const ret = wasm.wasmmount_locked(this.__wbg_ptr);
         return ret !== 0;
+    }
+    /**
+    * Returns the Metadata for the bucket
+    * @returns {WasmBucketMetadata}
+    */
+    metadata() {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.wasmmount_metadata(retptr, this.__wbg_ptr);
+            var r0 = getInt32Memory0()[retptr / 4 + 0];
+            var r1 = getInt32Memory0()[retptr / 4 + 1];
+            var r2 = getInt32Memory0()[retptr / 4 + 2];
+            if (r2) {
+                throw takeObject(r1);
+            }
+            return WasmBucketMetadata.__wrap(r0);
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
     }
     /**
     * List the contents of the bucket at a provided path
@@ -1076,13 +1177,25 @@ export class WasmMount {
         return takeObject(ret);
     }
     /**
+    * Return boolean indiciating whether or not the currently mounted bucket is snapshotted
+    * # Returns
+    * A boolean
+    * # Errors
+    * * "missing metadata" - If the metadata is missing
+    * @returns {boolean}
+    */
+    hasSnapshot() {
+        const ret = wasm.wasmmount_hasSnapshot(this.__wbg_ptr);
+        return ret !== 0;
+    }
+    /**
     * Snapshot a mounted bucket
     * # Returns
     * A Promise<void> in js speak
     * # Errors
     * * "missing metadata" - If the metadata is missing
     * * "could not snapshot" - If the snapshot fails
-    * @returns {Promise<void>}
+    * @returns {Promise<WasmSnapshot>}
     */
     snapshot() {
         const ret = wasm.wasmmount_snapshot(this.__wbg_ptr);
@@ -1130,12 +1243,12 @@ export class WasmSnapshot {
     /**
     * @returns {string}
     */
-    id() {
+    get id() {
         let deferred1_0;
         let deferred1_1;
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-            wasm.wasmsnapshot_id(retptr, this.__wbg_ptr);
+            wasm.wasmbucketmetadata_id(retptr, this.__wbg_ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
             deferred1_0 = r0;
@@ -1149,12 +1262,12 @@ export class WasmSnapshot {
     /**
     * @returns {string}
     */
-    bucketId() {
+    get bucketId() {
         let deferred1_0;
         let deferred1_1;
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-            wasm.wasmsnapshot_bucketId(retptr, this.__wbg_ptr);
+            wasm.wasmbucketmetadata_bucket_id(retptr, this.__wbg_ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
             deferred1_0 = r0;
@@ -1168,12 +1281,12 @@ export class WasmSnapshot {
     /**
     * @returns {string}
     */
-    metadataId() {
+    get metadataId() {
         let deferred1_0;
         let deferred1_1;
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-            wasm.wasmsnapshot_metadataId(retptr, this.__wbg_ptr);
+            wasm.wasmsnapshot_metadata_id(retptr, this.__wbg_ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
             deferred1_0 = r0;
@@ -1187,8 +1300,15 @@ export class WasmSnapshot {
     /**
     * @returns {bigint}
     */
-    dataSize() {
-        const ret = wasm.wasmsnapshot_dataSize(this.__wbg_ptr);
+    get size() {
+        const ret = wasm.wasmsnapshot_size(this.__wbg_ptr);
+        return BigInt.asUintN(64, ret);
+    }
+    /**
+    * @returns {bigint}
+    */
+    get createdAt() {
+        const ret = wasm.wasmsnapshot_created_at(this.__wbg_ptr);
         return ret;
     }
 }
@@ -1212,13 +1332,13 @@ export function __wbg_wasmbucketkey_new(arg0) {
     return addHeapObject(ret);
 };
 
-export function __wbg_wasmbucket_new(arg0) {
-    const ret = WasmBucket.__wrap(arg0);
+export function __wbg_wasmsnapshot_new(arg0) {
+    const ret = WasmSnapshot.__wrap(arg0);
     return addHeapObject(ret);
 };
 
-export function __wbg_wasmmount_new(arg0) {
-    const ret = WasmMount.__wrap(arg0);
+export function __wbg_wasmbucket_new(arg0) {
+    const ret = WasmBucket.__wrap(arg0);
     return addHeapObject(ret);
 };
 
@@ -1227,9 +1347,18 @@ export function __wbindgen_object_clone_ref(arg0) {
     return addHeapObject(ret);
 };
 
-export function __wbg_wasmsnapshot_new(arg0) {
-    const ret = WasmSnapshot.__wrap(arg0);
+export function __wbg_wasmmount_new(arg0) {
+    const ret = WasmMount.__wrap(arg0);
     return addHeapObject(ret);
+};
+
+export function __wbindgen_string_get(arg0, arg1) {
+    const obj = getObject(arg1);
+    const ret = typeof(obj) === 'string' ? obj : undefined;
+    var ptr1 = isLikeNone(ret) ? 0 : passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    var len1 = WASM_VECTOR_LEN;
+    getInt32Memory0()[arg0 / 4 + 1] = len1;
+    getInt32Memory0()[arg0 / 4 + 0] = ptr1;
 };
 
 export function __wbindgen_number_new(arg0) {
@@ -1245,15 +1374,6 @@ export function __wbindgen_cb_drop(arg0) {
     }
     const ret = false;
     return ret;
-};
-
-export function __wbindgen_string_get(arg0, arg1) {
-    const obj = getObject(arg1);
-    const ret = typeof(obj) === 'string' ? obj : undefined;
-    var ptr1 = isLikeNone(ret) ? 0 : passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    var len1 = WASM_VECTOR_LEN;
-    getInt32Memory0()[arg0 / 4 + 1] = len1;
-    getInt32Memory0()[arg0 / 4 + 0] = ptr1;
 };
 
 export function __wbg_new_abda76e883ba8a5f() {
@@ -1726,7 +1846,7 @@ export function __wbg_new_43f1b47c28813cbd(arg0, arg1) {
             const a = state0.a;
             state0.a = 0;
             try {
-                return __wbg_adapter_250(a, state0.b, arg0, arg1);
+                return __wbg_adapter_256(a, state0.b, arg0, arg1);
             } finally {
                 state0.a = a;
             }
@@ -1833,13 +1953,13 @@ export function __wbindgen_memory() {
     return addHeapObject(ret);
 };
 
-export function __wbindgen_closure_wrapper2891(arg0, arg1, arg2) {
-    const ret = makeMutClosure(arg0, arg1, 1186, __wbg_adapter_32);
+export function __wbindgen_closure_wrapper2905(arg0, arg1, arg2) {
+    const ret = makeMutClosure(arg0, arg1, 1185, __wbg_adapter_32);
     return addHeapObject(ret);
 };
 
-export function __wbindgen_closure_wrapper2945(arg0, arg1, arg2) {
-    const ret = makeMutClosure(arg0, arg1, 1198, __wbg_adapter_35);
+export function __wbindgen_closure_wrapper2959(arg0, arg1, arg2) {
+    const ret = makeMutClosure(arg0, arg1, 1197, __wbg_adapter_35);
     return addHeapObject(ret);
 };
 
