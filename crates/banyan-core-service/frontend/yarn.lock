@@ -5263,7 +5263,7 @@ toggle-selection@^1.0.6:
   integrity sha512-BiZS+C1OS8g/q2RRbJmy59xpyghNBqrr6k5L/uKBGRsTfxmu3ffiRnd8mlGPUVayg8pvfi5urfnu8TU7DVOkLQ==
 
 "tomb-wasm-experimental@file:./tomb_build":
-  version "1.2.0"
+  version "1.1.0"
 
 toposort-class@^1.0.1:
   version "1.0.1"

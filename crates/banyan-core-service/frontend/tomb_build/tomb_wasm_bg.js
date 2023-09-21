@@ -264,7 +264,7 @@ function getArrayU8FromWasm0(ptr, len) {
     ptr = ptr >>> 0;
     return getUint8Memory0().subarray(ptr / 1, ptr / 1 + len);
 }
-function __wbg_adapter_250(arg0, arg1, arg2, arg3) {
+function __wbg_adapter_256(arg0, arg1, arg2, arg3) {
     wasm.wasm_bindgen__convert__closures__invoke2_mut__h1c3c0aafea56a32b(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
 }
 
@@ -522,7 +522,8 @@ export class TombWasm {
     *
     * * `web_signing_key` - The CryptoKeyPair to use for signing requests
     * * `account_id` - The id of the account to use
-    * * `api_endpoint` - The API endpoint to use
+    * * `core_endpoint` - The API endpoint to use for core
+    * * `data_endpoint` - The API endpoint to use for data
     *
     * # Returns
     *
@@ -531,14 +532,17 @@ export class TombWasm {
     * Don't call it from multiple threads in parallel!
     * @param {any} web_signing_key
     * @param {string} account_id
-    * @param {string} api_endpoint
+    * @param {string} core_endpoint
+    * @param {string} data_endpoint
     */
-    constructor(web_signing_key, account_id, api_endpoint) {
+    constructor(web_signing_key, account_id, core_endpoint, data_endpoint) {
         const ptr0 = passStringToWasm0(account_id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(api_endpoint, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const ptr1 = passStringToWasm0(core_endpoint, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len1 = WASM_VECTOR_LEN;
-        const ret = wasm.tombwasm_new(addHeapObject(web_signing_key), ptr0, len0, ptr1, len1);
+        const ptr2 = passStringToWasm0(data_endpoint, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len2 = WASM_VECTOR_LEN;
+        const ret = wasm.tombwasm_new(addHeapObject(web_signing_key), ptr0, len0, ptr1, len1, ptr2, len2);
         return TombWasm.__wrap(ret);
     }
     /**
@@ -887,6 +891,88 @@ export class WasmBucketKey {
     }
 }
 /**
+* A wrapper around a bucket metadata
+*/
+export class WasmBucketMetadata {
+
+    static __wrap(ptr) {
+        ptr = ptr >>> 0;
+        const obj = Object.create(WasmBucketMetadata.prototype);
+        obj.__wbg_ptr = ptr;
+
+        return obj;
+    }
+
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+
+        return ptr;
+    }
+
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_wasmbucketmetadata_free(ptr);
+    }
+    /**
+    * @returns {string}
+    */
+    get id() {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.wasmbucketmetadata_id(retptr, this.__wbg_ptr);
+            var r0 = getInt32Memory0()[retptr / 4 + 0];
+            var r1 = getInt32Memory0()[retptr / 4 + 1];
+            deferred1_0 = r0;
+            deferred1_1 = r1;
+            return getStringFromWasm0(r0, r1);
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+        }
+    }
+    /**
+    * @returns {string}
+    */
+    get bucketId() {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.wasmbucketmetadata_bucket_id(retptr, this.__wbg_ptr);
+            var r0 = getInt32Memory0()[retptr / 4 + 0];
+            var r1 = getInt32Memory0()[retptr / 4 + 1];
+            deferred1_0 = r0;
+            deferred1_1 = r1;
+            return getStringFromWasm0(r0, r1);
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+        }
+    }
+    /**
+    * @returns {string}
+    */
+    get snapshotId() {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.wasmbucketmetadata_snapshot_id(retptr, this.__wbg_ptr);
+            var r0 = getInt32Memory0()[retptr / 4 + 0];
+            var r1 = getInt32Memory0()[retptr / 4 + 1];
+            deferred1_0 = r0;
+            deferred1_1 = r1;
+            return getStringFromWasm0(r0, r1);
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+        }
+    }
+}
+/**
 * Mount point for a Bucket in WASM
 *
 * Enables to call Fs methods on a Bucket, pulling metadata from a remote
@@ -928,6 +1014,25 @@ export class WasmMount {
     locked() {
         const ret = wasm.wasmmount_locked(this.__wbg_ptr);
         return ret !== 0;
+    }
+    /**
+    * Returns the Metadata for the bucket
+    * @returns {WasmBucketMetadata}
+    */
+    metadata() {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.wasmmount_metadata(retptr, this.__wbg_ptr);
+            var r0 = getInt32Memory0()[retptr / 4 + 0];
+            var r1 = getInt32Memory0()[retptr / 4 + 1];
+            var r2 = getInt32Memory0()[retptr / 4 + 2];
+            if (r2) {
+                throw takeObject(r1);
+            }
+            return WasmBucketMetadata.__wrap(r0);
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
     }
     /**
     * List the contents of the bucket at a provided path
@@ -983,10 +1088,10 @@ export class WasmMount {
         return takeObject(ret);
     }
     /**
-    * Add a file
+    * Write a file
     * # Arguments
-    * * `path_segments` - The path to add to (as an Array)
-    * * `content_buffer` - The content to add (as an ArrayBuffer)
+    * * `path_segments` - The path to write to (as an Array)
+    * * `content_buffer` - The content to write (as an ArrayBuffer)
     * # Returns
     * Promise<void> in js speak
     * # Errors
@@ -997,8 +1102,8 @@ export class WasmMount {
     * @param {ArrayBuffer} content_buffer
     * @returns {Promise<void>}
     */
-    add(path_segments, content_buffer) {
-        const ret = wasm.wasmmount_add(this.__wbg_ptr, addHeapObject(path_segments), addHeapObject(content_buffer));
+    write(path_segments, content_buffer) {
+        const ret = wasm.wasmmount_write(this.__wbg_ptr, addHeapObject(path_segments), addHeapObject(content_buffer));
         return takeObject(ret);
     }
     /**
@@ -1012,7 +1117,7 @@ export class WasmMount {
     * A Promise<ArrayBuffer> in js speak
     * @param {Array<any>} path_segments
     * @param {string | undefined} _version
-    * @returns {Promise<ArrayBuffer>}
+    * @returns {Promise<Uint8Array>}
     */
     readBytes(path_segments, _version) {
         var ptr0 = isLikeNone(_version) ? 0 : passStringToWasm0(_version, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
@@ -1076,13 +1181,25 @@ export class WasmMount {
         return takeObject(ret);
     }
     /**
+    * Return boolean indiciating whether or not the currently mounted bucket is snapshotted
+    * # Returns
+    * A boolean
+    * # Errors
+    * * "missing metadata" - If the metadata is missing
+    * @returns {boolean}
+    */
+    hasSnapshot() {
+        const ret = wasm.wasmmount_hasSnapshot(this.__wbg_ptr);
+        return ret !== 0;
+    }
+    /**
     * Snapshot a mounted bucket
     * # Returns
     * A Promise<void> in js speak
     * # Errors
     * * "missing metadata" - If the metadata is missing
     * * "could not snapshot" - If the snapshot fails
-    * @returns {Promise<void>}
+    * @returns {Promise<WasmSnapshot>}
     */
     snapshot() {
         const ret = wasm.wasmmount_snapshot(this.__wbg_ptr);
@@ -1130,12 +1247,12 @@ export class WasmSnapshot {
     /**
     * @returns {string}
     */
-    id() {
+    get id() {
         let deferred1_0;
         let deferred1_1;
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-            wasm.wasmsnapshot_id(retptr, this.__wbg_ptr);
+            wasm.wasmbucketmetadata_id(retptr, this.__wbg_ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
             deferred1_0 = r0;
@@ -1149,12 +1266,12 @@ export class WasmSnapshot {
     /**
     * @returns {string}
     */
-    bucketId() {
+    get bucketId() {
         let deferred1_0;
         let deferred1_1;
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-            wasm.wasmsnapshot_bucketId(retptr, this.__wbg_ptr);
+            wasm.wasmbucketmetadata_bucket_id(retptr, this.__wbg_ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
             deferred1_0 = r0;
@@ -1168,12 +1285,12 @@ export class WasmSnapshot {
     /**
     * @returns {string}
     */
-    metadataId() {
+    get metadataId() {
         let deferred1_0;
         let deferred1_1;
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-            wasm.wasmsnapshot_metadataId(retptr, this.__wbg_ptr);
+            wasm.wasmsnapshot_metadata_id(retptr, this.__wbg_ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
             deferred1_0 = r0;
@@ -1187,8 +1304,15 @@ export class WasmSnapshot {
     /**
     * @returns {bigint}
     */
-    dataSize() {
-        const ret = wasm.wasmsnapshot_dataSize(this.__wbg_ptr);
+    get size() {
+        const ret = wasm.wasmsnapshot_size(this.__wbg_ptr);
+        return BigInt.asUintN(64, ret);
+    }
+    /**
+    * @returns {bigint}
+    */
+    get createdAt() {
+        const ret = wasm.wasmsnapshot_created_at(this.__wbg_ptr);
         return ret;
     }
 }
@@ -1207,8 +1331,13 @@ export function __wbindgen_bigint_from_u64(arg0) {
     return addHeapObject(ret);
 };
 
-export function __wbg_wasmbucketkey_new(arg0) {
-    const ret = WasmBucketKey.__wrap(arg0);
+export function __wbindgen_object_clone_ref(arg0) {
+    const ret = getObject(arg0);
+    return addHeapObject(ret);
+};
+
+export function __wbg_wasmsnapshot_new(arg0) {
+    const ret = WasmSnapshot.__wrap(arg0);
     return addHeapObject(ret);
 };
 
@@ -1222,13 +1351,8 @@ export function __wbg_wasmmount_new(arg0) {
     return addHeapObject(ret);
 };
 
-export function __wbindgen_object_clone_ref(arg0) {
-    const ret = getObject(arg0);
-    return addHeapObject(ret);
-};
-
-export function __wbg_wasmsnapshot_new(arg0) {
-    const ret = WasmSnapshot.__wrap(arg0);
+export function __wbg_wasmbucketkey_new(arg0) {
+    const ret = WasmBucketKey.__wrap(arg0);
     return addHeapObject(ret);
 };
 
@@ -1726,7 +1850,7 @@ export function __wbg_new_43f1b47c28813cbd(arg0, arg1) {
             const a = state0.a;
             state0.a = 0;
             try {
-                return __wbg_adapter_250(a, state0.b, arg0, arg1);
+                return __wbg_adapter_256(a, state0.b, arg0, arg1);
             } finally {
                 state0.a = a;
             }
@@ -1787,11 +1911,6 @@ export function __wbg_newwithlength_e5d69174d6984cd7(arg0) {
     return addHeapObject(ret);
 };
 
-export function __wbg_buffer_f5b7059c439f330d(arg0) {
-    const ret = getObject(arg0).buffer;
-    return addHeapObject(ret);
-};
-
 export function __wbg_subarray_13db269f57aa838d(arg0, arg1, arg2) {
     const ret = getObject(arg0).subarray(arg1 >>> 0, arg2 >>> 0);
     return addHeapObject(ret);
@@ -1833,13 +1952,13 @@ export function __wbindgen_memory() {
     return addHeapObject(ret);
 };
 
-export function __wbindgen_closure_wrapper2891(arg0, arg1, arg2) {
-    const ret = makeMutClosure(arg0, arg1, 1186, __wbg_adapter_32);
+export function __wbindgen_closure_wrapper2910(arg0, arg1, arg2) {
+    const ret = makeMutClosure(arg0, arg1, 1189, __wbg_adapter_32);
     return addHeapObject(ret);
 };
 
-export function __wbindgen_closure_wrapper2945(arg0, arg1, arg2) {
-    const ret = makeMutClosure(arg0, arg1, 1198, __wbg_adapter_35);
+export function __wbindgen_closure_wrapper2964(arg0, arg1, arg2) {
+    const ret = makeMutClosure(arg0, arg1, 1201, __wbg_adapter_35);
     return addHeapObject(ret);
 };
 
