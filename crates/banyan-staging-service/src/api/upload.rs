@@ -406,10 +406,10 @@ where
 
                     let cid_id: String = sqlx::query_scalar(
                         r#"
-                            INSERT INTO
+                            INSERT OR IGNORE INTO
                                 blocks (cid, data_length)
-                                VALUES ($1, $2)
-                                RETURNING CAST(id AS TEXT) as id;
+                                VALUES ($1, $2);
+                            SELECT CAST(id AS TEXT) as id FROM blocks WHERE cid = $1 LIMIT 1;
                         "#,
                     )
                     .bind(cid_string)
