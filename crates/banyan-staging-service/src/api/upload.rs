@@ -399,7 +399,7 @@ where
                 .to_string_of_base(cid::multibase::Base::Base64Url)
                 .expect("parsed cid to unparse");
 
-            let block_id: Uuid = match db.ex() {
+            match db.ex() {
                 #[cfg(feature = "postgres")]
                 Executor::Postgres(ref mut conn) => {
                     use crate::database::postgres;
@@ -409,25 +409,46 @@ where
                             INSERT OR IGNORE INTO
                                 blocks (cid, data_length)
                                 VALUES ($1, $2);
-                            SELECT CAST(id AS TEXT) as id FROM blocks WHERE cid = $1 LIMIT 1;
                         "#,
                     )
-                    .bind(cid_string)
+                    .bind(cid_string.clone())
                     .bind(block_meta.length() as i64)
-                    .execute(conn);
+                    .execute(conn)
                     .await
                     .map_err(postgres::map_sqlx_error)?;
+                }
+
+                #[cfg(feature = "sqlite")]
+                Executor::Sqlite(ref mut conn) => {
+                    use crate::database::sqlite;
+
+                    sqlx::query(
+                        r#"
+                            INSERT OR IGNORE INTO
+                                blocks (cid, data_length)
+                                VALUES ($1, $2);
+                        "#,
+                    )
+                    .bind(cid_string.clone())
+                    .bind(block_meta.length() as i64)
+                    .execute(conn)
+                    .await
+                    .map_err(sqlite::map_sqlx_error)?;
+                }
+            };
+
+            let block_id: Uuid = match db.ex() {
+                #[cfg(feature = "postgres")]
+                Executor::Postgres(ref mut conn) => {
+                    use crate::database::postgres;
 
                     let cid_id: String = sqlx::query_scalar(
-                            "SELECT id FROM blocks WHERE cid = $1;",
+                            "SELECT CAST(id AS TEXT) as id FROM blocks WHERE cid = $1 LIMIT 1;"
                         )
                         .bind(cid_string)
-                        .bind(block_meta.length() as i64)
                         .fetch_one(conn)
                         .await
-                        .map_err(sqlite::map_sqlx_error)?;
-
-                    // todo: need to support the case where the block already exists...
+                        .map_err(postgres::map_sqlx_error)?;
 
                     Uuid::parse_str(&cid_id)
                         .map_err(|_| UploadStreamError::DatabaseCorruption("cid uuid parsing"))?
@@ -438,20 +459,12 @@ where
                     use crate::database::sqlite;
 
                     let cid_id: String = sqlx::query_scalar(
-                        r#"
-                            INSERT INTO
-                                blocks (cid, data_length)
-                                VALUES ($1, $2)
-                                RETURNING id;
-                        "#,
+                            "SELECT id FROM blocks WHERE cid = $1 LIMIT 1;"
                     )
                     .bind(cid_string)
-                    .bind(block_meta.length() as i64)
                     .fetch_one(conn)
                     .await
                     .map_err(sqlite::map_sqlx_error)?;
-
-                    // todo: need to support the case where the block already exists...
 
                     Uuid::parse_str(&cid_id)
                         .map_err(|_| UploadStreamError::DatabaseCorruption("cid uuid parsing"))?
