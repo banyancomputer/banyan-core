@@ -173,7 +173,7 @@ async fn handle_successful_upload(
                             state = 'complete',
                             final_size = $1,
                             integrity_hash  = $2
-                        WHERE id = $3;
+                        WHERE id = $3::uuid;
                 "#,
             )
             .bind(car_report.total_size() as i64)
@@ -230,8 +230,8 @@ async fn record_upload_beginning(
                 r#"
                     INSERT INTO
                         uploads (client_id, metadata_id, reported_size, file_path, state)
-                        VALUES ($1, $2, $3, $4, 'started')
-                        RETURNING id;
+                        VALUES ($1::uuid, $2::uuid, $3, $4, 'started')
+                        RETURNING CAST(id AS TEXT) as id;
                 "#,
             )
             .bind(client_id.to_string())
@@ -278,7 +278,7 @@ async fn record_upload_failed(db: &Database, upload_id: &str) -> Result<(), Uplo
 
             let _rows_affected: i32 = sqlx::query_scalar(
                 r#"
-                    UPDATE uploads SET state = 'failed' WHERE id = $1;
+                    UPDATE uploads SET state = 'failed' WHERE id = $1::uuid;
                 "#,
             )
             .bind(upload_id)
@@ -403,7 +403,7 @@ where
                             INSERT INTO
                                 blocks (cid, data_length)
                                 VALUES ($1, $2)
-                                RETURNING id;
+                                RETURNING CAST(id AS TEXT) as id;
                         "#,
                     )
                     .bind(cid_string)
@@ -453,7 +453,7 @@ where
                         r#"
                                 INSERT INTO
                                     uploads_blocks (upload_id, block_id, byte_offset)
-                                    VALUES ($1, $2, $3);
+                                    VALUES ($1::uuid, $2::uuid, $3);
                             "#,
                     )
                     .bind(upload_id)
