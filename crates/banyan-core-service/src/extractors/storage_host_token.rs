@@ -84,6 +84,8 @@ where
             .await
             .map_err(|_| StorageHostKeyAuthorizationError::database_unavailable())?;
 
+        tracing::info!("looking up storage host with fingerprint {key_id:?}");
+
         let storage_host = sqlx::query_as!(
             StorageHost,
             "SELECT name, pem FROM storage_hosts WHERE fingerprint = $1",
