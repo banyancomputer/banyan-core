@@ -404,7 +404,7 @@ where
                 Executor::Postgres(ref mut conn) => {
                     use crate::database::postgres;
 
-                    let cid_id: String = sqlx::query_scalar(
+                    sqlx::query(
                         r#"
                             INSERT OR IGNORE INTO
                                 blocks (cid, data_length)
@@ -414,9 +414,18 @@ where
                     )
                     .bind(cid_string)
                     .bind(block_meta.length() as i64)
-                    .fetch_one(conn)
+                    .execute(conn);
                     .await
                     .map_err(postgres::map_sqlx_error)?;
+
+                    let cid_id: String = sqlx::query_scalar(
+                            "SELECT id FROM blocks WHERE cid = $1;",
+                        )
+                        .bind(cid_string)
+                        .bind(block_meta.length() as i64)
+                        .fetch_one(conn)
+                        .await
+                        .map_err(sqlite::map_sqlx_error)?;
 
                     // todo: need to support the case where the block already exists...
 
