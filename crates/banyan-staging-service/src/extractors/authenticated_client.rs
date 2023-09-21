@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::cellections::HashSet;
 use std::sync::OnceLock;
 
 use axum::extract::rejection::TypedHeaderRejection;
@@ -146,7 +146,7 @@ pub async fn current_authorized_storage(
         Executor::Postgres(ref mut conn) => {
             use crate::database::postgres;
 
-            let maybe_allowed_storage: Option<i64> = sqlx::query_scalar(
+            let maybe_allowed_storage: Option<i32> = sqlx::query_scalar(
                 "SELECT allowed_storage FROM storage_grants WHERE client_id = $1::uuid ORDER BY created_at DESC LIMIT 1;",
             )
             .bind(client_id)
