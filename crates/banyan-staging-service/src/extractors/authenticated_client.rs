@@ -147,7 +147,7 @@ pub async fn current_authorized_storage(
             use crate::database::postgres;
 
             let maybe_allowed_storage: Option<i64> = sqlx::query_scalar(
-                "SELECT allowed_storage FROM storage_grants WHERE client_id = $1 ORDER BY created_at DESC LIMIT 1;",
+                "SELECT allowed_storage FROM storage_grants WHERE client_id = $1::uuid ORDER BY created_at DESC LIMIT 1;",
             )
             .bind(client_id)
             .fetch_optional(conn)
@@ -186,7 +186,7 @@ pub async fn current_consumed_storage(
             use crate::database::postgres;
 
             let maybe_consumed_storage: Option<i64> = sqlx::query_scalar(
-                "SELECT SUM(COALESCE(final_size, reported_size)) AS consumed_storage FROM uploads WHERE client_id = $1;",
+                "SELECT SUM(COALESCE(final_size, reported_size)) AS consumed_storage FROM uploads WHERE client_id = $1::uuid;",
             )
             .bind(client_id)
             .fetch_optional(conn)
@@ -225,7 +225,7 @@ pub async fn id_from_fingerprint(
             use crate::database::postgres;
 
             let maybe_remote_id: Option<RemoteId> = sqlx::query_as(
-                "SELECT id, platform_id, public_key FROM clients WHERE fingerprint = $1;",
+                "SELECT CAST(id AS TEXT) as id, CAST(platform_id AS TEXT) as platform_id, public_key FROM clients WHERE fingerprint = $1;",
             )
             .bind(fingerprint)
             .fetch_optional(conn)
