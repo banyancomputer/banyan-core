@@ -1,27 +1,17 @@
-import { useTomb } from '@/contexts/tomb';
-import { convertFileSize } from '@/utils/storage';
-import React, { useState } from 'react'
-import { IoMdClose } from 'react-icons/io';
+import React from 'react'
 import { useIntl } from 'react-intl';
 
-export const StorageUsage: React.FC<{ canBeClosed?: boolean }> = ({ canBeClosed = false }) => {
+import { convertFileSize } from '@/utils/storage';
+import { useTomb } from '@/contexts/tomb';
+
+export const StorageUsage = () => {
     const { usedStorage, usageLimit } = useTomb();
-    const [isVisible, setIsVisible] = useState(true);
     const { messages } = useIntl();
 
-    const toggleStorageVisibility = () => {
-        setIsVisible(prev => !prev);
-    };
-
     return (
-        <div className={`w-full bg-white rounded-lg p-4 ${isVisible ? '' : 'hidden'}`}>
+        <div className="w-full bg-white rounded-lg p-4">
             <span className="flex justify-between items-center font-semibold">
                 {`${messages.storage}`}
-                {canBeClosed &&
-                    <button onClick={toggleStorageVisibility}>
-                        <IoMdClose size="20px" />
-                    </button>
-                }
             </span>
             <span className="text-xs font-normal">{` ${messages.youHaveUsed} `}
                 <span className="uppercase">{convertFileSize(usedStorage)}</span>
