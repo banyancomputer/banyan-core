@@ -10,11 +10,13 @@ import { Bucket } from '@/lib/interfaces/bucket';
 import { useModal } from '@/contexts/modals';
 import { useTomb } from '@/contexts/tomb';
 import { ToastNotifications } from '@/utils/toastNotifications';
+import { useFolderLocation } from '@/hooks/useFolderLocation';
 
 import { Upload } from '@static/images/buckets';
 
 export const UploadFileModal: React.FC<{ bucket?: Bucket }> = ({ bucket }) => {
     const { buckets, uploadFile } = useTomb();
+    const folderLocation = useFolderLocation();
     const { openModal, closeModal } = useModal();
     const { messages } = useIntl();
     const [selectedBucket, setSelectedBucket] = useState(bucket?.id || '');
@@ -40,7 +42,7 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket }> = ({ bucket }) => {
         if (!file) { return; }
         try {
             const arrayBuffer = await file.arrayBuffer();
-            await uploadFile(selectedBucket, selectedFolder.length ? selectedFolder : [], file.name, arrayBuffer);
+            await uploadFile(selectedBucket, selectedFolder.length ? selectedFolder : [], file.name, arrayBuffer, folderLocation);
             closeModal();
         } catch (error: any) {
             ToastNotifications.error(`${messages.uploadError}`, `${messages.tryAgain}`, upload);

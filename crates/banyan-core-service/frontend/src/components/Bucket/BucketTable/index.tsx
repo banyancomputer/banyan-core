@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useIntl } from 'react-intl';
 import Image from 'next/image';
-import Link from 'next/link';
 import { useRouter } from 'next/router';
 
 import { ActionsCell } from '@components/common/ActionsCell';
@@ -35,9 +34,8 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         setSortState(prev => ({ criteria, direction: prev.direction === 'ASC' ? 'DESC' : 'ASC' }));
     };
 
-    // TODO: this state is incorrect
-    const goTofolder = (bucket: Bucket, file: BucketFile) => {
-        push(`/bucket/${bucket.id}?${file.name}`);
+    const goTofolder = (bucket: Bucket, folder: BucketFile) => {
+        push(`/bucket/${bucket.id}?${folderLocation.length ? `${folderLocation.join('/')}/${folder.name}` : folder.name}`);
     };
 
     const previewFile = async (bucket: Bucket, file: BucketFile) => {

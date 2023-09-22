@@ -29,7 +29,7 @@ interface TombInterface {
     moveTo: (bucket: Bucket, from: string[], to: string[]) => Promise<void>;
     createBucket: (name: string, storageClass: string, bucketType: string) => Promise<void>;
     createDirectory: (bucket: Bucket, path: string[]) => Promise<void>;
-    uploadFile: (id: string, path: string[], name: string, file: any) => Promise<void>;
+    uploadFile: (id: string, path: string[], name: string, file: any, folderLocation: string[]) => Promise<void>;
     renameFile: (id: string, path: string[], newPath: string[]) => Promise<void>;
     getTrashBucket: () => Promise<void>;
     getUsedStorage: () => Promise<number>;
@@ -218,10 +218,11 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     };
 
     /** Uploads file to selected bucket/directory, updates buckets state */
-    const uploadFile = async (id: string, path: string[], name: string, file: ArrayBuffer) => {
+    const uploadFile = async (id: string, path: string[], name: string, file: ArrayBuffer, folderLocation: string[]) => {
         const bucket = buckets.find(bucket => bucket.id == id);
         try {
             await bucket?.mount.write([...path, name], file);
+            if (path.join('') !== folderLocation.join('')) return;
             const files = await bucket?.mount.ls(path) || [];
 
             if (selectedBucket) {

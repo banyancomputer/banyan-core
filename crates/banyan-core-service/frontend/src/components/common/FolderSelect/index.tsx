@@ -5,7 +5,6 @@ import { useIntl } from 'react-intl';
 import { AddNewOption } from '../Select/AddNewOption';
 import { popupClickHandler } from '@/utils';
 import { FiChevronDown } from 'react-icons/fi';
-import { MdDone } from 'react-icons/md';
 import { useModal } from '@/contexts/modals';
 import { CreateFolderModal } from '../Modal/CreateFolderModal ';
 import { useTomb } from '@/contexts/tomb';
@@ -62,7 +61,11 @@ export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBu
             const files = await bucket.mount.ls(folder);
             setFolders(files.filter(file => file.type === 'dir'));
         })()
-    }, [folder])
+    }, [folder, buckets])
+
+    useEffect(() => {
+        handleSelect(folderLocation);
+    }, [folderLocation])
 
     useEffect(() => {
         const listener = popupClickHandler(selectRef.current!, setIsOptionsVisible);
