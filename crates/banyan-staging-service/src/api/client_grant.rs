@@ -48,19 +48,13 @@ async fn create_grant_user(
         Executor::Postgres(ref mut conn) => {
             use crate::database::postgres;
 
-            tracing::info!(platform_id = ?grant.platform_id(), fingerprint = ?grant.client_fingerprint(), key = ?request.public_key, "query for PG is: INSERT INTO clients (platform_id, fingerprint, public_key) VALUES ($1::uuid, $2, $3) RETURNING id;");
-
             let client_id : String = sqlx::query_scalar("INSERT INTO clients (platform_id, fingerprint, public_key) VALUES ($1::uuid, $2, $3) RETURNING CAST(id AS TEXT) as id;")
                 .bind(grant.platform_id().to_string())
                 .bind(grant.client_fingerprint())
                 .bind(request.public_key)
                 .fetch_one(conn)
                 .await
-                .map_err(|e| {
-                    tracing::info!("error in create_grant_user: {e}");
-                    postgres::map_sqlx_error(e)
-                })
-                //.map_err(postgres::map_sqlx_error)
+                .map_err(postgres::map_sqlx_error)
                 .map_err(GrantError::Database)?;
 
             Ok(Uuid::parse_str(&client_id).unwrap())
@@ -98,11 +92,7 @@ async fn existing_grant_user(
                     .bind(grant.client_fingerprint())
                     .fetch_optional(conn)
                     .await
-                    .map_err(|e| {
-                        tracing::info!("error in existing_grant_user: {e}");
-                        postgres::map_sqlx_error(e)
-                    })
-                    //.map_err(postgres::map_sqlx_error)
+                    .map_err(postgres::map_sqlx_error)
                     .map_err(GrantError::Database)?;
 
             Ok(user_id.map(|b| Uuid::parse_str(b.id.as_str()).unwrap()))
@@ -141,11 +131,7 @@ async fn create_storage_grant(
                 .bind(grant.authorized_data_size() as i64)
                 .fetch_one(conn)
                 .await
-                .map_err(|e| {
-                    tracing::info!("error in create_storage_grant: {e}");
-                    postgres::map_sqlx_error(e)
-                });
-                //.map_err(postgres::map_sqlx_error);
+                .map_err(postgres::map_sqlx_error);
 
             match grant_id {
                 Ok(gid) => Ok(Uuid::parse_str(gid.id.as_str()).unwrap()),

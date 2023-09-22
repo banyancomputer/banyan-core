@@ -351,18 +351,12 @@ async fn report_upload_to_platform(
         .json(&metadata_size)
         .bearer_auth(bearer_token);
 
-    let response = match request.send().await {
-        Ok(resp) => resp,
-        Err(err) => {
-            tracing::error!("failed to send confirmation request to the banyan-platform: {err}");
-            return Err(UploadError::FailedReport(bytes::Bytes::from("unable to connect")));
-        }
-    };
+    let response = request.send().await.map_err(|_| UploadError::FailedReport("unable to connect"))?;
 
     if response.status().is_success() {
         Ok(())
     } else {
-        Err(UploadError::FailedReport(response.bytes().await.unwrap()))
+        Err(UploadError::FailedReport("server returned error response"))
     }
 }
 
@@ -542,7 +536,7 @@ pub enum UploadError {
     DataFieldUnavailable(multer::Error),
 
     #[error("failed to report upload status to platform")]
-    FailedReport(bytes::Bytes),
+    FailedReport(&'static str),
 
     #[error("account is not authorized to store {0} bytes, {1} bytes are still authorized")]
     InsufficientAuthorizedStorage(u64, u64),
