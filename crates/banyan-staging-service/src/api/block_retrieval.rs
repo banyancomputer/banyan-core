@@ -67,8 +67,8 @@ pub struct BlockDetails {
     platform_id: String,
 
     file_path: String,
-    byte_offset: i64,
-    length: i64,
+    byte_offset: i32,
+    length: i32,
 }
 
 pub async fn block_from_normalized_cid(
