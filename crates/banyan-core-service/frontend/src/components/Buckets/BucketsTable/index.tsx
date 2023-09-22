@@ -7,6 +7,7 @@ import { FileIcon } from '@components/common/FileIcon';
 import { BucketActions } from '@components/common/BucketActions';
 import { SortCell } from '@/components/common/SortCell';
 import { FileActions } from '@/components/common/FileActions';
+import { FolderActions } from '@/components/common/FolderActions';
 
 import { useTomb } from '@/contexts/tomb';
 import { getDateLabel } from '@/utils/date';
@@ -139,7 +140,12 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
                                         <td
                                             className="px-3 py-4"
                                         >
-                                            <ActionsCell actions={<FileActions bucket={bucket} file={file} />} />
+                                            {
+                                                file.type === 'dir' && bucket.bucketType === 'backup' ?
+                                                    null
+                                                    :
+                                                    <ActionsCell actions={file.type === 'dir' ? <FolderActions bucket={bucket} file={file} /> : <FileActions bucket={bucket} file={file} />} />
+                                            }
                                         </td>
                                     </tr>
                                 )

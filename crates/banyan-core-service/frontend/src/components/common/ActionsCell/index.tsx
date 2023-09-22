@@ -32,7 +32,6 @@ export const ActionsCell: React.FC<{ actions: ReactElement }> = ({ actions }) =>
                 size="20px"
                 className="pointer-events-none"
             />
-
             {isActionsVisible &&
                 <div className="absolute right-0 top-6">{actions}</div>
             }
