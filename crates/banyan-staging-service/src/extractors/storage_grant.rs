@@ -11,7 +11,7 @@ use axum::{async_trait, Json, RequestPartsExt};
 use jwt_simple::prelude::*;
 use uuid::Uuid;
 
-use crate::app::PlatformVerificationKey;
+use crate::app::{Hostname, PlatformVerificationKey};
 use crate::extractors::paired_id_validator;
 
 // todo: will need a way for a client to refresh their storage grant
@@ -48,6 +48,7 @@ impl StorageGrant {
 #[async_trait]
 impl<S> FromRequestParts<S> for StorageGrant
 where
+    Hostname: FromRef<S>,
     PlatformVerificationKey: FromRef<S>,
     S: Sync,
 {
@@ -77,7 +78,7 @@ where
 
         // annoyingly jwt-simple doesn't use the correct encoding for this... we can support both
         // though and maybe we can fix upstream so it follows the spec
-        match (claims.nonce, claims.custom.nonce) {
+        match (claims.nonce.as_ref(), claims.custom.nonce.as_ref()) {
             (_, Some(nnc)) => {
                 if nnc.len() < 12 {
                     return Err(Self::Rejection::InsufficientNonce);
@@ -115,18 +116,24 @@ where
             None => return Err(Self::Rejection::SubjectInvalid),
         };
 
+        let hostname = Hostname::from_ref(state);
+
         // todo: need to take in the domain the provider will be running as to lookup expectedUsage
         // what we were authorized as but we can fake it for now by assuming we're the only one
         // present.
-        let usage = claims
+        let usage = match claims
             .custom
             .capabilities
-            .iter()
-            .next()
-            .unwrap();
+            .get(&hostname.0.to_string()) {
+                Some(u) => u,
+                None => {
+                    tracing::error!("received valid storage grant but didn't authorize extra storage for this host: {:?}", claims.custom);
+                    return Err(Self::Rejection::WrongTarget);
+                }
+        };
 
         let grant_id =
-            Uuid::parse_str(&usage.1.grant_id).map_err(|_| StorageGrantError::InvalidGrant)?;
+            Uuid::parse_str(&usage.grant_id).map_err(|_| StorageGrantError::InvalidGrant)?;
 
         let grant = StorageGrant {
             platform_id,
@@ -134,7 +141,7 @@ where
 
             client_fingerprint,
 
-            authorized_data_size: usage.1.available_storage,
+            authorized_data_size: usage.available_storage,
         };
 
         Ok(grant)

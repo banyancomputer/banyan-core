@@ -255,8 +255,6 @@ pub mod postgres {
     }
 
     pub fn map_sqlx_error(err: sqlx::Error) -> DbError {
-        tracing::info!("received sql error: {err}");
-
         match err {
             sqlx::Error::ColumnDecode { .. } => DbError::CorruptData(err),
             sqlx::Error::Database(ref db_err) => {
