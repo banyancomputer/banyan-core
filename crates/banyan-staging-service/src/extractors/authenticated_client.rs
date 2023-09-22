@@ -146,8 +146,6 @@ pub async fn current_authorized_storage(
         Executor::Postgres(ref mut conn) => {
             use crate::database::postgres;
 
-            tracing::info!("current authorized storage");
-
             let maybe_allowed_storage: Option<i32> = sqlx::query_scalar(
                 "SELECT allowed_storage FROM storage_grants WHERE client_id = $1::uuid ORDER BY created_at DESC LIMIT 1;",
             )
@@ -187,16 +185,20 @@ pub async fn current_consumed_storage(
         Executor::Postgres(ref mut conn) => {
             use crate::database::postgres;
 
-            tracing::info!("current consumed storage");
-
-            //let maybe_consumed_storage: Option<i32> = sqlx::query_scalar(
-            //    "SELECT SUM(COALESCE(final_size, reported_size)) AS consumed_storage FROM uploads WHERE client_id = $1::uuid;",
-            //)
-            //.bind(client_id)
-            //.fetch_optional(conn)
-            //.await
+            let maybe_consumed_storage = sqlx::query_scalar::<sqlx::Postgres, i64>(
+                "SELECT SUM(COALESCE(final_size, reported_size)) AS INT8 AS consumed_storage FROM uploads WHERE client_id = $1::uuid;",
+            )
+            .bind(client_id)
+            .fetch_optional(conn)
+            .await;
             //.map_err(postgres::map_sqlx_error)
             //.map_err(AuthenticatedClientError::DbFailure)?;
+
+
+            match maybe_consumed_storage {
+                Ok(cs) => tracing::info!("real consumed storage: {cs:?}"),
+                Err(err) => tracing::error!("error with real consumed storage: {err}"),
+            }
 
             //Ok(maybe_consumed_storage.unwrap_or(0) as u64)
             Ok(0)
