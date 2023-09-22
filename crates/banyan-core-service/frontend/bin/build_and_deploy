@@ -6,6 +6,8 @@ cd $(dirname %0)
 
 # Should probably make these configurable or source them from the project...
 DEPLOY_HOST="alpha.data.banyan.computer"
+API_URL="https://api.data.banyan.computer"
+DATA_URL="https://distributor.data.banyan.computer"
 DEPLOY_BASE_FOLDER="containers"
 
 SERVICE_NAME="${1:-temporary-frontend-server}"
@@ -47,6 +49,8 @@ fi
 
 # Create the actual container
 ${CONTAINER_RUNTIME} build -t ${FULL_IMAGE_NAME} \
+  --build-arg API_URL=${API_URL} \
+  --build-arg DATA_URL=${DATA_URL} \
   --build-arg CI_BUILD_REF=${COMMIT_ID} \
   --build-arg SERVICE_NAME=${SERVICE_NAME} .
 
