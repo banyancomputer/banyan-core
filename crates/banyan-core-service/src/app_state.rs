@@ -1,4 +1,6 @@
 use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
+use std::collections::HashMap;
 
 use axum::extract::FromRef;
 use jsonwebtoken::{DecodingKey, EncodingKey};
@@ -7,6 +9,7 @@ use openssl::ec::{EcGroup, EcKey};
 use openssl::nid::Nid;
 use openssl::pkey::{PKey, Private};
 use sqlx::sqlite::SqlitePool;
+use uuid::Uuid;
 
 mod database;
 mod state_error;
@@ -14,8 +17,14 @@ mod state_error;
 use crate::config::Config;
 pub use state_error::StateError;
 
+pub enum RegistrationEvent {
+    Approved(Uuid),
+    Rejected,
+}
+
 #[derive(Clone)]
 pub struct AppState {
+    pub registration_channels: HashMap<String, Arc<Mutex<Option<tokio::sync::oneshot::Sender<RegistrationEvent>>>>>,
     database_pool: SqlitePool,
     signing_key: EncodingKey,
     verification_key: DecodingKey,
@@ -34,7 +43,10 @@ impl AppState {
         let (signing_key, verification_key) =
             load_or_create_service_key(config.signing_key_path())?;
 
+        let registration_channels = HashMap::new();
+
         Ok(Self {
+            registration_channels,
             database_pool,
             signing_key,
             verification_key,
