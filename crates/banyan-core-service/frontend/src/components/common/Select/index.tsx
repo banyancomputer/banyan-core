@@ -6,14 +6,14 @@ import { popupClickHandler } from '@/utils';
 export class Selectoption {
     constructor(
         public label: string,
-        public value: string
+        public value: any
     ) { }
 };
 
 export interface SelectProps {
     options: Selectoption[];
-    selectedOption: string;
-    onChange: (option: string) => void;
+    selectedOption: any;
+    onChange: (option: any) => void;
     placeholder: string;
     initialOption?: ReactElement;
 };

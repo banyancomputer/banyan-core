@@ -30,7 +30,7 @@ interface TombInterface {
     moveTo: (bucket: Bucket, from: string[], to: string[]) => Promise<void>;
     createBucket: (name: string, storageClass: string, bucketType: string) => Promise<void>;
     createDirectory: (bucket: Bucket, path: string[], name: string) => Promise<void>;
-    uploadFile: (id: string, path: string[], name: string, file: any, folderLocation: string[]) => Promise<void>;
+    uploadFile: (nucket: Bucket, path: string[], name: string, file: any, folderLocation: string[]) => Promise<void>;
     getTrashBucket: () => Promise<void>;
     getBucketShapshots: (id: string) => Promise<BucketSnapshot[]>;
     getBucketKeys: (id: string) => Promise<BucketKey[]>;
@@ -224,10 +224,9 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     };
 
     /** Uploads file to selected bucket/directory, updates buckets state */
-    const uploadFile = async (id: string, path: string[], name: string, file: ArrayBuffer) => {
+    const uploadFile = async (bucket: Bucket, path: string[], name: string, file: ArrayBuffer) => {
         try {
-            const bucket = buckets.find(bucket => bucket.id == id);
-            tombMutex(bucket!.mount, async mount => {
+            tombMutex(bucket.mount, async mount => {
                 await mount.write([...path, name], file);
                 if (path.join('') !== folderLocation.join('')) return;
                 const files = await mount.ls(path) || [];
@@ -237,8 +236,8 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
                     return;
                 };
 
-                setBuckets(buckets => buckets.map(bucket => {
-                    if (bucket.id === id) {
+                setBuckets(buckets => buckets.map(bucketElement => {
+                    if (bucketElement.id === bucket.id) {
                         return ({ ...bucket, files: files })
                     }
                     return bucket;
