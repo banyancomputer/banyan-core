@@ -129,7 +129,7 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     }
 
     return (
-        <div className="fixed w-52 right-8 text-xs font-medium bg-white rounded-xl shadow-md z-10 text-gray-900">
+        <div className="absolute w-52 right-8 text-xs font-medium bg-white rounded-xl shadow-md z-10 text-gray-900">
             {router.pathname === '/bucket/[id]' ?
                 <div
                     key={createFolderAction.label}
