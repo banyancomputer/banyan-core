@@ -3,8 +3,11 @@ import { useRouter } from 'next/router';
 
 /** Returns current folder nesting */
 export const useFolderLocation = () => {
-    const { asPath } = useRouter();
-    const foldersPats = useMemo(() => asPath.split('?')[1]?.split('/') || [], [asPath]);
+    const { query } = useRouter();
+    const queryCopy = { ...query };
+    delete queryCopy.id
+
+    const foldersPats = useMemo(() => Object.keys(queryCopy)[0]?.split('/') || [], [query]);
 
     return foldersPats;
 };
