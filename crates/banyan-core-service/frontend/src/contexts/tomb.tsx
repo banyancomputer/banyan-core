@@ -289,8 +289,8 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
                 const tomb = new TombWasm(
                     apiKey,
                     session.accountId,
-                    process.env.NEXT_PUBLIC_API_URL || 'https://api.data.banyan.computer',
-                    process.env.NEXT_PUBLIC_DATA_URL || 'https://distributor.data.banyan.computer',
+                    process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
+                    process.env.NEXT_PUBLIC_DATA_URL || 'http://localhost:3002',
                 );
                 setTomb(tomb);
             } catch (err) {
