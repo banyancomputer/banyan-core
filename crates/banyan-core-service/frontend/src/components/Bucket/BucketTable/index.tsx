@@ -41,12 +41,7 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     };
 
     const previewFile = async (bucket: Bucket, file: BucketFile) => {
-        try {
-            const byteArray = await getFile(bucket, folderLocation, file.name);
-            openFile(byteArray, file.name);
-        } catch (error) {
-            console.log(error);
-        }
+        openFile(bucket, file, folderLocation);
     };
 
     useEffect(() => {

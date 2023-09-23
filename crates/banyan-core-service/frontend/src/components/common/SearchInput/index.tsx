@@ -10,7 +10,7 @@ import { useFolderLocation } from '@/hooks/useFolderLocation';
 
 import { FileIcon } from '../FileIcon';
 
-interface SeatchOption {
+interface SearchOption {
     label: string;
     path: string;
 };
@@ -18,7 +18,7 @@ interface SeatchOption {
 export const SearchInput = React.memo(() => {
     const { buckets, selectedBucket } = useTomb();
     const [search, setSearch] = useState('');
-    const [searchList, setSearchList] = useState<SeatchOption[]>([]);
+    const [searchList, setSearchList] = useState<SearchOption[]>([]);
     const { messages } = useIntl();
     const { pathname } = useRouter();
     const folderLocation = useFolderLocation();

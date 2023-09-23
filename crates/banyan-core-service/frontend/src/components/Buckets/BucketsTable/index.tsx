@@ -9,7 +9,6 @@ import { SortCell } from '@/components/common/SortCell';
 import { FileActions } from '@/components/common/FileActions';
 import { FolderActions } from '@/components/common/FolderActions';
 
-import { useTomb } from '@/contexts/tomb';
 import { getDateLabel } from '@/utils/date';
 import { Bucket, BucketFile, Bucket as IBucket } from '@/lib/interfaces/bucket';
 import { convertFileSize } from '@/utils/storage';
@@ -20,7 +19,6 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
     const { push } = useRouter();
     /** Created to prevent sotring logic affect initial buckets array */
     const [bucketsCopy, setBucketsCopy] = useState(buckets);
-    const { getFile } = useTomb();
     const { openFile } = useFilePreview();
     const [sortState, setSortState] = useState<{ criteria: string; direction: 'ASC' | 'DESC' | '' }>({ criteria: '', direction: '' });
 
@@ -37,12 +35,7 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
     };
 
     const previewFile = async (bucket: Bucket, file: BucketFile) => {
-        try {
-            const byteArray = await getFile(bucket, [], file.name);
-            openFile(byteArray, file.name);
-        } catch (error) {
-            console.log(error);
-        }
+        openFile(bucket, file, []);
     };
 
     useEffect(() => {
