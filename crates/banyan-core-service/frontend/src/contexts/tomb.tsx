@@ -238,9 +238,9 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
                 setBuckets(buckets => buckets.map(bucketElement => {
                     if (bucketElement.id === bucket.id) {
-                        return ({ ...bucket, files: files })
+                        return ({ ...bucketElement, files })
                     }
-                    return bucket;
+                    return bucketElement;
                 }))
             });
             await getStorageUsageState();
