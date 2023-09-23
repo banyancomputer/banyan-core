@@ -52,8 +52,6 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null }> = ({ bucket }
     const addNewBucket = () => {
         openModal(<CreateBucketModal />, () => openModal(<UploadFileModal bucket={selectedBucket} />));
     };
-    console.log(selectedBucket);
-    
 
     return (
         <div className="w-modal flex flex-col gap-4">
@@ -70,7 +68,7 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null }> = ({ bucket }
                     <Select
                         selectedOption={selectedBucket}
                         onChange={selectBucket}
-                        options={buckets.map(bucket => ({ value: bucket, label: bucket.name }))}
+                        options={buckets.filter(bucket => bucket.bucketType !== 'backup').map(bucket => ({ value: bucket, label: bucket.name }))}
                         placeholder={`${messages.selectBucket}`}
                         initialOption={<AddNewOption label={`${messages.createNewBucket}`} action={addNewBucket} />}
                     />

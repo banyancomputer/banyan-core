@@ -24,7 +24,7 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const { messages } = useIntl();
     const { openModal, closeModal } = useModal();
     const bucketType = `${bucket.bucketType}_${bucket.storageClass}`;
-    const { selectedBucket, selectBucket, getSelectedBucketFiles } = useTomb();
+    const { selectedBucket, getSelectedBucketFiles } = useTomb();
     const folderLocation = useFolderLocation();
     const router = useRouter();
 
@@ -101,13 +101,13 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const purgeAction = useMemo(() => new Action(`${messages.purgeColdKeys}`, <FiTrash2 size="18px" />, purgeColdKeys), []);
 
     const hotInrecactiveActions = [
-        uploadAction, createSnapshotAction, viewBucketSnapshotsAction, renameAction, deletedAction
+        createFolderAction, uploadAction, createSnapshotAction, viewBucketSnapshotsAction, renameAction, deletedAction
     ];
     const warmInrecactiveActions = [
-        uploadAction, createSnapshotAction, restoreColdVersionAction, viewBucketVersionsAction, deleteHotDatadAction, purgeAction
+        createFolderAction, uploadAction, createSnapshotAction, restoreColdVersionAction, viewBucketVersionsAction, deleteHotDatadAction, purgeAction
     ];
     const coldIntecactiveActions = [
-        viewBucketSnapshotsAction, renameAction, viewBucketVersionsAction, purgeAction
+        createFolderAction, viewBucketSnapshotsAction, renameAction, viewBucketVersionsAction, purgeAction
     ];
     const hotBackupActions = [
         createSnapshotAction, renameAction, viewBucketSnapshotsAction //deleteBackup
@@ -130,16 +130,6 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
 
     return (
         <div className="absolute w-52 right-8 text-xs font-medium bg-white rounded-xl shadow-md z-10 text-gray-900">
-            {router.pathname === '/bucket/[id]' ?
-                <div
-                    key={createFolderAction.label}
-                    className="w-full flex items-center gap-2 py-2 px-3 border-b-1 border-gray-200 transition-all hover:bg-slate-200"
-                    onClick={createFolderAction.value}
-                >
-                    {createFolderAction.icon} {createFolderAction.label}
-                </div>
-                : null
-            }
             {
                 actions[bucketType].map(action =>
                     <div
