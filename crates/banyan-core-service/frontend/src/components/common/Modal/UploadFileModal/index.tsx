@@ -38,6 +38,20 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null }> = ({ bucket }
         setFIle(Array.from(event.target.files)[0]);
     };
 
+    const handleDrop = async (event: React.DragEvent<HTMLInputElement | HTMLLabelElement>) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (!event.dataTransfer.files) { return; }
+
+        setFIle(Array.from(event.dataTransfer.files)[0]);
+    };
+
+    const handleDrag = async (event: React.DragEvent<HTMLInputElement | HTMLLabelElement>) => {
+        event.preventDefault();
+        event.stopPropagation();
+    };
+
     const upload = async () => {
         if (!file) { return; }
         try {
@@ -83,7 +97,11 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null }> = ({ bucket }
                     />
                 </div>
             }
-            <label className="mt-10 flex flex-col items-center justify-center gap-4 px-6 py-4 border-2 border-c rounded-xl  text-xs cursor-pointer">
+            <label
+                className="mt-10 flex flex-col items-center justify-center gap-4 px-6 py-4 border-2 border-c rounded-xl  text-xs cursor-pointer"
+                onDrop={handleDrop}
+                onDragOver={handleDrag}
+            >
                 {file ?
                     <span>{file.name}</span>
                     :
