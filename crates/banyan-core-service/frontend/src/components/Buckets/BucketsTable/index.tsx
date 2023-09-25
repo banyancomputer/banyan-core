@@ -35,7 +35,7 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
     };
 
     const previewFile = async (bucket: Bucket, file: BucketFile) => {
-        openFile(bucket, file, []);
+        openFile(bucket, file.name, []);
     };
 
     useEffect(() => {

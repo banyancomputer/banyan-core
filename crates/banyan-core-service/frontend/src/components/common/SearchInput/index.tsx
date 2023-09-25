@@ -7,10 +7,13 @@ import { useRouter } from 'next/router';
 
 import { useTomb } from '@/contexts/tomb';
 import { useFolderLocation } from '@/hooks/useFolderLocation';
+import { useFilePreview } from '@/contexts/filesPreview';
+import { Bucket } from '@/lib/interfaces/bucket';
 
 import { FileIcon } from '../FileIcon';
 
 interface SearchOption {
+    bucket: Bucket;
     label: string;
     path: string;
 };
@@ -20,27 +23,38 @@ export const SearchInput = React.memo(() => {
     const [search, setSearch] = useState('');
     const [searchList, setSearchList] = useState<SearchOption[]>([]);
     const { messages } = useIntl();
-    const { pathname } = useRouter();
+    const { pathname, push } = useRouter();
     const folderLocation = useFolderLocation();
+    const { openFile } = useFilePreview();
 
     const clearSearch = () => {
         setSearch('');
+    };
+    const goTo = (path: string) => {
+        push(path);
+        clearSearch();
+    };
+
+    const previewFile = (bucket: Bucket, name: string) => {
+        openFile(bucket, name, folderLocation);
+        clearSearch();
     };
 
     /** Ceates array of single-level elements to be able to go through them by search */
     useEffect(() => {
         if (pathname === '/bucket/[id]') {
             setSearchList(
-                selectedBucket ? [...selectedBucket.files?.map(file => ({ label: file.name, path: `/bucket/${selectedBucket?.id}?${folderLocation.join('/')}${file.type === 'dir' ? `${folderLocation.length ? `/${file.name}` : file.name}` : ''}` })),
-                { label: selectedBucket?.name, path: `/bucket/${selectedBucket?.id}` }
+                selectedBucket ? [
+                    ...selectedBucket.files?.map(file => ({ bucket: selectedBucket, label: file.name, path: file.type === 'dir' ? `/bucket/${selectedBucket?.id}?${folderLocation.join('/')}${folderLocation.length ? `/${file.name}` : file.name}` : '' })),
+                    { bucket: selectedBucket, label: selectedBucket?.name, path: `/bucket/${selectedBucket?.id}` }
                 ] : []
             )
             return;
         };
 
         setSearchList(buckets.map(bucket =>
-            [...bucket?.files?.map(file => ({ label: file.name, path: `/bucket/${bucket?.id}?${file.type === 'dir' ? `${file.name}` : ''}` })),
-            { label: bucket.name, path: `/bucket/${bucket.id}` }]
+            [...bucket?.files?.map(file => ({ bucket, label: file.name, path: file.type === 'dir' ? `/bucket/${bucket?.id}?${folderLocation.join('/')}${folderLocation.length ? `/${file.name}` : file.name}` : '' })),
+            { bucket, label: bucket.name, path: `/bucket/${bucket.id}` }]
         ).flat()
         );
     }, [buckets, selectedBucket, pathname]);
@@ -68,15 +82,14 @@ export const SearchInput = React.memo(() => {
                         className="absolute top-11 left-0 w-full max-h-48 flex flex-col items-stretch z-10 bg-white rounded-lg shadow-md overflow-y-scroll"
                     >
                         {searchList.filter(element => element.label.includes(search)).map((element, index) =>
-                            <Link
-                                href={element.path}
-                                className="flex items-center gap-2 py-2 px-3 transition-all hover:bg-slate-200"
+                            <div
+                                className="flex items-center gap-2 py-2 px-3 transition-all cursor-pointer hover:bg-slate-200"
                                 key={index}
-                                onClick={clearSearch}
+                                onClick={() => element.path ? goTo(element.path) : previewFile(element.bucket, element.label)}
                             >
                                 <FileIcon fileName={element.label} />
                                 {element.label}
-                            </Link>
+                            </div>
                         )}
                     </div>
                 </>

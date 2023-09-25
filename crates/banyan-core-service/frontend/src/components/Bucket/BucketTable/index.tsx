@@ -41,7 +41,7 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     };
 
     const previewFile = async (bucket: Bucket, file: BucketFile) => {
-        openFile(bucket, file, folderLocation);
+        openFile(bucket, file.name, folderLocation);
     };
 
     useEffect(() => {
