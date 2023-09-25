@@ -186,7 +186,7 @@ pub async fn current_consumed_storage(
             use crate::database::postgres;
 
             let maybe_consumed_storage = sqlx::query_scalar::<sqlx::Postgres, i64>(
-                "SELECT SUM(COALESCE(final_size, reported_size)) AS INT8 AS consumed_storage FROM uploads WHERE client_id = $1::uuid;",
+                "SELECT SUM(COALESCE(final_size, reported_size))::INT8 AS consumed_storage FROM uploads WHERE client_id = $1::uuid;",
             )
             .bind(client_id)
             .fetch_optional(conn)
