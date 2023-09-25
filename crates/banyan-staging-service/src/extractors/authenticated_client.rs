@@ -192,9 +192,14 @@ pub async fn current_consumed_storage(
             .fetch_optional(conn)
             .await
             .map_err(postgres::map_sqlx_error)
-            .map_err(AuthenticatedClientError::DbFailure)?;
+            .map_err(AuthenticatedClientError::DbFailure);
 
-            Ok(maybe_consumed_storage.unwrap_or(0) as u64)
+            if let Ok(Some(cs)) = maybe_consumed_storage {
+                Ok(cs as u64)
+            } else {
+                tracing::warn!("no valid storage consumption (res: {maybe_consumed_storage:?}), returning zero");
+                Ok(0)
+            }
         }
 
         #[cfg(feature = "sqlite")]
