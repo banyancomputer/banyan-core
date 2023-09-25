@@ -48,7 +48,7 @@ async fn create_grant_user(
         Executor::Postgres(ref mut conn) => {
             use crate::database::postgres;
 
-            let client_id : String = sqlx::query_scalar("INSERT INTO clients (platform_id, fingerprint, public_key) VALUES ($1, $2, $3) RETURNING id;")
+            let client_id : String = sqlx::query_scalar("INSERT INTO clients (platform_id, fingerprint, public_key) VALUES ($1::uuid, $2, $3) RETURNING CAST(id AS TEXT) as id;")
                 .bind(grant.platform_id().to_string())
                 .bind(grant.client_fingerprint())
                 .bind(request.public_key)
@@ -88,7 +88,7 @@ async fn existing_grant_user(
             use crate::database::postgres;
 
             let user_id: Option<BareId> =
-                sqlx::query_as("SELECT id FROM clients WHERE fingerprint = $1")
+                sqlx::query_as("SELECT CAST(id AS TEXT) as id FROM clients WHERE fingerprint = $1")
                     .bind(grant.client_fingerprint())
                     .fetch_optional(conn)
                     .await
@@ -125,7 +125,7 @@ async fn create_storage_grant(
         Executor::Postgres(ref mut conn) => {
             use crate::database::postgres;
 
-            let grant_id: DbResult<BareId> = sqlx::query_as("INSERT INTO storage_grants (client_id, grant_id, allowed_storage) VALUES ($1, $2, $3) RETURNING id;")
+            let grant_id: DbResult<BareId> = sqlx::query_as("INSERT INTO storage_grants (client_id, grant_id, allowed_storage) VALUES ($1::uuid, $2::uuid, $3) RETURNING CAST(id AS TEXT) as id;")
                 .bind(client_id.to_string())
                 .bind(grant.grant_id().to_string())
                 .bind(grant.authorized_data_size() as i64)
