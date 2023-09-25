@@ -190,24 +190,11 @@ pub async fn current_consumed_storage(
             )
             .bind(client_id)
             .fetch_optional(conn)
-            .await;
-            //.map_err(postgres::map_sqlx_error)
-            //.map_err(AuthenticatedClientError::DbFailure)?;
+            .await
+            .map_err(postgres::map_sqlx_error)
+            .map_err(AuthenticatedClientError::DbFailure)?;
 
-            match maybe_consumed_storage {
-                Ok(Some(cs)) => {
-                    tracing::info!("real consumed storage: {cs:?}");
-                    Ok(cs as u64)
-                }
-                Ok(None) => {
-                    tracing::info!("user has no consumed storage");
-                    Ok(0)
-                }
-                Err(err) => {
-                    tracing::error!("error with real consumed storage: {err}");
-                    Ok(0)
-                }
-            }
+            Ok(maybe_consumed_storage.unwrap_or(0) as u64)
         }
 
         #[cfg(feature = "sqlite")]
