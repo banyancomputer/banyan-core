@@ -25,6 +25,7 @@ DEPLOY_ENV="${DEPLOY_BASE_FOLDER}/env"
 DEPLOY_LOGS="${DEPLOY_BASE_FOLDER}/logs"
 DEPLOY_PERSISTENT_DATA="${DEPLOY_BASE_FOLDER}/data"
 DEPLOY_SERVICE_DIRECTORY="${DEPLOY_BASE_FOLDER}/services"
+DEPLOY_SHARED_DIRECTORY="${DEPLOY_BASE_FOLDER}/shared"
 DEPLOY_STATE="${DEPLOY_BASE_FOLDER}/state"
 
 if ! git diff-index --quiet HEAD -- || ! git diff-files --quiet; then
@@ -72,7 +73,7 @@ Restart=on-failure
 TimeoutStopSec=35
 ExecStartPre=rm -f %t/%n-pid %t/%n-cid
 ExecStartPre=podman load --input \${HOME}/${DEPLOY_IMAGE_ARCHIVE}/${IMAGE_BASE_NAME}.tar
-ExecStart=podman run -d --name ${SERVICE_NAME} --read-only --replace --restart=on-failure:3 --env-file \${HOME}/${DEPLOY_ENV}/${SERVICE_NAME} --mount type=bind,src=\${HOME}/${DEPLOY_PERSISTENT_DATA}/${SERVICE_NAME},dst=/data --userns keep-id:uid=1001,gid=1001 --network slirp4netns:allow_host_loopback=true --log-driver=k8s-file --log-opt max-size=128kb,path=\${HOME}/${DEPLOY_LOGS}/${SERVICE_NAME}.log --hostname ${SERVICE_NAME}.svc.${DEPLOY_HOST} --publish ${SERVICE_PORT}:3000/tcp --conmon-pidfile %t/%n-pid --cidfile %t/%n-cid ${FULL_IMAGE_NAME} ${SERVICE_ARGUMENTS}
+ExecStart=podman run -d --name ${SERVICE_NAME} --read-only --replace --restart=on-failure:3 --env-file \${HOME}/${DEPLOY_ENV}/${SERVICE_NAME} --mount type=bind,src=\${HOME}/${DEPLOY_SHARED_DIRECTORY},dst=/shared --mount type=bind,src=\${HOME}/${DEPLOY_PERSISTENT_DATA}/${SERVICE_NAME},dst=/data --userns keep-id:uid=1001,gid=1001 --network slirp4netns:allow_host_loopback=true --log-driver=k8s-file --log-opt max-size=128kb,path=\${HOME}/${DEPLOY_LOGS}/${SERVICE_NAME}.log --hostname ${SERVICE_NAME}.svc.${DEPLOY_HOST} --publish ${SERVICE_PORT}:3000/tcp --conmon-pidfile %t/%n-pid --cidfile %t/%n-cid ${FULL_IMAGE_NAME} ${SERVICE_ARGUMENTS}
 # If we want to replicate the k8s behavior wait-drain-and-shutdown, this is what we'd use to stop the service
 #ExecStop=podman stop -t 30 --cidfile %t/%n-cid
 # These servers don't have alternate services picking up its downtime so we want to take the fast restart path
@@ -96,65 +97,16 @@ ssh -T ${DEPLOY_HOST} <<EOS
 nohup sh -c "\
   set -o errexit
 
-  mkdir -p ${DEPLOY_ENV} ${DEPLOY_STATE} ${DEPLOY_LOGS}/${SERVICE_NAME} ${DEPLOY_PERSISTENT_DATA}/${SERVICE_NAME}
+  mkdir -p ${DEPLOY_ENV} ${DEPLOY_STATE} ${DEPLOY_SHARED_DIRECTORY} ${DEPLOY_PERSISTENT_DATA}/${SERVICE_NAME}
   touch ${DEPLOY_ENV}/${SERVICE_NAME}
-  chmod -R u=rwX,g=,o= ${DEPLOY_ENV}/${SERVICE_NAME} ${DEPLOY_PERSISTENT_DATA}/${SERVICE_NAME}
+  chmod -R u=rwX,g=,o= ${DEPLOY_ENV}/${SERVICE_NAME} ${DEPLOY_SHARED_DIRECTORY} ${DEPLOY_PERSISTENT_DATA}/${SERVICE_NAME}
 
   echo '##> Overwriting current version with new service data...'
   mkdir -p "\${HOME}/.config/systemd/user"
 
   cp -f "${DEPLOY_SERVICE_DIRECTORY}/${SERVICE_NAME}/${VERSIONED_SVC_NAME}.service" "\${HOME}/.config/systemd/user/${SERVICE_NAME}.service"
   systemctl --user daemon-reload
-
-  if systemctl --user is-enabled --quiet ${SERVICE_NAME}.service; then
-    echo '##> Service is enabled lets meddle...'
-
-    if systemctl --user is-active --quiet ${SERVICE_NAME}.service; then
-      echo '##> Service is running, attempting a restart...'
-
-      if ! systemctl --user restart ${SERVICE_NAME}.service &>/dev/null; then
-        echo '##> Service failed to start...'
-
-        if [ -L "${DEPLOY_STATE}/${SERVICE_NAME}.service" ]; then
-          echo '##> Previous version available, attempting to revert...'
-
-          cp -Lf "${DEPLOY_STATE}/${SERVICE_NAME}.service" "\${HOME}/.config/systemd/user/${SERVICE_NAME}.service"
-
-          systemctl --user daemon-reload
-          systemctl --user restart ${SERVICE_NAME}.service
-
-          echo '##> Reverted successfully'
-        else
-          echo '##> No recovery version available'
-        fi
-
-        echo '##> Deploy failed'
-        exit 1
-      fi
-
-      systemctl --user enable ${SERVICE_NAME}.service
-
-      echo '##> Service appears to be healthy'
-    else
-      echo '##> Attempting to start failed service...'
-      systemctl --user start ${SERVICE_NAME}.service &>/dev/null
-      echo '##> Service successfully started'
-    fi
-
-    echo '##> Marking the new version as current'
-
-    if [ -L "${DEPLOY_STATE}/${SERVICE_NAME}.service" ]; then
-      mv "${DEPLOY_STATE}/${SERVICE_NAME}.service" "${DEPLOY_STATE}/${SERVICE_NAME}.service.last"
-    fi
-
-    ln -frs "${DEPLOY_SERVICE_DIRECTORY}/${SERVICE_NAME}/${VERSIONED_SVC_NAME}.service" "${DEPLOY_STATE}/${SERVICE_NAME}.service"
-
-    echo '##> Cleaning up old images...'
-    podman image prune -f
-  else
-    echo '##> Service isnt enabled not starting...'
-  fi
 "
 EOS
 
-echo '==> Deployed'
+echo '==> Artifacts staged for deployment'
