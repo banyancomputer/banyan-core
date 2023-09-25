@@ -194,7 +194,6 @@ pub async fn current_consumed_storage(
             //.map_err(postgres::map_sqlx_error)
             //.map_err(AuthenticatedClientError::DbFailure)?;
 
-
             match maybe_consumed_storage {
                 Ok(Some(cs)) => {
                     tracing::info!("real consumed storage: {cs:?}");

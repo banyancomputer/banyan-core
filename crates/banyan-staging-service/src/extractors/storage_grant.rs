@@ -121,15 +121,12 @@ where
         // todo: need to take in the domain the provider will be running as to lookup expectedUsage
         // what we were authorized as but we can fake it for now by assuming we're the only one
         // present.
-        let usage = match claims
-            .custom
-            .capabilities
-            .get(&hostname.0.to_string()) {
-                Some(u) => u,
-                None => {
-                    tracing::error!("received valid storage grant but didn't authorize extra storage for this host: {:?}", claims.custom);
-                    return Err(Self::Rejection::WrongTarget);
-                }
+        let usage = match claims.custom.capabilities.get(&hostname.0.to_string()) {
+            Some(u) => u,
+            None => {
+                tracing::error!("received valid storage grant but didn't authorize extra storage for this host: {:?}", claims.custom);
+                return Err(Self::Rejection::WrongTarget);
+            }
         };
 
         let grant_id =

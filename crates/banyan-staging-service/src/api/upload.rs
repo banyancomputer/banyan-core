@@ -351,7 +351,10 @@ async fn report_upload_to_platform(
         .json(&metadata_size)
         .bearer_auth(bearer_token);
 
-    let response = request.send().await.map_err(|_| UploadError::FailedReport("unable to connect"))?;
+    let response = request
+        .send()
+        .await
+        .map_err(|_| UploadError::FailedReport("unable to connect"))?;
 
     if response.status().is_success() {
         Ok(())
@@ -438,12 +441,12 @@ where
                     use crate::database::postgres;
 
                     let cid_id: String = sqlx::query_scalar(
-                            "SELECT CAST(id AS TEXT) as id FROM blocks WHERE cid = $1 LIMIT 1;"
-                        )
-                        .bind(cid_string)
-                        .fetch_one(conn)
-                        .await
-                        .map_err(postgres::map_sqlx_error)?;
+                        "SELECT CAST(id AS TEXT) as id FROM blocks WHERE cid = $1 LIMIT 1;",
+                    )
+                    .bind(cid_string)
+                    .fetch_one(conn)
+                    .await
+                    .map_err(postgres::map_sqlx_error)?;
 
                     Uuid::parse_str(&cid_id)
                         .map_err(|_| UploadStreamError::DatabaseCorruption("cid uuid parsing"))?
@@ -453,13 +456,12 @@ where
                 Executor::Sqlite(ref mut conn) => {
                     use crate::database::sqlite;
 
-                    let cid_id: String = sqlx::query_scalar(
-                            "SELECT id FROM blocks WHERE cid = $1 LIMIT 1;"
-                    )
-                    .bind(cid_string)
-                    .fetch_one(conn)
-                    .await
-                    .map_err(sqlite::map_sqlx_error)?;
+                    let cid_id: String =
+                        sqlx::query_scalar("SELECT id FROM blocks WHERE cid = $1 LIMIT 1;")
+                            .bind(cid_string)
+                            .fetch_one(conn)
+                            .await
+                            .map_err(sqlite::map_sqlx_error)?;
 
                     Uuid::parse_str(&cid_id)
                         .map_err(|_| UploadStreamError::DatabaseCorruption("cid uuid parsing"))?
