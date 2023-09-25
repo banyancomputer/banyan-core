@@ -36,7 +36,7 @@ tower-http = { version = "^0.4", features = ["auth", "cors", "limit", "fs", "pro
 tracing = { version = "^0.1", features = ["max_level_debug", "release_max_level_info"] }
 tracing-appender = "^0.2"
 tracing-futures = { version = "^0.2", default-features = false, features = ["std-future"] }
-tracing-subscriber = { version = "^0.3", default-features = false, features = ["ansi", "env-filter", "fmt", "local-time", "time", "tracing"] }
+tracing-subscriber = { version = "^0.3", default-features = false, features = ["env-filter", "fmt", "local-time", "time", "tracing"] }
 
 [dev-dependencies]
 bytes = "^1.4"
