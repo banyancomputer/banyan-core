@@ -185,6 +185,8 @@ pub async fn current_consumed_storage(
         Executor::Postgres(ref mut conn) => {
             use crate::database::postgres;
 
+            tracing::warn!("about to calculate consumed storage for uuid {client_id}");
+
             let maybe_consumed_storage = sqlx::query_scalar::<sqlx::Postgres, i64>(
                 "SELECT SUM(COALESCE(final_size, reported_size))::INT8 AS consumed_storage FROM uploads WHERE client_id = $1::uuid;",
             )
@@ -193,6 +195,8 @@ pub async fn current_consumed_storage(
             .await
             .map_err(postgres::map_sqlx_error)
             .map_err(AuthenticatedClientError::DbFailure)?;
+
+            tracing::warn!("consumed storage was: {maybe_consumed_storage:?}");
 
             Ok(maybe_consumed_storage.unwrap_or(0) as u64)
         }
