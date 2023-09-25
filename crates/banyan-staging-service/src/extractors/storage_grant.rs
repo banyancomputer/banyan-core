@@ -124,6 +124,7 @@ where
         let usage = match claims.custom.capabilities.get(&hostname.0.to_string()) {
             Some(u) => u,
             None => {
+                tracing::info!("expecting hostname with value of {}", &hostname.0);
                 tracing::error!("received valid storage grant but didn't authorize extra storage for this host: {:?}", claims.custom);
                 return Err(Self::Rejection::WrongTarget);
             }
