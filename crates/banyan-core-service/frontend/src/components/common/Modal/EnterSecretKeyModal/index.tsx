@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { HiOutlineLightningBolt } from 'react-icons/hi';
 import { useIntl } from 'react-intl';
 import { useForm } from 'react-hook-form';
-import Router from 'next/router';
 
 import { PasswordInput } from '../../PasswordInput';
 
@@ -25,11 +24,10 @@ export const EnterSecretKeyModal = () => {
     });
     const { keyphrase } = watch();
 
-    const confirm = async() => {
+    const confirm = async () => {
         try {
             await initializeKeystore(keyphrase);
             closeModal();
-            Router.reload();
         } catch (error: any) {
             console.log(`Failed to initialize keystore: ${error.message}`);
         };

@@ -1,15 +1,17 @@
 import { WasmMount } from 'tomb-wasm-experimental';
 
+export interface FileMetadata {
+    [key: string]:string | number;
+    created: string;
+    modified: string;
+    size: number;
+};
+
 export interface BucketFile {
     [key: string]: any;
     name: string;
     type: string;
-    metadata: {
-        [key: string]:string | number;
-        created: string;
-        modified: string;
-        size: number;
-    };
+    metadata: FileMetadata
 };
 
 export interface BucketKey {
@@ -29,17 +31,17 @@ export interface Bucket {
     keys: BucketKey[];
 };
 
-export interface Metadata {
-    id: string;
-    bucket_id: string;
-    path: string;
-    type: string;
-    cid: string;
-    size: string;
-    versions: any[];
-    created_at: string;
-    updated_at: string;
-};
+// export interface Metadata {
+//     id: string;
+//     bucket_id: string;
+//     path: string;
+//     type: string;
+//     cid: string;
+//     size: string;
+//     versions: any[];
+//     created_at: string;
+//     updated_at: string;
+// };
 
 export class MockBucket {
     public id = '';

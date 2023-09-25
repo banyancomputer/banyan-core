@@ -10,20 +10,22 @@ import { Bucket } from '@/lib/interfaces/bucket';
 import { useModal } from '@/contexts/modals';
 import { useTomb } from '@/contexts/tomb';
 import { ToastNotifications } from '@/utils/toastNotifications';
+import { useFolderLocation } from '@/hooks/useFolderLocation';
 
 import { Upload } from '@static/images/buckets';
 
-export const UploadFileModal: React.FC<{ bucket?: Bucket }> = ({ bucket }) => {
+export const UploadFileModal: React.FC<{ bucket?: Bucket | null }> = ({ bucket }) => {
     const { buckets, uploadFile } = useTomb();
+    const folderLocation = useFolderLocation();
     const { openModal, closeModal } = useModal();
     const { messages } = useIntl();
-    const [selectedBucket, setSelectedBucket] = useState(bucket?.id || '');
+    const [selectedBucket, setSelectedBucket] = useState<Bucket | null>(bucket || null);
     const [selectedFolder, setSelectedFolder] = useState<string[]>([]);
     const [file, setFIle] = useState<File | null>(null);
     const isUploadDataFilled = useMemo(() => Boolean(selectedBucket && file), [selectedBucket, file]);
 
-    const selectBucket = (option: string) => {
-        setSelectedBucket(option);
+    const selectBucket = (bucket: Bucket) => {
+        setSelectedBucket(bucket);
     };
 
     const selectFolder = (option: string[]) => {
@@ -36,11 +38,25 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket }> = ({ bucket }) => {
         setFIle(Array.from(event.target.files)[0]);
     };
 
+    const handleDrop = async (event: React.DragEvent<HTMLInputElement | HTMLLabelElement>) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (!event.dataTransfer.files) { return; }
+
+        setFIle(Array.from(event.dataTransfer.files)[0]);
+    };
+
+    const handleDrag = async (event: React.DragEvent<HTMLInputElement | HTMLLabelElement>) => {
+        event.preventDefault();
+        event.stopPropagation();
+    };
+
     const upload = async () => {
         if (!file) { return; }
         try {
             const arrayBuffer = await file.arrayBuffer();
-            await uploadFile(selectedBucket, selectedFolder.length ? selectedFolder : [], file.name, arrayBuffer);
+            await uploadFile(selectedBucket!, selectedFolder.length ? selectedFolder : [], file.name, arrayBuffer, folderLocation);
             closeModal();
         } catch (error: any) {
             ToastNotifications.error(`${messages.uploadError}`, `${messages.tryAgain}`, upload);
@@ -48,9 +64,8 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket }> = ({ bucket }) => {
     };
 
     const addNewBucket = () => {
-        openModal(<CreateBucketModal />, () => openModal(<UploadFileModal />));
+        openModal(<CreateBucketModal />, () => openModal(<UploadFileModal bucket={selectedBucket} />));
     };
-
 
     return (
         <div className="w-modal flex flex-col gap-4">
@@ -67,7 +82,7 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket }> = ({ bucket }) => {
                     <Select
                         selectedOption={selectedBucket}
                         onChange={selectBucket}
-                        options={buckets.map(bucket => ({ value: bucket.id, label: bucket.name }))}
+                        options={buckets.filter(bucket => bucket.bucketType !== 'backup').map(bucket => ({ value: bucket, label: bucket.name }))}
                         placeholder={`${messages.selectBucket}`}
                         initialOption={<AddNewOption label={`${messages.createNewBucket}`} action={addNewBucket} />}
                     />
@@ -78,11 +93,15 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket }> = ({ bucket }) => {
                     <span className="inline-block mb-1 text-xs font-normal">{`${messages.selectFolder}`}:</span>
                     <FolderSelect
                         onChange={selectFolder}
-                        selectedBucket={selectedBucket}
+                        selectedBucket={selectedBucket!}
                     />
                 </div>
             }
-            <label className="mt-10 flex flex-col items-center justify-center gap-4 px-6 py-4 border-2 border-c rounded-xl  text-xs cursor-pointer">
+            <label
+                className="mt-10 flex flex-col items-center justify-center gap-4 px-6 py-4 border-2 border-c rounded-xl  text-xs cursor-pointer"
+                onDrop={handleDrop}
+                onDragOver={handleDrag}
+            >
                 {file ?
                     <span>{file.name}</span>
                     :

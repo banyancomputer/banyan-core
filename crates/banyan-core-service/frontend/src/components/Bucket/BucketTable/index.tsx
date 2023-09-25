@@ -2,18 +2,19 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useIntl } from 'react-intl';
 import Image from 'next/image';
-import Link from 'next/link';
 import { useRouter } from 'next/router';
 
 import { ActionsCell } from '@components/common/ActionsCell';
-import { Bucket, BucketFile } from '@/lib/interfaces/bucket';
-import { getDateLabel } from '@/utils/date';
-import { convertFileSize } from '@/utils/storage';
-import { useFilePreview } from '@/contexts/filesPreview';
+import { FolderActions } from '@/components/common/FolderActions';
+import { BucketActions } from '@/components/common/BucketActions';
 import { FileIcon } from '@/components/common/FileIcon';
 import { SortCell } from '@/components/common/SortCell';
 import { FileActions } from '@/components/common/FileActions';
-import { BucketActions } from '@/components/common/BucketActions';
+
+import { getDateLabel } from '@/utils/date';
+import { Bucket, BucketFile } from '@/lib/interfaces/bucket';
+import { useFilePreview } from '@/contexts/filesPreview';
+import { convertFileSize } from '@/utils/storage';
 import { useFolderLocation } from '@/hooks/useFolderLocation';
 import { useTomb } from '@/contexts/tomb';
 
@@ -35,18 +36,12 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         setSortState(prev => ({ criteria, direction: prev.direction === 'ASC' ? 'DESC' : 'ASC' }));
     };
 
-    // TODO: this state is incorrect
-    const goTofolder = (bucket: Bucket, file: BucketFile) => {
-        push(`/bucket/${bucket.id}?${file.name}`);
+    const goTofolder = (bucket: Bucket, folder: BucketFile) => {
+        push(`/bucket/${bucket.id}?${folderLocation.length ? `${folderLocation.join('/')}/${folder.name}` : folder.name}`);
     };
 
     const previewFile = async (bucket: Bucket, file: BucketFile) => {
-        try {
-            const byteArray = await getFile(bucket, folderLocation, file.name);
-            openFile(byteArray, file.name);
-        } catch (error) {
-            console.log(error);
-        }
+        openFile(bucket, file.name, folderLocation);
     };
 
     useEffect(() => {
@@ -125,7 +120,12 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                                     <td className="px-6 py-4">{getDateLabel(+file.metadata.modified)}</td>
                                     <td className="px-6 py-4">{convertFileSize(file.metadata.size)}</td>
                                     <td className="px-6 py-4">
-                                        <ActionsCell actions={<FileActions bucket={bucket} file={file} />} />
+                                        {
+                                            file.type === 'dir' && bucket.bucketType === 'backup' ?
+                                                null
+                                                :
+                                                <ActionsCell actions={file.type === 'dir' ? <FolderActions bucket={bucket} file={file} /> : <FileActions bucket={bucket} file={file} />} />
+                                        }
                                     </td>
                                 </tr>
                             )
