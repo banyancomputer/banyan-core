@@ -17,6 +17,7 @@ export const EnterSecretKeyModal = () => {
         formState: { errors },
         handleSubmit,
         register,
+        setError,
         watch,
     } = useForm({
         mode: 'onTouched',
@@ -29,7 +30,8 @@ export const EnterSecretKeyModal = () => {
             await initializeKeystore(keyphrase);
             closeModal();
         } catch (error: any) {
-            console.log(`Failed to initialize keystore: ${error.message}`);
+            /** TODO: rework when error message from tomb will be more specific. */
+            setError('keyphrase', { message: `${messages.wrongSecretKey}` })
         };
     };
 
