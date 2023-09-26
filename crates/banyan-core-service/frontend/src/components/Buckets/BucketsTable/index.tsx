@@ -30,8 +30,8 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
         push(`/bucket/${bucket}`);
     };
 
-    const goTofolder = (bucket: Bucket, file: BucketFile) => {
-        push(`/bucket/${bucket.id}?${file.name}`);
+    const goTofolder = (bucket: Bucket, folder: BucketFile) => {
+        push(`/bucket/${bucket.id}?${folder.name}`);
     };
 
     const previewFile = async (bucket: Bucket, file: BucketFile) => {
