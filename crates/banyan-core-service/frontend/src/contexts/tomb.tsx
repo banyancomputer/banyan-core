@@ -275,6 +275,18 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     const deleteFile = async (bucket: Bucket, path: string[], name: string) => {
         await tombMutex(bucket.mount, async mount => {
             await mount.rm([...path, name]);
+            const files = await mount.ls(path) || [];
+            if (selectedBucket) {
+                setSelectedBucket(bucket => bucket ? ({ ...bucket, files }) : bucket);
+                return;
+            };
+
+            setBuckets(buckets => buckets.map(bucketElement => {
+                if (bucketElement.id === bucket.id) {
+                    return ({ ...bucketElement, files })
+                }
+                return bucketElement;
+            }))
             await getSelectedBucketFiles(path);
         });
     };
