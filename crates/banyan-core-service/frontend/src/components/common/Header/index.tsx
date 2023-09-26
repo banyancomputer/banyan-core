@@ -48,7 +48,7 @@ export const Header = () => {
 
     const options = [
         new Action(`${messages.settings}`, <FiSettings size="20px" />, goTo('/account/settings')),
-        new Action(`${messages.manageKeys}`, <MdOutlineVpnKey size="20px" />, goTo('/key-management')),
+        new Action(`${messages.manageKeys}`, <MdOutlineVpnKey size="20px" />, goTo('/account/manage-keys')),
         new Action(`${messages.logout}`, <FiLogOut size="20px" />, logout)
     ];
 

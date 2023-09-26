@@ -31,7 +31,7 @@ cp -f crates/banyan-core-service/data/signing-key.public crates/banyan-staging-s
 export STORAGE_HOST_PUBKEY="$(cat crates/banyan-staging-service/data/platform-auth.public)"
 export STORAGE_HOST_FINGERPRINT="$(cat crates/banyan-staging-service/data/platform-auth.fingerprint)"
 export STORAGE_HOST_NAME="banyan-staging"
-export STORAGE_HOST_URL="http://127.0.0.1:3002"
+export STORAGE_HOST_URL="http://127.0.0.1:3002/"
 export STORAGE_HOST_BYTE_LIMIT="549755813888000"
 
 cat << ESQL | sqlite3 ./crates/banyan-core-service/data/server.db
