@@ -37,10 +37,13 @@ pub async fn handler(
 ) -> Result<Response, UploadError> {
     let reported_body_length = content_len.0;
     if reported_body_length > client.remaining_storage() {
-        return Err(UploadError::InsufficientAuthorizedStorage(
-            reported_body_length,
-            client.remaining_storage(),
-        ));
+        tracing::warn!(upload_size = ?reported_body_length, remaining_storage = ?client.remaining_storage(), "staging believes the user doesn't have sufficient storage capacity remaining");
+        // Disable storage authorization check, turns out the storage ticket authorizations aren't
+        // getting calculated correctly.
+        //return Err(UploadError::InsufficientAuthorizedStorage(
+        //    reported_body_length,
+        //    client.remaining_storage(),
+        //));
     }
 
     let mime_ct = mime::Mime::from(content_type);
