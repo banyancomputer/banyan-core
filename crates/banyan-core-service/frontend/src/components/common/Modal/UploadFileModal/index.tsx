@@ -103,7 +103,7 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null }> = ({ bucket }
                 onDragOver={handleDrag}
             >
                 {file ?
-                    <span>{file.name}</span>
+                    <span className="w-full overflow-hidden text-ellipsis whitespace-nowrap">{file.name}</span>
                     :
                     <>
                         <Upload />
