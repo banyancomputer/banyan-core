@@ -124,12 +124,12 @@ export const Header = () => {
                     }
                     {areProfileOptionsVisible &&
                         <div
-                            className="absolute right-0 top-full w-36 flex flex-col items-stretch shadow-xl rounded-xl text-xs font-semibold overflow-hidden  bg-white cursor-pointer"
+                            className="absolute right-0 top-full flex flex-col items-stretch shadow-xl rounded-xl text-xs font-semibold overflow-hidden  bg-white cursor-pointer"
                         >
                             {options.map(option =>
                                 <div
                                     key={option.label}
-                                    className="flex items-center gap-2 py-2.5 px-3 transition-all hover:bg-slate-100"
+                                    className="flex items-center gap-2 py-2.5 px-3 whitespace-nowrap transition-all hover:bg-slate-100"
                                     onClick={option.value}
                                 >
                                     {option.icon}
