@@ -63,7 +63,7 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
     }, [buckets]);
 
     return (
-        <div className="max-h-[calc(100vh-210px)] overflow-x-auto border-2 border-gray-200 rounded-xl" >
+        <div className="h-[calc(100vh-210px)] overflow-x-auto border-2 border-gray-200 rounded-xl" >
             <table className="table table-pin-rows w-full text-gray-600 rounded-xl ">
                 <thead className="border-b-table-cellBackground text-xxs font-normal">
                     <tr className="border-b-table-cellBackground bg-table-headBackground">
