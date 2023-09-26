@@ -24,7 +24,7 @@ interface TombInterface {
     download: (bucket: Bucket, path: string[], name: string) => Promise<void>;
     getFile: (bucket: Bucket, path: string[], name: string) => Promise<ArrayBuffer>;
     shareWith: (bucket: Bucket, key: string) => Promise<void>;
-    copyToClipboard: (bucket: Bucket, path: string[], name: string) => void;
+    makeCopy: (bucket: Bucket, path: string[], name: string) => void;
     takeColdSnapshot: (bucket: Bucket) => Promise<void>;
     getBuckets: () => Promise<void>;
     moveTo: (bucket: Bucket, from: string[], to: string[]) => Promise<void>;
@@ -138,11 +138,10 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         link.click();
     };
 
-    /** Copies file to clipboard. */
-    const copyToClipboard = async (bucket: Bucket, path: string[], name: string) => {
+    /** Creates copy of fie in same direction with "Copy of" prefix. */
+    const makeCopy = async (bucket: Bucket, path: string[], name: string) => {
         const arrayBuffer: ArrayBuffer = await getFile(bucket, path, name);
-        const blob = new Blob([arrayBuffer], { type: 'application/octet-stream' });
-        // navigator.clipboard.write([new ClipboardItem({ '': blob })])
+        await uploadFile(bucket, path, `Copy of ${name}`, arrayBuffer);
     };
 
     /** Retuns array buffer of selected file. */
@@ -192,6 +191,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
             await mount.mv(from, to);
         });
     };
+
     /** Creates directory inside selected bucket */
     const createDirectory = async (bucket: Bucket, path: string[], name: string) => {
         await tombMutex(bucket.mount, async mount => {
@@ -335,7 +335,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
                 getTrashBucket, takeColdSnapshot, createDirectory,
                 uploadFile, getBucketKeys, purgeSnapshot, getSelectedBucketFiles,
                 removeBucketAccess, approveBucketAccess,
-                shareWith, download, moveTo, restore, deleteFile, copyToClipboard
+                shareWith, download, moveTo, restore, deleteFile, makeCopy
             }}
         >
             {children}
