@@ -145,5 +145,6 @@
 	"shareWith": "Partager avec",
 	"enterEmail": "Entrer l'adresse e-mail",
 	"recipientEmail": "Adresse e-mail du destinataire",
-	"accessPreviousVersions": "Accéder et consulter les versions précédentes"
+	"accessPreviousVersions": "Accéder et consulter les versions précédentes",
+	"wrongSecretKey": "Mauvaise clé secrète"
 }
