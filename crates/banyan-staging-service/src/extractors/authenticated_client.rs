@@ -146,8 +146,8 @@ pub async fn current_authorized_storage(
         Executor::Postgres(ref mut conn) => {
             use crate::database::postgres;
 
-            let maybe_allowed_storage: Option<i64> = sqlx::query_scalar(
-                "SELECT allowed_storage FROM storage_grants WHERE client_id = $1 ORDER BY created_at DESC LIMIT 1;",
+            let maybe_allowed_storage: Option<i32> = sqlx::query_scalar(
+                "SELECT allowed_storage FROM storage_grants WHERE client_id = $1::uuid ORDER BY created_at DESC LIMIT 1;",
             )
             .bind(client_id)
             .fetch_optional(conn)
@@ -185,16 +185,21 @@ pub async fn current_consumed_storage(
         Executor::Postgres(ref mut conn) => {
             use crate::database::postgres;
 
-            let maybe_consumed_storage: Option<i64> = sqlx::query_scalar(
-                "SELECT SUM(COALESCE(final_size, reported_size)) AS consumed_storage FROM uploads WHERE client_id = $1;",
+            let maybe_consumed_storage = sqlx::query_scalar::<sqlx::Postgres, i64>(
+                "SELECT SUM(COALESCE(final_size, reported_size))::INT8 AS consumed_storage FROM uploads WHERE client_id = $1::uuid;",
             )
             .bind(client_id)
             .fetch_optional(conn)
             .await
             .map_err(postgres::map_sqlx_error)
-            .map_err(AuthenticatedClientError::DbFailure)?;
+            .map_err(AuthenticatedClientError::DbFailure);
 
-            Ok(maybe_consumed_storage.unwrap_or(0) as u64)
+            if let Ok(Some(cs)) = maybe_consumed_storage {
+                Ok(cs as u64)
+            } else {
+                tracing::warn!("no valid storage consumption (res: {maybe_consumed_storage:?}), returning zero");
+                Ok(0)
+            }
         }
 
         #[cfg(feature = "sqlite")]
@@ -224,8 +229,10 @@ pub async fn id_from_fingerprint(
         Executor::Postgres(ref mut conn) => {
             use crate::database::postgres;
 
+            tracing::info!("id from fingerprint");
+
             let maybe_remote_id: Option<RemoteId> = sqlx::query_as(
-                "SELECT id, platform_id, public_key FROM clients WHERE fingerprint = $1;",
+                "SELECT CAST(id AS TEXT) as id, CAST(platform_id AS TEXT) as platform_id, public_key FROM clients WHERE fingerprint = $1;",
             )
             .bind(fingerprint)
             .fetch_optional(conn)

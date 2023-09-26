@@ -1,6 +1,6 @@
-import React, { ReactElement, useCallback, useMemo } from 'react';
+import React, { ReactElement,  useMemo } from 'react';
 import { useIntl } from 'react-intl';
-import { FiDownload, FiEdit, FiTrash2, FiUpload } from 'react-icons/fi';
+import { FiDownload, FiEdit, FiTrash2 } from 'react-icons/fi';
 import { AiOutlineLink } from 'react-icons/ai';
 import { PiArrowsLeftRight, PiCopySimple } from 'react-icons/pi';
 import { GoDotFill } from 'react-icons/go';
@@ -14,7 +14,6 @@ import { useModal } from '@/contexts/modals';
 import { ToastNotifications } from '@/utils/toastNotifications';
 import { useFolderLocation } from '@/hooks/useFolderLocation';
 import { DeleteFileModal } from '@/components/common/Modal/DeleteFileModal';
-import { UploadFileModal } from '../Modal/UploadFileModal';
 
 export class Action {
     constructor(
@@ -26,11 +25,10 @@ export class Action {
 
 export const FileActions: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bucket, file }) => {
     const { messages } = useIntl();
-    const { download, deleteFile } = useTomb();
+    const { download } = useTomb();
     const { openModal } = useModal();
     const folredLoaction = useFolderLocation();
     const bucketType = `${bucket.bucketType}_${bucket.storageClass}`;
-    const isFolder = file.type === 'dir';
 
     const downloadFile = async () => {
         try {
@@ -38,9 +36,6 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bu
                 download(bucket, folredLoaction, file.name)
             );
         } catch (error: any) { }
-    };
-    const uploadFile = () => {
-        openModal(<UploadFileModal bucket={bucket} />);
     };
 
     const copyLink = async () => {
@@ -74,7 +69,6 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bu
         } catch (error: any) { }
     };
 
-
     const downloadAction = useMemo(() => new Action(`${messages.download}`, <FiDownload size="18px" />, downloadFile), []);
     const copyLinkdAction = useMemo(() => new Action(`${messages.copyLink}`, <AiOutlineLink size="18px" />, copyLink), []);
     const moveToAction = useMemo(() => new Action(`${messages.moveTo}`, <PiArrowsLeftRight size="18px" />, moveTo), []);
@@ -102,27 +96,17 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bu
         downloadAction
     ];
 
-    const actions: Record<string, Action[]> = isFolder ?
-        {
-            interactive_hot: [new Action(`${messages.upload}`, <FiUpload size="18px" />, uploadFile), moveToAction, renameAction, removeAction],
-            interactive_warm: [new Action(`${messages.upload}`, <FiUpload size="18px" />, uploadFile), moveToAction, renameAction, removeAction],
-            interactive_cold: [vierFileVersionsAction, moveToAction],
-            backup_hot: [],
-            backup_warm: [],
-            backup_cold: [],
-        }
-        :
-        {
-            interactive_hot: hotInrecactiveActions,
-            interactive_warm: warmInrecactiveActions,
-            interactive_cold: coldIntecactiveActions,
-            backup_hot: hotBackupActions,
-            backup_warm: warmBackupActions,
-            backup_cold: coldBackupActions,
-        }
+    const actions: Record<string, Action[]> = {
+        interactive_hot: hotInrecactiveActions,
+        interactive_warm: warmInrecactiveActions,
+        interactive_cold: coldIntecactiveActions,
+        backup_hot: hotBackupActions,
+        backup_warm: warmBackupActions,
+        backup_cold: coldBackupActions,
+    }
 
     return (
-        <div className="fixed w-48 right-8 text-xs font-medium bg-white rounded-xl shadow-md z-10 text-gray-900">{
+        <div className="absolute w-48 right-8 text-xs font-medium bg-white rounded-xl shadow-md z-10 text-gray-900">{
             actions[bucketType].map(action =>
                 <div
                     key={action.label}
@@ -133,16 +117,11 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bu
                 </div>
             )
         }
-            {
-                !isFolder ?
-                    <div
-                        className="w-full flex justify-between items-center gap-2 py-2 px-3 border-b-1 border-gray-200 transition-all hover:bg-slate-200"
-                    >
-                        Your file is secure <GoDotFill fill='#2bb65e' />
-                    </div>
-                    :
-                    null
-            }
+            <div
+                className="w-full flex justify-between items-center gap-2 py-2 px-3 border-b-1 border-gray-200 transition-all hover:bg-slate-200"
+            >
+                Your file is secure <GoDotFill fill='#2bb65e' />
+            </div>
         </div>
     );
 };

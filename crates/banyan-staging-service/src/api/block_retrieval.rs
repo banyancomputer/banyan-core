@@ -67,8 +67,8 @@ pub struct BlockDetails {
     platform_id: String,
 
     file_path: String,
-    byte_offset: i64,
-    length: i64,
+    byte_offset: i32,
+    length: i32,
 }
 
 pub async fn block_from_normalized_cid(
@@ -83,8 +83,8 @@ pub async fn block_from_normalized_cid(
             let maybe_block_id: Option<BlockDetails> = sqlx::query_as(
                 r#"
                 SELECT
-                        blocks.id AS id,
-                        clients.platform_id AS platform_id,
+                        CAST(blocks.id AS TEXT) AS id,
+                        CAST(clients.platform_id AS TEXT) AS platform_id,
                         uploads.file_path AS file_path,
                         uploads_blocks.byte_offset AS byte_offset,
                         blocks.data_length AS length

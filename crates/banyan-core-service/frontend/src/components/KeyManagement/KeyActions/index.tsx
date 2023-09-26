@@ -22,7 +22,7 @@ export const KeyActions: React.FC<{ bucket: Bucket; bucketKey: BucketKey }> = ({
     };
 
     return (
-        <div className="fixed right-8 w-52 text-xs font-medium bg-white rounded-xl shadow-md z-10 text-gray-900 overflow-hidden">
+        <div className="absolute right-8 w-52 text-xs font-medium bg-white rounded-xl shadow-md z-10 text-gray-900 overflow-hidden">
             {bucketKey.approved ?
                 <div
                     className="w-full gap-2 py-2 px-3 border-b-1 border-gray-200 transition-all hover:bg-slate-200"
