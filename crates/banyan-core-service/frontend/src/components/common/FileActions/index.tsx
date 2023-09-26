@@ -1,4 +1,4 @@
-import React, { ReactElement,  useMemo } from 'react';
+import React, { ReactElement, useMemo } from 'react';
 import { useIntl } from 'react-intl';
 import { FiDownload, FiEdit, FiTrash2 } from 'react-icons/fi';
 import { AiOutlineLink } from 'react-icons/ai';
@@ -25,7 +25,7 @@ export class Action {
 
 export const FileActions: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bucket, file }) => {
     const { messages } = useIntl();
-    const { download } = useTomb();
+    const { download, makeCopy } = useTomb();
     const { openModal } = useModal();
     const folredLoaction = useFolderLocation();
     const bucketType = `${bucket.bucketType}_${bucket.storageClass}`;
@@ -48,8 +48,9 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bu
         openModal(<MoveToModal file={file} bucket={bucket} />);
     };
 
-    const makeCopy = async () => {
+    const copy = async () => {
         try {
+            await makeCopy(bucket, folredLoaction, file.name);
             ToastNotifications.notify(`${messages.copyOf} ${file.name} ${messages.wasCreated}`, <AiOutlineLink size="20px" />);
         } catch (error: any) { }
     };
@@ -72,7 +73,7 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bu
     const downloadAction = useMemo(() => new Action(`${messages.download}`, <FiDownload size="18px" />, downloadFile), []);
     const copyLinkdAction = useMemo(() => new Action(`${messages.copyLink}`, <AiOutlineLink size="18px" />, copyLink), []);
     const moveToAction = useMemo(() => new Action(`${messages.moveTo}`, <PiArrowsLeftRight size="18px" />, moveTo), []);
-    const makeCopyAction = useMemo(() => new Action(`${messages.makeCopy}`, <PiCopySimple size="18px" />, makeCopy), []);
+    const makeCopyAction = useMemo(() => new Action(`${messages.makeCopy}`, <PiCopySimple size="18px" />, copy), []);
     const vierFileVersionsAction = useMemo(() => new Action(`${messages.viewFileVersions}`, <AiOutlineLink size="18px" />, viewFileVersions), []);
     const renameAction = useMemo(() => new Action(`${messages.rename}`, <FiEdit size="18px" />, rename), []);
     const removeAction = useMemo(() => new Action(`${messages.remove}`, <FiTrash2 size="18px" />, remove), []);
@@ -106,7 +107,7 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bu
     }
 
     return (
-        <div className="absolute w-48 right-8 text-xs font-medium bg-white rounded-xl shadow-md z-10 text-gray-900">{
+        <div className="absolute w-48 right-8 text-xs font-medium bg-white rounded-xl shadow-md z-10 text-gray-900 select-none">{
             actions[bucketType].map(action =>
                 <div
                     key={action.label}
