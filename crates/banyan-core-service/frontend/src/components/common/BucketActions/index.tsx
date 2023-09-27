@@ -57,8 +57,6 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     };
 
     const createFolder = async () => {
-        if (!selectedBucket) return;
-
         const onSuccess = async () => {
             await getSelectedBucketFiles(folderLocation);
             closeModal();
@@ -110,7 +108,7 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         createFolderAction, viewBucketSnapshotsAction, renameAction, viewBucketVersionsAction, purgeAction
     ];
     const hotBackupActions = [
-        createSnapshotAction, renameAction, viewBucketSnapshotsAction //deleteBackup
+        createSnapshotAction, renameAction, viewBucketSnapshotsAction, deletedAction
     ];
     const warmBackupActions = [
         viewBucketSnapshotsAction, createSnapshotAction, restoreColdVersionAction, viewBucketVersionsAction, deleteHotDatadAction, purgeAction
