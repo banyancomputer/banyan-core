@@ -111,9 +111,9 @@ export const KeystoreProvider = ({ children }: any) => {
         const createKeystore = async () => {
             console.log("createKeystore");
             try {
-                const ks = (await ECCKeystore.init({
+                const ks = await ECCKeystore.init({
                     storeName: KEY_STORE_NAME_PREFIX,
-                }));
+                });
                 ks.clear();
                 setKeystore(ks);
                 // Try and initialize the keystore with cached key material

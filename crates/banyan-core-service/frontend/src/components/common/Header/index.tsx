@@ -75,7 +75,7 @@ export const Header = () => {
             <Link href="/" className="font-semibold text-m flex-grow" >
                 <Logo />
             </Link>
-            <SearchInput />
+            {/* <SearchInput /> */}
             <div className="flex flex-grow items-center justify-end gap-6">
                 <div
                     className='relative w-10 h-10 flex items-center justify-center transition-all rounded-lg cursor-pointer hover:bg-slate-200'
