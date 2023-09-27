@@ -75,7 +75,7 @@
 	"noAccess": "Pas d'accès",
 	"wantToApproveAccess": "Êtes-vous sûr de vouloir approuver l'accès ",
 	"toTrash": "à la corbeille",
-	"wantToMove": "Voulez-vous déménager",
+	"wantToMove": "Voulez-vous supprimer",
 	"filesWillBeMoved": "Finalement, ces dossiers seront supprimés",
 	"removeAccessDescription": "La suppression de l'accès signifie que vous n'aurez plus accès à ces dossiers à l'avenir, toutes les dossiers précédemment téléchargées vous seront toujours accessibles mais ne seront plus synchronisées",
 	"bucket": "Seau",

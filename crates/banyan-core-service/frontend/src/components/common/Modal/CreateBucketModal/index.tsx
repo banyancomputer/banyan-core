@@ -14,8 +14,8 @@ export const CreateBucketModal = () => {
     const [bucketType, setBucketType] = useState('interactive');
     const [storageClass, setStorageClass] = useState('hot');
     const isBucketDataFilled = useMemo(() =>
-        !!bucketType && !!storageClass && !!bucketName,
-    [bucketName, storageClass, bucketName]);
+        !!bucketType && !!(bucketName.length >= 3),
+        [bucketName, bucketName]);
 
     const bucketTypes = [
         new Selectoption('Interactive', 'interactive'),
@@ -26,8 +26,14 @@ export const CreateBucketModal = () => {
         setBucketType(option);
     };
 
+    const changeBucketName = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const regexp = new RegExp(/^.{0,32}$/);
+        if (!regexp.test(event.target.value)) return;
 
-    const create = async() => {
+        setBucketName(event.target.value);
+    };
+
+    const create = async () => {
         try {
             await createBucket(bucketName, storageClass, bucketType);
             closeModal();
@@ -49,7 +55,7 @@ export const CreateBucketModal = () => {
                         type="text"
                         placeholder={`${messages.enterNewBucketName}`}
                         value={bucketName}
-                        onChange={event => setBucketName(event.target.value)}
+                        onChange={changeBucketName}
                     />
                 </label>
             </div>

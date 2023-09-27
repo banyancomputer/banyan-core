@@ -7,8 +7,8 @@ import { useRouter } from 'next/router';
 import { ActionsCell } from '@components/common/ActionsCell';
 import { FolderActions } from '@/components/common/FolderActions';
 import { BucketActions } from '@/components/common/BucketActions';
-import { FileIcon } from '@/components/common/FileIcon';
 import { SortCell } from '@/components/common/SortCell';
+import { FileCell } from '@/components/common/FileCell';
 import { FileActions } from '@/components/common/FileActions';
 
 import { getDateLabel } from '@/utils/date';
@@ -125,10 +125,11 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                         {
                             bucketCopy.files.map((file, index) =>
                                 <tr key={index}>
-                                    <td onClick={() => file.type === 'dir' ? goTofolder(bucket, file) : previewFile(bucket, file)}>
-                                        <span className="px-6 py-4 flex items-center gap-3 cursor-pointer">
-                                            <FileIcon fileName={file.name} className="p-2 bg-gray-200 rounded-full" />{file.name}
-                                        </span>
+                                    <td
+                                        onClick={() => file.type === 'dir' ? goTofolder(bucket, file) : previewFile(bucket, file)}
+                                        className='px-6 py-4'
+                                    >
+                                        <FileCell name={file.name} />
                                     </td>
                                     <td className="px-6 py-4">{getDateLabel(+file.metadata.modified)}</td>
                                     <td className="px-6 py-4">{convertFileSize(file.metadata.size)}</td>
