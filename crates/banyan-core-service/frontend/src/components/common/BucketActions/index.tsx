@@ -102,19 +102,19 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         createFolderAction, uploadAction, createSnapshotAction, viewBucketSnapshotsAction, renameAction, deletedAction
     ];
     const warmInrecactiveActions = [
-        createFolderAction, uploadAction, createSnapshotAction, restoreColdVersionAction, viewBucketVersionsAction, deleteHotDatadAction, purgeAction
+        createFolderAction, uploadAction, createSnapshotAction, restoreColdVersionAction, viewBucketVersionsAction, deleteHotDatadAction, purgeAction, deletedAction
     ];
     const coldIntecactiveActions = [
-        createFolderAction, viewBucketSnapshotsAction, renameAction, viewBucketVersionsAction, purgeAction
+        createFolderAction, viewBucketSnapshotsAction, renameAction, viewBucketVersionsAction, purgeAction, deletedAction
     ];
     const hotBackupActions = [
         createSnapshotAction, renameAction, viewBucketSnapshotsAction, deletedAction
     ];
     const warmBackupActions = [
-        viewBucketSnapshotsAction, createSnapshotAction, restoreColdVersionAction, viewBucketVersionsAction, deleteHotDatadAction, purgeAction
+        viewBucketSnapshotsAction, createSnapshotAction, restoreColdVersionAction, viewBucketVersionsAction, deleteHotDatadAction, purgeAction, deletedAction
     ];
     const coldBackupActions = [
-        viewBucketSnapshotsAction, restoreColdVersionAction, renameAction, purgeAction
+        viewBucketSnapshotsAction, restoreColdVersionAction, renameAction, purgeAction, deletedAction
     ];
 
     const actions: Record<string, Action[]> = {
