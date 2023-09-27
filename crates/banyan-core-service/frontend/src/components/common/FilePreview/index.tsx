@@ -10,6 +10,8 @@ export const FilePreview = () => {
     const { file, closeFile } = useFilePreview();
     const { messages } = useIntl();
     const filePreviewRef = useRef<HTMLDivElement | null>(null);
+    const supportedExtensions = ['pdf', 'gif', 'jpg', 'jpeg', 'png'];
+    const isFileSupported = supportedExtensions.includes(file.name.split('.')[1]);
 
     const close = (event: React.MouseEvent<HTMLDivElement | HTMLButtonElement>) => {
         if (!filePreviewRef.current!.contains(event.target as Node)) {
@@ -32,16 +34,20 @@ export const FilePreview = () => {
                         {`${messages.backToFiles}`}
                     </button>
                     <div
-                        className="relative max-w-filePreview w-full"
+                        className="relative max-w-filePreview w-full flex justify-center items-start"
                         ref={filePreviewRef}
                     >
-                        <FilePreviewer
-                            hideControls
-                            file={{
-                                url: file.data,
-                                mimeType: `application/${file.name.split('.')[1]}`,
-                            }}
-                        />
+                        {isFileSupported ?
+                            <FilePreviewer
+                                hideControls
+                                file={{
+                                    url: file.data,
+                                    mimeType: `application/${file.name.split('.')[1]}`,
+                                }}
+                            />
+                            :
+                            <div className='h-full flex items-center text-white'>File is not supported for preview</div>
+                        }
                     </div>
                 </div>
             }

@@ -4,6 +4,7 @@ import { FcGoogle } from 'react-icons/fc';
 import { useSearchParams } from 'next/navigation';
 import { useIntl } from 'react-intl';
 import Router from 'next/router';
+import { destroyCookie } from 'nookies';
 
 import { NextPageWithLayout } from '@/pages/page';
 
@@ -16,8 +17,9 @@ const Login: NextPageWithLayout = () => {
     const searchParams = useSearchParams();
     const error = searchParams.get('error');
 
-    const handleLoginWithProvider = (provider: any) => async() => {
+    const handleLoginWithProvider = (provider: any) => async () => {
         try {
+            destroyCookie(null, 'banyan-key-cookie', { path: '/' });
             await signIn(provider, { redirect: false });
         } catch (err: any) {
             setErrorMessage(err.message);

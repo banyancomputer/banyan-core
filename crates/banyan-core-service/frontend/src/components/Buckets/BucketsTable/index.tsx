@@ -3,7 +3,7 @@ import { useIntl } from 'react-intl';
 import { useRouter } from 'next/router';
 
 import { ActionsCell } from '@components/common/ActionsCell';
-import { FileIcon } from '@components/common/FileIcon';
+import { FileCell } from '@/components/common/FileCell';
 import { BucketActions } from '@components/common/BucketActions';
 import { SortCell } from '@/components/common/SortCell';
 import { FileActions } from '@/components/common/FileActions';
@@ -74,9 +74,9 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
     return (
         <div
             ref={tableRef}
-            className="max-h-[calc(100vh-210px)] overflow-x-auto border-2 border-gray-200 rounded-xl"
+            className="max-h-[calc(100vh-210px)] w-full overflow-x-auto border-2 border-gray-200 rounded-xl"
         >
-            <table className="table table-pin-rows w-full text-gray-600 rounded-xl ">
+            <table className="table table-pin-rows w-full text-gray-600 rounded-xl table-fixed">
                 <thead className="border-b-table-cellBackground text-xxs font-normal">
                     <tr className="border-b-table-cellBackground bg-table-headBackground">
                         <th className="p-3 text-left font-medium">{`${messages.bucketName}`}</th>
@@ -88,9 +88,9 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
                                 text={`${messages.name}`}
                             />
                         </th>
-                        <th className="p-3 text-left font-medium">{`${messages.storageClass}`}</th>
-                        <th className="p-3 text-left font-medium">{`${messages.bucketType}`}</th>
-                        <th className="p-3 text-left font-medium">
+                        <th className="p-3 text-left font-medium w-36">{`${messages.storageClass}`}</th>
+                        <th className="p-3 text-left font-medium w-36">{`${messages.bucketType}`}</th>
+                        <th className="p-3 text-left font-medium w-36">
                             <SortCell
                                 criteria="lastEdited"
                                 onChange={sort}
@@ -98,7 +98,7 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
                                 text={`${messages.lastEdited}`}
                             />
                         </th>
-                        <th className="p-3 text-left font-medium">
+                        <th className="p-3 text-left font-medium w-24">
                             <SortCell
                                 criteria="fileSize"
                                 onChange={sort}
@@ -106,7 +106,7 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
                                 text={`${messages.fileSize}`}
                             />
                         </th>
-                        <th className="p-3 text-left font-medium"></th>
+                        <th className="p-3 text-left font-medium w-20"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -137,10 +137,10 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
                                     <tr key={index}>
                                         <td className="px-3 py-4"></td>
                                         <td
-                                            className="px-3 py-4 flex items-center gap-3 cursor-pointer"
+                                            className="px-3 py-4"
                                             onClick={() => file.type === 'dir' ? goTofolder(bucket, file) : previewFile(bucket, file)}
                                         >
-                                            <FileIcon fileName={file.name} /> {file.name}
+                                            <FileCell name={file.name} />
                                         </td>
                                         <td className="px-3 py-4"></td>
                                         <td className="px-3 py-4"></td>

@@ -56,8 +56,8 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null }> = ({ bucket }
         if (!file) { return; }
         try {
             const arrayBuffer = await file.arrayBuffer();
-            await uploadFile(selectedBucket!, selectedFolder.length ? selectedFolder : [], file.name, arrayBuffer, folderLocation);
             closeModal();
+            await uploadFile(selectedBucket!, selectedFolder.length ? selectedFolder : [], file.name, arrayBuffer, folderLocation);
         } catch (error: any) {
             ToastNotifications.error(`${messages.uploadError}`, `${messages.tryAgain}`, upload);
         };
