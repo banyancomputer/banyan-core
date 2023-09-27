@@ -57,7 +57,7 @@ export const FolderActions: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ 
     };
 
     return (
-        <div className="absolute w-48 right-8 text-xs font-medium bg-white rounded-xl shadow-md z-10 select-none text-gray-900">{
+        <div className="w-48 right-8 text-xs font-medium bg-white rounded-xl shadow-md z-10 select-none text-gray-900">{
             actions[bucketType].map(action =>
                 <div
                     key={action.label}

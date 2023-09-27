@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useIntl } from 'react-intl';
 import { useRouter } from 'next/router';
 
@@ -15,12 +15,14 @@ import { convertFileSize } from '@/utils/storage';
 import { useFilePreview } from '@/contexts/filesPreview';
 
 export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
+    const tableRef = useRef<HTMLDivElement | null>(null);
     const { messages } = useIntl();
     const { push } = useRouter();
     /** Created to prevent sotring logic affect initial buckets array */
     const [bucketsCopy, setBucketsCopy] = useState(buckets);
     const { openFile } = useFilePreview();
     const [sortState, setSortState] = useState<{ criteria: string; direction: 'ASC' | 'DESC' | '' }>({ criteria: '', direction: '' });
+    const [tableScroll, setTableScroll] = useState(0);
 
     const sort = (criteria: string) => {
         setSortState(prev => ({ criteria, direction: prev.direction === 'ASC' ? 'DESC' : 'ASC' }));
@@ -62,8 +64,18 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
         setBucketsCopy(buckets);
     }, [buckets]);
 
+
+    useEffect(() => {
+        /** Weird typescript issue with scrollTop which exist, but not for typescript */
+        //@ts-ignore
+        tableRef.current?.addEventListener("scroll", event => setTableScroll(event.target.scrollTop));
+    }, [tableRef]);
+
     return (
-        <div className="h-[calc(100vh-210px)] overflow-x-auto border-2 border-gray-200 rounded-xl" >
+        <div
+            ref={tableRef}
+            className="max-h-[calc(100vh-210px)] overflow-x-auto border-2 border-gray-200 rounded-xl"
+        >
             <table className="table table-pin-rows w-full text-gray-600 rounded-xl ">
                 <thead className="border-b-table-cellBackground text-xxs font-normal">
                     <tr className="border-b-table-cellBackground bg-table-headBackground">
@@ -113,7 +125,11 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
                                 <td
                                     className="px-3 py-4"
                                 >
-                                    <ActionsCell actions={<BucketActions bucket={bucket} />} />
+                                    <ActionsCell
+                                        actions={<BucketActions bucket={bucket} />}
+                                        offsetTop={tableScroll}
+                                        tableRef={tableRef}
+                                    />
                                 </td>
                             </tr>
                             {
@@ -137,7 +153,11 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
                                                 file.type === 'dir' && bucket.bucketType === 'backup' ?
                                                     null
                                                     :
-                                                    <ActionsCell actions={file.type === 'dir' ? <FolderActions bucket={bucket} file={file} /> : <FileActions bucket={bucket} file={file} />} />
+                                                    <ActionsCell
+                                                        actions={file.type === 'dir' ? <FolderActions bucket={bucket} file={file} /> : <FileActions bucket={bucket} file={file} />}
+                                                        offsetTop={tableScroll}
+                                                        tableRef={tableRef}
+                                                    />
                                             }
                                         </td>
                                     </tr>
