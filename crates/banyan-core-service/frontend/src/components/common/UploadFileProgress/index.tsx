@@ -12,20 +12,10 @@ export const UploadFileProgress = () => {
     const { messages } = useIntl();
     const { files } = useFilesUpload()
 
-    const close = () => {
-        ToastNotifications.close();
-    };
-
     return (
         <div>
             <div className='flex justify-between items-center px-3 py-2 bg-gray-600 text-white font-normal text-xs'>
                 <p>{`${messages.uploading}`}</p>
-                <button
-                    className='underline'
-                    onClick={close}
-                >
-                    {`${messages.close}`}
-                </button>
             </div>
             <div className='flex flex-col'>
                 {files.map(file =>
