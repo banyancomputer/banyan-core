@@ -1,14 +1,15 @@
-use axum::extract::{self, Json, Path};
+use axum::extract::{self, Json, Path, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 
+use crate::app_state::{AppState, RegistrationEvent};
+use crate::db::models;
+use crate::extractors::{ApiToken, DbConn};
 use openssl::bn::BigNumContext;
 use openssl::ec::PointConversionForm;
 use openssl::pkey::PKey;
+use std::sync::{Arc, Mutex};
 use uuid::Uuid;
-
-use crate::db::models;
-use crate::extractors::{ApiToken, DbConn};
 
 use crate::api::auth::device_api_key::{requests, responses};
 
@@ -172,4 +173,72 @@ pub async fn delete(
         fingerprint: device_key.fingerprint,
     })
     .into_response()
+}
+
+pub async fn end_regwait(
+    State(mut state): State<AppState>,
+    Path(fingerprint): Path<String>,
+) -> impl IntoResponse {
+    tracing::info!("hit reg complete for '{fingerprint}'");
+
+    let chan_lock = match state.registration_channels.remove(&fingerprint) {
+        Some(channel) => channel,
+        None => {
+            return (
+                StatusCode::NOT_FOUND,
+                Json(serde_json::json!({"msg": "not found 1"})),
+            )
+                .into_response()
+        }
+    };
+
+    let channel = match chan_lock.lock() {
+        Ok(mut chan) => chan.take().unwrap(),
+        _ => {
+            return (
+                StatusCode::NOT_FOUND,
+                Json(serde_json::json!({"msg": "not found 2"})),
+            )
+                .into_response()
+        }
+    };
+
+    match channel.send(RegistrationEvent::Rejected) {
+        Ok(_) => (StatusCode::NO_CONTENT, ()).into_response(),
+        Err(_) => (
+            StatusCode::NOT_FOUND,
+            Json(serde_json::json!({"msg": "not found 3"})),
+        )
+            .into_response(),
+    }
+}
+
+pub async fn start_regwait(
+    State(mut state): State<AppState>,
+    Path(fingerprint): Path<String>,
+) -> impl IntoResponse {
+    let (sender, receiver) = tokio::sync::oneshot::channel();
+    state
+        .registration_channels
+        .insert(fingerprint, Arc::new(Mutex::new(Some(sender))));
+
+    match tokio::time::timeout(tokio::time::Duration::from_secs(30), receiver).await {
+        Ok(chan_result) => match chan_result {
+            Ok(RegistrationEvent::Approved(uuid)) => (
+                StatusCode::OK,
+                Json(serde_json::json!({"account_id": uuid})),
+            )
+                .into_response(),
+            _ => (
+                StatusCode::UNAUTHORIZED,
+                Json(serde_json::json!({"msg": "device registration rejected"})),
+            )
+                .into_response(),
+        },
+        Err(_) => (
+            StatusCode::REQUEST_TIMEOUT,
+            Json(serde_json::json!({"msg": "device registration took too long"})),
+        )
+            .into_response(),
+    }
 }

@@ -1,6 +1,6 @@
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
-use std::collections::HashMap;
 
 use axum::extract::FromRef;
 use jsonwebtoken::{DecodingKey, EncodingKey};
@@ -24,7 +24,8 @@ pub enum RegistrationEvent {
 
 #[derive(Clone)]
 pub struct AppState {
-    pub registration_channels: HashMap<String, Arc<Mutex<Option<tokio::sync::oneshot::Sender<RegistrationEvent>>>>>,
+    pub registration_channels:
+        HashMap<String, Arc<Mutex<Option<tokio::sync::oneshot::Sender<RegistrationEvent>>>>>,
     database_pool: SqlitePool,
     signing_key: EncodingKey,
     verification_key: DecodingKey,
