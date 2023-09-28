@@ -38,13 +38,15 @@ const BucketHeader = () => {
                     </React.Fragment>
                 )}
             </h2>
-            <button
-                className="btn-primary gap-2 w-40 py-2 px-4"
-                onClick={uploadFile}
-            >
-                <IoMdAdd fill="#fff" size="20px" />
-                {`${messages.upload}`}
-            </button>
+            {selectedBucket?.bucketType !== 'backup' &&
+                <button
+                    className="btn-primary gap-2 w-40 py-2 px-4"
+                    onClick={uploadFile}
+                >
+                    <IoMdAdd fill="#fff" size="20px" />
+                    {`${messages.upload}`}
+                </button>
+            }
         </div>
     );
 };

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useIntl } from 'react-intl';
 
 import { KeyActions } from '@components/KeyManagement/KeyActions';
@@ -7,9 +7,20 @@ import { ActionsCell } from '@/components/common/ActionsCell';
 
 export const KeyManagementTable: React.FC<{ buckets: Bucket[] }> = ({ buckets }) => {
     const { messages } = useIntl();
+    const tableRef = useRef<HTMLDivElement | null>(null);
+    const [tableScroll, setTableScroll] = useState(0);
+
+    useEffect(() => {
+        /** Weird typescript issue with scrollTop which exist, but not for typescript */
+        //@ts-ignore
+        tableRef.current?.addEventListener("scroll", event => setTableScroll(event.target.scrollTop));
+    }, [tableRef]);
 
     return (
-        <div className="max-h-[calc(100vh-290px)] overflow-x-auto border-2 border-gray-200 rounded-xl" >
+        <div
+            ref={tableRef}
+            className="max-h-[calc(100vh-320px)] overflow-x-auto border-2 border-gray-200 rounded-xl"
+        >
             <table className="table table-pin-rows w-full text-gray-600 rounded-xl">
                 <thead className="border-b-table-cellBackground text-xxs font-normal text-gray-600">
                     <tr className="border-b-table-cellBackground bg-table-headBackground">
@@ -44,7 +55,11 @@ export const KeyManagementTable: React.FC<{ buckets: Bucket[] }> = ({ buckets })
                                         <td className="px-6 py-4"></td>
                                         <td className="px-6 py-4">{bucketKey.approved ? `${messages.approved}` : `${messages.noAccess}`}</td>
                                         <td className="px-6 py-4">
-                                            <ActionsCell actions={<KeyActions bucket={bucket} bucketKey={bucketKey} />} />
+                                            <ActionsCell
+                                                actions={<KeyActions bucket={bucket} bucketKey={bucketKey} />}
+                                                offsetTop={tableScroll}
+                                                tableRef={tableRef}
+                                            />
                                         </td>
                                     </tr>
                                 )

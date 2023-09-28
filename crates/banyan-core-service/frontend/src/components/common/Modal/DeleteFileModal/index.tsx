@@ -30,7 +30,7 @@ export const DeleteFileModal: React.FC<{ bucket: Bucket; file: BucketFile }> = (
             <div>
                 <h4 className="text-m font-semibold">{`${messages.removeFile}`}</h4>
                 <p className="mt-2 text-gray-600">
-                    {`${messages.wantToMove}`} <b className="text-gray-900">{file.name}</b> {`${messages.toTrash}`}? <br /> {`${messages.filesWillBeMoved}`}.
+                    {`${messages.wantToMove}`} <b className="text-gray-900">{file.name}</b>? <br /> {`${messages.filesWillBeMoved}`}.
                 </p>
             </div>
             <div className="mt-3 flex items-center gap-3 text-xs" >

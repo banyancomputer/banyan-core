@@ -3,6 +3,7 @@
 @tailwind utilities;
 
 @import "react-toastify/dist/ReactToastify.min.css";
+@import 'react-circular-progressbar/dist/styles.css';
 
 @font-face {
     font-family: "Inter";

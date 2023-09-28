@@ -108,12 +108,12 @@ export const KeystoreProvider = ({ children }: any) => {
     // Handle creating the keystore if it doesn't exist
     // Occurs on context initialization
     useEffect(() => {
-        const createKeystore = async ()=> {
+        const createKeystore = async () => {
             console.log("createKeystore");
             try {
-                const ks = (await ECCKeystore.init({
+                const ks = await ECCKeystore.init({
                     storeName: KEY_STORE_NAME_PREFIX,
-                }));
+                });
                 ks.clear();
                 setKeystore(ks);
                 // Try and initialize the keystore with cached key material
@@ -145,6 +145,7 @@ export const KeystoreProvider = ({ children }: any) => {
     useEffect(() => {
         if (session) {
             setEscrowedDevice(session.escrowedKeyMaterial);
+            !session.escrowedKeyMaterial && purgeKeystore();
         }
     }, [session]);
 
@@ -210,7 +211,7 @@ export const KeystoreProvider = ({ children }: any) => {
             EccCurve.P_384,
             KeyUse.Exchange
         );
-        return encryptionKeyPair;        
+        return encryptionKeyPair;
     };
 
     // TODO: Just return the key material eventually

@@ -6,14 +6,14 @@ import { popupClickHandler } from '@/utils';
 export class Selectoption {
     constructor(
         public label: string,
-        public value: string
+        public value: any
     ) { }
 };
 
 export interface SelectProps {
     options: Selectoption[];
-    selectedOption: string;
-    onChange: (option: string) => void;
+    selectedOption: any;
+    onChange: (option: any) => void;
     placeholder: string;
     initialOption?: ReactElement;
 };
@@ -60,10 +60,10 @@ export const Select: React.FC<SelectProps> = ({ initialOption, onChange, options
                     className="absolute left-0 top-12 w-full max-h-48 overflow-y-auto bg-white border-1 border-gray-200 rounded-lg shadow-sm z-10"
                 >
                     {initialOption ? initialOption : null}
-                    {options.map(option =>
+                    {options.map((option, index) =>
                         <li
                             className="flex justify-between items-center p-2.5 transition-all hover:bg-slate-200 cursor-pointer"
-                            key={option.value}
+                            key={index}
                             onClick={() => handleSelect(option)}
                         >
                             {option.label}

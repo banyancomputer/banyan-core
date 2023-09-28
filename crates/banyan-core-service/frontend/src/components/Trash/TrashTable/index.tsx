@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useIntl } from 'react-intl';
 
 import { Bucket, BucketFile } from '@/lib/interfaces/bucket';
@@ -11,10 +11,12 @@ import { FileIcon } from '@/components/common/FileIcon';
 import { SortCell } from '@/components/common/SortCell';
 
 export const TrashTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
+    const tableRef = useRef<HTMLDivElement | null>(null);
     const { messages } = useIntl();
     const [selectedFiles, setSelectedFiles] = useState<BucketFile[]>([]);
     /** Created to prevent sotring logic affect initial buckets array */
     const [bucketCopy, setBucketCopy] = useState(bucket);
+    const [tableScroll, setTableScroll] = useState(0);
 
     const selectFile = (selectedFile: BucketFile) => {
         if (selectedFiles.includes(selectedFile)) {
@@ -57,6 +59,12 @@ export const TrashTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     useEffect(() => {
         setBucketCopy(bucket);
     }, [bucket]);
+
+    useEffect(() => {
+        /** Weird typescript issue with scrollTop which exist, but not for typescript */
+        //@ts-ignore
+        tableRef.current?.addEventListener("scroll", event => setTableScroll(event.target.scrollTop));
+    }, [tableRef]);
 
     return (
         <div className="max-h-[calc(100vh-367px)] w-fit overflow-x-auto border-2 border-gray-200 rounded-xl" >
@@ -116,7 +124,11 @@ export const TrashTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                                     <td className="px-6 py-4">{getDateLabel(Date.now())}</td>
                                     <td className="px-6 py-4">{convertFileSize(file.metadata.size)}</td>
                                     <td className="px-6 py-4">
-                                        <ActionsCell actions={<TrashActions bucket={bucket} file={file} />} />
+                                        <ActionsCell
+                                            actions={<TrashActions bucket={bucket} file={file} />}
+                                            offsetTop={tableScroll}
+                                            tableRef={tableRef}
+                                        />
                                     </td>
                                 </tr>
                             )

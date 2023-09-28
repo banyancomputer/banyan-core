@@ -7,9 +7,6 @@ import { Bucket, BucketFile } from '@/lib/interfaces/bucket';
 import { ToastNotifications } from '@/utils/toastNotifications';
 import { useTomb } from '@/contexts/tomb';
 
-import { CreateBucketModal } from '../CreateBucketModal';
-import { CreateFolderModal } from '../CreateFolderModal ';
-import { UploadFileModal } from '../UploadFileModal';
 import { useFolderLocation } from '@/hooks/useFolderLocation';
 import { FolderSelect } from '../../FolderSelect';
 
@@ -17,7 +14,6 @@ export const MoveToModal: React.FC<{ file: BucketFile, bucket: Bucket }> = ({ fi
     const { messages } = useIntl();
     const { moveTo, getSelectedBucketFiles } = useTomb();
     const { closeModal, openModal } = useModal();
-    // const [selectedBucket, setSelectedBucket] = useState('');
     const [selectedFolder, setSelectedFolder] = useState<string[]>([]);
     const folderLocation = useFolderLocation();
 
@@ -33,17 +29,9 @@ export const MoveToModal: React.FC<{ file: BucketFile, bucket: Bucket }> = ({ fi
         };
     };
 
-    // const selectBucket = (option: string) => {
-    //     setSelectedBucket(option);
-    // };
-
     const selectFolder = (option: string[]) => {
         setSelectedFolder(option);
     };
-
-    // const addNewBucket = () => {
-    //     openModal(<CreateBucketModal />, () => openModal(<MoveToModal bucket={bucket} file={file} />));
-    // };
 
     return (
         <div className="w-modal flex flex-col gap-6" >
@@ -53,20 +41,10 @@ export const MoveToModal: React.FC<{ file: BucketFile, bucket: Bucket }> = ({ fi
                     {`${messages.selectWhereToMove}`}
                 </p>
             </div>
-            {/* <div>
-                <label className="inline-block mb-1 text-xs font-normal">{`${messages.selectInTheList}`}:</label>
-                <Select
-                    selectedOption={selectedBucket}
-                    onChange={selectBucket}
-                    options={buckets.map(bucket => ({ value: bucket.id, label: bucket.name }))}
-                    placeholder={`${messages.selectBucket}`}
-                    initialOption={<AddNewOption label={`${messages.createNewBucket}`} action={addNewBucket} />}
-                />
-            </div> */}
             <div>
                 <label className="inline-block mb-1 text-xs font-normal">{`${messages.folder}`}:</label>
                 <FolderSelect
-                    selectedBucket={bucket.id}
+                    selectedBucket={bucket}
                     onChange={selectFolder}
                     onFolderCreation={() => openModal(<MoveToModal bucket={bucket} file={file} />)}
                 />

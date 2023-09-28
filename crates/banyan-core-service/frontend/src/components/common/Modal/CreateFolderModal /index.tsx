@@ -10,12 +10,11 @@ export const CreateFolderModal: React.FC<{ bucket: Bucket, onSuccess?: () => voi
     const { closeModal, openModal } = useModal();
     const { messages } = useIntl();
     const [newName, setNewName] = useState('');
-    const { createDirectory, getBuckets } = useTomb();
+    const { createDirectory } = useTomb();
 
     const create = async () => {
         try {
-            await createDirectory(bucket, [...path, newName]);
-            await getBuckets();
+            await createDirectory(bucket, path, newName);
             onSuccess();
         } catch (error: any) {
             ToastNotifications.error(`${messages.creationError}`, `${messages.tryAgain}`, create);

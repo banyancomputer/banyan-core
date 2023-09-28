@@ -1,4 +1,6 @@
+import { Bucket, BucketFile } from '@/lib/interfaces/bucket';
 import React, { Dispatch, FC, ReactElement, ReactNode, SetStateAction, createContext, useContext, useState } from 'react';
+import { useTomb } from './tomb';
 
 
 interface FilePreviewState {
@@ -6,7 +8,7 @@ interface FilePreviewState {
         name: string;
         data: string;
     };
-    openFile: (file: ArrayBuffer, name: string) => void;
+    openFile: (bucket: Bucket, file: string, path: string[]) => void;
     closeFile: () => void;
 }
 const initialState = {
@@ -18,20 +20,25 @@ export const FilePreviewContext = createContext<FilePreviewState>({} as FilePrev
 
 export const FilePreviewProvider: FC<{ children: ReactNode }> = ({ children }) => {
     const [file, setFile] = useState(initialState);
+    const { getFile } = useTomb();
 
-    const openFile = (arrayBuffer: ArrayBuffer, name: string) => {
-        const reader = new FileReader();
-        const blob = new Blob([arrayBuffer], { type: 'application/octet-stream' });
+    const openFile = async (bucket: Bucket, file: string, path: string[]) => {
+        try {
 
-        reader.readAsDataURL(blob);
-        reader.onload = function (event) {
-            const result = event.target?.result as string;
-            setFile({
-                data: result || '',
-                name
-            });
-        };
-        reader.readAsDataURL(blob);
+            const reader = new FileReader();
+            const arrayBuffer = await getFile(bucket, path, file);
+            const blob = new Blob([arrayBuffer], { type: 'application/octet-stream' });
+
+            reader.readAsDataURL(blob);
+            reader.onload = function (event) {
+                const result = event.target?.result as string;
+                setFile({
+                    data: result || '',
+                    name: file
+                });
+            };
+            reader.readAsDataURL(blob);
+        } catch (error: any) { }
     };
 
     const closeFile = () => {

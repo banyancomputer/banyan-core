@@ -10,7 +10,7 @@ DEPLOY_BASE_FOLDER="containers"
 
 SERVICE_NAME="${1:-banyan-staging-service}"
 SERVICE_PORT="${2:-3000}"
-SERVICE_ARGUMENTS="--auth-key /data/platform-auth.key --domain ${DEPLOY_HOST} --verifier-key /data/platform-verifier.public --upload-dir /data/uploads --platform-url https://api.data.banyan.computer"
+SERVICE_ARGUMENTS="--auth-key /data/platform-auth.key --hostname https://${DEPLOY_HOST}/ --verifier-key /data/platform-verifier.public --upload-dir /data/uploads --platform-url https://api.data.banyan.computer"
 SERVICE_FEATURES="postgres"
 
 # Everything beyond this point isn't expected to be changed between services
@@ -96,7 +96,7 @@ ssh -T ${DEPLOY_HOST} <<EOS
 nohup sh -c "\
   set -o errexit
 
-  mkdir -p ${DEPLOY_ENV} ${DEPLOY_STATE} ${DEPLOY_LOGS}/${SERVICE_NAME} ${DEPLOY_PERSISTENT_DATA}/${SERVICE_NAME}
+  mkdir -p ${DEPLOY_ENV} ${DEPLOY_STATE} ${DEPLOY_PERSISTENT_DATA}/${SERVICE_NAME}
   touch ${DEPLOY_ENV}/${SERVICE_NAME}
   chmod -R u=rwX,g=,o= ${DEPLOY_ENV}/${SERVICE_NAME} ${DEPLOY_PERSISTENT_DATA}/${SERVICE_NAME}
 
@@ -105,56 +105,7 @@ nohup sh -c "\
 
   cp -f "${DEPLOY_SERVICE_DIRECTORY}/${SERVICE_NAME}/${VERSIONED_SVC_NAME}.service" "\${HOME}/.config/systemd/user/${SERVICE_NAME}.service"
   systemctl --user daemon-reload
-
-  if systemctl --user is-enabled --quiet ${SERVICE_NAME}.service; then
-    echo '##> Service is enabled lets meddle...'
-
-    if systemctl --user is-active --quiet ${SERVICE_NAME}.service; then
-      echo '##> Service is running, attempting a restart...'
-
-      if ! systemctl --user restart ${SERVICE_NAME}.service &>/dev/null; then
-        echo '##> Service failed to start...'
-
-        if [ -L "${DEPLOY_STATE}/${SERVICE_NAME}.service" ]; then
-          echo '##> Previous version available, attempting to revert...'
-
-          cp -Lf "${DEPLOY_STATE}/${SERVICE_NAME}.service" "\${HOME}/.config/systemd/user/${SERVICE_NAME}.service"
-
-          systemctl --user daemon-reload
-          systemctl --user restart ${SERVICE_NAME}.service
-
-          echo '##> Reverted successfully'
-        else
-          echo '##> No recovery version available'
-        fi
-
-        echo '##> Deploy failed'
-        exit 1
-      fi
-
-      systemctl --user enable ${SERVICE_NAME}.service
-
-      echo '##> Service appears to be healthy'
-    else
-      echo '##> Attempting to start failed service...'
-      systemctl --user start ${SERVICE_NAME}.service &>/dev/null
-      echo '##> Service successfully started'
-    fi
-
-    echo '##> Marking the new version as current'
-
-    if [ -L "${DEPLOY_STATE}/${SERVICE_NAME}.service" ]; then
-      mv "${DEPLOY_STATE}/${SERVICE_NAME}.service" "${DEPLOY_STATE}/${SERVICE_NAME}.service.last"
-    fi
-
-    ln -frs "${DEPLOY_SERVICE_DIRECTORY}/${SERVICE_NAME}/${VERSIONED_SVC_NAME}.service" "${DEPLOY_STATE}/${SERVICE_NAME}.service"
-
-    echo '##> Cleaning up old images...'
-    podman image prune -f
-  else
-    echo '##> Service isnt enabled not starting...'
-  fi
 "
 EOS
 
-echo '==> Deployed'
+echo '==> Artifacts staged for deployment'

@@ -5,16 +5,15 @@ import { useIntl } from 'react-intl';
 import { AddNewOption } from '../Select/AddNewOption';
 import { popupClickHandler } from '@/utils';
 import { FiChevronDown } from 'react-icons/fi';
-import { MdDone } from 'react-icons/md';
 import { useModal } from '@/contexts/modals';
 import { CreateFolderModal } from '../Modal/CreateFolderModal ';
 import { useTomb } from '@/contexts/tomb';
 import { UploadFileModal } from '../Modal/UploadFileModal';
-import { BucketFile } from '@/lib/interfaces/bucket';
+import { Bucket, BucketFile } from '@/lib/interfaces/bucket';
 
 export interface FolderSelectProps {
     onChange: (option: string[]) => void;
-    selectedBucket: string;
+    selectedBucket: Bucket;
     onFolderCreation?: () => void
 };
 
@@ -50,19 +49,23 @@ export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBu
         const action = onFolderCreation || (() => openModal(<UploadFileModal />));
         openModal(<CreateFolderModal
             path={folder}
-            bucket={buckets.find(bucket => selectedBucket === bucket.id)!}
-            onSuccess={() => openModal(<UploadFileModal bucket={buckets.find(bucket => bucket.id === selectedBucket)} />)}
+            bucket={selectedBucket!}
+            onSuccess={() => openModal(<UploadFileModal bucket={selectedBucket} />)}
         />
             , action);
     };
 
     useEffect(() => {
         (async () => {
-            const bucket = buckets.find(bucket => bucket.id === selectedBucket)!;
+            const bucket = selectedBucket;
             const files = await bucket.mount.ls(folder);
             setFolders(files.filter(file => file.type === 'dir'));
         })()
-    }, [folder])
+    }, [folder, buckets])
+
+    useEffect(() => {
+        handleSelect(folderLocation);
+    }, [folderLocation])
 
     useEffect(() => {
         const listener = popupClickHandler(selectRef.current!, setIsOptionsVisible);

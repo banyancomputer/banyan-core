@@ -37,10 +37,13 @@ pub async fn handler(
 ) -> Result<Response, UploadError> {
     let reported_body_length = content_len.0;
     if reported_body_length > client.remaining_storage() {
-        return Err(UploadError::InsufficientAuthorizedStorage(
-            reported_body_length,
-            client.remaining_storage(),
-        ));
+        tracing::warn!(upload_size = ?reported_body_length, remaining_storage = ?client.remaining_storage(), "staging believes the user doesn't have sufficient storage capacity remaining");
+        // Disable storage authorization check, turns out the storage ticket authorizations aren't
+        // getting calculated correctly.
+        //return Err(UploadError::InsufficientAuthorizedStorage(
+        //    reported_body_length,
+        //    client.remaining_storage(),
+        //));
     }
 
     let mime_ct = mime::Mime::from(content_type);
@@ -173,7 +176,7 @@ async fn handle_successful_upload(
                             state = 'complete',
                             final_size = $1,
                             integrity_hash  = $2
-                        WHERE id = $3;
+                        WHERE id = $3::uuid;
                 "#,
             )
             .bind(car_report.total_size() as i64)
@@ -230,8 +233,8 @@ async fn record_upload_beginning(
                 r#"
                     INSERT INTO
                         uploads (client_id, metadata_id, reported_size, file_path, state)
-                        VALUES ($1, $2, $3, $4, 'started')
-                        RETURNING id;
+                        VALUES ($1::uuid, $2::uuid, $3, $4, 'started')
+                        RETURNING CAST(id AS TEXT) as id;
                 "#,
             )
             .bind(client_id.to_string())
@@ -278,7 +281,7 @@ async fn record_upload_failed(db: &Database, upload_id: &str) -> Result<(), Uplo
 
             let _rows_affected: i32 = sqlx::query_scalar(
                 r#"
-                    UPDATE uploads SET state = 'failed' WHERE id = $1;
+                    UPDATE uploads SET state = 'failed' WHERE id = $1::uuid;
                 "#,
             )
             .bind(upload_id)
@@ -351,12 +354,15 @@ async fn report_upload_to_platform(
         .json(&metadata_size)
         .bearer_auth(bearer_token);
 
-    let response = request.send().await.unwrap();
+    let response = request
+        .send()
+        .await
+        .map_err(|_| UploadError::FailedReport("unable to connect"))?;
 
     if response.status().is_success() {
         Ok(())
     } else {
-        Err(UploadError::FailedReport(response.bytes().await.unwrap()))
+        Err(UploadError::FailedReport("server returned error response"))
     }
 }
 
@@ -393,26 +399,57 @@ where
                 .to_string_of_base(cid::multibase::Base::Base64Url)
                 .expect("parsed cid to unparse");
 
+            match db.ex() {
+                #[cfg(feature = "postgres")]
+                Executor::Postgres(ref mut conn) => {
+                    use crate::database::postgres;
+
+                    sqlx::query(
+                        r#"
+                            INSERT INTO
+                                blocks (cid, data_length)
+                                VALUES ($1, $2)
+                                ON CONFLICT(cid) DO NOTHING;
+                        "#,
+                    )
+                    .bind(cid_string.clone())
+                    .bind(block_meta.length() as i64)
+                    .execute(conn)
+                    .await
+                    .map_err(postgres::map_sqlx_error)?;
+                }
+
+                #[cfg(feature = "sqlite")]
+                Executor::Sqlite(ref mut conn) => {
+                    use crate::database::sqlite;
+
+                    sqlx::query(
+                        r#"
+                            INSERT OR IGNORE INTO
+                                blocks (cid, data_length)
+                                VALUES ($1, $2);
+                        "#,
+                    )
+                    .bind(cid_string.clone())
+                    .bind(block_meta.length() as i64)
+                    .execute(conn)
+                    .await
+                    .map_err(sqlite::map_sqlx_error)?;
+                }
+            };
+
             let block_id: Uuid = match db.ex() {
                 #[cfg(feature = "postgres")]
                 Executor::Postgres(ref mut conn) => {
                     use crate::database::postgres;
 
                     let cid_id: String = sqlx::query_scalar(
-                        r#"
-                            INSERT INTO
-                                blocks (cid, data_length)
-                                VALUES ($1, $2)
-                                RETURNING id;
-                        "#,
+                        "SELECT CAST(id AS TEXT) as id FROM blocks WHERE cid = $1 LIMIT 1;",
                     )
                     .bind(cid_string)
-                    .bind(block_meta.length() as i64)
                     .fetch_one(conn)
                     .await
                     .map_err(postgres::map_sqlx_error)?;
-
-                    // todo: need to support the case where the block already exists...
 
                     Uuid::parse_str(&cid_id)
                         .map_err(|_| UploadStreamError::DatabaseCorruption("cid uuid parsing"))?
@@ -422,21 +459,12 @@ where
                 Executor::Sqlite(ref mut conn) => {
                     use crate::database::sqlite;
 
-                    let cid_id: String = sqlx::query_scalar(
-                        r#"
-                            INSERT INTO
-                                blocks (cid, data_length)
-                                VALUES ($1, $2)
-                                RETURNING id;
-                        "#,
-                    )
-                    .bind(cid_string)
-                    .bind(block_meta.length() as i64)
-                    .fetch_one(conn)
-                    .await
-                    .map_err(sqlite::map_sqlx_error)?;
-
-                    // todo: need to support the case where the block already exists...
+                    let cid_id: String =
+                        sqlx::query_scalar("SELECT id FROM blocks WHERE cid = $1 LIMIT 1;")
+                            .bind(cid_string)
+                            .fetch_one(conn)
+                            .await
+                            .map_err(sqlite::map_sqlx_error)?;
 
                     Uuid::parse_str(&cid_id)
                         .map_err(|_| UploadStreamError::DatabaseCorruption("cid uuid parsing"))?
@@ -453,7 +481,7 @@ where
                         r#"
                                 INSERT INTO
                                     uploads_blocks (upload_id, block_id, byte_offset)
-                                    VALUES ($1, $2, $3);
+                                    VALUES ($1::uuid, $2::uuid, $3);
                             "#,
                     )
                     .bind(upload_id)
@@ -513,7 +541,7 @@ pub enum UploadError {
     DataFieldUnavailable(multer::Error),
 
     #[error("failed to report upload status to platform")]
-    FailedReport(bytes::Bytes),
+    FailedReport(&'static str),
 
     #[error("account is not authorized to store {0} bytes, {1} bytes are still authorized")]
     InsufficientAuthorizedStorage(u64, u64),

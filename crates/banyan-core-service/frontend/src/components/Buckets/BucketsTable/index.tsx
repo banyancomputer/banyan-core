@@ -1,27 +1,28 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useIntl } from 'react-intl';
 import { useRouter } from 'next/router';
 
 import { ActionsCell } from '@components/common/ActionsCell';
-import { FileIcon } from '@components/common/FileIcon';
+import { FileCell } from '@/components/common/FileCell';
 import { BucketActions } from '@components/common/BucketActions';
 import { SortCell } from '@/components/common/SortCell';
 import { FileActions } from '@/components/common/FileActions';
+import { FolderActions } from '@/components/common/FolderActions';
 
-import { useTomb } from '@/contexts/tomb';
 import { getDateLabel } from '@/utils/date';
 import { Bucket, BucketFile, Bucket as IBucket } from '@/lib/interfaces/bucket';
 import { convertFileSize } from '@/utils/storage';
 import { useFilePreview } from '@/contexts/filesPreview';
 
 export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
+    const tableRef = useRef<HTMLDivElement | null>(null);
     const { messages } = useIntl();
     const { push } = useRouter();
     /** Created to prevent sotring logic affect initial buckets array */
     const [bucketsCopy, setBucketsCopy] = useState(buckets);
-    const { getFile } = useTomb();
     const { openFile } = useFilePreview();
     const [sortState, setSortState] = useState<{ criteria: string; direction: 'ASC' | 'DESC' | '' }>({ criteria: '', direction: '' });
+    const [tableScroll, setTableScroll] = useState(0);
 
     const sort = (criteria: string) => {
         setSortState(prev => ({ criteria, direction: prev.direction === 'ASC' ? 'DESC' : 'ASC' }));
@@ -31,17 +32,12 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
         push(`/bucket/${bucket}`);
     };
 
-    const goTofolder = (bucket: Bucket, file: BucketFile) => {
-        push(`/bucket/${bucket.id}?${file.name}`);
+    const goTofolder = (bucket: Bucket, folder: BucketFile) => {
+        push(`/bucket/${bucket.id}?${folder.name}`);
     };
 
     const previewFile = async (bucket: Bucket, file: BucketFile) => {
-        try {
-            const byteArray = await getFile(bucket, [], file.name);
-            openFile(byteArray, file.name);
-        } catch (error) {
-            console.log(error);
-        }
+        openFile(bucket, file.name, []);
     };
 
     useEffect(() => {
@@ -68,9 +64,19 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
         setBucketsCopy(buckets);
     }, [buckets]);
 
+
+    useEffect(() => {
+        /** Weird typescript issue with scrollTop which exist, but not for typescript */
+        //@ts-ignore
+        tableRef.current?.addEventListener("scroll", event => setTableScroll(event.target.scrollTop));
+    }, [tableRef]);
+
     return (
-        <div className="max-h-[calc(100vh-210px)] overflow-x-auto border-2 border-gray-200 rounded-xl" >
-            <table className="table table-pin-rows w-full text-gray-600 rounded-xl ">
+        <div
+            ref={tableRef}
+            className="max-h-[calc(100vh-210px)] w-full overflow-x-auto border-2 border-gray-200 rounded-xl"
+        >
+            <table className="table table-pin-rows w-full text-gray-600 rounded-xl table-fixed">
                 <thead className="border-b-table-cellBackground text-xxs font-normal">
                     <tr className="border-b-table-cellBackground bg-table-headBackground">
                         <th className="p-3 text-left font-medium">{`${messages.bucketName}`}</th>
@@ -82,9 +88,9 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
                                 text={`${messages.name}`}
                             />
                         </th>
-                        <th className="p-3 text-left font-medium">{`${messages.storageClass}`}</th>
-                        <th className="p-3 text-left font-medium">{`${messages.bucketType}`}</th>
-                        <th className="p-3 text-left font-medium">
+                        <th className="p-3 text-left font-medium w-36">{`${messages.storageClass}`}</th>
+                        <th className="p-3 text-left font-medium w-36">{`${messages.bucketType}`}</th>
+                        <th className="p-3 text-left font-medium w-36">
                             <SortCell
                                 criteria="lastEdited"
                                 onChange={sort}
@@ -92,7 +98,7 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
                                 text={`${messages.lastEdited}`}
                             />
                         </th>
-                        <th className="p-3 text-left font-medium">
+                        <th className="p-3 text-left font-medium w-24">
                             <SortCell
                                 criteria="fileSize"
                                 onChange={sort}
@@ -100,7 +106,7 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
                                 text={`${messages.fileSize}`}
                             />
                         </th>
-                        <th className="p-3 text-left font-medium"></th>
+                        <th className="p-3 text-left font-medium w-20"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -119,7 +125,11 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
                                 <td
                                     className="px-3 py-4"
                                 >
-                                    <ActionsCell actions={<BucketActions bucket={bucket} />} />
+                                    <ActionsCell
+                                        actions={<BucketActions bucket={bucket} />}
+                                        offsetTop={tableScroll}
+                                        tableRef={tableRef}
+                                    />
                                 </td>
                             </tr>
                             {
@@ -127,10 +137,10 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
                                     <tr key={index}>
                                         <td className="px-3 py-4"></td>
                                         <td
-                                            className="px-3 py-4 flex items-center gap-3 cursor-pointer"
+                                            className="px-3 py-4"
                                             onClick={() => file.type === 'dir' ? goTofolder(bucket, file) : previewFile(bucket, file)}
                                         >
-                                            <FileIcon fileName={file.name} /> {file.name}
+                                            <FileCell name={file.name} />
                                         </td>
                                         <td className="px-3 py-4"></td>
                                         <td className="px-3 py-4"></td>
@@ -139,7 +149,16 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
                                         <td
                                             className="px-3 py-4"
                                         >
-                                            <ActionsCell actions={<FileActions bucket={bucket} file={file} />} />
+                                            {
+                                                file.type === 'dir' && bucket.bucketType === 'backup' ?
+                                                    null
+                                                    :
+                                                    <ActionsCell
+                                                        actions={file.type === 'dir' ? <FolderActions bucket={bucket} file={file} /> : <FileActions bucket={bucket} file={file} />}
+                                                        offsetTop={tableScroll}
+                                                        tableRef={tableRef}
+                                                    />
+                                            }
                                         </td>
                                     </tr>
                                 )

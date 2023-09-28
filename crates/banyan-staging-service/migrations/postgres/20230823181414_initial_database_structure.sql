@@ -38,9 +38,9 @@ CREATE TABLE uploads (
   reported_size INTEGER NOT NULL CHECK (reported_size >= 0),
   final_size INTEGER CHECK (final_size IS NULL OR final_size >= 0),
 
-  file_path VARCHAR(128) NOT NULL,
+  file_path VARCHAR(256) NOT NULL,
   state VARCHAR(32) NOT NULL CHECK (state IN ('started', 'indexing', 'complete', 'failed')),
-  integrity_hash VARCHAR(32),
+  integrity_hash VARCHAR(64),
 
   started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   finished_at TIMESTAMP
