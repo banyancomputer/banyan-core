@@ -52,10 +52,7 @@ pub async fn create(
     }
     // Create a new snapshot
     let response = match db::create_snapshot(&metadata_id, &mut db_conn).await {
-        Ok(snapshot) => responses::CreateSnapshotResponse {
-            id: snapshot.id,
-            created_at: snapshot.created_at.timestamp(),
-        },
+        Ok(id) => responses::CreateSnapshotResponse { id },
         Err(err) => {
             tracing::error!("unable to create snapshot: {err}");
             return (

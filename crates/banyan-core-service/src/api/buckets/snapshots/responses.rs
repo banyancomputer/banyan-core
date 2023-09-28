@@ -3,7 +3,6 @@ use serde::Serialize;
 #[derive(Debug, Serialize)]
 pub struct CreateSnapshotResponse {
     pub id: String,
-    pub created_at: i64,
 }
 
 #[derive(Debug, Serialize)]
