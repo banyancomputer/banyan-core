@@ -442,9 +442,7 @@ pub async fn create_snapshot(
     metadata_id: &str,
     db_conn: &mut DbConn,
 ) -> Result<String, sqlx::Error> {
-    let metadata_size: i64 = sqlx::query_scalar(
-            r#"j"#
-        )
+    let metadata_size: i64 = sqlx::query_scalar(r#"j"#)
         .bind(metadata_id)
         .fetch_one(&mut *db_conn.0)
         .await?;
@@ -452,7 +450,7 @@ pub async fn create_snapshot(
     sqlx::query_scalar::<sqlx::Sqlite, String>(
         r#"INSERT INTO snapshots (metadata_id, size)
         VALUES ($1, $2)
-        RETURNING id;"#
+        RETURNING id;"#,
     )
     .bind(metadata_id)
     .bind(metadata_size)
@@ -486,15 +484,15 @@ pub async fn read_all_snapshots(
     db_conn: &mut DbConn,
 ) -> Result<Vec<models::Snapshot>, sqlx::Error> {
     sqlx::query_as!(
-            models::Snapshot,
-            r#"SELECT s.id, s.metadata_id, s.size, s.created_at
+        models::Snapshot,
+        r#"SELECT s.id, s.metadata_id, s.size, s.created_at
                 FROM snapshots AS s
                 INNER JOIN metadata m ON m.id = s.metadata_id
                 WHERE m.bucket_id = $1;"#,
-            bucket_id
-        )
-        .fetch_all(&mut *db_conn.0)
-        .await
+        bucket_id
+    )
+    .fetch_all(&mut *db_conn.0)
+    .await
 }
 
 /// Read the total data storage consumed by both data and metadata across a user's entire account
@@ -504,7 +502,7 @@ pub async fn read_total_usage(account_id: &str, db_conn: &mut DbConn) -> Result<
              SUM(m.metadata_size + COALESCE(m.expected_data_size, m.data_size))
            FROM metadata as m
            INNER JOIN buckets b ON b.id = m.bucket_id
-           WHERE b.account_id = $1;"#
+           WHERE b.account_id = $1;"#,
     )
     .bind(account_id)
     .fetch_one(&mut *db_conn.0)
@@ -522,7 +520,7 @@ pub async fn read_total_data_usage(
              COALESCE(m.expected_data_size, m.data_size)
            FROM metadata as m
            INNER JOIN buckets b ON b.id = m.bucket_id
-           WHERE b.account_id = $1;"#
+           WHERE b.account_id = $1;"#,
     )
     .bind(account_id)
     .fetch_one(&mut *db_conn.0)
@@ -539,7 +537,7 @@ pub async fn read_bucket_data_usage(
         r#"SELECT
              SUM(m.metadata_size + COALESCE(m.expected_data_size, m.data_size))
            FROM metadata
-           WHERE bucket_id = $1;"#
+           WHERE bucket_id = $1;"#,
     )
     .bind(bucket_id)
     .fetch_one(&mut *db_conn.0)
