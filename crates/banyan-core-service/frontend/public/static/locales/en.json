@@ -148,5 +148,6 @@
 	"enterEmail": "Enter email",
 	"recipientEmail": "Recipient email",
 	"accessPreviousVersions": "Access and review previous versions",
-	"wrongSecretKey": "Wrong secret key"
+	"wrongSecretKey": "Wrong secret key",
+	"uploading": "Uploading"
 }

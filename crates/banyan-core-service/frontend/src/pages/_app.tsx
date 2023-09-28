@@ -11,6 +11,7 @@ import { KeystoreProvider } from '@/contexts/keystore';
 import { TombProvider } from '@/contexts/tomb';
 import { ModalProvider } from '@/contexts/modals';
 import { FilePreviewProvider } from '@/contexts/filesPreview';
+import { FileUploadProvider } from '@/contexts/filesUpload';
 
 import { Notifications } from '@/components/common/Notifications';
 import { Modal } from '@/components/common/Modal';
@@ -40,18 +41,20 @@ export default function App({
             <KeystoreProvider>
                 <TombProvider>
                     <ModalProvider>
-                        <FilePreviewProvider>
-                            <ChakraProvider>
-                                <IntlProvider locale={locale} messages={TRANSLATES[locale]} >
-                                    <Notifications />
-                                    <Modal />
-                                    <FilePreview />
-                                    {/* Chakra Provider for access to Chakra UI components */}
-                                    {/* Get the layout and render the component :) */}
-                                    {getLayout(<Component {...pageProps} />)}
-                                </IntlProvider>
-                            </ChakraProvider>
-                        </FilePreviewProvider>
+                        <FileUploadProvider>
+                            <FilePreviewProvider>
+                                <ChakraProvider>
+                                    <IntlProvider locale={locale} messages={TRANSLATES[locale]} >
+                                        <Notifications />
+                                        <Modal />
+                                        <FilePreview />
+                                        {/* Chakra Provider for access to Chakra UI components */}
+                                        {/* Get the layout and render the component :) */}
+                                        {getLayout(<Component {...pageProps} />)}
+                                    </IntlProvider>
+                                </ChakraProvider>
+                            </FilePreviewProvider>
+                        </FileUploadProvider>
                     </ModalProvider>
                 </TombProvider>
             </KeystoreProvider>
