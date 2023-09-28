@@ -566,27 +566,17 @@ pub async fn read_total_data_usage(
     account_id: &str,
     db_conn: &mut DbConn,
 ) -> Result<u64, sqlx::Error> {
-    let maybe_data_usage = sqlx::query_as!(
-        GetUsage,
+    sqlx::query_scalar::<sqlx::Sqlite, i64>(
         r#"SELECT
-            COALESCE(SUM(COALESCE(m.data_size, m.expected_data_size)), 0) as "size!"
-        FROM
-            metadata m
-        INNER JOIN
-            buckets b ON b.id = m.bucket_id
-        WHERE
-            b.account_id = $1 AND m.state IN ('pending', 'current');"#,
-        account_id,
+             SUM(m.metadata_size + COALESCE(m.expected_data_size, m.data_size))
+           FROM metadata as m
+           INNER JOIN buckets b ON b.id = m.bucket_id
+           WHERE b.account_id = '$1';"#
     )
+    .bind(account_id)
     .fetch_one(&mut *db_conn.0)
-    .await;
-    match maybe_data_usage {
-        Ok(usage) => Ok(usage.size as u64),
-        Err(err) => match err {
-            sqlx::Error::RowNotFound => Err(sqlx::Error::RowNotFound),
-            _ => Err(err),
-        },
-    }
+    .await
+    .map(|num| num as u64)
 }
 
 /// Read the data usage of a given bucket id.
