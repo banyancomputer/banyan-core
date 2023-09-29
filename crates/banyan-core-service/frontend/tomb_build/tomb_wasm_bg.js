@@ -213,11 +213,11 @@ function makeMutClosure(arg0, arg1, dtor, f) {
     return real;
 }
 function __wbg_adapter_32(arg0, arg1, arg2) {
-    wasm.wasm_bindgen__convert__closures__invoke1_mut__h62aa2d9f2503329f(arg0, arg1, addHeapObject(arg2));
+    wasm.wasm_bindgen__convert__closures__invoke1_mut__h3508d3e728040214(arg0, arg1, addHeapObject(arg2));
 }
 
 function __wbg_adapter_35(arg0, arg1, arg2) {
-    wasm._dyn_core__ops__function__FnMut__A____Output___R_as_wasm_bindgen__closure__WasmClosure___describe__invoke__heff41a264a94e045(arg0, arg1, addHeapObject(arg2));
+    wasm._dyn_core__ops__function__FnMut__A____Output___R_as_wasm_bindgen__closure__WasmClosure___describe__invoke__h9ba99765cd061dc8(arg0, arg1, addHeapObject(arg2));
 }
 
 function _assertClass(instance, klass) {
@@ -265,7 +265,7 @@ function getArrayU8FromWasm0(ptr, len) {
     return getUint8Memory0().subarray(ptr / 1, ptr / 1 + len);
 }
 function __wbg_adapter_256(arg0, arg1, arg2, arg3) {
-    wasm.wasm_bindgen__convert__closures__invoke2_mut__h1c3c0aafea56a32b(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
+    wasm.wasm_bindgen__convert__closures__invoke2_mut__h61fc85f901b8fa45(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
 }
 
 /**
@@ -1199,7 +1199,7 @@ export class WasmMount {
     * # Errors
     * * "missing metadata" - If the metadata is missing
     * * "could not snapshot" - If the snapshot fails
-    * @returns {Promise<WasmSnapshot>}
+    * @returns {Promise<string>}
     */
     snapshot() {
         const ret = wasm.wasmmount_snapshot(this.__wbg_ptr);
@@ -1247,12 +1247,12 @@ export class WasmSnapshot {
     /**
     * @returns {string}
     */
-    get id() {
+    get bucketId() {
         let deferred1_0;
         let deferred1_1;
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-            wasm.wasmbucketmetadata_id(retptr, this.__wbg_ptr);
+            wasm.wasmsnapshot_bucket_id(retptr, this.__wbg_ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
             deferred1_0 = r0;
@@ -1264,14 +1264,21 @@ export class WasmSnapshot {
         }
     }
     /**
+    * @returns {number}
+    */
+    get createdAt() {
+        const ret = wasm.wasmsnapshot_created_at(this.__wbg_ptr);
+        return ret;
+    }
+    /**
     * @returns {string}
     */
-    get bucketId() {
+    get id() {
         let deferred1_0;
         let deferred1_1;
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-            wasm.wasmbucketmetadata_bucket_id(retptr, this.__wbg_ptr);
+            wasm.wasmsnapshot_id(retptr, this.__wbg_ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
             deferred1_0 = r0;
@@ -1302,17 +1309,10 @@ export class WasmSnapshot {
         }
     }
     /**
-    * @returns {bigint}
+    * @returns {number}
     */
     get size() {
         const ret = wasm.wasmsnapshot_size(this.__wbg_ptr);
-        return BigInt.asUintN(64, ret);
-    }
-    /**
-    * @returns {bigint}
-    */
-    get createdAt() {
-        const ret = wasm.wasmsnapshot_created_at(this.__wbg_ptr);
         return ret;
     }
 }
@@ -1331,6 +1331,21 @@ export function __wbindgen_bigint_from_u64(arg0) {
     return addHeapObject(ret);
 };
 
+export function __wbg_wasmbucket_new(arg0) {
+    const ret = WasmBucket.__wrap(arg0);
+    return addHeapObject(ret);
+};
+
+export function __wbg_wasmbucketkey_new(arg0) {
+    const ret = WasmBucketKey.__wrap(arg0);
+    return addHeapObject(ret);
+};
+
+export function __wbg_wasmmount_new(arg0) {
+    const ret = WasmMount.__wrap(arg0);
+    return addHeapObject(ret);
+};
+
 export function __wbindgen_object_clone_ref(arg0) {
     const ret = getObject(arg0);
     return addHeapObject(ret);
@@ -1341,24 +1356,18 @@ export function __wbg_wasmsnapshot_new(arg0) {
     return addHeapObject(ret);
 };
 
-export function __wbg_wasmbucket_new(arg0) {
-    const ret = WasmBucket.__wrap(arg0);
-    return addHeapObject(ret);
-};
-
-export function __wbg_wasmmount_new(arg0) {
-    const ret = WasmMount.__wrap(arg0);
-    return addHeapObject(ret);
-};
-
-export function __wbg_wasmbucketkey_new(arg0) {
-    const ret = WasmBucketKey.__wrap(arg0);
-    return addHeapObject(ret);
-};
-
 export function __wbindgen_number_new(arg0) {
     const ret = arg0;
     return addHeapObject(ret);
+};
+
+export function __wbindgen_string_get(arg0, arg1) {
+    const obj = getObject(arg1);
+    const ret = typeof(obj) === 'string' ? obj : undefined;
+    var ptr1 = isLikeNone(ret) ? 0 : passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    var len1 = WASM_VECTOR_LEN;
+    getInt32Memory0()[arg0 / 4 + 1] = len1;
+    getInt32Memory0()[arg0 / 4 + 0] = ptr1;
 };
 
 export function __wbindgen_cb_drop(arg0) {
@@ -1369,15 +1378,6 @@ export function __wbindgen_cb_drop(arg0) {
     }
     const ret = false;
     return ret;
-};
-
-export function __wbindgen_string_get(arg0, arg1) {
-    const obj = getObject(arg1);
-    const ret = typeof(obj) === 'string' ? obj : undefined;
-    var ptr1 = isLikeNone(ret) ? 0 : passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    var len1 = WASM_VECTOR_LEN;
-    getInt32Memory0()[arg0 / 4 + 1] = len1;
-    getInt32Memory0()[arg0 / 4 + 0] = ptr1;
 };
 
 export function __wbg_new_abda76e883ba8a5f() {
@@ -1952,13 +1952,13 @@ export function __wbindgen_memory() {
     return addHeapObject(ret);
 };
 
-export function __wbindgen_closure_wrapper2910(arg0, arg1, arg2) {
-    const ret = makeMutClosure(arg0, arg1, 1189, __wbg_adapter_32);
+export function __wbindgen_closure_wrapper2923(arg0, arg1, arg2) {
+    const ret = makeMutClosure(arg0, arg1, 1193, __wbg_adapter_32);
     return addHeapObject(ret);
 };
 
-export function __wbindgen_closure_wrapper2964(arg0, arg1, arg2) {
-    const ret = makeMutClosure(arg0, arg1, 1201, __wbg_adapter_35);
+export function __wbindgen_closure_wrapper2977(arg0, arg1, arg2) {
+    const ret = makeMutClosure(arg0, arg1, 1205, __wbg_adapter_35);
     return addHeapObject(ret);
 };
 

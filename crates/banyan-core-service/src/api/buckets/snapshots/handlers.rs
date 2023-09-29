@@ -16,6 +16,7 @@ pub async fn create(
     let account_id = api_token.subject;
     let bucket_id = bucket_id.to_string();
     let metadata_id = new_snapshot.metadata_id.to_string();
+
     // Make sure the calling user owns the bucket
     match db::authorize_bucket(&account_id, &bucket_id, &mut db_conn).await {
         Ok(_) => {}

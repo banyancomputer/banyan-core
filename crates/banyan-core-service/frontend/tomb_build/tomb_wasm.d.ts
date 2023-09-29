@@ -448,9 +448,9 @@ export class WasmMount {
 * # Errors
 * * "missing metadata" - If the metadata is missing
 * * "could not snapshot" - If the snapshot fails
-* @returns {Promise<WasmSnapshot>}
+* @returns {Promise<string>}
 */
-  snapshot(): Promise<WasmSnapshot>;
+  snapshot(): Promise<string>;
 /**
 * Restore a mounted bucket
 * # Arguments
@@ -471,7 +471,7 @@ export class WasmSnapshot {
   readonly bucketId: string;
 /**
 */
-  readonly createdAt: bigint;
+  readonly createdAt: number;
 /**
 */
   readonly id: string;
@@ -480,5 +480,5 @@ export class WasmSnapshot {
   readonly metadataId: string;
 /**
 */
-  readonly size: bigint;
+  readonly size: number;
 }
