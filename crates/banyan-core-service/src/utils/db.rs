@@ -442,14 +442,15 @@ pub async fn create_snapshot(
     metadata_id: &str,
     db_conn: &mut DbConn,
 ) -> Result<String, sqlx::Error> {
-    let metadata_size: i64 = sqlx::query_scalar(r#"
+    let metadata_size: i64 = sqlx::query_scalar(
+        r#"
             SELECT metadata_size + COALESCE(expected_data_size, data_size)
             FROM metadata
-            WHERE id = $1;"#
-        )
-        .bind(metadata_id)
-        .fetch_one(&mut *db_conn.0)
-        .await?;
+            WHERE id = $1;"#,
+    )
+    .bind(metadata_id)
+    .fetch_one(&mut *db_conn.0)
+    .await?;
 
     sqlx::query_scalar::<sqlx::Sqlite, String>(
         r#"INSERT INTO snapshots (metadata_id, size)
