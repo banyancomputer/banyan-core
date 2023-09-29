@@ -124,8 +124,6 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                     <tbody>
                         {
                             bucketCopy.files.map((file, index) => {
-                                console.log(file);
-
                                 return (<tr key={index}>
                                     <td
                                         onClick={() => file.type === 'dir' ? goTofolder(bucket, file) : previewFile(bucket, file)}
