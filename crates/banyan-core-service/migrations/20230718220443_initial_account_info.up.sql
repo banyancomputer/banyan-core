@@ -236,7 +236,7 @@ CREATE TABLE snapshots (
 
 CREATE UNIQUE INDEX idx_snapshots_on_unique_metadata_id
   ON snapshots(metadata_id);
-
+   
 -- Migration for Storage Hosts
 CREATE TABLE storage_hosts (
   id TEXT NOT NULL PRIMARY KEY DEFAULT (

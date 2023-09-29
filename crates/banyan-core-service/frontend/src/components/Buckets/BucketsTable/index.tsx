@@ -145,7 +145,7 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
                                         <td className="px-3 py-4"></td>
                                         <td className="px-3 py-4"></td>
                                         <td className="px-3 py-4">{getDateLabel(Number(file.metadata.modified))}</td>
-                                        <td className="px-3 py-4">{file.type === 'dir' ? '' : convertFileSize(file.metadata.size)}</td>
+                                        <td className="px-3 py-4">{convertFileSize(file.metadata.size)}</td>
                                         <td
                                             className="px-3 py-4"
                                         >
