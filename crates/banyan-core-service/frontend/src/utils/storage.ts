@@ -1,4 +1,6 @@
 export function convertFileSize(bytes: number) {
+    if(typeof bytes !== 'number') return;
+
     let size = bytes;
     let counter = 0;
     const BASE = 1024;
