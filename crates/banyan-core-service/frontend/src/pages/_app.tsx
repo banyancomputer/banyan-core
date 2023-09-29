@@ -40,7 +40,6 @@ export default function App({
         <SessionProvider session={session}>
             {/*  Tomb Provider for access to User's Keystore + TombFs */}
             <KeystoreProvider>
-                {/*
                 <Script>
                     {`
                             window['_fs_host'] = 'fullstory.com';
@@ -66,7 +65,6 @@ export default function App({
                             })(window,document,window['_fs_namespace'],'script','user');
                         `}
                 </Script>
-                */}
                 <TombProvider>
                     <ModalProvider>
                         <FileUploadProvider>
