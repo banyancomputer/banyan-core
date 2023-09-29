@@ -124,6 +124,7 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                     <tbody>
                         {
                             bucketCopy.files.map((file, index) =>
+                                console.log(file);
                                 <tr key={index}>
                                     <td
                                         onClick={() => file.type === 'dir' ? goTofolder(bucket, file) : previewFile(bucket, file)}
@@ -132,7 +133,7 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                                         <FileCell name={file.name} />
                                     </td>
                                     <td className="px-6 py-4">{getDateLabel(+file.metadata.modified)}</td>
-                                    <td className="px-6 py-4">{file.type === 'file' && file.metadata.size !== null ? convertFileSize(file.metadata.size) : ''}</td>
+                                    <td className="px-6 py-4">{file.type === 'file' && && file.metadata !== null && file.metadata.size !== null ? convertFileSize(file.metadata.size) : ''}</td>
                                     <td className="px-6 py-4">
                                         {
                                             file.type === 'dir' && bucket.bucketType === 'backup' ?
