@@ -59,5 +59,5 @@ export interface BucketSnapshot {
     snapshot_type: string;
     version: string;
     size: number;
-    created_at: number;
+    createdAt: number;
 };
