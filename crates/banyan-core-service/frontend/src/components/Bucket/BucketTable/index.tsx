@@ -132,7 +132,7 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                                         <FileCell name={file.name} />
                                     </td>
                                     <td className="px-6 py-4">{getDateLabel(+file.metadata.modified)}</td>
-                                    <td className="px-6 py-4">{file.type === 'dir' ? '' : convertFileSize(file.metadata.size)}</td>
+                                    <td className="px-6 py-4">{file.type === 'file' && file.metadata.size !== null ? convertFileSize(file.metadata.size) : ''}</td>
                                     <td className="px-6 py-4">
                                         {
                                             file.type === 'dir' && bucket.bucketType === 'backup' ?
