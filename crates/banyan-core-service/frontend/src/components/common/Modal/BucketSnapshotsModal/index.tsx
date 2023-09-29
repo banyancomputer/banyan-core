@@ -44,11 +44,11 @@ export const BucketSnapshotsModal: React.FC<{ bucketId: string }> = ({ bucketId 
                         <div className="flex align-middle gap-2 flex-grow">
                             <AiOutlineFile size="20px" />
                             <span className="font-semibold">
-                                {snapshot.version} snapshot
+                                {snapshot.id}
                             </span>
                         </div>
                         <div>
-                            {getDateLabel(Date.now())}
+                            Size: {snapshot.size}, Created: {`${new Date(snapshot.createdAt * 1000)}`}
                         </div>
                     </div>
                 )}
