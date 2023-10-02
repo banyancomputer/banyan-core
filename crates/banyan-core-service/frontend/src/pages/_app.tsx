@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import type { AppProps } from 'next/app';
 import { IntlProvider } from 'react-intl';
 import { useRouter } from 'next/router';
@@ -13,6 +14,7 @@ import { TombProvider } from '@/contexts/tomb';
 import { ModalProvider } from '@/contexts/modals';
 import { FilePreviewProvider } from '@/contexts/filesPreview';
 import { FileUploadProvider } from '@/contexts/filesUpload';
+import { getLocalStorageItem } from '@/utils/localStorage';
 
 import { Notifications } from '@/components/common/Notifications';
 import { Modal } from '@/components/common/Modal';
@@ -34,6 +36,13 @@ export default function App({
 }: AppPropsWithLayout) {
     const getLayout = Component.getLayout || ((page) => page);
     const { locale = '' } = useRouter();
+
+    useEffect(() => {
+        const theme = getLocalStorageItem('theme');
+
+        if (!theme) return;
+        document.documentElement.setAttribute('prefers-color-scheme', theme);
+    }, []);
 
     return (
         // Session provider for Authentication against NextAuth

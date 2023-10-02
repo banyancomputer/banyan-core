@@ -15,14 +15,14 @@ export const Billing: NextPageWithLayout = () => {
             <h2 className="text-lg font-semibold">
                 {`${messages.billing}`}
             </h2>
-            <ErrorBanner  title={`${messages.paymentIssue}`} description={`${messages.updatePaymentMethod}`}/>
-            <div className="flex justify-between items-center py-5 px-4 border-1 rounded-lg text-gray-800 border-gray-200">
+            <ErrorBanner title={`${messages.paymentIssue}`} description={`${messages.updatePaymentMethod}`} />
+            <div className="flex justify-between items-center py-5 px-4 border-1 rounded-lg text-gray-800 border-border">
                 <div>
                     <h5 className="font-semibold">{`${messages.language}`}</h5>
                     <p>{`${messages.chooseLanguage}`}</p>
                 </div>
                 <LanguageSelect />
-                </div>
+            </div>
         </div>
     );
 };

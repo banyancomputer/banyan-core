@@ -48,7 +48,7 @@ const Login: NextPageWithLayout = () => {
                 <div className="flex flex-col justify-cente">
                     <h3 className="mb-12 text-3xl font-medium">Log in</h3>
                     <button
-                        className="w-80 flex items-center justify-center bg-white text-sm font-medium py-2.5 px-3 rounded-lg cursor-pointer"
+                        className="w-80 flex items-center justify-center bg-mainBackground text-sm font-medium py-2.5 px-3 rounded-lg cursor-pointer"
                         onClick={handleLoginWithProvider('google')}
                     >
                         <span className="flex items-center justify-center gap-2">

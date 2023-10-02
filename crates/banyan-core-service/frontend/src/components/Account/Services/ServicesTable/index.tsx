@@ -22,7 +22,7 @@ export const ServicesTable = () => {
     ]
 
     return (
-        <div className="max-h-[calc(100vh-290px)] overflow-x-auto border-1 border-gray-200 rounded-xl" >
+        <div className="max-h-[calc(100vh-290px)] overflow-x-auto border-1 border-border rounded-xl" >
             <table className="table table-pin-rows w-full text-gray-600 rounded-xl ">
                 <thead className="border-b-table-cellBackground text-xxs font-normal text-gray-600">
                     <tr className="border-b-table-cellBackground bg-table-headBackground">
@@ -43,10 +43,10 @@ export const ServicesTable = () => {
                 <tbody>
                     {MOCK_DATA.map(storage =>
                         <tr>
-                            <td className='px-3 py-6 border-t-1 border-r-1 border-gray-200'>{storage.service}</td>
-                            <td className='px-3 py-6 border-t-1 border-x-1 border-gray-200'>{storage.serviceCost}</td>
-                            <td className='px-3 py-6 border-t-1 border-x-1 border-gray-200'>{storage.dataQty}</td>
-                            <td className='px-3 py-6 border-t-1 border-l-1 border-gray-200'>{storage.cost}</td>
+                            <td className='px-3 py-6 border-t-1 border-r-1 border-border'>{storage.service}</td>
+                            <td className='px-3 py-6 border-t-1 border-x-1 border-border'>{storage.serviceCost}</td>
+                            <td className='px-3 py-6 border-t-1 border-x-1 border-border'>{storage.dataQty}</td>
+                            <td className='px-3 py-6 border-t-1 border-l-1 border-border'>{storage.cost}</td>
                         </tr>
                     )}
                 </tbody>
