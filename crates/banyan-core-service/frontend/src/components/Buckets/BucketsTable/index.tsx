@@ -124,7 +124,7 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
                                 className="bg-table-cellBackground cursor-pointer"
                                 onClick={event => goToBucket(event, bucket.id)}
                             >
-                                <td className="px-3 py-4 cursor-pointer text-gray-900 font-medium">
+                                <td className="px-3 py-4 cursor-pointer  overflow-hidden text-ellipsis whitespace-nowrap text-gray-900 font-medium">
                                     {bucket.name}
                                 </td>
                                 <td className="px-3 py-4"></td>
