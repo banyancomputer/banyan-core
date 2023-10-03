@@ -104,7 +104,7 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                                     text={`${messages.lastEdited}`}
                                 />
                             </th>
-                            <th className="px-6 py-4 text-left font-medium w-24">
+                            <th className="px-6 py-4 text-left font-medium w-36">
                                 <SortCell
                                     criteria="fileSize"
                                     onChange={sort}

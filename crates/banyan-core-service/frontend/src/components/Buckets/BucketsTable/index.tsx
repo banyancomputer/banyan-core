@@ -98,7 +98,7 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
                                 text={`${messages.lastEdited}`}
                             />
                         </th>
-                        <th className="p-3 text-left font-medium w-24">
+                        <th className="p-3 text-left font-medium w-36">
                             <SortCell
                                 criteria="fileSize"
                                 onChange={sort}
@@ -114,7 +114,7 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
                         <React.Fragment key={bucket.id}>
                             <tr className="bg-table-cellBackground">
                                 <td
-                                    className="px-3 py-4  cursor-pointer"
+                                    className="px-3 py-4 cursor-pointer text-gray-900 font-medium"
                                     onClick={() => goToBucket(bucket.id)}
                                 >{bucket.name}</td>
                                 <td className="px-3 py-4"></td>
