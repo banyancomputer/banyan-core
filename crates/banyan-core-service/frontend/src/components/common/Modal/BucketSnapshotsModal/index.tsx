@@ -6,7 +6,8 @@ import { FiDownload } from 'react-icons/fi';
 import { useTomb } from '@/contexts/tomb';
 import { BucketSnapshot } from '@/lib/interfaces/bucket';
 import { useModal } from '@/contexts/modals';
-import { getDateLabel } from '@/utils/date';
+import { getDateLabel, getTime } from '@/utils/date';
+import { convertFileSize } from '@/utils/storage';
 
 export const BucketSnapshotsModal: React.FC<{ bucketId: string }> = ({ bucketId }) => {
     const { getBucketShapshots, tomb } = useTomb();
@@ -17,7 +18,7 @@ export const BucketSnapshotsModal: React.FC<{ bucketId: string }> = ({ bucketId 
     useEffect(() => {
         if (!tomb) { return; }
 
-        (async() => {
+        (async () => {
             try {
                 const snapshots = await getBucketShapshots(bucketId);
                 setSnapshots(snapshots);
@@ -26,6 +27,10 @@ export const BucketSnapshotsModal: React.FC<{ bucketId: string }> = ({ bucketId 
             }
         })();
     }, [tomb]);
+
+    console.log(snapshots[0]?.createdAt);
+    console.log(snapshots[0]?.size);
+
 
     return (
         <div className="w-snapshotsModal flex flex-col gap-8" >
@@ -38,17 +43,18 @@ export const BucketSnapshotsModal: React.FC<{ bucketId: string }> = ({ bucketId 
             <div className="flex flex-col gap-3">
                 {snapshots.map(snapshot =>
                     <div
-                        className="flex align-middle gap-3 px-3 py-2  border-1 border-navigation-border rounded-xl text-xs"
+                        className="flex align-middle gap-3 px-3 py-2  border-1 border-gray-200 rounded-xl text-xs"
                         key={snapshot.id}
                     >
-                        <div className="flex align-middle gap-2 flex-grow">
+                        <div className="flex items-center align-middle gap-2 flex-grow text-navigation-border">
                             <AiOutlineFile size="20px" />
-                            <span className="font-semibold">
-                                {snapshot.id}
-                            </span>
+                            <div className="flex flex-col font-semibold text-gray-900">
+                                <span>{`${getDateLabel(snapshot.createdAt, false)} version`}</span>
+                                <span className='text-gray-400 font-medium'>{`${convertFileSize(snapshot.size)}`}</span>
+                            </div>
                         </div>
-                        <div>
-                            Size: {snapshot.size}, Created: {`${new Date(snapshot.createdAt * 1000)}`}
+                        <div className='flex items-center whitespace-nowrap font-medium'>
+                            {`${getDateLabel(snapshot.createdAt)}, ${getTime(snapshot.createdAt)}`}
                         </div>
                     </div>
                 )}
