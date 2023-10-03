@@ -35,9 +35,9 @@ export const Header = () => {
         setAreFaqOpionsVisible(prev => !prev);
     };
 
-    const logout = () => {
-        signOut();
-        purgeKeystore();
+    const logout = async() => {
+        await signOut();
+        await purgeKeystore();
     };
 
     const goTo = (path: string) => {
