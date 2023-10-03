@@ -55,9 +55,9 @@ impl EmailTransport {
     }
 }
 
-// Parse a url of form
-// <host>:<port>?<username>:<password>
-// into a tuple of (host, port, creds)
+/// Parse a url of form:
+///     <host>:<port>?<username>:<password>
+/// into a tuple of (host, port, creds)
 fn parse_smtp_url(url: &str) -> Result<(String, u16, Credentials), EmailError> {
     let mut parts = url.split('?');
 

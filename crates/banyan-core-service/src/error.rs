@@ -47,7 +47,7 @@ impl CoreError {
 
     pub fn email_error(err: EmailError) -> Self {
         Self {
-            kind: CoreErrorKind::Email(err),
+            kind: CoreErrorKind::EmailError(err),
         }
     }
 }
@@ -65,7 +65,7 @@ pub enum CoreErrorKind {
         /// Resource
         resource: String,
     },
-    Email(EmailError),
+    EmailError(EmailError),
 }
 
 impl IntoResponse for CoreError {
@@ -104,7 +104,7 @@ impl IntoResponse for CoreError {
                     _ => Self::default_response(None),
                 }
             }
-            CoreErrorKind::Email(err) => {
+            CoreErrorKind::EmailError(err) => {
                 tracing::error!("unable to send email: {err}");
                 Self::default_response(None)
             }
