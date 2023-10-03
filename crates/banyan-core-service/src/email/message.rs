@@ -32,9 +32,7 @@ impl EmailMessage {
         let test_mode = env::var("MAILGUN_TEST_MODE")
             .unwrap_or_else(|_| "false".to_string())
             .parse::<bool>()
-            .map_err(|e| {
-                EmailError::default_error(&format!("EmailError parsing MAILGUN_TEST_MODE: {}", e))
-            })?;
+            .map_err(EmailError::invalid_test_mode)?;
 
         let mut builder = Message::builder();
 
@@ -45,20 +43,16 @@ impl EmailMessage {
         builder
             .from(
                 env::var("SMTP_FROM")
-                    .expect("SMTP_FROM must be set")
+                    .map_err(|_| EmailError::missing_smtp_from())?
                     .parse()
-                    .map_err(|e| {
-                        EmailError::default_error(&format!("EmailError parsing SMTP_FROM: {}", e))
-                    })?,
+                    .map_err(EmailError::invalid_smtp_from)?,
             )
-            .to(recipient_email.parse().map_err(|e| {
-                EmailError::default_error(&format!("EmailError parsing recipient email: {}", e))
-            })?)
+            .to(recipient_email
+                .parse()
+                .map_err(EmailError::invalid_smtp_from)?)
             .subject(self.subject())
             .body(self.body()?)
-            .map_err(|e| {
-                EmailError::default_error(&format!("EmailError building email message: {}", e))
-            })
+            .map_err(EmailError::message_build_error)
     }
 
     // 3. Implement the subject for the new variant
@@ -72,9 +66,7 @@ impl EmailMessage {
     //     You should be able to access it with its <snake_case_name>
     fn body(&self) -> Result<String, EmailError> {
         match self {
-            EmailMessage::GaRelease => TEMPLATE_REGISTRY.render("ga_release", &self).map_err(|e| {
-                EmailError::default_error(&format!("EmailError rendering email template: {}", e))
-            }),
+            EmailMessage::GaRelease => TEMPLATE_REGISTRY.render("ga_release", &self),
         }
     }
 }

@@ -1,6 +1,8 @@
 use handlebars::Handlebars;
 use serde::Serialize;
 
+use super::error::EmailError;
+
 const TEMPLATE_EXT: &str = ".hbs";
 const TEMPLATE_DIR: &str = "./src/email/templates";
 
@@ -17,14 +19,12 @@ impl Default for TemplateRegistry {
 }
 
 impl TemplateRegistry {
-    pub fn render<T>(
-        &self,
-        template_name: &str,
-        data: &T,
-    ) -> Result<String, handlebars::RenderError>
+    pub fn render<T>(&self, template_name: &str, data: &T) -> Result<String, EmailError>
     where
         T: Serialize,
     {
-        self.0.render(template_name, data)
+        self.0
+            .render(template_name, data)
+            .map_err(|e| EmailError::render_error(e))
     }
 }

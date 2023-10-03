@@ -1,7 +1,8 @@
 #![allow(dead_code)]
+pub mod error;
 pub mod message;
 pub mod transport;
-pub mod error;
+
 mod template_registry;
 
 #[cfg(test)]
@@ -12,7 +13,7 @@ mod tests {
     use crate::email::message::EmailMessage;
     use crate::email::transport::EmailTransport;
     use crate::error::CoreError;
-    
+
     // You will need to allow your mailgun domain to send to the recipient
     const RECIPIENT: &str = "alex@banyan.computer";
 
@@ -44,5 +45,4 @@ mod tests {
         transport.send(message)?;
         Ok(())
     }
-
 }

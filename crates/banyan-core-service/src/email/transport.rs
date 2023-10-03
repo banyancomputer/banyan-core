@@ -20,17 +20,13 @@ impl EmailTransport {
     pub fn new() -> Result<Self, EmailError> {
         let smtp_url = env::var("SMTP_URL");
         let (host, port, creds) = match smtp_url {
-            Ok(smtp_url) => parse_smtp_url(&smtp_url).map_err(|e| {
-                EmailError::default_error(&format!("EmailError parsing SMTP_URL: {}", e))
-            })?,
+            Ok(smtp_url) => parse_smtp_url(&smtp_url)?,
             Err(_) => {
                 return Ok(EmailTransport::Stub(StubTransport::new_ok()));
             }
         };
         let transport = SmtpTransport::starttls_relay(&host)
-            .map_err(|e| {
-                EmailError::default_error(&format!("EmailError creating SMTP transport: {}", e))
-            })?
+            .map_err(EmailError::smtp_transport_build_error)?
             .credentials(creds)
             .port(port);
         Ok(EmailTransport::Smtp(transport.build()))
@@ -43,24 +39,17 @@ impl EmailTransport {
                     .send(&message)
                     // TODO: What should we be doing with the response here?
                     .map(|_| ()) // Simply discard the Response here for now
-                    .map_err(|e| {
-                        EmailError::default_error(&format!("EmailError sending email: {}", e))
-                    })
+                    .map_err(EmailError::smtp_send_error)
             }
             EmailTransport::Stub(transport) => {
                 // TODO: What else should be logged here?
                 tracing::info!(
                     "Outgoing email: {}",
-                    std::str::from_utf8(&message.formatted()).map_err(|e| {
-                        EmailError::default_error(&format!(
-                            "EmailError could not decode email: {}",
-                            e
-                        ))
-                    })?
+                    std::str::from_utf8(&message.formatted()).map_err(EmailError::utf8_error)?
                 );
-                transport.send(&message).map_err(|e| {
-                    EmailError::default_error(&format!("EmailError sending email: {}", e))
-                })
+                transport
+                    .send(&message)
+                    .map_err(EmailError::stub_send_error)
             }
         }
     }
@@ -74,30 +63,30 @@ fn parse_smtp_url(url: &str) -> Result<(String, u16, Credentials), EmailError> {
 
     let host_port = parts
         .next()
-        .ok_or(EmailError::default_error("missing host:port"))?;
+        .ok_or(EmailError::invalid_smtp_url("missing host:port"))?;
     let creds = parts
         .next()
-        .ok_or(EmailError::default_error("missing username:password"))?;
+        .ok_or(EmailError::invalid_smtp_url("missing username:password"))?;
 
     let mut host_parts = host_port.split(':');
     let host = host_parts
         .next()
-        .ok_or(EmailError::default_error("missing host"))?
+        .ok_or(EmailError::invalid_smtp_url("missing host"))?
         .to_string();
     let port: u16 = host_parts
         .next()
-        .ok_or(EmailError::default_error("missing port"))?
+        .ok_or(EmailError::invalid_smtp_url("missing port"))?
         .parse()
-        .map_err(|e| EmailError::default_error(&format!("Error parsing port: {}", e)))?;
+        .map_err(|e| EmailError::invalid_smtp_url(&format!("Error parsing port: {}", e)))?;
 
     let mut creds_parts = creds.split(':');
     let username = creds_parts
         .next()
-        .ok_or(EmailError::default_error("missing username"))?
+        .ok_or(EmailError::invalid_smtp_url("missing username"))?
         .to_string();
     let password = creds_parts
         .next()
-        .ok_or(EmailError::default_error("missing password"))?
+        .ok_or(EmailError::invalid_smtp_url("missing password"))?
         .to_string();
 
     Ok((host, port, Credentials::new(username, password)))
