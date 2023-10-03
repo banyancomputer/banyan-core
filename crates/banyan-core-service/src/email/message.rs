@@ -37,7 +37,7 @@ impl EmailMessage {
         let mut builder = Message::builder();
 
         if test_mode {
-            builder = builder.clone().header(MailgunTestMode);
+            builder = builder.header(MailgunTestMode);
         }
 
         builder
@@ -91,56 +91,62 @@ impl Serialize for EmailMessage {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serial_test::serial;
     const RECIPIENT: &str = "fake@email.com";
 
-    // 6. Add a test for the new variant
+    // This just ensures that the SMTP_FROM env var is set for all tests
     #[test]
+    #[serial]
+    fn set_from() -> Result<(), EmailError> {
+        env::set_var("SMTP_FROM", RECIPIENT);
+        Ok(())
+    }
+
+    // 6. Add a test for the new variant in order to make sure it builds correctly. Make sure it is serial!
+
+    #[test]
+    #[serial]
     fn ga_release() -> Result<(), EmailError> {
         let _message = EmailMessage::GaRelease.build(RECIPIENT)?;
         Ok(())
     }
 
-    // Mailgun Test Mode Switch
-    mod test_mode {
-        use super::*;
-        use serial_test::serial;
+    // Mailgun Test Mode Switch Tests
 
-        #[test]
-        #[serial]
-        fn clean_env() -> Result<(), EmailError> {
-            env::set_var("SMTP_FROM", RECIPIENT);
-            env::remove_var("MAILGUN_TEST_MODE");
-            let message = EmailMessage::GaRelease.build(RECIPIENT)?;
-            assert!(message.headers().get::<MailgunTestMode>().is_none());
-            Ok(())
-        }
+    #[test]
+    #[serial]
+    fn test_mode_clear() -> Result<(), EmailError> {
+        env::remove_var("MAILGUN_TEST_MODE");
+        let message = EmailMessage::GaRelease.build(RECIPIENT)?;
+        assert!(message.headers().get::<MailgunTestMode>().is_none());
+        Ok(())
+    }
 
-        #[test]
-        #[serial]
-        fn true_env() -> Result<(), EmailError> {
-            env::set_var("MAILGUN_TEST_MODE", "true");
-            let message = EmailMessage::GaRelease.build(RECIPIENT)?;
-            assert!(message.headers().get::<MailgunTestMode>().is_some());
-            Ok(())
-        }
+    #[test]
+    #[serial]
+    fn test_mode_true() -> Result<(), EmailError> {
+        env::set_var("MAILGUN_TEST_MODE", "true");
+        let message = EmailMessage::GaRelease.build(RECIPIENT)?;
+        assert!(message.headers().get::<MailgunTestMode>().is_some());
+        Ok(())
+    }
 
-        #[test]
-        #[serial]
-        fn false_env() -> Result<(), EmailError> {
-            env::set_var("MAILGUN_TEST_MODE", "false");
-            let message = EmailMessage::GaRelease.build(RECIPIENT)?;
-            assert!(message.headers().get::<MailgunTestMode>().is_none());
-            Ok(())
-        }
+    #[test]
+    #[serial]
+    fn test_mode_false() -> Result<(), EmailError> {
+        env::set_var("MAILGUN_TEST_MODE", "false");
+        let message = EmailMessage::GaRelease.build(RECIPIENT)?;
+        assert!(message.headers().get::<MailgunTestMode>().is_none());
+        Ok(())
+    }
 
-        #[test]
-        #[serial]
-        fn invalid_env() -> Result<(), EmailError> {
-            env::set_var("MAILGUN_TEST_MODE", "invalid");
-            let message = EmailMessage::GaRelease.build(RECIPIENT);
-            assert!(message.is_err());
-            Ok(())
-        }
+    #[test]
+    #[serial]
+    fn test_mode_invalid() -> Result<(), EmailError> {
+        env::set_var("MAILGUN_TEST_MODE", "invalid");
+        let message = EmailMessage::GaRelease.build(RECIPIENT);
+        assert!(message.is_err());
+        Ok(())
     }
 }
 
