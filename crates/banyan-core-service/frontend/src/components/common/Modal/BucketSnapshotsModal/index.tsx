@@ -36,7 +36,7 @@ export const BucketSnapshotsModal: React.FC<{ bucketId: string }> = ({ bucketId 
         <div className="w-snapshotsModal flex flex-col gap-8" >
             <div>
                 <h4 className="text-m font-semibold ">{`${messages.viewColdSnapshots}`}</h4>
-                <p className="mt-2 text-gray-600">
+                <p className="mt-2 text-gray-400">
                     {`${messages.accessPreviousVersions}`}
                 </p>
             </div>
