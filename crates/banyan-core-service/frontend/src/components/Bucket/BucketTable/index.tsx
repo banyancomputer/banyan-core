@@ -44,7 +44,7 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         openFile(bucket, file.name, folderLocation);
     };
 
-    const handleCkick = (event: React.MouseEvent<HTMLTableRowElement, MouseEvent>, bucket: Bucket, file: BucketFile) => {
+    const handleClick = (event: React.MouseEvent<HTMLTableRowElement, MouseEvent>, bucket: Bucket, file: BucketFile) => {
         //@ts-ignore
         if (event.target.id === 'actionsCell') return;
 
@@ -134,7 +134,7 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                                 <tr
                                     className='cursor-pointer'
                                     key={index}
-                                    onClick={event => handleCkick(event, bucket, file)}
+                                    onClick={event => handleClick(event, bucket, file)}
                                 >
                                     <td className='px-6 py-4'><FileCell name={file.name} /></td>
                                     <td className="px-6 py-4">{getDateLabel(+file.metadata.modified)}</td>

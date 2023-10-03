@@ -41,7 +41,7 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
     const previewFile = async (bucket: Bucket, file: BucketFile) => {
         openFile(bucket, file.name, []);
     };
-    const handleCkick = (event: React.MouseEvent<HTMLTableRowElement, MouseEvent>, bucket: Bucket, file: BucketFile) => {
+    const handleClick = (event: React.MouseEvent<HTMLTableRowElement, MouseEvent>, bucket: Bucket, file: BucketFile) => {
         //@ts-ignore
         if (event.target.id === 'actionsCell') return;
 
@@ -145,7 +145,7 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
                                     <tr
                                         key={index}
                                         className='cursor-pointer'
-                                        onClick={event => handleCkick(event, bucket, file)}
+                                        onClick={event => handleClick(event, bucket, file)}
                                     >
                                         <td className="px-3 py-4"></td>
                                         <td className="px-3 py-4"><FileCell name={file.name} /></td>
