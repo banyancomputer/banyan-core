@@ -3,7 +3,5 @@ pub mod config;
 pub mod error;
 pub mod message;
 pub mod transport;
-pub mod error;
-mod template_registry;
 
 mod template_registry;
