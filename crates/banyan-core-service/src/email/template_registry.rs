@@ -1,5 +1,5 @@
-use serde::Serialize;
 use handlebars::Handlebars;
+use serde::Serialize;
 
 const TEMPLATE_EXT: &str = ".hbs";
 const TEMPLATE_DIR: &str = "./src/email/templates";

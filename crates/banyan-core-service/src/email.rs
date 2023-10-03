@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 pub mod message;
-pub mod transport;
 mod template_registry;
+pub mod transport;
 
 #[cfg(test)]
 mod tests {
@@ -40,5 +40,4 @@ mod tests {
         transport.send(message)?;
         Ok(())
     }
-
 }
