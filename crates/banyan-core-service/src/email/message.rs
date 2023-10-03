@@ -8,7 +8,7 @@ use lettre::message::{
 use serde::{ser::StdError, Serialize, Serializer};
 use serde_json::Value;
 
-use crate::error::CoreError;
+use crate::email::error::EmailError;
 
 use super::template_registry::TemplateRegistry;
 
@@ -28,12 +28,12 @@ pub enum EmailMessage {
 
 impl EmailMessage {
     /// Build an email message variant from the given template and data
-    pub fn build(&self, recipient_email: &str) -> Result<Message, CoreError> {
+    pub fn build(&self, recipient_email: &str) -> Result<Message, EmailError> {
         let test_mode = env::var("MAILGUN_TEST_MODE")
             .unwrap_or_else(|_| "false".to_string())
             .parse::<bool>()
             .map_err(|e| {
-                CoreError::default_error(&format!("CoreError parsing MAILGUN_TEST_MODE: {}", e))
+                EmailError::default_error(&format!("EmailError parsing MAILGUN_TEST_MODE: {}", e))
             })?;
 
         let mut builder = Message::builder();
@@ -48,16 +48,16 @@ impl EmailMessage {
                     .expect("SMTP_FROM must be set")
                     .parse()
                     .map_err(|e| {
-                        CoreError::default_error(&format!("CoreError parsing SMTP_FROM: {}", e))
+                        EmailError::default_error(&format!("EmailError parsing SMTP_FROM: {}", e))
                     })?,
             )
             .to(recipient_email.parse().map_err(|e| {
-                CoreError::default_error(&format!("CoreError parsing recipient email: {}", e))
+                EmailError::default_error(&format!("EmailError parsing recipient email: {}", e))
             })?)
             .subject(self.subject())
             .body(self.body()?)
             .map_err(|e| {
-                CoreError::default_error(&format!("CoreError building email message: {}", e))
+                EmailError::default_error(&format!("EmailError building email message: {}", e))
             })
     }
 
@@ -70,10 +70,10 @@ impl EmailMessage {
 
     // 4. Implement the body for the new variant -- remember that template you added in step 1? Use it here!
     //     You should be able to access it with its <snake_case_name>
-    fn body(&self) -> Result<String, CoreError> {
+    fn body(&self) -> Result<String, EmailError> {
         match self {
             EmailMessage::GaRelease => TEMPLATE_REGISTRY.render("ga_release", &self).map_err(|e| {
-                CoreError::default_error(&format!("CoreError rendering email template: {}", e))
+                EmailError::default_error(&format!("EmailError rendering email template: {}", e))
             }),
         }
     }
@@ -103,7 +103,7 @@ mod tests {
 
     // 6. Add a test for the new variant
     #[test]
-    fn ga_release() -> Result<(), CoreError> {
+    fn ga_release() -> Result<(), EmailError> {
         let _message = EmailMessage::GaRelease.build(RECIPIENT)?;
         Ok(())
     }
@@ -115,7 +115,8 @@ mod tests {
 
         #[test]
         #[serial]
-        fn clean_env() -> Result<(), CoreError> {
+        fn clean_env() -> Result<(), EmailError> {
+            env::set_var("SMTP_FROM", RECIPIENT);
             env::remove_var("MAILGUN_TEST_MODE");
             let message = EmailMessage::GaRelease.build(RECIPIENT)?;
             assert!(message.headers().get::<MailgunTestMode>().is_none());
@@ -124,7 +125,7 @@ mod tests {
 
         #[test]
         #[serial]
-        fn true_env() -> Result<(), CoreError> {
+        fn true_env() -> Result<(), EmailError> {
             env::set_var("MAILGUN_TEST_MODE", "true");
             let message = EmailMessage::GaRelease.build(RECIPIENT)?;
             assert!(message.headers().get::<MailgunTestMode>().is_some());
@@ -133,7 +134,7 @@ mod tests {
 
         #[test]
         #[serial]
-        fn false_env() -> Result<(), CoreError> {
+        fn false_env() -> Result<(), EmailError> {
             env::set_var("MAILGUN_TEST_MODE", "false");
             let message = EmailMessage::GaRelease.build(RECIPIENT)?;
             assert!(message.headers().get::<MailgunTestMode>().is_none());
@@ -142,7 +143,7 @@ mod tests {
 
         #[test]
         #[serial]
-        fn invalid_env() -> Result<(), CoreError> {
+        fn invalid_env() -> Result<(), EmailError> {
             env::set_var("MAILGUN_TEST_MODE", "invalid");
             let message = EmailMessage::GaRelease.build(RECIPIENT);
             assert!(message.is_err());
