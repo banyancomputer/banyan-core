@@ -48,3 +48,4 @@ proptest = "^1.1"
 
 [features]
 fake = []
+production = []
