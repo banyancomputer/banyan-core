@@ -25,6 +25,6 @@ impl TemplateRegistry {
     {
         self.0
             .render(template_name, data)
-            .map_err(|e| EmailError::render_error(e))
+            .map_err(EmailError::render_error)
     }
 }
