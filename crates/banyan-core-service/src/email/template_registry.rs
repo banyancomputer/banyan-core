@@ -4,7 +4,7 @@ use serde::Serialize;
 use super::error::EmailError;
 
 const TEMPLATE_EXT: &str = ".hbs";
-const TEMPLATE_DIR: &str = "./src/email/templates";
+const TEMPLATE_DIR: &str = "./templates/email";
 
 pub struct TemplateRegistry(Handlebars<'static>);
 

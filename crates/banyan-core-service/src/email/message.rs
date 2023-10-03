@@ -1,12 +1,9 @@
-use std::env;
-
 use lazy_static::lazy_static;
 use lettre::message::{
     header::{Header, HeaderName, HeaderValue},
     Message,
 };
-use serde::{ser::StdError, Serialize, Serializer};
-use serde_json::Value;
+use serde::{ser::StdError, Serialize};
 
 use crate::email::error::EmailError;
 
@@ -14,138 +11,75 @@ use super::template_registry::TemplateRegistry;
 
 // Help Implementing a new email message:
 
-// 1. Add a new template to the src/email/templates directory. The name of the template should be <snake_case_name>.hbs
+// 1. Add a new template to the ./templates/email directory. The name of the template should be <snake_case_name>.hbs
 //     This next line makes it available for our message builder to use here
 lazy_static! {
     static ref TEMPLATE_REGISTRY: TemplateRegistry = TemplateRegistry::default();
 }
 
-// 2. Add a new variant to the EmailMessage enum with requireed tuple fields. Document the fields
-pub enum EmailMessage {
-    // No fields required
-    GaRelease,
+// 2. Create a struct that contains the templated data for your new email message. Impl EmailMessage for it.
+#[derive(Serialize)]
+pub struct GaRelease;
+
+impl EmailMessage for GaRelease {
+    // 2a. Implement the subject() method for your new struct -- this is the subject line of the email
+    fn subject() -> String {
+        "Announcing Banyan GA Release".to_string()
+    }
+
+    // 2b. Implement the template_name() method for your new struct -- this is the name of the template file within the registry
+    fn template_name() -> &'static str {
+        "ga_release"
+    }
 }
 
-impl EmailMessage {
+pub trait EmailMessage: Serialize + Sized {
     /// Build an email message variant from the given template and data
-    pub fn build(&self, recipient_email: &str) -> Result<Message, EmailError> {
-        let test_mode = env::var("MAILGUN_TEST_MODE")
-            .unwrap_or_else(|_| "false".to_string())
-            .parse::<bool>()
-            .map_err(EmailError::invalid_test_mode)?;
-
+    fn build(&self, from: &str, to: &str, test_mode: bool) -> Result<Message, EmailError> {
         let mut builder = Message::builder();
-
         if test_mode {
             builder = builder.header(MailgunTestMode);
         }
-
         builder
-            .from(
-                env::var("SMTP_FROM")
-                    .map_err(|_| EmailError::missing_smtp_from())?
-                    .parse()
-                    .map_err(EmailError::invalid_smtp_from)?,
-            )
-            .to(recipient_email
-                .parse()
-                .map_err(EmailError::invalid_smtp_from)?)
-            .subject(self.subject())
-            .body(self.body()?)
+            .from(from.parse().map_err(EmailError::invalid_from_address)?)
+            .to(to.parse().map_err(EmailError::invalid_to_address)?)
+            .subject(Self::subject())
+            .body(TEMPLATE_REGISTRY.render(Self::template_name(), self)?)
             .map_err(EmailError::message_build_error)
     }
 
-    // 3. Implement the subject for the new variant
-    fn subject(&self) -> String {
-        match self {
-            EmailMessage::GaRelease => "Accouncing Banyan GA".to_string(),
-        }
-    }
-
-    // 4. Implement the body for the new variant -- remember that template you added in step 1? Use it here!
-    //     You should be able to access it with its <snake_case_name>
-    fn body(&self) -> Result<String, EmailError> {
-        match self {
-            EmailMessage::GaRelease => TEMPLATE_REGISTRY.render("ga_release", &self),
-        }
-    }
-}
-
-// 5. Implement Serialize for the new variant. This should take the tuple fields and serialize them into a JSON object
-//   that can be passed to the template.
-impl Serialize for EmailMessage {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match self {
-            EmailMessage::GaRelease => {
-                // No fields required, return an empty object
-                let map = Value::Object(serde_json::Map::new());
-                map.serialize(serializer)
-            }
-        }
-    }
+    fn subject() -> String;
+    fn template_name() -> &'static str;
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serial_test::serial;
-    const RECIPIENT: &str = "fake@email.com";
 
-    // This just ensures that the SMTP_FROM env var is set for all tests
-    #[test]
-    #[serial]
-    fn set_from() -> Result<(), EmailError> {
-        env::set_var("SMTP_FROM", RECIPIENT);
-        Ok(())
-    }
+    const FROM: &str = "fake@email.com";
+    const TO: &str = "another_fake@email.com";
 
     // 6. Add a test for the new variant in order to make sure it builds correctly. Make sure it is serial!
 
     #[test]
-    #[serial]
     fn ga_release() -> Result<(), EmailError> {
-        let _message = EmailMessage::GaRelease.build(RECIPIENT)?;
+        let _message = GaRelease.build(FROM, TO, false)?;
         Ok(())
     }
 
     // Mailgun Test Mode Switch Tests
 
     #[test]
-    #[serial]
-    fn test_mode_clear() -> Result<(), EmailError> {
-        env::remove_var("MAILGUN_TEST_MODE");
-        let message = EmailMessage::GaRelease.build(RECIPIENT)?;
-        assert!(message.headers().get::<MailgunTestMode>().is_none());
-        Ok(())
-    }
-
-    #[test]
-    #[serial]
     fn test_mode_true() -> Result<(), EmailError> {
-        env::set_var("MAILGUN_TEST_MODE", "true");
-        let message = EmailMessage::GaRelease.build(RECIPIENT)?;
+        let message = GaRelease.build(FROM, TO, true)?;
         assert!(message.headers().get::<MailgunTestMode>().is_some());
         Ok(())
     }
 
     #[test]
-    #[serial]
     fn test_mode_false() -> Result<(), EmailError> {
-        env::set_var("MAILGUN_TEST_MODE", "false");
-        let message = EmailMessage::GaRelease.build(RECIPIENT)?;
+        let message = GaRelease.build(FROM, TO, false)?;
         assert!(message.headers().get::<MailgunTestMode>().is_none());
-        Ok(())
-    }
-
-    #[test]
-    #[serial]
-    fn test_mode_invalid() -> Result<(), EmailError> {
-        env::set_var("MAILGUN_TEST_MODE", "invalid");
-        let message = EmailMessage::GaRelease.build(RECIPIENT);
-        assert!(message.is_err());
         Ok(())
     }
 }

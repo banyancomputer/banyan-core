@@ -1,15 +1,10 @@
-use std::env;
-
 use lettre::{
     message::Message,
-    transport::{
-        smtp::{authentication::Credentials, SmtpTransport},
-        stub::StubTransport,
-    },
+    transport::{smtp::SmtpTransport, stub::StubTransport},
     Transport,
 };
 
-use crate::email::error::EmailError;
+use super::{config::SmtpConnection, error::EmailError};
 
 pub enum EmailTransport {
     Smtp(SmtpTransport),
@@ -17,19 +12,20 @@ pub enum EmailTransport {
 }
 
 impl EmailTransport {
-    pub fn new() -> Result<Self, EmailError> {
-        let smtp_url = env::var("SMTP_URL");
-        let (host, port, creds) = match smtp_url {
-            Ok(smtp_url) => parse_smtp_url(&smtp_url)?,
-            Err(_) => {
-                return Ok(EmailTransport::Stub(StubTransport::new_ok()));
+    pub fn new(maybe_smtp_connection: Option<SmtpConnection>) -> Result<Self, EmailError> {
+        match maybe_smtp_connection {
+            Some(smtp_connection) => Ok(EmailTransport::Smtp(
+                SmtpTransport::starttls_relay(smtp_connection.host())
+                    .map_err(EmailError::smtp_transport_build_error)?
+                    .credentials(smtp_connection.creds().clone())
+                    .port(smtp_connection.port())
+                    .build(),
+            )),
+            None => {
+                // Use the StubTransport if no SMTP_URL is provided
+                Ok(EmailTransport::Stub(StubTransport::new_ok()))
             }
-        };
-        let transport = SmtpTransport::starttls_relay(&host)
-            .map_err(EmailError::smtp_transport_build_error)?
-            .credentials(creds)
-            .port(port);
-        Ok(EmailTransport::Smtp(transport.build()))
+        }
     }
 
     pub fn send(&self, message: Message) -> Result<(), EmailError> {
@@ -55,53 +51,13 @@ impl EmailTransport {
     }
 }
 
-/// Parse a url of form:
-///     <host>:<port>?<username>:<password>
-/// into a tuple of (host, port, creds)
-fn parse_smtp_url(url: &str) -> Result<(String, u16, Credentials), EmailError> {
-    let mut parts = url.split('?');
-
-    let host_port = parts
-        .next()
-        .ok_or(EmailError::invalid_smtp_url("missing host:port"))?;
-    let creds = parts
-        .next()
-        .ok_or(EmailError::invalid_smtp_url("missing username:password"))?;
-
-    let mut host_parts = host_port.split(':');
-    let host = host_parts
-        .next()
-        .ok_or(EmailError::invalid_smtp_url("missing host"))?
-        .to_string();
-    let port: u16 = host_parts
-        .next()
-        .ok_or(EmailError::invalid_smtp_url("missing port"))?
-        .parse()
-        .map_err(|e| EmailError::invalid_smtp_url(&format!("Error parsing port: {}", e)))?;
-
-    let mut creds_parts = creds.split(':');
-    let username = creds_parts
-        .next()
-        .ok_or(EmailError::invalid_smtp_url("missing username"))?
-        .to_string();
-    let password = creds_parts
-        .next()
-        .ok_or(EmailError::invalid_smtp_url("missing password"))?
-        .to_string();
-
-    Ok((host, port, Credentials::new(username, password)))
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serial_test::serial;
 
     #[test]
-    #[serial]
     fn stub_transport() -> Result<(), EmailError> {
-        env::remove_var("SMTP_URL");
-        let transport = EmailTransport::new()?;
+        let transport = EmailTransport::new(None)?;
         match transport {
             EmailTransport::Stub(_) => Ok(()),
             _ => Err(EmailError::default_error("Expected StubTransport")),
@@ -109,22 +65,13 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn smtp_transport() -> Result<(), EmailError> {
-        env::set_var("SMTP_URL", "localhost:1025?username:password");
-        let transport = EmailTransport::new()?;
+        let transport = EmailTransport::new(Some(SmtpConnection::new(
+            "localhost:1025?username:password",
+        )?))?;
         match transport {
             EmailTransport::Smtp(_) => Ok(()),
             _ => Err(EmailError::default_error("Expected SmtpTransport")),
         }
-    }
-
-    #[test]
-    #[serial]
-    fn invalid_smtp_url() -> Result<(), EmailError> {
-        env::set_var("SMTP_URL", "localhost:1025");
-        let transport = EmailTransport::new();
-        assert!(transport.is_err());
-        Ok(())
     }
 }

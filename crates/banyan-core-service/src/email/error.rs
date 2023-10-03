@@ -55,21 +55,15 @@ impl EmailError {
         }
     }
 
-    pub fn invalid_smtp_from(err: lettre::address::AddressError) -> Self {
+    pub fn invalid_from_address(err: lettre::address::AddressError) -> Self {
         Self {
-            kind: EmailErrorKind::InvalidSmtpFrom(err),
+            kind: EmailErrorKind::InvalidFromAddress(err),
         }
     }
 
-    pub fn invalid_smtp_to(err: lettre::address::AddressError) -> Self {
+    pub fn invalid_to_address(err: lettre::address::AddressError) -> Self {
         Self {
-            kind: EmailErrorKind::InvalidSmtpTo(err),
-        }
-    }
-
-    pub fn invalid_test_mode(err: std::str::ParseBoolError) -> Self {
-        Self {
-            kind: EmailErrorKind::InvalidTestMode(err),
+            kind: EmailErrorKind::InvalidToAddress(err),
         }
     }
 
@@ -99,8 +93,7 @@ enum EmailErrorKind {
     SmtpSendError(lettre::transport::smtp::Error),
     MissingSmtpFrom,
     InvalidSmptUrl(String),
-    InvalidSmtpFrom(lettre::address::AddressError),
-    InvalidSmtpTo(lettre::address::AddressError),
-    InvalidTestMode(std::str::ParseBoolError),
+    InvalidFromAddress(lettre::address::AddressError),
+    InvalidToAddress(lettre::address::AddressError),
     Utf8Error(std::str::Utf8Error),
 }
