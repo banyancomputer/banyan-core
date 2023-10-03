@@ -44,6 +44,13 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         openFile(bucket, file.name, folderLocation);
     };
 
+    const handleCkick = (event: React.MouseEvent<HTMLTableRowElement, MouseEvent>, bucket: Bucket, file: BucketFile) => {
+        //@ts-ignore
+        if (event.target.id === 'actionsCell') return;
+
+        file.type === 'dir' ? goTofolder(bucket, file) : previewFile(bucket, file);
+    };
+
     useEffect(() => {
         if (sortState.criteria === 'name') {
             setBucketCopy(bucket => {
@@ -123,14 +130,13 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                     </thead>
                     <tbody>
                         {
-                            bucketCopy.files.map((file, index) => {
-                                return (<tr key={index}>
-                                    <td
-                                        onClick={() => file.type === 'dir' ? goTofolder(bucket, file) : previewFile(bucket, file)}
-                                        className='px-6 py-4'
-                                    >
-                                        <FileCell name={file.name} />
-                                    </td>
+                            bucketCopy.files.map((file, index) =>
+                                <tr
+                                    className='cursor-pointer'
+                                    key={index}
+                                    onClick={event => handleCkick(event, bucket, file)}
+                                >
+                                    <td className='px-6 py-4'><FileCell name={file.name} /></td>
                                     <td className="px-6 py-4">{getDateLabel(+file.metadata.modified)}</td>
                                     <td className="px-6 py-4">{convertFileSize(file.metadata.size)}</td>
                                     <td className="px-6 py-4">
@@ -145,8 +151,8 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                                                 />
                                         }
                                     </td>
-                                </tr>);
-                            })
+                                </tr>
+                            )
                         }
                     </tbody>
                 </table>
