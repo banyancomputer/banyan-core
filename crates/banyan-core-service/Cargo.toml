@@ -38,10 +38,10 @@ tracing = "^0.1"
 tracing-appender = "^0.2"
 tracing-futures = { version = "^0.2", default-features = false, features = ["std-future"] }
 tracing-subscriber = { version = "^0.3", default-features = false, features = ["env-filter", "fmt", "local-time", "time", "tracing"] }
-lettre = { version = "0.10" }
+lettre = "^0.10"
 handlebars = { version = "4.4.0", features = ["dir_source"] }
-serial_test = "2.0.0"
-lazy_static = "1.4.0"
+serial_test = "^2"
+lazy_static = "^1.4"
 
 [dev-dependencies]
 proptest = "^1.1"
