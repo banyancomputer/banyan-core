@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 @import "react-toastify/dist/ReactToastify.min.css";
-@import "../../../src/index.css";
+@import "@/index.css";
 
 @font-face {
     font-family: "Inter";

@@ -14,18 +14,18 @@ export const PasswordInput: React.FC<{
     error,
     onChange = () => { },
 }) =>
-        <div>
-            <input
-                type="password"
-                className={'input w-full h-10 py-3 px-4 rounded-xl border-border focus:outline-none'}
-                value={value}
-                onChange={event => onChange(event.target.value)}
-                placeholder={placeholder}
-                {...register}
-            />
-            {error &&
-                <span className="mt-2 inline-block w-full text-error text-xs">{error}</span>
-            }
-        </div>;
+    <div>
+        <input
+            type="password"
+            className={'input w-full h-10 py-3 px-4 rounded-xl border-border focus:outline-none'}
+            value={value}
+            onChange={event => onChange(event.target.value)}
+            placeholder={placeholder}
+            {...register}
+        />
+        {error &&
+            <span className="mt-2 inline-block w-full text-error text-xs">{error}</span>
+        }
+    </div>;
 
 
