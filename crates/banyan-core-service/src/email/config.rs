@@ -1,5 +1,6 @@
 use std::env;
 
+use url::Url;
 use lettre::transport::smtp::authentication::Credentials;
 use url::Url;
 
