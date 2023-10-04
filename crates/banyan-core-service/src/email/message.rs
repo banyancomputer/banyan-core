@@ -81,19 +81,19 @@ mod tests {
 
     #[test]
     fn ga_release_send() -> Result<(), EmailError> {
-        let _ = GaRelease.send(&TRANSPORT, FROM, TO, false)?;
+        GaRelease.send(&TRANSPORT, FROM, TO, false)?;
         Ok(())
     }
 
     #[test]
     fn payment_failed_send() -> Result<(), EmailError> {
-        let _ = PaymentFailed.send(&TRANSPORT, FROM, TO, false)?;
+        PaymentFailed.send(&TRANSPORT, FROM, TO, false)?;
         Ok(())
     }
 
     #[test]
     fn product_invoice_send() -> Result<(), EmailError> {
-        let _ = ProductInvoice {
+        ProductInvoice {
             url: "https://www.banyansecurity.io".parse().unwrap(),
         }
         .send(&TRANSPORT, FROM, TO, false)?;
@@ -102,7 +102,7 @@ mod tests {
 
     #[test]
     fn reaching_storage_limit_send() -> Result<(), EmailError> {
-        let _ = ReachingStorageLimit {
+        ReachingStorageLimit {
             current_usage: 10,
             max_usage: 11,
         }
@@ -112,7 +112,7 @@ mod tests {
 
     #[test]
     fn scheduled_maintenance_send() -> Result<(), EmailError> {
-        let _ = ScheduledMaintenance {
+        ScheduledMaintenance {
             start: "2020-01-01".to_string(),
             end: "2020-01-02".to_string(),
         }
