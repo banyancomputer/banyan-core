@@ -12,7 +12,7 @@ pub enum EmailTransport {
 }
 
 impl EmailTransport {
-    pub fn new(maybe_smtp_connection: Option<SmtpConnection>) -> Result<Self, EmailError> {
+    pub fn new(maybe_smtp_connection: Option<&SmtpConnection>) -> Result<Self, EmailError> {
         match maybe_smtp_connection {
             Some(smtp_connection) => Ok(EmailTransport::Smtp(
                 SmtpTransport::starttls_relay(smtp_connection.host())
@@ -66,8 +66,8 @@ mod tests {
 
     #[test]
     fn smtp_transport() -> Result<(), EmailError> {
-        let transport = EmailTransport::new(Some(SmtpConnection::new(
-            "localhost:1025?username:password",
+        let transport = EmailTransport::new(Some(&SmtpConnection::new(
+            "smtps://user:pass@host"
         )?))?;
         match transport {
             EmailTransport::Smtp(_) => Ok(()),

@@ -17,17 +17,18 @@ lazy_static! {
     static ref TEMPLATE_REGISTRY: TemplateRegistry = TemplateRegistry::default();
 }
 
-// 2. Create a struct that contains the templated data for your new email message. Impl EmailMessage for it.
+// 2. Create a struct that contains the templated data for your new email message. 
 #[derive(Serialize)]
 pub struct GaRelease;
 
+// 3. Impl Email Message for your templated data
 impl EmailMessage for GaRelease {
-    // 2a. Implement the subject() method for your new struct -- this is the subject line of the email
+    // 3a. Implement the subject() method for your new struct -- this is the subject line of the email
     fn subject() -> String {
         "Announcing Banyan GA Release".to_string()
     }
 
-    // 2b. Implement the template_name() method for your new struct -- this is the name of the template file within the registry
+    // 3b. Implement the template_name() method for your new struct -- this is the name of the template file within the registry
     fn template_name() -> &'static str {
         "ga_release"
     }

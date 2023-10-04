@@ -292,6 +292,7 @@ dependencies = [
  "tracing-appender",
  "tracing-futures",
  "tracing-subscriber",
+ "url",
  "uuid",
  "validify",
 ]
