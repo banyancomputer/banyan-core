@@ -121,26 +121,26 @@ mod tests {
     }
 
     #[test]
-    fn payment_failed() -> Result<(), EmailError> {
-        let _message = PaymentFailed.build(FROM, TO, false)?;
+    fn payment_failed_send() -> Result<(), EmailError> {
+        let _ = PaymentFailed.send(&TRANSPORT, FROM, TO, false)?;
         Ok(())
     }
 
     #[test]
-    fn product_invoice() -> Result<(), EmailError> {
-        let _message = ProductInvoice { url: "https://www.banyansecurity.io".parse().unwrap() }.build(FROM, TO, false)?;
+    fn product_invoice_send() -> Result<(), EmailError> {
+        let _ = ProductInvoice { url: "https://www.banyansecurity.io".parse().unwrap() }.send(&TRANSPORT, FROM, TO, false)?;
         Ok(())
     }
 
     #[test]
-    fn reaching_storage_limit() -> Result<(), EmailError> {
-        let _message = ReachingStorageLimit.build(FROM, TO, false)?;
+    fn reaching_storage_limit_send() -> Result<(), EmailError> {
+        let _ = ReachingStorageLimit { current_usage: 10 , max_usage: 11 }.send(&TRANSPORT, FROM, TO, false)?;
         Ok(())
     }
 
     #[test]
-    fn scheduled_maintenance() -> Result<(), EmailError> {
-        let _message = ScheduledMaintenance { start: "2020-01-01".to_string(), end: "2020-01-02".to_string() }.build(FROM, TO, false)?;
+    fn scheduled_maintenance_send() -> Result<(), EmailError> {
+        let _ = ScheduledMaintenance { start: "2020-01-01".to_string(), end: "2020-01-02".to_string() }.send(&TRANSPORT, FROM, TO, false)?;
         Ok(())
     }
 
