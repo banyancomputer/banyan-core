@@ -43,9 +43,7 @@ impl EmailTransport {
                     "Outgoing email: {}",
                     std::str::from_utf8(&message.formatted()).map_err(EmailError::utf8_error)?
                 );
-                transport
-                    .send(message)
-                    .map_err(EmailError::stub_send_error)
+                transport.send(message).map_err(EmailError::stub_send_error)
             }
         }
     }
