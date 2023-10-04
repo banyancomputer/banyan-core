@@ -55,6 +55,10 @@ pub trait EmailMessage: Serialize + Sized {
             .body(TEMPLATE_REGISTRY.render(Self::TEMPLATE_NAME, self)?)
             .map_err(EmailError::message_build_error)
     }
+
+    fn type_name(&self) -> &'static str {
+        Self::TYPE_NAME
+    }
 }
 
 #[cfg(test)]

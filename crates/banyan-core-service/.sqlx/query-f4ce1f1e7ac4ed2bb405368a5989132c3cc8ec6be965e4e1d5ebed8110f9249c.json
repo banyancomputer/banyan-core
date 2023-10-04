@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT s.id, s.metadata_id, s.size, s.created_at\n                FROM snapshots AS s\n                INNER JOIN metadata m ON m.id = s.metadata_id\n                WHERE m.bucket_id = $1;",
+  "query": "SELECT s.id, s.metadata_id, s.size as \"size!\", s.created_at\n                FROM snapshots AS s\n                INNER JOIN metadata m ON m.id = s.metadata_id\n                WHERE m.bucket_id = $1;",
   "describe": {
     "columns": [
       {
@@ -14,7 +14,7 @@
         "type_info": "Text"
       },
       {
-        "name": "size",
+        "name": "size!",
         "ordinal": 2,
         "type_info": "Int64"
       },
@@ -34,5 +34,5 @@
       false
     ]
   },
-  "hash": "bb9c505e096ae279c4d465de873a3477ba786512a9d625483bd4b96f7c38ffe4"
+  "hash": "f4ce1f1e7ac4ed2bb405368a5989132c3cc8ec6be965e4e1d5ebed8110f9249c"
 }
