@@ -9,30 +9,28 @@ use crate::email::error::EmailError;
 
 use super::template_registry::TemplateRegistry;
 
-// Help Implementing a new email message:
+// Help Adding a new email message:
 
-// 1. Add a new template to the ./templates/email directory. The name of the template should be <snake_case_name>.hbs
+// 1. Add a new handlebars template to the ./templates/email directory. The name of the template should be <snake_case_name>.hbs
 //     This next line makes it available for our message builder to use here
 lazy_static! {
     static ref TEMPLATE_REGISTRY: TemplateRegistry = TemplateRegistry::default();
 }
 
-// 2. Create a struct that contains the templated data for your new email message.
-#[derive(Serialize)]
-pub struct GaRelease;
+// 2. Create a new module in `message` for your new email message.
+//     In your module define a struct that contains the templated data for your new email message.
+//      Impl Email Message for your templated data. See message/ga_release.rs for an example.
+mod ga_release;
+mod payment_failed;
+mod product_invoice;
+mod reaching_storage_limit;
+mod scheduled_maintenance;
 
-// 3. Impl Email Message for your templated data
-impl EmailMessage for GaRelease {
-    // 3a. Implement the subject() method for your new struct -- this is the subject line of the email
-    fn subject() -> String {
-        "Announcing Banyan GA Release".to_string()
-    }
-
-    // 3b. Implement the template_name() method for your new struct -- this is the name of the template file within the registry
-    fn template_name() -> &'static str {
-        "ga_release"
-    }
-}
+pub use ga_release::GaRelease;
+pub use payment_failed::PaymentFailed;
+pub use product_invoice::ProductInvoice;
+pub use reaching_storage_limit::ReachingStorageLimit;
+pub use scheduled_maintenance::ScheduledMaintenance;
 
 pub trait EmailMessage: Serialize + Sized {
     /// Build an email message variant from the given template and data
@@ -65,6 +63,30 @@ mod tests {
     #[test]
     fn ga_release() -> Result<(), EmailError> {
         let _message = GaRelease.build(FROM, TO, false)?;
+        Ok(())
+    }
+
+    #[test]
+    fn payment_failed() -> Result<(), EmailError> {
+        let _message = PaymentFailed.build(FROM, TO, false)?;
+        Ok(())
+    }
+
+    #[test]
+    fn product_invoice() -> Result<(), EmailError> {
+        let _message = ProductInvoice { url: "https://www.banyansecurity.io".parse().unwrap() }.build(FROM, TO, false)?;
+        Ok(())
+    }
+
+    #[test]
+    fn reaching_storage_limit() -> Result<(), EmailError> {
+        let _message = ReachingStorageLimit.build(FROM, TO, false)?;
+        Ok(())
+    }
+
+    #[test]
+    fn scheduled_maintenance() -> Result<(), EmailError> {
+        let _message = ScheduledMaintenance { start: "2020-01-01".to_string(), end: "2020-01-02".to_string() }.build(FROM, TO, false)?;
         Ok(())
     }
 

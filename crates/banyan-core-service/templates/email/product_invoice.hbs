@@ -1,0 +1,27 @@
+{{! TODO: actual invoice template }}
+{{! Required variables: }}
+{{! - url: the url to the platform }}
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <title>Invoice Available</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body>
+        <table class="main" style="height: 100vh; width: 100%; background-color: rgb(197, 197, 197);">
+            <tr align="center" >
+                <td>
+                    <div valign="top" class="container" style="padding: 60px 50px; max-width: 600px; width: 100%; border-radius: 16px; background-color: white">
+                    <h2 class="secondary-heading" style="text-align: center; font-size: 19px;font-weight: 600;">Hi there!</h2>
+                    <p class="description" style="margin: 24px auto; font-size: 19px; font-weight: 400; text-align: center;  max-width: 400px;">
+                       You hae a new invoice. Please check it out
+                        <a href="{{ url }}" class="link" style="color: #5299E0;">here</a>.
+                    </p>
+                    <p class="wish" style="font-size: 19px; font-style: italic; font-weight: 300; line-height: 24px; text-align: center;">Warmly, Banyan</p>
+                </div>
+                </td>
+            </tr>
+        </table>
+    </body>
+</html>

@@ -1,0 +1,29 @@
+{{! TODO: actual invoice template }}
+{{! Required variables: }}
+{{! - start: the start time of the maintenance }}
+{{! - end: the end time of the maintenance }}
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <title>Scheduled Maintenance</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body>
+        <table class="main" style="height: 100vh; width: 100%; background-color: rgb(197, 197, 197);">
+            <tr align="center" >
+                <td>
+                    <div valign="top" class="container" style="padding: 60px 50px; max-width: 600px; width: 100%; border-radius: 16px; background-color: white">
+                    <h2 class="secondary-heading" style="text-align: center; font-size: 19px;font-weight: 600;">Hi there!</h2>
+                    <p class="description" style="margin: 24px auto; font-size: 19px; font-weight: 400; text-align: center;  max-width: 400px;">
+                        We'll be performing scheduled maintenance on our servers. Services will be unavailable from
+                        <strong>{{ start }}</strong> to <strong>{{ end }}</strong>.
+                        We apologize for any inconvenience this may cause.
+                    </p>
+                    <p class="wish" style="font-size: 19px; font-style: italic; font-weight: 300; line-height: 24px; text-align: center;">Warmly, Banyan</p>
+                </div>
+                </td>
+            </tr>
+        </table>
+    </body>
+</html>
