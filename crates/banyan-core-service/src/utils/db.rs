@@ -2,7 +2,6 @@ use crate::db::models::{self, BucketType, CreatedResource, StorageClass};
 use crate::email::message::EmailMessage;
 use crate::extractors::DbConn;
 use crate::utils::keys::fingerprint_public_pem;
-use crate::email::message::EmailMessage;
 
 /// Create a new Bucket in the database and return the created resource.
 /// Implements an authorized read of a bucket by id and account_id.
