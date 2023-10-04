@@ -66,9 +66,7 @@ mod tests {
 
     #[test]
     fn smtp_transport() -> Result<(), EmailError> {
-        let transport = EmailTransport::new(Some(&SmtpConnection::new(
-            "smtps://user:pass@host"
-        )?))?;
+        let transport = EmailTransport::new(Some(&SmtpConnection::new("smtps://user:pass@host")?))?;
         match transport {
             EmailTransport::Smtp(_) => Ok(()),
             _ => Err(EmailError::default_error("Expected SmtpTransport")),

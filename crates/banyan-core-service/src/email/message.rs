@@ -17,7 +17,7 @@ lazy_static! {
     static ref TEMPLATE_REGISTRY: TemplateRegistry = TemplateRegistry::default();
 }
 
-// 2. Create a struct that contains the templated data for your new email message. 
+// 2. Create a struct that contains the templated data for your new email message.
 #[derive(Serialize)]
 pub struct GaRelease;
 

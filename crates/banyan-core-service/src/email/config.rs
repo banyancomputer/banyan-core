@@ -1,7 +1,7 @@
 use std::env;
 
-use url::Url;
 use lettre::transport::smtp::authentication::Credentials;
+use url::Url;
 
 use super::error::EmailError;
 
@@ -12,7 +12,11 @@ pub struct EmailConfig {
 }
 
 impl EmailConfig {
-    pub fn new(maybe_smtp_url: Option<&str>, from: &str, test_mode: bool) -> Result<Self, EmailError> {
+    pub fn new(
+        maybe_smtp_url: Option<&str>,
+        from: &str,
+        test_mode: bool,
+    ) -> Result<Self, EmailError> {
         let smtp_connection = match maybe_smtp_url {
             Some(smtp_url) => Some(SmtpConnection::new(smtp_url)?),
             None => None,
@@ -71,22 +75,27 @@ impl SmtpConnection {
         let url = Url::parse(smtp_url)
             .map_err(|e| EmailError::invalid_smtp_url(&format!("Invalid SMTP URL: {}", e)))?;
         if url.scheme() != "smtps" {
-            return Err(EmailError::invalid_smtp_url("SMTP URL must use the smtps scheme"))
+            return Err(EmailError::invalid_smtp_url(
+                "SMTP URL must use the smtps scheme",
+            ));
         };
         let username = url.username();
         if username.is_empty() {
-            return Err(EmailError::invalid_smtp_url("SMTP URL must contain a username"))
+            return Err(EmailError::invalid_smtp_url(
+                "SMTP URL must contain a username",
+            ));
         };
-        
+
         // If the username would have had an @ in it, correct it
         let username = username.replace("%40", "@");
 
-        let password = url.password().ok_or_else(|| {
-            EmailError::invalid_smtp_url("SMTP URL must contain a password")
-        })?;
-        let host = url.host().ok_or_else(|| {
-            EmailError::invalid_smtp_url("SMTP URL must contain a host")
-        })?.to_string();
+        let password = url
+            .password()
+            .ok_or_else(|| EmailError::invalid_smtp_url("SMTP URL must contain a password"))?;
+        let host = url
+            .host()
+            .ok_or_else(|| EmailError::invalid_smtp_url("SMTP URL must contain a host"))?
+            .to_string();
         // Port 25 is the default port for SMTP
         let port = url.port().unwrap_or(25);
         println!("username: {}", username);
