@@ -10,11 +10,7 @@ pub struct ProductInvoice {
 }
 
 impl EmailMessage for ProductInvoice {
-    fn subject() -> String {
-        "Your Invoice is Ready".to_string()
-    }
-
-    fn template_name() -> &'static str {
-        "product_invoice"
-    }
-}
+    const SUBJECT: &'static str = "Your Banyan Invoice";
+    const TEMPLATE_NAME: &'static str = "product_invoice";
+    const TYPE_NAME: &'static str = "product_invoice";
+} 

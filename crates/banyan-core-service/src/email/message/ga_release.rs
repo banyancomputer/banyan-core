@@ -8,13 +8,10 @@ pub struct GaRelease;
 
 // 2. Impl Email Message for your templated data
 impl EmailMessage for GaRelease {
-    // 2a. Implement the subject() method for your new struct -- this is the subject line of the email
-    fn subject() -> String {
-        "Announcing Banyan GA Release".to_string()
-    }
-
-    // 2b. Implement the template_name() method for your new struct -- this is the name of the template file within the registry
-    fn template_name() -> &'static str {
-        "ga_release"
-    }
+    // 2a. Set the subject of your email
+    const SUBJECT: &'static str = "Announcing Banyan GA Release";
+    // 2b. Set the name of your template
+    const TEMPLATE_NAME: &'static str = "ga_release";
+    // 2c. Set the name of your email message type. This should be unique, and not change!
+    const TYPE_NAME: &'static str = "ga_release";
 }

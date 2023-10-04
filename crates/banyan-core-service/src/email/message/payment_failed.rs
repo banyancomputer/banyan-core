@@ -6,11 +6,7 @@ use super::EmailMessage;
 pub struct PaymentFailed;
 
 impl EmailMessage for PaymentFailed {
-    fn subject() -> String {
-        "Payment Failed".to_string()
-    }
-
-    fn template_name() -> &'static str {
-        "payment_failed"
-    }
+    const SUBJECT: &'static str = "Payment Failed";
+    const TEMPLATE_NAME: &'static str = "payment_failed";
+    const TYPE_NAME: &'static str = "payment_failed";
 }

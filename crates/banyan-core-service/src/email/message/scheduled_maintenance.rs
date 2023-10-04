@@ -11,11 +11,7 @@ pub struct ScheduledMaintenance {
 }
 
 impl EmailMessage for ScheduledMaintenance {
-    fn subject() -> String {
-        "Scheduled Maintenance".to_string()
-    }
-
-    fn template_name() -> &'static str {
-        "scheduled_maintenance"
-    }
-} 
+    const SUBJECT: &'static str = "Scheduled Maintenance";
+    const TEMPLATE_NAME: &'static str = "scheduled_maintenance";
+    const TYPE_NAME: &'static str = "scheduled_maintenance";
+}

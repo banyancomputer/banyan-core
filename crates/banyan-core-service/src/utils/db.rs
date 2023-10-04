@@ -1,6 +1,7 @@
 use crate::db::models::{self, BucketType, CreatedResource, StorageClass};
 use crate::extractors::DbConn;
 use crate::utils::keys::fingerprint_public_pem;
+use crate::email::message::EmailMessage;
 
 /// Create a new Bucket in the database and return the created resource.
 /// Implements an authorized read of a bucket by id and account_id.
@@ -549,3 +550,19 @@ pub async fn read_bucket_data_usage(
     .await
     .map(|num| num as u64)
 }
+
+// #[allow(dead_code)]
+// pub async fn record_sent_email(
+//     account_id: &str,
+//     email_message: &impl EmailMessage,
+//     db_conn: &mut DbConn,
+// ) -> Result<(), sqlx::Error> {
+//     sqlx::query!(
+//         r#"INSERT INTO emails (account_id, type) VALUES ($1, $2);"#,
+//         account_id,
+//         email_message::TYPE_NAME,
+//     )
+//     .execute(&mut *db_conn.0)
+//     .await?;
+//     Ok(())
+// }

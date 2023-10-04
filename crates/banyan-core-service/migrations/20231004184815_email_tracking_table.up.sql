@@ -12,6 +12,9 @@ CREATE TABLE emails (
   -- The account_id of the user who should receive this email
   account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
 
+  -- When the email was sent
+  sent_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
   -- The type of the email. This corresponds to the EmailMessage::template_name
   type TEXT NOT NULL,
 

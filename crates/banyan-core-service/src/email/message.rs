@@ -5,11 +5,11 @@ use lettre::message::{
 };
 use serde::{ser::StdError, Serialize};
 
-use crate::email::error::EmailError;
-
+use super::error::EmailError;
 use super::template_registry::TemplateRegistry;
+use super::transport::EmailTransport;
 
-// Help Adding a new email message:
+// Help Adding a new email content variant:
 
 // 1. Add a new handlebars template to the ./templates/email directory. The name of the template should be <snake_case_name>.hbs
 //     This next line makes it available for our message builder to use here
@@ -33,7 +33,16 @@ pub use reaching_storage_limit::ReachingStorageLimit;
 pub use scheduled_maintenance::ScheduledMaintenance;
 
 pub trait EmailMessage: Serialize + Sized {
-    /// Build an email message variant from the given template and data
+    const SUBJECT: &'static str;
+    const TEMPLATE_NAME: &'static str;
+    const TYPE_NAME: &'static str;
+
+    fn send(&self, transport: &EmailTransport, from: &str, to: &str, test_mode: bool) -> Result<(), EmailError> {
+        let message = self.build(from, to, test_mode)?;
+        transport.send(&message)?;
+        Ok(())
+    }
+
     fn build(&self, from: &str, to: &str, test_mode: bool) -> Result<Message, EmailError> {
         let mut builder = Message::builder();
         if test_mode {
@@ -42,51 +51,51 @@ pub trait EmailMessage: Serialize + Sized {
         builder
             .from(from.parse().map_err(EmailError::invalid_from_address)?)
             .to(to.parse().map_err(EmailError::invalid_to_address)?)
-            .subject(Self::subject())
-            .body(TEMPLATE_REGISTRY.render(Self::template_name(), self)?)
+            .subject(Self::SUBJECT)
+            .body(TEMPLATE_REGISTRY.render(Self::TEMPLATE_NAME, self)?)
             .map_err(EmailError::message_build_error)
     }
-
-    fn subject() -> String;
-    fn template_name() -> &'static str;
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    lazy_static! {
+        static ref TRANSPORT: EmailTransport = EmailTransport::new(None).unwrap();
+    }
     const FROM: &str = "fake@email.com";
     const TO: &str = "another_fake@email.com";
 
-    // 6. Add a test for the new variant in order to make sure it builds correctly. Make sure it is serial!
+    // 3. Add a test for the new variant in order to make sure it builds correctly.
 
     #[test]
-    fn ga_release() -> Result<(), EmailError> {
-        let _message = GaRelease.build(FROM, TO, false)?;
+    fn ga_release_send() -> Result<(), EmailError> {
+        let _ = GaRelease.send(&TRANSPORT, FROM, TO, false)?;
         Ok(())
     }
 
     #[test]
-    fn payment_failed() -> Result<(), EmailError> {
-        let _message = PaymentFailed.build(FROM, TO, false)?;
+    fn payment_failed_send() -> Result<(), EmailError> {
+        let _ = PaymentFailed.send(&TRANSPORT, FROM, TO, false)?;
         Ok(())
     }
 
     #[test]
-    fn product_invoice() -> Result<(), EmailError> {
-        let _message = ProductInvoice { url: "https://www.banyansecurity.io".parse().unwrap() }.build(FROM, TO, false)?;
+    fn product_invoice_send() -> Result<(), EmailError> {
+        let _ = ProductInvoice { url: "https://www.banyansecurity.io".parse().unwrap() }.send(&TRANSPORT, FROM, TO, false)?;
         Ok(())
     }
 
     #[test]
-    fn reaching_storage_limit() -> Result<(), EmailError> {
-        let _message = ReachingStorageLimit.build(FROM, TO, false)?;
+    fn reaching_storage_limit_send() -> Result<(), EmailError> {
+        let _ = ReachingStorageLimit { current_usage: 10 , max_usage: 11 }.send(&TRANSPORT, FROM, TO, false)?;
         Ok(())
     }
 
     #[test]
-    fn scheduled_maintenance() -> Result<(), EmailError> {
-        let _message = ScheduledMaintenance { start: "2020-01-01".to_string(), end: "2020-01-02".to_string() }.build(FROM, TO, false)?;
+    fn scheduled_maintenance_send() -> Result<(), EmailError> {
+        let _ = ScheduledMaintenance { start: "2020-01-01".to_string(), end: "2020-01-02".to_string() }.send(&TRANSPORT, FROM, TO, false)?;
         Ok(())
     }
 

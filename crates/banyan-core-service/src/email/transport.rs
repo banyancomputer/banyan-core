@@ -28,7 +28,7 @@ impl EmailTransport {
         }
     }
 
-    pub fn send(&self, message: Message) -> Result<(), EmailError> {
+    pub fn send(&self, message: &Message) -> Result<(), EmailError> {
         match self {
             EmailTransport::Smtp(transport) => {
                 transport
