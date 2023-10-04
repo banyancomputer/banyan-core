@@ -6,7 +6,7 @@ use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::{EnvFilter, Layer};
 
 mod api;
-mod app_state;
+mod app;
 mod auth;
 mod config;
 mod db;
@@ -16,7 +16,7 @@ mod health_check;
 mod http_server;
 mod utils;
 
-use app_state::AppState;
+use app::AppState;
 
 #[tokio::main]
 async fn main() {
