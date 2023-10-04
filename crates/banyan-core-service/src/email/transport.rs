@@ -32,7 +32,7 @@ impl EmailTransport {
         match self {
             EmailTransport::Smtp(transport) => {
                 transport
-                    .send(&message)
+                    .send(message)
                     // TODO: What should we be doing with the response here?
                     .map(|_| ()) // Simply discard the Response here for now
                     .map_err(EmailError::smtp_send_error)
@@ -44,7 +44,7 @@ impl EmailTransport {
                     std::str::from_utf8(&message.formatted()).map_err(EmailError::utf8_error)?
                 );
                 transport
-                    .send(&message)
+                    .send(message)
                     .map_err(EmailError::stub_send_error)
             }
         }

@@ -183,7 +183,7 @@ pub enum EmailMessageState {
     Opened,
     MarkedAsSpam,
     Unsubscribed,
-    DeliveryFailed
+    DeliveryFailed,
 }
 
 impl Display for EmailMessageState {

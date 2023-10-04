@@ -37,7 +37,13 @@ pub trait EmailMessage: Serialize + Sized {
     const TEMPLATE_NAME: &'static str;
     const TYPE_NAME: &'static str;
 
-    fn send(&self, transport: &EmailTransport, from: &str, to: &str, test_mode: bool) -> Result<(), EmailError> {
+    fn send(
+        &self,
+        transport: &EmailTransport,
+        from: &str,
+        to: &str,
+        test_mode: bool,
+    ) -> Result<(), EmailError> {
         let message = self.build(from, to, test_mode)?;
         transport.send(&message)?;
         Ok(())
@@ -87,19 +93,30 @@ mod tests {
 
     #[test]
     fn product_invoice_send() -> Result<(), EmailError> {
-        let _ = ProductInvoice { url: "https://www.banyansecurity.io".parse().unwrap() }.send(&TRANSPORT, FROM, TO, false)?;
+        let _ = ProductInvoice {
+            url: "https://www.banyansecurity.io".parse().unwrap(),
+        }
+        .send(&TRANSPORT, FROM, TO, false)?;
         Ok(())
     }
 
     #[test]
     fn reaching_storage_limit_send() -> Result<(), EmailError> {
-        let _ = ReachingStorageLimit { current_usage: 10 , max_usage: 11 }.send(&TRANSPORT, FROM, TO, false)?;
+        let _ = ReachingStorageLimit {
+            current_usage: 10,
+            max_usage: 11,
+        }
+        .send(&TRANSPORT, FROM, TO, false)?;
         Ok(())
     }
 
     #[test]
     fn scheduled_maintenance_send() -> Result<(), EmailError> {
-        let _ = ScheduledMaintenance { start: "2020-01-01".to_string(), end: "2020-01-02".to_string() }.send(&TRANSPORT, FROM, TO, false)?;
+        let _ = ScheduledMaintenance {
+            start: "2020-01-01".to_string(),
+            end: "2020-01-02".to_string(),
+        }
+        .send(&TRANSPORT, FROM, TO, false)?;
         Ok(())
     }
 
