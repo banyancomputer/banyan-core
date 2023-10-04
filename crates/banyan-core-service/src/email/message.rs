@@ -120,6 +120,30 @@ mod tests {
         Ok(())
     }
 
+    #[test]
+    fn payment_failed() -> Result<(), EmailError> {
+        let _message = PaymentFailed.build(FROM, TO, false)?;
+        Ok(())
+    }
+
+    #[test]
+    fn product_invoice() -> Result<(), EmailError> {
+        let _message = ProductInvoice { url: "https://www.banyansecurity.io".parse().unwrap() }.build(FROM, TO, false)?;
+        Ok(())
+    }
+
+    #[test]
+    fn reaching_storage_limit() -> Result<(), EmailError> {
+        let _message = ReachingStorageLimit.build(FROM, TO, false)?;
+        Ok(())
+    }
+
+    #[test]
+    fn scheduled_maintenance() -> Result<(), EmailError> {
+        let _message = ScheduledMaintenance { start: "2020-01-01".to_string(), end: "2020-01-02".to_string() }.build(FROM, TO, false)?;
+        Ok(())
+    }
+
     // Mailgun Test Mode Switch Tests
 
     #[test]
