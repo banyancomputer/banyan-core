@@ -38,7 +38,6 @@ impl EmailTransport {
                     .map_err(EmailError::smtp_send_error)
             }
             EmailTransport::Stub(transport) => {
-                // TODO: What else should be logged here?
                 tracing::info!(
                     "Outgoing email: {}",
                     std::str::from_utf8(&message.formatted()).map_err(EmailError::utf8_error)?
