@@ -177,39 +177,70 @@ pub async fn delete(
 
 pub async fn end_regwait(
     State(mut state): State<AppState>,
+    mut db_conn: DbConn,
     Path(fingerprint): Path<String>,
 ) -> impl IntoResponse {
-    tracing::info!("hit reg complete for '{fingerprint}'");
+    tracing::info!("handling end_regwait for fingerprint: '{fingerprint}'");
+
+    tracing::info!("listing all channels: {:?}", state.registration_channels);
 
     let chan_lock = match state.registration_channels.remove(&fingerprint) {
         Some(channel) => channel,
         None => {
+            tracing::info!("there was no registration channel with that fingerprint!");
             return (
                 StatusCode::NOT_FOUND,
                 Json(serde_json::json!({"msg": "not found 1"})),
             )
-                .into_response()
+                .into_response();
         }
     };
 
     let channel = match chan_lock.lock() {
         Ok(mut chan) => chan.take().unwrap(),
         _ => {
+            tracing::info!("there was no lock available for that send channel!");
             return (
                 StatusCode::NOT_FOUND,
                 Json(serde_json::json!({"msg": "not found 2"})),
             )
-                .into_response()
+                .into_response();
         }
     };
 
-    match channel.send(RegistrationEvent::Rejected) {
-        Ok(_) => (StatusCode::NO_CONTENT, ()).into_response(),
-        Err(_) => (
-            StatusCode::NOT_FOUND,
-            Json(serde_json::json!({"msg": "not found 3"})),
-        )
-            .into_response(),
+    // Try to query the database for the key that would match this fingerprint
+    let maybe_device_key = sqlx::query_as!(
+        models::DeviceApiKey,
+        r#"SELECT id, account_id, fingerprint, pem FROM device_api_keys WHERE fingerprint = $1;"#,
+        fingerprint
+    )
+    .fetch_one(&mut *db_conn.0)
+    .await;
+
+    let device_key = match maybe_device_key {
+        Ok(dk) => dk,
+        Err(err) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("unable to read device key: {err}"),
+            )
+                .into_response();
+        }
+    };
+
+    match channel.send(RegistrationEvent::Approved(device_key.account_id)) {
+        Ok(_) => {
+            tracing::info!("we did it! the real response will come from the start request");
+            (StatusCode::NO_CONTENT, ()).into_response()
+        }
+        Err(_) => {
+            tracing::info!("the registration channel responded the wrong way...");
+            (
+                StatusCode::NOT_FOUND,
+                Json(serde_json::json!({"msg": "not found 3"})),
+            )
+                .into_response()
+        }
     }
 }
 
@@ -217,10 +248,14 @@ pub async fn start_regwait(
     State(mut state): State<AppState>,
     Path(fingerprint): Path<String>,
 ) -> impl IntoResponse {
+    tracing::info!("handling start_regwait for fingerprint: '{fingerprint}'");
+
     let (sender, receiver) = tokio::sync::oneshot::channel();
     state
         .registration_channels
         .insert(fingerprint, Arc::new(Mutex::new(Some(sender))));
+
+    tracing::info!("finished adding channel: {:?}", state.registration_channels);
 
     match tokio::time::timeout(tokio::time::Duration::from_secs(30), receiver).await {
         Ok(chan_result) => match chan_result {

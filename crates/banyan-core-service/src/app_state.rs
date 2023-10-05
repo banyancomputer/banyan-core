@@ -9,7 +9,6 @@ use openssl::ec::{EcGroup, EcKey};
 use openssl::nid::Nid;
 use openssl::pkey::{PKey, Private};
 use sqlx::sqlite::SqlitePool;
-use uuid::Uuid;
 
 mod database;
 mod state_error;
@@ -17,8 +16,9 @@ mod state_error;
 use crate::config::Config;
 pub use state_error::StateError;
 
+#[derive(Debug)]
 pub enum RegistrationEvent {
-    Approved(Uuid),
+    Approved(String),
     Rejected,
 }
 
