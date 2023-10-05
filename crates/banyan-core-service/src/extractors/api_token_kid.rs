@@ -13,8 +13,6 @@ use axum::{Json, RequestPartsExt};
 use jsonwebtoken::decode_header;
 use serde::{Deserialize, Serialize};
 
-use crate::extractors::DbConn;
-
 static KEY_ID_VALIDATOR: OnceLock<regex::Regex> = OnceLock::new();
 const KEY_ID_REGEX: &str = r"^[0-9a-f]{2}(:[0-9a-f]{2}){19}$";
 
@@ -30,7 +28,6 @@ impl ApiTokenKid {
 #[async_trait]
 impl<S> FromRequestParts<S> for ApiTokenKid
 where
-    DbConn: FromRequestParts<S>,
     S: Send + Sync,
 {
     type Rejection = ApiKeyIdAuthorizationError;

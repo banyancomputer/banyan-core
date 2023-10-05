@@ -42,6 +42,7 @@ lettre = "^0.10"
 handlebars = { version = "^4.4", features = ["dir_source"] }
 lazy_static = "^1.4"
 url = "^2.4"
+ring = "^0.17"
 
 [dev-dependencies]
 proptest = "^1.1"

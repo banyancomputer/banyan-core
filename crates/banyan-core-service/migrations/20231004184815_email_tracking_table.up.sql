@@ -19,6 +19,7 @@ CREATE TABLE emails (
   type TEXT NOT NULL,
 
   -- The state of the email.
+    -- 'queued' means the email is queued to be sent
     -- 'sent' means the email was successfully sent to the email service
     -- 'accepted' means the email was accepted by the email service
     -- 'delivered' means the email was successfully delivered by the email service
@@ -27,6 +28,6 @@ CREATE TABLE emails (
     -- 'unsubscribed' means the email was unsubscribed by the recipient
     -- 'rejected' means the email was rejected by the email service
     -- 'failed' means the email failed to be delivered by the email service
-  state VARCHAR(32) NOT NULL CHECK (state IN ('sent', 'accepted', 'delivered', 'opened', 'complained', 'unsubscribed', 'rejected', 'failed'))
-    DEFAULT 'sent'
+  state VARCHAR(32) NOT NULL CHECK (state IN ('queued', 'sent', 'accepted', 'delivered', 'opened', 'complained', 'unsubscribed', 'rejected', 'failed'))
+    DEFAULT 'queued'
 );
