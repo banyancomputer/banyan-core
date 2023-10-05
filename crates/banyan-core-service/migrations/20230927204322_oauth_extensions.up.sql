@@ -1,14 +1,39 @@
--- We're only using OAuth2 w/ Google. All accounts are inherently verified by
--- logging in.
-ALTER TABLE users DROP COLUMN email_verified;
+-- !!! We're missing a not null constraint on email and that can't be easily
+-- fixed. The table needs to be renamed, recreated correctly, and populated
+-- with the data from the old table... but there are foreign key constraints
+-- that all need to be disconnected and reconnected to fix it.
 
--- Better naming on a couple of the existing columns...
-ALTER TABLE users RENAME COLUMN image TO profile_image_url;
-ALTER TABLE users RENAME COLUMN name TO account_name;
+-- We need to keep around the old columns until we've fully migrated over...
+ALTER TABLE users ADD COLUMN display_name VARCHAR(128);
+ALTER TABLE users ADD COLUMN locale VARCHAR(256);
+ALTER TABLE users ADD COLUMN profile_image VARCHAR(256);
+ALTER TABLE users ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;
 
--- Changing a column that has foreign keys referencing it is much harder...
+-- ...but we need to remove the constraints on the existing columns...
+ALTER TABLE sessions ALTER COLUMN sessionToken DROP UNIQUE;
+ALTER TABLE sessions ALTER COLUMN userId DROP NOT NULL;
+ALTER TABLE sessions ALTER COLUMN expires DROP NOT NULL;
 
-CREATE TABLE new_accounts(
+-- ...and this column is especially annoying, anonymous FK aren't allowed to be
+-- NULL and can't be referenced. Changing them requires copying everything into
+-- a new column defined in a way that can be adjusted.
+ALTER TABLE sessions ADD COLUMN user_id TEXT REFERENCES users(id) DEFAULT userId;
+CREATE UNIQUE INDEX idx_unique_sessions_on_user_id
+  ON sessions(user_id);
+
+-- ...remove and create the table for nextJS
+ALTER TABLE sessions DROP COLUMN userId;
+ALTER TABLE sessions ADD COLUMN userId TEXT REFERENCE users(id) NOT NULL DEFAULT user_id;
+CREATE UNIQUE INDEX idx_unique_sessions_on_userId
+  ON sessions(userId);
+
+-- ...add the extra columns we want
+ALTER TABLE sessions ADD COLUMN client_ip VARCHAR(64);
+ALTER TABLE sessions ADD COLUMN user_agent VARCHAR(128);
+ALTER TABLE sessions ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE sessions ADD COLUMN expires_at TIMESTAMP NOT NULL DEFAULT (DATETIME('now', '+28 days'));
+
+CREATE TABLE oauth_state (
   id TEXT NOT NULL PRIMARY KEY DEFAULT (
     lower(hex(randomblob(4))) || '-' ||
     lower(hex(randomblob(2))) || '-4' ||
@@ -17,41 +42,11 @@ CREATE TABLE new_accounts(
     substr(lower(hex(randomblob(6))), 2)
   ),
 
-  user_id TEXT NOT NULL
-    REFERENCES users(id)
-    ON DELETE CASCADE,
+  provider VARCHAR(32) NOT NULL,
+  csrf_secret TEXT NOT NULL,
+  pkce_verifier_secret TEXT NOT NULL,
 
-  provider_account_id TEXT NOT NULL,
+  next_url VARCHAR(256),
 
-  refresh_token TEXT NOT NULL,
-  access_token TEXT NOT NULL,
-
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  expires_at TIMESTAMP NOT NULL
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-
-INSERT INTO new_accounts (id, user_id, provider_account_id, refresh_token, access_token, expires_at)
-  SELECT id, userId, providerAccountId, refresh_token, access_token, DATETIME(expires_at, 'unixepoch') FROM accounts
-    -- We can only migrate accounts to this new table that meet our
-    -- requirements, this should be all of them but add a guard just in case.
-    -- We don't need to specify columns that previously had a NOT NULL
-    -- constraint.
-    WHERE
-      accounts.refresh_token IS NOT NULL AND
-      accounts.access_token IS NOT NULL AND
-      accounts.expires_at IS NOT NULL;
-
--- TODO: Need to do this for all associations and likely I don't have handy
--- names on the constraints, probably should be the user_id anyway... Ugh
--- that's going to be an annoying alteration...
---ALTER TABLE escrowed_devices DROP FOREIGN KEY escrowed_devices_ibfk_1;
-
---ALTER TABLE accounts RENAME TO old_accounts;
---ALTER TABLE new_accounts RENAME TO accounts;
---
---ALTER TABLE escrowed_devices
---  ADD CONSTRAINT fk_accounts
---  FOREIGN KEY (account_id) REFERENCES accounts(id)
---  ON DELETE CASCADE;
---
---DROP TABLE old_accounts;
