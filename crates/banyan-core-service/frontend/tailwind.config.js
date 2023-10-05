@@ -13,7 +13,7 @@ module.exports = {
 				navbar: '72px',
 			},
 			width: {
-				navbar: '280px',
+				navbar: '320px',
 				modal: '400px',
 				toast: '480px',
 				snapshotsModal: '530px',

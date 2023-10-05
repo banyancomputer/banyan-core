@@ -69,8 +69,10 @@ export const Navigation = () => {
                                         href={`/bucket/${bucket.id}`}
                                         className={`flex items-center justify-between gap-2 py-2 px-3 w-full h-10  cursor-pointer rounded-md ${bucketId === bucket.id && 'bg-navigation-secondary'}`}
                                     >
+                                        <span className='w-5'>
                                         <Directory />
-                                        <span className="flex-grow">
+                                        </span>
+                                        <span className="flex-grow whitespace-nowrap overflow-hidden overflow-ellipsis">
                                             {bucket.name}
                                         </span>
                                     </Link>

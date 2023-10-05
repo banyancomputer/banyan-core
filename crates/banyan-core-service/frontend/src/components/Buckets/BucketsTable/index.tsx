@@ -28,16 +28,24 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
         setSortState(prev => ({ criteria, direction: prev.direction === 'ASC' ? 'DESC' : 'ASC' }));
     };
 
-    const goToBucket = (bucket: string) => {
+    const goToBucket = (event: React.MouseEvent<HTMLTableRowElement, MouseEvent>, bucket: string) => {
+        //@ts-ignore
+        if (event.target.id === 'actionsCell') return;
+
         push(`/bucket/${bucket}`);
     };
 
     const goTofolder = (bucket: Bucket, folder: BucketFile) => {
         push(`/bucket/${bucket.id}?${folder.name}`);
     };
-
     const previewFile = async (bucket: Bucket, file: BucketFile) => {
         openFile(bucket, file.name, []);
+    };
+    const handleClick = (event: React.MouseEvent<HTMLTableRowElement, MouseEvent>, bucket: Bucket, file: BucketFile) => {
+        //@ts-ignore
+        if (event.target.id === 'actionsCell') return;
+
+        file.type === 'dir' ? goTofolder(bucket, file) : previewFile(bucket, file);
     };
 
     useEffect(() => {
@@ -112,19 +120,19 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
                 <tbody>
                     {bucketsCopy.map(bucket =>
                         <React.Fragment key={bucket.id}>
-                            <tr className="bg-table-cellBackground">
-                                <td
-                                    className="px-3 py-4  cursor-pointer text-gray-900 font-medium"
-                                    onClick={() => goToBucket(bucket.id)}
-                                >{bucket.name}</td>
+                            <tr
+                                className="bg-table-cellBackground cursor-pointer"
+                                onClick={event => goToBucket(event, bucket.id)}
+                            >
+                                <td className="px-3 py-4 cursor-pointer  overflow-hidden text-ellipsis whitespace-nowrap text-gray-900 font-medium">
+                                    {bucket.name}
+                                </td>
                                 <td className="px-3 py-4"></td>
                                 <td className="px-3 py-4">{bucket.storageClass}</td>
                                 <td className="px-3 py-4">{bucket.bucketType}</td>
                                 <td className="px-3 py-4"></td>
                                 <td className="px-3 py-4"></td>
-                                <td
-                                    className="px-3 py-4"
-                                >
+                                <td className="px-3 py-4">
                                     <ActionsCell
                                         actions={<BucketActions bucket={bucket} />}
                                         offsetTop={tableScroll}
@@ -134,21 +142,18 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
                             </tr>
                             {
                                 bucket.files.map((file, index) =>
-                                    <tr key={index}>
+                                    <tr
+                                        key={index}
+                                        className='cursor-pointer'
+                                        onClick={event => handleClick(event, bucket, file)}
+                                    >
                                         <td className="px-3 py-4"></td>
-                                        <td
-                                            className="px-3 py-4"
-                                            onClick={() => file.type === 'dir' ? goTofolder(bucket, file) : previewFile(bucket, file)}
-                                        >
-                                            <FileCell name={file.name} />
-                                        </td>
+                                        <td className="px-3 py-4"><FileCell name={file.name} /></td>
                                         <td className="px-3 py-4"></td>
                                         <td className="px-3 py-4"></td>
                                         <td className="px-3 py-4">{getDateLabel(Number(file.metadata.modified))}</td>
                                         <td className="px-3 py-4">{convertFileSize(file.metadata.size)}</td>
-                                        <td
-                                            className="px-3 py-4"
-                                        >
+                                        <td className="px-3 py-4">
                                             {
                                                 file.type === 'dir' && bucket.bucketType === 'backup' ?
                                                     null

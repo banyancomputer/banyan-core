@@ -1,4 +1,5 @@
 use crate::db::models::{self, BucketType, CreatedResource, StorageClass};
+use crate::email::message::EmailMessage;
 use crate::extractors::DbConn;
 use crate::utils::keys::fingerprint_public_pem;
 
@@ -183,7 +184,6 @@ pub async fn create_bucket_key(
     db_conn: &mut DbConn,
 ) -> Result<CreatedResource, sqlx::Error> {
     let fingerprint = fingerprint_public_pem(pem);
-    tracing::info!("creating new bucketkey w fingerprint {fingerprint}");
     sqlx::query_as!(
         models::CreatedResource,
         r#"INSERT INTO bucket_keys (bucket_id, approved, pem, fingerprint) VALUES ($1, $2, $3, $4) RETURNING id;"#,
@@ -472,7 +472,7 @@ pub async fn read_snapshot(
 ) -> Result<models::Snapshot, sqlx::Error> {
     sqlx::query_as!(
         models::Snapshot,
-        r#"SELECT s.id, s.metadata_id, s.size, s.created_at
+        r#"SELECT s.id, s.metadata_id, s.size as "size!", s.created_at
              FROM snapshots AS s
              INNER JOIN metadata m ON m.id = s.metadata_id
              WHERE s.id = $1 AND m.bucket_id = $2;"#,
@@ -490,7 +490,7 @@ pub async fn read_all_snapshots(
 ) -> Result<Vec<models::Snapshot>, sqlx::Error> {
     sqlx::query_as!(
         models::Snapshot,
-        r#"SELECT s.id, s.metadata_id, s.size, s.created_at
+        r#"SELECT s.id, s.metadata_id, s.size as "size!", s.created_at
                 FROM snapshots AS s
                 INNER JOIN metadata m ON m.id = s.metadata_id
                 WHERE m.bucket_id = $1;"#,
@@ -548,4 +548,21 @@ pub async fn read_bucket_data_usage(
     .fetch_one(&mut *db_conn.0)
     .await
     .map(|num| num as u64)
+}
+
+#[allow(dead_code)]
+pub async fn record_sent_email(
+    account_id: &str,
+    email_message: &impl EmailMessage,
+    db_conn: &mut DbConn,
+) -> Result<(), sqlx::Error> {
+    let type_name = email_message.type_name();
+    sqlx::query!(
+        r#"INSERT INTO emails (account_id, type) VALUES ($1, $2);"#,
+        account_id,
+        type_name
+    )
+    .execute(&mut *db_conn.0)
+    .await?;
+    Ok(())
 }
