@@ -179,22 +179,26 @@ pub struct StorageHost {
 #[serde(rename_all = "snake_case")]
 pub enum EmailMessageState {
     Sent,
+    Accepted,
     Delivered,
     Opened,
-    MarkedAsSpam,
+    Complained,
     Unsubscribed,
-    DeliveryFailed,
+    Rejected,
+    Failed
 }
 
 impl Display for EmailMessageState {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             EmailMessageState::Sent => f.write_str("sent"),
+            EmailMessageState::Accepted => f.write_str("accepted"),
             EmailMessageState::Delivered => f.write_str("delivered"),
             EmailMessageState::Opened => f.write_str("opened"),
-            EmailMessageState::MarkedAsSpam => f.write_str("marked_as_spam"),
+            EmailMessageState::Complained => f.write_str("complained"),
             EmailMessageState::Unsubscribed => f.write_str("unsubscribed"),
-            EmailMessageState::DeliveryFailed => f.write_str("delivery_failed"),
+            EmailMessageState::Failed => f.write_str("failed"),
+            EmailMessageState::Rejected => f.write_str("rejected"),
         }
     }
 }
@@ -203,11 +207,13 @@ impl From<String> for EmailMessageState {
     fn from(s: String) -> Self {
         match s.as_str() {
             "sent" => EmailMessageState::Sent,
+            "accepted" => EmailMessageState::Accepted,
             "delivered" => EmailMessageState::Delivered,
             "opened" => EmailMessageState::Opened,
-            "marked_as_spam" => EmailMessageState::MarkedAsSpam,
+            "complained" => EmailMessageState::Complained,
             "unsubscribed" => EmailMessageState::Unsubscribed,
-            "delivery_failed" => EmailMessageState::DeliveryFailed,
+            "failed" => EmailMessageState::Failed,
+            "rejected" => EmailMessageState::Rejected,
             _ => panic!("invalid email message state: {}", s),
         }
     }
