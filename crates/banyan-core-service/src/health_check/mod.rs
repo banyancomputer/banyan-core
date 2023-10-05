@@ -12,7 +12,6 @@ mod service;
 
 pub use error::Error as HealthCheckError;
 pub use responses::Response as HealthCheckResponse;
-pub use responses::VersionResponse;
 pub use service::Service as HealthCheckService;
 
 use crate::app_state::AppState;

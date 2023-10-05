@@ -2,25 +2,25 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 mod provider_credential;
-mod session_creation_key;
+mod service_signing_key;
 
-pub(crate) use provider_credential::ProviderCredential;
-pub(crate) use session_creation_key::SessionCreationKey;
+pub use provider_credential::ProviderCredential;
+pub use service_signing_key::ServiceSigningKey;
 
 #[derive(Clone)]
 pub struct Secrets {
     provider_credentials: Arc<BTreeMap<Arc<str>, ProviderCredential>>,
-    session_creation_key: SessionCreationKey,
+    service_signing_key: ServiceSigningKey,
 }
 
 impl Secrets {
     pub fn new(
         credentials: BTreeMap<Arc<str>, ProviderCredential>,
-        session_creation_key: SessionCreationKey,
+        service_signing_key: ServiceSigningKey,
     ) -> Self {
         Self {
             provider_credentials: Arc::new(credentials),
-            session_creation_key,
+            service_signing_key,
         }
     }
 
@@ -28,7 +28,7 @@ impl Secrets {
         self.provider_credentials.get(config_id)
     }
 
-    pub fn session_creation_key(&self) -> SessionCreationKey {
-        self.session_creation_key.clone()
+    pub fn service_signing_key(&self) -> ServiceSigningKey {
+        self.service_signing_key.clone()
     }
 }

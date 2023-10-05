@@ -1,5 +1,4 @@
 use axum::Json;
-
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use serde::Serialize;
@@ -41,11 +40,5 @@ impl IntoResponse for Response {
         };
 
         (status_code, Json(self)).into_response()
-    }
-}
-
-impl<'a> IntoResponse for Version<'a> {
-    fn into_response(self) -> axum::response::Response {
-        (StatusCode::OK, Json(self)).into_response()
     }
 }

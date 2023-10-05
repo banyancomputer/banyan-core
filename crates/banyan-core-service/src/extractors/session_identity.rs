@@ -10,7 +10,7 @@ use jwt_simple::prelude::*;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
-use crate::app::SessionVerificationKey;
+use crate::app::ServiceVerificationKey;
 use crate::auth::{LOGIN_PATH, SESSION_COOKIE_NAME};
 use crate::database::Database;
 
@@ -84,7 +84,7 @@ where
         let mut digest = hmac_sha512::sha384::Hash::new();
         digest.update(&session_id_b64);
 
-        let verification_key = SessionVerificationKey::from_ref(state);
+        let verification_key = ServiceVerificationKey::from_ref(state);
         verification_key
             .public_key()
             .as_ref()

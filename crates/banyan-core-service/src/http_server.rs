@@ -19,7 +19,7 @@ use tower_http::validate_request::ValidateRequestHeaderLayer;
 use tower_http::{LatencyUnit, ServiceBuilderExt};
 use tracing::Level;
 
-use crate::app_state::AppState;
+use crate::app::AppState;
 use crate::{api, auth, health_check};
 
 // TODO: might want a longer timeout in some parts of the API and I'd like to be able customize a
@@ -113,12 +113,9 @@ pub async fn run(app_state: AppState) {
         .with_state(app_state)
         .fallback(not_found_handler);
 
-    let addr: SocketAddr = "[::]:3001".parse().unwrap();
-    let app = middleware_stack.service(root_router);
+    tracing::info!(listen_addr = ?config.listen_addr, "server listening");
 
-    tracing::info!(addr = ?addr, "server listening");
-
-    Server::bind(&addr)
+    Server::bind(&config.listen_addr)
         .serve(app.into_make_service())
         .with_graceful_shutdown(graceful_shutdown_blocker())
         .await

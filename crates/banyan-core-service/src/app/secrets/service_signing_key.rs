@@ -3,25 +3,25 @@ use std::sync::Arc;
 
 use jwt_simple::prelude::*;
 
-use crate::app::SessionVerificationKey;
+use crate::app::ServiceVerificationKey;
 
 #[derive(Clone)]
-pub struct SessionCreationKey(Arc<ES384KeyPair>);
+pub struct ServiceSigningKey(Arc<ES384KeyPair>);
 
-impl SessionCreationKey {
+impl ServiceSigningKey {
     pub fn new(key: ES384KeyPair) -> Self {
         Self(Arc::new(key))
     }
 }
 
-impl SessionCreationKey {
-    pub fn verifier(&self) -> SessionVerificationKey {
+impl ServiceSigningKey {
+    pub fn verifier(&self) -> ServiceVerificationKey {
         let key_pair = self.0.clone();
-        SessionVerificationKey::new(key_pair.public_key())
+        ServiceVerificationKey::new(key_pair.public_key())
     }
 }
 
-impl Deref for SessionCreationKey {
+impl Deref for ServiceSigningKey {
     type Target = Arc<ES384KeyPair>;
 
     fn deref(&self) -> &Self::Target {

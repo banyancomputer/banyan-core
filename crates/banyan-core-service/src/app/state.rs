@@ -8,87 +8,131 @@ use openssl::nid::Nid;
 use openssl::pkey::{PKey, Private};
 use sqlx::sqlite::SqlitePool;
 
-use crate::app::{Config, Secrets, SessionCreationKey, SessionVerificationKey};
+use crate::app::{Config, Secrets, ServiceSigningKey, ServiceVerificationKey};
+use crate::database::DatabaseSetupError;
 
 #[derive(Clone)]
 pub struct State {
-    database_pool: SqlitePool,
-    upload_directory: PathBuf,
-
+    database: Database,
     secrets: Secrets,
-    session_verifier: SessionVerificationKey,
+    service_verifier: ServiceVerificationKey,
+    upload_directory: PathBuf,
 }
 
 impl State {
-    pub async fn from_config(config: &Config) -> Result<Self, StateError> {
+    pub fn database(&self) -> Database {
+        self.database.clone()
+    }
+
+    pub async fn from_config(config: &Config) -> Result<Self, StateSetupError> {
         // Do a test setup to make sure the upload directory exists and is writable as an early
         // sanity check
         LocalFileSystem::new_with_prefix(&config.upload_directory())
-            .map_err(StateError::inaccessible_upload_directory)?;
+            .map_err(StateSetupError::InaccessibleUploadDirectory)?;
 
-        let database_pool = database::setup(config.database_url()).await?;
-        let (signing_key, verification_key) =
-            load_or_create_service_key(config.signing_key_path())?;
+        let database = database::setup(config.database_url()).await?;
+
+        // wrap our key and verifier
+        let service_key = load_or_create_service_key();
+        let service_verifier = service_key.verifier();
+
+        let mut credentials = BTreeMap::new();
+        credentials.insert(
+            Arc::from("google"),
+            ProviderCredential::new(config.google_client_id(), config.google_client_secret()),
+        );
+        let secrets = Secrets::new(credentials, service_key);
 
         Ok(Self {
-            database_pool,
+            database,
+            secrets,
+            service_verifier: ServiceVerificationKey,
             upload_directory: config.upload_directory(),
         })
     }
 
-    pub fn metadata_upload_directory(&self) -> &PathBuf {
-        &self.metadata_upload_directory
+    pub fn secrets(&self) -> &Secrets {
+        &self.secrets
+    }
+
+    pub fn service_verifier(&self) -> &ServiceVerificationKey {
+        &self.service_verifier
+    }
+
+    pub fn upload_directory(&self) -> PathBuf {
+        self.upload_directory.clone()
     }
 }
 
-fn load_or_create_service_key(path: &PathBuf) -> Result<(EncodingKey, DecodingKey), StateError> {
-    let service_private_key = if !path.exists() {
-        let ec_group =
-            EcGroup::from_curve_name(Nid::SECP384R1).map_err(StateError::service_keygen_failed)?;
+impl FromRef<State> for Database {
+    fn from_ref(state: &State) -> Self {
+        state.database()
+    }
+}
 
-        let ec_key = EcKey::generate(&ec_group).map_err(StateError::service_keygen_failed)?;
+impl FromRef<State> for Secrets {
+    fn from_ref(state: &State) -> Self {
+        state.secrets()
+    }
+}
 
-        let pkey_private: PKey<Private> = ec_key
-            .try_into()
-            .map_err(StateError::service_keygen_failed)?;
+impl FromRef<State> for ServiceVerificationKey {
+    fn from_ref(state: &State) -> Self {
+        state.service_verifier()
+    }
+}
 
-        let private_pem = pkey_private
-            .private_key_to_pem_pkcs8()
-            .map_err(StateError::service_keygen_failed)?;
+#[derive(Debug, thiserror::Error)]
+pub enum StateSetupError {
+    #[error("unable to access configured upload directory: {0}")]
+    InaccessibleUploadDirectory(object_store::Error),
 
-        std::fs::write(path, private_pem).map_err(StateError::write_service_key)?;
+    #[error("failed to setup the database: {0}")]
+    DatabaseSetupError(DatabaseSetupError),
+}
 
-        pkey_private
+fn fingerprint_key(keys: &ES384KeyPair) -> String {
+    let public_key = keys.key_pair().public_key();
+    let compressed_point = public_key.as_ref().to_encoded_point(true);
+
+    let mut hasher = sha2::Sha256::new();
+    hasher.update(compressed_point);
+    let hashed_bytes = hasher.finalize();
+
+    hashed_bytes
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
+}
+
+fn load_or_create_service_key(private_path: &PathBuf) -> Result<SessionCreationKey, StateSetupError> {
+    let mut session_key_raw = if private_path.exists() {
+        let key_bytes = std::fs::read(path).map_err(StateSetupError::UnreadableSessionKey)?;
+        let private_pem = String::from_utf8_lossy(&key_bytes);
+
+        ES384KeyPair::from_pem(&private_pem).map_err(StateSetupError::InvalidSessionKey)?
     } else {
-        let pem_bytes = std::fs::read(path).map_err(StateError::read_service_key)?;
+        let new_key = ES384KeyPair::generate();
+        let private_pem = new_key.to_pem().expect("fresh keys to export");
 
-        PKey::private_key_from_pem(pem_bytes.as_ref()).map_err(StateError::key_loading)?
+        std::fs::write(private_path, private_pem).map_err(StateSetupError::SessionKeyWriteFailed)?;
+
+        let public_spki = new_key.public_key_to_pem().expect("fresh key to have public component");
+        let mut public_path = private_path.clone();
+        public_path.set_extension("public");
+        std::fs::write(public_path, public_spki).map_err(StateSetupError::PublicKeyWriteFailed)?;
+
+        new_key
     };
 
-    // Write the public key next to the signing key
-    let mut public_key_path = path.clone();
-    public_key_path.set_extension("public");
-    if !public_key_path.exists() {
-        let public_pem_bytes = service_private_key
-            .public_key_to_pem()
-            .map_err(StateError::key_loading)?;
+    let fingerprint = fingerprint_key(&session_key_raw);
+    session_key_raw = session_key_raw.with_key_id(&fingerprint);
 
-        std::fs::write(&public_key_path, public_pem_bytes)
-            .map_err(StateError::write_service_key)?;
+    let mut fingerprint_path = private_path.clone();
+    fingerprint_path.set_extension("fingerprint");
+    if !fingerprint_path.exists() {
+        std::fs::write(fingerprint_path, fingerprint).map_err(StateSetupError::FingerprintWriteFailed)?;
     }
 
-    let private_pem_bytes = service_private_key
-        .private_key_to_pem_pkcs8()
-        .map_err(StateError::key_loading)?;
-    let encoding_key = EncodingKey::from_ec_pem(private_pem_bytes.as_ref())
-        .map_err(StateError::loading_state_keys)?;
-
-    let public_pem_bytes = service_private_key
-        .public_key_to_pem()
-        .map_err(StateError::key_loading)?;
-
-    let decoding_key = DecodingKey::from_ec_pem(public_pem_bytes.as_ref())
-        .map_err(StateError::loading_state_keys)?;
-
-    Ok((encoding_key, decoding_key))
+    Ok(SessionCreationKey(session_key_raw))
 }

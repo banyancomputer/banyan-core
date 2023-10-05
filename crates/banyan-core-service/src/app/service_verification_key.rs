@@ -4,15 +4,15 @@ use std::sync::Arc;
 use jwt_simple::prelude::*;
 
 #[derive(Clone)]
-pub struct SessionVerificationKey(Arc<ES384PublicKey>);
+pub struct ServiceVerificationKey(Arc<ES384PublicKey>);
 
-impl SessionVerificationKey {
+impl ServiceVerificationKey {
     pub fn new(key: ES384PublicKey) -> Self {
         Self(Arc::new(key))
     }
 }
 
-impl Deref for SessionVerificationKey {
+impl Deref for ServiceVerificationKey {
     type Target = Arc<ES384PublicKey>;
 
     fn deref(&self) -> &Self::Target {
