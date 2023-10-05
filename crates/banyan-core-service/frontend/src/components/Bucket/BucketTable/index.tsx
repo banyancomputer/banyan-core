@@ -44,6 +44,13 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         openFile(bucket, file.name, folderLocation);
     };
 
+    const handleClick = (event: React.MouseEvent<HTMLTableRowElement, MouseEvent>, bucket: Bucket, file: BucketFile) => {
+        //@ts-ignore
+        if (event.target.id === 'actionsCell') return;
+
+        file.type === 'dir' ? goTofolder(bucket, file) : previewFile(bucket, file);
+    };
+
     useEffect(() => {
         if (sortState.criteria === 'name') {
             setBucketCopy(bucket => {
@@ -104,7 +111,7 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                                     text={`${messages.lastEdited}`}
                                 />
                             </th>
-                            <th className="px-6 py-4 text-left font-medium w-24">
+                            <th className="px-6 py-4 text-left font-medium w-36">
                                 <SortCell
                                     criteria="fileSize"
                                     onChange={sort}
@@ -123,14 +130,13 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                     </thead>
                     <tbody>
                         {
-                            bucketCopy.files.map((file, index) => {
-                                return (<tr key={index}>
-                                    <td
-                                        onClick={() => file.type === 'dir' ? goTofolder(bucket, file) : previewFile(bucket, file)}
-                                        className='px-6 py-4'
-                                    >
-                                        <FileCell name={file.name} />
-                                    </td>
+                            bucketCopy.files.map((file, index) =>
+                                <tr
+                                    className='cursor-pointer'
+                                    key={index}
+                                    onClick={event => handleClick(event, bucket, file)}
+                                >
+                                    <td className='px-6 py-4'><FileCell name={file.name} /></td>
                                     <td className="px-6 py-4">{getDateLabel(+file.metadata.modified)}</td>
                                     <td className="px-6 py-4">{convertFileSize(file.metadata.size)}</td>
                                     <td className="px-6 py-4">
@@ -145,8 +151,8 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                                                 />
                                         }
                                     </td>
-                                </tr>);
-                            })
+                                </tr>
+                            )
                         }
                     </tbody>
                 </table>
