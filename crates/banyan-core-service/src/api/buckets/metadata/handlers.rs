@@ -102,7 +102,7 @@ pub async fn push(
         expected_data_size,
         models::MetadataState::Uploading
     )
-    .fetch_one(&mut *db_conn.0)
+    .fetch_one(&database)
     .await;
 
     let metadata_resource = match maybe_metadata_resource {
@@ -139,7 +139,7 @@ pub async fn push(
                 models::MetadataState::UploadFailed,
                 metadata_resource.id
             )
-            .execute(&mut *db_conn.0)
+            .execute(&database)
             .await;
             // Return the correct response based on the result of the update
             return match maybe_failed_metadata_upload {
@@ -191,7 +191,7 @@ pub async fn push(
             models::MetadataState::UploadFailed,
             metadata_resource.id
         )
-        .execute(&mut *db_conn.0)
+        .execute(&database)
         .await;
         match maybe_failed_metadata_upload {
             Ok(_) => {}
@@ -233,7 +233,7 @@ pub async fn push(
             expected_data_size,
             metadata_hash,
             metadata_resource.id
-        ).fetch_one(&mut *db_conn.0).await;
+        ).fetch_one(&database).await;
         let current_metadata = match maybe_current_metadata {
             Ok(cr) => cr,
             Err(err) => {
@@ -252,7 +252,7 @@ pub async fn push(
             metadata_resource.id,
             current_metadata_state
         )
-        .execute(&mut *db_conn.0)
+        .execute(&database)
         .await;
         match maybe_outdated_metadata {
             Ok(_) => {
@@ -286,7 +286,7 @@ pub async fn push(
         metadata_hash,
         metadata_resource.id
     )
-    .fetch_one(&mut *db_conn.0)
+    .fetch_one(&database)
     .await;
     let updated_metadata = match maybe_updated_metadata {
         Ok(cr) => cr,

@@ -1,24 +1,17 @@
 use crate::db::models::{self, BucketType, CreatedResource, StorageClass};
-use crate::extractors::DbConn;
+use crate::database::Database;
 use crate::utils::keys::fingerprint_public_pem;
 use serde::Serialize;
 use sqlx::FromRow;
 
-/// Create a new Bucket in the database and return the created resource.
-/// Implements an authorized read of a bucket by id and account_id.
-/// # Arguments
-/// * `account_id` - The account_id of the account that owns the bucket.
-/// * `type` - The type of the bucket.
-/// * `storage_class` - The storage class of the bucket.
-/// * `db_conn` - The database connection to use.
-/// # Return Type
-/// Returns the created resource if successful, otherwise errors.
+/// Create a new Bucket in the database and return the created resource. Implements an authorized
+/// read of a bucket by id and account_id.
 pub async fn create_bucket(
     account_id: &str,
     name: &str,
     r#type: &BucketType,
     storage_class: &StorageClass,
-    db_conn: &mut DbConn,
+    database: &Database,
 ) -> Result<CreatedResource, sqlx::Error> {
     sqlx::query_as!(
         models::CreatedResource,
@@ -28,16 +21,16 @@ pub async fn create_bucket(
         r#type,
         storage_class,
     )
-    .fetch_one(&mut *db_conn.0)
+    .fetch_one(database)
     .await
 }
 
-pub async fn select_storage_host(db_conn: &mut DbConn) -> Result<models::StorageHost, sqlx::Error> {
+pub async fn select_storage_host(database: &Database) -> Result<models::StorageHost, sqlx::Error> {
     sqlx::query_as!(
         models::StorageHost,
         r#"SELECT id, name, url, used_storage, available_storage, fingerprint, pem FROM storage_hosts ORDER BY RANDOM() LIMIT 1;"#,
     )
-    .fetch_one(&mut *db_conn.0)
+    .fetch_one(database)
     .await
 }
 
@@ -46,7 +39,7 @@ pub async fn record_storage_grant(
     account_id: &str,
     metadata_id: &str,
     authorized_usage: u64,
-    db_conn: &mut DbConn,
+    database: &Database,
 ) -> Result<String, sqlx::Error> {
     let authorized_usage = authorized_usage as i64;
 
@@ -60,7 +53,7 @@ pub async fn record_storage_grant(
         account_id,
         authorized_usage,
     )
-    .fetch_one(&mut *db_conn.0)
+    .fetch_one(database)
     .await?;
 
     sqlx::query!(r#"
@@ -71,24 +64,18 @@ pub async fn record_storage_grant(
             metadata_id,
             storage_grant_id,
         )
-        .execute(&mut *db_conn.0)
+        .execute(database)
         .await?;
 
     Ok(storage_grant_id)
 }
 
-/// Pull the bucket from the database by id and account_id and return it.
-/// Implements an authorized read of a bucket by id and account_id.
-/// # Arguments
-/// * `account_id` - The account_id of the account that owns the bucket.
-/// * `bucket_id` - The id of the bucket to read.
-/// * `db_conn` - The database connection to use.
-/// # Return Type
-/// Returns the bucket if it exists and is owned by the given account_id, otherwise returns an error.
+/// Pull the bucket from the database by id and account_id and return it. Implements an authorized
+/// read of a bucket by id and account_id.
 pub async fn read_bucket(
     account_id: &str,
     bucket_id: &str,
-    db_conn: &mut DbConn,
+    database: &Database,
 ) -> Result<models::Bucket, sqlx::Error> {
     sqlx::query_as!(
         models::Bucket,
@@ -96,69 +83,52 @@ pub async fn read_bucket(
         bucket_id,
         account_id,
     )
-    .fetch_one(&mut *db_conn.0)
+    .fetch_one(database)
     .await
 }
 
-/// Pull all buckets from the database by account_id and return them.
-/// Implements an authorized read of all buckets by account_id.
-/// # Arguments
-/// * `account_id` - The account_id of the account that owns the buckets.
-/// * `db_conn` - The database connection to use.
-/// # Return Type
-/// Returns a vector of buckets if they exist and are owned by the given account_id, otherwise returns an error.
+/// Pull all buckets from the database by account_id and return them. Implements an authorized read
+/// of all buckets by account_id.
 pub async fn read_all_buckets(
     account_id: &str,
-    db_conn: &mut DbConn,
+    database: &Database,
 ) -> Result<Vec<models::Bucket>, sqlx::Error> {
     sqlx::query_as!(
         models::Bucket,
         r#"SELECT id, account_id, name, type, storage_class FROM buckets WHERE account_id = $1"#,
         account_id,
     )
-    .fetch_all(&mut *db_conn.0)
+    .fetch_all(database)
     .await
 }
 
 /// Delete a bucket by id and account_id and return it.
 /// Implements an authorized delete of a bucket by id and account_id.
-/// # Arguments
-/// * `account_id` - The account_id of the account that owns the bucket.
-/// * `bucket_id` - The id of the bucket to delete.
-/// * `db_conn` - The database connection to use.
-/// # Return Type
-/// Returns the bucket if it exists and is owned by the given account_id, otherwise returns an error.
 pub async fn delete_bucket(
     account_id: &str,
     bucket_id: &str,
-    db_conn: &mut DbConn,
+    database: &Database,
 ) -> Result<(), sqlx::Error> {
     // delete does not tell us whether any rows existed, to return a 404 we need to see if its
     // present or not. We'll cheat and use our read bucket method for this 404 check.
-    read_bucket(account_id, bucket_id, db_conn).await?;
+    read_bucket(account_id, bucket_id, database).await?;
 
     sqlx::query!(
         r#"DELETE FROM buckets WHERE id = $1 AND account_id = $2"#,
         bucket_id,
         account_id,
     )
-    .execute(&mut *db_conn.0)
+    .execute(database)
     .await?;
 
     Ok(())
 }
 
 /// Authorize the given account_id to read the given bucket_id.
-/// # Arguments
-/// * `account_id` - The account_id of the account that owns the bucket.
-/// * `bucket_id` - The id of the bucket to read.
-/// * `db_conn` - The database connection to use.
-/// # Return Type
-/// Returns `Ok(())` if the account_id is authorized to read the bucket_id, otherwise returns an error.
 pub async fn authorize_bucket(
     account_id: &str,
     bucket_id: &str,
-    db_conn: &mut DbConn,
+    database: &Database,
 ) -> Result<(), sqlx::Error> {
     sqlx::query_as!(
         models::CreatedResource,
@@ -166,23 +136,17 @@ pub async fn authorize_bucket(
         bucket_id,
         account_id
     )
-    .fetch_one(&mut *db_conn.0)
+    .fetch_one(database)
     .await
     .map(|_| ())
 }
 
 /// Create a bucket key by its id and PEM
-/// # Arguments
-/// * `bucket_id` - The id of the bucket to insert this key in.
-/// * `pem` - The public PEM of the Key
-/// * `db_conn` - The database connection to use.
-/// # Return Type
-/// Returns the created resource if creation succeeds, otherwise returns an error.
 pub async fn create_bucket_key(
     bucket_id: &str,
     approved: bool,
     pem: &str,
-    db_conn: &mut DbConn,
+    database: &Database,
 ) -> Result<CreatedResource, sqlx::Error> {
     let fingerprint = fingerprint_public_pem(pem);
     tracing::info!("creating new bucketkey w fingerprint {fingerprint}");
@@ -194,21 +158,15 @@ pub async fn create_bucket_key(
         pem,
         fingerprint
     )
-    .fetch_one(&mut *db_conn.0)
+    .fetch_one(database)
     .await
 }
 
 /// Read a bucket key by its id and authorize that it belongs to a given bucket_id.
-/// # Arguments
-/// * `bucket_id` - The id of the bucket to read.
-/// * `bucket_key_id` - The id of the bucket key to read.
-/// * `db_conn` - The database connection to use.
-/// # Return Type
-/// Returns the bucket key if it exists and belongs to the given bucket_id, otherwise returns an error.
 pub async fn read_bucket_key(
     bucket_id: &str,
     bucket_key_id: &str,
-    db_conn: &mut DbConn,
+    database: &Database,
 ) -> Result<models::BucketKey, sqlx::Error> {
     sqlx::query_as!(
         models::BucketKey,
@@ -216,40 +174,29 @@ pub async fn read_bucket_key(
         bucket_key_id,
         bucket_id,
     )
-    .fetch_one(&mut *db_conn.0)
+    .fetch_one(database)
     .await
 }
 
 /// Read all bucket keys by a given bucket_id.
-/// # Arguments
-/// * `bucket_id` - The id of the bucket to read.
-/// * `db_conn` - The database connection to use.
-/// # Return Type
-/// Returns a vector of bucket keys if they exist and belong to the given bucket_id, otherwise returns an error.
 pub async fn read_all_bucket_keys(
     bucket_id: &str,
-    db_conn: &mut DbConn,
+    database: &Database,
 ) -> Result<Vec<models::BucketKey>, sqlx::Error> {
     sqlx::query_as!(
         models::BucketKey,
         r#"SELECT id, bucket_id, approved, pem, fingerprint FROM bucket_keys WHERE bucket_id = $1;"#,
         bucket_id,
     )
-    .fetch_all(&mut *db_conn.0)
+    .fetch_all(database)
     .await
 }
 
 /// Delete a bucket key by its id and authorize that it belongs to a given bucket_id.
-/// # Arguments
-/// * `bucket_id` - The id of the bucket to read.
-/// * `bucket_key_id` - The id of the bucket key to read.
-/// * `db_conn` - The database connection to use.
-/// # Return Type
-/// Returns the bucket key if it exists and belongs to the given bucket_id, otherwise returns an error.
 pub async fn delete_bucket_key(
     bucket_id: &str,
     bucket_key_id: &str,
-    db_conn: &mut DbConn,
+    database: &Database,
 ) -> Result<models::BucketKey, sqlx::Error> {
     sqlx::query_as!(
         models::BucketKey,
@@ -257,21 +204,15 @@ pub async fn delete_bucket_key(
         bucket_key_id,
         bucket_id,
     )
-    .fetch_one(&mut *db_conn.0)
+    .fetch_one(database)
     .await
 }
 
 /// Approve a bucket key for use by its id and authorize that it belongs to a given bucket_id.
-/// # Arguments
-/// * `bucket_id` - The id of the bucket to read.
-/// * `pem` - The public PEM of the Key
-/// * `db_conn` - The database connection to use.
-/// # Return Type
-/// Returns the bucket key if it exists and belongs to the given bucket_id, otherwise returns an error.
 pub async fn approve_bucket_key(
     bucket_id: &str,
     fingerprint: &str,
-    db_conn: &mut DbConn,
+    database: &Database,
 ) -> Result<models::BucketKey, sqlx::Error> {
     // Perorm the update
     sqlx::query_as!(
@@ -284,21 +225,15 @@ pub async fn approve_bucket_key(
         fingerprint,
         bucket_id,
     )
-    .fetch_one(&mut *db_conn.0)
+    .fetch_one(database)
     .await
 }
 
 /// Read metadata from the database, checking if references a given bucket_id.
-/// # Arguments
-/// * `bucket_id` - The id of the bucket to read.
-/// * `metadata_id` - The id of the metadata to read.
-/// * `db_conn` - The database connection to use.
-/// # Return Type
-/// Returns the metadata if it exists and belongs to the given bucket_id, otherwise returns an error.
 pub async fn read_metadata(
     bucket_id: &str,
     metadata_id: &str,
-    db_conn: &mut DbConn,
+    database: &Database,
 ) -> Result<models::MetadataWithSnapshot, sqlx::Error> {
     let maybe_metadata = sqlx::query_as!(
         models::Metadata,
@@ -307,7 +242,7 @@ pub async fn read_metadata(
         metadata_id,
         bucket_id,
     )
-    .fetch_one(&mut *db_conn.0)
+    .fetch_one(database)
     .await;
     let metadata = match maybe_metadata {
         Ok(metadata) => metadata,
@@ -329,7 +264,7 @@ pub async fn read_metadata(
         metadata_id,
         bucket_id
     )
-    .fetch_optional(&mut *db_conn.0)
+    .fetch_optional(database)
     .await?;
     let metadata_with_snapshot = match maybe_snapshot_id {
         Some(cr) => models::MetadataWithSnapshot {
@@ -345,16 +280,10 @@ pub async fn read_metadata(
 }
 
 /// Authorize access to the given metadata_id by checking if it references a given bucket_id.
-/// # Arguments
-/// * `bucket_id` - The id of the bucket to read.
-/// * `metadata_id` - The id of the metadata to read.
-/// * `db_conn` - The database connection to use.
-/// # Return Type
-/// Returns `Ok(())` if the metadata_id references the given bucket_id, otherwise returns an error.
 pub async fn authorize_metadata(
     bucket_id: &str,
     metadata_id: &str,
-    db_conn: &mut DbConn,
+    database: &Database,
 ) -> Result<(), sqlx::Error> {
     sqlx::query_as!(
         models::CreatedResource,
@@ -362,20 +291,15 @@ pub async fn authorize_metadata(
         metadata_id,
         bucket_id,
     )
-    .fetch_one(&mut *db_conn.0)
+    .fetch_one(database)
     .await
     .map(|_| ())
 }
 
 /// Read all metadata from the database by a given bucket_id.
-/// # Arguments
-/// * `bucket_id` - The id of the bucket to read.
-/// * `db_conn` - The database connection to use.
-/// # Return Type
-/// Returns a vector of metadata if it exists and belongs to the given bucket_id, otherwise returns an error.
 pub async fn read_all_metadata(
     bucket_id: &str,
-    db_conn: &mut DbConn,
+    database: &Database,
 ) -> Result<Vec<models::Metadata>, sqlx::Error> {
     sqlx::query_as!(
         models::Metadata,
@@ -383,19 +307,14 @@ pub async fn read_all_metadata(
         FROM metadata WHERE bucket_id = $1;"#,
         bucket_id,
     )
-    .fetch_all(&mut *db_conn.0)
+    .fetch_all(database)
     .await
 }
 
 /// Read the current metadata from the database by a given bucket_id.
-/// # Arguments
-/// * `bucket_id` - The id of the bucket to read.
-/// * `db_conn` - The database connection to use.
-/// # Return Type
-/// Returns the current metadata if it exists and belongs to the given bucket_id, otherwise returns an error.
 pub async fn read_current_metadata(
     bucket_id: &str,
-    db_conn: &mut DbConn,
+    database: &Database,
 ) -> Result<models::MetadataWithSnapshot, sqlx::Error> {
     let maybe_metadata = sqlx::query_as!(
         models::Metadata,
@@ -403,7 +322,7 @@ pub async fn read_current_metadata(
         FROM metadata WHERE bucket_id = $1 AND state = 'current';"#,
         bucket_id,
     )
-    .fetch_one(&mut *db_conn.0)
+    .fetch_one(database)
     .await;
     let metadata = match maybe_metadata {
         Ok(metadata) => metadata,
@@ -425,7 +344,7 @@ pub async fn read_current_metadata(
         metadata.id,
         bucket_id
     )
-    .fetch_optional(&mut *db_conn.0)
+    .fetch_optional(database)
     .await?;
     let metadata_with_snapshot = match maybe_snapshot_id {
         Some(cr) => models::MetadataWithSnapshot {
@@ -441,14 +360,9 @@ pub async fn read_current_metadata(
 }
 
 /// Create a snapshot and return the created resource.
-/// # Arguments
-/// * `metadata_id` - The id of the metadata to snapshot.
-/// * `db_conn` - The database connection to use.
-/// # Return Type
-/// Returns the created snapshot if successful, otherwise returns an error.
 pub async fn create_snapshot(
     metadata_id: &str,
-    db_conn: &mut DbConn,
+    database: &Database,
 ) -> Result<models::CreateSnapshot, sqlx::Error> {
     sqlx::query_as!(
         models::CreateSnapshot,
@@ -457,21 +371,15 @@ pub async fn create_snapshot(
         RETURNING id, created_at;"#,
         metadata_id
     )
-    .fetch_one(&mut *db_conn.0)
+    .fetch_one(database)
     .await
 }
 
 /// Read a snapshot by its id and authorize that its associated metadata belongs to a given bucket_id.
-/// # Arguments
-/// * `bucket_id` - The id of the bucket to read.
-/// * `snapshot_id` - The id of the snapshot to read.
-/// * `db_conn` - The database connection to use.
-/// # Return Type
-/// Returns the snapshot if it exists and belongs to the given bucket_id, otherwise returns an error.
 pub async fn read_snapshot(
     bucket_id: &str,
     snapshot_id: &str,
-    db_conn: &mut DbConn,
+    database: &Database,
 ) -> Result<models::Snapshot, sqlx::Error> {
     sqlx::query_as!(
         models::Snapshot,
@@ -489,20 +397,14 @@ pub async fn read_snapshot(
         snapshot_id,
         bucket_id
     )
-    .fetch_one(&mut *db_conn.0)
+    .fetch_one(database)
     .await
 }
 
 /// Read a snapshot by bucket_id and snapshot_id.
-/// # Arguments
-/// * `bucket_id` - The id of the bucket to read.
-/// * `snapshot_id` - The id of the snapshot to read.
-/// * `db_conn` - The database connection to use.
-/// # Return Type
-/// Returns the snapshot if it exists and belongs to the given bucket_id, otherwise returns an error.
 pub async fn read_all_snapshots(
     bucket_id: &str,
-    db_conn: &mut DbConn,
+    database: &Database,
 ) -> Result<Vec<models::Snapshot>, sqlx::Error> {
     sqlx::query_as!(
         models::Snapshot,
@@ -519,18 +421,12 @@ pub async fn read_all_snapshots(
             m.bucket_id = $1;"#,
         bucket_id
     )
-    .fetch_all(&mut *db_conn.0)
+    .fetch_all(database)
     .await
 }
 
 /// Read the data + metadata usage of the given account id.
-/// This is the sum of all data_size and metadata_size for all metadata associated with the account in the 'pending' or 'current' state.
-/// # Arguments
-/// * `account_id` - The id of the account to read.
-/// * `db_conn` - The database connection to use.
-/// # Return Type
-/// Returns the current data usage if it exists, otherwise returns an error.
-pub async fn read_total_usage(account_id: &str, db_conn: &mut DbConn) -> Result<u64, sqlx::Error> {
+pub async fn read_total_usage(account_id: &str, database: &Database) -> Result<u64, sqlx::Error> {
     let maybe_usage = sqlx::query_as!(
         GetTotalUsage,
         r#"SELECT 
@@ -544,7 +440,7 @@ pub async fn read_total_usage(account_id: &str, db_conn: &mut DbConn) -> Result<
             b.account_id = $1 AND m.state IN ('pending', 'current');"#,
         account_id,
     )
-    .fetch_one(&mut *db_conn.0)
+    .fetch_one(database)
     .await;
     match maybe_usage {
         Ok(usage) => Ok(usage.data_size as u64 + usage.metadata_size as u64),
@@ -556,15 +452,9 @@ pub async fn read_total_usage(account_id: &str, db_conn: &mut DbConn) -> Result<
 }
 
 /// Read the data usage of the given account id.
-/// This is the sum of all data_size for all metadata associated with the account in the 'pending' or 'current' state.
-/// # Arguments
-/// * `account_id` - The id of the account to read.
-/// * `db_conn` - The database connection to use.
-/// # Return Type
-/// Returns the data usage if it exists, otherwise returns an error.
 pub async fn read_total_data_usage(
     account_id: &str,
-    db_conn: &mut DbConn,
+    database: &Database,
 ) -> Result<u64, sqlx::Error> {
     let maybe_data_usage = sqlx::query_as!(
         GetUsage,
@@ -578,7 +468,7 @@ pub async fn read_total_data_usage(
             b.account_id = $1 AND m.state IN ('pending', 'current');"#,
         account_id,
     )
-    .fetch_one(&mut *db_conn.0)
+    .fetch_one(database)
     .await;
     match maybe_data_usage {
         Ok(usage) => Ok(usage.size as u64),
@@ -590,15 +480,9 @@ pub async fn read_total_data_usage(
 }
 
 /// Read the data usage of a given bucket id.
-/// This is the sum of all data_size for all metadata associated with the bucket in the 'pending' or 'current' state.
-/// # Arguments
-/// * `bucket_id` - The id of the bucket to read.
-/// * `db_conn` - The database connection to use.
-/// # Return Type
-/// Returns the data usage if it exists, otherwise returns an error.
 pub async fn read_bucket_data_usage(
     bucket_id: &str,
-    db_conn: &mut DbConn,
+    database: &Database,
 ) -> Result<u64, sqlx::Error> {
     let maybe_data_usage = sqlx::query_as!(
         GetUsage,
@@ -610,7 +494,7 @@ pub async fn read_bucket_data_usage(
                     m.bucket_id = $1 AND m.state IN ('pending', 'current');"#,
         bucket_id,
     )
-    .fetch_one(&mut *db_conn.0)
+    .fetch_one(database)
     .await;
     match maybe_data_usage {
         Ok(usage) => Ok(usage.size as u64),

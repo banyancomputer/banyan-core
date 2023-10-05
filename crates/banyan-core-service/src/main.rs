@@ -21,7 +21,7 @@ use app::{AppState, Config};
 #[derive(Debug, thiserror::Error)]
 pub enum AppError {
     #[error("failed to build service config: {0}")]
-    ConfigError(#[from] app::config::ConfigError),
+    ConfigError(#[from] app::ConfigError),
 }
 
 #[tokio::main]

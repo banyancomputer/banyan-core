@@ -7,7 +7,7 @@ use jwt_simple::prelude::*;
 use object_store::local::LocalFileSystem;
 
 use crate::app::{Config, ProviderCredential, Secrets, ServiceSigningKey, ServiceVerificationKey};
-use crate::database::{Database, DatabaseSetupError};
+use crate::database::{self, Database, DatabaseSetupError};
 
 #[derive(Clone)]
 pub struct State {
@@ -28,10 +28,9 @@ impl State {
         LocalFileSystem::new_with_prefix(&config.upload_directory())
             .map_err(StateSetupError::InaccessibleUploadDirectory)?;
 
-        let database = database::setup(config.database_url()).await?;
+        let database = database::connect(&config.database_url()).await?;
 
-        // wrap our key and verifier
-        let service_key = load_or_create_service_key();
+        let service_key = load_or_create_service_key(&config.session_key_path())?;
         let service_verifier = service_key.verifier();
 
         let mut credentials = BTreeMap::new();
@@ -89,7 +88,7 @@ pub enum StateSetupError {
     InvalidServiceKey(jwt_simple::Error),
 
     #[error("failed to setup the database: {0}")]
-    DatabaseSetupError(DatabaseSetupError),
+    DatabaseSetupError(#[from] DatabaseSetupError),
 
     #[error("failed to write fingerprint: {0}")]
     FingerprintWriteFailed(std::io::Error),

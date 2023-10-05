@@ -3,7 +3,7 @@ use std::sync::OnceLock;
 
 use axum::async_trait;
 use axum::extract::rejection::TypedHeaderRejection;
-use axum::extract::{FromRequestParts, TypedHeader};
+use axum::extract::{FromRef, FromRequestParts, TypedHeader};
 use axum::headers::authorization::Bearer;
 use axum::headers::Authorization;
 use axum::http::request::Parts;
@@ -13,7 +13,7 @@ use axum::{Json, RequestPartsExt};
 use jsonwebtoken::{decode, decode_header, Algorithm, DecodingKey, Validation};
 use serde::{Deserialize, Serialize};
 
-use crate::extractors::DbConn;
+use crate::database::Database;
 
 // Allow 15 minute token windows for now, this is likely to change in the future
 pub const EXPIRATION_WINDOW_SECS: u64 = 900;
@@ -52,7 +52,7 @@ impl ApiToken {
 #[async_trait]
 impl<S> FromRequestParts<S> for ApiToken
 where
-    DbConn: FromRequestParts<S>,
+    Database: FromRef<S>,
     S: Send + Sync,
 {
     type Rejection = ApiKeyAuthorizationError;
@@ -85,16 +85,14 @@ where
             None => return Err(ApiKeyAuthorizationError::unidentified_key()),
         };
 
-        let mut db_conn = DbConn::from_request_parts(parts, state)
-            .await
-            .map_err(|_| ApiKeyAuthorizationError::database_unavailable())?;
+        let database = Database::from_ref(state);
 
         let db_device_api_key = sqlx::query_as!(
             DeviceApiKey,
             "SELECT account_id, pem FROM device_api_keys WHERE fingerprint = $1",
             key_id
         )
-        .fetch_one(&mut *db_conn.0)
+        .fetch_one(&database)
         .await
         .map_err(ApiKeyAuthorizationError::device_api_key_not_found)?;
 

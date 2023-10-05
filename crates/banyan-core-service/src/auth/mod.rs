@@ -68,7 +68,7 @@ pub async fn select_provider_handler() -> Response {
 fn oauth_client(
     config_id: &str,
     hostname: Url,
-    secrets: &Secrets,
+    secrets: Secrets,
 ) -> Result<BasicClient, AuthenticationError> {
     let provider_config = PROVIDER_CONFIGS
         .get(config_id)

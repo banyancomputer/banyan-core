@@ -3,7 +3,7 @@ use std::sync::OnceLock;
 
 use axum::async_trait;
 use axum::extract::rejection::TypedHeaderRejection;
-use axum::extract::{FromRequestParts, TypedHeader};
+use axum::extract::{FromRef, FromRequestParts, TypedHeader};
 use axum::headers::authorization::Bearer;
 use axum::headers::Authorization;
 use axum::http::request::Parts;
@@ -13,12 +13,13 @@ use axum::{Json, RequestPartsExt};
 use jsonwebtoken::{decode, decode_header, Algorithm, DecodingKey, Validation};
 use serde::{Deserialize, Serialize};
 
-use crate::extractors::DbConn;
+use crate::database::Database;
 
 // Allow 15 minute token windows for now, this is likely to change in the future
 pub const EXPIRATION_WINDOW_SECS: u64 = 900;
 
 static KEY_ID_VALIDATOR: OnceLock<regex::Regex> = OnceLock::new();
+
 const KEY_ID_REGEX: &str = r"^[0-9a-f]{2}(:[0-9a-f]{2}){31}$";
 
 #[derive(Deserialize, Serialize)]
@@ -46,7 +47,7 @@ pub struct StorageHostToken {
 #[async_trait]
 impl<S> FromRequestParts<S> for StorageHostToken
 where
-    DbConn: FromRequestParts<S>,
+    Database: FromRef<S>,
     S: Send + Sync,
 {
     type Rejection = StorageHostKeyAuthorizationError;
@@ -80,16 +81,14 @@ where
             None => return Err(StorageHostKeyAuthorizationError::unidentified_key()),
         };
 
-        let mut db_conn = DbConn::from_request_parts(parts, state)
-            .await
-            .map_err(|_| StorageHostKeyAuthorizationError::database_unavailable())?;
+        let database = Database::from_ref(state);
 
         let storage_host = sqlx::query_as!(
             StorageHost,
             "SELECT name, pem FROM storage_hosts WHERE fingerprint = $1",
             key_id
         )
-        .fetch_one(&mut *db_conn.0)
+        .fetch_one(&database)
         .await
         .map_err(StorageHostKeyAuthorizationError::storage_host_not_found)?;
 

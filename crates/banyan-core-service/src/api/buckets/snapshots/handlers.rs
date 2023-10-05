@@ -4,12 +4,13 @@ use axum::response::IntoResponse;
 use uuid::Uuid;
 
 use crate::api::buckets::snapshots::{requests, responses};
-use crate::extractors::{ApiToken, DbConn};
+use crate::database::Database;
+use crate::extractors::ApiToken;
 use crate::utils::db;
 
 pub async fn create(
     api_token: ApiToken,
-    mut db_conn: DbConn,
+    database: Database,
     Path(bucket_id): Path<Uuid>,
     Json(new_snapshot): Json<requests::CreateSnapshotRequest>,
 ) -> impl IntoResponse {
@@ -17,7 +18,7 @@ pub async fn create(
     let bucket_id = bucket_id.to_string();
     let metadata_id = new_snapshot.metadata_id.to_string();
     // Make sure the calling user owns the bucket
-    match db::authorize_bucket(&account_id, &bucket_id, &mut db_conn).await {
+    match db::authorize_bucket(&account_id, &bucket_id, &database).await {
         Ok(_) => {}
         Err(err) => match err {
             sqlx::Error::RowNotFound => {
@@ -33,7 +34,7 @@ pub async fn create(
             }
         },
     }
-    match db::authorize_metadata(&bucket_id, &metadata_id, &mut db_conn).await {
+    match db::authorize_metadata(&bucket_id, &metadata_id, &database).await {
         Ok(_) => (),
         Err(err) => match err {
             sqlx::Error::RowNotFound => {
@@ -51,7 +52,7 @@ pub async fn create(
         },
     }
     // Create a new snapshot
-    let response = match db::create_snapshot(&metadata_id, &mut db_conn).await {
+    let response = match db::create_snapshot(&metadata_id, &database).await {
         Ok(snapshot) => responses::CreateSnapshotResponse {
             id: snapshot.id,
             created_at: snapshot.created_at.timestamp(),
@@ -71,12 +72,12 @@ pub async fn create(
 /// Read all snapshots for a bucket
 pub async fn read_all(
     api_token: ApiToken,
-    mut db_conn: DbConn,
+    database: Database,
     Path(bucket_id): Path<Uuid>,
 ) -> impl IntoResponse {
     let account_id = api_token.subject;
     let bucket_id = bucket_id.to_string();
-    match db::authorize_bucket(&account_id, &bucket_id, &mut db_conn).await {
+    match db::authorize_bucket(&account_id, &bucket_id, &database).await {
         Ok(_) => {}
         Err(err) => match err {
             sqlx::Error::RowNotFound => {
@@ -92,7 +93,7 @@ pub async fn read_all(
             }
         },
     }
-    let response = match db::read_all_snapshots(&bucket_id, &mut db_conn).await {
+    let response = match db::read_all_snapshots(&bucket_id, &database).await {
         Ok(snapshots) => responses::ReadAllSnapshotsResponse(
             snapshots
                 .into_iter()
@@ -125,7 +126,7 @@ pub async fn read_all(
 /// Restore a bucket to a specific snapshot
 pub async fn restore(
     api_token: ApiToken,
-    mut db_conn: DbConn,
+    database: Database,
     Path((bucket_id, snapshot_id)): Path<(Uuid, Uuid)>,
 ) -> impl IntoResponse {
     let account_id = api_token.subject;
@@ -133,7 +134,7 @@ pub async fn restore(
     let snapshot_id = snapshot_id.to_string();
 
     // Check that the bucket exists
-    match db::authorize_bucket(&account_id, &bucket_id, &mut db_conn).await {
+    match db::authorize_bucket(&account_id, &bucket_id, &database).await {
         Ok(_) => {}
         Err(err) => match err {
             sqlx::Error::RowNotFound => {
@@ -150,7 +151,7 @@ pub async fn restore(
         },
     }
     // Check that the snapshot exists
-    let snapshot = match db::read_snapshot(&bucket_id, &snapshot_id, &mut db_conn).await {
+    let snapshot = match db::read_snapshot(&bucket_id, &snapshot_id, &database).await {
         Ok(s) => s,
         Err(err) => match err {
             sqlx::Error::RowNotFound => {
@@ -173,7 +174,7 @@ pub async fn restore(
         r#"UPDATE metadata SET state = 'current' WHERE id = $1;"#,
         snapshot.metadata_id,
     )
-    .execute(&mut *db_conn.0)
+    .execute(&database)
     .await;
     let response = match maybe_metadata_update {
         Ok(_) => responses::RestoreSnapshotResponse {

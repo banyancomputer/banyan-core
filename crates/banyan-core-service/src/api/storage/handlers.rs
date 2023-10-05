@@ -4,13 +4,14 @@ use axum::response::IntoResponse;
 use uuid::Uuid;
 
 use crate::api::storage::requests;
+use crate::database::Database;
 use crate::db::models;
-use crate::extractors::{DbConn, StorageHostToken};
+use crate::extractors::StorageHostToken;
 
 /// Finalize a metadata upload from a storage host
 pub async fn finalize_upload(
     _storage_host_token: StorageHostToken,
-    mut db_conn: DbConn,
+    database: Database,
     Path(metadata_id): Path<Uuid>,
     Json(finalize_upload_request): Json<requests::FinalizeUpload>,
 ) -> impl IntoResponse {
@@ -25,7 +26,7 @@ pub async fn finalize_upload(
         data_size,
         metadata_id,
     )
-    .fetch_one(&mut *db_conn.0)
+    .fetch_one(&database)
     .await;
     let bucket_id = match maybe_updated_metadata_bucket_id {
         Ok(umb) => umb.id,
@@ -49,7 +50,7 @@ pub async fn finalize_upload(
         bucket_id,
         current,
         metadata_id,
-    ).fetch_optional(&mut *db_conn.0).await;
+    ).fetch_optional(&database).await;
 
     match maybe_updated_metadata {
         Ok(_) => StatusCode::NO_CONTENT.into_response(),

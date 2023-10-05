@@ -26,8 +26,8 @@ impl Config {
         self.database_url.clone()
     }
 
-    pub fn from_env_and_args() -> Result<Self, Error> {
-        dotenvy::dotenv().map_err(Error::EnvironmentUnavailable)?;
+    pub fn from_env_and_args() -> Result<Self, ConfigError> {
+        dotenvy::dotenv().map_err(ConfigError::EnvironmentUnavailable)?;
         let mut cli_args = Arguments::from_env();
 
         if cli_args.contains("-h") || cli_args.contains("--help") {
@@ -47,7 +47,7 @@ impl Config {
                 _ => "sqlite://./data/server.db".to_string(),
             },
         };
-        let db_url = Url::parse(&db_str).map_err(|err| Error::InvalidDatabaseUrl(err))?;
+        let db_url = Url::parse(&db_str).map_err(|err| ConfigError::InvalidDatabaseUrl(err))?;
 
         let session_key_str = match cli_args.opt_value_from_str("--signing-key")? {
             Some(path) => path,
@@ -69,11 +69,11 @@ impl Config {
 
         let google_client_id = match std::env::var("GOOGLE_OAUTH_CLIENT_ID") {
             Ok(cid) if !cid.is_empty() => cid,
-            _ => return Err(Error::MissingGoogleClientId),
+            _ => return Err(ConfigError::MissingGoogleClientId),
         };
         let google_client_secret = match std::env::var("GOOGLE_OAUTH_CLIENT_SECRET") {
             Ok(cs) if !cs.is_empty() => cs,
-            _ => return Err(Error::MissingGoogleClientSecret),
+            _ => return Err(ConfigError::MissingGoogleClientSecret),
         };
 
         let listen_str = match cli_args.opt_value_from_str("--listen")? {
@@ -85,7 +85,7 @@ impl Config {
         };
         let listen_addr: SocketAddr = listen_str
             .parse()
-            .map_err(|err| Error::InvalidListenAddr(err))?;
+            .map_err(|err| ConfigError::InvalidListenAddr(err))?;
 
         let log_level = cli_args
             .opt_value_from_str("--log-level")?
@@ -131,7 +131,7 @@ impl Config {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum Error {
+pub enum ConfigError {
     #[error("unable to read environment details: {0}")]
     EnvironmentUnavailable(dotenvy::Error),
 
