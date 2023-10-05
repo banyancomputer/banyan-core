@@ -36,7 +36,7 @@ impl SessionIdentity {
 impl<S> FromRequestParts<S> for SessionIdentity
 where
     Database: FromRef<S>,
-    SessionVerificationKey: FromRef<S>,
+    ServiceVerificationKey: FromRef<S>,
     S: Send + Sync,
 {
     type Rejection = SessionIdentityError;

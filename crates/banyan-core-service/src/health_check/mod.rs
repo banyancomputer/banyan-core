@@ -14,7 +14,7 @@ pub use error::Error as HealthCheckError;
 pub use responses::Response as HealthCheckResponse;
 pub use service::Service as HealthCheckService;
 
-use crate::app_state::AppState;
+use crate::app::AppState;
 
 // requests to the healthcheck endpoints shouldn't contain anything other than headers, anything
 // larger should be rejected.

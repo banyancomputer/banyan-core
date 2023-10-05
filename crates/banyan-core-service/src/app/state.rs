@@ -1,15 +1,14 @@
+use std::collections::BTreeMap;
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use axum::extract::FromRef;
-use jsonwebtoken::{DecodingKey, EncodingKey};
+use jwt_simple::prelude::*;
 use object_store::local::LocalFileSystem;
-use openssl::ec::{EcGroup, EcKey};
-use openssl::nid::Nid;
-use openssl::pkey::{PKey, Private};
 use sqlx::sqlite::SqlitePool;
 
-use crate::app::{Config, Secrets, ServiceSigningKey, ServiceVerificationKey};
-use crate::database::DatabaseSetupError;
+use crate::app::{Config, ProviderCredential, Secrets, ServiceSigningKey, ServiceVerificationKey};
+use crate::database::{Database, DatabaseSetupError};
 
 #[derive(Clone)]
 pub struct State {
@@ -46,7 +45,7 @@ impl State {
         Ok(Self {
             database,
             secrets,
-            service_verifier: ServiceVerificationKey,
+            service_verifier,
             upload_directory: config.upload_directory(),
         })
     }
@@ -105,9 +104,9 @@ fn fingerprint_key(keys: &ES384KeyPair) -> String {
         .collect()
 }
 
-fn load_or_create_service_key(private_path: &PathBuf) -> Result<SessionCreationKey, StateSetupError> {
+fn load_or_create_service_key(private_path: &PathBuf) -> Result<ServiceCreationKey, StateSetupError> {
     let mut session_key_raw = if private_path.exists() {
-        let key_bytes = std::fs::read(path).map_err(StateSetupError::UnreadableSessionKey)?;
+        let key_bytes = std::fs::read(private_path).map_err(StateSetupError::UnreadableSessionKey)?;
         let private_pem = String::from_utf8_lossy(&key_bytes);
 
         ES384KeyPair::from_pem(&private_pem).map_err(StateSetupError::InvalidSessionKey)?
