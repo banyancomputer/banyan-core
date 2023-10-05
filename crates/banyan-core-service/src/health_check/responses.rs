@@ -3,7 +3,6 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use serde::Serialize;
 
-use crate::app::Version;
 use crate::health_check::HealthCheckError;
 use crate::utils::collect_error_messages;
 

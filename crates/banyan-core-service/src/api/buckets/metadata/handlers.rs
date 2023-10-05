@@ -11,9 +11,10 @@ use tokio::io::AsyncWriteExt;
 use uuid::Uuid;
 
 use crate::api::buckets::metadata::{requests, responses};
+use crate::database::Database;
 use crate::db::models;
 use crate::error::CoreError;
-use crate::extractors::{ApiToken, ApiTokenKid, DataStore, DbConn, SigningKey};
+use crate::extractors::{ApiToken, ApiTokenKid, DataStore, SigningKey};
 use crate::utils::db::{self, approve_bucket_key};
 use crate::utils::metadata_upload::{handle_metadata_upload, round_to_nearest_100_mib};
 use crate::utils::storage_ticket::generate_storage_ticket;
@@ -32,7 +33,7 @@ const CAR_DATA_SIZE_LIMIT: u64 = 128 * 1_024 * 1_024;
 pub async fn push(
     api_token: ApiToken,
     api_token_kid: ApiTokenKid,
-    mut db_conn: DbConn,
+    database: Database,
     store: DataStore,
     signing_key: SigningKey,
     Path(bucket_id): Path<Uuid>,
@@ -44,7 +45,7 @@ pub async fn push(
     let api_token_kid = api_token_kid.kid();
 
     /* 1. Authorize access to the bucket and validate the request */
-    if let Err(err) = db::authorize_bucket(&account_id, &bucket_id, &mut db_conn).await {
+    if let Err(err) = db::authorize_bucket(&account_id, &bucket_id, &database).await {
         return CoreError::sqlx_error(err, "read", "bucket").into_response();
     }
 
@@ -82,7 +83,7 @@ pub async fn push(
     /* 2. Now that the request is validated and the data extracted, approve any outstanding keys */
     for fingerprint in request_data.valid_keys {
         // Return if we fail to approve any of them
-        if let Err(err) = approve_bucket_key(&bucket_id, &fingerprint, &mut db_conn).await {
+        if let Err(err) = approve_bucket_key(&bucket_id, &fingerprint, &database).await {
             return CoreError::sqlx_error(err, "approve", "bucket key").into_response();
         }
     }
@@ -170,7 +171,7 @@ pub async fn push(
     /* 4. Now that we know the size of metadata, Check if the upload exceeds the user's storage quota. If so, abort with 413 */
 
     // Read how metadata and data the use has in the current and pending states across all buckets
-    let current_usage = match db::read_total_usage(&account_id, &mut db_conn).await {
+    let current_usage = match db::read_total_usage(&account_id, &database).await {
         Ok(usage) => usage,
         Err(err) => {
             return CoreError::default_error(&format!(
@@ -301,7 +302,7 @@ pub async fn push(
 
     // Since we only have one storage host, this is easy
     // Query the database for the current and pending data usage for the account
-    let data_usage = match db::read_total_data_usage(&account_id, &mut db_conn).await {
+    let data_usage = match db::read_total_data_usage(&account_id, &database).await {
         Ok(usage) => usage,
         Err(err) => {
             return CoreError::default_error(&format!("unable to read account data usage: {err}"))
@@ -312,7 +313,7 @@ pub async fn push(
     // Round up to the nearest 100 MiB
     let data_usage = round_to_nearest_100_mib(data_usage);
     // Read a storage host from the database. We only have one right now, so this is easy
-    let storage_host = match db::select_storage_host(&mut db_conn).await {
+    let storage_host = match db::select_storage_host(&database).await {
         Ok(sh) => sh,
         Err(err) => {
             return CoreError::default_error(&format!("unable to read storage host: {err}"))
@@ -327,7 +328,7 @@ pub async fn push(
         &account_id,
         &metadata_resource.id,
         data_usage,
-        &mut db_conn,
+        &database,
     )
     .await
     {
@@ -367,14 +368,14 @@ pub async fn push(
 /// Handle a request to pull metadata from a bucket
 pub async fn pull(
     api_token: ApiToken,
-    mut db_conn: DbConn,
+    database: Database,
     store: DataStore,
     Path((bucket_id, metadata_id)): Path<(Uuid, Uuid)>,
 ) -> impl IntoResponse {
     let account_id = api_token.subject;
     let bucket_id = bucket_id.to_string();
     let metadata_id = metadata_id.to_string();
-    match db::authorize_bucket(&account_id, &bucket_id, &mut db_conn).await {
+    match db::authorize_bucket(&account_id, &bucket_id, &database).await {
         Ok(_) => {}
         Err(err) => match err {
             sqlx::Error::RowNotFound => {
@@ -387,7 +388,7 @@ pub async fn pull(
         },
     };
     // Make sure the metadata exists
-    match db::authorize_metadata(&bucket_id, &metadata_id, &mut db_conn).await {
+    match db::authorize_metadata(&bucket_id, &metadata_id, &database).await {
         Ok(_) => {}
         Err(err) => match err {
             sqlx::Error::RowNotFound => {
@@ -436,13 +437,13 @@ pub async fn pull(
 
 pub async fn read(
     api_token: ApiToken,
-    mut db_conn: DbConn,
+    database: Database,
     Path((bucket_id, metadata_id)): Path<(Uuid, Uuid)>,
 ) -> impl IntoResponse {
     let account_id = api_token.subject;
     let bucket_id = bucket_id.to_string();
     let metadata_id = metadata_id.to_string();
-    match db::authorize_bucket(&account_id, &bucket_id, &mut db_conn).await {
+    match db::authorize_bucket(&account_id, &bucket_id, &database).await {
         Ok(_) => {}
         Err(err) => match err {
             sqlx::Error::RowNotFound => {
@@ -455,7 +456,7 @@ pub async fn read(
         },
     };
     // Read the metadata
-    let response = match db::read_metadata(&bucket_id, &metadata_id, &mut db_conn).await {
+    let response = match db::read_metadata(&bucket_id, &metadata_id, &database).await {
         Ok(bm) => responses::ReadMetadataResponse {
             id: bm.metadata.id.to_string(),
             root_cid: bm.metadata.root_cid,
@@ -483,12 +484,12 @@ pub async fn read(
 /// Read all uploaded metadata for a bucket
 pub async fn read_all(
     api_token: ApiToken,
-    mut db_conn: DbConn,
+    database: Database,
     Path(bucket_id): Path<Uuid>,
 ) -> impl IntoResponse {
     let account_id = api_token.subject;
     let bucket_id = bucket_id.to_string();
-    match db::authorize_bucket(&account_id, &bucket_id, &mut db_conn).await {
+    match db::authorize_bucket(&account_id, &bucket_id, &database).await {
         Ok(_) => {}
         Err(err) => match err {
             sqlx::Error::RowNotFound => {
@@ -500,7 +501,7 @@ pub async fn read_all(
             }
         },
     };
-    let response = match db::read_all_metadata(&bucket_id, &mut db_conn).await {
+    let response = match db::read_all_metadata(&bucket_id, &database).await {
         Ok(bm) => responses::ReadAllMetadataResponse(
             bm.into_iter()
                 .map(|bm| responses::ReadMetadataResponse {
@@ -532,12 +533,12 @@ pub async fn read_all(
 /// Read the current metadata for a bucket or return 404 if there is no current metadata
 pub async fn read_current(
     api_token: ApiToken,
-    mut db_conn: DbConn,
+    database: Database,
     Path(bucket_id): Path<Uuid>,
 ) -> impl IntoResponse {
     let account_id = api_token.subject;
     let bucket_id = bucket_id.to_string();
-    match db::authorize_bucket(&account_id, &bucket_id, &mut db_conn).await {
+    match db::authorize_bucket(&account_id, &bucket_id, &database).await {
         Ok(_) => {}
         Err(err) => match err {
             sqlx::Error::RowNotFound => {
@@ -549,7 +550,7 @@ pub async fn read_current(
             }
         },
     };
-    let response = match db::read_current_metadata(&bucket_id, &mut db_conn).await {
+    let response = match db::read_current_metadata(&bucket_id, &database).await {
         Ok(bm) => responses::ReadMetadataResponse {
             id: bm.metadata.id.to_string(),
             root_cid: bm.metadata.root_cid,

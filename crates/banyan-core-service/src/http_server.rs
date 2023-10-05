@@ -71,7 +71,7 @@ async fn not_found_handler() -> impl IntoResponse {
     )
 }
 
-pub async fn run(app_state: AppState) {
+pub async fn run(listen_addr: SocketAddr, state: AppState) {
     let sensitive_headers: Arc<[_]> = Arc::new([
         header::AUTHORIZATION,
         header::COOKIE,
@@ -107,16 +107,14 @@ pub async fn run(app_state: AppState) {
         ));
 
     let root_router = Router::new()
-        .nest("/api/v1", api::router(app_state.clone()))
-        .nest("/auth", auth::router(app_state.clone()))
-        .nest("/_status", health_check::router(app_state.clone()))
-        .with_state(app_state)
+        .nest("/api/v1", api::router(state.clone()))
+        .nest("/auth", auth::router(state.clone()))
+        .nest("/_status", health_check::router(state.clone()))
+        .with_state(state)
         .fallback(not_found_handler);
 
-    tracing::info!(listen_addr = ?config.listen_addr, "server listening");
-
-    Server::bind(&config.listen_addr)
-        .serve(app.into_make_service())
+    Server::bind(&listen_addr)
+        .serve(root_router.into_make_service())
         .with_graceful_shutdown(graceful_shutdown_blocker())
         .await
         .unwrap();

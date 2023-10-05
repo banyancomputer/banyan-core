@@ -8,14 +8,15 @@ use openssl::pkey::PKey;
 use uuid::Uuid;
 
 use crate::db::models;
-use crate::extractors::{ApiToken, DbConn};
+use crate::extractors::ApiToken;
+use crate::database::Database;
 
 use crate::api::auth::device_api_key::{requests, responses};
 
 /// Register a new device api key with an account
 pub async fn create(
     api_token: ApiToken,
-    mut db_conn: DbConn,
+    database: Database,
     extract::Json(create_device_api_key): extract::Json<requests::CreateDeviceApiKey>,
 ) -> impl IntoResponse {
     let account_id = api_token.subject;
@@ -47,7 +48,7 @@ pub async fn create(
         fingerprint,
         pem
     )
-    .fetch_one(&mut *db_conn.0)
+    .fetch_one(&database)
     .await;
 
     let created_device_key = match maybe_device_key {
@@ -70,7 +71,7 @@ pub async fn create(
 
 pub async fn read(
     api_token: ApiToken,
-    mut db_conn: DbConn,
+    database: Database,
     Path(device_api_key_id): Path<Uuid>,
 ) -> impl IntoResponse {
     let account_id = api_token.subject;
@@ -82,7 +83,7 @@ pub async fn read(
         id,
         account_id
     )
-    .fetch_one(&mut *db_conn.0)
+    .fetch_one(&database)
     .await;
 
     let device_key = match maybe_device_key {
@@ -105,14 +106,14 @@ pub async fn read(
 }
 
 // TODO: pagination
-pub async fn read_all(api_token: ApiToken, mut db_conn: DbConn) -> impl IntoResponse {
+pub async fn read_all(api_token: ApiToken, database: Database) -> impl IntoResponse {
     let account_id = api_token.subject;
     let maybe_device_keys = sqlx::query_as!(
         models::DeviceApiKey,
         r#"SELECT id, account_id, fingerprint, pem FROM device_api_keys WHERE account_id = $1;"#,
         account_id
     )
-    .fetch_all(&mut *db_conn.0)
+    .fetch_all(&database)
     .await;
 
     let device_keys = match maybe_device_keys {
@@ -141,7 +142,7 @@ pub async fn read_all(api_token: ApiToken, mut db_conn: DbConn) -> impl IntoResp
 
 pub async fn delete(
     api_token: ApiToken,
-    mut db_conn: DbConn,
+    database: Database,
     Path(device_api_key_id): Path<Uuid>,
 ) -> impl IntoResponse {
     let account_id = api_token.subject;
@@ -153,7 +154,7 @@ pub async fn delete(
         id,
         account_id
     )
-    .fetch_one(&mut *db_conn.0)
+    .fetch_one(&database)
     .await;
 
     let device_key = match maybe_device_key {

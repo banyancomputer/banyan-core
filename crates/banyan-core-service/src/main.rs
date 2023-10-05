@@ -16,7 +16,7 @@ mod health_check;
 mod http_server;
 mod utils;
 
-use app::AppState;
+use app::{AppState, Config};
 
 #[derive(Debug, thiserror::Error)]
 pub enum AppError {
@@ -26,7 +26,7 @@ pub enum AppError {
 
 #[tokio::main]
 async fn main() -> Result<(), AppError> {
-    let config = app::config::Config::from_env_and_args()
+    let config = Config::from_env_and_args()
         .map_err(AppError::ConfigError)?;
 
     let (non_blocking_writer, _guard) = tracing_appender::non_blocking(std::io::stderr());
@@ -43,7 +43,7 @@ async fn main() -> Result<(), AppError> {
 
     let state = AppState::from_config(&config).await.unwrap();
 
-    http_server::run(state).await;
+    http_server::run(config.listen_addr(), state).await;
 
     Ok(())
 }

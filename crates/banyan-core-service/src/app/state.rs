@@ -5,7 +5,6 @@ use std::sync::Arc;
 use axum::extract::FromRef;
 use jwt_simple::prelude::*;
 use object_store::local::LocalFileSystem;
-use sqlx::sqlite::SqlitePool;
 
 use crate::app::{Config, ProviderCredential, Secrets, ServiceSigningKey, ServiceVerificationKey};
 use crate::database::{Database, DatabaseSetupError};
@@ -50,12 +49,12 @@ impl State {
         })
     }
 
-    pub fn secrets(&self) -> &Secrets {
-        &self.secrets
+    pub fn secrets(&self) -> Secrets {
+        self.secrets.clone()
     }
 
-    pub fn service_verifier(&self) -> &ServiceVerificationKey {
-        &self.service_verifier
+    pub fn service_verifier(&self) -> ServiceVerificationKey {
+        self.service_verifier.clone()
     }
 
     pub fn upload_directory(&self) -> PathBuf {
@@ -86,8 +85,23 @@ pub enum StateSetupError {
     #[error("unable to access configured upload directory: {0}")]
     InaccessibleUploadDirectory(object_store::Error),
 
+    #[error("private service key could not be loaded: {0}")]
+    InvalidServiceKey(jwt_simple::Error),
+
     #[error("failed to setup the database: {0}")]
     DatabaseSetupError(DatabaseSetupError),
+
+    #[error("failed to write fingerprint: {0}")]
+    FingerprintWriteFailed(std::io::Error),
+
+    #[error("failed to write public key: {0}")]
+    PublicKeyWriteFailed(std::io::Error),
+
+    #[error("unable to write generated service key: {0}")]
+    ServiceKeyWriteFailed(std::io::Error),
+
+    #[error("failed to read private service key: {0}")]
+    UnreadableServiceKey(std::io::Error),
 }
 
 fn fingerprint_key(keys: &ES384KeyPair) -> String {
@@ -104,19 +118,19 @@ fn fingerprint_key(keys: &ES384KeyPair) -> String {
         .collect()
 }
 
-fn load_or_create_service_key(private_path: &PathBuf) -> Result<ServiceCreationKey, StateSetupError> {
+fn load_or_create_service_key(private_path: &PathBuf) -> Result<ServiceSigningKey, StateSetupError> {
     let mut session_key_raw = if private_path.exists() {
-        let key_bytes = std::fs::read(private_path).map_err(StateSetupError::UnreadableSessionKey)?;
+        let key_bytes = std::fs::read(private_path).map_err(StateSetupError::UnreadableServiceKey)?;
         let private_pem = String::from_utf8_lossy(&key_bytes);
 
-        ES384KeyPair::from_pem(&private_pem).map_err(StateSetupError::InvalidSessionKey)?
+        ES384KeyPair::from_pem(&private_pem).map_err(StateSetupError::InvalidServiceKey)?
     } else {
         let new_key = ES384KeyPair::generate();
         let private_pem = new_key.to_pem().expect("fresh keys to export");
 
-        std::fs::write(private_path, private_pem).map_err(StateSetupError::SessionKeyWriteFailed)?;
+        std::fs::write(private_path, private_pem).map_err(StateSetupError::ServiceKeyWriteFailed)?;
 
-        let public_spki = new_key.public_key_to_pem().expect("fresh key to have public component");
+        let public_spki = new_key.public_key().to_pem().expect("fresh key to have public component");
         let mut public_path = private_path.clone();
         public_path.set_extension("public");
         std::fs::write(public_path, public_spki).map_err(StateSetupError::PublicKeyWriteFailed)?;
@@ -133,5 +147,5 @@ fn load_or_create_service_key(private_path: &PathBuf) -> Result<ServiceCreationK
         std::fs::write(fingerprint_path, fingerprint).map_err(StateSetupError::FingerprintWriteFailed)?;
     }
 
-    Ok(SessionCreationKey(session_key_raw))
+    Ok(ServiceSigningKey(session_key_raw))
 }

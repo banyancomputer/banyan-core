@@ -5,15 +5,16 @@ use uuid::Uuid;
 use validify::Validate;
 
 use crate::api::buckets::{keys, requests, responses};
+use crate::database::Database;
 use crate::error::CoreError;
-use crate::extractors::{ApiToken, DbConn};
+use crate::extractors::ApiToken;
 use crate::utils::db;
 use crate::utils::keys::*;
 
 /// Initialze a new bucket with initial key material.
 pub async fn create(
     api_token: ApiToken,
-    mut db_conn: DbConn,
+    database: Database,
     Json(new_bucket): extract::Json<requests::CreateBucket>,
 ) -> Response {
     if let Err(errors) = new_bucket.validate() {
@@ -29,7 +30,7 @@ pub async fn create(
             &new_bucket.name,
             &new_bucket.r#type,
             &new_bucket.storage_class,
-            &mut db_conn,
+            &database,
         )
         .await
         {
@@ -40,7 +41,7 @@ pub async fn create(
                     &bucket_resource.id,
                     true,
                     &new_bucket.initial_bucket_key_pem,
-                    &mut db_conn,
+                    &database,
                 )
                 .await
                 {
@@ -74,10 +75,10 @@ pub async fn create(
 
 // TODO: pagination
 /// Read all buckets associated with the calling account
-pub async fn read_all(api_token: ApiToken, mut db_conn: DbConn) -> Response {
+pub async fn read_all(api_token: ApiToken, database: Database) -> Response {
     let account_id = api_token.subject;
 
-    match db::read_all_buckets(&account_id, &mut db_conn).await {
+    match db::read_all_buckets(&account_id, &database).await {
         Ok(buckets) => Json(responses::ReadBuckets(
             buckets
                 .into_iter()
@@ -102,12 +103,12 @@ pub async fn read_all(api_token: ApiToken, mut db_conn: DbConn) -> Response {
 /// Read a single bucket by id. Also search and return by account id
 pub async fn read(
     api_token: ApiToken,
-    mut db_conn: DbConn,
+    database: Database,
     Path(bucket_id): Path<Uuid>,
 ) -> Response {
     let account_id = api_token.subject;
     let bucket_id = bucket_id.to_string();
-    match db::read_bucket(&account_id, &bucket_id, &mut db_conn).await {
+    match db::read_bucket(&account_id, &bucket_id, &database).await {
         Ok(bucket) => Json(responses::ReadBucket {
             id: bucket.id,
             name: bucket.name,
@@ -126,13 +127,13 @@ pub async fn read(
 /// Delete a Bucket
 pub async fn delete(
     api_token: ApiToken,
-    mut db_conn: DbConn,
+    database: Database,
     Path(bucket_id): Path<Uuid>,
 ) -> Response {
     let account_id = api_token.subject;
     let bucket_id = bucket_id.to_string();
     // todo: need to delete all the hot data stored at various storage hosts
-    if let Err(err) = db::delete_bucket(&account_id, &bucket_id, &mut db_conn).await {
+    if let Err(err) = db::delete_bucket(&account_id, &bucket_id, &database).await {
         tracing::error!("failed to delete bucket: {err}");
         GenericError::new(StatusCode::INTERNAL_SERVER_ERROR, "backend service issue")
             .into_response()
@@ -144,13 +145,13 @@ pub async fn delete(
 /// Return the current DATA usage for the bucket. Query metadata in the current state of the bucket
 pub async fn get_usage(
     _api_token: ApiToken,
-    mut db_conn: DbConn,
+    database: Database,
     Path(bucket_id): Path<Uuid>,
 ) -> Response {
     let bucket_id = bucket_id.to_string();
 
     // Observable usage is sum of data in current state for the requested bucket
-    match db::read_bucket_data_usage(&bucket_id, &mut db_conn).await {
+    match db::read_bucket_data_usage(&bucket_id, &database).await {
         Ok(usage) => Json(responses::GetUsage { size: usage }).into_response(),
         Err(err) => match err {
             sqlx::Error::RowNotFound => {
@@ -166,8 +167,8 @@ pub async fn get_usage(
 }
 
 /// Return the current DATA usage for the account. Query metadata in the current state of the account
-pub async fn get_total_usage(api_token: ApiToken, mut db_conn: DbConn) -> Response {
-    match db::read_total_data_usage(&api_token.subject, &mut db_conn).await {
+pub async fn get_total_usage(api_token: ApiToken, database: Database) -> Response {
+    match db::read_total_data_usage(&api_token.subject, &database).await {
         Ok(usage) => Json(responses::GetUsage { size: usage }).into_response(),
         Err(err) => match err {
             sqlx::Error::RowNotFound => {
