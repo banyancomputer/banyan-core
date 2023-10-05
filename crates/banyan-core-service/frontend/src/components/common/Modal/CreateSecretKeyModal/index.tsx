@@ -3,7 +3,7 @@ import { HiOutlineLightningBolt } from 'react-icons/hi';
 import { useIntl } from 'react-intl';
 import { useForm } from 'react-hook-form';
 
-import { PasswordInput } from '../../PasswordInput';
+import { Input } from '../../Input';
 
 import { useKeystore } from '@/contexts/keystore';
 import { validateKeyphrase } from '@/utils/validation';
@@ -27,7 +27,7 @@ export const CreateSecretKeyModal = () => {
     const { keyphrase, keyphraseConfirmation } = watch();
     const isDataCorrect = !Object.keys(errors).length && !!keyphrase && !!keyphraseConfirmation && keyphraseConfirmation === keyphrase;
 
-    const confirm = async() => {
+    const confirm = async () => {
         try {
             await initializeKeystore(keyphrase);
             closeModal();
@@ -58,9 +58,10 @@ export const CreateSecretKeyModal = () => {
             </div>
             <div>
                 <label className="inline-block mb-1 text-xs font-normal">{`${messages.secretKey}`}</label>
-                <PasswordInput
+                <Input
                     placeholder={`${messages.enterPassphrase}`}
                     error={errors.keyphrase?.message}
+                    type='password'
                     register={register('keyphrase', {
                         required: `${messages.enterPassphrase}`,
                         validate: validateKeyphrase(`${messages.keyRequirements}`),
@@ -69,9 +70,10 @@ export const CreateSecretKeyModal = () => {
             </div>
             <div>
                 <label className="inline-block mb-1 text-xs font-normal">{`${messages.confirmSecretKey}`}</label>
-                <PasswordInput
+                <Input
                     placeholder={`${messages.enterPassphrase}`}
                     error={errors.keyphraseConfirmation?.message}
+                    type='password'
                     register={register('keyphraseConfirmation', {
                         required: `${messages.enterPassphrase}`,
                         validate: (keyphraseConfirmation) => {

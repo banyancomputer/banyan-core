@@ -1,21 +1,34 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useIntl } from 'react-intl';
+import { useForm } from 'react-hook-form';
 
 import { useModal } from '@/contexts/modals';
 import { useTomb } from '@/contexts/tomb';
 import { Bucket } from '@/lib/interfaces/bucket';
 import { ToastNotifications } from '@/utils/toastNotifications';
+import { Input } from '../../Input';
 
 export const CreateFolderModal: React.FC<{ bucket: Bucket, onSuccess?: () => void, path: string[] }> = ({ bucket, onSuccess = () => { }, path }) => {
+    const {
+        formState: { errors },
+        handleSubmit,
+        register,
+        watch,
+    } = useForm({
+        mode: 'onChange',
+        values: { folderName: '' },
+    });
     const { closeModal, openModal } = useModal();
     const { messages } = useIntl();
-    const [folderName, setfolderName] = useState('');
     const { createDirectory } = useTomb();
+    const { folderName } = watch();
+    const regexp = new RegExp(/^.{0,32}$/);
+    const isFolderNameValid = useMemo(() => regexp.test(folderName) && !errors.folderName, [folderName, errors.folderName]);
+    const filesNames = bucket.files.map(file => file.name);
 
-    const changeName = (event: React.ChangeEvent<HTMLInputElement>) => {
-        if (event.target.value.length >= 32) return;
-
-        setfolderName(event.target.value);
+    const validateFolderName = (name: string) => {
+        if (!regexp.test(name)) return `${messages.folder} ${messages.nameLengthError}`;
+        if (filesNames.includes(name)) return `${messages.folder} ${messages.nameDuplicationError}`
     };
 
     const create = async () => {
@@ -28,19 +41,23 @@ export const CreateFolderModal: React.FC<{ bucket: Bucket, onSuccess?: () => voi
     };
 
     return (
-        <div className="w-modal flex flex-col gap-5" >
+        <form
+            className="w-modal flex flex-col gap-5"
+        onSubmit={handleSubmit(create)}
+        >
             <div>
                 <h4 className="text-m font-semibold ">{`${messages.createNewFolder}`}</h4>
             </div>
             <div>
                 <label>
                     {`${messages.folderName}`}
-                    <input
-                        className="mt-2 input w-full h-11 py-3 px-4 rounded-lg border-gray-400 focus:outline-none"
-                        type="text"
+                    <Input
                         placeholder={`${messages.enterNewBucketName}`}
-                        value={folderName}
-                        onChange={changeName}
+                        error={errors.folderName?.message}
+                        register={register('folderName', {
+                            required: `${messages.enterNewBucketName}`,
+                            validate: validateFolderName,
+                        })}
                     />
                 </label>
             </div>
@@ -53,12 +70,11 @@ export const CreateFolderModal: React.FC<{ bucket: Bucket, onSuccess?: () => voi
                 </button>
                 <button
                     className="btn-primary flex-grow py-3 px-4"
-                    onClick={create}
-                    disabled={!folderName}
+                    disabled={!isFolderNameValid}
                 >
                     {`${messages.create}`}
                 </button>
             </div>
-        </div >
+        </form >
     );
 };

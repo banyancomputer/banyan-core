@@ -3,7 +3,7 @@ import { HiOutlineLightningBolt } from 'react-icons/hi';
 import { useIntl } from 'react-intl';
 import { useForm } from 'react-hook-form';
 
-import { PasswordInput } from '../../PasswordInput';
+import { Input } from '../../Input';
 
 import { useKeystore } from '@/contexts/keystore';
 import { useModal } from '@/contexts/modals';
@@ -51,9 +51,10 @@ export const EnterSecretKeyModal = () => {
             </div>
             <div>
                 <label className="inline-block mb-1 text-xs font-normal">{`${messages.secretKey}`}</label>
-                <PasswordInput
+                <Input
                     placeholder={`${messages.enterPassphrase}`}
                     error={errors.keyphrase?.message}
+                    type="password"
                     register={register('keyphrase', {
                         required: `${messages.enterPassphrase}`,
                         validate: validateKeyphrase(`${messages.keyRequirements}`),

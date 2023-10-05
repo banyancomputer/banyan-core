@@ -147,5 +147,7 @@
 	"recipientEmail": "Adresse e-mail du destinataire",
 	"accessPreviousVersions": "Accéder et consulter les versions précédentes",
 	"wrongSecretKey": "Mauvaise clé secrète",
-	"uploading": "Téléchargement"
+	"uploading": "Téléchargement",
+	"nameDuplicationError": "un élément avec un tel nom existe déjà",
+	"nameLengthError": "la longueur du nom doit être comprise entre 3 et 32 caractères"
 }
