@@ -3,7 +3,7 @@ use std::str::FromStr;
 use sqlx::migrate::Migrator;
 use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePool, SqliteSynchronous};
 
-use crate::app_state::StateError;
+use crate::app::StateError;
 
 static DATABASE_MIGRATIONS: Migrator = sqlx::migrate!("./migrations");
 

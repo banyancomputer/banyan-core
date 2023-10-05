@@ -10,7 +10,7 @@ mod who_am_i;
 
 pub use error::Error as AuthError;
 
-use crate::app_state::AppState;
+use crate::app::AppState;
 
 pub fn router(state: AppState) -> Router<AppState> {
     let r = Router::new();

@@ -12,7 +12,7 @@ mod snapshots;
 
 pub use error::Error as BucketError;
 
-use crate::app_state::AppState;
+use crate::app::AppState;
 
 pub fn router(state: AppState) -> Router<AppState> {
     Router::new()

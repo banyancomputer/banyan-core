@@ -11,8 +11,8 @@ use time::OffsetDateTime;
 use uuid::Uuid;
 
 use crate::app::SessionVerificationKey;
+use crate::auth::{LOGIN_PATH, SESSION_COOKIE_NAME};
 use crate::database::Database;
-use crate::extractors::{LOGIN_PATH, SESSION_COOKIE_NAME};
 
 pub struct SessionIdentity {
     session_id: Uuid,
@@ -105,10 +105,11 @@ where
 
         let database = Database::from_ref(state);
 
+        let db_sid = session_id.to_string();
         let db_session = sqlx::query_as!(
             DatabaseSession,
-            r#"SELECT id,user_id,created_at,expires_at FROM sessions WHERE id = ?"#,
-            session_id
+            r#"SELECT id, user_id, created_at, expires_at FROM sessions WHERE id = $1;"#,
+            db_sid,
         )
         .fetch_one(&database)
         .await
@@ -135,6 +136,7 @@ where
     }
 }
 
+#[derive(sqlx::FromRow)]
 struct DatabaseSession {
     id: String,
     user_id: String,
@@ -160,7 +162,7 @@ pub enum SessionIdentityError {
     #[error("authenicated signature was in a valid format: {0}")]
     InvalidSignatureBytes(ecdsa::Error),
 
-    #[error("unable to lookup session in database")]
+    #[error("unable to lookup session in database: {0}")]
     LookupFailed(sqlx::Error),
 
     #[error("user didn't have an existing session")]

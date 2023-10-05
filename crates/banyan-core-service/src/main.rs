@@ -33,7 +33,7 @@ async fn main() {
     tracing_subscriber::registry().with(stderr_layer).init();
 
     let config = config::parse_arguments().unwrap();
-    let app_state = AppState::from_config(&config).await.unwrap();
+    let state = AppState::from_config(&config).await.unwrap();
 
-    http_server::run(app_state).await;
+    http_server::run(state).await;
 }

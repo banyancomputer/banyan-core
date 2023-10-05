@@ -7,7 +7,7 @@ mod auth;
 mod buckets;
 mod storage;
 
-use crate::app_state::AppState;
+use crate::app::AppState;
 use crate::utils::collect_error_messages;
 
 pub fn router(state: AppState) -> Router<AppState> {

@@ -8,7 +8,7 @@ mod responses;
 
 pub use error::Error as StorageError;
 
-use crate::app_state::AppState;
+use crate::app::AppState;
 
 pub fn router(state: AppState) -> Router<AppState> {
     Router::new()
