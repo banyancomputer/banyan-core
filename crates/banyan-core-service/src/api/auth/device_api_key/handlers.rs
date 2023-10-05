@@ -1,14 +1,12 @@
 use axum::extract::{self, Json, Path, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-
 use crate::app_state::{AppState, RegistrationEvent};
 use crate::db::models;
 use crate::extractors::{ApiToken, DbConn};
 use openssl::bn::BigNumContext;
 use openssl::ec::PointConversionForm;
 use openssl::pkey::PKey;
-use std::sync::{Arc, Mutex};
 use uuid::Uuid;
 
 use crate::api::auth::device_api_key::{requests, responses};
@@ -176,15 +174,20 @@ pub async fn delete(
 }
 
 pub async fn end_regwait(
-    State(mut state): State<AppState>,
+    State(state): State<AppState>,
     mut db_conn: DbConn,
     Path(fingerprint): Path<String>,
 ) -> impl IntoResponse {
     tracing::info!("handling end_regwait for fingerprint: '{fingerprint}'");
-
-    tracing::info!("listing all channels: {:?}", state.registration_channels);
-
-    let chan_lock = match state.registration_channels.remove(&fingerprint) {
+    // Grab a lock on the registration channels
+    let mut guard = state.registration_channels.lock().await;
+    tracing::info!(
+        "acquired channel lock: {:?} at time {:?}",
+        guard,
+        chrono::Utc::now()
+    );
+    // Aquire the channel associated with the fingerprint
+    let channel = match guard.remove(&fingerprint) {
         Some(channel) => channel,
         None => {
             tracing::info!("there was no registration channel with that fingerprint!");
@@ -195,18 +198,12 @@ pub async fn end_regwait(
                 .into_response();
         }
     };
+    // Immediately drop the guard
+    drop(guard);
 
-    let channel = match chan_lock.lock() {
-        Ok(mut chan) => chan.take().unwrap(),
-        _ => {
-            tracing::info!("there was no lock available for that send channel!");
-            return (
-                StatusCode::NOT_FOUND,
-                Json(serde_json::json!({"msg": "not found 2"})),
-            )
-                .into_response();
-        }
-    };
+    tracing::info!(
+        "end_regwait successfully aquired the lock on the channel with that fingerprint"
+    );
 
     // Try to query the database for the key that would match this fingerprint
     let maybe_device_key = sqlx::query_as!(
@@ -220,6 +217,7 @@ pub async fn end_regwait(
     let device_key = match maybe_device_key {
         Ok(dk) => dk,
         Err(err) => {
+            tracing::info!("the maybe_device_key didn't yield a result: {:?}", err);
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 format!("unable to read device key: {err}"),
@@ -244,19 +242,28 @@ pub async fn end_regwait(
     }
 }
 
+#[axum::debug_handler]
 pub async fn start_regwait(
-    State(mut state): State<AppState>,
+    State(state): State<AppState>,
     Path(fingerprint): Path<String>,
 ) -> impl IntoResponse {
     tracing::info!("handling start_regwait for fingerprint: '{fingerprint}'");
 
     let (sender, receiver) = tokio::sync::oneshot::channel();
-    state
-        .registration_channels
-        .insert(fingerprint, Arc::new(Mutex::new(Some(sender))));
+    // Grab a lock on the registration channels
+    let mut guard = state.registration_channels.lock().await;
+    // Insert into them
+    guard.insert(fingerprint, sender);
+    // Print
+    tracing::info!(
+        "finished adding channel: {:?} at time {:?}",
+        guard,
+        chrono::Utc::now()
+    );
+    // Immediately drop the lock
+    drop(guard);
 
-    tracing::info!("finished adding channel: {:?}", state.registration_channels);
-
+    //
     match tokio::time::timeout(tokio::time::Duration::from_secs(30), receiver).await {
         Ok(chan_result) => match chan_result {
             Ok(RegistrationEvent::Approved(uuid)) => (

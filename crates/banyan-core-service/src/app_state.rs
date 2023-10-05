@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use axum::extract::FromRef;
+use futures::lock::Mutex;
 use jsonwebtoken::{DecodingKey, EncodingKey};
 use object_store::local::LocalFileSystem;
 use openssl::ec::{EcGroup, EcKey};
@@ -25,7 +26,7 @@ pub enum RegistrationEvent {
 #[derive(Clone)]
 pub struct AppState {
     pub registration_channels:
-        HashMap<String, Arc<Mutex<Option<tokio::sync::oneshot::Sender<RegistrationEvent>>>>>,
+        Arc<Mutex<HashMap<String, tokio::sync::oneshot::Sender<RegistrationEvent>>>>,
     database_pool: SqlitePool,
     signing_key: EncodingKey,
     verification_key: DecodingKey,
@@ -44,7 +45,7 @@ impl AppState {
         let (signing_key, verification_key) =
             load_or_create_service_key(config.signing_key_path())?;
 
-        let registration_channels = HashMap::new();
+        let registration_channels = Arc::new(Mutex::new(HashMap::new()));
 
         Ok(Self {
             registration_channels,
