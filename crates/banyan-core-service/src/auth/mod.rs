@@ -8,9 +8,9 @@ use url::Url;
 use crate::app::{AppState, Secrets};
 
 mod authentication_error;
-mod login;
-mod logout;
-mod oauth_callback;
+//mod login;
+//mod logout;
+//mod oauth_callback;
 mod provider_config;
 
 use authentication_error::AuthenticationError;
@@ -40,29 +40,10 @@ pub const SESSION_TTL: u64 = 28 * 24 * 60 * 60;
 
 pub fn router(state: AppState) -> Router<AppState> {
     Router::new()
-        .route("/callback/:provider", get(oauth_callback::handler))
-        .route("/login", get(select_provider_handler))
-        .route("/login/:provider", get(login::handler))
-        .route("/logout", get(logout::handler))
+        //.route("/callback/:provider", get(oauth_callback::handler))
+        //.route("/login/:provider", get(login::handler))
+        //.route("/logout", get(logout::handler))
         .with_state(state)
-}
-
-pub async fn select_provider_handler() -> Response {
-    Html(
-        r#"<!DOCTYPE html>
-    <html>
-        <head>
-            <title>Select Login Provider</title>
-        </head>
-        <body>
-            <h2>Select Login Provider:<h2>
-            <ul>
-                <li><a href="/auth/login/google">Login with Google</a></li>
-            </ul>
-        </body>
-    </html>"#,
-    )
-    .into_response()
 }
 
 fn oauth_client(

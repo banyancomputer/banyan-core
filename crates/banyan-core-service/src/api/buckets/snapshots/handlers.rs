@@ -55,7 +55,7 @@ pub async fn create(
     let response = match db::create_snapshot(&metadata_id, &database).await {
         Ok(snapshot) => responses::CreateSnapshotResponse {
             id: snapshot.id,
-            created_at: snapshot.created_at.timestamp(),
+            created_at: snapshot.created_at.unix_timestamp(),
         },
         Err(err) => {
             tracing::error!("unable to create snapshot: {err}");
@@ -101,7 +101,7 @@ pub async fn read_all(
                     id: s.id,
                     metadata_id: s.metadata_id,
                     size: s.size,
-                    created_at: s.created_at.timestamp(),
+                    created_at: s.created_at.unix_timestamp(),
                 })
                 .collect(),
         ),

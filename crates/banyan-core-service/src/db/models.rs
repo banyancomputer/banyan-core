@@ -2,6 +2,7 @@ use std::fmt::{Display, Formatter};
 
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, Type};
+use time::OffsetDateTime;
 
 /// Catch all get id of created resource
 #[derive(Debug, FromRow)]
@@ -135,8 +136,8 @@ pub struct Metadata {
     pub metadata_size: Option<i64>,
     pub metadata_hash: Option<String>,
 
-    pub created_at: chrono::NaiveDateTime,
-    pub updated_at: chrono::NaiveDateTime,
+    pub created_at: OffsetDateTime,
+    pub updated_at: OffsetDateTime,
 }
 
 /// Bucket Metadata with Snapshot - data associated with the metadata for a bucket
@@ -150,7 +151,7 @@ pub struct MetadataWithSnapshot {
 #[derive(Debug, Serialize, FromRow)]
 pub struct CreateSnapshot {
     pub id: String,
-    pub created_at: chrono::NaiveDateTime,
+    pub created_at: OffsetDateTime,
 }
 
 /// Snapshot of a piece of metadata
@@ -159,7 +160,7 @@ pub struct Snapshot {
     pub id: String,
     pub metadata_id: String,
     pub size: i64,
-    pub created_at: chrono::NaiveDateTime,
+    pub created_at: OffsetDateTime,
 }
 
 /// Storage Host

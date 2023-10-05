@@ -5,14 +5,14 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::{EnvFilter, Layer};
 
-mod api;
+//mod api;
 mod app;
 mod auth;
-mod db;
+//mod db;
 mod database;
 mod error;
 mod extractors;
-mod health_check;
+//mod health_check;
 mod http_server;
 mod utils;
 

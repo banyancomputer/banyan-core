@@ -20,7 +20,7 @@ use tower_http::{LatencyUnit, ServiceBuilderExt};
 use tracing::Level;
 
 use crate::app::AppState;
-use crate::{api, auth, health_check};
+//use crate::{api, auth, health_check};
 
 // TODO: might want a longer timeout in some parts of the API and I'd like to be able customize a
 // few layers eventually such as CORS and request timeouts but that's for something down the line
@@ -107,9 +107,9 @@ pub async fn run(listen_addr: SocketAddr, state: AppState) {
         ));
 
     let root_router = Router::new()
-        .nest("/api/v1", api::router(state.clone()))
-        .nest("/auth", auth::router(state.clone()))
-        .nest("/_status", health_check::router(state.clone()))
+        //.nest("/api/v1", api::router(state.clone()))
+        //.nest("/auth", auth::router(state.clone()))
+        //.nest("/_status", health_check::router(state.clone()))
         .with_state(state)
         .fallback(not_found_handler);
 

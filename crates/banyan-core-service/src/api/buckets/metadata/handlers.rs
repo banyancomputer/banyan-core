@@ -463,8 +463,8 @@ pub async fn read(
             metadata_cid: bm.metadata.metadata_cid,
             data_size: bm.metadata.data_size,
             state: bm.metadata.state,
-            created_at: bm.metadata.created_at.timestamp(),
-            updated_at: bm.metadata.updated_at.timestamp(),
+            created_at: bm.metadata.created_at.unix_timestamp(),
+            updated_at: bm.metadata.updated_at.unix_timestamp(),
             snapshot_id: bm.snapshot_id,
         },
         Err(err) => match err {
@@ -510,8 +510,8 @@ pub async fn read_all(
                     metadata_cid: bm.metadata_cid,
                     data_size: bm.data_size,
                     state: bm.state,
-                    created_at: bm.created_at.timestamp(),
-                    updated_at: bm.updated_at.timestamp(),
+                    created_at: bm.created_at.unix_timestamp(),
+                    updated_at: bm.updated_at.unix_timestamp(),
                     snapshot_id: None,
                 })
                 .collect(),
@@ -557,8 +557,8 @@ pub async fn read_current(
             metadata_cid: bm.metadata.metadata_cid,
             data_size: bm.metadata.data_size,
             state: bm.metadata.state,
-            created_at: bm.metadata.created_at.timestamp(),
-            updated_at: bm.metadata.updated_at.timestamp(),
+            created_at: bm.metadata.created_at.unix_timestamp(),
+            updated_at: bm.metadata.updated_at.unix_timestamp(),
             snapshot_id: bm.snapshot_id,
         },
         Err(err) => match err {
