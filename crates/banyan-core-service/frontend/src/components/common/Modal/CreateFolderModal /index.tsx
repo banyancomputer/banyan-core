@@ -20,6 +20,7 @@ export const CreateFolderModal: React.FC<{ bucket: Bucket, onSuccess?: () => voi
     });
     const { closeModal, openModal } = useModal();
     const { messages } = useIntl();
+
     const { createDirectory } = useTomb();
     const { folderName } = watch();
     const regexp = new RegExp(/^.{0,32}$/);
@@ -29,6 +30,12 @@ export const CreateFolderModal: React.FC<{ bucket: Bucket, onSuccess?: () => voi
     const validateFolderName = (name: string) => {
         if (!regexp.test(name)) return `${messages.folder} ${messages.nameLengthError}`;
         if (filesNames.includes(name)) return `${messages.folder} ${messages.nameDuplicationError}`
+    };
+
+    const changeName = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (event.target.value.length >= 32) return;
+
+        setfolderName(event.target.value);
     };
 
     const create = async () => {
@@ -71,6 +78,7 @@ export const CreateFolderModal: React.FC<{ bucket: Bucket, onSuccess?: () => voi
                 <button
                     className="btn-primary flex-grow py-3 px-4"
                     disabled={!isFolderNameValid}
+
                 >
                     {`${messages.create}`}
                 </button>
