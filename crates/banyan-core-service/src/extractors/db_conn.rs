@@ -1,9 +1,9 @@
 use axum::extract::{FromRef, FromRequestParts};
 use axum::response::{IntoResponse, Response};
 use axum::{async_trait, Json};
-use sqlx::sqlite::SqlitePool;
+use sqlx::sqlite::{Sqlite, SqlitePool};
 
-pub struct DbConn(pub(crate) sqlx::pool::PoolConnection<sqlx::Sqlite>);
+pub struct DbConn(pub(crate) SqlitePool);
 
 #[async_trait]
 impl<S> FromRequestParts<S> for DbConn

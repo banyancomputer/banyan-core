@@ -8,20 +8,22 @@ use openssl::nid::Nid;
 use openssl::pkey::{PKey, Private};
 use sqlx::sqlite::SqlitePool;
 
+use crate::app::{Config, Secrets, SessionCreationKey, SessionVerificationKey};
+
 #[derive(Clone)]
-pub struct AppState {
+pub struct State {
     database_pool: SqlitePool,
-    signing_key: EncodingKey,
-    verification_key: DecodingKey,
-    metadata_upload_directory: PathBuf,
+    upload_directory: PathBuf,
+
+    secrets: Secrets,
+    session_verifier: SessionVerificationKey,
 }
 
-impl AppState {
+impl State {
     pub async fn from_config(config: &Config) -> Result<Self, StateError> {
         // Do a test setup to make sure the upload directory exists and is writable as an early
         // sanity check
-        let metadata_upload_directory = config.metadata_upload_directory().clone();
-        LocalFileSystem::new_with_prefix(&metadata_upload_directory)
+        LocalFileSystem::new_with_prefix(&config.upload_directory())
             .map_err(StateError::inaccessible_upload_directory)?;
 
         let database_pool = database::setup(config.database_url()).await?;
@@ -30,32 +32,12 @@ impl AppState {
 
         Ok(Self {
             database_pool,
-            signing_key,
-            verification_key,
-            metadata_upload_directory,
+            upload_directory: config.upload_directory(),
         })
     }
 
     pub fn metadata_upload_directory(&self) -> &PathBuf {
         &self.metadata_upload_directory
-    }
-}
-
-impl FromRef<AppState> for DecodingKey {
-    fn from_ref(state: &AppState) -> Self {
-        state.verification_key.clone()
-    }
-}
-
-impl FromRef<AppState> for EncodingKey {
-    fn from_ref(state: &AppState) -> Self {
-        state.signing_key.clone()
-    }
-}
-
-impl FromRef<AppState> for SqlitePool {
-    fn from_ref(state: &AppState) -> Self {
-        state.database_pool.clone()
     }
 }
 

@@ -6,7 +6,7 @@ use axum::http::request::Parts;
 use axum::http::StatusCode;
 use object_store::local::LocalFileSystem;
 
-use crate::app_state::AppState;
+use crate::app::AppState;
 
 #[derive(Debug)]
 pub struct DataStore(LocalFileSystem);

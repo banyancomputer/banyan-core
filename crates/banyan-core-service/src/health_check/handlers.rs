@@ -1,4 +1,5 @@
-use crate::health_check::{HealthCheckResponse, HealthCheckService, VersionResponse};
+use crate::app::Version;
+use crate::health_check::{HealthCheckResponse, HealthCheckService};
 
 pub async fn liveness_check() -> HealthCheckResponse {
     HealthCheckResponse::Ready
@@ -12,10 +13,6 @@ pub async fn readiness_check(mut healthcheck_service: HealthCheckService) -> Hea
     HealthCheckResponse::Ready
 }
 
-pub async fn version() -> VersionResponse<'static> {
-    VersionResponse {
-        build_profile: env!("BUILD_PROFILE"),
-        features: env!("BUILD_FEATURES").split(',').collect(),
-        version: env!("REPO_VERSION"),
-    }
+pub async fn version() -> Version {
+    Version::new()
 }
