@@ -1,6 +1,3 @@
--- All or nothing here...
-BEGIN TRANSACTION;
-
 -- We're only using OAuth2 w/ Google. All accounts are inherently verified by
 -- logging in.
 ALTER TABLE users DROP COLUMN email_verified;
@@ -58,5 +55,3 @@ INSERT INTO new_accounts (id, user_id, provider_account_id, refresh_token, acces
 --  ON DELETE CASCADE;
 --
 --DROP TABLE old_accounts;
-
-COMMIT;
