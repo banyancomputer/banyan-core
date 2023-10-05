@@ -16,6 +16,7 @@ const initialState = {
     data: ''
 };
 
+export const SUPPORTED_EXTENSIONS = ['pdf', 'gif', 'jpg', 'jpeg', 'png'];
 export const FilePreviewContext = createContext<FilePreviewState>({} as FilePreviewState);
 
 export const FilePreviewProvider: FC<{ children: ReactNode }> = ({ children }) => {
@@ -23,7 +24,14 @@ export const FilePreviewProvider: FC<{ children: ReactNode }> = ({ children }) =
     const { getFile } = useTomb();
 
     const openFile = async (bucket: Bucket, file: string, path: string[]) => {
+        const isFileSupported = SUPPORTED_EXTENSIONS.includes(file.split('.')[1]);
         try {
+            setFile({
+                data: '',
+                name: file
+            });
+
+            if (!isFileSupported) return;
 
             const reader = new FileReader();
             const arrayBuffer = await getFile(bucket, path, file);

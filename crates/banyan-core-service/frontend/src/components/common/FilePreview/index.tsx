@@ -4,14 +4,13 @@ import FilePreviewer from 'react-file-previewer';
 import { FiArrowLeft } from 'react-icons/fi';
 import { useIntl } from 'react-intl';
 
-import { useFilePreview } from '@/contexts/filesPreview';
+import { SUPPORTED_EXTENSIONS, useFilePreview } from '@/contexts/filesPreview';
 
 export const FilePreview = () => {
     const { file, closeFile } = useFilePreview();
     const { messages } = useIntl();
     const filePreviewRef = useRef<HTMLDivElement | null>(null);
-    const supportedExtensions = ['pdf', 'gif', 'jpg', 'jpeg', 'png'];
-    const isFileSupported = supportedExtensions.includes(file.name.split('.')[1]);
+    const isFileSupported = file.name ? SUPPORTED_EXTENSIONS.includes(file.name.split('.')[1]) : true;
 
     const close = (event: React.MouseEvent<HTMLDivElement | HTMLButtonElement>) => {
         if (!filePreviewRef.current!.contains(event.target as Node)) {
@@ -21,7 +20,7 @@ export const FilePreview = () => {
 
     return (
         <>
-            {file.data &&
+            {(file.data || !isFileSupported) &&
                 <div
                     className="absolute w-screen h-screen bg flex justify-center py-24 z-10 bg-slate-800 bg-opacity-80 backdrop-blur-sm overflow-scroll"
                     onClick={close}
