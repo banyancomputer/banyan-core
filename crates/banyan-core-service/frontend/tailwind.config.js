@@ -30,7 +30,7 @@ module.exports = {
 				login: '590px',
 			},
 			maxWidth: {
-				filePreview: '952px',
+				filePreview: '80vw',
 			},
 			colors: {
 				blue: {

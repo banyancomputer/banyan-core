@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import type { AppProps } from 'next/app';
 import { IntlProvider } from 'react-intl';
 import { useRouter } from 'next/router';
@@ -34,6 +35,20 @@ export default function App({
 }: AppPropsWithLayout) {
     const getLayout = Component.getLayout || ((page) => page);
     const { locale = '' } = useRouter();
+
+    useEffect(() => {
+        window.addEventListener('error', e => {
+            /** Warns user about application redeploy */
+            if (/Loading chunk [\d]+ failed/.test(e.message)) {
+                /* eslint-disable */
+                alert('New version released, page will be reloaded');
+
+                setTimeout(() => {
+                    window.location.reload();
+                }, 3000);
+            }
+        });
+    }, []);
 
     return (
         // Session provider for Authentication against NextAuth
