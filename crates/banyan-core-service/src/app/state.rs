@@ -5,6 +5,7 @@ use std::sync::Arc;
 use axum::extract::FromRef;
 use jwt_simple::prelude::*;
 use object_store::local::LocalFileSystem;
+use sha2::Digest;
 
 use crate::app::{Config, ProviderCredential, Secrets, ServiceSigningKey, ServiceVerificationKey};
 use crate::database::{self, Database, DatabaseSetupError};
@@ -146,5 +147,5 @@ fn load_or_create_service_key(private_path: &PathBuf) -> Result<ServiceSigningKe
         std::fs::write(fingerprint_path, fingerprint).map_err(StateSetupError::FingerprintWriteFailed)?;
     }
 
-    Ok(ServiceSigningKey(session_key_raw))
+    Ok(ServiceSigningKey::new(session_key_raw))
 }

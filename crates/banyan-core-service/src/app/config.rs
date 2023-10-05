@@ -40,14 +40,14 @@ impl Config {
             std::process::exit(0);
         }
 
-        let db_str = match cli_args.opt_value_from_str("--db-url")? {
+        let database_str = match cli_args.opt_value_from_str("--db-url")? {
             Some(du) => du,
             None => match std::env::var("DATABASE_URL") {
                 Ok(du) if !du.is_empty() => du,
                 _ => "sqlite://./data/server.db".to_string(),
             },
         };
-        let db_url = Url::parse(&db_str).map_err(|err| ConfigError::InvalidDatabaseUrl(err))?;
+        let database_url = Url::parse(&database_str).map_err(ConfigError::InvalidDatabaseUrl)?;
 
         let session_key_str = match cli_args.opt_value_from_str("--signing-key")? {
             Some(path) => path,
@@ -85,7 +85,7 @@ impl Config {
         };
         let listen_addr: SocketAddr = listen_str
             .parse()
-            .map_err(|err| ConfigError::InvalidListenAddr(err))?;
+            .map_err(ConfigError::InvalidListenAddr)?;
 
         let log_level = cli_args
             .opt_value_from_str("--log-level")?
@@ -95,7 +95,7 @@ impl Config {
             listen_addr,
             log_level,
 
-            db_url,
+            database_url,
 
             google_client_id,
             google_client_secret,
@@ -132,14 +132,17 @@ impl Config {
 
 #[derive(Debug, thiserror::Error)]
 pub enum ConfigError {
+    #[error("failed to read argument from CLI: {0}")]
+    ArgumentReadError(#[from] pico_args::Error),
+
     #[error("unable to read environment details: {0}")]
     EnvironmentUnavailable(dotenvy::Error),
 
     #[error("invalid database URL: {0}")]
-    InvalidDatabaseUrl(url::Url),
+    InvalidDatabaseUrl(url::ParseError),
 
     #[error("invalid listening address: {0}")]
-    InvalidListenAddr(String),
+    InvalidListenAddr(std::net::AddrParseError),
 
     #[error("a google auth client ID needs to be provided")]
     MissingGoogleClientId,

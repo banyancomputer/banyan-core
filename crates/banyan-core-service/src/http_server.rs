@@ -113,8 +113,10 @@ pub async fn run(listen_addr: SocketAddr, state: AppState) {
         .with_state(state)
         .fallback(not_found_handler);
 
+    let app = middleware_stack.service(root_router);
+
     Server::bind(&listen_addr)
-        .serve(root_router.into_make_service())
+        .serve(app.into_make_service())
         .with_graceful_shutdown(graceful_shutdown_blocker())
         .await
         .unwrap();
