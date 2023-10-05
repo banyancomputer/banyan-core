@@ -1,5 +1,4 @@
 // #![feature(const_trait_impl)]
-
 use tracing::Level;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
@@ -10,6 +9,7 @@ mod app_state;
 mod auth;
 mod config;
 mod db;
+mod email;
 mod error;
 mod extractors;
 mod health_check;

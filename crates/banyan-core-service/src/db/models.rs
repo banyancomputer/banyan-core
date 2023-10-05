@@ -94,12 +94,12 @@ pub enum MetadataState {
 impl Display for MetadataState {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            MetadataState::Uploading => write!(f, "uploading"),
-            MetadataState::UploadFailed => write!(f, "upload_failed"),
-            MetadataState::Pending => write!(f, "pending"),
-            MetadataState::Current => write!(f, "current"),
-            MetadataState::Outdated => write!(f, "outdated"),
-            MetadataState::Deleted => write!(f, "deleted"),
+            MetadataState::Uploading => f.write_str("uploading"),
+            MetadataState::UploadFailed => f.write_str("upload_failed"),
+            MetadataState::Pending => f.write_str("pending"),
+            MetadataState::Current => f.write_str("current"),
+            MetadataState::Outdated => f.write_str("outdated"),
+            MetadataState::Deleted => f.write_str("deleted"),
         }
     }
 }
@@ -172,4 +172,53 @@ pub struct StorageHost {
     pub available_storage: i64,
     pub fingerprint: String,
     pub pem: String,
+}
+
+/// Email Message State
+#[derive(Debug, Serialize, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum EmailMessageState {
+    Sent,
+    Delivered,
+    Opened,
+    MarkedAsSpam,
+    Unsubscribed,
+    DeliveryFailed,
+}
+
+impl Display for EmailMessageState {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            EmailMessageState::Sent => f.write_str("sent"),
+            EmailMessageState::Delivered => f.write_str("delivered"),
+            EmailMessageState::Opened => f.write_str("opened"),
+            EmailMessageState::MarkedAsSpam => f.write_str("marked_as_spam"),
+            EmailMessageState::Unsubscribed => f.write_str("unsubscribed"),
+            EmailMessageState::DeliveryFailed => f.write_str("delivery_failed"),
+        }
+    }
+}
+
+impl From<String> for EmailMessageState {
+    fn from(s: String) -> Self {
+        match s.as_str() {
+            "sent" => EmailMessageState::Sent,
+            "delivered" => EmailMessageState::Delivered,
+            "opened" => EmailMessageState::Opened,
+            "marked_as_spam" => EmailMessageState::MarkedAsSpam,
+            "unsubscribed" => EmailMessageState::Unsubscribed,
+            "delivery_failed" => EmailMessageState::DeliveryFailed,
+            _ => panic!("invalid email message state: {}", s),
+        }
+    }
+}
+
+/// Email Message
+#[derive(Debug, Serialize, FromRow)]
+pub struct EmailMessage {
+    pub id: String,
+    pub account_id: String,
+    pub sent_at: chrono::NaiveDateTime,
+    pub r#type: String,
+    pub state: EmailMessageState,
 }
