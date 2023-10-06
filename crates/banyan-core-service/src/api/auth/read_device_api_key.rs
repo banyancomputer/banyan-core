@@ -5,13 +5,12 @@ use serde::Serialize;
 use uuid::Uuid;
 
 use crate::app::AppState;
-use crate::database::Database;
 use crate::extractors::ApiToken;
 
 pub async fn handler(
     api_token: ApiToken,
     State(state): State<AppState>,
-    Path(device_api_key_id): Path<Uuid>,
+    Path(key_id): Path<Uuid>,
 ) -> Response {
     let key_id = key_id.to_string();
     let database = state.database();
@@ -21,8 +20,8 @@ pub async fn handler(
         r#"SELECT id, fingerprint, pem
                FROM device_api_keys
                WHERE id = $1 AND account_id = $2;"#,
-        id,
-        account_id
+        key_id,
+        api_token.subject,
     )
     .fetch_one(&database)
     .await;
@@ -33,7 +32,7 @@ pub async fn handler(
             let err_msg = serde_json::json!({"msg": "key not found"});
             (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
         }
-        err => {
+        Err(err) => {
             tracing::error!("failed to remove key from database: {err}");
             let err_msg = serde_json::json!({"msg": "backend service experienced an issue servicing the request"});
             (StatusCode::NOT_FOUND, Json(err_msg)).into_response()

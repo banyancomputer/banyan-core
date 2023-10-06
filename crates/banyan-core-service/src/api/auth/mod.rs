@@ -5,6 +5,8 @@ use crate::app::AppState;
 
 mod create_device_api_key;
 mod delete_device_api_key;
+mod read_all_device_api_keys;
+mod read_device_api_key;
 
 #[cfg(feature = "fake")]
 mod create_fake_account;

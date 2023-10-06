@@ -64,6 +64,6 @@ impl IntoResponse for CreateDeviceApiKeyError {
 }
 
 #[derive(Deserialize)]
-struct CreateDeviceApiKeyRequest {
+pub struct CreateDeviceApiKeyRequest {
     pem: String,
 }

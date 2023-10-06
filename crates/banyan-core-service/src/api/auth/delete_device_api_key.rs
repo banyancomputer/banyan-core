@@ -1,11 +1,9 @@
 use axum::extract::{Json, Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::app::AppState;
-use crate::database::Database;
 use crate::extractors::ApiToken;
 
 pub async fn handler(
@@ -36,7 +34,7 @@ pub async fn handler(
         Err(err) => {
             tracing::error!("failed to remove key from database: {err}");
             let err_msg = serde_json::json!({"msg": "backend service experienced an issue servicing the request"});
-            (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
         }
     }
 }

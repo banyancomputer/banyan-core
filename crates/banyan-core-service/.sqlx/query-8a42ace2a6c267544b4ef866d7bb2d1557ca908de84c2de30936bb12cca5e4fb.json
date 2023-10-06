@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, fingerprint, pem FROM device_api_keys WHERE account_id = $1;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "fingerprint",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "pem",
+        "ordinal": 2,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "8a42ace2a6c267544b4ef866d7bb2d1557ca908de84c2de30936bb12cca5e4fb"
+}

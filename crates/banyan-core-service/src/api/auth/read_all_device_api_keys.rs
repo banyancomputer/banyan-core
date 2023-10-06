@@ -1,37 +1,38 @@
+use axum::extract::{Json, Path, State};
+use axum::http::StatusCode;
+use axum::response::{IntoResponse, Response};
+use serde::Serialize;
+
+use crate::app::AppState;
+use crate::extractors::ApiToken;
 
 pub async fn handler(
     api_token: ApiToken,
     State(state): State<AppState>,
 ) -> Response {
-    let account_id = api_token.subject;
-    let maybe_device_keys = sqlx::query_as!(
-        models::DeviceApiKey,
-        r#"SELECT id, account_id, fingerprint, pem FROM device_api_keys WHERE account_id = $1;"#,
-        account_id
+    let database = state.database();
+
+    let query_result = sqlx::query_as!(
+        DeviceApiKey,
+        r#"SELECT id, fingerprint, pem FROM device_api_keys WHERE account_id = $1;"#,
+        api_token.subject,
     )
     .fetch_all(&database)
     .await;
 
-    let device_keys = match maybe_device_keys {
-        Ok(dks) => dks,
+    match query_result {
+        Ok(keys) => (StatusCode::OK, Json(keys)).into_response(),
         Err(err) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("unable to read device keys: {err}"),
-            )
-                .into_response();
+            tracing::error!("failed to query for device keys from the database: {err}");
+            let err_msg = serde_json::json!({"msg": "backend service experienced an issue servicing the request"});
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
         }
-    };
+    }
+}
 
-    Json(responses::ReadDeviceApiKeys(
-        device_keys
-            .into_iter()
-            .map(|dk| responses::ReadDeviceApiKey {
-                id: dk.id,
-                fingerprint: dk.fingerprint,
-                pem: dk.pem,
-            })
-            .collect(),
-    ))
-    .into_response()
+#[derive(sqlx::FromRow, Serialize)]
+pub struct DeviceApiKey {
+    id: String,
+    fingerprint: String,
+    pem: String,
 }
