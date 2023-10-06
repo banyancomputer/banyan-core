@@ -62,10 +62,14 @@ pub async fn handler(
         .await
         .expect("(temp query, no custom error, just needs refactor)");
 
-    let bucket_key = sqlx::query_as!(BucketKey, "SELECT * FROM bucket_keys WHERE id = $1;", bucket_key_id)
-        .fetch_one(&database)
-        .await
-        .expect("(temp query, no custom error, just needs refactor)");
+    let bucket_key = sqlx::query_as!(
+        BucketKey,
+        "SELECT * FROM bucket_keys WHERE id = $1;",
+        bucket_key_id
+    )
+    .fetch_one(&database)
+    .await
+    .expect("(temp query, no custom error, just needs refactor)");
 
     let resp = serde_json::json!({
         "id": bucket.id,

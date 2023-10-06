@@ -1,10 +1,10 @@
 use std::fmt::{self, Display, Formatter};
 
 use serde::{Deserialize, Serialize};
-use sqlx::{FromRow, Type};
 
-#[derive(Debug, Serialize, Type)]
+#[derive(Deserialize, Serialize, sqlx::Type)]
 #[serde(rename_all = "snake_case")]
+#[sqlx(rename_all = "snake_case")]
 pub enum MetadataState {
     Uploading,
     UploadFailed,

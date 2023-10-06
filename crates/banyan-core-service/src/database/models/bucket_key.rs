@@ -1,4 +1,4 @@
-#[derive(Debug, sqlx::FromRow)]
+#[derive(sqlx::FromRow)]
 pub struct BucketKey {
     pub id: String,
     pub bucket_id: String,

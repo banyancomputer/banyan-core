@@ -11,31 +11,7 @@ use crate::extractors::ApiToken;
 use crate::utils::db;
 use crate::utils::keys::*;
 
-// TODO: pagination
 /// Read all buckets associated with the calling account
-pub async fn read_all(api_token: ApiToken, database: Database) -> Response {
-    let account_id = api_token.subject;
-
-    match db::read_all_buckets(&account_id, &database).await {
-        Ok(buckets) => Json(responses::ReadBuckets(
-            buckets
-                .into_iter()
-                .map(|bucket| responses::ReadBucket {
-                    id: bucket.id,
-                    name: bucket.name,
-                    r#type: bucket.r#type,
-                    storage_class: bucket.storage_class,
-                })
-                .collect::<Vec<_>>(),
-        ))
-        .into_response(),
-        Err(err) => {
-            tracing::error!("failed to read all buckets: {err}");
-            GenericError::new(StatusCode::INTERNAL_SERVER_ERROR, "backend service issue")
-                .into_response()
-        }
-    }
-}
 
 // TODO: Should this be authenticated or not?
 /// Read a single bucket by id. Also search and return by account id
@@ -118,33 +94,5 @@ pub async fn get_total_usage(api_token: ApiToken, database: Database) -> Respons
                     .into_response()
             }
         },
-    }
-}
-
-pub async fn get_usage_limit(_api_token: ApiToken) -> Response {
-    Json(responses::GetUsage {
-        // 5 TiB
-        size: 5 * 1024 * 1024 * 1024 * 1024,
-    })
-    .into_response()
-}
-
-pub struct GenericError {
-    code: StatusCode,
-    msg: String,
-}
-
-impl GenericError {
-    pub fn new(code: StatusCode, msg: impl ToString) -> Self {
-        Self {
-            code,
-            msg: msg.to_string(),
-        }
-    }
-}
-
-impl IntoResponse for GenericError {
-    fn into_response(self) -> Response {
-        (self.code, Json(serde_json::json!({"msg": self.msg}))).into_response()
     }
 }

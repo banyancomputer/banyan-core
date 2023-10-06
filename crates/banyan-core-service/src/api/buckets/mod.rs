@@ -1,26 +1,25 @@
 use axum::routing::{delete, get, post};
 use axum::Router;
 
-//mod error;
-//mod handlers;
-//mod requests;
-//mod responses;
+mod create_bucket;
+mod current_total_usage;
+mod current_total_usage_limit;
+mod read_all_buckets;
 
 //mod keys;
 //mod metadata;
 //mod snapshots;
 
-
-mod create_bucket;
-
 use crate::app::AppState;
 
 pub fn router(state: AppState) -> Router<AppState> {
     Router::new()
-        .route("/", post(create_bucket::handler))
-        //.route("/", get(handlers::read_all))
-        //.route("/usage", get(handlers::get_total_usage))
-        //.route("/usage_limit", get(handlers::get_usage_limit))
+        .route(
+            "/",
+            get(read_all_buckets::handler).post(create_bucket::handler),
+        )
+        .route("/usage", get(current_total_usage::handler))
+        .route("/usage_limit", get(current_total_usage_limit::handler))
         //.route("/:bucket_id/usage", get(handlers::get_usage))
         //.route("/:bucket_id", get(handlers::read))
         //.route("/:bucket_id", delete(handlers::delete))

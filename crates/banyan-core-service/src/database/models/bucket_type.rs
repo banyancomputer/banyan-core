@@ -1,14 +1,14 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{FromRow, Type};
 
-#[derive(Clone, Debug, Deserialize, Serialize, Type)]
+#[derive(Clone, Debug, Deserialize, Serialize, sqlx::Type)]
 #[serde(rename_all = "snake_case")]
-#[sqlx(rename_all = "lowercase")]
+#[sqlx(rename_all = "lowercase")] // todo: make snake_case, requires db changes
 pub enum BucketType {
     Backup,
     Interactive,
 }
 
+// todo: should be tryfrom since this is fallible
 impl From<String> for BucketType {
     fn from(s: String) -> Self {
         match s.as_str() {
