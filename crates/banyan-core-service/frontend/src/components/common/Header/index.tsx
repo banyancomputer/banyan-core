@@ -13,8 +13,6 @@ import { popupClickHandler } from '@/utils';
 import { useKeystore } from '@/contexts/keystore';
 import { Action } from '../FileActions';
 
-import { SearchInput } from '../SearchInput';
-
 import { Logo } from '@static/images/common';
 
 export const Header = () => {
@@ -78,17 +76,17 @@ export const Header = () => {
             {/* <SearchInput /> */}
             <div className="flex flex-grow items-center justify-end gap-6">
                 <div
-                    className='relative w-10 h-10 flex items-center justify-center transition-all rounded-lg cursor-pointer hover:bg-slate-200'
+                    className='relative w-10 h-10 flex items-center justify-center transition-all rounded-lg cursor-pointer hover:bg-hover'
                     ref={faqRef}
                     onClick={toggleFaqOptionsVisibility}
                 >
                     <AiOutlineQuestionCircle size="20px" fill="#4A5578" />
                     {areFaqOpionsVisible &&
                         <div
-                            className="absolute right-0 top-full w-36 flex flex-col items-stretch shadow-xl rounded-xl text-xs font-semibold overflow-hidden  bg-white cursor-pointer"
+                            className="absolute right-0 top-full w-36 flex flex-col items-stretch shadow-xl rounded-xl text-xs font-semibold overflow-hidden  bg-mainBackground cursor-pointer"
                         >
                             <a
-                                className="flex items-center gap-2 py-2.5 px-3 transition-all hover:bg-slate-100"
+                                className="flex items-center gap-2 py-2.5 px-3 transition-all hover:bg-hover"
                                 href='https://banyan8674.zendesk.com/hc/en-us'
                                 target='_blank'
                             >
@@ -97,7 +95,7 @@ export const Header = () => {
                             </a>
                             <a
                                 href='mailto:support@banyan8674.zendesk.com'
-                                className="flex items-center gap-2 py-2.5 px-3 transition-all hover:bg-slate-100"
+                                className="flex items-center gap-2 py-2.5 px-3 transition-all hover:bg-hover"
                                 target='_blank'
                             >
                                 <GrMailOption />
@@ -124,12 +122,12 @@ export const Header = () => {
                     }
                     {areProfileOptionsVisible &&
                         <div
-                            className="absolute right-0 top-full flex flex-col items-stretch shadow-xl rounded-xl text-xs font-semibold overflow-hidden  bg-white cursor-pointer"
+                            className="absolute right-0 top-full flex flex-col items-stretch shadow-xl rounded-xl text-xs font-semibold overflow-hidden  bg-mainBackground cursor-pointer"
                         >
                             {options.map(option =>
                                 <div
                                     key={option.label}
-                                    className="flex items-center gap-2 py-2.5 px-3 whitespace-nowrap transition-all hover:bg-slate-100"
+                                    className="flex items-center gap-2 py-2.5 px-3 whitespace-nowrap transition-all hover:bg-hover"
                                     onClick={option.value}
                                 >
                                     {option.icon}

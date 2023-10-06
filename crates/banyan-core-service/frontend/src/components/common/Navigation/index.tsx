@@ -102,7 +102,7 @@ export const Navigation = () => {
                 </button>
             </div>
             {/* <StorageUsage /> */}
-            <div className="flex flex-col mt-6 pl-2 pt-3 pr-8 border-t-2 border-gray-200 text-gray-600">
+            <div className="flex flex-col mt-6 pl-2 pt-3 pr-8 border-t-2 border-border text-gray-600">
                 <span>Banyan Computer</span>
                 <span className="font-normal">{`${messages.decentralizedStorage}`}</span>
             </div>

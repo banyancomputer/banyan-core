@@ -22,7 +22,7 @@ const BaseLayout: React.FC<IBaseLayout> = ({ children }) => {
         };
     }, [keystoreInitialized, isLoading, escrowedDevice]);
 
-    return <main className="flex flex-col h-screen font-sans bg-white">
+    return <main className="flex flex-col h-screen font-sans bg-mainBackground">
         <Header />
         <section className="flex flex-grow">
             {isNavigationVisible &&

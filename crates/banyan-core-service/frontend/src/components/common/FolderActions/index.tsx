@@ -57,11 +57,11 @@ export const FolderActions: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ 
     };
 
     return (
-        <div className="w-48 right-8 text-xs font-medium bg-white rounded-xl shadow-md z-10 select-none text-gray-900">{
+        <div className="w-48 right-8 text-xs font-medium bg-mainBackground rounded-xl shadow-md z-10 select-none text-gray-900">{
             actions[bucketType].map(action =>
                 <div
                     key={action.label}
-                    className="w-full flex items-center gap-2 py-2 px-3 border-b-1 border-gray-200 transition-all hover:bg-slate-200"
+                    className="w-full flex items-center gap-2 py-2 px-3 border-b-1 border-border transition-all hover:bg-hover"
                     onClick={action.value}
                     id='action'
                 >

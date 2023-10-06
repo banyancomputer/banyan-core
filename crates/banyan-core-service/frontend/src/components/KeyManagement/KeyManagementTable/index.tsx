@@ -19,7 +19,7 @@ export const KeyManagementTable: React.FC<{ buckets: Bucket[] }> = ({ buckets })
     return (
         <div
             ref={tableRef}
-            className="max-h-[calc(100vh-320px)] overflow-x-auto border-2 border-gray-200 rounded-xl"
+            className="max-h-[calc(100vh-320px)] overflow-x-auto border-2 border-border rounded-xl"
         >
             <table className="table table-pin-rows w-full text-gray-600 rounded-xl">
                 <thead className="border-b-table-cellBackground text-xxs font-normal text-gray-600">

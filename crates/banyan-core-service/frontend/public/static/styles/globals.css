@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 @import "react-toastify/dist/ReactToastify.min.css";
-@import 'react-circular-progressbar/dist/styles.css';
+@import "@/index.css";
 
 @font-face {
     font-family: "Inter";
@@ -36,7 +36,7 @@ input {
 	@apply bg-blue-hover border-blue-hover;
 }
 .btn-primary:disabled {
-	@apply cursor-not-allowed bg-slate-300 border-slate-300;
+	@apply cursor-not-allowed bg-disabled border-disabled;
 }
 /* Button default styles */
 .btn-secondary {

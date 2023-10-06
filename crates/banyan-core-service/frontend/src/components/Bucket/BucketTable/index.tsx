@@ -86,9 +86,9 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     return (
         <div
             ref={tableRef}
-            className="max-h-[calc(100vh-210px)] w-fit overflow-x-auto border-2 border-gray-200 rounded-xl "
+            className="max-h-[calc(100vh-210px)] w-fit overflow-x-auto border-2 border-border rounded-xl "
         >
-            <div className="px-5 py-6 text-m font-semibold border-b-2 border-gray-200">
+            <div className="px-5 py-6 text-m font-semibold border-b-2 border-border">
                 {`${messages.files}`}
             </div>
             <div >
