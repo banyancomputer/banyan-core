@@ -156,7 +156,7 @@ fn print_help() {
     println!("    -v, --version                 Display the version of this compiled version");
     println!("                                  and exit\n");
     println!(
-        "    --listen, LISTEN_ADDR         Specify the address to bind to (default [::]:3000)"
+        "    --listen, LISTEN_ADDR         Specify the address to bind to (default 127.0.0.1:3001)"
     );
     println!("    --signing-key, SESSION_KEY    Path to the p384 private key used for session");
     println!("                                  key generation and verification");
