@@ -155,6 +155,8 @@ CREATE TABLE buckets (
 
   -- TODO: Make this an enum
   storage_class VARCHAR(32) NOT NULL
+
+  -- todo: this needs created_at and updated_at fields
 );
 
 CREATE UNIQUE INDEX idx_buckets_on_unique_account_id_and_name

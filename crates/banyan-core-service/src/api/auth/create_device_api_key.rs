@@ -5,7 +5,6 @@ use jwt_simple::prelude::*;
 use serde::Deserialize;
 
 use crate::app::AppState;
-use crate::database::Database;
 use crate::extractors::ApiToken;
 use crate::utils::keys::sha1_fingerprint_publickey;
 

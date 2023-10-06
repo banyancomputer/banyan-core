@@ -11,68 +11,6 @@ use crate::extractors::ApiToken;
 use crate::utils::db;
 use crate::utils::keys::*;
 
-/// Initialze a new bucket with initial key material.
-pub async fn create(
-    api_token: ApiToken,
-    database: Database,
-    Json(new_bucket): extract::Json<requests::CreateBucket>,
-) -> Response {
-    if let Err(errors) = new_bucket.validate() {
-        GenericError::new(
-            StatusCode::BAD_REQUEST,
-            format!("invalid bucket creation request: {:?}", errors.errors()),
-        )
-        .into_response()
-    } else {
-        // Create the Bucket
-        match db::create_bucket(
-            &api_token.subject,
-            &new_bucket.name,
-            &new_bucket.r#type,
-            &new_bucket.storage_class,
-            &database,
-        )
-        .await
-        {
-            // If we successfully created the resource
-            Ok(bucket_resource) => {
-                // Create the initial Bucket Key
-                match db::create_bucket_key(
-                    &bucket_resource.id,
-                    true,
-                    &new_bucket.initial_bucket_key_pem,
-                    &database,
-                )
-                .await
-                {
-                    // If we successfully created that too
-                    Ok(key_resource) => {
-                        // Create a response
-                        let response = responses::CreateBucket {
-                            id: bucket_resource.id,
-                            name: new_bucket.name,
-                            r#type: new_bucket.r#type,
-                            storage_class: new_bucket.storage_class,
-                            initial_bucket_key: keys::responses::CreateBucketKey {
-                                id: key_resource.id,
-                                approved: true,
-                                fingerprint: fingerprint_public_pem(
-                                    &new_bucket.initial_bucket_key_pem,
-                                ),
-                            },
-                        };
-
-                        // Return it
-                        (StatusCode::OK, Json(response)).into_response()
-                    }
-                    Err(err) => CoreError::sqlx_error(err, "create", "bucket key").into_response(),
-                }
-            }
-            Err(err) => CoreError::sqlx_error(err, "create", "bucket").into_response(),
-        }
-    }
-}
-
 // TODO: pagination
 /// Read all buckets associated with the calling account
 pub async fn read_all(api_token: ApiToken, database: Database) -> Response {

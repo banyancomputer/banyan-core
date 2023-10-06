@@ -4,7 +4,7 @@ use axum::{Json, Router};
 use serde::Serialize;
 
 mod auth;
-//mod buckets;
+mod buckets;
 mod storage;
 
 use crate::app::AppState;
@@ -18,7 +18,7 @@ pub fn router(state: AppState) -> Router<AppState> {
 
     Router::new()
         .nest("/auth", auth::router(state.clone()))
-        //.nest("/buckets", buckets::router(state.clone()))
+        .nest("/buckets", buckets::router(state.clone()))
         .nest("/storage", storage::router(state.clone()))
         .with_state(state)
         .layer(cors_layer)

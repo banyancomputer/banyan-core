@@ -1,8 +1,8 @@
-//pub mod car_buffer;
+pub mod car_buffer;
 //pub mod db;
 pub mod keys;
-//pub mod metadata_upload;
-//pub mod storage_ticket;
+pub mod metadata_upload;
+pub mod storage_ticket;
 
 use std::error::Error;
 

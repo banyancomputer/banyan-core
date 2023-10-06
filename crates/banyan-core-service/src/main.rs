@@ -8,7 +8,6 @@ use tracing_subscriber::{EnvFilter, Layer};
 mod api;
 mod app;
 mod auth;
-//mod db;
 mod database;
 mod error;
 mod extractors;
