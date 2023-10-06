@@ -12,7 +12,7 @@ mod auth;
 mod database;
 mod error;
 mod extractors;
-//mod health_check;
+mod health_check;
 mod http_server;
 mod utils;
 
