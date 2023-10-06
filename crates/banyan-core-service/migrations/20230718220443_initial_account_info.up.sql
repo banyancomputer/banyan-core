@@ -194,6 +194,8 @@ CREATE TABLE metadata (
     REFERENCES buckets(id)
     ON DELETE CASCADE,
 
+  -- todo: should have a user_id
+
   -- Description of the data
   -- The root CID of this version of the bucket
   root_cid TEXT NOT NULL,

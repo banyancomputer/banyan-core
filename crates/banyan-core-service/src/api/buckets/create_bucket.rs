@@ -10,7 +10,6 @@ use crate::database::models::{Bucket, BucketKey, BucketType, StorageClass};
 use crate::extractors::ApiToken;
 use crate::utils::keys::sha1_fingerprint_publickey;
 
-/// Initialze a new bucket
 pub async fn handler(
     api_token: ApiToken,
     State(state): State<AppState>,
