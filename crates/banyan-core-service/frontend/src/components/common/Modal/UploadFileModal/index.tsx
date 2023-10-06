@@ -54,7 +54,8 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null }> = ({ bucket }
     };
 
     const upload = async () => {
-        if (!files.length) { return; }
+        if (!files.length) { return; };
+
         try {
             closeModal();
             ToastNotifications.uploadProgress();

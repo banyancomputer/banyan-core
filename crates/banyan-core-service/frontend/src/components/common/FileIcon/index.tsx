@@ -26,7 +26,7 @@ export const FileIcon: React.FC<{ fileName: string; className?: string, size?: s
     };
 
     return (
-        <div className={className}>
+        <div className={`${className} pointer-events-none`}>
             {
                 fileName.split('.')[1] ?
                     fileTypeMapper[fileName.split('.')[1]] || <AiOutlineFile size={size} />

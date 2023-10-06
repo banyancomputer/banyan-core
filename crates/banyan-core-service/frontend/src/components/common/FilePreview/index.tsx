@@ -4,14 +4,15 @@ import FilePreviewer from 'react-file-previewer';
 import { FiArrowLeft } from 'react-icons/fi';
 import { useIntl } from 'react-intl';
 
-import { useFilePreview } from '@/contexts/filesPreview';
+import { SUPPORTED_EXTENSIONS, useFilePreview } from '@/contexts/filesPreview';
+import { Loader } from '../Loader';
 
 export const FilePreview = () => {
-    const { file, closeFile } = useFilePreview();
+    const { file, closeFile, } = useFilePreview();
     const { messages } = useIntl();
     const filePreviewRef = useRef<HTMLDivElement | null>(null);
-    const supportedExtensions = ['pdf', 'gif', 'jpg', 'jpeg', 'png'];
-    const isFileSupported = supportedExtensions.includes(file.name.split('.')[1]);
+    const fileExtension = file.name.split('.')[1];
+    const isFileSupported = file.name ? SUPPORTED_EXTENSIONS.includes(fileExtension) : true;
 
     const close = (event: React.MouseEvent<HTMLDivElement | HTMLButtonElement>) => {
         if (!filePreviewRef.current!.contains(event.target as Node)) {
@@ -21,9 +22,9 @@ export const FilePreview = () => {
 
     return (
         <>
-            {file.data &&
+            {(file.data || !isFileSupported || file.isLoading) &&
                 <div
-                    className="absolute w-screen h-screen bg flex justify-center py-24 z-10 bg-slate-800 bg-opacity-80 backdrop-blur-sm overflow-scroll"
+                    className="absolute w-screen h-screen bg flex items-start justify-center py-24 z-10 bg-slate-800 bg-opacity-80 backdrop-blur-sm overflow-scroll"
                     onClick={close}
                 >
                     <button
@@ -34,19 +35,26 @@ export const FilePreview = () => {
                         {`${messages.backToFiles}`}
                     </button>
                     <div
-                        className="relative max-w-filePreview w-full flex justify-center items-start"
+                        className={`relative max-w-filePreview w-filePreview  flex justify-center items-start `}
                         ref={filePreviewRef}
                     >
-                        {isFileSupported ?
-                            <FilePreviewer
-                                hideControls
-                                file={{
-                                    url: file.data,
-                                    mimeType: `application/${file.name.split('.')[1]}`,
-                                }}
-                            />
+                        {file.isLoading ?
+                            <Loader spinnerSize='50px' containerHeight='100vh' className='text-white' />
                             :
-                            <div className='h-full flex items-center text-white'>File is not supported for preview</div>
+                            <>
+                                {
+                                    isFileSupported ?
+                                        <FilePreviewer
+                                            hideControls
+                                            file={{
+                                                url: file.data,
+                                                mimeType: `application/${file.name.split('.')[1]}`,
+                                            }}
+                                        />
+                                        :
+                                        <div className='h-screen flex items-center text-white text-lg'>File is not supported for preview</div>
+                                }
+                            </>
                         }
                     </div>
                 </div>

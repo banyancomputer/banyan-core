@@ -77,13 +77,6 @@ input {
     padding: 35px 0px;
 };
 
-.photo-viewer-container {
-    width: unset !important;
-    height: unset !important;
-}
-
 .preview-file > img {
-    width: unset !important;
-    height: unset !important;
     border-radius: 16px;
 }

@@ -1,7 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import { useIntl } from 'react-intl';
+import { useForm } from 'react-hook-form';
 
 import { Select, Selectoption } from '../../Select';
+import { Input } from '../../Input';
+
 import { useModal } from '@/contexts/modals';
 import { useTomb } from '@/contexts/tomb';
 import { ToastNotifications } from '@/utils/toastNotifications';
@@ -9,14 +12,23 @@ import { ToastNotifications } from '@/utils/toastNotifications';
 export const CreateBucketModal = () => {
     const { closeModal } = useModal();
     const { messages } = useIntl();
-    const [bucketName, setBucketName] = useState('');
-    const { createBucket } = useTomb();
+    const { createBucket, buckets } = useTomb();
     const [bucketType, setBucketType] = useState('interactive');
-    const [storageClass, setStorageClass] = useState('hot');
-    const isBucketDataFilled = useMemo(() =>
-        !!bucketType && !!(bucketName.length >= 3),
-        [bucketName, bucketName]);
 
+    const {
+        formState: { errors },
+        handleSubmit,
+        register,
+        watch,
+    } = useForm({
+        mode: 'onChange',
+        values: { bucketName: '' },
+    });
+
+    const { bucketName } = watch();
+    const regexp = new RegExp(/^.{3,32}$/);
+    const isBucketDataFilled = useMemo(() => regexp.test(bucketName) && !errors.bucketName, [bucketName, errors.bucketName]);
+    const bucketsNames = buckets.map(bucket => bucket.name);
     const bucketTypes = [
         new Selectoption('Interactive', 'interactive'),
         new Selectoption('Backup', 'backup'),
@@ -26,16 +38,14 @@ export const CreateBucketModal = () => {
         setBucketType(option);
     };
 
-    const changeBucketName = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const regexp = new RegExp(/^.{0,32}$/);
-        if (!regexp.test(event.target.value)) return;
-
-        setBucketName(event.target.value);
+    const validateBucketName = (name: string) => {
+        if (!regexp.test(name)) return `${messages.bucket} ${messages.nameLengthError}`;
+        if (bucketsNames.includes(name)) return `${messages.bucket} ${messages.nameDuplicationError}`
     };
 
     const create = async () => {
         try {
-            await createBucket(bucketName, storageClass, bucketType);
+            await createBucket(bucketName, 'hot', bucketType);
             closeModal();
         } catch (error: any) {
             ToastNotifications.error(`${messages.creationError}`, `${messages.tryAgain}`, create);
@@ -43,19 +53,23 @@ export const CreateBucketModal = () => {
     };
 
     return (
-        <div className="w-modal flex flex-col gap-5" >
+        <form
+            className="w-modal flex flex-col gap-5"
+            onSubmit={handleSubmit(create)}
+        >
             <div>
                 <h4 className="text-m font-semibold ">{`${messages.createNewBucket}`}</h4>
             </div>
             <div>
                 <label>
                     {`${messages.bucketName}`}
-                    <input
-                        className="mt-2 input w-full h-11 py-3 px-4 rounded-lg border-gray-200 focus:outline-none"
-                        type="text"
+                    <Input
                         placeholder={`${messages.enterNewBucketName}`}
-                        value={bucketName}
-                        onChange={changeBucketName}
+                        error={errors.bucketName?.message}
+                        register={register('bucketName', {
+                            required: `${messages.enterNewBucketName}`,
+                            validate: validateBucketName,
+                        })}
                     />
                 </label>
             </div>
@@ -77,12 +91,11 @@ export const CreateBucketModal = () => {
                 </button>
                 <button
                     className="btn-primary flex-grow py-3 px-4"
-                    onClick={create}
                     disabled={!isBucketDataFilled}
                 >
                     {`${messages.create}`}
                 </button>
             </div>
-        </div >
+        </form >
     );
 };
