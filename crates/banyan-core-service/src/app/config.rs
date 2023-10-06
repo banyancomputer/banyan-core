@@ -80,7 +80,7 @@ impl Config {
             Some(l) => l,
             None => match std::env::var("LISTEN_ADDR") {
                 Ok(l) if !l.is_empty() => l,
-                _ => "[::1]:3001".to_string(),
+                _ => "127.0.0.1:3001".to_string(),
             },
         };
         let listen_addr: SocketAddr = listen_str.parse().map_err(ConfigError::InvalidListenAddr)?;

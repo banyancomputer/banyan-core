@@ -43,8 +43,6 @@ pub async fn handler(
     .await
     .map_err(AuthenticationError::MissingCallbackState)?;
 
-    tracing::info!("found matching oauth state");
-
     sqlx::query!(
         r#"DELETE FROM oauth_state
             WHERE provider = $1 AND csrf_secret = $2;"#,
@@ -60,8 +58,6 @@ pub async fn handler(
 
     let oauth_client = oauth_client(&provider, hostname.clone(), state.secrets())?;
 
-    tracing::info!("build oauth client");
-
     let token_response = tokio::task::spawn_blocking(move || {
         oauth_client
             .exchange_code(exchange_code)
@@ -71,8 +67,6 @@ pub async fn handler(
     .await
     .map_err(AuthenticationError::SpawnFailure)?
     .map_err(|err| AuthenticationError::ExchangeCodeFailure(err.to_string()))?;
-
-    tracing::info!("received token response");
 
     let access_token = token_response.access_token().secret();
     let access_expires_at = token_response
@@ -92,8 +86,6 @@ pub async fn handler(
         .json()
         .await
         .map_err(AuthenticationError::ProfileUnavailable)?;
-
-    tracing::info!("collected profile");
 
     if !user_info.verified_email {
         return Err(AuthenticationError::UnverifiedEmail);
