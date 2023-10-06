@@ -1,6 +1,6 @@
 //pub mod car_buffer;
 //pub mod db;
-//pub mod keys;
+pub mod keys;
 //pub mod metadata_upload;
 //pub mod storage_ticket;
 

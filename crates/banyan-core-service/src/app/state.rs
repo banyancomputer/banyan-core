@@ -5,10 +5,10 @@ use std::sync::Arc;
 use axum::extract::FromRef;
 use jwt_simple::prelude::*;
 use object_store::local::LocalFileSystem;
-use sha2::Digest;
 
 use crate::app::{Config, ProviderCredential, Secrets, ServiceSigningKey, ServiceVerificationKey};
 use crate::database::{self, Database, DatabaseSetupError};
+use crate::utils::keys::sha1_fingerprint_publickey;
 
 #[derive(Clone)]
 pub struct State {
@@ -104,20 +104,6 @@ pub enum StateSetupError {
     UnreadableServiceKey(std::io::Error),
 }
 
-fn fingerprint_key(keys: &ES384KeyPair) -> String {
-    let public_key = keys.key_pair().public_key();
-    let compressed_point = public_key.as_ref().to_encoded_point(true);
-
-    let mut hasher = sha2::Sha256::new();
-    hasher.update(compressed_point);
-    let hashed_bytes = hasher.finalize();
-
-    hashed_bytes
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect()
-}
-
 fn load_or_create_service_key(private_path: &PathBuf) -> Result<ServiceSigningKey, StateSetupError> {
     let mut session_key_raw = if private_path.exists() {
         let key_bytes = std::fs::read(private_path).map_err(StateSetupError::UnreadableServiceKey)?;
@@ -138,7 +124,7 @@ fn load_or_create_service_key(private_path: &PathBuf) -> Result<ServiceSigningKe
         new_key
     };
 
-    let fingerprint = fingerprint_key(&session_key_raw);
+    let fingerprint = sha1_fingerprint_publickey(&session_key_raw.public_key());
     session_key_raw = session_key_raw.with_key_id(&fingerprint);
 
     let mut fingerprint_path = private_path.clone();

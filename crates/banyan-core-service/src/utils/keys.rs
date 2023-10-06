@@ -1,56 +1,30 @@
-use openssl::ec::{EcGroup, EcKey};
-use openssl::nid::Nid;
-use openssl::pkey::{PKey, Private, Public};
+use jwt_simple::prelude::*;
+use sha1::Sha1;
+use sha2::{Digest, Sha256};
 
-#[allow(dead_code)]
-pub fn create_private_ec_pem() -> String {
-    let private_key: PKey<Private> = {
-        let ec_group = EcGroup::from_curve_name(Nid::SECP384R1).unwrap();
-        let ec_key = EcKey::generate(&ec_group).unwrap();
-        ec_key.try_into().unwrap()
-    };
+pub fn sha1_fingerprint_publickey(public_key: &ES384PublicKey) -> String {
+    let compressed_point = public_key.public_key().as_ref().to_encoded_point(true);
 
-    String::from_utf8(private_key.private_key_to_pem_pkcs8().unwrap()).unwrap()
+    let mut hasher = Sha1::new();
+    hasher.update(compressed_point);
+    let hashed_bytes = hasher.finalize();
+
+    format_fingerprint_bytes(&hashed_bytes)
 }
 
-pub fn fingerprint_public_pem(public_pem: &str) -> String {
-    let public_key = PKey::public_key_from_pem(public_pem.as_bytes()).unwrap();
+pub fn sha256_fingerprint_publickey(public_key: &ES384PublicKey) -> String {
+    let compressed_point = public_key.public_key().as_ref().to_encoded_point(true);
 
-    let fingerprint_bytes = {
-        use openssl::bn::BigNumContext;
-        use openssl::ec::PointConversionForm;
+    let mut hasher = Sha256::new();
+    hasher.update(compressed_point);
+    let hashed_bytes = hasher.finalize();
 
-        let ec_group = EcGroup::from_curve_name(Nid::SECP384R1).unwrap();
-        let mut big_num_ctx = BigNumContext::new().unwrap();
+    format_fingerprint_bytes(&hashed_bytes)
+}
 
-        let ec_pub_key = public_key.ec_key().unwrap();
-        let compressed_key = ec_pub_key
-            .public_key()
-            .to_bytes(&ec_group, PointConversionForm::COMPRESSED, &mut big_num_ctx)
-            .unwrap();
-
-        openssl::sha::sha1(&compressed_key)
-    };
-
-    fingerprint_bytes
+fn format_fingerprint_bytes(bytes: &[u8]) -> String {
+    bytes
         .iter()
         .map(|byte| format!("{byte:02x}"))
-        .collect::<Vec<String>>()
-        .join(":")
-}
-
-#[allow(dead_code)]
-pub fn public_from_private(private_pem: &str) -> String {
-    let private_key = PKey::private_key_from_pem(private_pem.as_bytes()).unwrap();
-
-    let public_key: PKey<Public> = {
-        let ec_group = EcGroup::from_curve_name(Nid::SECP384R1).unwrap();
-        let priv_ec_key = private_key.ec_key().unwrap();
-        let pub_ec_key: EcKey<Public> =
-            EcKey::from_public_key(&ec_group, priv_ec_key.public_key()).unwrap();
-
-        PKey::from_ec_key(pub_ec_key).unwrap()
-    };
-
-    String::from_utf8(public_key.public_key_to_pem().unwrap()).unwrap()
+        .collect()
 }

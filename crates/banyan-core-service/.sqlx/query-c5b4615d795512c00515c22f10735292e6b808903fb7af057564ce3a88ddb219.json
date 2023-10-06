@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM device_api_keys\n            WHERE id = $1 AND account_id = $2;",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "c5b4615d795512c00515c22f10735292e6b808903fb7af057564ce3a88ddb219"
+}

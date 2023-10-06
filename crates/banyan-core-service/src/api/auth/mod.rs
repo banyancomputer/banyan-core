@@ -1,27 +1,29 @@
-use axum::routing::post;
+use axum::routing::{get, delete, post};
 use axum::Router;
 
 use crate::app::AppState;
 
+mod create_device_api_key;
+mod delete_device_api_key;
+
 #[cfg(feature = "fake")]
 mod create_fake_account;
 
-//mod device_api_key;
-//mod who_am_i;
+mod who_am_i;
 
 #[cfg(feature = "fake")]
 pub fn router(state: AppState) -> Router<AppState> {
     Router::new()
+        .route("/device_api_key", post(create_device_api_key::handler))
+        .route("/device_api_key/:key_id", delete(delete_device_api_key::handler))
         .route("/fake_account", post(create_fake_account::handler))
-        //.nest("/device_api_key", device_api_key::router(state.clone()))
-        //.nest("/who_am_i", who_am_i::router(state.clone()))
+        .route("/who_am_i", get(who_am_i::handler))
         .with_state(state)
 }
 
 #[cfg(not(feature = "fake"))]
 pub fn router(state: AppState) -> Router<AppState> {
     Router::new()
-        //.nest("/device_api_key", device_api_key::router(state.clone()))
-        //.nest("/who_am_i", who_am_i::router(state.clone()))
+        .route("/who_am_i", get(who_am_i::handler))
         .with_state(state)
 }
