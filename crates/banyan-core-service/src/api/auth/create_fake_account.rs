@@ -29,14 +29,14 @@ pub async fn handler(
         .map_err(CreateFakeAccountError::UserCreationFailed)?;
 
     let account_id = sqlx::query_scalar!(
-            r#"INSERT INTO accounts (userId, type, provider, providerAccountId)
+        r#"INSERT INTO accounts (userId, type, provider, providerAccountId)
                    VALUES ($1, "oauth", "not-google", 100033331337)
                    RETURNING id;"#,
-            user_id,
-        )
-        .fetch_one(&database)
-        .await
-        .map_err(CreateFakeAccountError::AccountCreationFailed)?;
+        user_id,
+    )
+    .fetch_one(&database)
+    .await
+    .map_err(CreateFakeAccountError::AccountCreationFailed)?;
 
     let compressed_point = public_key.public_key().as_ref().to_encoded_point(true);
     let mut hasher = Sha1::new();
@@ -49,14 +49,14 @@ pub async fn handler(
         .collect();
 
     sqlx::query!(
-            "INSERT INTO device_api_keys (account_id, fingerprint, pem) VALUES ($1, $2, $3);",
-            account_id,
-            fingerprint,
-            request.device_api_key_pem,
-        )
-        .execute(&database)
-        .await
-        .map_err(CreateFakeAccountError::ApiKeyCreationFailed)?;
+        "INSERT INTO device_api_keys (account_id, fingerprint, pem) VALUES ($1, $2, $3);",
+        account_id,
+        fingerprint,
+        request.device_api_key_pem,
+    )
+    .execute(&database)
+    .await
+    .map_err(CreateFakeAccountError::ApiKeyCreationFailed)?;
 
     let response = serde_json::json!({"id": account_id});
     Ok((StatusCode::OK, Json(response)).into_response())
@@ -88,7 +88,8 @@ impl IntoResponse for CreateFakeAccountError {
             }
             _ => {
                 tracing::error!("{self}");
-                let err_msg = serde_json::json!({"msg": "backend service issue prevented account creation"});
+                let err_msg =
+                    serde_json::json!({"msg": "backend service issue prevented account creation"});
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
             }
         }

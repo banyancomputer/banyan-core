@@ -26,8 +26,7 @@ pub enum AppError {
 
 #[tokio::main]
 async fn main() -> Result<(), AppError> {
-    let config = Config::from_env_and_args()
-        .map_err(AppError::ConfigError)?;
+    let config = Config::from_env_and_args().map_err(AppError::ConfigError)?;
 
     let (non_blocking_writer, _guard) = tracing_appender::non_blocking(std::io::stderr());
     let env_filter = EnvFilter::builder()

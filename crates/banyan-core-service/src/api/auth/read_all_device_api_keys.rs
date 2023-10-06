@@ -6,10 +6,7 @@ use serde::Serialize;
 use crate::app::AppState;
 use crate::extractors::ApiToken;
 
-pub async fn handler(
-    api_token: ApiToken,
-    State(state): State<AppState>,
-) -> Response {
+pub async fn handler(api_token: ApiToken, State(state): State<AppState>) -> Response {
     let database = state.database();
 
     let query_result = sqlx::query_as!(

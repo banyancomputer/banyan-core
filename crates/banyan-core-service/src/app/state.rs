@@ -104,9 +104,12 @@ pub enum StateSetupError {
     UnreadableServiceKey(std::io::Error),
 }
 
-fn load_or_create_service_key(private_path: &PathBuf) -> Result<ServiceSigningKey, StateSetupError> {
+fn load_or_create_service_key(
+    private_path: &PathBuf,
+) -> Result<ServiceSigningKey, StateSetupError> {
     let mut session_key_raw = if private_path.exists() {
-        let key_bytes = std::fs::read(private_path).map_err(StateSetupError::UnreadableServiceKey)?;
+        let key_bytes =
+            std::fs::read(private_path).map_err(StateSetupError::UnreadableServiceKey)?;
         let private_pem = String::from_utf8_lossy(&key_bytes);
 
         ES384KeyPair::from_pem(&private_pem).map_err(StateSetupError::InvalidServiceKey)?
@@ -114,9 +117,13 @@ fn load_or_create_service_key(private_path: &PathBuf) -> Result<ServiceSigningKe
         let new_key = ES384KeyPair::generate();
         let private_pem = new_key.to_pem().expect("fresh keys to export");
 
-        std::fs::write(private_path, private_pem).map_err(StateSetupError::ServiceKeyWriteFailed)?;
+        std::fs::write(private_path, private_pem)
+            .map_err(StateSetupError::ServiceKeyWriteFailed)?;
 
-        let public_spki = new_key.public_key().to_pem().expect("fresh key to have public component");
+        let public_spki = new_key
+            .public_key()
+            .to_pem()
+            .expect("fresh key to have public component");
         let mut public_path = private_path.clone();
         public_path.set_extension("public");
         std::fs::write(public_path, public_spki).map_err(StateSetupError::PublicKeyWriteFailed)?;
@@ -130,7 +137,8 @@ fn load_or_create_service_key(private_path: &PathBuf) -> Result<ServiceSigningKe
     let mut fingerprint_path = private_path.clone();
     fingerprint_path.set_extension("fingerprint");
     if !fingerprint_path.exists() {
-        std::fs::write(fingerprint_path, fingerprint).map_err(StateSetupError::FingerprintWriteFailed)?;
+        std::fs::write(fingerprint_path, fingerprint)
+            .map_err(StateSetupError::FingerprintWriteFailed)?;
     }
 
     Ok(ServiceSigningKey::new(session_key_raw))

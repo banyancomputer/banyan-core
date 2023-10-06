@@ -76,7 +76,9 @@ pub async fn handler(
     tracing::info!("received token response");
 
     let access_token = token_response.access_token().secret();
-    let access_expires_at = token_response.expires_in().map(|secs| OffsetDateTime::now_utc() + secs);
+    let access_expires_at = token_response
+        .expires_in()
+        .map(|secs| OffsetDateTime::now_utc() + secs);
     let refresh_token = token_response.refresh_token().map(|rt| rt.secret());
 
     let user_info_url = Url::parse_with_params(

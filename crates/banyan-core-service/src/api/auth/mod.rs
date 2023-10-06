@@ -1,4 +1,4 @@
-use axum::routing::{get, delete, post};
+use axum::routing::{delete, get, post};
 use axum::Router;
 
 use crate::app::AppState;
@@ -16,8 +16,14 @@ mod who_am_i;
 #[cfg(feature = "fake")]
 pub fn router(state: AppState) -> Router<AppState> {
     Router::new()
-        .route("/device_api_key", post(create_device_api_key::handler))
-        .route("/device_api_key/:key_id", delete(delete_device_api_key::handler))
+        .route(
+            "/device_api_key",
+            get(read_all_device_api_keys::handler).post(create_device_api_key::handler),
+        )
+        .route(
+            "/device_api_key/:key_id",
+            get(read_device_api_key::handler).delete(delete_device_api_key::handler),
+        )
         .route("/fake_account", post(create_fake_account::handler))
         .route("/who_am_i", get(who_am_i::handler))
         .with_state(state)

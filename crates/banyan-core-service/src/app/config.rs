@@ -83,9 +83,7 @@ impl Config {
                 _ => "[::1]:3001".to_string(),
             },
         };
-        let listen_addr: SocketAddr = listen_str
-            .parse()
-            .map_err(ConfigError::InvalidListenAddr)?;
+        let listen_addr: SocketAddr = listen_str.parse().map_err(ConfigError::InvalidListenAddr)?;
 
         let log_level = cli_args
             .opt_value_from_str("--log-level")?
@@ -157,7 +155,9 @@ fn print_help() {
     println!("    -h, --help                    Print this notice and exit");
     println!("    -v, --version                 Display the version of this compiled version");
     println!("                                  and exit\n");
-    println!("    --listen, LISTEN_ADDR         Specify the address to bind to (default [::]:3000)");
+    println!(
+        "    --listen, LISTEN_ADDR         Specify the address to bind to (default [::]:3000)"
+    );
     println!("    --signing-key, SESSION_KEY    Path to the p384 private key used for session");
     println!("                                  key generation and verification");
     println!("    --upload-dir, UPLOAD_DIR      Path used to store uploaded client data\n");

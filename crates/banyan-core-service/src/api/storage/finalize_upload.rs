@@ -44,7 +44,10 @@ pub async fn handler(
              WHERE bucket_id = $1 AND state = 'current' AND id != $2;"#,
         bucket_id,
         db_metadata_id,
-    ).execute(&database).await.map_err(FinalizeUploadError::MarkOutdatedFailed)?;
+    )
+    .execute(&database)
+    .await
+    .map_err(FinalizeUploadError::MarkOutdatedFailed)?;
 
     Ok((StatusCode::NO_CONTENT, ()).into_response())
 }

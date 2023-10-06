@@ -24,9 +24,7 @@ pub async fn handler(
     .await;
 
     match query_result {
-        Ok(_) => {
-            (StatusCode::NO_CONTENT, ()).into_response()
-        }
+        Ok(_) => (StatusCode::NO_CONTENT, ()).into_response(),
         Err(sqlx::Error::RowNotFound) => {
             let err_msg = serde_json::json!({"msg": "key not found"});
             (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
