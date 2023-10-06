@@ -18,11 +18,9 @@ use crate::app::AppState;
 use crate::auth::{
     oauth_client, AuthenticationError, NEW_USER_COOKIE_NAME, SESSION_COOKIE_NAME, SESSION_TTL,
 };
-use crate::database::Database;
 use crate::extractors::ServerBase;
 
 pub async fn handler(
-    database: Database,
     mut cookie_jar: CookieJar,
     State(state): State<AppState>,
     ServerBase(hostname): ServerBase,
@@ -31,6 +29,7 @@ pub async fn handler(
 ) -> Result<Response, AuthenticationError> {
     let csrf_secret = CsrfToken::new(params.state);
     let exchange_code = AuthorizationCode::new(params.code);
+    let database = state.database();
 
     let query_secret = csrf_secret.secret();
     let oauth_state_query: (String, Option<String>) = sqlx::query_as(

@@ -1,16 +1,20 @@
+use axum::extract::State;
 use axum::response::{IntoResponse, Redirect, Response};
-use axum_extra::extract::cookie::Cookie;
 use axum_extra::extract::CookieJar;
+use axum_extra::extract::cookie::Cookie;
 
+use crate::app::AppState;
 use crate::auth::{NEW_USER_COOKIE_NAME, SESSION_COOKIE_NAME};
 use crate::database::Database;
 use crate::extractors::SessionIdentity;
 
 pub async fn handler(
     session: Option<SessionIdentity>,
-    database: Database,
+    State(state): State<AppState>,
     mut cookie_jar: CookieJar,
 ) -> Response {
+    let database = state.database();
+
     if let Some(sid) = session {
         let session_id = sid.session_id();
 

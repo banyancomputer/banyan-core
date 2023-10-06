@@ -1,4 +1,5 @@
 use axum::Router;
+use axum::routing::get;
 use oauth2::basic::BasicClient;
 use oauth2::RedirectUrl;
 use url::Url;
@@ -38,9 +39,9 @@ pub const SESSION_TTL: u64 = 28 * 24 * 60 * 60;
 
 pub fn router(state: AppState) -> Router<AppState> {
     Router::new()
-        //.route("/callback/:provider", get(oauth_callback::handler))
-        //.route("/login/:provider", get(login::handler))
-        //.route("/logout", get(logout::handler))
+        .route("/callback/:provider", get(oauth_callback::handler))
+        .route("/login/:provider", get(login::handler))
+        .route("/logout", get(logout::handler))
         .with_state(state)
 }
 
