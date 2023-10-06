@@ -3,12 +3,11 @@ use axum::response::IntoResponse;
 use axum::{Json, Router};
 use serde::Serialize;
 
-//mod auth;
+mod auth;
 //mod buckets;
 mod storage;
 
 use crate::app::AppState;
-use crate::utils::collect_error_messages;
 
 pub fn router(state: AppState) -> Router<AppState> {
     // TODO: Ideally this would have a wrapper method to allow per route method configuration or
@@ -18,7 +17,7 @@ pub fn router(state: AppState) -> Router<AppState> {
     let cors_layer = tower_http::cors::CorsLayer::very_permissive();
 
     Router::new()
-        //.nest("/auth", auth::router(state.clone()))
+        .nest("/auth", auth::router(state.clone()))
         //.nest("/buckets", buckets::router(state.clone()))
         .nest("/storage", storage::router(state.clone()))
         .with_state(state)
