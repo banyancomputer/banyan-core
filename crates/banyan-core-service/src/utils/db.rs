@@ -124,23 +124,6 @@ pub async fn delete_bucket(
     Ok(())
 }
 
-/// Authorize the given account_id to read the given bucket_id.
-pub async fn authorize_bucket(
-    account_id: &str,
-    bucket_id: &str,
-    database: &Database,
-) -> Result<(), sqlx::Error> {
-    sqlx::query_as!(
-        models::CreatedResource,
-        r#"SELECT id FROM buckets WHERE id = $1 AND account_id = $2;"#,
-        bucket_id,
-        account_id
-    )
-    .fetch_one(database)
-    .await
-    .map(|_| ())
-}
-
 /// Create a bucket key by its id and PEM
 pub async fn create_bucket_key(
     bucket_id: &str,
@@ -425,60 +408,6 @@ pub async fn read_all_snapshots(
     .await
 }
 
-/// Read the data + metadata usage of the given account id.
-pub async fn read_total_usage(account_id: &str, database: &Database) -> Result<u64, sqlx::Error> {
-    let maybe_usage = sqlx::query_as!(
-        GetTotalUsage,
-        r#"SELECT 
-            COALESCE(SUM(COALESCE(m.data_size, m.expected_data_size)), 0) as "data_size!",
-            COALESCE(SUM(m.metadata_size), 0) as "metadata_size!"
-        FROM
-            metadata m
-        INNER JOIN
-            buckets b ON b.id = m.bucket_id
-        WHERE
-            b.account_id = $1 AND m.state IN ('pending', 'current');"#,
-        account_id,
-    )
-    .fetch_one(database)
-    .await;
-    match maybe_usage {
-        Ok(usage) => Ok(usage.data_size as u64 + usage.metadata_size as u64),
-        Err(err) => match err {
-            sqlx::Error::RowNotFound => Err(sqlx::Error::RowNotFound),
-            _ => Err(err),
-        },
-    }
-}
-
-/// Read the data usage of the given account id.
-pub async fn read_total_data_usage(
-    account_id: &str,
-    database: &Database,
-) -> Result<u64, sqlx::Error> {
-    let maybe_data_usage = sqlx::query_as!(
-        GetUsage,
-        r#"SELECT
-            COALESCE(SUM(COALESCE(m.data_size, m.expected_data_size)), 0) as "size!"
-        FROM
-            metadata m
-        INNER JOIN
-            buckets b ON b.id = m.bucket_id
-        WHERE
-            b.account_id = $1 AND m.state IN ('pending', 'current');"#,
-        account_id,
-    )
-    .fetch_one(database)
-    .await;
-    match maybe_data_usage {
-        Ok(usage) => Ok(usage.size as u64),
-        Err(err) => match err {
-            sqlx::Error::RowNotFound => Err(sqlx::Error::RowNotFound),
-            _ => Err(err),
-        },
-    }
-}
-
 /// Read the data usage of a given bucket id.
 pub async fn read_bucket_data_usage(
     bucket_id: &str,
@@ -503,15 +432,4 @@ pub async fn read_bucket_data_usage(
             _ => Err(err),
         },
     }
-}
-
-#[derive(Serialize)]
-struct GetTotalUsage {
-    pub data_size: i64,
-    pub metadata_size: i64,
-}
-
-#[derive(Serialize, FromRow)]
-struct GetUsage {
-    pub size: i64,
 }

@@ -14,6 +14,7 @@ pub enum MetadataState {
     Deleted,
 }
 
+// todo: might not be needed...
 impl Display for MetadataState {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
@@ -23,6 +24,21 @@ impl Display for MetadataState {
             MetadataState::Current => f.write_str("current"),
             MetadataState::Outdated => f.write_str("outdated"),
             MetadataState::Deleted => f.write_str("deleted"),
+        }
+    }
+}
+
+// todo: should be tryfrom since this is fallible... might not be needed at all
+impl From<String> for MetadataState {
+    fn from(s: String) -> Self {
+        match s.as_str() {
+            "uploading" => MetadataState::Uploading,
+            "upload_failed" => MetadataState::UploadFailed,
+            "pending" => MetadataState::Pending,
+            "current" => MetadataState::Current,
+            "outdated" => MetadataState::Outdated,
+            "deleted" => MetadataState::Deleted,
+            _ => panic!("invalid bucket metadata state: {}", s),
         }
     }
 }

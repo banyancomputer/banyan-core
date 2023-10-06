@@ -13,20 +13,6 @@ pub struct DeviceApiKey {
     pub pem: String,
 }
 
-impl From<String> for MetadataState {
-    fn from(s: String) -> Self {
-        match s.as_str() {
-            "uploading" => MetadataState::Uploading,
-            "upload_failed" => MetadataState::UploadFailed,
-            "pending" => MetadataState::Pending,
-            "current" => MetadataState::Current,
-            "outdated" => MetadataState::Outdated,
-            "deleted" => MetadataState::Deleted,
-            _ => panic!("invalid bucket metadata state: {}", s),
-        }
-    }
-}
-
 /// Bucket Metadata - data associated with the metadata for a bucket
 #[derive(Debug, Serialize, FromRow)]
 pub struct Metadata {

@@ -47,14 +47,13 @@ pub enum CreateDeviceApiKeyError {
 
 impl IntoResponse for CreateDeviceApiKeyError {
     fn into_response(self) -> Response {
-        tracing::error!("failed to create device api key: {self}");
-
         match &self {
             CreateDeviceApiKeyError::InvalidPublicKey(_) => {
                 let err_msg = serde_json::json!({"msg": "provided public key was not valid"});
                 (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
             }
             _ => {
+                tracing::error!("failed to create device api key: {self}");
                 let err_msg = serde_json::json!({"msg": "backend service experienced an issue servicing the request"});
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
             }

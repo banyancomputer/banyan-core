@@ -3,10 +3,10 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use serde::Serialize;
 
-use crate::database::models::{Bucket, BucketType, StorageClass};
-use crate::extractors::ApiToken;
-
 use crate::app::AppState;
+use crate::database::models::Bucket;
+use crate::extractors::ApiToken;
+use crate::api::buckets::common::ApiBucket;
 
 pub async fn handler(api_token: ApiToken, State(state): State<AppState>) -> Response {
     let database = state.database();
@@ -31,25 +31,6 @@ pub async fn handler(api_token: ApiToken, State(state): State<AppState>) -> Resp
             tracing::error!("failed to lookup all buckets for account: {err}");
             let err_msg = serde_json::json!({"msg": "backend service experienced an issue servicing the request"});
             (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
-        }
-    }
-}
-
-#[derive(Serialize)]
-pub struct ApiBucket {
-    pub id: String,
-    pub name: String,
-    pub r#type: BucketType,
-    pub storage_class: StorageClass,
-}
-
-impl From<Bucket> for ApiBucket {
-    fn from(value: Bucket) -> Self {
-        Self {
-            id: value.id,
-            name: value.name,
-            r#type: value.r#type,
-            storage_class: value.storage_class,
         }
     }
 }

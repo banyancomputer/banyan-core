@@ -11,33 +11,6 @@ use crate::extractors::ApiToken;
 use crate::utils::db;
 use crate::utils::keys::*;
 
-/// Read all buckets associated with the calling account
-
-// TODO: Should this be authenticated or not?
-/// Read a single bucket by id. Also search and return by account id
-pub async fn read(
-    api_token: ApiToken,
-    database: Database,
-    Path(bucket_id): Path<Uuid>,
-) -> Response {
-    let account_id = api_token.subject;
-    let bucket_id = bucket_id.to_string();
-    match db::read_bucket(&account_id, &bucket_id, &database).await {
-        Ok(bucket) => Json(responses::ReadBucket {
-            id: bucket.id,
-            name: bucket.name,
-            r#type: bucket.r#type,
-            storage_class: bucket.storage_class,
-        })
-        .into_response(),
-        Err(err) => {
-            tracing::error!("unable to delete bucket: {err}");
-            GenericError::new(StatusCode::INTERNAL_SERVER_ERROR, "backend service issue")
-                .into_response()
-        }
-    }
-}
-
 /// Delete a Bucket
 pub async fn delete(
     api_token: ApiToken,
