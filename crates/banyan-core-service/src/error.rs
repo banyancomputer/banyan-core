@@ -3,8 +3,6 @@ use std::fmt::Display;
 use axum::response::{IntoResponse, Response};
 use http::StatusCode;
 
-use crate::email::error::EmailError;
-
 #[derive(Debug)]
 #[non_exhaustive]
 pub struct CoreError {
@@ -45,9 +43,13 @@ impl CoreError {
         }
     }
 
-    pub fn email_error(err: EmailError) -> Self {
+    pub fn generic_error(code: StatusCode, msg: &str, trace: Option<&str>) -> Self {
         Self {
-            kind: CoreErrorKind::EmailError(err),
+            kind: CoreErrorKind::Generic {
+                code,
+                msg: msg.to_string(),
+                trace: trace.map(|trace| trace.to_string())
+            },
         }
     }
 }
@@ -65,7 +67,14 @@ pub enum CoreErrorKind {
         /// Resource
         resource: String,
     },
-    EmailError(EmailError),
+    Generic {
+        /// Status Code
+        code: StatusCode,
+        /// Message
+        msg: String,
+        /// Trace
+        trace: Option<String>,
+    },
 }
 
 impl IntoResponse for CoreError {
@@ -104,16 +113,10 @@ impl IntoResponse for CoreError {
                     _ => Self::default_response(None),
                 }
             }
-            CoreErrorKind::EmailError(err) => {
-                tracing::error!("unable to send email: {err}");
-                Self::default_response(None)
+            CoreErrorKind::Generic { code, msg, trace } => {
+                if let Some(trace) = trace { tracing::error!("{trace}") }
+                (code, axum::extract::Json(serde_json::json!({"msg": msg}))).into_response()
             }
         }
-    }
-}
-
-impl From<EmailError> for CoreError {
-    fn from(err: EmailError) -> Self {
-        Self::email_error(err)
     }
 }

@@ -2,6 +2,9 @@
 use axum::routing::post;
 use axum::Router;
 
+// See Mailgun docs for more info on processing a webhook request:
+// https://documentation.mailgun.com/en/latest/user_manual.html#tracking-messages-1
+
 mod error;
 mod handler;
 mod request;

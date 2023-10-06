@@ -575,6 +575,19 @@ pub async fn queue_email(
     Ok(message_id)
 }
 
+#[allow(dead_code)]
+/// Set en email as sent
+pub async fn send_email(message_id: Uuid, db_conn: &mut DbConn) -> Result<(), sqlx::Error> {
+    let message_id = message_id.to_string();
+    sqlx::query!(
+        r#"UPDATE emails SET state = 'sent' AND sent_at = CURRENT_TIMESTAMP WHERE id = $1;"#,
+        message_id
+    )
+    .execute(&mut *db_conn.0)
+    .await?;
+    Ok(())
+}
+
 /// Read the current state of an email in the database.
 pub async fn read_email_state(
     message_id: Uuid,

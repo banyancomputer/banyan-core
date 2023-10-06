@@ -129,6 +129,7 @@ fn load_or_create_service_key(path: &PathBuf) -> Result<(EncodingKey, DecodingKe
     Ok((encoding_key, decoding_key))
 }
 
+// TODO eng-356: Is this the right way to load the key?
 fn load_mailgun_signing_key() -> Result<HmacKey, StateError> {
     let key =
         env::var("MAILGUN_SIGNING_KEY").map_err(|_| StateError::mailgun_signing_key_missing())?;

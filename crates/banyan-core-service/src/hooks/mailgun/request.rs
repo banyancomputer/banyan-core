@@ -8,6 +8,8 @@ use crate::db::models::EmailMessageState;
 
 use super::error::MailgunHookError;
 
+/// Form of a Mailgun webhook request
+/// All such requests are POST requests
 #[derive(Debug, Deserialize)]
 pub struct MailgunHookRequest {
     signature: Signature,
@@ -16,17 +18,20 @@ pub struct MailgunHookRequest {
 }
 
 impl MailgunHookRequest {
-    pub fn verify(&self, key: &HmacKey) -> Result<(), MailgunHookError> {
+    /// Verify the signature of the request
+    pub fn verify_signature(&self, key: &HmacKey) -> Result<(), MailgunHookError> {
         self.signature.verify(key)?;
         Ok(())
     }
 
+    /// Extract our custom message id from the request
     pub fn message_id(&self) -> Uuid {
         self.event_data.message_id()
     }
 
-    pub fn event(&self) -> MailgunEvent {
-        self.event_data.event()
+    /// Extract the event from the request
+    pub fn event(&self) -> EmailMessageState {
+        self.event_data.event().into()
     }
 }
 
@@ -40,11 +45,10 @@ pub struct Signature {
 impl Signature {
     pub fn verify(&self, key: &HmacKey) -> Result<(), MailgunHookError> {
         let data = format!("{}{}", self.timestamp, self.token);
-        // TODO: this is probably not the best way to decode the signature
-        match ring::hmac::verify(key, data.as_bytes(), self.signature.as_bytes()) {
-            Ok(_) => Ok(()),
-            Err(_) => Err(MailgunHookError::invalid_signature()),
-        }
+        let signature =
+            hex::decode(&self.signature).map_err(MailgunHookError::failed_to_decode_signature)?;
+        ring::hmac::verify(key, data.as_bytes(), &signature)
+            .map_err(MailgunHookError::invalid_signature)
     }
 }
 
@@ -65,8 +69,10 @@ impl EventData {
     }
 }
 
+/// Our custom user variables:
 #[derive(Debug, Deserialize)]
 struct UserVariables {
+    /// We attach a message id to the email when we send it. See `EmailMessage::build`
     #[serde(rename = "message-id")]
     message_id: Uuid,
 }
@@ -147,7 +153,7 @@ impl FromStr for MailgunEvent {
             "opened" => Ok(MailgunEvent::Opened),
             "unsubscribed" => Ok(MailgunEvent::Unsubscribed),
             "complained" => Ok(MailgunEvent::Complained),
-            _ => Err(MailgunHookError::invalid_event()),
+            _ => panic!("invalid event"),
         }
     }
 }
