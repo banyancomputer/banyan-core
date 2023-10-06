@@ -8,9 +8,9 @@ use url::Url;
 use crate::app::{AppState, Secrets};
 
 mod authentication_error;
-//mod login;
-//mod logout;
-//mod oauth_callback;
+mod login;
+mod logout;
+mod oauth_callback;
 mod provider_config;
 
 use authentication_error::AuthenticationError;

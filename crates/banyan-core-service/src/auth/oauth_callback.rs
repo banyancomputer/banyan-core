@@ -9,6 +9,7 @@ use jwt_simple::algorithms::ECDSAP384KeyPairLike;
 use oauth2::{AuthorizationCode, CsrfToken, PkceCodeVerifier, TokenResponse};
 use serde::Deserialize;
 use std::time::Duration;
+use time::OffsetDateTime;
 use url::Url;
 use uuid::Uuid;
 
@@ -33,8 +34,11 @@ pub async fn handler(
 
     let query_secret = csrf_secret.secret();
     let oauth_state_query: (String, Option<String>) = sqlx::query_as(
-        "SELECT pkce_verifier_secret,next_url FROM oauth_state WHERE csrf_secret = $1;",
+        r#"SELECT pkce_verifier_secret, next_url
+            FROM oauth_state
+            WHERE provider = $1 AND csrf_secret = $2;"#,
     )
+    .bind(provider.clone())
     .bind(query_secret)
     .fetch_one(&database)
     .await
@@ -43,8 +47,10 @@ pub async fn handler(
     tracing::info!("found matching oauth state");
 
     sqlx::query!(
-        "DELETE FROM oauth_state WHERE csrf_secret = $1;",
-        query_secret
+        r#"DELETE FROM oauth_state
+            WHERE provider = $1 AND csrf_secret = $2;"#,
+        provider,
+        query_secret,
     )
     .execute(&database)
     .await
@@ -70,6 +76,8 @@ pub async fn handler(
     tracing::info!("received token response");
 
     let access_token = token_response.access_token().secret();
+    let access_expires_at = token_response.expires_in().map(|secs| OffsetDateTime::now_utc() + secs);
+    let refresh_token = token_response.refresh_token().map(|rt| rt.secret());
 
     let user_info_url = Url::parse_with_params(
         "https://www.googleapis.com/oauth2/v2/userinfo",
@@ -94,7 +102,7 @@ pub async fn handler(
     // todo: allow for providers other than Google here...
 
     let user_row = sqlx::query!(
-        "SELECT id FROM users WHERE email = LOWER($1);",
+        "SELECT id FROM rust_users WHERE email = LOWER($1);",
         user_info.email
     )
     .fetch_optional(&database)
@@ -111,12 +119,12 @@ pub async fn handler(
         Some(u) => Uuid::parse_str(&u.id.to_string()).expect("db ids to be valid"),
         None => {
             let new_user_row = sqlx::query!(
-                r#"INSERT INTO users (email, display_name, picture, locale)
+                r#"INSERT INTO rust_users (email, display_name, locale, profile_image)
                         VALUES (LOWER($1), $2, $3, $4) RETURNING id;"#,
                 user_info.email,
                 user_info.name,
-                user_info.picture,
                 user_info.locale,
+                user_info.picture,
             )
             .fetch_one(&database)
             .await
@@ -140,8 +148,15 @@ pub async fn handler(
     let db_uid = user_id.clone().to_string();
 
     let new_sid_row = sqlx::query!(
-        "INSERT INTO sessions (user_id, expires_at) VALUES ($1, $2) RETURNING id;",
+        "INSERT INTO rust_sessions
+            (user_id, provider, access_token, access_expires_at, refresh_token, expires_at)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING id;",
         db_uid,
+        provider,
+        access_token,
+        access_expires_at,
+        refresh_token,
         expires_at,
     )
     .fetch_one(&database)

@@ -59,7 +59,7 @@ pub async fn handler(
         params.next_url,
     );
 
-    if let Err(err) = query.execute(state.database()).await {
+    if let Err(err) = query.execute(&state.database()).await {
         tracing::error!("failed to create oauth session handle: {err}");
         let response = serde_json::json!({"msg": "unable to use login services"});
         return (StatusCode::INTERNAL_SERVER_ERROR, Json(response)).into_response();

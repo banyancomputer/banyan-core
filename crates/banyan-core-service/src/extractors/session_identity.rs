@@ -108,7 +108,7 @@ where
         let db_sid = session_id.to_string();
         let db_session = sqlx::query_as!(
             DatabaseSession,
-            r#"SELECT id, user_id, created_at, expires_at FROM sessions WHERE id = $1;"#,
+            r#"SELECT id, user_id, created_at, expires_at FROM rust_sessions WHERE id = $1;"#,
             db_sid,
         )
         .fetch_one(&database)
