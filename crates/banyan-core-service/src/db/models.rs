@@ -13,17 +13,6 @@ pub struct DeviceApiKey {
     pub pem: String,
 }
 
-// TODO: should we add the account_id to this?
-/// BucketKey - data associated with a bucket key
-#[derive(Serialize, Debug)]
-pub struct BucketKey {
-    pub id: String,
-    pub bucket_id: String,
-    pub approved: bool,
-    pub pem: String,
-    pub fingerprint: String,
-}
-
 impl From<String> for MetadataState {
     fn from(s: String) -> Self {
         match s.as_str() {

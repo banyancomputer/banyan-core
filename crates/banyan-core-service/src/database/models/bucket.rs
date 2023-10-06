@@ -6,7 +6,6 @@ pub struct Bucket {
     pub account_id: String,
 
     pub name: String,
-    #[sqlx(rename = "type")]
-    pub bucket_type: BucketType,
+    pub r#type: BucketType,
     pub storage_class: StorageClass,
 }
