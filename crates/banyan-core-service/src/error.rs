@@ -48,7 +48,7 @@ impl CoreError {
             kind: CoreErrorKind::Generic {
                 code,
                 msg: msg.to_string(),
-                trace: trace.map(|trace| trace.to_string())
+                trace: trace.map(|trace| trace.to_string()),
             },
         }
     }
@@ -114,7 +114,9 @@ impl IntoResponse for CoreError {
                 }
             }
             CoreErrorKind::Generic { code, msg, trace } => {
-                if let Some(trace) = trace { tracing::error!("{trace}") }
+                if let Some(trace) = trace {
+                    tracing::error!("{trace}")
+                }
                 (code, axum::extract::Json(serde_json::json!({"msg": msg}))).into_response()
             }
         }
