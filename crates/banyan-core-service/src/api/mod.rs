@@ -3,8 +3,8 @@ use axum::response::IntoResponse;
 use axum::{Json, Router};
 use serde::Serialize;
 
-mod auth;
-mod buckets;
+//mod auth;
+//mod buckets;
 mod storage;
 
 use crate::app::AppState;
@@ -18,35 +18,9 @@ pub fn router(state: AppState) -> Router<AppState> {
     let cors_layer = tower_http::cors::CorsLayer::very_permissive();
 
     Router::new()
-        .nest("/auth", auth::router(state.clone()))
-        .nest("/buckets", buckets::router(state.clone()))
+        //.nest("/auth", auth::router(state.clone()))
+        //.nest("/buckets", buckets::router(state.clone()))
         .nest("/storage", storage::router(state.clone()))
         .with_state(state)
         .layer(cors_layer)
 }
-
-#[derive(Serialize)]
-pub struct ErrorResponse {
-    pub errors: Vec<String>,
-}
-
-impl IntoResponse for ErrorResponse {
-    fn into_response(self) -> axum::response::Response {
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(self)).into_response()
-    }
-}
-
-macro_rules! from_error_impl {
-    ($t: ty) => {
-        impl From<$t> for ErrorResponse {
-            fn from(err: $t) -> Self {
-                Self {
-                    errors: collect_error_messages(err),
-                }
-            }
-        }
-    };
-}
-
-from_error_impl!(auth::AuthError);
-from_error_impl!(buckets::BucketError);
