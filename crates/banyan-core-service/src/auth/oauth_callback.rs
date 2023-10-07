@@ -177,6 +177,7 @@ pub async fn handler(
             .http_only(true)
             .expires(expires_at)
             .same_site(SameSite::Lax)
+            .path("/")
             .domain(cookie_domain)
             .secure(cookie_secure)
             .finish(),

@@ -5,7 +5,6 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::app::AppState;
-use crate::database::Database;
 use crate::extractors::StorageHostToken;
 
 /// When a client finishes uploading their data to either staging or a storage host, the storage

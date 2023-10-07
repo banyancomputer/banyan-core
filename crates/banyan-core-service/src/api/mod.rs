@@ -5,6 +5,7 @@ use serde::Serialize;
 
 mod auth;
 mod buckets;
+pub mod common;
 mod storage;
 
 use crate::app::AppState;

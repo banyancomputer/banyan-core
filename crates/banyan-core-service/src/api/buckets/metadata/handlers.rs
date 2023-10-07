@@ -19,17 +19,15 @@ use crate::utils::db::{self, approve_bucket_key};
 use crate::utils::metadata_upload::{handle_metadata_upload, round_to_nearest_100_mib};
 use crate::utils::storage_ticket::generate_storage_ticket;
 
-/// Usage limit for all accounts (5 TiB)
+/// The default quota we assume each storage host / staging service to provide
 const ACCOUNT_STORAGE_QUOTA: u64 = 5 * 1_024 * 1_024 * 1_024 * 1_024;
 
-/// Upload data size limit for CAR file uploads
-const REQUEST_DATA_SIZE_LIMIT: u64 = 100 * 1_024;
+/// Upper size limit on the JSON payload that precedes a metadata CAR file upload (128KiB)
+const REQUEST_DATA_SIZE_LIMIT: u64 = 128 * 1_024;
 
-/// Upload size limit for CAR files
+/// Size limit of the pure metadata CAR file that is being uploaded (128MiB)
 const CAR_DATA_SIZE_LIMIT: u64 = 128 * 1_024 * 1_024;
 
-/// Handle a request to push new metadata to a bucket
-#[allow(clippy::too_many_arguments)]
 pub async fn push(
     api_token: ApiToken,
     api_token_kid: ApiTokenKid,
@@ -577,13 +575,4 @@ pub async fn read_current(
     };
 
     (StatusCode::OK, axum::Json(response)).into_response()
-}
-
-pub async fn delete(
-    _api_token: ApiToken,
-    Path(_bucket_id): Path<Uuid>,
-    Path(_metadata_id): Path<Uuid>,
-) -> impl IntoResponse {
-    // TODO: Implement
-    (StatusCode::NO_CONTENT, ()).into_response()
 }

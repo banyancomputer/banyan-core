@@ -5,7 +5,6 @@ use axum_extra::extract::cookie::Cookie;
 
 use crate::app::AppState;
 use crate::auth::{NEW_USER_COOKIE_NAME, SESSION_COOKIE_NAME};
-use crate::database::Database;
 use crate::extractors::SessionIdentity;
 
 pub async fn handler(
