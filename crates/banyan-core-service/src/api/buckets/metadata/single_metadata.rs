@@ -7,7 +7,7 @@ use uuid::Uuid;
 use crate::app::AppState;
 use crate::database::models::Metadata;
 use crate::extractors::ApiToken;
-use crate::api::common::ApiMetadata;
+use crate::api::models::ApiMetadata;
 
 pub async fn handler(
     api_token: ApiToken,
