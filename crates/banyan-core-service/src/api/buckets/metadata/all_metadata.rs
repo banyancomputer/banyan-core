@@ -1,33 +1,30 @@
 use axum::extract::{Json, Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use uuid::Uuid;
 
-use crate::api::models::ApiMetadata;
 use crate::app::AppState;
 use crate::database::models::PartialMetadataWithSnapshot;
 use crate::extractors::ApiToken;
+use crate::api::models::ApiMetadata;
 
 pub async fn handler(
     api_token: ApiToken,
     State(state): State<AppState>,
-    Path((bucket_id, metadata_id)): Path<(Uuid, Uuid)>,
 ) -> Response {
-    let query_result = PartialMetadataWithSnapshot::locate_specific(
+    let database = state.database();
+
+    let query_result = PartialMetadataWithSnapshot::all(
         &state.database(),
         api_token.subject(),
-        bucket_id,
-        metadata_id,
     ).await;
 
     match query_result {
-        Ok(Some(m)) => (StatusCode::OK, Json(ApiMetadata::from(m))).into_response(),
-        Ok(None) => {
-            let err_msg = serde_json::json!({"msg": "not found"});
-            return (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
+        Ok(db_meta) => {
+            let api_meta: Vec<_> = db_meta.into_iter().map(|m| ApiMetadata::from(m)).collect();
+            (StatusCode::OK, Json(api_meta)).into_response()
         }
         Err(err) => {
-            tracing::error!("failed to lookup specific metadata for bucket/account: {err}");
+            tracing::error!("failed to lookup all metadata for account: {err}");
             let err_msg = serde_json::json!({"msg": "backend service experienced an issue servicing the request"});
             (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
         }

@@ -14,7 +14,7 @@ pub async fn handler(api_token: ApiToken, State(state): State<AppState>) -> Resp
     // version, todo: we'll need a better way of calculating this
     let query_result: Result<(i64, i64), _> = sqlx::query_as(
         r#"SELECT
-            SUM(COALESCE(COALESCE(m.data_size, m.expected_data_size)), 0) as data_size,
+            SUM(COALESCE(COALESCE(m.data_size, m.expected_data_size), 0)) as data_size,
             SUM(COALESCE(m.metadata_size, 0)) as metadata_size
         FROM
             metadata m

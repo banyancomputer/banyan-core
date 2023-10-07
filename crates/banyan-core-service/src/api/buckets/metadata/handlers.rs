@@ -433,52 +433,6 @@ pub async fn pull(
     (StatusCode::OK, headers, body).into_response()
 }
 
-pub async fn read(
-    api_token: ApiToken,
-    database: Database,
-    Path((bucket_id, metadata_id)): Path<(Uuid, Uuid)>,
-) -> impl IntoResponse {
-    let account_id = api_token.subject;
-    let bucket_id = bucket_id.to_string();
-    let metadata_id = metadata_id.to_string();
-    match db::authorize_bucket(&account_id, &bucket_id, &database).await {
-        Ok(_) => {}
-        Err(err) => match err {
-            sqlx::Error::RowNotFound => {
-                return (StatusCode::NOT_FOUND, format!("bucket not found: {err}")).into_response();
-            }
-            _ => {
-                return CoreError::default_error(&format!("unable to read bucket: {err}"))
-                    .into_response();
-            }
-        },
-    };
-    // Read the metadata
-    let response = match db::read_metadata(&bucket_id, &metadata_id, &database).await {
-        Ok(bm) => responses::ReadMetadataResponse {
-            id: bm.metadata.id.to_string(),
-            root_cid: bm.metadata.root_cid,
-            metadata_cid: bm.metadata.metadata_cid,
-            data_size: bm.metadata.data_size,
-            state: bm.metadata.state,
-            created_at: bm.metadata.created_at.unix_timestamp(),
-            updated_at: bm.metadata.updated_at.unix_timestamp(),
-            snapshot_id: bm.snapshot_id,
-        },
-        Err(err) => match err {
-            sqlx::Error::RowNotFound => {
-                return (StatusCode::NOT_FOUND, format!("metadata not found: {err}"))
-                    .into_response();
-            }
-            _ => {
-                return CoreError::default_error(&format!("unable to read metadata: {err}"))
-                    .into_response();
-            }
-        },
-    };
-    (StatusCode::OK, axum::Json(response)).into_response()
-}
-
 /// Read all uploaded metadata for a bucket
 pub async fn read_all(
     api_token: ApiToken,
@@ -525,54 +479,5 @@ pub async fn read_all(
             }
         },
     };
-    (StatusCode::OK, axum::Json(response)).into_response()
-}
-
-/// Read the current metadata for a bucket or return 404 if there is no current metadata
-pub async fn read_current(
-    api_token: ApiToken,
-    database: Database,
-    Path(bucket_id): Path<Uuid>,
-) -> impl IntoResponse {
-    let account_id = api_token.subject;
-    let bucket_id = bucket_id.to_string();
-    match db::authorize_bucket(&account_id, &bucket_id, &database).await {
-        Ok(_) => {}
-        Err(err) => match err {
-            sqlx::Error::RowNotFound => {
-                return (StatusCode::NOT_FOUND, format!("bucket not found: {err}")).into_response();
-            }
-            _ => {
-                return CoreError::default_error(&format!("unable to read bucket: {err}"))
-                    .into_response();
-            }
-        },
-    };
-    let response = match db::read_current_metadata(&bucket_id, &database).await {
-        Ok(bm) => responses::ReadMetadataResponse {
-            id: bm.metadata.id.to_string(),
-            root_cid: bm.metadata.root_cid,
-            metadata_cid: bm.metadata.metadata_cid,
-            data_size: bm.metadata.data_size,
-            state: bm.metadata.state,
-            created_at: bm.metadata.created_at.unix_timestamp(),
-            updated_at: bm.metadata.updated_at.unix_timestamp(),
-            snapshot_id: bm.snapshot_id,
-        },
-        Err(err) => match err {
-            sqlx::Error::RowNotFound => {
-                return (
-                    StatusCode::NOT_FOUND,
-                    format!("current metadata not found: {err}"),
-                )
-                    .into_response();
-            }
-            _ => {
-                return CoreError::default_error(&format!("unable to read bucket metadata: {err}"))
-                    .into_response();
-            }
-        },
-    };
-
     (StatusCode::OK, axum::Json(response)).into_response()
 }
