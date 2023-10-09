@@ -40,7 +40,7 @@ const Login: NextPageWithLayout = () => {
     }, [error]);
 
     return (
-        <div className="flex items-stretch h-screen bg-login">
+        <div className="flex items-stretch h-screen bg-login text-gray-900">
             <div className="w-2/3 flex items-center justify-center bg-navigation-primary svg:w-44">
                 <Logo width="426px" height="88px" />
             </div>

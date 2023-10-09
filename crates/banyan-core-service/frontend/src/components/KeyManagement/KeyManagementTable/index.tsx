@@ -19,11 +19,11 @@ export const KeyManagementTable: React.FC<{ buckets: Bucket[] }> = ({ buckets })
     return (
         <div
             ref={tableRef}
-            className="max-h-[calc(100vh-320px)] overflow-x-auto border-2 border-border rounded-xl"
+            className="max-h-[calc(100vh-320px)] overflow-x-auto border-2 border-table-border rounded-xl"
         >
             <table className="table table-pin-rows w-full text-gray-600 rounded-xl">
                 <thead className="border-b-table-cellBackground text-xxs font-normal text-gray-600">
-                    <tr className="border-b-table-cellBackground bg-table-headBackground">
+                    <tr className="border-b-table-cellBackground bg-table-headBackground border-none">
                         <th className="py-3 px-6 w-44 whitespace-break-spaces text-left font-medium">{`${messages.locationForKey}`}</th>
                         <th className="py-3 px-6 text-left font-medium whitespace-pre">
                             {`${messages.client}`}

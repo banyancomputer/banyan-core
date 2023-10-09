@@ -11,8 +11,7 @@ import { CreateBucketModal } from '../Modal/CreateBucketModal';
 import { useTomb } from '@/contexts/tomb';
 import { useModal } from '@/contexts/modals';
 
-import { Directory } from '@static/images/common';
-import { StorageUsage } from '../StorageUsage';
+import { Directory, Logo } from '@static/images/common';
 
 export const Navigation = () => {
     const searchParams = useSearchParams();
@@ -40,6 +39,9 @@ export const Navigation = () => {
 
     return (
         <nav className="flex flex-col w-navbar min-w-navbar bg-navigation-primary py-8 px-4 text-navigation-text border-r-2 border-r-navigation-border font-semibold">
+            <Link href="/" className="mb-7 flex justify-center font-semibold text-m" >
+                <Logo />
+            </Link>
             <div className="flex-grow">
                 <Link
                     href={'/'}
@@ -70,7 +72,7 @@ export const Navigation = () => {
                                         className={`flex items-center justify-between gap-2 py-2 px-3 w-full h-10  cursor-pointer rounded-md ${bucketId === bucket.id && 'bg-navigation-secondary'}`}
                                     >
                                         <span className='w-5'>
-                                        <Directory />
+                                            <Directory />
                                         </span>
                                         <span className="flex-grow whitespace-nowrap overflow-hidden overflow-ellipsis">
                                             {bucket.name}
@@ -102,7 +104,7 @@ export const Navigation = () => {
                 </button>
             </div>
             {/* <StorageUsage /> */}
-            <div className="flex flex-col mt-6 pl-2 pt-3 pr-8 border-t-2 border-border text-gray-600">
+            <div className="flex flex-col mt-6 pl-2 pt-3 pr-8 border-t-2 border-table-border text-gray-600">
                 <span>Banyan Computer</span>
                 <span className="font-normal">{`${messages.decentralizedStorage}`}</span>
             </div>
