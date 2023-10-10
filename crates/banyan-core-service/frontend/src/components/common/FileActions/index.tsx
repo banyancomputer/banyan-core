@@ -5,6 +5,7 @@ import { AiOutlineLink } from 'react-icons/ai';
 import { PiArrowsLeftRight, PiCopySimple } from 'react-icons/pi';
 import { GoDotFill } from 'react-icons/go';
 import { MdDone } from 'react-icons/md';
+import { BiShareAlt } from 'react-icons/bi';
 
 import { MoveToModal } from '../../common/Modal/MoveToModal';
 import { RenameFileModal } from '../../common/Modal/RenameFileModal';
@@ -14,6 +15,7 @@ import { useModal } from '@/contexts/modals';
 import { ToastNotifications } from '@/utils/toastNotifications';
 import { useFolderLocation } from '@/hooks/useFolderLocation';
 import { DeleteFileModal } from '@/components/common/Modal/DeleteFileModal';
+import { ShareFileModal } from '../Modal/ShareFileModal';
 
 export class Action {
     constructor(
@@ -25,7 +27,7 @@ export class Action {
 
 export const FileActions: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bucket, file }) => {
     const { messages } = useIntl();
-    const { download, makeCopy } = useTomb();
+    const { download, makeCopy, shareFile } = useTomb();
     const { openModal } = useModal();
     const folredLoaction = useFolderLocation();
     const bucketType = `${bucket.bucketType}_${bucket.storageClass}`;
@@ -64,9 +66,17 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bu
             openModal(<DeleteFileModal bucket={bucket} file={file} />);
         } catch (error: any) { }
     };
+
     const viewFileVersions = async () => {
         try {
 
+        } catch (error: any) { }
+    };
+
+    const share = async () => {
+        try {
+            const link = await shareFile(bucket, file);
+            openModal(<ShareFileModal link={link} />);
         } catch (error: any) { }
     };
 
@@ -77,6 +87,7 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bu
     const vierFileVersionsAction = useMemo(() => new Action(`${messages.viewFileVersions}`, <AiOutlineLink size="18px" />, viewFileVersions), []);
     const renameAction = useMemo(() => new Action(`${messages.rename}`, <FiEdit size="18px" />, rename), []);
     const removeAction = useMemo(() => new Action(`${messages.remove}`, <FiTrash2 size="18px" />, remove), []);
+    const shareAction = useMemo(() => new Action(`${messages.shareFile}`, <BiShareAlt size="18px" />, share), []);
 
     const hotInrecactiveActions = [
         downloadAction, moveToAction, makeCopyAction, renameAction, removeAction
