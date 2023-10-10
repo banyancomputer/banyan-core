@@ -59,7 +59,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     const [usedStorage, setUsedStorage] = useState<number>(0);
     const [usageLimit, setUsageLimit] = useState<number>(0);
     const [isTrashLoading, setIsTrashLoading] = useState<boolean>(true);
-    const [areBucketsLoading, setAreBucketsLoading] = useState<boolean>(true);
+    const [areBucketsLoading, setAreBucketsLoading] = useState<boolean>(false);
     const folderLocation = useFolderLocation();
 
     /** Prevents rust recursion error. */
