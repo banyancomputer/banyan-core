@@ -37,6 +37,7 @@ interface TombInterface {
     purgeSnapshot: (id: string) => void;
     deleteBucket: (id: string) => void;
     deleteFile: (bucket: Bucket, path: string[], name: string) => void;
+    completeDeviceKeyRegistration: (fingerprint: string) => Promise<void>;
     approveBucketAccess: (id: string) => Promise<void>;
     removeBucketAccess: (id: string) => Promise<void>;
     restore: (bucket: Bucket, snapshot: WasmSnapshot) => Promise<void>;
@@ -76,6 +77,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     const getBuckets = async () => {
         setAreBucketsLoading(true);
         tombMutex(tomb, async tomb => {
+            console.log("tomb: " + tomb!.listBuckets);
             const wasm_buckets: WasmBucket[] = await tomb!.listBuckets();
             const buckets = [];
             let key = await getEncryptionKey();
@@ -154,6 +156,11 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
     /** Returns list of snapshots for selected bucket */
     const getBucketShapshots = async (id: string) => await tombMutex(tomb, async tomb => await tomb!.listBucketSnapshots(id));
+
+    /** Approves a new deviceKey */
+    const completeDeviceKeyRegistration = async (fingerprint: string) => {
+        return await tombMutex(tomb, async tomb => await tomb!.completeDeviceKeyRegistration(fingerprint));
+    };
 
     /** Approves access key for bucket */
     const approveBucketAccess = async (id: string) => {
@@ -309,7 +316,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
                     process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
                     process.env.NEXT_PUBLIC_DATA_URL || 'http://localhost:3002',
                 );
-                setTomb(tomb);
+                setTomb(await tomb);
             } catch (err) {
                 console.error(err);
             }
@@ -334,7 +341,8 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
                 getBuckets, getBucketShapshots, createBucket, deleteBucket, selectBucket, getFile,
                 getTrashBucket, takeColdSnapshot, createDirectory,
                 uploadFile, getBucketKeys, purgeSnapshot, getSelectedBucketFiles,
-                removeBucketAccess, approveBucketAccess,
+                removeBucketAccess, approveBucketAccess, 
+                completeDeviceKeyRegistration,
                 shareWith, download, moveTo, restore, deleteFile, makeCopy
             }}
         >

@@ -75,11 +75,6 @@ export default async(req: NextApiRequest, res: NextApiResponse) => {
             return;
         }
 
-        
-
-        // Now that the device API key has been plopped into the db
-        // Let's also send a call to core telling it that the 
-
         // Okay
         res.status(200).send(deviceApiKey);
     }
