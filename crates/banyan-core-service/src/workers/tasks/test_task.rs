@@ -1,6 +1,5 @@
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use serde::de::DeserializeOwned;
 use uuid::Uuid;
 
 use crate::workers::CurrentTask;

@@ -45,6 +45,15 @@ pub trait TaskStore: Send + Sync + 'static {
 
 #[derive(Debug, thiserror::Error)]
 pub enum TaskStoreError {
+    #[error("failed to encode task as JSON: {0}")]
+    EncodeFailed(serde_json::Error),
+
+    #[error("a task can't transition between {0:?} and {1:?}")]
+    InvalidStateTransition(TaskState, TaskState),
+
+    #[error("unable to retry task from invalid state '{0:?}'")]
+    NotRetryable(TaskState),
+
     #[error("unable to find task with ID {0}")]
     UnknownTask(TaskId),
 }

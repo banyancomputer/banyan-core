@@ -7,29 +7,29 @@ use crate::workers::panic_safe_future::CaughtPanic;
 pub struct Task {
     pub id: TaskId,
 
-    next_id: Option<TaskId>,
-    previous_id: Option<TaskId>,
+    pub next_id: Option<TaskId>,
+    pub previous_id: Option<TaskId>,
 
-    name: String,
-    queue_name: String,
+    pub name: String,
+    pub queue_name: String,
 
-    unique_key: Option<String>,
-    state: TaskState,
+    pub unique_key: Option<String>,
+    pub state: TaskState,
 
-    current_attempt: usize,
-    maximum_attempts: usize,
+    pub current_attempt: usize,
+    pub maximum_attempts: usize,
 
     // will need a live-cancel signal and likely a custom Future impl to ensure its used for proper
     // timeout handling
 
-    payload: serde_json::Value,
-    error: Option<String>,
+    pub payload: serde_json::Value,
+    pub error: Option<String>,
 
-    scheduled_at: OffsetDateTime,
-    scheduled_to_run_at: OffsetDateTime,
+    pub scheduled_at: OffsetDateTime,
+    pub scheduled_to_run_at: OffsetDateTime,
 
-    started_at: Option<OffsetDateTime>,
-    finished_at: Option<OffsetDateTime>,
+    pub started_at: Option<OffsetDateTime>,
+    pub finished_at: Option<OffsetDateTime>,
 }
 
 #[derive(Debug, thiserror::Error)]

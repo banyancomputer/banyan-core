@@ -1,6 +1,5 @@
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
-use std::fmt::{self, Debug, Display, Formatter};
 use std::ops::{Deref, DerefMut};
 use std::pin::Pin;
 use std::sync::Arc;
@@ -8,9 +7,8 @@ use std::time::Duration;
 
 use axum::async_trait;
 use futures::{Future, FutureExt};
-use futures::future::{BoxFuture, join_all};
+use futures::future::join_all;
 use itertools::Itertools;
-use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use tokio::sync::{Mutex, watch};
@@ -517,7 +515,7 @@ impl TaskStore for MemoryTaskStore {
         }
 
         let id = TaskId::from(Uuid::new_v4());
-        let payload = serde_json::to_value(task).map_err(|_| TaskStoreError::Unknown)?;
+        let payload = serde_json::to_value(task).map_err(TaskStoreError::EncodeFailed)?;
 
         let task = Task {
             id,
@@ -613,7 +611,7 @@ impl TaskStore for MemoryTaskStore {
         // these states are the only retryable states
         if !matches!(target_task.state, TaskState::Error | TaskState::TimedOut) {
             tracing::warn!(?id, "task is not in a state that can be retried");
-            return Err(TaskStoreError::Unknown);
+            return Err(TaskStoreError::NotRetryable(target_task.state));
         }
 
         // no retries remaining mark the task as dead
@@ -656,21 +654,21 @@ impl TaskStore for MemoryTaskStore {
 
         if task.state != TaskState::InProgress {
             tracing::error!("only in progress tasks are allowed to transition to other states");
-            return Err(TaskStoreError::Unknown);
+            return Err(TaskStoreError::InvalidStateTransition(task.state, new_state));
         }
 
         match new_state {
             // this state should only exist when the task is first created
             TaskState::New => {
                 tracing::error!("can't transition an existing task to the New state");
-                return Err(TaskStoreError::Unknown);
+                return Err(TaskStoreError::InvalidStateTransition(task.state, new_state));
             }
             // this is an internal transition that happens automatically when the task is picked up
             TaskState::InProgress => {
                 tracing::error!(
                     "only the task store may transition a task to the InProgress state"
                 );
-                return Err(TaskStoreError::Unknown);
+                return Err(TaskStoreError::InvalidStateTransition(task.state, new_state));
             }
             _ => (),
         }

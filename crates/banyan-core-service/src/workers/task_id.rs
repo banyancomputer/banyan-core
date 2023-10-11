@@ -1,7 +1,6 @@
 use std::fmt::{self, Debug, Display, Formatter};
 
-use serde::{Deserialize, Serialize};
-use serde::de::DeserializeOwned;
+use serde::Serialize;
 use uuid::Uuid;
 
 #[derive(Clone, Copy, Hash, Eq, Ord, PartialEq, PartialOrd, Serialize)]

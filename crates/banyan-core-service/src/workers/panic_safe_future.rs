@@ -2,10 +2,10 @@ use std::fmt::{self, Display, Formatter};
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-use futures::Future;
+use futures::{Future, FutureExt};
 use futures::future::BoxFuture;
 
-struct PanicSafeFuture<F: Future + Send + 'static> {
+pub struct PanicSafeFuture<F: Future + Send + 'static> {
     inner: BoxFuture<'static, F::Output>,
 }
 
