@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import React, { ReactElement, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { signOut, useSession } from 'next-auth/react';
 import { useIntl } from 'react-intl';
@@ -12,8 +12,6 @@ import { FiLogOut, FiSettings } from 'react-icons/fi';
 import { popupClickHandler } from '@/utils';
 import { useKeystore } from '@/contexts/keystore';
 import { Action } from '../FileActions';
-
-import { Logo } from '@static/images/common';
 
 export const Header = () => {
     const userControlsRef = useRef<HTMLDivElement | null>(null);
@@ -33,7 +31,7 @@ export const Header = () => {
         setAreFaqOpionsVisible(prev => !prev);
     };
 
-    const logout = async() => {
+    const logout = async () => {
         await signOut();
         await purgeKeystore();
     };
@@ -69,10 +67,7 @@ export const Header = () => {
     }, [faqRef]);
 
     return (
-        <header className="flex items-center justify-between border-b-2 border-c p-4">
-            <Link href="/" className="font-semibold text-m flex-grow" >
-                <Logo />
-            </Link>
+        <header className="flex items-center justify-between border-b-2 border-table-border p-4">
             {/* <SearchInput /> */}
             <div className="flex flex-grow items-center justify-end gap-6">
                 <div

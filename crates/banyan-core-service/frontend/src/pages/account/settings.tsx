@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useIntl } from 'react-intl';
-import { Switch } from '@chakra-ui/react';
 import { NextPageWithLayout } from '../page';
 import SettingsLayout from '@/layouts/SettingsLayout';
 import { LanguageSelect } from '@/components/common/LanguageSelect';
@@ -29,14 +28,19 @@ export const Settings: NextPageWithLayout = () => {
             <h2 className="text-lg font-semibold">
                 {`${messages.settings}`}
             </h2>
-            <div className="flex justify-between items-center py-5 px-4 border-1 rounded-lg text-gray-800 border-border">
+            <div className="flex justify-between items-center py-5 px-4 border-1 rounded-lg text-gray-800 border-table-border">
                 <div>
                     <h5 className="font-semibold">{`${messages.theme}`}</h5>
                     <p>{`${messages.selectTheme}`}</p>
                 </div>
-                <Switch onChange={toggleTheme} isChecked={isDarkModaActive} />
+                <input
+                    type="checkbox"
+                    className="toggle"
+                    checked={isDarkModaActive}
+                    onChange={toggleTheme}
+                />
             </div>
-            <div className="flex justify-between items-center py-5 px-4 border-1 rounded-lg text-gray-800 border-border">
+            <div className="flex justify-between items-center py-5 px-4 border-1 rounded-lg text-gray-800 border-table-border">
                 <div>
                     <h5 className="font-semibold">{`${messages.language}`}</h5>
                     <p>{`${messages.chooseLanguage}`}</p>

@@ -99,7 +99,7 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null }> = ({ bucket }
                 </div>
             }
             <label
-                className="mt-10 flex flex-col items-center justify-center gap-4 px-6 py-4 border-2 border-c rounded-xl  text-xs cursor-pointer"
+                className="mt-10 flex flex-col items-center justify-center gap-4 px-6 py-4 border-2 border-inputBorder rounded-xl  text-xs cursor-pointer"
                 onDrop={handleDrop}
                 onDragOver={handleDrag}
             >

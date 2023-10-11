@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react';
 import { useKeystore } from './keystore';
 import {
     Bucket, BucketFile, BucketKey,
-    BucketSnapshot, MockBucket,
+    BucketSnapshot, FileMetadata, MockBucket,
 } from '@/lib/interfaces/bucket';
 import { useFolderLocation } from '@/hooks/useFolderLocation';
 
@@ -32,7 +32,7 @@ interface TombInterface {
     createDirectory: (bucket: Bucket, path: string[], name: string) => Promise<void>;
     download: (bucket: Bucket, path: string[], name: string) => Promise<void>;
     getFile: (bucket: Bucket, path: string[], name: string) => Promise<ArrayBuffer>;
-    shareWith: (bucket: Bucket, key: string) => Promise<void>;
+    shareFile: (bucket: Bucket, file: BucketFile) => Promise<string>;
     makeCopy: (bucket: Bucket, path: string[], name: string) => void;
     moveTo: (bucket: Bucket, from: string[], to: string[]) => Promise<void>;
     uploadFile: (nucket: Bucket, path: string[], name: string, file: any) => Promise<void>;
@@ -197,8 +197,11 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     /** Retuns array buffer of selected file. */
     const restore = async (bucket: Bucket, snapshot: WasmSnapshot) => await tombMutex(bucket.mount, async mount => await mount.restore(snapshot));
 
-    /** Shares bucket with selected key. */
-    const shareWith = async (bucket: Bucket, key: string) => await tombMutex(bucket.mount, async mount => await mount.shareWith(key));
+    /** Generates public link to share file. */
+    const shareFile = async (bucket: Bucket, file: BucketFile) => {
+        /** TODO: implement sharing logic when it will be added to tomb. */
+        return '';
+    };
 
     const getBucketKeys = async (id: string) => await tombMutex(tomb, async tomb => await tomb!.listBucketKeys(id));
 
