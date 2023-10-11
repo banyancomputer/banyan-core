@@ -3,8 +3,8 @@ use serde::{Deserialize, Serialize};
 use serde::de::DeserializeOwned;
 use uuid::Uuid;
 
-use crate::workers::{CurrentTask};
-use crate::workers::tasks::TaskLike;
+use crate::workers::CurrentTask;
+use crate::workers::TaskLike;
 
 #[derive(Deserialize, Serialize)]
 pub struct TestTask {

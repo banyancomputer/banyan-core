@@ -4,7 +4,6 @@ use std::fmt::{self, Debug, Display, Formatter};
 use std::ops::{Deref, DerefMut};
 use std::pin::Pin;
 use std::sync::Arc;
-use std::task::{Context, Poll};
 use std::time::Duration;
 
 use axum::async_trait;
@@ -19,19 +18,26 @@ use tokio::task::JoinHandle;
 use tokio::time::timeout;
 use uuid::Uuid;
 
-mod tasks;
+pub mod panic_safe_future;
+mod stores;
+mod task;
+mod task_id;
+mod task_like;
+mod task_state;
+mod task_store;
+pub mod tasks;
 
-use crate::workers::tasks::{TaskId, TaskLike};
-
-// constants
+pub use task_id::TaskId;
+pub use task_like::{TaskLike, TaskLikeExt};
+pub use task_state::TaskState;
+pub use task_store::{TaskStore, TaskStoreError};
+pub use task::{Task, TaskExecError};
 
 const MAXIMUM_CHECK_DELAY: Duration = Duration::from_millis(250);
 
 const TASK_EXECUTION_TIMEOUT: Duration = Duration::from_secs(30);
 
 const WORKER_SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(5);
-
-// types
 
 pub type ExecuteTaskFn<Context> = Arc<
     dyn Fn(
@@ -45,85 +51,7 @@ pub type ExecuteTaskFn<Context> = Arc<
 
 pub type StateFn<Context> = Arc<dyn Fn() -> Context + Send + Sync>;
 
-// traits
-
-#[async_trait]
-pub trait TaskStore: Send + Sync + 'static {
-    type Connection: Send;
-
-    async fn cancel(&self, id: TaskId) -> Result<(), TaskQueueError> {
-        self.update_state(id, TaskState::Cancelled).await
-    }
-
-    async fn completed(&self, id: TaskId) -> Result<(), TaskQueueError> {
-        self.update_state(id, TaskState::Complete).await
-    }
-
-    async fn enqueue<T: TaskLike>(
-        conn: &mut Self::Connection,
-        task: T,
-    ) -> Result<Option<TaskId>, TaskQueueError>
-    where
-        Self: Sized;
-
-    async fn errored(&self, id: TaskId, error: TaskExecError) -> Result<Option<TaskId>, TaskQueueError> {
-        use TaskExecError as TEE;
-
-        match error {
-            TEE::DeserializationFailed(_) | TEE::Panicked(_) => {
-                self.update_state(id, TaskState::Dead).await?;
-                Ok(None)
-            }
-            TEE::ExecutionFailed(_) => {
-                self.update_state(id, TaskState::Error).await?;
-                self.retry(id).await
-            }
-        }
-    }
-
-    async fn next(&self, queue_name: &str, task_names: &[&str]) -> Result<Option<Task>, TaskQueueError>;
-
-    async fn retry(&self, id: TaskId) -> Result<Option<TaskId>, TaskQueueError>;
-
-    async fn update_state(&self, id: TaskId, state: TaskState) -> Result<(), TaskQueueError>;
-}
-
 // structs
-
-struct CatchPanicFuture<F: Future + Send + 'static> {
-    inner: BoxFuture<'static, F::Output>,
-}
-
-impl<F: Future + Send + 'static> CatchPanicFuture<F> {
-    pub fn wrap(f: F) -> Self {
-        Self { inner: f.boxed() }
-    }
-}
-
-impl<F: Future + Send + 'static> Future for CatchPanicFuture<F> {
-    type Output = Result<F::Output, CaughtPanic>;
-
-    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        let inner = &mut self.inner;
-
-        match catch_unwind(move || inner.poll_unpin(cx)) {
-            Ok(Poll::Pending) => Poll::Pending,
-            Ok(Poll::Ready(value)) => Poll::Ready(Ok(value)),
-            Err(err) => Poll::Ready(Err(err)),
-        }
-    }
-}
-
-#[derive(Debug)]
-pub struct CaughtPanic(String);
-
-impl Display for CaughtPanic {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "panicked message: {}", self.0)
-    }
-}
-
-impl std::error::Error for CaughtPanic {}
 
 #[derive(Deserialize, Serialize)]
 pub struct CreateTask {
@@ -188,69 +116,6 @@ impl QueueConfig {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
-pub struct Task {
-    pub id: TaskId,
-
-    next_id: Option<TaskId>,
-    previous_id: Option<TaskId>,
-
-    name: String,
-    queue_name: String,
-
-    unique_key: Option<String>,
-    state: TaskState,
-
-    current_attempt: usize,
-    maximum_attempts: usize,
-
-    // will need a live-cancel signal and likely a custom Future impl to ensure its used for proper
-    // timeout handling
-
-    payload: serde_json::Value,
-    error: Option<String>,
-
-    scheduled_at: OffsetDateTime,
-    scheduled_to_run_at: OffsetDateTime,
-
-    started_at: Option<OffsetDateTime>,
-    finished_at: Option<OffsetDateTime>,
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum TaskExecError {
-    #[error("task deserialization failed: {0}")]
-    DeserializationFailed(#[from] serde_json::Error),
-
-    #[error("task execution failed: {0}")]
-    ExecutionFailed(String),
-
-    #[error("task panicked: {0}")]
-    Panicked(#[from] CaughtPanic),
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum TaskQueueError {
-    #[error("unable to find task with ID {0}")]
-    UnknownTask(TaskId),
-
-    #[error("I lazily hit one of the queue errors I haven't implemented yet")]
-    Unknown,
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum TaskState {
-    New,
-    InProgress,
-    Panicked,
-    Retry,
-    Cancelled,
-    Error,
-    Complete,
-    TimedOut,
-    Dead,
-}
-
 struct Worker<Context, S>
 where
     Context: Clone + Send + 'static,
@@ -297,7 +162,7 @@ where
             .ok_or_else(|| WorkerError::UnregisteredTaskName(task.name))?
             .clone();
 
-        let safe_runner = CatchPanicFuture::wrap({
+        let safe_runner = panic_safe_future::PanicSafeFuture::wrap({
             let context = (self.context_data_fn)();
             let payload = task.payload.clone();
 
@@ -404,13 +269,13 @@ pub enum WorkerError {
     EmergencyShutdown,
 
     #[error("failed to enqueue a failed task for re-execution: {0}")]
-    RetryTaskFailed(TaskQueueError),
+    RetryTaskFailed(TaskStoreError),
 
     #[error("error while attempting to retrieve the next task: {0}")]
-    StoreUnavailable(TaskQueueError),
+    StoreUnavailable(TaskStoreError),
 
     #[error("failed to update task status with store: {0}")]
-    UpdateTaskStatusFailed(TaskQueueError),
+    UpdateTaskStatusFailed(TaskStoreError),
 
     #[error("during execution of a dequeued task, encountered unregistered task '{0}'")]
     UnregisteredTaskName(String),
@@ -564,7 +429,7 @@ impl<T: TaskStore> DerefMut for WorkScheduler<T> {
 #[derive(Debug, thiserror::Error)]
 pub enum WorkSchedulerError {
     #[error("failed to enqueue task to workers: {0}")]
-    EnqueueFailed(TaskQueueError),
+    EnqueueFailed(TaskStoreError),
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -574,23 +439,6 @@ pub enum WorkerPoolError {
 }
 
 // local helper functions
-
-fn catch_unwind<F: FnOnce() -> R, R>(f: F) -> Result<R, CaughtPanic> {
-    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(f)) {
-        Ok(res) => Ok(res),
-        Err(panic_err) => {
-            if let Some(msg) = panic_err.downcast_ref::<&'static str>() {
-                return Err(CaughtPanic(msg.to_string()));
-            }
-
-            if let Some(msg) = panic_err.downcast_ref::<String>() {
-                return Err(CaughtPanic(msg.to_string()));
-            }
-
-            Err(CaughtPanic("unknown panic message format".to_string()))
-        },
-    }
-}
 
 fn deserialize_and_run_task<TL>(
     current_task: CurrentTask,
@@ -659,7 +507,7 @@ impl TaskStore for MemoryTaskStore {
     async fn enqueue<T: TaskLike>(
         conn: &mut Self::Connection,
         task: T,
-    ) -> Result<Option<TaskId>, TaskQueueError> {
+    ) -> Result<Option<TaskId>, TaskStoreError> {
         let unique_key = task.unique_key().await;
 
         if let Some(new_key) = &unique_key {
@@ -669,7 +517,7 @@ impl TaskStore for MemoryTaskStore {
         }
 
         let id = TaskId::from(Uuid::new_v4());
-        let payload = serde_json::to_value(task).map_err(|_| TaskQueueError::Unknown)?;
+        let payload = serde_json::to_value(task).map_err(|_| TaskStoreError::Unknown)?;
 
         let task = Task {
             id,
@@ -701,7 +549,7 @@ impl TaskStore for MemoryTaskStore {
         Ok(Some(id))
     }
 
-    async fn next(&self, queue_name: &str, task_names: &[&str]) -> Result<Option<Task>, TaskQueueError> {
+    async fn next(&self, queue_name: &str, task_names: &[&str]) -> Result<Option<Task>, TaskStoreError> {
         let mut tasks = self.tasks.lock().await;
         let mut next_task = None;
 
@@ -754,18 +602,18 @@ impl TaskStore for MemoryTaskStore {
         Ok(next_task)
     }
 
-    async fn retry(&self, id: TaskId) -> Result<Option<TaskId>, TaskQueueError> {
+    async fn retry(&self, id: TaskId) -> Result<Option<TaskId>, TaskStoreError> {
         let mut tasks = self.tasks.lock().await;
 
         let target_task = match tasks.get_mut(&id) {
             Some(t) => t,
-            None => return Err(TaskQueueError::UnknownTask(id)),
+            None => return Err(TaskStoreError::UnknownTask(id)),
         };
 
         // these states are the only retryable states
         if !matches!(target_task.state, TaskState::Error | TaskState::TimedOut) {
             tracing::warn!(?id, "task is not in a state that can be retried");
-            return Err(TaskQueueError::Unknown);
+            return Err(TaskStoreError::Unknown);
         }
 
         // no retries remaining mark the task as dead
@@ -798,31 +646,31 @@ impl TaskStore for MemoryTaskStore {
         Ok(Some(new_id))
     }
 
-    async fn update_state(&self, id: TaskId, new_state: TaskState) -> Result<(), TaskQueueError> {
+    async fn update_state(&self, id: TaskId, new_state: TaskState) -> Result<(), TaskStoreError> {
         let mut tasks = self.tasks.lock().await;
 
         let task = match tasks.get_mut(&id) {
             Some(t) => t,
-            None => return Err(TaskQueueError::UnknownTask(id)),
+            None => return Err(TaskStoreError::UnknownTask(id)),
         };
 
         if task.state != TaskState::InProgress {
             tracing::error!("only in progress tasks are allowed to transition to other states");
-            return Err(TaskQueueError::Unknown);
+            return Err(TaskStoreError::Unknown);
         }
 
         match new_state {
             // this state should only exist when the task is first created
             TaskState::New => {
                 tracing::error!("can't transition an existing task to the New state");
-                return Err(TaskQueueError::Unknown);
+                return Err(TaskStoreError::Unknown);
             }
             // this is an internal transition that happens automatically when the task is picked up
             TaskState::InProgress => {
                 tracing::error!(
                     "only the task store may transition a task to the InProgress state"
                 );
-                return Err(TaskQueueError::Unknown);
+                return Err(TaskStoreError::Unknown);
             }
             _ => (),
         }
