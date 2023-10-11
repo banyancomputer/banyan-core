@@ -29,7 +29,7 @@ pub async fn handler(api_token: ApiToken, State(state): State<AppState>) -> Resp
 
     match query_result {
         Ok((data_size, metadata_size)) => {
-            let resp = serde_json::json!({"data_size": data_size, "metadata_size": metadata_size});
+            let resp = serde_json::json!({"size": data_size + metadata_size});
             (StatusCode::OK, Json(resp)).into_response()
         }
         Err(err) => {
