@@ -5,6 +5,7 @@ import { AiOutlineLink } from 'react-icons/ai';
 import { PiArrowsLeftRight, PiCopySimple } from 'react-icons/pi';
 import { GoDotFill } from 'react-icons/go';
 import { MdDone } from 'react-icons/md';
+import { BiShareAlt } from 'react-icons/bi';
 
 import { MoveToModal } from '../../common/Modal/MoveToModal';
 import { RenameFileModal } from '../../common/Modal/RenameFileModal';
@@ -14,6 +15,7 @@ import { useModal } from '@/contexts/modals';
 import { ToastNotifications } from '@/utils/toastNotifications';
 import { useFolderLocation } from '@/hooks/useFolderLocation';
 import { DeleteFileModal } from '@/components/common/Modal/DeleteFileModal';
+import { ShareFileModal } from '../Modal/ShareFileModal';
 
 export class Action {
     constructor(
@@ -25,8 +27,8 @@ export class Action {
 
 export const FileActions: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bucket, file }) => {
     const { messages } = useIntl();
-    const { download, makeCopy } = useTomb();
-    const { openModal } = useModal();
+    const { download, makeCopy, shareFile } = useTomb();
+    const { openModal, closeModal } = useModal();
     const folredLoaction = useFolderLocation();
     const bucketType = `${bucket.bucketType}_${bucket.storageClass}`;
 
@@ -64,9 +66,17 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bu
             openModal(<DeleteFileModal bucket={bucket} file={file} />);
         } catch (error: any) { }
     };
+
     const viewFileVersions = async () => {
         try {
 
+        } catch (error: any) { }
+    };
+
+    const share = async () => {
+        try {
+            const link = await shareFile(bucket, file);
+            openModal(<ShareFileModal link={link} />);
         } catch (error: any) { }
     };
 
@@ -77,6 +87,7 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bu
     const vierFileVersionsAction = useMemo(() => new Action(`${messages.viewFileVersions}`, <AiOutlineLink size="18px" />, viewFileVersions), []);
     const renameAction = useMemo(() => new Action(`${messages.rename}`, <FiEdit size="18px" />, rename), []);
     const removeAction = useMemo(() => new Action(`${messages.remove}`, <FiTrash2 size="18px" />, remove), []);
+    const shareAction = useMemo(() => new Action(`${messages.shareFile}`, <BiShareAlt size="18px" />, share), []);
 
     const hotInrecactiveActions = [
         downloadAction, moveToAction, makeCopyAction, renameAction, removeAction
@@ -107,11 +118,11 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bu
     }
 
     return (
-        <div className="absolute w-48 right-8 text-xs font-medium bg-white rounded-xl shadow-md z-10 text-gray-900 select-none">{
+        <div className="absolute w-48 right-8 text-xs font-medium bg-mainBackground rounded-xl shadow-md z-10 text-gray-900 select-none">{
             actions[bucketType].map(action =>
                 <div
                     key={action.label}
-                    className="w-full flex items-center gap-2 py-2 px-3 border-b-1 border-gray-200 transition-all hover:bg-slate-200"
+                    className="w-full flex items-center gap-2 py-2 px-3 border-b-1 border-table-border transition-all hover:bg-hover"
                     onClick={action.value}
                 >
                     {action.icon} {action.label}
@@ -119,7 +130,7 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bu
             )
         }
             <div
-                className="w-full flex justify-between items-center gap-2 py-2 px-3 border-b-1 border-gray-200 transition-all hover:bg-slate-200"
+                className="w-full flex justify-between items-center gap-2 py-2 px-3 border-b-1 border-table-border transition-all hover:bg-hover"
             >
                 Your file is secure <GoDotFill fill='#2bb65e' />
             </div>

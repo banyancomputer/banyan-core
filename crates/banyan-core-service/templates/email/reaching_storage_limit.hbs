@@ -1,0 +1,9 @@
+{{! Required variables: }}
+{{! - current_usage: the current usage of the user }}
+{{! - max_usage: the maximum usage of the user }}
+{{#> layout}}
+    {{#*inline "content"}}
+        You're almost out of storage! Oopsy woopsy!
+        You're currently using {{ current_usage }} out of {{ max_usage }}.
+    {{/inline}}
+{{/layout}}

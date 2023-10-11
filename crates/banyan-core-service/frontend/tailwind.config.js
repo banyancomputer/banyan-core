@@ -8,12 +8,13 @@ module.exports = {
 		extend: {
 			boxShadow: {
 				blue: '0px 4px 0px rgba(37, 99, 235, 0.35)',
+				common: 'var(--shadow)',
 			},
 			height: {
 				navbar: '72px',
 			},
 			width: {
-				navbar: '280px',
+				navbar: '320px',
 				modal: '400px',
 				toast: '480px',
 				snapshotsModal: '530px',
@@ -26,7 +27,7 @@ module.exports = {
 				1.5: '6px',
 			},
 			minWidth: {
-				navbar: '280px',
+				navbar: '320px',
 				login: '590px',
 			},
 			maxWidth: {
@@ -34,26 +35,32 @@ module.exports = {
 			},
 			colors: {
 				blue: {
-					primary: '#3E8CDA',
-					hover: '#287dd2',
-					100: '#DBEAFE',
-					600: '#2563EB',
-					900: '#1E3A8A',
+					primary: 'var(--blue-primary)',
+					hover: 'var(--blue-hover)',
 				},
-				error: '#CB3535',
-				errorBanner: '#FFD7B2',
-				login: '#F7F7F7',
+				error: 'var(--error)',
+				errorBanner: 'var(--errorBanner)',
+				login: 'var(--login)',
 				navigation: {
-					primary: '#FFECC5',
-					secondary: '#fff8e7',
-					text: '#30374F',
-					textSecondary: '#7D89B0',
-					border: '#EFC163',
+					primary: 'var(--navigation-primary)',
+					secondary: 'var(--navigation-secondary)',
+					text: 'var(--navigation-text)',
+					textSecondary: 'var(--navigation-textSecondary)',
+					border: 'var(--navigation-border)',
 				},
 				table: {
-					cellBackground: '#EFF1F5',
-					headBackground: '#fcfcfd',
+					cellBackground: 'var(--table-cellBackground)',
+					headBackground: 'var(--table-headBackground)',
+					border: 'var(--table-border)',
 				},
+				inputBorder: 'var(--input-border)',
+				'gray-200': 'var(--gray-200)',
+				'gray-600': 'var(--gray-600)',
+				'gray-800': 'var(--gray-800)',
+				'gray-900': 'var(--gray-900)',
+				disabled: 'var(--disabled)',
+				hover: 'var(--hover-background)',
+				mainBackground: 'var(--background)',
 			},
 			fontFamily: {
 				sans: ['Inter'],

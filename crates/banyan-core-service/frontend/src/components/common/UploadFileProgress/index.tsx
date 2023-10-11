@@ -5,7 +5,6 @@ import { MdDone } from 'react-icons/md';
 import { Loader } from '../Loader';
 import { FileIcon } from '../FileIcon';
 
-import { ToastNotifications } from '@/utils/toastNotifications';
 import { useFilesUpload } from '@/contexts/filesUpload';
 
 export const UploadFileProgress = () => {

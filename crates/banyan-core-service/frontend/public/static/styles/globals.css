@@ -3,19 +3,19 @@
 @tailwind utilities;
 
 @import "react-toastify/dist/ReactToastify.min.css";
-@import 'react-circular-progressbar/dist/styles.css';
+@import "@static/styles/_variables.css";
 
 @font-face {
     font-family: "Inter";
     font-style: normal;
     font-display: swap;
     src: url("../fonts/Inter.ttf") format("truetype");
-};
+}
 
 h1,
 h2,
 h3 {
-	@apply font-bold;
+    @apply font-bold;
 }
 
 h4,
@@ -31,25 +31,39 @@ input {
 
 .btn-primary {
 	@apply flex items-center justify-center font-semibold rounded-lg border-2 border-blue-primary bg-blue-primary text-white transition-all;
-}
+};
+
 .btn-primary:hover {
 	@apply bg-blue-hover border-blue-hover;
 }
+
 .btn-primary:disabled {
-	@apply cursor-not-allowed bg-slate-300 border-slate-300;
+	@apply cursor-not-allowed bg-disabled border-disabled;
 }
+
 /* Button default styles */
 .btn-secondary {
 	@apply flex items-center justify-center font-semibold rounded-lg bg-transparent border-2 border-gray-900 text-gray-900;
 }
+
 .btn-secondary:hover {
 	@apply bg-transparent border-gray-900;
+}
+
+.table {
+    tr {
+        border: none;
+    }
+}
+
+.input {
+    background: unset;
 }
 
 *::-webkit-scrollbar {
         margin-right: 5px;
         width: 6px;
-    }
+}
 
 *::-webkit-scrollbar-thumb {
     border-radius: 8px;
@@ -75,7 +89,7 @@ input {
     justify-content: center;
     width: 100%;
     padding: 35px 0px;
-};
+}
 
 .photo-viewer-container {
     width: unset !important;
@@ -86,4 +100,10 @@ input {
     width: unset !important;
     height: unset !important;
     border-radius: 16px;
+}
+
+.toggle {
+    background-color: #5299E0 !important;
+    border: none;
+    --tglbg: var(--gray-200);
 }

@@ -13,7 +13,7 @@ export const RenameBucketModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const [newName, setNewName] = useState('');
     const { } = useTomb();
 
-    const rename = async() => {
+    const rename = async () => {
         try {
             /** TODO: add rename function after it will be added into tomb-wasm */
             ToastNotifications.notify(`${messages.bucket} "${bucket.name}" ${messages.wasRenamed}`, <MdDone size="20px" />);
@@ -29,7 +29,7 @@ export const RenameBucketModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                 <label>
                     {`${messages.bucketName}`}
                     <input
-                        className="mt-2 input w-full h-11 py-3 px-4 rounded-lg border-gray-400 focus:outline-none"
+                        className="mt-2 input w-full h-11 py-3 px-4 rounded-lg border-inputBorder focus:outline-none"
                         type="text"
                         placeholder={`${messages.enterNewBucketName}`}
                         value={newName}

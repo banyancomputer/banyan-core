@@ -3,6 +3,8 @@ use std::fmt::Display;
 use axum::response::{IntoResponse, Response};
 use http::StatusCode;
 
+use crate::email::error::EmailError;
+
 #[derive(Debug)]
 #[non_exhaustive]
 pub struct CoreError {
@@ -42,6 +44,12 @@ impl CoreError {
             },
         }
     }
+
+    pub fn email_error(err: EmailError) -> Self {
+        Self {
+            kind: CoreErrorKind::EmailError(err),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -57,6 +65,7 @@ pub enum CoreErrorKind {
         /// Resource
         resource: String,
     },
+    EmailError(EmailError),
 }
 
 impl IntoResponse for CoreError {
@@ -95,6 +104,16 @@ impl IntoResponse for CoreError {
                     _ => Self::default_response(None),
                 }
             }
+            CoreErrorKind::EmailError(err) => {
+                tracing::error!("unable to send email: {err}");
+                Self::default_response(None)
+            }
         }
+    }
+}
+
+impl From<EmailError> for CoreError {
+    fn from(err: EmailError) -> Self {
+        Self::email_error(err)
     }
 }

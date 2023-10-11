@@ -1,8 +1,7 @@
 use crate::db::models::{self, BucketType, CreatedResource, StorageClass};
+use crate::email::message::EmailMessage;
 use crate::extractors::DbConn;
 use crate::utils::keys::fingerprint_public_pem;
-use serde::Serialize;
-use sqlx::FromRow;
 
 /// Create a new Bucket in the database and return the created resource.
 /// Implements an authorized read of a bucket by id and account_id.
@@ -185,7 +184,6 @@ pub async fn create_bucket_key(
     db_conn: &mut DbConn,
 ) -> Result<CreatedResource, sqlx::Error> {
     let fingerprint = fingerprint_public_pem(pem);
-    tracing::info!("creating new bucketkey w fingerprint {fingerprint}");
     sqlx::query_as!(
         models::CreatedResource,
         r#"INSERT INTO bucket_keys (bucket_id, approved, pem, fingerprint) VALUES ($1, $2, $3, $4) RETURNING id;"#,
@@ -440,34 +438,33 @@ pub async fn read_current_metadata(
     Ok(metadata_with_snapshot)
 }
 
-/// Create a snapshot and return the created resource.
-/// # Arguments
-/// * `metadata_id` - The id of the metadata to snapshot.
-/// * `db_conn` - The database connection to use.
-/// # Return Type
-/// Returns the created snapshot if successful, otherwise returns an error.
 pub async fn create_snapshot(
     metadata_id: &str,
     db_conn: &mut DbConn,
-) -> Result<models::CreateSnapshot, sqlx::Error> {
-    sqlx::query_as!(
-        models::CreateSnapshot,
-        r#"INSERT INTO snapshots (metadata_id)
-        VALUES ($1)
-        RETURNING id, created_at;"#,
-        metadata_id
+) -> Result<String, sqlx::Error> {
+    let metadata_size: i64 = sqlx::query_scalar(
+        r#"
+            SELECT metadata_size + COALESCE(expected_data_size, data_size)
+            FROM metadata
+            WHERE id = $1;"#,
     )
+    .bind(metadata_id)
+    .fetch_one(&mut *db_conn.0)
+    .await?;
+
+    sqlx::query_scalar::<sqlx::Sqlite, String>(
+        r#"INSERT INTO snapshots (metadata_id, size)
+        VALUES ($1, $2)
+        RETURNING id;"#,
+    )
+    .bind(metadata_id)
+    .bind(metadata_size)
     .fetch_one(&mut *db_conn.0)
     .await
 }
 
-/// Read a snapshot by its id and authorize that its associated metadata belongs to a given bucket_id.
-/// # Arguments
-/// * `bucket_id` - The id of the bucket to read.
-/// * `snapshot_id` - The id of the snapshot to read.
-/// * `db_conn` - The database connection to use.
-/// # Return Type
-/// Returns the snapshot if it exists and belongs to the given bucket_id, otherwise returns an error.
+/// Returns information about a specific snapshot. The caller must know what bucket its associated
+/// with as an authorization check.
 pub async fn read_snapshot(
     bucket_id: &str,
     snapshot_id: &str,
@@ -475,17 +472,10 @@ pub async fn read_snapshot(
 ) -> Result<models::Snapshot, sqlx::Error> {
     sqlx::query_as!(
         models::Snapshot,
-        r#"SELECT 
-            s.id,
-            s.metadata_id as "metadata_id!",
-            m.data_size as "size!",
-            s.created_at as "created_at!"
-        FROM 
-            snapshots s
-        INNER JOIN 
-            metadata m ON m.id = s.metadata_id
-        WHERE 
-            s.id = $1 AND m.bucket_id = $2;"#,
+        r#"SELECT s.id, s.metadata_id, s.size as "size!", s.created_at
+             FROM snapshots AS s
+             INNER JOIN metadata m ON m.id = s.metadata_id
+             WHERE s.id = $1 AND m.bucket_id = $2;"#,
         snapshot_id,
         bucket_id
     )
@@ -493,141 +483,86 @@ pub async fn read_snapshot(
     .await
 }
 
-/// Read a snapshot by bucket_id and snapshot_id.
-/// # Arguments
-/// * `bucket_id` - The id of the bucket to read.
-/// * `snapshot_id` - The id of the snapshot to read.
-/// * `db_conn` - The database connection to use.
-/// # Return Type
-/// Returns the snapshot if it exists and belongs to the given bucket_id, otherwise returns an error.
+/// Returns all snapshots associated with a specific bucket
 pub async fn read_all_snapshots(
     bucket_id: &str,
     db_conn: &mut DbConn,
 ) -> Result<Vec<models::Snapshot>, sqlx::Error> {
     sqlx::query_as!(
         models::Snapshot,
-        r#"SELECT 
-            s.id,
-            s.metadata_id as "metadata_id!",
-            m.data_size as "size!",
-            s.created_at as "created_at!"
-        FROM 
-            snapshots s
-        INNER JOIN 
-            metadata m ON m.id = s.metadata_id
-        WHERE 
-            m.bucket_id = $1;"#,
+        r#"SELECT s.id, s.metadata_id, s.size as "size!", s.created_at
+                FROM snapshots AS s
+                INNER JOIN metadata m ON m.id = s.metadata_id
+                WHERE m.bucket_id = $1;"#,
         bucket_id
     )
     .fetch_all(&mut *db_conn.0)
     .await
 }
 
-/// Read the data + metadata usage of the given account id.
-/// This is the sum of all data_size and metadata_size for all metadata associated with the account in the 'pending' or 'current' state.
-/// # Arguments
-/// * `account_id` - The id of the account to read.
-/// * `db_conn` - The database connection to use.
-/// # Return Type
-/// Returns the current data usage if it exists, otherwise returns an error.
+/// Read the total data storage consumed by both data and metadata across a user's entire account
 pub async fn read_total_usage(account_id: &str, db_conn: &mut DbConn) -> Result<u64, sqlx::Error> {
-    let maybe_usage = sqlx::query_as!(
-        GetTotalUsage,
-        r#"SELECT 
-            COALESCE(SUM(COALESCE(m.data_size, m.expected_data_size)), 0) as "data_size!",
-            COALESCE(SUM(m.metadata_size), 0) as "metadata_size!"
-        FROM
-            metadata m
-        INNER JOIN
-            buckets b ON b.id = m.bucket_id
-        WHERE
-            b.account_id = $1 AND m.state IN ('pending', 'current');"#,
-        account_id,
+    sqlx::query_scalar::<sqlx::Sqlite, i64>(
+        r#"SELECT
+             SUM(m.metadata_size + COALESCE(m.expected_data_size, m.data_size))
+           FROM metadata as m
+           INNER JOIN buckets b ON b.id = m.bucket_id
+           WHERE b.account_id = $1;"#,
     )
+    .bind(account_id)
     .fetch_one(&mut *db_conn.0)
-    .await;
-    match maybe_usage {
-        Ok(usage) => Ok(usage.data_size as u64 + usage.metadata_size as u64),
-        Err(err) => match err {
-            sqlx::Error::RowNotFound => Err(sqlx::Error::RowNotFound),
-            _ => Err(err),
-        },
-    }
+    .await
+    .map(|num| num as u64)
 }
 
-/// Read the data usage of the given account id.
-/// This is the sum of all data_size for all metadata associated with the account in the 'pending' or 'current' state.
-/// # Arguments
-/// * `account_id` - The id of the account to read.
-/// * `db_conn` - The database connection to use.
-/// # Return Type
-/// Returns the data usage if it exists, otherwise returns an error.
+/// Read just the data usage of the given account id across all buckets they control
 pub async fn read_total_data_usage(
     account_id: &str,
     db_conn: &mut DbConn,
 ) -> Result<u64, sqlx::Error> {
-    let maybe_data_usage = sqlx::query_as!(
-        GetUsage,
+    sqlx::query_scalar::<sqlx::Sqlite, i64>(
         r#"SELECT
-            COALESCE(SUM(COALESCE(m.data_size, m.expected_data_size)), 0) as "size!"
-        FROM
-            metadata m
-        INNER JOIN
-            buckets b ON b.id = m.bucket_id
-        WHERE
-            b.account_id = $1 AND m.state IN ('pending', 'current');"#,
-        account_id,
+             COALESCE(m.expected_data_size, m.data_size)
+           FROM metadata as m
+           INNER JOIN buckets b ON b.id = m.bucket_id
+           WHERE b.account_id = $1;"#,
     )
+    .bind(account_id)
     .fetch_one(&mut *db_conn.0)
-    .await;
-    match maybe_data_usage {
-        Ok(usage) => Ok(usage.size as u64),
-        Err(err) => match err {
-            sqlx::Error::RowNotFound => Err(sqlx::Error::RowNotFound),
-            _ => Err(err),
-        },
-    }
+    .await
+    .map(|num| num as u64)
 }
 
 /// Read the data usage of a given bucket id.
-/// This is the sum of all data_size for all metadata associated with the bucket in the 'pending' or 'current' state.
-/// # Arguments
-/// * `bucket_id` - The id of the bucket to read.
-/// * `db_conn` - The database connection to use.
-/// # Return Type
-/// Returns the data usage if it exists, otherwise returns an error.
 pub async fn read_bucket_data_usage(
     bucket_id: &str,
     db_conn: &mut DbConn,
 ) -> Result<u64, sqlx::Error> {
-    let maybe_data_usage = sqlx::query_as!(
-        GetUsage,
+    sqlx::query_scalar::<sqlx::Sqlite, i64>(
         r#"SELECT
-                    COALESCE(SUM(m.data_size), 0) as "size!"
-                FROM
-                    metadata m
-                WHERE
-                    m.bucket_id = $1 AND m.state IN ('pending', 'current');"#,
-        bucket_id,
+             SUM(m.metadata_size + COALESCE(m.expected_data_size, m.data_size))
+           FROM metadata
+           WHERE bucket_id = $1;"#,
     )
+    .bind(bucket_id)
     .fetch_one(&mut *db_conn.0)
-    .await;
-    match maybe_data_usage {
-        Ok(usage) => Ok(usage.size as u64),
-        Err(err) => match err {
-            sqlx::Error::RowNotFound => Err(sqlx::Error::RowNotFound),
-            _ => Err(err),
-        },
-    }
+    .await
+    .map(|num| num as u64)
 }
 
-#[derive(Serialize)]
-struct GetTotalUsage {
-    pub data_size: i64,
-    pub metadata_size: i64,
-}
-
-#[derive(Serialize, FromRow)]
-struct GetUsage {
-    pub size: i64,
+#[allow(dead_code)]
+pub async fn record_sent_email(
+    account_id: &str,
+    email_message: &impl EmailMessage,
+    db_conn: &mut DbConn,
+) -> Result<(), sqlx::Error> {
+    let type_name = email_message.type_name();
+    sqlx::query!(
+        r#"INSERT INTO emails (account_id, type) VALUES ($1, $2);"#,
+        account_id,
+        type_name
+    )
+    .execute(&mut *db_conn.0)
+    .await?;
+    Ok(())
 }

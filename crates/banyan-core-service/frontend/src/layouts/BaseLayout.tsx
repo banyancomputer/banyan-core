@@ -12,7 +12,6 @@ export interface IBaseLayout {
 
 const BaseLayout: React.FC<IBaseLayout> = ({ children }) => {
     const router = useRouter();
-    const isNavigationVisible = useMemo(() => router.pathname !== '/login', [router.pathname]);
     const { keystoreInitialized, isLoading, escrowedDevice } = useKeystore();
     const { openEscrowModal } = useModal();
 
@@ -22,13 +21,11 @@ const BaseLayout: React.FC<IBaseLayout> = ({ children }) => {
         };
     }, [keystoreInitialized, isLoading, escrowedDevice]);
 
-    return <main className="flex flex-col h-screen font-sans bg-white">
-        <Header />
+    return <main className="flex flex-col h-screen font-sans bg-mainBackground text-gray-900">
         <section className="flex flex-grow">
-            {isNavigationVisible &&
-                <Navigation />
-            }
+            <Navigation />
             <div className="flex-grow">
+                <Header />
                 {children}
             </div>
         </section>

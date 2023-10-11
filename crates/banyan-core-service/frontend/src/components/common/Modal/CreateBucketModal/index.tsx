@@ -51,7 +51,7 @@ export const CreateBucketModal = () => {
                 <label>
                     {`${messages.bucketName}`}
                     <input
-                        className="mt-2 input w-full h-11 py-3 px-4 rounded-lg border-gray-200 focus:outline-none"
+                        className="mt-2 input w-full h-11 py-3 px-4 rounded-lg border-inputBorder focus:outline-none"
                         type="text"
                         placeholder={`${messages.enterNewBucketName}`}
                         value={bucketName}

@@ -28,16 +28,24 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
         setSortState(prev => ({ criteria, direction: prev.direction === 'ASC' ? 'DESC' : 'ASC' }));
     };
 
-    const goToBucket = (bucket: string) => {
+    const goToBucket = (event: React.MouseEvent<HTMLTableRowElement, MouseEvent>, bucket: string) => {
+        //@ts-ignore
+        if (event.target.id === 'actionsCell') return;
+
         push(`/bucket/${bucket}`);
     };
 
     const goTofolder = (bucket: Bucket, folder: BucketFile) => {
         push(`/bucket/${bucket.id}?${folder.name}`);
     };
-
     const previewFile = async (bucket: Bucket, file: BucketFile) => {
         openFile(bucket, file.name, []);
+    };
+    const handleClick = (event: React.MouseEvent<HTMLTableRowElement, MouseEvent>, bucket: Bucket, file: BucketFile) => {
+        //@ts-ignore
+        if (event.target.id === 'actionsCell') return;
+
+        file.type === 'dir' ? goTofolder(bucket, file) : previewFile(bucket, file);
     };
 
     useEffect(() => {
@@ -74,10 +82,10 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
     return (
         <div
             ref={tableRef}
-            className="max-h-[calc(100vh-210px)] w-full overflow-x-auto border-2 border-gray-200 rounded-xl"
+            className="max-h-[calc(100vh-210px)] w-full overflow-x-auto border-2 border-table-border rounded-xl"
         >
             <table className="table table-pin-rows w-full text-gray-600 rounded-xl table-fixed">
-                <thead className="border-b-table-cellBackground text-xxs font-normal">
+                <thead className="border-b-table-cellBackground text-xxs font-normal text-gray-600">
                     <tr className="border-b-table-cellBackground bg-table-headBackground">
                         <th className="p-3 text-left font-medium">{`${messages.bucketName}`}</th>
                         <th className="p-3 text-left font-medium">
@@ -98,7 +106,7 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
                                 text={`${messages.lastEdited}`}
                             />
                         </th>
-                        <th className="p-3 text-left font-medium w-24">
+                        <th className="p-3 text-left font-medium w-36">
                             <SortCell
                                 criteria="fileSize"
                                 onChange={sort}
@@ -112,19 +120,19 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
                 <tbody>
                     {bucketsCopy.map(bucket =>
                         <React.Fragment key={bucket.id}>
-                            <tr className="bg-table-cellBackground">
-                                <td
-                                    className="px-3 py-4  cursor-pointer"
-                                    onClick={() => goToBucket(bucket.id)}
-                                >{bucket.name}</td>
+                            <tr
+                                className="bg-table-cellBackground cursor-pointer"
+                                onClick={event => goToBucket(event, bucket.id)}
+                            >
+                                <td className="px-3 py-4 cursor-pointer  overflow-hidden text-ellipsis whitespace-nowrap text-gray-900 font-medium">
+                                    {bucket.name}
+                                </td>
                                 <td className="px-3 py-4"></td>
                                 <td className="px-3 py-4">{bucket.storageClass}</td>
                                 <td className="px-3 py-4">{bucket.bucketType}</td>
                                 <td className="px-3 py-4"></td>
                                 <td className="px-3 py-4"></td>
-                                <td
-                                    className="px-3 py-4"
-                                >
+                                <td className="px-3 py-4">
                                     <ActionsCell
                                         actions={<BucketActions bucket={bucket} />}
                                         offsetTop={tableScroll}
@@ -134,21 +142,18 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
                             </tr>
                             {
                                 bucket.files.map((file, index) =>
-                                    <tr key={index}>
+                                    <tr
+                                        key={index}
+                                        className='cursor-pointer'
+                                        onClick={event => handleClick(event, bucket, file)}
+                                    >
                                         <td className="px-3 py-4"></td>
-                                        <td
-                                            className="px-3 py-4"
-                                            onClick={() => file.type === 'dir' ? goTofolder(bucket, file) : previewFile(bucket, file)}
-                                        >
-                                            <FileCell name={file.name} />
-                                        </td>
+                                        <td className="px-3 py-4"><FileCell name={file.name} /></td>
                                         <td className="px-3 py-4"></td>
                                         <td className="px-3 py-4"></td>
                                         <td className="px-3 py-4">{getDateLabel(Number(file.metadata.modified))}</td>
                                         <td className="px-3 py-4">{convertFileSize(file.metadata.size)}</td>
-                                        <td
-                                            className="px-3 py-4"
-                                        >
+                                        <td className="px-3 py-4">
                                             {
                                                 file.type === 'dir' && bucket.bucketType === 'backup' ?
                                                     null

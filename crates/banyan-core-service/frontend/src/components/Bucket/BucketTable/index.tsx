@@ -44,6 +44,13 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         openFile(bucket, file.name, folderLocation);
     };
 
+    const handleClick = (event: React.MouseEvent<HTMLTableRowElement, MouseEvent>, bucket: Bucket, file: BucketFile) => {
+        //@ts-ignore
+        if (event.target.id === 'actionsCell') return;
+
+        file.type === 'dir' ? goTofolder(bucket, file) : previewFile(bucket, file);
+    };
+
     useEffect(() => {
         if (sortState.criteria === 'name') {
             setBucketCopy(bucket => {
@@ -79,14 +86,14 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     return (
         <div
             ref={tableRef}
-            className="max-h-[calc(100vh-210px)] w-fit overflow-x-auto border-2 border-gray-200 rounded-xl "
+            className="max-h-[calc(100vh-210px)] w-fit overflow-x-auto border-2 border-table-border rounded-xl shadow-common"
         >
-            <div className="px-5 py-6 text-m font-semibold border-b-2 border-gray-200">
+            <div className="px-5 py-6 text-m font-semibold border-b-2 border-table-border">
                 {`${messages.files}`}
             </div>
             <div >
                 <table className="table table-pin-rows w-full text-gray-600 rounded-xl  table-fixed ">
-                    <thead className="border-b-table-cellBackground text-xxs font-normal ">
+                    <thead className="border-b-table-cellBackground text-xxs font-normal text-gray-600">
                         <tr className="border-b-table-cellBackground bg-table-headBackground font-normal">
                             <th className="flex items-center gap-3 px-6 py-4 text-left font-medium">
                                 <SortCell
@@ -104,7 +111,7 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                                     text={`${messages.lastEdited}`}
                                 />
                             </th>
-                            <th className="px-6 py-4 text-left font-medium w-24">
+                            <th className="px-6 py-4 text-left font-medium w-36">
                                 <SortCell
                                     criteria="fileSize"
                                     onChange={sort}
@@ -124,13 +131,12 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                     <tbody>
                         {
                             bucketCopy.files.map((file, index) =>
-                                <tr key={index}>
-                                    <td
-                                        onClick={() => file.type === 'dir' ? goTofolder(bucket, file) : previewFile(bucket, file)}
-                                        className='px-6 py-4'
-                                    >
-                                        <FileCell name={file.name} />
-                                    </td>
+                                <tr
+                                    className='cursor-pointer'
+                                    key={index}
+                                    onClick={event => handleClick(event, bucket, file)}
+                                >
+                                    <td className='px-6 py-4'><FileCell name={file.name} /></td>
                                     <td className="px-6 py-4">{getDateLabel(+file.metadata.modified)}</td>
                                     <td className="px-6 py-4">{convertFileSize(file.metadata.size)}</td>
                                     <td className="px-6 py-4">

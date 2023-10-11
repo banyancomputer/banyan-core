@@ -37,7 +37,11 @@ validify = "^1.0"
 tracing = "^0.1"
 tracing-appender = "^0.2"
 tracing-futures = { version = "^0.2", default-features = false, features = ["std-future"] }
-tracing-subscriber = { version = "^0.3", default-features = false, features = ["ansi", "env-filter", "fmt", "local-time", "time", "tracing"] }
+tracing-subscriber = { version = "^0.3", default-features = false, features = ["env-filter", "fmt", "local-time", "time", "tracing"] }
+lettre = "^0.10"
+handlebars = { version = "^4.4", features = ["dir_source"] }
+lazy_static = "^1.4"
+url = "^2.4"
 
 [dev-dependencies]
 proptest = "^1.1"

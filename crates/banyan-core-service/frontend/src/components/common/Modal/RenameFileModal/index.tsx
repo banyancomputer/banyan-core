@@ -15,7 +15,7 @@ export const RenameFileModal: React.FC<{ bucket: Bucket; file: BucketFile }> = (
     const [newName, setNewName] = useState('');
     const folderLocation = useFolderLocation();
 
-    const save = async() => {
+    const save = async () => {
         try {
             await moveTo(bucket, [...folderLocation, file.name], [...folderLocation, newName]);
             ToastNotifications.notify(`${messages.fileWasRenamed}`, <MdDone size="20px" />);
@@ -35,7 +35,7 @@ export const RenameFileModal: React.FC<{ bucket: Bucket; file: BucketFile }> = (
                 <label>
                     {`${messages.fileName}`}
                     <input
-                        className="mt-2 input w-full h-11 py-3 px-4 rounded-lg border-gray-300 shadow-sm focus:outline-none"
+                        className="mt-2 input w-full h-11 py-3 px-4 rounded-lg border-inputBorder shadow-sm focus:outline-none"
                         type="text"
                         placeholder={`${messages.enterNewBucketName}`}
                         value={newName}

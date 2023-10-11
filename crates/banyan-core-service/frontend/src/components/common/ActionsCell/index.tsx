@@ -60,6 +60,10 @@ export const ActionsCell: React.FC<{
                         <div
                             className='relative'
                             style={{ top: `-${offsetTop - Math.min(overflow, 0)}px` }}
+                            onClick={event => {
+                                event.stopPropagation();
+                                toggleActionsVisibility();
+                            }}
                         >
                             {actions}
                         </div>

@@ -179,10 +179,12 @@ pub async fn push(
             .into_response();
         }
     };
+
+    tracing::info!(metadata_id = ?metadata_resource.id, current_usage = ?current_usage, data_size = ?expected_data_size, meta_size = ?metadata_size, "created new metadata entry");
+
     // Based on how much stuff there planning on pushing, reject the upload if it would exceed the quota
     // Expected usage is their current usage plus the size of the metadata they're uploading plus the size of the data they want to upload to a host
-    let expected_data_size = request_data.expected_data_size as u64;
-    let expected_usage = current_usage + metadata_size + expected_data_size;
+    let expected_usage = current_usage + metadata_size + expected_data_size as u64;
     if expected_usage > ACCOUNT_STORAGE_QUOTA {
         // Mark the upload as failed
         let maybe_failed_metadata_upload = sqlx::query!(
@@ -208,7 +210,7 @@ pub async fn push(
             format!(
                 "account storage quota exceeded: {current_usage} + {request_size} > {ACCOUNT_STORAGE_QUOTA}",
                 current_usage = current_usage,
-                request_size = expected_data_size + metadata_size,
+                request_size = expected_data_size + metadata_size as i64,
                 ACCOUNT_STORAGE_QUOTA = ACCOUNT_STORAGE_QUOTA
             ),
         )
@@ -299,18 +301,10 @@ pub async fn push(
 
     /* 6. Determine a storage host we can point them too. Determine what they're expected usage on that host will be after upload */
 
-    // Since we only have one storage host, this is easy
-    // Query the database for the current and pending data usage for the account
-    let data_usage = match db::read_total_data_usage(&account_id, &mut db_conn).await {
-        Ok(usage) => usage,
-        Err(err) => {
-            return CoreError::default_error(&format!("unable to read account data usage: {err}"))
-                .into_response();
-        }
-    };
-
     // Round up to the nearest 100 MiB
-    let data_usage = round_to_nearest_100_mib(data_usage);
+    let data_authorization = round_to_nearest_100_mib(expected_usage);
+    tracing::info!(account_id = ?account_id, authorized_amt = ?data_authorization, "authorizing user more storage");
+
     // Read a storage host from the database. We only have one right now, so this is easy
     let storage_host = match db::select_storage_host(&mut db_conn).await {
         Ok(sh) => sh,
@@ -326,7 +320,7 @@ pub async fn push(
         &storage_host.id,
         &account_id,
         &metadata_resource.id,
-        data_usage,
+        data_authorization,
         &mut db_conn,
     )
     .await
@@ -344,7 +338,7 @@ pub async fn push(
         api_token_kid,
         &storage_host.name,
         &storage_host.url,
-        data_usage,
+        data_authorization,
         &signing_key,
     ) {
         Ok(ticket) => ticket,

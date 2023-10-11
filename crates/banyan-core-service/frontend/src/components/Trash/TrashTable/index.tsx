@@ -67,8 +67,8 @@ export const TrashTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     }, [tableRef]);
 
     return (
-        <div className="max-h-[calc(100vh-367px)] w-fit overflow-x-auto border-2 border-gray-200 rounded-xl" >
-            <div className="px-5 py-6 text-m font-semibold border-b-2 border-gray-200">
+        <div className="max-h-[calc(100vh-367px)] w-fit overflow-x-auto border-2 border-table-border rounded-xl" >
+            <div className="px-5 py-6 text-m font-semibold border-b-2 border-table-border">
                 {`${messages.files}`}
             </div>
             <div >
@@ -80,7 +80,7 @@ export const TrashTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                                     onChange={selectAll}
                                     type="checkbox"
                                     checked={selectedFiles.length === bucket.files.length}
-                                    className="checkbox border-gray-600"
+                                    className="checkbox border-inputBorder"
                                 />
                                 <SortCell
                                     criteria="name"
@@ -117,7 +117,7 @@ export const TrashTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                                             onChange={() => selectFile(file)}
                                             type="checkbox"
                                             checked={selectedFiles.includes(file)}
-                                            className="checkbox border-gray-600"
+                                            className="checkbox border-inputBorder"
                                         />
                                         <FileIcon fileName={file.name} className="p-2 bg-gray-200 rounded-full" />{file.name}
                                     </td>
