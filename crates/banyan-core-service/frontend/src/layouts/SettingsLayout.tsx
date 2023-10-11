@@ -20,11 +20,11 @@ const SettingsLayout: React.FC<IBaseLayout> = ({ children }) => {
         };
     }, [keystoreInitialized, isLoading, escrowedDevice]);
 
-    return <main className="flex flex-col h-screen font-sans bg-mainBackground">
-        <Header />
+    return <main className="flex flex-col h-screen font-sans bg-mainBackground text-gray-900">
         <section className="flex flex-grow">
             <Navigation />
             <div className="flex-grow">
+                <Header />
                 <AccountNavigation />
                 {children}
             </div>
