@@ -15,7 +15,7 @@ pub struct CreateTask {
 }
 
 impl CreateTask {
-    fn new<T: TaskLike>(task: T, run_at: OffsetDateTime) -> Self {
+    pub fn new<T: TaskLike>(task: T, run_at: OffsetDateTime) -> Self {
         Self {
             name: T::TASK_NAME.to_string(),
             queue_name: T::QUEUE_NAME.to_string(),

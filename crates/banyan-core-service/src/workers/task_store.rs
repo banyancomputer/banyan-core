@@ -22,14 +22,12 @@ pub trait TaskStore: Send + Sync + 'static {
         Self: Sized;
 
     async fn errored(&self, id: TaskId, error: TaskExecError) -> Result<Option<TaskId>, TaskStoreError> {
-        use TaskExecError as TEE;
-
         match error {
-            TEE::DeserializationFailed(_) | TEE::Panicked(_) => {
+            TaskExecError::DeserializationFailed(_) | TaskExecError::Panicked(_) => {
                 self.update_state(id, TaskState::Dead).await?;
                 Ok(None)
             }
-            TEE::ExecutionFailed(_) => {
+            TaskExecError::ExecutionFailed(_) => {
                 self.update_state(id, TaskState::Error).await?;
                 self.retry(id).await
             }
@@ -45,6 +43,9 @@ pub trait TaskStore: Send + Sync + 'static {
 
 #[derive(Debug, thiserror::Error)]
 pub enum TaskStoreError {
+    #[error("the underlying connection experienced an issue: {0}")]
+    ConnectionFailure(String),
+
     #[error("failed to encode task as JSON: {0}")]
     EncodeFailed(serde_json::Error),
 

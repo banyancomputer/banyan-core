@@ -54,8 +54,8 @@ impl TaskStore for MemoryTaskStore {
     ) -> Result<Option<TaskId>, TaskStoreError> {
         let unique_key = task.unique_key().await;
 
-        if let Some(new_key) = &unique_key {
-            if MemoryTaskStore::is_key_present(conn, new_key).await {
+        if let Some(ukey) = &unique_key {
+            if MemoryTaskStore::is_key_present(conn, ukey).await {
                 return Ok(None);
             }
         }
