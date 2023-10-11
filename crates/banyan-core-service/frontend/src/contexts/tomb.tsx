@@ -32,7 +32,7 @@ interface TombInterface {
     createDirectory: (bucket: Bucket, path: string[], name: string) => Promise<void>;
     download: (bucket: Bucket, path: string[], name: string) => Promise<void>;
     getFile: (bucket: Bucket, path: string[], name: string) => Promise<ArrayBuffer>;
-    shareWith: (bucket: Bucket, file: BucketFile) => Promise<string>;
+    shareFile: (bucket: Bucket, file: BucketFile) => Promise<string>;
     makeCopy: (bucket: Bucket, path: string[], name: string) => void;
     moveTo: (bucket: Bucket, from: string[], to: string[]) => Promise<void>;
     uploadFile: (nucket: Bucket, path: string[], name: string, file: any) => Promise<void>;
@@ -200,7 +200,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     const restore = async (bucket: Bucket, snapshot: WasmSnapshot) => await tombMutex(bucket.mount, async mount => await mount.restore(snapshot));
 
     /** Generates public link to share file. */
-    const shareWith = async (bucket: Bucket, file: BucketFile) => {
+    const shareFile = async (bucket: Bucket, file: BucketFile) => {
         /** TODO: implement sharing logic when it will be added to tomb. */
         return '';
     };
@@ -359,7 +359,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
                 getBuckets, getBucketsFiles, getBucketsKeys, selectBucket, getSelectedBucketFiles,
                 takeColdSnapshot, getBucketShapshots, createBucket, deleteBucket, getTrashBucket,
                 getFile, createDirectory, uploadFile, getBucketKeys, purgeSnapshot,
-                removeBucketAccess, approveBucketAccess, completeDeviceKeyRegistration, shareWith, download, moveTo,
+                removeBucketAccess, approveBucketAccess, completeDeviceKeyRegistration, shareFile, download, moveTo,
                 restore, deleteFile, makeCopy
             }}
         >
