@@ -352,7 +352,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
                 getBuckets, getBucketsFiles, getBucketsKeys, selectBucket, getSelectedBucketFiles,
                 takeColdSnapshot, getBucketShapshots, createBucket, deleteBucket, getTrashBucket,
                 getFile, createDirectory, uploadFile, getBucketKeys, purgeSnapshot,
-                removeBucketAccess, approveBucketAccess, shareWith, download, moveTo,
+                removeBucketAccess, approveBucketAccess, shareFile, download, moveTo,
                 restore, deleteFile, makeCopy
             }}
         >
