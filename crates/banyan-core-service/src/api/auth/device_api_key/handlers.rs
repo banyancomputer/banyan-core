@@ -1,9 +1,9 @@
-use axum::extract::{self, Json, Path, State};
-use axum::http::StatusCode;
-use axum::response::IntoResponse;
 use crate::app_state::{AppState, RegistrationEvent};
 use crate::db::models;
 use crate::extractors::{ApiToken, DbConn};
+use axum::extract::{self, Json, Path, State};
+use axum::http::StatusCode;
+use axum::response::IntoResponse;
 use openssl::bn::BigNumContext;
 use openssl::ec::PointConversionForm;
 use openssl::pkey::PKey;
