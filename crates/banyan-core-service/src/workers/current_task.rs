@@ -4,13 +4,13 @@ use crate::workers::{Task, TaskId};
 
 pub struct CurrentTask {
     id: TaskId,
-    current_attempt: usize,
+    current_attempt: i32,
     scheduled_at: OffsetDateTime,
     started_at: OffsetDateTime,
 }
 
 impl CurrentTask {
-    pub fn current_attempt(&self) -> usize {
+    pub fn current_attempt(&self) -> i32 {
         self.current_attempt
     }
 

@@ -14,8 +14,8 @@ CREATE TABLE background_tasks (
     REFERENCES background_tasks(id)
     ON DELETE SET NULL,
 
-  name TEXT NOT NULL,
-  task_queue TEXT NOT NULL DEFAULT 'default',
+  task_name TEXT NOT NULL,
+  queue_name TEXT NOT NULL DEFAULT 'default',
 
   unique_key TEXT,
   state TEXT NOT NULL
@@ -41,6 +41,6 @@ CREATE TABLE background_tasks (
 CREATE INDEX idx_background_tasks_on_scheduled_at ON background_tasks(scheduled_at);
 CREATE INDEX idx_background_tasks_on_scheduled_to_run_at ON background_tasks(scheduled_to_run_at);
 CREATE INDEX idx_background_tasks_on_state ON background_tasks(state);
-CREATE INDEX idx_background_tasks_on_name ON background_tasks(name);
-CREATE INDEX idx_background_tasks_on_task_queue ON background_tasks(task_queue);
+CREATE INDEX idx_background_tasks_on_task_name ON background_tasks(task_name);
+CREATE INDEX idx_background_tasks_on_queue_name ON background_tasks(queue_name);
 CREATE INDEX idx_background_tasks_on_unique_key ON background_tasks(unique_key) WHERE unique_key != NULL;

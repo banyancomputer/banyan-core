@@ -7,7 +7,7 @@ use crate::workers::{CurrentTask, TaskId, TaskStoreError, TaskStore};
 #[async_trait]
 pub trait TaskLike: Serialize + DeserializeOwned + Sync + Send + 'static {
     // todo: rename MAX_ATTEMPTS
-    const MAX_RETRIES: usize = 3;
+    const MAX_RETRIES: i32 = 3;
 
     const QUEUE_NAME: &'static str = "default";
 

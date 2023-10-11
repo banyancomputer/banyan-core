@@ -1,6 +1,5 @@
 use std::time::Duration;
 
-mod create_task;
 mod current_task;
 pub mod panic_safe_future;
 mod queue_config;
@@ -14,7 +13,6 @@ pub mod tasks;
 mod worker;
 mod worker_pool;
 
-pub use create_task::CreateTask;
 pub use current_task::CurrentTask;
 pub use queue_config::QueueConfig;
 pub use task_id::TaskId;
