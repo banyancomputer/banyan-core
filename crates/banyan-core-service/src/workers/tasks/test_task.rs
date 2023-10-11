@@ -25,7 +25,7 @@ impl TaskLike for TestTask {
 
     async fn run(&self, task: CurrentTask, _ctx: Self::Context) -> Result<(), Self::Error> {
         // intentionally fail the task the first time it gets queued
-        if task.current_attempt == 0 {
+        if task.current_attempt() == 0 {
             return Err(TestTaskError::IntentionalFailure);
         }
 
