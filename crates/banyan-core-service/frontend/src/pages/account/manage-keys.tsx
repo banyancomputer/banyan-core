@@ -8,12 +8,21 @@ import { Fallback } from '@/components/common/Fallback';
 
 import getServerSideProps from '@/utils/session';
 import SettingsLayout from '@/layouts/SettingsLayout';
+import { useEffect } from 'react';
 
 export { getServerSideProps };
 
 const ManageKeys: NextPageWithLayout = () => {
-    const { buckets, areBucketsLoading } = useTomb();
+    const { buckets, areBucketsLoading, tomb, getBucketsKeys } = useTomb();
     const { messages } = useIntl();
+
+    useEffect(() => {
+        if (!tomb) return;
+
+        (async () => {
+            await getBucketsKeys();
+        })();
+    }, [buckets.length, tomb])
 
     return (
         <div className="flex flex-col gap-5 px-4">
