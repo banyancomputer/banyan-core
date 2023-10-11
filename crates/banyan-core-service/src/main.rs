@@ -15,6 +15,7 @@ mod extractors;
 mod health_check;
 mod http_server;
 mod utils;
+mod workers;
 
 use app_state::AppState;
 
