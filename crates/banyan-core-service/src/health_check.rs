@@ -34,5 +34,6 @@ pub fn router(state: AppState) -> Router<AppState> {
         .route("/healthz", get(handlers::liveness_check))
         .route("/readyz", get(handlers::readiness_check))
         .route("/version", get(handlers::version))
+        .route("/work_test", get(handlers::work_test))
         .with_state(state)
 }

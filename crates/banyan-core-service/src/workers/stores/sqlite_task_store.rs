@@ -58,7 +58,10 @@ impl TaskStore for SqliteTaskStore {
             .await
             .map_err(|err| TaskStoreError::ConnectionFailure(err.to_string()))?;
 
-        Ok(Some(TaskId::from(Uuid::parse_str(background_task_id.as_str()).expect("valid uuid"))))
+        let uuid = Uuid::parse_str(background_task_id.as_str())
+            .expect("valid uuid");
+
+        Ok(Some(TaskId::from(uuid)))
     }
 
     async fn next(&self, queue_name: &str, task_names: &[&str]) -> Result<Option<Task>, TaskStoreError> {

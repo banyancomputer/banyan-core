@@ -19,3 +19,24 @@ pub async fn version() -> VersionResponse<'static> {
         version: env!("REPO_VERSION"),
     }
 }
+
+use axum::Json;
+use axum::extract::{FromRef, State};
+use axum::response::{IntoResponse, Response};
+use http::StatusCode;
+use sqlx::SqlitePool;
+
+use crate::app_state::AppState;
+use crate::workers::{SqliteTaskStore, TaskLikeExt};
+use crate::workers::tasks::TestTask;
+
+pub async fn work_test(State(state): State<AppState>) -> Response {
+    let mut pool = SqlitePool::from_ref(&state);
+
+    TestTask::new(uuid::Uuid::new_v4())
+        .enqueue::<SqliteTaskStore>(&mut pool)
+        .await
+        .expect("queue success");
+
+    (StatusCode::OK, Json(serde_json::json!({"msg": "ok"}))).into_response()
+}
