@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useIntl } from 'react-intl';
 import { IoMdAdd } from 'react-icons/io';
 import Image from 'next/image';
@@ -19,12 +19,20 @@ export { getServerSideProps };
 
 const Buckets: NextPageWithLayout = () => {
     const { openModal } = useModal();
-    const { buckets, areBucketsLoading } = useTomb();
+    const { buckets, areBucketsLoading, getBucketsFiles, tomb } = useTomb();
     const { messages } = useIntl();
 
     const uploadFile = () => {
         openModal(<UploadFileModal />);
     };
+
+    useEffect(() => {
+        if (!tomb) return;
+
+        (async () => {
+            await getBucketsFiles();
+        })();
+    }, [buckets.length, tomb]);
 
     return (
         <section className="py-9 px-4" id="buckets">

@@ -58,7 +58,7 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null }> = ({ bucket }
         try {
             closeModal();
             ToastNotifications.uploadProgress();
-            await uploadFiles(selectedBucket!, selectedFolder.length ? selectedFolder : [], folderLocation);
+            await uploadFiles(selectedBucket!, selectedFolder.length ? selectedFolder : []);
         } catch (error: any) {
             ToastNotifications.error(`${messages.uploadError}`, `${messages.tryAgain}`, upload);
         };

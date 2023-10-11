@@ -72,7 +72,6 @@ export const BucketsTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
         setBucketsCopy(buckets);
     }, [buckets]);
 
-
     useEffect(() => {
         /** Weird typescript issue with scrollTop which exist, but not for typescript */
         //@ts-ignore
