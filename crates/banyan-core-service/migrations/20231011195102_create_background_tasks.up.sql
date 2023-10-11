@@ -26,10 +26,8 @@ CREATE TABLE background_tasks (
   maximum_attempts INTEGER NOT NULL,
 
   -- actually a JSON blob might want to split more of this out
-  payload BLOB NOT NULL,
-
-  -- should probably be structured, for now will be JSON blob
-  error BLOB,
+  payload TEXT NOT NULL,
+  error TEXT,
 
   scheduled_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   scheduled_to_run_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

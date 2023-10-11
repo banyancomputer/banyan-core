@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 
-use crate::workers::{CurrentTask, TaskId, TaskStoreError, TaskStore};
+use crate::workers::{CurrentTask, TaskStoreError, TaskStore};
 
 #[async_trait]
 pub trait TaskLike: Serialize + DeserializeOwned + Sync + Send + 'static {
@@ -28,7 +28,7 @@ pub trait TaskLikeExt {
     async fn enqueue<S: TaskStore>(
         self,
         connection: &mut S::Connection,
-    ) -> Result<Option<TaskId>, TaskStoreError>;
+    ) -> Result<Option<String>, TaskStoreError>;
 }
 
 #[async_trait]
@@ -39,7 +39,7 @@ where
     async fn enqueue<S: TaskStore>(
         self,
         connection: &mut S::Connection,
-    ) -> Result<Option<TaskId>, TaskStoreError> {
+    ) -> Result<Option<String>, TaskStoreError> {
         S::enqueue(connection, self).await
     }
 }

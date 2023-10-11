@@ -1,16 +1,16 @@
-use time::OffsetDateTime;
+use chrono::NaiveDateTime;
 
-use crate::workers::{TaskId, TaskState};
+use crate::workers::{TaskState};
 use crate::workers::panic_safe_future::CaughtPanic;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, sqlx::FromRow)]
 pub struct Task {
-    pub id: TaskId,
+    pub id: String,
 
-    pub next_id: Option<TaskId>,
-    pub previous_id: Option<TaskId>,
+    pub next_id: Option<String>,
+    pub previous_id: Option<String>,
 
-    pub name: String,
+    pub task_name: String,
     pub queue_name: String,
 
     pub unique_key: Option<String>,
@@ -25,11 +25,11 @@ pub struct Task {
     pub payload: serde_json::Value,
     pub error: Option<String>,
 
-    pub scheduled_at: OffsetDateTime,
-    pub scheduled_to_run_at: OffsetDateTime,
+    pub scheduled_at: NaiveDateTime,
+    pub scheduled_to_run_at: NaiveDateTime,
 
-    pub started_at: Option<OffsetDateTime>,
-    pub finished_at: Option<OffsetDateTime>,
+    pub started_at: Option<NaiveDateTime>,
+    pub finished_at: Option<NaiveDateTime>,
 }
 
 #[derive(Debug, thiserror::Error)]

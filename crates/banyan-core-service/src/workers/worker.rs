@@ -45,8 +45,8 @@ where
         let task_info = CurrentTask::new(&task);
 
         let deserialize_and_run_task_fn = self.task_registry
-            .get(task.name.as_str())
-            .ok_or_else(|| WorkerError::UnregisteredTaskName(task.name))?
+            .get(task.task_name.as_str())
+            .ok_or_else(|| WorkerError::UnregisteredTaskName(task.task_name))?
             .clone();
 
         let safe_runner = PanicSafeFuture::wrap({

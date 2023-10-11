@@ -1,12 +1,12 @@
-use time::OffsetDateTime;
+use chrono::NaiveDateTime;
 
-use crate::workers::{Task, TaskId};
+use crate::workers::Task;
 
 pub struct CurrentTask {
-    id: TaskId,
+    id: String,
     current_attempt: i32,
-    scheduled_at: OffsetDateTime,
-    started_at: OffsetDateTime,
+    scheduled_at: NaiveDateTime,
+    started_at: NaiveDateTime,
 }
 
 impl CurrentTask {

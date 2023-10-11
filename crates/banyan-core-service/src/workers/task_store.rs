@@ -1,27 +1,27 @@
 use async_trait::async_trait;
 
-use crate::workers::{Task, TaskExecError, TaskId, TaskLike, TaskState};
+use crate::workers::{Task, TaskExecError, TaskLike, TaskState};
 
 #[async_trait]
 pub trait TaskStore: Send + Sync + 'static {
     type Connection: Send;
 
-    async fn cancel(&self, id: TaskId) -> Result<(), TaskStoreError> {
+    async fn cancel(&self, id: String) -> Result<(), TaskStoreError> {
         self.update_state(id, TaskState::Cancelled).await
     }
 
-    async fn completed(&self, id: TaskId) -> Result<(), TaskStoreError> {
+    async fn completed(&self, id: String) -> Result<(), TaskStoreError> {
         self.update_state(id, TaskState::Complete).await
     }
 
     async fn enqueue<T: TaskLike>(
         conn: &mut Self::Connection,
         task: T,
-    ) -> Result<Option<TaskId>, TaskStoreError>
+    ) -> Result<Option<String>, TaskStoreError>
     where
         Self: Sized;
 
-    async fn errored(&self, id: TaskId, error: TaskExecError) -> Result<Option<TaskId>, TaskStoreError> {
+    async fn errored(&self, id: String, error: TaskExecError) -> Result<Option<String>, TaskStoreError> {
         match error {
             TaskExecError::DeserializationFailed(_) | TaskExecError::Panicked(_) => {
                 self.update_state(id, TaskState::Dead).await?;
@@ -36,9 +36,9 @@ pub trait TaskStore: Send + Sync + 'static {
 
     async fn next(&self, queue_name: &str, task_names: &[&str]) -> Result<Option<Task>, TaskStoreError>;
 
-    async fn retry(&self, id: TaskId) -> Result<Option<TaskId>, TaskStoreError>;
+    async fn retry(&self, id: String) -> Result<Option<String>, TaskStoreError>;
 
-    async fn update_state(&self, id: TaskId, state: TaskState) -> Result<(), TaskStoreError>;
+    async fn update_state(&self, id: String, state: TaskState) -> Result<(), TaskStoreError>;
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -56,5 +56,5 @@ pub enum TaskStoreError {
     NotRetryable(TaskState),
 
     #[error("unable to find task with ID {0}")]
-    UnknownTask(TaskId),
+    UnknownTask(String),
 }

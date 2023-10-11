@@ -3,10 +3,12 @@ use sqlx::{Sqlite, SqliteConnection, SqlitePool};
 use time::OffsetDateTime;
 use uuid::Uuid;
 
-use crate::workers::{TASK_EXECUTION_TIMEOUT, Task, TaskId, TaskLike, TaskState, TaskStore, TaskStoreError};
+use crate::workers::{TASK_EXECUTION_TIMEOUT, Task, TaskLike, TaskState, TaskStore, TaskStoreError};
 
-#[derive(Clone, Default)]
-pub struct SqliteTaskStore;
+#[derive(Clone)]
+pub struct SqliteTaskStore {
+    pool: SqlitePool,
+}
 
 impl SqliteTaskStore {
     async fn is_key_present(pool: &SqlitePool, key: &str) -> Result<bool, TaskStoreError> {
@@ -17,6 +19,10 @@ impl SqliteTaskStore {
 
         Ok(query_res.is_some())
     }
+
+    fn new(pool: SqlitePool) -> Self {
+        Self { pool }
+    }
 }
 
 #[async_trait]
@@ -26,7 +32,7 @@ impl TaskStore for SqliteTaskStore {
     async fn enqueue<T: TaskLike>(
         pool: &mut Self::Connection,
         task: T,
-    ) -> Result<Option<TaskId>, TaskStoreError> {
+    ) -> Result<Option<String>, TaskStoreError> {
         let unique_key = task.unique_key().await;
 
         if let Some(ukey) = &unique_key {
@@ -58,21 +64,27 @@ impl TaskStore for SqliteTaskStore {
             .await
             .map_err(|err| TaskStoreError::ConnectionFailure(err.to_string()))?;
 
-        let uuid = Uuid::parse_str(background_task_id.as_str())
-            .expect("valid uuid");
-
-        Ok(Some(TaskId::from(uuid)))
+        Ok(Some(background_task_id))
     }
 
-    async fn next(&self, queue_name: &str, task_names: &[&str]) -> Result<Option<Task>, TaskStoreError> {
+    async fn next(&self, queue_name: &str, _task_names: &[&str]) -> Result<Option<Task>, TaskStoreError> {
+        let next_few_tasks = sqlx::query_as!(
+            Task,
+            r#"SELECT * FROM background_tasks WHERE queue_name = $1;"#,
+            queue_name,
+        )
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|err| TaskStoreError::ConnectionFailure(err.to_string()))?;
+
         todo!()
     }
 
-    async fn retry(&self, id: TaskId) -> Result<Option<TaskId>, TaskStoreError> {
+    async fn retry(&self, id: String) -> Result<Option<String>, TaskStoreError> {
         todo!()
     }
 
-    async fn update_state(&self, id: TaskId, new_state: TaskState) -> Result<(), TaskStoreError> {
+    async fn update_state(&self, id: String, new_state: TaskState) -> Result<(), TaskStoreError> {
         todo!()
     }
 }

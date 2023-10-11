@@ -9,11 +9,11 @@ use tokio::sync::Mutex;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
-use crate::workers::{TASK_EXECUTION_TIMEOUT, Task, TaskId, TaskLike, TaskState, TaskStore, TaskStoreError};
+use crate::workers::{TASK_EXECUTION_TIMEOUT, Task, TaskLike, TaskState, TaskStore, TaskStoreError};
 
 #[derive(Clone, Default)]
 pub struct MemoryTaskStore {
-    pub tasks: Arc<Mutex<BTreeMap<TaskId, Task>>>,
+    pub tasks: Arc<Mutex<BTreeMap<String, Task>>>,
 }
 
 impl MemoryTaskStore {
@@ -51,7 +51,7 @@ impl TaskStore for MemoryTaskStore {
     async fn enqueue<T: TaskLike>(
         conn: &mut Self::Connection,
         task: T,
-    ) -> Result<Option<TaskId>, TaskStoreError> {
+    ) -> Result<Option<String>, TaskStoreError> {
         let unique_key = task.unique_key().await;
 
         if let Some(ukey) = &unique_key {
@@ -60,7 +60,7 @@ impl TaskStore for MemoryTaskStore {
             }
         }
 
-        let id = TaskId::from(Uuid::new_v4());
+        let id = Uuid::new_v4().to_string();
         let payload = serde_json::to_value(task).map_err(TaskStoreError::EncodeFailed)?;
 
         let task = Task {
@@ -146,7 +146,7 @@ impl TaskStore for MemoryTaskStore {
         Ok(next_task)
     }
 
-    async fn retry(&self, id: TaskId) -> Result<Option<TaskId>, TaskStoreError> {
+    async fn retry(&self, id: String) -> Result<Option<String>, TaskStoreError> {
         let mut tasks = self.tasks.lock().await;
 
         let target_task = match tasks.get_mut(&id) {
@@ -169,7 +169,7 @@ impl TaskStore for MemoryTaskStore {
 
         let mut new_task = target_task.clone();
 
-        let new_id = TaskId::from(Uuid::new_v4());
+        let new_id = Uuid::new_v4().to_string();
         target_task.next_id = Some(new_task.id);
 
         new_task.id = new_id;
@@ -191,7 +191,7 @@ impl TaskStore for MemoryTaskStore {
         Ok(Some(new_id))
     }
 
-    async fn update_state(&self, id: TaskId, new_state: TaskState) -> Result<(), TaskStoreError> {
+    async fn update_state(&self, id: String, new_state: TaskState) -> Result<(), TaskStoreError> {
         let mut tasks = self.tasks.lock().await;
 
         let task = match tasks.get_mut(&id) {
