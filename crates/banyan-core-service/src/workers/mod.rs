@@ -55,7 +55,7 @@ pub type ExecuteTaskFn<Context> = Arc<
 
 pub type StateFn<Context> = Arc<dyn Fn() -> Context + Send + Sync>;
 
-struct Worker<Context, S>
+pub struct Worker<Context, S>
 where
     Context: Clone + Send + 'static,
     S: TaskStore + Clone,
@@ -75,7 +75,7 @@ where
     Context: Clone + Send + 'static,
     S: TaskStore + Clone,
 {
-    fn new(
+    pub fn new(
         name: String,
         queue_config: QueueConfig,
         context_data_fn: StateFn<Context>,
@@ -93,7 +93,7 @@ where
         }
     }
 
-    async fn run(&self, task: Task) -> Result<(), WorkerError> {
+    pub async fn run(&self, task: Task) -> Result<(), WorkerError> {
         let task_info = CurrentTask::new(&task);
 
         let deserialize_and_run_task_fn = self.task_registry
@@ -151,7 +151,7 @@ where
         Ok(())
     }
 
-    async fn run_tasks(&mut self) -> Result<(), WorkerError> {
+    pub async fn run_tasks(&mut self) -> Result<(), WorkerError> {
         let relevant_task_names: Vec<&'static str> = self.task_registry.keys().cloned().collect();
 
         loop {
