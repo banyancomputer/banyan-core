@@ -19,6 +19,10 @@ use tokio::task::JoinHandle;
 use tokio::time::timeout;
 use uuid::Uuid;
 
+mod tasks;
+
+use crate::workers::tasks::{TaskId, TaskLike};
+
 // constants
 
 const MAXIMUM_CHECK_DELAY: Duration = Duration::from_millis(250);
@@ -42,46 +46,6 @@ pub type ExecuteTaskFn<Context> = Arc<
 pub type StateFn<Context> = Arc<dyn Fn() -> Context + Send + Sync>;
 
 // traits
-
-#[async_trait]
-pub trait TaskLike: Serialize + DeserializeOwned + Sync + Send + 'static {
-    // todo: rename MAX_ATTEMPTS
-    const MAX_RETRIES: usize = 3;
-
-    const QUEUE_NAME: &'static str = "default";
-
-    const TASK_NAME: &'static str;
-
-    type Error: std::error::Error;
-    type Context: Clone + Send + 'static;
-
-    async fn run(&self, task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error>;
-
-    async fn unique_key(&self) -> Option<String> {
-        None
-    }
-}
-
-#[async_trait]
-pub trait TaskLikeExt {
-    async fn enqueue<S: TaskStore>(
-        self,
-        connection: &mut S::Connection,
-    ) -> Result<Option<TaskId>, TaskQueueError>;
-}
-
-#[async_trait]
-impl<T> TaskLikeExt for T
-where
-    T: TaskLike,
-{
-    async fn enqueue<S: TaskStore>(
-        self,
-        connection: &mut S::Connection,
-    ) -> Result<Option<TaskId>, TaskQueueError> {
-        S::enqueue(connection, self).await
-    }
-}
 
 #[async_trait]
 pub trait TaskStore: Send + Sync + 'static {
@@ -221,34 +185,6 @@ impl QueueConfig {
     pub fn worker_count(mut self, worker_count: usize) -> Self {
         self.worker_count = worker_count;
         self
-    }
-}
-
-#[derive(Clone, Copy, Hash, Eq, Ord, PartialEq, PartialOrd, Serialize, sqlx::Type)]
-#[sqlx(transparent)]
-pub struct TaskId(Uuid);
-
-impl Debug for TaskId {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        f.debug_tuple("TaskId").field(&self.0).finish()
-    }
-}
-
-impl Display for TaskId {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-impl From<Uuid> for TaskId {
-    fn from(value: Uuid) -> Self {
-        Self(value)
-    }
-}
-
-impl From<TaskId> for Uuid {
-    fn from(value: TaskId) -> Self {
-        value.0
     }
 }
 
@@ -901,39 +837,3 @@ impl TaskStore for MemoryTaskStore {
 // sample context implementation
 
 // todo
-
-// concrete task implementation
-
-#[derive(Deserialize, Serialize)]
-pub struct TestTask {
-    number: usize,
-}
-
-impl TestTask {
-    pub fn new(number: usize) -> Self {
-        Self { number }
-    }
-}
-
-#[async_trait]
-impl TaskLike for TestTask {
-    const TASK_NAME: &'static str = "test_task";
-
-    type Error = TestTaskError;
-    type Context = ();
-
-    async fn run(&self, task: CurrentTask, _ctx: Self::Context) -> Result<(), Self::Error> {
-        if task.current_attempt != 0 {
-            tracing::info!("the test task value is {}", self.number);
-            return Ok(());
-        }
-
-        Err(TestTaskError::Unknown)
-    }
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum TestTaskError {
-    #[error("unspecified error with the task")]
-    Unknown,
-}
