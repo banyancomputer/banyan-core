@@ -28,7 +28,7 @@ export class Action {
 export const FileActions: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bucket, file }) => {
     const { messages } = useIntl();
     const { download, makeCopy, shareFile } = useTomb();
-    const { openModal } = useModal();
+    const { openModal, closeModal } = useModal();
     const folredLoaction = useFolderLocation();
     const bucketType = `${bucket.bucketType}_${bucket.storageClass}`;
 

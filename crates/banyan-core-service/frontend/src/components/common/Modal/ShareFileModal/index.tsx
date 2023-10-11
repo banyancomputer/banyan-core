@@ -1,6 +1,5 @@
 import React from 'react'
 import { useIntl } from 'react-intl';
-import { BiLinkAlt, BiShareAlt } from 'react-icons/bi'
 
 import { useModal } from '@/contexts/modals';
 import { ToastNotifications } from '@/utils/toastNotifications';
@@ -22,15 +21,18 @@ export const ShareFileModal: React.FC<{ link: string }> = ({ link }) => {
             </div>
             <div className='flex flex-col items-start gap-3'>
                 <span className='text-xs'>{link}</span>
+            </div>
+            <div className="mt-3 flex items-center gap-3 text-xs" >
                 <button
-                    className='flex items-center gap-3 underline text-xs font-medium'
-                    onClick={copy}
+                    className="btn-secondary flex-grow py-3 px-4"
+                    onClick={closeModal}
                 >
-                    <span className='text-blue-primary'>
-                        <BiLinkAlt size="14px" />
-                    </span>
-                    {`${messages.copyLink}`}
+                    {`${messages.cancel}`}
                 </button>
+                <button
+                    className="btn-primary flex-grow py-3 px-4"
+                    onClick={copy}
+                >{`${messages.copyLink}`}</button>
             </div>
         </div >
     )
