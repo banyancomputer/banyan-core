@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::health_check::{HealthCheckResponse, HealthCheckService, VersionResponse};
 
 pub async fn liveness_check() -> HealthCheckResponse {
