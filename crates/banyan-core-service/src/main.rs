@@ -13,6 +13,7 @@ mod email;
 mod error;
 mod extractors;
 mod health_check;
+mod hooks;
 mod http_server;
 mod utils;
 mod workers;

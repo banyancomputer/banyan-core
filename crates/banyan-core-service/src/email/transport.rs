@@ -30,13 +30,10 @@ impl EmailTransport {
 
     pub fn send(&self, message: &Message) -> Result<(), EmailError> {
         match self {
-            EmailTransport::Smtp(transport) => {
-                transport
-                    .send(message)
-                    // TODO: What should we be doing with the response here?
-                    .map(|_| ()) // Simply discard the Response here for now
-                    .map_err(EmailError::smtp_send_error)
-            }
+            EmailTransport::Smtp(transport) => transport
+                .send(message)
+                .map(|_| ())
+                .map_err(EmailError::smtp_send_error),
             EmailTransport::Stub(transport) => {
                 tracing::info!(
                     "Outgoing email: {}",

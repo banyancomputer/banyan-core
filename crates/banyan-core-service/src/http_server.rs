@@ -22,8 +22,8 @@ use tower_http::validate_request::ValidateRequestHeaderLayer;
 use tower_http::{LatencyUnit, ServiceBuilderExt};
 use tracing::Level;
 
+use crate::{api, auth, health_check, hooks};
 use crate::app_state::AppState;
-use crate::{api, auth, health_check};
 use crate::workers::start_background_workers;
 
 // TODO: might want a longer timeout in some parts of the API and I'd like to be able customize a
@@ -127,6 +127,7 @@ pub async fn run(app_state: AppState) {
     let root_router = Router::new()
         .nest("/api/v1", api::router(app_state.clone()))
         .nest("/auth", auth::router(app_state.clone()))
+        .nest("/hooks", hooks::router(app_state.clone()))
         .nest("/_status", health_check::router(app_state.clone()))
         .with_state(app_state)
         .fallback(not_found_handler);

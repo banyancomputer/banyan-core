@@ -7,6 +7,7 @@ license = "LicenseRef-LICENSE.txt"
 [dependencies]
 async-trait = "^0.1"
 futures = "^0.3"
+itertools = "^0.11"
 lazy_static = "^1.4"
 pico-args = "^0.5"
 rand = "^0.8"
@@ -17,9 +18,11 @@ asn1 = "^0.15"
 blake3 = "^1.4"
 bytes = "^1"
 chrono = { version = "^0.4", features = ["serde"] }
+hex = "^0.4"
 openssl = { version = "^0.10", features = ["vendored"] }
 pem = "^2"
 regex = "^1.9"
+ring = "^0.17"
 serde = { version = "^1", features = ["derive"] }
 serde_json = "^1"
 time = { version = "^0.3", features = ["serde"] }
@@ -45,7 +48,6 @@ tracing = "^0.1"
 tracing-appender = "^0.2"
 tracing-futures = { version = "^0.2", default-features = false, features = ["std-future"] }
 tracing-subscriber = { version = "^0.3", default-features = false, features = ["env-filter", "fmt", "local-time", "time", "tracing"] }
-itertools = "^0.11"
 
 [features]
 fake = []

@@ -60,6 +60,12 @@ impl StateError {
             kind: StateErrorKind::WriteServiceKey(err),
         }
     }
+
+    pub(super) fn mailgun_signing_key_missing() -> Self {
+        Self {
+            kind: StateErrorKind::MailgunSigningKeyMissing,
+        }
+    }
 }
 
 impl Display for StateError {
@@ -76,6 +82,7 @@ impl Display for StateError {
             ReadServiceKey(_) => "unable to read service key from provided location",
             ServiceKeygenFailed(_) => "unable to create new ECDSA service key",
             WriteServiceKey(_) => "unable to persist geneated service key to disk",
+            MailgunSigningKeyMissing => "mailgun signing key is missing from environment",
         };
 
         f.write_str(msg)
@@ -96,6 +103,7 @@ impl std::error::Error for StateError {
             ReadServiceKey(err) => Some(err),
             ServiceKeygenFailed(err) => Some(err),
             WriteServiceKey(err) => Some(err),
+            MailgunSigningKeyMissing => None,
         }
     }
 }
@@ -112,4 +120,5 @@ enum StateErrorKind {
     ReadServiceKey(std::io::Error),
     ServiceKeygenFailed(openssl::error::ErrorStack),
     WriteServiceKey(std::io::Error),
+    MailgunSigningKeyMissing,
 }
