@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT * FROM background_tasks WHERE queue_name = $1;",
+  "query": "SELECT * FROM background_tasks WHERE id = $1;",
   "describe": {
     "columns": [
       {
@@ -100,5 +100,5 @@
       true
     ]
   },
-  "hash": "964396ee9cb9dcfdeb6d98598aff5810afbfcc3c258ed018b51e713040594421"
+  "hash": "5f721c96e11f94916e62a92f9fbc517cc16d8aa13b479fee5ef87ff70a306a3c"
 }

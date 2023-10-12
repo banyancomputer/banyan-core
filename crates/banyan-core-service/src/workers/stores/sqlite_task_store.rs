@@ -1,6 +1,6 @@
 use async_trait::async_trait;
+use chrono::offset::Utc;
 use sqlx::{Sqlite, SqliteConnection, SqlitePool};
-use time::OffsetDateTime;
 use uuid::Uuid;
 
 use crate::workers::{TASK_EXECUTION_TIMEOUT, Task, TaskLike, TaskState, TaskStore, TaskStoreError};
@@ -52,8 +52,8 @@ impl TaskStore for SqliteTaskStore {
 
         let background_task_id: String = sqlx::query_scalar!(
                 r#"INSERT INTO background_tasks (task_name, unique_key, queue_name, payload, maximum_attempts)
-                    VALUES ($1, $2, $3, $4, $5)
-                    RETURNING id;"#,
+                       VALUES ($1, $2, $3, $4, $5)
+                       RETURNING id;"#,
                 task_name,
                 unique_key,
                 queue_name,
@@ -68,16 +68,67 @@ impl TaskStore for SqliteTaskStore {
     }
 
     async fn next(&self, queue_name: &str, _task_names: &[&str]) -> Result<Option<Task>, TaskStoreError> {
-        let next_few_tasks = sqlx::query_as!(
-            Task,
-            r#"SELECT * FROM background_tasks WHERE queue_name = $1;"#,
+        // todo: need to dynamically build up the task_names portion of this query since sqlx
+        // doesn't support generation of IN queries or have a concept of arrays for sqlite.l
+
+        let next_task_id: Option<String> = sqlx::query_scalar!(
+            r#"SELECT id FROM background_tasks
+                   WHERE queue_name = $1
+                      AND state IN ('new', 'retry')
+                      AND scheduled_to_run_at <= DATETIME('now')
+                   ORDER BY scheduled_to_run_at ASC, scheduled_at ASC
+                   LIMIT 1;"#,
             queue_name,
         )
-        .fetch_all(&self.pool)
+        .fetch_optional(&self.pool)
         .await
         .map_err(|err| TaskStoreError::ConnectionFailure(err.to_string()))?;
 
-        todo!()
+        let timed_out_start_threshold = Utc::now() - TASK_EXECUTION_TIMEOUT;
+        let pending_retry_tasks = sqlx::query_scalar!(
+            r#"SELECT id FROM background_tasks
+                 WHERE state = 'in_progress'
+                    AND started_at <= $1
+                ORDER BY started_at ASC
+                LIMIT 10;"#,
+            timed_out_start_threshold,
+        )
+        .fetch_all(&self.pool)
+        .await;
+
+        // if this query fails or any of our rescheduling fails, we still want to process our task,
+        // let these retry again sometime in the future. Ideally we'd randomly shuffle some of
+        // these to prevent head-of-line blocking by a single poison task.
+        if let Ok(_task_ids) = pending_retry_tasks {
+            // todo
+        }
+
+        let chosen_task_id = match next_task_id {
+            Some(nti) => nti,
+            None => return Ok(None),
+        };
+
+        // todo: should add a worker identifier when picking up a job for both logging/tracking as
+        // well as future directed clean up
+        sqlx::query!(
+            r#"UPDATE background_tasks
+                   SET
+                       state = 'in_progress',
+                       started_at = DATETIME('now')
+                   WHERE id = ?;"#,
+            chosen_task_id,
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(|err| TaskStoreError::ConnectionFailure(err.to_string()))?;
+
+        // pull the full current version of the task
+        let chosen_task = sqlx::query_as!(Task, "SELECT * FROM background_tasks WHERE id = $1;", chosen_task_id)
+            .fetch_one(&self.pool)
+            .await
+            .map_err(|err| TaskStoreError::ConnectionFailure(err.to_string()))?;
+
+        Ok(Some(chosen_task))
     }
 
     async fn retry(&self, id: String) -> Result<Option<String>, TaskStoreError> {
