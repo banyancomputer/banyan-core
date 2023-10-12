@@ -1,19 +1,23 @@
 use axum::routing::{get, post};
 use axum::Router;
 
-mod handlers;
-mod requests;
-pub mod responses;
+//mod handlers;
+//mod requests;
+//pub mod responses;
+
+//mod all_bucket_keys;
+//mod create_bucket_key;
+//mod delete_bucket_key;
+//mod reject_bucket_key;
+mod single_bucket_key;
 
 use crate::app::AppState;
 
 pub fn router(state: AppState) -> Router<AppState> {
     Router::new()
-        .route("/", get(handlers::read_all).post(handlers::create))
-        .route(
-            "/:bucket_key_id",
-            get(handlers::read).delete(handlers::delete),
-        )
-        .route("/:bucket_key_id/reject", post(handlers::reject))
+        //.route("/", get(all_bucket_keys::handler).post(create_bucket_key::handler))
+        .route("/:bucket_key_id", get(single_bucket_key::handler))
+        //.route("/:bucket_key_id", get(single_bucket_key::handler).delete(delete_bucket_key::handler))
+        //.route("/:bucket_key_id/reject", post(reject_bucket_key::handler))
         .with_state(state)
 }
