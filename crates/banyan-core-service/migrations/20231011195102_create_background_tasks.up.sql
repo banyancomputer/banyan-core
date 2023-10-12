@@ -22,7 +22,7 @@ CREATE TABLE background_tasks (
     CHECK (state IN ('new', 'in_progress', 'panicked', 'retry', 'cancelled', 'error', 'complete', 'timed_out', 'dead'))
     DEFAULT 'new',
 
-  current_attempt INTEGER NOT NULL DEFAULT 0,
+  current_attempt INTEGER NOT NULL DEFAULT 1,
   maximum_attempts INTEGER NOT NULL,
 
   payload TEXT NOT NULL,

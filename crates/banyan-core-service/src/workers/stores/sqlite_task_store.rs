@@ -31,6 +31,9 @@ impl SqliteTaskStore {
             }
         }
 
+        // todo: need to set state to retry when previous_task_id is present
+        // todo: need to schedule the exponential backoff for task retrying
+
         let background_task_id: String = sqlx::query_scalar!(
                 r#"INSERT INTO background_tasks (previous_id, task_name, unique_key, queue_name, payload, current_attempt, maximum_attempts)
                        VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -218,13 +221,15 @@ impl TaskStore for SqliteTaskStore {
                        AND current_attempt < maximum_attempts;"#,
             id
         )
-        .fetch_optional(&self.pool)
+        .fetch_optional(&mut *transaction)
         .await?;
 
         let retried_task = match maybe_retried_task {
             Some(rt) => rt,
             None => return Ok(None),
         };
+
+        // next task should run at now() + (30 * 3^retried_task.current_attempt) secs
 
         let new_task_id = SqliteTaskStore::checked_create(
             &mut transaction,
@@ -237,6 +242,8 @@ impl TaskStore for SqliteTaskStore {
             Some(retried_task.id),
         )
         .await?;
+
+        // todo: need to update the old task with the pointer to the new one...
 
         transaction.commit().await?;
 
