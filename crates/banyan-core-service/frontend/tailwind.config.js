@@ -8,6 +8,7 @@ module.exports = {
 		extend: {
 			boxShadow: {
 				blue: '0px 4px 0px rgba(37, 99, 235, 0.35)',
+				common: 'var(--shadow)',
 			},
 			height: {
 				navbar: '72px',
@@ -26,7 +27,7 @@ module.exports = {
 				1.5: '6px',
 			},
 			minWidth: {
-				navbar: '280px',
+				navbar: '320px',
 				login: '590px',
 			},
 			maxWidth: {
@@ -50,15 +51,16 @@ module.exports = {
 				table: {
 					cellBackground: 'var(--table-cellBackground)',
 					headBackground: 'var(--table-headBackground)',
+					border: 'var(--table-border)',
 				},
+				inputBorder: 'var(--input-border)',
 				'gray-200': 'var(--gray-200)',
 				'gray-600': 'var(--gray-600)',
 				'gray-800': 'var(--gray-800)',
 				'gray-900': 'var(--gray-900)',
-				border: 'var(--border)',
 				disabled: 'var(--disabled)',
 				hover: 'var(--hover-background)',
-				mainBackground: 'var(--background)'
+				mainBackground: 'var(--background)',
 			},
 			fontFamily: {
 				sans: ['Inter'],

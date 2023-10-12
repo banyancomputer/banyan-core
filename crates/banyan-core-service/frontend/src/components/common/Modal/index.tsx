@@ -19,7 +19,7 @@ export const Modal = () => {
         <>
             {content &&
                 <div
-                    className="absolute w-screen h-screen bg flex items-center justify-center z-10 bg-slate-800 bg-opacity-80 backdrop-blur-sm"
+                    className="absolute w-screen h-screen bg flex items-center justify-center z-10 bg-slate-800 bg-opacity-80 backdrop-blur-sm text-gray-900"
                     onClick={close}
                 >
                     <div

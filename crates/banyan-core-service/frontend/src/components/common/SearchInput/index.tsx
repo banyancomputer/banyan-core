@@ -65,7 +65,7 @@ export const SearchInput = React.memo(() => {
                 <FiSearch size="20px" stroke="#667085" />
             </span>
             <input
-                className={`input w-full h-10 py-3 px-4 rounded-xl border-border  pl-12 focus:outline-none`}
+                className={`input w-full h-10 py-3 px-4 rounded-xl border-inputBorder  pl-12 focus:outline-none`}
                 value={search}
                 onChange={event => setSearch(event.target.value)}
                 placeholder={`${messages.search}`}

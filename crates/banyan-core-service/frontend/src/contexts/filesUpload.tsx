@@ -7,7 +7,7 @@ export interface UploadingFile { file: File, isUploaded: boolean };
 interface FilesUploadState {
     files: UploadingFile[];
     setFiles: React.Dispatch<React.SetStateAction<UploadingFile[]>>;
-    uploadFiles: (bucket: Bucket, path: string[], folderLocation: string[]) => void;
+    uploadFiles: (bucket: Bucket, path: string[]) => void;
 };
 
 export const FilesUploadContext = createContext<FilesUploadState>({} as FilesUploadState);
@@ -16,11 +16,11 @@ export const FileUploadProvider: FC<{ children: ReactNode }> = ({ children }) =>
     const { uploadFile } = useTomb();
     const [files, setFiles] = useState<UploadingFile[]>([]);
 
-    const uploadFiles = async (bucket: Bucket, path: string[], folderLocation: string[]) => {
+    const uploadFiles = async (bucket: Bucket, path: string[]) => {
         let filesCopy = [...files];
         for (let file of files) {
             const arrayBuffer = await file.file.arrayBuffer();
-            await uploadFile(bucket, path, file.file.name, arrayBuffer, folderLocation);
+            await uploadFile(bucket, path, file.file.name, arrayBuffer);
             filesCopy = filesCopy.map(item => item.file.name === file.file.name ? ({ ...item, isUploaded: true }) : item);
             await setFiles(filesCopy);
         };

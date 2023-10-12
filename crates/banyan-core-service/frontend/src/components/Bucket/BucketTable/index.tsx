@@ -86,14 +86,14 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     return (
         <div
             ref={tableRef}
-            className="max-h-[calc(100vh-210px)] w-fit overflow-x-auto border-2 border-border rounded-xl "
+            className="max-h-[calc(100vh-210px)] w-fit overflow-x-auto border-2 border-table-border rounded-xl shadow-common"
         >
-            <div className="px-5 py-6 text-m font-semibold border-b-2 border-border">
+            <div className="px-5 py-6 text-m font-semibold border-b-2 border-table-border">
                 {`${messages.files}`}
             </div>
             <div >
                 <table className="table table-pin-rows w-full text-gray-600 rounded-xl  table-fixed ">
-                    <thead className="border-b-table-cellBackground text-xxs font-normal ">
+                    <thead className="border-b-table-cellBackground text-xxs font-normal text-gray-600">
                         <tr className="border-b-table-cellBackground bg-table-headBackground font-normal">
                             <th className="flex items-center gap-3 px-6 py-4 text-left font-medium">
                                 <SortCell
