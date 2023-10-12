@@ -68,7 +68,7 @@ where
     {
         self.queue_tasks
             .entry(TL::QUEUE_NAME)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(TL::TASK_NAME);
 
         self.task_registry

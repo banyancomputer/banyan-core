@@ -149,11 +149,11 @@ impl TaskStore for SqliteTaskStore {
                 .execute(&self.pool)
                 .await;
 
-                if let Err(_) = state_update_res {
+                if state_update_res.is_err() {
                     break;
                 }
 
-                if let Err(_) = self.retry(id).await {
+                if self.retry(id).await.is_err() {
                     break;
                 }
             }
