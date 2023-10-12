@@ -19,8 +19,7 @@ impl SqliteTaskStore {
         let query_res =
             sqlx::query_scalar!("SELECT 1 FROM background_tasks WHERE unique_key = $1;", key)
                 .fetch_optional(&mut *conn)
-                .await
-                .map_err(|err| TaskStoreError::ConnectionFailure(err.to_string()))?;
+                .await?;
 
         Ok(query_res.is_some())
     }
@@ -40,16 +39,14 @@ impl TaskStore for SqliteTaskStore {
     ) -> Result<Option<String>, TaskStoreError> {
         let unique_key = task.unique_key().await;
 
-        let mut connection = pool
-            .acquire()
-            .await
-            .map_err(|err| TaskStoreError::ConnectionFailure(err.to_string()))?;
+        let mut connection = pool.acquire().await?;
+        let mut transaction = connection.begin().await?;
 
         if let Some(ukey) = &unique_key {
             // right now if we encounter a unique key that is already present in the DB we simply
             // don't queue the new instance of that task, the old one will have a bit of priority
             // due to its age.
-            if SqliteTaskStore::is_key_present(&mut connection, ukey).await? {
+            if SqliteTaskStore::is_key_present(&mut transaction, ukey).await? {
                 return Ok(None);
             }
         }
@@ -69,9 +66,10 @@ impl TaskStore for SqliteTaskStore {
                 payload,
                 T::MAX_RETRIES,
             )
-            .fetch_one(&mut *connection)
-            .await
-            .map_err(|err| TaskStoreError::ConnectionFailure(err.to_string()))?;
+            .fetch_one(&mut *transaction)
+            .await?;
+
+        transaction.commit().await?;
 
         Ok(Some(background_task_id))
     }
@@ -81,16 +79,8 @@ impl TaskStore for SqliteTaskStore {
         queue_name: &str,
         _task_names: &[&str],
     ) -> Result<Option<Task>, TaskStoreError> {
-        let mut connection = self
-            .pool
-            .acquire()
-            .await
-            .map_err(|err| TaskStoreError::ConnectionFailure(err.to_string()))?;
-
-        let mut transaction = connection
-            .begin()
-            .await
-            .map_err(|err| TaskStoreError::ConnectionFailure(err.to_string()))?;
+        let mut connection = self.pool.acquire().await?;
+        let mut transaction = connection.begin().await?;
 
         // todo: need to dynamically build up the task_names portion of this query since sqlx
         // doesn't support generation of IN queries or have a concept of arrays for sqlite.l
@@ -105,8 +95,7 @@ impl TaskStore for SqliteTaskStore {
             queue_name,
         )
         .fetch_optional(&mut *transaction)
-        .await
-        .map_err(|err| TaskStoreError::ConnectionFailure(err.to_string()))?;
+        .await?;
 
         // If we found it claim it for this worker in the same transaction
         //
@@ -115,28 +104,24 @@ impl TaskStore for SqliteTaskStore {
         if let Some(ref id) = next_task_id {
             sqlx::query!(
                 r#"UPDATE background_tasks
-                           SET started_at = DATETIME('now'),
-                               state = 'in_progress'
-                           WHERE id = $1;"#,
+                       SET started_at = DATETIME('now'),
+                           state = 'in_progress'
+                       WHERE id = $1;"#,
                 id,
             )
             .execute(&mut *transaction)
-            .await
-            .map_err(|err| TaskStoreError::ConnectionFailure(err.to_string()))?;
+            .await?;
         }
 
-        transaction
-            .commit()
-            .await
-            .map_err(|err| TaskStoreError::ConnectionFailure(err.to_string()))?;
+        transaction.commit().await?;
 
         let timed_out_start_threshold = Utc::now() - TASK_EXECUTION_TIMEOUT;
         let pending_retry_tasks = sqlx::query_scalar!(
             r#"SELECT id FROM background_tasks
-                 WHERE state = 'in_progress'
-                    AND started_at <= $1
-                ORDER BY started_at ASC
-                LIMIT 10;"#,
+                   WHERE state = 'in_progress'
+                      AND started_at <= $1
+                   ORDER BY started_at ASC
+                   LIMIT 10;"#,
             timed_out_start_threshold,
         )
         .fetch_all(&self.pool)
@@ -155,10 +140,10 @@ impl TaskStore for SqliteTaskStore {
 
                 let state_update_res = sqlx::query!(
                     r#"UPDATE background_tasks
-                        SET
-                            finished_at = DATETIME('now'),
-                            state = 'timed_out'
-                        WHERE id = $1"#,
+                          SET
+                              finished_at = DATETIME('now'),
+                              state = 'timed_out'
+                          WHERE id = $1"#,
                     id,
                 )
                 .execute(&self.pool)
@@ -186,8 +171,7 @@ impl TaskStore for SqliteTaskStore {
             chosen_task_id
         )
         .fetch_one(&self.pool)
-        .await
-        .map_err(|err| TaskStoreError::ConnectionFailure(err.to_string()))?;
+        .await?;
 
         Ok(Some(chosen_task))
     }
@@ -208,8 +192,7 @@ impl TaskStore for SqliteTaskStore {
             new_state,
         )
         .execute(&self.pool)
-        .await
-        .map_err(|err| TaskStoreError::ConnectionFailure(err.to_string()))?;
+        .await?;
 
         Ok(())
     }

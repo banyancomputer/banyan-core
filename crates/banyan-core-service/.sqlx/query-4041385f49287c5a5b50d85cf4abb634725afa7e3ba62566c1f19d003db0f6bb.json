@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id FROM background_tasks\n                   WHERE state = 'in_progress'\n                      AND started_at <= $1\n                   ORDER BY started_at ASC\n                   LIMIT 10;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "4041385f49287c5a5b50d85cf4abb634725afa7e3ba62566c1f19d003db0f6bb"
+}

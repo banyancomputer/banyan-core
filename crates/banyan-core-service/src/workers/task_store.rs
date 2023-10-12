@@ -68,3 +68,9 @@ pub enum TaskStoreError {
     #[error("unable to find task with ID {0}")]
     UnknownTask(String),
 }
+
+impl From<sqlx::Error> for TaskStoreError {
+    fn from(value: sqlx::Error) -> Self {
+        TaskStoreError::ConnectionFailure(value.to_string())
+    }
+}
