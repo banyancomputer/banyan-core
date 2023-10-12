@@ -1,4 +1,5 @@
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, sqlx::Type)]
+#[sqlx(rename_all = "snake_case")]
 pub enum TaskState {
     New,
     InProgress,

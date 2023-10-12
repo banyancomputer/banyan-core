@@ -1,7 +1,6 @@
 use async_trait::async_trait;
 use chrono::offset::Utc;
-use sqlx::{Sqlite, SqliteConnection, SqlitePool};
-use uuid::Uuid;
+use sqlx::SqlitePool;
 
 use crate::workers::{TASK_EXECUTION_TIMEOUT, Task, TaskLike, TaskState, TaskStore, TaskStoreError};
 
@@ -118,6 +117,10 @@ impl TaskStore for SqliteTaskStore {
                 .execute(&self.pool)
                 .await;
 
+                if let Err(_) = state_update_res {
+                    break;
+                }
+
                 if let Err(_) = self.retry(id).await {
                     break;
                 }
@@ -162,9 +165,10 @@ impl TaskStore for SqliteTaskStore {
         // that as future work for now.
         sqlx::query!(
             r#"UPDATE background_tasks
-                SET state = $1
+                SET state = $2
                 WHERE id = $1;"#,
             id,
+            new_state,
         )
         .execute(&self.pool)
         .await

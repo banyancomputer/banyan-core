@@ -8,7 +8,10 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::{Json, Router};
 use axum::{Server, ServiceExt};
+use futures::future::join_all;
 use http::header;
+use tokio::sync::watch;
+use tokio::task::JoinHandle;
 use tower::ServiceBuilder;
 use tower_http::request_id::MakeRequestUuid;
 use tower_http::sensitive_headers::{
@@ -21,6 +24,7 @@ use tracing::Level;
 
 use crate::app_state::AppState;
 use crate::{api, auth, health_check};
+use crate::workers::start_background_workers;
 
 // TODO: might want a longer timeout in some parts of the API and I'd like to be able customize a
 // few layers eventually such as CORS and request timeouts but that's for something down the line
@@ -49,7 +53,7 @@ async fn handle_error(error: tower::BoxError) -> impl IntoResponse {
     )
 }
 
-async fn graceful_shutdown_blocker() {
+pub async fn graceful_shutdown_blocker() -> (JoinHandle<()>, watch::Receiver<()>) {
     use tokio::signal::unix;
 
     let mut sig_int_handler =
@@ -57,11 +61,18 @@ async fn graceful_shutdown_blocker() {
     let mut sig_term_handler =
         unix::signal(unix::SignalKind::terminate()).expect("to be able to install signal handler");
 
-    // TODO: need to follow k8s signal handling rules for these different signals
-    tokio::select! {
-        _ = sig_int_handler.recv() => tracing::debug!("gracefully exiting on an interrupt signal"),
-        _ = sig_term_handler.recv() => tracing::debug!("gracefully exiting on an terminate signal"),
-    }
+    let (tx, rx) = tokio::sync::watch::channel(());
+    let handle = tokio::spawn(async move {
+        // TODO: need to follow k8s signal handling rules for these different signals
+        tokio::select! {
+            _ = sig_int_handler.recv() => tracing::debug!("gracefully exiting on an interrupt signal"),
+            _ = sig_term_handler.recv() => tracing::debug!("gracefully exiting on an terminate signal"),
+        }
+
+        let _ = tx.send(());
+    });
+
+    (handle, rx)
 }
 
 async fn not_found_handler() -> impl IntoResponse {
@@ -72,6 +83,13 @@ async fn not_found_handler() -> impl IntoResponse {
 }
 
 pub async fn run(app_state: AppState) {
+    let (shutdown_handle, mut shutdown_rx) = graceful_shutdown_blocker().await;
+
+    let database = app_state.database();
+    let worker_handle = start_background_workers(database, shutdown_rx.clone())
+        .await
+        .expect("background workers to start");
+
     let sensitive_headers: Arc<[_]> = Arc::new([
         header::AUTHORIZATION,
         header::COOKIE,
@@ -118,9 +136,19 @@ pub async fn run(app_state: AppState) {
 
     tracing::info!(addr = ?addr, "server listening");
 
-    Server::bind(&addr)
-        .serve(app.into_make_service())
-        .with_graceful_shutdown(graceful_shutdown_blocker())
-        .await
-        .unwrap();
+    let web_handle: JoinHandle<()> = tokio::spawn(async move {
+        Server::bind(&addr)
+            .serve(app.into_make_service())
+            .with_graceful_shutdown(async move { let _ = shutdown_rx.changed().await; })
+            .await
+            .expect("server to exit cleanly upon completion");
+    });
+
+    // wait for a shutdown signal, let everything run in the background
+    let _ = shutdown_handle.await;
+
+    let _ = tokio::time::timeout(
+        Duration::from_secs(5),
+        join_all([worker_handle, web_handle]),
+    ).await;
 }

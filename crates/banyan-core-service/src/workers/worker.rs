@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::collections::BTreeMap;
 
 use crate::workers::{MAXIMUM_CHECK_DELAY, CurrentTask, ExecuteTaskFn, QueueConfig, StateFn, Task, TaskExecError, TaskState, TaskStore, TaskStoreError};

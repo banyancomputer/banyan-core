@@ -38,7 +38,7 @@ pub async fn start_background_workers(pool: SqlitePool, mut shutdown_rx: watch::
 
     WorkerPool::new(task_store.clone(), move || { pool.clone() })
         .register_task_type::<tasks::TestTask>()
-        .configure_queue(QueueConfig::new("default"))
+        .configure_queue(QueueConfig::new("default").with_worker_count(5))
         .start(async move { let _ = shutdown_rx.changed().await; })
         .await
         .map_err(|_| "worker startup failed")
