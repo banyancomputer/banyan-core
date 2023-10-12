@@ -20,7 +20,7 @@ impl SqliteTaskStore {
         current_attempt: i64,
         maximum_attempts: i64,
         payload: String,
-        previous_task_id: Option<String>
+        previous_task_id: Option<String>,
     ) -> Result<Option<String>, TaskStoreError> {
         if let Some(ukey) = &unique_key {
             // right now if we encounter a unique key that is already present in the DB we simply
@@ -93,7 +93,8 @@ impl TaskStore for SqliteTaskStore {
             T::MAX_RETRIES,
             payload,
             None,
-        ).await?;
+        )
+        .await?;
 
         transaction.commit().await?;
 
@@ -233,7 +234,8 @@ impl TaskStore for SqliteTaskStore {
             retried_task.maximum_attempts,
             retried_task.payload.to_string(),
             Some(retried_task.id),
-        ).await?;
+        )
+        .await?;
 
         transaction.commit().await?;
 
