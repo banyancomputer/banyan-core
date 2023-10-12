@@ -1,7 +1,7 @@
 use chrono::NaiveDateTime;
 
-use crate::workers::{TaskState};
 use crate::workers::panic_safe_future::CaughtPanic;
+use crate::workers::TaskState;
 
 #[derive(Clone, Debug, PartialEq, sqlx::FromRow)]
 pub struct Task {
@@ -21,7 +21,6 @@ pub struct Task {
 
     // will need a live-cancel signal and likely a custom Future impl to ensure its used for proper
     // timeout handling
-
     pub payload: serde_json::Value,
     pub error: Option<String>,
 

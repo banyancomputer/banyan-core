@@ -2,22 +2,24 @@ use std::collections::BTreeMap;
 use std::pin::Pin;
 use std::sync::Arc;
 
-use futures::Future;
 use futures::future::join_all;
+use futures::Future;
 use tokio::sync::watch;
 use tokio::task::JoinHandle;
 use tokio::time::timeout;
 
-use crate::workers::{WORKER_SHUTDOWN_TIMEOUT, CurrentTask, QueueConfig, TaskExecError, TaskLike, TaskStore, Worker};
+use crate::workers::{
+    CurrentTask, QueueConfig, TaskExecError, TaskLike, TaskStore, Worker, WORKER_SHUTDOWN_TIMEOUT,
+};
 
 pub type ExecuteTaskFn<Context> = Arc<
     dyn Fn(
-        CurrentTask,
-        serde_json::Value,
-        Context,
-    ) -> Pin<Box<dyn Future<Output = Result<(), TaskExecError>> + Send>>
-    + Send
-    + Sync,
+            CurrentTask,
+            serde_json::Value,
+            Context,
+        ) -> Pin<Box<dyn Future<Output = Result<(), TaskExecError>> + Send>>
+        + Send
+        + Sync,
 >;
 
 pub type StateFn<Context> = Arc<dyn Fn() -> Context + Send + Sync>;
@@ -81,7 +83,10 @@ where
     {
         for (queue_name, queue_tracked_tasks) in self.queue_tasks.iter() {
             if !self.worker_queues.contains_key(queue_name) {
-                return Err(WorkerPoolError::QueueNotConfigured(queue_name, queue_tracked_tasks.clone()));
+                return Err(WorkerPoolError::QueueNotConfigured(
+                    queue_name,
+                    queue_tracked_tasks.clone(),
+                ));
             }
         }
 
@@ -106,8 +111,12 @@ where
 
                 let worker_handle = tokio::spawn(async move {
                     match worker.run_tasks().await {
-                        Ok(()) => tracing::info!(name = ?worker_name, "worker stopped successfully"),
-                        Err(err) => tracing::error!(name = ?worker_name, "worker stopped due to error: {err}"),
+                        Ok(()) => {
+                            tracing::info!(name = ?worker_name, "worker stopped successfully")
+                        }
+                        Err(err) => {
+                            tracing::error!(name = ?worker_name, "worker stopped due to error: {err}")
+                        }
                     }
                 });
 
@@ -125,8 +134,17 @@ where
             let _ = inner_shutdown_tx.send(());
 
             // try and collect error from workers but if it takes too long abandon them
-            let worker_errors: Vec<_> = match timeout(WORKER_SHUTDOWN_TIMEOUT, join_all(worker_handles)).await {
-                Ok(res) => res.into_iter().filter(Result::is_err).map(Result::unwrap_err).collect(),
+            let worker_errors: Vec<_> = match timeout(
+                WORKER_SHUTDOWN_TIMEOUT,
+                join_all(worker_handles),
+            )
+            .await
+            {
+                Ok(res) => res
+                    .into_iter()
+                    .filter(Result::is_err)
+                    .map(Result::unwrap_err)
+                    .collect(),
                 Err(_) => {
                     tracing::warn!("timed out waiting for workers to shutdown, not reporting outstanding errors");
                     Vec::new()
@@ -136,7 +154,10 @@ where
             if worker_errors.is_empty() {
                 tracing::info!("worker pool shutdown gracefully");
             } else {
-                tracing::error!("workers reported the following errors during shutdown:\n{:?}", worker_errors);
+                tracing::error!(
+                    "workers reported the following errors during shutdown:\n{:?}",
+                    worker_errors
+                );
             }
         });
 

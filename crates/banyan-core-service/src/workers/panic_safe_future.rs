@@ -2,8 +2,8 @@ use std::fmt::{self, Display, Formatter};
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-use futures::{Future, FutureExt};
 use futures::future::BoxFuture;
+use futures::{Future, FutureExt};
 
 pub struct PanicSafeFuture<F: Future + Send + 'static> {
     inner: BoxFuture<'static, F::Output>,
@@ -53,6 +53,6 @@ fn catch_unwind<F: FnOnce() -> R, R>(f: F) -> Result<R, CaughtPanic> {
             }
 
             Err(CaughtPanic("unknown panic message format".to_string()))
-        },
+        }
     }
 }

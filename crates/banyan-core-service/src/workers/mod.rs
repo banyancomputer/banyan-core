@@ -16,10 +16,10 @@ pub use current_task::CurrentTask;
 pub use queue_config::QueueConfig;
 //pub use stores::{MemoryTaskStore, SqliteTaskStore};
 pub use stores::SqliteTaskStore;
+pub use task::{Task, TaskExecError};
 pub use task_like::{TaskLike, TaskLikeExt};
 pub use task_state::TaskState;
 pub use task_store::{TaskStore, TaskStoreError};
-pub use task::{Task, TaskExecError};
 pub use worker::{Worker, WorkerError};
 pub use worker_pool::{ExecuteTaskFn, StateFn, WorkerPool, WorkerPoolError};
 
@@ -33,13 +33,18 @@ pub const TASK_EXECUTION_TIMEOUT: Duration = Duration::from_secs(30);
 
 pub const WORKER_SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(5);
 
-pub async fn start_background_workers(pool: SqlitePool, mut shutdown_rx: watch::Receiver<()>) -> Result<JoinHandle<()>, &'static str> {
+pub async fn start_background_workers(
+    pool: SqlitePool,
+    mut shutdown_rx: watch::Receiver<()>,
+) -> Result<JoinHandle<()>, &'static str> {
     let task_store = SqliteTaskStore::new(pool.clone());
 
-    WorkerPool::new(task_store.clone(), move || { pool.clone() })
+    WorkerPool::new(task_store.clone(), move || pool.clone())
         .register_task_type::<tasks::TestTask>()
         .configure_queue(QueueConfig::new("default").with_worker_count(5))
-        .start(async move { let _ = shutdown_rx.changed().await; })
+        .start(async move {
+            let _ = shutdown_rx.changed().await;
+        })
         .await
         .map_err(|_| "worker startup failed")
 }

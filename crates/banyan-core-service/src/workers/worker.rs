@@ -2,8 +2,11 @@
 
 use std::collections::BTreeMap;
 
-use crate::workers::{MAXIMUM_CHECK_DELAY, CurrentTask, ExecuteTaskFn, QueueConfig, StateFn, Task, TaskExecError, TaskState, TaskStore, TaskStoreError};
 use crate::workers::panic_safe_future::PanicSafeFuture;
+use crate::workers::{
+    CurrentTask, ExecuteTaskFn, QueueConfig, StateFn, Task, TaskExecError, TaskState, TaskStore,
+    TaskStoreError, MAXIMUM_CHECK_DELAY,
+};
 
 pub struct Worker<Context, S>
 where
@@ -46,7 +49,8 @@ where
     pub async fn run(&self, task: Task) -> Result<(), WorkerError> {
         let task_info = CurrentTask::new(&task);
 
-        let deserialize_and_run_task_fn = self.task_registry
+        let deserialize_and_run_task_fn = self
+            .task_registry
             .get(task.task_name.as_str())
             .ok_or_else(|| WorkerError::UnregisteredTaskName(task.task_name))?
             .clone();
@@ -72,7 +76,8 @@ where
 
                 // todo: save panic message into the task.error and save it back to the memory
                 // store somehow...
-                self.store.update_state(task.id, TaskState::Panicked)
+                self.store
+                    .update_state(task.id, TaskState::Panicked)
                     .await
                     .map_err(WorkerError::UpdateTaskStatusFailed)?;
 
@@ -85,14 +90,16 @@ where
 
         match task_result {
             Ok(_) => {
-                self.store.update_state(task.id, TaskState::Complete)
+                self.store
+                    .update_state(task.id, TaskState::Complete)
                     .await
                     .map_err(WorkerError::UpdateTaskStatusFailed)?;
             }
             Err(err) => {
                 tracing::error!("task failed with error: {err}");
 
-                self.store.errored(task.id, TaskExecError::ExecutionFailed(err.to_string()))
+                self.store
+                    .errored(task.id, TaskExecError::ExecutionFailed(err.to_string()))
                     .await
                     .map_err(WorkerError::RetryTaskFailed)?;
             }
@@ -117,7 +124,8 @@ where
                 }
             }
 
-            let next_task = self.store
+            let next_task = self
+                .store
                 .next(self.queue_config.name(), &relevant_task_names)
                 .await
                 .map_err(WorkerError::StoreUnavailable)?;
@@ -134,7 +142,9 @@ where
             // future wakers instead of internal timeouts but some central scheduler
             match &mut self.shutdown_signal {
                 Some(ss) => {
-                    if let Ok(_signaled) = tokio::time::timeout(MAXIMUM_CHECK_DELAY, ss.changed()).await {
+                    if let Ok(_signaled) =
+                        tokio::time::timeout(MAXIMUM_CHECK_DELAY, ss.changed()).await
+                    {
                         // todo might want to handle graceful / non-graceful differently
                         tracing::info!("received worker shutdown signal while idle");
                         return Ok(());

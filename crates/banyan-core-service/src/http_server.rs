@@ -22,9 +22,9 @@ use tower_http::validate_request::ValidateRequestHeaderLayer;
 use tower_http::{LatencyUnit, ServiceBuilderExt};
 use tracing::Level;
 
-use crate::{api, auth, health_check, hooks};
 use crate::app_state::AppState;
 use crate::workers::start_background_workers;
+use crate::{api, auth, health_check, hooks};
 
 // TODO: might want a longer timeout in some parts of the API and I'd like to be able customize a
 // few layers eventually such as CORS and request timeouts but that's for something down the line
@@ -140,7 +140,9 @@ pub async fn run(app_state: AppState) {
     let web_handle: JoinHandle<()> = tokio::spawn(async move {
         Server::bind(&addr)
             .serve(app.into_make_service())
-            .with_graceful_shutdown(async move { let _ = shutdown_rx.changed().await; })
+            .with_graceful_shutdown(async move {
+                let _ = shutdown_rx.changed().await;
+            })
             .await
             .expect("server to exit cleanly upon completion");
     });
@@ -151,5 +153,6 @@ pub async fn run(app_state: AppState) {
     let _ = tokio::time::timeout(
         Duration::from_secs(5),
         join_all([worker_handle, web_handle]),
-    ).await;
+    )
+    .await;
 }

@@ -22,15 +22,15 @@ pub async fn version() -> VersionResponse<'static> {
     }
 }
 
-use axum::Json;
 use axum::extract::{FromRef, State};
 use axum::response::{IntoResponse, Response};
+use axum::Json;
 use http::StatusCode;
 use sqlx::SqlitePool;
 
 use crate::app_state::AppState;
-use crate::workers::{SqliteTaskStore, TaskLikeExt};
 use crate::workers::tasks::TestTask;
+use crate::workers::{SqliteTaskStore, TaskLikeExt};
 
 pub async fn work_test(State(state): State<AppState>) -> Response {
     let mut pool = SqlitePool::from_ref(&state);

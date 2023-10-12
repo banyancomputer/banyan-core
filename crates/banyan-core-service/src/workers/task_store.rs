@@ -23,7 +23,11 @@ pub trait TaskStore: Send + Sync + 'static {
     where
         Self: Sized;
 
-    async fn errored(&self, id: String, error: TaskExecError) -> Result<Option<String>, TaskStoreError> {
+    async fn errored(
+        &self,
+        id: String,
+        error: TaskExecError,
+    ) -> Result<Option<String>, TaskStoreError> {
         match error {
             TaskExecError::DeserializationFailed(_) | TaskExecError::Panicked(_) => {
                 self.update_state(id, TaskState::Dead).await?;
@@ -36,7 +40,11 @@ pub trait TaskStore: Send + Sync + 'static {
         }
     }
 
-    async fn next(&self, queue_name: &str, task_names: &[&str]) -> Result<Option<Task>, TaskStoreError>;
+    async fn next(
+        &self,
+        queue_name: &str,
+        task_names: &[&str],
+    ) -> Result<Option<Task>, TaskStoreError>;
 
     async fn retry(&self, id: String) -> Result<Option<String>, TaskStoreError>;
 

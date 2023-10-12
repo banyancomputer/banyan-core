@@ -1,8 +1,10 @@
 use async_trait::async_trait;
 use chrono::offset::Utc;
-use sqlx::{Acquire, SqlitePool};
+use sqlx::{Acquire, SqliteConnection, SqlitePool};
 
-use crate::workers::{TASK_EXECUTION_TIMEOUT, Task, TaskLike, TaskState, TaskStore, TaskStoreError};
+use crate::workers::{
+    Task, TaskLike, TaskState, TaskStore, TaskStoreError, TASK_EXECUTION_TIMEOUT,
+};
 
 #[derive(Clone)]
 pub struct SqliteTaskStore {
@@ -10,11 +12,15 @@ pub struct SqliteTaskStore {
 }
 
 impl SqliteTaskStore {
-    async fn is_key_present(pool: &SqlitePool, key: &str) -> Result<bool, TaskStoreError> {
-        let query_res = sqlx::query_scalar!("SELECT 1 FROM background_tasks WHERE unique_key = $1;", key)
-            .fetch_optional(&*pool)
-            .await
-            .map_err(|err| TaskStoreError::ConnectionFailure(err.to_string()))?;
+    async fn is_key_present(
+        conn: &mut SqliteConnection,
+        key: &str,
+    ) -> Result<bool, TaskStoreError> {
+        let query_res =
+            sqlx::query_scalar!("SELECT 1 FROM background_tasks WHERE unique_key = $1;", key)
+                .fetch_optional(&mut *conn)
+                .await
+                .map_err(|err| TaskStoreError::ConnectionFailure(err.to_string()))?;
 
         Ok(query_res.is_some())
     }
@@ -34,17 +40,21 @@ impl TaskStore for SqliteTaskStore {
     ) -> Result<Option<String>, TaskStoreError> {
         let unique_key = task.unique_key().await;
 
+        let mut connection = pool
+            .acquire()
+            .await
+            .map_err(|err| TaskStoreError::ConnectionFailure(err.to_string()))?;
+
         if let Some(ukey) = &unique_key {
             // right now if we encounter a unique key that is already present in the DB we simply
             // don't queue the new instance of that task, the old one will have a bit of priority
             // due to its age.
-            if SqliteTaskStore::is_key_present(pool, ukey).await? {
+            if SqliteTaskStore::is_key_present(&mut connection, ukey).await? {
                 return Ok(None);
             }
         }
 
-        let payload = serde_json::to_string(&task)
-            .map_err(TaskStoreError::EncodeFailed)?;
+        let payload = serde_json::to_string(&task).map_err(TaskStoreError::EncodeFailed)?;
 
         let task_name = T::TASK_NAME.to_string();
         let queue_name = T::QUEUE_NAME.to_string();
@@ -59,20 +69,28 @@ impl TaskStore for SqliteTaskStore {
                 payload,
                 T::MAX_RETRIES,
             )
-            .fetch_one(&*pool)
+            .fetch_one(&mut *connection)
             .await
             .map_err(|err| TaskStoreError::ConnectionFailure(err.to_string()))?;
 
         Ok(Some(background_task_id))
     }
 
-    async fn next(&self, queue_name: &str, _task_names: &[&str]) -> Result<Option<Task>, TaskStoreError> {
-        let mut connection = self.pool
+    async fn next(
+        &self,
+        queue_name: &str,
+        _task_names: &[&str],
+    ) -> Result<Option<Task>, TaskStoreError> {
+        let mut connection = self
+            .pool
             .acquire()
             .await
             .map_err(|err| TaskStoreError::ConnectionFailure(err.to_string()))?;
 
-        let mut transaction = connection.begin().await.map_err(|err| TaskStoreError::ConnectionFailure(err.to_string()))?;
+        let mut transaction = connection
+            .begin()
+            .await
+            .map_err(|err| TaskStoreError::ConnectionFailure(err.to_string()))?;
 
         // todo: need to dynamically build up the task_names portion of this query since sqlx
         // doesn't support generation of IN queries or have a concept of arrays for sqlite.l
@@ -91,17 +109,20 @@ impl TaskStore for SqliteTaskStore {
         .map_err(|err| TaskStoreError::ConnectionFailure(err.to_string()))?;
 
         // If we found it claim it for this worker in the same transaction
+        //
+        // todo: should add a worker identifier when picking up a job for both logging/tracking as
+        // well as future directed clean up
         if let Some(ref id) = next_task_id {
             sqlx::query!(
-                    r#"UPDATE background_tasks
+                r#"UPDATE background_tasks
                            SET started_at = DATETIME('now'),
                                state = 'in_progress'
                            WHERE id = $1;"#,
-                    id,
-                )
-                .execute(&mut *transaction)
-                .await
-                .map_err(|err| TaskStoreError::ConnectionFailure(err.to_string()))?;
+                id,
+            )
+            .execute(&mut *transaction)
+            .await
+            .map_err(|err| TaskStoreError::ConnectionFailure(err.to_string()))?;
         }
 
         transaction
@@ -158,25 +179,15 @@ impl TaskStore for SqliteTaskStore {
             None => return Ok(None),
         };
 
-        // todo: should add a worker identifier when picking up a job for both logging/tracking as
-        // well as future directed clean up
-        sqlx::query!(
-            r#"UPDATE background_tasks
-                   SET
-                       state = 'in_progress',
-                       started_at = DATETIME('now')
-                   WHERE id = ?;"#,
-            chosen_task_id,
+        // pull the full current version of the task
+        let chosen_task = sqlx::query_as!(
+            Task,
+            "SELECT * FROM background_tasks WHERE id = $1;",
+            chosen_task_id
         )
-        .execute(&self.pool)
+        .fetch_one(&self.pool)
         .await
         .map_err(|err| TaskStoreError::ConnectionFailure(err.to_string()))?;
-
-        // pull the full current version of the task
-        let chosen_task = sqlx::query_as!(Task, "SELECT * FROM background_tasks WHERE id = $1;", chosen_task_id)
-            .fetch_one(&self.pool)
-            .await
-            .map_err(|err| TaskStoreError::ConnectionFailure(err.to_string()))?;
 
         Ok(Some(chosen_task))
     }
