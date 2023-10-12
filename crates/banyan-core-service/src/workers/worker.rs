@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 
 use crate::workers::panic_safe_future::PanicSafeFuture;
 use crate::workers::{
-    CurrentTask, ExecuteTaskFn, QueueConfig, StateFn, Task, TaskExecError, TaskState, TaskStore,
+    CurrentTask, CurrentTaskError, ExecuteTaskFn, QueueConfig, StateFn, Task, TaskExecError, TaskState, TaskStore,
     TaskStoreError, MAXIMUM_CHECK_DELAY,
 };
 
@@ -47,7 +47,8 @@ where
     }
 
     pub async fn run(&self, task: Task) -> Result<(), WorkerError> {
-        let task_info = CurrentTask::new(&task);
+        let task_info = CurrentTask::try_from(&task)
+            .map_err(WorkerError::CantMakeCurrent)?;
 
         let deserialize_and_run_task_fn = self
             .task_registry
@@ -164,6 +165,9 @@ where
 
 #[derive(Debug, thiserror::Error)]
 pub enum WorkerError {
+    #[error("failed to generate current task info for task execution: {0}")]
+    CantMakeCurrent(CurrentTaskError),
+
     #[error("worker detected an error in the shutdown channel and forced and immediate exit")]
     EmergencyShutdown,
 

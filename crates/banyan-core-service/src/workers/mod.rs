@@ -12,7 +12,7 @@ pub mod tasks;
 mod worker;
 mod worker_pool;
 
-pub use current_task::CurrentTask;
+pub use current_task::{CurrentTask, CurrentTaskError};
 pub use queue_config::QueueConfig;
 pub use stores::SqliteTaskStore;
 pub use task::{Task, TaskExecError};
