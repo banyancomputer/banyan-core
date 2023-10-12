@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use chrono::offset::Utc;
-use sqlx::SqlitePool;
+use sqlx::{Acquire, SqlitePool};
 
 use crate::workers::{TASK_EXECUTION_TIMEOUT, Task, TaskLike, TaskState, TaskStore, TaskStoreError};
 
@@ -67,6 +67,13 @@ impl TaskStore for SqliteTaskStore {
     }
 
     async fn next(&self, queue_name: &str, _task_names: &[&str]) -> Result<Option<Task>, TaskStoreError> {
+        let mut connection = self.pool
+            .acquire()
+            .await
+            .map_err(|err| TaskStoreError::ConnectionFailure(err.to_string()))?;
+
+        let mut transaction = connection.begin().await.map_err(|err| TaskStoreError::ConnectionFailure(err.to_string()))?;
+
         // todo: need to dynamically build up the task_names portion of this query since sqlx
         // doesn't support generation of IN queries or have a concept of arrays for sqlite.l
 
@@ -79,9 +86,28 @@ impl TaskStore for SqliteTaskStore {
                    LIMIT 1;"#,
             queue_name,
         )
-        .fetch_optional(&self.pool)
+        .fetch_optional(&mut *transaction)
         .await
         .map_err(|err| TaskStoreError::ConnectionFailure(err.to_string()))?;
+
+        // If we found it claim it for this worker in the same transaction
+        if let Some(ref id) = next_task_id {
+            sqlx::query!(
+                    r#"UPDATE background_tasks
+                           SET started_at = DATETIME('now'),
+                               state = 'in_progress'
+                           WHERE id = $1;"#,
+                    id,
+                )
+                .execute(&mut *transaction)
+                .await
+                .map_err(|err| TaskStoreError::ConnectionFailure(err.to_string()))?;
+        }
+
+        transaction
+            .commit()
+            .await
+            .map_err(|err| TaskStoreError::ConnectionFailure(err.to_string()))?;
 
         let timed_out_start_threshold = Utc::now() - TASK_EXECUTION_TIMEOUT;
         let pending_retry_tasks = sqlx::query_scalar!(
