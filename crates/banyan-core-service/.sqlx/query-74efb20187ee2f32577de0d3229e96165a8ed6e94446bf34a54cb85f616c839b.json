@@ -1,0 +1,104 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT * FROM background_tasks\n                   WHERE id = $1\n                       AND state IN ('error', 'timed_out')\n                       AND current_attempt < maximum_attempts;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "next_id",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "previous_id",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "task_name",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "queue_name",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "unique_key",
+        "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "state",
+        "ordinal": 6,
+        "type_info": "Text"
+      },
+      {
+        "name": "current_attempt",
+        "ordinal": 7,
+        "type_info": "Int64"
+      },
+      {
+        "name": "maximum_attempts",
+        "ordinal": 8,
+        "type_info": "Int64"
+      },
+      {
+        "name": "payload",
+        "ordinal": 9,
+        "type_info": "Text"
+      },
+      {
+        "name": "error",
+        "ordinal": 10,
+        "type_info": "Text"
+      },
+      {
+        "name": "scheduled_at",
+        "ordinal": 11,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "scheduled_to_run_at",
+        "ordinal": 12,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "started_at",
+        "ordinal": 13,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "finished_at",
+        "ordinal": 14,
+        "type_info": "Datetime"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      true,
+      true,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "74efb20187ee2f32577de0d3229e96165a8ed6e94446bf34a54cb85f616c839b"
+}

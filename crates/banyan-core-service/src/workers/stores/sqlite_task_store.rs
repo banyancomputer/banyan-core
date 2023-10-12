@@ -12,6 +12,43 @@ pub struct SqliteTaskStore {
 }
 
 impl SqliteTaskStore {
+    async fn checked_create(
+        conn: &mut SqliteConnection,
+        unique_key: Option<&str>,
+        task_name: &str,
+        queue_name: &str,
+        current_attempt: i64,
+        maximum_attempts: i64,
+        payload: String,
+        previous_task_id: Option<String>
+    ) -> Result<Option<String>, TaskStoreError> {
+        if let Some(ukey) = &unique_key {
+            // right now if we encounter a unique key that is already present in the DB we simply
+            // don't queue the new instance of that task, the old one will have a bit of priority
+            // due to its age.
+            if SqliteTaskStore::is_key_present(conn, ukey).await? {
+                return Ok(None);
+            }
+        }
+
+        let background_task_id: String = sqlx::query_scalar!(
+                r#"INSERT INTO background_tasks (previous_id, task_name, unique_key, queue_name, payload, current_attempt, maximum_attempts)
+                       VALUES ($1, $2, $3, $4, $5, $6, $7)
+                       RETURNING id;"#,
+                previous_task_id,
+                task_name,
+                unique_key,
+                queue_name,
+                payload,
+                current_attempt,
+                maximum_attempts,
+            )
+            .fetch_one(&mut *conn)
+            .await?;
+
+        Ok(Some(background_task_id))
+    }
+
     async fn is_key_present(
         conn: &mut SqliteConnection,
         key: &str,
@@ -42,36 +79,25 @@ impl TaskStore for SqliteTaskStore {
         let mut connection = pool.acquire().await?;
         let mut transaction = connection.begin().await?;
 
-        if let Some(ukey) = &unique_key {
-            // right now if we encounter a unique key that is already present in the DB we simply
-            // don't queue the new instance of that task, the old one will have a bit of priority
-            // due to its age.
-            if SqliteTaskStore::is_key_present(&mut transaction, ukey).await? {
-                return Ok(None);
-            }
-        }
-
-        let payload = serde_json::to_string(&task).map_err(TaskStoreError::EncodeFailed)?;
-
         let task_name = T::TASK_NAME.to_string();
         let queue_name = T::QUEUE_NAME.to_string();
 
-        let background_task_id: String = sqlx::query_scalar!(
-                r#"INSERT INTO background_tasks (task_name, unique_key, queue_name, payload, maximum_attempts)
-                       VALUES ($1, $2, $3, $4, $5)
-                       RETURNING id;"#,
-                task_name,
-                unique_key,
-                queue_name,
-                payload,
-                T::MAX_RETRIES,
-            )
-            .fetch_one(&mut *transaction)
-            .await?;
+        let payload = serde_json::to_string(&task).map_err(TaskStoreError::EncodeFailed)?;
+
+        let background_task_id = SqliteTaskStore::checked_create(
+            &mut transaction,
+            unique_key.as_ref().map(|x| x.as_str()),
+            &task_name,
+            &queue_name,
+            0,
+            T::MAX_RETRIES,
+            payload,
+            None,
+        ).await?;
 
         transaction.commit().await?;
 
-        Ok(Some(background_task_id))
+        Ok(background_task_id)
     }
 
     async fn next(
@@ -118,13 +144,13 @@ impl TaskStore for SqliteTaskStore {
         let timed_out_start_threshold = Utc::now() - TASK_EXECUTION_TIMEOUT;
         let pending_retry_tasks = sqlx::query_scalar!(
             r#"SELECT id FROM background_tasks
-                   WHERE state = 'in_progress'
+                   WHERE state IN ('in_progress', 'retry')
                       AND started_at <= $1
                    ORDER BY started_at ASC
                    LIMIT 10;"#,
             timed_out_start_threshold,
         )
-        .fetch_all(&self.pool)
+        .fetch_all(&mut *connection)
         .await;
 
         // if this query fails or any of our rescheduling fails, we still want to process our task,
@@ -176,22 +202,57 @@ impl TaskStore for SqliteTaskStore {
         Ok(Some(chosen_task))
     }
 
-    async fn retry(&self, _id: String) -> Result<Option<String>, TaskStoreError> {
-        // leaving as a todo for now
-        Ok(None)
+    async fn retry(&self, id: String) -> Result<Option<String>, TaskStoreError> {
+        let mut connection = self.pool.acquire().await?;
+        let mut transaction = connection.begin().await?;
+
+        // We only care about tasks that are capable of being retried so some filters here allow
+        // irrelevant attempts to quickly and silently be ignored.
+        let maybe_retried_task = sqlx::query_as!(
+            Task,
+            r#"SELECT * FROM background_tasks
+                   WHERE id = $1
+                       AND state IN ('error', 'timed_out')
+                       AND current_attempt < maximum_attempts;"#,
+            id
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+
+        let retried_task = match maybe_retried_task {
+            Some(rt) => rt,
+            None => return Ok(None),
+        };
+
+        let new_task_id = SqliteTaskStore::checked_create(
+            &mut transaction,
+            retried_task.unique_key.as_ref().map(|x| x.as_str()),
+            &retried_task.task_name,
+            &retried_task.queue_name,
+            retried_task.current_attempt + 1,
+            retried_task.maximum_attempts,
+            retried_task.payload.to_string(),
+            Some(retried_task.id),
+        ).await?;
+
+        transaction.commit().await?;
+
+        Ok(new_task_id)
     }
 
     async fn update_state(&self, id: String, new_state: TaskState) -> Result<(), TaskStoreError> {
+        let mut connection = self.pool.acquire().await?;
+
         // this could probably use some protection against invalid state transitions but I'll leave
         // that as future work for now.
         sqlx::query!(
             r#"UPDATE background_tasks
-                SET state = $2
-                WHERE id = $1;"#,
+                   SET state = $2
+                   WHERE id = $1;"#,
             id,
             new_state,
         )
-        .execute(&self.pool)
+        .execute(&mut *connection)
         .await?;
 
         Ok(())
