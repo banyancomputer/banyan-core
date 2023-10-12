@@ -23,8 +23,23 @@ pub use task::{Task, TaskExecError};
 pub use worker::{Worker, WorkerError};
 pub use worker_pool::{ExecuteTaskFn, StateFn, WorkerPool, WorkerPoolError};
 
+use sqlx::SqlitePool;
+use tokio::sync::watch;
+use tokio::task::JoinHandle;
+
 pub const MAXIMUM_CHECK_DELAY: Duration = Duration::from_millis(250);
 
 pub const TASK_EXECUTION_TIMEOUT: Duration = Duration::from_secs(30);
 
 pub const WORKER_SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(5);
+
+pub async fn start_background_workers(pool: SqlitePool, mut shutdown_rx: watch::Receiver<()>) -> Result<JoinHandle<()>, &'static str> {
+    let task_store = SqliteTaskStore::new(pool.clone());
+
+    WorkerPool::new(task_store.clone(), move || { pool.clone() })
+        .register_task_type::<tasks::TestTask>()
+        .configure_queue(QueueConfig::new("default"))
+        .start(async move { let _ = shutdown_rx.changed().await; })
+        .await
+        .map_err(|_| "worker startup failed")
+}

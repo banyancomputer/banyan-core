@@ -21,7 +21,7 @@ impl TaskLike for TestTask {
     const TASK_NAME: &'static str = "test_task";
 
     type Error = TestTaskError;
-    type Context = ();
+    type Context = sqlx::SqlitePool;
 
     async fn run(&self, task: CurrentTask, _ctx: Self::Context) -> Result<(), Self::Error> {
         // intentionally fail the task the first time it gets queued

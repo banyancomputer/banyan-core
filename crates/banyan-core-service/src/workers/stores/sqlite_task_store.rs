@@ -20,7 +20,7 @@ impl SqliteTaskStore {
         Ok(query_res.is_some())
     }
 
-    fn new(pool: SqlitePool) -> Self {
+    pub fn new(pool: SqlitePool) -> Self {
         Self { pool }
     }
 }
