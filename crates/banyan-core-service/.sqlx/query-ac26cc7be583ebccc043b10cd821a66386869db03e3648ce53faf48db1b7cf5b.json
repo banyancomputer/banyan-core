@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT 1 FROM background_tasks WHERE unique_key = $1;",
+  "query": "SELECT 1 FROM background_tasks WHERE unique_key = $1 AND task_name = $2;",
   "describe": {
     "columns": [
       {
@@ -10,11 +10,11 @@
       }
     ],
     "parameters": {
-      "Right": 1
+      "Right": 2
     },
     "nullable": [
       false
     ]
   },
-  "hash": "1cef0535d180a707ec901826f6672098689d00bdd2430eee78e709781279924a"
+  "hash": "ac26cc7be583ebccc043b10cd821a66386869db03e3648ce53faf48db1b7cf5b"
 }

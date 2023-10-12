@@ -26,7 +26,7 @@ impl SqliteTaskStore {
             // right now if we encounter a unique key that is already present in the DB we simply
             // don't queue the new instance of that task, the old one will have a bit of priority
             // due to its age.
-            if SqliteTaskStore::is_key_present(conn, ukey).await? {
+            if SqliteTaskStore::is_key_present(conn, ukey, task_name).await? {
                 return Ok(None);
             }
         }
@@ -52,9 +52,10 @@ impl SqliteTaskStore {
     async fn is_key_present(
         conn: &mut SqliteConnection,
         key: &str,
+        task_name: &str,
     ) -> Result<bool, TaskStoreError> {
         let query_res =
-            sqlx::query_scalar!("SELECT 1 FROM background_tasks WHERE unique_key = $1;", key)
+            sqlx::query_scalar!("SELECT 1 FROM background_tasks WHERE unique_key = $1 AND task_name = $2;", key, task_name)
                 .fetch_optional(&mut *conn)
                 .await?;
 

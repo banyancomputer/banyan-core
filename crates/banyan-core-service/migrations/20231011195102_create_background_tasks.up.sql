@@ -40,4 +40,4 @@ CREATE INDEX idx_background_tasks_on_scheduled_to_run_at ON background_tasks(sch
 CREATE INDEX idx_background_tasks_on_state ON background_tasks(state);
 CREATE INDEX idx_background_tasks_on_task_name ON background_tasks(task_name);
 CREATE INDEX idx_background_tasks_on_queue_name ON background_tasks(queue_name);
-CREATE INDEX idx_background_tasks_on_unique_key ON background_tasks(unique_key) WHERE unique_key != NULL;
+CREATE INDEX idx_background_tasks_on_task_name_and_unique_key ON background_tasks(task_name, unique_key) WHERE unique_key != NULL;
