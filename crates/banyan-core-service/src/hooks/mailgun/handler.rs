@@ -11,7 +11,6 @@ use crate::utils::db::{read_email_state, update_email_state};
 pub async fn handle(
     mut db_conn: DbConn,
     mailgun_signing_key: MailgunSigningKey,
-    // TODO eng-356: How are these errors handled?
     Json(hook_request): extract::Json<MailgunHookRequest>,
 ) -> Response {
     match hook_request.verify_signature(&mailgun_signing_key.0) {
