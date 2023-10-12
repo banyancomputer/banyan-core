@@ -23,6 +23,7 @@ impl From<String> for TaskState {
             "complete" => TaskState::Complete,
             "timed_out" => TaskState::TimedOut,
             "dead" => TaskState::Dead,
+            _ => panic!("unknown task state from string"),
         }
     }
 }

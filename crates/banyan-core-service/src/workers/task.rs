@@ -16,8 +16,8 @@ pub struct Task {
     pub unique_key: Option<String>,
     pub state: TaskState,
 
-    pub current_attempt: i32,
-    pub maximum_attempts: i32,
+    pub current_attempt: i64,
+    pub maximum_attempts: i64,
 
     // will need a live-cancel signal and likely a custom Future impl to ensure its used for proper
     // timeout handling

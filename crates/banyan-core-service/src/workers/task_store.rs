@@ -28,7 +28,7 @@ pub trait TaskStore: Send + Sync + 'static {
                 Ok(None)
             }
             TaskExecError::ExecutionFailed(_) => {
-                self.update_state(id, TaskState::Error).await?;
+                self.update_state(id.clone(), TaskState::Error).await?;
                 self.retry(id).await
             }
         }
