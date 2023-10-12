@@ -13,18 +13,21 @@ CREATE TABLE emails (
   account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
 
   -- When the email was sent
-  sent_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  sent_at TIMESTAMP,
 
   -- The type of the email. This corresponds to the EmailMessage::template_name
   type TEXT NOT NULL,
 
   -- The state of the email.
-    -- 'sent' means the email was successfully sent
-    -- 'delivered' means the email was successfully delivered
-    -- 'opened' means the email was successfully opened
-    -- 'marked_as_spam' means the email was marked as spam
-    -- 'unsubscribed' means the email was unsubscribed
-    -- 'delivery_failed' means the email failed to be delivered
-  state VARCHAR(32) NOT NULL CHECK (state IN ('sent', 'delivered', 'opened', 'marked_as_spam', 'unsubscribed', 'delivery_failed'))
-    DEFAULT 'sent'
+    -- 'queued' means the email is queued to be sent
+    -- 'sent' means the email was successfully sent to the email service
+    -- 'accepted' means the email was accepted by the email service
+    -- 'delivered' means the email was successfully delivered by the email service
+    -- 'opened' means the email was successfully opened by the recipient
+    -- 'complained' means the email was marked as spam by the recipient
+    -- 'unsubscribed' means the email was unsubscribed by the recipient
+    -- 'rejected' means the email was rejected by the email service
+    -- 'failed' means the email failed to be delivered by the email service
+  state VARCHAR(32) NOT NULL CHECK (state IN ('queued', 'sent', 'accepted', 'delivered', 'opened', 'complained', 'unsubscribed', 'rejected', 'failed'))
+    DEFAULT 'queued'
 );
