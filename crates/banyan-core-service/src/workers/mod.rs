@@ -14,7 +14,6 @@ mod worker_pool;
 
 pub use current_task::CurrentTask;
 pub use queue_config::QueueConfig;
-//pub use stores::{MemoryTaskStore, SqliteTaskStore};
 pub use stores::SqliteTaskStore;
 pub use task::{Task, TaskExecError};
 pub use task_like::{TaskLike, TaskLikeExt};
