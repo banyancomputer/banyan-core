@@ -5,7 +5,8 @@ use chrono::offset::Utc;
 use sqlx::{Acquire, SqliteConnection, SqlitePool};
 
 use crate::workers::{
-    Task, TaskInstanceBuilder, TaskLike, TaskState, TaskStore, TaskStoreError, TASK_EXECUTION_TIMEOUT,
+    Task, TaskInstanceBuilder, TaskLike, TaskState, TaskStore, TaskStoreError,
+    TASK_EXECUTION_TIMEOUT,
 };
 
 #[derive(Clone)]
@@ -19,10 +20,13 @@ impl SqliteTaskStore {
         key: &str,
         task_name: &str,
     ) -> Result<bool, TaskStoreError> {
-        let query_res =
-            sqlx::query_scalar!("SELECT 1 FROM background_tasks WHERE unique_key = $1 AND task_name = $2;", key, task_name)
-                .fetch_optional(&mut *conn)
-                .await?;
+        let query_res = sqlx::query_scalar!(
+            "SELECT 1 FROM background_tasks WHERE unique_key = $1 AND task_name = $2;",
+            key,
+            task_name
+        )
+        .fetch_optional(&mut *conn)
+        .await?;
 
         Ok(query_res.is_some())
     }

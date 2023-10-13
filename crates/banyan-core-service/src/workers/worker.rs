@@ -4,8 +4,8 @@ use std::collections::BTreeMap;
 
 use crate::workers::panic_safe_future::PanicSafeFuture;
 use crate::workers::{
-    CurrentTask, CurrentTaskError, ExecuteTaskFn, QueueConfig, StateFn, Task, TaskExecError, TaskState, TaskStore,
-    TaskStoreError, MAXIMUM_CHECK_DELAY,
+    CurrentTask, CurrentTaskError, ExecuteTaskFn, QueueConfig, StateFn, Task, TaskExecError,
+    TaskState, TaskStore, TaskStoreError, MAXIMUM_CHECK_DELAY,
 };
 
 pub struct Worker<Context, S>
@@ -47,8 +47,7 @@ where
     }
 
     pub async fn run(&self, task: Task) -> Result<(), WorkerError> {
-        let task_info = CurrentTask::try_from(&task)
-            .map_err(WorkerError::CantMakeCurrent)?;
+        let task_info = CurrentTask::try_from(&task).map_err(WorkerError::CantMakeCurrent)?;
 
         let deserialize_and_run_task_fn = self
             .task_registry

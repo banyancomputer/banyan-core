@@ -1,10 +1,8 @@
-use chrono::NaiveDateTime;
 use chrono::offset::Utc;
+use chrono::NaiveDateTime;
 use sqlx::SqliteConnection;
 
-use crate::workers::{
-    SqliteTaskStore, Task, TaskLike, TaskState, TaskStoreError,
-};
+use crate::workers::{SqliteTaskStore, Task, TaskLike, TaskState, TaskStoreError};
 
 pub struct TaskInstanceBuilder {
     task_name: String,
@@ -22,7 +20,10 @@ pub struct TaskInstanceBuilder {
 }
 
 impl TaskInstanceBuilder {
-    pub async fn create(self, conn: &mut SqliteConnection) -> Result<Option<String>, TaskStoreError> {
+    pub async fn create(
+        self,
+        conn: &mut SqliteConnection,
+    ) -> Result<Option<String>, TaskStoreError> {
         if let Some(ukey) = &self.unique_key {
             // right now if we encounter a unique key that is already present in the DB we simply
             // don't queue the new instance of that task, the old one will have a bit of priority
@@ -34,33 +35,32 @@ impl TaskInstanceBuilder {
 
         let payload = self.payload.to_string();
         let background_task_id: String = sqlx::query_scalar!(
-                r#"INSERT INTO background_tasks (
+            r#"INSERT INTO background_tasks (
                            task_name, queue_name, unique_key, payload,
                            current_attempt, maximum_attempts, state,
                            original_task_id, scheduled_to_run_at
                        )
                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
                        RETURNING id;"#,
-                self.task_name,
-                self.queue_name,
-                self.unique_key,
-                payload,
-                self.current_attempt,
-                self.maximum_attempts,
-                self.state,
-                self.original_task_id,
-                self.scheduled_to_run_at,
-            )
-            .fetch_one(&mut *conn)
-            .await?;
+            self.task_name,
+            self.queue_name,
+            self.unique_key,
+            payload,
+            self.current_attempt,
+            self.maximum_attempts,
+            self.state,
+            self.original_task_id,
+            self.scheduled_to_run_at,
+        )
+        .fetch_one(&mut *conn)
+        .await?;
 
         Ok(Some(background_task_id))
     }
 
     pub async fn for_task<T: TaskLike>(instance: T) -> Result<Self, TaskStoreError> {
         let unique_key = instance.unique_key().await;
-        let payload = serde_json::to_value(&instance)
-            .map_err(TaskStoreError::EncodeFailed)?;
+        let payload = serde_json::to_value(&instance).map_err(TaskStoreError::EncodeFailed)?;
 
         Ok(Self {
             task_name: T::TASK_NAME.to_string(),
