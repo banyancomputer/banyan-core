@@ -78,7 +78,6 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     /** Returns list of buckets. */
     const getBuckets = async () => {
         tombMutex(tomb, async tomb => {
-            console.log("tomb: " + tomb!.listBuckets);
             const wasm_buckets: WasmBucket[] = await tomb!.listBuckets();
             setBuckets(wasm_buckets.map(bucket => ({
                 mount: {} as WasmMount,
