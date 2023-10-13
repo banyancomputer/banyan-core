@@ -17,9 +17,10 @@ pub async fn create(
     Json(new_bucket): extract::Json<requests::CreateBucket>,
 ) -> Response {
     if let Err(errors) = new_bucket.validate() {
-        GenericError::new(
+        CoreError::generic_error(
             StatusCode::BAD_REQUEST,
-            format!("invalid bucket creation request: {:?}", errors.errors()),
+            &format!("invalid bucket creation request: {errors}"),
+            None,
         )
         .into_response()
     } else {
@@ -90,11 +91,12 @@ pub async fn read_all(api_token: ApiToken, mut db_conn: DbConn) -> Response {
                 .collect::<Vec<_>>(),
         ))
         .into_response(),
-        Err(err) => {
-            tracing::error!("failed to read all buckets: {err}");
-            GenericError::new(StatusCode::INTERNAL_SERVER_ERROR, "backend service issue")
-                .into_response()
-        }
+        Err(err) => CoreError::generic_error(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "backend service issue",
+            Some(&format!("failed to read all buckets: {err}")),
+        )
+        .into_response(),
     }
 }
 
@@ -115,11 +117,12 @@ pub async fn read(
             storage_class: bucket.storage_class,
         })
         .into_response(),
-        Err(err) => {
-            tracing::error!("unable to delete bucket: {err}");
-            GenericError::new(StatusCode::INTERNAL_SERVER_ERROR, "backend service issue")
-                .into_response()
-        }
+        Err(err) => CoreError::generic_error(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "backend service issue",
+            Some(&format!("unable to read bucket: {err}")),
+        )
+        .into_response(),
     }
 }
 
@@ -133,9 +136,12 @@ pub async fn delete(
     let bucket_id = bucket_id.to_string();
     // todo: need to delete all the hot data stored at various storage hosts
     if let Err(err) = db::delete_bucket(&account_id, &bucket_id, &mut db_conn).await {
-        tracing::error!("failed to delete bucket: {err}");
-        GenericError::new(StatusCode::INTERNAL_SERVER_ERROR, "backend service issue")
-            .into_response()
+        CoreError::generic_error(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "backend service issue",
+            Some(&format!("unable to delete bucket: {err}")),
+        )
+        .into_response()
     } else {
         (StatusCode::NO_CONTENT, ()).into_response()
     }
@@ -154,13 +160,14 @@ pub async fn get_usage(
         Ok(usage) => Json(responses::GetUsage { size: usage }).into_response(),
         Err(err) => match err {
             sqlx::Error::RowNotFound => {
-                GenericError::new(StatusCode::NOT_FOUND, "bucket not found").into_response()
+                CoreError::sqlx_error(err, "read", "bucket").into_response()
             }
-            _ => {
-                tracing::error!("unable to read bucket: {err}");
-                GenericError::new(StatusCode::INTERNAL_SERVER_ERROR, "backend service issue")
-                    .into_response()
-            }
+            _ => CoreError::generic_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "backend service issue",
+                Some(&format!("unable to read bucket usage: {err}")),
+            )
+            .into_response(),
         },
     }
 }
@@ -171,13 +178,14 @@ pub async fn get_total_usage(api_token: ApiToken, mut db_conn: DbConn) -> Respon
         Ok(usage) => Json(responses::GetUsage { size: usage }).into_response(),
         Err(err) => match err {
             sqlx::Error::RowNotFound => {
-                GenericError::new(StatusCode::NOT_FOUND, "bucket not found").into_response()
+                CoreError::sqlx_error(err, "read", "account").into_response()
             }
-            _ => {
-                tracing::error!("unable to read bucket: {err}");
-                GenericError::new(StatusCode::INTERNAL_SERVER_ERROR, "backend service issue")
-                    .into_response()
-            }
+            _ => CoreError::generic_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "backend service issue",
+                Some(&format!("unable to read account usage: {err}")),
+            )
+            .into_response(),
         },
     }
 }
@@ -188,24 +196,4 @@ pub async fn get_usage_limit(_api_token: ApiToken) -> Response {
         size: 5 * 1024 * 1024 * 1024 * 1024,
     })
     .into_response()
-}
-
-pub struct GenericError {
-    code: StatusCode,
-    msg: String,
-}
-
-impl GenericError {
-    pub fn new(code: StatusCode, msg: impl ToString) -> Self {
-        Self {
-            code,
-            msg: msg.to_string(),
-        }
-    }
-}
-
-impl IntoResponse for GenericError {
-    fn into_response(self) -> Response {
-        (self.code, Json(serde_json::json!({"msg": self.msg}))).into_response()
-    }
 }

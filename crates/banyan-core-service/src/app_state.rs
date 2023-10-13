@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::env;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -9,6 +10,7 @@ use object_store::local::LocalFileSystem;
 use openssl::ec::{EcGroup, EcKey};
 use openssl::nid::Nid;
 use openssl::pkey::{PKey, Private};
+use ring::hmac::{Key as HmacKey, HMAC_SHA256};
 use sqlx::sqlite::SqlitePool;
 
 mod database;
@@ -30,10 +32,15 @@ pub struct AppState {
     database_pool: SqlitePool,
     signing_key: EncodingKey,
     verification_key: DecodingKey,
+    mailgun_signing_key: HmacKey,
     metadata_upload_directory: PathBuf,
 }
 
 impl AppState {
+    pub fn database(&self) -> SqlitePool {
+        self.database_pool.clone()
+    }
+
     pub async fn from_config(config: &Config) -> Result<Self, StateError> {
         // Do a test setup to make sure the upload directory exists and is writable as an early
         // sanity check
@@ -46,12 +53,14 @@ impl AppState {
             load_or_create_service_key(config.signing_key_path())?;
 
         let registration_channels = Arc::new(Mutex::new(HashMap::new()));
+        let mailgun_signing_key = load_mailgun_signing_key()?;
 
         Ok(Self {
             registration_channels,
             database_pool,
             signing_key,
             verification_key,
+            mailgun_signing_key,
             metadata_upload_directory,
         })
     }
@@ -75,7 +84,13 @@ impl FromRef<AppState> for EncodingKey {
 
 impl FromRef<AppState> for SqlitePool {
     fn from_ref(state: &AppState) -> Self {
-        state.database_pool.clone()
+        state.database()
+    }
+}
+
+impl FromRef<AppState> for HmacKey {
+    fn from_ref(state: &AppState) -> Self {
+        state.mailgun_signing_key.clone()
     }
 }
 
@@ -129,4 +144,11 @@ fn load_or_create_service_key(path: &PathBuf) -> Result<(EncodingKey, DecodingKe
         .map_err(StateError::loading_state_keys)?;
 
     Ok((encoding_key, decoding_key))
+}
+
+fn load_mailgun_signing_key() -> Result<HmacKey, StateError> {
+    let key =
+        env::var("MAILGUN_SIGNING_KEY").map_err(|_| StateError::mailgun_signing_key_missing())?;
+
+    Ok(HmacKey::new(HMAC_SHA256, key.as_bytes()))
 }

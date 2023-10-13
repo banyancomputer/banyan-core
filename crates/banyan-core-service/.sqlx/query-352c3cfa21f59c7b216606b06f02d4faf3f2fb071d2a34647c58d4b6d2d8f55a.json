@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id FROM background_tasks\n                   WHERE state IN ('in_progress', 'retry')\n                      AND started_at <= $1\n                   ORDER BY started_at ASC\n                   LIMIT 10;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "352c3cfa21f59c7b216606b06f02d4faf3f2fb071d2a34647c58d4b6d2d8f55a"
+}
