@@ -7,10 +7,7 @@ CREATE TABLE background_tasks (
     substr(lower(hex(randomblob(6))), 2)
   ),
 
-  next_id TEXT NULL
-    REFERENCES background_tasks(id)
-    ON DELETE SET NULL,
-  previous_id TEXT NULL
+  original_task_id TEXT NULL
     REFERENCES background_tasks(id)
     ON DELETE SET NULL,
 

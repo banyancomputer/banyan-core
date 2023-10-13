@@ -9,73 +9,68 @@
         "type_info": "Text"
       },
       {
-        "name": "next_id",
+        "name": "original_task_id",
         "ordinal": 1,
         "type_info": "Text"
       },
       {
-        "name": "previous_id",
+        "name": "task_name",
         "ordinal": 2,
         "type_info": "Text"
       },
       {
-        "name": "task_name",
+        "name": "queue_name",
         "ordinal": 3,
         "type_info": "Text"
       },
       {
-        "name": "queue_name",
+        "name": "unique_key",
         "ordinal": 4,
         "type_info": "Text"
       },
       {
-        "name": "unique_key",
+        "name": "state",
         "ordinal": 5,
         "type_info": "Text"
       },
       {
-        "name": "state",
-        "ordinal": 6,
-        "type_info": "Text"
-      },
-      {
         "name": "current_attempt",
-        "ordinal": 7,
+        "ordinal": 6,
         "type_info": "Int64"
       },
       {
         "name": "maximum_attempts",
-        "ordinal": 8,
+        "ordinal": 7,
         "type_info": "Int64"
       },
       {
         "name": "payload",
-        "ordinal": 9,
+        "ordinal": 8,
         "type_info": "Text"
       },
       {
         "name": "error",
-        "ordinal": 10,
+        "ordinal": 9,
         "type_info": "Text"
       },
       {
         "name": "scheduled_at",
-        "ordinal": 11,
+        "ordinal": 10,
         "type_info": "Datetime"
       },
       {
         "name": "scheduled_to_run_at",
-        "ordinal": 12,
+        "ordinal": 11,
         "type_info": "Datetime"
       },
       {
         "name": "started_at",
-        "ordinal": 13,
+        "ordinal": 12,
         "type_info": "Datetime"
       },
       {
         "name": "finished_at",
-        "ordinal": 14,
+        "ordinal": 13,
         "type_info": "Datetime"
       }
     ],
@@ -84,7 +79,6 @@
     },
     "nullable": [
       false,
-      true,
       true,
       false,
       false,

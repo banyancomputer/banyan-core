@@ -1,9 +1,11 @@
+use std::time::Duration;
+
 use async_trait::async_trait;
 use chrono::offset::Utc;
 use sqlx::{Acquire, SqliteConnection, SqlitePool};
 
 use crate::workers::{
-    Task, TaskLike, TaskState, TaskStore, TaskStoreError, TASK_EXECUTION_TIMEOUT,
+    Task, TaskInstanceBuilder, TaskLike, TaskState, TaskStore, TaskStoreError, TASK_EXECUTION_TIMEOUT,
 };
 
 #[derive(Clone)]
@@ -12,47 +14,7 @@ pub struct SqliteTaskStore {
 }
 
 impl SqliteTaskStore {
-    async fn checked_create(
-        conn: &mut SqliteConnection,
-        unique_key: Option<&str>,
-        task_name: &str,
-        queue_name: &str,
-        current_attempt: i64,
-        maximum_attempts: i64,
-        payload: String,
-        previous_task_id: Option<String>,
-    ) -> Result<Option<String>, TaskStoreError> {
-        if let Some(ukey) = &unique_key {
-            // right now if we encounter a unique key that is already present in the DB we simply
-            // don't queue the new instance of that task, the old one will have a bit of priority
-            // due to its age.
-            if SqliteTaskStore::is_key_present(conn, ukey, task_name).await? {
-                return Ok(None);
-            }
-        }
-
-        // todo: need to set state to retry when previous_task_id is present
-        // todo: need to schedule the exponential backoff for task retrying
-
-        let background_task_id: String = sqlx::query_scalar!(
-                r#"INSERT INTO background_tasks (previous_id, task_name, unique_key, queue_name, payload, current_attempt, maximum_attempts)
-                       VALUES ($1, $2, $3, $4, $5, $6, $7)
-                       RETURNING id;"#,
-                previous_task_id,
-                task_name,
-                unique_key,
-                queue_name,
-                payload,
-                current_attempt,
-                maximum_attempts,
-            )
-            .fetch_one(&mut *conn)
-            .await?;
-
-        Ok(Some(background_task_id))
-    }
-
-    async fn is_key_present(
+    pub async fn is_key_present(
         conn: &mut SqliteConnection,
         key: &str,
         task_name: &str,
@@ -78,27 +40,13 @@ impl TaskStore for SqliteTaskStore {
         pool: &mut Self::Connection,
         task: T,
     ) -> Result<Option<String>, TaskStoreError> {
-        let unique_key = task.unique_key().await;
-
         let mut connection = pool.acquire().await?;
         let mut transaction = connection.begin().await?;
 
-        let task_name = T::TASK_NAME.to_string();
-        let queue_name = T::QUEUE_NAME.to_string();
-
-        let payload = serde_json::to_string(&task).map_err(TaskStoreError::EncodeFailed)?;
-
-        let background_task_id = SqliteTaskStore::checked_create(
-            &mut transaction,
-            unique_key.as_ref().map(|x| x.as_str()),
-            &task_name,
-            &queue_name,
-            0,
-            T::MAX_RETRIES,
-            payload,
-            None,
-        )
-        .await?;
+        let background_task_id = TaskInstanceBuilder::for_task(task)
+            .await?
+            .create(&mut *transaction)
+            .await?;
 
         transaction.commit().await?;
 
@@ -229,21 +177,14 @@ impl TaskStore for SqliteTaskStore {
             None => return Ok(None),
         };
 
-        // next task should run at now() + (30 * 3^retried_task.current_attempt) secs
+        let backoff_time_secs = 30u64 * 3u64.saturating_pow(retried_task.current_attempt as u32);
+        let next_run_at = Utc::now() + Duration::from_secs(backoff_time_secs);
 
-        let new_task_id = SqliteTaskStore::checked_create(
-            &mut transaction,
-            retried_task.unique_key.as_ref().map(|x| x.as_str()),
-            &retried_task.task_name,
-            &retried_task.queue_name,
-            retried_task.current_attempt + 1,
-            retried_task.maximum_attempts,
-            retried_task.payload.to_string(),
-            Some(retried_task.id),
-        )
-        .await?;
-
-        // todo: need to update the old task with the pointer to the new one...
+        let new_task_id = TaskInstanceBuilder::from_task_instance(retried_task)
+            .await
+            .run_at(next_run_at.naive_utc())
+            .create(&mut *transaction)
+            .await?;
 
         transaction.commit().await?;
 

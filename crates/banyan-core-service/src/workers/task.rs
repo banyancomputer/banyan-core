@@ -6,9 +6,7 @@ use crate::workers::TaskState;
 #[derive(Clone, Debug, PartialEq, sqlx::FromRow)]
 pub struct Task {
     pub id: String,
-
-    pub next_id: Option<String>,
-    pub previous_id: Option<String>,
+    pub original_task_id: Option<String>,
 
     pub task_name: String,
     pub queue_name: String,
