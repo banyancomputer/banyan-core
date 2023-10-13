@@ -49,7 +49,7 @@ impl TaskStore for SqliteTaskStore {
 
         let background_task_id = TaskInstanceBuilder::for_task(task)
             .await?
-            .create(&mut *transaction)
+            .create(&mut transaction)
             .await?;
 
         transaction.commit().await?;
@@ -187,7 +187,7 @@ impl TaskStore for SqliteTaskStore {
         let new_task_id = TaskInstanceBuilder::from_task_instance(retried_task)
             .await
             .run_at(next_run_at.naive_utc())
-            .create(&mut *transaction)
+            .create(&mut transaction)
             .await?;
 
         transaction.commit().await?;

@@ -22,7 +22,7 @@ impl TryFrom<&Task> for CurrentTask {
 
     fn try_from(value: &Task) -> Result<Self, Self::Error> {
         let started_at = match value.started_at {
-            Some(sa) => sa.clone(),
+            Some(sa) => sa,
             None => return Err(CurrentTaskError::TaskNotStarted),
         };
 
