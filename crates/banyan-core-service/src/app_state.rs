@@ -26,6 +26,10 @@ pub struct AppState {
 }
 
 impl AppState {
+    pub fn database(&self) -> SqlitePool {
+        self.database_pool.clone()
+    }
+
     pub async fn from_config(config: &Config) -> Result<Self, StateError> {
         // Do a test setup to make sure the upload directory exists and is writable as an early
         // sanity check
@@ -67,7 +71,7 @@ impl FromRef<AppState> for EncodingKey {
 
 impl FromRef<AppState> for SqlitePool {
     fn from_ref(state: &AppState) -> Self {
-        state.database_pool.clone()
+        state.database()
     }
 }
 
