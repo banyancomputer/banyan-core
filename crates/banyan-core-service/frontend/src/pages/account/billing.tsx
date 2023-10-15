@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useIntl } from 'react-intl';
 
 import { NextPageWithLayout } from '../page';
 import SettingsLayout from '@/layouts/SettingsLayout';
-import { LanguageSelect } from '@/components/common/LanguageSelect';
 import { ErrorBanner } from "@components/Account/Billing/ErrorBanner"
+import { BillingInfo } from '@/components/Account/Billing/BillingInfo';
+import { PaymentMethods } from '@/components/Account/Billing/PaymentMethods';
+import { BillingHistory } from '@/components/Account/Billing/BillingHistory';
 
 export const Billing: NextPageWithLayout = () => {
     const { messages } = useIntl();
-    const [isPaymentErrorVisible, setIsPaymentErrorVisible] = useState(true);
 
     return (
         <div className="flex flex-col gap-5 px-4">
@@ -16,13 +17,9 @@ export const Billing: NextPageWithLayout = () => {
                 {`${messages.billing}`}
             </h2>
             <ErrorBanner title={`${messages.paymentIssue}`} description={`${messages.updatePaymentMethod}`} />
-            <div className="flex justify-between items-center py-5 px-4 border-1 rounded-lg text-gray-800 border-table-border">
-                <div>
-                    <h5 className="font-semibold">{`${messages.language}`}</h5>
-                    <p>{`${messages.chooseLanguage}`}</p>
-                </div>
-                <LanguageSelect />
-            </div>
+            <BillingInfo />
+            <PaymentMethods />
+            <BillingHistory />
         </div>
     );
 };
