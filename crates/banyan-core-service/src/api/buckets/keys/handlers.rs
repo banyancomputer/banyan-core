@@ -80,57 +80,6 @@ pub async fn read_all(
     }
 }
 
-/// Read a specific bucket key for the specified bucket
-pub async fn read(
-    api_token: ApiToken,
-    database: Database,
-    Path((bucket_id, bucket_key_id)): Path<(Uuid, Uuid)>,
-) -> impl IntoResponse {
-    let account_id = api_token.subject;
-    let bucket_id = bucket_id.to_string();
-    let bucket_key_id = bucket_key_id.to_string();
-    // If this Account is not allowed to read this Bucket
-    if let Err(err) = db::authorize_bucket(&account_id, &bucket_id, &database).await {
-        // Return error response if not
-        return CoreError::sqlx_error(err, "read", "bucket").into_response();
-    }
-    // Try to read the Bucket Key, respond based on success
-    match db::read_bucket_key(&bucket_id, &bucket_key_id, &database).await {
-        Ok(bucket_key) => Json(responses::ReadBucketKey {
-            id: bucket_key.id,
-            approved: bucket_key.approved,
-            pem: bucket_key.pem,
-            fingerprint: bucket_key.fingerprint,
-        })
-        .into_response(),
-        Err(err) => CoreError::sqlx_error(err, "read", "bucket key").into_response(),
-    }
-}
-
-pub async fn delete(
-    api_token: ApiToken,
-    database: Database,
-    Path((bucket_id, bucket_key_id)): Path<(Uuid, Uuid)>,
-) -> impl IntoResponse {
-    let account_id = api_token.subject;
-    let bucket_id = bucket_id.to_string();
-    let bucket_key_id = bucket_key_id.to_string();
-    // If this Account is not allowed to read this Bucket
-    if let Err(err) = db::authorize_bucket(&account_id, &bucket_id, &database).await {
-        // Return error response if not
-        return CoreError::sqlx_error(err, "read", "bucket").into_response();
-    }
-    // Try to delete the Bucket Key, respond based on success
-    match db::delete_bucket_key(&bucket_id, &bucket_key_id, &database).await {
-        Ok(bucket_key) => Json(responses::DeleteBucketKey {
-            id: bucket_key.id,
-            approved: bucket_key.approved,
-        })
-        .into_response(),
-        Err(err) => CoreError::sqlx_error(err, "delete", "bucket key").into_response(),
-    }
-}
-
 /// Reject a Bucket Key, deleting it in the process
 pub async fn reject(
     api_token: ApiToken,

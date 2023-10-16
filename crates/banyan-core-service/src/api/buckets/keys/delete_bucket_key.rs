@@ -18,18 +18,18 @@ pub async fn handler(
     let database = state.database();
 
     let query_result = sqlx::query!(
-            r#"DELETE FROM bucket_keys
-                   WHERE id IN (
-                       SELECT bk.id FROM bucket_keys AS bk
-                           JOIN buckets AS b ON bk.bucket_id = b.id
-                           WHERE b.account_id = $1 AND bk.id = $2 AND bk.bucket_id = $3
-                   );"#,
-            account_id,
-            bucket_key_id,
-            bucket_id,
-        )
-        .execute(&database)
-        .await;
+        r#"DELETE FROM bucket_keys
+                WHERE id IN (
+                    SELECT bk.id FROM bucket_keys AS bk
+                        JOIN buckets AS b ON bk.bucket_id = b.id
+                        WHERE b.account_id = $1 AND bk.id = $2 AND bk.bucket_id = $3
+                );"#,
+        account_id,
+        bucket_key_id,
+        bucket_id,
+    )
+    .execute(&database)
+    .await;
 
     match query_result {
         Ok(_) => (StatusCode::NO_CONTENT, ()).into_response(),
