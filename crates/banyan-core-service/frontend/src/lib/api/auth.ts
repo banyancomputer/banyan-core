@@ -3,7 +3,7 @@ import { DeviceApiKey, EscrowedDevice } from '@/lib/interfaces';
 import { EscrowedKeyMaterial } from '../crypto/types';
 import { publicPemUnwrap } from '@/utils';
 
-async function fetchJson<T>(url: string, opts?: {}): Promise<T> {
+export async function fetchJson<T>(url: string, opts?: {}): Promise<T> {
     try {
         const response = await fetch(url, {
             headers: {

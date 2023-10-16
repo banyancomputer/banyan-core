@@ -2,9 +2,6 @@
 /* eslint-disable */
 /**
 */
-export function setPanicHook(): void;
-/**
-*/
 export class IntoUnderlyingByteSource {
   free(): void;
 /**
@@ -218,6 +215,12 @@ export class TombWasm {
 */
   deleteBucket(bucket_id: string): Promise<void>;
 /**
+* End Registration waiting
+* @param {string} fingerprint
+* @returns {Promise<void>}
+*/
+  completeDeviceKeyRegistration(fingerprint: string): Promise<void>;
+/**
 * Mount a bucket as a File System that can be managed by the user
 * # Arguments
 * * bucket_id - The id of the bucket to mount
@@ -226,10 +229,10 @@ export class TombWasm {
 * # Returns
 * A WasmMount instance
 * @param {string} bucket_id
-* @param {any} key
+* @param {any} key_pair
 * @returns {Promise<WasmMount>}
 */
-  mount(bucket_id: string, key: any): Promise<WasmMount>;
+  mount(bucket_id: string, key_pair: any): Promise<WasmMount>;
 }
 /**
 */

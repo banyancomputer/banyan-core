@@ -524,10 +524,14 @@ pub async fn read_total_data_usage(
 ) -> Result<u64, sqlx::Error> {
     sqlx::query_scalar::<sqlx::Sqlite, i64>(
         r#"SELECT
-             COALESCE(m.expected_data_size, m.data_size)
-           FROM metadata as m
-           INNER JOIN buckets b ON b.id = m.bucket_id
-           WHERE b.account_id = $1;"#,
+                SUM(COALESCE(COALESCE(m.data_size, m.expected_data_size), 0)) + 
+                SUM(COALESCE(m.metadata_size, 0))
+            FROM
+                metadata m
+            INNER JOIN
+                buckets b ON b.id = m.bucket_id
+            WHERE
+                b.account_id = $1 AND m.state IN ('current', 'outdated', 'pending');"#,
     )
     .bind(account_id)
     .fetch_one(&mut *db_conn.0)
@@ -543,7 +547,7 @@ pub async fn read_bucket_data_usage(
     sqlx::query_scalar::<sqlx::Sqlite, i64>(
         r#"SELECT
              SUM(m.metadata_size + COALESCE(m.expected_data_size, m.data_size))
-           FROM metadata
+           FROM metadata as m
            WHERE bucket_id = $1;"#,
     )
     .bind(bucket_id)
