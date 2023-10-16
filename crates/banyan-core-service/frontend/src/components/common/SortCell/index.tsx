@@ -1,5 +1,6 @@
 import React from 'react';
-import { FiArrowDown } from 'react-icons/fi';
+
+import { ArrowDown } from '@static/images/common';
 
 interface SortCellProps {
     text: string;
@@ -17,7 +18,7 @@ export const SortCell: React.FC<SortCellProps> = ({ criteria, onChange, sortStat
             onClick={() => onChange(criteria)}
         >
             {text} <div className={isActive && sortState.direction === 'ASC'? 'rotate-180' : ''}>
-                <FiArrowDown size="16px" stroke={isActive ? '#3E8CDA' : '#7c818a'} />
+                <ArrowDown />
             </div>
         </div>
     );

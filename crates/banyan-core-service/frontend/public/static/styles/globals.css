@@ -4,6 +4,8 @@
 
 @import "react-toastify/dist/ReactToastify.min.css";
 @import "@static/styles/_variables.css";
+@import "react-date-range/dist/styles";
+@import "react-date-range/dist/theme/default";
 
 @font-face {
     font-family: "Inter";
@@ -43,7 +45,7 @@ input {
 
 /* Button default styles */
 .btn-secondary {
-	@apply flex items-center justify-center font-semibold rounded-lg bg-transparent border-2 border-gray-900 text-gray-900;
+	@apply flex items-center justify-center font-semibold rounded-lg bg-transparent border-2 border-blue-primary text-gray-900;
 }
 
 .btn-secondary:hover {

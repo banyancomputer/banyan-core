@@ -16,9 +16,10 @@ export interface SelectProps {
     onChange: (option: any) => void;
     placeholder: string;
     initialOption?: ReactElement;
+    className?: string;
 };
 
-export const Select: React.FC<SelectProps> = ({ initialOption, onChange, options, placeholder, selectedOption }) => {
+export const Select: React.FC<SelectProps> = ({ initialOption, onChange, options, placeholder, selectedOption, className }) => {
     const selectRef = useRef<HTMLDivElement | null>(null);
     const [isOptionstVisible, setIsOptionsVisible] = useState(false);
 
@@ -46,7 +47,7 @@ export const Select: React.FC<SelectProps> = ({ initialOption, onChange, options
         <div
             ref={selectRef}
             onClick={toggleSelect}
-            className="relative p-2.5 flex justify-between items-center text-sm font-medium border-1 border-inputBorder rounded-lg shadow-sm cursor-pointer select-none"
+            className={`relative p-2.5 flex justify-between items-center text-sm font-medium border-1 border-inputBorder rounded-lg shadow-sm cursor-pointer select-none ${className}`}
         >
             {selectedOption ? options.find(option => option.value === selectedOption)?.label : placeholder}
             <FiChevronDown

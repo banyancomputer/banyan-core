@@ -4,11 +4,12 @@
     --error: #CB3535;
     --errorBanner: #FFD7B2;
     --login: #F7F7F7;
-    --navigation-primary: #FFECC5;
-    --navigation-secondary: #fff8e7;
-    --navigation-text: #30374F;
-    --navigation-textSecondary: #7D89B0;
-    --navigation-border: #EFC163;
+    --navigation-primary: #0F3A4A;
+    --navigation-secondary: #3D5F6B;
+    --navigation-text: #fff;
+    --navigation-separator: #3D5F6B;
+    --navigation-textSecondary: #FFFFFF80;
+    --navigation-border: #0F3A4A;
     --table-cellBackground: #EFF1F5;
     --table-headBackground: #fcfcfd;
     --gray-900: #111322;
