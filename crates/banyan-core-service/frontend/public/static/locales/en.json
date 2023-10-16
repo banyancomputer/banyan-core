@@ -1,6 +1,8 @@
 {
 	"manageKeys": "Manage Keys",
 	"logout": "Log Out",
+	"logoutAccount": "Logout Account",
+	"help": "Help",
 	"upload": "Upload",
 	"chooseFilesToUpload": "Choose files for uploading from your device, or use drag & drop",
 	"uploadFiles": "Upload files",

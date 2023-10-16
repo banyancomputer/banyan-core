@@ -1,17 +1,14 @@
-import Link from 'next/link';
 import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { signOut, useSession } from 'next-auth/react';
 import { useIntl } from 'react-intl';
 import { useRouter } from 'next/router';
-import { AiOutlineQuestionCircle } from 'react-icons/ai';
-import { GrMailOption } from 'react-icons/gr';
-import { MdOutlineVpnKey } from 'react-icons/md';
-import { FiLogOut, FiSettings } from 'react-icons/fi';
 
 import { popupClickHandler } from '@/utils';
 import { useKeystore } from '@/contexts/keystore';
 import { Action } from '../FileActions';
+
+import { Headphones, Key, LogoutAlternative, Mail, Question, Settings } from '@static/images/common';
 
 export const Header = () => {
     const userControlsRef = useRef<HTMLDivElement | null>(null);
@@ -43,9 +40,9 @@ export const Header = () => {
     };
 
     const options = [
-        new Action(`${messages.settings}`, <FiSettings size="20px" />, goTo('/account/settings')),
-        new Action(`${messages.manageKeys}`, <MdOutlineVpnKey size="20px" />, goTo('/account/manage-keys')),
-        new Action(`${messages.logout}`, <FiLogOut size="20px" />, logout)
+        new Action(`${messages.settings}`, <Settings/>, goTo('/account/settings')),
+        new Action(`${messages.manageKeys}`, <Key  />, goTo('/account/manage-keys')),
+        new Action(`${messages.logout}`, <LogoutAlternative />, logout)
     ];
 
     useEffect(() => {
@@ -67,25 +64,25 @@ export const Header = () => {
     }, [faqRef]);
 
     return (
-        <header className="flex items-center justify-between border-b-2 border-table-border p-4">
+        <header className="flex items-center justify-between border-b-2 border-table-border p-4 bg-navigation-primary">
             {/* <SearchInput /> */}
             <div className="flex flex-grow items-center justify-end gap-6">
                 <div
-                    className='relative w-10 h-10 flex items-center justify-center transition-all rounded-lg cursor-pointer hover:bg-hover'
+                    className='relative w-10 h-10 flex items-center justify-center transition-all rounded-lg cursor-pointer hover:bg-navigation-secondary text-navigation-text'
                     ref={faqRef}
                     onClick={toggleFaqOptionsVisibility}
                 >
-                    <AiOutlineQuestionCircle size="20px" fill="#4A5578" />
+                    <Headphones />
                     {areFaqOpionsVisible &&
                         <div
-                            className="absolute right-0 top-full w-36 flex flex-col items-stretch shadow-xl rounded-xl text-xs font-semibold overflow-hidden  bg-mainBackground cursor-pointer"
+                            className="absolute right-0 top-12 w-36 flex flex-col items-stretch shadow-xl rounded-xl text-xs font-semibold overflow-hidden  bg-mainBackground cursor-pointer text-gray-900"
                         >
                             <a
                                 className="flex items-center gap-2 py-2.5 px-3 transition-all hover:bg-hover"
                                 href='https://banyan8674.zendesk.com/hc/en-us'
                                 target='_blank'
                             >
-                                <MdOutlineVpnKey />
+                                <Question  />
                                 FAQ
                             </a>
                             <a
@@ -93,14 +90,14 @@ export const Header = () => {
                                 className="flex items-center gap-2 py-2.5 px-3 transition-all hover:bg-hover"
                                 target='_blank'
                             >
-                                <GrMailOption />
+                                <Mail />
                                 {`${messages.contactUs}`}
                             </a>
                         </div>
                     }
                 </div>
                 <div
-                    className="relative w-10 h-10 border-2 rounded-full cursor-pointer "
+                    className="relative w-10 h-10 rounded-full cursor-pointer "
                     onClick={toggleProfileOptionsVisibility}
                     ref={userControlsRef}
                 >
@@ -117,7 +114,7 @@ export const Header = () => {
                     }
                     {areProfileOptionsVisible &&
                         <div
-                            className="absolute right-0 top-full flex flex-col items-stretch shadow-xl rounded-xl text-xs font-semibold overflow-hidden  bg-mainBackground cursor-pointer"
+                            className="absolute z-10 right-0 top-12 flex flex-col items-stretch shadow-xl rounded-xl text-xs font-semibold overflow-hidden  bg-mainBackground cursor-pointer"
                         >
                             {options.map(option =>
                                 <div

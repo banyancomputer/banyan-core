@@ -2,25 +2,27 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from 'next/router';
-import { FiChevronDown, FiTrash2 } from 'react-icons/fi';
-import { IoIosAdd } from 'react-icons/io';
 import { useIntl } from 'react-intl';
+import { signOut } from 'next-auth/react';
 
 import { CreateBucketModal } from '../Modal/CreateBucketModal';
 
 import { useTomb } from '@/contexts/tomb';
 import { useModal } from '@/contexts/modals';
+import { useKeystore } from '@/contexts/keystore';
 
-import { Directory, Logo } from '@static/images/common';
+import { ChevronUp, Home, Info, Logo, Logout, Plus, Trash } from '@static/images/common';
 
 export const Navigation = () => {
     const searchParams = useSearchParams();
     const router = useRouter();
     const bucketId = searchParams.get('id');
     const { buckets, trash } = useTomb();
+    const { purgeKeystore } = useKeystore();
     const [isBucketsVisible, setIsBucketsVisible] = useState(false);
     const { messages } = useIntl();
-    const { openModal } = useModal()
+    const { openModal } = useModal();
+
     const toggleBucketsVisibility = (event: React.MouseEvent<HTMLDivElement>) => {
         event.stopPropagation();
         event.preventDefault();
@@ -31,6 +33,11 @@ export const Navigation = () => {
         openModal(<CreateBucketModal />);
     };
 
+    const logout = async () => {
+        await signOut();
+        await purgeKeystore();
+    };
+
     useEffect(() => {
         if (isBucketsVisible) return;
 
@@ -38,43 +45,39 @@ export const Navigation = () => {
     }, [buckets])
 
     return (
-        <nav className="flex flex-col w-navbar min-w-navbar bg-navigation-primary py-8 px-4 text-navigation-text border-r-2 border-r-navigation-border font-semibold">
-            <Link href="/" className="mb-7 flex justify-center font-semibold text-m" >
-                <Logo />
+        <nav className="flex flex-col w-navbar min-w-navbar bg-navigation-primary py-8 px-4 text-navigation-text border-r-2 border-r-navigation-border">
+            <Link href="/" className="mb-7 flex text-xs" >
+                <Logo width="174px" height="36px" />
             </Link>
-            <div className="flex-grow">
+            <div className="flex-grow py-8 border-t-2 border-b-2 border-navigation-separator text-navigation-text">
                 <Link
                     href={'/'}
-                    className={`flex items-center justify-between gap-2 py-2 px-3 w-full h-10  cursor-pointer rounded-md ${router.pathname === '/' && 'bg-navigation-secondary'}`}
+                    className={`flex items-center justify-between gap-3 py-2.5 px-3 w-full h-10  cursor-pointer rounded-md bg-navigation-secondary`}
                 >
-                    <Directory />
+                    <Home />
                     <span className="flex-grow">
                         {`${messages.myBuckets}`}
                     </span>
-                    <span className={`px-2 py-1 bg-navigation-text text-navigation-secondary rounded-full text-xxs font-medium ${!buckets.length && 'hidden'}`}>
-                        {buckets.length}
-                    </span>
                     <span
                         onClick={toggleBucketsVisibility}
-                        className={`${isBucketsVisible && 'rotate-180'} ${!buckets.length && 'hidden'} `}
+                        className={`${!isBucketsVisible && 'rotate-180'} ${!buckets.length && 'hidden'}`}
                     >
-                        <FiChevronDown size="20px" stroke="#5D6B98" />
+                        <ChevronUp />
                     </span>
                 </Link>
                 {
                     isBucketsVisible &&
-                    <ul className="mt-3 mb-3 flex-col gap-2 px-4">
+                    <ul className="mt-3 mb-3 flex-col gap-2 px-4 text-xxs">
                         {
                             buckets.map(bucket =>
                                 <li key={bucket.id}>
                                     <Link
                                         href={`/bucket/${bucket.id}`}
-                                        className={`flex items-center justify-between gap-2 py-2 px-3 w-full h-10  cursor-pointer rounded-md ${bucketId === bucket.id && 'bg-navigation-secondary'}`}
+                                        className={`relative flex items-center justify-between gap-2  w-full h-10  cursor-pointer `}
                                     >
-                                        <span className='w-5'>
-                                            <Directory />
+                                        <span className='absolute w-4 h-11 bottom-1/2 border-2 border-transparent border-l-navigation-secondary border-b-navigation-secondary'>
                                         </span>
-                                        <span className="flex-grow whitespace-nowrap overflow-hidden overflow-ellipsis">
+                                        <span className={`ml-5 py-2 px-2 flex-grow whitespace-nowrap overflow-hidden rounded-md verflow-ellipsis ${bucketId === bucket.id && 'bg-navigation-secondary'}`}>
                                             {bucket.name}
                                         </span>
                                     </Link>
@@ -85,28 +88,38 @@ export const Navigation = () => {
                 }
                 <Link
                     href="/trash"
-                    className={`flex items-center justify-between  gap-2 py-2 px-3 w-full h-10 cursor-pointer rounded-md ${router.pathname === '/trash' && 'bg-navigation-secondary'} hidden`}
+                    className={`flex items-center justify-between  gap-2 py-2 px-3 w-full h-10 cursor-pointer rounded-md text-xs ${router.pathname === '/trash' && 'bg-navigation-secondary'}`}
                 >
-                    <FiTrash2 size="24px" stroke="#5e6c97" />
+                    <Trash />
                     <span className="flex-grow">
                         {`${messages.trash}`}
                     </span>
-                    <span className={`px-2 py-1 bg-navigation-text text-navigation-secondary rounded-full text-xxs font-normal ${!trash.files.length && 'hidden'}`}>
+                    <span className={`px-2 py-1 bg-navigation-text text-navigation-secondary rounded-full text-xxs ${!trash.files.length && 'hidden'}`}>
                         {trash.files.length}
                     </span>
                 </Link>
                 <button
                     onClick={createBucket}
-                    className="mt-2 flex items-center gap-3 py-2 px-3"
+                    className="mt-2 flex items-center gap-3 py-2 px-3 text-navigation-textSecondary"
                 >
-                    <IoIosAdd size="24px" fill="#5D6B98" />
+                    <Plus />
                     {`${messages.newBucket}`}
                 </button>
             </div>
-            {/* <StorageUsage /> */}
-            <div className="flex flex-col mt-6 pl-2 pt-3 pr-8 border-t-2 border-table-border text-gray-600">
-                <span>Banyan Computer</span>
-                <span className="font-normal">{`${messages.decentralizedStorage}`}</span>
+            <div className="flex flex-col gap-2 mt-6 pl-2 pt-3 pr-8 text-navigation-textSecondary text-xs">
+                <span className='flex items-center gap-3 py-2.5 cursor-pointer'>
+                    <Info />
+                    {`${messages.help}`}
+                </span>
+                <span
+                    className="flex items-center gap-3 py-2.5 cursor-pointer"
+                    onClick={logout}
+                >
+                    <Logout />
+                    <span className='text-navigation-text'>
+                        {`${messages.logoutAccount}`}
+                    </span>
+                </span>
             </div>
         </nav>
     );
