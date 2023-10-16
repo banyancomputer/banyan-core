@@ -47,6 +47,7 @@ module.exports = {
 					text: 'var(--navigation-text)',
 					textSecondary: 'var(--navigation-textSecondary)',
 					border: 'var(--navigation-border)',
+					separator: 'var(--navigation-separator)'
 				},
 				table: {
 					cellBackground: 'var(--table-cellBackground)',
