@@ -4,6 +4,7 @@ use lettre::message::{
     Message,
 };
 use serde::{ser::StdError, Serialize};
+use uuid::Uuid;
 
 use super::error::EmailError;
 use super::template_registry::TemplateRegistry;
@@ -42,19 +43,27 @@ pub trait EmailMessage: Serialize + Sized {
         transport: &EmailTransport,
         from: &str,
         to: &str,
+        message_id: Uuid,
         test_mode: bool,
     ) -> Result<(), EmailError> {
-        let message = self.build(from, to, test_mode)?;
+        let message = self.build(from, to, message_id, test_mode)?;
         transport.send(&message)?;
         Ok(())
     }
 
-    fn build(&self, from: &str, to: &str, test_mode: bool) -> Result<Message, EmailError> {
+    fn build(
+        &self,
+        from: &str,
+        to: &str,
+        message_id: Uuid,
+        test_mode: bool,
+    ) -> Result<Message, EmailError> {
         let mut builder = Message::builder();
         if test_mode {
             builder = builder.header(MailgunTestMode);
         }
         builder
+            .header(MailgunMessageId(message_id))
             .from(from.parse().map_err(EmailError::invalid_from_address)?)
             .to(to.parse().map_err(EmailError::invalid_to_address)?)
             .subject(Self::SUBJECT)
@@ -74,6 +83,7 @@ mod tests {
     lazy_static! {
         static ref TRANSPORT: EmailTransport = EmailTransport::new(None).unwrap();
     }
+    const MESSAGE_ID: Uuid = Uuid::nil();
     const FROM: &str = "fake@email.com";
     const TO: &str = "another_fake@email.com";
 
@@ -81,13 +91,13 @@ mod tests {
 
     #[test]
     fn ga_release_send() -> Result<(), EmailError> {
-        GaRelease.send(&TRANSPORT, FROM, TO, false)?;
+        GaRelease.send(&TRANSPORT, FROM, TO, MESSAGE_ID, false)?;
         Ok(())
     }
 
     #[test]
     fn payment_failed_send() -> Result<(), EmailError> {
-        PaymentFailed.send(&TRANSPORT, FROM, TO, false)?;
+        PaymentFailed.send(&TRANSPORT, FROM, TO, MESSAGE_ID, false)?;
         Ok(())
     }
 
@@ -96,7 +106,7 @@ mod tests {
         ProductInvoice {
             url: "https://www.banyansecurity.io".parse().unwrap(),
         }
-        .send(&TRANSPORT, FROM, TO, false)?;
+        .send(&TRANSPORT, FROM, TO, MESSAGE_ID, false)?;
         Ok(())
     }
 
@@ -106,7 +116,7 @@ mod tests {
             current_usage: 10,
             max_usage: 11,
         }
-        .send(&TRANSPORT, FROM, TO, false)?;
+        .send(&TRANSPORT, FROM, TO, MESSAGE_ID, false)?;
         Ok(())
     }
 
@@ -116,7 +126,7 @@ mod tests {
             start: "2020-01-01".to_string(),
             end: "2020-01-02".to_string(),
         }
-        .send(&TRANSPORT, FROM, TO, false)?;
+        .send(&TRANSPORT, FROM, TO, MESSAGE_ID, false)?;
         Ok(())
     }
 
@@ -124,14 +134,14 @@ mod tests {
 
     #[test]
     fn test_mode_true() -> Result<(), EmailError> {
-        let message = GaRelease.build(FROM, TO, true)?;
+        let message = GaRelease.build(FROM, TO, MESSAGE_ID, true)?;
         assert!(message.headers().get::<MailgunTestMode>().is_some());
         Ok(())
     }
 
     #[test]
     fn test_mode_false() -> Result<(), EmailError> {
-        let message = GaRelease.build(FROM, TO, false)?;
+        let message = GaRelease.build(FROM, TO, MESSAGE_ID, false)?;
         assert!(message.headers().get::<MailgunTestMode>().is_none());
         Ok(())
     }
@@ -153,5 +163,34 @@ impl Header for MailgunTestMode {
     }
     fn display(&self) -> HeaderValue {
         HeaderValue::new(MailgunTestMode::name(), "yes".to_string())
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+struct MailgunMessageId(Uuid);
+
+impl Header for MailgunMessageId {
+    fn name() -> HeaderName {
+        HeaderName::new_from_ascii_str("X-Mailgun-Variables")
+    }
+    fn parse(s: &str) -> Result<Self, Box<dyn StdError + Send + Sync>> {
+        let json: serde_json::Value = serde_json::from_str(s)?;
+        let message_id = json
+            .get("message_id")
+            .ok_or("missing message_id")?
+            .as_str()
+            .ok_or("message_id is not a string")?;
+        Ok(MailgunMessageId(Uuid::parse_str(message_id)?))
+    }
+    fn display(&self) -> HeaderValue {
+        let mut map = serde_json::Map::new();
+        map.insert(
+            "message_id".to_string(),
+            serde_json::Value::String(self.0.to_string()),
+        );
+        HeaderValue::new(
+            MailgunMessageId::name(),
+            serde_json::to_string(&map).unwrap(),
+        )
     }
 }
