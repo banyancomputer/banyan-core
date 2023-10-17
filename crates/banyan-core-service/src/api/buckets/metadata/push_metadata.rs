@@ -16,7 +16,7 @@ use crate::app::AppState;
 use crate::database::Database;
 use crate::extractors::{ApiIdentity, DataStore, SigningKey};
 use crate::utils::car_buffer::CarBuffer;
-//use crate::utils::metadata_upload::{handle_metadata_upload, round_to_nearest_100_mib};
+//use crate::utils::metadata_upload::{round_to_nearest_100_mib};
 //use crate::utils::storage_ticket::generate_storage_ticket;
 
 /// The default quota we assume each storage host / staging service to provide
@@ -85,29 +85,13 @@ pub async fn handler(
     let request_data: PushMetadataRequest = serde_json::from_slice(&request_data_bytes)
         .map_err(PushMetadataError::InvalidRequestData)?;
 
-    for device_key_fingerprint in request_data.included_key_fingerprints.iter() {
-        let query_res = sqlx::query!(
-            "UPDATE bucket_keys SET approved = 'true' WHERE bucket_id = $1 AND fingerprint = $2;",
-            authorized_bucket_id,
-            device_key_fingerprint,
-        )
-        .execute(&database)
-        .await
-        .map_err(PushMetadataError::KeyApprovalFailed)?;
-    }
+    approve_key_fingerprints(
+        &database,
+        &authorized_bucket_id,
+        &request_data.included_key_fingerprints
+    ).await?;
 
-    let new_metadata_id = sqlx::query_scalar!(
-        r#"INSERT INTO metadata (bucket_id, root_cid, metadata_cid, expected_data_size, state)
-               VALUES ($1, $2, $3, $4, 'uploading')
-               RETURNING id;"#,
-        authorized_bucket_id,
-        request_data.root_cid,
-        request_data.metadata_cid,
-        request_data.expected_data_size,
-    )
-    .fetch_one(&database)
-    .await
-    .map_err(PushMetadataError::MetadataRegistrationFailed)?;
+    let new_metadata_id = record_upload_start(&database, &authorized_bucket_id, &request_data).await?;
 
     let car_stream = multipart
         .next_field()
@@ -118,26 +102,59 @@ pub async fn handler(
     // TODO: validate name is car-upload (request_data_field.name())
     // TODO: validate type is "application/vnd.ipld.car; version=2" (request_data_field.content_type())
     let file_name = format!("{authorized_bucket_id}/{new_metadata_id}.car");
-
     let (metadata_hash, metadata_size) =
         match store_metadata_stream(&store, file_name.as_str(), car_stream).await {
             Ok(mhs) => mhs,
             Err(store_err) => {
-                let update_res = sqlx::query!(
-                    "UPDATE metadata SET state = 'upload_failed' WHERE id = $1",
-                    new_metadata_id,
-                )
-                .execute(&database)
-                .await;
-
                 return Err(PushMetadataError::UploadStoreFailed(
                     store_err,
-                    update_res.err(),
+                    fail_upload(&database, &new_metadata_id).await.err(),
                 ));
             }
         };
 
     todo!()
+}
+
+async fn approve_key_fingerprints(database: &Database, bucket_id: &str, keys: &Vec<String>) -> Result<(), PushMetadataError> {
+    for device_key_fingerprint in keys.iter() {
+        sqlx::query!(
+            "UPDATE bucket_keys SET approved = 'true' WHERE bucket_id = $1 AND fingerprint = $2;",
+            bucket_id,
+            device_key_fingerprint,
+        )
+        .execute(database)
+        .await
+        .map_err(PushMetadataError::KeyApprovalFailed)?;
+    }
+
+    Ok(())
+}
+
+async fn record_upload_start(database: &Database, bucket_id: &str, request: &PushMetadataRequest) -> Result<String, PushMetadataError> {
+    sqlx::query_scalar!(
+        r#"INSERT INTO metadata (bucket_id, root_cid, metadata_cid, expected_data_size, state)
+               VALUES ($1, $2, $3, $4, 'uploading')
+               RETURNING id;"#,
+        bucket_id,
+        request.root_cid,
+        request.metadata_cid,
+        request.expected_data_size,
+    )
+    .fetch_one(database)
+    .await
+    .map_err(PushMetadataError::MetadataRegistrationFailed)
+}
+
+async fn fail_upload(database: &Database, metadata_id: &str) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        "UPDATE metadata SET state = 'upload_failed' WHERE id = $1",
+        metadata_id,
+    )
+    .execute(database)
+    .await?;
+
+    Ok(())
 }
 
 async fn store_metadata_stream<'a>(

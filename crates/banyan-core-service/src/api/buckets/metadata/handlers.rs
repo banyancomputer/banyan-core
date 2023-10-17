@@ -9,27 +9,6 @@ pub async fn push(
 ) -> impl IntoResponse {
     // ...
 
-    /* 3. Process the upload */
-
-    // Try and upload the file
-    let (metadata_hash, metadata_size) = match handle_metadata_upload(car_stream, &mut writer).await
-    {
-        Ok(fh) => {
-            writer
-                .shutdown()
-                .await
-                .expect("upload finalization to succeed");
-            fh
-        }
-        Err(_) => {
-            store
-                .abort_multipart(&file_path, &upload_id)
-                .await
-                .expect("aborting to success");
-            return CoreError::default_error("unable to process upload").into_response();
-        }
-    };
-
     /* 4. Now that we know the size of metadata, Check if the upload exceeds the user's storage quota. If so, abort with 413 */
 
     // Read how metadata and data the use has in the current and pending states across all buckets
@@ -42,6 +21,7 @@ pub async fn push(
             .into_response();
         }
     };
+
     // Based on how much stuff there planning on pushing, reject the upload if it would exceed the quota
     // Expected usage is their current usage plus the size of the metadata they're uploading plus the size of the data they want to upload to a host
     let expected_data_size = request_data.expected_data_size as u64;
@@ -137,6 +117,7 @@ pub async fn push(
             }
         }
     }
+
     // OK, they're actually asking for more data. Update the metadata state to pending and continue
     let metadata_state = models::MetadataState::Pending.to_string();
     let metadata_size = metadata_size as i64;
@@ -174,6 +155,7 @@ pub async fn push(
 
     // Round up to the nearest 100 MiB
     let data_usage = round_to_nearest_100_mib(data_usage);
+
     // Read a storage host from the database. We only have one right now, so this is easy
     let storage_host = match db::select_storage_host(&database).await {
         Ok(sh) => sh,
