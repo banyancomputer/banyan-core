@@ -26,6 +26,7 @@ pub async fn push(
     // Expected usage is their current usage plus the size of the metadata they're uploading plus the size of the data they want to upload to a host
     let expected_data_size = request_data.expected_data_size as u64;
     let expected_usage = current_usage + metadata_size + expected_data_size;
+
     if expected_usage > ACCOUNT_STORAGE_QUOTA {
         // Mark the upload as failed
         let maybe_failed_metadata_upload = sqlx::query!(

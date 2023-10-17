@@ -40,20 +40,8 @@ pub async fn handler(
     let service_signing_key = state.secrets().service_signing_key();
 
     let unvalidated_bid = bucket_id.to_string();
-
-    let maybe_bucket_id = sqlx::query_scalar!(
-        r#"SELECT id FROM buckets WHERE account_id = $1 AND id = $2;"#,
-        api_id.account_id,
-        unvalidated_bid,
-    )
-    .fetch_optional(&database)
-    .await
-    .map_err(PushMetadataError::BucketAuthorizationFailed)?;
-
-    let authorized_bucket_id = match maybe_bucket_id {
-        Some(abi) => abi,
-        None => return Err(PushMetadataError::NoAuthorizedBucket),
-    };
+    let authorized_bucket_id =
+        authorized_bucket_id(&database, &api_id.account_id, &unvalidated_bid).await?;
 
     // Read the body from the request, checking for size limits
     let mime_ct = mime::Mime::from(content_type);
@@ -88,12 +76,14 @@ pub async fn handler(
     approve_key_fingerprints(
         &database,
         &authorized_bucket_id,
-        &request_data.included_key_fingerprints
-    ).await?;
+        &request_data.included_key_fingerprints,
+    )
+    .await?;
 
-    let new_metadata_id = record_upload_start(&database, &authorized_bucket_id, &request_data).await?;
+    let new_metadata_id =
+        record_upload_start(&database, &authorized_bucket_id, &request_data).await?;
 
-    let car_stream = multipart
+    let data_body = multipart
         .next_field()
         .await
         .map_err(PushMetadataError::BrokenMultipartField)?
@@ -102,21 +92,32 @@ pub async fn handler(
     // TODO: validate name is car-upload (request_data_field.name())
     // TODO: validate type is "application/vnd.ipld.car; version=2" (request_data_field.content_type())
     let file_name = format!("{authorized_bucket_id}/{new_metadata_id}.car");
-    let (metadata_hash, metadata_size) =
-        match store_metadata_stream(&store, file_name.as_str(), car_stream).await {
+    let (hash, uploaded_size) =
+        match store_metadata_stream(&store, file_name.as_str(), data_body).await {
             Ok(mhs) => mhs,
             Err(store_err) => {
+                let fail_update_res = fail_upload(&database, &new_metadata_id).await.err();
                 return Err(PushMetadataError::UploadStoreFailed(
                     store_err,
-                    fail_upload(&database, &new_metadata_id).await.err(),
+                    fail_update_res,
                 ));
             }
         };
 
+    record_data_stored(&database, &new_metadata_id, uploaded_size, &hash)
+        .await
+        .map_err(PushMetadataError::DataMetaStoreFailed)?;
+
+    //let currently_consumed_storage
+
     todo!()
 }
 
-async fn approve_key_fingerprints(database: &Database, bucket_id: &str, keys: &Vec<String>) -> Result<(), PushMetadataError> {
+async fn approve_key_fingerprints(
+    database: &Database,
+    bucket_id: &str,
+    keys: &Vec<String>,
+) -> Result<(), PushMetadataError> {
     for device_key_fingerprint in keys.iter() {
         sqlx::query!(
             "UPDATE bucket_keys SET approved = 'true' WHERE bucket_id = $1 AND fingerprint = $2;",
@@ -131,7 +132,80 @@ async fn approve_key_fingerprints(database: &Database, bucket_id: &str, keys: &V
     Ok(())
 }
 
-async fn record_upload_start(database: &Database, bucket_id: &str, request: &PushMetadataRequest) -> Result<String, PushMetadataError> {
+async fn authorized_bucket_id(
+    database: &Database,
+    account_id: &str,
+    bucket_id: &str,
+) -> Result<String, PushMetadataError> {
+    sqlx::query_scalar!(
+        r#"SELECT id FROM buckets WHERE account_id = $1 AND id = $2;"#,
+        account_id,
+        bucket_id,
+    )
+    .fetch_optional(database)
+    .await
+    .map_err(PushMetadataError::BucketAuthorizationFailed)?
+    .ok_or(PushMetadataError::NoAuthorizedBucket)
+}
+
+async fn currently_consumed_storage(database: &Database, account_id: &str) -> Result<i32, sqlx::Error> {
+    let maybe_stored = sqlx::query_scalar!(
+        r#"SELECT
+            COALESCE(SUM(m.metadata_size), 0) +
+            COALESCE(SUM(COALESCE(m.data_size, m.expected_data_size)), 0)
+        FROM
+            metadata m
+        INNER JOIN
+            buckets b ON b.id = m.bucket_id
+        WHERE
+            b.account_id = $1 AND m.state IN ('current', 'outdated', 'pending');"#,
+        account_id,
+    )
+    .fetch_optional(database)
+    .await?;
+
+    Ok(maybe_stored.unwrap_or(0))
+}
+
+async fn fail_upload(database: &Database, metadata_id: &str) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        "UPDATE metadata SET state = 'upload_failed' WHERE id = $1",
+        metadata_id,
+    )
+    .execute(database)
+    .await?;
+
+    Ok(())
+}
+
+async fn record_data_stored(
+    database: &Database,
+    metadata_id: &str,
+    uploaded_size: usize,
+    data_hash: &str,
+) -> Result<(), sqlx::Error> {
+    let db_size = uploaded_size as i32;
+
+    sqlx::query!(
+        "UPDATE metadata SET metadata_size = $2, metadata_hash = $3 WHERE id = $1;",
+        metadata_id,
+        db_size,
+        data_hash,
+    )
+    .execute(database)
+    .await?;
+
+    // todo: if this fails really need to clean up the files and everything... good task for a
+    // background job...
+
+    Ok(())
+}
+
+async fn record_upload_start(
+    database: &Database,
+    bucket_id: &str,
+    request: &PushMetadataRequest,
+) -> Result<String, PushMetadataError> {
     sqlx::query_scalar!(
         r#"INSERT INTO metadata (bucket_id, root_cid, metadata_cid, expected_data_size, state)
                VALUES ($1, $2, $3, $4, 'uploading')
@@ -144,17 +218,6 @@ async fn record_upload_start(database: &Database, bucket_id: &str, request: &Pus
     .fetch_one(database)
     .await
     .map_err(PushMetadataError::MetadataRegistrationFailed)
-}
-
-async fn fail_upload(database: &Database, metadata_id: &str) -> Result<(), sqlx::Error> {
-    sqlx::query!(
-        "UPDATE metadata SET state = 'upload_failed' WHERE id = $1",
-        metadata_id,
-    )
-    .execute(database)
-    .await?;
-
-    Ok(())
 }
 
 async fn store_metadata_stream<'a>(
@@ -218,33 +281,15 @@ where
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum StreamStoreError {
-    #[error("failed to retrieve next expected chunk: {0}")]
-    NeedChunk(String),
-
-    #[error("failed to write out chunk: {0}")]
-    WriteFailed(std::io::Error),
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum StoreMetadataError {
-    #[error("failed to finalize storage to disk: {0}")]
-    FinalizationFailed(std::io::Error),
-
-    #[error("failed to begin file write transaction: {0}")]
-    PutFailed(object_store::Error),
-
-    #[error("failed to stream upload to storage: {0}, aborting might have also failed: {1:?}")]
-    StreamingFailed(StreamStoreError, Option<object_store::Error>),
-}
-
-#[derive(Debug, thiserror::Error)]
 pub enum PushMetadataError {
     #[error("failed to validate bucket was authorized by user: {0}")]
     BucketAuthorizationFailed(sqlx::Error),
 
     #[error("unable to pull next multipart field: {0}")]
     BrokenMultipartField(multer::Error),
+
+    #[error("failed to record metadata size and hash: {0}")]
+    DataMetaStoreFailed(sqlx::Error),
 
     #[error("failed to mark bucket key as approved: {0}")]
     KeyApprovalFailed(sqlx::Error),
@@ -306,4 +351,25 @@ pub struct PushMetadataRequest {
 
     #[serde(rename = "valid_keys")]
     pub included_key_fingerprints: Vec<String>,
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum StoreMetadataError {
+    #[error("failed to finalize storage to disk: {0}")]
+    FinalizationFailed(std::io::Error),
+
+    #[error("failed to begin file write transaction: {0}")]
+    PutFailed(object_store::Error),
+
+    #[error("failed to stream upload to storage: {0}, aborting might have also failed: {1:?}")]
+    StreamingFailed(StreamStoreError, Option<object_store::Error>),
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum StreamStoreError {
+    #[error("failed to retrieve next expected chunk: {0}")]
+    NeedChunk(String),
+
+    #[error("failed to write out chunk: {0}")]
+    WriteFailed(std::io::Error),
 }
