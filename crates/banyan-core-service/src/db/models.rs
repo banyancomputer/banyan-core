@@ -178,7 +178,6 @@ pub struct StorageHost {
 #[derive(Debug, Serialize, Clone, Type, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum EmailMessageState {
-    Queued,
     Sent,
     Accepted,
     Rejected,
@@ -191,8 +190,6 @@ pub enum EmailMessageState {
 
 fn email_message_state_value(state: &EmailMessageState) -> i32 {
     match state {
-        // Email is queued, but not sent
-        EmailMessageState::Queued => 0,
         // Email is sent, but not accepted
         EmailMessageState::Sent => 1,
         // Email is either accepted or rejected
@@ -220,7 +217,6 @@ impl PartialOrd for EmailMessageState {
 impl Display for EmailMessageState {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            EmailMessageState::Queued => f.write_str("queued"),
             EmailMessageState::Sent => f.write_str("sent"),
             EmailMessageState::Accepted => f.write_str("accepted"),
             EmailMessageState::Delivered => f.write_str("delivered"),
@@ -236,7 +232,6 @@ impl Display for EmailMessageState {
 impl From<String> for EmailMessageState {
     fn from(s: String) -> Self {
         match s.as_str() {
-            "queued" => EmailMessageState::Queued,
             "sent" => EmailMessageState::Sent,
             "accepted" => EmailMessageState::Accepted,
             "delivered" => EmailMessageState::Delivered,

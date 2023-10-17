@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "INSERT INTO emails (account_id, type) VALUES ($1, $2) RETURNING id;",
+  "query": "INSERT INTO emails (account_id, type)\n            VALUES ($1, $2)\n            RETURNING id",
   "describe": {
     "columns": [
       {
@@ -16,5 +16,5 @@
       false
     ]
   },
-  "hash": "db94c4a53f16181a150f2191408644c1d5029db41f719eddb964fe826d817086"
+  "hash": "49ae6cf06e082be4c7089386d719724f5b68820d5990cd2c35ac69d094bff192"
 }

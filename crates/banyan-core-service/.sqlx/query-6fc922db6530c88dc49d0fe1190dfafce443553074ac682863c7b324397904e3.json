@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT\n                COUNT(*) AS spam_reports\n            FROM emails e\n            WHERE e.account_id = $1\n                AND e.state = 'spam'\n            ORDER BY e.sent_at DESC\n            LIMIT 3",
+  "describe": {
+    "columns": [
+      {
+        "name": "spam_reports",
+        "ordinal": 0,
+        "type_info": "Int"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "6fc922db6530c88dc49d0fe1190dfafce443553074ac682863c7b324397904e3"
+}

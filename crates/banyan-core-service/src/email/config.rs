@@ -4,6 +4,7 @@ use lettre::transport::smtp::authentication::Credentials;
 use url::Url;
 
 use super::error::EmailError;
+use super::transport::EmailTransport;
 
 pub struct EmailConfig {
     smtp_connection: Option<SmtpConnection>,
@@ -49,6 +50,10 @@ impl EmailConfig {
             .unwrap_or(false);
 
         Self::new(smtp_url, &from, test_mode)
+    }
+
+    pub fn transport(&self) -> Result<EmailTransport, EmailError> {
+        EmailTransport::new(self.smtp_connection())
     }
 
     pub fn smtp_connection(&self) -> Option<&SmtpConnection> {
