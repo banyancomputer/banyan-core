@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react';
 import { useKeystore } from './keystore';
 import {
     Bucket, BucketFile, BucketKey,
-    BucketSnapshot, FileMetadata, MockBucket,
+    BucketSnapshot, MockBucket,
 } from '@/lib/interfaces/bucket';
 import { useFolderLocation } from '@/hooks/useFolderLocation';
 
@@ -86,8 +86,9 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
                 storageClass: bucket.storageClass(),
                 bucketType: bucket.bucketType(),
                 files: [],
+                snapshots: [],
                 keys: [],
-            })))
+            })));
         });
     };
 
@@ -99,12 +100,14 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
             for (let bucket of buckets) {
                 const mount = await tomb!.mount(bucket.id, key);
                 const files = await mount.ls([]);
+                const snapshots = await tomb!.listBucketSnapshots(bucket.id);
                 wasm_bukets.push({
                     ...bucket,
                     mount,
+                    snapshots,
                     files: files || [],
                 });
-            }
+            };
             setBuckets(wasm_bukets);
             setAreBucketsLoading(false);
         })
@@ -157,6 +160,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
             let wasmBucket = await tomb!.createBucket(name, storageClass, bucketType, key.publicKey);
             let mount = await tomb!.mount(wasmBucket.id(), key);
             const files = await mount.ls([]);
+            const snapshots = await tomb!.listBucketSnapshots(wasmBucket.id());
             const keys = await tomb!.listBucketKeys(wasmBucket.id())
             let bucket = {
                 mount,
@@ -165,6 +169,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
                 storageClass: wasmBucket.storageClass(),
                 bucketType: wasmBucket.bucketType(),
                 files: files || [],
+                snapshots,
                 keys,
             }
 

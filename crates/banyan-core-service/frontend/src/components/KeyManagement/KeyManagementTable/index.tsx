@@ -13,7 +13,10 @@ export const KeyManagementTable: React.FC<{ buckets: Bucket[] }> = ({ buckets })
     useEffect(() => {
         /** Weird typescript issue with scrollTop which exist, but not for typescript */
         //@ts-ignore
-        tableRef.current?.addEventListener("scroll", event => setTableScroll(event.target.scrollTop));
+        const listener = (event: Event) => setTableScroll(event.target!.scrollTop || 0);
+        tableRef.current?.addEventListener("scroll", listener);
+
+        return () => tableRef.current?.removeEventListener('scroll', listener);
     }, [tableRef]);
 
     return (

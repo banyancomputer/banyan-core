@@ -164,5 +164,9 @@
 	"recipientEmail": "Recipient email",
 	"accessPreviousVersions": "Access and review previous versions",
 	"wrongSecretKey": "Wrong secret key",
-	"uploading": "Uploading"
+	"uploading": "Uploading",
+	"hot": "On-Demand",
+	"warm": "On-Demand",
+	"cold": "Archival",
+	"coldSnapshots": "Cold Snapshots"
 }

@@ -122,7 +122,7 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     }
 
     return (
-        <div className={`w-52 text-xs font-medium bg-mainBackground rounded-xl shadow-md z-10 select-none text-gray-900`}>
+        <div className={`w-52 text-xs font-medium bg-bucket-actionsBackground rounded-xl shadow-md z-10 select-none text-gray-900`}>
             {
                 actions[bucketType].map(action =>
                     <div

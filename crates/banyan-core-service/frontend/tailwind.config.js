@@ -47,12 +47,20 @@ module.exports = {
 					text: 'var(--navigation-text)',
 					textSecondary: 'var(--navigation-textSecondary)',
 					border: 'var(--navigation-border)',
-					separator: 'var(--navigation-separator)'
+					separator: 'var(--navigation-separator)',
 				},
 				table: {
 					cellBackground: 'var(--table-cellBackground)',
 					headBackground: 'var(--table-headBackground)',
 					border: 'var(--table-border)',
+				},
+				bucket: {
+					bucketItemBackground: 'var(--bucket-item-background)',
+					bucketClasshot: 'var(--bucket-class-hot)',
+					bucketClasswarm: 'var(--bucket-class-hot)',
+					bucketClasscold: 'var(--bucket-class-cold)',
+					background: 'var(--bucket-background)',
+					actionsBackground: 'var(--bucket-actions-background)'
 				},
 				inputBorder: 'var(--input-border)',
 				'gray-200': 'var(--gray-200)',
@@ -61,7 +69,7 @@ module.exports = {
 				'gray-900': 'var(--gray-900)',
 				disabled: 'var(--disabled)',
 				hover: 'var(--hover-background)',
-				mainBackground: 'var(--background)',
+				mainBackground: 'var(--main-background)',
 			},
 			fontFamily: {
 				sans: ['Inter'],
