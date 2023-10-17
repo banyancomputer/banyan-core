@@ -11,44 +11,6 @@ pub async fn push(
 
     /* 3. Process the upload */
 
-    let car_stream = multipart.next_field().await.unwrap().unwrap();
-
-    // TODO: validate name is car-upload (request_data_field.name())
-    // TODO: validate type is "application/vnd.ipld.car; version=2" (request_data_field.content_type())
-    let file_name = format!(
-        "{bucket_id}/{metadata_id}.car",
-        bucket_id = bucket_id,
-        metadata_id = metadata_resource.id
-    );
-
-    let file_path = object_store::path::Path::from(file_name.as_str());
-    // Open the file for writing
-    let (upload_id, mut writer) = match store.put_multipart(&file_path).await {
-        // If we created the writer, go ahead and do the upload
-        Ok(mp) => mp,
-        // Otherwise, try marking the update as failed
-        Err(_) => {
-            tracing::error!(
-                "could not open writer to metadata file <id: {}>",
-                metadata_resource.id
-            );
-            // Try and mark the upload as failed
-            let maybe_failed_metadata_upload = sqlx::query!(
-                r#"UPDATE metadata SET state = $1 WHERE id = $2;"#,
-                models::MetadataState::UploadFailed,
-                metadata_resource.id
-            )
-            .execute(&database)
-            .await;
-            // Return the correct response based on the result of the update
-            return match maybe_failed_metadata_upload {
-                Ok(_) => CoreError::default_error("failed to upload metadata"),
-                Err(err) => CoreError::sqlx_error(err, "mark failed", "metadata upload"),
-            }
-            .into_response();
-        }
-    };
-
     // Try and upload the file
     let (metadata_hash, metadata_size) = match handle_metadata_upload(car_stream, &mut writer).await
     {
