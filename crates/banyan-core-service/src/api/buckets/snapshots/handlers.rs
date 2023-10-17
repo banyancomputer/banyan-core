@@ -69,60 +69,6 @@ pub async fn create(
     Json(response).into_response()
 }
 
-/// Read all snapshots for a bucket
-pub async fn read_all(
-    api_token: ApiToken,
-    database: Database,
-    Path(bucket_id): Path<Uuid>,
-) -> impl IntoResponse {
-    let account_id = api_token.subject;
-    let bucket_id = bucket_id.to_string();
-    match db::authorize_bucket(&account_id, &bucket_id, &database).await {
-        Ok(_) => {}
-        Err(err) => match err {
-            sqlx::Error::RowNotFound => {
-                return (StatusCode::NOT_FOUND, format!("bucket not found: {err}")).into_response();
-            }
-            _ => {
-                tracing::error!("unable to read bucket: {err}");
-                return (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "internal server error".to_string(),
-                )
-                    .into_response();
-            }
-        },
-    }
-    let response = match db::read_all_snapshots(&bucket_id, &database).await {
-        Ok(snapshots) => responses::ReadAllSnapshotsResponse(
-            snapshots
-                .into_iter()
-                .map(|s| responses::ReadSnapshotResponse {
-                    id: s.id,
-                    metadata_id: s.metadata_id,
-                    size: s.size,
-                    created_at: s.created_at.unix_timestamp(),
-                })
-                .collect(),
-        ),
-        Err(err) => match err {
-            sqlx::Error::RowNotFound => {
-                return (StatusCode::NOT_FOUND, format!("snapshot not found: {err}"))
-                    .into_response();
-            }
-            _ => {
-                tracing::error!("unable to read snapshot: {err}");
-                return (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "internal server error".to_string(),
-                )
-                    .into_response();
-            }
-        },
-    };
-    Json(response).into_response()
-}
-
 /// Restore a bucket to a specific snapshot
 pub async fn restore(
     api_token: ApiToken,

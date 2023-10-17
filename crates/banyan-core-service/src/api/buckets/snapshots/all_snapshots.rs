@@ -1,7 +1,8 @@
-use axum::extract::{Json, State};
+use axum::extract::{Json, Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use serde::Serialize;
+use uuid::Uuid;
 
 use crate::app::AppState;
 use crate::database::models::Snapshot;
@@ -12,7 +13,7 @@ pub async fn handler(
     api_token: ApiToken,
     State(state): State<AppState>,
     Path(bucket_id): Path<Uuid>,
-) -> Response {
+) -> Result<Response, AllSnapshotsError> {
     let database = state.database();
     let bucket_id = bucket_id.to_string();
 
@@ -29,8 +30,9 @@ pub async fn handler(
     .await
     .map_err(AllSnapshotsError::DatabaseFailure)?;
 
-    let buckets: Vec<_> = qr.into_iter().map(|db| ApiSnapshot::from(db)).collect();
-    (StatusCode::OK, Json(buckets)).into_response()
+    let buckets: Vec<_> = query_result.into_iter().map(|db| ApiSnapshot::from(db)).collect();
+
+    Ok((StatusCode::OK, Json(buckets)).into_response())
 }
 
 #[derive(Debug, thiserror::Error)]

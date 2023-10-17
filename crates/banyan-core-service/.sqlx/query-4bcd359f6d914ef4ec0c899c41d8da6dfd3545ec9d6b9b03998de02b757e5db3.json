@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT s.*,(m.data_size + m.metadata_size) AS size FROM snapshots AS s\n             JOIN metadata AS m ON s.metadata_id = m.id\n             JOIN buckets AS b ON m.bucket_id = b.id\n             WHERE b.account_id = $1 AND m.bucket_id = $2;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "metadata_id",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 2,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "size",
+        "ordinal": 3,
+        "type_info": "Int64"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "4bcd359f6d914ef4ec0c899c41d8da6dfd3545ec9d6b9b03998de02b757e5db3"
+}

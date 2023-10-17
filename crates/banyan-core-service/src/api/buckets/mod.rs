@@ -3,7 +3,7 @@ use axum::Router;
 
 mod keys;
 mod metadata;
-//mod snapshots;
+mod snapshots;
 
 mod all_buckets;
 mod bucket_usage;
@@ -20,7 +20,7 @@ pub fn router(state: AppState) -> Router<AppState> {
         .route("/:bucket_id", get(single_bucket::handler).delete(delete_bucket::handler))
         .nest("/:bucket_id/keys", keys::router(state.clone()))
         .nest("/:bucket_id/metadata", metadata::router(state.clone()))
-        //.nest("/:bucket_id/snapshots", snapshots::router(state.clone()))
+        .nest("/:bucket_id/snapshots", snapshots::router(state.clone()))
         .route("/:bucket_id/usage", get(bucket_usage::handler))
         .route("/usage", get(current_total_usage::handler))
         .route("/usage_limit", get(current_total_usage_limit::handler))
