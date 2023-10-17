@@ -3,10 +3,10 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use uuid::Uuid;
 
+use crate::api::models::ApiSnapshot;
 use crate::app::AppState;
 use crate::database::models::Snapshot;
 use crate::extractors::ApiIdentity;
-use crate::api::models::ApiSnapshot;
 
 pub async fn handler(
     api_id: ApiIdentity,
@@ -29,7 +29,10 @@ pub async fn handler(
     .await
     .map_err(AllSnapshotsError::DatabaseFailure)?;
 
-    let buckets: Vec<_> = query_result.into_iter().map(|db| ApiSnapshot::from(db)).collect();
+    let buckets: Vec<_> = query_result
+        .into_iter()
+        .map(|db| ApiSnapshot::from(db))
+        .collect();
 
     Ok((StatusCode::OK, Json(buckets)).into_response())
 }

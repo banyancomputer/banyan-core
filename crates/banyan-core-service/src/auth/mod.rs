@@ -1,5 +1,5 @@
-use axum::Router;
 use axum::routing::get;
+use axum::Router;
 use oauth2::basic::BasicClient;
 use oauth2::RedirectUrl;
 use url::Url;

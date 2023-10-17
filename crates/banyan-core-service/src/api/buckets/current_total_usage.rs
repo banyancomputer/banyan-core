@@ -1,7 +1,7 @@
-use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
+use axum::Json;
 
 use crate::app::AppState;
 use crate::extractors::ApiIdentity;
@@ -20,7 +20,7 @@ pub async fn handler(api_id: ApiIdentity, State(state): State<AppState>) -> Resp
         INNER JOIN
             buckets b ON b.id = m.bucket_id
         WHERE
-            b.account_id = $1 AND m.state IN ('current', 'outdated', 'pending');"#
+            b.account_id = $1 AND m.state IN ('current', 'outdated', 'pending');"#,
     )
     .bind(api_id.account_id)
     .fetch_one(&database)

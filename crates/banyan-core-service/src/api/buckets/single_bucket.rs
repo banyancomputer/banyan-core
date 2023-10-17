@@ -3,10 +3,10 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use uuid::Uuid;
 
+use crate::api::models::ApiBucket;
 use crate::app::AppState;
 use crate::database::models::Bucket;
 use crate::extractors::ApiIdentity;
-use crate::api::models::ApiBucket;
 
 pub async fn handler(
     api_id: ApiIdentity,

@@ -1,7 +1,7 @@
 use axum::extract::State;
 use axum::response::{IntoResponse, Redirect, Response};
-use axum_extra::extract::CookieJar;
 use axum_extra::extract::cookie::Cookie;
+use axum_extra::extract::CookieJar;
 
 use crate::app::AppState;
 use crate::auth::{NEW_USER_COOKIE_NAME, SESSION_COOKIE_NAME};

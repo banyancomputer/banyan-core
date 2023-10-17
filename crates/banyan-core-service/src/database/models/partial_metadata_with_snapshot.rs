@@ -1,8 +1,8 @@
 use time::OffsetDateTime;
 use uuid::Uuid;
 
-use crate::database::Database;
 use crate::database::models::MetadataState;
+use crate::database::Database;
 
 #[derive(sqlx::FromRow)]
 pub struct PartialMetadataWithSnapshot {
@@ -21,10 +21,7 @@ pub struct PartialMetadataWithSnapshot {
 }
 
 impl PartialMetadataWithSnapshot {
-    pub async fn all(
-        database: &Database,
-        account_id: String,
-    ) -> Result<Vec<Self>, sqlx::Error> {
+    pub async fn all(database: &Database, account_id: String) -> Result<Vec<Self>, sqlx::Error> {
         sqlx::query_as!(
             Self,
             r#"SELECT

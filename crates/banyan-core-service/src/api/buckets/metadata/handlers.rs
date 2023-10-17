@@ -1,33 +1,3 @@
-use axum::body::StreamBody;
-use axum::extract::{BodyStream, Path};
-use axum::headers::ContentType;
-use axum::http::StatusCode;
-use axum::response::IntoResponse;
-use axum::Json;
-use axum::TypedHeader;
-use http::{HeaderMap, HeaderValue};
-use object_store::ObjectStore;
-use tokio::io::AsyncWriteExt;
-use uuid::Uuid;
-
-use crate::api::buckets::metadata::{requests, responses};
-use crate::database::Database;
-use crate::db::models;
-use crate::error::CoreError;
-use crate::extractors::{ApiToken, DataStore, SigningKey};
-use crate::utils::db::{self, approve_bucket_key};
-use crate::utils::metadata_upload::{handle_metadata_upload, round_to_nearest_100_mib};
-use crate::utils::storage_ticket::generate_storage_ticket;
-
-/// The default quota we assume each storage host / staging service to provide
-const ACCOUNT_STORAGE_QUOTA: u64 = 5 * 1_024 * 1_024 * 1_024 * 1_024;
-
-/// Upper size limit on the JSON payload that precedes a metadata CAR file upload (128KiB)
-const REQUEST_DATA_SIZE_LIMIT: u64 = 128 * 1_024;
-
-/// Size limit of the pure metadata CAR file that is being uploaded (128MiB)
-const CAR_DATA_SIZE_LIMIT: u64 = 128 * 1_024 * 1_024;
-
 pub async fn push(
     api_token: ApiToken,
     database: Database,
@@ -37,45 +7,7 @@ pub async fn push(
     TypedHeader(content_type): TypedHeader<ContentType>,
     body: BodyStream,
 ) -> impl IntoResponse {
-    let account_id = api_token.subject;
-    let bucket_id = bucket_id.to_string();
-    let api_token_kid = api_token_kid.kid();
-
-    /* 1. Authorize access to the bucket and validate the request */
-    if let Err(err) = db::authorize_bucket(&account_id, &bucket_id, &database).await {
-        return CoreError::sqlx_error(err, "read", "bucket").into_response();
-    }
-
-    // TODO: Check if the uploaded version exists. If-Match matches existing version abort with 409
-
-    // Read the body from the request, checking for size limits
-    let mime_ct = mime::Mime::from(content_type);
-    let boundary = multer::parse_boundary(mime_ct).unwrap();
-    let constraints = multer::Constraints::new()
-        .allowed_fields(vec!["request-data", "car-upload"])
-        .size_limit(
-            multer::SizeLimit::new()
-                .for_field("request-data", REQUEST_DATA_SIZE_LIMIT)
-                .for_field("car-upload", CAR_DATA_SIZE_LIMIT),
-        );
-    let mut multipart = multer::Multipart::with_constraints(body, boundary, constraints);
-
-    // Process the request data
-    let request_data_field = multipart.next_field().await.unwrap().unwrap();
-    // TODO: validate name is request-data (request_data_field.name())
-    // TODO: validate type is application/json (request_data_field.content_type())
-    let request_data_bytes = request_data_field.bytes().await.unwrap();
-    let request_data: requests::PushMetadataRequest =
-        match serde_json::from_slice(&request_data_bytes) {
-            Ok(rdb) => rdb,
-            Err(err) => {
-                return (
-                    StatusCode::BAD_REQUEST,
-                    Json(serde_json::json!({"msg": format!("{err}")})),
-                )
-                    .into_response();
-            }
-        };
+    // ...
 
     /* 2. Now that the request is validated and the data extracted, approve any outstanding keys */
     for fingerprint in request_data.valid_keys {

@@ -171,7 +171,9 @@ pub enum ApiIdentityError {
     #[error("authorization token doesn't become valid until after it has already expired")]
     NeverValid,
 
-    #[error("header didn't include kid required to lookup the appropriate authentication mechanism")]
+    #[error(
+        "header didn't include kid required to lookup the appropriate authentication mechanism"
+    )]
     UnidentifiedKey,
 
     #[error("an unexpected error edge case occurred around an authentation token")]

@@ -115,7 +115,7 @@ pub async fn run(listen_addr: SocketAddr, state: AppState) {
         .fallback(not_found_handler);
 
     let app = middleware_stack.service(root_router);
-    
+
     tracing::info!(listen_addr = ?listen_addr, "service starting up");
 
     Server::bind(&listen_addr)

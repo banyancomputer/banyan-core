@@ -3,10 +3,10 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use uuid::Uuid;
 
+use crate::api::models::ApiBucketKey;
 use crate::app::AppState;
 use crate::database::models::BucketKey;
 use crate::extractors::ApiIdentity;
-use crate::api::models::ApiBucketKey;
 
 pub async fn handler(
     api_id: ApiIdentity,
@@ -31,7 +31,10 @@ pub async fn handler(
     // note: this also includes account_id which wasn't being returned before and may cause
     // compatibility issues
 
-    let buckets: Vec<_> = query_result.into_iter().map(|db| ApiBucketKey::from(db)).collect();
+    let buckets: Vec<_> = query_result
+        .into_iter()
+        .map(|db| ApiBucketKey::from(db))
+        .collect();
     Ok((StatusCode::OK, Json(buckets)).into_response())
 }
 
