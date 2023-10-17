@@ -4,12 +4,10 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use crate::db::models::CreatedResource;
 use crate::email::config::EmailConfig;
 use crate::email::error::EmailError;
 use crate::email::message::EmailMessage;
-
-use crate::db::models::CreatedResource;
-
 use crate::workers::CurrentTask;
 use crate::workers::TaskLike;
 
@@ -17,16 +15,18 @@ use crate::workers::TaskLike;
 pub struct EmailTask<M> {
     account_id: Uuid,
     message: M,
+    config: EmailConfig,
 }
 
 impl<M> EmailTask<M>
 where
     M: EmailMessage,
 {
-    pub fn new(account_id: Uuid, message: M) -> Self {
+    pub fn new(account_id: Uuid, message: M, config: EmailConfig) -> Self {
         Self {
             account_id,
             message,
+            config,
         }
     }
 }
@@ -42,9 +42,7 @@ where
     type Context = sqlx::SqlitePool;
 
     async fn run(&self, _task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
-        // Get the email and transport configuration
-        let config = EmailConfig::from_env()?;
-        let transport = config.transport()?;
+        let transport = self.config.transport()?;
 
         // Filter out innapropriate emails
         let mut connection = ctx.acquire().await?;
@@ -63,9 +61,9 @@ where
             LIMIT 1"#,
             account_id
         )
-        .fetch_one(&mut *connection)
+        .fetch_optional(&mut *connection)
         .await?;
-        if unsubscribed == 1 {
+        if unsubscribed == Some(1) {
             tracing::info!("the user has unsubscribed from emails");
             return Ok(());
         }
@@ -81,9 +79,9 @@ where
             LIMIT 3"#,
             account_id
         )
-        .fetch_one(&mut *connection)
+        .fetch_optional(&mut *connection)
         .await?;
-        if delivery_failures >= 3 {
+        if delivery_failures >= Some(3) {
             tracing::info!("the user has had too many delivery failures");
             return Ok(());
         }
@@ -99,10 +97,10 @@ where
             LIMIT 3"#,
             account_id
         )
-        .fetch_one(&mut *connection)
+        .fetch_optional(&mut *connection)
         .await?;
-        if spam_reports >= 3 {
-            tracing::info!("the user has had too many spam reports");
+        if spam_reports >= Some(3) {
+            tracing::info!("the user has marked too many emails as spam");
             return Ok(());
         }
 
@@ -134,10 +132,10 @@ where
         // Send the email -- capture errors to prevent the task from being retried
         let send_result = self.message.send(
             &transport,
-            config.from(),
+            self.config.from(),
             &recipient_address,
             message_id,
-            config.test_mode(),
+            self.config.test_mode(),
         );
         match send_result {
             Ok(_) => {}
@@ -159,4 +157,56 @@ pub enum EmailTaskError {
     EmailError(#[from] EmailError),
     #[error("the task encountered a sql error: {0}")]
     SqlxError(#[from] sqlx::Error),
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sqlx::SqlitePool;
+
+    const ACCOUNT_ID: &str = "00000000-0000-0000-0000-000000000000";
+    const USER_EMAIL: &str = "user@user.email";
+
+    async fn context() -> SqlitePool {
+        let pool = SqlitePool::connect("sqlite::memory:")
+            .await
+            .expect("db setup");
+        sqlx::migrate!("./migrations")
+            .run(&pool)
+            .await
+            .expect("db setup");
+        sqlx::query!(
+            r#"INSERT INTO users (id, email)
+            VALUES ($1, $2)"#,
+            ACCOUNT_ID,
+            USER_EMAIL
+        )
+        .execute(&pool)
+        .await
+        .expect("db setup");
+
+        sqlx::query!(
+            r#"INSERT INTO accounts (id, userId, type, provider, providerAccountId)
+            VALUES ($1, $1, 'email', 'email', $2)"#,
+            ACCOUNT_ID,
+            USER_EMAIL
+        )
+        .execute(&pool)
+        .await
+        .expect("db setup");
+
+        pool
+    }
+
+    #[tokio::test]
+    async fn email_task() -> Result<(), EmailTaskError> {
+        let ctx = context().await;
+        let task = EmailTask::new(
+            Uuid::parse_str(ACCOUNT_ID).unwrap(),
+            crate::email::message::GaRelease {},
+            EmailConfig::new(None, "test@test.test", false).unwrap(),
+        );
+        task.run(CurrentTask::default(), ctx).await?;
+        Ok(())
+    }
 }

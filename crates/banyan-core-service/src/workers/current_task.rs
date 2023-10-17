@@ -11,6 +11,17 @@ pub struct CurrentTask {
     started_at: NaiveDateTime,
 }
 
+impl Default for CurrentTask {
+    fn default() -> Self {
+        Self {
+            id: uuid::Uuid::new_v4().to_string(),
+            current_attempt: 0,
+            scheduled_at: NaiveDateTime::from_timestamp_opt(0, 0).unwrap(),
+            started_at: NaiveDateTime::from_timestamp_opt(0, 0).unwrap(),
+        }
+    }
+}
+
 impl CurrentTask {
     pub fn current_attempt(&self) -> i64 {
         self.current_attempt

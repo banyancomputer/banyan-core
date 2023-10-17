@@ -1,11 +1,13 @@
 use std::env;
 
 use lettre::transport::smtp::authentication::Credentials;
+use serde::{Deserialize, Serialize};
 use url::Url;
 
 use super::error::EmailError;
 use super::transport::EmailTransport;
 
+#[derive(Serialize, Deserialize)]
 pub struct EmailConfig {
     smtp_connection: Option<SmtpConnection>,
     from: String,
@@ -69,10 +71,12 @@ impl EmailConfig {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct SmtpConnection {
     host: String,
     port: u16,
-    creds: Credentials,
+    username: String,
+    password: String,
 }
 
 impl SmtpConnection {
@@ -96,7 +100,8 @@ impl SmtpConnection {
 
         let password = url
             .password()
-            .ok_or_else(|| EmailError::invalid_smtp_url("SMTP URL must contain a password"))?;
+            .ok_or_else(|| EmailError::invalid_smtp_url("SMTP URL must contain a password"))?
+            .to_string();
         let host = url
             .host()
             .ok_or_else(|| EmailError::invalid_smtp_url("SMTP URL must contain a host"))?
@@ -107,7 +112,8 @@ impl SmtpConnection {
         Ok(Self {
             host,
             port,
-            creds: Credentials::new(username.to_string(), password.to_string()),
+            username,
+            password,
         })
     }
 
@@ -119,8 +125,8 @@ impl SmtpConnection {
         self.port
     }
 
-    pub fn creds(&self) -> &Credentials {
-        &self.creds
+    pub fn creds(&self) -> Credentials {
+        Credentials::new(self.username.clone(), self.password.clone())
     }
 }
 
