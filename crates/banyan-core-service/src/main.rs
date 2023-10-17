@@ -17,17 +17,17 @@ mod utils;
 
 use app::{AppState, Config};
 
-#[derive(Debug, thiserror::Error)]
-pub enum AppError {
-    #[error("failed to build service config: {0}")]
-    ConfigError(#[from] app::ConfigError),
-}
-
 #[tokio::main]
-async fn main() -> Result<(), AppError> {
-    let config = Config::from_env_and_args().map_err(AppError::ConfigError)?;
+async fn main() {
+    let config = match Config::from_env_and_args() {
+        Ok(c) => c,
+        Err(err) => {
+            println!("failed load a valid config: {err}");
+            std::process::exit(1);
+        }
+    };
 
-    let (non_blocking_writer, _guard) = tracing_appender::non_blocking(std::io::stderr());
+    let (non_blocking_writer, _guard) = tracing_appender::non_blocking(std::io::stdout());
     let env_filter = EnvFilter::builder()
         .with_default_directive(Level::INFO.into())
         .from_env_lossy();
@@ -42,6 +42,4 @@ async fn main() -> Result<(), AppError> {
     let state = AppState::from_config(&config).await.unwrap();
 
     http_server::run(config.listen_addr(), state).await;
-
-    Ok(())
 }

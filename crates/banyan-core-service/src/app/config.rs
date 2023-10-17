@@ -27,7 +27,11 @@ impl Config {
     }
 
     pub fn from_env_and_args() -> Result<Self, ConfigError> {
-        dotenvy::dotenv().map_err(ConfigError::EnvironmentUnavailable)?;
+        if dotenvy::dotenv().is_err() {
+            #[cfg(debug_assertions)]
+            tracing::warn!("no dot-environment file detected");
+        }
+
         let mut cli_args = Arguments::from_env();
 
         if cli_args.contains("-h") || cli_args.contains("--help") {
@@ -132,9 +136,6 @@ impl Config {
 pub enum ConfigError {
     #[error("failed to read argument from CLI: {0}")]
     ArgumentReadError(#[from] pico_args::Error),
-
-    #[error("unable to read environment details: {0}")]
-    EnvironmentUnavailable(dotenvy::Error),
 
     #[error("invalid database URL: {0}")]
     InvalidDatabaseUrl(url::ParseError),
