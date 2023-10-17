@@ -1,16 +1,16 @@
-use axum::extract::{Json, Path, State};
+use axum::extract::{Json, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use jwt_simple::prelude::*;
 use serde::Deserialize;
 
 use crate::app::AppState;
-use crate::extractors::ApiToken;
+use crate::extractors::ApiIdentity;
 use crate::utils::keys::sha1_fingerprint_publickey;
 
 /// Register a new device api key with an account
 pub async fn handler(
-    api_token: ApiToken,
+    api_id: ApiIdentity,
     State(state): State<AppState>,
     Json(request): Json<CreateDeviceApiKeyRequest>,
 ) -> Result<Response, CreateDeviceApiKeyError> {
@@ -24,7 +24,7 @@ pub async fn handler(
         r#"INSERT INTO device_api_keys (account_id, fingerprint, pem)
             VALUES ($1, $2, $3)
             RETURNING id;"#,
-        api_token.subject,
+        api_id.account_id,
         fingerprint,
         request.pem,
     )

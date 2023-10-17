@@ -4,14 +4,13 @@ use axum::response::{IntoResponse, Response};
 use uuid::Uuid;
 
 use crate::app::AppState;
-use crate::extractors::ApiToken;
+use crate::extractors::ApiIdentity;
 
 pub async fn handler(
-    api_token: ApiToken,
+    api_id: ApiIdentity,
     State(state): State<AppState>,
     Path(bucket_id): Path<Uuid>,
 ) -> Response {
-    let account_id = api_token.subject();
     let bucket_id = bucket_id.to_string();
 
     let database = state.database();
@@ -21,7 +20,7 @@ pub async fn handler(
                FROM metadata m
                JOIN buckets b ON m.bucket_id = b.id
                WHERE b.account_id = $1 AND b.id = $2;"#,
-        account_id,
+        api_id.account_id,
         bucket_id,
     )
     .fetch_one(&database)

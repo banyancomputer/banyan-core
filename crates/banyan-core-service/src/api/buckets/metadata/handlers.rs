@@ -14,7 +14,7 @@ use crate::api::buckets::metadata::{requests, responses};
 use crate::database::Database;
 use crate::db::models;
 use crate::error::CoreError;
-use crate::extractors::{ApiToken, ApiTokenKid, DataStore, SigningKey};
+use crate::extractors::{ApiToken, DataStore, SigningKey};
 use crate::utils::db::{self, approve_bucket_key};
 use crate::utils::metadata_upload::{handle_metadata_upload, round_to_nearest_100_mib};
 use crate::utils::storage_ticket::generate_storage_ticket;
@@ -30,7 +30,6 @@ const CAR_DATA_SIZE_LIMIT: u64 = 128 * 1_024 * 1_024;
 
 pub async fn push(
     api_token: ApiToken,
-    api_token_kid: ApiTokenKid,
     database: Database,
     store: DataStore,
     signing_key: SigningKey,

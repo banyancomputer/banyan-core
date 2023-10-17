@@ -5,19 +5,17 @@ use uuid::Uuid;
 
 use crate::app::AppState;
 use crate::database::models::PartialMetadataWithSnapshot;
-use crate::extractors::ApiToken;
+use crate::extractors::ApiIdentity;
 use crate::api::models::ApiMetadata;
 
 pub async fn handler(
-    api_token: ApiToken,
+    api_id: ApiIdentity,
     State(state): State<AppState>,
     Path(bucket_id): Path<Uuid>,
 ) -> Response {
-    let database = state.database();
-
     let query_result = PartialMetadataWithSnapshot::locate_current(
         &state.database(),
-        api_token.subject(),
+        api_id.account_id,
         bucket_id,
     ).await;
 

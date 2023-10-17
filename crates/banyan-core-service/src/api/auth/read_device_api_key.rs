@@ -5,10 +5,10 @@ use serde::Serialize;
 use uuid::Uuid;
 
 use crate::app::AppState;
-use crate::extractors::ApiToken;
+use crate::extractors::ApiIdentity;
 
 pub async fn handler(
-    api_token: ApiToken,
+    api_id: ApiIdentity,
     State(state): State<AppState>,
     Path(key_id): Path<Uuid>,
 ) -> Response {
@@ -21,7 +21,7 @@ pub async fn handler(
                FROM device_api_keys
                WHERE id = $1 AND account_id = $2;"#,
         key_id,
-        api_token.subject,
+        api_id.account_id,
     )
     .fetch_one(&database)
     .await;

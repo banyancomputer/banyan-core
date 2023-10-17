@@ -1,20 +1,19 @@
 use axum::extract::{Json, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use serde::Serialize;
 
 use crate::app::AppState;
 use crate::database::models::Bucket;
-use crate::extractors::ApiToken;
+use crate::extractors::ApiIdentity;
 use crate::api::models::ApiBucket;
 
-pub async fn handler(api_token: ApiToken, State(state): State<AppState>) -> Response {
+pub async fn handler(api_id: ApiIdentity, State(state): State<AppState>) -> Response {
     let database = state.database();
 
     let query_result = sqlx::query_as!(
         Bucket,
         "SELECT * FROM buckets WHERE account_id = $1;",
-        api_token.subject,
+        api_id.account_id,
     )
     .fetch_all(&database)
     .await;

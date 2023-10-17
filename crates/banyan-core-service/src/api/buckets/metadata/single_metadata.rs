@@ -6,16 +6,16 @@ use uuid::Uuid;
 use crate::api::models::ApiMetadata;
 use crate::app::AppState;
 use crate::database::models::PartialMetadataWithSnapshot;
-use crate::extractors::ApiToken;
+use crate::extractors::ApiIdentity;
 
 pub async fn handler(
-    api_token: ApiToken,
+    api_id: ApiIdentity,
     State(state): State<AppState>,
     Path((bucket_id, metadata_id)): Path<(Uuid, Uuid)>,
 ) -> Response {
     let query_result = PartialMetadataWithSnapshot::locate_specific(
         &state.database(),
-        api_token.subject(),
+        api_id.account_id,
         bucket_id,
         metadata_id,
     ).await;

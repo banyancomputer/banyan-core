@@ -1,21 +1,19 @@
-use axum::extract::{Json, Path, State};
+use axum::extract::{Json, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
 use crate::app::AppState;
 use crate::database::models::PartialMetadataWithSnapshot;
-use crate::extractors::ApiToken;
+use crate::extractors::ApiIdentity;
 use crate::api::models::ApiMetadata;
 
 pub async fn handler(
-    api_token: ApiToken,
+    api_id: ApiIdentity,
     State(state): State<AppState>,
 ) -> Response {
-    let database = state.database();
-
     let query_result = PartialMetadataWithSnapshot::all(
         &state.database(),
-        api_token.subject(),
+        api_id.account_id,
     ).await;
 
     match query_result {

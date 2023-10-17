@@ -1,4 +1,4 @@
-use axum::extract::{Json, Path, State};
+use axum::extract::{Json, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use jwt_simple::prelude::*;
@@ -7,11 +7,11 @@ use validify::{Validate, Validify};
 
 use crate::app::AppState;
 use crate::database::models::{Bucket, BucketKey, BucketType, StorageClass};
-use crate::extractors::ApiToken;
+use crate::extractors::ApiIdentity;
 use crate::utils::keys::sha1_fingerprint_publickey;
 
 pub async fn handler(
-    api_token: ApiToken,
+    api_id: ApiIdentity,
     State(state): State<AppState>,
     Json(request): Json<CreateBucketRequest>,
 ) -> Result<Response, CreateBucketError> {
@@ -28,7 +28,7 @@ pub async fn handler(
         r#"INSERT INTO buckets (account_id, name, type, storage_class)
                VALUES ($1, $2, $3, $4)
                RETURNING id;"#,
-        api_token.subject,
+        api_id.account_id,
         request.name,
         request.bucket_type,
         request.storage_class,

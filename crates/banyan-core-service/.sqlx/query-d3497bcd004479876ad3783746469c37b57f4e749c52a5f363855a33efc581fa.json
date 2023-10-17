@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT dak.id, dak.account_id, a.userId as user_id, dak.pem\n                   FROM device_api_keys AS dak\n                   JOIN accounts AS a ON dak.account_id = a.id\n                   WHERE fingerprint = $1;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "account_id",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "user_id",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "pem",
+        "ordinal": 3,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "d3497bcd004479876ad3783746469c37b57f4e749c52a5f363855a33efc581fa"
+}

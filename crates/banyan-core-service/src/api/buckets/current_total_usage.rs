@@ -4,10 +4,9 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
 use crate::app::AppState;
-use crate::extractors::ApiToken;
+use crate::extractors::ApiIdentity;
 
-pub async fn handler(api_token: ApiToken, State(state): State<AppState>) -> Response {
-    let account_id = api_token.subject();
+pub async fn handler(api_id: ApiIdentity, State(state): State<AppState>) -> Response {
     let database = state.database();
 
     // we need to include outdated currently as they include blocks referenced by the current
@@ -23,7 +22,7 @@ pub async fn handler(api_token: ApiToken, State(state): State<AppState>) -> Resp
         WHERE
             b.account_id = $1 AND m.state IN ('current', 'outdated', 'pending');"#
     )
-    .bind(account_id)
+    .bind(api_id.account_id)
     .fetch_one(&database)
     .await;
 

@@ -4,14 +4,13 @@ use axum::response::{IntoResponse, Response};
 use uuid::Uuid;
 
 use crate::app::AppState;
-use crate::extractors::ApiToken;
+use crate::extractors::ApiIdentity;
 
 pub async fn handler(
-    api_token: ApiToken,
+    api_id: ApiIdentity,
     State(state): State<AppState>,
     Path((bucket_id, metadata_id)): Path<(Uuid, Uuid)>,
 ) -> Response {
-    let account_id = api_token.subject();
     let bucket_id = bucket_id.to_string();
     let metadata_id = metadata_id.to_string();
 
@@ -24,7 +23,7 @@ pub async fn handler(
                    WHERE bucket_id IN
                        (SELECT id FROM buckets WHERE account_id = $1 AND id = $2)
                        AND id = $3;"#,
-            account_id,
+            api_id.account_id,
             bucket_id,
             metadata_id,
         )

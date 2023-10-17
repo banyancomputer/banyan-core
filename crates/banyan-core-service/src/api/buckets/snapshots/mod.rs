@@ -1,4 +1,4 @@
-use axum::routing::{get, put};
+use axum::routing::get;
 use axum::Router;
 
 mod all_snapshots;

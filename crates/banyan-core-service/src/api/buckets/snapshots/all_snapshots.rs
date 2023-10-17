@@ -1,16 +1,15 @@
 use axum::extract::{Json, Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use serde::Serialize;
 use uuid::Uuid;
 
 use crate::app::AppState;
 use crate::database::models::Snapshot;
-use crate::extractors::ApiToken;
+use crate::extractors::ApiIdentity;
 use crate::api::models::ApiSnapshot;
 
 pub async fn handler(
-    api_token: ApiToken,
+    api_id: ApiIdentity,
     State(state): State<AppState>,
     Path(bucket_id): Path<Uuid>,
 ) -> Result<Response, AllSnapshotsError> {
@@ -23,7 +22,7 @@ pub async fn handler(
              JOIN metadata AS m ON s.metadata_id = m.id
              JOIN buckets AS b ON m.bucket_id = b.id
              WHERE b.account_id = $1 AND m.bucket_id = $2;",
-        api_token.subject,
+        api_id.account_id,
         bucket_id,
     )
     .fetch_all(&database)

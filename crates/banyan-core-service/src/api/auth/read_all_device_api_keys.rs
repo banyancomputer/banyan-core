@@ -1,18 +1,18 @@
-use axum::extract::{Json, Path, State};
+use axum::extract::{Json, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use serde::Serialize;
 
 use crate::app::AppState;
-use crate::extractors::ApiToken;
+use crate::extractors::ApiIdentity;
 
-pub async fn handler(api_token: ApiToken, State(state): State<AppState>) -> Response {
+pub async fn handler(api_id: ApiIdentity, State(state): State<AppState>) -> Response {
     let database = state.database();
 
     let query_result = sqlx::query_as!(
         DeviceApiKey,
         r#"SELECT id, fingerprint, pem FROM device_api_keys WHERE account_id = $1;"#,
-        api_token.subject,
+        api_id.account_id,
     )
     .fetch_all(&database)
     .await;

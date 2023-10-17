@@ -1,7 +1,5 @@
-use axum::http::StatusCode;
-use axum::response::IntoResponse;
-use axum::{Json, Router};
-use serde::Serialize;
+use axum::Router;
+use tower_http::cors::CorsLayer;
 
 mod auth;
 mod buckets;
@@ -15,7 +13,7 @@ pub fn router(state: AppState) -> Router<AppState> {
     // even better something that inspected the route matches and applied the correct method config
     // for that path...
     // TODO: Find the right cors config for this
-    let cors_layer = tower_http::cors::CorsLayer::very_permissive();
+    let cors_layer = CorsLayer::very_permissive();
 
     Router::new()
         .nest("/auth", auth::router(state.clone()))
