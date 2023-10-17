@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE bucket_keys SET approved = 'true' WHERE bucket_id = $1 AND fingerprint = $2;",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "e27c10ce4ea1612bac2c75c9450e2e0cdcf7dad367e10807043e1772732d3c03"
+}

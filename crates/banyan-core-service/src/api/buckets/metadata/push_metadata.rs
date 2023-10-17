@@ -7,6 +7,7 @@ use axum::Json;
 use axum::TypedHeader;
 use http::{HeaderMap, HeaderValue};
 use object_store::ObjectStore;
+use serde::Deserialize;
 use tokio::io::AsyncWriteExt;
 use uuid::Uuid;
 
@@ -79,16 +80,32 @@ pub async fn handler(
         .await
         .map_err(PushMetadataError::RequestDataUnavailable)?;
 
-    //let request_data: requests::PushMetadataRequest = match serde_json::from_slice(&request_data_bytes) {
-    //    Ok(rdb) => rdb,
-    //    Err(err) => {
-    //        return (
-    //            StatusCode::BAD_REQUEST,
-    //            Json(serde_json::json!({"msg": format!("{err}")})),
-    //            )
-    //            .into_response();
-    //    }
-    //};
+    let request_data: PushMetadataRequest = serde_json::from_slice(&request_data_bytes)
+        .map_err(PushMetadataError::InvalidRequestData)?;
+
+    for device_key_fingerprint in request_data.included_key_fingerprints.iter() {
+        let query_res = sqlx::query!(
+            "UPDATE bucket_keys SET approved = 'true' WHERE bucket_id = $1 AND fingerprint = $2;",
+            authorized_bucket_id,
+            device_key_fingerprint,
+        )
+        .execute(&database)
+        .await
+        .map_err(PushMetadataError::KeyApprovalFailed)?;
+    }
+
+    let new_metadata_id = sqlx::query_scalar!(
+        r#"INSERT INTO metadata (bucket_id, root_cid, metadata_cid, expected_data_size, state)
+               VALUES ($1, $2, $3, $4, 'uploading')
+               RETURNING id;"#,
+        authorized_bucket_id,
+        request_data.root_cid,
+        request_data.metadata_cid,
+        request_data.expected_data_size,
+    )
+    .fetch_one(&database)
+    .await
+    .map_err(PushMetadataError::MetadataRegistrationFailed)?;
 
     todo!()
 }
@@ -100,6 +117,12 @@ pub enum PushMetadataError {
 
     #[error("unable to pull next multipart field: {0}")]
     BrokenMultipartField(multer::Error),
+
+    #[error("failed to mark bucket key as approved: {0}")]
+    KeyApprovalFailed(sqlx::Error),
+
+    #[error("failed to create entry for metadata in the database: {0}")]
+    MetadataRegistrationFailed(sqlx::Error),
 
     #[error("unable to parse valid boundary: {0}")]
     InvalidBoundary(multer::Error),
@@ -122,6 +145,7 @@ impl IntoResponse for PushMetadataError {
         match &self {
             PushMetadataError::BrokenMultipartField(_)
             | PushMetadataError::InvalidBoundary(_)
+            | PushMetadataError::InvalidRequestData(_)
             | PushMetadataError::MissingRequestData => {
                 let err_msg = serde_json::json!({"msg": "invalid request"});
                 (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
@@ -137,4 +161,15 @@ impl IntoResponse for PushMetadataError {
             }
         }
     }
+}
+
+#[derive(Deserialize)]
+pub struct PushMetadataRequest {
+    pub root_cid: String,
+    pub metadata_cid: String,
+
+    pub expected_data_size: i64,
+
+    #[serde(rename = "valid_keys")]
+    pub included_key_fingerprints: Vec<String>,
 }

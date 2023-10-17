@@ -9,41 +9,10 @@ pub async fn push(
 ) -> impl IntoResponse {
     // ...
 
-    /* 2. Now that the request is validated and the data extracted, approve any outstanding keys */
-    for fingerprint in request_data.valid_keys {
-        // Return if we fail to approve any of them
-        if let Err(err) = approve_bucket_key(&bucket_id, &fingerprint, &database).await {
-            return CoreError::sqlx_error(err, "approve", "bucket key").into_response();
-        }
-    }
-
-    /* 2. Create a tentative row for the new metadata. We need to do this in order to get a created resource */
-
-    let expected_data_size = request_data.expected_data_size as i64;
-    let maybe_metadata_resource = sqlx::query_as!(
-        models::CreatedResource,
-        r#"INSERT INTO metadata (bucket_id, root_cid, metadata_cid, expected_data_size, state)
-        VALUES ($1, $2, $3, $4, $5)
-        RETURNING id;"#,
-        bucket_id,
-        request_data.root_cid,
-        request_data.metadata_cid,
-        expected_data_size,
-        models::MetadataState::Uploading
-    )
-    .fetch_one(&database)
-    .await;
-
-    let metadata_resource = match maybe_metadata_resource {
-        Ok(metadata) => metadata,
-        Err(err) => {
-            return CoreError::sqlx_error(err, "create", "metadata").into_response();
-        }
-    };
-
     /* 3. Process the upload */
 
     let car_stream = multipart.next_field().await.unwrap().unwrap();
+
     // TODO: validate name is car-upload (request_data_field.name())
     // TODO: validate type is "application/vnd.ipld.car; version=2" (request_data_field.content_type())
     let file_name = format!(
@@ -51,6 +20,7 @@ pub async fn push(
         bucket_id = bucket_id,
         metadata_id = metadata_resource.id
     );
+
     let file_path = object_store::path::Path::from(file_name.as_str());
     // Open the file for writing
     let (upload_id, mut writer) = match store.put_multipart(&file_path).await {
@@ -78,6 +48,7 @@ pub async fn push(
             .into_response();
         }
     };
+
     // Try and upload the file
     let (metadata_hash, metadata_size) = match handle_metadata_upload(car_stream, &mut writer).await
     {
