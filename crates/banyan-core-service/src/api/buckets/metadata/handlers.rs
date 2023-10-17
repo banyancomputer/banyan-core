@@ -9,56 +9,6 @@ pub async fn push(
 ) -> impl IntoResponse {
     // ...
 
-    /* 4. Now that we know the size of metadata, Check if the upload exceeds the user's storage quota. If so, abort with 413 */
-
-    // Read how metadata and data the use has in the current and pending states across all buckets
-    let current_usage = match db::read_total_usage(&account_id, &database).await {
-        Ok(usage) => usage,
-        Err(err) => {
-            return CoreError::default_error(&format!(
-                "unable to read account storage usage: {err}"
-            ))
-            .into_response();
-        }
-    };
-
-    // Based on how much stuff there planning on pushing, reject the upload if it would exceed the quota
-    // Expected usage is their current usage plus the size of the metadata they're uploading plus the size of the data they want to upload to a host
-    let expected_data_size = request_data.expected_data_size as u64;
-    let expected_usage = current_usage + metadata_size + expected_data_size;
-
-    if expected_usage > ACCOUNT_STORAGE_QUOTA {
-        // Mark the upload as failed
-        let maybe_failed_metadata_upload = sqlx::query!(
-            r#"UPDATE metadata SET state = $1 WHERE id = $2;"#,
-            models::MetadataState::UploadFailed,
-            metadata_resource.id
-        )
-        .execute(&database)
-        .await;
-        match maybe_failed_metadata_upload {
-            Ok(_) => {}
-            Err(err) => {
-                return CoreError::default_error(&format!(
-                    "unable to mark metadata upload as failed: {}",
-                    err
-                ))
-                .into_response();
-            }
-        };
-        // Return the correct response based on the result of the update
-        return (
-            StatusCode::PAYLOAD_TOO_LARGE,
-            format!(
-                "account storage quota exceeded: {current_usage} + {request_size} > {ACCOUNT_STORAGE_QUOTA}",
-                current_usage = current_usage,
-                request_size = expected_data_size + metadata_size,
-                ACCOUNT_STORAGE_QUOTA = ACCOUNT_STORAGE_QUOTA
-            ),
-        )
-            .into_response();
-    }
-
     /* 5. Ah yes! They can indeed store this data. Mark the upload as complete and put it in the appropriate state */
 
     // Check that the user is actually asking for more data in this request.

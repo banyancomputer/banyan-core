@@ -20,7 +20,7 @@ use crate::utils::car_buffer::CarBuffer;
 //use crate::utils::storage_ticket::generate_storage_ticket;
 
 /// The default quota we assume each storage host / staging service to provide
-const ACCOUNT_STORAGE_QUOTA: u64 = 5 * 1_024 * 1_024 * 1_024 * 1_024;
+const ACCOUNT_STORAGE_QUOTA: i64 = 5 * 1_024 * 1_024 * 1_024 * 1_024;
 
 /// Upper size limit on the JSON payload that precedes a metadata CAR file upload (128KiB)
 const REQUEST_DATA_SIZE_LIMIT: u64 = 128 * 1_024;
@@ -108,7 +108,20 @@ pub async fn handler(
         .await
         .map_err(PushMetadataError::DataMetaStoreFailed)?;
 
-    //let currently_consumed_storage
+    let currently_consumed_storage = currently_consumed_storage(&database, &api_id.account_id)
+        .await
+        .map_err(PushMetadataError::UnableToCheckAccounting)?;
+    let expected_total_storage = currently_consumed_storage as i64 + request_data.expected_data_size;
+
+    if expected_total_storage > ACCOUNT_STORAGE_QUOTA {
+        tracing::warn!(account_id = ?api_id.account_id, ?expected_total_storage, "account reached storage limit");
+        let fail_res = fail_upload(&database, &new_metadata_id).await;
+        return Err(PushMetadataError::LimitReached(fail_res.err()));
+    }
+
+    if request_data.expected_data_size == 0 {
+        // todo: mark the metadata as current
+    }
 
     todo!()
 }
@@ -303,6 +316,9 @@ pub enum PushMetadataError {
     #[error("provided request data couldn't be decoded: {0}")]
     InvalidRequestData(serde_json::Error),
 
+    #[error("account reached upload quota and recording the failure may have failed: {0:?}")]
+    LimitReached(Option<sqlx::Error>),
+
     #[error("request did not contain required data segment")]
     MissingRequestData,
 
@@ -314,6 +330,9 @@ pub enum PushMetadataError {
 
     #[error("unable to retrieve request data: {0}")]
     RequestDataUnavailable(multer::Error),
+
+    #[error("unable to determine if user is within their quota: {0}")]
+    UnableToCheckAccounting(sqlx::Error),
 
     #[error("failed to store metadata on disk: {0}, marking as failed might have had an error as well: {1:?}")]
     UploadStoreFailed(StoreMetadataError, Option<sqlx::Error>),
@@ -328,6 +347,10 @@ impl IntoResponse for PushMetadataError {
             | PushMetadataError::MissingRequestData => {
                 let err_msg = serde_json::json!({"msg": "invalid request"});
                 (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
+            }
+            PushMetadataError::LimitReached(_) => {
+                let err_msg = serde_json::json!({"msg": "you have hit your account storage limit"});
+                (StatusCode::PAYLOAD_TOO_LARGE, Json(err_msg)).into_response()
             }
             PushMetadataError::NoAuthorizedBucket => {
                 let err_msg = serde_json::json!({"msg": "not found"});
