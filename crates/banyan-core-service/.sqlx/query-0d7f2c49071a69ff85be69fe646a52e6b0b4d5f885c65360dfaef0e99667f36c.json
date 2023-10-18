@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT\n                COUNT(*) AS failures\n            FROM emails e\n            WHERE e.account_id = $1\n                AND e.state = 'failed'\n            ORDER BY e.sent_at DESC\n            LIMIT 3",
+  "describe": {
+    "columns": [
+      {
+        "name": "failures",
+        "ordinal": 0,
+        "type_info": "Int"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "0d7f2c49071a69ff85be69fe646a52e6b0b4d5f885c65360dfaef0e99667f36c"
+}

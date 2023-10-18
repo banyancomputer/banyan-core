@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT\n                COUNT(*) AS sent\n            FROM emails e\n            WHERE e.account_id = $1\n                AND e.state = 'sent'",
+  "describe": {
+    "columns": [
+      {
+        "name": "sent",
+        "ordinal": 0,
+        "type_info": "Int"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "2ee2e363749101885b57857156fac7940c0949d06de378efc9b072297f9f51f4"
+}

@@ -71,10 +71,10 @@ where
         // If the last three emails we sent to a user resulted in a delivery failure we should not send the message
         let delivery_failures = sqlx::query_scalar!(
             r#"SELECT
-                COUNT(*) AS delivery_failures
+                COUNT(*) AS failures
             FROM emails e
             WHERE e.account_id = $1
-                AND e.state = 'delivery_failure'
+                AND e.state = 'failed'
             ORDER BY e.sent_at DESC
             LIMIT 3"#,
             account_id
@@ -89,10 +89,10 @@ where
         // If we have sent 3 or more email to the user which have been marked as spam we should not send the message
         let spam_reports = sqlx::query_scalar!(
             r#"SELECT
-                COUNT(*) AS spam_reports
+                COUNT(*) AS complaints
             FROM emails e
             WHERE e.account_id = $1
-                AND e.state = 'spam'
+                AND e.state = 'complained'
             ORDER BY e.sent_at DESC
             LIMIT 3"#,
             account_id
@@ -167,6 +167,157 @@ mod tests {
     const ACCOUNT_ID: &str = "00000000-0000-0000-0000-000000000000";
     const USER_EMAIL: &str = "user@user.email";
 
+    async fn email_task(ctx: SqlitePool) -> Result<(), EmailTaskError> {
+        let task = EmailTask::new(
+            Uuid::parse_str(ACCOUNT_ID).unwrap(),
+            crate::email::message::GaRelease {},
+            EmailConfig::new(None, "test@test.test", false).unwrap(),
+        );
+        task.run(CurrentTask::default(), ctx).await?;
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn success() -> Result<(), EmailTaskError> {
+        let mut ctx = context().await;
+        email_task(ctx.clone()).await?;
+        let email_count = sent_emails(&mut ctx).await;
+        assert_eq!(email_count, 1);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn unsubscribed() -> Result<(), EmailTaskError> {
+        let mut ctx = unsubscribed_context().await;
+        email_task(ctx.clone()).await?;
+        let email_count = sent_emails(&mut ctx).await;
+        assert_eq!(email_count, 0);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn failure() -> Result<(), EmailTaskError> {
+        let mut ctx = failure_context().await;
+        email_task(ctx.clone()).await?;
+        let email_count = sent_emails(&mut ctx).await;
+        assert_eq!(email_count, 0);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn complaint() -> Result<(), EmailTaskError> {
+        let mut ctx = complaint_context().await;
+        email_task(ctx.clone()).await?;
+        let email_count = sent_emails(&mut ctx).await;
+        assert_eq!(email_count, 0);
+        Ok(())
+    }
+
+    async fn unsubscribed_context() -> SqlitePool {
+        let pool = context().await;
+        let message_id = Uuid::new_v4().to_string();
+        sqlx::query!(
+            r#"INSERT INTO emails (id, account_id, state, type)
+            VALUES ($1, $2, 'unsubscribed', 'na')"#,
+            message_id,
+            ACCOUNT_ID
+        )
+        .execute(&pool)
+        .await
+        .expect("db setup");
+        pool
+    }
+
+    async fn failure_context() -> SqlitePool {
+        let pool = context().await;
+
+        let message_id = Uuid::new_v4().to_string();
+        sqlx::query!(
+            r#"INSERT INTO emails (id, account_id, state, type)
+            VALUES ($1, $2, 'failed', 'na')"#,
+            message_id,
+            ACCOUNT_ID
+        )
+        .execute(&pool)
+        .await
+        .expect("db setup");
+    let message_id = Uuid::new_v4().to_string();
+        sqlx::query!(
+            r#"INSERT INTO emails (id, account_id, state, type)
+            VALUES ($1, $2, 'failed', 'na')"#,
+            message_id,
+            ACCOUNT_ID
+        )
+        .execute(&pool)
+        .await
+        .expect("db setup");
+    let message_id = Uuid::new_v4().to_string();
+        sqlx::query!(
+            r#"INSERT INTO emails (id, account_id, state, type)
+            VALUES ($1, $2, 'failed', 'na')"#,
+            message_id,
+            ACCOUNT_ID
+        )
+        .execute(&pool)
+        .await
+        .expect("db setup");
+
+        pool
+    }
+
+    async fn complaint_context() -> SqlitePool {
+        let pool = context().await;
+
+        let message_id = Uuid::new_v4().to_string();
+        sqlx::query!(
+            r#"INSERT INTO emails (id, account_id, state, type)
+            VALUES ($1, $2, 'complained', 'na')"#,
+            message_id,
+            ACCOUNT_ID
+        )
+        .execute(&pool)
+        .await
+        .expect("db setup");
+
+        let message_id = Uuid::new_v4().to_string();
+        sqlx::query!(
+            r#"INSERT INTO emails (id, account_id, state, type)
+            VALUES ($1, $2, 'complained', 'na')"#,
+            message_id,
+            ACCOUNT_ID
+        )
+        .execute(&pool)
+        .await
+        .expect("db setup");
+
+        let message_id = Uuid::new_v4().to_string();
+        sqlx::query!(
+            r#"INSERT INTO emails (id, account_id, state, type)
+            VALUES ($1, $2, 'complained', 'na')"#,
+            message_id,
+            ACCOUNT_ID
+        )
+        .execute(&pool)
+        .await
+        .expect("db setup");
+
+        pool
+    }
+
+    async fn sent_emails(pool: &mut SqlitePool) -> i32 {
+        sqlx::query_scalar!(
+            r#"SELECT
+                COUNT(*) AS sent
+            FROM emails e
+            WHERE e.account_id = $1
+                AND e.state = 'sent'"#,
+            ACCOUNT_ID
+        )
+        .fetch_one(& *pool)
+        .await
+        .expect("db setup")
+    }
+ 
     async fn context() -> SqlitePool {
         let pool = SqlitePool::connect("sqlite::memory:")
             .await
@@ -198,15 +349,5 @@ mod tests {
         pool
     }
 
-    #[tokio::test]
-    async fn email_task() -> Result<(), EmailTaskError> {
-        let ctx = context().await;
-        let task = EmailTask::new(
-            Uuid::parse_str(ACCOUNT_ID).unwrap(),
-            crate::email::message::GaRelease {},
-            EmailConfig::new(None, "test@test.test", false).unwrap(),
-        );
-        task.run(CurrentTask::default(), ctx).await?;
-        Ok(())
-    }
+    
 }
