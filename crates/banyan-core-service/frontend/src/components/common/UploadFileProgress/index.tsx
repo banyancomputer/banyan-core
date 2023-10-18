@@ -12,8 +12,8 @@ export const UploadFileProgress = () => {
     const { files } = useFilesUpload()
 
     return (
-        <div>
-            <div className='flex justify-between items-center px-3 py-2 bg-gray-600 text-white font-normal text-xs'>
+        <div className='w-80'>
+            <div className='flex justify-between items-center px-3 py-2 bg-button-primary text-white font-normal text-xs'>
                 <p>{`${messages.uploading}`}</p>
             </div>
             <div className='flex flex-col'>

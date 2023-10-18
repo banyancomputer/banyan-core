@@ -1,21 +1,24 @@
-import { Bucket, BucketFile } from '@/lib/interfaces/bucket';
-import React, { Dispatch, FC, ReactElement, ReactNode, SetStateAction, createContext, useContext, useState } from 'react';
+import { Bucket } from '@/lib/interfaces/bucket';
+import React, { FC, ReactNode, createContext, useContext, useState } from 'react';
 import { useTomb } from './tomb';
-
 
 interface FilePreviewState {
     file: {
         name: string;
         data: string;
+        isLoading: boolean;
     };
     openFile: (bucket: Bucket, file: string, path: string[]) => void;
     closeFile: () => void;
-}
-const initialState = {
-    name: '',
-    data: ''
 };
 
+const initialState = {
+    name: '',
+    data: '',
+    isLoading: false,
+};
+
+export const SUPPORTED_EXTENSIONS = ['pdf', 'gif', 'jpg', 'jpeg', 'png'];
 export const FilePreviewContext = createContext<FilePreviewState>({} as FilePreviewState);
 
 export const FilePreviewProvider: FC<{ children: ReactNode }> = ({ children }) => {
@@ -23,7 +26,16 @@ export const FilePreviewProvider: FC<{ children: ReactNode }> = ({ children }) =
     const { getFile } = useTomb();
 
     const openFile = async (bucket: Bucket, file: string, path: string[]) => {
+        const isFileSupported = SUPPORTED_EXTENSIONS.includes(file.split('.')[1]);
         try {
+            setFile({
+                data: '',
+                name: file,
+                isLoading: false,
+            });
+
+            if (!isFileSupported) return;
+            setFile(prev => ({ ...prev, isLoading: true }));
 
             const reader = new FileReader();
             const arrayBuffer = await getFile(bucket, path, file);
@@ -34,11 +46,14 @@ export const FilePreviewProvider: FC<{ children: ReactNode }> = ({ children }) =
                 const result = event.target?.result as string;
                 setFile({
                     data: result || '',
-                    name: file
+                    name: file,
+                    isLoading: false
                 });
             };
             reader.readAsDataURL(blob);
-        } catch (error: any) { }
+        } catch (error: any) {
+            setFile(initialState);
+        }
     };
 
     const closeFile = () => {
