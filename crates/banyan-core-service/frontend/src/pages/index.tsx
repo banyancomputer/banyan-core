@@ -53,7 +53,7 @@ const Buckets: NextPageWithLayout = () => {
                 {buckets.length ?
                     <div className='grid grid-cols-3 gap-3'>{
                         buckets.map(bucket =>
-                            <Bucket bucket={bucket} />
+                            <Bucket bucket={bucket} key={bucket.id} />
                         )
                     }</div>
                     :

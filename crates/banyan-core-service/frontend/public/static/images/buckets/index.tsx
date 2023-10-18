@@ -15,13 +15,13 @@ export const BucketIcon = (params: SVGProps<any>) => <svg width="120" height="89
     <rect x="38.9238" y="49" width="43.8609" height="7" rx="3.5" fill="#29717B" />
     <defs>
         <linearGradient id="paint0_linear_2680_2634" x1="59.8328" y1="8" x2="59.8328" y2="89" gradientUnits="userSpaceOnUse">
-            <stop stop-color="#B2EDF5" />
-            <stop offset="0.291667" stop-color="#B3C2C6" />
-            <stop offset="1" stop-color="#346D75" />
+            <stop stopColor="#B2EDF5" />
+            <stop offset="0.291667" stopColor="#B3C2C6" />
+            <stop offset="1" stopColor="#346D75" />
         </linearGradient>
         <linearGradient id="paint1_linear_2680_2634" x1="59.8328" y1="2" x2="59.8328" y2="34" gradientUnits="userSpaceOnUse">
-            <stop stop-color="#AEC3C6" />
-            <stop offset="1" stop-color="#3A7077" />
+            <stop stopColor="#AEC3C6" />
+            <stop offset="1" stopColor="#3A7077" />
         </linearGradient>
     </defs>
 </svg>
