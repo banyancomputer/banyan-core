@@ -42,7 +42,7 @@ const Buckets: NextPageWithLayout = () => {
                     {`${messages.myBuckets}`}
                 </h2>
                 <button
-                    className="btn-primary gap-2 w-40 py-2 px-4"
+                    className="btn-highlighted gap-2 w-40 py-2 px-4"
                     onClick={uploadFile}
                 >
                     <PlusBold />
