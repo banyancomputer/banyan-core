@@ -74,6 +74,10 @@ input {
     background-color: #686868;
 }
 
+.Toastify__toast-container {
+    width: unset !important;
+}
+
 .Toastify__toast-icon {
     width: 24px;
     height: 24px;
