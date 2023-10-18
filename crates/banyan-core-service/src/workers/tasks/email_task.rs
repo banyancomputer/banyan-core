@@ -52,13 +52,16 @@ where
         let unsubscribed = sqlx::query_scalar!(
             r#"SELECT
                 CASE
-                    WHEN e.state = 'unsubscribed' THEN 1
+                    WHEN last_email.state = 'unsubscribed' THEN 1
                     ELSE 0
                 END
-            FROM emails e
-            WHERE e.account_id = $1
-            ORDER BY e.sent_at DESC
-            LIMIT 1"#,
+            FROM (
+                SELECT state
+                FROM emails e
+                WHERE e.account_id = $1
+                ORDER BY e.sent_at DESC
+                LIMIT 1
+            ) AS last_email;"#,
             account_id
         )
         .fetch_optional(&mut *connection)
@@ -69,37 +72,39 @@ where
         }
 
         // If the last three emails we sent to a user resulted in a delivery failure we should not send the message
-        let delivery_failures = sqlx::query_scalar!(
+        let failures = sqlx::query_scalar!(
             r#"SELECT
                 COUNT(*) AS failures
-            FROM emails e
-            WHERE e.account_id = $1
-                AND e.state = 'failed'
-            ORDER BY e.sent_at DESC
-            LIMIT 3"#,
+            FROM (
+                SELECT state
+                FROM emails e
+                WHERE e.account_id = $1
+                ORDER BY e.sent_at DESC
+                LIMIT 3 
+            ) AS last_three_emails
+            WHERE   last_three_emails.state = 'failed';"#,
             account_id
         )
         .fetch_optional(&mut *connection)
         .await?;
-        if delivery_failures >= Some(3) {
-            tracing::info!("the user has had too many delivery failures");
+        if failures >= Some(3) {
+            tracing::info!("the user has had too many sequential delivery failures");
             return Ok(());
         }
 
         // If we have sent 3 or more email to the user which have been marked as spam we should not send the message
-        let spam_reports = sqlx::query_scalar!(
+        let complaints = sqlx::query_scalar!(
             r#"SELECT
                 COUNT(*) AS complaints
             FROM emails e
             WHERE e.account_id = $1
                 AND e.state = 'complained'
-            ORDER BY e.sent_at DESC
             LIMIT 3"#,
             account_id
         )
         .fetch_optional(&mut *connection)
         .await?;
-        if spam_reports >= Some(3) {
+        if complaints >= Some(3) {
             tracing::info!("the user has marked too many emails as spam");
             return Ok(());
         }
@@ -196,11 +201,51 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn unsubscribed_then_sent() -> Result<(), EmailTaskError> {
+        let mut ctx = unsubscribed_context().await;
+        // Add one delivered email
+        let now = chrono::Utc::now() + chrono::Duration::seconds(1);
+        sqlx::query!(
+            r#"INSERT INTO emails (account_id, sent_at, state, type)
+            VALUES ($1, $2, 'delivered', 'na')"#,
+            ACCOUNT_ID,
+            now
+        )
+        .execute(&ctx)
+        .await
+        .expect("db setup");
+        email_task(ctx.clone()).await?;
+        let email_count = sent_emails(&mut ctx).await;
+        assert_eq!(email_count, 1);
+        Ok(())
+    }
+
+    #[tokio::test]
     async fn failure() -> Result<(), EmailTaskError> {
         let mut ctx = failure_context().await;
         email_task(ctx.clone()).await?;
         let email_count = sent_emails(&mut ctx).await;
         assert_eq!(email_count, 0);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn failure_then_sent() -> Result<(), EmailTaskError> {
+        let mut ctx = failure_context().await;
+        // Add one delivered email
+        let now = chrono::Utc::now() + chrono::Duration::seconds(10);
+        sqlx::query!(
+            r#"INSERT INTO emails (account_id, sent_at, state, type)
+            VALUES ($1, $2, 'delivered', 'na')"#,
+            ACCOUNT_ID,
+            now
+        )
+        .execute(&ctx)
+        .await
+        .expect("db setup");
+        email_task(ctx.clone()).await?;
+        let email_count = sent_emails(&mut ctx).await;
+        assert_eq!(email_count, 1);
         Ok(())
     }
 
@@ -215,47 +260,77 @@ mod tests {
 
     async fn unsubscribed_context() -> SqlitePool {
         let pool = context().await;
-        let message_id = Uuid::new_v4().to_string();
+
+        // Add one delivered email
+        let now = chrono::Utc::now();
         sqlx::query!(
-            r#"INSERT INTO emails (id, account_id, state, type)
-            VALUES ($1, $2, 'unsubscribed', 'na')"#,
-            message_id,
-            ACCOUNT_ID
+            r#"INSERT INTO emails (sent_at, account_id, state, type)
+            VALUES ($1, $2, 'delivered', 'na')"#,
+            now,
+            ACCOUNT_ID,
         )
         .execute(&pool)
         .await
         .expect("db setup");
+
+        // Most recent must be unsubscribed
+        let now = now + chrono::Duration::seconds(1);
+        sqlx::query!(
+            r#"INSERT INTO emails (sent_at, account_id, state, type)
+            VALUES ($1, $2, 'unsubscribed', 'na')"#,
+            now,
+            ACCOUNT_ID,
+        )
+        .execute(&pool)
+        .await
+        .expect("db setup");
+
         pool
     }
 
     async fn failure_context() -> SqlitePool {
         let pool = context().await;
 
-        let message_id = Uuid::new_v4().to_string();
+        // Add one delivered email
+        let now = chrono::Utc::now();
         sqlx::query!(
-            r#"INSERT INTO emails (id, account_id, state, type)
-            VALUES ($1, $2, 'failed', 'na')"#,
-            message_id,
+            r#"INSERT INTO emails (sent_at, account_id, state, type)
+            VALUES ($1, $2, 'delivered', 'na')"#,
+            now,
             ACCOUNT_ID
         )
         .execute(&pool)
         .await
         .expect("db setup");
-    let message_id = Uuid::new_v4().to_string();
+
+        // Add three failed emails
+        let now = now + chrono::Duration::seconds(1);
         sqlx::query!(
-            r#"INSERT INTO emails (id, account_id, state, type)
+            r#"INSERT INTO emails (sent_at, account_id, state, type)
             VALUES ($1, $2, 'failed', 'na')"#,
-            message_id,
+            now,
             ACCOUNT_ID
         )
         .execute(&pool)
         .await
         .expect("db setup");
-    let message_id = Uuid::new_v4().to_string();
+
+        let now = now + chrono::Duration::seconds(1);
         sqlx::query!(
-            r#"INSERT INTO emails (id, account_id, state, type)
+            r#"INSERT INTO emails (sent_at, account_id, state, type)
             VALUES ($1, $2, 'failed', 'na')"#,
-            message_id,
+            now,
+            ACCOUNT_ID
+        )
+        .execute(&pool)
+        .await
+        .expect("db setup");
+
+        let now = now + chrono::Duration::seconds(1);
+        sqlx::query!(
+            r#"INSERT INTO emails (sent_at, account_id, state, type)
+            VALUES ($1, $2, 'failed', 'na')"#,
+            now,
             ACCOUNT_ID
         )
         .execute(&pool)
@@ -268,33 +343,58 @@ mod tests {
     async fn complaint_context() -> SqlitePool {
         let pool = context().await;
 
-        let message_id = Uuid::new_v4().to_string();
+        // Add one delivered email
+        let now = chrono::Utc::now();
         sqlx::query!(
-            r#"INSERT INTO emails (id, account_id, state, type)
-            VALUES ($1, $2, 'complained', 'na')"#,
-            message_id,
+            r#"INSERT INTO emails (sent_at, account_id, state, type)
+            VALUES ($1, $2, 'delivered', 'na')"#,
+            now,
             ACCOUNT_ID
         )
         .execute(&pool)
         .await
         .expect("db setup");
 
-        let message_id = Uuid::new_v4().to_string();
+        // Add three complaints
+        let now = now + chrono::Duration::seconds(1);
         sqlx::query!(
-            r#"INSERT INTO emails (id, account_id, state, type)
+            r#"INSERT INTO emails (sent_at, account_id, state, type)
             VALUES ($1, $2, 'complained', 'na')"#,
-            message_id,
+            now,
             ACCOUNT_ID
         )
         .execute(&pool)
         .await
         .expect("db setup");
 
-        let message_id = Uuid::new_v4().to_string();
+        let now = now + chrono::Duration::seconds(1);
         sqlx::query!(
-            r#"INSERT INTO emails (id, account_id, state, type)
+            r#"INSERT INTO emails (sent_at, account_id, state, type)
             VALUES ($1, $2, 'complained', 'na')"#,
-            message_id,
+            now,
+            ACCOUNT_ID
+        )
+        .execute(&pool)
+        .await
+        .expect("db setup");
+
+        let now = now + chrono::Duration::seconds(1);
+        sqlx::query!(
+            r#"INSERT INTO emails (sent_at, account_id, state, type)
+            VALUES ($1, $2, 'complained', 'na')"#,
+            now,
+            ACCOUNT_ID
+        )
+        .execute(&pool)
+        .await
+        .expect("db setup");
+
+        // Add one delivered email
+        let now = chrono::Utc::now();
+        sqlx::query!(
+            r#"INSERT INTO emails (sent_at, account_id, state, type)
+        VALUES ($1, $2, 'delivered', 'na')"#,
+            now,
             ACCOUNT_ID
         )
         .execute(&pool)
@@ -313,11 +413,11 @@ mod tests {
                 AND e.state = 'sent'"#,
             ACCOUNT_ID
         )
-        .fetch_one(& *pool)
+        .fetch_one(&*pool)
         .await
         .expect("db setup")
     }
- 
+
     async fn context() -> SqlitePool {
         let pool = SqlitePool::connect("sqlite::memory:")
             .await
@@ -348,6 +448,4 @@ mod tests {
 
         pool
     }
-
-    
 }
