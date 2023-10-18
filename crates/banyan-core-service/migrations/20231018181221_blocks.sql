@@ -20,11 +20,10 @@ CREATE UNIQUE INDEX idx_blocks_on_cid
 CREATE TABLE block_locations (
   metadata_id TEXT NOT NULL REFERENCES metadata(id) ON DELETE CASCADE,
   block_id UUID NOT NULL REFERENCES blocks(id) ON DELETE CASCADE,
---   TODO: This should be using the storage host id
-  storage_host_name TEXT NOT NULL REFERENCES storage_hosts(name) ON DELETE CASCADE,
+  storage_host_id TEXT NOT NULL REFERENCES storage_hosts(id) ON DELETE CASCADE,
 
   associated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE UNIQUE INDEX idx_uploads_blocks_on_metadata_id_block_id_storage_host_name
-  ON block_locations(metadata_id, block_id, storage_host_name);
+CREATE UNIQUE INDEX idx_uploads_blocks_on_metadata_id_block_id_storage_host_id
+  ON block_locations(metadata_id, block_id, storage_host_id);

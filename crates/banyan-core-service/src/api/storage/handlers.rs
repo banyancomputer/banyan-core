@@ -5,11 +5,11 @@ use uuid::Uuid;
 
 use crate::api::storage::requests;
 use crate::db::models;
-use crate::extractors::{DbConn, StorageHostToken};
+use crate::extractors::{DbConn, StorageHost};
 
 /// Finalize a metadata upload from a storage host
 pub async fn finalize_upload(
-    storage_host_token: StorageHostToken,
+    storage_host: StorageHost,
     mut db_conn: DbConn,
     Path(metadata_id): Path<Uuid>,
     Json(finalize_upload_request): Json<requests::FinalizeUpload>,
@@ -107,17 +107,16 @@ pub async fn finalize_upload(
             }
         };
 
-        // TODO: This should be storing with the storage host id not the name
         let maybe_block_location_id = sqlx::query(
             r#"
                     INSERT INTO
-                        block_locations (block_id, metadata_id, storage_host_name)
+                        block_locations (block_id, metadata_id, storage_host_id)
                         VALUES ($1, $2, $3);
                 "#,
         )
         .bind(block_id)
         .bind(metadata_id.clone())
-        .bind(storage_host_token.subject.clone())
+        .bind(storage_host.id().to_string())
         .execute(&mut *db_conn.0)
         .await;
         match maybe_block_location_id {

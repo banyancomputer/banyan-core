@@ -6,10 +6,7 @@ use axum::Json;
 
 use crate::extractors::{ApiToken, DbConn};
 
-#[derive(serde::Deserialize)]
-pub struct LocationRequest {
-    cids: Vec<String>,
-}
+pub type LocationRequest = Vec<String>;
 
 pub async fn handler(
     api_token: ApiToken,
@@ -18,7 +15,7 @@ pub async fn handler(
 ) -> Response {
     let account_id = api_token.subject();
     let mut result_map = HashMap::new();
-    for cid in &request.cids {
+    for cid in &request {
         let normalized_cid = match cid::Cid::try_from(cid.to_string()) {
             Ok(cid) => {
                 cid.to_string_of_base(cid::multibase::Base::Base64Url)
@@ -49,7 +46,7 @@ pub async fn handler(
                 FROM block_locations bl
                 JOIN metadata m ON bl.metadata_id = m.id
                 JOIN buckets b ON m.bucket_id = b.id
-                JOIN storage_hosts sh ON bl.storage_host_name = sh.name
+                JOIN storage_hosts sh ON bl.storage_host_id = sh.id
                 WHERE bl.block_id = $1
                 AND b.account_id = $2"#,
             block_id,
