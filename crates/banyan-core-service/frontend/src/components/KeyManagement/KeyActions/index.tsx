@@ -21,9 +21,11 @@ export const KeyActions: React.FC<{ bucket: Bucket; bucketKey: BucketKey }> = ({
         } catch (error: any) { }
     };
 
+    var approved = bucketKey.approved();
+
     return (
         <div className="w-52 text-xs font-medium bg-mainBackground rounded-xl shadow-md z-10 text-gray-900 overflow-hidden">
-            {bucketKey.approved ?
+            {approved ?
                 <div
                     className="w-full gap-2 py-2 px-3 border-b-1 border-table-border transition-all hover:bg-hover"
                     onClick={removeAccess}

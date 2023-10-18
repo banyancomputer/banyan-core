@@ -4,6 +4,7 @@ import { useIntl } from 'react-intl';
 import { KeyActions } from '@components/KeyManagement/KeyActions';
 import { Bucket } from '@/lib/interfaces/bucket';
 import { ActionsCell } from '@/components/common/ActionsCell';
+import { fingerprintEcPem } from '@/lib/crypto/utils';
 
 export const KeyManagementTable: React.FC<{ buckets: Bucket[] }> = ({ buckets }) => {
     const { messages } = useIntl();
@@ -29,7 +30,9 @@ export const KeyManagementTable: React.FC<{ buckets: Bucket[] }> = ({ buckets })
                             {`${messages.client}`}
                         </th>
                         <th className="py-3 px-6 text-left font-medium">
-                            {`${messages.fingerprint}`}
+                            {/* {`${messages.fingerprint}`} */
+                                `PEM`
+                            }
                         </th>
                         <th className="py-3 px-6 w-32 text-left font-medium">
                             {`${messages.status}`}
@@ -48,21 +51,24 @@ export const KeyManagementTable: React.FC<{ buckets: Bucket[] }> = ({ buckets })
                                 <td className="px-6 py-4"></td>
                             </tr>
                             {
-                                bucket?.keys?.map(bucketKey =>
-                                    <tr key={bucketKey.id}>
-                                        <td className="px-6 py-4"></td>
-                                        <td className="px-6 py-4"></td>
-                                        <td className="px-6 py-4"></td>
-                                        <td className="px-6 py-4">{bucketKey.approved ? `${messages.approved}` : `${messages.noAccess}`}</td>
-                                        <td className="px-6 py-4">
-                                            <ActionsCell
-                                                actions={<KeyActions bucket={bucket} bucketKey={bucketKey} />}
-                                                offsetTop={tableScroll}
-                                                tableRef={tableRef}
-                                            />
-                                        </td>
-                                    </tr>
-                                )
+                                bucket?.keys?.map(bucketKey => {
+                                    var pem = bucketKey.pem();
+                                    var approved = bucketKey.approved();
+
+                                    return <tr >
+                                    <td className="px-6 py-4"></td>
+                                    <td className="px-6 py-4"></td>
+                                    <td className="px-6 py-4">{pem}</td>
+                                    <td className="px-6 py-4">{approved ? `${messages.approved}` : `${messages.noAccess}`}</td>
+                                    <td className="px-6 py-4">
+                                        <ActionsCell
+                                            actions={<KeyActions bucket={bucket} bucketKey={bucketKey} />}
+                                            offsetTop={tableScroll}
+                                            tableRef={tableRef}
+                                        />
+                                    </td>
+                                </tr>
+                                })
                             }
                         </React.Fragment>
                     )}

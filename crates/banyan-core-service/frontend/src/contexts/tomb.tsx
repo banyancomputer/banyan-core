@@ -215,7 +215,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     };
 
     /** Approves access key for bucket */
-    const approveBucketAccess = async (id: string) => {
+    const approveBucketAccess = async (bucket_id: string, fingerprint: string) => {
         /** TODO:  connect approveBucketAccess method when in will be implemented.  */
         // await tomb.approveBucketAccess(id);
     };

@@ -13,13 +13,14 @@ import { useEffect } from 'react';
 export { getServerSideProps };
 
 const ManageKeys: NextPageWithLayout = () => {
-    const { buckets, areBucketsLoading, tomb, getBucketsKeys } = useTomb();
+    const { buckets, areBucketsLoading, tomb, getBuckets, getBucketsKeys } = useTomb();
     const { messages } = useIntl();
 
     useEffect(() => {
         if (!tomb) return;
 
         (async () => {
+            console.log("UPDATING BUCKETS AND KEYS")
             await getBucketsKeys();
         })();
     }, [buckets.length, tomb])

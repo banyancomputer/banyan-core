@@ -394,6 +394,8 @@ where
             .map_err(UploadStreamError::WriteFailed)?;
 
         while let Some(block_meta) = car_analyzer.next().await? {
+            tracing::info!("processing block meta: {:?}", block_meta);
+
             let cid_string = block_meta
                 .cid()
                 .to_string_of_base(cid::multibase::Base::Base64Url)
