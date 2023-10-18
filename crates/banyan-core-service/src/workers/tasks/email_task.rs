@@ -82,7 +82,8 @@ where
                 ORDER BY e.sent_at DESC
                 LIMIT 3 
             ) AS last_three_emails
-            WHERE   last_three_emails.state = 'failed';"#,
+            WHERE
+                last_three_emails.state = 'failed';"#,
             account_id
         )
         .fetch_optional(&mut *connection)
@@ -156,8 +157,6 @@ where
 #[non_exhaustive]
 #[derive(Debug, thiserror::Error)]
 pub enum EmailTaskError {
-    #[error("the task is missing a message id")]
-    MissingMessageId,
     #[error("the task encountered an email error: {0}")]
     EmailError(#[from] EmailError),
     #[error("the task encountered a sql error: {0}")]
