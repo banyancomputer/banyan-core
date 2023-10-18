@@ -131,28 +131,31 @@ pub async fn handler(
     }
 
     let expected_data_size = ((request_data.expected_data_size / ONE_HUNDRED_MIB) + 1) * ONE_HUNDRED_MIB;
+    let storage_host = select_storage_host(&database, expected_data_size).await?;
 
-    // We need to choose a storage host that has the capacity for this upload available
-    let maybe_storage_host = sqlx::query_scalar!(
-        r#"SELECT id FROM storage_hosts
+    todo!()
+}
+
+async fn select_storage_host(database: &Database, required_space: i64) -> Result<SelectedStorageHost, PushMetadataError> {
+    let maybe_storage_host = sqlx::query_as!(
+        SelectedStorageHost,
+        r#"SELECT id, name, url FROM storage_hosts
                WHERE (available_storage - used_storage) > $1
                ORDER BY RANDOM()
                LIMIT 1;"#,
-        expected_data_size,
+        required_space,
     )
-    .fetch_optional(&database)
+    .fetch_optional(database)
     .await
     .map_err(PushMetadataError::StorageHostLookupFailed)?;
 
-    let storage_host_id = match maybe_storage_host {
-        Some(shi) => shi,
+    match maybe_storage_host {
+        Some(shi) => Ok(shi),
         None => {
-            tracing::error!(?expected_data_size, "failed to locate storage host with sufficient storage");
-            return Err(PushMetadataError::NoAvailableStorage)?;
+            tracing::error!(?required_space, "failed to locate storage host with sufficient storage");
+            Err(PushMetadataError::NoAvailableStorage)
         }
-    };
-
-    todo!()
+    }
 }
 
 async fn approve_key_fingerprints(
@@ -430,6 +433,13 @@ pub struct PushMetadataRequest {
 
     #[serde(rename = "valid_keys")]
     pub included_key_fingerprints: Vec<String>,
+}
+
+#[derive(sqlx::FromRow)]
+struct SelectedStorageHost {
+    pub id: String,
+    pub name: String,
+    pub url: String,
 }
 
 #[derive(Debug, thiserror::Error)]
