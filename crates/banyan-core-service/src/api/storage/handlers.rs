@@ -65,8 +65,7 @@ pub async fn finalize_upload(
 
     // Read over the normalized CIDs (base64 url encoded) and update the blocks table
     let normalized_cids = finalize_upload_request.normalized_cids;
-    let mut normalized_cids_iter = normalized_cids.iter();
-    while let Some(normalized_cid) = normalized_cids_iter.next() {
+    for normalized_cid in normalized_cids.iter() {
         // Try inserting the block into the blocks table if it doesn't exist
         let maybe_block = sqlx::query(
             r#"

@@ -17,29 +17,26 @@ pub async fn handler(
     let mut result_map = HashMap::new();
     for cid in &request {
         let normalized_cid = match cid::Cid::try_from(cid.to_string()) {
-            Ok(cid) => {
-                cid.to_string_of_base(cid::multibase::Base::Base64Url)
-                    .expect("parsed cid to unparse")
-            }
+            Ok(cid) => cid
+                .to_string_of_base(cid::multibase::Base::Base64Url)
+                .expect("parsed cid to unparse"),
             Err(err) => {
                 tracing::error!("unable to parse cid: {}", err);
                 continue;
             }
         };
 
-        let block_id = match sqlx::query_scalar!(
-            r#"SELECT id FROM blocks WHERE cid = $1"#,
-            normalized_cid
-        )
-        .fetch_one(&mut *db_conn.0)
-        .await
-        {
-            Ok(block_id) => block_id,
-            Err(err) => {
-                tracing::error!("unable to get block id from blocks table: {}", err);
-                continue;
-            }
-        };
+        let block_id =
+            match sqlx::query_scalar!(r#"SELECT id FROM blocks WHERE cid = $1"#, normalized_cid)
+                .fetch_one(&mut *db_conn.0)
+                .await
+            {
+                Ok(block_id) => block_id,
+                Err(err) => {
+                    tracing::error!("unable to get block id from blocks table: {}", err);
+                    continue;
+                }
+            };
 
         let block_location: Option<String> = match sqlx::query_scalar!(
             r#"SELECT sh.url
@@ -50,14 +47,17 @@ pub async fn handler(
                 WHERE bl.block_id = $1
                 AND b.account_id = $2"#,
             block_id,
-            account_id 
+            account_id
         )
         .fetch_optional(&mut *db_conn.0)
         .await
         {
             Ok(maybe_block_location) => maybe_block_location,
             Err(err) => {
-                tracing::error!("unable to get block location from block_locations table: {}", err);
+                tracing::error!(
+                    "unable to get block location from block_locations table: {}",
+                    err
+                );
                 continue;
             }
         };
