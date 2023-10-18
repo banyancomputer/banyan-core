@@ -22,11 +22,13 @@ use crate::utils::car_buffer::CarBuffer;
 /// The default quota we assume each storage host / staging service to provide
 const ACCOUNT_STORAGE_QUOTA: i64 = 5 * 1_024 * 1_024 * 1_024 * 1_024;
 
-/// Upper size limit on the JSON payload that precedes a metadata CAR file upload (128KiB)
-const REQUEST_DATA_SIZE_LIMIT: u64 = 128 * 1_024;
-
 /// Size limit of the pure metadata CAR file that is being uploaded (128MiB)
 const CAR_DATA_SIZE_LIMIT: u64 = 128 * 1_024 * 1_024;
+
+const ONE_HUNDRED_MIB: i64 = 100 * 1024 * 1024;
+
+/// Upper size limit on the JSON payload that precedes a metadata CAR file upload (128KiB)
+const REQUEST_DATA_SIZE_LIMIT: u64 = 128 * 1_024;
 
 pub async fn handler(
     api_id: ApiIdentity,
@@ -120,8 +122,35 @@ pub async fn handler(
     }
 
     if request_data.expected_data_size == 0 {
-        // todo: mark the metadata as current
+        mark_current(&database, &new_metadata_id)
+            .await
+            .map_err(PushMetadataError::ActivationFailed)?;
+
+        let resp_msg = serde_json::json!({"id": new_metadata_id, "state": "current"});
+        return Ok((StatusCode::OK, Json(resp_msg)).into_response());
     }
+
+    let expected_data_size = ((request_data.expected_data_size / ONE_HUNDRED_MIB) + 1) * ONE_HUNDRED_MIB;
+
+    // We need to choose a storage host that has the capacity for this upload available
+    let maybe_storage_host = sqlx::query_scalar!(
+        r#"SELECT id FROM storage_hosts
+               WHERE (available_storage - used_storage) > $1
+               ORDER BY RANDOM()
+               LIMIT 1;"#,
+        expected_data_size,
+    )
+    .fetch_optional(&database)
+    .await
+    .map_err(PushMetadataError::StorageHostLookupFailed)?;
+
+    let storage_host_id = match maybe_storage_host {
+        Some(shi) => shi,
+        None => {
+            tracing::error!(?expected_data_size, "failed to locate storage host with sufficient storage");
+            return Err(PushMetadataError::NoAvailableStorage)?;
+        }
+    };
 
     todo!()
 }
@@ -178,6 +207,24 @@ async fn currently_consumed_storage(database: &Database, account_id: &str) -> Re
     .await?;
 
     Ok(maybe_stored.unwrap_or(0))
+}
+
+async fn mark_current(database: &Database, metadata_id: &str) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        "UPDATE metadata SET state = 'current' WHERE id = $1",
+        metadata_id,
+    )
+    .execute(database)
+    .await?;
+
+    sqlx::query!(
+        "UPDATE metadata SET state = 'outdated' WHERE id != $1 AND state = 'current';",
+        metadata_id,
+    )
+    .execute(database)
+    .await?;
+
+    Ok(())
 }
 
 async fn fail_upload(database: &Database, metadata_id: &str) -> Result<(), sqlx::Error> {
@@ -295,6 +342,9 @@ where
 
 #[derive(Debug, thiserror::Error)]
 pub enum PushMetadataError {
+    #[error("failed updating zero data metadata to current")]
+    ActivationFailed(sqlx::Error),
+
     #[error("failed to validate bucket was authorized by user: {0}")]
     BucketAuthorizationFailed(sqlx::Error),
 
@@ -328,8 +378,14 @@ pub enum PushMetadataError {
     #[error("unable to locate a bucket for the current authorized user")]
     NoAuthorizedBucket,
 
+    #[error("no storage host is available with sufficient storage")]
+    NoAvailableStorage,
+
     #[error("unable to retrieve request data: {0}")]
     RequestDataUnavailable(multer::Error),
+
+    #[error("failed to query for available storage host: {0}")]
+    StorageHostLookupFailed(sqlx::Error),
 
     #[error("unable to determine if user is within their quota: {0}")]
     UnableToCheckAccounting(sqlx::Error),
