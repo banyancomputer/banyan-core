@@ -45,7 +45,7 @@ export const Plus = (params: SVGProps<any>) => <svg width="20" height="20" viewB
 </svg>;
 
 export const PlusBold = (params: SVGProps<any>) => <svg width="21" height="20" viewBox="0 0 21 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M10.4998 4.1665V15.8332M4.6665 9.99984H16.3332" stroke="white" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M10.4998 4.1665V15.8332M4.6665 9.99984H16.3332" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
 </svg>;
 
 export const Info = (params: SVGProps<any>) => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...params}>
@@ -116,7 +116,14 @@ export const Mail = (params: SVGProps<any>) => <svg width="18" height="18" viewB
             <rect width="18" height="18" fill="none" />
         </clipPath>
     </defs>
+</svg>;
+
+export const Dots = (params: SVGProps<any>) => <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" {...params}>
+    <path d="M10.0001 10.8333C10.4603 10.8333 10.8334 10.4602 10.8334 9.99992C10.8334 9.53968 10.4603 9.16659 10.0001 9.16659C9.53984 9.16659 9.16675 9.53968 9.16675 9.99992C9.16675 10.4602 9.53984 10.8333 10.0001 10.8333Z" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M10.0001 4.99992C10.4603 4.99992 10.8334 4.62682 10.8334 4.16659C10.8334 3.70635 10.4603 3.33325 10.0001 3.33325C9.53984 3.33325 9.16675 3.70635 9.16675 4.16659C9.16675 4.62682 9.53984 4.99992 10.0001 4.99992Z" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M10.0001 16.6666C10.4603 16.6666 10.8334 16.2935 10.8334 15.8333C10.8334 15.373 10.4603 14.9999 10.0001 14.9999C9.53984 14.9999 9.16675 15.373 9.16675 15.8333C9.16675 16.2935 9.53984 16.6666 10.0001 16.6666Z" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
 </svg>
+
 
 
 

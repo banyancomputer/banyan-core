@@ -7,7 +7,6 @@ module.exports = {
 	theme: {
 		extend: {
 			boxShadow: {
-				blue: '0px 4px 0px rgba(37, 99, 235, 0.35)',
 				common: 'var(--shadow)',
 			},
 			height: {
@@ -34,9 +33,10 @@ module.exports = {
 				filePreview: '952px',
 			},
 			colors: {
-				blue: {
-					primary: 'var(--blue-primary)',
-					hover: 'var(--blue-hover)',
+				button: {
+					primary: 'var(--highlight-color)',
+					highLight: 'var(--button-secondary)',
+					disabled: 'var(--disabled)',
 				},
 				error: 'var(--error)',
 				errorBanner: 'var(--errorBanner)',
@@ -52,24 +52,29 @@ module.exports = {
 				table: {
 					cellBackground: 'var(--table-cellBackground)',
 					headBackground: 'var(--table-headBackground)',
-					border: 'var(--table-border)',
 				},
 				bucket: {
-					bucketItemBackground: 'var(--bucket-item-background)',
+					bucketIconBackground: 'var(--bucket-icon-background)',
+					bucketHoverBackground: 'var(--bucket-hover-background)',
 					bucketClasshot: 'var(--bucket-class-hot)',
 					bucketClasswarm: 'var(--bucket-class-hot)',
 					bucketClasscold: 'var(--bucket-class-cold)',
-					background: 'var(--bucket-background)',
-					actionsBackground: 'var(--bucket-actions-background)'
+					actionsBackground: 'var(--bucket-actions-background)',
 				},
-				inputBorder: 'var(--input-border)',
-				'gray-200': 'var(--gray-200)',
-				'gray-600': 'var(--gray-600)',
-				'gray-800': 'var(--gray-800)',
-				'gray-900': 'var(--gray-900)',
-				disabled: 'var(--disabled)',
+				border: {
+					darken: 'var(--darken-border)',
+					regular: 'var(--regular-border)',
+				},
+				text: {
+					200: 'var(--text-200)',
+					600: 'var(--text-600)',
+					800: 'var(--text-800)',
+					900: 'var(--text-900)',
+				},
+				'gray-200': 'var(--text-200)',
 				hover: 'var(--hover-background)',
 				mainBackground: 'var(--main-background)',
+				secondaryBackground: 'var(--secondary-background)',
 			},
 			fontFamily: {
 				sans: ['Inter'],

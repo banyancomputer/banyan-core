@@ -133,14 +133,16 @@ export const Navigation = () => {
                     {`${messages.help}`}
                     {areHelpOpionsVisible &&
                         <div
-                            className="absolute left-0 top-10 w-full flex flex-col items-stretch shadow-xl rounded-xl text-xs font-semibold overflow-hidden  bg-mainBackground cursor-pointer text-gray-900"
+                            className="absolute left-0 top-10 w-full flex flex-col items-stretch shadow-xl rounded-xl text-xs font-semibold overflow-hidden  bg-mainBackground cursor-pointer text-text-900"
                         >
                             <a
                                 className="flex items-center gap-2 py-2.5 px-3 transition-all hover:bg-hover"
                                 href='https://banyan8674.zendesk.com/hc/en-us'
                                 target='_blank'
                             >
-                                <Question />
+                                <span className='text-button-primary'>
+                                    <Question />
+                                </span>
                                 FAQ
                             </a>
                             <a
@@ -148,7 +150,9 @@ export const Navigation = () => {
                                 className="flex items-center gap-2 py-2.5 px-3 transition-all hover:bg-hover"
                                 target='_blank'
                             >
+                                <span className='text-button-primary'>
                                 <Mail />
+                                </span>
                                 {`${messages.contactUs}`}
                             </a>
                         </div>

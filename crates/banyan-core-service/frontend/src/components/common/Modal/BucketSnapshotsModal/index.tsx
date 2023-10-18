@@ -44,7 +44,7 @@ export const BucketSnapshotsModal: React.FC<{ bucketId: string }> = ({ bucketId 
                     >
                         <div className="flex items-center align-middle gap-2 flex-grow text-navigation-border">
                             <AiOutlineFile size="20px" />
-                            <div className="flex flex-col font-semibold text-gray-900">
+                            <div className="flex flex-col font-semibold text-text-900">
                                 <span>{`${getDateLabel(snapshot.createdAt, false)} version`}</span>
                                 <span className='text-gray-400 font-medium'>{`${convertFileSize(snapshot.size)}`}</span>
                             </div>

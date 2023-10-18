@@ -4,11 +4,13 @@ import { signOut, useSession } from 'next-auth/react';
 import { useIntl } from 'react-intl';
 import { useRouter } from 'next/router';
 
+import { SearchInput } from '../SearchInput';
+
 import { popupClickHandler } from '@/utils';
 import { useKeystore } from '@/contexts/keystore';
 import { Action } from '../FileActions';
 
-import { Headphones, Key, LogoutAlternative, Mail, Question, Settings } from '@static/images/common';
+import { Key, LogoutAlternative, Settings } from '@static/images/common';
 
 export const Header = () => {
     const userControlsRef = useRef<HTMLDivElement | null>(null);
@@ -35,8 +37,8 @@ export const Header = () => {
     };
 
     const options = [
-        new Action(`${messages.settings}`, <Settings/>, goTo('/account/settings')),
-        new Action(`${messages.manageKeys}`, <Key  />, goTo('/account/manage-keys')),
+        new Action(`${messages.settings}`, <Settings />, goTo('/account/settings')),
+        new Action(`${messages.manageKeys}`, <Key />, goTo('/account/manage-keys')),
         new Action(`${messages.logout}`, <LogoutAlternative />, logout)
     ];
 
@@ -51,7 +53,7 @@ export const Header = () => {
 
     return (
         <header className="flex items-center justify-between p-4 bg-mainBackground">
-            {/* <SearchInput /> */}
+            <SearchInput />
             <div className="flex flex-grow items-center justify-end gap-6">
                 <div
                     className="relative w-10 h-10 rounded-full cursor-pointer "
@@ -71,7 +73,7 @@ export const Header = () => {
                     }
                     {areProfileOptionsVisible &&
                         <div
-                            className="absolute z-10 right-0 top-12 flex flex-col items-stretch shadow-xl rounded-xl text-xs font-semibold overflow-hidden  bg-mainBackground cursor-pointer border-1 border-inputBorder"
+                            className="absolute z-10 right-0 top-12 flex flex-col items-stretch shadow-xl rounded-xl text-xs font-semibold overflow-hidden  bg-mainBackground cursor-pointer border-1 border-border-darken"
                         >
                             {options.map(option =>
                                 <div
@@ -79,7 +81,9 @@ export const Header = () => {
                                     className="flex items-center gap-2 py-2.5 px-3 whitespace-nowrap transition-all hover:bg-hover"
                                     onClick={option.value}
                                 >
-                                    {option.icon}
+                                    <span className='text-button-primary'>
+                                        {option.icon}
+                                    </span>
                                     {option.label}
                                 </div>
                             )}

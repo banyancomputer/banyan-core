@@ -65,7 +65,7 @@ export class ToastNotifications {
             <div className="w-full flex flex-col items-start justify-between gap-2 text-xs">
                 {message}
                 <button
-                    className="text-gray-600"
+                    className="text-text-600"
                     onClick={callback}
                 >
                     {buttonMessage}

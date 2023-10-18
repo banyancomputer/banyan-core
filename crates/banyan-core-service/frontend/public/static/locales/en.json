@@ -168,5 +168,6 @@
 	"hot": "On-Demand",
 	"warm": "On-Demand",
 	"cold": "Archival",
-	"coldSnapshots": "Cold Snapshots"
+	"coldSnapshots": "Cold Snapshots",
+	"tooltipExplanation": "Cold snapshots offer a point-in-time glimpse of the file and are useful for versioning."
 }

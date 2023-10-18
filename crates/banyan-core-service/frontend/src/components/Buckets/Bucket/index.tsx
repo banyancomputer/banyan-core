@@ -64,7 +64,7 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
 
     return (
         <div
-            className='px-3 py-6 border-1 rounded-xl cursor-pointer transition-all bg-bucket-background hover:shadow-lg'
+            className='px-3 py-6 border-1 rounded-xl cursor-pointer transition-all bg-secondaryBackground hover:bg-bucket-bucketHoverBackground'
             ref={bucketRef}
             onContextMenu={onContextMenu}
             onClick={openBucket}
@@ -81,10 +81,10 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
             >
                 <BucketActions bucket={bucket} />
             </div>
-            <h4 className='mb-3 text-gray-900 font-semibold'>
+            <h4 className='mb-3 text-text-900 font-semibold'>
                 {bucket.name}
             </h4>
-            <div className='mb-6 flex justify-center py-10 bg-bucket-bucketItemBackground rounded-xl'>
+            <div className='mb-6 flex justify-center py-10 bg-bucket-bucketIconBackground rounded-xl'>
                 <BucketIcon />
             </div>
             <div className='flex flex-col gap-2 items-start text-xs font-normal'>

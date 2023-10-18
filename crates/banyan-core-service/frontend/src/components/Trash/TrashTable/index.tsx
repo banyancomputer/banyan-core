@@ -70,12 +70,12 @@ export const TrashTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     }, [tableRef]);
 
     return (
-        <div className="max-h-[calc(100vh-367px)] w-fit overflow-x-auto border-2 border-table-border rounded-xl" >
-            <div className="px-5 py-6 text-m font-semibold border-b-2 border-table-border">
+        <div className="max-h-[calc(100vh-367px)] w-fit overflow-x-auto border-2 border-border-regular rounded-xl" >
+            <div className="px-5 py-6 text-m font-semibold border-b-2 border-border-regular">
                 {`${messages.files}`}
             </div>
             <div >
-                <table className="table table-pin-rows w-full text-gray-600 rounded-xl  table-fixed ">
+                <table className="table table-pin-rows w-full text-text-600 rounded-xl  table-fixed ">
                     <thead className="border-b-table-cellBackground text-xxs font-normal ">
                         <tr className="border-b-table-cellBackground bg-table-headBackground font-normal">
                             <th className="flex items-center gap-3 px-6 py-4 text-left font-medium">
@@ -83,7 +83,7 @@ export const TrashTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                                     onChange={selectAll}
                                     type="checkbox"
                                     checked={selectedFiles.length === bucket.files.length}
-                                    className="checkbox border-inputBorder"
+                                    className="checkbox border-border-darken"
                                 />
                                 <SortCell
                                     criteria="name"
@@ -120,7 +120,7 @@ export const TrashTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                                             onChange={() => selectFile(file)}
                                             type="checkbox"
                                             checked={selectedFiles.includes(file)}
-                                            className="checkbox border-inputBorder"
+                                            className="checkbox border-border-darken"
                                         />
                                         <FileIcon fileName={file.name} className="p-2 bg-gray-200 rounded-full" />{file.name}
                                     </td>

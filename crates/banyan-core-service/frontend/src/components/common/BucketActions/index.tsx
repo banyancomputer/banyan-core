@@ -84,7 +84,7 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
 
     const uploadAction = useMemo(() => new Action(`${messages.upload}`, <FiUpload size="18px" />, upload), []);
     const createSnapshotAction = useMemo(() => new Action(`${messages.takeColdSnapshot}`, <HiOutlineLightningBolt size="18px" />, takeSnapshot), []);
-    const viewBucketSnapshotsAction = useMemo(() => new Action(`${messages.viewColdSnapshots}`, <MdRestore size="18px" />, viewBucketSnapshots), []);
+    const viewBucketSnapshotsAction = useMemo(() => new Action(`${messages.viewColdSnapshots}`, <MdRestore size="18px" />, viewBucketSnapshots, `${messages.tooltipExplanation}`), []);
     const viewBucketVersionsAction = useMemo(() => new Action(`${messages.viewBucketVersions}`, <MdRestore size="18px" />, viewBucketVersions), []);
     const renameAction = useMemo(() => new Action(`${messages.rename}`, <FiEdit size="18px" />, rename), []);
     const createFolderAction = useMemo(() => new Action(`${messages.createNewFolder}`, <PiFolderNotchPlusBold size="18px" />, createFolder), []);
@@ -122,15 +122,23 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     }
 
     return (
-        <div className={`w-52 text-xs font-medium bg-bucket-actionsBackground rounded-xl shadow-md z-10 select-none text-gray-900`}>
+        <div className={`w-56 text-xs font-medium bg-bucket-actionsBackground rounded-xl shadow-md z-10 select-none text-text-900`}>
             {
                 actions[bucketType].map(action =>
                     <div
                         key={action.label}
-                        className="w-full flex items-center gap-2 py-2 px-3 border-b-1 border-table-border transition-all hover:bg-hover"
+                        className="w-full flex items-center gap-2 py-2 px-3 border-b-1 border-border-regular transition-all hover:bg-hover"
                         onClick={action.value}
                     >
-                        {action.icon} {action.label}
+                        <span className='text-button-primary'>
+                            {action.icon}
+                        </span>
+                        {action.label}
+                        {action.tooltip ?
+                            <span className='text-button-primary' title={action.tooltip}>(?)</span>
+                            :
+                            null
+                        }
                     </div>
                 )
             }
