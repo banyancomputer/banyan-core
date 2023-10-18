@@ -267,6 +267,7 @@ dependencies = [
  "blake3 1.5.0",
  "bytes",
  "chrono",
+ "cid",
  "futures",
  "handlebars",
  "hex",

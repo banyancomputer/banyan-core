@@ -9,7 +9,7 @@ use crate::extractors::{DbConn, StorageHostToken};
 
 /// Finalize a metadata upload from a storage host
 pub async fn finalize_upload(
-    _storage_host_token: StorageHostToken,
+    storage_host_token: StorageHostToken,
     mut db_conn: DbConn,
     Path(metadata_id): Path<Uuid>,
     Json(finalize_upload_request): Json<requests::FinalizeUpload>,
@@ -52,14 +52,85 @@ pub async fn finalize_upload(
     ).fetch_optional(&mut *db_conn.0).await;
 
     match maybe_updated_metadata {
-        Ok(_) => StatusCode::NO_CONTENT.into_response(),
+        Ok(_) => {}
         Err(err) => {
             tracing::error!("unable to update bucket metadata after push: {err}");
-            (
+            return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "internal server error".to_string(),
             )
-                .into_response()
+                .into_response();
         }
     }
+
+    // Read over the normalized CIDs (base64 url encoded) and update the blocks table
+    let normalized_cids = finalize_upload_request.normalized_cids;
+    let mut normalized_cids_iter = normalized_cids.iter();
+    while let Some(normalized_cid) = normalized_cids_iter.next() {
+        // Try inserting the block into the blocks table if it doesn't exist
+        let maybe_block = sqlx::query(
+            r#"
+                INSERT OR IGNORE INTO
+                    blocks (cid)
+                    VALUES ($1);
+            "#,
+        )
+        .bind(normalized_cid.clone())
+        .execute(&mut *db_conn.0)
+        .await;
+        match maybe_block {
+            Ok(_) => {}
+            Err(err) => {
+                tracing::error!("unable to insert block in blocks table {err}");
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "internal server error".to_string(),
+                )
+                    .into_response();
+            }
+        }
+
+        let normalized_cid = normalized_cid.to_string();
+        let maybe_block_id =
+            sqlx::query_scalar!(r#"SELECT id FROM blocks WHERE cid = $1;"#, normalized_cid,)
+                .fetch_one(&mut *db_conn.0)
+                .await;
+        let block_id = match maybe_block_id {
+            Ok(block_id) => block_id,
+            Err(err) => {
+                tracing::error!("unable to get block id from blocks table {err}");
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "internal server error".to_string(),
+                )
+                    .into_response();
+            }
+        };
+
+        // TODO: This should be storing with the storage host id not the name
+        let maybe_block_location_id = sqlx::query(
+            r#"
+                    INSERT INTO
+                        block_locations (block_id, metadata_id, storage_host_name)
+                        VALUES ($1, $2, $3);
+                "#,
+        )
+        .bind(block_id)
+        .bind(metadata_id.clone())
+        .bind(storage_host_token.subject.clone())
+        .execute(&mut *db_conn.0)
+        .await;
+        match maybe_block_location_id {
+            Ok(_) => {}
+            Err(err) => {
+                tracing::error!("unable to insert block location in block_locations table {err}");
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "internal server error".to_string(),
+                )
+                    .into_response();
+            }
+        }
+    }
+    (StatusCode::NO_CONTENT, ()).into_response()
 }
