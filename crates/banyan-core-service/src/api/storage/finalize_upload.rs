@@ -5,23 +5,24 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::app::AppState;
-use crate::extractors::StorageHostToken;
+use crate::extractors::StorageProviderIdentity;
 
 /// When a client finishes uploading their data to either staging or a storage host, the storage
 /// host will make a request to this end point letting us know that we have all the data safely
 /// stored and can mark the associated metadata as ready to be consumed by downstream clients.
 #[axum::debug_handler]
 pub async fn handler(
-    _storage_host_token: StorageHostToken,
-    //database: Database, // todo: needs a fromrequestparts...
+    storage_provider: StorageProviderIdentity,
     State(state): State<AppState>,
     Path(metadata_id): Path<Uuid>,
     Json(request): Json<FinalizeUploadRequest>,
 ) -> Result<Response, FinalizeUploadError> {
-    let db_data_size = request.data_size as i64;
+    let db_data_size = request.data_size;
     let db_metadata_id = metadata_id.to_string();
 
     let database = state.database();
+
+    // todo: need to associate storage authorization with metadata
 
     let bucket_id = sqlx::query_scalar!(
         r#"UPDATE metadata
@@ -53,7 +54,8 @@ pub async fn handler(
 
 #[derive(Deserialize)]
 pub struct FinalizeUploadRequest {
-    data_size: u64,
+    data_size: i64,
+    storage_authorization_id: String,
 }
 
 #[derive(Debug, thiserror::Error)]

@@ -30,6 +30,8 @@ pub struct AuthenticatedClient {
 
     authorized_storage: u64,
     consumed_storage: u64,
+
+    storage_grant_id: String,
 }
 
 impl AuthenticatedClient {
@@ -51,6 +53,10 @@ impl AuthenticatedClient {
 
     pub fn platform_id(&self) -> Uuid {
         self.platform_id
+    }
+
+    pub fn storage_grant_id(&self) -> String {
+        self.storage_grant_id.clone()
     }
 
     pub fn remaining_storage(&self) -> u64 {
@@ -137,17 +143,22 @@ where
     }
 }
 
+pub struct AuthorizedStorage {
+    id: String,
+    allowed_storage: 
+}
+
 pub async fn current_authorized_storage(
     db: &Database,
     client_id: &str,
-) -> Result<u64, AuthenticatedClientError> {
+) -> Result<Option<(String, i64)>, AuthenticatedClientError> {
     match db.ex() {
         #[cfg(feature = "postgres")]
         Executor::Postgres(ref mut conn) => {
             use crate::database::postgres;
 
-            let maybe_allowed_storage: Option<i32> = sqlx::query_scalar(
-                "SELECT allowed_storage FROM storage_grants WHERE client_id = $1::uuid ORDER BY created_at DESC LIMIT 1;",
+            let maybe_allowed_storage: Option<(Uuid, i32)> = sqlx::query_scalar(
+                "SELECT id,allowed_storage FROM storage_grants WHERE client_id = $1::uuid ORDER BY created_at DESC LIMIT 1;",
             )
             .bind(client_id)
             .fetch_optional(conn)
@@ -162,8 +173,8 @@ pub async fn current_authorized_storage(
         Executor::Sqlite(ref mut conn) => {
             use crate::database::sqlite;
 
-            let maybe_allowed_storage: Option<i64> = sqlx::query_scalar(
-                "SELECT allowed_storage FROM storage_grants WHERE client_id = $1 ORDER BY created_at DESC LIMIT 1;",
+            let maybe_allowed_storage: Option<(String, i64)> = sqlx::query_scalar(
+                "SELECT id,allowed_storage FROM storage_grants WHERE client_id = $1 ORDER BY created_at DESC LIMIT 1;",
             )
             .bind(client_id)
             .fetch_optional(conn)

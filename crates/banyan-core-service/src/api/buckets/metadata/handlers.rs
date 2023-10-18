@@ -9,16 +9,6 @@ pub async fn push(
 ) -> impl IntoResponse {
     // ...
 
-    // Read a storage host from the database. We only have one right now, so this is easy
-    let storage_host = match db::select_storage_host(&database).await {
-        Ok(sh) => sh,
-        Err(err) => {
-            return CoreError::default_error(&format!("unable to read storage host: {err}"))
-                .into_response();
-        }
-    };
-    // TODO: Check if the storage host is full. If so, abort with 503
-
     /* 7. Generate a JWT for the storage host and return it to the user */
     let storage_grant_id = match db::record_storage_grant(
         &storage_host.id,

@@ -14,6 +14,7 @@ use uuid::Uuid;
 
 use crate::app::AppState;
 use crate::database::Database;
+use crate::database::models::MetadataState;
 use crate::extractors::{ApiIdentity, DataStore, SigningKey};
 use crate::utils::car_buffer::CarBuffer;
 //use crate::utils::metadata_upload::{round_to_nearest_100_mib};
@@ -91,8 +92,8 @@ pub async fn handler(
         .map_err(PushMetadataError::BrokenMultipartField)?
         .ok_or(PushMetadataError::MissingMetadata)?;
 
-    // TODO: validate name is car-upload (request_data_field.name())
-    // TODO: validate type is "application/vnd.ipld.car; version=2" (request_data_field.content_type())
+    // todo: validate name is car-upload (request_data_field.name())
+    // todo: validate type is "application/vnd.ipld.car; version=2" (request_data_field.content_type())
     let file_name = format!("{authorized_bucket_id}/{new_metadata_id}.car");
     let (hash, uploaded_size) =
         match store_metadata_stream(&store, file_name.as_str(), data_body).await {
@@ -130,32 +131,35 @@ pub async fn handler(
         return Ok((StatusCode::OK, Json(resp_msg)).into_response());
     }
 
-    let expected_data_size = ((request_data.expected_data_size / ONE_HUNDRED_MIB) + 1) * ONE_HUNDRED_MIB;
-    let storage_host = select_storage_host(&database, expected_data_size).await?;
+    let storage_host = select_storage_host(&database, request_data.expected_data_size).await?;
 
-    todo!()
-}
+    let current_authorized_amount = existing_authorization(&database, &api_id.account_id, &storage_host.id)
+        .await
+        .map_err(PushMetadataError::UnableToRetrieveAuthorizations)?;
+    let current_stored_amount = currently_stored_at_provider(&database, &api_id.account_id, &storage_host.id)
+        .await
+        .map_err(PushMetadataError::UnableToIdentifyStoredAmount)?;
 
-async fn select_storage_host(database: &Database, required_space: i64) -> Result<SelectedStorageHost, PushMetadataError> {
-    let maybe_storage_host = sqlx::query_as!(
-        SelectedStorageHost,
-        r#"SELECT id, name, url FROM storage_hosts
-               WHERE (available_storage - used_storage) > $1
-               ORDER BY RANDOM()
-               LIMIT 1;"#,
-        required_space,
-    )
-    .fetch_optional(database)
-    .await
-    .map_err(PushMetadataError::StorageHostLookupFailed)?;
+    let mut storage_authorization: Option<String> = None;
+    if (current_authorized_amount - current_stored_amount) < request_data.expected_data_size {
+        let currently_required_amount = current_stored_amount + request_data.expected_data_size;
+        let data_size_rounded = ((currently_required_amount / ONE_HUNDRED_MIB) + 1) * ONE_HUNDRED_MIB;
 
-    match maybe_storage_host {
-        Some(shi) => Ok(shi),
-        None => {
-            tracing::error!(?required_space, "failed to locate storage host with sufficient storage");
-            Err(PushMetadataError::NoAvailableStorage)
-        }
+        let new_authorization = generate_new_storage_authorization(&database, &api_id.account_id, &storage_host.id, data_size_rounded)
+            .await
+            .map_err(PushMetadataError::UnableToGenerateAuthorization)?;
+
+        storage_authorization = Some(new_authorization);
     }
+
+    let response = serde_json::json!({
+        "id": new_metadata_id,
+        "state": MetadataState::Pending,
+        "storage_host": storage_host.url,
+        "storage_authorization": storage_authorization,
+    });
+
+    Ok((StatusCode::OK, Json(response)).into_response())
 }
 
 async fn approve_key_fingerprints(
@@ -212,6 +216,71 @@ async fn currently_consumed_storage(database: &Database, account_id: &str) -> Re
     Ok(maybe_stored.unwrap_or(0))
 }
 
+async fn currently_stored_at_provider(database: &Database, account_id: &str, storage_host_id: &str) -> Result<i64, sqlx::Error> {
+    let res: Result<Option<i64>, _> = sqlx::query_scalar!(
+        r#"SELECT SUM(m.data_size) as total_data_size FROM metadata m
+               JOIN storage_hosts_metadatas_storage_grants shmg ON shmg.metadata_id = m.id
+               JOIN storage_grants sg ON shmg.storage_grant_id = sg.id
+               WHERE sg.account_id = $1 AND shmg.storage_host_id = $2;"#,
+        account_id,
+        storage_host_id,
+    )
+    .fetch_one(database)
+    .await;
+
+    res.map(|amt| amt.unwrap_or(0))
+}
+
+async fn existing_authorization(database: &Database, account_id: &str, storage_host_id: &str) -> Result<i64, sqlx::Error> {
+    sqlx::query_scalar!(
+        r#"SELECT authorized_amount FROM storage_grants
+               WHERE account_id = $1
+                   AND storage_host_id = $2
+                   AND redeemed_at IS NOT NULL
+               ORDER BY created_at DESC
+               LIMIT 1;"#,
+        account_id,
+        storage_host_id,
+    )
+    .fetch_optional(database)
+    .await
+    .map(|amt| amt.unwrap_or(0))
+}
+
+async fn fail_upload(database: &Database, metadata_id: &str) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        "UPDATE metadata SET state = 'upload_failed' WHERE id = $1",
+        metadata_id,
+    )
+    .execute(database)
+    .await?;
+
+    Ok(())
+}
+
+async fn generate_new_storage_authorization(
+    database: &Database,
+    account_id: &str,
+    storage_host_id: &str,
+    authorized_amount: i64,
+) -> Result<String, StorageAuthorizationError> {
+    let storage_grant_id = sqlx::query_scalar!(
+        r#"INSERT INTO storage_grants (storage_host_id, account_id, authorized_amount)
+            VALUES ($1, $2, $3)
+            RETURNING id;"#,
+        storage_host_id,
+        account_id,
+        authorized_amount,
+    )
+    .fetch_one(database)
+    .await
+    .map_err(StorageAuthorizationError::GrantRecordingFailed)?;
+
+    // todo: generate a signed authorization for the client
+
+    todo!()
+}
+
 async fn mark_current(database: &Database, metadata_id: &str) -> Result<(), sqlx::Error> {
     sqlx::query!(
         "UPDATE metadata SET state = 'current' WHERE id = $1",
@@ -222,17 +291,6 @@ async fn mark_current(database: &Database, metadata_id: &str) -> Result<(), sqlx
 
     sqlx::query!(
         "UPDATE metadata SET state = 'outdated' WHERE id != $1 AND state = 'current';",
-        metadata_id,
-    )
-    .execute(database)
-    .await?;
-
-    Ok(())
-}
-
-async fn fail_upload(database: &Database, metadata_id: &str) -> Result<(), sqlx::Error> {
-    sqlx::query!(
-        "UPDATE metadata SET state = 'upload_failed' WHERE id = $1",
         metadata_id,
     )
     .execute(database)
@@ -281,6 +339,28 @@ async fn record_upload_start(
     .fetch_one(database)
     .await
     .map_err(PushMetadataError::MetadataRegistrationFailed)
+}
+
+async fn select_storage_host(database: &Database, required_space: i64) -> Result<SelectedStorageHost, PushMetadataError> {
+    let maybe_storage_host = sqlx::query_as!(
+        SelectedStorageHost,
+        r#"SELECT id, name, url FROM storage_hosts
+               WHERE (available_storage - used_storage) > $1
+               ORDER BY RANDOM()
+               LIMIT 1;"#,
+        required_space,
+    )
+    .fetch_optional(database)
+    .await
+    .map_err(PushMetadataError::StorageHostLookupFailed)?;
+
+    match maybe_storage_host {
+        Some(shi) => Ok(shi),
+        None => {
+            tracing::error!(?required_space, "failed to locate storage host with sufficient storage");
+            Err(PushMetadataError::NoAvailableStorage)
+        }
+    }
 }
 
 async fn store_metadata_stream<'a>(
@@ -393,6 +473,15 @@ pub enum PushMetadataError {
     #[error("unable to determine if user is within their quota: {0}")]
     UnableToCheckAccounting(sqlx::Error),
 
+    #[error("failed to create new storage authorization: {0}")]
+    UnableToGenerateAuthorization(#[from] StorageAuthorizationError),
+
+    #[error("unable to identify how much data user has stored with each storage provider")]
+    UnableToIdentifyStoredAmount(sqlx::Error),
+
+    #[error("couldn't locate existing storage authorizations for account: {0}")]
+    UnableToRetrieveAuthorizations(sqlx::Error),
+
     #[error("failed to store metadata on disk: {0}, marking as failed might have had an error as well: {1:?}")]
     UploadStoreFailed(StoreMetadataError, Option<sqlx::Error>),
 }
@@ -411,6 +500,11 @@ impl IntoResponse for PushMetadataError {
                 let err_msg = serde_json::json!({"msg": "you have hit your account storage limit"});
                 (StatusCode::PAYLOAD_TOO_LARGE, Json(err_msg)).into_response()
             }
+            PushMetadataError::NoAvailableStorage => {
+                tracing::error!("no storage host available with capacity to store pushed data!");
+                let err_msg = serde_json::json!({"msg": "an internal server error occurred"});
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
+            }
             PushMetadataError::NoAuthorizedBucket => {
                 let err_msg = serde_json::json!({"msg": "not found"});
                 (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
@@ -418,7 +512,7 @@ impl IntoResponse for PushMetadataError {
             _ => {
                 tracing::error!("failed to push metadata: {self}");
                 let err_msg = serde_json::json!({"msg": "an internal server error occurred"});
-                (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
             }
         }
     }
@@ -440,6 +534,12 @@ struct SelectedStorageHost {
     pub id: String,
     pub name: String,
     pub url: String,
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum StorageAuthorizationError {
+    #[error("failed to record new grant storage authorization in the database: {0}")]
+    GrantRecordingFailed(sqlx::Error),
 }
 
 #[derive(Debug, thiserror::Error)]
