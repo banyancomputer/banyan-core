@@ -1,12 +1,22 @@
 use std::collections::HashMap;
+use std::convert::TryFrom;
+use std::fmt;
 
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
+use cid::Cid;
+use serde::{Deserialize, Deserializer};
 
 use crate::extractors::{ApiToken, DbConn};
 
-pub type LocationRequest = Vec<String>;
+const NA_LABEL: &str = "NA";
+pub type LocationRequest = Vec<SerializedCid>;
+
+#[derive(serde::Serialize)]
+struct InvalidCid {
+    msg: String,
+}
 
 pub async fn handler(
     api_token: ApiToken,
@@ -15,56 +25,83 @@ pub async fn handler(
 ) -> Response {
     let account_id = api_token.subject();
     let mut result_map = HashMap::new();
-    for cid in &request {
-        let normalized_cid = match cid::Cid::try_from(cid.to_string()) {
-            Ok(cid) => cid
-                .to_string_of_base(cid::multibase::Base::Base64Url)
-                .expect("parsed cid to unparse"),
-            Err(err) => {
-                tracing::error!("unable to parse cid: {}", err);
-                continue;
-            }
-        };
-
-        let block_id =
-            match sqlx::query_scalar!(r#"SELECT id FROM blocks WHERE cid = $1"#, normalized_cid)
-                .fetch_one(&mut *db_conn.0)
-                .await
-            {
-                Ok(block_id) => block_id,
-                Err(err) => {
-                    tracing::error!("unable to get block id from blocks table: {}", err);
-                    continue;
-                }
-            };
-
-        let block_location: Option<String> = match sqlx::query_scalar!(
+    for serialized_cid in &request {
+        let normalized_cid = Cid::from(serialized_cid)
+            .to_string_of_base(cid::multibase::Base::Base64Url)
+            .expect("cid should be valid");
+        let block_locations = match sqlx::query!(
             r#"SELECT sh.url
-                FROM block_locations bl
-                JOIN metadata m ON bl.metadata_id = m.id
-                JOIN buckets b ON m.bucket_id = b.id
-                JOIN storage_hosts sh ON bl.storage_host_id = sh.id
-                WHERE bl.block_id = $1
-                AND b.account_id = $2"#,
-            block_id,
+            FROM block_locations bl
+            JOIN metadata m ON bl.metadata_id = m.id
+            JOIN buckets b ON m.bucket_id = b.id
+            JOIN storage_hosts sh ON bl.storage_host_id = sh.id
+            JOIN blocks ON bl.block_id = blocks.id
+            WHERE blocks.cid = $1
+            AND b.account_id = $2
+            "#,
+            normalized_cid,
             account_id
         )
-        .fetch_optional(&mut *db_conn.0)
+        .fetch_all(&mut *db_conn.0)
         .await
         {
-            Ok(maybe_block_location) => maybe_block_location,
+            Ok(maybe_block_locations) => maybe_block_locations,
             Err(err) => {
                 tracing::error!(
-                    "unable to get block location from block_locations table: {}",
+                    "unable to get block locations from block_locations table: {}",
                     err
                 );
-                continue;
+                // Push the cid onto the NA label
+                vec![]
             }
         };
-
-        if let Some(location) = block_location {
-            result_map.insert(cid.to_owned(), location);
+        if block_locations.is_empty() {
+            // Push the cid onto the NA label
+            result_map
+                .entry(NA_LABEL.to_string())
+                .or_insert_with(Vec::new)
+                .push(serialized_cid.to_string());
+        } else {
+            for location in block_locations {
+                result_map
+                    .entry(location.url)
+                    .or_insert_with(Vec::new)
+                    .push(serialized_cid.to_string());
+            }
         }
     }
     (StatusCode::OK, Json(result_map)).into_response()
+}
+
+pub struct SerializedCid(Cid);
+
+impl fmt::Display for SerializedCid {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl SerializedCid {
+    pub fn from_str(s: &str) -> Result<Self, cid::Error> {
+        let cid = Cid::try_from(s)?;
+        Ok(Self(cid))
+    }
+}
+
+impl From<&SerializedCid> for Cid {
+    fn from(serialized_cid: &SerializedCid) -> Self {
+        serialized_cid.0
+    }
+}
+
+impl<'de> Deserialize<'de> for SerializedCid {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        Ok(SerializedCid(
+            Cid::try_from(s).map_err(serde::de::Error::custom)?,
+        ))
+    }
 }
