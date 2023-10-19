@@ -12,7 +12,7 @@ export const KeyActions: React.FC<{ bucket: Bucket; bucketKey: BucketKey }> = ({
     const { openModal } = useModal();
 
     const approveAccess = async () => {
-        openModal(<ApproveBucketAccessModal bucketKey={bucketKey} />);
+        openModal(<ApproveBucketAccessModal bucket={bucket} bucketKey={bucketKey} />);
     };
 
     const removeAccess = async () => {

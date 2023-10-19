@@ -3,16 +3,16 @@ import { useIntl } from 'react-intl';
 
 import { useModal } from '@/contexts/modals';
 import { useTomb } from '@/contexts/tomb';
-import { BucketKey } from '@/lib/interfaces/bucket';
+import { Bucket, BucketKey } from '@/lib/interfaces/bucket';
 
-export const ApproveBucketAccessModal: React.FC<{ bucketKey: BucketKey }> = ({ bucketKey }) => {
+export const ApproveBucketAccessModal: React.FC<{ bucket: Bucket; bucketKey: BucketKey }> = ({ bucket, bucketKey }) => {
     const { messages } = useIntl();
     const { approveBucketAccess } = useTomb();
     const { closeModal } = useModal();
 
     const approveAccess = async() => {
         try {
-            await approveBucketAccess(bucketKey.id);
+            await approveBucketAccess(bucket, bucketKey.id());
         } catch (error: any) { }
     };
 

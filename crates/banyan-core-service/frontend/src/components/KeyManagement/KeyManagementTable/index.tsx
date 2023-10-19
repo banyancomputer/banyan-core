@@ -27,7 +27,9 @@ export const KeyManagementTable: React.FC<{ buckets: Bucket[] }> = ({ buckets })
                     <tr className="border-b-table-cellBackground bg-table-headBackground border-none">
                         <th className="py-3 px-6 w-44 whitespace-break-spaces text-left font-medium">{`${messages.locationForKey}`}</th>
                         <th className="py-3 px-6 text-left font-medium whitespace-pre">
-                            {`${messages.client}`}
+                            {/* {`${messages.client}`} */
+                                `bucket_key_id`
+                            }
                         </th>
                         <th className="py-3 px-6 text-left font-medium">
                             {/* {`${messages.fingerprint}`} */
@@ -41,36 +43,41 @@ export const KeyManagementTable: React.FC<{ buckets: Bucket[] }> = ({ buckets })
                     </tr>
                 </thead>
                 <tbody>
-                    {buckets.map(bucket =>
-                        <React.Fragment key={bucket.id}>
-                            <tr className="bg-table-cellBackground text-gray-900">
-                                <td className="px-6 py-4">{bucket.name}</td>
-                                <td className="px-6 py-4"></td>
-                                <td className="px-6 py-4"></td>
-                                <td className="px-6 py-4"></td>
-                                <td className="px-6 py-4"></td>
-                            </tr>
-                            {
-                                bucket?.keys?.map(bucketKey => {
-                                    var pem = bucketKey.pem();
-                                    var approved = bucketKey.approved();
+                    {buckets.map(bucket => {
+                        // var bucket_id = bucket.id();
 
-                                    return <tr >
-                                    <td className="px-6 py-4"></td>
-                                    <td className="px-6 py-4"></td>
-                                    <td className="px-6 py-4">{pem}</td>
-                                    <td className="px-6 py-4">{approved ? `${messages.approved}` : `${messages.noAccess}`}</td>
-                                    <td className="px-6 py-4">
-                                        <ActionsCell
-                                            actions={<KeyActions bucket={bucket} bucketKey={bucketKey} />}
-                                            offsetTop={tableScroll}
-                                            tableRef={tableRef}
-                                        />
-                                    </td>
-                                </tr>
-                                })
-                            }
-                        </React.Fragment>
+                        return (<React.Fragment key={bucket.id}>
+                        <tr className="bg-table-cellBackground text-gray-900">
+                            <td className="px-6 py-4">{bucket.name}</td>
+                            <td className="px-6 py-4"></td>
+                            <td className="px-6 py-4"></td>
+                            <td className="px-6 py-4"></td>
+                            <td className="px-6 py-4"></td>
+                        </tr>
+                        {
+                            bucket?.keys?.map(bucketKey => {
+                                var pem = bucketKey.pem();
+                                var approved = bucketKey.approved();
+                                var bucket_key_id = bucketKey.id();
+
+                                return <tr key={bucket_key_id}>
+                                <td className="px-6 py-4"></td>
+                                <td className="px-6 py-4">{bucket_key_id}</td>
+                                <td className="px-6 py-4">{pem}</td>
+                                <td className="px-6 py-4">{approved ? `${messages.approved}` : `${messages.noAccess}`}</td>
+                                <td className="px-6 py-4">
+                                    <ActionsCell
+                                        actions={<KeyActions bucket={bucket} bucketKey={bucketKey} />}
+                                        offsetTop={tableScroll}
+                                        tableRef={tableRef}
+                                    />
+                                </td>
+                            </tr>
+                            })
+                        }
+                    </React.Fragment>);
+                    }
+                        
                     )}
                 </tbody>
             </table >
