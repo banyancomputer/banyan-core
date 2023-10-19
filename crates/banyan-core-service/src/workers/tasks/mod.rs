@@ -1,5 +1,5 @@
-mod email;
+mod email_task;
 mod test_task;
 
-pub use email::GaReleaseEmailTask;
+pub use email_task::GaReleaseEmailTask;
 pub use test_task::TestTask;
