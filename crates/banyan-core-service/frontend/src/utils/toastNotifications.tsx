@@ -15,7 +15,7 @@ export class ToastNotifications {
                 theme: 'light',
                 hideProgressBar: true,
                 autoClose: 2000,
-                icon: icon ? <span className="bg-gray-200 p-2 rounded-full">{icon}</span> : null,
+                icon: icon ? <span className="bg-button-primary p-2 rounded-full text-navigation-text">{icon}</span> : null,
                 bodyStyle: { gap: '17px', fontFamily: 'Inter', fontSize: '14px', fontWeight: 600, color: 'black' },
                 style: { padding: '16px', borderRadius: '12px', borderColor: '#7D89B0', borderWidth: '2px', width: '400px' },
             }
@@ -31,7 +31,7 @@ export class ToastNotifications {
                 },
                 success: {
                     render() { return successMessage; },
-                    icon: <span className="bg-gray-200 p-2 rounded-full">{icon}</span>,
+                    icon: <span className="bg-button-primary p-2 rounded-full text-navigation-text">{icon}</span>,
                 },
             },
             {
@@ -39,7 +39,7 @@ export class ToastNotifications {
                 hideProgressBar: true,
                 autoClose: false,
                 bodyStyle: { gap: '17px', fontFamily: 'Inter', fontSize: '14px', fontWeight: 600, color: 'black' },
-                style: { padding: '16px', borderRadius: '12px', borderColor: '#7D89B0', borderWidth: '2px', width: '400px' },
+                style: { padding: '16px', borderRadius: '12px', borderColor: 'var(--darken-border)', borderWidth: '2px', width: '400px' },
             }
         );
     };
@@ -65,7 +65,7 @@ export class ToastNotifications {
             <div className="w-full flex flex-col items-start justify-between gap-2 text-xs">
                 {message}
                 <button
-                    className="text-gray-600"
+                    className="text-text-600"
                     onClick={callback}
                 >
                     {buttonMessage}

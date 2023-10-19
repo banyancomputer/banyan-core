@@ -32,34 +32,36 @@ input {
 }
 
 .btn-primary {
-	@apply flex items-center justify-center font-semibold rounded-lg border-2 border-blue-primary bg-blue-primary text-white transition-all;
+	@apply flex items-center justify-center font-semibold rounded-lg border-2 border-button-primary bg-button-primary text-white transition-all;
 };
 
 .btn-primary:hover {
-	@apply bg-blue-hover border-blue-hover;
+	@apply bg-button-primary border-button-primary shadow-lg;
 }
 
 .btn-primary:disabled {
-	@apply cursor-not-allowed bg-disabled border-disabled;
+    @apply cursor-not-allowed bg-button-disabled border-button-disabled;
 }
 
 /* Button default styles */
 .btn-secondary {
-	@apply flex items-center justify-center font-semibold rounded-lg bg-transparent border-2 border-blue-primary text-gray-900;
+    @apply flex items-center justify-center font-semibold rounded-lg bg-transparent border-2 border-button-primary text-gray-900;
 }
 
 .btn-secondary:hover {
-	@apply bg-transparent border-gray-900;
+    @apply bg-transparent border-gray-900;
 }
 
-.table {
-    tr {
-        border: none;
-    }
+.btn-highlighted {
+    @apply flex items-center justify-center font-semibold rounded-lg border-2 border-button-highLight bg-button-highLight text-white transition-all;
+};
+
+.btn-highlighted:hover {
+    @apply bg-button-highLight border-button-highLight shadow-lg;
 }
 
 .input {
-    background: unset;
+    @apply bg-secondaryBackground
 }
 
 *::-webkit-scrollbar {
@@ -70,6 +72,10 @@ input {
 *::-webkit-scrollbar-thumb {
     border-radius: 8px;
     background-color: #686868;
+}
+
+.Toastify__toast-container {
+    width: unset !important;
 }
 
 .Toastify__toast-icon {
@@ -93,19 +99,12 @@ input {
     padding: 35px 0px;
 }
 
-.photo-viewer-container {
-    width: unset !important;
-    height: unset !important;
-}
-
 .preview-file > img {
-    width: unset !important;
-    height: unset !important;
     border-radius: 16px;
 }
 
 .toggle {
     background-color: #5299E0 !important;
     border: none;
-    --tglbg: var(--gray-200);
+    --tglbg: var(--text-200);
 }

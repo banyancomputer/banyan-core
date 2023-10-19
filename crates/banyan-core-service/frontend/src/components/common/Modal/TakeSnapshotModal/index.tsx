@@ -12,7 +12,7 @@ export const TakeSnapshotModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const { takeColdSnapshot } = useTomb();
     const { messages } = useIntl();
 
-    const takeSnapshot = async() => {
+    const takeSnapshot = async () => {
         try {
             await takeColdSnapshot(bucket);
             ToastNotifications.notify(`${messages.snapshotWasTaken}`, <HiOutlineLightningBolt size="20px" />);
@@ -30,7 +30,7 @@ export const TakeSnapshotModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
             </span>
             <div>
                 <h4 className="text-m font-semibold">{`${messages.takeColdSnapshot}`}</h4>
-                <p className="mt-2 text-gray-600">
+                <p className="mt-2 text-text-600">
                     {`${messages.doYouWantToTakeSnapshot}`}?
                 </p>
             </div>

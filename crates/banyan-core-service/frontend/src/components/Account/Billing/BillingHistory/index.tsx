@@ -68,11 +68,11 @@ export const BillingHistory = () => {
     ];
 
     return (
-        <div className="py-5 px-4 border-1 flex flex-col gap-4 rounded-lg text-gray-800 border-table-border">
+        <div className="py-5 px-4 border-1 flex flex-col gap-4 rounded-lg text-text-800 border-border-regular bg-secondaryBackground">
             <div className='flex items-center justify-between '>
                 <h3 className='font-semibold mb-1.5'>{`${messages.billingHistory}`}</h3>
                 <button
-                    className={`text-gray-600 ${isVisible && 'rotate-90'}`}
+                    className={`text-text-600 ${isVisible && 'rotate-90'}`}
                     onClick={() => setIsVisible(prev => !prev)}
                 >
                     <FiChevronRight size="20px" />
