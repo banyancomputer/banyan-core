@@ -16,6 +16,24 @@ pub async fn handler(
     let bucket_id = bucket_id.to_string();
     let metadata_id = metadata_id.to_string();
 
+    let owned_data = sqlx::query_as!(
+        OwnedMetadata,
+        r#"SELECT m.bucket_id, m.id as metadata_id FROM metadata AS m
+               JOIN buckets AS b ON m.bucket_id = b.id
+               JOIN snapshots AS s ON s.metadata_id = m.id
+               WHERE b.account_id = $1
+                   AND b.id = $2
+                   AND m.id = $3
+                   AND s.id IS NULL;"#,
+        api_id.account_id,
+        bucket_id,
+        metadata_id,
+    )
+    .fetch_optional(&database)
+    .await
+    .map_err(CreateSnapshotError::MetadataUnavailable)?
+    .ok_or(CreateSnapshotError::NotFound)?;
+
     todo!()
 }
 
@@ -23,6 +41,9 @@ pub async fn handler(
 pub enum CreateSnapshotError {
     #[error("no matching metadata for the current account")]
     NotFound,
+
+    #[error("unable to locate requested metadata: {0}")]
+    MetadataUnavailable(sqlx::Error),
 }
 
 impl IntoResponse for CreateSnapshotError {
@@ -39,4 +60,10 @@ impl IntoResponse for CreateSnapshotError {
             }
         }
     }
+}
+
+#[derive(sqlx::FromRow)]
+struct OwnedMetadata {
+    bucket_id: String,
+    metadata_id: String,
 }

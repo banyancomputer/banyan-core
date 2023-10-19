@@ -235,6 +235,9 @@ CREATE TABLE snapshots (
     REFERENCES metadata(id)
     ON DELETE CASCADE,
 
+  state TEXT NOT NULL,
+  size INTEGER,
+
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -304,3 +307,36 @@ CREATE TABLE storage_hosts_metadatas_storage_grants (
 
 CREATE UNIQUE INDEX idx_storage_hosts_metadatas_storage_grants_on_all
   ON storage_hosts_metadatas_storage_grants(storage_host_id, metadata_id, storage_grant_id);
+
+CREATE TABLE snapshot_restore_requests (
+  id TEXT NOT NULL PRIMARY KEY DEFAULT (
+    lower(hex(randomblob(4))) || '-' ||
+    lower(hex(randomblob(2))) || '-4' ||
+    substr(lower(hex(randomblob(2))), 2) || '-a' ||
+    substr(lower(hex(randomblob(2))), 2) || '-6' ||
+    substr(lower(hex(randomblob(6))), 2)),
+
+  user_id TEXT
+    REFERENCES users(id)
+    ON DELETE SET NULL,
+
+  snapshot_id TEXT
+    REFERENCES snapshots(id)
+    ON DELETE SET NULL,
+
+  storage_host_id TEXT
+    REFERENCES storage_hosts(id)
+    ON DELETE SET NULL,
+
+  state TEXT NOT NULL,
+
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  completed_at TIMESTAMP
+);
+
+CREATE UNIQUE INDEX idx_snapshot_restore_requests_on_snapshot_id_storage_host_id_state
+  ON snapshot_restore_requests(snapshot_id, storage_host_id)
+  WHERE snapshot_id IS NOT NULL
+    AND storage_host_id IS NOT NULL
+    AND user_id IS NOT NULL
+    AND state IN ('pending', 'ready');

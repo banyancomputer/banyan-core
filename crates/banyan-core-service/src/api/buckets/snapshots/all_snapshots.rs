@@ -18,7 +18,7 @@ pub async fn handler(
 
     let query_result = sqlx::query_as!(
         Snapshot,
-        "SELECT s.*,(m.data_size + m.metadata_size) AS size FROM snapshots AS s
+        "SELECT s.* FROM snapshots AS s
              JOIN metadata AS m ON s.metadata_id = m.id
              JOIN buckets AS b ON m.bucket_id = b.id
              WHERE b.account_id = $1 AND m.bucket_id = $2;",

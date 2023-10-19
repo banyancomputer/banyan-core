@@ -16,13 +16,47 @@ pub async fn handler(
     let bucket_id = bucket_id.to_string();
     let metadata_id = metadata_id.to_string();
 
-    todo!()
+    let snapshot_id = sqlx::query_scalar!(
+        r#"SELECT s.id FROM snapshots AS s
+               JOIN metadata AS m ON s.metadata_id = m.id
+               JOIN buckets AS b ON m.bucket_id = b.id
+               WHERE b.account_id = $1
+                   AND b.id = $2
+                   AND m.id = $3;"#,
+        api_id.account_id,
+        bucket_id,
+        metadata_id,
+    )
+    .fetch_optional(&database)
+    .await
+    .map_err(RestoreSnapshotError::SnapshotUnavailable)?
+    .ok_or(RestoreSnapshotError::NotFound)?;
+
+    let request_id = sqlx::query_scalar!(
+        r#"INSERT INTO snapshot_restore_requests (user_id, snapshot_id, state)
+               VALUES ($1, $2, 'pending')
+               RETURNING id;"#,
+        api_id.user_id,
+        snapshot_id,
+    )
+    .fetch_one(&database)
+    .await
+    .map_err(RestoreSnapshotError::FailedRequestGeneration)?;
+
+    let resp_msg = serde_json::json!({ "id": request_id });
+    Ok((StatusCode::OK, Json(resp_msg)).into_response())
 }
 
 #[derive(Debug, thiserror::Error)]
 pub enum RestoreSnapshotError {
+    #[error("failed to store request for restoration in the database")]
+    FailedRequestGeneration(sqlx::Error),
+
     #[error("no matching metadata for the current account")]
     NotFound,
+
+    #[error("unable to locate requested snapshot: {0}")]
+    SnapshotUnavailable(sqlx::Error),
 }
 
 impl IntoResponse for RestoreSnapshotError {
