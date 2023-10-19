@@ -1,6 +1,10 @@
+use axum::body::StreamBody;
 use axum::extract::{Json, Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
+use http::{HeaderMap, HeaderValue};
+use http::header::{CONTENT_DISPOSITION, CONTENT_TYPE};
+use object_store::ObjectStore;
 use uuid::Uuid;
 
 use crate::api::models::ApiMetadata;
@@ -14,7 +18,7 @@ pub async fn handler(
     store: DataStore,
     Path((bucket_id, metadata_id)): Path<(Uuid, Uuid)>,
     State(state): State<AppState>,
-) -> Response {
+) -> Result<Response, PullMetadataError> {
     let database = state.database();
 
     let db_bucket_id = bucket_id.to_string();
@@ -31,15 +35,48 @@ pub async fn handler(
     )
     .fetch_optional(&database)
     .await
-    .unwrap();
+    .map_err(PullMetadataError::MetadataUnavailable)?
+    .ok_or(PullMetadataError::NotFound)?;
 
-    let file_path = object_store::path::Path::from(format!("{bucket_id}/{metadata_id}.car").as_str());
+    let file_name = format!("{bucket_id}/{metadata_id}.car");
+    let file_path = object_store::path::Path::from(file_name.as_str());
 
-    todo!()
+    let file_reader = store.get(&file_path).await.map_err(PullMetadataError::FileUnavailable)?;
+    let stream = file_reader.into_stream();
+
+    let mut headers = HeaderMap::new();
+
+    let disposition = HeaderValue::from_str(format!("attachment; filename=\"{file_name}\"").as_str()).unwrap();
+    headers.insert(CONTENT_DISPOSITION, disposition);
+    headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/vnd.ipld.car; version=2"));
+
+    let body = StreamBody::new(stream);
+
+    Ok((StatusCode::OK, headers, body).into_response())
 }
 
 #[derive(sqlx::FromRow)]
 struct PullBucketData {
     bucket_id: String,
     metadata_id: String,
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum PullMetadataError {
+    #[error("unable to get a handle on metadata file: {0}")]
+    FileUnavailable(object_store::Error),
+
+    #[error("the database reported an issue when attempting to locate metadata: {0}")]
+    MetadataUnavailable(sqlx::Error),
+
+    #[error("no matching metadata for the current account")]
+    NotFound,
+}
+
+impl IntoResponse for PullMetadataError {
+    fn into_response(self) -> Response {
+        tracing::error!("encountered error retrieving metadata: {self}");
+        let err_msg = serde_json::json!({"msg": "backend service experienced an issue servicing the request"});
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
+    }
 }
