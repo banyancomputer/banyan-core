@@ -228,7 +228,6 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     /** Deletes access key for bucket */
     const removeBucketAccess = async (id: string) => {
         /** TODO:  connect removeBucketAccess method when in will be implemented.  */
-        // return await tomb.approveBucketAccess(id);
     };
 
     const purgeSnapshot = async (id: string) => {
