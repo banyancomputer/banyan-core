@@ -29,8 +29,8 @@ export const DeleteFileModal: React.FC<{ bucket: Bucket; file: BucketFile }> = (
             <FiTrash2 size="24px" stroke="#5e6c97" />
             <div>
                 <h4 className="text-m font-semibold">{`${messages.removeFile}`}</h4>
-                <p className="mt-2 text-gray-600">
-                    {`${messages.wantToMove}`} <b className="text-gray-900">{file.name}</b>? <br /> {`${messages.filesWillBeMoved}`}.
+                <p className="mt-2 text-text-600">
+                    {`${messages.wantToMove}`} <b className="text-text-900">{file.name}</b>? <br /> {`${messages.filesWillBeMoved}`}.
                 </p>
             </div>
             <div className="mt-3 flex items-center gap-3 text-xs" >

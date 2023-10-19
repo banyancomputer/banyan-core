@@ -22,17 +22,17 @@ export const KeyActions: React.FC<{ bucket: Bucket; bucketKey: BucketKey }> = ({
     };
 
     return (
-        <div className="w-52 text-xs font-medium bg-mainBackground rounded-xl shadow-md z-10 text-gray-900 overflow-hidden">
+        <div className="w-52 text-xs font-medium bg-mainBackground rounded-xl shadow-md z-10 text-text-900 overflow-hidden">
             {bucketKey.approved ?
                 <div
-                    className="w-full gap-2 py-2 px-3 border-b-1 border-table-border transition-all hover:bg-hover"
+                    className="w-full gap-2 py-2 px-3 border-b-1 border-border-regular transition-all hover:bg-hover"
                     onClick={removeAccess}
                 >
                     {`${messages.removeAccess}`}
                 </div>
                 :
                 <div
-                    className="w-full gap-2 py-2 px-3 border-b-1 border-table-border transition-all hover:bg-hover"
+                    className="w-full gap-2 py-2 px-3 border-b-1 border-border-regular transition-all hover:bg-hover"
                     onClick={approveAccess}
                 >
                     {`${messages.approveAccess}`}

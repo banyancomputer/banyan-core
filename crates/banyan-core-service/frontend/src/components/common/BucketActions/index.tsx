@@ -1,16 +1,14 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { useIntl } from 'react-intl';
 import { FiEdit, FiTrash2, FiUpload } from 'react-icons/fi';
 import { HiOutlineLightningBolt } from 'react-icons/hi';
 import { MdRestore, MdOutlineRestoreFromTrash } from 'react-icons/md';
 import { BsBoxSeam } from 'react-icons/bs';
 import { PiFolderNotchPlusBold } from 'react-icons/pi';
-import { useRouter } from 'next/router';
 
 import { useModal } from '@/contexts/modals';
 import { Bucket } from '@/lib/interfaces/bucket';
 import { useFolderLocation } from '@/hooks/useFolderLocation';
-import { useTomb } from '@/contexts/tomb';
 
 import { Action } from '../FileActions';
 import { BucketSnapshotsModal } from '@/components/common/Modal/BucketSnapshotsModal';
@@ -24,9 +22,7 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const { messages } = useIntl();
     const { openModal, closeModal } = useModal();
     const bucketType = `${bucket.bucketType}_${bucket.storageClass}`;
-    const { selectedBucket, getSelectedBucketFiles } = useTomb();
     const folderLocation = useFolderLocation();
-    const router = useRouter();
 
     const upload = async () => {
         try {
@@ -82,16 +78,16 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         } catch (error: any) { }
     };
 
-    const uploadAction = useMemo(() => new Action(`${messages.upload}`, <FiUpload size="18px" />, upload), []);
-    const createSnapshotAction = useMemo(() => new Action(`${messages.takeColdSnapshot}`, <HiOutlineLightningBolt size="18px" />, takeSnapshot), []);
-    const viewBucketSnapshotsAction = useMemo(() => new Action(`${messages.viewColdSnapshots}`, <MdRestore size="18px" />, viewBucketSnapshots), []);
-    const viewBucketVersionsAction = useMemo(() => new Action(`${messages.viewBucketVersions}`, <MdRestore size="18px" />, viewBucketVersions), []);
-    const renameAction = useMemo(() => new Action(`${messages.rename}`, <FiEdit size="18px" />, rename), []);
-    const createFolderAction = useMemo(() => new Action(`${messages.createNewFolder}`, <PiFolderNotchPlusBold size="18px" />, createFolder), []);
-    const restoreColdVersionAction = useMemo(() => new Action(`${messages.restoreCold}`, <MdOutlineRestoreFromTrash size="18px" />, retoreColdVersion), []);
-    const deleteHotDatadAction = useMemo(() => new Action(`${messages.deleteHotData}`, <BsBoxSeam size="18px" />, deleteHotData), []);
-    const deletedAction = useMemo(() => new Action(`${messages.delete}`, <FiTrash2 size="18px" />, deleteBucket), []);
-    const purgeAction = useMemo(() => new Action(`${messages.purgeColdKeys}`, <FiTrash2 size="18px" />, purgeColdKeys), []);
+    const uploadAction = new Action(`${messages.upload}`, <FiUpload size="18px" />, upload);
+    const createSnapshotAction = new Action(`${messages.takeColdSnapshot}`, <HiOutlineLightningBolt size="18px" />, takeSnapshot, `${messages.tooltipExplanation}`);
+    const viewBucketSnapshotsAction = bucket.snapshots.length ? new Action(`${messages.viewColdSnapshots}`, <MdRestore size="18px" />, viewBucketSnapshots) : null;
+    const viewBucketVersionsAction = new Action(`${messages.viewBucketVersions}`, <MdRestore size="18px" />, viewBucketVersions);
+    const renameAction = new Action(`${messages.rename}`, <FiEdit size="18px" />, rename);
+    const createFolderAction = new Action(`${messages.createNewFolder}`, <PiFolderNotchPlusBold size="18px" />, createFolder);
+    const restoreColdVersionAction = new Action(`${messages.restoreCold}`, <MdOutlineRestoreFromTrash size="18px" />, retoreColdVersion);
+    const deleteHotDatadAction = new Action(`${messages.deleteHotData}`, <BsBoxSeam size="18px" />, deleteHotData);
+    const deletedAction = new Action(`${messages.delete}`, <FiTrash2 size="18px" />, deleteBucket);
+    const purgeAction = new Action(`${messages.purgeColdKeys}`, <FiTrash2 size="18px" />, purgeColdKeys);
 
     const hotInrecactiveActions = [
         createFolderAction, uploadAction, createSnapshotAction, viewBucketSnapshotsAction, renameAction, deletedAction
@@ -122,16 +118,27 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     }
 
     return (
-        <div className={`w-52 text-xs font-medium bg-mainBackground rounded-xl shadow-md z-10 select-none text-gray-900`}>
+        <div className={`w-56 text-xs font-medium bg-bucket-actionsBackground rounded-xl shadow-md z-10 select-none text-text-900`}>
             {
                 actions[bucketType].map(action =>
-                    <div
-                        key={action.label}
-                        className="w-full flex items-center gap-2 py-2 px-3 border-b-1 border-table-border transition-all hover:bg-hover"
-                        onClick={action.value}
-                    >
-                        {action.icon} {action.label}
-                    </div>
+                    action ?
+                        <div
+                            key={action.label}
+                            className="w-full flex items-center gap-2 py-2 px-3 border-b-1 border-border-regular transition-all hover:bg-hover"
+                            onClick={action.value}
+                        >
+                            <span className='text-button-primary'>
+                                {action.icon}
+                            </span>
+                            {action.label}
+                            {action.tooltip ?
+                                <span className='text-button-primary' title={action.tooltip}>(?)</span>
+                                :
+                                null
+                            }
+                        </div>
+                        :
+                        null
                 )
             }
         </div>
