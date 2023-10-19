@@ -41,12 +41,6 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bu
         } catch (error: any) { }
     };
 
-    const copyLink = async () => {
-        try {
-            ToastNotifications.notify(`${messages.linkWasCopied}`, <AiOutlineLink size="20px" />);
-        } catch (error: any) { }
-    };
-
     const moveTo = () => {
         openModal(<MoveToModal file={file} bucket={bucket} />);
     };
@@ -82,13 +76,12 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bu
     };
 
     const downloadAction = useMemo(() => new Action(`${messages.download}`, <FiDownload size="18px" />, downloadFile), []);
-    // const copyLinkdAction = useMemo(() => new Action(`${messages.copyLink}`, <AiOutlineLink size="18px" />, copyLink), []);
-    const moveToAction = useMemo(() => new Action(`${messages.moveTo}`, <PiArrowsLeftRight size="18px" />, moveTo), []);
-    const makeCopyAction = useMemo(() => new Action(`${messages.makeCopy}`, <PiCopySimple size="18px" />, copy), []);
-    const vierFileVersionsAction = useMemo(() => new Action(`${messages.viewFileVersions}`, <AiOutlineLink size="18px" />, viewFileVersions), []);
-    const renameAction = useMemo(() => new Action(`${messages.rename}`, <FiEdit size="18px" />, rename), []);
-    const removeAction = useMemo(() => new Action(`${messages.remove}`, <FiTrash2 size="18px" />, remove), []);
-    const shareAction = useMemo(() => new Action(`${messages.shareFile}`, <BiShareAlt size="18px" />, share), []);
+    const moveToAction = new Action(`${messages.moveTo}`, <PiArrowsLeftRight size="18px" />, moveTo);
+    const makeCopyAction = new Action(`${messages.makeCopy}`, <PiCopySimple size="18px" />, copy);
+    const vierFileVersionsAction = new Action(`${messages.viewFileVersions}`, <AiOutlineLink size="18px" />, viewFileVersions);
+    const renameAction = new Action(`${messages.rename}`, <FiEdit size="18px" />, rename);
+    const removeAction = new Action(`${messages.remove}`, <FiTrash2 size="18px" />, remove);
+    const shareAction = new Action(`${messages.shareFile}`, <BiShareAlt size="18px" />, share);
 
     const hotInrecactiveActions = [
         downloadAction, moveToAction, makeCopyAction, renameAction, removeAction
@@ -116,7 +109,7 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bu
         backup_hot: hotBackupActions,
         backup_warm: warmBackupActions,
         backup_cold: coldBackupActions,
-    }
+    };
 
     return (
         <div className="absolute w-48 right-8 text-xs font-medium bg-mainBackground rounded-xl shadow-md z-10 text-text-900 select-none">{

@@ -18,7 +18,7 @@ module.exports = {
 				toast: '480px',
 				snapshotsModal: '530px',
 				keyManagement: '1128px',
-				filePreview: '70%',
+				filePreview: '80vw',
 			},
 			padding: {
 				keyManagement: '72px',
@@ -30,7 +30,7 @@ module.exports = {
 				login: '590px',
 			},
 			maxWidth: {
-				filePreview: '952px',
+				filePreview: '80vw',
 			},
 			colors: {
 				button: {
