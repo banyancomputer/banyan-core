@@ -34,7 +34,18 @@ pub async fn handler(
     .map_err(CreateSnapshotError::MetadataUnavailable)?
     .ok_or(CreateSnapshotError::NotFound)?;
 
-    todo!()
+    let snapshot_id = sqlx::query_scalar!(
+        r#"INSERT INTO snapshots (metadata_id, state)
+               VALUES ($1, 'pending')
+               RETURNING id;"#,
+        metadata_id,
+    )
+    .fetch_one(&database)
+    .await
+    .map_err(CreateSnapshotError::SaveFailed)?;
+
+    let resp_msg = serde_json::json!({ "id": snapshot_id });
+    Ok((StatusCode::OK, Json(resp_msg)).into_response())
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -44,6 +55,9 @@ pub enum CreateSnapshotError {
 
     #[error("unable to locate requested metadata: {0}")]
     MetadataUnavailable(sqlx::Error),
+
+    #[error("saving new snapshot association failed")]
+    SaveFailed(sqlx::Error),
 }
 
 impl IntoResponse for CreateSnapshotError {
