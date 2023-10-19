@@ -9,23 +9,6 @@ pub async fn push(
 ) -> impl IntoResponse {
     // ...
 
-    /* 7. Generate a JWT for the storage host and return it to the user */
-    let storage_grant_id = match db::record_storage_grant(
-        &storage_host.id,
-        &account_id,
-        &metadata_resource.id,
-        data_usage,
-        &database,
-    )
-    .await
-    {
-        Ok(sgi) => sgi,
-        Err(err) => {
-            return CoreError::default_error(&format!("unable record storage grant: {err}"))
-                .into_response();
-        }
-    };
-
     let storage_authorization = match generate_storage_ticket(
         &account_id,
         &storage_grant_id,
@@ -42,14 +25,6 @@ pub async fn push(
         }
     };
 
-    let response = responses::PushMetadataResponse {
-        id: updated_metadata.id.to_string(),
-        state: models::MetadataState::Pending,
-        storage_host: Some(storage_host.url),
-        storage_authorization: Some(storage_authorization),
-    };
-
-    (StatusCode::OK, axum::Json(response)).into_response()
 }
 
 /// Handle a request to pull metadata from a bucket

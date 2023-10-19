@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT dak.id, dak.account_id, a.userId as user_id, dak.pem\n                   FROM device_api_keys AS dak\n                   JOIN accounts AS a ON dak.account_id = a.id\n                   WHERE fingerprint = $1;",
+  "query": "SELECT dak.id, a.id as account_id, a.userId as user_id, dak.pem\n                   FROM device_api_keys AS dak\n                   JOIN accounts AS a ON dak.account_id = a.id\n                   WHERE dak.fingerprint = $1;",
   "describe": {
     "columns": [
       {
@@ -34,5 +34,5 @@
       false
     ]
   },
-  "hash": "d3497bcd004479876ad3783746469c37b57f4e749c52a5f363855a33efc581fa"
+  "hash": "c72238692f8bbd163f2686f548be5b75593e9809c5e32ae72a9a1f7df903ed0f"
 }

@@ -1,18 +1,21 @@
+use std::collections::{HashMap, HashSet};
+use std::str::FromStr;
+
+use axum::{Json, TypedHeader};
 use axum::body::StreamBody;
 use axum::extract::{BodyStream, Path, State};
 use axum::headers::ContentType;
-use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use axum::Json;
-use axum::TypedHeader;
 use futures::{TryStream, TryStreamExt};
-use http::{HeaderMap, HeaderValue};
+use jwt_simple::prelude::*;
+use http::{HeaderMap, HeaderValue, StatusCode};
 use object_store::ObjectStore;
 use serde::Deserialize;
 use tokio::io::{AsyncWrite, AsyncWriteExt};
 use uuid::Uuid;
+use url::Url;
 
-use crate::app::AppState;
+use crate::app::{AppState, ServiceSigningKey};
 use crate::database::Database;
 use crate::database::models::MetadataState;
 use crate::extractors::{ApiIdentity, DataStore, SigningKey};
@@ -30,6 +33,8 @@ const ONE_HUNDRED_MIB: i64 = 100 * 1024 * 1024;
 
 /// Upper size limit on the JSON payload that precedes a metadata CAR file upload (128KiB)
 const REQUEST_DATA_SIZE_LIMIT: u64 = 128 * 1_024;
+
+const STORAGE_TICKET_DURATION: u64 = 15 * 60; // 15 minutes
 
 pub async fn handler(
     api_id: ApiIdentity,
@@ -145,7 +150,7 @@ pub async fn handler(
         let currently_required_amount = current_stored_amount + request_data.expected_data_size;
         let data_size_rounded = ((currently_required_amount / ONE_HUNDRED_MIB) + 1) * ONE_HUNDRED_MIB;
 
-        let new_authorization = generate_new_storage_authorization(&database, &api_id.account_id, &storage_host.id, data_size_rounded)
+        let new_authorization = generate_new_storage_authorization(&database, &service_signing_key, &api_id, &storage_host, data_size_rounded)
             .await
             .map_err(PushMetadataError::UnableToGenerateAuthorization)?;
 
@@ -260,25 +265,38 @@ async fn fail_upload(database: &Database, metadata_id: &str) -> Result<(), sqlx:
 
 async fn generate_new_storage_authorization(
     database: &Database,
-    account_id: &str,
-    storage_host_id: &str,
+    service_signing_key: &ServiceSigningKey,
+    api_id: &ApiIdentity,
+    storage_host: &SelectedStorageHost,
     authorized_amount: i64,
 ) -> Result<String, StorageAuthorizationError> {
     let storage_grant_id = sqlx::query_scalar!(
         r#"INSERT INTO storage_grants (storage_host_id, account_id, authorized_amount)
             VALUES ($1, $2, $3)
             RETURNING id;"#,
-        storage_host_id,
-        account_id,
+        storage_host.id,
+        api_id.account_id,
         authorized_amount,
     )
     .fetch_one(database)
     .await
     .map_err(StorageAuthorizationError::GrantRecordingFailed)?;
 
-    // todo: generate a signed authorization for the client
+    let token_capabilities = TokenCapabilities::new(&storage_host.url, authorized_amount);
+    let mut claims = Claims::with_custom_claims(token_capabilities, Duration::from_secs(STORAGE_TICKET_DURATION))
+        .with_audiences(HashSet::from_strings(&[storage_host.name.as_str()]))
+        .with_issuer("banyan-platform")
+        .with_subject(format!("{}@{}", api_id.user_id, api_id.device_api_key_fingerprint))
+        .invalid_before(Clock::now_since_epoch() - Duration::from_secs(30));
 
-    todo!()
+    claims.create_nonce();
+    claims.issued_at = Some(Clock::now_since_epoch());
+
+    let bearer_token = service_signing_key
+        .sign(claims)
+        .map_err(StorageAuthorizationError::SignatureFailed)?;
+
+    Ok(bearer_token)
 }
 
 async fn mark_current(database: &Database, metadata_id: &str) -> Result<(), sqlx::Error> {
@@ -540,6 +558,9 @@ struct SelectedStorageHost {
 pub enum StorageAuthorizationError {
     #[error("failed to record new grant storage authorization in the database: {0}")]
     GrantRecordingFailed(sqlx::Error),
+
+    #[error("failed to sign new storage authorization: {0}")]
+    SignatureFailed(jwt_simple::Error),
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -561,4 +582,17 @@ pub enum StreamStoreError {
 
     #[error("failed to write out chunk: {0}")]
     WriteFailed(std::io::Error),
+}
+
+#[derive(Deserialize, Serialize)]
+struct TokenCapabilities {
+    capabilities: HashMap<String, i64>,
+}
+
+impl TokenCapabilities {
+    fn new(storage_url: &str, authorized_amount: i64) -> Self {
+        let mut capabilities = HashMap::new();
+        capabilities.insert(storage_url.to_string(), authorized_amount);
+        TokenCapabilities { capabilities }
+    }
 }

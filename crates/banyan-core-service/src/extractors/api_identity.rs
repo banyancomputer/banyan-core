@@ -53,6 +53,7 @@ pub struct ApiIdentity {
     pub account_id: String,
     pub user_id: String,
     pub device_api_key_id: String,
+    pub device_api_key_fingerprint: String,
 }
 
 #[async_trait]
@@ -95,10 +96,10 @@ where
 
         let db_device_api_key = sqlx::query_as!(
             DeviceApiKey,
-            r#"SELECT dak.id, dak.account_id, a.userId as user_id, dak.pem
+            r#"SELECT dak.id, a.id as account_id, a.userId as user_id, dak.pem
                    FROM device_api_keys AS dak
                    JOIN accounts AS a ON dak.account_id = a.id
-                   WHERE fingerprint = $1;"#,
+                   WHERE dak.fingerprint = $1;"#,
             key_id
         )
         .fetch_one(&database)
@@ -136,6 +137,7 @@ where
             account_id: claims.subject,
             user_id: db_device_api_key.user_id,
             device_api_key_id: db_device_api_key.id,
+            device_api_key_fingerprint: key_id,
         };
 
         Ok(api_identity)
