@@ -8,6 +8,8 @@ use axum::TypedHeader;
 use futures::{TryFutureExt, TryStream, TryStreamExt};
 use jwt_simple::prelude::*;
 use object_store::ObjectStore;
+use reqwest::{Client, Url};
+use reqwest::header::{HeaderMap, HeaderValue};
 use serde::{Deserialize, Serialize};
 use tokio::io::{AsyncWrite, AsyncWriteExt};
 use uuid::Uuid;
@@ -116,7 +118,7 @@ pub async fn handler(
 
             handle_successful_upload(&db, &store, &cr, &upload_id, &store_path).await?;
             // todo: should be a background task
-            report_upload_to_platform(auth_key, request.metadata_id, &cr).await?;
+            report_upload_to_platform(auth_key, client.storage_grant_id(), request.metadata_id, &cr).await?;
 
             Ok((StatusCode::NO_CONTENT, ()).into_response())
         }
@@ -309,21 +311,15 @@ async fn record_upload_failed(db: &Database, upload_id: &str) -> Result<(), Uplo
     Ok(())
 }
 
-use reqwest::header::{HeaderMap, HeaderValue};
-use reqwest::{Client, Url};
-
-#[derive(Serialize)]
-struct MetadataSizeRequest {
-    data_size: u64,
-}
-
 async fn report_upload_to_platform(
     auth_key: PlatformAuthKey,
+    storage_authorization_id: String,
     metadata_id: Uuid,
     report: &CarReport,
 ) -> Result<(), UploadError> {
     let metadata_size = MetadataSizeRequest {
         data_size: report.total_size(),
+        storage_authorization_id,
     };
 
     let mut default_headers = HeaderMap::new();
@@ -527,6 +523,12 @@ where
         ));
     }
     Ok(car_analyzer.report()?)
+}
+
+#[derive(Serialize)]
+struct MetadataSizeRequest {
+    data_size: u64,
+    storage_authorization_id: String,
 }
 
 #[derive(Debug, thiserror::Error)]
