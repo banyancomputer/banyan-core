@@ -19,6 +19,6 @@ pub fn router(state: AppState) -> Router<AppState> {
             "/:metadata_id",
             get(single_metadata::handler).delete(delete_metadata::handler),
         )
-        //.route("/:metadata_id/pull", get(pull_metadata::handler))
+        .route("/:metadata_id/pull", get(pull_metadata::handler))
         .with_state(state)
 }

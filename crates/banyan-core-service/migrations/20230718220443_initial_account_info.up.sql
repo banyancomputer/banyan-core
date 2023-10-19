@@ -289,9 +289,17 @@ CREATE TABLE storage_grants (
 );
 
 CREATE TABLE storage_hosts_metadatas_storage_grants (
-  storage_host_id TEXT NOT NULL REFERENCES storage_hosts(id),
-  metadata_id TEXT NOT NULL REFERENCES metadata(id),
-  storage_grant_id TEXT REFERENCES storage_grants(id)
+  storage_host_id TEXT NOT NULL
+    REFERENCES storage_hosts(id)
+    ON DELETE CASCADE,
+
+  metadata_id TEXT NOT NULL
+    REFERENCES metadata(id)
+    ON DELETE CASCADE,
+
+  storage_grant_id TEXT NOT NULL
+    REFERENCES storage_grants(id)
+    ON DELETE CASCADE
 );
 
 CREATE UNIQUE INDEX idx_storage_hosts_metadatas_storage_grants_on_all
