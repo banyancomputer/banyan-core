@@ -166,6 +166,7 @@ pub enum EmailTaskError {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::workers::current_task::tests::default_current_task;
     use sqlx::SqlitePool;
 
     const ACCOUNT_ID: &str = "00000000-0000-0000-0000-000000000000";
@@ -177,7 +178,7 @@ mod tests {
             crate::email::message::GaRelease {},
             EmailConfig::new(None, "test@test.test", false).unwrap(),
         );
-        task.run(CurrentTask::default(), ctx).await?;
+        task.run(default_current_task(), ctx).await?;
         Ok(())
     }
 
