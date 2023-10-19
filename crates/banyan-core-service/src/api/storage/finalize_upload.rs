@@ -22,7 +22,17 @@ pub async fn handler(
 
     let database = state.database();
 
-    // todo: need to associate storage authorization with metadata
+    sqlx::query!(
+        r#"INSERT INTO storage_hosts_metadatas_storage_grants
+               (storage_host_id, metadata_id, storage_grant_id)
+               VALUES ($1, $2, $3);"#,
+        storage_provider.id,
+        db_metadata_id,
+        request.storage_authorization_id,
+    )
+    .execute(&database)
+    .await
+    .map_err(FinalizeUploadError::NoUploadAssociation)?;
 
     let bucket_id = sqlx::query_scalar!(
         r#"UPDATE metadata
@@ -65,6 +75,9 @@ pub enum FinalizeUploadError {
 
     #[error("failed to existing current upload(s) as outdated: {0}")]
     MarkOutdatedFailed(sqlx::Error),
+
+    #[error("failed to associate finalized uploaded with storage host")]
+    NoUploadAssociation(sqlx::Error),
 }
 
 impl IntoResponse for FinalizeUploadError {

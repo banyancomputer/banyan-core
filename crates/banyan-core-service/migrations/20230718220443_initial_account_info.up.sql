@@ -293,3 +293,6 @@ CREATE TABLE storage_hosts_metadatas_storage_grants (
   metadata_id TEXT NOT NULL REFERENCES metadata(id),
   storage_grant_id TEXT REFERENCES storage_grants(id)
 );
+
+CREATE UNIQUE INDEX idx_storage_hosts_metadatas_storage_grants_on_all
+  ON storage_hosts_metadatas_storage_grants(storage_host_id, metadata_id, storage_grant_id);
