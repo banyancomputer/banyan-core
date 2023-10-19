@@ -1,12 +1,13 @@
 use axum::extract::{self, Json};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
+use sqlx::Connection;
 
 use super::request::MailgunHookRequest;
 
+use crate::db::models::EmailMessageState;
 use crate::error::CoreError;
 use crate::extractors::{DbConn, MailgunSigningKey};
-use crate::utils::db::{read_email_state, update_email_state};
 
 pub async fn handle(
     mut db_conn: DbConn,
@@ -25,27 +26,32 @@ pub async fn handle(
         }
     }
 
-    let message_id = hook_request.message_id();
+    let message_id = hook_request.message_id().to_string();
     let next_state = hook_request.event();
 
-    let maybe_current_state = read_email_state(message_id, &mut db_conn).await;
-    let current_state = match maybe_current_state {
-        Ok(state) => state,
+    let email = match sqlx::query_as!(
+        Email,
+        r#"SELECT account_id, state FROM emails WHERE id = $1;"#,
+        message_id
+    )
+    .fetch_one(&mut *db_conn.0)
+    .await
+    {
+        Ok(e) => e,
         Err(err) => {
             return CoreError::generic_error(
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "backend service issue",
-                Some(&format!("failed to read message state: {err}")),
+                Some(&format!("failed to read email: {err}")),
             )
             .into_response()
         }
     };
 
-    // No need to do anything if the current state is already greater than or equal to the next state
-    if next_state < current_state {
-        return (StatusCode::OK).into_response();
-    }
-    // If we get this then something went wrong on Mailgun's end
+    let current_state = email.state();
+    let account_id = email.account_id();
+
+    // If we get this then something went wrong on Mailgun's end -- represents an invalid state transition or a duplicate event
     if next_state == current_state {
         return CoreError::generic_error(
             StatusCode::NOT_ACCEPTABLE,
@@ -55,16 +61,119 @@ pub async fn handle(
         .into_response();
     }
 
-    // Otherwise, this is a valid state transition
-    let maybe_updated_email = update_email_state(message_id, next_state, &mut db_conn).await;
+    // Make sure we have an email_stats entry for this account
+    match sqlx::query!(
+        r#"INSERT OR IGNORE INTO email_stats (account_id) VALUES ($1);"#,
+        account_id
+    )
+    .execute(&mut *db_conn.0)
+    .await
+    {
+        Ok(_) => (),
+        Err(err) => {
+            return CoreError::generic_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "backend service issue",
+                Some(&format!("failed to insert email_stats: {err}")),
+            )
+            .into_response()
+        }
+    };
+    let email_stat_query = format!(
+        "UPDATE email_stats SET {} = {} + 1 WHERE account_id = $1;",
+        next_state, next_state
+    );
 
-    match maybe_updated_email {
+    // No need to do anything to the state but we should update the email_stat counter
+    if next_state < current_state {
+        match sqlx::query(&email_stat_query)
+            .bind(account_id)
+            .execute(&mut *db_conn.0)
+            .await
+        {
+            Ok(_) => return (StatusCode::OK).into_response(),
+            Err(err) => {
+                return CoreError::generic_error(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "backend service issue",
+                    Some(&format!("failed to update email_stats: {err}")),
+                )
+                .into_response()
+            }
+        }
+    }
+
+    let next_state = next_state.to_string();
+    // Otherwise, this is a valid state transition. Start a transaction and update the email state
+    let mut tx = match db_conn.0.begin().await {
+        Ok(tx) => tx,
+        Err(err) => {
+            return CoreError::generic_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "backend service issue",
+                Some(&format!("failed to start transaction: {err}")),
+            )
+            .into_response()
+        }
+    };
+
+    match sqlx::query!(
+        r#"UPDATE emails SET state = $1 WHERE id = $2;"#,
+        next_state,
+        message_id
+    )
+    .execute(&mut *tx)
+    .await
+    {
+        Ok(_) => (),
+        Err(err) => {
+            return CoreError::generic_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "backend service issue",
+                Some(&format!("failed to update email state: {err}")),
+            )
+            .into_response()
+        }
+    }
+
+    match sqlx::query(&email_stat_query)
+        .bind(account_id)
+        .execute(&mut *tx)
+        .await
+    {
+        Ok(_) => (),
+        Err(err) => {
+            return CoreError::generic_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "backend service issue",
+                Some(&format!("failed to update email_stats: {err}")),
+            )
+            .into_response()
+        }
+    }
+
+    match tx.commit().await {
         Ok(_) => (StatusCode::OK).into_response(),
         Err(err) => CoreError::generic_error(
             StatusCode::INTERNAL_SERVER_ERROR,
             "backend service issue",
-            Some(&format!("failed to update message state: {err}")),
+            Some(&format!("failed to commit transaction: {err}")),
         )
         .into_response(),
+    }
+}
+
+#[derive(sqlx::FromRow)]
+struct Email {
+    account_id: String,
+    state: String,
+}
+
+impl Email {
+    fn state(&self) -> EmailMessageState {
+        self.state.clone().into()
+    }
+    fn account_id(&self) -> String {
+        self.account_id.clone()
     }
 }

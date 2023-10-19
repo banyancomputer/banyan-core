@@ -2,8 +2,8 @@
 
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 use url::Url;
+use uuid::Uuid;
 
 use crate::email::message::ProductInvoice;
 use crate::workers::CurrentTask;
@@ -38,7 +38,9 @@ impl TaskLike for ProductInvoiceEmailTask {
         if !should_send_email_message(self.account_id, &ctx).await? {
             return Ok(());
         }
-        let message = ProductInvoice { url: self.url.clone() };
+        let message = ProductInvoice {
+            url: self.url.clone(),
+        };
         send_email_message(self.account_id, &message, &ctx).await
     }
 }
@@ -52,9 +54,9 @@ mod tests {
     /// ProductInvoiceEmailTask should succeed in a valid context
     async fn success() {
         let (ctx, account_id, current_task) = test_setup().await;
-        let task = ProductInvoiceEmailTask::new(account_id, Url::parse("https://example.com").unwrap());
+        let task =
+            ProductInvoiceEmailTask::new(account_id, Url::parse("https://example.com").unwrap());
         let result = task.run(current_task, ctx).await;
         assert!(result.is_ok());
     }
 }
-

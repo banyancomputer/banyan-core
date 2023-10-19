@@ -1,5 +1,3 @@
-use uuid::Uuid;
-
 use crate::db::models::{self, BucketType, CreatedResource, StorageClass};
 use crate::extractors::DbConn;
 use crate::utils::keys::fingerprint_public_pem;
@@ -553,35 +551,4 @@ pub async fn read_bucket_data_usage(
     .fetch_one(&mut *db_conn.0)
     .await
     .map(|num| num as u64)
-}
-
-/// Read the current state of an email in the database.
-pub async fn read_email_state(
-    message_id: Uuid,
-    db_conn: &mut DbConn,
-) -> Result<models::EmailMessageState, sqlx::Error> {
-    let message_id = message_id.to_string();
-    let state = sqlx::query_scalar!(r#"SELECT state FROM emails WHERE id = $1;"#, message_id)
-        .fetch_one(&mut *db_conn.0)
-        .await?;
-    Ok(state.into())
-}
-
-#[allow(dead_code)]
-/// Update the state of an email in the database.
-pub async fn update_email_state(
-    message_id: Uuid,
-    state: models::EmailMessageState,
-    db_conn: &mut DbConn,
-) -> Result<(), sqlx::Error> {
-    let message_id = message_id.to_string();
-    let state = state.to_string();
-    sqlx::query!(
-        r#"UPDATE emails SET state = $1 WHERE id = $2;"#,
-        state,
-        message_id
-    )
-    .execute(&mut *db_conn.0)
-    .await?;
-    Ok(())
 }

@@ -30,3 +30,27 @@ CREATE TABLE emails (
   state VARCHAR(32) NOT NULL CHECK (state IN ('sent', 'accepted', 'delivered', 'opened', 'complained', 'unsubscribed', 'rejected', 'failed'))
     DEFAULT 'sent'
 );
+
+CREATE TABLE email_stats (
+  id TEXT NOT NULL PRIMARY KEY DEFAULT (
+    lower(hex(randomblob(4))) || '-' ||
+    lower(hex(randomblob(2))) || '-4' ||
+    substr(lower(hex(randomblob(2))), 2) || '-a' ||
+    substr(lower(hex(randomblob(2))), 2) || '-6' ||
+    substr(lower(hex(randomblob(6))), 2)
+  ),
+
+  account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+
+  sent INTEGER NOT NULL DEFAULT 0,
+  accepted INTEGER NOT NULL DEFAULT 0,
+  delivered INTEGER NOT NULL DEFAULT 0,
+  opened INTEGER NOT NULL DEFAULT 0,
+  complained INTEGER NOT NULL DEFAULT 0,
+  unsubscribed INTEGER NOT NULL DEFAULT 0,
+  rejected INTEGER NOT NULL DEFAULT 0,
+  failed INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE UNIQUE INDEX idx_email_stats_on_account_id
+  ON email_stats(account_id);

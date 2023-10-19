@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT\n                delivered,\n                failed,\n                complained,\n                unsubscribed\n            FROM email_stats e\n            WHERE e.account_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "name": "delivered",
+        "ordinal": 0,
+        "type_info": "Int64"
+      },
+      {
+        "name": "failed",
+        "ordinal": 1,
+        "type_info": "Int64"
+      },
+      {
+        "name": "complained",
+        "ordinal": 2,
+        "type_info": "Int64"
+      },
+      {
+        "name": "unsubscribed",
+        "ordinal": 3,
+        "type_info": "Int64"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "9c068dd7e5d505015a94b4aba0792d8a65454412aae0957036cd72f8609bb677"
+}

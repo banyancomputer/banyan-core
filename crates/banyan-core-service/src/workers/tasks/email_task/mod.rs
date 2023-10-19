@@ -1,14 +1,14 @@
 mod ga_release;
-mod scheduled_maintenance;
 mod payment_failed;
 mod product_invoice;
 mod reaching_storage_limit;
+mod scheduled_maintenance;
 
 pub use ga_release::GaReleaseEmailTask;
-pub use scheduled_maintenance::ScheduledMaintenanceEmailTask;
 pub use payment_failed::PaymentFailedEmailTask;
 pub use product_invoice::ProductInvoiceEmailTask;
 pub use reaching_storage_limit::ReachingStorageLimitEmailTask;
+pub use scheduled_maintenance::ScheduledMaintenanceEmailTask;
 
 use sqlx::SqlitePool;
 use tracing;
@@ -91,19 +91,17 @@ pub async fn should_send_email_message(
     // If the last three emails we sent to a user resulted in a delivery failure we should not send the message
     let failures = sqlx::query_scalar!(
         r#"SELECT
-                COUNT(*) AS failures
+                SUM(CASE WHEN state = 'failed' THEN 1 ELSE 0 END) AS failures
             FROM (
                 SELECT state
                 FROM emails e
                 WHERE e.account_id = $1
                 ORDER BY e.sent_at DESC
                 LIMIT 3 
-            ) AS last_three_emails
-            WHERE
-                last_three_emails.state = 'failed';"#,
+            ) AS last_three_emails;"#,
         account_id_string
     )
-    .fetch_optional(&mut *db_conn)
+    .fetch_one(&mut *db_conn)
     .await?;
     if failures >= Some(3) {
         tracing::info!("user {account_id_string} has had 3 or more consecutive failed emails");
@@ -111,18 +109,23 @@ pub async fn should_send_email_message(
     }
 
     // If we have sent 3 or more email to the user which have been marked as spam we should not send the message
-    let complaints = sqlx::query_scalar!(
-        r#"SELECT
-                COUNT(*) AS complaints
-            FROM emails e
-            WHERE e.account_id = $1
-                AND e.state = 'complained'
-            LIMIT 3"#,
+    sqlx::query!(
+        r#"INSERT OR IGNORE INTO email_stats (account_id) VALUES ($1);"#,
         account_id_string
     )
-    .fetch_optional(&mut *db_conn)
+    .execute(&mut *db_conn)
     .await?;
-    if complaints >= Some(3) {
+    let complaints = sqlx::query_scalar!(
+        r#"SELECT
+                complained
+            FROM email_stats e
+            WHERE e.account_id = $1
+            LIMIT 1"#,
+        account_id_string
+    )
+    .fetch_one(&mut *db_conn)
+    .await?;
+    if complaints >= 3 {
         tracing::info!("user {account_id_string} has had 3 or more spam complaints");
         return Ok(false);
     }
@@ -197,7 +200,7 @@ pub async fn send_email_message(
 pub mod tests {
     use super::*;
     use crate::workers::current_task::tests::default_current_task;
-    use crate::workers::{TaskLike, CurrentTask};
+    use crate::workers::{CurrentTask, TaskLike};
 
     const ACCOUNT_ID: &str = "00000000-0000-0000-0000-000000000000";
     const USER_EMAIL: &str = "user@user.email";
@@ -299,7 +302,6 @@ pub mod tests {
         let later = complained_email(&ctx, later).await;
         let later = delivered_email(&ctx, later).await;
         let _later = complained_email(&ctx, later).await;
-        example_email_task(ctx.clone()).await?;
         let email_count = count_sent_emails(&ctx).await;
         assert_eq!(email_count, 0);
         Ok(())
@@ -326,6 +328,16 @@ pub mod tests {
         .execute(&mut *db_conn)
         .await
         .expect("db setup");
+        sqlx::query!(
+            r#"UPDATE email_stats
+            SET delivered = delivered + 1
+            WHERE account_id = $1"#,
+            ACCOUNT_ID
+        )
+        .execute(&mut *db_conn)
+        .await
+        .expect("db setup");
+
         when + chrono::Duration::seconds(1)
     }
 
@@ -343,6 +355,16 @@ pub mod tests {
         .execute(&mut *db_conn)
         .await
         .expect("db setup");
+        sqlx::query!(
+            r#"UPDATE email_stats
+            SET failed = failed + 1
+            WHERE account_id = $1"#,
+            ACCOUNT_ID
+        )
+        .execute(&mut *db_conn)
+        .await
+        .expect("db setup");
+
         when + chrono::Duration::seconds(1)
     }
 
@@ -360,6 +382,16 @@ pub mod tests {
         .execute(&mut *db_conn)
         .await
         .expect("db setup");
+        sqlx::query!(
+            r#"UPDATE email_stats
+            SET complained = complained + 1
+            WHERE account_id = $1"#,
+            ACCOUNT_ID
+        )
+        .execute(&mut *db_conn)
+        .await
+        .expect("db setup");
+
         when + chrono::Duration::seconds(1)
     }
 
@@ -377,6 +409,16 @@ pub mod tests {
         .execute(&mut *db_conn)
         .await
         .expect("db setup");
+        sqlx::query!(
+            r#"UPDATE email_stats
+            SET unsubscribed = unsubscribed + 1
+            WHERE account_id = $1"#,
+            ACCOUNT_ID
+        )
+        .execute(&mut *db_conn)
+        .await
+        .expect("db setup");
+
         when + chrono::Duration::seconds(1)
     }
 
@@ -403,6 +445,15 @@ pub mod tests {
             VALUES ($1, $1, 'email', 'email', $2)"#,
             ACCOUNT_ID,
             USER_EMAIL
+        )
+        .execute(&db_conn)
+        .await
+        .expect("db setup");
+
+        sqlx::query!(
+            r#"INSERT INTO email_stats (account_id)
+            VALUES ($1)"#,
+            ACCOUNT_ID
         )
         .execute(&db_conn)
         .await

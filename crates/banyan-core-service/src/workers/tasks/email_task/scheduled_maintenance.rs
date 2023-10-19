@@ -22,7 +22,11 @@ pub struct ScheduledMaintenanceEmailTask {
 
 impl ScheduledMaintenanceEmailTask {
     pub fn new(account_id: Uuid, start: String, end: String) -> Self {
-        Self { account_id, start, end }
+        Self {
+            account_id,
+            start,
+            end,
+        }
     }
 }
 
@@ -38,7 +42,10 @@ impl TaskLike for ScheduledMaintenanceEmailTask {
         if !should_send_email_message(self.account_id, &ctx).await? {
             return Ok(());
         }
-        let message = ScheduledMaintenance { start: self.start.clone(), end: self.end.clone() };
+        let message = ScheduledMaintenance {
+            start: self.start.clone(),
+            end: self.end.clone(),
+        };
         send_email_message(self.account_id, &message, &ctx).await
     }
 }
@@ -52,9 +59,12 @@ mod tests {
     /// ScheduledMaintenanceEmailTask should succeed in a valid context
     async fn success() {
         let (ctx, account_id, current_task) = test_setup().await;
-        let task = ScheduledMaintenanceEmailTask::new(account_id, "2021-01-01".to_string(), "2021-01-02".to_string());
+        let task = ScheduledMaintenanceEmailTask::new(
+            account_id,
+            "2021-01-01".to_string(),
+            "2021-01-02".to_string(),
+        );
         let result = task.run(current_task, ctx).await;
         assert!(result.is_ok());
     }
 }
-
