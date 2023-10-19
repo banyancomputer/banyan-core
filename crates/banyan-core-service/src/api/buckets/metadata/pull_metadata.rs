@@ -75,8 +75,16 @@ pub enum PullMetadataError {
 
 impl IntoResponse for PullMetadataError {
     fn into_response(self) -> Response {
-        tracing::error!("encountered error retrieving metadata: {self}");
-        let err_msg = serde_json::json!({"msg": "backend service experienced an issue servicing the request"});
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
+        match &self {
+            PullMetadataError::NotFound => {
+                let err_msg = serde_json::json!({"msg": "not found"});
+                (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
+            }
+            _ => {
+                tracing::error!("encountered error retrieving metadata: {self}");
+                let err_msg = serde_json::json!({"msg": "backend service experienced an issue servicing the request"});
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
+            }
+        }
     }
 }
