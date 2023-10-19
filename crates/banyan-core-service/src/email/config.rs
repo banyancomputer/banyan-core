@@ -1,13 +1,12 @@
 use std::env;
 
 use lettre::transport::smtp::authentication::Credentials;
-use serde::{Deserialize, Serialize};
 use url::Url;
 
 use super::error::EmailError;
 use super::transport::EmailTransport;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone)]
 pub struct EmailConfig {
     smtp_connection: Option<SmtpConnection>,
     from: String,
@@ -71,7 +70,7 @@ impl EmailConfig {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone)]
 pub struct SmtpConnection {
     host: String,
     port: u16,
