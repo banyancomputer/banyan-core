@@ -52,7 +52,7 @@ export const CreateSecretKeyModal = () => {
             </span>
             <div>
                 <h4 className="text-m font-semibold">{`${messages.createSecretKey}`}</h4>
-                <p className="mt-2 text-gray-600">
+                <p className="mt-2 text-text-600">
                     {`${messages.andEnterIntoTextField}`}
                 </p>
             </div>

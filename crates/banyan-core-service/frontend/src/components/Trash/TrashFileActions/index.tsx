@@ -36,11 +36,11 @@ export const TrashActions: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ b
     ];
 
     return (
-        <div className="relative w-48 text-xs font-medium bg-mainBackground rounded-xl shadow-md z-10 text-gray-900">{
+        <div className="relative w-48 text-xs font-medium bg-mainBackground rounded-xl shadow-md z-10 text-text-900">{
             acrions.map(action =>
                 <div
                     key={action.label}
-                    className="w-full flex items-center gap-2 py-2 px-3 border-b-1 border-table-border transition-all hover:bg-hover"
+                    className="w-full flex items-center gap-2 py-2 px-3 border-b-1 border-border-regular transition-all hover:bg-hover"
                     onClick={action.value}
                 >
                     {action.icon} {action.label}

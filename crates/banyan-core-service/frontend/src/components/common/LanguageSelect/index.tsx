@@ -36,7 +36,7 @@ export const LanguageSelect = () => {
         <div
             ref={selectRef}
             onClick={toggleSelect}
-            className="relative p-2.5 flex w-80 justify-between items-center gap-2 text-sm font-medium border-1 border-inputBorder rounded-lg shadow-sm cursor-pointer select-none"
+            className="relative p-2.5 flex w-80 justify-between items-center gap-2 text-sm font-medium border-1 border-border-darken rounded-lg shadow-sm cursor-pointer select-none"
         >
             <Image
                 width={22}
@@ -55,7 +55,7 @@ export const LanguageSelect = () => {
             {isOptionstVisible &&
                 <ul
                     onClick={stopPropagation}
-                    className="absolute left-0 top-12 w-full max-h-48 overflow-y-auto bg-mainBackground border-1 border-table-border rounded-lg shadow-sm z-10"
+                    className="absolute left-0 top-12 w-full max-h-48 overflow-y-auto bg-mainBackground border-1 border-border-regular rounded-lg shadow-sm z-10"
                 >
                     {locales?.map(language =>
                         <Link

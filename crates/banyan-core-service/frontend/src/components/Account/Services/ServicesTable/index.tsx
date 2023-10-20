@@ -22,9 +22,9 @@ export const ServicesTable = () => {
     ]
 
     return (
-        <div className="max-h-[calc(100vh-290px)] overflow-x-auto border-1 border-table-border rounded-xl" >
-            <table className="table table-pin-rows w-full text-gray-600 rounded-xl ">
-                <thead className="border-b-table-cellBackground text-xxs font-normal text-gray-600">
+        <div className="max-h-[calc(100vh-290px)] overflow-x-auto border-1 border-border-regular rounded-xl" >
+            <table className="table table-pin-rows w-full text-text-600 rounded-xl ">
+                <thead className="border-b-table-cellBackground text-xxs font-normal text-text-600">
                     <tr className="border-b-table-cellBackground bg-table-headBackground">
                         <th className="p-3 whitespace-break-spaces text-left font-medium">
                             {`${messages.service}`}
@@ -43,10 +43,10 @@ export const ServicesTable = () => {
                 <tbody>
                     {MOCK_DATA.map(storage =>
                         <tr>
-                            <td className='px-3 py-6 border-t-1 border-r-1 border-table-border'>{storage.service}</td>
-                            <td className='px-3 py-6 border-t-1 border-x-1 border-table-border'>{storage.serviceCost}</td>
-                            <td className='px-3 py-6 border-t-1 border-x-1 border-table-border'>{storage.dataQty}</td>
-                            <td className='px-3 py-6 border-t-1 border-l-1 border-table-border'>{storage.cost}</td>
+                            <td className='px-3 py-6 border-t-1 border-r-1 border-border-regular'>{storage.service}</td>
+                            <td className='px-3 py-6 border-t-1 border-x-1 border-border-regular'>{storage.serviceCost}</td>
+                            <td className='px-3 py-6 border-t-1 border-x-1 border-border-regular'>{storage.dataQty}</td>
+                            <td className='px-3 py-6 border-t-1 border-l-1 border-border-regular'>{storage.cost}</td>
                         </tr>
                     )}
                 </tbody>

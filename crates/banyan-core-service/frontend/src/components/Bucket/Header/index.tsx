@@ -41,7 +41,7 @@ const BucketHeader = () => {
             </h2>
             {selectedBucket?.bucketType !== 'backup' &&
                 <button
-                    className="btn-primary gap-2 w-40 py-2 px-4"
+                    className="btn-highlighted bg-button-highLight gap-2 w-40 py-2 px-4 bg-"
                     onClick={uploadFile}
                 >
                     <PlusBold />

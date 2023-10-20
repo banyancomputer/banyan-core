@@ -160,5 +160,9 @@
 	"recipientEmail": "Adresse e-mail du destinataire",
 	"accessPreviousVersions": "Accéder et consulter les versions précédentes",
 	"wrongSecretKey": "Mauvaise clé secrète",
-	"uploading": "Téléchargement"
+	"uploading": "Téléchargement",
+	"hot": "À la demande",
+	"warm": "À la demande",
+	"cold": "Archivage",
+	"coldSnapshots": "Instantanés froids"
 }

@@ -37,7 +37,7 @@ export const MoveToModal: React.FC<{ file: BucketFile, bucket: Bucket }> = ({ fi
         <div className="w-modal flex flex-col gap-6" >
             <div>
                 <h4 className="text-m font-semibold ">{`${messages.moveTo}`}</h4>
-                <p className="mt-2 text-gray-600">
+                <p className="mt-2 text-text-600">
                     {`${messages.selectWhereToMove}`}
                 </p>
             </div>

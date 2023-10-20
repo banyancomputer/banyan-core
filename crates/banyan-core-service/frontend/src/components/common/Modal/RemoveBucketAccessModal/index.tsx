@@ -10,7 +10,7 @@ export const RemoveBucketAccessModal: React.FC<{ bucketKey: BucketKey }> = ({ bu
     const { removeBucketAccess } = useTomb();
     const { closeModal } = useModal();
 
-    const removeAccess = async() => {
+    const removeAccess = async () => {
         try {
             await removeBucketAccess(bucketKey.id);
             closeModal();
@@ -21,7 +21,7 @@ export const RemoveBucketAccessModal: React.FC<{ bucketKey: BucketKey }> = ({ bu
         <div className="w-modal flex flex-col gap-8" >
             <div>
                 <h4 className="text-m font-semibold ">{`${messages.removeAccess}`}</h4>
-                <p className="mt-2 text-gray-600">
+                <p className="mt-2 text-text-600">
                     {`${messages.removeAccessDescription}`}
                 </p>
             </div>

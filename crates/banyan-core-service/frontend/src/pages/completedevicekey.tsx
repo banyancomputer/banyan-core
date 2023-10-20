@@ -35,7 +35,7 @@ const DeviceKeyApproval: NextPageWithLayout = () => {
     }, []);
 
     // Perform all functions required to complete 
-    const completeRegistration = async() => {
+    const completeRegistration = async () => {
         try {
             let keys: DeviceApiKey[] = await api.readDeviceApiKeys();
             if (keys.some(key => key.fingerprint == fingerprint)) {
@@ -65,20 +65,20 @@ const DeviceKeyApproval: NextPageWithLayout = () => {
                 <div className="w-modal flex flex-col gap-8" >
                     <div>
                         <h4 className="text-m font-semibold">{`${messages.approveAccess}`}</h4>
-                        <p className="mt-2 text-gray-600">
+                        <p className="mt-2 text-text-600">
                             {`${messages.wantToApproveAccess}?`}
                         </p>
 
                         <h4 className="text-m font-semibold">Fingerprint:</h4>
-                        <p className="mt-2 text-gray-600">{`${ fingerprint }`}</p>
+                        <p className="mt-2 text-text-600">{`${fingerprint}`}</p>
 
                         <h4 className="text-m font-semibold">PEM:</h4>
-                        <p className="mt-2 text-gray-600">{`${ spki }`}</p>
+                        <p className="mt-2 text-text-600">{`${spki}`}</p>
                     </div>
                     <div className="mt-3 flex items-center gap-3 text-xs" >
                         <button
                             className="btn-secondary w-1/2 py-3 px-4"
-                            // onClick={closeModal}
+                        // onClick={closeModal}
                         >
                             {`${messages.cancel}`}
                         </button>

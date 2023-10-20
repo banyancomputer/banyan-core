@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react';
 import { useKeystore } from './keystore';
 import {
     Bucket, BucketFile, BucketKey,
-    BucketSnapshot, FileMetadata, MockBucket,
+    BucketSnapshot, MockBucket,
 } from '@/lib/interfaces/bucket';
 import { useFolderLocation } from '@/hooks/useFolderLocation';
 
@@ -86,8 +86,9 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
                 storageClass: bucket.storageClass(),
                 bucketType: bucket.bucketType(),
                 files: [],
+                snapshots: [],
                 keys: [],
-            })))
+            })));
         });
     };
 
@@ -99,12 +100,14 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
             for (let bucket of buckets) {
                 const mount = await tomb!.mount(bucket.id, key);
                 const files = await mount.ls([]);
+                const snapshots = await tomb!.listBucketSnapshots(bucket.id);
                 wasm_bukets.push({
                     ...bucket,
                     mount,
+                    snapshots,
                     files: files || [],
                 });
-            }
+            };
             setBuckets(wasm_bukets);
             setAreBucketsLoading(false);
         })
@@ -160,6 +163,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
             let wasmBucket = await tomb!.createBucket(name, storageClass, bucketType, key.publicKey);
             let mount = await tomb!.mount(wasmBucket.id(), key);
             const files = await mount.ls([]);
+            const snapshots = await tomb!.listBucketSnapshots(wasmBucket.id());
             const keys = await tomb!.listBucketKeys(wasmBucket.id())
             let bucket = {
                 mount,
@@ -168,6 +172,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
                 storageClass: wasmBucket.storageClass(),
                 bucketType: wasmBucket.bucketType(),
                 files: files || [],
+                snapshots,
                 keys,
             }
 
@@ -228,7 +233,6 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     /** Deletes access key for bucket */
     const removeBucketAccess = async (id: string) => {
         /** TODO:  connect removeBucketAccess method when in will be implemented.  */
-        // return await tomb.approveBucketAccess(id);
     };
 
     const purgeSnapshot = async (id: string) => {
@@ -244,16 +248,16 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     };
 
     /** Internal function which looking for selected bucket and updates it, or bucket in buckets list if no bucket selected. */
-    const updateBucketsState = (files: BucketFile[], id: string) => {
+    const updateBucketsState = (key: 'keys' | 'files' | 'snapshots', elements: BucketFile[] | BucketSnapshot[], id: string,) => {
         /** If we are on buckets list screen there is no selected bucket in state. */
         if (selectedBucket?.id === id) {
-            setSelectedBucket(bucket => bucket ? ({ ...bucket, files }) : bucket);
+            setSelectedBucket(bucket => bucket ? ({ ...bucket, [key]: elements }) : bucket);
             return;
         };
 
         setBuckets(buckets => buckets.map(bucket => {
             if (bucket.id === id) {
-                return ({ ...bucket, files })
+                return ({ ...bucket, [key]: elements })
             }
             return bucket;
         }));
@@ -265,7 +269,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
             await mount.mkdir([...path, name]);
             if (path.join('') !== folderLocation.join('')) return;
             const files = await mount.ls(path) || [];
-            await updateBucketsState(files, bucket.id);
+            await updateBucketsState('files', files, bucket.id);
         });
     };
 
@@ -286,7 +290,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
                 await mount.write([...uploadPath, name], file);
                 if (uploadPath.join('') !== folderLocation.join('')) return;
                 const files = await mount.ls(uploadPath) || [];
-                await updateBucketsState(files, bucket.id);
+                await updateBucketsState('files', files, bucket.id);
             });
             await getStorageUsageState();
         } catch (error: any) {
@@ -299,6 +303,10 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         await tombMutex(bucket.mount, async mount => {
             await mount.snapshot();
         });
+        await tombMutex(tomb, async tomb => {
+            const snapshots = await tomb!.listBucketSnapshots(bucket.id);
+            await updateBucketsState('snapshots', snapshots, bucket.id);
+        })
     };
 
     /** TODO: implement after adding to tomb-wasm */
@@ -321,7 +329,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         await tombMutex(bucket.mount, async mount => {
             await mount.rm([...path, name]);
             const files = await mount.ls(path) || [];
-            await updateBucketsState(files, bucket.id);
+            await updateBucketsState('files', files, bucket.id);
         });
     };
 
