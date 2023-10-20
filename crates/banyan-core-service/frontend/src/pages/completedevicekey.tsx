@@ -10,6 +10,7 @@ import { b64UrlDecode } from '@/utils/b64';
 import { prettyFingerprintApiKeySpki, publicPemWrap } from '@/utils';
 import { useSession } from 'next-auth/react';
 import { ClientApi } from '@/lib/api/auth';
+import { DeviceApiKey } from '@/lib/interfaces';
 
 export { getServerSideProps };
 
@@ -36,10 +37,19 @@ const DeviceKeyApproval: NextPageWithLayout = () => {
     // Perform all functions required to complete 
     const completeRegistration = async() => {
         try {
-            await api.registerDeviceApiKey(pem);
-            await completeDeviceKeyRegistration(fingerprint);
-            console.log("finished device key registration");
-            alert("successfully authorized new device!");
+            let keys: DeviceApiKey[] = await api.readDeviceApiKeys();
+            if (keys.some(key => key.fingerprint == fingerprint)) {
+                console.log("key already registered; sending completion signal");
+                await completeDeviceKeyRegistration(fingerprint);
+            }
+            else {
+                console.log("failed to find an existing key with that fingerprint; adding " + fingerprint);
+                await api.registerDeviceApiKey(pem);
+                await completeDeviceKeyRegistration(fingerprint);
+            }
+
+            console.log("finished device key completion");
+            alert("successfully authorized device!");
         } catch (error: any) { 
             alert("failed to authorize new device!");
             console.log("error: " + error);
