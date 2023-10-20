@@ -35,7 +35,7 @@ export const RenameFileModal: React.FC<{ bucket: Bucket; file: BucketFile }> = (
                 <label>
                     {`${messages.fileName}`}
                     <input
-                        className="mt-2 input w-full h-11 py-3 px-4 rounded-lg border-inputBorder shadow-sm focus:outline-none"
+                        className="mt-2 input w-full h-11 py-3 px-4 rounded-lg border-border-darken shadow-sm focus:outline-none"
                         type="text"
                         placeholder={`${messages.enterNewBucketName}`}
                         value={newName}

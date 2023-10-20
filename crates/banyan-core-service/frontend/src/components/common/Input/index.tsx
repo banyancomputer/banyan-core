@@ -34,7 +34,7 @@ export const Input: React.FC<{
             }
             <input
                 type={type}
-                className={`input w-full h-10 py-3 px-4 rounded-xl border-inputBorder focus:outline-none ${inputClassName}`}
+                className={`input w-full h-10 py-3 px-4 rounded-xl border-border-darken focus:outline-none ${inputClassName}`}
                 value={value}
                 onChange={event => onChange(event.target.value)}
                 placeholder={placeholder}

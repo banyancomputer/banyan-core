@@ -28,7 +28,7 @@ export const Settings: NextPageWithLayout = () => {
             <h2 className="text-lg font-semibold">
                 {`${messages.settings}`}
             </h2>
-            <div className="flex justify-between items-center py-5 px-4 border-1 rounded-lg text-gray-800 border-table-border">
+            <div className="flex justify-between items-center py-5 px-4 border-1 rounded-lg bg-secondaryBackground text-text-800 border-border-regular">
                 <div>
                     <h5 className="font-semibold">{`${messages.theme}`}</h5>
                     <p>{`${messages.selectTheme}`}</p>
@@ -40,7 +40,7 @@ export const Settings: NextPageWithLayout = () => {
                     onChange={toggleTheme}
                 />
             </div>
-            <div className="flex justify-between items-center py-5 px-4 border-1 rounded-lg text-gray-800 border-table-border">
+            <div className="flex justify-between items-center py-5 px-4 border-1 rounded-lg bg-secondaryBackground text-text-800 border-border-regular">
                 <div>
                     <h5 className="font-semibold">{`${messages.language}`}</h5>
                     <p>{`${messages.chooseLanguage}`}</p>

@@ -38,7 +38,7 @@ export const DatePicker: React.FC<SelectProps> = ({ onChange, from, to, classNam
         <div
             ref={datePickerRef}
             onClick={toggleSelect}
-            className={`relative p-2.5 flex justify-between items-center text-sm font-medium border-1 border-inputBorder rounded-lg shadow-sm cursor-pointer select-none ${className}`}
+            className={`relative p-2.5 flex justify-between items-center text-sm font-medium border-1 border-border-darken rounded-lg shadow-sm cursor-pointer select-none ${className}`}
         >
             {`${from?.toLocaleDateString()} - ${to?.toLocaleDateString()}`}
             <FiChevronDown
@@ -48,7 +48,7 @@ export const DatePicker: React.FC<SelectProps> = ({ onChange, from, to, classNam
             />
             {isOptionstVisible &&
                 <div
-                    className='absolute right-0 top-12 border-1 border-inputBorder rounded-lg shadow-sm overflow-hidden'
+                    className='absolute right-0 top-12 border-1 border-border-darken rounded-lg shadow-sm overflow-hidden'
                     onClick={stopPropagation}
                 >
                     <DateRange

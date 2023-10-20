@@ -36,7 +36,7 @@ export const CreateFolderModal: React.FC<{ bucket: Bucket, onSuccess?: () => voi
                 <label>
                     {`${messages.folderName}`}
                     <input
-                        className="mt-2 input w-full h-11 py-3 px-4 rounded-lg border-inputBorder focus:outline-none"
+                        className="mt-2 input w-full h-11 py-3 px-4 rounded-lg border-border-darken focus:outline-none"
                         type="text"
                         placeholder={`${messages.enterNewBucketName}`}
                         value={folderName}

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from 'next/router';
@@ -11,7 +11,8 @@ import { useTomb } from '@/contexts/tomb';
 import { useModal } from '@/contexts/modals';
 import { useKeystore } from '@/contexts/keystore';
 
-import { ChevronUp, Home, Info, Logo, Logout, Plus, Trash } from '@static/images/common';
+import { ChevronUp, Home, Info, Logo, Logout, Mail, Plus, Question, Trash } from '@static/images/common';
+import { popupClickHandler } from '@/utils';
 
 export const Navigation = () => {
     const searchParams = useSearchParams();
@@ -20,13 +21,20 @@ export const Navigation = () => {
     const { buckets, trash } = useTomb();
     const { purgeKeystore } = useKeystore();
     const [isBucketsVisible, setIsBucketsVisible] = useState(false);
+    const [areHelpOpionsVisible, setAreHelpOpionsVisible] = useState(false);
     const { messages } = useIntl();
     const { openModal } = useModal();
+    const helpRef = useRef<HTMLDivElement | null>(null);
 
     const toggleBucketsVisibility = (event: React.MouseEvent<HTMLDivElement>) => {
         event.stopPropagation();
         event.preventDefault();
         setIsBucketsVisible(prev => !prev);
+    };
+
+
+    const toggleHelpOptionsVisibility = (event: any) => {
+        setAreHelpOpionsVisible(prev => !prev);
     };
 
     const createBucket = () => {
@@ -43,6 +51,15 @@ export const Navigation = () => {
 
         buckets.length && setIsBucketsVisible(true);
     }, [buckets])
+
+    useEffect(() => {
+        const listener = popupClickHandler(helpRef.current!, setAreHelpOpionsVisible);
+        document.addEventListener('click', listener);
+
+        return () => {
+            document.removeEventListener('click', listener);
+        };
+    }, [helpRef]);
 
     return (
         <nav className="flex flex-col w-navbar min-w-navbar bg-navigation-primary py-8 px-4 text-navigation-text border-r-2 border-r-navigation-border">
@@ -107,9 +124,39 @@ export const Navigation = () => {
                 </button>
             </div>
             <div className="flex flex-col gap-2 mt-6 pl-2 pt-3 pr-8 text-navigation-textSecondary text-xs">
-                <span className='flex items-center gap-3 py-2.5 cursor-pointer'>
+                <span
+                    className='relative flex items-center gap-3 py-2.5 cursor-pointer'
+                    onClick={toggleHelpOptionsVisibility}
+                    ref={helpRef}
+                >
                     <Info />
                     {`${messages.help}`}
+                    {areHelpOpionsVisible &&
+                        <div
+                            className="absolute left-0 top-10 w-full flex flex-col items-stretch shadow-xl rounded-xl text-xs font-semibold overflow-hidden  bg-mainBackground cursor-pointer text-text-900"
+                        >
+                            <a
+                                className="flex items-center gap-2 py-2.5 px-3 transition-all hover:bg-hover"
+                                href='https://banyan8674.zendesk.com/hc/en-us'
+                                target='_blank'
+                            >
+                                <span className='text-button-primary'>
+                                    <Question />
+                                </span>
+                                FAQ
+                            </a>
+                            <a
+                                href='mailto:support@banyan8674.zendesk.com'
+                                className="flex items-center gap-2 py-2.5 px-3 transition-all hover:bg-hover"
+                                target='_blank'
+                            >
+                                <span className='text-button-primary'>
+                                <Mail />
+                                </span>
+                                {`${messages.contactUs}`}
+                            </a>
+                        </div>
+                    }
                 </span>
                 <span
                     className="flex items-center gap-3 py-2.5 cursor-pointer"

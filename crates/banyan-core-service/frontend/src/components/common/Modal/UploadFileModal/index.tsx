@@ -72,7 +72,7 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null }> = ({ bucket }
         <div className="w-modal flex flex-col gap-4">
             <div>
                 <h4 className="text-m font-semibold ">{`${messages.uploadFiles}`}</h4>
-                <p className="mt-2 text-gray-600">
+                <p className="mt-2 text-text-600">
                     {`${messages.chooseFilesToUpload}`}
                 </p>
             </div>
@@ -99,7 +99,7 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null }> = ({ bucket }
                 </div>
             }
             <label
-                className="mt-10 flex flex-col items-center justify-center gap-4 px-6 py-4 border-2 border-inputBorder rounded-xl  text-xs cursor-pointer"
+                className="mt-10 flex flex-col items-center justify-center gap-4 px-6 py-4 border-2 border-border-darken rounded-xl  text-xs cursor-pointer"
                 onDrop={handleDrop}
                 onDragOver={handleDrag}
             >
@@ -117,8 +117,8 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null }> = ({ bucket }
                     :
                     <>
                         <Upload />
-                        <span className="text-gray-600">
-                            <b className="text-gray-900">{`${messages.clickToUpload}`} </b>
+                        <span className="text-text-600">
+                            <b className="text-text-900">{`${messages.clickToUpload}`} </b>
                             {`${messages.orDragAndDrop}`}
                         </span>
                     </>
