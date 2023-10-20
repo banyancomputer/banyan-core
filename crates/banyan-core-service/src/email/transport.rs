@@ -17,7 +17,7 @@ impl EmailTransport {
             Some(smtp_connection) => Ok(EmailTransport::Smtp(
                 SmtpTransport::starttls_relay(smtp_connection.host())
                     .map_err(EmailError::smtp_transport_build_error)?
-                    .credentials(smtp_connection.creds().clone())
+                    .credentials(smtp_connection.creds())
                     .port(smtp_connection.port())
                     .build(),
             )),

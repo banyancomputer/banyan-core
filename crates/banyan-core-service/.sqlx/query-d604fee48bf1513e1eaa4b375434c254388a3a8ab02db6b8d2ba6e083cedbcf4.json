@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE email_stats\n            SET failed = failed + 1\n            WHERE account_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "d604fee48bf1513e1eaa4b375434c254388a3a8ab02db6b8d2ba6e083cedbcf4"
+}
