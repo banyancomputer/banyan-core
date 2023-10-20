@@ -1,15 +1,12 @@
 use std::collections::HashMap;
-use std::convert::TryFrom;
-use std::fmt;
 
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use cid::Cid;
-use serde::{Deserialize, Deserializer};
 
-use crate::extractors::{ApiToken, DbConn};
 use crate::error::CoreError;
+use crate::extractors::{ApiToken, DbConn};
 
 const NA_LABEL: &str = "NA";
 pub type LocationRequest = Vec<Cid>;
@@ -22,17 +19,17 @@ pub async fn handler(
     let account_id = api_token.subject();
     let mut result_map = HashMap::new();
     for cid in &request {
-        let normalized_cid = 
-            match cid
-            .to_string_of_base(cid::multibase::Base::Base64Url) {
-                Ok(normalized_cid) => normalized_cid,
-                Err(err) => 
-                    return CoreError::generic_error(
-                        StatusCode::INTERNAL_SERVER_ERROR,
-                        "backend service issue",
-                        Some(&format!("unable to normalize cid {err}")),
-                    ).into_response()
-            };
+        let normalized_cid = match cid.to_string_of_base(cid::multibase::Base::Base64Url) {
+            Ok(normalized_cid) => normalized_cid,
+            Err(err) => {
+                return CoreError::generic_error(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "backend service issue",
+                    Some(&format!("unable to normalize cid {err}")),
+                )
+                .into_response()
+            }
+        };
         let block_locations = match sqlx::query!(
             r#"SELECT sh.url
             FROM storage_hosts sh
