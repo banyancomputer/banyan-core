@@ -6,7 +6,6 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 use cid::Cid;
 use object_store::{GetOptions, ObjectStore};
-use tracing::info;
 use uuid::Uuid;
 
 use crate::database::{DbError, Executor};
@@ -184,7 +183,6 @@ impl IntoResponse for BlockRetrievalError {
                 (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
             }
             UnknownBlock => {
-                tracing::warn!("client asking for an unknown block");
                 let err_msg = serde_json::json!({ "msg": format!("block not found") });
                 (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
             }
