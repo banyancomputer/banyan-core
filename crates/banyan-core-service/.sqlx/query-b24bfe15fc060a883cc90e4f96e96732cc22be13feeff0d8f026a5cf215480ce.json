@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO emails (sent_at, account_id, state, type)\n            VALUES ($1, $2, 'unsubscribed', 'na')",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "b24bfe15fc060a883cc90e4f96e96732cc22be13feeff0d8f026a5cf215480ce"
+}

@@ -1,9 +1,9 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use url::Url;
 
 use super::EmailMessage;
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct ProductInvoice {
     /// Where a user can go to view their invoice
     pub(crate) url: Url,
