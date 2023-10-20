@@ -9,14 +9,10 @@ use cid::Cid;
 use serde::{Deserialize, Deserializer};
 
 use crate::extractors::{ApiToken, DbConn};
+use crate::error::CoreError;
 
 const NA_LABEL: &str = "NA";
-pub type LocationRequest = Vec<SerializedCid>;
-
-#[derive(serde::Serialize)]
-struct InvalidCid {
-    msg: String,
-}
+pub type LocationRequest = Vec<Cid>;
 
 pub async fn handler(
     api_token: ApiToken,
@@ -25,16 +21,24 @@ pub async fn handler(
 ) -> Response {
     let account_id = api_token.subject();
     let mut result_map = HashMap::new();
-    for serialized_cid in &request {
-        let normalized_cid = Cid::from(serialized_cid)
-            .to_string_of_base(cid::multibase::Base::Base64Url)
-            .expect("cid should be valid");
+    for cid in &request {
+        let normalized_cid = 
+            match cid
+            .to_string_of_base(cid::multibase::Base::Base64Url) {
+                Ok(normalized_cid) => normalized_cid,
+                Err(err) => 
+                    return CoreError::generic_error(
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        "backend service issue",
+                        Some(&format!("unable to normalize cid {err}")),
+                    ).into_response()
+            };
         let block_locations = match sqlx::query!(
             r#"SELECT sh.url
-            FROM block_locations bl
+            FROM storage_hosts sh
+            JOIN block_locations bl ON sh.id = bl.storage_host_id
             JOIN metadata m ON bl.metadata_id = m.id
             JOIN buckets b ON m.bucket_id = b.id
-            JOIN storage_hosts sh ON bl.storage_host_id = sh.id
             JOIN blocks ON bl.block_id = blocks.id
             WHERE blocks.cid = $1
             AND b.account_id = $2
@@ -60,48 +64,15 @@ pub async fn handler(
             result_map
                 .entry(NA_LABEL.to_string())
                 .or_insert_with(Vec::new)
-                .push(serialized_cid.to_string());
+                .push(cid);
         } else {
             for location in block_locations {
                 result_map
                     .entry(location.url)
                     .or_insert_with(Vec::new)
-                    .push(serialized_cid.to_string());
+                    .push(cid);
             }
         }
     }
     (StatusCode::OK, Json(result_map)).into_response()
-}
-
-pub struct SerializedCid(Cid);
-
-impl fmt::Display for SerializedCid {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-impl SerializedCid {
-    pub fn from_str(s: &str) -> Result<Self, cid::Error> {
-        let cid = Cid::try_from(s)?;
-        Ok(Self(cid))
-    }
-}
-
-impl From<&SerializedCid> for Cid {
-    fn from(serialized_cid: &SerializedCid) -> Self {
-        serialized_cid.0
-    }
-}
-
-impl<'de> Deserialize<'de> for SerializedCid {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let s = String::deserialize(deserializer)?;
-        Ok(SerializedCid(
-            Cid::try_from(s).map_err(serde::de::Error::custom)?,
-        ))
-    }
 }
