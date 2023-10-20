@@ -61,27 +61,9 @@ pub async fn handle(
         .into_response();
     }
 
-    // Make sure we have an email_stats entry for this account
-    match sqlx::query!(
-        r#"INSERT OR IGNORE INTO email_stats (account_id) VALUES ($1);"#,
-        account_id
-    )
-    .execute(&mut *db_conn.0)
-    .await
-    {
-        Ok(_) => (),
-        Err(err) => {
-            return CoreError::generic_error(
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "backend service issue",
-                Some(&format!("failed to insert email_stats: {err}")),
-            )
-            .into_response()
-        }
-    };
     let email_stat_query = format!(
-        "UPDATE email_stats SET {} = {} + 1 WHERE account_id = $1;",
-        next_state, next_state
+        "INSERT INTO email_stats(account_id, {}) VALUES ($1, 1) ON CONFLICT(account_id) DO UPDATE SET {} = {} + 1 WHERE account_id = $1;",
+        next_state, next_state, next_state
     );
 
     // No need to do anything to the state but we should update the email_stat counter
