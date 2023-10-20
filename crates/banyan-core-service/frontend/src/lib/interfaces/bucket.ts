@@ -11,6 +11,7 @@ export interface BucketFile {
     [key: string]: any;
     name: string;
     type: string;
+    files: BucketFile[];
     metadata: FileMetadata
 };
 

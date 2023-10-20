@@ -10,14 +10,12 @@ import { Bucket } from '@/lib/interfaces/bucket';
 import { useModal } from '@/contexts/modals';
 import { useTomb } from '@/contexts/tomb';
 import { ToastNotifications } from '@/utils/toastNotifications';
-import { useFolderLocation } from '@/hooks/useFolderLocation';
 import { useFilesUpload } from '@/contexts/filesUpload';
 
 import { Upload } from '@static/images/buckets';
 
 export const UploadFileModal: React.FC<{ bucket?: Bucket | null }> = ({ bucket }) => {
     const { buckets } = useTomb();
-    const folderLocation = useFolderLocation();
     const { openModal, closeModal } = useModal();
     const { setFiles, uploadFiles, files } = useFilesUpload()
     const { messages } = useIntl();

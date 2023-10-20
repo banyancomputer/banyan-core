@@ -2,19 +2,14 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useIntl } from 'react-intl';
 import Image from 'next/image';
-import { useRouter } from 'next/router';
 
 import { ActionsCell } from '@components/common/ActionsCell';
-import { FolderActions } from '@/components/common/FolderActions';
 import { BucketActions } from '@/components/common/BucketActions';
 import { SortCell } from '@/components/common/SortCell';
-import { FileCell } from '@/components/common/FileCell';
-import { FileActions } from '@/components/common/FileActions';
+import { FolderRow } from '@/components/common/FolderRow';
+import { FileRow } from '@/components/common/FileRow';
 
-import { getDateLabel } from '@/utils/date';
-import { Bucket, BucketFile } from '@/lib/interfaces/bucket';
-import { useFilePreview } from '@/contexts/filesPreview';
-import { convertFileSize } from '@/utils/storage';
+import { Bucket } from '@/lib/interfaces/bucket';
 import { useFolderLocation } from '@/hooks/useFolderLocation';
 
 import emptyIcon from '@static/images/common/emptyIcon.png';
@@ -27,28 +22,11 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const [bucketCopy, setBucketCopy] = useState(bucket);
     const { messages } = useIntl();
     const [sortState, setSortState] = useState<{ criteria: string; direction: 'ASC' | 'DESC' | '' }>({ criteria: '', direction: '' });
-    const folderLocation = useFolderLocation();
-    const { push } = useRouter();
-    const { openFile } = useFilePreview();
     const [tableScroll, setTableScroll] = useState(0);
+    const folderLocation = useFolderLocation();
 
     const sort = (criteria: string) => {
         setSortState(prev => ({ criteria, direction: prev.direction === 'ASC' ? 'DESC' : 'ASC' }));
-    };
-
-    const goTofolder = (bucket: Bucket, folder: BucketFile) => {
-        push(`/bucket/${bucket.id}?${folderLocation.length ? `${folderLocation.join('/')}/${folder.name}` : folder.name}`);
-    };
-
-    const previewFile = async (bucket: Bucket, file: BucketFile) => {
-        openFile(bucket, file.name, folderLocation);
-    };
-
-    const handleClick = (event: React.MouseEvent<HTMLTableRowElement, MouseEvent>, bucket: Bucket, file: BucketFile) => {
-        //@ts-ignore
-        if (event.target.id === 'actionsCell') return;
-
-        file.type === 'dir' ? goTofolder(bucket, file) : previewFile(bucket, file);
     };
 
     useEffect(() => {
@@ -131,27 +109,24 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                     <tbody>
                         {
                             bucketCopy.files.map((file, index) =>
-                                <tr
-                                    className='cursor-pointer border-1 border-t-border-regular border-b-border-regular text-text-900 font-normal'
-                                    key={index}
-                                    onClick={event => handleClick(event, bucket, file)}
-                                >
-                                    <td className='px-6 py-4'><FileCell name={file.name} /></td>
-                                    <td className="px-6 py-4">{getDateLabel(+file.metadata.modified)}</td>
-                                    <td className="px-6 py-4">{convertFileSize(file.metadata.size)}</td>
-                                    <td className="px-6 py-4">
-                                        {
-                                            file.type === 'dir' && bucket.bucketType === 'backup' ?
-                                                null
-                                                :
-                                                <ActionsCell
-                                                    actions={file.type === 'dir' ? <FolderActions bucket={bucket} file={file} /> : <FileActions bucket={bucket} file={file} />}
-                                                    offsetTop={tableScroll}
-                                                    tableRef={tableRef}
-                                                />
-                                        }
-                                    </td>
-                                </tr>
+                                file.type === 'dir' ?
+                                    <FolderRow
+                                        bucket={bucket}
+                                        folder={file}
+                                        tableRef={tableRef}
+                                        tableScroll={tableScroll}
+                                        path={folderLocation}
+                                        key={index}
+                                        />
+                                        :
+                                        <FileRow
+                                        bucket={bucket}
+                                        file={file}
+                                        tableRef={tableRef}
+                                        tableScroll={tableScroll}
+                                        path={folderLocation}
+                                        key={index}
+                                    />
                             )
                         }
                     </tbody>
@@ -168,3 +143,4 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         </div>
     );
 };
+

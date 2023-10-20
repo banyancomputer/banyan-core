@@ -24,6 +24,7 @@ interface TombInterface {
     getBucketsKeys: () => Promise<void>;
     selectBucket: (bucket: Bucket | null) => void;
     getSelectedBucketFiles: (path: string[]) => void;
+    getExpandedFolderFiles: (path: string[]) => Promise<BucketFile[]>;
     takeColdSnapshot: (bucket: Bucket) => Promise<void>;
     getBucketShapshots: (id: string) => Promise<BucketSnapshot[]>;
     createBucket: (name: string, storageClass: string, bucketType: string) => Promise<void>;
@@ -99,13 +100,13 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
             let wasm_bukets: Bucket[] = [];
             for (let bucket of buckets) {
                 const mount = await tomb!.mount(bucket.id, key);
-                const files = await mount.ls([]);
+                const files: BucketFile[] = await mount.ls([]) || [];
                 const snapshots = await tomb!.listBucketSnapshots(bucket.id);
                 wasm_bukets.push({
                     ...bucket,
                     mount,
                     snapshots,
-                    files: files || [],
+                    files,
                 });
             };
             setBuckets(wasm_bukets);
@@ -136,6 +137,12 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
             const files = await mount.ls(path);
             await setSelectedBucket(bucket => bucket ? ({ ...bucket, files }) : bucket);
             setAreBucketsLoading(false);
+        });
+    };
+    /** Returns selected folder files. */
+    const getExpandedFolderFiles = async (path: string[]) => {
+        return await tombMutex(selectedBucket!.mount, async mount => {
+            return await mount.ls(path);
         });
     };
 
@@ -367,7 +374,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
                 takeColdSnapshot, getBucketShapshots, createBucket, deleteBucket, getTrashBucket,
                 getFile, createDirectory, uploadFile, getBucketKeys, purgeSnapshot,
                 removeBucketAccess, approveBucketAccess, completeDeviceKeyRegistration, shareFile, download, moveTo,
-                restore, deleteFile, makeCopy
+                restore, deleteFile, makeCopy, getExpandedFolderFiles
             }}
         >
             {children}
