@@ -175,7 +175,7 @@ pub async fn handler(
 async fn approve_key_fingerprints(
     database: &Database,
     bucket_id: &str,
-    keys: &Vec<String>,
+    keys: &[String],
 ) -> Result<(), PushMetadataError> {
     for device_key_fingerprint in keys.iter() {
         sqlx::query!(
@@ -431,7 +431,7 @@ async fn store_metadata_stream<'a>(
             writer
                 .shutdown()
                 .await
-                .map_err(StoreMetadataError::FinalizationFailed)?;
+                .map_err(StoreMetadataError::NotFinalized)?;
             Ok(store_output)
         }
         Err(err) => {
@@ -599,7 +599,7 @@ pub enum StorageAuthorizationError {
 #[derive(Debug, thiserror::Error)]
 pub enum StoreMetadataError {
     #[error("failed to finalize storage to disk: {0}")]
-    FinalizationFailed(std::io::Error),
+    NotFinalized(std::io::Error),
 
     #[error("failed to begin file write transaction: {0}")]
     PutFailed(object_store::Error),
