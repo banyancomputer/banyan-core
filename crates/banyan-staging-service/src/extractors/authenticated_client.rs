@@ -137,7 +137,10 @@ where
             Err(err) => return Err(Self::Rejection::CorruptPlatformId(err)),
         };
 
-        let (allowed_bytes, storage_grant_id) = (authorized_storage.allowed_bytes, authorized_storage.grant_id);
+        let (allowed_bytes, storage_grant_id) = (
+            authorized_storage.allowed_bytes,
+            authorized_storage.grant_id,
+        );
 
         Ok(AuthenticatedClient {
             id: internal_id,
@@ -338,7 +341,11 @@ impl IntoResponse for AuthenticatedClientError {
                 let err_msg = serde_json::json!({ "msg": "invalid request" });
                 (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
             }
-            CorruptDatabaseKey(_) | CorruptInternalId(_) | CorruptPlatformId(_) | DbFailure(_) | MissingGrant => {
+            CorruptDatabaseKey(_)
+            | CorruptInternalId(_)
+            | CorruptPlatformId(_)
+            | DbFailure(_)
+            | MissingGrant => {
                 tracing::error!("{self}");
                 let err_msg =
                     serde_json::json!({ "msg": "service is experiencing internal issues" });

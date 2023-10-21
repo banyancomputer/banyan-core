@@ -2,8 +2,8 @@
 
 use uuid::Uuid;
 
-use crate::database::Database;
 use crate::database::models::{BucketType, EmailMessageState, StorageClass};
+use crate::database::Database;
 use crate::email::message::EmailMessage;
 
 /// Create a new Bucket in the database and return the created resource. Implements an authorized
@@ -45,8 +45,7 @@ pub async fn queue_email(
     .await?;
 
     // todo: remove expect here
-    let message_id = Uuid::parse_str(&email_id)
-        .expect("queue_email: invalid uuid");
+    let message_id = Uuid::parse_str(&email_id).expect("queue_email: invalid uuid");
 
     Ok(message_id)
 }

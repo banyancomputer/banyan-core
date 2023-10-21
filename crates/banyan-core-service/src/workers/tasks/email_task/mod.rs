@@ -316,10 +316,7 @@ pub mod tests {
         Ok(())
     }
 
-    async fn delivered_email(
-        ctx: &EmailTaskContext,
-        when: OffsetDateTime,
-    ) -> OffsetDateTime {
+    async fn delivered_email(ctx: &EmailTaskContext, when: OffsetDateTime) -> OffsetDateTime {
         let mut db_conn = ctx.db_pool().acquire().await.unwrap();
         sqlx::query!(
             r#"INSERT INTO emails (sent_at, account_id, state, type)
@@ -343,10 +340,7 @@ pub mod tests {
         when + std::time::Duration::from_secs(1)
     }
 
-    async fn failed_email(
-        ctx: &EmailTaskContext,
-        when: OffsetDateTime,
-    ) -> OffsetDateTime {
+    async fn failed_email(ctx: &EmailTaskContext, when: OffsetDateTime) -> OffsetDateTime {
         let mut db_conn = ctx.db_pool().acquire().await.unwrap();
         sqlx::query!(
             r#"INSERT INTO emails (sent_at, account_id, state, type)
@@ -370,10 +364,7 @@ pub mod tests {
         when + std::time::Duration::from_secs(1)
     }
 
-    async fn complained_email(
-        ctx: &EmailTaskContext,
-        when: OffsetDateTime,
-    ) -> OffsetDateTime {
+    async fn complained_email(ctx: &EmailTaskContext, when: OffsetDateTime) -> OffsetDateTime {
         let mut db_conn = ctx.db_pool().acquire().await.unwrap();
         sqlx::query!(
             r#"INSERT INTO emails (sent_at, account_id, state, type)
@@ -397,10 +388,7 @@ pub mod tests {
         when + std::time::Duration::from_secs(1)
     }
 
-    async fn unsubscribed_email(
-        ctx: &EmailTaskContext,
-        when: OffsetDateTime,
-    ) -> OffsetDateTime {
+    async fn unsubscribed_email(ctx: &EmailTaskContext, when: OffsetDateTime) -> OffsetDateTime {
         let mut db_conn = ctx.db_pool().acquire().await.unwrap();
         sqlx::query!(
             r#"INSERT INTO emails (sent_at, account_id, state, type)

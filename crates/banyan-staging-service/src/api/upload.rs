@@ -8,8 +8,8 @@ use axum::TypedHeader;
 use futures::{TryFutureExt, TryStream, TryStreamExt};
 use jwt_simple::prelude::*;
 use object_store::ObjectStore;
-use reqwest::{Client, Url};
 use reqwest::header::{HeaderMap, HeaderValue};
+use reqwest::{Client, Url};
 use serde::{Deserialize, Serialize};
 use tokio::io::{AsyncWrite, AsyncWriteExt};
 use uuid::Uuid;
@@ -118,7 +118,13 @@ pub async fn handler(
 
             handle_successful_upload(&db, &store, &cr, &upload_id, &store_path).await?;
             // todo: should be a background task
-            report_upload_to_platform(auth_key, client.storage_grant_id(), request.metadata_id, &cr).await?;
+            report_upload_to_platform(
+                auth_key,
+                client.storage_grant_id(),
+                request.metadata_id,
+                &cr,
+            )
+            .await?;
 
             Ok((StatusCode::NO_CONTENT, ()).into_response())
         }

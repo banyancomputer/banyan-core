@@ -129,7 +129,9 @@ where
             return Err(StorageProviderIdentityError::MismatchedSubject);
         }
 
-        Ok(StorageProviderIdentity { id: storage_host.id })
+        Ok(StorageProviderIdentity {
+            id: storage_host.id,
+        })
     }
 }
 
@@ -159,7 +161,9 @@ pub enum StorageProviderIdentityError {
     #[error("authorization token doesn't become valid until after it has already expired")]
     NeverValid,
 
-    #[error("header didn't include kid required to lookup the appropriate authentication mechanism")]
+    #[error(
+        "header didn't include kid required to lookup the appropriate authentication mechanism"
+    )]
     UnidentifiedKey,
 }
 

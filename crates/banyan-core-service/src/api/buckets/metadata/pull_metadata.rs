@@ -2,14 +2,14 @@ use axum::body::StreamBody;
 use axum::extract::{Json, Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use http::{HeaderMap, HeaderValue};
 use http::header::{CONTENT_DISPOSITION, CONTENT_TYPE};
+use http::{HeaderMap, HeaderValue};
 use object_store::ObjectStore;
 use uuid::Uuid;
 
 use crate::app::AppState;
-use crate::extractors::DataStore;
 use crate::extractors::ApiIdentity;
+use crate::extractors::DataStore;
 
 pub async fn handler(
     api_id: ApiIdentity,
@@ -38,19 +38,25 @@ pub async fn handler(
 
     let file_name = format!(
         "{}/{}.car",
-        authorized_bucket_data.bucket_id,
-        authorized_bucket_data.metadata_id,
+        authorized_bucket_data.bucket_id, authorized_bucket_data.metadata_id,
     );
     let file_path = object_store::path::Path::from(file_name.as_str());
 
-    let file_reader = store.get(&file_path).await.map_err(PullMetadataError::FileUnavailable)?;
+    let file_reader = store
+        .get(&file_path)
+        .await
+        .map_err(PullMetadataError::FileUnavailable)?;
     let stream = file_reader.into_stream();
 
     let mut headers = HeaderMap::new();
 
-    let disposition = HeaderValue::from_str(format!("attachment; filename=\"{file_name}\"").as_str()).unwrap();
+    let disposition =
+        HeaderValue::from_str(format!("attachment; filename=\"{file_name}\"").as_str()).unwrap();
     headers.insert(CONTENT_DISPOSITION, disposition);
-    headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/vnd.ipld.car; version=2"));
+    headers.insert(
+        CONTENT_TYPE,
+        HeaderValue::from_static("application/vnd.ipld.car; version=2"),
+    );
 
     let body = StreamBody::new(stream);
 

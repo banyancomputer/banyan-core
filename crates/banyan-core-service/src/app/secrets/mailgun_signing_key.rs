@@ -1,7 +1,7 @@
 use std::ops::Deref;
 use std::sync::Arc;
 
-use ring::hmac::{HMAC_SHA256, Key};
+use ring::hmac::{Key, HMAC_SHA256};
 
 #[derive(Clone)]
 pub struct MailgunSigningKey(Arc<Key>);

@@ -13,8 +13,8 @@ impl Signature {
     pub(crate) fn verify(&self, key: &ring::hmac::Key) -> Result<(), MailgunHookError> {
         let data = format!("{}{}", self.timestamp, self.token);
 
-        let signature = hex::decode(&self.signature)
-            .map_err(MailgunHookError::FailedToDecodeSignature)?;
+        let signature =
+            hex::decode(&self.signature).map_err(MailgunHookError::FailedToDecodeSignature)?;
 
         ring::hmac::verify(key, data.as_bytes(), &signature)
             .map_err(MailgunHookError::InvalidSignature)

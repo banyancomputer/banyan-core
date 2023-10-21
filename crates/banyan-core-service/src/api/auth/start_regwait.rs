@@ -46,8 +46,8 @@ async fn watch_for_fingerprint(
 
         match bus_event {
             (SystemEvent::DeviceKeyRegistration, data) => {
-                let event: RegistrationEvent = bincode::deserialize(&data[..])
-                    .map_err(StartRegwaitError::InvalidEvent)?;
+                let event: RegistrationEvent =
+                    bincode::deserialize(&data[..]).map_err(StartRegwaitError::InvalidEvent)?;
 
                 if event.fingerprint == fingerprint {
                     return Ok(event);

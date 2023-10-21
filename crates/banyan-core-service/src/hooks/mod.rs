@@ -1,7 +1,7 @@
 mod mailgun;
 
-use axum::Router;
 use axum::routing::post;
+use axum::Router;
 use tower_http::cors::CorsLayer;
 
 use crate::app::AppState;

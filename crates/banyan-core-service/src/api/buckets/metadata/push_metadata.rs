@@ -1,10 +1,10 @@
 use std::collections::HashSet;
 
-use axum::{Json, TypedHeader};
 use axum::extract::{BodyStream, Path, State};
 use axum::headers::ContentType;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
+use axum::{Json, TypedHeader};
 use futures::{TryStream, TryStreamExt};
 use jwt_simple::prelude::*;
 use object_store::ObjectStore;
@@ -13,8 +13,8 @@ use tokio::io::{AsyncWrite, AsyncWriteExt};
 use uuid::Uuid;
 
 use crate::app::{AppState, ServiceSigningKey};
-use crate::database::Database;
 use crate::database::models::MetadataState;
+use crate::database::Database;
 use crate::extractors::{ApiIdentity, DataStore};
 use crate::utils::car_buffer::CarBuffer;
 
@@ -114,7 +114,8 @@ pub async fn handler(
     let currently_consumed_storage = currently_consumed_storage(&database, &api_id.account_id)
         .await
         .map_err(PushMetadataError::UnableToCheckAccounting)?;
-    let expected_total_storage = currently_consumed_storage as i64 + request_data.expected_data_size;
+    let expected_total_storage =
+        currently_consumed_storage as i64 + request_data.expected_data_size;
 
     if expected_total_storage > ACCOUNT_STORAGE_QUOTA {
         tracing::warn!(account_id = ?api_id.account_id, ?expected_total_storage, "account reached storage limit");
@@ -133,21 +134,30 @@ pub async fn handler(
 
     let storage_host = select_storage_host(&database, request_data.expected_data_size).await?;
 
-    let current_authorized_amount = existing_authorization(&database, &api_id.account_id, &storage_host.id)
-        .await
-        .map_err(PushMetadataError::UnableToRetrieveAuthorizations)?;
-    let current_stored_amount = currently_stored_at_provider(&database, &api_id.account_id, &storage_host.id)
-        .await
-        .map_err(PushMetadataError::UnableToIdentifyStoredAmount)?;
+    let current_authorized_amount =
+        existing_authorization(&database, &api_id.account_id, &storage_host.id)
+            .await
+            .map_err(PushMetadataError::UnableToRetrieveAuthorizations)?;
+    let current_stored_amount =
+        currently_stored_at_provider(&database, &api_id.account_id, &storage_host.id)
+            .await
+            .map_err(PushMetadataError::UnableToIdentifyStoredAmount)?;
 
     let mut storage_authorization: Option<String> = None;
     if (current_authorized_amount - current_stored_amount) < request_data.expected_data_size {
         let currently_required_amount = current_stored_amount + request_data.expected_data_size;
-        let data_size_rounded = ((currently_required_amount / ONE_HUNDRED_MIB) + 1) * ONE_HUNDRED_MIB;
+        let data_size_rounded =
+            ((currently_required_amount / ONE_HUNDRED_MIB) + 1) * ONE_HUNDRED_MIB;
 
-        let new_authorization = generate_new_storage_authorization(&database, &service_signing_key, &api_id, &storage_host, data_size_rounded)
-            .await
-            .map_err(PushMetadataError::UnableToGenerateAuthorization)?;
+        let new_authorization = generate_new_storage_authorization(
+            &database,
+            &service_signing_key,
+            &api_id,
+            &storage_host,
+            data_size_rounded,
+        )
+        .await
+        .map_err(PushMetadataError::UnableToGenerateAuthorization)?;
 
         storage_authorization = Some(new_authorization);
     }
@@ -197,7 +207,10 @@ async fn authorized_bucket_id(
     .ok_or(PushMetadataError::NoAuthorizedBucket)
 }
 
-async fn currently_consumed_storage(database: &Database, account_id: &str) -> Result<i32, sqlx::Error> {
+async fn currently_consumed_storage(
+    database: &Database,
+    account_id: &str,
+) -> Result<i32, sqlx::Error> {
     let maybe_stored = sqlx::query_scalar!(
         r#"SELECT
             COALESCE(SUM(m.metadata_size), 0) +
@@ -216,7 +229,11 @@ async fn currently_consumed_storage(database: &Database, account_id: &str) -> Re
     Ok(maybe_stored.unwrap_or(0))
 }
 
-async fn currently_stored_at_provider(database: &Database, account_id: &str, storage_host_id: &str) -> Result<i64, sqlx::Error> {
+async fn currently_stored_at_provider(
+    database: &Database,
+    account_id: &str,
+    storage_host_id: &str,
+) -> Result<i64, sqlx::Error> {
     let res: Result<Option<i64>, _> = sqlx::query_scalar!(
         r#"SELECT SUM(m.data_size) as total_data_size FROM metadata m
                JOIN storage_hosts_metadatas_storage_grants shmg ON shmg.metadata_id = m.id
@@ -231,7 +248,11 @@ async fn currently_stored_at_provider(database: &Database, account_id: &str, sto
     res.map(|amt| amt.unwrap_or(0))
 }
 
-async fn existing_authorization(database: &Database, account_id: &str, storage_host_id: &str) -> Result<i64, sqlx::Error> {
+async fn existing_authorization(
+    database: &Database,
+    account_id: &str,
+    storage_host_id: &str,
+) -> Result<i64, sqlx::Error> {
     sqlx::query_scalar!(
         r#"SELECT authorized_amount FROM storage_grants
                WHERE account_id = $1
@@ -285,11 +306,15 @@ async fn generate_new_storage_authorization(
     let mut capabilities = serde_json::Map::new();
     capabilities.insert(storage_host.url.to_string(), storage_details.into());
 
-    let mut claims = Claims::with_custom_claims(capabilities, Duration::from_secs(STORAGE_TICKET_DURATION))
-        .with_audiences(HashSet::from_strings(&[storage_host.name.as_str()]))
-        .with_issuer("banyan-platform")
-        .with_subject(format!("{}@{}", api_id.user_id, api_id.device_api_key_fingerprint))
-        .invalid_before(Clock::now_since_epoch() - Duration::from_secs(30));
+    let mut claims =
+        Claims::with_custom_claims(capabilities, Duration::from_secs(STORAGE_TICKET_DURATION))
+            .with_audiences(HashSet::from_strings(&[storage_host.name.as_str()]))
+            .with_issuer("banyan-platform")
+            .with_subject(format!(
+                "{}@{}",
+                api_id.user_id, api_id.device_api_key_fingerprint
+            ))
+            .invalid_before(Clock::now_since_epoch() - Duration::from_secs(30));
 
     claims.create_nonce();
     claims.issued_at = Some(Clock::now_since_epoch());
@@ -361,7 +386,10 @@ async fn record_upload_start(
     .map_err(PushMetadataError::MetadataRegistrationFailed)
 }
 
-async fn select_storage_host(database: &Database, required_space: i64) -> Result<SelectedStorageHost, PushMetadataError> {
+async fn select_storage_host(
+    database: &Database,
+    required_space: i64,
+) -> Result<SelectedStorageHost, PushMetadataError> {
     let maybe_storage_host = sqlx::query_as!(
         SelectedStorageHost,
         r#"SELECT id, name, url FROM storage_hosts
@@ -377,7 +405,10 @@ async fn select_storage_host(database: &Database, required_space: i64) -> Result
     match maybe_storage_host {
         Some(shi) => Ok(shi),
         None => {
-            tracing::error!(?required_space, "failed to locate storage host with sufficient storage");
+            tracing::error!(
+                ?required_space,
+                "failed to locate storage host with sufficient storage"
+            );
             Err(PushMetadataError::NoAvailableStorage)
         }
     }

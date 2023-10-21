@@ -10,10 +10,10 @@ pub(crate) use mailgun_hook_request::MailgunHookRequest;
 pub(crate) use signature::Signature;
 pub(crate) use user_variables::UserVariables;
 
-use axum::Json;
-use axum::http::StatusCode;
 use axum::extract::State;
+use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
+use axum::Json;
 
 use crate::app::AppState;
 use crate::database::models::EmailMessageState;
@@ -65,7 +65,10 @@ pub async fn handler(
 
     // If this is old state we don't have anything else to do
     if reported_state < email_state.state {
-        transaction.commit().await.map_err(MailgunHookError::QueryFailed)?;
+        transaction
+            .commit()
+            .await
+            .map_err(MailgunHookError::QueryFailed)?;
         return Ok((StatusCode::OK, ()).into_response());
     }
 
@@ -81,7 +84,10 @@ pub async fn handler(
     .await
     .map_err(MailgunHookError::QueryFailed)?;
 
-    transaction.commit().await.map_err(MailgunHookError::QueryFailed)?;
+    transaction
+        .commit()
+        .await
+        .map_err(MailgunHookError::QueryFailed)?;
 
     Ok((StatusCode::OK, ()).into_response())
 }
