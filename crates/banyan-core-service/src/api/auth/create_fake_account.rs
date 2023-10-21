@@ -6,6 +6,7 @@ use serde::Deserialize;
 use sha1::{Digest, Sha1};
 
 use crate::app::AppState;
+use crate::utils::keys::format_fingerprint_bytes;
 
 #[derive(Deserialize)]
 pub struct CreateFakeAccountRequest {
@@ -43,10 +44,7 @@ pub async fn handler(
     hasher.update(compressed_point);
     let hashed_bytes = hasher.finalize();
 
-    let fingerprint: String = hashed_bytes
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect();
+    let fingerprint = format_fingerprint_bytes(&hashed_bytes);
 
     sqlx::query!(
         "INSERT INTO device_api_keys (account_id, fingerprint, pem) VALUES ($1, $2, $3);",

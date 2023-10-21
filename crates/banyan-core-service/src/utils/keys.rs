@@ -23,7 +23,7 @@ pub fn sha256_fingerprint_publickey(public_key: &ES384PublicKey) -> String {
     format_fingerprint_bytes(&hashed_bytes)
 }
 
-fn format_fingerprint_bytes(bytes: &[u8]) -> String {
+pub fn format_fingerprint_bytes(bytes: &[u8]) -> String {
     bytes
         .iter()
         .fold(String::new(), |chain, byte| format!("{chain}{byte:02x}"))
