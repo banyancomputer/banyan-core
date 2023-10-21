@@ -34,7 +34,7 @@ pub async fn queue_email(
 ) -> Result<Uuid, sqlx::Error> {
     let type_name = email_message.type_name();
 
-    let email_id = sqlx::query_scalar!(
+    let email_id: String = sqlx::query_scalar!(
         r#"INSERT INTO emails (account_id, type) VALUES ($1, $2) RETURNING id;"#,
         account_id,
         type_name

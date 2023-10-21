@@ -1,9 +1,9 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use super::EmailMessage;
 
 // 1. Create a struct that contains the templated data for your new email message.
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct GaRelease;
 
 // 2. Impl Email Message for your templated data
