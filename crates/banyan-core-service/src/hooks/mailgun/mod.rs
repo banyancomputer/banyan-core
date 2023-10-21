@@ -63,6 +63,24 @@ pub async fn handler(
         .await
         .map_err(MailgunHookError::QueryFailed)?;
 
+    // If this is old state we don't have anything else to do
+    if reported_state < email_state.state {
+        transaction.commit().await.map_err(MailgunHookError::QueryFailed)?;
+        return Ok((StatusCode::OK, ()).into_response());
+    }
+
+    // Update the email to the new state
+    let db_reported_state = reported_state.to_string();
+
+    sqlx::query!(
+        "UPDATE emails SET state = $1 WHERE id = $2;",
+        db_reported_state,
+        email_id,
+    )
+    .execute(&mut *transaction)
+    .await
+    .map_err(MailgunHookError::QueryFailed)?;
+
     transaction.commit().await.map_err(MailgunHookError::QueryFailed)?;
 
     Ok((StatusCode::OK, ()).into_response())
