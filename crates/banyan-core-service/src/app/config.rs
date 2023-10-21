@@ -128,15 +128,15 @@ impl Config {
     }
 
     pub fn listen_addr(&self) -> SocketAddr {
-        self.listen_addr.clone()
+        self.listen_addr
     }
 
     pub fn log_level(&self) -> Level {
-        self.log_level.clone()
+        self.log_level
     }
 
     pub fn mailgun_signing_key(&self) -> Option<&str> {
-        self.mailgun_signing_key.as_ref().map(String::as_str)
+        self.mailgun_signing_key.as_deref()
     }
 
     pub fn session_key_path(&self) -> PathBuf {

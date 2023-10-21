@@ -12,7 +12,7 @@ pub async fn handler(api_id: ApiIdentity, State(state): State<AppState>) -> Resp
 
     match query_result {
         Ok(db_meta) => {
-            let api_meta: Vec<_> = db_meta.into_iter().map(|m| ApiMetadata::from(m)).collect();
+            let api_meta: Vec<_> = db_meta.into_iter().map(ApiMetadata::from).collect();
             (StatusCode::OK, Json(api_meta)).into_response()
         }
         Err(err) => {

@@ -35,7 +35,7 @@ impl State {
     pub async fn from_config(config: &Config) -> Result<Self, StateSetupError> {
         // Do a test setup to make sure the upload directory exists and is writable as an early
         // sanity check
-        LocalFileSystem::new_with_prefix(&config.upload_directory())
+        LocalFileSystem::new_with_prefix(config.upload_directory())
             .map_err(StateSetupError::InaccessibleUploadDirectory)?;
 
         let database = database::connect(&config.database_url()).await?;

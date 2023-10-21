@@ -25,7 +25,7 @@ pub async fn handler(
         Ok(Some(m)) => (StatusCode::OK, Json(ApiMetadata::from(m))).into_response(),
         Ok(None) => {
             let err_msg = serde_json::json!({"msg": "not found"});
-            return (StatusCode::NOT_FOUND, Json(err_msg)).into_response();
+            (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
         }
         Err(err) => {
             tracing::error!("failed to lookup specific metadata for bucket/account: {err}");

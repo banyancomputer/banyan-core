@@ -33,7 +33,7 @@ pub async fn handler(
 
     let buckets: Vec<_> = query_result
         .into_iter()
-        .map(|db| ApiBucketKey::from(db))
+        .map(ApiBucketKey::from)
         .collect();
     Ok((StatusCode::OK, Json(buckets)).into_response())
 }

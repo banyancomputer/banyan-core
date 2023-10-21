@@ -23,7 +23,7 @@ pub async fn handler(api_id: ApiIdentity, State(state): State<AppState>) -> Resp
 
     match query_result {
         Ok(qr) => {
-            let buckets: Vec<_> = qr.into_iter().map(|db| ApiBucket::from(db)).collect();
+            let buckets: Vec<_> = qr.into_iter().map(ApiBucket::from).collect();
             (StatusCode::OK, Json(buckets)).into_response()
         }
         Err(err) => {

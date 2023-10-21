@@ -84,7 +84,7 @@ where
         let ecdsa_signature = ecdsa::Signature::try_from(authentication_tag_bytes.as_slice())
             .map_err(SessionIdentityError::InvalidSignatureBytes)?;
         let mut digest = hmac_sha512::sha384::Hash::new();
-        digest.update(&session_id_b64);
+        digest.update(session_id_b64);
 
         let verification_key = ServiceVerificationKey::from_ref(state);
         verification_key

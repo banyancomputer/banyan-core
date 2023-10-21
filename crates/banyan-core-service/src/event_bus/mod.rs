@@ -10,6 +10,12 @@ pub struct EventBus {
     bus: EventBusSender,
 }
 
+impl Default for EventBus {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl EventBus {
     pub fn new() -> Self {
         let (bus, _) = broadcast::channel(1_024);
