@@ -29,21 +29,43 @@ pub async fn handler(
 
     request.verify_signature(&mailgun_webhook_key)?;
 
-    let message_id = request.message_id().to_string();
-    let reported_state = request.event();
-
     let database = state.database();
+    let mut transaction = database
+        .begin()
+        .await
+        .map_err(MailgunHookError::QueryFailed)?;
 
+    let email_id = request.message_id().to_string();
     let email_state = sqlx::query_as!(
         EmailState,
         "SELECT account_id, state as 'state: EmailMessageState' FROM emails WHERE id = $1;",
-        message_id,
+        email_id,
     )
-    .fetch_optional(&database)
+    .fetch_optional(&mut *transaction)
     .await
-    .map_err(MailgunHookError::QueryFailed)?;
+    .map_err(MailgunHookError::QueryFailed)?
+    .ok_or(MailgunHookError::UnknownEmail)?;
 
-    todo!()
+    let reported_state = request.event();
+    if email_state.state == reported_state {
+        return Err(MailgunHookError::DuplicateEvent);
+    }
+
+    let stat_sql = format!(
+        r#"INSERT INTO email_stats(account_id, {reported_state})
+               VALUES ($1, 1)
+               ON CONFLICT(account_id) DO UPDATE SET {reported_state} = {reported_state} + 1;"#,
+    );
+
+    sqlx::query(&stat_sql)
+        .bind(email_state.account_id)
+        .execute(&mut *transaction)
+        .await
+        .map_err(MailgunHookError::QueryFailed)?;
+
+    transaction.commit().await.map_err(MailgunHookError::QueryFailed)?;
+
+    Ok((StatusCode::OK, ()).into_response())
 }
 
 #[derive(sqlx::FromRow)]
@@ -54,6 +76,9 @@ struct EmailState {
 
 #[derive(Debug, thiserror::Error)]
 pub enum MailgunHookError {
+    #[error("received duplicate event")]
+    DuplicateEvent,
+
     #[error("failed to decode signature")]
     FailedToDecodeSignature(hex::FromHexError),
 
@@ -65,6 +90,9 @@ pub enum MailgunHookError {
 
     #[error("database query failed: {0}")]
     QueryFailed(sqlx::Error),
+
+    #[error("provided email ID was not located in the database")]
+    UnknownEmail,
 }
 
 impl IntoResponse for MailgunHookError {
@@ -74,6 +102,10 @@ impl IntoResponse for MailgunHookError {
                 tracing::error!("{self}");
                 let err_msg = serde_json::json!({ "msg": "an internal server error occurred" });
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
+            }
+            MailgunHookError::UnknownEmail => {
+                let err_msg = serde_json::json!({ "msg": "email not recognized" });
+                (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
             }
             _ => {
                 let err_msg = serde_json::json!({ "msg": self.to_string() });

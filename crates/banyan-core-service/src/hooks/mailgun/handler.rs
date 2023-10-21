@@ -17,37 +17,6 @@ pub async fn handle(
 
     // ...
 
-    let email = match sqlx::query_as!(
-        Email,
-        r#"SELECT account_id, state FROM emails WHERE id = $1;"#,
-        message_id
-    )
-    .fetch_one(&mut *db_conn.0)
-    .await
-    {
-        Ok(e) => e,
-        Err(err) => {
-            return CoreError::generic_error(
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "backend service issue",
-                Some(&format!("failed to read email: {err}")),
-            )
-            .into_response()
-        }
-    };
-
-    let current_state = email.state();
-    let account_id = email.account_id();
-
-    // If we get this then something went wrong on Mailgun's end -- represents an invalid state transition or a duplicate event
-    if next_state == current_state {
-        return CoreError::generic_error(
-            StatusCode::NOT_ACCEPTABLE,
-            "received duplicate event",
-            Some("received duplicate event"),
-        )
-        .into_response();
-    }
 
     let email_stat_query = format!(
         "INSERT INTO email_stats(account_id, {}) VALUES ($1, 1) ON CONFLICT(account_id) DO UPDATE SET {} = {} + 1 WHERE account_id = $1;",
