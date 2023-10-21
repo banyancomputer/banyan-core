@@ -18,7 +18,6 @@ tokio = { version = "^1", features = ["macros", "net", "rt", "rt-multi-thread", 
 base64 = "^0.21"
 bincode = "^1"
 bytes = "^1"
-chrono = { version = "^0.4", features = ["serde"] }
 phf = { version = "^0.11", features = ["macros"] }
 regex = "^1.9"
 serde = { version = "^1", features = ["derive"] }
@@ -31,7 +30,6 @@ blake3 = "^1.4"
 ecdsa = { version = "^0.16", features = ["signing", "verifying"] }
 hmac-sha512 = "^1"
 hex = "^0.4"
-openssl = { version = "^0.10", features = ["vendored"] }
 p384 = "^0.13"
 pem = "^2"
 ring = "^0.17"

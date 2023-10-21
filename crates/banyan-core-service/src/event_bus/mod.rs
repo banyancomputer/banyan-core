@@ -38,7 +38,7 @@ pub enum EventBusError {
     Serialization(bincode::Error),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug)]
 pub enum SystemEvent {
     DeviceKeyRegistration,
 }
