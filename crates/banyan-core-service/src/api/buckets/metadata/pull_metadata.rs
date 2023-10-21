@@ -7,10 +7,8 @@ use http::header::{CONTENT_DISPOSITION, CONTENT_TYPE};
 use object_store::ObjectStore;
 use uuid::Uuid;
 
-use crate::api::models::ApiMetadata;
 use crate::app::AppState;
 use crate::extractors::DataStore;
-use crate::database::models::PartialMetadataWithSnapshot;
 use crate::extractors::ApiIdentity;
 
 pub async fn handler(

@@ -1,4 +1,4 @@
-use axum::routing::{get, post};
+use axum::routing::get;
 use axum::Router;
 
 use crate::app::AppState;
@@ -30,7 +30,7 @@ pub fn router(state: AppState) -> Router<AppState> {
         )
         .route("/device_api_key/start_regwait/:fingerprint", get(start_regwait::handler))
         .route("/device_api_key/end_regwait/:fingerprint", get(end_regwait::handler))
-        .route("/fake_account", post(create_fake_account::handler))
+        .route("/fake_account", axum::routing::post(create_fake_account::handler))
         .route("/who_am_i", get(who_am_i::handler))
         .with_state(state)
 }

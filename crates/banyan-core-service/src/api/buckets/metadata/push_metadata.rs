@@ -1,27 +1,22 @@
 use std::collections::{HashMap, HashSet};
-use std::str::FromStr;
 
 use axum::{Json, TypedHeader};
-use axum::body::StreamBody;
 use axum::extract::{BodyStream, Path, State};
 use axum::headers::ContentType;
+use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use futures::{TryStream, TryStreamExt};
 use jwt_simple::prelude::*;
-use http::{HeaderMap, HeaderValue, StatusCode};
 use object_store::ObjectStore;
 use serde::Deserialize;
 use tokio::io::{AsyncWrite, AsyncWriteExt};
 use uuid::Uuid;
-use url::Url;
 
 use crate::app::{AppState, ServiceSigningKey};
 use crate::database::Database;
 use crate::database::models::MetadataState;
-use crate::extractors::{ApiIdentity, DataStore, SigningKey};
+use crate::extractors::{ApiIdentity, DataStore};
 use crate::utils::car_buffer::CarBuffer;
-//use crate::utils::metadata_upload::{round_to_nearest_100_mib};
-//use crate::utils::storage_ticket::generate_storage_ticket;
 
 /// The default quota we assume each storage host / staging service to provide
 const ACCOUNT_STORAGE_QUOTA: i64 = 5 * 1_024 * 1_024 * 1_024 * 1_024;

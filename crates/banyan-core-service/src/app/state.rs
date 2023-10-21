@@ -5,7 +5,6 @@ use std::sync::Arc;
 use axum::extract::FromRef;
 use jwt_simple::prelude::*;
 use object_store::local::LocalFileSystem;
-use tokio::sync::oneshot::Sender;
 
 use crate::app::{Config, MailgunSigningKey, ProviderCredential, Secrets, ServiceSigningKey, ServiceVerificationKey};
 use crate::database::{self, Database, DatabaseSetupError};

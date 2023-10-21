@@ -12,6 +12,7 @@ pub fn sha1_fingerprint_publickey(public_key: &ES384PublicKey) -> String {
     format_fingerprint_bytes(&hashed_bytes)
 }
 
+#[allow(dead_code)]
 pub fn sha256_fingerprint_publickey(public_key: &ES384PublicKey) -> String {
     let compressed_point = public_key.public_key().as_ref().to_encoded_point(true);
 

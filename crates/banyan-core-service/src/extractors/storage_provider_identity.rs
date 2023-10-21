@@ -1,4 +1,3 @@
-use std::fmt::{self, Display, Formatter};
 use std::sync::OnceLock;
 
 use axum::async_trait;
@@ -151,12 +150,6 @@ pub enum StorageProviderIdentityError {
     #[error("format of the provide bearer token didn't meet our requirements: {0}")]
     FormatError(jsonwebtoken::errors::Error),
 
-    #[error("there was an internal cryptographic issue due too a code or configuration issue: {0}")]
-    InternalCryptographyIssue(String),
-
-    #[error("the provided token was invalid in a way that indicates an attack is likely occurring: {0}")]
-    MaliciousConstruction(String),
-
     #[error("token had a valid signature but the key was not owned by the represented subject")]
     MismatchedSubject,
 
@@ -168,9 +161,6 @@ pub enum StorageProviderIdentityError {
 
     #[error("header didn't include kid required to lookup the appropriate authentication mechanism")]
     UnidentifiedKey,
-
-    #[error("an unexpected error edge case occurred around an authentation token: {0}")]
-    UnknownTokenError(String),
 }
 
 impl IntoResponse for StorageProviderIdentityError {

@@ -1,10 +1,7 @@
 use sqlx::SqlitePool;
 
-mod error;
 pub mod models;
 pub mod sqlite;
-
-pub use error::DatabaseError;
 
 pub type Database = SqlitePool;
 

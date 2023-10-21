@@ -7,7 +7,7 @@ use tokio::time::timeout;
 
 use crate::api::auth::registration_event::{RegistrationEvent, RegistrationEventStatus};
 use crate::app::AppState;
-use crate::event_bus::{EventBusError, EventBusReceiver, SystemEvent};
+use crate::event_bus::{EventBusReceiver, SystemEvent};
 
 pub async fn handler(
     State(state): State<AppState>,
@@ -53,7 +53,6 @@ async fn watch_for_fingerprint(
                     return Ok(event);
                 }
             }
-            _ => ()
         }
     }
 }

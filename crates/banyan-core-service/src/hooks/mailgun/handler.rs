@@ -14,20 +14,8 @@ pub async fn handle(
     mailgun_signing_key: MailgunSigningKey,
     Json(hook_request): extract::Json<MailgunHookRequest>,
 ) -> Response {
-    match hook_request.verify_signature(&mailgun_signing_key.0) {
-        Ok(_) => (),
-        Err(err) => {
-            return CoreError::generic_error(
-                StatusCode::NOT_ACCEPTABLE,
-                "invalid signature",
-                Some(&format!("failed to verify signature: {err}")),
-            )
-            .into_response()
-        }
-    }
 
-    let message_id = hook_request.message_id().to_string();
-    let next_state = hook_request.event();
+    // ...
 
     let email = match sqlx::query_as!(
         Email,
@@ -142,20 +130,5 @@ pub async fn handle(
             Some(&format!("failed to commit transaction: {err}")),
         )
         .into_response(),
-    }
-}
-
-#[derive(sqlx::FromRow)]
-struct Email {
-    account_id: String,
-    state: String,
-}
-
-impl Email {
-    fn state(&self) -> EmailMessageState {
-        self.state.clone().into()
-    }
-    fn account_id(&self) -> String {
-        self.account_id.clone()
     }
 }

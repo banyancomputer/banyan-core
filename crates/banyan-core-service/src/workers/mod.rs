@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::time::Duration;
 
 mod current_task;

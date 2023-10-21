@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use uuid::Uuid;
 
 use crate::database::Database;

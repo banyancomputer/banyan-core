@@ -150,9 +150,6 @@ pub enum SessionIdentityError {
     #[error("signature did not match digest, tampering likely: {0}")]
     BadSignature(ecdsa::Error),
 
-    #[error("received cookie that was larger than we expect or accept")]
-    CookieTooLarge,
-
     #[error("a UUID in the database was corrupted and can not be parsed")]
     CorruptDatabaseId(uuid::Error),
 
