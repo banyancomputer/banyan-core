@@ -18,7 +18,7 @@ export const AccountNavigation = () => {
         // new SettingsLink(`${messages.profile}`, '/account/profile'),
         new SettingsLink(`${messages.appSettings}`, '/account/settings'),
         new SettingsLink(`${messages.manageKeys}`, '/account/manage-keys'),
-        // new SettingsLink(`${messages.billingAndPayments}`, '/account/billing'),
+        new SettingsLink(`${messages.billingAndPayments}`, '/account/billing'),
         // new SettingsLink(`${messages.services}`, '/account/services'),
     ];
 
@@ -33,7 +33,7 @@ export const AccountNavigation = () => {
                 {links.map(link =>
                     <li className="flex-grow" key={link.label}>
                         <Link
-                            className={`flex justify-center w-full py-3 rounded-lg text-xs transition-all ${pathname == link.path && 'bg-white'} `}
+                            className={`flex justify-center w-full py-3 rounded-lg text-xs transition-all ${pathname == link.path && 'bg-secondaryBackground'} `}
                             href={link.path}
                         >
                             {link.label}

@@ -13,7 +13,7 @@ export const Services: NextPageWithLayout = () => {
             <h2 className="text-lg font-semibold">
                 {`${messages.services}`}
             </h2>
-            <div className="flex justify-between items-center border-1 rounded-lg text-gray-800 border-gray-200">
+            <div className="flex justify-between items-center border-1 rounded-lg text-text-800 border-border-regular">
                 <StorageUsage />
             </div>
             <ServicesTable />

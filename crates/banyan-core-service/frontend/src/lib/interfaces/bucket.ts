@@ -21,6 +21,16 @@ export interface BucketKey {
     approved: boolean;
 };
 
+
+export interface BucketSnapshot {
+    id: string;
+    bucket_id: string;
+    snapshot_type: string;
+    version: string;
+    size: number;
+    createdAt: number;
+};
+
 export interface Bucket {
     id: string;
     name: string;
@@ -28,6 +38,7 @@ export interface Bucket {
     bucketType: string;
     storageClass: string;
     files: BucketFile[];
+    snapshots: BucketSnapshot[];
     keys: BucketKey[];
 };
 
@@ -50,12 +61,6 @@ export class MockBucket {
     public storageClass = '';
     public mount = {} as WasmMount;
     public files = [];
+    public snapshots = [];
     public keys = [];
-};
-
-export interface BucketSnapshot {
-    id: string;
-    bucket_id: string;
-    snapshot_type: string;
-    version: string;
 };

@@ -5,14 +5,17 @@ use std::sync::Arc;
 use axum::extract::FromRef;
 use jwt_simple::prelude::*;
 use object_store::local::LocalFileSystem;
+use tokio::sync::oneshot::Sender;
 
-use crate::app::{Config, ProviderCredential, Secrets, ServiceSigningKey, ServiceVerificationKey};
+use crate::app::{Config, MailgunSigningKey, ProviderCredential, Secrets, ServiceSigningKey, ServiceVerificationKey};
 use crate::database::{self, Database, DatabaseSetupError};
+use crate::event_bus::EventBus;
 use crate::utils::keys::sha1_fingerprint_publickey;
 
 #[derive(Clone)]
 pub struct State {
     database: Database,
+    event_bus: EventBus,
     secrets: Secrets,
     service_verifier: ServiceVerificationKey,
     upload_directory: PathBuf,
@@ -23,6 +26,10 @@ impl State {
         self.database.clone()
     }
 
+    pub fn event_bus(&self) -> EventBus {
+        self.event_bus.clone()
+    }
+
     pub async fn from_config(config: &Config) -> Result<Self, StateSetupError> {
         // Do a test setup to make sure the upload directory exists and is writable as an early
         // sanity check
@@ -30,6 +37,9 @@ impl State {
             .map_err(StateSetupError::InaccessibleUploadDirectory)?;
 
         let database = database::connect(&config.database_url()).await?;
+        let event_bus = EventBus::new();
+
+        let mailgun_signing_key = config.mailgun_signing_key().map(MailgunSigningKey::new);
 
         let service_key = load_or_create_service_key(&config.session_key_path())?;
         let service_verifier = service_key.verifier();
@@ -39,10 +49,11 @@ impl State {
             Arc::from("google"),
             ProviderCredential::new(config.google_client_id(), config.google_client_secret()),
         );
-        let secrets = Secrets::new(credentials, service_key);
+        let secrets = Secrets::new(credentials, mailgun_signing_key, service_key);
 
         Ok(Self {
             database,
+            event_bus,
             secrets,
             service_verifier,
             upload_directory: config.upload_directory(),

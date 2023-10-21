@@ -60,7 +60,13 @@ impl AuthenticatedClient {
     }
 
     pub fn remaining_storage(&self) -> u64 {
-        self.authorized_storage - self.consumed_storage
+        match self.authorized_storage.checked_sub(self.consumed_storage) {
+            Some(size) => size,
+            None => {
+                tracing::error!(client_id = ?self.id, "client has consumed more storage than authorized");
+                0
+            }
+        }
     }
 }
 

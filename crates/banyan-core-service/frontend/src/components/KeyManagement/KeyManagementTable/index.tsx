@@ -13,17 +13,20 @@ export const KeyManagementTable: React.FC<{ buckets: Bucket[] }> = ({ buckets })
     useEffect(() => {
         /** Weird typescript issue with scrollTop which exist, but not for typescript */
         //@ts-ignore
-        tableRef.current?.addEventListener("scroll", event => setTableScroll(event.target.scrollTop));
+        const listener = (event: Event) => setTableScroll(event.target!.scrollTop || 0);
+        tableRef.current?.addEventListener("scroll", listener);
+
+        return () => tableRef.current?.removeEventListener('scroll', listener);
     }, [tableRef]);
 
     return (
         <div
             ref={tableRef}
-            className="max-h-[calc(100vh-320px)] overflow-x-auto border-2 border-gray-200 rounded-xl"
+            className="max-h-[calc(100vh-320px)] overflow-x-auto border-2 border-border-regular bg-secondaryBackground rounded-xl"
         >
-            <table className="table table-pin-rows w-full text-gray-600 rounded-xl">
-                <thead className="border-b-table-cellBackground text-xxs font-normal text-gray-600">
-                    <tr className="border-b-table-cellBackground bg-table-headBackground">
+            <table className="table table-pin-rows w-full text-text-600 rounded-xl">
+                <thead className="border-b-table-cellBackground text-xxs font-normal text-text-600">
+                    <tr className="border-b-table-cellBackground bg-table-headBackground border-none">
                         <th className="py-3 px-6 w-44 whitespace-break-spaces text-left font-medium">{`${messages.locationForKey}`}</th>
                         <th className="py-3 px-6 text-left font-medium whitespace-pre">
                             {`${messages.client}`}
@@ -40,7 +43,7 @@ export const KeyManagementTable: React.FC<{ buckets: Bucket[] }> = ({ buckets })
                 <tbody>
                     {buckets.map(bucket =>
                         <React.Fragment key={bucket.id}>
-                            <tr className="bg-table-cellBackground text-gray-900">
+                            <tr className="bg-table-cellBackground text-text-900 border-1 border-b-border-regular">
                                 <td className="px-6 py-4">{bucket.name}</td>
                                 <td className="px-6 py-4"></td>
                                 <td className="px-6 py-4"></td>
@@ -49,7 +52,7 @@ export const KeyManagementTable: React.FC<{ buckets: Bucket[] }> = ({ buckets })
                             </tr>
                             {
                                 bucket?.keys?.map(bucketKey =>
-                                    <tr key={bucketKey.id}>
+                                    <tr key={bucketKey.id} className='border-1 border-b-border-regular'>
                                         <td className="px-6 py-4"></td>
                                         <td className="px-6 py-4"></td>
                                         <td className="px-6 py-4"></td>

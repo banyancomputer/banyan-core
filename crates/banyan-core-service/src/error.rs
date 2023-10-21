@@ -42,6 +42,16 @@ impl CoreError {
             },
         }
     }
+
+    pub fn generic_error(code: StatusCode, msg: &str, trace: Option<&str>) -> Self {
+        Self {
+            kind: CoreErrorKind::Generic {
+                code,
+                msg: msg.to_string(),
+                trace: trace.map(|trace| trace.to_string()),
+            },
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -56,6 +66,14 @@ pub enum CoreErrorKind {
         operation: String,
         /// Resource
         resource: String,
+    },
+    Generic {
+        /// Status Code
+        code: StatusCode,
+        /// Message
+        msg: String,
+        /// Trace
+        trace: Option<String>,
     },
 }
 
@@ -94,6 +112,12 @@ impl IntoResponse for CoreError {
                     // Catch all others
                     _ => Self::default_response(None),
                 }
+            }
+            CoreErrorKind::Generic { code, msg, trace } => {
+                if let Some(trace) = trace {
+                    tracing::error!("{trace}")
+                }
+                (code, axum::extract::Json(serde_json::json!({"msg": msg}))).into_response()
             }
         }
     }

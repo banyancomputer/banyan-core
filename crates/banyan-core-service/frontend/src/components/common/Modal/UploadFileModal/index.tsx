@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useIntl } from 'react-intl';
 
 import { Select } from '../../Select';
@@ -11,18 +11,19 @@ import { useModal } from '@/contexts/modals';
 import { useTomb } from '@/contexts/tomb';
 import { ToastNotifications } from '@/utils/toastNotifications';
 import { useFolderLocation } from '@/hooks/useFolderLocation';
+import { useFilesUpload } from '@/contexts/filesUpload';
 
 import { Upload } from '@static/images/buckets';
 
 export const UploadFileModal: React.FC<{ bucket?: Bucket | null }> = ({ bucket }) => {
-    const { buckets, uploadFile } = useTomb();
+    const { buckets } = useTomb();
     const folderLocation = useFolderLocation();
     const { openModal, closeModal } = useModal();
+    const { setFiles, uploadFiles, files } = useFilesUpload()
     const { messages } = useIntl();
     const [selectedBucket, setSelectedBucket] = useState<Bucket | null>(bucket || null);
     const [selectedFolder, setSelectedFolder] = useState<string[]>([]);
-    const [file, setFIle] = useState<File | null>(null);
-    const isUploadDataFilled = useMemo(() => Boolean(selectedBucket && file), [selectedBucket, file]);
+    const isUploadDataFilled = useMemo(() => Boolean(selectedBucket && files.length), [selectedBucket, files]);
 
     const selectBucket = (bucket: Bucket) => {
         setSelectedBucket(bucket);
@@ -35,7 +36,7 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null }> = ({ bucket }
     const handleChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         if (!event.target.files) { return; }
 
-        setFIle(Array.from(event.target.files)[0]);
+        setFiles(Array.from(event.target.files).map(file => ({ file, isUploaded: false })));
     };
 
     const handleDrop = async (event: React.DragEvent<HTMLInputElement | HTMLLabelElement>) => {
@@ -44,7 +45,7 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null }> = ({ bucket }
 
         if (!event.dataTransfer.files) { return; }
 
-        setFIle(Array.from(event.dataTransfer.files)[0]);
+        setFiles(Array.from(event.dataTransfer.files).map(file => ({ file, isUploaded: false })));
     };
 
     const handleDrag = async (event: React.DragEvent<HTMLInputElement | HTMLLabelElement>) => {
@@ -53,11 +54,11 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null }> = ({ bucket }
     };
 
     const upload = async () => {
-        if (!file) { return; }
+        if (!files.length) { return; }
         try {
-            const arrayBuffer = await file.arrayBuffer();
             closeModal();
-            await uploadFile(selectedBucket!, selectedFolder.length ? selectedFolder : [], file.name, arrayBuffer, folderLocation);
+            ToastNotifications.uploadProgress();
+            await uploadFiles(selectedBucket!, selectedFolder.length ? selectedFolder : []);
         } catch (error: any) {
             ToastNotifications.error(`${messages.uploadError}`, `${messages.tryAgain}`, upload);
         };
@@ -71,7 +72,7 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null }> = ({ bucket }
         <div className="w-modal flex flex-col gap-4">
             <div>
                 <h4 className="text-m font-semibold ">{`${messages.uploadFiles}`}</h4>
-                <p className="mt-2 text-gray-600">
+                <p className="mt-2 text-text-600">
                     {`${messages.chooseFilesToUpload}`}
                 </p>
             </div>
@@ -98,17 +99,26 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null }> = ({ bucket }
                 </div>
             }
             <label
-                className="mt-10 flex flex-col items-center justify-center gap-4 px-6 py-4 border-2 border-c rounded-xl  text-xs cursor-pointer"
+                className="mt-10 flex flex-col items-center justify-center gap-4 px-6 py-4 border-2 border-border-darken rounded-xl  text-xs cursor-pointer"
                 onDrop={handleDrop}
                 onDragOver={handleDrag}
             >
-                {file ?
-                    <span className="w-full overflow-hidden text-ellipsis whitespace-nowrap">{file.name}</span>
+                {files.length ?
+                    <React.Fragment >
+                        {files.map(file =>
+                            <span
+                                className="w-full overflow-hidden text-ellipsis whitespace-nowrap"
+                                key={file.file.name}
+                            >
+                                {file.file.name}
+                            </span>
+                        )}
+                    </React.Fragment>
                     :
                     <>
                         <Upload />
-                        <span className="text-gray-600">
-                            <b className="text-gray-900">{`${messages.clickToUpload}`} </b>
+                        <span className="text-text-600">
+                            <b className="text-text-900">{`${messages.clickToUpload}`} </b>
                             {`${messages.orDragAndDrop}`}
                         </span>
                     </>

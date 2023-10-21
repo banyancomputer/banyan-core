@@ -40,15 +40,15 @@ const Login: NextPageWithLayout = () => {
     }, [error]);
 
     return (
-        <div className="flex items-stretch h-screen bg-login">
-            <div className="w-2/3 flex items-center justify-center bg-navigation-primary svg:w-44">
+        <div className="flex items-stretch h-screen bg-login text-text-900">
+            <div className="w-2/3 flex items-center justify-center bg-navigation-primary text-navigation-text">
                 <Logo width="426px" height="88px" />
             </div>
             <div className="w-1/3 min-w-login flex items-center justify-center">
                 <div className="flex flex-col justify-cente">
                     <h3 className="mb-12 text-3xl font-medium">Log in</h3>
                     <button
-                        className="w-80 flex items-center justify-center bg-white text-sm font-medium py-2.5 px-3 rounded-lg cursor-pointer"
+                        className="w-80 flex items-center justify-center bg-secondaryBackground text-sm font-medium py-2.5 px-3 rounded-lg cursor-pointer"
                         onClick={handleLoginWithProvider('google')}
                     >
                         <span className="flex items-center justify-center gap-2">

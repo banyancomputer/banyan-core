@@ -3,7 +3,7 @@ import { HiOutlineLightningBolt } from 'react-icons/hi';
 import { useIntl } from 'react-intl';
 import { useForm } from 'react-hook-form';
 
-import { PasswordInput } from '../../PasswordInput';
+import { Input } from '../../Input';
 
 import { useKeystore } from '@/contexts/keystore';
 import { validateKeyphrase } from '@/utils/validation';
@@ -27,7 +27,7 @@ export const CreateSecretKeyModal = () => {
     const { keyphrase, keyphraseConfirmation } = watch();
     const isDataCorrect = !Object.keys(errors).length && !!keyphrase && !!keyphraseConfirmation && keyphraseConfirmation === keyphrase;
 
-    const confirm = async() => {
+    const confirm = async () => {
         try {
             await initializeKeystore(keyphrase);
             closeModal();
@@ -52,39 +52,37 @@ export const CreateSecretKeyModal = () => {
             </span>
             <div>
                 <h4 className="text-m font-semibold">{`${messages.createSecretKey}`}</h4>
-                <p className="mt-2 text-gray-600">
+                <p className="mt-2 text-text-600">
                     {`${messages.andEnterIntoTextField}`}
                 </p>
             </div>
-            <div>
-                <label className="inline-block mb-1 text-xs font-normal">{`${messages.secretKey}`}</label>
-                <PasswordInput
-                    placeholder={`${messages.enterPassphrase}`}
-                    error={errors.keyphrase?.message}
-                    register={register('keyphrase', {
-                        required: `${messages.enterPassphrase}`,
-                        validate: validateKeyphrase(`${messages.keyRequirements}`),
-                    })}
-                />
-            </div>
-            <div>
-                <label className="inline-block mb-1 text-xs font-normal">{`${messages.confirmSecretKey}`}</label>
-                <PasswordInput
-                    placeholder={`${messages.enterPassphrase}`}
-                    error={errors.keyphraseConfirmation?.message}
-                    register={register('keyphraseConfirmation', {
-                        required: `${messages.enterPassphrase}`,
-                        validate: (keyphraseConfirmation) => {
-                            const { keyphrase } = getValues();
-                            if (keyphrase !== keyphraseConfirmation) {
-                                return `${messages.passphraseNotMatch}`;
-                            }
+            <Input
+                type='password'
+                label={`${messages.secretKey}`}
+                placeholder={`${messages.enterPassphrase}`}
+                error={errors.keyphrase?.message}
+                register={register('keyphrase', {
+                    required: `${messages.enterPassphrase}`,
+                    validate: validateKeyphrase(`${messages.keyRequirements}`),
+                })}
+            />
+            <Input
+                type='password'
+                label={`${messages.confirmSecretKey}`}
+                placeholder={`${messages.enterPassphrase}`}
+                error={errors.keyphraseConfirmation?.message}
+                register={register('keyphraseConfirmation', {
+                    required: `${messages.enterPassphrase}`,
+                    validate: (keyphraseConfirmation) => {
+                        const { keyphrase } = getValues();
+                        if (keyphrase !== keyphraseConfirmation) {
+                            return `${messages.passphraseNotMatch}`;
+                        }
 
-                            return validateKeyphrase(`${messages.keyRequirements}`)(keyphraseConfirmation);
-                        },
-                    })}
-                />
-            </div>
+                        return validateKeyphrase(`${messages.keyRequirements}`)(keyphraseConfirmation);
+                    },
+                })}
+            />
             <button
                 type="submit"
                 className="btn-primary flex-grow py-2.5 px-4"

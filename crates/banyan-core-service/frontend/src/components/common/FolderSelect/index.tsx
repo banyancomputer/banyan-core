@@ -78,7 +78,7 @@ export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBu
         <div
             ref={selectRef}
             onClick={toggleSelect}
-            className="relative p-2.5 flex justify-between items-center text-sm font-medium border-1 border-gray-200 rounded-lg shadow-sm cursor-pointer select-none"
+            className="relative p-2.5 flex justify-between items-center text-sm font-medium border-1 border-border-darken rounded-lg shadow-sm cursor-pointer select-none"
         >
             <span className='overflow-hidden text-ellipsis'>
                 /{folder.join('/')}
@@ -91,11 +91,11 @@ export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBu
             {isOptionstVisible &&
                 <ul
                     onClick={stopPropagation}
-                    className='absolute left-0 top-full w-full mt-2 max-h-48 overflow-y-auto bg-white border-1 border-gray-200 rounded-lg shadow-sm z-10'
+                    className='absolute left-0 top-full w-full mt-2 max-h-48 overflow-y-auto bg-secondaryBackground border-1 border-border-darken rounded-lg shadow-sm z-10'
                 >
                     {
                         folder.length ? <li
-                            className='flex justify-between items-center p-2.5 transition-all hover:bg-slate-200 cursor-pointer'
+                            className='flex justify-between items-center p-2.5 transition-all hover:bg-hover cursor-pointer'
                             onClick={goAbove}
                         >
                             ...
@@ -106,7 +106,7 @@ export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBu
                     <AddNewOption label={`${messages.createNewFolder}`} action={addNewFolder} />
                     {folders.map((folderItem, index) =>
                         <li
-                            className='flex justify-between items-center p-2.5 transition-all hover:bg-slate-200 cursor-pointer'
+                            className='flex justify-between items-center p-2.5 transition-all hover:bg-hover cursor-pointer'
                             key={index}
                             onClick={() => handleSelect([...folder, folderItem.name])}
                         >

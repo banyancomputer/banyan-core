@@ -1,0 +1,57 @@
+:root {
+    --button-secondary: #0F3A4A;
+    --error: #CB3535;
+    --errorBanner: #FFD7B2;
+    --login: #F7F7F7;
+    --navigation-primary: #0F3A4A;
+    --navigation-secondary: #3D5F6B;
+    --navigation-text: #fff;
+    --navigation-separator: #3D5F6B;
+    --navigation-textSecondary: #FFFFFF80;
+    --navigation-border: #0F3A4A;
+    --table-cellBackground: #EFF1F5;
+    --table-headBackground: #fcfcfd;
+    --bucket-icon-background: #E0F4FC;
+    --bucket-hover-background: #e2e8f0;
+    --bucket-class-hot: #DE6F6F;
+    --bucket-class-warm: #716FDE;
+    --bucket-class-cold: #5CADBF;
+    --bucket-actions-background: #F4F3F3;
+    --text-900: #111322;
+    --text-800: #30374F;
+    --text-600: #4A5578;
+    --text-200: #e5e7eb;
+    --regular-border: #EFF1F5;
+    --darken-border: #D0D5DD;
+    --main-background: #F4F3F3;
+    --secondary-background: #fff;
+    --highlight-color: #5299E0;
+    --hover-background: #e2e8f0;
+    --disabled: #cbd5e1;
+    --shadow: 0px 1px 2px 0px rgba(16, 24, 40, 0.06);
+}
+
+[prefers-color-scheme="dark"]:root {
+    --button-primary: #3E8CDA;
+    --button-hover: #287dd2;
+    --error: #CB3535;
+    --errorBanner: #FFD7B2;
+    --login: #F7F7F7;
+    --navigation-primary: #c5c6ff;
+    --navigation-secondary: #fff8e7;
+    --navigation-text: #30374F;
+    --navigation-textSecondary: #7D89B0;
+    --navigation-border: #EFC163;
+    --table-cellBackground: #EFF1F5;
+    --table-headBackground: #fcfcfd;
+    --gray-900: #111322;
+    --gray-800: #30374F;
+    --gray-600: #4A5578;
+    --gray-200: #e5e7eb;
+    --table-border: #EFF1F5;
+    --input-border: #D0D5DD;
+    --background: #fff;
+    --hover-background: #e2e8f0;
+    --disabled: #cbd5e1;
+    --shadow: 0px 1px 2px 0px rgba(16, 24, 40, 0.06);
+}

@@ -12,10 +12,10 @@ const nextConfig = {
 		ignoreDuringBuilds: true,
 	},
 	output: 'standalone',
+	productionBrowserSourceMaps: true,
 	webpack(config) {
 		// Since Webpack 5 doesn't enable WebAssembly by default, we should do it manually
 		config.experiments = { ...config.experiments, asyncWebAssembly: true };
-
 		return config;
 	},
 };

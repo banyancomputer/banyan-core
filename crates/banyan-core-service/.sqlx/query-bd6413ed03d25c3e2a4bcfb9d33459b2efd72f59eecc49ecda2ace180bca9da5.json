@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE emails\n               SET state = $1\n               WHERE id = $2;",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "bd6413ed03d25c3e2a4bcfb9d33459b2efd72f59eecc49ecda2ace180bca9da5"
+}

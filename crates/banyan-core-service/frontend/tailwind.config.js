@@ -7,18 +7,18 @@ module.exports = {
 	theme: {
 		extend: {
 			boxShadow: {
-				blue: '0px 4px 0px rgba(37, 99, 235, 0.35)',
+				common: 'var(--shadow)',
 			},
 			height: {
 				navbar: '72px',
 			},
 			width: {
-				navbar: '280px',
+				navbar: '320px',
 				modal: '400px',
 				toast: '480px',
 				snapshotsModal: '530px',
 				keyManagement: '1128px',
-				filePreview: '70%',
+				filePreview: '80vw',
 			},
 			padding: {
 				keyManagement: '72px',
@@ -26,34 +26,55 @@ module.exports = {
 				1.5: '6px',
 			},
 			minWidth: {
-				navbar: '280px',
+				navbar: '320px',
 				login: '590px',
 			},
 			maxWidth: {
-				filePreview: '952px',
+				filePreview: '80vw',
 			},
 			colors: {
-				blue: {
-					primary: '#3E8CDA',
-					hover: '#287dd2',
-					100: '#DBEAFE',
-					600: '#2563EB',
-					900: '#1E3A8A',
+				button: {
+					primary: 'var(--highlight-color)',
+					highLight: 'var(--button-secondary)',
+					disabled: 'var(--disabled)',
 				},
-				error: '#CB3535',
-				errorBanner: '#FFD7B2',
-				login: '#F7F7F7',
+				error: 'var(--error)',
+				errorBanner: 'var(--errorBanner)',
+				login: 'var(--login)',
 				navigation: {
-					primary: '#FFECC5',
-					secondary: '#fff8e7',
-					text: '#30374F',
-					textSecondary: '#7D89B0',
-					border: '#EFC163',
+					primary: 'var(--navigation-primary)',
+					secondary: 'var(--navigation-secondary)',
+					text: 'var(--navigation-text)',
+					textSecondary: 'var(--navigation-textSecondary)',
+					border: 'var(--navigation-border)',
+					separator: 'var(--navigation-separator)',
 				},
 				table: {
-					cellBackground: '#EFF1F5',
-					headBackground: '#fcfcfd',
+					cellBackground: 'var(--table-cellBackground)',
+					headBackground: 'var(--table-headBackground)',
 				},
+				bucket: {
+					bucketIconBackground: 'var(--bucket-icon-background)',
+					bucketHoverBackground: 'var(--bucket-hover-background)',
+					bucketClasshot: 'var(--bucket-class-hot)',
+					bucketClasswarm: 'var(--bucket-class-hot)',
+					bucketClasscold: 'var(--bucket-class-cold)',
+					actionsBackground: 'var(--bucket-actions-background)',
+				},
+				border: {
+					darken: 'var(--darken-border)',
+					regular: 'var(--regular-border)',
+				},
+				text: {
+					200: 'var(--text-200)',
+					600: 'var(--text-600)',
+					800: 'var(--text-800)',
+					900: 'var(--text-900)',
+				},
+				'gray-200': 'var(--text-200)',
+				hover: 'var(--hover-background)',
+				mainBackground: 'var(--main-background)',
+				secondaryBackground: 'var(--secondary-background)',
 			},
 			fontFamily: {
 				sans: ['Inter'],

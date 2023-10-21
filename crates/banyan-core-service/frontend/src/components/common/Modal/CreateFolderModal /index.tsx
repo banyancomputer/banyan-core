@@ -9,12 +9,18 @@ import { ToastNotifications } from '@/utils/toastNotifications';
 export const CreateFolderModal: React.FC<{ bucket: Bucket, onSuccess?: () => void, path: string[] }> = ({ bucket, onSuccess = () => { }, path }) => {
     const { closeModal, openModal } = useModal();
     const { messages } = useIntl();
-    const [newName, setNewName] = useState('');
+    const [folderName, setfolderName] = useState('');
     const { createDirectory } = useTomb();
+
+    const changeName = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (event.target.value.length >= 32) return;
+
+        setfolderName(event.target.value);
+    };
 
     const create = async () => {
         try {
-            await createDirectory(bucket, path, newName);
+            await createDirectory(bucket, path, folderName);
             onSuccess();
         } catch (error: any) {
             ToastNotifications.error(`${messages.creationError}`, `${messages.tryAgain}`, create);
@@ -30,11 +36,11 @@ export const CreateFolderModal: React.FC<{ bucket: Bucket, onSuccess?: () => voi
                 <label>
                     {`${messages.folderName}`}
                     <input
-                        className="mt-2 input w-full h-11 py-3 px-4 rounded-lg border-gray-400 focus:outline-none"
+                        className="mt-2 input w-full h-11 py-3 px-4 rounded-lg border-border-darken focus:outline-none"
                         type="text"
                         placeholder={`${messages.enterNewBucketName}`}
-                        value={newName}
-                        onChange={event => setNewName(event.target.value)}
+                        value={folderName}
+                        onChange={changeName}
                     />
                 </label>
             </div>
@@ -48,6 +54,7 @@ export const CreateFolderModal: React.FC<{ bucket: Bucket, onSuccess?: () => voi
                 <button
                     className="btn-primary flex-grow py-3 px-4"
                     onClick={create}
+                    disabled={!folderName}
                 >
                     {`${messages.create}`}
                 </button>

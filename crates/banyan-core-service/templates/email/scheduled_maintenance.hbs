@@ -1,0 +1,10 @@
+{{! Required variables: }}
+{{! - start: the start time of the maintenance }}
+{{! - end: the end time of the maintenance }}
+{{#> layout}}
+    {{#*inline "content"}}
+        We'll be performing scheduled maintenance on our servers. Services will be unavailable from
+        <strong>{{ start }}</strong> to <strong>{{ end }}</strong>.
+        We apologize for any inconvenience this may cause.
+    {{/inline}}
+{{/layout}}

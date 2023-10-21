@@ -1,7 +1,7 @@
 import React, { ReactElement, useEffect, useRef, useState } from 'react';
-import { FiChevronDown } from 'react-icons/fi';
 import { MdDone } from 'react-icons/md';
 import { popupClickHandler } from '@/utils';
+import { ChevronUp } from '@static/images/common';
 
 export class Selectoption {
     constructor(
@@ -16,9 +16,10 @@ export interface SelectProps {
     onChange: (option: any) => void;
     placeholder: string;
     initialOption?: ReactElement;
+    className?: string;
 };
 
-export const Select: React.FC<SelectProps> = ({ initialOption, onChange, options, placeholder, selectedOption }) => {
+export const Select: React.FC<SelectProps> = ({ initialOption, onChange, options, placeholder, selectedOption, className }) => {
     const selectRef = useRef<HTMLDivElement | null>(null);
     const [isOptionstVisible, setIsOptionsVisible] = useState(false);
 
@@ -46,23 +47,21 @@ export const Select: React.FC<SelectProps> = ({ initialOption, onChange, options
         <div
             ref={selectRef}
             onClick={toggleSelect}
-            className="relative p-2.5 flex justify-between items-center text-sm font-medium border-1 border-gray-200 rounded-lg shadow-sm cursor-pointer select-none"
+            className={`relative p-2.5 flex justify-between items-center text-sm font-medium border-1 border-border-darken rounded-lg shadow-sm cursor-pointer select-none ${className}`}
         >
             {selectedOption ? options.find(option => option.value === selectedOption)?.label : placeholder}
-            <FiChevronDown
-                className={`${isOptionstVisible && 'rotate-180'}`}
-                stroke="#667085"
-                size="20px"
+            <ChevronUp
+                className={`${!isOptionstVisible && 'rotate-180'}`}
             />
             {isOptionstVisible &&
                 <ul
                     onClick={stopPropagation}
-                    className="absolute left-0 top-12 w-full max-h-48 overflow-y-auto bg-white border-1 border-gray-200 rounded-lg shadow-sm z-10"
+                    className="absolute left-0 top-12 w-full max-h-48 overflow-y-auto bg-secondaryBackground border-1 border-border-darken rounded-lg shadow-sm z-10"
                 >
                     {initialOption ? initialOption : null}
                     {options.map((option, index) =>
                         <li
-                            className="flex justify-between items-center p-2.5 transition-all hover:bg-slate-200 cursor-pointer"
+                            className="flex justify-between items-center p-2.5 transition-all hover:bg-hover cursor-pointer"
                             key={index}
                             onClick={() => handleSelect(option)}
                         >

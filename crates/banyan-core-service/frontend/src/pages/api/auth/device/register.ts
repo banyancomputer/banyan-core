@@ -41,33 +41,41 @@ export default async(req: NextApiRequest, res: NextApiResponse) => {
         const maybeDeviceApiKey = await DeviceApiKeyFactory.readByFingerprint(
             fingerprint as string
         );
+        
+        // If it does
         if (maybeDeviceApiKey) {
-            res.status(409).send('conflict'); // Conflict
-
+            // There is a conflict
+            res.status(409).send('conflict');
             return;
         }
 
+        // Re-wrap the spki
         const pem = publicPemWrap(spki);
-
+        // Create the new struct
         const deviceApiKey = {
             accountId,
             fingerprint,
             pem,
         };
 
+        // Try to create the device API key in the db
         try {
             await DeviceApiKeyFactory.create(deviceApiKey);
         } catch (e: any) {
+            // If the request was formatted incorrectly in a known way
             if (e.name === errors.BadModelFormat.name) {
-                res.status(400).send('bad request -- bad format'); // Bad Request
-
+                // Bad Request
+                res.status(400).send('bad request -- bad format');
                 return;
             }
+            // Otherwise, misc error
             console.log('Error creating device api key: ', e);
-            res.status(500).send('internal server error'); // Bad Request
-
+            // Bad Request
+            res.status(500).send('internal server error');
             return;
         }
-        res.status(200).send(deviceApiKey); // Bad Request
+
+        // Okay
+        res.status(200).send(deviceApiKey);
     }
 };

@@ -149,8 +149,6 @@ export const KeystoreProvider = ({ children }: any) => {
         }
     }, [session]);
 
-    /* Methods */
-
     // Initialize a keystore based on the user's passphrase
     const initializeKeystore = async (passkey: string): Promise<void> => {
         let exportedKeyMaterial: ExportedKeyMaterial;
@@ -234,7 +232,7 @@ export const KeystoreProvider = ({ children }: any) => {
         const apiKeyPublicKeySpki = publicPemUnwrap(apiKeyPublicKeyPem);
         const apiKeyPrivateKeyPem = exportKeyMaterial.apiKeyPem;
         const apiKeyPrivateKeyPkcs8 = privatePemUnwrap(apiKeyPrivateKeyPem);
-        // Assume P-384 for now      
+        // Assume P-384 for now
         const apiKeyPair = await importKeyPair(
             apiKeyPublicKeySpki,
             apiKeyPrivateKeyPkcs8,
@@ -246,6 +244,7 @@ export const KeystoreProvider = ({ children }: any) => {
 
     // Purge the keystore from storage
     const purgeKeystore = async (): Promise<void> => {
+        setIsLoading(true);
         if (!keystore) {
             setError('No keystore');
             throw new Error('No keystore');
@@ -254,6 +253,9 @@ export const KeystoreProvider = ({ children }: any) => {
         // Purge the session key cookie
         destroyCookie(null, KEY_STORE_COOKIE_NAME);
         setKeystoreInitialized(false);
+        setTimeout(() => {
+            setIsLoading(false);
+        }, 500);
     };
 
     /* Helpers */

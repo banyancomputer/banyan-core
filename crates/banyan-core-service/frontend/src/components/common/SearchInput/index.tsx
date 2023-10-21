@@ -65,7 +65,7 @@ export const SearchInput = React.memo(() => {
                 <FiSearch size="20px" stroke="#667085" />
             </span>
             <input
-                className={`input w-full h-10 py-3 px-4 rounded-xl border-gray-400  pl-12 focus:outline-none`}
+                className={`input w-full h-10 py-3 px-4 rounded-xl bg-secondaryBackground border-border-darken  pl-12 focus:outline-none`}
                 value={search}
                 onChange={event => setSearch(event.target.value)}
                 placeholder={`${messages.search}`}
@@ -73,17 +73,17 @@ export const SearchInput = React.memo(() => {
             {search &&
                 <>
                     <span
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 bg-gray-300 h-fit rounded-full cursor-pointer"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-text-900 bg-border h-fit rounded-full cursor-pointer"
                         onClick={clearSearch}
                     >
                         <IoMdClose size="20px" />
                     </span>
                     <div
-                        className="absolute top-11 left-0 w-full max-h-48 flex flex-col items-stretch z-10 bg-white rounded-lg shadow-md overflow-y-scroll"
+                        className="absolute top-11 left-0 w-full max-h-48 flex flex-col items-stretch z-10 bg-secondaryBackground rounded-lg shadow-md overflow-y-scroll"
                     >
-                        {searchList.filter(element => element.label.includes(search)).map((element, index) =>
+                        {searchList.filter(element => element.label.toLocaleLowerCase().includes(search.toLocaleLowerCase())).map((element, index) =>
                             <div
-                                className="flex items-center gap-2 py-2 px-3 transition-all cursor-pointer hover:bg-slate-200"
+                                className="flex items-center gap-2 py-2 px-3 transition-all cursor-pointer hover:bg-hover"
                                 key={index}
                                 onClick={() => element.path ? goTo(element.path) : previewFile(element.bucket, element.label)}
                             >

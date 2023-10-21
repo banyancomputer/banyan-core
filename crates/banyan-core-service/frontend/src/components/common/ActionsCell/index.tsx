@@ -1,7 +1,8 @@
 import React, { ReactElement, useEffect, useRef, useState } from 'react';
-import { HiDotsVertical } from 'react-icons/hi';
 
 import { popupClickHandler } from '@/utils';
+
+import { Dots } from '@static/images/common';
 
 export const ActionsCell: React.FC<{
     actions: ReactElement,
@@ -47,11 +48,9 @@ export const ActionsCell: React.FC<{
                 ref={actionsRef}
                 onClick={toggleActionsVisibility}
             >
-                <HiDotsVertical
-                    fill="#7f8ab0"
-                    size="20px"
-                    className="pointer-events-none"
-                />
+                <span className='pointer-events-none'>
+                    <Dots />
+                </span>
                 {isActionsVisible &&
                     <div
                         className="fixed right-14"
@@ -60,6 +59,10 @@ export const ActionsCell: React.FC<{
                         <div
                             className='relative'
                             style={{ top: `-${offsetTop - Math.min(overflow, 0)}px` }}
+                            onClick={event => {
+                                event.stopPropagation();
+                                toggleActionsVisibility();
+                            }}
                         >
                             {actions}
                         </div>

@@ -17,6 +17,8 @@ pub struct Config {
     google_client_id: String,
     google_client_secret: String,
 
+    mailgun_signing_key: Option<String>,
+
     session_key_path: PathBuf,
     upload_directory: PathBuf,
 }
@@ -52,6 +54,14 @@ impl Config {
             },
         };
         let database_url = Url::parse(&database_str).map_err(ConfigError::InvalidDatabaseUrl)?;
+
+        let mailgun_signing_key = match cli_args.opt_value_from_str("--mailgun")? {
+            Some(key) => Some(key),
+            None => match std::env::var("MAILGUN_KEY") {
+                Ok(mk) if !mk.is_empty() => Some(mk),
+                _ => None,
+            },
+        };
 
         let session_key_str = match cli_args.opt_value_from_str("--signing-key")? {
             Some(path) => path,
@@ -102,6 +112,8 @@ impl Config {
             google_client_id,
             google_client_secret,
 
+            mailgun_signing_key,
+
             session_key_path,
             upload_directory,
         })
@@ -121,6 +133,10 @@ impl Config {
 
     pub fn log_level(&self) -> Level {
         self.log_level.clone()
+    }
+
+    pub fn mailgun_signing_key(&self) -> Option<&str> {
+        self.mailgun_signing_key.as_ref().map(String::as_str)
     }
 
     pub fn session_key_path(&self) -> PathBuf {
@@ -156,9 +172,10 @@ fn print_help() {
     println!("    -h, --help                    Print this notice and exit");
     println!("    -v, --version                 Display the version of this compiled version");
     println!("                                  and exit\n");
-    println!(
-        "    --listen, LISTEN_ADDR         Specify the address to bind to (default 127.0.0.1:3001)"
-    );
+    println!("    --listen, LISTEN_ADDR         Specify the address to bind to, by default");
+    println!("                                  this is 127.0.0.1:3001");
+    println!("    --mailgun, MAILGUN_KEY        Webhook signature verification key issued by");
+    println!("                                  mailgun");
     println!("    --signing-key, SESSION_KEY    Path to the p384 private key used for session");
     println!("                                  key generation and verification");
     println!("    --upload-dir, UPLOAD_DIR      Path used to store uploaded client data\n");

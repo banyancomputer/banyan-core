@@ -19,11 +19,11 @@ export const Modal = () => {
         <>
             {content &&
                 <div
-                    className="absolute w-screen h-screen bg flex items-center justify-center z-10 bg-slate-800 bg-opacity-80 backdrop-blur-sm"
+                    className="absolute w-screen h-screen bg flex items-center justify-center z-10 bg-slate-800 bg-opacity-80 backdrop-blur-sm text-text-900"
                     onClick={close}
                 >
                     <div
-                        className="relative p-6 bg-white rounded-xl"
+                        className="relative p-6 bg-secondaryBackground rounded-xl"
                         ref={modalRef}
                     >
                         {onBack &&

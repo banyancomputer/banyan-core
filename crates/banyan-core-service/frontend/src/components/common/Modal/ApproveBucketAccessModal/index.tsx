@@ -10,7 +10,7 @@ export const ApproveBucketAccessModal: React.FC<{ bucketKey: BucketKey }> = ({ b
     const { approveBucketAccess } = useTomb();
     const { closeModal } = useModal();
 
-    const approveAccess = async() => {
+    const approveAccess = async () => {
         try {
             await approveBucketAccess(bucketKey.id);
         } catch (error: any) { }
@@ -20,7 +20,7 @@ export const ApproveBucketAccessModal: React.FC<{ bucketKey: BucketKey }> = ({ b
         <div className="w-modal flex flex-col gap-8" >
             <div>
                 <h4 className="text-m font-semibold ">{`${messages.approveAccess}`}</h4>
-                <p className="mt-2 text-gray-600">
+                <p className="mt-2 text-text-600">
                     {`${messages.wantToApproveAccess}?`}
                 </p>
             </div>
