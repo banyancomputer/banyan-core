@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT bk.* FROM bucket_keys AS bk\n               JOIN buckets b ON bk.bucket_id = b.id\n               WHERE b.account_id = $1 AND bk.bucket_id = $2;",
+  "query": "SELECT bk.* FROM bucket_keys AS bk\n               JOIN buckets b ON bk.bucket_id = b.id\n               WHERE b.account_id = $1\n                   AND bk.bucket_id = $2\n                   AND bk.id = $3;",
   "describe": {
     "columns": [
       {
@@ -30,7 +30,7 @@
       }
     ],
     "parameters": {
-      "Right": 2
+      "Right": 3
     },
     "nullable": [
       false,
@@ -40,5 +40,5 @@
       false
     ]
   },
-  "hash": "c8fb13b4bdef782c54a0c25d7664c7b16bbf1b9ef3de7e0221ba2408cd7398f7"
+  "hash": "4c91ee7ef1f1d596fda154b883deb4d6e7673455fcc08ef287b97b85832f4daa"
 }

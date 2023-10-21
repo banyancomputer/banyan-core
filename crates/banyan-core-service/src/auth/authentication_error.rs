@@ -19,9 +19,6 @@ pub enum AuthenticationError {
     #[error("received callback from oauth but we didn't have a matching session")]
     MissingCallbackState(sqlx::Error),
 
-    #[error("failed to build oauth client: {0}")]
-    OAuthClientUnavailable(String),
-
     #[error("unable to retrieve authenticated user details")]
     ProfileUnavailable(reqwest::Error),
 

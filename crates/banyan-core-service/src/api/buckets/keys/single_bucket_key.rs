@@ -22,9 +22,12 @@ pub async fn handler(
         BucketKey,
         r#"SELECT bk.* FROM bucket_keys AS bk
                JOIN buckets b ON bk.bucket_id = b.id
-               WHERE b.account_id = $1 AND bk.bucket_id = $2;"#,
+               WHERE b.account_id = $1
+                   AND bk.bucket_id = $2
+                   AND bk.id = $3;"#,
         api_id.account_id,
         bucket_id,
+        bucket_key_id,
     )
     .fetch_optional(&database)
     .await

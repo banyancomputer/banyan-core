@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 mod api_identity;
 mod data_store;
 mod server_base;

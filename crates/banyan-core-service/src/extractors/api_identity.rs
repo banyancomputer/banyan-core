@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::sync::OnceLock;
 
 use axum::async_trait;
@@ -152,9 +154,6 @@ pub enum ApiIdentityError {
     #[error("public key '{0}' stored in database is corrupted")]
     DatabaseCorrupt(String, jsonwebtoken::errors::Error),
 
-    #[error("unable to lookup identity in database")]
-    DatabaseUnavailable,
-
     #[error("unable to lookup device API key in database")]
     DeviceApiKeyNotFound(sqlx::Error),
 
@@ -177,9 +176,6 @@ pub enum ApiIdentityError {
         "header didn't include kid required to lookup the appropriate authentication mechanism"
     )]
     UnidentifiedKey,
-
-    #[error("an unexpected error edge case occurred around an authentation token")]
-    UnknownTokenError(jsonwebtoken::errors::Error),
 }
 
 impl IntoResponse for ApiIdentityError {

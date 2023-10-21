@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use axum::async_trait;
 use axum::extract::{FromRef, FromRequestParts, OriginalUri};
 use axum::response::{IntoResponse, Redirect, Response};

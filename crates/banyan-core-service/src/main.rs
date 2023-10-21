@@ -9,7 +9,6 @@ mod auth;
 mod database;
 mod email;
 mod event_bus;
-mod error;
 mod extractors;
 mod health_check;
 mod hooks;

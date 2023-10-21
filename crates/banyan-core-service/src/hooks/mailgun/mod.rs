@@ -16,7 +16,6 @@ use axum::extract::State;
 use axum::response::{IntoResponse, Response};
 
 use crate::app::AppState;
-use crate::database::Database;
 use crate::database::models::EmailMessageState;
 
 pub async fn handler(

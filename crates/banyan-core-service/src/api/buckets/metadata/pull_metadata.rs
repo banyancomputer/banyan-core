@@ -36,7 +36,11 @@ pub async fn handler(
     .map_err(PullMetadataError::MetadataUnavailable)?
     .ok_or(PullMetadataError::NotFound)?;
 
-    let file_name = format!("{bucket_id}/{metadata_id}.car");
+    let file_name = format!(
+        "{}/{}.car",
+        authorized_bucket_data.bucket_id,
+        authorized_bucket_data.metadata_id,
+    );
     let file_path = object_store::path::Path::from(file_name.as_str());
 
     let file_reader = store.get(&file_path).await.map_err(PullMetadataError::FileUnavailable)?;

@@ -16,9 +16,8 @@ pub async fn handler(
     let bucket_id = bucket_id.to_string();
     let metadata_id = metadata_id.to_string();
 
-    let owned_data = sqlx::query_as!(
-        OwnedMetadata,
-        r#"SELECT m.bucket_id, m.id as metadata_id FROM metadata AS m
+    let owned_metadata_id = sqlx::query_scalar!(
+        r#"SELECT m.id FROM metadata AS m
                JOIN buckets AS b ON m.bucket_id = b.id
                JOIN snapshots AS s ON s.metadata_id = m.id
                WHERE b.account_id = $1
@@ -38,7 +37,7 @@ pub async fn handler(
         r#"INSERT INTO snapshots (metadata_id, state)
                VALUES ($1, 'pending')
                RETURNING id;"#,
-        metadata_id,
+        owned_metadata_id,
     )
     .fetch_one(&database)
     .await
@@ -74,10 +73,4 @@ impl IntoResponse for CreateSnapshotError {
             }
         }
     }
-}
-
-#[derive(sqlx::FromRow)]
-struct OwnedMetadata {
-    bucket_id: String,
-    metadata_id: String,
 }

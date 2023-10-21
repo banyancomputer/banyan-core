@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 use axum::{Json, TypedHeader};
 use axum::extract::{BodyStream, Path, State};
@@ -277,8 +277,15 @@ async fn generate_new_storage_authorization(
     .await
     .map_err(StorageAuthorizationError::GrantRecordingFailed)?;
 
-    let token_capabilities = TokenCapabilities::new(&storage_host.url, authorized_amount);
-    let mut claims = Claims::with_custom_claims(token_capabilities, Duration::from_secs(STORAGE_TICKET_DURATION))
+    let mut storage_details = serde_json::Map::new();
+
+    storage_details.insert("available_storage".to_string(), authorized_amount.into());
+    storage_details.insert("grant_id".to_string(), storage_grant_id.into());
+
+    let mut capabilities = serde_json::Map::new();
+    capabilities.insert(storage_host.url.to_string(), storage_details.into());
+
+    let mut claims = Claims::with_custom_claims(capabilities, Duration::from_secs(STORAGE_TICKET_DURATION))
         .with_audiences(HashSet::from_strings(&[storage_host.name.as_str()]))
         .with_issuer("banyan-platform")
         .with_subject(format!("{}@{}", api_id.user_id, api_id.device_api_key_fingerprint))
@@ -379,7 +386,7 @@ async fn select_storage_host(database: &Database, required_space: i64) -> Result
 async fn store_metadata_stream<'a>(
     store: &DataStore,
     path: &str,
-    mut body: multer::Field<'a>,
+    body: multer::Field<'a>,
 ) -> Result<(String, usize), StoreMetadataError> {
     let file_path = object_store::path::Path::from(path);
 
@@ -577,17 +584,4 @@ pub enum StreamStoreError {
 
     #[error("failed to write out chunk: {0}")]
     WriteFailed(std::io::Error),
-}
-
-#[derive(Deserialize, Serialize)]
-struct TokenCapabilities {
-    capabilities: HashMap<String, i64>,
-}
-
-impl TokenCapabilities {
-    fn new(storage_url: &str, authorized_amount: i64) -> Self {
-        let mut capabilities = HashMap::new();
-        capabilities.insert(storage_url.to_string(), authorized_amount);
-        TokenCapabilities { capabilities }
-    }
 }
