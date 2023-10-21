@@ -29,10 +29,7 @@ pub async fn handler(
     .await
     .map_err(AllSnapshotsError::DatabaseFailure)?;
 
-    let buckets: Vec<_> = query_result
-        .into_iter()
-        .map(ApiSnapshot::from)
-        .collect();
+    let buckets: Vec<_> = query_result.into_iter().map(ApiSnapshot::from).collect();
 
     Ok((StatusCode::OK, Json(buckets)).into_response())
 }

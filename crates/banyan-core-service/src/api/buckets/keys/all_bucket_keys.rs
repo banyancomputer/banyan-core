@@ -31,10 +31,7 @@ pub async fn handler(
     // note: this also includes account_id which wasn't being returned before and may cause
     // compatibility issues
 
-    let buckets: Vec<_> = query_result
-        .into_iter()
-        .map(ApiBucketKey::from)
-        .collect();
+    let buckets: Vec<_> = query_result.into_iter().map(ApiBucketKey::from).collect();
     Ok((StatusCode::OK, Json(buckets)).into_response())
 }
 
