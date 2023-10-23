@@ -47,7 +47,7 @@ allow = [
   "OpenSSL",
   "Unicode-DFS-2016",
   "0BSD",
-  "LicenseRef"
+  "LicenseRef-LICENSE.txt"
 ]
 
 # We don't care what these organization think of the license, we are making our
