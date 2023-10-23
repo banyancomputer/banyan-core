@@ -32,6 +32,7 @@ ignore = [
 [licenses]
 unlicensed = "deny"
 
+
 # Licenses we always allow without any additional thoughts, this list should
 # only be updated when we encounter a dependency using a license we want to
 # include here rather than trying to proactively enumerate all acceptable
@@ -47,7 +48,6 @@ allow = [
   "OpenSSL",
   "Unicode-DFS-2016",
   "0BSD",
-  "LicenseRef-LICENSE.txt"
 ]
 
 # We don't care what these organization think of the license, we are making our
@@ -72,6 +72,7 @@ exceptions = [
     { name = "banyan-core-service", allow = ["LicenseRef-LICENSE.txt"] },
     { name = "banyan-staging-service", allow = ["LicenseRef-LICENSE.txt"] },
     { name = "banyan-storage-provider-service", allow = ["LicenseRef-LICENSE.txt"] },
+    { name = "banyan-task", allow =  [ "LicenseRef-LICENSE.txt"] }
 ]
 
 # Ring doesn't specify the license in their Cargo manifest, we have to

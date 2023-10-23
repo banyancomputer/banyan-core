@@ -1,7 +1,6 @@
 use std::time::Duration;
 
 use async_trait::async_trait;
-use chrono::offset::Utc;
 use sqlx::{Acquire, SqliteConnection, SqlitePool};
 
 use crate::{
@@ -98,7 +97,7 @@ impl TaskStore for SqliteTaskStore {
 
         transaction.commit().await?;
 
-        let timed_out_start_threshold = Utc::now() - TASK_EXECUTION_TIMEOUT;
+        let timed_out_start_threshold = time::OffsetDateTime::now_utc() - TASK_EXECUTION_TIMEOUT;
         let pending_retry_tasks = sqlx::query_scalar!(
             r#"SELECT id FROM background_tasks
                    WHERE state IN ('in_progress', 'retry')
@@ -182,11 +181,11 @@ impl TaskStore for SqliteTaskStore {
         };
 
         let backoff_time_secs = 30u64 * 3u64.saturating_pow(retried_task.current_attempt as u32);
-        let next_run_at = Utc::now() + Duration::from_secs(backoff_time_secs);
+        let next_run_at = time::OffsetDateTime::now_utc() + Duration::from_secs(backoff_time_secs);
 
         let new_task_id = TaskInstanceBuilder::from_task_instance(retried_task)
             .await
-            .run_at(next_run_at.naive_utc())
+            .run_at(next_run_at)
             .create(&mut transaction)
             .await?;
 

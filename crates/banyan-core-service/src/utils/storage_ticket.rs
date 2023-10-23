@@ -69,12 +69,14 @@ pub fn generate_storage_ticket(
     let header = jsonwebtoken::Header::new(jsonwebtoken::Algorithm::ES384);
 
     let claims = Claims {
-        issued_at: chrono::Utc::now().timestamp() as u64,
+        issued_at: time::OffsetDateTime::now_utc().unix_timestamp() as u64,
         nonce,
-        expiration: (chrono::Utc::now() + chrono::Duration::seconds(STORAGE_TICKET_DURATION as i64))
-            .timestamp() as u64,
-        not_before: (chrono::Utc::now() - chrono::Duration::seconds(STORAGE_TICKET_LEEWAY as i64))
-            .timestamp() as u64,
+        expiration: (time::OffsetDateTime::now_utc()
+            + std::time::Duration::from_secs(STORAGE_TICKET_DURATION))
+        .unix_timestamp() as u64,
+        not_before: (time::OffsetDateTime::now_utc()
+            - std::time::Duration::from_secs(STORAGE_TICKET_LEEWAY))
+        .unix_timestamp() as u64,
         audience: storage_host_name.to_string(),
         subject: format!("{}@{}", account_id, fingerprint),
         capabilities,

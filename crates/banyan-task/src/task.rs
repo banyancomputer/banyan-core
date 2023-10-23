@@ -1,4 +1,4 @@
-use chrono::NaiveDateTime;
+use time::OffsetDateTime;
 
 use crate::panic_safe_future::CaughtPanic;
 use crate::TaskState;
@@ -22,11 +22,11 @@ pub struct Task {
     pub payload: serde_json::Value,
     pub error: Option<String>,
 
-    pub scheduled_at: NaiveDateTime,
-    pub scheduled_to_run_at: NaiveDateTime,
+    pub scheduled_at: OffsetDateTime,
+    pub scheduled_to_run_at: OffsetDateTime,
 
-    pub started_at: Option<NaiveDateTime>,
-    pub finished_at: Option<NaiveDateTime>,
+    pub started_at: Option<OffsetDateTime>,
+    pub finished_at: Option<OffsetDateTime>,
 }
 
 #[derive(Debug, thiserror::Error)]

@@ -1,14 +1,14 @@
 #![allow(dead_code)]
 
-use chrono::NaiveDateTime;
+use time::OffsetDateTime;
 
 use crate::Task;
 
 pub struct CurrentTask {
     id: String,
     current_attempt: i64,
-    scheduled_at: NaiveDateTime,
-    started_at: NaiveDateTime,
+    scheduled_at: OffsetDateTime,
+    started_at: OffsetDateTime,
 }
 
 impl CurrentTask {
@@ -42,14 +42,14 @@ pub enum CurrentTaskError {
 }
 
 pub mod tests {
-    use super::{CurrentTask, NaiveDateTime};
+    use super::{CurrentTask, OffsetDateTime};
 
     pub fn default_current_task() -> CurrentTask {
         CurrentTask {
             id: uuid::Uuid::new_v4().to_string(),
             current_attempt: 0,
-            scheduled_at: NaiveDateTime::from_timestamp_opt(0, 0).unwrap(),
-            started_at: NaiveDateTime::from_timestamp_opt(0, 0).unwrap(),
+            scheduled_at: OffsetDateTime::UNIX_EPOCH,
+            started_at: OffsetDateTime::UNIX_EPOCH,
         }
     }
 

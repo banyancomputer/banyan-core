@@ -184,7 +184,7 @@ pub async fn end_regwait(
     tracing::info!(
         "acquired channel lock: {:?} at time {:?}",
         guard,
-        chrono::Utc::now()
+        time::OffsetDateTime::now_utc()
     );
     // Aquire the channel associated with the fingerprint
     let channel = match guard.remove(&fingerprint) {
@@ -258,7 +258,7 @@ pub async fn start_regwait(
     tracing::info!(
         "finished adding channel: {:?} at time {:?}",
         guard,
-        chrono::Utc::now()
+        time::OffsetDateTime::now_utc()
     );
     // Immediately drop the lock
     drop(guard);

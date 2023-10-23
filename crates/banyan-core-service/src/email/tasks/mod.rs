@@ -242,7 +242,7 @@ pub mod tests {
     async fn unsubscribed() -> Result<(), EmailTaskError> {
         let ctx = email_task_context().await;
         // Create one unsubscribed email as the last email sent
-        let now = chrono::Utc::now();
+        let now = time::OffsetDateTime::now_utc();
         let _later = unsubscribed_email(&ctx, now).await;
         example_email_task(ctx.clone()).await?;
         let email_count = count_sent_emails(&ctx).await;
@@ -254,7 +254,7 @@ pub mod tests {
     async fn unsubscribed_then_sent() -> Result<(), EmailTaskError> {
         let ctx = email_task_context().await;
         // One unsubscribed email then one delivered email as the last email sent
-        let now = chrono::Utc::now();
+        let now = time::OffsetDateTime::now_utc();
         let later = unsubscribed_email(&ctx, now).await;
         let _later = delivered_email(&ctx, later).await;
         example_email_task(ctx.clone()).await?;
@@ -267,7 +267,7 @@ pub mod tests {
     async fn failure() -> Result<(), EmailTaskError> {
         let ctx = email_task_context().await;
         // Threee failed emails in a row as the last three emails sent
-        let now = chrono::Utc::now();
+        let now = time::OffsetDateTime::now_utc();
         let later = failed_email(&ctx, now).await;
         let later = failed_email(&ctx, later).await;
         let _later = failed_email(&ctx, later).await;
@@ -281,7 +281,7 @@ pub mod tests {
     async fn failure_then_sent() -> Result<(), EmailTaskError> {
         let ctx = email_task_context().await;
         // Threee failed emails in a row and then one delivered email
-        let now = chrono::Utc::now();
+        let now = time::OffsetDateTime::now_utc();
         let later = failed_email(&ctx, now).await;
         let later = failed_email(&ctx, later).await;
         let later = failed_email(&ctx, later).await;
@@ -295,7 +295,7 @@ pub mod tests {
     #[tokio::test]
     async fn complaint() -> Result<(), EmailTaskError> {
         let ctx = email_task_context().await;
-        let now = chrono::Utc::now();
+        let now = time::OffsetDateTime::now_utc();
         // Three complaints interspersed with delivered emails
         let later = complained_email(&ctx, now).await;
         let later = delivered_email(&ctx, later).await;
@@ -316,8 +316,8 @@ pub mod tests {
 
     async fn delivered_email(
         ctx: &EmailTaskContext,
-        when: chrono::DateTime<chrono::Utc>,
-    ) -> chrono::DateTime<chrono::Utc> {
+        when: time::OffsetDateTime,
+    ) -> time::OffsetDateTime {
         let mut db_conn = ctx.db_pool().acquire().await.unwrap();
         sqlx::query!(
             r#"INSERT INTO emails (sent_at, account_id, state, type)
@@ -338,13 +338,13 @@ pub mod tests {
         .await
         .expect("db setup");
 
-        when + chrono::Duration::seconds(1)
+        when + std::time::Duration::from_secs(1)
     }
 
     async fn failed_email(
         ctx: &EmailTaskContext,
-        when: chrono::DateTime<chrono::Utc>,
-    ) -> chrono::DateTime<chrono::Utc> {
+        when: time::OffsetDateTime,
+    ) -> time::OffsetDateTime {
         let mut db_conn = ctx.db_pool().acquire().await.unwrap();
         sqlx::query!(
             r#"INSERT INTO emails (sent_at, account_id, state, type)
@@ -365,13 +365,13 @@ pub mod tests {
         .await
         .expect("db setup");
 
-        when + chrono::Duration::seconds(1)
+        when + std::time::Duration::from_secs(1)
     }
 
     async fn complained_email(
         ctx: &EmailTaskContext,
-        when: chrono::DateTime<chrono::Utc>,
-    ) -> chrono::DateTime<chrono::Utc> {
+        when: time::OffsetDateTime,
+    ) -> time::OffsetDateTime {
         let mut db_conn = ctx.db_pool().acquire().await.unwrap();
         sqlx::query!(
             r#"INSERT INTO emails (sent_at, account_id, state, type)
@@ -392,13 +392,13 @@ pub mod tests {
         .await
         .expect("db setup");
 
-        when + chrono::Duration::seconds(1)
+        when + std::time::Duration::from_secs(1)
     }
 
     async fn unsubscribed_email(
         ctx: &EmailTaskContext,
-        when: chrono::DateTime<chrono::Utc>,
-    ) -> chrono::DateTime<chrono::Utc> {
+        when: time::OffsetDateTime,
+    ) -> time::OffsetDateTime {
         let mut db_conn = ctx.db_pool().acquire().await.unwrap();
         sqlx::query!(
             r#"INSERT INTO emails (sent_at, account_id, state, type)
@@ -419,7 +419,7 @@ pub mod tests {
         .await
         .expect("db setup");
 
-        when + chrono::Duration::seconds(1)
+        when + std::time::Duration::from_secs(1)
     }
 
     async fn email_task_context() -> EmailTaskContext {
