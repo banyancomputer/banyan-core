@@ -40,3 +40,17 @@ pub enum CurrentTaskError {
     #[error("task must be started before creating a current instance")]
     TaskNotStarted,
 }
+
+#[cfg(test)]
+pub mod tests {
+    use super::{CurrentTask, NaiveDateTime};
+
+    pub(crate) fn default_current_task() -> CurrentTask {
+        CurrentTask {
+            id: uuid::Uuid::new_v4().to_string(),
+            current_attempt: 0,
+            scheduled_at: NaiveDateTime::from_timestamp_opt(0, 0).unwrap(),
+            started_at: NaiveDateTime::from_timestamp_opt(0, 0).unwrap(),
+        }
+    }
+}

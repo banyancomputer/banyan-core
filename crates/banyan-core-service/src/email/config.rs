@@ -4,7 +4,9 @@ use lettre::transport::smtp::authentication::Credentials;
 use url::Url;
 
 use super::error::EmailError;
+use super::transport::EmailTransport;
 
+#[derive(Clone)]
 pub struct EmailConfig {
     smtp_connection: Option<SmtpConnection>,
     from: String,
@@ -51,6 +53,10 @@ impl EmailConfig {
         Self::new(smtp_url, &from, test_mode)
     }
 
+    pub fn transport(&self) -> Result<EmailTransport, EmailError> {
+        EmailTransport::new(self.smtp_connection())
+    }
+
     pub fn smtp_connection(&self) -> Option<&SmtpConnection> {
         self.smtp_connection.as_ref()
     }
@@ -64,10 +70,12 @@ impl EmailConfig {
     }
 }
 
+#[derive(Clone)]
 pub struct SmtpConnection {
     host: String,
     port: u16,
-    creds: Credentials,
+    username: String,
+    password: String,
 }
 
 impl SmtpConnection {
@@ -91,7 +99,8 @@ impl SmtpConnection {
 
         let password = url
             .password()
-            .ok_or_else(|| EmailError::invalid_smtp_url("SMTP URL must contain a password"))?;
+            .ok_or_else(|| EmailError::invalid_smtp_url("SMTP URL must contain a password"))?
+            .to_string();
         let host = url
             .host()
             .ok_or_else(|| EmailError::invalid_smtp_url("SMTP URL must contain a host"))?
@@ -102,7 +111,8 @@ impl SmtpConnection {
         Ok(Self {
             host,
             port,
-            creds: Credentials::new(username.to_string(), password.to_string()),
+            username,
+            password,
         })
     }
 
@@ -114,8 +124,8 @@ impl SmtpConnection {
         self.port
     }
 
-    pub fn creds(&self) -> &Credentials {
-        &self.creds
+    pub fn creds(&self) -> Credentials {
+        Credentials::new(self.username.clone(), self.password.clone())
     }
 }
 

@@ -1,8 +1,8 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use super::EmailMessage;
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct ReachingStorageLimit {
     pub(crate) current_usage: usize,
     pub(crate) max_usage: usize,
