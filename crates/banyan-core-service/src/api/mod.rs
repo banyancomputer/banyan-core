@@ -2,6 +2,7 @@ use axum::Router;
 use tower_http::cors::CorsLayer;
 
 mod auth;
+mod blocks;
 mod buckets;
 pub mod models;
 mod storage;
@@ -17,6 +18,7 @@ pub fn router(state: AppState) -> Router<AppState> {
 
     Router::new()
         .nest("/auth", auth::router(state.clone()))
+        .nest("/blocks", blocks::router(state.clone()))
         .nest("/buckets", buckets::router(state.clone()))
         .nest("/storage", storage::router(state.clone()))
         .with_state(state)

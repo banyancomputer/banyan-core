@@ -34,6 +34,28 @@ pub async fn handler(
     .await
     .map_err(FinalizeUploadError::NoUploadAssociation)?;
 
+    for block_cid in request.normalized_cids.iter() {
+        sqlx::query!("INSERT OR IGNORE INTO blocks (cid) VALUES ($1);", block_cid)
+            .execute(&database)
+            .await
+            .map_err(FinalizeUploadError::UnableToRecordBlock)?;
+
+        let block_id = sqlx::query_scalar!("SELECT id FROM blocks WHERE cid = $1", block_cid)
+            .fetch_one(&database)
+            .await
+            .map_err(FinalizeUploadError::UnableToRecordBlock)?;
+
+        sqlx::query!(
+            "INSERT INTO block_locations (block_id, metadata_id, storage_host_id) VALUES ($1, $2, $3);",
+            block_id,
+            db_metadata_id,
+            storage_provider.id,
+        )
+        .execute(&database)
+        .await
+        .map_err(FinalizeUploadError::UnableToRecordBlock)?;
+    }
+
     let bucket_id = sqlx::query_scalar!(
         r#"UPDATE metadata
              SET state = 'current' AND data_size = $1
@@ -65,6 +87,7 @@ pub async fn handler(
 #[derive(Deserialize)]
 pub struct FinalizeUploadRequest {
     data_size: i64,
+    normalized_cids: Vec<String>,
     storage_authorization_id: String,
 }
 
@@ -78,6 +101,9 @@ pub enum FinalizeUploadError {
 
     #[error("failed to associate finalized uploaded with storage host")]
     NoUploadAssociation(sqlx::Error),
+
+    #[error("error occurred while recording a blocks present: {0}")]
+    UnableToRecordBlock(sqlx::Error),
 }
 
 impl IntoResponse for FinalizeUploadError {
