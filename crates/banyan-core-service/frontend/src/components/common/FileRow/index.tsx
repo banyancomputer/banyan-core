@@ -17,7 +17,7 @@ export const FileRow: React.FC<{
     nestingLevel: number,
     path: string[],
     parrentFolder?: BucketFile,
-}> = ({ file, bucket, tableScroll, tableRef, nestingLevel = 1, path, parrentFolder }) => {
+}> = ({ file, bucket, tableScroll, tableRef, nestingLevel = 0.25, path = [], parrentFolder }) => {
     const { openFile } = useFilePreview();
 
     const previewFile = (event: React.MouseEvent<HTMLTableRowElement, MouseEvent>, bucket: Bucket, file: BucketFile) => {
@@ -42,7 +42,14 @@ export const FileRow: React.FC<{
             <td className="px-6 py-4">{convertFileSize(file.metadata.size)}</td>
             <td className="px-6 py-4">
                 <ActionsCell
-                    actions={<FileActions bucket={bucket} file={file} />}
+                    actions={
+                        <FileActions
+                            bucket={bucket}
+                            file={file}
+                            parrentFolder={parrentFolder!}
+                            path={path}
+                        />
+                    }
                     offsetTop={tableScroll}
                     tableRef={tableRef}
                 />

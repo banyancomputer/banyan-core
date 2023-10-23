@@ -1,6 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { Selectoption } from '../Select'
-import { useFolderLocation } from '@/hooks/useFolderLocation';
 import { useIntl } from 'react-intl';
 import { AddNewOption } from '../Select/AddNewOption';
 import { popupClickHandler } from '@/utils';
@@ -46,11 +44,11 @@ export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBu
     }
 
     const addNewFolder = () => {
-        const action = onFolderCreation || (() => openModal(<UploadFileModal />));
+        const action = onFolderCreation || (() => openModal(<UploadFileModal bucket={selectedBucket} path={folder} />));
         openModal(<CreateFolderModal
             path={folder}
             bucket={selectedBucket!}
-            onSuccess={() => openModal(<UploadFileModal bucket={selectedBucket} />)}
+            onSuccess={() => openModal(<UploadFileModal bucket={selectedBucket} path={folder} />)}
         />
             , action);
     };

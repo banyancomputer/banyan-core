@@ -55,7 +55,8 @@ export const FolderActions: React.FC<{ bucket: Bucket; file: BucketFile, parrent
                 file={file}
                 parrentFolder={parrentFolder}
                 path={path}
-            />);
+            />
+        );
     };
 
     const moveToAction = useMemo(() => new Action(`${messages.moveTo}`, <PiArrowsLeftRight size="18px" />, moveTo), []);

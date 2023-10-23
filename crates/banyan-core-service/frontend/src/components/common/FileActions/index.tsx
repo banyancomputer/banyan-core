@@ -13,7 +13,6 @@ import { useTomb } from '@/contexts/tomb';
 import { Bucket, BucketFile } from '@/lib/interfaces/bucket';
 import { useModal } from '@/contexts/modals';
 import { ToastNotifications } from '@/utils/toastNotifications';
-import { useFolderLocation } from '@/hooks/useFolderLocation';
 import { DeleteFileModal } from '@/components/common/Modal/DeleteFileModal';
 import { ShareFileModal } from '../Modal/ShareFileModal';
 
@@ -26,39 +25,59 @@ export class Action {
     ) { }
 }
 
-export const FileActions: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bucket, file }) => {
+export const FileActions: React.FC<{ bucket: Bucket; file: BucketFile, parrentFolder: BucketFile, path: string[] }> = ({ bucket, file, path, parrentFolder }) => {
     const { messages } = useIntl();
     const { download, makeCopy, shareFile } = useTomb();
     const { openModal, closeModal } = useModal();
-    const folredLoaction = useFolderLocation();
     const bucketType = `${bucket.bucketType}_${bucket.storageClass}`;
 
     const downloadFile = async () => {
         try {
             await ToastNotifications.promise(`${messages.downloading}...`, `${messages.fileWasDownloaded}`, <MdDone size="20px" />,
-                download(bucket, folredLoaction, file.name)
+                download(bucket, path, file.name)
             );
         } catch (error: any) { }
     };
 
     const moveTo = () => {
-        openModal(<MoveToModal file={file} bucket={bucket} />);
+        openModal(
+            <MoveToModal
+                file={file}
+                bucket={bucket}
+                path={path}
+                parrentFolder={parrentFolder}
+            />
+        );
     };
 
     const copy = async () => {
         try {
-            await makeCopy(bucket, folredLoaction, file.name);
+            await makeCopy(bucket, path, file.name);
             ToastNotifications.notify(`${messages.copyOf} ${file.name} ${messages.wasCreated}`, <AiOutlineLink size="20px" />);
         } catch (error: any) { }
     };
 
     const rename = async () => {
-        openModal(<RenameFileModal bucket={bucket} file={file} />);
+        openModal(
+            <RenameFileModal
+                bucket={bucket}
+                file={file}
+                path={path}
+                parrentFolder={parrentFolder}
+            />
+        );
     };
 
     const remove = async () => {
         try {
-            openModal(<DeleteFileModal bucket={bucket} file={file} />);
+            openModal(
+                <DeleteFileModal
+                    bucket={bucket}
+                    file={file}
+                    parrentFolder={parrentFolder}
+                    path={path}
+                />
+            );
         } catch (error: any) { }
     };
 
@@ -71,7 +90,9 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bu
     const share = async () => {
         try {
             const link = await shareFile(bucket, file);
-            openModal(<ShareFileModal link={link} />);
+            openModal(
+                <ShareFileModal link={link} />
+            );
         } catch (error: any) { }
     };
 

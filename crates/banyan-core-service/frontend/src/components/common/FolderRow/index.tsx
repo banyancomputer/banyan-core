@@ -21,7 +21,7 @@ export const FolderRow: React.FC<{
     nestingLevel: number,
     path: string[]
     parrentFolder?: BucketFile,
-}> = ({ folder, bucket, tableRef, tableScroll, nestingLevel = 1, path = [], parrentFolder }) => {
+}> = ({ folder, bucket, tableRef, tableScroll, nestingLevel = 0.25, path = [], parrentFolder }) => {
     const [isVisible, setIsVisible] = useState(false);
     const { push } = useRouter();
 

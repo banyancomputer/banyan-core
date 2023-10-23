@@ -26,7 +26,11 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
 
     const upload = async () => {
         try {
-            openModal(<UploadFileModal bucket={bucket} />);
+            openModal(<UploadFileModal
+                bucket={bucket}
+                path={folderLocation}
+            />
+            );
         } catch (error: any) { }
     };
 
