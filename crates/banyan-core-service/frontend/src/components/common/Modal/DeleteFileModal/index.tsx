@@ -8,15 +8,20 @@ import { useTomb } from '@/contexts/tomb';
 import { ToastNotifications } from '@/utils/toastNotifications';
 import { useFolderLocation } from '@/hooks/useFolderLocation';
 
-export const DeleteFileModal: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bucket, file }) => {
+export const DeleteFileModal: React.FC<{ bucket: Bucket; file: BucketFile, path: string[], parrentFolder: BucketFile }> = ({ bucket, file, path, parrentFolder }) => {
     const { closeModal } = useModal();
     const { messages } = useIntl();
-    const { deleteFile } = useTomb();
+    const { deleteFile, getSelectedBucketFiles, getExpandedFolderFiles } = useTomb();
     const folderLocation = useFolderLocation();
 
     const removeFile = async () => {
         try {
-            await deleteFile(bucket, [...folderLocation], file.name);
+            await deleteFile(bucket, [...path], file.name);
+            if (path.join('/') === folderLocation.join('/')) {
+                await getSelectedBucketFiles(folderLocation);
+            } else {
+                await getExpandedFolderFiles(path, parrentFolder, bucket);
+            };
             closeModal();
             ToastNotifications.notify(`${messages.file} "${file.name}" ${messages.wasDeleted}`, <FiTrash2 size="20px" />);
         } catch (error: any) {

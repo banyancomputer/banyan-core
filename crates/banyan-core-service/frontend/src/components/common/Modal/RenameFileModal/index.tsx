@@ -8,9 +8,9 @@ import { useTomb } from '@/contexts/tomb';
 import { ToastNotifications } from '@/utils/toastNotifications';
 import { useFolderLocation } from '@/hooks/useFolderLocation';
 
-export const RenameFileModal: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bucket, file }) => {
+export const RenameFileModal: React.FC<{ bucket: Bucket; file: BucketFile, path: string[], parrentFolder: BucketFile }> = ({ bucket, file, path, parrentFolder }) => {
     const { closeModal } = useModal();
-    const { moveTo, getSelectedBucketFiles } = useTomb();
+    const { moveTo, getSelectedBucketFiles, getExpandedFolderFiles } = useTomb();
     const { messages } = useIntl();
     const [newName, setNewName] = useState('');
     const folderLocation = useFolderLocation();
@@ -19,7 +19,12 @@ export const RenameFileModal: React.FC<{ bucket: Bucket; file: BucketFile }> = (
         try {
             await moveTo(bucket, [...folderLocation, file.name], [...folderLocation, newName]);
             ToastNotifications.notify(`${messages.fileWasRenamed}`, <MdDone size="20px" />);
-            await getSelectedBucketFiles(folderLocation);
+            if (path.join('/') === folderLocation.join('/')) {
+                await getSelectedBucketFiles(folderLocation);
+                closeModal();
+                return;
+            };
+            await getExpandedFolderFiles(path, parrentFolder, bucket);
             closeModal();
         } catch (error: any) {
             ToastNotifications.error(`${messages.editError}`, `${messages.tryAgain}`, save);

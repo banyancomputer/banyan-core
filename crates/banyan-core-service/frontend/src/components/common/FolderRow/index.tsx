@@ -20,13 +20,14 @@ export const FolderRow: React.FC<{
     tableRef: React.MutableRefObject<HTMLDivElement | null>,
     nestingLevel: number,
     path: string[]
-}> = ({ folder, bucket, tableRef, tableScroll, nestingLevel = 1, path = [] }) => {
+    parrentFolder?: BucketFile,
+}> = ({ folder, bucket, tableRef, tableScroll, nestingLevel = 1, path = [], parrentFolder }) => {
     const [isVisible, setIsVisible] = useState(false);
     const { push } = useRouter();
 
     const { getExpandedFolderFiles, selectBucket } = useTomb();
 
-    const goTOFolder = (event: React.MouseEvent<HTMLTableRowElement, MouseEvent>, bucket: Bucket) => {
+    const goToFolder = (event: React.MouseEvent<HTMLTableRowElement, MouseEvent>, bucket: Bucket) => {
         //@ts-ignore
         if (event.target.id === 'actionsCell') return;
 
@@ -41,9 +42,7 @@ export const FolderRow: React.FC<{
                 folder.files = [];
                 selectBucket({ ...bucket });
             } else {
-                const files = await getExpandedFolderFiles([...path, folder.name]);
-                folder.files = files;
-                selectBucket({ ...bucket });
+                await getExpandedFolderFiles([...path, folder.name], folder, bucket);
             };
 
             setIsVisible(prev => !prev);
@@ -54,7 +53,7 @@ export const FolderRow: React.FC<{
         <>
             <tr
                 className='cursor-pointer border-1 border-t-border-regular border-b-border-regular text-text-900 font-normal'
-                onClick={event => goTOFolder(event, bucket)}
+                onClick={event => goToFolder(event, bucket)}
             >
                 <td
                     className="flex items-center gap-3 p-4"
@@ -76,7 +75,14 @@ export const FolderRow: React.FC<{
                             null
                             :
                             <ActionsCell
-                                actions={<FolderActions bucket={bucket} file={folder} />}
+                                actions={
+                                    <FolderActions
+                                        bucket={bucket}
+                                        file={folder}
+                                        parrentFolder={parrentFolder!}
+                                        path={path}
+                                    />
+                                }
                                 offsetTop={tableScroll}
                                 tableRef={tableRef}
                             />
@@ -93,15 +99,17 @@ export const FolderRow: React.FC<{
                             tableScroll={tableScroll}
                             nestingLevel={nestingLevel + 1}
                             key={index}
+                            parrentFolder={folder}
                             path={[...path, folder.name]}
-                            />
-                            :
-                            <FileRow
+                        />
+                        :
+                        <FileRow
                             bucket={bucket}
                             file={file}
                             tableRef={tableRef}
                             tableScroll={tableScroll}
                             nestingLevel={nestingLevel + 1}
+                            parrentFolder={folder}
                             path={[...path, folder.name]}
                             key={index}
                         />

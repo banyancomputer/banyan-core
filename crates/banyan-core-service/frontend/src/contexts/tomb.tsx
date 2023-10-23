@@ -24,7 +24,7 @@ interface TombInterface {
     getBucketsKeys: () => Promise<void>;
     selectBucket: (bucket: Bucket | null) => void;
     getSelectedBucketFiles: (path: string[]) => void;
-    getExpandedFolderFiles: (path: string[]) => Promise<BucketFile[]>;
+    getExpandedFolderFiles: (path: string[], folder: BucketFile, bucket: Bucket) => Promise<void>;
     takeColdSnapshot: (bucket: Bucket) => Promise<void>;
     getBucketShapshots: (id: string) => Promise<BucketSnapshot[]>;
     createBucket: (name: string, storageClass: string, bucketType: string) => Promise<void>;
@@ -36,7 +36,7 @@ interface TombInterface {
     shareFile: (bucket: Bucket, file: BucketFile) => Promise<string>;
     makeCopy: (bucket: Bucket, path: string[], name: string) => void;
     moveTo: (bucket: Bucket, from: string[], to: string[]) => Promise<void>;
-    uploadFile: (nucket: Bucket, path: string[], name: string, file: any) => Promise<void>;
+    uploadFile: (nucket: Bucket, path: string[], name: string, file: any, folder?: BucketFile) => Promise<void>;
     getBucketKeys: (id: string) => Promise<BucketKey[]>;
     purgeSnapshot: (id: string) => void;
     deleteFile: (bucket: Bucket, path: string[], name: string) => void;
@@ -140,9 +140,11 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         });
     };
     /** Returns selected folder files. */
-    const getExpandedFolderFiles = async (path: string[]) => {
-        return await tombMutex(selectedBucket!.mount, async mount => {
-            return await mount.ls(path);
+    const getExpandedFolderFiles = async (path: string[], folder: BucketFile, bucket: Bucket) => {
+        await tombMutex(selectedBucket!.mount, async mount => {
+            const files = await mount.ls(path);
+            folder.files = files;
+            selectBucket({ ...bucket });
         });
     };
 
@@ -286,10 +288,18 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     };
 
     /** Uploads file to selected bucket/directory, updates buckets state */
-    const uploadFile = async (bucket: Bucket, uploadPath: string[], name: string, file: ArrayBuffer) => {
+    const uploadFile = async (bucket: Bucket, uploadPath: string[], name: string, file: ArrayBuffer, folder?: BucketFile) => {
+        console.log('uploadFileFolder', folder);
+
         try {
             tombMutex(bucket.mount, async mount => {
                 await mount.write([...uploadPath, name], file);
+                if (folder) {
+                    const files = await mount.ls(uploadPath);
+                    folder.files = files;
+                    selectBucket({ ...bucket });
+                    return;
+                }
                 if (uploadPath.join('') !== folderLocation.join('')) return;
                 const files = await mount.ls(uploadPath) || [];
                 await updateBucketsState('files', files, bucket.id);
@@ -330,8 +340,6 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     const deleteFile = async (bucket: Bucket, path: string[], name: string) => {
         await tombMutex(bucket.mount, async mount => {
             await mount.rm([...path, name]);
-            const files = await mount.ls(path) || [];
-            await updateBucketsState('files', files, bucket.id);
         });
     };
 

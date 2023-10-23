@@ -3,45 +3,71 @@ import { useIntl } from 'react-intl';
 import { FiEdit, FiTrash2, FiUpload } from 'react-icons/fi';
 import { PiArrowsLeftRight } from 'react-icons/pi';
 
-import { MoveToModal } from '../Modal/MoveToModal';
-import { RenameFileModal } from '../Modal/RenameFileModal';
+import { MoveToModal } from '@/components/common/Modal/MoveToModal';
+import { RenameFileModal } from '@/components/common/Modal/RenameFileModal';
+import { DeleteFileModal } from '@/components/common/Modal/DeleteFileModal';
+import { UploadFileModal } from '@/components/common/Modal/UploadFileModal';
 import { Bucket, BucketFile } from '@/lib/interfaces/bucket';
 import { useModal } from '@/contexts/modals';
-import { DeleteFileModal } from '@/components/common/Modal/DeleteFileModal';
-import { UploadFileModal } from '../Modal/UploadFileModal';
-import { Action } from '../FileActions';
+import { Action } from '@/components/common/FileActions';
 
-export const FolderActions: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bucket, file }) => {
+export const FolderActions: React.FC<{ bucket: Bucket; file: BucketFile, parrentFolder: BucketFile, path: string[] }> = ({ bucket, file, path, parrentFolder }) => {
     const { messages } = useIntl();
     const { openModal } = useModal();
     const bucketType = `${bucket.bucketType}_${bucket.storageClass}`;
 
     const uploadFile = () => {
-        openModal(<UploadFileModal bucket={bucket} />);
+        openModal(
+            <UploadFileModal
+                bucket={bucket}
+                folder={file}
+                path={[...path, file.name]}
+            />
+        );
     };
 
     const moveTo = () => {
-        openModal(<MoveToModal file={file} bucket={bucket} />);
+        openModal(
+            <MoveToModal
+                file={file}
+                bucket={bucket}
+                path={path}
+                parrentFolder={parrentFolder}
+            />
+        );
     };
 
     const rename = async () => {
-        openModal(<RenameFileModal bucket={bucket} file={file} />);
+        openModal(
+            <RenameFileModal
+                bucket={bucket}
+                file={file}
+                path={path}
+                parrentFolder={parrentFolder}
+            />
+        );
     };
 
     const remove = async () => {
-        openModal(<DeleteFileModal bucket={bucket} file={file} />);
+        openModal(
+            <DeleteFileModal
+                bucket={bucket}
+                file={file}
+                parrentFolder={parrentFolder}
+                path={path}
+            />);
     };
 
     const moveToAction = useMemo(() => new Action(`${messages.moveTo}`, <PiArrowsLeftRight size="18px" />, moveTo), []);
     const renameAction = useMemo(() => new Action(`${messages.rename}`, <FiEdit size="18px" />, rename), []);
     const removeAction = useMemo(() => new Action(`${messages.remove}`, <FiTrash2 size="18px" />, remove), []);
-    const uploadFileAction = useMemo(() => new Action(`${messages.upload}`, <FiUpload size="18px" />, uploadFile), [])
+    const uploaFolderAction = useMemo(() => new Action(`${messages.upload}`, <FiUpload size="18px" />, uploadFile), [])
 
     const hotInrecactiveActions = [
-        uploadFileAction, moveToAction, renameAction, removeAction
+        uploaFolderAction, moveToAction, renameAction, removeAction
     ];
     const warmInrecactiveActions = [
-        uploadFileAction, moveToAction, renameAction, removeAction
+        uploaFolderAction, moveToAction, renameAction, removeAction
     ];
     const coldIntecactiveActions = [
         moveToAction

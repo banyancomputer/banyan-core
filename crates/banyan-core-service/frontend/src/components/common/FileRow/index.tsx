@@ -15,8 +15,9 @@ export const FileRow: React.FC<{
     tableScroll: number,
     tableRef: React.MutableRefObject<HTMLDivElement | null>
     nestingLevel: number,
-    path: string[]
-}> = ({ file, bucket, tableScroll, tableRef, nestingLevel = 1, path }) => {
+    path: string[],
+    parrentFolder?: BucketFile,
+}> = ({ file, bucket, tableScroll, tableRef, nestingLevel = 1, path, parrentFolder }) => {
     const { openFile } = useFilePreview();
 
     const previewFile = (event: React.MouseEvent<HTMLTableRowElement, MouseEvent>, bucket: Bucket, file: BucketFile) => {

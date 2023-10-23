@@ -14,15 +14,15 @@ import { Bucket, BucketFile } from '@/lib/interfaces/bucket';
 export interface FolderSelectProps {
     onChange: (option: string[]) => void;
     selectedBucket: Bucket;
-    onFolderCreation?: () => void
+    path: string[];
+    onFolderCreation?: () => void;
 };
 
-export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBucket, onFolderCreation }) => {
-    const folderLocation = useFolderLocation();
+export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBucket, onFolderCreation, path }) => {
     const { buckets, uploadFile, tomb } = useTomb();
     const selectRef = useRef<HTMLDivElement | null>(null);
     const [isOptionstVisible, setIsOptionsVisible] = useState(false);
-    const [folder, setFolder] = useState(folderLocation);
+    const [folder, setFolder] = useState(path);
     const [folders, setFolders] = useState<BucketFile[]>([]);
     const { openModal, closeModal } = useModal();
     const { messages } = useIntl();
@@ -64,8 +64,8 @@ export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBu
     }, [folder, buckets])
 
     useEffect(() => {
-        handleSelect(folderLocation);
-    }, [folderLocation])
+        handleSelect(path);
+    }, [path])
 
     useEffect(() => {
         const listener = popupClickHandler(selectRef.current!, setIsOptionsVisible);
