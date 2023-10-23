@@ -23,7 +23,7 @@ const KEY_ID_REGEX: &str = r"^[0-9a-f]{2}(:[0-9a-f]{2}){31}$";
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-pub struct StorageHostToken {
+struct StorageHostToken {
     #[serde(rename = "iat")]
     pub issued_at: u64,
 
@@ -44,7 +44,7 @@ pub struct StorageHostToken {
 }
 
 #[async_trait]
-impl<S> FromRequestParts<S> for StorageHostToken
+impl<S> FromRequestParts<S> for StorageHost
 where
     DbConn: FromRequestParts<S>,
     S: Send + Sync,
@@ -86,7 +86,7 @@ where
 
         let storage_host = sqlx::query_as!(
             StorageHost,
-            "SELECT name, pem FROM storage_hosts WHERE fingerprint = $1",
+            "SELECT id, name, pem FROM storage_hosts WHERE fingerprint = $1",
             key_id
         )
         .fetch_one(&mut *db_conn.0)
@@ -125,7 +125,7 @@ where
             });
         }
 
-        Ok(claims)
+        Ok(storage_host)
     }
 }
 
@@ -258,7 +258,14 @@ enum StorageHostKeyAuthorizationErrorKind {
 }
 
 #[derive(sqlx::FromRow)]
-struct StorageHost {
+pub struct StorageHost {
+    id: String,
     name: String,
     pem: String,
+}
+
+impl StorageHost {
+    pub fn id(&self) -> &str {
+        self.id.as_str()
+    }
 }
