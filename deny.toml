@@ -26,7 +26,6 @@ ignore = [
     # to update to a non-vulnerable version. That being said we're also not
     # impacted by this vulnerability as the impacted code is converting between
     # local timezones from offsets and we only operate on UTC timestamps.
-    "RUSTSEC-2020-0071",
 ]
 
 [licenses]
