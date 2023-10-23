@@ -66,9 +66,6 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null, folder?: Bucket
         openModal(<CreateBucketModal />, () => openModal(<UploadFileModal bucket={selectedBucket} path={path} />));
     };
 
-    console.log(selectedBucket);
-    
-
     return (
         <div className="w-modal flex flex-col gap-4">
             <div>

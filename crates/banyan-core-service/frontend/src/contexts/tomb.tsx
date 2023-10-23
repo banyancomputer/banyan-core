@@ -289,8 +289,6 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
     /** Uploads file to selected bucket/directory, updates buckets state */
     const uploadFile = async (bucket: Bucket, uploadPath: string[], name: string, file: ArrayBuffer, folder?: BucketFile) => {
-        console.log('uploadFileFolder', folder);
-
         try {
             tombMutex(bucket.mount, async mount => {
                 await mount.write([...uploadPath, name], file);
