@@ -1,7 +1,7 @@
 use chrono::NaiveDateTime;
 
-use crate::workers::panic_safe_future::CaughtPanic;
-use crate::workers::TaskState;
+use crate::panic_safe_future::CaughtPanic;
+use crate::TaskState;
 
 #[derive(Clone, Debug, PartialEq, sqlx::FromRow)]
 pub struct Task {

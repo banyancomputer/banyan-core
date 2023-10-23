@@ -2,7 +2,7 @@ use chrono::offset::Utc;
 use chrono::NaiveDateTime;
 use sqlx::SqliteConnection;
 
-use crate::workers::{SqliteTaskStore, Task, TaskLike, TaskState, TaskStoreError};
+use crate::{SqliteTaskStore, Task, TaskLike, TaskState, TaskStoreError};
 
 pub struct TaskInstanceBuilder {
     task_name: String,

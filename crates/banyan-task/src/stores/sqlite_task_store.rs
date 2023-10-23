@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use chrono::offset::Utc;
 use sqlx::{Acquire, SqliteConnection, SqlitePool};
 
-use crate::workers::{
+use crate::{
     Task, TaskInstanceBuilder, TaskLike, TaskState, TaskStore, TaskStoreError,
     TASK_EXECUTION_TIMEOUT,
 };

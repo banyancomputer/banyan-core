@@ -2,12 +2,11 @@
 
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use url::Url;
 use uuid::Uuid;
 
-use crate::email::message::ProductInvoice;
-use crate::workers::CurrentTask;
-use crate::workers::TaskLike;
+use crate::email::message::ReachingStorageLimit;
+use banyan_task::CurrentTask;
+use banyan_task::TaskLike;
 
 use super::send_email_message;
 use super::should_send_email_message;
@@ -15,20 +14,25 @@ use super::EmailTaskContext;
 use super::EmailTaskError;
 
 #[derive(Deserialize, Serialize)]
-pub struct ProductInvoiceEmailTask {
+pub struct ReachingStorageLimitEmailTask {
     account_id: Uuid,
-    url: Url,
+    current_usage: usize,
+    max_usage: usize,
 }
 
-impl ProductInvoiceEmailTask {
-    pub fn new(account_id: Uuid, url: Url) -> Self {
-        Self { account_id, url }
+impl ReachingStorageLimitEmailTask {
+    pub fn new(account_id: Uuid, current_usage: usize, max_usage: usize) -> Self {
+        Self {
+            account_id,
+            current_usage,
+            max_usage,
+        }
     }
 }
 
 #[async_trait]
-impl TaskLike for ProductInvoiceEmailTask {
-    const TASK_NAME: &'static str = "product_invoice_email_task";
+impl TaskLike for ReachingStorageLimitEmailTask {
+    const TASK_NAME: &'static str = "reaching_storage_limit_email_task";
 
     type Error = EmailTaskError;
     type Context = EmailTaskContext;
@@ -38,8 +42,9 @@ impl TaskLike for ProductInvoiceEmailTask {
         if !should_send_email_message(self.account_id, &ctx).await? {
             return Ok(());
         }
-        let message = ProductInvoice {
-            url: self.url.clone(),
+        let message = ReachingStorageLimit {
+            current_usage: self.current_usage,
+            max_usage: self.max_usage,
         };
         send_email_message(self.account_id, &message, &ctx).await
     }
@@ -48,14 +53,13 @@ impl TaskLike for ProductInvoiceEmailTask {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::workers::tasks::email_task::tests::test_setup;
+    use crate::email::tasks::tests::test_setup;
 
     #[tokio::test]
-    /// ProductInvoiceEmailTask should succeed in a valid context
+    /// ReachingStorageLimitEmailTask should succeed in a valid context
     async fn success() {
         let (ctx, account_id, current_task) = test_setup().await;
-        let task =
-            ProductInvoiceEmailTask::new(account_id, Url::parse("https://example.com").unwrap());
+        let task = ReachingStorageLimitEmailTask::new(account_id, 0, 0);
         let result = task.run(current_task, ctx).await;
         assert!(result.is_ok());
     }

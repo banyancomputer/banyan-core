@@ -199,8 +199,8 @@ pub async fn send_email_message(
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::workers::current_task::tests::default_current_task;
-    use crate::workers::{CurrentTask, TaskLike};
+    use banyan_task::tests::default_current_task;
+    use banyan_task::{CurrentTask, TaskLike};
 
     const ACCOUNT_ID: &str = "00000000-0000-0000-0000-000000000000";
     const USER_EMAIL: &str = "user@user.email";

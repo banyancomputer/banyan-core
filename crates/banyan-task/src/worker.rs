@@ -2,8 +2,8 @@
 
 use std::collections::BTreeMap;
 
-use crate::workers::panic_safe_future::PanicSafeFuture;
-use crate::workers::{
+use crate::panic_safe_future::PanicSafeFuture;
+use crate::{
     CurrentTask, CurrentTaskError, ExecuteTaskFn, QueueConfig, StateFn, Task, TaskExecError,
     TaskState, TaskStore, TaskStoreError, MAXIMUM_CHECK_DELAY,
 };
