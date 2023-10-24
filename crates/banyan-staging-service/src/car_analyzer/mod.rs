@@ -63,6 +63,7 @@ enum CarState {
 pub struct CarReport {
     integrity_hash: String,
     total_size: u64,
+    cids: Vec<Cid>,
 }
 
 impl CarReport {
@@ -73,6 +74,10 @@ impl CarReport {
     pub fn total_size(&self) -> u64 {
         self.total_size
     }
+
+    pub fn cids(&self) -> &[Cid] {
+        self.cids.as_slice()
+    }
 }
 
 #[derive(Debug)]
@@ -80,7 +85,7 @@ pub struct StreamingCarAnalyzer {
     buffer: BytesMut,
     state: CarState,
     stream_offset: u64,
-
+    cids: Vec<Cid>,
     hasher: blake3::Hasher,
 }
 
@@ -117,7 +122,7 @@ impl StreamingCarAnalyzer {
             buffer: BytesMut::new(),
             state: CarState::Pragma,
             stream_offset: 0,
-
+            cids: Vec::new(),
             hasher: blake3::Hasher::new(),
         }
     }
@@ -306,6 +311,7 @@ impl StreamingCarAnalyzer {
                         }
                     };
                     let cid_length = cid.encoded_len() as u64;
+                    self.cids.push(cid);
 
                     // This might be the end of all data, we'll check once we reach the block_start
                     // offset
@@ -348,6 +354,7 @@ impl StreamingCarAnalyzer {
         Ok(CarReport {
             integrity_hash: self.hasher.finalize().to_string(),
             total_size: self.stream_offset,
+            cids: self.cids,
         })
     }
 

@@ -135,8 +135,8 @@ pub struct Metadata {
     pub metadata_size: Option<i64>,
     pub metadata_hash: Option<String>,
 
-    pub created_at: chrono::NaiveDateTime,
-    pub updated_at: chrono::NaiveDateTime,
+    pub created_at: time::OffsetDateTime,
+    pub updated_at: time::OffsetDateTime,
 }
 
 /// Bucket Metadata with Snapshot - data associated with the metadata for a bucket
@@ -150,7 +150,7 @@ pub struct MetadataWithSnapshot {
 #[derive(Debug, Serialize, FromRow)]
 pub struct CreateSnapshot {
     pub id: String,
-    pub created_at: chrono::NaiveDateTime,
+    pub created_at: time::OffsetDateTime,
 }
 
 /// Snapshot of a piece of metadata
@@ -159,7 +159,7 @@ pub struct Snapshot {
     pub id: String,
     pub metadata_id: String,
     pub size: i64,
-    pub created_at: chrono::NaiveDateTime,
+    pub created_at: time::OffsetDateTime,
 }
 
 /// Storage Host
@@ -178,7 +178,6 @@ pub struct StorageHost {
 #[derive(Debug, Serialize, Clone, Type, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum EmailMessageState {
-    Queued,
     Sent,
     Accepted,
     Rejected,
@@ -191,8 +190,6 @@ pub enum EmailMessageState {
 
 fn email_message_state_value(state: &EmailMessageState) -> i32 {
     match state {
-        // Email is queued, but not sent
-        EmailMessageState::Queued => 0,
         // Email is sent, but not accepted
         EmailMessageState::Sent => 1,
         // Email is either accepted or rejected
@@ -220,7 +217,6 @@ impl PartialOrd for EmailMessageState {
 impl Display for EmailMessageState {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            EmailMessageState::Queued => f.write_str("queued"),
             EmailMessageState::Sent => f.write_str("sent"),
             EmailMessageState::Accepted => f.write_str("accepted"),
             EmailMessageState::Delivered => f.write_str("delivered"),
@@ -236,7 +232,6 @@ impl Display for EmailMessageState {
 impl From<String> for EmailMessageState {
     fn from(s: String) -> Self {
         match s.as_str() {
-            "queued" => EmailMessageState::Queued,
             "sent" => EmailMessageState::Sent,
             "accepted" => EmailMessageState::Accepted,
             "delivered" => EmailMessageState::Delivered,
@@ -255,7 +250,7 @@ impl From<String> for EmailMessageState {
 pub struct EmailMessage {
     pub id: String,
     pub account_id: String,
-    pub sent_at: chrono::NaiveDateTime,
+    pub sent_at: time::OffsetDateTime,
     pub r#type: String,
     pub state: EmailMessageState,
 }

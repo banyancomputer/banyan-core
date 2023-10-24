@@ -29,8 +29,8 @@ use http::StatusCode;
 use sqlx::SqlitePool;
 
 use crate::app_state::AppState;
-use crate::workers::tasks::TestTask;
-use crate::workers::{SqliteTaskStore, TaskLikeExt};
+use banyan_task::tasks::TestTask;
+use banyan_task::{SqliteTaskStore, TaskLikeExt};
 
 pub async fn work_test(State(state): State<AppState>) -> Response {
     let mut pool = SqlitePool::from_ref(&state);

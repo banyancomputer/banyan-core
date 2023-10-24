@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE email_stats\n            SET complained = complained + 1\n            WHERE account_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "c852657b4f41a1353486c041945e906251a12923952f4177f1c4c1142ccf72d1"
+}

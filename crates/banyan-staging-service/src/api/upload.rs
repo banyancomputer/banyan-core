@@ -309,12 +309,14 @@ async fn record_upload_failed(db: &Database, upload_id: &str) -> Result<(), Uplo
     Ok(())
 }
 
+use cid::Cid;
 use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest::{Client, Url};
 
 #[derive(Serialize)]
 struct MetadataSizeRequest {
     data_size: u64,
+    normalized_cids: Vec<String>,
 }
 
 async fn report_upload_to_platform(
@@ -324,6 +326,14 @@ async fn report_upload_to_platform(
 ) -> Result<(), UploadError> {
     let metadata_size = MetadataSizeRequest {
         data_size: report.total_size(),
+        normalized_cids: report
+            .cids()
+            .iter()
+            .map(|c| {
+                c.to_string_of_base(cid::multibase::Base::Base64Url)
+                    .expect("parsed cid to unparse")
+            })
+            .collect(),
     };
 
     let mut default_headers = HeaderMap::new();

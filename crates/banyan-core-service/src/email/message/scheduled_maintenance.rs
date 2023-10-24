@@ -1,8 +1,8 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use super::EmailMessage;
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct ScheduledMaintenance {
     /// The start time of the maintenance window
     pub(crate) start: String,

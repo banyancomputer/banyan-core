@@ -3,7 +3,7 @@ use lettre::message::{
     header::{Header, HeaderName, HeaderValue},
     Message,
 };
-use serde::{ser::StdError, Serialize};
+use serde::{de::DeserializeOwned, ser::StdError, Serialize};
 use uuid::Uuid;
 
 use super::error::EmailError;
@@ -33,7 +33,9 @@ pub use product_invoice::ProductInvoice;
 pub use reaching_storage_limit::ReachingStorageLimit;
 pub use scheduled_maintenance::ScheduledMaintenance;
 
-pub trait EmailMessage: Serialize + Sized {
+pub trait EmailMessage:
+    Serialize + DeserializeOwned + Sized + std::marker::Send + std::marker::Sync + 'static
+{
     const SUBJECT: &'static str;
     const TEMPLATE_NAME: &'static str;
     const TYPE_NAME: &'static str;
