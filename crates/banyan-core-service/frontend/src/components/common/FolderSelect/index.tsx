@@ -7,7 +7,7 @@ import { useModal } from '@/contexts/modals';
 import { CreateFolderModal } from '../Modal/CreateFolderModal ';
 import { useTomb } from '@/contexts/tomb';
 import { UploadFileModal } from '../Modal/UploadFileModal';
-import { Bucket, BucketFile } from '@/lib/interfaces/bucket';
+import { Bucket, BrowserObject } from '@/lib/interfaces/bucket';
 
 export interface FolderSelectProps {
     onChange: (option: string[]) => void;
@@ -21,7 +21,7 @@ export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBu
     const selectRef = useRef<HTMLDivElement | null>(null);
     const [isOptionstVisible, setIsOptionsVisible] = useState(false);
     const [folder, setFolder] = useState(path);
-    const [folders, setFolders] = useState<BucketFile[]>([]);
+    const [folders, setFolders] = useState<BrowserObject[]>([]);
     const { openModal, closeModal } = useModal();
     const { messages } = useIntl();
 

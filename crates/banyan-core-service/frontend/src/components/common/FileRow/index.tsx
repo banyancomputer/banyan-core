@@ -4,23 +4,23 @@ import { ActionsCell } from '../ActionsCell';
 import { FileActions } from '../FileActions';
 import { FileCell } from '../FileCell';
 
-import { Bucket, BucketFile } from '@/lib/interfaces/bucket';
+import { Bucket, BrowserObject } from '@/lib/interfaces/bucket';
 import { getDateLabel } from '@/utils/date';
 import { convertFileSize } from '@/utils/storage';
 import { useFilePreview } from '@/contexts/filesPreview';
 
 export const FileRow: React.FC<{
-    file: BucketFile,
+    file: BrowserObject,
     bucket: Bucket,
     tableScroll: number,
     tableRef: React.MutableRefObject<HTMLDivElement | null>
     nestingLevel: number,
     path: string[],
-    parrentFolder?: BucketFile,
+    parrentFolder?: BrowserObject,
 }> = ({ file, bucket, tableScroll, tableRef, nestingLevel = 0.25, path = [], parrentFolder }) => {
     const { openFile } = useFilePreview();
 
-    const previewFile = (event: React.MouseEvent<HTMLTableRowElement, MouseEvent>, bucket: Bucket, file: BucketFile) => {
+    const previewFile = (event: React.MouseEvent<HTMLTableRowElement, MouseEvent>, bucket: Bucket, file: BrowserObject) => {
         //@ts-ignore
         if (event.target.id === 'actionsCell') return;
 

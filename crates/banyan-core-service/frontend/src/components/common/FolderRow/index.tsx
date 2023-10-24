@@ -6,7 +6,7 @@ import { FolderActions } from '../FolderActions';
 import { FileCell } from '../FileCell';
 import { FileRow } from '../FileRow';
 
-import { Bucket, BucketFile } from '@/lib/interfaces/bucket';
+import { BrowserObject, Bucket } from '@/lib/interfaces/bucket';
 import { getDateLabel } from '@/utils/date';
 import { convertFileSize } from '@/utils/storage';
 import { useTomb } from '@/contexts/tomb';
@@ -14,13 +14,13 @@ import { useTomb } from '@/contexts/tomb';
 import { ChevronUp } from '@static/images/common';
 
 export const FolderRow: React.FC<{
-    folder: BucketFile,
+    folder: BrowserObject,
     bucket: Bucket,
     tableScroll: number,
     tableRef: React.MutableRefObject<HTMLDivElement | null>,
     nestingLevel: number,
     path: string[]
-    parrentFolder?: BucketFile,
+    parrentFolder?: BrowserObject,
 }> = ({ folder, bucket, tableRef, tableScroll, nestingLevel = 0.25, path = [], parrentFolder }) => {
     const [isVisible, setIsVisible] = useState(false);
     const { push } = useRouter();

@@ -7,11 +7,11 @@ import { MoveToModal } from '@/components/common/Modal/MoveToModal';
 import { RenameFileModal } from '@/components/common/Modal/RenameFileModal';
 import { DeleteFileModal } from '@/components/common/Modal/DeleteFileModal';
 import { UploadFileModal } from '@/components/common/Modal/UploadFileModal';
-import { Bucket, BucketFile } from '@/lib/interfaces/bucket';
+import { Bucket, BrowserObject } from '@/lib/interfaces/bucket';
 import { useModal } from '@/contexts/modals';
 import { Action } from '@/components/common/FileActions';
 
-export const FolderActions: React.FC<{ bucket: Bucket; file: BucketFile, parrentFolder: BucketFile, path: string[] }> = ({ bucket, file, path, parrentFolder }) => {
+export const FolderActions: React.FC<{ bucket: Bucket; file: BrowserObject, parrentFolder: BrowserObject, path: string[] }> = ({ bucket, file, path, parrentFolder }) => {
     const { messages } = useIntl();
     const { openModal } = useModal();
     const bucketType = `${bucket.bucketType}_${bucket.storageClass}`;
@@ -43,7 +43,6 @@ export const FolderActions: React.FC<{ bucket: Bucket; file: BucketFile, parrent
                 bucket={bucket}
                 file={file}
                 path={path}
-                parrentFolder={parrentFolder}
             />
         );
     };
@@ -59,16 +58,16 @@ export const FolderActions: React.FC<{ bucket: Bucket; file: BucketFile, parrent
         );
     };
 
-    const moveToAction = useMemo(() => new Action(`${messages.moveTo}`, <PiArrowsLeftRight size="18px" />, moveTo), []);
-    const renameAction = useMemo(() => new Action(`${messages.rename}`, <FiEdit size="18px" />, rename), []);
-    const removeAction = useMemo(() => new Action(`${messages.remove}`, <FiTrash2 size="18px" />, remove), []);
-    const uploaFolderAction = useMemo(() => new Action(`${messages.upload}`, <FiUpload size="18px" />, uploadFile), [])
+    const moveToAction = new Action(`${messages.moveTo}`, <PiArrowsLeftRight size="18px" />, moveTo);
+    const renameAction = new Action(`${messages.rename}`, <FiEdit size="18px" />, rename);
+    const removeAction = new Action(`${messages.remove}`, <FiTrash2 size="18px" />, remove);
+    const uploadFolderAction = new Action(`${messages.upload}`, <FiUpload size="18px" />, uploadFile);
 
     const hotInrecactiveActions = [
-        uploaFolderAction, moveToAction, renameAction, removeAction
+        uploadFolderAction, moveToAction, renameAction, removeAction
     ];
     const warmInrecactiveActions = [
-        uploaFolderAction, moveToAction, renameAction, removeAction
+        uploadFolderAction, moveToAction, renameAction, removeAction
     ];
     const coldIntecactiveActions = [
         moveToAction

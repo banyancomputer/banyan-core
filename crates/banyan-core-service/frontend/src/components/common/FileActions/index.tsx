@@ -10,7 +10,7 @@ import { BiShareAlt } from 'react-icons/bi';
 import { MoveToModal } from '../../common/Modal/MoveToModal';
 import { RenameFileModal } from '../../common/Modal/RenameFileModal';
 import { useTomb } from '@/contexts/tomb';
-import { Bucket, BucketFile } from '@/lib/interfaces/bucket';
+import { Bucket, BrowserObject } from '@/lib/interfaces/bucket';
 import { useModal } from '@/contexts/modals';
 import { ToastNotifications } from '@/utils/toastNotifications';
 import { DeleteFileModal } from '@/components/common/Modal/DeleteFileModal';
@@ -25,7 +25,7 @@ export class Action {
     ) { }
 }
 
-export const FileActions: React.FC<{ bucket: Bucket; file: BucketFile, parrentFolder: BucketFile, path: string[] }> = ({ bucket, file, path, parrentFolder }) => {
+export const FileActions: React.FC<{ bucket: Bucket; file: BrowserObject, parrentFolder: BrowserObject, path: string[] }> = ({ bucket, file, path, parrentFolder }) => {
     const { messages } = useIntl();
     const { download, makeCopy, shareFile } = useTomb();
     const { openModal, closeModal } = useModal();

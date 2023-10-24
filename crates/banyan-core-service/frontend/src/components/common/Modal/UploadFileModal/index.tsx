@@ -6,7 +6,7 @@ import { AddNewOption } from '../../Select/AddNewOption';
 import { CreateBucketModal } from '../CreateBucketModal';
 import { FolderSelect } from '../../FolderSelect';
 
-import { Bucket, BucketFile } from '@/lib/interfaces/bucket';
+import { Bucket, BrowserObject } from '@/lib/interfaces/bucket';
 import { useModal } from '@/contexts/modals';
 import { useTomb } from '@/contexts/tomb';
 import { ToastNotifications } from '@/utils/toastNotifications';
@@ -14,7 +14,7 @@ import { useFilesUpload } from '@/contexts/filesUpload';
 
 import { Upload } from '@static/images/buckets';
 
-export const UploadFileModal: React.FC<{ bucket?: Bucket | null, folder?: BucketFile, path: string[] }> = ({ bucket, folder, path }) => {
+export const UploadFileModal: React.FC<{ bucket?: Bucket | null, folder?: BrowserObject, path: string[] }> = ({ bucket, folder, path }) => {
     const { buckets } = useTomb();
     const { openModal, closeModal } = useModal();
     const { setFiles, uploadFiles, files } = useFilesUpload()

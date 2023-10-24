@@ -3,14 +3,14 @@ import { useIntl } from 'react-intl';
 import { MdDone } from 'react-icons/md';
 
 import { useModal } from '@/contexts/modals';
-import { Bucket, BucketFile } from '@/lib/interfaces/bucket';
+import { Bucket, BrowserObject } from '@/lib/interfaces/bucket';
 import { ToastNotifications } from '@/utils/toastNotifications';
 import { useTomb } from '@/contexts/tomb';
 
 import { useFolderLocation } from '@/hooks/useFolderLocation';
 import { FolderSelect } from '../../FolderSelect';
 
-export const MoveToModal: React.FC<{ file: BucketFile, bucket: Bucket, path: string[], parrentFolder: BucketFile }> = ({ file, bucket, path, parrentFolder }) => {
+export const MoveToModal: React.FC<{ file: BrowserObject, bucket: Bucket, path: string[], parrentFolder: BrowserObject }> = ({ file, bucket, path, parrentFolder }) => {
     const { messages } = useIntl();
     const { moveTo, getSelectedBucketFiles, getExpandedFolderFiles } = useTomb();
     const { closeModal, openModal } = useModal();
