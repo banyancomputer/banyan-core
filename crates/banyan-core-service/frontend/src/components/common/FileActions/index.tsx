@@ -63,7 +63,6 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BrowserObject; parren
                 bucket={bucket}
                 file={file}
                 path={path}
-                parrentFolder={parrentFolder}
             />
         );
     };

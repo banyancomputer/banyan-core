@@ -81,9 +81,10 @@ export default function App({
                                     <Notifications />
                                     <Modal />
                                     <FilePreview />
-                                    {/* Chakra Provider for access to Chakra UI components */}
-                                    {/* Get the layout and render the component :) */}
-                                    {getLayout(<Component {...pageProps} />)}
+                                    <>
+                                        {/* Get the layout and render the component :) */}
+                                        {getLayout(<Component {...pageProps} />)}
+                                    </>
                                 </IntlProvider>
                             </FilePreviewProvider>
                         </FileUploadProvider>

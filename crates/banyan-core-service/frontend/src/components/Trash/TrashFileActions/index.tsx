@@ -16,15 +16,15 @@ export const TrashActions: React.FC<{ bucket: Bucket; file: BrowserObject }> = (
     const { openModal } = useModal();
 
     const moveTo = () => {
-        openModal(<MoveToModal bucket={bucket} file={file} />);
+        openModal(<MoveToModal bucket={bucket} file={file} parrentFolder={file} path={[]} />);
     };
-    const makeCopy = async() => {
+    const makeCopy = async () => {
         try {
 
         } catch (error: any) { }
     };
 
-    const remove = async() => {
+    const remove = async () => {
         try {
 
         } catch (error: any) { }
