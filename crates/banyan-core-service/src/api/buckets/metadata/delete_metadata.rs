@@ -47,17 +47,29 @@ pub async fn handler(
         .map_err(DeleteMetadataError::LookupUnavailable)?;
 
         if let Some(prev_id) = maybe_previous_metadata_id {
-            sqlx::query!("UPDATE metadata SET state = 'current' WHERE id = $1;", prev_id)
+            sqlx::query!(
+                r#"UPDATE metadata
+                       SET state = 'current',
+                           updated_at = CURRENT_TIMESTAMP
+                       WHERE id = $1;"#,
+                prev_id,
+            )
                 .execute(&mut *transaction)
                 .await
                 .map_err(DeleteMetadataError::ReversionFailed)?;
         }
     }
 
-    sqlx::query!("DELETE FROM metadata WHERE id = $1;", metadata_id)
-        .execute(&mut *transaction)
-        .await
-        .map_err(DeleteMetadataError::FailedDelete)?;
+    sqlx::query!(
+        r#"UPDATE metadata
+               SET state = 'deleted',
+                   updated_at = CURRENT_TIMESTAMP
+               WHERE id = $1;"#,
+        metadata_id,
+    )
+    .execute(&mut *transaction)
+    .await
+    .map_err(DeleteMetadataError::FailedDelete)?;
 
     // todo: need to delete all the hot data stored at various storage hosts
 
