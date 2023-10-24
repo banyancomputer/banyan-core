@@ -88,13 +88,16 @@ where
         let token = bearer.token();
         let header_data = decode_header(token).map_err(ApiIdentityError::FormatError)?;
 
-        let key_id = match header_data.kid {
+        let mut key_id = match header_data.kid {
             Some(key_id) if key_regex.is_match(key_id.as_str()) => key_id,
             Some(_) => return Err(ApiIdentityError::BadKeyFormat),
             None => return Err(ApiIdentityError::UnidentifiedKey),
         };
 
         let database = Database::from_ref(state);
+
+        key_id = key_id.replace(':', "");
+        tracing::info!("searching for key_id: {:?}", key_id);
 
         let db_device_api_key = sqlx::query_as!(
             DeviceApiKey,
