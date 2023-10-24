@@ -17,10 +17,14 @@ pub async fn handler(
     store: UploadStore,
     Path(cid): Path<String>,
 ) -> Result<Response, BlockRetrievalError> {
+    tracing::info!("in the handler");
+
     let cid = cid::Cid::try_from(cid).map_err(BlockRetrievalError::InvalidCid)?;
     let normalized_cid = cid
         .to_string_of_base(cid::multibase::Base::Base64Url)
         .expect("parsed cid to unparse");
+
+    tracing::info!("normalized CID");
 
     let block_details = block_from_normalized_cid(&db, &normalized_cid).await?;
     if block_details.platform_id != client.platform_id().to_string() {
@@ -183,6 +187,7 @@ impl IntoResponse for BlockRetrievalError {
                 (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
             }
             UnknownBlock => {
+                tracing::warn!("client attempted to access block that we don't know");
                 let err_msg = serde_json::json!({ "msg": format!("block not found") });
                 (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
             }

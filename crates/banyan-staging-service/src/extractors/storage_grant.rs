@@ -196,6 +196,7 @@ impl IntoResponse for StorageGrantError {
                 (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
             }
             WrongTarget => {
+                tracing::info!("STORAGE GRANT TICKET FOR WRONG PROVIDER");
                 tracing::error!("{self}");
                 let err_msg = serde_json::json!({ "msg": "storage grant ticket is for another storage provider" });
                 (StatusCode::UNAUTHORIZED, Json(err_msg)).into_response()

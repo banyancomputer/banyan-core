@@ -305,6 +305,7 @@ impl StreamingCarAnalyzer {
                             ));
                         }
                     };
+                    tracing::info!("car stream analyzer found cid: {}", cid);
                     let cid_length = cid.encoded_len() as u64;
 
                     // This might be the end of all data, we'll check once we reach the block_start

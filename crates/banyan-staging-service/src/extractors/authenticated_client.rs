@@ -90,6 +90,8 @@ where
 
         let database = Database::from_ref(state);
 
+        tracing::info!("trying to find a client with fingerprint: {}", key_id);
+
         let client_id = id_from_fingerprint(&database, &key_id).await?;
         let client_verification_key = ES384PublicKey::from_pem(&client_id.public_key)
             .map_err(Self::Rejection::CorruptDatabaseKey)?;
@@ -326,6 +328,7 @@ impl IntoResponse for AuthenticatedClientError {
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
             }
             MissingHeader | UnknownFingerprint => {
+                tracing::info!("UNKNOWN FINGERPRINT");
                 let err_msg = serde_json::json!({ "msg": "authentication required" });
                 (StatusCode::UNAUTHORIZED, Json(err_msg)).into_response()
             }
