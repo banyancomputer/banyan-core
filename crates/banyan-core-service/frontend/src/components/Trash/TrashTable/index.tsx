@@ -18,7 +18,7 @@ export const TrashTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const [bucketCopy, setBucketCopy] = useState(bucket);
     const [tableScroll, setTableScroll] = useState(0);
 
-    const selectFile = (selectedfile: BrowserObject) => {
+    const selectFile = (selectedFile: BrowserObject) => {
         if (selectedFiles.includes(selectedFile)) {
             setSelectedFiles(files => files.filter(file => file !== selectedFile));
         } else {
