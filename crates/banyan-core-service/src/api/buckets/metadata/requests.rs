@@ -1,4 +1,5 @@
 use serde::Deserialize;
+use std::collections::BTreeSet;
 
 #[derive(Clone, Debug, Deserialize)]
 #[allow(dead_code)]
@@ -13,4 +14,6 @@ pub struct PushMetadataRequest {
     pub metadata_cid: String,
     /// Fingerprints of Public Keys which are being associated with a Bucket
     pub valid_keys: Vec<String>,
+    /// Deleted Block CIDs
+    pub deleted_blocks: BTreeSet<String>,
 }

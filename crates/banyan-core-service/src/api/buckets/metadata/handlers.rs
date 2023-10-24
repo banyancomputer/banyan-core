@@ -79,6 +79,11 @@ pub async fn push(
             }
         };
 
+    /* 1.5 */
+    for cid in request_data.deleted_blocks {
+        tracing::info!("DELETING BLOCK WITH CID: {}", cid);
+    }
+
     /* 2. Now that the request is validated and the data extracted, approve any outstanding keys */
     for fingerprint in request_data.valid_keys {
         // Return if we fail to approve any of them
