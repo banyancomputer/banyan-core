@@ -12,7 +12,7 @@ export interface BrowserObject {
     name: string;
     type: 'file' | 'dir';
     files: BrowserObject[];
-    metadata: FileMetadata
+    metadata: FileMetadata;
 };
 
 export interface BucketKey {

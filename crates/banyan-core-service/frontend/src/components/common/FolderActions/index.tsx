@@ -7,11 +7,11 @@ import { MoveToModal } from '@/components/common/Modal/MoveToModal';
 import { RenameFileModal } from '@/components/common/Modal/RenameFileModal';
 import { DeleteFileModal } from '@/components/common/Modal/DeleteFileModal';
 import { UploadFileModal } from '@/components/common/Modal/UploadFileModal';
-import { Bucket, BrowserObject } from '@/lib/interfaces/bucket';
+import { BrowserObject, Bucket } from '@/lib/interfaces/bucket';
 import { useModal } from '@/contexts/modals';
 import { Action } from '@/components/common/FileActions';
 
-export const FolderActions: React.FC<{ bucket: Bucket; file: BrowserObject, parrentFolder: BrowserObject, path: string[] }> = ({ bucket, file, path, parrentFolder }) => {
+export const FolderActions: React.FC<{ bucket: Bucket; file: BrowserObject; parrentFolder: BrowserObject; path: string[] }> = ({ bucket, file, path, parrentFolder }) => {
     const { messages } = useIntl();
     const { openModal } = useModal();
     const bucketType = `${bucket.bucketType}_${bucket.storageClass}`;
@@ -37,7 +37,7 @@ export const FolderActions: React.FC<{ bucket: Bucket; file: BrowserObject, parr
         );
     };
 
-    const rename = async () => {
+    const rename = async() => {
         openModal(
             <RenameFileModal
                 bucket={bucket}
@@ -47,7 +47,7 @@ export const FolderActions: React.FC<{ bucket: Bucket; file: BrowserObject, parr
         );
     };
 
-    const remove = async () => {
+    const remove = async() => {
         openModal(
             <DeleteFileModal
                 bucket={bucket}
@@ -64,13 +64,13 @@ export const FolderActions: React.FC<{ bucket: Bucket; file: BrowserObject, parr
     const uploadFolderAction = new Action(`${messages.upload}`, <FiUpload size="18px" />, uploadFile);
 
     const hotInrecactiveActions = [
-        uploadFolderAction, moveToAction, renameAction, removeAction
+        uploadFolderAction, moveToAction, renameAction, removeAction,
     ];
     const warmInrecactiveActions = [
-        uploadFolderAction, moveToAction, renameAction, removeAction
+        uploadFolderAction, moveToAction, renameAction, removeAction,
     ];
     const coldIntecactiveActions = [
-        moveToAction
+        moveToAction,
     ];
 
     const actions: Record<string, Action[]> = {
@@ -89,9 +89,9 @@ export const FolderActions: React.FC<{ bucket: Bucket; file: BrowserObject, parr
                     key={action.label}
                     className="w-full flex items-center gap-2 py-2 px-3 border-b-1 border-border-regular transition-all hover:bg-hover"
                     onClick={action.value}
-                    id='action'
+                    id="action"
                 >
-                    <span className='text-button-primary'>
+                    <span className="text-button-primary">
                         {action.icon}
                     </span>
                     {action.label}

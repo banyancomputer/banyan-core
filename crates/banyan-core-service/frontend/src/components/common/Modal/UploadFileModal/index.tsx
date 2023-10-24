@@ -6,7 +6,7 @@ import { AddNewOption } from '../../Select/AddNewOption';
 import { CreateBucketModal } from '../CreateBucketModal';
 import { FolderSelect } from '../../FolderSelect';
 
-import { Bucket, BrowserObject } from '@/lib/interfaces/bucket';
+import { BrowserObject, Bucket } from '@/lib/interfaces/bucket';
 import { useModal } from '@/contexts/modals';
 import { useTomb } from '@/contexts/tomb';
 import { ToastNotifications } from '@/utils/toastNotifications';
@@ -14,10 +14,10 @@ import { useFilesUpload } from '@/contexts/filesUpload';
 
 import { Upload } from '@static/images/buckets';
 
-export const UploadFileModal: React.FC<{ bucket?: Bucket | null, folder?: BrowserObject, path: string[] }> = ({ bucket, folder, path }) => {
+export const UploadFileModal: React.FC<{ bucket?: Bucket | null; folder?: BrowserObject; path: string[] }> = ({ bucket, folder, path }) => {
     const { buckets } = useTomb();
     const { openModal, closeModal } = useModal();
-    const { setFiles, uploadFiles, files } = useFilesUpload()
+    const { setFiles, uploadFiles, files } = useFilesUpload();
     const { messages } = useIntl();
     const [selectedBucket, setSelectedBucket] = useState<Bucket | null>(bucket || null);
     const [selectedFolder, setSelectedFolder] = useState<string[]>(path);
@@ -31,13 +31,13 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null, folder?: Browse
         setSelectedFolder(option);
     };
 
-    const handleChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleChange = async(event: React.ChangeEvent<HTMLInputElement>) => {
         if (!event.target.files) { return; }
 
         setFiles(Array.from(event.target.files).map(file => ({ file, isUploaded: false })));
     };
 
-    const handleDrop = async (event: React.DragEvent<HTMLInputElement | HTMLLabelElement>) => {
+    const handleDrop = async(event: React.DragEvent<HTMLInputElement | HTMLLabelElement>) => {
         event.preventDefault();
         event.stopPropagation();
 
@@ -46,12 +46,12 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null, folder?: Browse
         setFiles(Array.from(event.dataTransfer.files).map(file => ({ file, isUploaded: false })));
     };
 
-    const handleDrag = async (event: React.DragEvent<HTMLInputElement | HTMLLabelElement>) => {
+    const handleDrag = async(event: React.DragEvent<HTMLInputElement | HTMLLabelElement>) => {
         event.preventDefault();
         event.stopPropagation();
     };
 
-    const upload = async () => {
+    const upload = async() => {
         if (!files.length) { return; }
         try {
             closeModal();

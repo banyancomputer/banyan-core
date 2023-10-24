@@ -2,19 +2,19 @@ import React from 'react';
 import { useIntl } from 'react-intl';
 import { FiTrash2 } from 'react-icons/fi';
 
-import { Bucket, BrowserObject } from '@/lib/interfaces/bucket';
+import { BrowserObject, Bucket } from '@/lib/interfaces/bucket';
 import { useModal } from '@/contexts/modals';
 import { useTomb } from '@/contexts/tomb';
 import { ToastNotifications } from '@/utils/toastNotifications';
 import { useFolderLocation } from '@/hooks/useFolderLocation';
 
-export const DeleteFileModal: React.FC<{ bucket: Bucket; file: BrowserObject, path: string[], parrentFolder: BrowserObject }> = ({ bucket, file, path, parrentFolder }) => {
+export const DeleteFileModal: React.FC<{ bucket: Bucket; file: BrowserObject; path: string[]; parrentFolder: BrowserObject }> = ({ bucket, file, path, parrentFolder }) => {
     const { closeModal } = useModal();
     const { messages } = useIntl();
     const { deleteFile, getSelectedBucketFiles, getExpandedFolderFiles } = useTomb();
     const folderLocation = useFolderLocation();
 
-    const removeFile = async () => {
+    const removeFile = async() => {
         try {
             await deleteFile(bucket, [...path], file.name);
             if (path.join('/') === folderLocation.join('/')) {

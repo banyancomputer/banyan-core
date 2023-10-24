@@ -2,28 +2,29 @@ import React, { useState } from 'react';
 import { useIntl } from 'react-intl';
 import { MdDone } from 'react-icons/md';
 
+import { FolderSelect } from '../../FolderSelect';
 import { useModal } from '@/contexts/modals';
-import { Bucket, BrowserObject } from '@/lib/interfaces/bucket';
+import { BrowserObject, Bucket } from '@/lib/interfaces/bucket';
 import { ToastNotifications } from '@/utils/toastNotifications';
 import { useTomb } from '@/contexts/tomb';
 
 import { useFolderLocation } from '@/hooks/useFolderLocation';
-import { FolderSelect } from '../../FolderSelect';
 
-export const MoveToModal: React.FC<{ file: BrowserObject, bucket: Bucket, path: string[], parrentFolder: BrowserObject }> = ({ file, bucket, path, parrentFolder }) => {
+export const MoveToModal: React.FC<{ file: BrowserObject; bucket: Bucket; path: string[]; parrentFolder: BrowserObject }> = ({ file, bucket, path, parrentFolder }) => {
     const { messages } = useIntl();
     const { moveTo, getSelectedBucketFiles, getExpandedFolderFiles } = useTomb();
     const { closeModal, openModal } = useModal();
     const [selectedFolder, setSelectedFolder] = useState<string[]>([]);
     const folderLocation = useFolderLocation();
 
-    const move = async () => {
+    const move = async() => {
         try {
             await moveTo(bucket, [...path, file.name], [...selectedFolder, file.name]);
             ToastNotifications.notify(`${messages.fileWasMoved}`, <MdDone size="20px" />);
             if (path.join('/') === folderLocation.join('/')) {
                 await getSelectedBucketFiles(folderLocation);
                 closeModal();
+
                 return;
             };
             await getExpandedFolderFiles(path, parrentFolder, bucket);

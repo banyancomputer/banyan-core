@@ -25,13 +25,13 @@ export const EnterSecretKeyModal = () => {
     });
     const { keyphrase } = watch();
 
-    const confirm = async () => {
+    const confirm = async() => {
         try {
             await initializeKeystore(keyphrase);
             closeModal();
         } catch (error: any) {
             /** TODO: rework when error message from tomb will be more specific. */
-            setError('keyphrase', { message: `${messages.wrongSecretKey}` })
+            setError('keyphrase', { message: `${messages.wrongSecretKey}` });
         };
     };
 
@@ -50,7 +50,7 @@ export const EnterSecretKeyModal = () => {
                 </p>
             </div>
             <Input
-                type='password'
+                type="password"
                 label={`${messages.secretKey}`}
                 placeholder={`${messages.enterPassphrase}`}
                 error={errors.keyphrase?.message}

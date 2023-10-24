@@ -57,8 +57,8 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
 
     useEffect(() => {
         /** Weird typescript issue with scrollTop which exist, but not for typescript */
-        //@ts-ignore
-        tableRef.current?.addEventListener("scroll", event => setTableScroll(event.target.scrollTop));
+        // @ts-ignore
+        tableRef.current?.addEventListener('scroll', event => setTableScroll(event.target.scrollTop));
     }, [tableRef]);
 
     return (
@@ -117,9 +117,9 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                                         tableScroll={tableScroll}
                                         path={folderLocation}
                                         key={index}
-                                        />
-                                        :
-                                        <FileRow
+                                    />
+                                    :
+                                    <FileRow
                                         bucket={bucket}
                                         file={file}
                                         tableRef={tableRef}

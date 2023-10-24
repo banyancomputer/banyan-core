@@ -14,13 +14,13 @@ import { useTomb } from '@/contexts/tomb';
 import { ChevronUp } from '@static/images/common';
 
 export const FolderRow: React.FC<{
-    folder: BrowserObject,
-    bucket: Bucket,
-    tableScroll: number,
-    tableRef: React.MutableRefObject<HTMLDivElement | null>,
-    nestingLevel: number,
-    path: string[]
-    parrentFolder?: BrowserObject,
+    folder: BrowserObject;
+    bucket: Bucket;
+    tableScroll: number;
+    tableRef: React.MutableRefObject<HTMLDivElement | null>;
+    nestingLevel: number;
+    path: string[];
+    parrentFolder?: BrowserObject;
 }> = ({ folder, bucket, tableRef, tableScroll, nestingLevel = 0.25, path = [], parrentFolder }) => {
     const [isVisible, setIsVisible] = useState(false);
     const { push } = useRouter();
@@ -28,13 +28,13 @@ export const FolderRow: React.FC<{
     const { getExpandedFolderFiles, selectBucket } = useTomb();
 
     const goToFolder = (event: React.MouseEvent<HTMLTableRowElement, MouseEvent>, bucket: Bucket) => {
-        //@ts-ignore
-        if (event.target.id === 'actionsCell') return;
+        // @ts-ignore
+        if (event.target.id === 'actionsCell') { return; }
 
         push(`/bucket/${bucket.id}?${path.length ? `${path.join('/')}/${folder.name}` : folder.name}`);
     };
 
-    const expandFolder = async (event: any) => {
+    const expandFolder = async(event: any) => {
         event.stopPropagation();
 
         try {
@@ -52,7 +52,7 @@ export const FolderRow: React.FC<{
     return (
         <>
             <tr
-                className='cursor-pointer border-1 border-t-border-regular border-b-border-regular text-text-900 font-normal'
+                className="cursor-pointer border-1 border-t-border-regular border-b-border-regular text-text-900 font-normal"
                 onClick={event => goToFolder(event, bucket)}
             >
                 <td
@@ -116,5 +116,5 @@ export const FolderRow: React.FC<{
                 )
             }
         </>
-    )
-}
+    );
+};

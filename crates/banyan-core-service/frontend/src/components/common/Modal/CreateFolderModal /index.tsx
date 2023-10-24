@@ -6,19 +6,19 @@ import { useTomb } from '@/contexts/tomb';
 import { Bucket } from '@/lib/interfaces/bucket';
 import { ToastNotifications } from '@/utils/toastNotifications';
 
-export const CreateFolderModal: React.FC<{ bucket: Bucket, onSuccess?: () => void, path: string[] }> = ({ bucket, onSuccess = () => { }, path }) => {
+export const CreateFolderModal: React.FC<{ bucket: Bucket; onSuccess?: () => void; path: string[] }> = ({ bucket, onSuccess = () => { }, path }) => {
     const { closeModal, openModal } = useModal();
     const { messages } = useIntl();
     const [folderName, setfolderName] = useState('');
     const { createDirectory } = useTomb();
 
     const changeName = (event: React.ChangeEvent<HTMLInputElement>) => {
-        if (event.target.value.length >= 32) return;
+        if (event.target.value.length >= 32) { return; }
 
         setfolderName(event.target.value);
     };
 
-    const create = async () => {
+    const create = async() => {
         try {
             await createDirectory(bucket, path, folderName);
             onSuccess();

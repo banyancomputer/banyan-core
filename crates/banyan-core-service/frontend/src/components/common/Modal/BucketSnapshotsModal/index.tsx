@@ -18,7 +18,7 @@ export const BucketSnapshotsModal: React.FC<{ bucketId: string }> = ({ bucketId 
     useEffect(() => {
         if (!tomb) { return; }
 
-        (async () => {
+        (async() => {
             try {
                 const snapshots = await getBucketShapshots(bucketId);
                 setSnapshots(snapshots);
@@ -46,10 +46,10 @@ export const BucketSnapshotsModal: React.FC<{ bucketId: string }> = ({ bucketId 
                             <AiOutlineFile size="20px" />
                             <div className="flex flex-col font-semibold text-text-900">
                                 <span>{`${getDateLabel(snapshot.createdAt, false)} version`}</span>
-                                <span className='text-gray-400 font-medium'>{`${convertFileSize(snapshot.size)}`}</span>
+                                <span className="text-gray-400 font-medium">{`${convertFileSize(snapshot.size)}`}</span>
                             </div>
                         </div>
-                        <div className='flex items-center whitespace-nowrap font-medium'>
+                        <div className="flex items-center whitespace-nowrap font-medium">
                             {`${getDateLabel(snapshot.createdAt)}, ${getTime(snapshot.createdAt)}`}
                         </div>
                     </div>

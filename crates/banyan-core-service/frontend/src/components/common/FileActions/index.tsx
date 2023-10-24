@@ -9,12 +9,12 @@ import { BiShareAlt } from 'react-icons/bi';
 
 import { MoveToModal } from '../../common/Modal/MoveToModal';
 import { RenameFileModal } from '../../common/Modal/RenameFileModal';
+import { ShareFileModal } from '../Modal/ShareFileModal';
 import { useTomb } from '@/contexts/tomb';
-import { Bucket, BrowserObject } from '@/lib/interfaces/bucket';
+import { BrowserObject, Bucket } from '@/lib/interfaces/bucket';
 import { useModal } from '@/contexts/modals';
 import { ToastNotifications } from '@/utils/toastNotifications';
 import { DeleteFileModal } from '@/components/common/Modal/DeleteFileModal';
-import { ShareFileModal } from '../Modal/ShareFileModal';
 
 export class Action {
     constructor(
@@ -25,13 +25,13 @@ export class Action {
     ) { }
 }
 
-export const FileActions: React.FC<{ bucket: Bucket; file: BrowserObject, parrentFolder: BrowserObject, path: string[] }> = ({ bucket, file, path, parrentFolder }) => {
+export const FileActions: React.FC<{ bucket: Bucket; file: BrowserObject; parrentFolder: BrowserObject; path: string[] }> = ({ bucket, file, path, parrentFolder }) => {
     const { messages } = useIntl();
     const { download, makeCopy, shareFile } = useTomb();
     const { openModal, closeModal } = useModal();
     const bucketType = `${bucket.bucketType}_${bucket.storageClass}`;
 
-    const downloadFile = async () => {
+    const downloadFile = async() => {
         try {
             await ToastNotifications.promise(`${messages.downloading}...`, `${messages.fileWasDownloaded}`, <MdDone size="20px" />,
                 download(bucket, path, file.name)
@@ -50,14 +50,14 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BrowserObject, parren
         );
     };
 
-    const copy = async () => {
+    const copy = async() => {
         try {
             await makeCopy(bucket, path, file.name);
             ToastNotifications.notify(`${messages.copyOf} ${file.name} ${messages.wasCreated}`, <AiOutlineLink size="20px" />);
         } catch (error: any) { }
     };
 
-    const rename = async () => {
+    const rename = async() => {
         openModal(
             <RenameFileModal
                 bucket={bucket}
@@ -68,7 +68,7 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BrowserObject, parren
         );
     };
 
-    const remove = async () => {
+    const remove = async() => {
         try {
             openModal(
                 <DeleteFileModal
@@ -81,13 +81,13 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BrowserObject, parren
         } catch (error: any) { }
     };
 
-    const viewFileVersions = async () => {
+    const viewFileVersions = async() => {
         try {
 
         } catch (error: any) { }
     };
 
-    const share = async () => {
+    const share = async() => {
         try {
             const link = await shareFile(bucket, file);
             openModal(
@@ -105,22 +105,22 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BrowserObject, parren
     const shareAction = new Action(`${messages.shareFile}`, <BiShareAlt size="18px" />, share);
 
     const hotInrecactiveActions = [
-        downloadAction, moveToAction, makeCopyAction, renameAction, removeAction
+        downloadAction, moveToAction, makeCopyAction, renameAction, removeAction,
     ];
     const warmInrecactiveActions = [
-        downloadAction, moveToAction, makeCopyAction, renameAction, removeAction
+        downloadAction, moveToAction, makeCopyAction, renameAction, removeAction,
     ];
     const coldIntecactiveActions = [
-        downloadAction
+        downloadAction,
     ];
     const hotBackupActions = [
-        downloadAction, makeCopyAction
+        downloadAction, makeCopyAction,
     ];
     const warmBackupActions = [
-        downloadAction
+        downloadAction,
     ];
     const coldBackupActions = [
-        downloadAction
+        downloadAction,
     ];
 
     const actions: Record<string, Action[]> = {
@@ -140,18 +140,18 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BrowserObject, parren
                     className="w-full flex items-center gap-2 py-2 px-3 border-b-1 border-border-regular transition-all hover:bg-hover"
                     onClick={action.value}
                 >
-                    <span className='text-button-primary'>
+                    <span className="text-button-primary">
                         {action.icon}
                     </span>
                     {action.label}
                 </div>
             )
         }
-            <div
-                className="w-full flex justify-between items-center gap-2 py-2 px-3 border-b-1 border-border-regular transition-all hover:bg-hover"
-            >
-                Your file is secure <GoDotFill fill='#2bb65e' />
-            </div>
+        <div
+            className="w-full flex justify-between items-center gap-2 py-2 px-3 border-b-1 border-border-regular transition-all hover:bg-hover"
+        >
+                Your file is secure <GoDotFill fill="#2bb65e" />
+        </div>
         </div>
     );
 };

@@ -41,11 +41,12 @@ export default async(req: NextApiRequest, res: NextApiResponse) => {
         const maybeDeviceApiKey = await DeviceApiKeyFactory.readByFingerprint(
             fingerprint as string
         );
-        
+
         // If it does
         if (maybeDeviceApiKey) {
             // There is a conflict
             res.status(409).send('conflict');
+
             return;
         }
 
@@ -66,12 +67,14 @@ export default async(req: NextApiRequest, res: NextApiResponse) => {
             if (e.name === errors.BadModelFormat.name) {
                 // Bad Request
                 res.status(400).send('bad request -- bad format');
+
                 return;
             }
             // Otherwise, misc error
             console.log('Error creating device api key: ', e);
             // Bad Request
             res.status(500).send('internal server error');
+
             return;
         }
 

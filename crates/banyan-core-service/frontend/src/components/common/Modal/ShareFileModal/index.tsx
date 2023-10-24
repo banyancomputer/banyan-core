@@ -1,4 +1,4 @@
-import React from 'react'
+import React from 'react';
 import { useIntl } from 'react-intl';
 
 import { useModal } from '@/contexts/modals';
@@ -19,8 +19,8 @@ export const ShareFileModal: React.FC<{ link: string }> = ({ link }) => {
             <div>
                 <h4 className="text-m font-semibold ">{`${messages.share}`}</h4>
             </div>
-            <div className='flex flex-col items-start gap-3'>
-                <span className='text-xs'>{link}</span>
+            <div className="flex flex-col items-start gap-3">
+                <span className="text-xs">{link}</span>
             </div>
             <div className="mt-3 flex items-center gap-3 text-xs" >
                 <button
@@ -35,5 +35,5 @@ export const ShareFileModal: React.FC<{ link: string }> = ({ link }) => {
                 >{`${messages.copyLink}`}</button>
             </div>
         </div >
-    )
+    );
 };

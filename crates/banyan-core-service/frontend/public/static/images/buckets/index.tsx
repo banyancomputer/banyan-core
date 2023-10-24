@@ -1,4 +1,4 @@
-import { SVGProps } from "react";
+import { SVGProps } from 'react';
 
 export const Upload = () => <svg width="47" height="46" viewBox="0 0 47 46" fill="none" xmlns="http://www.w3.org/2000/svg">
     <rect x="3.5" y="3" width="40" height="40" rx="20" fill="#EFF1F5" />

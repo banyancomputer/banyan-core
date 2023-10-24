@@ -5,8 +5,8 @@ import { Bucket } from './Bucket';
 import { DatePicker } from '@/components/common/DatePicker';
 
 export interface BucketBillingInfo {
-    name: string,
-    data: { memoryAmount: number, serviceName: string, billiedAt: string, cost: string }[]
+    name: string;
+    data: Array<{ memoryAmount: number; serviceName: string; billiedAt: string; cost: string }>;
 }
 
 export const BillingHistory = () => {
@@ -16,7 +16,7 @@ export const BillingHistory = () => {
 
     const changeDateRange = (startDate: Date, endDate: Date) => {
         setDateRange({ from: startDate, to: endDate });
-    }
+    };
 
     const MOCK_DATA: BucketBillingInfo[] = [
         {
@@ -26,27 +26,27 @@ export const BillingHistory = () => {
                     memoryAmount: 6000000000000,
                     serviceName: 'Migration Fees',
                     billiedAt: 'waived (>50 TB)',
-                    cost: '0'
+                    cost: '0',
                 },
                 {
                     memoryAmount: 7000000000000,
                     serviceName: 'Egress Fees',
                     billiedAt: '$10/TB/mo',
-                    cost: '650'
+                    cost: '650',
                 },
                 {
                     memoryAmount: 6000000000000,
                     serviceName: 'Migration Fees',
                     billiedAt: 'waived (>50 TB)',
-                    cost: '0'
+                    cost: '0',
                 },
                 {
                     memoryAmount: 7000000000000,
                     serviceName: 'Egress Fees',
                     billiedAt: '$10/TB/mo',
-                    cost: '650'
+                    cost: '650',
                 },
-            ]
+            ],
         },
         {
             name: 'Bucket test2',
@@ -55,22 +55,22 @@ export const BillingHistory = () => {
                     memoryAmount: 6000000000000,
                     serviceName: 'Migration Fees',
                     billiedAt: 'waived (>50 TB)',
-                    cost: '0'
+                    cost: '0',
                 },
                 {
                     memoryAmount: 7000000000000,
                     serviceName: 'Egress Fees',
                     billiedAt: '$10/TB/mo',
-                    cost: '650'
-                }
-            ]
-        }
+                    cost: '650',
+                },
+            ],
+        },
     ];
 
     return (
         <div className="py-5 px-4 border-1 flex flex-col gap-4 rounded-lg text-text-800 border-border-regular bg-secondaryBackground">
-            <div className='flex items-center justify-between '>
-                <h3 className='font-semibold mb-1.5'>{`${messages.billingHistory}`}</h3>
+            <div className="flex items-center justify-between ">
+                <h3 className="font-semibold mb-1.5">{`${messages.billingHistory}`}</h3>
                 <button
                     className={`text-text-600 ${isVisible && 'rotate-90'}`}
                     onClick={() => setIsVisible(prev => !prev)}
@@ -80,7 +80,7 @@ export const BillingHistory = () => {
             </div>
             {isVisible &&
                 <>
-                    <div className='flex items-center justify-between'>
+                    <div className="flex items-center justify-between">
                         <p>Metered</p>
                         <DatePicker
                             from={dateRange.from}
