@@ -55,17 +55,24 @@ pub async fn handler(
     for auth_details in authorized_amounts.into_iter() {
         let mut host_caps = serde_json::Map::new();
 
-        host_caps.insert("available_storage".to_string(), auth_details.authorized_amount.into());
+        host_caps.insert(
+            "available_storage".to_string(),
+            auth_details.authorized_amount.into(),
+        );
         host_caps.insert("grant_id".to_string(), auth_details.storage_grant_id.into());
         audiences.insert(auth_details.storage_host_name);
 
         all_auths.insert(auth_details.storage_host_url, host_caps.into());
     }
 
-    let mut claims = Claims::with_custom_claims(all_auths, Duration::from_secs(STORAGE_TICKET_DURATION))
+    let mut claims =
+        Claims::with_custom_claims(all_auths, Duration::from_secs(STORAGE_TICKET_DURATION))
             .with_audiences(audiences)
             .with_issuer("banyan-platform")
-            .with_subject(format!("{}@{}", api_id.user_id, api_id.device_api_key_fingerprint))
+            .with_subject(format!(
+                "{}@{}",
+                api_id.user_id, api_id.device_api_key_fingerprint
+            ))
             .invalid_before(Clock::now_since_epoch() - Duration::from_secs(30));
 
     claims.create_nonce();
