@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE metadata\n                       SET state = 'current',\n                           updated_at = CURRENT_TIMESTAMP\n                       WHERE id = $1;",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "fecda10da12260e4c1bcbf02a1f67d7bf9cad08c1da23d422053afb6ae2d2252"
+}

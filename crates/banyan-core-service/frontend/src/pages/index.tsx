@@ -24,7 +24,7 @@ const Buckets: NextPageWithLayout = () => {
     const { messages } = useIntl();
 
     const uploadFile = () => {
-        openModal(<UploadFileModal />);
+        openModal(<UploadFileModal  path={[]}/>);
     };
 
     useEffect(() => {

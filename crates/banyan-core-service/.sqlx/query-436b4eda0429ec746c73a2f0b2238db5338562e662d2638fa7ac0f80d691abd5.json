@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO buckets (account_id, name, type, storage_class)\n               VALUES ($1, $2, $3, $4)\n               RETURNING id;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "436b4eda0429ec746c73a2f0b2238db5338562e662d2638fa7ac0f80d691abd5"
+}

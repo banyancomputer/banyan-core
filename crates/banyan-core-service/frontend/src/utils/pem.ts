@@ -32,13 +32,15 @@ export const privatePemWrap = (pkcs8: string) => {
         throw new Error('Could not chunk pkcs8');
     }
     const pem = pemHeader + chunkedPkcs8.join('\n') + pemFooter;
+
     return pem;
-}
+};
 
 export const privatePemUnwrap = (pem: string) => {
     const pemHeader = /-----BEGIN PRIVATE KEY-----\n/;
     const pemFooter = /\n-----END PRIVATE KEY-----/;
     const chunkedPkcs8 = pem.replace(pemHeader, '').replace(pemFooter, '');
     const pkcs8 = chunkedPkcs8.replace(/\n/g, '');
+
     return pkcs8;
-}
+};

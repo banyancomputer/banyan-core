@@ -15,7 +15,7 @@ export const KeyActions: React.FC<{ bucket: Bucket; bucketKey: BucketKey }> = ({
         openModal(<ApproveBucketAccessModal bucket={bucket} bucketKey={bucketKey} />);
     };
 
-    const removeAccess = async () => {
+    const removeAccess = async() => {
         try {
             openModal(<RemoveBucketAccessModal bucketKey={bucketKey} />);
         } catch (error: any) { }

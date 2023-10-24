@@ -46,15 +46,16 @@ export const SearchInput = React.memo(() => {
             setSearchList(
                 selectedBucket ? [
                     ...selectedBucket.files?.map(file => ({ bucket: selectedBucket, label: file.name, path: file.type === 'dir' ? `/bucket/${selectedBucket?.id}?${folderLocation.join('/')}${folderLocation.length ? `/${file.name}` : file.name}` : '' })),
-                    { bucket: selectedBucket, label: selectedBucket?.name, path: `/bucket/${selectedBucket?.id}` }
+                    { bucket: selectedBucket, label: selectedBucket?.name, path: `/bucket/${selectedBucket?.id}` },
                 ] : []
-            )
+            );
+
             return;
         };
 
         setSearchList(buckets.map(bucket =>
             [...bucket?.files?.map(file => ({ bucket, label: file.name, path: file.type === 'dir' ? `/bucket/${bucket?.id}?${folderLocation.join('/')}${folderLocation.length ? `/${file.name}` : file.name}` : '' })),
-            { bucket, label: bucket.name, path: `/bucket/${bucket.id}` }]
+                { bucket, label: bucket.name, path: `/bucket/${bucket.id}` }]
         ).flat()
         );
     }, [buckets, selectedBucket, pathname]);
@@ -65,7 +66,7 @@ export const SearchInput = React.memo(() => {
                 <FiSearch size="20px" stroke="#667085" />
             </span>
             <input
-                className={`input w-full h-10 py-3 px-4 rounded-xl bg-secondaryBackground border-border-darken  pl-12 focus:outline-none`}
+                className={'input w-full h-10 py-3 px-4 rounded-xl bg-secondaryBackground border-border-darken  pl-12 focus:outline-none'}
                 value={search}
                 onChange={event => setSearch(event.target.value)}
                 placeholder={`${messages.search}`}

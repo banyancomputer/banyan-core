@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO oauth_state (provider, csrf_secret, pkce_verifier_secret, next_url)\n                   VALUES ($1, $2, $3, $4);",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "8abdf55cf6beda16ce7ee8747c5065111448cf8ac7e263949f4b9a8364fb43d0"
+}

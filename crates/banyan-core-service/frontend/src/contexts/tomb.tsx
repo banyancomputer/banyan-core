@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 
 import { useKeystore } from './keystore';
 import {
-    Bucket, BucketFile, BucketKey,
+    Bucket, BrowserObject, BucketKey,
     BucketSnapshot, MockBucket,
 } from '@/lib/interfaces/bucket';
 import { useFolderLocation } from '@/hooks/useFolderLocation';
@@ -24,6 +24,7 @@ interface TombInterface {
     getBucketsKeys: () => Promise<void>;
     selectBucket: (bucket: Bucket | null) => void;
     getSelectedBucketFiles: (path: string[]) => void;
+    getExpandedFolderFiles: (path: string[], folder: BrowserObject, bucket: Bucket) => Promise<void>;
     takeColdSnapshot: (bucket: Bucket) => Promise<void>;
     getBucketShapshots: (id: string) => Promise<BucketSnapshot[]>;
     createBucket: (name: string, storageClass: string, bucketType: string) => Promise<void>;
@@ -32,10 +33,10 @@ interface TombInterface {
     createDirectory: (bucket: Bucket, path: string[], name: string) => Promise<void>;
     download: (bucket: Bucket, path: string[], name: string) => Promise<void>;
     getFile: (bucket: Bucket, path: string[], name: string) => Promise<ArrayBuffer>;
-    shareFile: (bucket: Bucket, file: BucketFile) => Promise<string>;
+    shareFile: (bucket: Bucket, file: BrowserObject) => Promise<string>;
     makeCopy: (bucket: Bucket, path: string[], name: string) => void;
     moveTo: (bucket: Bucket, from: string[], to: string[]) => Promise<void>;
-    uploadFile: (nucket: Bucket, path: string[], name: string, file: any) => Promise<void>;
+    uploadFile: (nucket: Bucket, path: string[], name: string, file: any, folder?: BrowserObject) => Promise<void>;
     getBucketKeys: (id: string) => Promise<BucketKey[]>;
     purgeSnapshot: (id: string) => void;
     deleteFile: (bucket: Bucket, path: string[], name: string) => void;
@@ -99,13 +100,13 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
             let wasm_bukets: Bucket[] = [];
             for (let bucket of buckets) {
                 const mount = await tomb!.mount(bucket.id, key);
-                const files = await mount.ls([]);
+                const files: BrowserObject[] = await mount.ls([]) || [];
                 const snapshots = await tomb!.listBucketSnapshots(bucket.id);
                 wasm_bukets.push({
                     ...bucket,
                     mount,
                     snapshots,
-                    files: files || [],
+                    files,
                 });
             };
             setBuckets(wasm_bukets);
@@ -139,6 +140,14 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
             const files = await mount.ls(path);
             await setSelectedBucket(bucket => bucket ? ({ ...bucket, files }) : bucket);
             setAreBucketsLoading(false);
+        });
+    };
+    /** Returns selected folder files. */
+    const getExpandedFolderFiles = async (path: string[], folder: BrowserObject, bucket: Bucket) => {
+        await tombMutex(selectedBucket!.mount, async mount => {
+            const files = await mount.ls(path);
+            folder.files = files;
+            selectBucket({ ...bucket });
         });
     };
 
@@ -207,7 +216,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     const restore = async (bucket: Bucket, snapshot: WasmSnapshot) => await tombMutex(bucket.mount, async mount => await mount.restore(snapshot));
 
     /** Generates public link to share file. */
-    const shareFile = async (bucket: Bucket, file: BucketFile) => {
+    const shareFile = async (bucket: Bucket, file: BrowserObject) => {
         /** TODO: implement sharing logic when it will be added to tomb. */
         return '';
     };
@@ -248,7 +257,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     };
 
     /** Internal function which looking for selected bucket and updates it, or bucket in buckets list if no bucket selected. */
-    const updateBucketsState = (key: 'keys' | 'files' | 'snapshots', elements: BucketFile[] | BucketSnapshot[], id: string,) => {
+    const updateBucketsState = (key: 'keys' | 'files' | 'snapshots', elements: BrowserObject[] | BucketSnapshot[], id: string,) => {
         /** If we are on buckets list screen there is no selected bucket in state. */
         if (selectedBucket?.id === id) {
             setSelectedBucket(bucket => bucket ? ({ ...bucket, [key]: elements }) : bucket);
@@ -284,10 +293,16 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     };
 
     /** Uploads file to selected bucket/directory, updates buckets state */
-    const uploadFile = async (bucket: Bucket, uploadPath: string[], name: string, file: ArrayBuffer) => {
+    const uploadFile = async (bucket: Bucket, uploadPath: string[], name: string, file: ArrayBuffer, folder?: BrowserObject) => {
         try {
             tombMutex(bucket.mount, async mount => {
                 await mount.write([...uploadPath, name], file);
+                if (folder) {
+                    const files = await mount.ls(uploadPath);
+                    folder.files = files;
+                    selectBucket({ ...bucket });
+                    return;
+                }
                 if (uploadPath.join('') !== folderLocation.join('')) return;
                 const files = await mount.ls(uploadPath) || [];
                 await updateBucketsState('files', files, bucket.id);
@@ -328,8 +343,6 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     const deleteFile = async (bucket: Bucket, path: string[], name: string) => {
         await tombMutex(bucket.mount, async mount => {
             await mount.rm([...path, name]);
-            const files = await mount.ls(path) || [];
-            await updateBucketsState('files', files, bucket.id);
         });
     };
 
@@ -372,7 +385,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
                 takeColdSnapshot, getBucketShapshots, createBucket, deleteBucket, getTrashBucket,
                 getFile, createDirectory, uploadFile, getBucketKeys, purgeSnapshot,
                 removeBucketAccess, approveBucketAccess, completeDeviceKeyRegistration, shareFile, download, moveTo,
-                restore, deleteFile, makeCopy
+                restore, deleteFile, makeCopy, getExpandedFolderFiles
             }}
         >
             {children}

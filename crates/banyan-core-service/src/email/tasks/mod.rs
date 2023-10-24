@@ -1,0 +1,457 @@
+mod ga_release;
+mod payment_failed;
+mod product_invoice;
+mod reaching_storage_limit;
+mod scheduled_maintenance;
+
+pub use ga_release::GaReleaseEmailTask;
+pub use payment_failed::PaymentFailedEmailTask;
+pub use product_invoice::ProductInvoiceEmailTask;
+pub use reaching_storage_limit::ReachingStorageLimitEmailTask;
+pub use scheduled_maintenance::ScheduledMaintenanceEmailTask;
+
+use sqlx::SqlitePool;
+use tracing;
+use uuid::Uuid;
+
+use crate::email::config::EmailConfig;
+use crate::email::error::EmailError;
+use crate::email::message::EmailMessage;
+
+#[derive(Clone)]
+pub struct EmailTaskContext {
+    db_pool: SqlitePool,
+    email_config: EmailConfig,
+}
+
+#[non_exhaustive]
+#[derive(Debug, thiserror::Error)]
+pub enum EmailTaskError {
+    #[error("the task encountered an email error: {0}")]
+    EmailError(#[from] EmailError),
+
+    #[error("the task encountered a sql error: {0}")]
+    SqlxError(#[from] sqlx::Error),
+}
+
+#[allow(dead_code)]
+impl EmailTaskContext {
+    pub fn db_pool(&self) -> &SqlitePool {
+        &self.db_pool
+    }
+
+    pub fn email_config(&self) -> &EmailConfig {
+        &self.email_config
+    }
+
+    pub fn new(db_pool: SqlitePool, email_config: EmailConfig) -> Self {
+        Self {
+            db_pool,
+            email_config,
+        }
+    }
+}
+
+/// Tests recipient for filtering conditions against the provided context
+/// # Arguments
+/// * `account_id` - The account id of the user to get the email address for
+/// * `ctx` - The context to use for the task
+/// # Returns
+/// * `Result<bool, EmailTaskError>` - Whether or not the user should be sent an email
+pub async fn should_send_email_message(
+    account_id: Uuid,
+    ctx: &EmailTaskContext,
+) -> Result<bool, EmailTaskError> {
+    let mut db_conn = ctx.db_pool.acquire().await?;
+    let account_id_string = account_id.to_string();
+
+    // If our last email we sent to the user resulting in a status of unsubscribe we should not send the message
+    let unsubscribed = sqlx::query_scalar!(
+        r#"SELECT
+                CASE
+                    WHEN last_email.state = 'unsubscribed' THEN 1
+                    ELSE 0
+                END
+            FROM (
+                SELECT state
+                FROM emails e
+                WHERE e.account_id = $1
+                ORDER BY e.sent_at DESC
+                LIMIT 1
+            ) AS last_email;"#,
+        account_id_string
+    )
+    .fetch_optional(&mut *db_conn)
+    .await?;
+    if unsubscribed == Some(1) {
+        tracing::info!("user {account_id_string} has unsubscribed");
+        return Ok(false);
+    }
+
+    // If the last three emails we sent to a user resulted in a delivery failure we should not send the message
+    let failures = sqlx::query_scalar!(
+        r#"SELECT
+                SUM(CASE WHEN state = 'failed' THEN 1 ELSE 0 END) AS failures
+            FROM (
+                SELECT state
+                FROM emails e
+                WHERE e.account_id = $1
+                ORDER BY e.sent_at DESC
+                LIMIT 3 
+            ) AS last_three_emails;"#,
+        account_id_string
+    )
+    .fetch_one(&mut *db_conn)
+    .await?;
+    if failures >= Some(3) {
+        tracing::info!("user {account_id_string} has had 3 or more consecutive failed emails");
+        return Ok(false);
+    }
+
+    // If we have sent 3 or more email to the user which have been marked as spam we should not send the message
+    sqlx::query!(
+        r#"INSERT OR IGNORE INTO email_stats (account_id) VALUES ($1);"#,
+        account_id_string
+    )
+    .execute(&mut *db_conn)
+    .await?;
+    let complaints = sqlx::query_scalar!(
+        r#"SELECT
+                complained
+            FROM email_stats e
+            WHERE e.account_id = $1
+            LIMIT 1"#,
+        account_id_string
+    )
+    .fetch_one(&mut *db_conn)
+    .await?;
+    if complaints >= 3 {
+        tracing::info!("user {account_id_string} has had 3 or more spam complaints");
+        return Ok(false);
+    }
+    Ok(true)
+}
+
+/// Goes through the process of sending an email message to a user. It
+/// - Determines the recipient address
+/// - Records the outgoing message in the context and asigns it a message id
+/// - Sends the message -- Note, if this fails the message will not be retried!
+/// # Arguments
+/// * `account_id` - The account id of the user to get the email address for
+/// * `message` - The message to send
+/// * `ctx` - The context to use for the task
+/// # Returns
+/// * `Result<(), EmailTaskError>` - The message id of the recorded message
+pub async fn send_email_message(
+    account_id: Uuid,
+    message: &impl EmailMessage,
+    ctx: &EmailTaskContext,
+) -> Result<(), EmailTaskError> {
+    let mut db_conn = ctx.db_pool.acquire().await?;
+    let transport = ctx.email_config.transport()?;
+    let from_address = ctx.email_config.from();
+    let mailgun_test_mode = ctx.email_config.test_mode();
+    let account_id_string = account_id.to_string();
+    let message_type_name = message.type_name();
+
+    // Get the recipient address -- do this first to prevent side effects from this failing
+    let recipient_address = sqlx::query_scalar!(
+        r#"SELECT u.email as "email!"
+        FROM users u
+        JOIN accounts a ON u.id = a.userId
+        WHERE a.id = $1;"#,
+        account_id_string
+    )
+    .fetch_one(&mut *db_conn)
+    .await?;
+
+    // Record the outgoing message
+    let new_email_id = sqlx::query_scalar!(
+        r#"INSERT INTO emails (account_id, type)
+         VALUES ($1, $2)
+         RETURNING id"#,
+        account_id_string,
+        message_type_name
+    )
+    .fetch_one(&mut *db_conn)
+    .await?;
+    let message_id = new_email_id.parse::<Uuid>().expect("invalid uuid");
+
+    // Send the email -- capture errors to prevent the task from being retried
+    let send_result = message.send(
+        &transport,
+        from_address,
+        &recipient_address,
+        message_id,
+        mailgun_test_mode,
+    );
+    match send_result {
+        Ok(_) => {}
+        Err(error) => {
+            tracing::error!("email failed to send: {}", error);
+        }
+    }
+
+    Ok(())
+}
+
+#[cfg(test)]
+pub mod tests {
+    use super::*;
+
+    use time::OffsetDateTime;
+
+    use banyan_task::tests::default_current_task;
+    use banyan_task::{CurrentTask, TaskLike};
+
+    const ACCOUNT_ID: &str = "00000000-0000-0000-0000-000000000000";
+    const USER_EMAIL: &str = "user@user.email";
+
+    /// Return a base context and a test account id
+    pub async fn test_setup() -> (EmailTaskContext, Uuid, CurrentTask) {
+        (
+            email_task_context().await,
+            Uuid::parse_str(ACCOUNT_ID).expect("account id parse"),
+            default_current_task(),
+        )
+    }
+
+    pub async fn count_sent_emails(ctx: &EmailTaskContext) -> i32 {
+        let mut db_conn = ctx.db_pool().acquire().await.unwrap();
+        sqlx::query_scalar!(
+            r#"SELECT
+                COUNT(*) AS sent
+            FROM emails e
+            WHERE e.account_id = $1
+                AND e.state = 'sent'"#,
+            ACCOUNT_ID
+        )
+        .fetch_one(&mut *db_conn)
+        .await
+        .expect("db setup")
+    }
+
+    #[tokio::test]
+    async fn success() -> Result<(), EmailTaskError> {
+        let ctx = email_task_context().await;
+        example_email_task(ctx.clone()).await?;
+        let email_count = count_sent_emails(&ctx).await;
+        assert_eq!(email_count, 1);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn unsubscribed() -> Result<(), EmailTaskError> {
+        let ctx = email_task_context().await;
+        // Create one unsubscribed email as the last email sent
+        let now = OffsetDateTime::now_utc();
+        let _later = unsubscribed_email(&ctx, now).await;
+        example_email_task(ctx.clone()).await?;
+        let email_count = count_sent_emails(&ctx).await;
+        assert_eq!(email_count, 0);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn unsubscribed_then_sent() -> Result<(), EmailTaskError> {
+        let ctx = email_task_context().await;
+        // One unsubscribed email then one delivered email as the last email sent
+        let now = OffsetDateTime::now_utc();
+        let later = unsubscribed_email(&ctx, now).await;
+        let _later = delivered_email(&ctx, later).await;
+        example_email_task(ctx.clone()).await?;
+        let email_count = count_sent_emails(&ctx).await;
+        assert_eq!(email_count, 1);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn failure() -> Result<(), EmailTaskError> {
+        let ctx = email_task_context().await;
+        // Threee failed emails in a row as the last three emails sent
+        let now = OffsetDateTime::now_utc();
+        let later = failed_email(&ctx, now).await;
+        let later = failed_email(&ctx, later).await;
+        let _later = failed_email(&ctx, later).await;
+        example_email_task(ctx.clone()).await?;
+        let email_count = count_sent_emails(&ctx).await;
+        assert_eq!(email_count, 0);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn failure_then_sent() -> Result<(), EmailTaskError> {
+        let ctx = email_task_context().await;
+        // Threee failed emails in a row and then one delivered email
+        let now = OffsetDateTime::now_utc();
+        let later = failed_email(&ctx, now).await;
+        let later = failed_email(&ctx, later).await;
+        let later = failed_email(&ctx, later).await;
+        let _later = delivered_email(&ctx, later).await;
+        example_email_task(ctx.clone()).await?;
+        let email_count = count_sent_emails(&ctx).await;
+        assert_eq!(email_count, 1);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn complaint() -> Result<(), EmailTaskError> {
+        let ctx = email_task_context().await;
+        let now = OffsetDateTime::now_utc();
+        // Three complaints interspersed with delivered emails
+        let later = complained_email(&ctx, now).await;
+        let later = delivered_email(&ctx, later).await;
+        let later = complained_email(&ctx, later).await;
+        let later = delivered_email(&ctx, later).await;
+        let _later = complained_email(&ctx, later).await;
+        let email_count = count_sent_emails(&ctx).await;
+        assert_eq!(email_count, 0);
+        Ok(())
+    }
+
+    async fn example_email_task(ctx: EmailTaskContext) -> Result<(), EmailTaskError> {
+        // Use GaReleaseEmailTask as a stand in for any email task here
+        let task = GaReleaseEmailTask::new(Uuid::parse_str(ACCOUNT_ID).unwrap());
+        task.run(default_current_task(), ctx).await?;
+        Ok(())
+    }
+
+    async fn delivered_email(ctx: &EmailTaskContext, when: OffsetDateTime) -> OffsetDateTime {
+        let mut db_conn = ctx.db_pool().acquire().await.unwrap();
+        sqlx::query!(
+            r#"INSERT INTO emails (sent_at, account_id, state, type)
+            VALUES ($1, $2, 'delivered', 'na')"#,
+            when,
+            ACCOUNT_ID
+        )
+        .execute(&mut *db_conn)
+        .await
+        .expect("db setup");
+        sqlx::query!(
+            r#"UPDATE email_stats
+            SET delivered = delivered + 1
+            WHERE account_id = $1"#,
+            ACCOUNT_ID
+        )
+        .execute(&mut *db_conn)
+        .await
+        .expect("db setup");
+
+        when + std::time::Duration::from_secs(1)
+    }
+
+    async fn failed_email(ctx: &EmailTaskContext, when: OffsetDateTime) -> OffsetDateTime {
+        let mut db_conn = ctx.db_pool().acquire().await.unwrap();
+        sqlx::query!(
+            r#"INSERT INTO emails (sent_at, account_id, state, type)
+            VALUES ($1, $2, 'failed', 'na')"#,
+            when,
+            ACCOUNT_ID
+        )
+        .execute(&mut *db_conn)
+        .await
+        .expect("db setup");
+        sqlx::query!(
+            r#"UPDATE email_stats
+            SET failed = failed + 1
+            WHERE account_id = $1"#,
+            ACCOUNT_ID
+        )
+        .execute(&mut *db_conn)
+        .await
+        .expect("db setup");
+
+        when + std::time::Duration::from_secs(1)
+    }
+
+    async fn complained_email(ctx: &EmailTaskContext, when: OffsetDateTime) -> OffsetDateTime {
+        let mut db_conn = ctx.db_pool().acquire().await.unwrap();
+        sqlx::query!(
+            r#"INSERT INTO emails (sent_at, account_id, state, type)
+            VALUES ($1, $2, 'complained', 'na')"#,
+            when,
+            ACCOUNT_ID
+        )
+        .execute(&mut *db_conn)
+        .await
+        .expect("db setup");
+        sqlx::query!(
+            r#"UPDATE email_stats
+            SET complained = complained + 1
+            WHERE account_id = $1"#,
+            ACCOUNT_ID
+        )
+        .execute(&mut *db_conn)
+        .await
+        .expect("db setup");
+
+        when + std::time::Duration::from_secs(1)
+    }
+
+    async fn unsubscribed_email(ctx: &EmailTaskContext, when: OffsetDateTime) -> OffsetDateTime {
+        let mut db_conn = ctx.db_pool().acquire().await.unwrap();
+        sqlx::query!(
+            r#"INSERT INTO emails (sent_at, account_id, state, type)
+            VALUES ($1, $2, 'unsubscribed', 'na')"#,
+            when,
+            ACCOUNT_ID
+        )
+        .execute(&mut *db_conn)
+        .await
+        .expect("db setup");
+        sqlx::query!(
+            r#"UPDATE email_stats
+            SET unsubscribed = unsubscribed + 1
+            WHERE account_id = $1"#,
+            ACCOUNT_ID
+        )
+        .execute(&mut *db_conn)
+        .await
+        .expect("db setup");
+
+        when + std::time::Duration::from_secs(1)
+    }
+
+    async fn email_task_context() -> EmailTaskContext {
+        let db_conn = SqlitePool::connect("sqlite::memory:")
+            .await
+            .expect("db setup");
+        sqlx::migrate!("./migrations")
+            .run(&db_conn)
+            .await
+            .expect("db setup");
+        sqlx::query!(
+            r#"INSERT INTO users (id, email)
+            VALUES ($1, $2)"#,
+            ACCOUNT_ID,
+            USER_EMAIL
+        )
+        .execute(&db_conn)
+        .await
+        .expect("db setup");
+
+        sqlx::query!(
+            r#"INSERT INTO accounts (id, userId, type, provider, providerAccountId)
+            VALUES ($1, $1, 'email', 'email', $2)"#,
+            ACCOUNT_ID,
+            USER_EMAIL
+        )
+        .execute(&db_conn)
+        .await
+        .expect("db setup");
+
+        sqlx::query!(
+            r#"INSERT INTO email_stats (account_id)
+            VALUES ($1)"#,
+            ACCOUNT_ID
+        )
+        .execute(&db_conn)
+        .await
+        .expect("db setup");
+
+        EmailTaskContext::new(
+            db_conn,
+            EmailConfig::new(None, "test@test.email", false).unwrap(),
+        )
+    }
+}

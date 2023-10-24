@@ -1,9 +1,9 @@
 import { webcrypto } from 'one-webcrypto';
-import { HashAlg, SymmKey, SymmKeyOpts, ExportKeyFormat } from '../types';
+import { ExportKeyFormat, HashAlg, SymmKey, SymmKeyOpts } from '../types';
 import {
-  DEFAULT_HASH_ALG,
-  DEFAULT_SYMM_ALG,
-  DEFAULT_SYMM_KEY_LENGTH,
+    DEFAULT_HASH_ALG,
+    DEFAULT_SYMM_ALG,
+    DEFAULT_SYMM_KEY_LENGTH,
 } from '../constants';
 
 /**
@@ -17,37 +17,38 @@ import {
  */
 
 export async function deriveKey(
-  ikm: string,
-  salt: ArrayBuffer,
-  hashAlg: HashAlg = DEFAULT_HASH_ALG,
-  uses: KeyUsage[] = ['encrypt', 'decrypt'],
-  opts?: Partial<SymmKeyOpts>
+    ikm: string,
+    salt: ArrayBuffer,
+    hashAlg: HashAlg = DEFAULT_HASH_ALG,
+    uses: KeyUsage[] = ['encrypt', 'decrypt'],
+    opts?: Partial<SymmKeyOpts>
 ): Promise<SymmKey> {
-  const enc = new TextEncoder();
-  return await webcrypto.subtle
-    .importKey(ExportKeyFormat.RAW, enc.encode(ikm), 'PBKDF2', false, [
-      'deriveBits',
-      'deriveKey',
-    ])
-    .then((baseKey) =>
-      webcrypto.subtle.deriveKey(
-        {
-          name: 'PBKDF2',
-          salt: salt,
-          iterations: 100000,
-          hash: hashAlg,
-        },
-        baseKey,
-        {
-          name: opts?.alg || DEFAULT_SYMM_ALG,
-          length: opts?.length || DEFAULT_SYMM_KEY_LENGTH,
-        },
-        false,
-        uses
-      )
-    );
+    const enc = new TextEncoder();
+
+    return await webcrypto.subtle
+        .importKey(ExportKeyFormat.RAW, enc.encode(ikm), 'PBKDF2', false, [
+            'deriveBits',
+            'deriveKey',
+        ])
+        .then((baseKey) =>
+            webcrypto.subtle.deriveKey(
+                {
+                    name: 'PBKDF2',
+                    salt: salt,
+                    iterations: 100000,
+                    hash: hashAlg,
+                },
+                baseKey,
+                {
+                    name: opts?.alg || DEFAULT_SYMM_ALG,
+                    length: opts?.length || DEFAULT_SYMM_KEY_LENGTH,
+                },
+                false,
+                uses
+            )
+        );
 }
 
 export default {
-  deriveKey,
+    deriveKey,
 };

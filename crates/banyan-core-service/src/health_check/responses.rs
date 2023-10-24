@@ -1,7 +1,6 @@
-use axum::Json;
-
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
+use axum::Json;
 use serde::Serialize;
 
 use crate::health_check::HealthCheckError;
@@ -40,18 +39,5 @@ impl IntoResponse for Response {
         };
 
         (status_code, Json(self)).into_response()
-    }
-}
-
-#[derive(Serialize)]
-pub struct VersionResponse<'a> {
-    pub build_profile: &'a str,
-    pub features: Vec<&'a str>,
-    pub version: &'a str,
-}
-
-impl<'a> IntoResponse for VersionResponse<'a> {
-    fn into_response(self) -> axum::response::Response {
-        (StatusCode::OK, Json(self)).into_response()
     }
 }

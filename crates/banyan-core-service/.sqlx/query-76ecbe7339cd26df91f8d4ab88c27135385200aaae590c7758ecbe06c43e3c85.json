@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT m.state as 'state: MetadataState' FROM metadata AS m\n               JOIN buckets AS b ON m.bucket_id = b.id\n               WHERE b.account_id = $1 AND b.id = $2 AND m.id = $3;",
+  "describe": {
+    "columns": [
+      {
+        "name": "state: MetadataState",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "76ecbe7339cd26df91f8d4ab88c27135385200aaae590c7758ecbe06c43e3c85"
+}

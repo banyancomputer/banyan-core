@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useIntl } from 'react-intl';
 
-import { Bucket, BucketFile } from '@/lib/interfaces/bucket';
+import { Bucket, BrowserObject } from '@/lib/interfaces/bucket';
 import { getDateLabel } from '@/utils/date';
 import { convertFileSize } from '@/utils/storage';
 
@@ -13,12 +13,12 @@ import { SortCell } from '@/components/common/SortCell';
 export const TrashTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const tableRef = useRef<HTMLDivElement | null>(null);
     const { messages } = useIntl();
-    const [selectedFiles, setSelectedFiles] = useState<BucketFile[]>([]);
+    const [selectedFiles, setSelectedFiles] = useState<BrowserObject[]>([]);
     /** Created to prevent sotring logic affect initial buckets array */
     const [bucketCopy, setBucketCopy] = useState(bucket);
     const [tableScroll, setTableScroll] = useState(0);
 
-    const selectFile = (selectedFile: BucketFile) => {
+    const selectFile = (selectedFile: BrowserObject) => {
         if (selectedFiles.includes(selectedFile)) {
             setSelectedFiles(files => files.filter(file => file !== selectedFile));
         } else {

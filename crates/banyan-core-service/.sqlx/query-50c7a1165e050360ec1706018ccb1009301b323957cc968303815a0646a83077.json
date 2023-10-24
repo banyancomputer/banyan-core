@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO device_api_keys (account_id, fingerprint, pem) VALUES ($1, $2, $3);",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "50c7a1165e050360ec1706018ccb1009301b323957cc968303815a0646a83077"
+}

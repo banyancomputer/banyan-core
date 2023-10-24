@@ -6,17 +6,17 @@ import { PiArrowsLeftRight } from 'react-icons/pi';
 import { MoveToModal } from '../../common/Modal/MoveToModal';
 import { Action } from '../../common/FileActions';
 import { useTomb } from '@/contexts/tomb';
-import { Bucket, BucketFile } from '@/lib/interfaces/bucket';
+import { BrowserObject, Bucket } from '@/lib/interfaces/bucket';
 import { useModal } from '@/contexts/modals';
 
 
-export const TrashActions: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bucket, file }) => {
+export const TrashActions: React.FC<{ bucket: Bucket; file: BrowserObject }> = ({ bucket, file }) => {
     const { messages } = useIntl();
     const { } = useTomb();
     const { openModal } = useModal();
 
     const moveTo = () => {
-        openModal(<MoveToModal bucket={bucket} file={file} />);
+        openModal(<MoveToModal bucket={bucket} file={file} parrentFolder={file} path={[]} />);
     };
     const makeCopy = async () => {
         try {
