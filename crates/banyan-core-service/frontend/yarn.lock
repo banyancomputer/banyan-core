@@ -12,10 +12,10 @@
   resolved "https://registry.yarnpkg.com/@alloc/quick-lru/-/quick-lru-5.2.0.tgz#7bf68b20c0a350f936915fcae06f58e32007ce30"
   integrity sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==
 
-"@auth/core@0.17.0":
-  version "0.17.0"
-  resolved "https://registry.yarnpkg.com/@auth/core/-/core-0.17.0.tgz#1250174f4a11b3252a93c4664b06ae46ccd62bc0"
-  integrity sha512-YkbWuXny6sv0gF/sYm7KD3GxnnGxJomoQJzibzhJuwVOYjPUjjYBv/JMTkYcfpBuPHoHZwTVR3y1J+/W18oRxA==
+"@auth/core@0.18.0":
+  version "0.18.0"
+  resolved "https://registry.yarnpkg.com/@auth/core/-/core-0.18.0.tgz#9dfd8f6e8634d3c089af6afbbb4ecd146c882e1e"
+  integrity sha512-Xb41H3FIv4PlTZmwoFvntaNlVTwIqFxIg7i0/ieHOOxf/7H8EJpGTWoNrqKhwMyZEPU6fHp+VcUiqdX3vFrWSg==
   dependencies:
     "@panva/hkdf" "^1.0.4"
     cookie "0.5.0"
@@ -25,18 +25,18 @@
     preact-render-to-string "5.2.3"
 
 "@auth/sequelize-adapter@^1.0.1":
-  version "1.0.4"
-  resolved "https://registry.yarnpkg.com/@auth/sequelize-adapter/-/sequelize-adapter-1.0.4.tgz#ba2840b3bfb887c6ab409faac1210a476e32b660"
-  integrity sha512-OtLnYGbLo3jSuleqIf7TfOOSnC0c9gUkbfNL2LRJtH1sdQvP8lbv0mwwEvT5PH4VtWtzbF1cUFZRL2ZTe8ysYQ==
+  version "1.0.5"
+  resolved "https://registry.yarnpkg.com/@auth/sequelize-adapter/-/sequelize-adapter-1.0.5.tgz#89f51bc87222f789742b73943b3ebb3925d94b4a"
+  integrity sha512-h5RHo3sXyURHDbuPvjwNXi14bGop7CrRmTIVqFs6Jx+LwpgeXc1PrFKxHCBslVXhDKUBrLrRGy78BZ6h+1r49Q==
   dependencies:
-    "@auth/core" "0.17.0"
+    "@auth/core" "0.18.0"
 
 "@auth/typeorm-adapter@^1.0.1":
-  version "1.0.5"
-  resolved "https://registry.yarnpkg.com/@auth/typeorm-adapter/-/typeorm-adapter-1.0.5.tgz#9f3af4212d9c54fd4c3ea3872a972d2cd2d9c97b"
-  integrity sha512-NZ7ByCvQJqhffxSwX4mczj6pkA4585zoREJWaycUdehnGwk6It0k2K8Pzc9rMDjs4/GIpY3ax61FPe4k1C8P2Q==
+  version "1.0.6"
+  resolved "https://registry.yarnpkg.com/@auth/typeorm-adapter/-/typeorm-adapter-1.0.6.tgz#f16077781484c32da76c11618addcb23661a3b91"
+  integrity sha512-2DXAQ+kehgSlanQNe6cTNAwqfuI0WA+B2+GWw8+dZaAzxGstrCBrw1iNBCLah40Mc4g9IYfFZaXpukQs69jMEQ==
   dependencies:
-    "@auth/core" "0.17.0"
+    "@auth/core" "0.18.0"
 
 "@babel/code-frame@^7.0.0", "@babel/code-frame@^7.22.13":
   version "7.22.13"
@@ -690,9 +690,9 @@
   integrity sha512-AuHIyzR5Hea7ij0P9q7vx7xu4z0C28ucwjAZC0ja7JhINyCnOw8/DnvAPQQ9TfOlCtZAmCERKQX9+o1mgQhuOQ==
 
 "@types/node@*":
-  version "20.8.7"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.8.7.tgz#ad23827850843de973096edfc5abc9e922492a25"
-  integrity sha512-21TKHHh3eUHIi2MloeptJWALuCu5H7HQTdTrWIFReA8ad+aggoX+lRes3ex7/FtpC+sVUpFMQ+QTfYr74mruiQ==
+  version "20.8.8"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.8.8.tgz#adee050b422061ad5255fc38ff71b2bb96ea2a0e"
+  integrity sha512-YRsdVxq6OaLfmR9Hy816IMp33xOBjfyOgUd77ehqg96CFywxAPbDbXvAsuN2KVg2HOT8Eh6uAfU+l4WffwPVrQ==
   dependencies:
     undici-types "~5.25.1"
 
@@ -1595,9 +1595,9 @@ dottie@^2.0.6:
   integrity sha512-iGCHkfUc5kFekGiqhe8B/mdaurD+lakO9txNnTvKtA6PISrw86LgqHvRzWYPyoE2Ph5aMIrCw9/uko6XHTKCwA==
 
 electron-to-chromium@^1.4.535:
-  version "1.4.564"
-  resolved "https://registry.yarnpkg.com/electron-to-chromium/-/electron-to-chromium-1.4.564.tgz#9c6ada8ec7b43c65d8629300a0916a346ac5c0c2"
-  integrity sha512-bGAx9+teIzL5I4esQwCMtiXtb78Ysc8xOKTPOvmafbJZ4SQ40kDO1ym3yRcGSkfaBtV81fGgHOgPoe6DsmpmkA==
+  version "1.4.565"
+  resolved "https://registry.yarnpkg.com/electron-to-chromium/-/electron-to-chromium-1.4.565.tgz#205f3746a759ec3c43bce98b9eef5445f2721ea9"
+  integrity sha512-XbMoT6yIvg2xzcbs5hCADi0dXBh4//En3oFXmtPX+jiyyiCTiM9DGFT2SLottjpEs9Z8Mh8SqahbR96MaHfuSg==
 
 emoji-regex@^8.0.0:
   version "8.0.0"
@@ -4596,7 +4596,7 @@ to-regex-range@^5.0.1:
     is-number "^7.0.0"
 
 "tomb-wasm-experimental@file:./tomb_build":
-  version "1.5.0"
+  version "1.16.0"
 
 toposort-class@^1.0.1:
   version "1.0.1"
