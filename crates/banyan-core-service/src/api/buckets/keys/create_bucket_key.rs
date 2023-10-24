@@ -80,8 +80,12 @@ impl IntoResponse for CreateBucketKeyError {
                 let err_msg = serde_json::json!({"msg": "not found"});
                 (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
             }
-            _ => {
-                tracing::error!("failed to lookup bucket key: {self}");
+            CreateBucketKeyError::InvalidPublicKey(_) => {
+                let err_msg = serde_json::json!({"msg": "invalid public key"});
+                (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
+            }
+            CreateBucketKeyError::DatabaseFailure(_) => {
+                tracing::error!("{self}");
                 let err_msg = serde_json::json!({"msg": "backend service experienced an issue servicing the request"});
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
             }
