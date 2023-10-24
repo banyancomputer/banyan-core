@@ -17,7 +17,7 @@ const Login: NextPageWithLayout = () => {
     const searchParams = useSearchParams();
     const error = searchParams.get('error');
 
-    const handleLoginWithProvider = (provider: any) => async () => {
+    const handleLoginWithProvider = (provider: any) => async() => {
         try {
             destroyCookie(null, 'banyan-key-cookie', { path: '/' });
             await signIn(provider, { redirect: false });

@@ -6,23 +6,21 @@ import { AddNewOption } from '../../Select/AddNewOption';
 import { CreateBucketModal } from '../CreateBucketModal';
 import { FolderSelect } from '../../FolderSelect';
 
-import { Bucket } from '@/lib/interfaces/bucket';
+import { BrowserObject, Bucket } from '@/lib/interfaces/bucket';
 import { useModal } from '@/contexts/modals';
 import { useTomb } from '@/contexts/tomb';
 import { ToastNotifications } from '@/utils/toastNotifications';
-import { useFolderLocation } from '@/hooks/useFolderLocation';
 import { useFilesUpload } from '@/contexts/filesUpload';
 
 import { Upload } from '@static/images/buckets';
 
-export const UploadFileModal: React.FC<{ bucket?: Bucket | null }> = ({ bucket }) => {
+export const UploadFileModal: React.FC<{ bucket?: Bucket | null; folder?: BrowserObject; path: string[] }> = ({ bucket, folder, path }) => {
     const { buckets } = useTomb();
-    const folderLocation = useFolderLocation();
     const { openModal, closeModal } = useModal();
-    const { setFiles, uploadFiles, files } = useFilesUpload()
+    const { setFiles, uploadFiles, files } = useFilesUpload();
     const { messages } = useIntl();
     const [selectedBucket, setSelectedBucket] = useState<Bucket | null>(bucket || null);
-    const [selectedFolder, setSelectedFolder] = useState<string[]>([]);
+    const [selectedFolder, setSelectedFolder] = useState<string[]>(path);
     const isUploadDataFilled = useMemo(() => Boolean(selectedBucket && files.length), [selectedBucket, files]);
 
     const selectBucket = (bucket: Bucket) => {
@@ -33,13 +31,13 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null }> = ({ bucket }
         setSelectedFolder(option);
     };
 
-    const handleChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleChange = async(event: React.ChangeEvent<HTMLInputElement>) => {
         if (!event.target.files) { return; }
 
         setFiles(Array.from(event.target.files).map(file => ({ file, isUploaded: false })));
     };
 
-    const handleDrop = async (event: React.DragEvent<HTMLInputElement | HTMLLabelElement>) => {
+    const handleDrop = async(event: React.DragEvent<HTMLInputElement | HTMLLabelElement>) => {
         event.preventDefault();
         event.stopPropagation();
 
@@ -48,24 +46,24 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null }> = ({ bucket }
         setFiles(Array.from(event.dataTransfer.files).map(file => ({ file, isUploaded: false })));
     };
 
-    const handleDrag = async (event: React.DragEvent<HTMLInputElement | HTMLLabelElement>) => {
+    const handleDrag = async(event: React.DragEvent<HTMLInputElement | HTMLLabelElement>) => {
         event.preventDefault();
         event.stopPropagation();
     };
 
-    const upload = async () => {
+    const upload = async() => {
         if (!files.length) { return; }
         try {
             closeModal();
             ToastNotifications.uploadProgress();
-            await uploadFiles(selectedBucket!, selectedFolder.length ? selectedFolder : []);
+            await uploadFiles(selectedBucket!, selectedFolder.length ? selectedFolder : [], folder);
         } catch (error: any) {
             ToastNotifications.error(`${messages.uploadError}`, `${messages.tryAgain}`, upload);
         };
     };
 
     const addNewBucket = () => {
-        openModal(<CreateBucketModal />, () => openModal(<UploadFileModal bucket={selectedBucket} />));
+        openModal(<CreateBucketModal />, () => openModal(<UploadFileModal bucket={selectedBucket} path={path} />));
     };
 
     return (
@@ -95,6 +93,7 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null }> = ({ bucket }
                     <FolderSelect
                         onChange={selectFolder}
                         selectedBucket={selectedBucket!}
+                        path={path}
                     />
                 </div>
             }

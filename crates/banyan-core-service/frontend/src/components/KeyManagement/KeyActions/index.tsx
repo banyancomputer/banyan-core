@@ -11,11 +11,11 @@ export const KeyActions: React.FC<{ bucket: Bucket; bucketKey: BucketKey }> = ({
     const { messages } = useIntl();
     const { openModal } = useModal();
 
-    const approveAccess = async () => {
+    const approveAccess = async() => {
         openModal(<ApproveBucketAccessModal bucketKey={bucketKey} />);
     };
 
-    const removeAccess = async () => {
+    const removeAccess = async() => {
         try {
             openModal(<RemoveBucketAccessModal bucketKey={bucketKey} />);
         } catch (error: any) { }

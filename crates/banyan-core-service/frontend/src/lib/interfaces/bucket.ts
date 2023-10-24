@@ -7,11 +7,12 @@ export interface FileMetadata {
     size: number;
 };
 
-export interface BucketFile {
-    [key: string]: any;
+export interface BrowserObject {
+    [key: string]: string | BrowserObject[] | FileMetadata;
     name: string;
-    type: string;
-    metadata: FileMetadata
+    type: 'file' | 'dir';
+    files: BrowserObject[];
+    metadata: FileMetadata;
 };
 
 export interface BucketKey {
@@ -20,7 +21,6 @@ export interface BucketKey {
     pem: string;
     approved: boolean;
 };
-
 
 export interface BucketSnapshot {
     id: string;
@@ -37,7 +37,7 @@ export interface Bucket {
     mount: WasmMount;
     bucketType: string;
     storageClass: string;
-    files: BucketFile[];
+    files: BrowserObject[];
     snapshots: BucketSnapshot[];
     keys: BucketKey[];
 };

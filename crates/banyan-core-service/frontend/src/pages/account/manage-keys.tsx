@@ -1,5 +1,6 @@
 
 import { useIntl } from 'react-intl';
+import { useEffect } from 'react';
 
 import { NextPageWithLayout } from '@/pages/page';
 import { useTomb } from '@/contexts/tomb';
@@ -8,7 +9,6 @@ import { Fallback } from '@/components/common/Fallback';
 
 import getServerSideProps from '@/utils/session';
 import SettingsLayout from '@/layouts/SettingsLayout';
-import { useEffect } from 'react';
 
 export { getServerSideProps };
 
@@ -17,12 +17,12 @@ const ManageKeys: NextPageWithLayout = () => {
     const { messages } = useIntl();
 
     useEffect(() => {
-        if (!tomb) return;
+        if (!tomb) { return; }
 
-        (async () => {
+        (async() => {
             await getBucketsKeys();
         })();
-    }, [buckets.length, tomb])
+    }, [buckets.length, tomb]);
 
     return (
         <div className="flex flex-col gap-5 px-4">

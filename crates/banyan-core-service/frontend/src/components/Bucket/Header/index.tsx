@@ -22,7 +22,10 @@ const BucketHeader = () => {
 
     const uploadFile = () => {
         if (selectedBucket) {
-            openModal(<UploadFileModal bucket={selectedBucket} />);
+            openModal(<UploadFileModal
+                bucket={selectedBucket}
+                path={folderLocation}
+            />);
         }
     };
 

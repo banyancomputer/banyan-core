@@ -1,6 +1,7 @@
-import { Bucket } from '@/lib/interfaces/bucket';
 import React, { FC, ReactNode, createContext, useContext, useState } from 'react';
+
 import { useTomb } from './tomb';
+import { Bucket } from '@/lib/interfaces/bucket';
 
 interface FilePreviewState {
     file: {
@@ -25,7 +26,7 @@ export const FilePreviewProvider: FC<{ children: ReactNode }> = ({ children }) =
     const [file, setFile] = useState(initialState);
     const { getFile } = useTomb();
 
-    const openFile = async (bucket: Bucket, file: string, path: string[]) => {
+    const openFile = async(bucket: Bucket, file: string, path: string[]) => {
         const isFileSupported = SUPPORTED_EXTENSIONS.includes(file.split('.')[1]);
         try {
             setFile({
@@ -34,7 +35,7 @@ export const FilePreviewProvider: FC<{ children: ReactNode }> = ({ children }) =
                 isLoading: false,
             });
 
-            if (!isFileSupported) return;
+            if (!isFileSupported) { return; }
             setFile(prev => ({ ...prev, isLoading: true }));
 
             const reader = new FileReader();
@@ -42,12 +43,12 @@ export const FilePreviewProvider: FC<{ children: ReactNode }> = ({ children }) =
             const blob = new Blob([arrayBuffer], { type: 'application/octet-stream' });
 
             reader.readAsDataURL(blob);
-            reader.onload = function (event) {
+            reader.onload = function(event) {
                 const result = event.target?.result as string;
                 setFile({
                     data: result || '',
                     name: file,
-                    isLoading: false
+                    isLoading: false,
                 });
             };
             reader.readAsDataURL(blob);
