@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashSet, BTreeSet};
 
 use axum::extract::{BodyStream, Path, State};
 use axum::headers::ContentType;
@@ -575,9 +575,11 @@ pub struct PushMetadataRequest {
     pub metadata_cid: String,
 
     pub expected_data_size: i64,
-
+    /// Fingerprints of Public Bucket Keys
     #[serde(rename = "valid_keys")]
     pub included_key_fingerprints: Vec<String>,
+    /// Deleted Block CIDs
+    pub deleted_blocks: BTreeSet<String>,
 }
 
 #[derive(sqlx::FromRow)]
