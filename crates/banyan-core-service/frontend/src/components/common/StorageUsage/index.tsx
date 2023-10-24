@@ -1,4 +1,4 @@
-import React from 'react'
+import React from 'react';
 import { useIntl } from 'react-intl';
 
 import { convertFileSize } from '@/utils/storage';
@@ -20,5 +20,5 @@ export const StorageUsage = () => {
             </span>
             <progress className="progress w-full" value={usedStorage} max={usageLimit}></progress>
         </div>
-    )
-}
+    );
+};

@@ -10,9 +10,9 @@ import { CreateBucketModal } from '../Modal/CreateBucketModal';
 import { useTomb } from '@/contexts/tomb';
 import { useModal } from '@/contexts/modals';
 import { useKeystore } from '@/contexts/keystore';
+import { popupClickHandler } from '@/utils';
 
 import { ChevronUp, Home, Info, Logo, Logout, Mail, Plus, Question, Trash } from '@static/images/common';
-import { popupClickHandler } from '@/utils';
 
 export const Navigation = () => {
     const searchParams = useSearchParams();
@@ -41,16 +41,16 @@ export const Navigation = () => {
         openModal(<CreateBucketModal />);
     };
 
-    const logout = async () => {
+    const logout = async() => {
         await signOut();
         await purgeKeystore();
     };
 
     useEffect(() => {
-        if (isBucketsVisible) return;
+        if (isBucketsVisible) { return; }
 
         buckets.length && setIsBucketsVisible(true);
-    }, [buckets])
+    }, [buckets]);
 
     useEffect(() => {
         const listener = popupClickHandler(helpRef.current!, setAreHelpOpionsVisible);
@@ -69,7 +69,7 @@ export const Navigation = () => {
             <div className="flex-grow py-8 border-t-2 border-b-2 border-navigation-separator text-navigation-text">
                 <Link
                     href={'/'}
-                    className={`flex items-center justify-between gap-3 py-2.5 px-3 w-full h-10  cursor-pointer rounded-md bg-navigation-secondary`}
+                    className={'flex items-center justify-between gap-3 py-2.5 px-3 w-full h-10  cursor-pointer rounded-md bg-navigation-secondary'}
                 >
                     <Home />
                     <span className="flex-grow">
@@ -90,9 +90,9 @@ export const Navigation = () => {
                                 <li key={bucket.id}>
                                     <Link
                                         href={`/bucket/${bucket.id}`}
-                                        className={`relative flex items-center justify-between gap-2  w-full h-10  cursor-pointer `}
+                                        className={'relative flex items-center justify-between gap-2  w-full h-10  cursor-pointer '}
                                     >
-                                        <span className='absolute w-4 h-11 bottom-1/2 border-2 border-transparent border-l-navigation-secondary border-b-navigation-secondary'>
+                                        <span className="absolute w-4 h-11 bottom-1/2 border-2 border-transparent border-l-navigation-secondary border-b-navigation-secondary">
                                         </span>
                                         <span className={`ml-5 py-2 px-2 flex-grow whitespace-nowrap overflow-hidden rounded-md verflow-ellipsis ${bucketId === bucket.id && 'bg-navigation-secondary'}`}>
                                             {bucket.name}
@@ -125,7 +125,7 @@ export const Navigation = () => {
             </div>
             <div className="flex flex-col gap-2 mt-6 pl-2 pt-3 pr-8 text-navigation-textSecondary text-xs">
                 <span
-                    className='relative flex items-center gap-3 py-2.5 cursor-pointer'
+                    className="relative flex items-center gap-3 py-2.5 cursor-pointer"
                     onClick={toggleHelpOptionsVisibility}
                     ref={helpRef}
                 >
@@ -137,21 +137,21 @@ export const Navigation = () => {
                         >
                             <a
                                 className="flex items-center gap-2 py-2.5 px-3 transition-all hover:bg-hover"
-                                href='https://banyan8674.zendesk.com/hc/en-us'
-                                target='_blank'
+                                href="https://banyan8674.zendesk.com/hc/en-us"
+                                target="_blank"
                             >
-                                <span className='text-button-primary'>
+                                <span className="text-button-primary">
                                     <Question />
                                 </span>
                                 FAQ
                             </a>
                             <a
-                                href='mailto:support@banyan8674.zendesk.com'
+                                href="mailto:support@banyan8674.zendesk.com"
                                 className="flex items-center gap-2 py-2.5 px-3 transition-all hover:bg-hover"
-                                target='_blank'
+                                target="_blank"
                             >
-                                <span className='text-button-primary'>
-                                <Mail />
+                                <span className="text-button-primary">
+                                    <Mail />
                                 </span>
                                 {`${messages.contactUs}`}
                             </a>
@@ -163,7 +163,7 @@ export const Navigation = () => {
                     onClick={logout}
                 >
                     <Logout />
-                    <span className='text-navigation-text'>
+                    <span className="text-navigation-text">
                         {`${messages.logoutAccount}`}
                     </span>
                 </span>

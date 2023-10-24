@@ -1,29 +1,29 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { Selectoption } from '../Select'
-import { useFolderLocation } from '@/hooks/useFolderLocation';
 import { useIntl } from 'react-intl';
-import { AddNewOption } from '../Select/AddNewOption';
-import { popupClickHandler } from '@/utils';
 import { FiChevronDown } from 'react-icons/fi';
-import { useModal } from '@/contexts/modals';
+
+import { AddNewOption } from '../Select/AddNewOption';
 import { CreateFolderModal } from '../Modal/CreateFolderModal ';
-import { useTomb } from '@/contexts/tomb';
 import { UploadFileModal } from '../Modal/UploadFileModal';
-import { Bucket, BucketFile } from '@/lib/interfaces/bucket';
+
+import { popupClickHandler } from '@/utils';
+import { useModal } from '@/contexts/modals';
+import { Bucket, BrowserObject } from '@/lib/interfaces/bucket';
+import { useTomb } from '@/contexts/tomb';
 
 export interface FolderSelectProps {
     onChange: (option: string[]) => void;
     selectedBucket: Bucket;
-    onFolderCreation?: () => void
+    path: string[];
+    onFolderCreation?: () => void;
 };
 
-export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBucket, onFolderCreation }) => {
-    const folderLocation = useFolderLocation();
+export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBucket, onFolderCreation, path }) => {
     const { buckets, uploadFile, tomb } = useTomb();
     const selectRef = useRef<HTMLDivElement | null>(null);
     const [isOptionstVisible, setIsOptionsVisible] = useState(false);
-    const [folder, setFolder] = useState(folderLocation);
-    const [folders, setFolders] = useState<BucketFile[]>([]);
+    const [folder, setFolder] = useState(path);
+    const [folders, setFolders] = useState<BrowserObject[]>([]);
     const { openModal, closeModal } = useModal();
     const { messages } = useIntl();
 
@@ -33,7 +33,7 @@ export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBu
 
     const handleSelect = (option: string[]) => {
         onChange(option);
-        setFolder(option)
+        setFolder(option);
         setIsOptionsVisible(false);
     };
 
@@ -42,30 +42,30 @@ export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBu
     };
 
     const goAbove = () => {
-        setFolder(prev => prev.slice(0, -1))
-    }
+        setFolder(prev => prev.slice(0, -1));
+    };
 
     const addNewFolder = () => {
-        const action = onFolderCreation || (() => openModal(<UploadFileModal />));
+        const action = onFolderCreation || (() => openModal(<UploadFileModal bucket={selectedBucket} path={folder} />));
         openModal(<CreateFolderModal
             path={folder}
             bucket={selectedBucket!}
-            onSuccess={() => openModal(<UploadFileModal bucket={selectedBucket} />)}
+            onSuccess={() => openModal(<UploadFileModal bucket={selectedBucket} path={folder} />)}
         />
-            , action);
+        , action);
     };
 
     useEffect(() => {
-        (async () => {
+        (async() => {
             const bucket = selectedBucket;
             const files = await bucket.mount.ls(folder);
             setFolders(files.filter(file => file.type === 'dir'));
-        })()
-    }, [folder, buckets])
+        })();
+    }, [folder, buckets]);
 
     useEffect(() => {
-        handleSelect(folderLocation);
-    }, [folderLocation])
+        handleSelect(path);
+    }, [path]);
 
     useEffect(() => {
         const listener = popupClickHandler(selectRef.current!, setIsOptionsVisible);
@@ -80,7 +80,7 @@ export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBu
             onClick={toggleSelect}
             className="relative p-2.5 flex justify-between items-center text-sm font-medium border-1 border-border-darken rounded-lg shadow-sm cursor-pointer select-none"
         >
-            <span className='overflow-hidden text-ellipsis'>
+            <span className="overflow-hidden text-ellipsis">
                 /{folder.join('/')}
             </span>
             <FiChevronDown
@@ -91,11 +91,11 @@ export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBu
             {isOptionstVisible &&
                 <ul
                     onClick={stopPropagation}
-                    className='absolute left-0 top-full w-full mt-2 max-h-48 overflow-y-auto bg-secondaryBackground border-1 border-border-darken rounded-lg shadow-sm z-10'
+                    className="absolute left-0 top-full w-full mt-2 max-h-48 overflow-y-auto bg-secondaryBackground border-1 border-border-darken rounded-lg shadow-sm z-10"
                 >
                     {
                         folder.length ? <li
-                            className='flex justify-between items-center p-2.5 transition-all hover:bg-hover cursor-pointer'
+                            className="flex justify-between items-center p-2.5 transition-all hover:bg-hover cursor-pointer"
                             onClick={goAbove}
                         >
                             ...
@@ -106,7 +106,7 @@ export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBu
                     <AddNewOption label={`${messages.createNewFolder}`} action={addNewFolder} />
                     {folders.map((folderItem, index) =>
                         <li
-                            className='flex justify-between items-center p-2.5 transition-all hover:bg-hover cursor-pointer'
+                            className="flex justify-between items-center p-2.5 transition-all hover:bg-hover cursor-pointer"
                             key={index}
                             onClick={() => handleSelect([...folder, folderItem.name])}
                         >
@@ -116,5 +116,5 @@ export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBu
                 </ul>
             }
         </div>
-    )
-}
+    );
+};

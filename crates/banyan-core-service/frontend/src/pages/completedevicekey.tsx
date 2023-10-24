@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useIntl } from 'react-intl';
 import BaseLayout from '@layouts/BaseLayout';
+import { useSearchParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+
 import { NextPageWithLayout } from './page';
 import getServerSideProps from '@/utils/session';
 import { useTomb } from '@/contexts/tomb';
 import { useModal } from '@/contexts/modals';
-import { useSearchParams } from 'next/navigation';
 import { b64UrlDecode } from '@/utils/b64';
 import { prettyFingerprintApiKeySpki, publicPemWrap } from '@/utils';
-import { useSession } from 'next-auth/react';
 import { ClientApi } from '@/lib/api/auth';
 
 export { getServerSideProps };
@@ -23,26 +24,26 @@ const DeviceKeyApproval: NextPageWithLayout = () => {
     const urlSpki = searchParams.get('spki')!;
     const spki = b64UrlDecode(urlSpki as string);
     const pem = publicPemWrap(spki);
-    const [fingerprint, setFingerprint] = useState("");
+    const [fingerprint, setFingerprint] = useState('');
 
     useEffect(() => {
-        const getFingerprint = async () => {
-            let fingerprint: string = await prettyFingerprintApiKeySpki(spki);
+        const getFingerprint = async() => {
+            const fingerprint: string = await prettyFingerprintApiKeySpki(spki);
             setFingerprint(fingerprint);
-        }
+        };
         getFingerprint();
     }, []);
 
-    // Perform all functions required to complete 
-    const completeRegistration = async () => {
+    // Perform all functions required to complete
+    const completeRegistration = async() => {
         try {
             await api.registerDeviceApiKey(pem);
             await completeDeviceKeyRegistration(fingerprint);
-            console.log("finished device key registration");
-            alert("successfully authorized new device!");
+            console.log('finished device key registration');
+            alert('successfully authorized new device!');
         } catch (error: any) {
-            alert("failed to authorize new device!");
-            console.log("error: " + error);
+            alert('failed to authorize new device!');
+            console.log(`error: ${error}`);
         }
     };
 

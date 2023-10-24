@@ -3,27 +3,34 @@ import { useIntl } from 'react-intl';
 import { MdDone } from 'react-icons/md';
 
 import { useModal } from '@/contexts/modals';
-import { Bucket, BucketFile } from '@/lib/interfaces/bucket';
+import { BrowserObject, Bucket } from '@/lib/interfaces/bucket';
 import { useTomb } from '@/contexts/tomb';
 import { ToastNotifications } from '@/utils/toastNotifications';
 import { useFolderLocation } from '@/hooks/useFolderLocation';
 
-export const RenameFileModal: React.FC<{ bucket: Bucket; file: BucketFile }> = ({ bucket, file }) => {
+export const RenameFileModal: React.FC<{ bucket: Bucket; file: BrowserObject; path: string[]}> = ({ bucket, file, path }) => {
     const { closeModal } = useModal();
-    const { moveTo, getSelectedBucketFiles } = useTomb();
+    const { moveTo, getSelectedBucketFiles, selectBucket } = useTomb();
     const { messages } = useIntl();
     const [newName, setNewName] = useState('');
     const folderLocation = useFolderLocation();
 
-    const save = async () => {
+    const save = async() => {
         try {
-            await moveTo(bucket, [...folderLocation, file.name], [...folderLocation, newName]);
+            await moveTo(bucket, [...path, file.name], [...path, newName]);
             ToastNotifications.notify(`${messages.fileWasRenamed}`, <MdDone size="20px" />);
-            await getSelectedBucketFiles(folderLocation);
+            if (path.join('/') === folderLocation.join('/')) {
+                await getSelectedBucketFiles(folderLocation);
+                closeModal();
+
+                return;
+            };
+            file.name = newName;
+            selectBucket({ ...bucket });
             closeModal();
         } catch (error: any) {
             ToastNotifications.error(`${messages.editError}`, `${messages.tryAgain}`, save);
-        }
+        };
     };
 
     return (

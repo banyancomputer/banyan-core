@@ -1,7 +1,8 @@
-import { UploadFileProgress } from '@/components/common/UploadFileProgress';
 import { ReactElement } from 'react';
 import { IoMdClose } from 'react-icons/io';
 import { toast } from 'react-toastify';
+
+import { UploadFileProgress } from '@/components/common/UploadFileProgress';
 
 /** Defines toast notifications with message, toast type and theme. */
 export class ToastNotifications {
@@ -52,7 +53,7 @@ export class ToastNotifications {
                 autoClose: false,
                 closeButton: false,
                 bodyStyle: { padding: '0', margin: '0', height: '100%' },
-                style: { padding: '0', borderRadius: "12px 12px 0 0" }
+                style: { padding: '0', borderRadius: '12px 12px 0 0' },
             });
     };
 

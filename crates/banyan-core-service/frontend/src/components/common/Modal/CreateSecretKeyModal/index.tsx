@@ -27,7 +27,7 @@ export const CreateSecretKeyModal = () => {
     const { keyphrase, keyphraseConfirmation } = watch();
     const isDataCorrect = !Object.keys(errors).length && !!keyphrase && !!keyphraseConfirmation && keyphraseConfirmation === keyphrase;
 
-    const confirm = async () => {
+    const confirm = async() => {
         try {
             await initializeKeystore(keyphrase);
             closeModal();
@@ -57,7 +57,7 @@ export const CreateSecretKeyModal = () => {
                 </p>
             </div>
             <Input
-                type='password'
+                type="password"
                 label={`${messages.secretKey}`}
                 placeholder={`${messages.enterPassphrase}`}
                 error={errors.keyphrase?.message}
@@ -67,7 +67,7 @@ export const CreateSecretKeyModal = () => {
                 })}
             />
             <Input
-                type='password'
+                type="password"
                 label={`${messages.confirmSecretKey}`}
                 placeholder={`${messages.enterPassphrase}`}
                 error={errors.keyphraseConfirmation?.message}

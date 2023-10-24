@@ -19,7 +19,7 @@ export const ServicesTable = () => {
         new Storage(`${messages.downloads}`),
         new Storage(`${messages.egress}`),
         new Storage(`${messages.migrationFees}`),
-    ]
+    ];
 
     return (
         <div className="max-h-[calc(100vh-290px)] overflow-x-auto border-1 border-border-regular rounded-xl" >
@@ -43,10 +43,10 @@ export const ServicesTable = () => {
                 <tbody>
                     {MOCK_DATA.map(storage =>
                         <tr>
-                            <td className='px-3 py-6 border-t-1 border-r-1 border-border-regular'>{storage.service}</td>
-                            <td className='px-3 py-6 border-t-1 border-x-1 border-border-regular'>{storage.serviceCost}</td>
-                            <td className='px-3 py-6 border-t-1 border-x-1 border-border-regular'>{storage.dataQty}</td>
-                            <td className='px-3 py-6 border-t-1 border-l-1 border-border-regular'>{storage.cost}</td>
+                            <td className="px-3 py-6 border-t-1 border-r-1 border-border-regular">{storage.service}</td>
+                            <td className="px-3 py-6 border-t-1 border-x-1 border-border-regular">{storage.serviceCost}</td>
+                            <td className="px-3 py-6 border-t-1 border-x-1 border-border-regular">{storage.dataQty}</td>
+                            <td className="px-3 py-6 border-t-1 border-l-1 border-border-regular">{storage.cost}</td>
                         </tr>
                     )}
                 </tbody>

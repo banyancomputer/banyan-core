@@ -59,12 +59,12 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
     const storageClassNames: Record<string, string> = {
         hot: 'bg-bucket-bucketClasshot',
         warm: 'bg-bucket-bucketClasswarm',
-        cold: 'bg-bucket-bucketClasscold'
+        cold: 'bg-bucket-bucketClasscold',
     };
 
     return (
         <div
-            className='px-3 py-6 border-1 rounded-xl cursor-pointer transition-all bg-secondaryBackground hover:bg-bucket-bucketHoverBackground'
+            className="px-3 py-6 border-1 rounded-xl cursor-pointer transition-all bg-secondaryBackground hover:bg-bucket-bucketHoverBackground"
             ref={bucketRef}
             onContextMenu={onContextMenu}
             onClick={openBucket}
@@ -81,23 +81,23 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
             >
                 <BucketActions bucket={bucket} />
             </div>
-            <h4 className='mb-3 text-text-900 font-semibold'>
+            <h4 className="mb-3 text-text-900 font-semibold">
                 {bucket.name}
             </h4>
-            <div className='mb-6 flex justify-center py-10 bg-bucket-bucketIconBackground rounded-xl'>
+            <div className="mb-6 flex justify-center py-10 bg-bucket-bucketIconBackground rounded-xl">
                 <BucketIcon />
             </div>
-            <div className='flex flex-col gap-2 items-start text-xs font-normal'>
+            <div className="flex flex-col gap-2 items-start text-xs font-normal">
                 <div className={`px-2 rounded-full text-mainBackground ${storageClassNames[bucket.storageClass]} capitalize`}>
                     {`${messages[bucket.storageClass]}`}
                 </div>
-                <div className='capitalize'>{bucket.bucketType}</div>
+                <div className="capitalize">{bucket.bucketType}</div>
                 {bucket.snapshots.length ? <div>{bucket.snapshots.length} {`${messages.coldSnapshots}`}</div> : null}
-                <div className='flex justify-between items-center'>
+                <div className="flex justify-between items-center">
                     <div>{bucket.files.length} {`${messages.files}`}</div>
                     <div>{ }</div>
                 </div>
             </div>
         </div>
-    )
-}
+    );
+};

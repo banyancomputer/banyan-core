@@ -1,11 +1,12 @@
 import React, { useRef } from 'react';
-//@ts-ignore
+// @ts-ignore
 import FilePreviewer from 'react-file-previewer';
 import { FiArrowLeft } from 'react-icons/fi';
 import { useIntl } from 'react-intl';
 
-import { SUPPORTED_EXTENSIONS, useFilePreview } from '@/contexts/filesPreview';
 import { Loader } from '../Loader';
+
+import { SUPPORTED_EXTENSIONS, useFilePreview } from '@/contexts/filesPreview';
 
 export const FilePreview = () => {
     const { file, closeFile } = useFilePreview();
@@ -39,7 +40,7 @@ export const FilePreview = () => {
                         ref={filePreviewRef}
                     >
                         {file.isLoading ?
-                            <Loader spinnerSize='50px' containerHeight='100vh' className='text-white' />
+                            <Loader spinnerSize="50px" containerHeight="100vh" className="text-white" />
                             :
                             <>
                                 {
@@ -52,7 +53,7 @@ export const FilePreview = () => {
                                             }}
                                         />
                                         :
-                                        <div className='h-screen flex items-center text-white text-lg'>File is not supported for preview</div>
+                                        <div className="h-screen flex items-center text-white text-lg">File is not supported for preview</div>
                                 }
                             </>
                         }
@@ -60,5 +61,5 @@ export const FilePreview = () => {
                 </div>
             }
         </>
-    )
-}
+    );
+};

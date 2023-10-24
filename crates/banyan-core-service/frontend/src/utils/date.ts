@@ -5,6 +5,4 @@ export const getDateLabel = (timestapm: number, year: boolean = true) => {
     return `${months[date.getMonth()]} ${date.getDay()} ${year ? `, ${date.getFullYear()}`: ''}`;
 };
 
-export const getTime = (timestapm: number, year: boolean = true) => {
-    return new Date(timestapm).toLocaleTimeString('en');
-};
+export const getTime = (timestapm: number, year: boolean = true) => new Date(timestapm).toLocaleTimeString('en');

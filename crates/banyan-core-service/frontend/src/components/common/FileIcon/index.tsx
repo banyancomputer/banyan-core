@@ -7,7 +7,7 @@ import {
 } from 'react-icons/ai';
 import { PiFolderNotchBold } from 'react-icons/pi';
 
-export const FileIcon: React.FC<{ fileName: string; className?: string, size?: string }> = ({ fileName, className, size = '24px' }) => {
+export const FileIcon: React.FC<{ fileName: string; className?: string; size?: string }> = ({ fileName, className, size = '20px' }) => {
     const fileTypeMapper: Record<string, ReactElement> = {
         'txt': <AiOutlineFileText size={size} />,
         'pdf': <AiOutlineFilePdf size={size} />,

@@ -25,21 +25,19 @@ export const Header = () => {
         setAreProfileOptionsVisible(prev => !prev);
     };
 
-    const logout = async () => {
+    const logout = async() => {
         await signOut();
         await purgeKeystore();
     };
 
-    const goTo = (path: string) => {
-        return function () {
-            router.push(path);
-        }
+    const goTo = (path: string) => function() {
+        router.push(path);
     };
 
     const options = [
         new Action(`${messages.settings}`, <Settings />, goTo('/account/settings')),
         new Action(`${messages.manageKeys}`, <Key />, goTo('/account/manage-keys')),
-        new Action(`${messages.logout}`, <LogoutAlternative />, logout)
+        new Action(`${messages.logout}`, <LogoutAlternative />, logout),
     ];
 
     useEffect(() => {
@@ -81,7 +79,7 @@ export const Header = () => {
                                     className="flex items-center gap-2 py-2.5 px-3 whitespace-nowrap transition-all hover:bg-hover"
                                     onClick={option.value}
                                 >
-                                    <span className='text-button-primary'>
+                                    <span className="text-button-primary">
                                         {option.icon}
                                     </span>
                                     {option.label}
