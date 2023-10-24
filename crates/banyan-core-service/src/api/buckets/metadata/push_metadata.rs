@@ -111,11 +111,9 @@ pub async fn handler(
         .await
         .map_err(PushMetadataError::DataMetaStoreFailed)?;
 
-    let currently_consumed_storage = currently_consumed_storage(&database, &api_id.account_id)
+    let expected_total_storage = currently_consumed_storage(&database, &api_id.account_id)
         .await
-        .map_err(PushMetadataError::UnableToCheckAccounting)?;
-    let expected_total_storage =
-        currently_consumed_storage as i64 + request_data.expected_data_size;
+        .map_err(PushMetadataError::UnableToCheckAccounting)? as i64;
 
     if expected_total_storage > ACCOUNT_STORAGE_QUOTA {
         tracing::warn!(account_id = ?api_id.account_id, ?expected_total_storage, "account reached storage limit");
@@ -279,6 +277,12 @@ async fn fail_upload(database: &Database, metadata_id: &str) -> Result<(), sqlx:
     Ok(())
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+struct Capabilities {
+    #[serde(rename = "cap")]
+    capabilities: serde_json::Map<String, serde_json::Value>,
+}
+
 async fn generate_new_storage_authorization(
     database: &Database,
     service_signing_key: &ServiceSigningKey,
@@ -297,7 +301,7 @@ async fn generate_new_storage_authorization(
     .fetch_one(database)
     .await
     .map_err(StorageAuthorizationError::GrantRecordingFailed)?;
-
+    println!("minitnet: {:?}", storage_grant_id);
     let mut storage_details = serde_json::Map::new();
 
     storage_details.insert("available_storage".to_string(), authorized_amount.into());
@@ -307,7 +311,7 @@ async fn generate_new_storage_authorization(
     capabilities.insert(storage_host.url.to_string(), storage_details.into());
 
     let mut claims =
-        Claims::with_custom_claims(capabilities, Duration::from_secs(STORAGE_TICKET_DURATION))
+        Claims::with_custom_claims(Capabilities { capabilities }, Duration::from_secs(STORAGE_TICKET_DURATION))
             .with_audiences(HashSet::from_strings(&[storage_host.name.as_str()]))
             .with_issuer("banyan-platform")
             .with_subject(format!(
@@ -353,7 +357,7 @@ async fn record_data_stored(
     let db_size = uploaded_size as i32;
 
     sqlx::query!(
-        "UPDATE metadata SET metadata_size = $2, metadata_hash = $3 WHERE id = $1;",
+        "UPDATE metadata SET metadata_size = $2, metadata_hash = $3, state = 'pending' WHERE id = $1;",
         metadata_id,
         db_size,
         data_hash,

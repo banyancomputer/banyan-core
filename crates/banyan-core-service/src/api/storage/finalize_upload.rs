@@ -108,7 +108,7 @@ pub enum FinalizeUploadError {
 
 impl IntoResponse for FinalizeUploadError {
     fn into_response(self) -> Response {
-        tracing::error!("{self}");
+        tracing::error!("{:?}", self);
         let err_msg = serde_json::json!({"msg": "internal server error"});
         (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
     }

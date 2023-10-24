@@ -80,7 +80,7 @@ where
 
         // Restrict audience as our clients will use the same API key for authorization to multiple
         // services
-        //token_validator.set_audience(&["banyan-platform"]);
+        token_validator.set_audience(&["banyan-platform"]);
 
         // Require all of our keys except for the attestations and proofs
         token_validator.set_required_spec_claims(&["aud", "exp", "nbf", "sub", "iat"]);
@@ -160,7 +160,7 @@ pub enum ApiIdentityError {
     #[error("the provided token's validity range is outside our allowed range")]
     ExtremeTokenValidity,
 
-    #[error("format of the provide bearer token didn't meet our requirements")]
+    #[error("format of the provided bearer token didn't meet our requirements")]
     FormatError(jsonwebtoken::errors::Error),
 
     #[error("no Authorization header was present in request to protected route")]
