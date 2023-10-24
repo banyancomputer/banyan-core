@@ -31,7 +31,8 @@ impl PartialMetadataWithSnapshot {
                 FROM metadata m
                     JOIN buckets b ON m.bucket_id = b.id
                     JOIN snapshots s ON s.metadata_id = m.id
-                    WHERE m.state = 'current' AND b.account_id = $1;"#,
+                    WHERE m.state NOT IN ('upload_failed', 'deleted')
+                          AND b.account_id = $1;"#,
             account_id,
         )
         .fetch_all(database)
