@@ -170,7 +170,7 @@ pub async fn handler(
         .sign_digest_with_rng(&mut rng, digest);
 
     let auth_tag = B64.encode(signature.to_vec());
-    let session_value = format!("{session_enc}*{auth_tag}");
+    let session_value = format!("{session_enc}{auth_tag}");
 
     cookie_jar = cookie_jar.add(
         Cookie::build(SESSION_COOKIE_NAME, session_value)

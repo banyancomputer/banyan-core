@@ -16,7 +16,10 @@ pub async fn handler(
     let metadata_id = metadata_id.to_string();
 
     let database = state.database();
-    let mut transaction = database.begin().await.map_err(DeleteMetadataError::TransactionUnavailable)?;
+    let mut transaction = database
+        .begin()
+        .await
+        .map_err(DeleteMetadataError::TransactionUnavailable)?;
 
     let metadata_state = sqlx::query_scalar!(
         r#"SELECT m.state as 'state: MetadataState' FROM metadata AS m
@@ -54,9 +57,9 @@ pub async fn handler(
                        WHERE id = $1;"#,
                 prev_id,
             )
-                .execute(&mut *transaction)
-                .await
-                .map_err(DeleteMetadataError::ReversionFailed)?;
+            .execute(&mut *transaction)
+            .await
+            .map_err(DeleteMetadataError::ReversionFailed)?;
         }
     }
 
@@ -73,7 +76,10 @@ pub async fn handler(
 
     // todo: need to delete all the hot data stored at various storage hosts
 
-    transaction.commit().await.map_err(DeleteMetadataError::CommitFailed)?;
+    transaction
+        .commit()
+        .await
+        .map_err(DeleteMetadataError::CommitFailed)?;
 
     Ok((StatusCode::NO_CONTENT, ()).into_response())
 }

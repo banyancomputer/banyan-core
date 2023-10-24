@@ -57,18 +57,11 @@ where
         };
 
         let raw_cookie_val = session_cookie.value();
-        let mut cookie_pieces = raw_cookie_val.split('*');
-
-        let session_id_b64 = cookie_pieces
-            .next()
-            .ok_or(SessionIdentityError::EncodingError)?;
-        let authentication_tag_b64 = cookie_pieces
-            .next()
-            .ok_or(SessionIdentityError::EncodingError)?;
-
-        if cookie_pieces.next().is_some() {
+        if raw_cookie_val.len() != 150 {
             return Err(SessionIdentityError::EncodingError);
         }
+
+        let (session_id_b64, authentication_tag_b64) = raw_cookie_val.split_at(22);
 
         let authentication_tag_bytes = B64
             .decode(authentication_tag_b64)
