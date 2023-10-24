@@ -276,8 +276,8 @@ CREATE TABLE storage_grants (
     substr(lower(hex(randomblob(2))), 2) || '-6' ||
     substr(lower(hex(randomblob(6))), 2)),
 
-  storage_host_id TEXT NOT NULL REFERENCES storage_hosts(id) ON DELETE CASCADE,
-  account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  storage_host_id TEXT NOT NULL REFERENCES storage_hosts(id),
+  account_id TEXT NOT NULL REFERENCES accounts(id),
   authorized_amount INTEGER NOT NULL DEFAULT 0,
 
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -285,7 +285,7 @@ CREATE TABLE storage_grants (
 );
 
 CREATE TABLE storage_hosts_metadatas_storage_grants (
-  storage_host_id TEXT NOT NULL REFERENCES storage_hosts(id) ON DELETE CASCADE,
-  metadata_id TEXT NOT NULL REFERENCES metadata(id) ON DELETE CASCADE,
-  storage_grant_id TEXT REFERENCES storage_grants(id) ON DELETE CASCADE
+  storage_host_id TEXT NOT NULL REFERENCES storage_hosts(id),
+  metadata_id TEXT NOT NULL REFERENCES metadata(id),
+  storage_grant_id TEXT REFERENCES storage_grants(id)
 );
