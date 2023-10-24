@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
-use crate::workers::{CurrentTask, TaskStore, TaskStoreError};
+use crate::{CurrentTask, TaskStore, TaskStoreError};
 
 #[async_trait]
 pub trait TaskLike: Serialize + DeserializeOwned + Sync + Send + 'static {

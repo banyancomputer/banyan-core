@@ -1,7 +1,7 @@
 use sqlx::SqliteConnection;
 use time::OffsetDateTime;
 
-use crate::workers::{SqliteTaskStore, Task, TaskLike, TaskState, TaskStoreError};
+use crate::{SqliteTaskStore, Task, TaskLike, TaskState, TaskStoreError};
 
 pub struct TaskInstanceBuilder {
     task_name: String,

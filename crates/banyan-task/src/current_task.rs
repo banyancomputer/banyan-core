@@ -1,6 +1,8 @@
+#![allow(dead_code)]
+
 use time::OffsetDateTime;
 
-use crate::workers::Task;
+use crate::Task;
 
 pub struct CurrentTask {
     id: String,
@@ -39,18 +41,22 @@ pub enum CurrentTaskError {
     TaskNotStarted,
 }
 
-#[cfg(test)]
 pub mod tests {
     use time::OffsetDateTime;
 
     use super::CurrentTask;
 
-    pub(crate) fn default_current_task() -> CurrentTask {
+    pub fn default_current_task() -> CurrentTask {
         CurrentTask {
             id: uuid::Uuid::new_v4().to_string(),
             current_attempt: 0,
             scheduled_at: OffsetDateTime::UNIX_EPOCH,
             started_at: OffsetDateTime::UNIX_EPOCH,
         }
+    }
+
+    pub fn increment_current_task_attempt_count(ct: &mut CurrentTask) -> &mut CurrentTask {
+        ct.current_attempt += 1;
+        ct
     }
 }

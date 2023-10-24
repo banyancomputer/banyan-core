@@ -8,6 +8,7 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::{Json, Router};
 use axum::{Server, ServiceExt};
+use banyan_task::start_background_workers;
 use futures::future::join_all;
 use http::header;
 use tokio::sync::watch;
@@ -22,9 +23,8 @@ use tower_http::validate_request::ValidateRequestHeaderLayer;
 use tower_http::{LatencyUnit, ServiceBuilderExt};
 use tracing::Level;
 
-use crate::app::AppState;
-use crate::workers::start_background_workers;
 use crate::{api, auth, health_check, hooks};
+use crate::app::AppState;
 
 // TODO: might want a longer timeout in some parts of the API and I'd like to be able customize a
 // few layers eventually such as CORS and request timeouts but that's for something down the line

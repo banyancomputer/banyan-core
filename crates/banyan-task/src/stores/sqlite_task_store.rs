@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use sqlx::{Acquire, SqliteConnection, SqlitePool};
 use time::OffsetDateTime;
 
-use crate::workers::{
+use crate::{
     Task, TaskInstanceBuilder, TaskLike, TaskState, TaskStore, TaskStoreError,
     TASK_EXECUTION_TIMEOUT,
 };
@@ -98,7 +98,7 @@ impl TaskStore for SqliteTaskStore {
 
         transaction.commit().await?;
 
-        let timed_out_start_threshold = OffsetDateTime::now_utc() - TASK_EXECUTION_TIMEOUT;
+        let timed_out_start_threshold = time::OffsetDateTime::now_utc() - TASK_EXECUTION_TIMEOUT;
         let pending_retry_tasks = sqlx::query_scalar!(
             r#"SELECT id FROM background_tasks
                    WHERE state IN ('in_progress', 'retry')
