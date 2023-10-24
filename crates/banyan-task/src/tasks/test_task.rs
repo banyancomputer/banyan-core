@@ -4,8 +4,8 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::workers::CurrentTask;
-use crate::workers::TaskLike;
+use crate::CurrentTask;
+use crate::TaskLike;
 
 #[derive(Deserialize, Serialize)]
 pub struct TestTask {
@@ -40,4 +40,28 @@ impl TaskLike for TestTask {
 pub enum TestTaskError {
     #[error("the task failed intentionally")]
     IntentionalFailure,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::current_task::tests::{default_current_task, increment_current_task_attempt_count};
+
+    const USER_ID: &str = "00000000-0000-0000-0000-000000000000";
+
+    #[tokio::test]
+    async fn test_task() -> Result<(), TestTaskError> {
+        let ctx = sqlx::SqlitePool::connect("sqlite::memory:")
+            .await
+            .expect("db setup");
+        let current_task = default_current_task();
+        let task = TestTask::new(Uuid::parse_str(USER_ID).unwrap());
+        let run_result = task.run(current_task, ctx.clone()).await;
+        assert!(run_result.is_err());
+        let mut current_task = default_current_task();
+        increment_current_task_attempt_count(&mut current_task);
+        let run_result = task.run(current_task, ctx).await;
+        assert!(run_result.is_ok());
+        Ok(())
+    }
 }

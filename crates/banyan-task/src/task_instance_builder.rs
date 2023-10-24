@@ -1,8 +1,7 @@
-use chrono::offset::Utc;
-use chrono::NaiveDateTime;
 use sqlx::SqliteConnection;
+use time::OffsetDateTime;
 
-use crate::workers::{SqliteTaskStore, Task, TaskLike, TaskState, TaskStoreError};
+use crate::{SqliteTaskStore, Task, TaskLike, TaskState, TaskStoreError};
 
 pub struct TaskInstanceBuilder {
     task_name: String,
@@ -16,7 +15,7 @@ pub struct TaskInstanceBuilder {
     original_task_id: Option<String>,
     unique_key: Option<String>,
 
-    scheduled_to_run_at: NaiveDateTime,
+    scheduled_to_run_at: OffsetDateTime,
 }
 
 impl TaskInstanceBuilder {
@@ -74,7 +73,7 @@ impl TaskInstanceBuilder {
             original_task_id: None,
             unique_key,
 
-            scheduled_to_run_at: Utc::now().naive_utc(),
+            scheduled_to_run_at: time::OffsetDateTime::now_utc(),
         })
     }
 
@@ -91,11 +90,11 @@ impl TaskInstanceBuilder {
             original_task_id: Some(task.original_task_id.unwrap_or(task.id)),
             unique_key: task.unique_key,
 
-            scheduled_to_run_at: Utc::now().naive_utc(),
+            scheduled_to_run_at: time::OffsetDateTime::now_utc(),
         }
     }
 
-    pub fn run_at(mut self, time: NaiveDateTime) -> Self {
+    pub fn run_at(mut self, time: OffsetDateTime) -> Self {
         self.scheduled_to_run_at = time;
         self
     }

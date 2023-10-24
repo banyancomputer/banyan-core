@@ -23,8 +23,8 @@ use tower_http::{LatencyUnit, ServiceBuilderExt};
 use tracing::Level;
 
 use crate::app_state::AppState;
-use crate::workers::start_background_workers;
 use crate::{api, auth, health_check, hooks};
+use banyan_task::start_background_workers;
 
 // TODO: might want a longer timeout in some parts of the API and I'd like to be able customize a
 // few layers eventually such as CORS and request timeouts but that's for something down the line

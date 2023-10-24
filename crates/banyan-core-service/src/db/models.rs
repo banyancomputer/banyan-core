@@ -135,8 +135,8 @@ pub struct Metadata {
     pub metadata_size: Option<i64>,
     pub metadata_hash: Option<String>,
 
-    pub created_at: chrono::NaiveDateTime,
-    pub updated_at: chrono::NaiveDateTime,
+    pub created_at: time::OffsetDateTime,
+    pub updated_at: time::OffsetDateTime,
 }
 
 /// Bucket Metadata with Snapshot - data associated with the metadata for a bucket
@@ -150,7 +150,7 @@ pub struct MetadataWithSnapshot {
 #[derive(Debug, Serialize, FromRow)]
 pub struct CreateSnapshot {
     pub id: String,
-    pub created_at: chrono::NaiveDateTime,
+    pub created_at: time::OffsetDateTime,
 }
 
 /// Snapshot of a piece of metadata
@@ -159,7 +159,7 @@ pub struct Snapshot {
     pub id: String,
     pub metadata_id: String,
     pub size: i64,
-    pub created_at: chrono::NaiveDateTime,
+    pub created_at: time::OffsetDateTime,
 }
 
 /// Storage Host
@@ -250,7 +250,7 @@ impl From<String> for EmailMessageState {
 pub struct EmailMessage {
     pub id: String,
     pub account_id: String,
-    pub sent_at: chrono::NaiveDateTime,
+    pub sent_at: time::OffsetDateTime,
     pub r#type: String,
     pub state: EmailMessageState,
 }

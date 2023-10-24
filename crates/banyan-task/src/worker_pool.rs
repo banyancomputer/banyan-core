@@ -8,7 +8,7 @@ use tokio::sync::watch;
 use tokio::task::JoinHandle;
 use tokio::time::timeout;
 
-use crate::workers::{
+use crate::{
     CurrentTask, QueueConfig, TaskExecError, TaskLike, TaskStore, Worker, WORKER_SHUTDOWN_TIMEOUT,
 };
 

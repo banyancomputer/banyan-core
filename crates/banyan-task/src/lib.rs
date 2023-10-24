@@ -24,6 +24,11 @@ pub use task_store::{TaskStore, TaskStoreError};
 pub use worker::{Worker, WorkerError};
 pub use worker_pool::{ExecuteTaskFn, StateFn, WorkerPool, WorkerPoolError};
 
+pub mod tests {
+    use super::current_task;
+    pub use current_task::tests::{default_current_task, increment_current_task_attempt_count};
+}
+
 use sqlx::SqlitePool;
 use tokio::sync::watch;
 use tokio::task::JoinHandle;
@@ -41,7 +46,6 @@ pub async fn start_background_workers(
     let task_store = SqliteTaskStore::new(pool.clone());
 
     WorkerPool::new(task_store.clone(), move || pool.clone())
-        .register_task_type::<tasks::TestTask>()
         .configure_queue(QueueConfig::new("default").with_worker_count(5))
         .start(async move {
             let _ = shutdown_rx.changed().await;
