@@ -8,6 +8,7 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::{Json, Router};
 use axum::{Server, ServiceExt};
+use banyan_task::start_background_workers;
 use futures::future::join_all;
 use http::header;
 use tokio::sync::watch;
@@ -22,9 +23,8 @@ use tower_http::validate_request::ValidateRequestHeaderLayer;
 use tower_http::{LatencyUnit, ServiceBuilderExt};
 use tracing::Level;
 
-use crate::app_state::AppState;
+use crate::app::AppState;
 use crate::{api, auth, health_check, hooks};
-use banyan_task::start_background_workers;
 
 // TODO: might want a longer timeout in some parts of the API and I'd like to be able customize a
 // few layers eventually such as CORS and request timeouts but that's for something down the line
@@ -82,7 +82,7 @@ async fn not_found_handler() -> impl IntoResponse {
     )
 }
 
-pub async fn run(app_state: AppState) {
+pub async fn run(listen_addr: SocketAddr, app_state: AppState) {
     let (shutdown_handle, mut shutdown_rx) = graceful_shutdown_blocker().await;
 
     let database = app_state.database();
@@ -132,13 +132,12 @@ pub async fn run(app_state: AppState) {
         .with_state(app_state)
         .fallback(not_found_handler);
 
-    let addr: SocketAddr = "[::]:3001".parse().unwrap();
     let app = middleware_stack.service(root_router);
 
-    tracing::info!(addr = ?addr, "server listening");
+    tracing::info!(listen_addr = ?listen_addr, "service starting up");
 
     let web_handle: JoinHandle<()> = tokio::spawn(async move {
-        Server::bind(&addr)
+        Server::bind(&listen_addr)
             .serve(app.into_make_service())
             .with_graceful_shutdown(async move {
                 let _ = shutdown_rx.changed().await;

@@ -73,7 +73,7 @@ impl TaskInstanceBuilder {
             original_task_id: None,
             unique_key,
 
-            scheduled_to_run_at: time::OffsetDateTime::now_utc(),
+            scheduled_to_run_at: OffsetDateTime::now_utc(),
         })
     }
 
@@ -90,7 +90,7 @@ impl TaskInstanceBuilder {
             original_task_id: Some(task.original_task_id.unwrap_or(task.id)),
             unique_key: task.unique_key,
 
-            scheduled_to_run_at: time::OffsetDateTime::now_utc(),
+            scheduled_to_run_at: OffsetDateTime::now_utc(),
         }
     }
 

@@ -30,6 +30,8 @@ pub struct AuthenticatedClient {
 
     authorized_storage: u64,
     consumed_storage: u64,
+
+    storage_grant_id: String,
 }
 
 impl AuthenticatedClient {
@@ -51,6 +53,10 @@ impl AuthenticatedClient {
 
     pub fn platform_id(&self) -> Uuid {
         self.platform_id
+    }
+
+    pub fn storage_grant_id(&self) -> String {
+        self.storage_grant_id.clone()
     }
 
     pub fn remaining_storage(&self) -> u64 {
@@ -131,14 +137,21 @@ where
             Err(err) => return Err(Self::Rejection::CorruptPlatformId(err)),
         };
 
+        let (allowed_bytes, storage_grant_id) = (
+            authorized_storage.allowed_bytes,
+            authorized_storage.grant_id,
+        );
+
         Ok(AuthenticatedClient {
             id: internal_id,
 
             platform_id,
             fingerprint: key_id,
 
-            authorized_storage,
+            authorized_storage: allowed_bytes as u64,
             consumed_storage,
+
+            storage_grant_id,
         })
     }
 }
@@ -146,14 +159,17 @@ where
 pub async fn current_authorized_storage(
     db: &Database,
     client_id: &str,
-) -> Result<u64, AuthenticatedClientError> {
+) -> Result<AuthorizedStorage, AuthenticatedClientError> {
     match db.ex() {
         #[cfg(feature = "postgres")]
         Executor::Postgres(ref mut conn) => {
             use crate::database::postgres;
 
-            let maybe_allowed_storage: Option<i32> = sqlx::query_scalar(
-                "SELECT allowed_storage FROM storage_grants WHERE client_id = $1::uuid ORDER BY created_at DESC LIMIT 1;",
+            let auth_stor: Option<AuthorizedStorage> = sqlx::query_as(
+                "SELECT id AS grant_id, allowed_storage AS allowed_bytes FROM storage_grants
+                     WHERE client_id = $1::uuid
+                     ORDER BY created_at DESC
+                     LIMIT 1;",
             )
             .bind(client_id)
             .fetch_optional(conn)
@@ -161,15 +177,18 @@ pub async fn current_authorized_storage(
             .map_err(postgres::map_sqlx_error)
             .map_err(AuthenticatedClientError::DbFailure)?;
 
-            Ok(maybe_allowed_storage.unwrap_or(0) as u64)
+            auth_stor.ok_or(AuthenticatedClientError::MissingGrant)
         }
 
         #[cfg(feature = "sqlite")]
         Executor::Sqlite(ref mut conn) => {
             use crate::database::sqlite;
 
-            let maybe_allowed_storage: Option<i64> = sqlx::query_scalar(
-                "SELECT allowed_storage FROM storage_grants WHERE client_id = $1 ORDER BY created_at DESC LIMIT 1;",
+            let auth_stor: Option<AuthorizedStorage> = sqlx::query_as(
+                "SELECT id AS grant_id, allowed_storage AS allowed_bytes FROM storage_grants
+                     WHERE client_id = $1
+                     ORDER BY created_at DESC
+                     LIMIT 1;",
             )
             .bind(client_id)
             .fetch_optional(conn)
@@ -177,7 +196,7 @@ pub async fn current_authorized_storage(
             .map_err(sqlite::map_sqlx_error)
             .map_err(AuthenticatedClientError::DbFailure)?;
 
-            Ok(maybe_allowed_storage.unwrap_or(0) as u64)
+            auth_stor.ok_or(AuthenticatedClientError::MissingGrant)
         }
     }
 }
@@ -296,6 +315,9 @@ pub enum AuthenticatedClientError {
     #[error("bearer token key ID does not conform to our expectations")]
     InvalidKeyId,
 
+    #[error("grant (required for account) was not present")]
+    MissingGrant,
+
     #[error("authentication header wasn't present")]
     MissingHeader,
 
@@ -319,7 +341,11 @@ impl IntoResponse for AuthenticatedClientError {
                 let err_msg = serde_json::json!({ "msg": "invalid request" });
                 (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
             }
-            CorruptDatabaseKey(_) | CorruptInternalId(_) | CorruptPlatformId(_) | DbFailure(_) => {
+            CorruptDatabaseKey(_)
+            | CorruptInternalId(_)
+            | CorruptPlatformId(_)
+            | DbFailure(_)
+            | MissingGrant => {
                 tracing::error!("{self}");
                 let err_msg =
                     serde_json::json!({ "msg": "service is experiencing internal issues" });
@@ -333,12 +359,18 @@ impl IntoResponse for AuthenticatedClientError {
     }
 }
 
+#[derive(sqlx::FromRow)]
+pub struct AuthorizedStorage {
+    pub grant_id: String,
+    pub allowed_bytes: i64,
+}
+
 #[derive(FromRow)]
 pub struct ClientKey {
     public_key: String,
 }
 
-#[derive(FromRow, Debug)]
+#[derive(FromRow)]
 pub struct RemoteId {
     id: String,
     platform_id: String,

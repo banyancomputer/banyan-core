@@ -1,27 +1,33 @@
-// #![feature(const_trait_impl)]
 use tracing::Level;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::{EnvFilter, Layer};
 
 mod api;
-mod app_state;
+mod app;
 mod auth;
-mod config;
-mod db;
+mod database;
 mod email;
-mod error;
+mod event_bus;
 mod extractors;
 mod health_check;
 mod hooks;
 mod http_server;
 mod utils;
 
-use app_state::AppState;
+use app::{AppState, Config};
 
 #[tokio::main]
 async fn main() {
-    let (non_blocking_writer, _guard) = tracing_appender::non_blocking(std::io::stderr());
+    let config = match Config::from_env_and_args() {
+        Ok(c) => c,
+        Err(err) => {
+            println!("failed load a valid config: {err}");
+            std::process::exit(1);
+        }
+    };
+
+    let (non_blocking_writer, _guard) = tracing_appender::non_blocking(std::io::stdout());
     let env_filter = EnvFilter::builder()
         .with_default_directive(Level::INFO.into())
         .from_env_lossy();
@@ -33,8 +39,7 @@ async fn main() {
 
     tracing_subscriber::registry().with(stderr_layer).init();
 
-    let config = config::parse_arguments().unwrap();
-    let app_state = AppState::from_config(&config).await.unwrap();
+    let state = AppState::from_config(&config).await.unwrap();
 
-    http_server::run(app_state).await;
+    http_server::run(config.listen_addr(), state).await;
 }

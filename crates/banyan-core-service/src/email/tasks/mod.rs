@@ -14,7 +14,6 @@ use sqlx::SqlitePool;
 use tracing;
 use uuid::Uuid;
 
-use crate::db::models::CreatedResource;
 use crate::email::config::EmailConfig;
 use crate::email::error::EmailError;
 use crate::email::message::EmailMessage;
@@ -30,25 +29,26 @@ pub struct EmailTaskContext {
 pub enum EmailTaskError {
     #[error("the task encountered an email error: {0}")]
     EmailError(#[from] EmailError),
+
     #[error("the task encountered a sql error: {0}")]
     SqlxError(#[from] sqlx::Error),
 }
 
 #[allow(dead_code)]
 impl EmailTaskContext {
-    pub fn new(db_pool: SqlitePool, email_config: EmailConfig) -> Self {
-        Self {
-            db_pool,
-            email_config,
-        }
-    }
-
     pub fn db_pool(&self) -> &SqlitePool {
         &self.db_pool
     }
 
     pub fn email_config(&self) -> &EmailConfig {
         &self.email_config
+    }
+
+    pub fn new(db_pool: SqlitePool, email_config: EmailConfig) -> Self {
+        Self {
+            db_pool,
+            email_config,
+        }
     }
 }
 
@@ -166,8 +166,7 @@ pub async fn send_email_message(
     .await?;
 
     // Record the outgoing message
-    let created_resource = sqlx::query_as!(
-        CreatedResource,
+    let new_email_id = sqlx::query_scalar!(
         r#"INSERT INTO emails (account_id, type)
          VALUES ($1, $2)
          RETURNING id"#,
@@ -176,7 +175,7 @@ pub async fn send_email_message(
     )
     .fetch_one(&mut *db_conn)
     .await?;
-    let message_id = created_resource.id.parse::<Uuid>().expect("invalid uuid");
+    let message_id = new_email_id.parse::<Uuid>().expect("invalid uuid");
 
     // Send the email -- capture errors to prevent the task from being retried
     let send_result = message.send(
@@ -199,6 +198,9 @@ pub async fn send_email_message(
 #[cfg(test)]
 pub mod tests {
     use super::*;
+
+    use time::OffsetDateTime;
+
     use banyan_task::tests::default_current_task;
     use banyan_task::{CurrentTask, TaskLike};
 
@@ -242,7 +244,7 @@ pub mod tests {
     async fn unsubscribed() -> Result<(), EmailTaskError> {
         let ctx = email_task_context().await;
         // Create one unsubscribed email as the last email sent
-        let now = time::OffsetDateTime::now_utc();
+        let now = OffsetDateTime::now_utc();
         let _later = unsubscribed_email(&ctx, now).await;
         example_email_task(ctx.clone()).await?;
         let email_count = count_sent_emails(&ctx).await;
@@ -254,7 +256,7 @@ pub mod tests {
     async fn unsubscribed_then_sent() -> Result<(), EmailTaskError> {
         let ctx = email_task_context().await;
         // One unsubscribed email then one delivered email as the last email sent
-        let now = time::OffsetDateTime::now_utc();
+        let now = OffsetDateTime::now_utc();
         let later = unsubscribed_email(&ctx, now).await;
         let _later = delivered_email(&ctx, later).await;
         example_email_task(ctx.clone()).await?;
@@ -267,7 +269,7 @@ pub mod tests {
     async fn failure() -> Result<(), EmailTaskError> {
         let ctx = email_task_context().await;
         // Threee failed emails in a row as the last three emails sent
-        let now = time::OffsetDateTime::now_utc();
+        let now = OffsetDateTime::now_utc();
         let later = failed_email(&ctx, now).await;
         let later = failed_email(&ctx, later).await;
         let _later = failed_email(&ctx, later).await;
@@ -281,7 +283,7 @@ pub mod tests {
     async fn failure_then_sent() -> Result<(), EmailTaskError> {
         let ctx = email_task_context().await;
         // Threee failed emails in a row and then one delivered email
-        let now = time::OffsetDateTime::now_utc();
+        let now = OffsetDateTime::now_utc();
         let later = failed_email(&ctx, now).await;
         let later = failed_email(&ctx, later).await;
         let later = failed_email(&ctx, later).await;
@@ -295,7 +297,7 @@ pub mod tests {
     #[tokio::test]
     async fn complaint() -> Result<(), EmailTaskError> {
         let ctx = email_task_context().await;
-        let now = time::OffsetDateTime::now_utc();
+        let now = OffsetDateTime::now_utc();
         // Three complaints interspersed with delivered emails
         let later = complained_email(&ctx, now).await;
         let later = delivered_email(&ctx, later).await;
@@ -314,10 +316,7 @@ pub mod tests {
         Ok(())
     }
 
-    async fn delivered_email(
-        ctx: &EmailTaskContext,
-        when: time::OffsetDateTime,
-    ) -> time::OffsetDateTime {
+    async fn delivered_email(ctx: &EmailTaskContext, when: OffsetDateTime) -> OffsetDateTime {
         let mut db_conn = ctx.db_pool().acquire().await.unwrap();
         sqlx::query!(
             r#"INSERT INTO emails (sent_at, account_id, state, type)
@@ -341,10 +340,7 @@ pub mod tests {
         when + std::time::Duration::from_secs(1)
     }
 
-    async fn failed_email(
-        ctx: &EmailTaskContext,
-        when: time::OffsetDateTime,
-    ) -> time::OffsetDateTime {
+    async fn failed_email(ctx: &EmailTaskContext, when: OffsetDateTime) -> OffsetDateTime {
         let mut db_conn = ctx.db_pool().acquire().await.unwrap();
         sqlx::query!(
             r#"INSERT INTO emails (sent_at, account_id, state, type)
@@ -368,10 +364,7 @@ pub mod tests {
         when + std::time::Duration::from_secs(1)
     }
 
-    async fn complained_email(
-        ctx: &EmailTaskContext,
-        when: time::OffsetDateTime,
-    ) -> time::OffsetDateTime {
+    async fn complained_email(ctx: &EmailTaskContext, when: OffsetDateTime) -> OffsetDateTime {
         let mut db_conn = ctx.db_pool().acquire().await.unwrap();
         sqlx::query!(
             r#"INSERT INTO emails (sent_at, account_id, state, type)
@@ -395,10 +388,7 @@ pub mod tests {
         when + std::time::Duration::from_secs(1)
     }
 
-    async fn unsubscribed_email(
-        ctx: &EmailTaskContext,
-        when: time::OffsetDateTime,
-    ) -> time::OffsetDateTime {
+    async fn unsubscribed_email(ctx: &EmailTaskContext, when: OffsetDateTime) -> OffsetDateTime {
         let mut db_conn = ctx.db_pool().acquire().await.unwrap();
         sqlx::query!(
             r#"INSERT INTO emails (sent_at, account_id, state, type)

@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO accounts (userId, type, provider, providerAccountId)\n                   VALUES ($1, \"oauth\", \"not-google\", 100033331337)\n                   RETURNING id;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "d937772e0fb15d49e28ad981ab0b269da975c6dd8966c0511d3eea3821b51c30"
+}

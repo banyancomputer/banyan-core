@@ -1,6 +1,3 @@
--- We need to record and return how large the snapshot is
-ALTER TABLE snapshots ADD COLUMN size INTEGER;
-
 -- Once a snapshot is created we need to assign it to a storage_host provider
 -- for eventual sealing. This table hold the association of that assignment and
 -- our on going monitoring of state around that process.

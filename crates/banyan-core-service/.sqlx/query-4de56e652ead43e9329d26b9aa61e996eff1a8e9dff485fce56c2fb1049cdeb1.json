@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT SUM(m.data_size) as total_data_size FROM metadata m\n               JOIN storage_hosts_metadatas_storage_grants shmg ON shmg.metadata_id = m.id\n               JOIN storage_grants sg ON shmg.storage_grant_id = sg.id\n               WHERE sg.account_id = $1 AND shmg.storage_host_id = $2;",
+  "describe": {
+    "columns": [
+      {
+        "name": "total_data_size",
+        "ordinal": 0,
+        "type_info": "Int64"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "4de56e652ead43e9329d26b9aa61e996eff1a8e9dff485fce56c2fb1049cdeb1"
+}

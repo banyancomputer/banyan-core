@@ -5,9 +5,13 @@ use axum::headers::{ContentLength, ContentType};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::TypedHeader;
+use cid::multibase::Base;
+use cid::Cid;
 use futures::{TryFutureExt, TryStream, TryStreamExt};
 use jwt_simple::prelude::*;
 use object_store::ObjectStore;
+use reqwest::header::{HeaderMap, HeaderValue};
+use reqwest::{Client, Url};
 use serde::{Deserialize, Serialize};
 use tokio::io::{AsyncWrite, AsyncWriteExt};
 use uuid::Uuid;
@@ -116,7 +120,13 @@ pub async fn handler(
 
             handle_successful_upload(&db, &store, &cr, &upload_id, &store_path).await?;
             // todo: should be a background task
-            report_upload_to_platform(auth_key, request.metadata_id, &cr).await?;
+            report_upload_to_platform(
+                auth_key,
+                client.storage_grant_id(),
+                request.metadata_id,
+                &cr,
+            )
+            .await?;
 
             Ok((StatusCode::NO_CONTENT, ()).into_response())
         }
@@ -309,31 +319,25 @@ async fn record_upload_failed(db: &Database, upload_id: &str) -> Result<(), Uplo
     Ok(())
 }
 
-use cid::Cid;
-use reqwest::header::{HeaderMap, HeaderValue};
-use reqwest::{Client, Url};
-
-#[derive(Serialize)]
-struct MetadataSizeRequest {
-    data_size: u64,
-    normalized_cids: Vec<String>,
-}
-
 async fn report_upload_to_platform(
     auth_key: PlatformAuthKey,
+    storage_authorization_id: String,
     metadata_id: Uuid,
     report: &CarReport,
 ) -> Result<(), UploadError> {
+    let normalized_cids = report
+        .cids()
+        .iter()
+        .map(|c| {
+            c.to_string_of_base(Base::Base64Url)
+                .map_err(UploadError::InvalidInternalCid)
+        })
+        .collect::<Result<Vec<_>, UploadError>>()?;
+
     let metadata_size = MetadataSizeRequest {
         data_size: report.total_size(),
-        normalized_cids: report
-            .cids()
-            .iter()
-            .map(|c| {
-                c.to_string_of_base(cid::multibase::Base::Base64Url)
-                    .expect("parsed cid to unparse")
-            })
-            .collect(),
+        storage_authorization_id,
+        normalized_cids,
     };
 
     let mut default_headers = HeaderMap::new();
@@ -539,6 +543,13 @@ where
     Ok(car_analyzer.report()?)
 }
 
+#[derive(Serialize)]
+struct MetadataSizeRequest {
+    data_size: u64,
+    normalized_cids: Vec<String>,
+    storage_authorization_id: String,
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum UploadError {
     #[error("a database error occurred during an upload {0}")]
@@ -555,6 +566,9 @@ pub enum UploadError {
 
     #[error("account is not authorized to store {0} bytes, {1} bytes are still authorized")]
     InsufficientAuthorizedStorage(u64, u64),
+
+    #[error("a CID from our internal reports wasn't convertable: {0}")]
+    InvalidInternalCid(cid::Error),
 
     #[error("request's data payload was malformed")]
     InvalidRequestData(multer::Error),
@@ -577,7 +591,7 @@ impl IntoResponse for UploadError {
         use UploadError::*;
 
         match self {
-            Database(_) | FailedReport(_) | StoreUnavailable(_) => {
+            Database(_) | FailedReport(_) | InvalidInternalCid(_) | StoreUnavailable(_) => {
                 tracing::error!("{self}");
                 let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()

@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::time::Duration;
 
 mod current_task;
@@ -9,7 +11,6 @@ mod task_instance_builder;
 mod task_like;
 mod task_state;
 mod task_store;
-pub mod tasks;
 mod worker;
 mod worker_pool;
 

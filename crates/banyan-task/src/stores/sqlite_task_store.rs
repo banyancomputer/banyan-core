@@ -2,6 +2,7 @@ use std::time::Duration;
 
 use async_trait::async_trait;
 use sqlx::{Acquire, SqliteConnection, SqlitePool};
+use time::OffsetDateTime;
 
 use crate::{
     Task, TaskInstanceBuilder, TaskLike, TaskState, TaskStore, TaskStoreError,
@@ -181,7 +182,7 @@ impl TaskStore for SqliteTaskStore {
         };
 
         let backoff_time_secs = 30u64 * 3u64.saturating_pow(retried_task.current_attempt as u32);
-        let next_run_at = time::OffsetDateTime::now_utc() + Duration::from_secs(backoff_time_secs);
+        let next_run_at = OffsetDateTime::now_utc() + Duration::from_secs(backoff_time_secs);
 
         let new_task_id = TaskInstanceBuilder::from_task_instance(retried_task)
             .await

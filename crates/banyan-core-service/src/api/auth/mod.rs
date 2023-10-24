@@ -1,22 +1,68 @@
+use axum::routing::get;
 use axum::Router;
 
-mod error;
+use crate::app::AppState;
 
-// Our routeres
-mod device_api_key;
+mod create_device_api_key;
+mod delete_device_api_key;
+mod read_all_device_api_keys;
+mod read_device_api_key;
+
+mod end_regwait;
+pub(crate) mod registration_event;
+mod start_regwait;
+
 #[cfg(feature = "fake")]
-mod fake_account;
+mod create_fake_account;
+
 mod who_am_i;
 
-pub use error::Error as AuthError;
-
-use crate::app_state::AppState;
-
+#[cfg(feature = "fake")]
 pub fn router(state: AppState) -> Router<AppState> {
-    let r = Router::new();
-    #[cfg(feature = "fake")]
-    let r = r.nest("/fake_account", fake_account::router(state.clone()));
-    r.nest("/device_api_key", device_api_key::router(state.clone()))
-        .nest("/who_am_i", who_am_i::router(state.clone()))
+    Router::new()
+        .route(
+            "/device_api_key",
+            get(read_all_device_api_keys::handler).post(create_device_api_key::handler),
+        )
+        .route(
+            "/device_api_key/:key_id",
+            get(read_device_api_key::handler).delete(delete_device_api_key::handler),
+        )
+        .route(
+            "/device_api_key/start_regwait/:fingerprint",
+            get(start_regwait::handler),
+        )
+        .route(
+            "/device_api_key/end_regwait/:fingerprint",
+            get(end_regwait::handler),
+        )
+        .route(
+            "/fake_account",
+            axum::routing::post(create_fake_account::handler),
+        )
+        .route("/who_am_i", get(who_am_i::handler))
+        .with_state(state)
+}
+
+#[cfg(not(feature = "fake"))]
+pub fn router(state: AppState) -> Router<AppState> {
+    Router::new()
+        .route(
+            "/device_api_key",
+            get(read_all_device_api_keys::handler).post(create_device_api_key::handler),
+        )
+        .route(
+            "/device_api_key/:key_id",
+            get(read_device_api_key::handler).delete(delete_device_api_key::handler),
+        )
+        .route(
+            "/device_api_key/start_regwait/:fingerprint",
+            get(start_regwait::handler),
+        )
+        .route(
+            "/device_api_key/end_regwait/:fingerprint",
+            get(end_regwait::handler),
+        )
+        .route("/who_am_i", get(who_am_i::handler))
         .with_state(state)
 }

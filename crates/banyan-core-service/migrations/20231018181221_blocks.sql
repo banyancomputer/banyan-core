@@ -18,8 +18,8 @@ CREATE UNIQUE INDEX idx_blocks_on_cid
   ON blocks(cid);
 
 CREATE TABLE block_locations (
-  metadata_id TEXT NOT NULL REFERENCES metadata(id) ON DELETE CASCADE,
-  block_id UUID NOT NULL REFERENCES blocks(id) ON DELETE CASCADE,
+  metadata_id TEXT NOT NULL REFERENCES metadata(id),
+  block_id TEXT NOT NULL REFERENCES blocks(id),
   storage_host_id TEXT NOT NULL REFERENCES storage_hosts(id) ON DELETE CASCADE,
 
   associated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP

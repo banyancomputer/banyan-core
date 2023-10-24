@@ -6,6 +6,8 @@ license = "LicenseRef-LICENSE.txt"
 
 [dependencies]
 banyan-task = { path = "../banyan-task", version = "^0.1"}
+
+dotenvy = "^0.15"
 async-trait = "^0.1"
 futures = "^0.3"
 itertools = "^0.11"
@@ -15,31 +17,42 @@ rand = "^0.8"
 thiserror = "^1"
 tokio = { version = "^1", features = ["macros", "net", "rt", "rt-multi-thread", "signal", "sync", "time"] }
 
-asn1 = "^0.15"
 blake3 = "^1.4"
-bytes = "^1"
-hex = "^0.4"
+ecdsa = { version = "^0.16", features = ["signing", "verifying"] }
+hmac-sha512 = "^1"
 openssl = { version = "^0.10", features = ["vendored"] }
-pem = "^2"
-regex = "^1.9"
+p384 = "^0.13"
 ring = "^0.17"
-serde = { version = "^1", features = ["derive"] }
+sha1 = "^0.10"
+sha2 = "^0.10"
+
+asn1 = "^0.15"
+base64 = "^0.21"
+bincode = "^1"
+bytes = "^1"
+cid = { version = "^0.10", features = ["serde-codec"] }
+hex = "^0.4"
+pem = "^2"
+phf = { version = "^0.11", features = ["macros"] }
+regex = "^1.9"
 serde_json = "^1"
+serde = { version = "^1", features = ["derive"] }
 time = { version = "^0.3", features = ["serde"] }
 uuid = { version = "^1.3", features = ["fast-rng", "serde", "v4"] }
-cid = { version = "^0.10", features = ["serde-codec"] }
 
-async-session = "^3"
 axum = { version = "^0.6", features = ["macros", "headers", "http2", "multipart", "tracing"] }
-handlebars = { version = "^4.4", features = ["dir_source"] }
+axum-extra = { version = "^0.8", features = ["cookie"] }
 http = "^0.2"
-jsonwebtoken = "^8.3"
+jsonwebtoken = "^9"
+jwt-simple = "^0.11"
+handlebars = { version = "^4.4", features = ["dir_source"] }
 lettre = "^0.10"
-oauth2 = "^4"
 mime = "^0.3"
 multer = { version = "^2", features = ["json", "tokio", "tokio-io"] }
+oauth2 = "^4"
 object_store = "^0.6"
-sqlx = { version = "^0.7", default-features = false, features = ["macros", "migrate", "sqlite", "runtime-tokio", "time"] }
+reqwest = { version = "^0.11", features = ["json"], default-features = false }
+sqlx = { version = "^0.7", default-features = false, features = ["macros", "migrate", "runtime-tokio", "sqlite", "time", "uuid"] }
 tower = { version = "^0.4", features = ["timeout", "load-shed", "limit", "util"] }
 tower-http = { version = "^0.4", features = ["auth", "cors", "limit", "fs", "propagate-header", "request-id", "sensitive-headers", "set-header", "util", "trace", "validate-request"] }
 url = "^2.4"
@@ -48,7 +61,7 @@ validify = "^1.0"
 tracing = "^0.1"
 tracing-appender = "^0.2"
 tracing-futures = { version = "^0.2", default-features = false, features = ["std-future"] }
-tracing-subscriber = { version = "^0.3", default-features = false, features = ["env-filter", "fmt", "local-time", "time", "tracing"] }
+tracing-subscriber = { version = "^0.3", default-features = false, features = ["ansi", "env-filter", "fmt", "local-time", "time", "tracing"] }
 
 [features]
 fake = []

@@ -42,7 +42,9 @@ pub enum CurrentTaskError {
 }
 
 pub mod tests {
-    use super::{CurrentTask, OffsetDateTime};
+    use time::OffsetDateTime;
+
+    use super::CurrentTask;
 
     pub fn default_current_task() -> CurrentTask {
         CurrentTask {
