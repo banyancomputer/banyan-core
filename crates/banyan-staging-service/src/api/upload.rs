@@ -1,17 +1,17 @@
 use std::path::PathBuf;
 
-use axum::TypedHeader;
 use axum::extract::{BodyStream, Json};
 use axum::headers::{ContentLength, ContentType};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use cid::Cid;
+use axum::TypedHeader;
 use cid::multibase::Base;
+use cid::Cid;
 use futures::{TryFutureExt, TryStream, TryStreamExt};
 use jwt_simple::prelude::*;
 use object_store::ObjectStore;
-use reqwest::{Client, Url};
 use reqwest::header::{HeaderMap, HeaderValue};
+use reqwest::{Client, Url};
 use serde::{Deserialize, Serialize};
 use tokio::io::{AsyncWrite, AsyncWriteExt};
 use uuid::Uuid;
@@ -328,7 +328,10 @@ async fn report_upload_to_platform(
     let normalized_cids = report
         .cids()
         .iter()
-        .map(|c| c.to_string_of_base(Base::Base64Url).map_err(UploadError::InvalidInternalCid))
+        .map(|c| {
+            c.to_string_of_base(Base::Base64Url)
+                .map_err(UploadError::InvalidInternalCid)
+        })
         .collect::<Result<Vec<_>, UploadError>>()?;
 
     let metadata_size = MetadataSizeRequest {

@@ -23,8 +23,8 @@ use tower_http::validate_request::ValidateRequestHeaderLayer;
 use tower_http::{LatencyUnit, ServiceBuilderExt};
 use tracing::Level;
 
-use crate::{api, auth, health_check, hooks};
 use crate::app::AppState;
+use crate::{api, auth, health_check, hooks};
 
 // TODO: might want a longer timeout in some parts of the API and I'd like to be able customize a
 // few layers eventually such as CORS and request timeouts but that's for something down the line
