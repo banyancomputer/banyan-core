@@ -4596,7 +4596,7 @@ to-regex-range@^5.0.1:
     is-number "^7.0.0"
 
 "tomb-wasm-experimental@file:./tomb_build":
-  version "1.16.0"
+  version "1.21.0"
 
 toposort-class@^1.0.1:
   version "1.0.1"
