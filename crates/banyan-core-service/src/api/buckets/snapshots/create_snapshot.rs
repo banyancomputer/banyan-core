@@ -19,7 +19,7 @@ pub async fn handler(
     let owned_metadata_id = sqlx::query_scalar!(
         r#"SELECT m.id FROM metadata AS m
                JOIN buckets AS b ON m.bucket_id = b.id
-               JOIN snapshots AS s ON s.metadata_id = m.id
+               LEFT JOIN snapshots AS s ON s.metadata_id = m.id
                WHERE b.account_id = $1
                    AND b.id = $2
                    AND m.id = $3

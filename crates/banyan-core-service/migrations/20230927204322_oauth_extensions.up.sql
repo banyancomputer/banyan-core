@@ -15,8 +15,8 @@ CREATE TABLE rust_users (
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE UNIQUE INDEX idx_unique_users_on_email ON
-  users(email);
+CREATE UNIQUE INDEX idx_unique_rust_users_on_email ON
+  rust_users(email);
 
 CREATE TABLE oauth_state (
   provider TEXT NOT NULL,

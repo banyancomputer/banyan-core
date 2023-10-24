@@ -30,7 +30,7 @@ impl PartialMetadataWithSnapshot {
                     m.state, m.created_at, m.updated_at, s.id as snapshot_id
                 FROM metadata m
                     JOIN buckets b ON m.bucket_id = b.id
-                    JOIN snapshots s ON s.metadata_id = m.id
+                    LEFT JOIN snapshots s ON s.metadata_id = m.id
                     WHERE m.state NOT IN ('upload_failed', 'deleted')
                           AND b.account_id = $1;"#,
             account_id,
@@ -54,7 +54,7 @@ impl PartialMetadataWithSnapshot {
                     m.state, m.created_at, m.updated_at, s.id as snapshot_id
                 FROM metadata m
                     JOIN buckets b ON m.bucket_id = b.id
-                    JOIN snapshots s ON s.metadata_id = m.id
+                    LEFT JOIN snapshots s ON s.metadata_id = m.id
                     WHERE m.state = 'current' AND b.account_id = $1 AND b.id = $2;"#,
             account_id,
             bucket_id,
@@ -86,7 +86,7 @@ impl PartialMetadataWithSnapshot {
                     m.state, m.created_at, m.updated_at, s.id as snapshot_id
                 FROM metadata m
                     JOIN buckets b ON m.bucket_id = b.id
-                    JOIN snapshots s ON s.metadata_id = m.id
+                    LEFT JOIN snapshots s ON s.metadata_id = m.id
                     WHERE m.id = $1 AND b.account_id = $2 AND b.id = $3;"#,
             metadata_id,
             account_id,
