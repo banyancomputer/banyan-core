@@ -18,8 +18,8 @@ export const FolderRow: React.FC<{
     bucket: Bucket;
     tableScroll: number;
     tableRef: React.MutableRefObject<HTMLDivElement | null>;
-    nestingLevel: number;
     path: string[];
+    nestingLevel?: number;
     parrentFolder?: BrowserObject;
 }> = ({ folder, bucket, tableRef, tableScroll, nestingLevel = 0.25, path = [], parrentFolder }) => {
     const [isVisible, setIsVisible] = useState(false);

@@ -51,7 +51,8 @@ export const MoveToModal: React.FC<{ file: BrowserObject; bucket: Bucket; path: 
                 <FolderSelect
                     selectedBucket={bucket}
                     onChange={selectFolder}
-                    onFolderCreation={() => openModal(<MoveToModal bucket={bucket} file={file} path={path} />)}
+                    path={path}
+                    onFolderCreation={() => openModal(<MoveToModal bucket={bucket} file={file} path={path} parrentFolder={parrentFolder} />)}
                 />
             </div>
             <div className="mt-3 flex items-center gap-3 text-xs" >
