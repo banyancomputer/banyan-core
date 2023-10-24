@@ -46,9 +46,6 @@ where
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
         let cookie_jar: CookieJar = CookieJar::from_headers(&parts.headers);
 
-        // todo: error returns are not able to access the cookie state, we need to handle removing
-        // bad session tokens directly in here where appropriate
-
         let session_cookie = match cookie_jar.get(SESSION_COOKIE_NAME) {
             Some(st) => st,
             None => {
@@ -59,11 +56,7 @@ where
             }
         };
 
-        // todo: some sanity checks on the cookie (path, security, is web only)
-
         let raw_cookie_val = session_cookie.value();
-
-        // todo: these are going to be fixed lengths, validate the length and switch to split_at
         let mut cookie_pieces = raw_cookie_val.split('*');
 
         let session_id_b64 = cookie_pieces

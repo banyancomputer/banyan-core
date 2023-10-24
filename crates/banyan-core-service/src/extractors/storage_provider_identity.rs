@@ -104,9 +104,6 @@ where
 
         let key = DecodingKey::from_ec_pem(storage_host.pem.as_bytes())
             .map_err(StorageProviderIdentityError::FormatError)?;
-
-        // TODO: we probably want to use device keys to sign this instead of a
-        // static AES key, this works for now
         let token_data = decode::<StorageHostToken>(token, &key, &token_validator)
             .map_err(StorageProviderIdentityError::FormatError)?;
 
