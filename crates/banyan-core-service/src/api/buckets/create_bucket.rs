@@ -52,10 +52,6 @@ pub async fn handler(
     .await
     .map_err(CreateBucketError::BucketKeyCreationFailed)?;
 
-    // this should only be returning the created bucket_id but we were sending back a complete
-    // nested object, so that has been reproduced for compatibility. todo: check if this is being
-    // used and replace it with a get call for the resource if it is, then clean up this return.
-
     let bucket = sqlx::query_as!(Bucket, "SELECT * FROM buckets WHERE id = $1;", bucket_id)
         .fetch_one(&database)
         .await
@@ -68,7 +64,7 @@ pub async fn handler(
     )
     .fetch_one(&database)
     .await
-    .expect("(temp query, no custom error, just needs refactor)");
+    .map_err(CreateBucketError::AdditionalDetailsUnavailable)?;
 
     let resp = serde_json::json!({
         "id": bucket.id,
@@ -99,6 +95,9 @@ pub struct CreateBucketRequest {
 
 #[derive(Debug, thiserror::Error)]
 pub enum CreateBucketError {
+    #[error("retrieving additional bucket details failed: {0}")]
+    AdditionalDetailsUnavailable(sqlx::Error),
+
     #[error("failed to insert bucket into database: {0}")]
     BucketCreationFailed(sqlx::Error),
 
