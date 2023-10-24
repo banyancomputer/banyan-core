@@ -1,5 +1,4 @@
 pub mod car_buffer;
-pub mod email;
 pub mod keys;
 
 use std::error::Error;
