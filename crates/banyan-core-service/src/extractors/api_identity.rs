@@ -115,12 +115,10 @@ where
 
         // TODO: we probably want to use device keys to sign this instead of a
         // static AES key, this works for now
-        let token_data = decode::<ApiToken>(token, &key, &token_validator)
-            .map_err(|err| {
-                tracing::info!("real error: {}", err);
-
-                return ApiIdentityError::FormatError(err)
-            })?;
+        let token_data = decode::<ApiToken>(token, &key, &token_validator).map_err(|err| {
+            tracing::info!("real error: {}", err);
+            ApiIdentityError::FormatError(err)
+        })?;
 
         let claims = token_data.claims;
 

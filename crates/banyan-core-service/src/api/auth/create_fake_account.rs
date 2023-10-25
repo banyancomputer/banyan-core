@@ -1,10 +1,10 @@
+use crate::app::AppState;
+use crate::utils::keys::sha1_fingerprint_publickey;
 use axum::extract::{Json, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use jwt_simple::prelude::*;
 use serde::Deserialize;
-use crate::app::AppState;
-use crate::utils::keys::sha1_fingerprint_publickey;
 
 #[derive(Deserialize)]
 pub struct CreateFakeAccountRequest {
@@ -39,7 +39,12 @@ pub async fn handler(
 
     let fingerprint = sha1_fingerprint_publickey(&public_key);
 
-    tracing::info!("inserting:\na.id: {}\nfingerprint: {}\nPEM: {}", account_id, fingerprint, request.device_api_key_pem);
+    tracing::info!(
+        "inserting:\na.id: {}\nfingerprint: {}\nPEM: {}",
+        account_id,
+        fingerprint,
+        request.device_api_key_pem
+    );
 
     sqlx::query!(
         "INSERT INTO device_api_keys (account_id, fingerprint, pem) VALUES ($1, $2, $3);",

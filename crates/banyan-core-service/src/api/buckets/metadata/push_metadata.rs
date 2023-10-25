@@ -76,7 +76,10 @@ pub async fn handler(
     let request_data: PushMetadataRequest = serde_json::from_slice(&request_data_bytes)
         .map_err(PushMetadataError::InvalidRequestData)?;
 
-    tracing::info!("approving new prints: {:?}", request_data.included_key_fingerprints);
+    tracing::info!(
+        "approving new prints: {:?}",
+        request_data.included_key_fingerprints
+    );
 
     approve_key_fingerprints(
         &database,

@@ -15,7 +15,11 @@ pub async fn handler(
 
     let database = state.database();
 
-    tracing::info!("searching for bucket usage on account_id {} with bucket id {}", api_id.account_id, bucket_id);
+    tracing::info!(
+        "searching for bucket usage on account_id {} with bucket id {}",
+        api_id.account_id,
+        bucket_id
+    );
 
     let query_count_result: Result<i32, _> = sqlx::query_scalar!(
         r#"SELECT COUNT(id) 
@@ -39,7 +43,7 @@ pub async fn handler(
             )
             .fetch_one(&database)
             .await;
-        
+
             match query_usage_result {
                 Ok(Some(size)) => {
                     let resp = serde_json::json!({ "size": size });
@@ -49,8 +53,7 @@ pub async fn handler(
                     if query_count > 0 {
                         let resp = serde_json::json!({ "size": 0 });
                         (StatusCode::OK, Json(resp)).into_response()
-                    }
-                    else {
+                    } else {
                         let err_msg = serde_json::json!({ "msg": "bucket not found" });
                         (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
                     }
@@ -61,11 +64,10 @@ pub async fn handler(
                     (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
                 }
             }
-
-        },
+        }
         Err(_) => {
             let err_msg = serde_json::json!({ "msg": "bucket not found" });
             (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
-        },
+        }
     }
 }
