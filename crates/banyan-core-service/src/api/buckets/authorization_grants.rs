@@ -23,27 +23,31 @@ pub async fn handler(
     let authorized_amounts = sqlx::query_as!(
         AuthorizedAmounts,
         r#"WITH current_grants AS (
-               SELECT id, storage_host_id, account_id, MAX(redeemed_at) AS most_recently_redeemed_at
-                   FROM storage_grants
-                   WHERE redeemed_at IS NOT NULL
-                   GROUP BY storage_host_id, account_id
-           )
-           SELECT sg.id AS storage_grant_id, sg.authorized_amount, sh.name AS storage_host_name, sh.url AS storage_host_url
-               FROM buckets AS b
-               JOIN metadata AS m ON m.bucket_id = b.id
-               JOIN storage_hosts_metadatas_storage_grants AS shms ON shms.metadata_id = m.id
-               JOIN storage_hosts AS sh ON sh.id = shms.storage_host_id
-               JOIN storage_grants AS sg ON sg.id = shms.storage_grant_id
-               JOIN current_grants AS cg ON cg.id = sh.id
-               WHERE b.account_id = $1
-                   AND b.id = $2
-                   AND m.state NOT IN ('deleted', 'upload_failed');"#,
+            SELECT id, authorized_amount, storage_host_id, account_id, MAX(redeemed_at) AS most_recently_redeemed_at
+            FROM storage_grants
+            WHERE redeemed_at IS NOT NULL AND account_id = $1
+            GROUP BY storage_host_id, account_id
+        )
+            SELECT sg.id AS storage_grant_id, sg.authorized_amount, sh.name AS storage_host_name, sh.url AS storage_host_url
+                FROM current_grants AS cg
+                JOIN storage_hosts_metadatas_storage_grants AS shms ON shms.storage_grant_id = cg.id
+                JOIN storage_hosts AS sh ON sh.id = shms.storage_host_id
+                JOIN metadata AS m ON m.id = shms.metadata_id
+                JOIN buckets AS b ON b.id = m.bucket_id
+                JOIN storage_grants AS sg ON sg.id = cg.id
+                WHERE b.id = $2
+                AND m.state NOT IN ('deleted', 'upload_failed');"#,
         api_id.account_id,
         bucket_id,
     )
     .fetch_all(&database)
     .await
-    .map_err(AuthorizationGrantError::LookupFailed)?;
+    .map_err(|err|{
+        tracing::info!("failed to query.......");
+        AuthorizationGrantError::LookupFailed(err)
+    })?;
+
+    tracing::info!("authorized amounts: {:?}", authorized_amounts);
 
     if authorized_amounts.is_empty() {
         return Err(AuthorizationGrantError::NotFound);
@@ -89,11 +93,10 @@ pub async fn handler(
     Ok((StatusCode::OK, Json(resp_msg)).into_response())
 }
 
-#[derive(sqlx::FromRow)]
+#[derive(sqlx::FromRow, Debug)]
 struct AuthorizedAmounts {
     authorized_amount: i64,
     storage_grant_id: String,
-
     storage_host_name: String,
     storage_host_url: String,
 }

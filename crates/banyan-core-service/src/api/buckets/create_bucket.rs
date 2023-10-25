@@ -57,6 +57,11 @@ pub async fn handler(
         .await
         .expect("(temp query, no custom error, just needs refactor)");
 
+    tracing::info!(
+        "searching for a bucket key where the id is {}",
+        bucket_key_id
+    );
+
     let bucket_key = sqlx::query_as!(
         BucketKey,
         "SELECT * FROM bucket_keys WHERE id = $1;",
