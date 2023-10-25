@@ -78,12 +78,12 @@ where
         // Allow +/- 20 sec clock skew off the expiration and not before time
         token_validator.leeway = 20;
 
+        // TODO: eventually implement aud restriction
         // Restrict audience as our clients will use the same API key for authorization to multiple
         // services
-        //token_validator.set_audience(&["banyan-platform"]);
-
+        // token_validator.set_audience(&["banyan-platform"]);
         // Require all of our keys except for the attestations and proofs
-        token_validator.set_required_spec_claims(&["aud", "exp", "nbf", "sub", "iat"]);
+        token_validator.set_required_spec_claims(&["exp", "nbf", "sub", "iat"]);
 
         let token = bearer.token();
         let header_data = decode_header(token).map_err(ApiIdentityError::FormatError)?;
@@ -160,7 +160,7 @@ pub enum ApiIdentityError {
     #[error("the provided token's validity range is outside our allowed range")]
     ExtremeTokenValidity,
 
-    #[error("format of the provide bearer token didn't meet our requirements")]
+    #[error("format of the provided bearer token didn't meet our requirements")]
     FormatError(jsonwebtoken::errors::Error),
 
     #[error("no Authorization header was present in request to protected route")]

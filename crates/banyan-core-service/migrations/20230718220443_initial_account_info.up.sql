@@ -212,7 +212,12 @@ CREATE TABLE metadata (
   metadata_hash TEXT,
 
   -- The state of the metadata
-  -- TODO: Make this an enum
+  -- 'uploading' means the metadata is being uploaded the server
+  -- 'upload_failed' means the metadata failed to upload to the server
+  -- 'pending' means the metadata has been processed by the server and waiting conf by the staging server
+  -- 'current' means the metadata has been fully processed and is the current version of the bucket
+  -- 'outdated' means the metadata has been fully processed but is not the current version of the bucket
+  -- 'deleted' means the metadata has been deleted
   state VARCHAR(32) NOT NULL,
 
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
