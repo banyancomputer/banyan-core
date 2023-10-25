@@ -80,7 +80,7 @@ where
 
         // Restrict audience as our clients will use the same API key for authorization to multiple
         // services
-        //token_validator.set_audience(&["banyan-platform"]);
+        token_validator.set_audience(&["banyan-platform"]);
 
         // Require all of our keys except for the attestations and proofs
         token_validator.set_required_spec_claims(&["aud", "exp", "nbf", "sub", "iat"]);
@@ -88,7 +88,7 @@ where
         let token = bearer.token();
         let header_data = decode_header(token).map_err(ApiIdentityError::FormatError)?;
 
-        let mut key_id = match header_data.kid {
+        let key_id = match header_data.kid {
             Some(key_id) if key_regex.is_match(key_id.as_str()) => key_id,
             Some(_) => return Err(ApiIdentityError::BadKeyFormat),
             None => return Err(ApiIdentityError::UnidentifiedKey),
@@ -96,7 +96,6 @@ where
 
         let database = Database::from_ref(state);
 
-        key_id = key_id.replace(':', "");
         tracing::info!("searching for key_id: {:?}", key_id);
 
         let db_device_api_key = sqlx::query_as!(
@@ -117,7 +116,11 @@ where
         // TODO: we probably want to use device keys to sign this instead of a
         // static AES key, this works for now
         let token_data = decode::<ApiToken>(token, &key, &token_validator)
-            .map_err(ApiIdentityError::FormatError)?;
+            .map_err(|err| {
+                tracing::info!("real error: {}", err);
+
+                return ApiIdentityError::FormatError(err)
+            })?;
 
         let claims = token_data.claims;
 

@@ -15,6 +15,8 @@ pub async fn handler(
 
     let database = state.database();
 
+    tracing::info!("searching for bucket usage on account_id {} with bucket id {}", api_id.account_id, bucket_id);
+
     let query_result: Result<Option<i64>, _> = sqlx::query_scalar!(
         r#"SELECT SUM(m.data_size) as size
                FROM metadata m

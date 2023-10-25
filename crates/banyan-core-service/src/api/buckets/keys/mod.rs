@@ -18,6 +18,8 @@ pub fn router(state: AppState) -> Router<AppState> {
             "/:bucket_key_id",
             get(single_bucket_key::handler).delete(delete_bucket_key::handler),
         )
+        // Isn't rejection supposed to be different? this allows you to "reject" a key which was already accepting,
+        // which is not expected behavior so far as I'm aware
         .route("/:bucket_key_id/reject", post(delete_bucket_key::handler))
         .with_state(state)
 }
