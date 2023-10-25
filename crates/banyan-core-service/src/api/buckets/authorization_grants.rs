@@ -24,17 +24,17 @@ pub async fn handler(
         AuthorizedAmounts,
         r#"WITH current_grants AS (
                SELECT id, storage_host_id, account_id, MAX(redeemed_at) AS most_recently_redeemed_at
-                   FROM storage_grants
-                   WHERE redeemed_at IS NOT NULL
-                   GROUP BY storage_host_id, account_id
+               FROM storage_grants
+               WHERE redeemed_at IS NOT NULL AND account_id = $1
+               GROUP BY storage_host_id, account_id
            )
            SELECT sg.id AS storage_grant_id, sg.authorized_amount, sh.name AS storage_host_name, sh.url AS storage_host_url
-               FROM buckets AS b
-               JOIN metadata AS m ON m.bucket_id = b.id
-               JOIN storage_hosts_metadatas_storage_grants AS shms ON shms.metadata_id = m.id
+               FROM current_grants AS cg
+               JOIN storage_hosts_metadatas_storage_grants AS shms ON shms.storage_grant_id = cg.id
                JOIN storage_hosts AS sh ON sh.id = shms.storage_host_id
-               JOIN storage_grants AS sg ON sg.id = shms.storage_grant_id
-               JOIN current_grants AS cg ON cg.id = sh.id
+               JOIN metadata AS m ON m.id = shms.metadata_id
+               JOIN buckets AS b ON b.id = m.bucket_id
+               JOIN storage_grants AS sg ON sg.id = cg.id
                WHERE b.account_id = $1
                    AND b.id = $2
                    AND m.state NOT IN ('deleted', 'upload_failed');"#,
