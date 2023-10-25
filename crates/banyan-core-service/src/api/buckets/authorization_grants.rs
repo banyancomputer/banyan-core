@@ -23,7 +23,7 @@ pub async fn handler(
     let authorized_amounts = sqlx::query_as!(
         AuthorizedAmounts,
         r#"WITH current_grants AS (
-               SELECT id, authorized_amount, storage_host_id, account_id, MAX(redeemed_at) AS most_recently_redeemed_at
+               SELECT id, storage_host_id, account_id, MAX(redeemed_at) AS most_recently_redeemed_at
                FROM storage_grants
                WHERE redeemed_at IS NOT NULL AND account_id = $1
                GROUP BY storage_host_id, account_id
