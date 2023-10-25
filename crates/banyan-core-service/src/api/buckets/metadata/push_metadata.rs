@@ -29,7 +29,7 @@ const ONE_HUNDRED_MIB: i64 = 100 * 1024 * 1024;
 /// Upper size limit on the JSON payload that precedes a metadata CAR file upload (128KiB)
 const REQUEST_DATA_SIZE_LIMIT: u64 = 128 * 1_024;
 
-const STORAGE_TICKET_DURATION: u64 = 15 * 60; // 15 minutes
+pub const STORAGE_TICKET_DURATION: u64 = 15 * 60; // 15 minutes
 
 pub async fn handler(
     api_id: ApiIdentity,

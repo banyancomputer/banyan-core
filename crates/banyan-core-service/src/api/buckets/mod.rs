@@ -11,6 +11,8 @@ mod bucket_usage;
 mod current_total_usage;
 mod current_total_usage_limit;
 
+mod authorization_grants;
+
 use axum::routing::get;
 use axum::Router;
 
@@ -26,6 +28,10 @@ pub fn router(state: AppState) -> Router<AppState> {
         .nest("/:bucket_id/metadata", metadata::router(state.clone()))
         .nest("/:bucket_id/snapshots", snapshots::router(state.clone()))
         .route("/:bucket_id/usage", get(bucket_usage::handler))
+        .route(
+            "/:bucket_id/authorization_grants",
+            get(authorization_grants::handler),
+        )
         .route("/usage", get(current_total_usage::handler))
         .route("/usage_limit", get(current_total_usage_limit::handler))
         .route("/", get(all_buckets::handler).post(create_bucket::handler))
