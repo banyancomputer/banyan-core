@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE metadata SET metadata_size = $2, metadata_hash = $3, state = 'pending' WHERE id = $1;",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "57d79be81c9cee7ef9ea62e5cef571622fe891037151ebca3bf4bc15fea5e30a"
+}
