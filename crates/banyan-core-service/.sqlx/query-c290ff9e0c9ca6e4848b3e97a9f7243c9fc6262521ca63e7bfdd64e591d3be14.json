@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT COUNT(id) \n               FROM buckets b \n               WHERE b.account_id = $1 AND b.id = $2;",
+  "describe": {
+    "columns": [
+      {
+        "name": "COUNT(id)",
+        "ordinal": 0,
+        "type_info": "Int"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "c290ff9e0c9ca6e4848b3e97a9f7243c9fc6262521ca63e7bfdd64e591d3be14"
+}
