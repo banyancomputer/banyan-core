@@ -1,16 +1,21 @@
 use std::time::Duration;
 
 use axum::{Json, Router, Server};
+use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
+use axum::routing::get;
 use futures::future::join_all;
+use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
+use time::OffsetDateTime;
 use tokio::task::JoinHandle;
 use tokio::sync::watch;
 use tracing::Level;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::{EnvFilter, Layer};
+use uuid::Uuid;
 
 #[tokio::main]
 async fn main() {
@@ -32,9 +37,9 @@ async fn main() {
     //   * { "health_status": "green/yellow/red", "database": "healthy", "job_queue": 0 }
     // /api/v1/alerts
     //   * List of currently active alerts
-    //   * { "alerts": [{"id": "<uuid>", "msg": "Something has gone wrong!", "type": "setup_required", "triggered_at": "<date time>"}] }
+    //   * [{"id": "<uuid>", "msg": "Something has gone wrong!", "type": "setup_required", "triggered_at": "<date time>"}]
     // /api/v1/alerts/history
-    //   * { "alerts": [{"id": "<uuid>", "msg": "Something has gone wrong!", "type": "deal_expired", "triggered_at": "<date time>", "resolved_at": "<date time>"}] }
+    //   * [{"id": "<uuid>", "msg": "Something has gone wrong!", "type": "deal_expired", "triggered_at": "<date time>", "resolved_at": "<date time>"}]
     // /api/v1/config
     //   * { "friendly_name": "Vault42", "platform": {"name": "vault_42", "id": "<uuid>"},
     //   "settings": { "billing_start_day": 5, "time_zone": "America/New_York" } }
@@ -67,9 +72,10 @@ async fn main() {
 
     let (shutdown_handle, mut shutdown_rx) = graceful_shutdown_blocker().await;
 
-    let state = State::new().await;
+    let state = AppState::new().await;
 
     let app = Router::new()
+        .route("/api/v1/alerts", get(alerts_handler))
         .with_state(state)
         .fallback(not_found_handler);
 
@@ -89,11 +95,11 @@ async fn main() {
 }
 
 #[derive(Clone)]
-pub struct State {
+pub struct AppState {
     database: SqlitePool,
 }
 
-impl State {
+impl AppState {
     pub async fn new() -> Self {
         Self {
             database: SqlitePool::connect("sqlite::memory:").await.expect("valid"),
@@ -103,6 +109,17 @@ impl State {
     pub fn database(&self) -> SqlitePool {
         self.database.clone()
     }
+}
+
+pub async fn alerts_handler(
+    State(_state): State<AppState>,
+) -> Response {
+    let resp_msg = serde_json::json!([
+        Alert::random(),
+        Alert::random(),
+        Alert::random(),
+    ]);
+    (StatusCode::OK, Json(resp_msg)).into_response()
 }
 
 pub async fn graceful_shutdown_blocker() -> (JoinHandle<()>, watch::Receiver<()>) {
@@ -125,6 +142,46 @@ pub async fn graceful_shutdown_blocker() -> (JoinHandle<()>, watch::Receiver<()>
     });
 
     (handle, rx)
+}
+
+#[derive(Deserialize, Serialize)]
+struct Alert {
+    id: Uuid,
+
+    #[serde(rename = "msg")]
+    message: String,
+
+    severity: AlertSeverity,
+    r#type: AlertType,
+
+    triggered_at: OffsetDateTime,
+}
+
+impl Alert {
+    fn random() -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            severity: AlertSeverity::Warning,
+            message: "here's some alert text. Something is going on".to_string(),
+            r#type: AlertType::SetupRequired,
+            triggered_at: OffsetDateTime::now_utc(),
+        }
+    }
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+enum AlertSeverity {
+    Warning,
+    Error,
+    Fatal,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+enum AlertType {
+    DealExpired,
+    SetupRequired,
 }
 
 async fn not_found_handler() -> impl IntoResponse {
