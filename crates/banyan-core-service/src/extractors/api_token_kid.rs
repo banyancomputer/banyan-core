@@ -14,7 +14,7 @@ use jsonwebtoken::decode_header;
 use serde::{Deserialize, Serialize};
 
 static KEY_ID_VALIDATOR: OnceLock<regex::Regex> = OnceLock::new();
-const KEY_ID_REGEX: &str = r"^[0-9a-f]{2}(:[0-9a-f]{2}){19}$";
+const KEY_ID_REGEX: &str = r"^[0-9a-f]{40}$";
 
 #[derive(Deserialize, Serialize)]
 pub struct ApiTokenKid(String);
