@@ -58,8 +58,11 @@ pub async fn handler(
             .await
             .map_err(FinalizeUploadError::UnableToRecordBlock)?;
 
+        // Completeley insert the block location into the database, treating it like we've definitely never seen it before
         sqlx::query!(
-            "INSERT INTO block_locations (block_id, metadata_id, storage_host_id) VALUES ($1, $2, $3);",
+            r#"INSERT INTO block_locations
+            (block_id, metadata_id, storage_host_id)
+            VALUES ($1, $2, $3);"#,
             block_id,
             db_metadata_id,
             storage_provider.id,

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE block_locations AS bl\n                SET expired_at = CURRENT_TIMESTAMP\n                WHERE bl.block_id = $1 AND bl.metadata_id = $2;",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "3eb1ec64bd256d798c47668c6b0d541fd49cfa618032b4dae91a6c781ba40bbf"
+}
