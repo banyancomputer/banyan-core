@@ -49,7 +49,10 @@ pub async fn handler(
         return Err(AuthorizationGrantError::NotFound);
     }
 
-    let mut all_auths = serde_json::Map::new();
+    let mut caps = Capabilities {
+        capabilities: serde_json::Map::new(),
+    };
+
     let mut audiences = HashSet::new();
 
     for auth_details in authorized_amounts.into_iter() {
@@ -62,18 +65,18 @@ pub async fn handler(
         host_caps.insert("grant_id".to_string(), auth_details.storage_grant_id.into());
         audiences.insert(auth_details.storage_host_name);
 
-        all_auths.insert(auth_details.storage_host_url, host_caps.into());
+        caps.capabilities
+            .insert(auth_details.storage_host_url, host_caps.into());
     }
 
-    let mut claims =
-        Claims::with_custom_claims(all_auths, Duration::from_secs(STORAGE_TICKET_DURATION))
-            .with_audiences(audiences)
-            .with_issuer("banyan-platform")
-            .with_subject(format!(
-                "{}@{}",
-                api_id.user_id, api_id.device_api_key_fingerprint
-            ))
-            .invalid_before(Clock::now_since_epoch() - Duration::from_secs(30));
+    let mut claims = Claims::with_custom_claims(caps, Duration::from_secs(STORAGE_TICKET_DURATION))
+        .with_audiences(audiences)
+        .with_issuer("banyan-platform")
+        .with_subject(format!(
+            "{}@{}",
+            api_id.user_id, api_id.device_api_key_fingerprint
+        ))
+        .invalid_before(Clock::now_since_epoch() - Duration::from_secs(30));
 
     claims.create_nonce();
     claims.issued_at = Some(Clock::now_since_epoch());
@@ -121,4 +124,10 @@ impl IntoResponse for AuthorizationGrantError {
             }
         }
     }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct Capabilities {
+    #[serde(rename = "cap")]
+    capabilities: serde_json::Map<String, serde_json::Value>,
 }
