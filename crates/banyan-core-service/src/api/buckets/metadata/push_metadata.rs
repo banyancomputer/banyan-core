@@ -113,7 +113,8 @@ pub async fn handler(
 
     let expected_total_storage = currently_consumed_storage(&database, &api_id.account_id)
         .await
-        .map_err(PushMetadataError::UnableToCheckAccounting)? as i64;
+        .map_err(PushMetadataError::UnableToCheckAccounting)?
+        as i64;
 
     if expected_total_storage > ACCOUNT_STORAGE_QUOTA {
         tracing::warn!(account_id = ?api_id.account_id, ?expected_total_storage, "account reached storage limit");
@@ -310,15 +311,17 @@ async fn generate_new_storage_authorization(
     let mut capabilities = serde_json::Map::new();
     capabilities.insert(storage_host.url.to_string(), storage_details.into());
 
-    let mut claims =
-        Claims::with_custom_claims(Capabilities { capabilities }, Duration::from_secs(STORAGE_TICKET_DURATION))
-            .with_audiences(HashSet::from_strings(&[storage_host.name.as_str()]))
-            .with_issuer("banyan-platform")
-            .with_subject(format!(
-                "{}@{}",
-                api_id.user_id, api_id.device_api_key_fingerprint
-            ))
-            .invalid_before(Clock::now_since_epoch() - Duration::from_secs(30));
+    let mut claims = Claims::with_custom_claims(
+        Capabilities { capabilities },
+        Duration::from_secs(STORAGE_TICKET_DURATION),
+    )
+    .with_audiences(HashSet::from_strings(&[storage_host.name.as_str()]))
+    .with_issuer("banyan-platform")
+    .with_subject(format!(
+        "{}@{}",
+        api_id.user_id, api_id.device_api_key_fingerprint
+    ))
+    .invalid_before(Clock::now_since_epoch() - Duration::from_secs(30));
 
     claims.create_nonce();
     claims.issued_at = Some(Clock::now_since_epoch());

@@ -132,7 +132,7 @@ where
 
         let grant_id =
             Uuid::parse_str(&usage.grant_id).map_err(|_| StorageGrantError::InvalidGrant)?;
-        
+
         let grant = StorageGrant {
             platform_id,
             grant_id,
