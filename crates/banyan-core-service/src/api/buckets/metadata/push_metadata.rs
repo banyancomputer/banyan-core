@@ -485,6 +485,12 @@ where
     Ok((hash.to_string(), bytes_written))
 }
 
+#[derive(sqlx::FromRow)]
+struct UniqueBlockLocation {
+    block_id: String,
+    metadata_id: String
+}
+
 async fn expire_deleted_blocks(
     database: &Database,
     api_id: &ApiIdentity,
@@ -503,38 +509,38 @@ async fn expire_deleted_blocks(
             .to_string_of_base(Base::Base64Url)
             .map_err(PushMetadataError::InvalidCid)?;
 
-        let block_location_ids: Vec<String> = sqlx::query_scalar!(
-            r#"SELECT bl.id
-            FROM block_locations AS bl
-            JOIN blocks ON blocks.id = bl.block_id
-            JOIN metadata AS m ON m.id = bl.metadata_id
-            JOIN buckets AS b ON b.id = m.bucket_id
-            WHERE b.account_id = $1 AND b.id = $2 AND blocks.cid = $3;"#,
-            account_id,
-            bucket_id,
-            normalized_cid,
-        )
-        .fetch_all(&mut *transaction)
-        .await
-        .map_err(PushMetadataError::UnableToExpireBlocks)?;
+        let unique_block_locations = sqlx::query_as!(
+            UniqueBlockLocation,
+            r#"SELECT blocks.id AS block_id, m.id AS metadata_id
+                FROM block_locations AS bl
+                JOIN blocks ON blocks.id = bl.block_id
+                JOIN metadata AS m ON m.id = bl.metadata_id
+                JOIN buckets AS b ON b.id = m.bucket_id
+                WHERE b.account_id = $1 AND b.id = $2 AND blocks.cid = $3;"#,
+                account_id,
+                bucket_id,
+                normalized_cid,
+            )
+            .fetch_all(&mut *transaction)
+            .await
+            .map_err(PushMetadataError::UnableToExpireBlocks)?;
 
-        if block_location_ids.is_empty() {
+        if unique_block_locations.is_empty() {
             return Err(PushMetadataError::NoBlock(original_cid));
         }
 
-        let block_location_ids = block_location_ids
-            .iter()
-            .fold(String::new(), |chain, id| format!("{},{}", chain, id));
-
-        sqlx::query!(
-            r#"UPDATE block_locations AS bl
-            SET expired_at = CURRENT_TIMESTAMP
-            WHERE bl.id IN ($1);"#,
-            block_location_ids
-        )
-        .execute(&mut *transaction)
-        .await
-        .map_err(PushMetadataError::UnableToExpireBlocks)?;
+        for unique_block_location in unique_block_locations {
+            sqlx::query!(
+                r#"UPDATE block_locations AS bl
+                SET expired_at = CURRENT_TIMESTAMP
+                WHERE bl.block_id = $1 AND bl.metadata_id = $2;"#,
+                unique_block_location.block_id,
+                unique_block_location.metadata_id,
+            )
+            .execute(&mut *transaction)
+            .await
+            .map_err(PushMetadataError::UnableToExpireBlocks)?;
+        }
     }
     transaction
         .commit()
