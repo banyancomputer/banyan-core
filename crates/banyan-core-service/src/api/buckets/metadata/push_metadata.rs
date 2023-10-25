@@ -301,7 +301,7 @@ async fn generate_new_storage_authorization(
     .fetch_one(database)
     .await
     .map_err(StorageAuthorizationError::GrantRecordingFailed)?;
-    println!("minitnet: {:?}", storage_grant_id);
+
     let mut storage_details = serde_json::Map::new();
 
     storage_details.insert("available_storage".to_string(), authorized_amount.into());
