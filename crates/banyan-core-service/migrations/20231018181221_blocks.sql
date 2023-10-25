@@ -18,6 +18,14 @@ CREATE UNIQUE INDEX idx_blocks_on_cid
   ON blocks(cid);
 
 CREATE TABLE block_locations (
+  id TEXT NOT NULL PRIMARY KEY DEFAULT (
+    lower(hex(randomblob(4))) || '-' ||
+    lower(hex(randomblob(2))) || '-4' ||
+    substr(lower(hex(randomblob(2))), 2) || '-a' ||
+    substr(lower(hex(randomblob(2))), 2) || '-6' ||
+    substr(lower(hex(randomblob(6))), 2)
+  ),
+  
   metadata_id TEXT NOT NULL REFERENCES metadata(id),
   block_id TEXT NOT NULL REFERENCES blocks(id),
   storage_host_id TEXT NOT NULL REFERENCES storage_hosts(id) ON DELETE CASCADE,

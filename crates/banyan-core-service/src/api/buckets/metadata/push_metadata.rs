@@ -503,26 +503,34 @@ async fn expire_deleted_blocks(
             .to_string_of_base(Base::Base64Url)
             .map_err(PushMetadataError::InvalidCid)?;
 
-        let maybe_block_id =
-            sqlx::query_scalar!("SELECT id FROM blocks WHERE cid = $1", normalized_cid)
-                .fetch_optional(&mut *transaction)
-                .await
-                .map_err(PushMetadataError::UnableToExpireBlocks)?;
-        let block_id = match maybe_block_id {
-            Some(id) => id,
-            None => return Err(PushMetadataError::NoBlock(original_cid)),
-        };
-
-        sqlx::query!(
-            r#"UPDATE block_locations SET expired_at = CURRENT_TIMESTAMP
-                WHERE block_id = $1 AND metadata_id IN (
-                    SELECT m.id FROM metadata m
-                    JOIN buckets b ON b.id = m.bucket_id
-                    WHERE b.account_id = $2 AND b.id = $3
-                );"#,
-            block_id,
+        let block_location_ids: Vec<String> = sqlx::query_scalar!(
+            r#"SELECT bl.id
+            FROM block_locations AS bl
+            JOIN blocks ON blocks.id = bl.block_id
+            JOIN metadata AS m ON m.id = bl.metadata_id
+            JOIN buckets AS b ON b.id = m.bucket_id
+            WHERE b.account_id = $1 AND b.id = $2 AND blocks.cid = $3;"#,
             account_id,
             bucket_id,
+            normalized_cid,
+        )
+        .fetch_all(&mut *transaction)
+        .await
+        .map_err(PushMetadataError::UnableToExpireBlocks)?;
+
+        if block_location_ids.is_empty() {
+            return Err(PushMetadataError::NoBlock(original_cid));
+        }
+
+        let block_location_ids = block_location_ids
+            .iter()
+            .fold(String::new(), |chain, id| format!("{},{}", chain, id));
+
+        sqlx::query!(
+            r#"UPDATE block_locations AS bl
+            SET expired_at = CURRENT_TIMESTAMP
+            WHERE bl.id IN ($1);"#,
+            block_location_ids
         )
         .execute(&mut *transaction)
         .await
