@@ -1,0 +1,124 @@
+use std::collections::HashSet;
+
+use axum::extract::{Json, Path, State};
+use axum::http::StatusCode;
+use axum::response::{IntoResponse, Response};
+use jwt_simple::prelude::*;
+use uuid::Uuid;
+
+use crate::api::buckets::metadata::STORAGE_TICKET_DURATION;
+use crate::app::AppState;
+use crate::extractors::ApiIdentity;
+
+pub async fn handler(
+    api_id: ApiIdentity,
+    State(state): State<AppState>,
+    Path(bucket_id): Path<Uuid>,
+) -> Result<Response, AuthorizationGrantError> {
+    let database = state.database();
+    let service_signing_key = state.secrets().service_signing_key();
+
+    let bucket_id = bucket_id.to_string();
+
+    let authorized_amounts = sqlx::query_as!(
+        AuthorizedAmounts,
+        r#"WITH current_grants AS (
+               SELECT id, storage_host_id, account_id, MAX(redeemed_at) AS most_recently_redeemed_at
+                   FROM storage_grants
+                   WHERE redeemed_at IS NOT NULL
+                   GROUP BY storage_host_id, account_id
+           )
+           SELECT sg.id AS storage_grant_id, sg.authorized_amount, sh.name AS storage_host_name, sh.url AS storage_host_url
+               FROM buckets AS b
+               JOIN metadata AS m ON m.bucket_id = b.id
+               JOIN storage_hosts_metadatas_storage_grants AS shms ON shms.metadata_id = m.id
+               JOIN storage_hosts AS sh ON sh.id = shms.storage_host_id
+               JOIN storage_grants AS sg ON sg.id = shms.storage_grant_id
+               JOIN current_grants AS cg ON cg.id = sh.id
+               WHERE b.account_id = $1
+                   AND b.id = $2
+                   AND m.state NOT IN ('deleted', 'upload_failed');"#,
+        api_id.account_id,
+        bucket_id,
+    )
+    .fetch_all(&database)
+    .await
+    .map_err(AuthorizationGrantError::LookupFailed)?;
+
+    if authorized_amounts.is_empty() {
+        return Err(AuthorizationGrantError::NotFound);
+    }
+
+    let mut all_auths = serde_json::Map::new();
+    let mut audiences = HashSet::new();
+
+    for auth_details in authorized_amounts.into_iter() {
+        let mut host_caps = serde_json::Map::new();
+
+        host_caps.insert(
+            "available_storage".to_string(),
+            auth_details.authorized_amount.into(),
+        );
+        host_caps.insert("grant_id".to_string(), auth_details.storage_grant_id.into());
+        audiences.insert(auth_details.storage_host_name);
+
+        all_auths.insert(auth_details.storage_host_url, host_caps.into());
+    }
+
+    let mut claims =
+        Claims::with_custom_claims(all_auths, Duration::from_secs(STORAGE_TICKET_DURATION))
+            .with_audiences(audiences)
+            .with_issuer("banyan-platform")
+            .with_subject(format!(
+                "{}@{}",
+                api_id.user_id, api_id.device_api_key_fingerprint
+            ))
+            .invalid_before(Clock::now_since_epoch() - Duration::from_secs(30));
+
+    claims.create_nonce();
+    claims.issued_at = Some(Clock::now_since_epoch());
+
+    let bearer_token = service_signing_key
+        .sign(claims)
+        .map_err(AuthorizationGrantError::SigningFailed)?;
+
+    let resp_msg = serde_json::json!({"authorization_token": bearer_token});
+    Ok((StatusCode::OK, Json(resp_msg)).into_response())
+}
+
+#[derive(sqlx::FromRow)]
+struct AuthorizedAmounts {
+    authorized_amount: i64,
+    storage_grant_id: String,
+
+    storage_host_name: String,
+    storage_host_url: String,
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum AuthorizationGrantError {
+    #[error("failed to locate authorization grants: {0}")]
+    LookupFailed(sqlx::Error),
+
+    #[error("no grants found associated with bucket and account")]
+    NotFound,
+
+    #[error("failed to sign new grant: {0}")]
+    SigningFailed(jwt_simple::Error),
+}
+
+impl IntoResponse for AuthorizationGrantError {
+    fn into_response(self) -> Response {
+        match &self {
+            AuthorizationGrantError::NotFound => {
+                let err_msg = serde_json::json!({"msg": "not found"});
+                (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
+            }
+            _ => {
+                tracing::error!("{self}");
+                let err_msg = serde_json::json!({"msg": "backend service experienced an issue servicing the request"});
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
+            }
+        }
+    }
+}
