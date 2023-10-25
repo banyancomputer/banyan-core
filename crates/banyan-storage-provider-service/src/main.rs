@@ -31,18 +31,6 @@ async fn main() {
 
     tracing_subscriber::registry().with(stderr_layer).init();
 
-    // No authentication required to the API or status endpoint
-    //
-    // /_status/healthz
-    //   * { "health_status": "green/yellow/red", "database": "healthy", "job_queue": 0 }
-    // /api/v1/alerts
-    //   * List of currently active alerts
-    //   * [{"id": "<uuid>", "msg": "Something has gone wrong!", "type": "setup_required", "triggered_at": "<date time>"}]
-    // /api/v1/alerts/history
-    //   * [{"id": "<uuid>", "msg": "Something has gone wrong!", "type": "deal_expired", "triggered_at": "<date time>", "resolved_at": "<date time>"}]
-    // /api/v1/config
-    //   * { "friendly_name": "Vault42", "platform": {"name": "vault_42", "id": "<uuid>"},
-    //   "settings": { "billing_start_day": 5, "time_zone": "America/New_York" } }
     // /api/v1/deals/available
     //   * size in bytes, price in USD * 10_000 (example is $2.45)
     //   * [{"id": "<uuid>", "size": 1234567, "payment": 245000, "accept_by": "<date time>", "seal_by": "<date time>"}]
@@ -75,7 +63,17 @@ async fn main() {
     let state = AppState::new().await;
 
     let app = Router::new()
+        .route("/_status/healthz", get(healthcheck_handler))
         .route("/api/v1/alerts", get(alerts_handler))
+        .route("/api/v1/alerts/history", get(alert_history_handler))
+        //.route("/api/v1/deals/available", get(deal_available_handler))
+        //.route("/api/v1/deals/:deal_id", get(deal_single_handler))
+        //.route("/api/v1/deals/:deal_id/accept", get(deal_accept_handler))
+        //.route("/api/v1/deals/:deal_id/cancel", get(deal_cancel_handler))
+        //.route("/api/v1/deals/:deal_id/ignore", get(deal_ignore_handler))
+        //.route("/api/v1/metrics/current", get(metrics_current_handler))
+        //.route("/api/v1/metrics/storage/daily", get(storage_daily_handler))
+        //.route("/api/v1/metrics/bandwidth/daily", get(bandwidth_daily_handler))
         .with_state(state)
         .fallback(not_found_handler);
 
@@ -111,15 +109,39 @@ impl AppState {
     }
 }
 
-pub async fn alerts_handler(
-    State(_state): State<AppState>,
-) -> Response {
+pub async fn alerts_handler() -> Response {
     let resp_msg = serde_json::json!([
         Alert::random(),
         Alert::random(),
         Alert::random(),
     ]);
     (StatusCode::OK, Json(resp_msg)).into_response()
+}
+
+pub async fn alert_history_handler() -> Response {
+    let resp_msg = serde_json::json!([
+        Alert::random(),
+        Alert::random_resolved(),
+        Alert::random_resolved(),
+    ]);
+    (StatusCode::OK, Json(resp_msg)).into_response()
+}
+
+pub async fn config_handler() -> Response {
+    let resp_msg = serde_json::json!({
+        "friendly_name": "Vault42",
+        "platform": {
+            "id": Uuid::new_v4(),
+            "name": "vault_42",
+        },
+        "settings": {
+            "current_billing_start_day": 5, // valid 1-28,
+            "next_billing_start_day": 9, // valid 1-28,
+            "time_zone": "America/New_York",
+        },
+    });
+
+    (StatusCode::OK, Json(resp_msg)).into_response();
 }
 
 pub async fn graceful_shutdown_blocker() -> (JoinHandle<()>, watch::Receiver<()>) {
@@ -145,6 +167,14 @@ pub async fn graceful_shutdown_blocker() -> (JoinHandle<()>, watch::Receiver<()>
 }
 
 #[derive(Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+enum HealthCheckStatus {
+    Red,
+    Yellow,
+    Green,
+}
+
+#[derive(Deserialize, Serialize)]
 struct Alert {
     id: Uuid,
 
@@ -155,6 +185,7 @@ struct Alert {
     r#type: AlertType,
 
     triggered_at: OffsetDateTime,
+    resolved_at: Option<OffsetDateTime>,
 }
 
 impl Alert {
@@ -165,6 +196,18 @@ impl Alert {
             message: "here's some alert text. Something is going on".to_string(),
             r#type: AlertType::SetupRequired,
             triggered_at: OffsetDateTime::now_utc(),
+            resolved_at: None,
+        }
+    }
+
+    fn random_resolved() -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            severity: AlertSeverity::Warning,
+            message: "here's some alert text. Something is going on".to_string(),
+            r#type: AlertType::SetupRequired,
+            triggered_at: OffsetDateTime::now_utc(),
+            resolved_at: Some(OffsetDateTime::now_utc()),
         }
     }
 }
