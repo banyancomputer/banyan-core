@@ -143,7 +143,7 @@ where
         }
 
         let api_identity = ApiIdentity {
-            account_id: claims.subject,
+            account_id: db_device_api_key.account_id,
             user_id: db_device_api_key.user_id,
             device_api_key_id: db_device_api_key.id,
             device_api_key_fingerprint: key_id,

@@ -1,6 +1,16 @@
 /* tslint:disable */
 /* eslint-disable */
 export const memory: WebAssembly.Memory;
+export function __wbg_wasmsnapshot_free(a: number): void;
+export function wasmsnapshot_bucket_id(a: number, b: number): void;
+export function wasmsnapshot_created_at(a: number): number;
+export function wasmsnapshot_id(a: number, b: number): void;
+export function wasmsnapshot_metadata_id(a: number, b: number): void;
+export function wasmsnapshot_size(a: number): number;
+export function __wbg_wasmbucketmetadata_free(a: number): void;
+export function wasmbucketmetadata_id(a: number, b: number): void;
+export function wasmbucketmetadata_bucket_id(a: number, b: number): void;
+export function wasmbucketmetadata_snapshot_id(a: number, b: number): void;
 export function __wbg_wasmmount_free(a: number): void;
 export function wasmmount_dirty(a: number): number;
 export function wasmmount_locked(a: number): number;
@@ -37,16 +47,6 @@ export function tombwasm_createBucketKey(a: number, b: number, c: number): numbe
 export function tombwasm_deleteBucket(a: number, b: number, c: number): number;
 export function tombwasm_completeDeviceKeyRegistration(a: number, b: number, c: number): number;
 export function tombwasm_mount(a: number, b: number, c: number, d: number): number;
-export function __wbg_wasmsnapshot_free(a: number): void;
-export function wasmsnapshot_bucket_id(a: number, b: number): void;
-export function wasmsnapshot_created_at(a: number): number;
-export function wasmsnapshot_id(a: number, b: number): void;
-export function wasmsnapshot_metadata_id(a: number, b: number): void;
-export function wasmsnapshot_size(a: number): number;
-export function __wbg_wasmbucketmetadata_free(a: number): void;
-export function wasmbucketmetadata_id(a: number, b: number): void;
-export function wasmbucketmetadata_bucket_id(a: number, b: number): void;
-export function wasmbucketmetadata_snapshot_id(a: number, b: number): void;
 export function __wbg_intounderlyingbytesource_free(a: number): void;
 export function intounderlyingbytesource_type(a: number, b: number): void;
 export function intounderlyingbytesource_autoAllocateChunkSize(a: number): number;

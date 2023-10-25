@@ -22,8 +22,14 @@ CREATE TABLE block_locations (
   block_id TEXT NOT NULL REFERENCES blocks(id),
   storage_host_id TEXT NOT NULL REFERENCES storage_hosts(id) ON DELETE CASCADE,
 
-  associated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+  associated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  
+  -- When the server gets the notification to prune the block
+  expired_at TIMESTAMP,
+  -- When the storage host confirms the block has been pruned
+  pruned_at TIMESTAMP
 );
 
 CREATE UNIQUE INDEX idx_uploads_blocks_on_metadata_id_block_id_storage_host_id
-  ON block_locations(metadata_id, block_id, storage_host_id);
+  ON block_locations(metadata_id, block_id, storage_host_id)
+  WHERE expired_at IS NULL AND pruned_at IS NULL;
