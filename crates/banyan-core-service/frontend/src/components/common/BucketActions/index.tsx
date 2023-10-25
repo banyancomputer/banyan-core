@@ -24,7 +24,7 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const bucketType = `${bucket.bucketType}_${bucket.storageClass}`;
     const folderLocation = useFolderLocation();
 
-    const upload = async() => {
+    const upload = async () => {
         try {
             openModal(<UploadFileModal
                 bucket={bucket}
@@ -34,50 +34,50 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         } catch (error: any) { }
     };
 
-    const takeSnapshot = async() => {
+    const takeSnapshot = async () => {
         try {
             openModal(<TakeSnapshotModal bucket={bucket} />);
         } catch (error: any) { }
     };
 
-    const viewBucketSnapshots = async() => {
+    const viewBucketSnapshots = async () => {
         try {
             openModal(<BucketSnapshotsModal bucketId={bucket.id} />);
         } catch (error: any) { }
     };
 
-    const viewBucketVersions = async() => {
+    const viewBucketVersions = async () => {
         try {
             // openModal(<BucketSnapshotsModal bucketId={bucket.id} />);
         } catch (error: any) { }
     };
 
-    const rename = async() => {
+    const rename = async () => {
         openModal(<RenameBucketModal bucket={bucket} />);
     };
 
-    const createFolder = async() => {
+    const createFolder = async () => {
         openModal(<CreateFolderModal bucket={bucket} path={folderLocation} onSuccess={closeModal} />);
     };
 
-    const retoreColdVersion = async() => {
+    const retoreColdVersion = async () => {
         try {
 
         } catch (error: any) { }
     };
-    const deleteHotData = async() => {
+    const deleteHotData = async () => {
         try {
 
         } catch (error: any) { }
     };
 
-    const deleteBucket = async() => {
+    const deleteBucket = async () => {
         try {
             openModal(<DeleteBucketModal bucket={bucket} />);
         } catch (error: any) { }
     };
 
-    const purgeColdKeys = async() => {
+    const purgeColdKeys = async () => {
         try {
         } catch (error: any) { }
     };
@@ -112,7 +112,7 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         viewBucketSnapshotsAction, restoreColdVersionAction, renameAction, purgeAction, deletedAction,
     ];
 
-    const actions: Record<string, Action[]> = {
+    const actions: Record<string, Array<Action | null>> = {
         interactive_hot: hotInrecactiveActions,
         interactive_warm: warmInrecactiveActions,
         interactive_cold: coldIntecactiveActions,
