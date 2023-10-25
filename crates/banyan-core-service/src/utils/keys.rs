@@ -24,8 +24,7 @@ pub fn sha256_fingerprint_publickey(public_key: &ES384PublicKey) -> String {
 }
 
 pub fn format_fingerprint_bytes(bytes: &[u8]) -> String {
-    let value = bytes
+    bytes
         .iter()
-        .fold(String::new(), |chain, byte| format!("{chain}{byte:02x}:"));
-    value[..value.len() - 1].to_string()
+        .fold(String::new(), |chain, byte| format!("{chain}{byte:02x}"))
 }

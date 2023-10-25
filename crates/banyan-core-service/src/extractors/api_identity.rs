@@ -21,7 +21,7 @@ pub const EXPIRATION_WINDOW_SECS: u64 = 900;
 
 static KEY_ID_VALIDATOR: OnceLock<regex::Regex> = OnceLock::new();
 
-const KEY_ID_REGEX: &str = r"^[0-9a-f]{2}(:[0-9a-f]{2}){19}$";
+const KEY_ID_REGEX: &str = r"^[0-9a-f]{2}{20}$";
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -90,7 +90,7 @@ where
 
         let key_id = match header_data.kid {
             Some(key_id) if key_regex.is_match(key_id.as_str()) => key_id,
-            Some(_) => return Err(ApiIdentityError::BadKeyFormat),
+            Some(val) => { tracing::info!("api_identity_val: {}", val); return Err(ApiIdentityError::BadKeyFormat)},
             None => return Err(ApiIdentityError::UnidentifiedKey),
         };
 
