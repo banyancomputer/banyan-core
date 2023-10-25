@@ -166,7 +166,7 @@ pub async fn current_authorized_storage(
             use crate::database::postgres;
 
             let auth_stor: Option<AuthorizedStorage> = sqlx::query_as(
-                "SELECT id AS grant_id, allowed_storage AS allowed_bytes FROM storage_grants
+                "SELECT grant_id, allowed_storage AS allowed_bytes FROM storage_grants
                      WHERE client_id = $1::uuid
                      ORDER BY created_at DESC
                      LIMIT 1;",
@@ -185,7 +185,7 @@ pub async fn current_authorized_storage(
             use crate::database::sqlite;
 
             let auth_stor: Option<AuthorizedStorage> = sqlx::query_as(
-                "SELECT id AS grant_id, allowed_storage AS allowed_bytes FROM storage_grants
+                "SELECT grant_id, allowed_storage AS allowed_bytes FROM storage_grants
                      WHERE client_id = $1
                      ORDER BY created_at DESC
                      LIMIT 1;",
