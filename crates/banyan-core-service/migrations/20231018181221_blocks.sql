@@ -31,4 +31,5 @@ CREATE TABLE block_locations (
 );
 
 CREATE UNIQUE INDEX idx_uploads_blocks_on_metadata_id_block_id_storage_host_id
-  ON block_locations(metadata_id, block_id, storage_host_id);
+  ON block_locations(metadata_id, block_id, storage_host_id)
+  WHERE expired_at IS NULL AND pruned_at IS NULL;
