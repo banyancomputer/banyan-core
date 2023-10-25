@@ -493,6 +493,10 @@ async fn expire_deleted_blocks(
 ) -> Result<(), PushMetadataError> {
     let account_id = api_id.account_id.clone();
     let bucket_id = bucket_id.to_string();
+    let mut transaction = database
+        .begin()
+        .await
+        .map_err(PushMetadataError::UnableToExpireBlocks)?;
     for original_cid in request.deleted_block_cids.clone() {
         let normalized_cid = Cid::from_str(&original_cid)
             .map_err(PushMetadataError::InvalidCid)?
@@ -501,7 +505,7 @@ async fn expire_deleted_blocks(
 
         let maybe_block_id =
             sqlx::query_scalar!("SELECT id FROM blocks WHERE cid = $1", normalized_cid)
-                .fetch_optional(database)
+                .fetch_optional(&mut *transaction)
                 .await
                 .map_err(PushMetadataError::UnableToExpireBlocks)?;
         let block_id = match maybe_block_id {
@@ -520,10 +524,14 @@ async fn expire_deleted_blocks(
             account_id,
             bucket_id,
         )
-        .execute(database)
+        .execute(&mut *transaction)
         .await
         .map_err(PushMetadataError::UnableToExpireBlocks)?;
     }
+    transaction
+        .commit()
+        .await
+        .map_err(PushMetadataError::UnableToExpireBlocks)?;
 
     Ok(())
 }
