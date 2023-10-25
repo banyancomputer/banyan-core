@@ -488,7 +488,7 @@ where
 #[derive(sqlx::FromRow)]
 struct UniqueBlockLocation {
     block_id: String,
-    metadata_id: String
+    metadata_id: String,
 }
 
 async fn expire_deleted_blocks(
@@ -517,13 +517,13 @@ async fn expire_deleted_blocks(
                 JOIN metadata AS m ON m.id = bl.metadata_id
                 JOIN buckets AS b ON b.id = m.bucket_id
                 WHERE b.account_id = $1 AND b.id = $2 AND blocks.cid = $3;"#,
-                account_id,
-                bucket_id,
-                normalized_cid,
-            )
-            .fetch_all(&mut *transaction)
-            .await
-            .map_err(PushMetadataError::UnableToExpireBlocks)?;
+            account_id,
+            bucket_id,
+            normalized_cid,
+        )
+        .fetch_all(&mut *transaction)
+        .await
+        .map_err(PushMetadataError::UnableToExpireBlocks)?;
 
         if unique_block_locations.is_empty() {
             return Err(PushMetadataError::NoBlock(original_cid));
