@@ -309,7 +309,10 @@ struct Alert {
     #[serde(with = "time::serde::rfc3339")]
     triggered_at: OffsetDateTime,
 
-    #[serde(skip_serializing_if = "Option::is_none", with = "time::serde::rfc3339::option")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        with = "time::serde::rfc3339::option"
+    )]
     resolved_at: Option<OffsetDateTime>,
 }
 
@@ -495,11 +498,17 @@ struct FullDeal {
     status: DealStatus,
 
     /// Not present in Pending state, time the deal was accepted by the user
-    #[serde(skip_serializing_if = "Option::is_none", with = "time::serde::rfc3339::option")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        with = "time::serde::rfc3339::option"
+    )]
     accepted_at: Option<OffsetDateTime>,
 
     /// Only present in the Cancelled state
-    #[serde(skip_serializing_if = "Option::is_none", with = "time::serde::rfc3339::option")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        with = "time::serde::rfc3339::option"
+    )]
     cancelled_at: Option<OffsetDateTime>,
 
     /// When the data needs to be sealed by (the deadline)
@@ -507,11 +516,17 @@ struct FullDeal {
     sealed_by: OffsetDateTime,
 
     /// When the data was ACTUALLY sealed
-    #[serde(skip_serializing_if = "Option::is_none", with = "time::serde::rfc3339::option")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        with = "time::serde::rfc3339::option"
+    )]
     sealed_at: Option<OffsetDateTime>,
 
     /// When the sealed contract will end if not renewed
-    #[serde(skip_serializing_if = "Option::is_none", with = "time::serde::rfc3339::option")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        with = "time::serde::rfc3339::option"
+    )]
     completes_at: Option<OffsetDateTime>,
 }
 
