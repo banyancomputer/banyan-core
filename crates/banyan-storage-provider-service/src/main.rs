@@ -159,6 +159,7 @@ pub async fn deal_cancel_handler(Path(_deal_id): Path<Uuid>) -> Response {
     (StatusCode::NO_CONTENT, ()).into_response()
 }
 
+/// Note: this only allows downloading of files in the Pending state
 pub async fn deal_download_handler(Path(deal_id): Path<Uuid>) -> Response {
     let mut rng = rand::thread_rng();
 
@@ -226,7 +227,11 @@ pub async fn healthcheck_handler() -> Response {
     let resp_msg = serde_json::json!({
         "health_status": HealthCheckStatus::Green,
         "database": "healthy",
-        "job_queue": 5,
+        "job_queue": {
+            "active": 1,
+            "errored": 23,
+            "scheduled": 178,
+        },
     });
 
     (StatusCode::OK, Json(resp_msg)).into_response()
@@ -392,7 +397,7 @@ struct AvailableDeal {
     accept_by: OffsetDateTime,
 
     #[serde(with = "time::serde::rfc3339")]
-    seal_by: OffsetDateTime,
+    sealed_by: OffsetDateTime,
 }
 
 impl AvailableDeal {
@@ -408,7 +413,7 @@ impl AvailableDeal {
 
         let future_offset = rng.gen_range(113_320..=233_280);
         let accept_by = OffsetDateTime::now_utc() + Duration::from_secs(future_offset);
-        let seal_by = accept_by + Duration::from_secs(86_400);
+        let sealed_by = accept_by + 1.days();
 
         Self {
             id,
@@ -416,7 +421,7 @@ impl AvailableDeal {
             payment,
             status: DealStatus::Available,
             accept_by,
-            seal_by,
+            sealed_by,
         }
     }
 }
@@ -453,7 +458,11 @@ enum DealStatus {
     /// Initial state, the deal is available to be taken but has not been committed to
     Available,
 
-    /// The deal has been accepted but the storage provider still needs to seal the data
+    /// The deal has been accepted and the data is being assembled but is not ready to be sealed.
+    Constructing,
+
+    /// The deal has been accepted, and the data is available for the storage provider to seal the
+    /// data.
     Pending,
 
     /// The deal reached the end of its accept_by window or was ignored
@@ -474,12 +483,13 @@ enum DealStatus {
 
 impl DealStatus {
     pub fn random() -> Self {
-        match rand::thread_rng().gen_range(1u8..=5u8) {
-            1 => DealStatus::Pending,
-            2 => DealStatus::Cancelled,
-            3 => DealStatus::Sealed,
-            4 => DealStatus::Violated,
-            5 => DealStatus::Completed,
+        match rand::thread_rng().gen_range(1u8..=6u8) {
+            1 => DealStatus::Constructing,
+            2 => DealStatus::Pending,
+            3 => DealStatus::Cancelled,
+            4 => DealStatus::Sealed,
+            5 => DealStatus::Violated,
+            6 => DealStatus::Completed,
             _ => unreachable!(),
         }
     }
@@ -554,8 +564,8 @@ impl FullDeal {
         let accepted_at = if matches!(status, DealStatus::Available | DealStatus::NotAccepted) {
             None
         } else {
-            let at = created_at + rng.gen_range(900i64..=86_400).seconds();
-            Some(at)
+            let aa = created_at + rng.gen_range(900i64..=86_400).seconds();
+            Some(aa)
         };
 
         let (sealed_at, completes_at) = if matches!(
