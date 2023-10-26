@@ -8,7 +8,6 @@ use cid::Cid;
 use object_store::{GetOptions, ObjectStore};
 use uuid::Uuid;
 
-use crate::database::{DbError, Executor};
 use crate::extractors::{AuthenticatedClient, Database, UploadStore};
 
 pub async fn handler(
@@ -72,47 +71,11 @@ pub struct BlockDetails {
 }
 
 pub async fn block_from_normalized_cid(
-    db: &Database,
+    database: &Database,
     normalized_cid: &str,
 ) -> Result<BlockDetails, BlockRetrievalError> {
-    match db.ex() {
-        #[cfg(feature = "postgres")]
-        Executor::Postgres(ref mut conn) => {
-            use crate::database::postgres;
-
-            let maybe_block_id: Option<BlockDetails> = sqlx::query_as(
-                r#"
-                SELECT
-                        CAST(blocks.id AS TEXT) AS id,
-                        CAST(clients.platform_id AS TEXT) AS platform_id,
-                        uploads.file_path AS file_path,
-                        uploads_blocks.byte_offset AS byte_offset,
-                        blocks.data_length AS length
-                    FROM blocks
-                        JOIN uploads_blocks ON blocks.id = uploads_blocks.block_id
-                        JOIN uploads ON uploads_blocks.upload_id = uploads.id
-                        JOIN clients ON uploads.client_id = clients.id
-                    WHERE blocks.cid = $1;
-            "#,
-            )
-            .bind(normalized_cid)
-            .fetch_optional(conn)
-            .await
-            .map_err(postgres::map_sqlx_error)
-            .map_err(BlockRetrievalError::DbFailure)?;
-
-            match maybe_block_id {
-                Some(id) => Ok(id),
-                None => Err(BlockRetrievalError::UnknownBlock),
-            }
-        }
-
-        #[cfg(feature = "sqlite")]
-        Executor::Sqlite(ref mut conn) => {
-            use crate::database::sqlite;
-
-            let maybe_block_id: Option<BlockDetails> = sqlx::query_as(
-                r#"
+    let maybe_block_id: Option<BlockDetails> = sqlx::query_as(
+        r#"
                 SELECT
                         blocks.id AS id,
                         clients.platform_id AS platform_id,
@@ -125,24 +88,21 @@ pub async fn block_from_normalized_cid(
                         JOIN clients ON uploads.client_id = clients.id
                     WHERE blocks.cid = $1;
             "#,
-            )
-            .bind(normalized_cid)
-            .fetch_optional(conn)
-            .await
-            .map_err(sqlite::map_sqlx_error)
-            .map_err(BlockRetrievalError::DbFailure)?;
-            match maybe_block_id {
-                Some(id) => Ok(id),
-                None => Err(BlockRetrievalError::UnknownBlock),
-            }
-        }
+    )
+    .bind(normalized_cid)
+    .fetch_optional(&**database)
+    .await
+    .map_err(BlockRetrievalError::DbFailure)?;
+    match maybe_block_id {
+        Some(id) => Ok(id),
+        None => Err(BlockRetrievalError::UnknownBlock),
     }
 }
 
 #[derive(Debug, thiserror::Error)]
 pub enum BlockRetrievalError {
     #[error("internal database error occurred")]
-    DbFailure(DbError),
+    DbFailure(sqlx::Error),
 
     #[error("request for invalid CID rejected")]
     InvalidCid(cid::Error),

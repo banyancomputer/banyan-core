@@ -5,6 +5,7 @@ edition = "2021"
 license = "LicenseRef-LICENSE.txt"
 
 [dependencies]
+banyan-task = { path = "../banyan-task", version = "^0.1" }
 futures = "^0.3"
 itertools = "^0.11"
 pico-args = "^0.5"
@@ -41,9 +42,3 @@ tracing-subscriber = { version = "^0.3", default-features = false, features = ["
 [dev-dependencies]
 bytes = "^1.4"
 reqwest = { version = "^0.11", default-features = false, features = ["multipart", "stream"] }
-
-[features]
-default = ["postgres", "sqlite"]
-
-postgres = ["sqlx/postgres"]
-sqlite = ["sqlx/sqlite"]

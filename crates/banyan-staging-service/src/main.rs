@@ -13,6 +13,7 @@ mod database;
 mod extractors;
 mod health_check;
 mod http_server;
+mod tasks;
 
 use app::{Config, Error, Version};
 

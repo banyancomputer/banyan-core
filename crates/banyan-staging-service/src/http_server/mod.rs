@@ -139,6 +139,8 @@ pub async fn run(config: Config) -> Result<(), Error> {
         ));
 
     let state = State::from_config(&config).await?;
+
+    // let database
     let root_router = Router::new()
         .nest("/api/v1", api::router(state.clone()))
         .nest("/_status", health_check::router(state.clone()))

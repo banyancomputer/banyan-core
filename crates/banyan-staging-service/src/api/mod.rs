@@ -6,6 +6,7 @@ use tower_http::cors::{Any, CorsLayer};
 
 mod block_retrieval;
 mod client_grant;
+mod prune_blocks;
 mod upload;
 
 use crate::app::State;
@@ -24,6 +25,7 @@ pub fn router(state: State) -> Router<State> {
         .route("/blocks/:block_id", get(block_retrieval::handler))
         .route("/client_grant", post(client_grant::handler))
         .route("/upload", post(upload::handler))
+        .route("/core/prune", post(prune_blocks::handler))
         .layer(cors_layer)
         .with_state(state)
 }

@@ -39,7 +39,10 @@ impl State {
         };
 
         // Configure the database instance we're going use
-        let database = database::connect(&db_url).await?;
+        let db_url = Url::parse(&db_url).map_err(Error::InvalidDatabaseUrl)?;
+        let database = database::connect(&db_url)
+            .await
+            .map_err(Error::DatabaseSetupError)?;
 
         // Parse the platform authentication key (this will be used to communicate with the
         // metadata service).
