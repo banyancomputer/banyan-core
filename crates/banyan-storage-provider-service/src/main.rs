@@ -1,17 +1,17 @@
 use std::time::Duration;
 
-use axum::{Json, Router, Server};
-use axum::extract::{Path, State};
+use axum::extract::Path;
 use axum::handler::HandlerWithoutStateExt;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::routing::get;
+use axum::{Json, Router, Server};
 use futures::future::join_all;
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use time::OffsetDateTime;
-use tokio::task::JoinHandle;
 use tokio::sync::watch;
+use tokio::task::JoinHandle;
 use tower_http::services::ServeDir;
 use tracing::Level;
 use tracing_subscriber::layer::SubscriberExt;
@@ -70,8 +70,7 @@ async fn main() {
 
     let state = AppState::new().await;
 
-    let static_assets = ServeDir::new("dist")
-        .not_found_service(not_found_handler.into_service());
+    let static_assets = ServeDir::new("dist").not_found_service(not_found_handler.into_service());
 
     let app = Router::new()
         .route("/_status/healthz", get(healthcheck_handler))
@@ -81,12 +80,21 @@ async fn main() {
         .route("/api/v1/deals/:deal_id", get(deal_single_handler))
         .route("/api/v1/deals/:deal_id/accept", get(deal_accept_handler))
         .route("/api/v1/deals/:deal_id/cancel", get(deal_cancel_handler))
-        .route("/api/v1/deals/:deal_id/download", get(deal_download_handler))
+        .route(
+            "/api/v1/deals/:deal_id/download",
+            get(deal_download_handler),
+        )
         .route("/api/v1/deals/:deal_id/ignore", get(deal_ignore_handler))
         .route("/api/v1/deals/:deal_id/proof", get(deal_proof_handler))
         .route("/api/v1/metrics/current", get(metrics_current_handler))
-        .route("/api/v1/metrics/bandwidth/daily", get(metrics_bandwidth_daily_handler))
-        .route("/api/v1/metrics/storage/daily", get(metrics_storage_daily_handler))
+        .route(
+            "/api/v1/metrics/bandwidth/daily",
+            get(metrics_bandwidth_daily_handler),
+        )
+        .route(
+            "/api/v1/metrics/storage/daily",
+            get(metrics_storage_daily_handler),
+        )
         .with_state(state)
         .fallback_service(static_assets);
 
@@ -124,11 +132,7 @@ impl AppState {
 }
 
 pub async fn alerts_handler() -> Response {
-    let resp_msg = serde_json::json!([
-        Alert::random(),
-        Alert::random(),
-        Alert::random(),
-    ]);
+    let resp_msg = serde_json::json!([Alert::random(), Alert::random(), Alert::random()]);
     (StatusCode::OK, Json(resp_msg)).into_response()
 }
 
