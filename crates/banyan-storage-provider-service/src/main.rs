@@ -401,7 +401,7 @@ impl AvailableDeal {
         let mut rng = rand::thread_rng();
 
         let size = rng.gen_range(1073741824..=30064771072);
-        let payment = (size * PRICE_PER_TIB * CURRENCY_MULTIPLIER) / (1024 * 1024 * 1024 * 1024);
+        let payment = ((size * PRICE_PER_TIB) / (1024 * 1024 * 1024 * 1024)) * CURRENCY_MULTIPLIER;
 
         let future_offset = rng.gen_range(113_320..=233_280);
         let accept_by = OffsetDateTime::now_utc() + Duration::from_secs(future_offset);
