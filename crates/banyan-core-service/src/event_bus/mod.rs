@@ -27,7 +27,7 @@ impl EventBus {
         event: SystemEvent,
         payload: &impl Serialize,
     ) -> Result<usize, EventBusError> {
-        let bytes = bincode::serialize(payload).map_err(EventBusError::Serialization)?;
+        let bytes = serde_json::ser::to_vec(payload).map_err(EventBusError::Serialization)?;
 
         self.bus
             .send((event, bytes))
@@ -45,7 +45,7 @@ pub enum EventBusError {
     SendFailed(broadcast::error::SendError<(SystemEvent, Vec<u8>)>),
 
     #[error("unable to serialize event payload: {0}")]
-    Serialization(bincode::Error),
+    Serialization(serde_json::Error),
 }
 
 #[derive(Clone, Debug)]
