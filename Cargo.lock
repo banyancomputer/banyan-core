@@ -350,6 +350,7 @@ dependencies = [
  "thiserror",
  "time",
  "tokio",
+ "tower-http",
  "tracing",
  "tracing-appender",
  "tracing-futures",
