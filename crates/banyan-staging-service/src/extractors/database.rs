@@ -12,7 +12,7 @@ use axum::{async_trait, Json, RequestPartsExt};
 use crate::database::Database as StateDb;
 
 #[derive(Debug)]
-pub struct Database(StateDb);
+pub struct Database(pub(crate) StateDb);
 
 impl Deref for Database {
     type Target = StateDb;

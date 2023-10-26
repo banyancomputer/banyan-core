@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use axum::extract::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
@@ -6,31 +8,32 @@ use cid::Cid;
 use jwt_simple::prelude::*;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+use banyan_task::TaskLikeExt;
 
 use crate::app::PlatformAuthKey;
 use crate::car_analyzer::{CarReport, StreamingCarAnalyzer, StreamingCarAnalyzerError};
+use crate::tasks::{PruneBlock, PruneBlocksTask};
 use crate::database::{BareId, SqlxError};
-use crate::extractors::CoreIdentity;
-
-/// Limit on the size of the JSON request that accompanies an upload.
-const UPLOAD_REQUEST_SIZE_LIMIT: u64 = 100 * 1_024;
-
-#[derive(Deserialize)]
-pub struct PruneBlock {
-    pub normalized_cid: String,
-    pub metadata_id: Uuid,
-}
+use crate::extractors::{CoreIdentity, Database};
 
 pub async fn handler(
     _ci: CoreIdentity,
-    Json(_prune_blocks): Json<Vec<PruneBlock>>,
+    db: Database,
+    Json(prune_blocks): Json<Vec<PruneBlock>>,
 ) -> Result<Response, PruneBlocksError> {
-    Ok((StatusCode::OK, Json(serde_json::json!({}))).into_response())
+    let mut db = db.0;
+    PruneBlocksTask::new(prune_blocks)
+            .enqueue::<banyan_task::SqliteTaskStore>(&mut db)
+            .await
+            .map_err(PruneBlocksError::UnableToEnqueueTask)?;
+    Ok((StatusCode::OK, ()).into_response())
 }
 
-#[non_exhaustive]
 #[derive(Debug, thiserror::Error)]
-pub enum PruneBlocksError {}
+pub enum PruneBlocksError {
+    #[error("could not enqueue task: {0}")]
+    UnableToEnqueueTask(banyan_task::TaskStoreError)
+}
 
 impl IntoResponse for PruneBlocksError {
     fn into_response(self) -> Response {
