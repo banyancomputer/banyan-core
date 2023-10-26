@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { Session } from 'next-auth';
 import { AccountFactory, DeviceApiKeyFactory } from '@/lib/db';
 import { authOptions } from '@/pages/api/auth/[...nextauth]';
-import { prettyFingerprintApiKeySpki, publicPemWrap } from '@/utils';
+import { hexFingerprintApiKeySpki, publicPemWrap } from '@/utils';
 import * as errors from '@/lib/db/models/errors';
 import { b64UrlDecode } from '@/utils/b64';
 
@@ -34,7 +34,7 @@ export default async(req: NextApiRequest, res: NextApiResponse) => {
     const spki = b64UrlDecode(urlSpki as string);
 
     // Get the fingerprint from the spki
-    const fingerprint = await prettyFingerprintApiKeySpki(spki);
+    const fingerprint = await hexFingerprintApiKeySpki(spki);
 
     if (req.method === 'GET') {
         // Check if the device api key already exists
@@ -61,6 +61,7 @@ export default async(req: NextApiRequest, res: NextApiResponse) => {
 
         // Try to create the device API key in the db
         try {
+            console.log("validating key: " + JSON.stringify(deviceApiKey));
             await DeviceApiKeyFactory.create(deviceApiKey);
         } catch (e: any) {
             // If the request was formatted incorrectly in a known way

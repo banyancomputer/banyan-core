@@ -2,11 +2,7 @@ import { DataTypes, Model, ModelDefined, Sequelize } from 'sequelize';
 import { validateOrReject } from 'class-validator';
 import { BadModelFormat } from './errors';
 import { EscrowedDevice as EscrowedDeviceAttributes } from '@/lib/interfaces';
-import {
-    isPem,
-    isPrettyFingerprint,
-    prettyFingerprintApiKeyPem,
-} from '@/utils';
+import { isPem } from '@/utils';
 
 interface EscrowedDeviceInstance
     extends Model<EscrowedDeviceAttributes>,

@@ -3,7 +3,7 @@ import { validateOrReject } from 'class-validator';
 
 import { BadModelFormat } from './errors';
 import { DeviceApiKey as DeviceApiKeyAttributes } from '@/lib/interfaces';
-import { isPem,	isPrettyFingerprint, prettyFingerprintApiKeyPem } from '@/utils';
+import { hexFingerprintApiKeyPem, isHexFingerprint, isPem } from '@/utils';
 
 interface DeviceApiKeyInstance
     extends Model<DeviceApiKeyAttributes>,
@@ -60,17 +60,18 @@ const DeviceApiKeyModel = (
 
     /** Generate the fingerprint from the PEM */
     DeviceApiKey.prototype.generateFingerprint = async function() {
-        this.fingerprint = await prettyFingerprintApiKeyPem(this.pem);
+        this.fingerprint = await hexFingerprintApiKeyPem(this.pem);
     };
 
     DeviceApiKey.prototype.validate = async function() {
+        console.log("validating: " + JSON.stringify(this));
         if (!isPem(this.pem)) {
             throw new Error('invalid pem');
         }
-        if (!isPrettyFingerprint(this.fingerprint)) {
+        if (!isHexFingerprint(this.fingerprint)) {
             throw new Error('invalid fingerprint');
         }
-        const pemFingerprint = await prettyFingerprintApiKeyPem(this.pem);
+        const pemFingerprint = await hexFingerprintApiKeyPem(this.pem);
         if (!pemFingerprint || pemFingerprint !== this.fingerprint) {
             throw new Error('api key fingerprint does not match api key pem');
         }
