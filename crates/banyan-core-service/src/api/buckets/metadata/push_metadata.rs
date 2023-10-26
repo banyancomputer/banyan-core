@@ -1,10 +1,12 @@
-use std::collections::HashSet;
+use std::collections::{BTreeSet, HashSet};
+use std::str::FromStr;
 
 use axum::extract::{BodyStream, Path, State};
 use axum::headers::ContentType;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::{Json, TypedHeader};
+use cid::{multibase::Base, Cid};
 use futures::{TryStream, TryStreamExt};
 use jwt_simple::prelude::*;
 use object_store::ObjectStore;
@@ -29,7 +31,7 @@ const ONE_HUNDRED_MIB: i64 = 100 * 1024 * 1024;
 /// Upper size limit on the JSON payload that precedes a metadata CAR file upload (128KiB)
 const REQUEST_DATA_SIZE_LIMIT: u64 = 128 * 1_024;
 
-const STORAGE_TICKET_DURATION: u64 = 15 * 60; // 15 minutes
+pub const STORAGE_TICKET_DURATION: u64 = 15 * 60; // 15 minutes
 
 pub async fn handler(
     api_id: ApiIdentity,
@@ -111,11 +113,12 @@ pub async fn handler(
         .await
         .map_err(PushMetadataError::DataMetaStoreFailed)?;
 
-    let currently_consumed_storage = currently_consumed_storage(&database, &api_id.account_id)
+    expire_deleted_blocks(&database, &api_id, &bucket_id, &request_data).await?;
+
+    let expected_total_storage = currently_consumed_storage(&database, &api_id.account_id)
         .await
-        .map_err(PushMetadataError::UnableToCheckAccounting)?;
-    let expected_total_storage =
-        currently_consumed_storage as i64 + request_data.expected_data_size;
+        .map_err(PushMetadataError::UnableToCheckAccounting)?
+        as i64;
 
     if expected_total_storage > ACCOUNT_STORAGE_QUOTA {
         tracing::warn!(account_id = ?api_id.account_id, ?expected_total_storage, "account reached storage limit");
@@ -279,6 +282,12 @@ async fn fail_upload(database: &Database, metadata_id: &str) -> Result<(), sqlx:
     Ok(())
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+struct Capabilities {
+    #[serde(rename = "cap")]
+    capabilities: serde_json::Map<String, serde_json::Value>,
+}
+
 async fn generate_new_storage_authorization(
     database: &Database,
     service_signing_key: &ServiceSigningKey,
@@ -306,15 +315,17 @@ async fn generate_new_storage_authorization(
     let mut capabilities = serde_json::Map::new();
     capabilities.insert(storage_host.url.to_string(), storage_details.into());
 
-    let mut claims =
-        Claims::with_custom_claims(capabilities, Duration::from_secs(STORAGE_TICKET_DURATION))
-            .with_audiences(HashSet::from_strings(&[storage_host.name.as_str()]))
-            .with_issuer("banyan-platform")
-            .with_subject(format!(
-                "{}@{}",
-                api_id.user_id, api_id.device_api_key_fingerprint
-            ))
-            .invalid_before(Clock::now_since_epoch() - Duration::from_secs(30));
+    let mut claims = Claims::with_custom_claims(
+        Capabilities { capabilities },
+        Duration::from_secs(STORAGE_TICKET_DURATION),
+    )
+    .with_audiences(HashSet::from_strings(&[storage_host.name.as_str()]))
+    .with_issuer("banyan-platform")
+    .with_subject(format!(
+        "{}@{}",
+        api_id.user_id, api_id.device_api_key_fingerprint
+    ))
+    .invalid_before(Clock::now_since_epoch() - Duration::from_secs(30));
 
     claims.create_nonce();
     claims.issued_at = Some(Clock::now_since_epoch());
@@ -353,7 +364,7 @@ async fn record_data_stored(
     let db_size = uploaded_size as i32;
 
     sqlx::query!(
-        "UPDATE metadata SET metadata_size = $2, metadata_hash = $3 WHERE id = $1;",
+        "UPDATE metadata SET metadata_size = $2, metadata_hash = $3, state = 'pending' WHERE id = $1;",
         metadata_id,
         db_size,
         data_hash,
@@ -474,6 +485,71 @@ where
     Ok((hash.to_string(), bytes_written))
 }
 
+#[derive(sqlx::FromRow)]
+struct UniqueBlockLocation {
+    block_id: String,
+    metadata_id: String,
+}
+
+async fn expire_deleted_blocks(
+    database: &Database,
+    api_id: &ApiIdentity,
+    bucket_id: &Uuid,
+    request: &PushMetadataRequest,
+) -> Result<(), PushMetadataError> {
+    let account_id = api_id.account_id.clone();
+    let bucket_id = bucket_id.to_string();
+    let mut transaction = database
+        .begin()
+        .await
+        .map_err(PushMetadataError::UnableToExpireBlocks)?;
+    for original_cid in request.deleted_block_cids.clone() {
+        let normalized_cid = Cid::from_str(&original_cid)
+            .map_err(PushMetadataError::InvalidCid)?
+            .to_string_of_base(Base::Base64Url)
+            .map_err(PushMetadataError::InvalidCid)?;
+
+        let unique_block_locations = sqlx::query_as!(
+            UniqueBlockLocation,
+            r#"SELECT blocks.id AS block_id, m.id AS metadata_id
+                FROM block_locations AS bl
+                JOIN blocks ON blocks.id = bl.block_id
+                JOIN metadata AS m ON m.id = bl.metadata_id
+                JOIN buckets AS b ON b.id = m.bucket_id
+                WHERE b.account_id = $1 AND b.id = $2 AND blocks.cid = $3;"#,
+            account_id,
+            bucket_id,
+            normalized_cid,
+        )
+        .fetch_all(&mut *transaction)
+        .await
+        .map_err(PushMetadataError::UnableToExpireBlocks)?;
+
+        if unique_block_locations.is_empty() {
+            return Err(PushMetadataError::NoBlock(original_cid));
+        }
+
+        for unique_block_location in unique_block_locations {
+            sqlx::query!(
+                r#"UPDATE block_locations AS bl
+                SET expired_at = CURRENT_TIMESTAMP
+                WHERE bl.block_id = $1 AND bl.metadata_id = $2;"#,
+                unique_block_location.block_id,
+                unique_block_location.metadata_id,
+            )
+            .execute(&mut *transaction)
+            .await
+            .map_err(PushMetadataError::UnableToExpireBlocks)?;
+        }
+    }
+    transaction
+        .commit()
+        .await
+        .map_err(PushMetadataError::UnableToExpireBlocks)?;
+
+    Ok(())
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum PushMetadataError {
     #[error("failed updating zero data metadata to current")]
@@ -500,6 +576,9 @@ pub enum PushMetadataError {
     #[error("provided request data couldn't be decoded: {0}")]
     InvalidRequestData(serde_json::Error),
 
+    #[error("invalid CID provided: {0}")]
+    InvalidCid(cid::Error),
+
     #[error("account reached upload quota and recording the failure may have failed: {0:?}")]
     LimitReached(Option<sqlx::Error>),
 
@@ -508,6 +587,9 @@ pub enum PushMetadataError {
 
     #[error("request did not contain required metadata segment")]
     MissingMetadata,
+
+    #[error("unable to locate block with provided CID: {0}")]
+    NoBlock(String),
 
     #[error("unable to locate a bucket for the current authorized user")]
     NoAuthorizedBucket,
@@ -533,6 +615,9 @@ pub enum PushMetadataError {
     #[error("couldn't locate existing storage authorizations for account: {0}")]
     UnableToRetrieveAuthorizations(sqlx::Error),
 
+    #[error("couldn't mark blocks as expired: {0}")]
+    UnableToExpireBlocks(sqlx::Error),
+
     #[error("failed to store metadata on disk: {0}, marking as failed might have had an error as well: {1:?}")]
     UploadStoreFailed(StoreMetadataError, Option<sqlx::Error>),
 }
@@ -543,6 +628,8 @@ impl IntoResponse for PushMetadataError {
             PushMetadataError::BrokenMultipartField(_)
             | PushMetadataError::InvalidBoundary(_)
             | PushMetadataError::InvalidRequestData(_)
+            | PushMetadataError::InvalidCid(_)
+            | PushMetadataError::NoBlock(_)
             | PushMetadataError::MissingRequestData => {
                 let err_msg = serde_json::json!({"msg": "invalid request"});
                 (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
@@ -578,6 +665,8 @@ pub struct PushMetadataRequest {
 
     #[serde(rename = "valid_keys")]
     pub included_key_fingerprints: Vec<String>,
+
+    pub deleted_block_cids: BTreeSet<String>,
 }
 
 #[derive(sqlx::FromRow)]

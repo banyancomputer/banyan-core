@@ -23,6 +23,19 @@ pub async fn handler(
     let database = state.database();
 
     sqlx::query!(
+        r#"UPDATE storage_grants
+               SET redeemed_at = CURRENT_TIMESTAMP
+               WHERE storage_host_id = $1
+                   AND id = $2
+                   AND redeemed_at IS NULL;"#,
+        storage_provider.id,
+        request.storage_authorization_id,
+    )
+    .execute(&database)
+    .await
+    .map_err(FinalizeUploadError::RedeemFailed)?;
+
+    sqlx::query!(
         r#"INSERT INTO storage_hosts_metadatas_storage_grants
                (storage_host_id, metadata_id, storage_grant_id)
                VALUES ($1, $2, $3);"#,
@@ -45,8 +58,11 @@ pub async fn handler(
             .await
             .map_err(FinalizeUploadError::UnableToRecordBlock)?;
 
+        // Completeley insert the block location into the database, treating it like we've definitely never seen it before
         sqlx::query!(
-            "INSERT INTO block_locations (block_id, metadata_id, storage_host_id) VALUES ($1, $2, $3);",
+            r#"INSERT INTO block_locations
+            (block_id, metadata_id, storage_host_id)
+            VALUES ($1, $2, $3);"#,
             block_id,
             db_metadata_id,
             storage_provider.id,
@@ -101,6 +117,9 @@ pub enum FinalizeUploadError {
 
     #[error("failed to associate finalized uploaded with storage host")]
     NoUploadAssociation(sqlx::Error),
+
+    #[error("failed to register storage grant as redeemed: {0}")]
+    RedeemFailed(sqlx::Error),
 
     #[error("error occurred while recording a blocks present: {0}")]
     UnableToRecordBlock(sqlx::Error),
