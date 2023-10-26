@@ -340,11 +340,23 @@ dependencies = [
 name = "banyan-storage-provider-service"
 version = "0.1.0"
 dependencies = [
+ "axum",
+ "futures",
+ "http",
+ "rand",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror",
+ "time",
  "tokio",
+ "tower-http",
  "tracing",
  "tracing-appender",
  "tracing-futures",
  "tracing-subscriber",
+ "uuid",
 ]
 
 [[package]]

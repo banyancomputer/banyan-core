@@ -218,7 +218,7 @@ CREATE TABLE metadata (
   -- 'current' means the metadata has been fully processed and is the current version of the bucket
   -- 'outdated' means the metadata has been fully processed but is not the current version of the bucket
   -- 'deleted' means the metadata has been deleted
-  state VARCHAR(32) NOT NULL,
+  state TEXT NOT NULL,
 
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
