@@ -13,8 +13,8 @@ use http::{HeaderMap, HeaderValue};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
-use time::{Date, OffsetDateTime};
 use time::ext::NumericalDuration;
+use time::{Date, OffsetDateTime};
 use tokio::sync::watch;
 use tokio::task::JoinHandle;
 use tower_http::services::ServeDir;
@@ -349,9 +349,13 @@ enum AlertDetails {
 impl Display for AlertDetails {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let msg = match &self {
-            AlertDetails::AvailableDealExpired { .. } => "Available deal expired without being accepted!",
+            AlertDetails::AvailableDealExpired { .. } => {
+                "Available deal expired without being accepted!"
+            }
             AlertDetails::ProofFailed { .. } => "A proof on sealed data failed to validate!",
-            AlertDetails::SetupRequired => "Additional configuration required before data will be stored",
+            AlertDetails::SetupRequired => {
+                "Additional configuration required before data will be stored"
+            }
         };
 
         f.write_str(msg)
@@ -513,7 +517,7 @@ impl FullDeal {
 
         let current_time = OffsetDateTime::now_utc();
         let past_offset = rng.gen_range(113_320i64..=233_280i64);
-        let created_at =  current_time - past_offset.seconds();
+        let created_at = current_time - past_offset.seconds();
 
         let sealed_by = created_at + 1i64.days();
 
@@ -532,8 +536,14 @@ impl FullDeal {
             Some(at)
         };
 
-        let (sealed_at, completes_at) = if matches!(status, DealStatus::Sealed | DealStatus::Violated | DealStatus::Completed) {
-            let aa = accepted_at.as_ref().cloned().expect("present in these status");
+        let (sealed_at, completes_at) = if matches!(
+            status,
+            DealStatus::Sealed | DealStatus::Violated | DealStatus::Completed
+        ) {
+            let aa = accepted_at
+                .as_ref()
+                .cloned()
+                .expect("present in these status");
 
             let sa = aa + rng.gen_range(3600i64..7200i64).seconds();
             let ca = sa + 180i64.days();
