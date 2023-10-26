@@ -27,7 +27,7 @@ impl PartialMetadataWithSnapshot {
             r#"SELECT
                     m.id, m.root_cid, m.metadata_cid,
                     COALESCE(m.data_size, m.expected_data_size) as data_size,
-                    m.state, m.created_at, m.updated_at, s.id as snapshot_id
+                    m.state as 'state: MetadataState', m.created_at, m.updated_at, s.id as snapshot_id
                 FROM metadata m
                     JOIN buckets b ON m.bucket_id = b.id
                     LEFT JOIN snapshots s ON s.metadata_id = m.id
@@ -51,7 +51,7 @@ impl PartialMetadataWithSnapshot {
             r#"SELECT
                     m.id, m.root_cid, m.metadata_cid,
                     COALESCE(m.data_size, m.expected_data_size) as data_size,
-                    m.state, m.created_at, m.updated_at, s.id as snapshot_id
+                    m.state as 'state: MetadataState', m.created_at, m.updated_at, s.id as snapshot_id
                 FROM metadata m
                     JOIN buckets b ON m.bucket_id = b.id
                     LEFT JOIN snapshots s ON s.metadata_id = m.id
@@ -83,7 +83,7 @@ impl PartialMetadataWithSnapshot {
             r#"SELECT
                     m.id, m.root_cid, m.metadata_cid,
                     COALESCE(m.data_size, m.expected_data_size) as data_size,
-                    m.state, m.created_at, m.updated_at, s.id as snapshot_id
+                    m.state as 'state: MetadataState', m.created_at, m.updated_at, s.id as snapshot_id
                 FROM metadata m
                     JOIN buckets b ON m.bucket_id = b.id
                     LEFT JOIN snapshots s ON s.metadata_id = m.id
