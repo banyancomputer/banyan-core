@@ -15,6 +15,7 @@ serde = { version = "^1", features = ["derive"] }
 uuid = { version = "^1", features = ["fast-rng", "serde", "v4"] }
 
 axum = { version = "^0.6", features = ["headers", "http2", "macros", "multipart", "tracing"] }
+http = "^0.2"
 reqwest = { version = "^0.11", default-features = false, features = ["json", "rustls-tls-native-roots"] }
 sqlx = { version = "^0.7", default-features = false, features = ["macros", "migrate", "runtime-tokio", "sqlite", "tls-rustls", "uuid"] }
 time = { version = "^0.3", features = ["serde"] }

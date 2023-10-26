@@ -8,10 +8,13 @@ use axum::response::{IntoResponse, Response};
 use axum::routing::get;
 use axum::{Json, Router, Server};
 use futures::future::join_all;
+use http::header::{CONTENT_DISPOSITION, CONTENT_TYPE};
+use http::{HeaderMap, HeaderValue};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
-use time::OffsetDateTime;
+use time::{Date, OffsetDateTime};
+use time::ext::NumericalDuration;
 use tokio::sync::watch;
 use tokio::task::JoinHandle;
 use tower_http::services::ServeDir;
@@ -39,37 +42,9 @@ async fn main() {
 
     tracing_subscriber::registry().with(stderr_layer).init();
 
-    // /api/v1/deals/available
-    //   * size in bytes, price in USD * 10_000 (example is $2.45)
-    //   * [{"id": "<uuid>", "size": 1234567, "payment": 245000, "accept_by": "<date time>", "seal_by": "<date time>"}]
-    // /api/v1/deals/:deal_id
-    //   * size in bytes
-    //   * price in USD * 10_000
-    //   * status in ('available', 'pending', 'sealed', 'violated', 'expired', 'cancelled', 'completed'),
-    //     available will never be returned by this API endpoint only by the 'available' endpoint
-    //   * "seal_by" only present in status "pending"
-    //   * "sealed_at" is present for state 'sealed', 'violated', 'expired'
-    //   * "expires_at" is present for state 'sealed, 'violated', 'expired'
-    //   * "cancelled_at" is present for state 'cancelled'
-    //   * [{"id": "<uuid>", "status": "sealed", "size": 1234567, "payment": 245000, "accepted_at": "<date time>", "seal_by": "<date time>", "expires_at": "<date time>", "cancelled_at": "<date time>"}]
-    // /api/v1/deals/available/:deal_id/download
-    //   * starts file download if present...
-    // /api/v1/deals/:deal_id/proof
-    //   * sector ID is a u64
-    //   * future work will include the actual PoSt and PoRep proofs
-    //   * {"id": "<uuid>", "sector_id": 1234616, "sealed_cid": "<sector cid>", "merkle_root": "<digest>", "timestamp": "<date time>"}
-    // /api/v1/metrics/current
-    //   * used/available storage amounts, bandwidth ingress/egress all in bytes
-    //   * {"storage": {"used": 123456, "available": 123456}, "bandwidth": {"ingress": 67070, "egress": 80123}, "deals": {"accepted": 67, "sealed_amt": 12355}}
-    // /api/v1/metrics/bandwidth/daily
-    //   * [{"timestamp": "<date time>", "ingress": 12345, "egress": 89023}, ... ]
-    // /api/v1/metrics/storage/daily
-    //   * [{"timestamp": "<date time>", "consumed": 12345, "available": 89023}, ... ]
-
     let (shutdown_handle, mut shutdown_rx) = graceful_shutdown_blocker().await;
 
     let state = AppState::new().await;
-
     let static_assets = ServeDir::new("dist").not_found_service(not_found_handler.into_service());
 
     let app = Router::new()
@@ -182,8 +157,23 @@ pub async fn deal_cancel_handler(Path(_deal_id): Path<Uuid>) -> Response {
     (StatusCode::NO_CONTENT, ()).into_response()
 }
 
-pub async fn deal_download_handler(Path(_deal_id): Path<Uuid>) -> Response {
-    todo!()
+pub async fn deal_download_handler(Path(deal_id): Path<Uuid>) -> Response {
+    let mut rng = rand::thread_rng();
+
+    let mut headers = HeaderMap::new();
+
+    let disposition =
+        HeaderValue::from_str(format!("attachment; filename=\"{deal_id}.car\"").as_str()).unwrap();
+    headers.insert(CONTENT_DISPOSITION, disposition);
+    headers.insert(
+        CONTENT_TYPE,
+        HeaderValue::from_static("application/vnd.ipld.car; version=2"),
+    );
+
+    let mut data_to_seal = [0u8; 1024];
+    rng.fill(&mut data_to_seal);
+
+    (StatusCode::OK, headers, data_to_seal).into_response()
 }
 
 pub async fn deal_ignore_handler(Path(_deal_id): Path<Uuid>) -> Response {
@@ -191,13 +181,21 @@ pub async fn deal_ignore_handler(Path(_deal_id): Path<Uuid>) -> Response {
 }
 
 pub async fn deal_proof_handler(Path(deal_id): Path<Uuid>) -> Response {
-    let resp_msg = serde_json::json!({"id": deal_id, "msg": "in progress"});
+    // todo: include PoSt and PoRep details
+    let resp_msg = serde_json::json!({
+        "id": deal_id,
+        "sector_id": 123456789u64,
+        "sealed_cid": "uAVUSIPETJqF9uI82g0Gk1Dk_eAJ0NxXGvFJ1Gpx2W1E0MDyV",
+        "merkle_root": "22595ccbf9d38fe952ddefae13a2be1584c8afcf971a17e9a6e1ee902cb79ed41430e27a14f8d6ffb469c9cb53baec89aa29ba4e0fc4b14d8cdbac73f1a0080b",
+        "timestamp": OffsetDateTime::now_utc(),
+    });
+
     (StatusCode::OK, Json(resp_msg)).into_response()
 }
 
 pub async fn deal_single_handler(Path(deal_id): Path<Uuid>) -> Response {
-    let resp_msg = serde_json::json!({"id": deal_id, "msg": "in progress"});
-    (StatusCode::OK, Json(resp_msg)).into_response()
+    let deal = FullDeal::random_with_id(deal_id);
+    (StatusCode::OK, Json(deal)).into_response()
 }
 
 pub async fn graceful_shutdown_blocker() -> (JoinHandle<()>, watch::Receiver<()>) {
@@ -232,19 +230,61 @@ pub async fn healthcheck_handler() -> Response {
     (StatusCode::OK, Json(resp_msg)).into_response()
 }
 
+/// Returns the accumulated metrics since the start of the billing period. Storage, bandwidth, and
+/// sealed values are in bytes.
 pub async fn metrics_current_handler() -> Response {
-    let resp_msg = serde_json::json!({"msg": "in progress"});
+    let mut rng = rand::thread_rng();
+
+    let used_storage = rng.gen_range(1099511627776u64..=2528876743884u64);
+    let available_storage = used_storage + rng.gen_range(1099511627776u64..=2528876743884u64);
+
+    let egress_bandwidth = rng.gen_range(0u64..=17179869184u64);
+    let ingress_bandwidth = (egress_bandwidth as f32 * rng.gen_range(1.2f32..=2.3f32)) as usize;
+
+    let resp_msg = serde_json::json!({
+        "bandwidth": {
+            "egress": egress_bandwidth,
+            "ingress": ingress_bandwidth,
+        },
+        "deals": {
+            "accepted": rng.gen_range(0..=99),
+            "sealed": rng.gen_range(109951162u64..=252887674u64),
+        },
+        "storage": {
+            "used": used_storage,
+            "available": available_storage,
+        },
+    });
+
     (StatusCode::OK, Json(resp_msg)).into_response()
 }
 
 pub async fn metrics_bandwidth_daily_handler() -> Response {
-    let resp_msg = serde_json::json!({"msg": "in progress"});
-    (StatusCode::OK, Json(resp_msg)).into_response()
+    let mut readings = Vec::new();
+
+    let current_time = OffsetDateTime::now_utc();
+    let mut date = current_time.date() - 30i64.days();
+
+    for _day in 0..30 {
+        date = date.next_day().expect("tomorrow");
+        readings.push(BandwidthMeasurement::random_with_date(date));
+    }
+
+    (StatusCode::OK, Json(readings)).into_response()
 }
 
 pub async fn metrics_storage_daily_handler() -> Response {
-    let resp_msg = serde_json::json!({"msg": "in progress"});
-    (StatusCode::OK, Json(resp_msg)).into_response()
+    let mut readings = Vec::new();
+
+    let current_time = OffsetDateTime::now_utc();
+    let mut date = current_time.date() - 30i64.days();
+
+    for _day in 0..30 {
+        date = date.next_day().expect("tomorrow");
+        readings.push(StorageMeasurement::random_with_date(date));
+    }
+
+    (StatusCode::OK, Json(readings)).into_response()
 }
 
 async fn not_found_handler() -> impl IntoResponse {
@@ -361,9 +401,35 @@ impl AvailableDeal {
             id,
             size,
             payment,
-            status: DealStatus::random(),
+            status: DealStatus::Available,
             accept_by,
             seal_by,
+        }
+    }
+}
+
+#[derive(Deserialize, Serialize)]
+struct BandwidthMeasurement {
+    date: Date,
+
+    // value in bytes
+    egress: u64,
+
+    // value in bytes
+    ingress: u64,
+}
+
+impl BandwidthMeasurement {
+    pub fn random_with_date(date: Date) -> Self {
+        let mut rng = rand::thread_rng();
+
+        let egress = rng.gen_range(0u64..=171798691u64);
+        let ingress = (egress as f32 * rng.gen_range(1.2f32..=2.3f32)) as u64;
+
+        Self {
+            date,
+            egress,
+            ingress,
         }
     }
 }
@@ -395,15 +461,98 @@ enum DealStatus {
 
 impl DealStatus {
     pub fn random() -> Self {
-        match rand::thread_rng().gen_range(0u8..=6u8) {
-            0 => DealStatus::Available,
+        match rand::thread_rng().gen_range(1u8..=5u8) {
             1 => DealStatus::Pending,
-            2 => DealStatus::NotAccepted,
-            3 => DealStatus::Cancelled,
-            4 => DealStatus::Sealed,
-            5 => DealStatus::Violated,
-            6 => DealStatus::Completed,
+            2 => DealStatus::Cancelled,
+            3 => DealStatus::Sealed,
+            4 => DealStatus::Violated,
+            5 => DealStatus::Completed,
             _ => unreachable!(),
+        }
+    }
+}
+
+#[derive(Deserialize, Serialize)]
+struct FullDeal {
+    id: Uuid,
+
+    /// Size of the deal in bytes
+    size: usize,
+
+    /// Price is in USD * 10_000, $2.45 would be 245000
+    payment: usize,
+
+    status: DealStatus,
+
+    /// Not present in Pending state, time the deal was accepted by the user
+    #[serde(skip_serializing_if = "Option::is_none")]
+    accepted_at: Option<OffsetDateTime>,
+
+    /// Only present in the Cancelled state
+    #[serde(skip_serializing_if = "Option::is_none")]
+    cancelled_at: Option<OffsetDateTime>,
+
+    /// When the data needs to be sealed by (the deadline)
+    sealed_by: OffsetDateTime,
+
+    /// When the data was ACTUALLY sealed
+    #[serde(skip_serializing_if = "Option::is_none")]
+    sealed_at: Option<OffsetDateTime>,
+
+    /// When the sealed contract will end if not renewed
+    #[serde(skip_serializing_if = "Option::is_none")]
+    completes_at: Option<OffsetDateTime>,
+}
+
+impl FullDeal {
+    pub fn random_with_id(id: Uuid) -> Self {
+        let mut rng = rand::thread_rng();
+
+        let size = rng.gen_range(1073741824..=30064771072);
+        let payment = (size * PRICE_PER_TIB * CURRENCY_MULTIPLIER) / (1024 * 1024 * 1024 * 1024);
+
+        let current_time = OffsetDateTime::now_utc();
+        let past_offset = rng.gen_range(113_320i64..=233_280i64);
+        let created_at =  current_time - past_offset.seconds();
+
+        let sealed_by = created_at + 1i64.days();
+
+        let status = DealStatus::random();
+
+        let cancelled_at = if matches!(status, DealStatus::Cancelled) {
+            Some(current_time - rng.gen_range(20i64..=280i64).minutes())
+        } else {
+            None
+        };
+
+        let accepted_at = if matches!(status, DealStatus::Available | DealStatus::NotAccepted) {
+            None
+        } else {
+            let at = created_at + rng.gen_range(900i64..=86_400).seconds();
+            Some(at)
+        };
+
+        let (sealed_at, completes_at) = if matches!(status, DealStatus::Sealed | DealStatus::Violated | DealStatus::Completed) {
+            let aa = accepted_at.as_ref().cloned().expect("present in these status");
+
+            let sa = aa + rng.gen_range(3600i64..7200i64).seconds();
+            let ca = sa + 180i64.days();
+
+            (Some(sa), Some(ca))
+        } else {
+            (None, None)
+        };
+
+        Self {
+            id,
+            size,
+            payment,
+            status,
+            accepted_at,
+            cancelled_at,
+            sealed_by,
+            sealed_at,
+            completes_at,
         }
     }
 }
@@ -414,4 +563,30 @@ enum HealthCheckStatus {
     Red,
     Yellow,
     Green,
+}
+
+#[derive(Deserialize, Serialize)]
+struct StorageMeasurement {
+    date: Date,
+
+    // value in bytes
+    used: u64,
+
+    // value in bytes
+    available: u64,
+}
+
+impl StorageMeasurement {
+    pub fn random_with_date(date: Date) -> Self {
+        let mut rng = rand::thread_rng();
+
+        let used = rng.gen_range(0u64..=171798691u64);
+        let available = (used as f32 * rng.gen_range(1.2f32..=2.3f32)) as u64;
+
+        Self {
+            date,
+            used,
+            available,
+        }
+    }
 }
