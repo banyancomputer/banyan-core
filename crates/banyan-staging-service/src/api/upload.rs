@@ -291,7 +291,7 @@ async fn report_upload_to_platform(
     let response = request
         .send()
         .await
-        .map_err(|_| UploadError::FailedReport("unable to connect"))?;
+        .map_err(|_| UploadError::FailedReport("unable to &**dbect"))?;
 
     if response.status().is_success() {
         Ok(())

@@ -570,6 +570,21 @@ async fn expire_deleted_blocks(
             .execute(&mut *transaction)
             .await
             .map_err(PushMetadataError::UnableToExpireBlocks)?;
+
+            // Associate unqiue block into the map
+            let prune_block = PruneBlock {
+                normalized_cid: normalized_cid.clone(),
+                metadata_id: Uuid::parse_str(&unique_block_location.metadata_id)
+                    .map_err(PushMetadataError::DatabaseUuidCorrupted)?,
+            };
+            for storage_host_id in storage_host_ids {
+                let storage_host_id = Uuid::parse_str(&storage_host_id)
+                    .map_err(PushMetadataError::DatabaseUuidCorrupted)?;
+                prune_blocks_tasks_map
+                    .entry(storage_host_id)
+                    .or_default()
+                    .push(prune_block.clone());
+            }
         }
     }
     // Create background tasks for our storage hosts to notify them to prune blocks

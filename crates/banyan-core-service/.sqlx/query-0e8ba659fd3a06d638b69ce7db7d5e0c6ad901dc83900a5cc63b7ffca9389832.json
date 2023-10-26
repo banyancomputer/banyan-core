@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT storage_host_id\n                FROM block_locations AS bl\n                WHERE bl.block_id = $1 AND bl.metadata_id = $2;",
+  "describe": {
+    "columns": [
+      {
+        "name": "storage_host_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "0e8ba659fd3a06d638b69ce7db7d5e0c6ad901dc83900a5cc63b7ffca9389832"
+}
