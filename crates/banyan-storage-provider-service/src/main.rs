@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::fmt::{self, Display, Formatter};
 use std::time::Duration;
 
@@ -11,7 +13,7 @@ use futures::future::join_all;
 use http::header::{CONTENT_DISPOSITION, CONTENT_TYPE};
 use http::{HeaderMap, HeaderValue};
 use rand::Rng;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use sqlx::SqlitePool;
 use time::ext::NumericalDuration;
 use time::{Date, OffsetDateTime};
@@ -294,7 +296,7 @@ async fn not_found_handler() -> impl IntoResponse {
     )
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Serialize)]
 struct Alert {
     id: Uuid,
 
@@ -339,7 +341,7 @@ impl Alert {
     }
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Serialize)]
 #[serde(rename_all = "snake_case", tag = "type")]
 enum AlertDetails {
     AvailableDealExpired { id: Uuid },
@@ -363,7 +365,7 @@ impl Display for AlertDetails {
     }
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Serialize)]
 #[serde(rename_all = "snake_case")]
 enum AlertSeverity {
     Warning,
@@ -371,7 +373,7 @@ enum AlertSeverity {
     Fatal,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Serialize)]
 struct AvailableDeal {
     id: Uuid,
 
@@ -416,7 +418,7 @@ impl AvailableDeal {
     }
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Serialize)]
 struct BandwidthMeasurement {
     date: Date,
 
@@ -442,7 +444,7 @@ impl BandwidthMeasurement {
     }
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Serialize)]
 #[serde(rename_all = "snake_case")]
 enum DealStatus {
     /// Initial state, the deal is available to be taken but has not been committed to
@@ -480,7 +482,7 @@ impl DealStatus {
     }
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Serialize)]
 struct FullDeal {
     id: Uuid,
 
@@ -572,7 +574,7 @@ impl FullDeal {
     }
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Serialize)]
 #[serde(rename_all = "snake_case")]
 enum HealthCheckStatus {
     Red,
@@ -580,7 +582,7 @@ enum HealthCheckStatus {
     Green,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Serialize)]
 struct StorageMeasurement {
     date: Date,
 
