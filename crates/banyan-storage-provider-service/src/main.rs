@@ -1,3 +1,4 @@
+use std::fmt::{self, Display, Formatter};
 use std::time::Duration;
 
 use axum::extract::Path;
@@ -7,6 +8,7 @@ use axum::response::{IntoResponse, Response};
 use axum::routing::get;
 use axum::{Json, Router, Server};
 use futures::future::join_all;
+use rand::Rng;
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use time::OffsetDateTime;
@@ -18,6 +20,10 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::{EnvFilter, Layer};
 use uuid::Uuid;
+
+const CURRENCY_MULTIPLIER: usize = 10_000;
+
+const PRICE_PER_TIB: usize = 2 * CURRENCY_MULTIPLIER;
 
 #[tokio::main]
 async fn main() {
@@ -46,14 +52,8 @@ async fn main() {
     //   * "expires_at" is present for state 'sealed, 'violated', 'expired'
     //   * "cancelled_at" is present for state 'cancelled'
     //   * [{"id": "<uuid>", "status": "sealed", "size": 1234567, "payment": 245000, "accepted_at": "<date time>", "seal_by": "<date time>", "expires_at": "<date time>", "cancelled_at": "<date time>"}]
-    // /api/v1/deals/:deal_id/cancel
-    //   * Should only work for deals in waiting for seal, no body, 204 on success, no content
-    // /api/v1/deals/available/:deal_id/accept
-    //   * 204 on success, no content
     // /api/v1/deals/available/:deal_id/download
     //   * starts file download if present...
-    // /api/v1/deals/available/:deal_id/ignore
-    //   * 204 on success, no content
     // /api/v1/deals/:deal_id/proof
     //   * sector ID is a u64
     //   * future work will include the actual PoSt and PoRep proofs
@@ -142,6 +142,7 @@ pub async fn alert_history_handler() -> Response {
         Alert::random_resolved(),
         Alert::random_resolved(),
     ]);
+
     (StatusCode::OK, Json(resp_msg)).into_response()
 }
 
@@ -162,28 +163,31 @@ pub async fn config_handler() -> Response {
     (StatusCode::OK, Json(resp_msg)).into_response()
 }
 
-pub async fn deal_accept_handler(Path(deal_id): Path<Uuid>) -> Response {
-    let resp_msg = serde_json::json!({"id": deal_id, "msg": "in progress"});
-    (StatusCode::OK, Json(resp_msg)).into_response()
+pub async fn deal_accept_handler(Path(_deal_id): Path<Uuid>) -> Response {
+    (StatusCode::NO_CONTENT, ()).into_response()
 }
 
 pub async fn deal_available_handler() -> Response {
-    let resp_msg = serde_json::json!({"msg": "in progress"});
-    (StatusCode::OK, Json(resp_msg)).into_response()
+    let deals = vec![
+        AvailableDeal::random(),
+        AvailableDeal::random(),
+        AvailableDeal::random(),
+        AvailableDeal::random(),
+    ];
+
+    (StatusCode::OK, Json(deals)).into_response()
 }
 
-pub async fn deal_cancel_handler(Path(deal_id): Path<Uuid>) -> Response {
-    let resp_msg = serde_json::json!({"id": deal_id, "msg": "in progress"});
-    (StatusCode::OK, Json(resp_msg)).into_response()
+pub async fn deal_cancel_handler(Path(_deal_id): Path<Uuid>) -> Response {
+    (StatusCode::NO_CONTENT, ()).into_response()
 }
 
 pub async fn deal_download_handler(Path(_deal_id): Path<Uuid>) -> Response {
     todo!()
 }
 
-pub async fn deal_ignore_handler(Path(deal_id): Path<Uuid>) -> Response {
-    let resp_msg = serde_json::json!({"id": deal_id, "msg": "in progress"});
-    (StatusCode::OK, Json(resp_msg)).into_response()
+pub async fn deal_ignore_handler(Path(_deal_id): Path<Uuid>) -> Response {
+    (StatusCode::NO_CONTENT, ()).into_response()
 }
 
 pub async fn deal_proof_handler(Path(deal_id): Path<Uuid>) -> Response {
@@ -194,6 +198,28 @@ pub async fn deal_proof_handler(Path(deal_id): Path<Uuid>) -> Response {
 pub async fn deal_single_handler(Path(deal_id): Path<Uuid>) -> Response {
     let resp_msg = serde_json::json!({"id": deal_id, "msg": "in progress"});
     (StatusCode::OK, Json(resp_msg)).into_response()
+}
+
+pub async fn graceful_shutdown_blocker() -> (JoinHandle<()>, watch::Receiver<()>) {
+    use tokio::signal::unix;
+
+    let mut sig_int_handler =
+        unix::signal(unix::SignalKind::interrupt()).expect("to be able to install signal handler");
+    let mut sig_term_handler =
+        unix::signal(unix::SignalKind::terminate()).expect("to be able to install signal handler");
+
+    let (tx, rx) = tokio::sync::watch::channel(());
+    let handle = tokio::spawn(async move {
+        // TODO: need to follow k8s signal handling rules for these different signals
+        tokio::select! {
+            _ = sig_int_handler.recv() => tracing::debug!("gracefully exiting on an interrupt signal"),
+            _ = sig_term_handler.recv() => tracing::debug!("gracefully exiting on an terminate signal"),
+        }
+
+        let _ = tx.send(());
+    });
+
+    (handle, rx)
 }
 
 pub async fn healthcheck_handler() -> Response {
@@ -221,34 +247,11 @@ pub async fn metrics_storage_daily_handler() -> Response {
     (StatusCode::OK, Json(resp_msg)).into_response()
 }
 
-pub async fn graceful_shutdown_blocker() -> (JoinHandle<()>, watch::Receiver<()>) {
-    use tokio::signal::unix;
-
-    let mut sig_int_handler =
-        unix::signal(unix::SignalKind::interrupt()).expect("to be able to install signal handler");
-    let mut sig_term_handler =
-        unix::signal(unix::SignalKind::terminate()).expect("to be able to install signal handler");
-
-    let (tx, rx) = tokio::sync::watch::channel(());
-    let handle = tokio::spawn(async move {
-        // TODO: need to follow k8s signal handling rules for these different signals
-        tokio::select! {
-            _ = sig_int_handler.recv() => tracing::debug!("gracefully exiting on an interrupt signal"),
-            _ = sig_term_handler.recv() => tracing::debug!("gracefully exiting on an terminate signal"),
-        }
-
-        let _ = tx.send(());
-    });
-
-    (handle, rx)
-}
-
-#[derive(Deserialize, Serialize)]
-#[serde(rename_all = "snake_case")]
-enum HealthCheckStatus {
-    Red,
-    Yellow,
-    Green,
+async fn not_found_handler() -> impl IntoResponse {
+    (
+        StatusCode::NOT_FOUND,
+        Json(serde_json::json!({"status": "not found"})),
+    )
 }
 
 #[derive(Deserialize, Serialize)]
@@ -259,33 +262,59 @@ struct Alert {
     message: String,
 
     severity: AlertSeverity,
-    r#type: AlertType,
+    details: AlertDetails,
 
     triggered_at: OffsetDateTime,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     resolved_at: Option<OffsetDateTime>,
 }
 
 impl Alert {
     fn random() -> Self {
+        let details = AlertDetails::SetupRequired;
+
         Self {
             id: Uuid::new_v4(),
             severity: AlertSeverity::Warning,
-            message: "here's some alert text. Something is going on".to_string(),
-            r#type: AlertType::SetupRequired,
+            message: details.to_string(),
+            details,
             triggered_at: OffsetDateTime::now_utc(),
             resolved_at: None,
         }
     }
 
     fn random_resolved() -> Self {
+        let details = AlertDetails::SetupRequired;
+
         Self {
             id: Uuid::new_v4(),
             severity: AlertSeverity::Warning,
-            message: "here's some alert text. Something is going on".to_string(),
-            r#type: AlertType::SetupRequired,
+            message: details.to_string(),
+            details,
             triggered_at: OffsetDateTime::now_utc(),
             resolved_at: Some(OffsetDateTime::now_utc()),
         }
+    }
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all = "snake_case", tag = "type")]
+enum AlertDetails {
+    AvailableDealExpired { id: Uuid },
+    ProofFailed { id: Uuid },
+    SetupRequired,
+}
+
+impl Display for AlertDetails {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let msg = match &self {
+            AlertDetails::AvailableDealExpired { .. } => "Available deal expired without being accepted!",
+            AlertDetails::ProofFailed { .. } => "A proof on sealed data failed to validate!",
+            AlertDetails::SetupRequired => "Additional configuration required before data will be stored",
+        };
+
+        f.write_str(msg)
     }
 }
 
@@ -298,15 +327,91 @@ enum AlertSeverity {
 }
 
 #[derive(Deserialize, Serialize)]
-#[serde(rename_all = "snake_case")]
-enum AlertType {
-    DealExpired,
-    SetupRequired,
+struct AvailableDeal {
+    id: Uuid,
+
+    /// Size of the deal in bytes
+    size: usize,
+
+    /// Price is in USD * 10_000, $2.45 would be 245000
+    payment: usize,
+
+    status: DealStatus,
+
+    accept_by: OffsetDateTime,
+    seal_by: OffsetDateTime,
 }
 
-async fn not_found_handler() -> impl IntoResponse {
-    (
-        StatusCode::NOT_FOUND,
-        Json(serde_json::json!({"status": "not found"})),
-    )
+impl AvailableDeal {
+    pub fn random() -> Self {
+        Self::random_with_id(Uuid::new_v4())
+    }
+
+    pub fn random_with_id(id: Uuid) -> Self {
+        let mut rng = rand::thread_rng();
+
+        let size = rng.gen_range(1073741824..=30064771072);
+        let payment = (size * PRICE_PER_TIB * CURRENCY_MULTIPLIER) / (1024 * 1024 * 1024 * 1024);
+
+        let future_offset = rng.gen_range(113_320..=233_280);
+        let accept_by = OffsetDateTime::now_utc() + Duration::from_secs(future_offset);
+        let seal_by = accept_by + Duration::from_secs(86_400);
+
+        Self {
+            id,
+            size,
+            payment,
+            status: DealStatus::random(),
+            accept_by,
+            seal_by,
+        }
+    }
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+enum DealStatus {
+    /// Initial state, the deal is available to be taken but has not been committed to
+    Available,
+
+    /// The deal has been accepted but the storage provider still needs to seal the data
+    Pending,
+
+    /// The deal reached the end of its accept_by window or was ignored
+    NotAccepted,
+
+    /// The deal was previously accepted, but was cancelled before sealing took place.
+    Cancelled,
+
+    /// The data was successfully sealed on to the network
+    Sealed,
+
+    /// We detected a proof violation in this deal
+    Violated,
+
+    /// The deal reached the end of its agreed term without renewal
+    Completed,
+}
+
+impl DealStatus {
+    pub fn random() -> Self {
+        match rand::thread_rng().gen_range(0u8..=6u8) {
+            0 => DealStatus::Available,
+            1 => DealStatus::Pending,
+            2 => DealStatus::NotAccepted,
+            3 => DealStatus::Cancelled,
+            4 => DealStatus::Sealed,
+            5 => DealStatus::Violated,
+            6 => DealStatus::Completed,
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+enum HealthCheckStatus {
+    Red,
+    Yellow,
+    Green,
 }
