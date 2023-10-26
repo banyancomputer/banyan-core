@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::fmt::{self, Display, Formatter};
 use std::time::Duration;
 
@@ -11,7 +13,7 @@ use futures::future::join_all;
 use http::header::{CONTENT_DISPOSITION, CONTENT_TYPE};
 use http::{HeaderMap, HeaderValue};
 use rand::Rng;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use sqlx::SqlitePool;
 use time::ext::NumericalDuration;
 use time::{Date, OffsetDateTime};
@@ -294,7 +296,7 @@ async fn not_found_handler() -> impl IntoResponse {
     )
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Serialize)]
 struct Alert {
     id: Uuid,
 
@@ -304,9 +306,13 @@ struct Alert {
     severity: AlertSeverity,
     details: AlertDetails,
 
+    #[serde(with = "time::serde::rfc3339")]
     triggered_at: OffsetDateTime,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        with = "time::serde::rfc3339::option"
+    )]
     resolved_at: Option<OffsetDateTime>,
 }
 
@@ -338,7 +344,7 @@ impl Alert {
     }
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Serialize)]
 #[serde(rename_all = "snake_case", tag = "type")]
 enum AlertDetails {
     AvailableDealExpired { id: Uuid },
@@ -362,7 +368,7 @@ impl Display for AlertDetails {
     }
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Serialize)]
 #[serde(rename_all = "snake_case")]
 enum AlertSeverity {
     Warning,
@@ -370,7 +376,7 @@ enum AlertSeverity {
     Fatal,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Serialize)]
 struct AvailableDeal {
     id: Uuid,
 
@@ -382,7 +388,10 @@ struct AvailableDeal {
 
     status: DealStatus,
 
+    #[serde(with = "time::serde::rfc3339")]
     accept_by: OffsetDateTime,
+
+    #[serde(with = "time::serde::rfc3339")]
     seal_by: OffsetDateTime,
 }
 
@@ -395,7 +404,7 @@ impl AvailableDeal {
         let mut rng = rand::thread_rng();
 
         let size = rng.gen_range(1073741824..=30064771072);
-        let payment = (size * PRICE_PER_TIB * CURRENCY_MULTIPLIER) / (1024 * 1024 * 1024 * 1024);
+        let payment = ((size * PRICE_PER_TIB) / (1024 * 1024 * 1024 * 1024)) * CURRENCY_MULTIPLIER;
 
         let future_offset = rng.gen_range(113_320..=233_280);
         let accept_by = OffsetDateTime::now_utc() + Duration::from_secs(future_offset);
@@ -412,7 +421,7 @@ impl AvailableDeal {
     }
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Serialize)]
 struct BandwidthMeasurement {
     date: Date,
 
@@ -438,7 +447,7 @@ impl BandwidthMeasurement {
     }
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Serialize)]
 #[serde(rename_all = "snake_case")]
 enum DealStatus {
     /// Initial state, the deal is available to be taken but has not been committed to
@@ -476,7 +485,7 @@ impl DealStatus {
     }
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Serialize)]
 struct FullDeal {
     id: Uuid,
 
@@ -489,22 +498,35 @@ struct FullDeal {
     status: DealStatus,
 
     /// Not present in Pending state, time the deal was accepted by the user
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        with = "time::serde::rfc3339::option"
+    )]
     accepted_at: Option<OffsetDateTime>,
 
     /// Only present in the Cancelled state
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        with = "time::serde::rfc3339::option"
+    )]
     cancelled_at: Option<OffsetDateTime>,
 
     /// When the data needs to be sealed by (the deadline)
+    #[serde(with = "time::serde::rfc3339")]
     sealed_by: OffsetDateTime,
 
     /// When the data was ACTUALLY sealed
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        with = "time::serde::rfc3339::option"
+    )]
     sealed_at: Option<OffsetDateTime>,
 
     /// When the sealed contract will end if not renewed
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        with = "time::serde::rfc3339::option"
+    )]
     completes_at: Option<OffsetDateTime>,
 }
 
@@ -567,7 +589,7 @@ impl FullDeal {
     }
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Serialize)]
 #[serde(rename_all = "snake_case")]
 enum HealthCheckStatus {
     Red,
@@ -575,7 +597,7 @@ enum HealthCheckStatus {
     Green,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Serialize)]
 struct StorageMeasurement {
     date: Date,
 
