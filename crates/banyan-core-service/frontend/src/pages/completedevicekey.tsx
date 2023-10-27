@@ -43,8 +43,7 @@ const DeviceKeyApproval: NextPageWithLayout = () => {
             if (keys.some(key => key.fingerprint == hexFingerprint)) {
                 console.log("key already registered; sending completion signal");
                 await completeDeviceKeyRegistration(hexFingerprint);
-            }
-            else {
+            } else {
                 console.log("failed to find an existing key with that fingerprint; adding " + hexFingerprint);
                 await api.registerDeviceApiKey(pem);
                 await completeDeviceKeyRegistration(hexFingerprint);

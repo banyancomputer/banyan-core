@@ -90,10 +90,7 @@ where
 
         let key_id = match header_data.kid {
             Some(key_id) if key_regex.is_match(key_id.as_str()) => key_id,
-            Some(val) => {
-                tracing::info!("api_identity_val: {}", val);
-                return Err(ApiIdentityError::BadKeyFormat);
-            }
+            Some(_) => return Err(ApiIdentityError::BadKeyFormat),
             None => return Err(ApiIdentityError::UnidentifiedKey),
         };
 
@@ -116,10 +113,8 @@ where
 
         // TODO: we probably want to use device keys to sign this instead of a
         // static AES key, this works for now
-        let token_data = decode::<ApiToken>(token, &key, &token_validator).map_err(|err| {
-            tracing::info!("real error: {}", err);
-            ApiIdentityError::FormatError(err)
-        })?;
+        let token_data = decode::<ApiToken>(token, &key, &token_validator)
+            .map_err(ApiIdentityError::FormatError)?;
 
         let claims = token_data.claims;
 

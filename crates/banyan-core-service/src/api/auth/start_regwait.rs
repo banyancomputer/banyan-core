@@ -47,7 +47,7 @@ async fn watch_for_fingerprint(
         match bus_event {
             (SystemEvent::DeviceKeyRegistration, data) => {
                 let event: RegistrationEvent =
-                    serde_json::from_slice(&data[..]).map_err(StartRegwaitError::InvalidEvent)?;
+                    bincode::deserialize(&data[..]).map_err(StartRegwaitError::InvalidEvent)?;
                 if event.fingerprint == fingerprint {
                     return Ok(event);
                 }
@@ -62,7 +62,7 @@ pub enum StartRegwaitError {
     BrokenBus(tokio::sync::broadcast::error::RecvError),
 
     #[error("announced event did not match our expected schema: {0}")]
-    InvalidEvent(serde_json::Error),
+    InvalidEvent(bincode::Error),
 
     #[error("timed out waiting for registration event")]
     TimedOut,
