@@ -63,6 +63,7 @@ async fn main() {
         )
         .route("/api/v1/deals/:deal_id/ignore", get(deal_ignore_handler))
         .route("/api/v1/deals/:deal_id/proof", get(deal_proof_handler))
+        .route("/api/v1/deals", get(deal_all_handler))
         .route("/api/v1/metrics/current", get(metrics_current_handler))
         .route(
             "/api/v1/metrics/bandwidth/daily",
@@ -142,6 +143,24 @@ pub async fn config_handler() -> Response {
 
 pub async fn deal_accept_handler(Path(_deal_id): Path<Uuid>) -> Response {
     (StatusCode::NO_CONTENT, ()).into_response()
+}
+
+pub async fn deal_all_handler() -> Response {
+    let mut rng = rand::thread_rng();
+    let target_count = rng.gen_range(3..=15);
+    let mut deals = Vec::new();
+
+    while deals.len() < target_count {
+        let new_deal = FullDeal::random();
+
+        if matches!(new_deal.status, DealStatus::Available) {
+            continue;
+        }
+
+        deals.push(new_deal);
+    }
+
+    (StatusCode::OK, Json(deals)).into_response()
 }
 
 pub async fn deal_available_handler() -> Response {
@@ -541,6 +560,10 @@ struct FullDeal {
 }
 
 impl FullDeal {
+    pub fn random() -> Self {
+        Self::random_with_id(Uuid::new_v4())
+    }
+
     pub fn random_with_id(id: Uuid) -> Self {
         let mut rng = rand::thread_rng();
 
