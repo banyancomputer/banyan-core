@@ -1,10 +1,13 @@
 use std::fmt::{self, Display, Formatter};
 
 use serde::{Deserialize, Serialize};
+use sqlx::encode::IsNull;
+use sqlx::error::BoxDynError;
+use sqlx::sqlite::{SqliteArgumentValue, SqliteTypeInfo, SqliteValueRef};
+use sqlx::{Decode, Encode, Sqlite, Type};
 
-#[derive(Deserialize, PartialEq, Serialize, sqlx::Type)]
+#[derive(Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
-#[sqlx(rename_all = "snake_case")]
 pub enum MetadataState {
     Uploading,
     UploadFailed,
@@ -14,7 +17,6 @@ pub enum MetadataState {
     Deleted,
 }
 
-// todo: might not be needed...
 impl Display for MetadataState {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
@@ -28,17 +30,50 @@ impl Display for MetadataState {
     }
 }
 
-// todo: should be tryfrom since this is fallible... might not be needed at all
-impl From<String> for MetadataState {
-    fn from(s: String) -> Self {
-        match s.as_str() {
+impl TryFrom<&str> for MetadataState {
+    type Error = MetadataStateError;
+
+    fn try_from(val: &str) -> Result<Self, MetadataStateError> {
+        let variant = match val {
             "uploading" => MetadataState::Uploading,
             "upload_failed" => MetadataState::UploadFailed,
             "pending" => MetadataState::Pending,
             "current" => MetadataState::Current,
             "outdated" => MetadataState::Outdated,
             "deleted" => MetadataState::Deleted,
-            _ => panic!("invalid bucket metadata state: {}", s),
-        }
+            _ => return Err(MetadataStateError::InvalidStateValue),
+        };
+
+        Ok(variant)
     }
+}
+
+impl Decode<'_, Sqlite> for MetadataState {
+    fn decode(value: SqliteValueRef<'_>) -> Result<Self, BoxDynError> {
+        let inner_val = <&str as Decode<Sqlite>>::decode(value)?;
+        Self::try_from(inner_val).map_err(Into::into)
+    }
+}
+
+impl Encode<'_, Sqlite> for MetadataState {
+    fn encode_by_ref(&self, args: &mut Vec<SqliteArgumentValue<'_>>) -> IsNull {
+        args.push(SqliteArgumentValue::Text(self.to_string().into()));
+        IsNull::No
+    }
+}
+
+impl Type<Sqlite> for MetadataState {
+    fn compatible(ty: &SqliteTypeInfo) -> bool {
+        <&str as Type<Sqlite>>::compatible(ty)
+    }
+
+    fn type_info() -> SqliteTypeInfo {
+        <&str as Type<Sqlite>>::type_info()
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum MetadataStateError {
+    #[error("attempted to decode unknown state value")]
+    InvalidStateValue,
 }
