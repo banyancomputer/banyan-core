@@ -5,26 +5,49 @@ use jwt_simple::prelude::*;
 use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use sqlx::{SqlitePool, Acquire};
+use sqlx::{Acquire, SqlitePool};
 use url::Url;
 use uuid::Uuid;
 
 use banyan_task::{CurrentTask, TaskLike};
 
-// use crate::app::ServiceSigningKey;
+use crate::app::PlatformAuthKey;
 
-pub type PruneBlocksTaskContext = SqlitePool;
+#[derive(Clone)]
+pub struct PruneBlocksTaskContext {
+    db_pool: SqlitePool,
+    auth_key: PlatformAuthKey,
+}
+
+impl PruneBlocksTaskContext {
+    pub fn new(db_pool: SqlitePool, auth_key: PlatformAuthKey) -> Self {
+        Self { db_pool, auth_key }
+    }
+
+    pub fn db_pool(&self) -> &SqlitePool {
+        &self.db_pool
+    }
+
+    pub fn auth_key(&self) -> &PlatformAuthKey {
+        &self.auth_key
+    }
+}
 
 #[non_exhaustive]
 #[derive(Debug, thiserror::Error)]
 pub enum PruneBlocksTaskError {
     #[error("the task encountered a sql error: {0}")]
     SqlxError(#[from] sqlx::Error),
+    #[error("the task encountered a reqwest error: {0}")]
+    ReqwestError(#[from] reqwest::Error),
+    #[error("the task encountered a jwt error: {0}")]
+    JwtError(#[from] jwt_simple::Error),
+    #[error("the task encountered a non success response")]
+    NonSuccessResponse(http::StatusCode),
 }
 
 #[derive(Deserialize, Serialize, Clone)]
 pub struct PruneBlock {
-    // TODO: this should be a CID? Based on how I'm using it right now, this is gauranteed to be a CID.
     pub normalized_cid: String,
     pub metadata_id: Uuid,
 }
@@ -36,15 +59,13 @@ pub struct PruneBlocksTask {
 
 impl PruneBlocksTask {
     pub fn new(prune_blocks: Vec<PruneBlock>) -> Self {
-        Self {
-            prune_blocks,
-        }
+        Self { prune_blocks }
     }
 }
 
 struct UniqueUploadsBlock {
     pub upload_id: String,
-    pub block_id: String
+    pub block_id: String,
 }
 
 #[async_trait]
@@ -55,7 +76,9 @@ impl TaskLike for PruneBlocksTask {
     type Context = PruneBlocksTaskContext;
 
     async fn run(&self, _task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
+        let auth_key = ctx.auth_key();
         let mut db_conn = ctx
+            .db_pool()
             .acquire()
             .await
             .map_err(PruneBlocksTaskError::SqlxError)?;
@@ -81,7 +104,7 @@ impl TaskLike for PruneBlocksTask {
             .fetch_one(&mut *transaction)
             .await
             .map_err(PruneBlocksTaskError::SqlxError)?;
-        
+
             // Set the specifiec block as pruned
             sqlx::query!(
                 r#"
@@ -93,9 +116,59 @@ impl TaskLike for PruneBlocksTask {
             )
             .execute(&mut *transaction)
             .await
-            .map_err(PruneBlocksTaskError::SqlxError)?; 
+            .map_err(PruneBlocksTaskError::SqlxError)?;
         }
-        transaction.commit().await.map_err(PruneBlocksTaskError::SqlxError)?;
+
+        report_pruned_blocks(auth_key, &self.prune_blocks).await?;
+
+        transaction
+            .commit()
+            .await
+            .map_err(PruneBlocksTaskError::SqlxError)?;
         Ok(())
+    }
+}
+
+async fn report_pruned_blocks(
+    auth_key: &PlatformAuthKey,
+    prune_blocks: &Vec<PruneBlock>,
+) -> Result<(), PruneBlocksTaskError> {
+    let mut default_headers = HeaderMap::new();
+    default_headers.insert("Content-Type", HeaderValue::from_static("application/json"));
+
+    let client = Client::builder()
+        .default_headers(default_headers)
+        .build()
+        .unwrap();
+
+    let report_endpoint = auth_key
+        .base_url()
+        .join(format!("/hooks/storage/prune").as_str())
+        .unwrap();
+
+    let mut claims = Claims::create(Duration::from_secs(60))
+        .with_audiences(HashSet::from_strings(&["banyan-platform"]))
+        .with_subject("banyan-staging")
+        .invalid_before(Clock::now_since_epoch() - Duration::from_secs(30));
+
+    claims.create_nonce();
+    claims.issued_at = Some(Clock::now_since_epoch());
+
+    let bearer_token = auth_key.sign(claims).unwrap();
+
+    let request = client
+        .post(report_endpoint)
+        .json(&prune_blocks)
+        .bearer_auth(bearer_token);
+
+    let response = request
+        .send()
+        .await
+        .map_err(PruneBlocksTaskError::ReqwestError)?;
+
+    if response.status().is_success() {
+        Ok(())
+    } else {
+        Err(PruneBlocksTaskError::NonSuccessResponse(response.status()))
     }
 }

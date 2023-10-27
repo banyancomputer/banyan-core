@@ -48,7 +48,6 @@ pub enum PruneBlocksTaskError {
 
 #[derive(Deserialize, Serialize, Clone)]
 pub struct PruneBlock {
-    // TODO: this should be a CID? Based on how I'm using it right now, this is gauranteed to be a CID.
     pub normalized_cid: String,
     pub metadata_id: Uuid,
 }
