@@ -143,7 +143,7 @@ async fn report_pruned_blocks(
 
     let report_endpoint = auth_key
         .base_url()
-        .join(format!("/hooks/storage/prune").as_str())
+        .join("/hooks/storage/prune".to_string().as_str())
         .unwrap();
 
     let mut claims = Claims::create(Duration::from_secs(60))

@@ -38,12 +38,10 @@ pub enum PruneBlocksError {
 impl IntoResponse for PruneBlocksError {
     fn into_response(self) -> Response {
         use PruneBlocksError::*;
-        match self {
-            _ => {
-                tracing::error!("{self}");
-                let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
-            }
+        {
+            tracing::error!("{self}");
+            let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
         }
     }
 }

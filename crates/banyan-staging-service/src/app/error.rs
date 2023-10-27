@@ -7,7 +7,7 @@ pub enum Error {
     AxumServer(#[from] hyper::Error),
 
     #[error("unable to setup database")]
-    DatabaseSetupError(#[from] crate::database::DatabaseSetupError),
+    DatabaseSetup(#[from] crate::database::DatabaseSetupError),
 
     #[error("failed to initial the database")]
     DatabaseFailure(#[from] sqlx::Error),

@@ -167,7 +167,7 @@ pub async fn current_authorized_storage(
                      LIMIT 1;",
     )
     .bind(client_id)
-    .fetch_optional(&*db)
+    .fetch_optional(db)
     .await
     .map_err(AuthenticatedClientError::DbFailure)?;
 
@@ -182,7 +182,7 @@ pub async fn current_consumed_storage(
                 "SELECT SUM(COALESCE(final_size, reported_size)) AS consumed_storage FROM uploads WHERE client_id = $1;",
             )
             .bind(client_id)
-            .fetch_optional(&*db)
+            .fetch_optional(db)
             .await
             .map_err(AuthenticatedClientError::DbFailure)?;
 
@@ -196,7 +196,7 @@ pub async fn id_from_fingerprint(
     let maybe_remote_id: Option<RemoteId> =
         sqlx::query_as("SELECT id, platform_id, public_key FROM clients WHERE fingerprint = $1;")
             .bind(fingerprint)
-            .fetch_optional(&*db)
+            .fetch_optional(db)
             .await
             .map_err(AuthenticatedClientError::DbFailure)?;
 
