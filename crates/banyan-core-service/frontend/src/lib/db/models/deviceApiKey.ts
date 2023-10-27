@@ -64,7 +64,6 @@ const DeviceApiKeyModel = (
     };
 
     DeviceApiKey.prototype.validate = async function() {
-        console.log("validating: " + JSON.stringify(this));
         if (!isPem(this.pem)) {
             throw new Error('invalid pem');
         }
