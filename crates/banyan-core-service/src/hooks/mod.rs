@@ -8,7 +8,6 @@ use tower_http::cors::CorsLayer;
 use crate::app::AppState;
 
 pub fn router(state: AppState) -> Router<AppState> {
-    // TODO: does this need to be here?
     // TODO: Find the right cors config for this
     let cors_layer = CorsLayer::very_permissive();
 

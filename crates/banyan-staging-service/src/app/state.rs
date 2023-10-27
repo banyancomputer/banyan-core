@@ -84,6 +84,10 @@ impl State {
         self.platform_verification_key.clone()
     }
 
+    pub fn platform_auth_key(&self) -> PlatformAuthKey {
+        self.platform_auth_key.clone()
+    }
+
     pub fn upload_directory(&self) -> PathBuf {
         self.upload_directory.clone()
     }

@@ -8,23 +8,20 @@ use tokio::task::JoinHandle;
 
 use banyan_task::{QueueConfig, SqliteTaskStore, WorkerPool};
 
-use crate::app::PlatformAuthKey;
+use crate::app::State;
 
-pub async fn start_prune_blocks_workers(
-    pool: SqlitePool,
-    auth_key: PlatformAuthKey,
+pub async fn start_background_workers(
+    state: State,
     mut shutdown_rx: watch::Receiver<()>,
 ) -> Result<JoinHandle<()>, &'static str> {
-    let task_store = SqliteTaskStore::new(pool.clone());
+    let task_store = SqliteTaskStore::new(state.database());
 
-    WorkerPool::new(task_store.clone(), move || {
-        PruneBlocksTaskContext::new(pool.clone(), auth_key.clone())
-    })
-    .configure_queue(QueueConfig::new("prune_blocks").with_worker_count(5))
-    .register_task_type::<PruneBlocksTask>()
-    .start(async move {
-        let _ = shutdown_rx.changed().await;
-    })
-    .await
-    .map_err(|_| "prune blocks worker startup failed")
+    WorkerPool::new(task_store.clone(), move || state.clone())
+        .configure_queue(QueueConfig::new("prune_blocks").with_worker_count(5))
+        .register_task_type::<PruneBlocksTask>()
+        .start(async move {
+            let _ = shutdown_rx.changed().await;
+        })
+        .await
+        .map_err(|_| "prune blocks worker startup failed")
 }

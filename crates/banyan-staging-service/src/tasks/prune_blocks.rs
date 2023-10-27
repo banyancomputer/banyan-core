@@ -11,27 +11,9 @@ use uuid::Uuid;
 
 use banyan_task::{CurrentTask, TaskLike};
 
-use crate::app::PlatformAuthKey;
+use crate::app::{PlatformAuthKey, State};
 
-#[derive(Clone)]
-pub struct PruneBlocksTaskContext {
-    db_pool: SqlitePool,
-    auth_key: PlatformAuthKey,
-}
-
-impl PruneBlocksTaskContext {
-    pub fn new(db_pool: SqlitePool, auth_key: PlatformAuthKey) -> Self {
-        Self { db_pool, auth_key }
-    }
-
-    pub fn db_pool(&self) -> &SqlitePool {
-        &self.db_pool
-    }
-
-    pub fn auth_key(&self) -> &PlatformAuthKey {
-        &self.auth_key
-    }
-}
+pub type PruneBlocksTaskContext = State;
 
 #[non_exhaustive]
 #[derive(Debug, thiserror::Error)]
@@ -76,9 +58,9 @@ impl TaskLike for PruneBlocksTask {
     type Context = PruneBlocksTaskContext;
 
     async fn run(&self, _task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
-        let auth_key = ctx.auth_key();
+        let auth_key = ctx.platform_auth_key();
         let mut db_conn = ctx
-            .db_pool()
+            .database()
             .acquire()
             .await
             .map_err(PruneBlocksTaskError::SqlxError)?;
@@ -119,7 +101,7 @@ impl TaskLike for PruneBlocksTask {
             .map_err(PruneBlocksTaskError::SqlxError)?;
         }
 
-        report_pruned_blocks(auth_key, &self.prune_blocks).await?;
+        report_pruned_blocks(&auth_key, &self.prune_blocks).await?;
 
         transaction
             .commit()

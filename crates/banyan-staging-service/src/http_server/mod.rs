@@ -6,6 +6,8 @@ use axum::Router;
 use axum::{Server, ServiceExt};
 use http::header;
 use tokio::signal::unix::{signal, SignalKind};
+use tokio::sync::watch;
+use tokio::task::JoinHandle;
 use tower::ServiceBuilder;
 use tower_http::classify::{ServerErrorsAsFailures, SharedClassifier};
 use tower_http::request_id::MakeRequestUuid;
@@ -18,6 +20,7 @@ use tower_http::{LatencyUnit, ServiceBuilderExt};
 use tracing::Level;
 
 use crate::app::{Config, Error, State};
+use crate::tasks::start_background_workers;
 use crate::{api, health_check};
 
 mod error_handlers;
@@ -79,24 +82,30 @@ fn create_trace_layer(log_level: Level) -> TraceLayer<SharedClassifier<ServerErr
 ///
 /// This also handles SIGINT which K8s doesn't issue, those will be coming from users running the
 /// server locally and should shut the server down immediately.
-async fn graceful_shutdown_blocker() {
-    let mut sigint = signal(SignalKind::interrupt()).unwrap();
-    let mut sigterm = signal(SignalKind::terminate()).unwrap();
+pub async fn graceful_shutdown_blocker() -> (JoinHandle<()>, watch::Receiver<()>) {
+    use tokio::signal::unix;
 
-    tokio::select! {
-        _ = sigint.recv() => {
-            tracing::debug!("gracefully exiting immediately on SIGINT");
-            return;
+    let mut sig_int_handler =
+        unix::signal(unix::SignalKind::interrupt()).expect("to be able to install signal handler");
+    let mut sig_term_handler =
+        unix::signal(unix::SignalKind::terminate()).expect("to be able to install signal handler");
+
+    let (tx, rx) = tokio::sync::watch::channel(());
+    let handle = tokio::spawn(async move {
+        // TODO: need to follow k8s signal handling rules for these different signals
+        tokio::select! {
+            _ = sig_int_handler.recv() => tracing::debug!("gracefully exiting on an interrupt signal"),
+            _ = sig_term_handler.recv() => tracing::debug!("gracefully exiting on an terminate signal"),
         }
-        _ = sigterm.recv() => tracing::debug!("initiaing graceful shutdown with delay on SIGTERM"),
-    }
 
-    // todo: fail the readiness checks
+        let _ = tx.send(());
+    });
 
-    tokio::time::sleep(REQUEST_GRACE_PERIOD).await
+    (handle, rx)
 }
 
 pub async fn run(config: Config) -> Result<(), Error> {
+    let (_shutdown_handle, mut shutdown_rx) = graceful_shutdown_blocker().await;
     let trace_layer = create_trace_layer(config.log_level());
 
     // The order of these layers and configuration extensions was carefully chosen as they will see
@@ -139,8 +148,10 @@ pub async fn run(config: Config) -> Result<(), Error> {
         ));
 
     let state = State::from_config(&config).await?;
+    start_background_workers(state.clone(), shutdown_rx.clone())
+        .await
+        .expect("background workers to start");
 
-    // let database
     let root_router = Router::new()
         .nest("/api/v1", api::router(state.clone()))
         .nest("/_status", health_check::router(state.clone()))
@@ -151,7 +162,9 @@ pub async fn run(config: Config) -> Result<(), Error> {
     tracing::info!(addr = ?config.listen_addr(), "server listening");
     Server::bind(&config.listen_addr())
         .serve(app.into_make_service())
-        .with_graceful_shutdown(graceful_shutdown_blocker())
+        .with_graceful_shutdown(async move {
+            let _ = shutdown_rx.changed().await;
+        })
         .await?;
 
     Ok(())
