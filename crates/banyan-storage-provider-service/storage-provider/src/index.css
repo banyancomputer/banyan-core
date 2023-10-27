@@ -1,0 +1,43 @@
+@import "./app/static/styles/_variables.css";
+@import "react-toastify/dist/ReactToastify.min.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+    font-family: "Inter";
+    font-style: normal;
+    font-display: swap;
+    src: url("@static/fonts/Inter.ttf") format("truetype");
+};
+
+@font-face {
+    font-family: "BoogyBrut";
+    font-style: normal;
+    font-display: swap;
+    src: url("@static/fonts/BoogyBrut-Light.otf") format("truetype");
+};
+
+*::-webkit-scrollbar {
+    margin-right: 5px;
+    width: 6px;
+}
+
+*::-webkit-scrollbar-thumb {
+border-radius: 8px;
+background-color: #686868;
+}
+
+.Toastify__toast-container {
+    margin-top: 80px;
+    width: unset !important;
+}
+
+.Toastify__toast-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
