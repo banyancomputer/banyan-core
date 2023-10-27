@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use axum::extract::{BodyStream, Json};
+use axum::extract::{BodyStream, Json, State};
 use axum::headers::{ContentLength, ContentType};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
@@ -17,9 +17,10 @@ use tokio::io::{AsyncWrite, AsyncWriteExt};
 use uuid::Uuid;
 
 use crate::app::PlatformAuthKey;
+use crate::app::State as AppState;
 use crate::car_analyzer::{CarReport, StreamingCarAnalyzer, StreamingCarAnalyzerError};
-use crate::database::{map_sqlx_error, BareId, SqlxError};
-use crate::extractors::{AuthenticatedClient, Database, UploadStore};
+use crate::database::{map_sqlx_error, BareId, Database, SqlxError};
+use crate::extractors::{AuthenticatedClient, UploadStore};
 
 /// Limit on the size of the JSON request that accompanies an upload.
 const UPLOAD_REQUEST_SIZE_LIMIT: u64 = 100 * 1_024;
@@ -31,7 +32,7 @@ pub struct UploadRequest {
 }
 
 pub async fn handler(
-    db: Database,
+    State(state): State<AppState>,
     client: AuthenticatedClient,
     store: UploadStore,
     auth_key: PlatformAuthKey,
@@ -39,6 +40,7 @@ pub async fn handler(
     TypedHeader(content_type): TypedHeader<ContentType>,
     body: BodyStream,
 ) -> Result<Response, UploadError> {
+    let db = state.database();
     let reported_body_length = content_len.0;
     if reported_body_length > client.remaining_storage() {
         tracing::warn!(upload_size = ?reported_body_length, remaining_storage = ?client.remaining_storage(), "staging believes the user doesn't have sufficient storage capacity remaining");
@@ -186,7 +188,7 @@ async fn handle_successful_upload(
     .bind(car_report.total_size() as i64)
     .bind(car_report.integrity_hash())
     .bind(upload_id)
-    .execute(&**db)
+    .execute(db)
     .await
     .map_err(map_sqlx_error)?;
 
@@ -217,7 +219,7 @@ async fn record_upload_beginning(
     .bind(metadata_id.to_string())
     .bind(reported_size as i64)
     .bind(&tmp_upload_path)
-    .fetch_one(&**db)
+    .fetch_one(db)
     .await
     .map_err(map_sqlx_error)
     .map_err(UploadError::Database)?;
@@ -231,7 +233,7 @@ async fn record_upload_failed(db: &Database, upload_id: &str) -> Result<(), Uplo
                 "#,
     )
     .bind(upload_id)
-    .fetch_one(&**db)
+    .fetch_one(db)
     .await
     .map_err(map_sqlx_error)?;
     Ok(())
@@ -340,7 +342,7 @@ where
             )
             .bind(cid_string.clone())
             .bind(block_meta.length() as i64)
-            .execute(&**db)
+            .execute(db)
             .await
             .map_err(map_sqlx_error)?;
 
@@ -348,7 +350,7 @@ where
                 let cid_id: String =
                     sqlx::query_scalar("SELECT id FROM blocks WHERE cid = $1 LIMIT 1;")
                         .bind(cid_string)
-                        .fetch_one(&**db)
+                        .fetch_one(db)
                         .await
                         .map_err(map_sqlx_error)?;
 
@@ -367,7 +369,7 @@ where
             .bind(upload_id)
             .bind(block_id.to_string())
             .bind(block_meta.offset() as i64)
-            .execute(&**db)
+            .execute(db)
             .await
             .map_err(map_sqlx_error)?;
         }

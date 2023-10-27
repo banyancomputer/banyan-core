@@ -24,8 +24,7 @@ pub async fn handler(
     for prune_block in request {
         let normalized_cid = prune_block.normalized_cid;
         // Try and interpret the cid to make sure it's valid
-        let _ = cid::Cid::from_str(&normalized_cid)
-            .map_err(PruneBlocksHookError::InvalidCid)?;
+        let _ = cid::Cid::from_str(&normalized_cid).map_err(PruneBlocksHookError::InvalidCid)?;
 
         let metadata_id = prune_block.metadata_id;
 

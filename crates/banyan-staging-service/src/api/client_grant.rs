@@ -7,8 +7,8 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::app::State as AppState;
-use crate::database::{map_sqlx_error, BareId, DbResult, SqlxError};
-use crate::extractors::{Database, StorageGrant};
+use crate::database::{map_sqlx_error, BareId, Database, DbResult, SqlxError};
+use crate::extractors::StorageGrant;
 
 #[derive(Deserialize, Serialize)]
 pub struct GrantRequest {
@@ -16,12 +16,11 @@ pub struct GrantRequest {
 }
 
 pub async fn handler(
-    // this weirdly needs to be present even though we don't use it
-    _: State<AppState>,
-    database: Database,
+    State(state): State<AppState>,
     grant: StorageGrant,
     Json(request): Json<GrantRequest>,
 ) -> Result<Response, GrantError> {
+    let database = state.database();
     let grant_user_id = ensure_grant_user(&database, &grant, request).await?;
     tracing::info!(client_id = ?grant_user_id, grant_id = ?grant.grant_id(), authorization_amount = ?grant.authorized_data_size(), "update user's authorized storage amount");
     create_storage_grant(grant_user_id, &database, &grant).await?;
@@ -48,7 +47,7 @@ async fn create_grant_user(
                 .bind(grant.platform_id().to_string())
                 .bind(grant.client_fingerprint())
                 .bind(request.public_key)
-                .fetch_one(&**database)
+                .fetch_one(database)
                 .await
                 .map_err(map_sqlx_error)
                 .map_err(GrantError::Database)?;
@@ -62,7 +61,7 @@ async fn existing_grant_user(
 ) -> Result<Option<Uuid>, GrantError> {
     let user_id: Option<BareId> = sqlx::query_as("SELECT id FROM clients WHERE fingerprint = $1")
         .bind(grant.client_fingerprint())
-        .fetch_optional(&**database)
+        .fetch_optional(database)
         .await
         .map_err(map_sqlx_error)
         .map_err(GrantError::Database)?;
@@ -79,7 +78,7 @@ async fn create_storage_grant(
                 .bind(client_id.to_string())
                 .bind(grant.grant_id().to_string())
                 .bind(grant.authorized_data_size() as i64)
-                .fetch_one(&**database)
+                .fetch_one(database)
                 .await
                 .map_err(map_sqlx_error);
 

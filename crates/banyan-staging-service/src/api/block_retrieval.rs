@@ -1,5 +1,5 @@
 use axum::body::StreamBody;
-use axum::extract::Path;
+use axum::extract::{Path, State};
 use axum::headers::{ContentLength, ContentType};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
@@ -8,14 +8,17 @@ use cid::Cid;
 use object_store::{GetOptions, ObjectStore};
 use uuid::Uuid;
 
-use crate::extractors::{AuthenticatedClient, Database, UploadStore};
+use crate::app::State as AppState;
+use crate::database::Database;
+use crate::extractors::{AuthenticatedClient, UploadStore};
 
 pub async fn handler(
-    db: Database,
+    State(state): State<AppState>,
     client: AuthenticatedClient,
     store: UploadStore,
     Path(cid): Path<String>,
 ) -> Result<Response, BlockRetrievalError> {
+    let db = state.database();
     let cid = cid::Cid::try_from(cid).map_err(BlockRetrievalError::InvalidCid)?;
     let normalized_cid = cid
         .to_string_of_base(cid::multibase::Base::Base64Url)
@@ -90,7 +93,7 @@ pub async fn block_from_normalized_cid(
             "#,
     )
     .bind(normalized_cid)
-    .fetch_optional(&**database)
+    .fetch_optional(database)
     .await
     .map_err(BlockRetrievalError::DbFailure)?;
     match maybe_block_id {

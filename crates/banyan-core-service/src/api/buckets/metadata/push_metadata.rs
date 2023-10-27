@@ -512,7 +512,7 @@ async fn expire_deleted_blocks(
             .to_string_of_base(Base::Base64Url)
             .map_err(PushMetadataError::InvalidCid)?;
 
-        // TODO: is there any chance this is producing duplicate rows? Should we use GroupBy?
+        // Get all the unique blocks that have this cid contained within the bucket
         let unique_block_locations = sqlx::query_as!(
             UniqueBlockLocation,
             r#"SELECT blocks.id AS block_id, m.id AS metadata_id
@@ -574,6 +574,7 @@ async fn expire_deleted_blocks(
             }
         }
     }
+    // Create background tasks for our storage hosts to notify them to prune blocks
     for (storage_host_id, prune_blocks) in prune_blocks_tasks_map {
         PruneBlocksTask::new(storage_host_id, prune_blocks)
             .enqueue::<banyan_task::SqliteTaskStore>(&mut *database)
