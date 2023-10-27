@@ -87,6 +87,10 @@ impl State {
     pub fn upload_directory(&self) -> PathBuf {
         self.upload_directory.clone()
     }
+
+    pub fn database(&self) -> Database {
+        self.database.clone()
+    }
 }
 
 impl axum::extract::FromRef<State> for Database {

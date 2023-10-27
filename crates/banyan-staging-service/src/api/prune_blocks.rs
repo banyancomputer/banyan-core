@@ -1,27 +1,19 @@
-use std::ops::Deref;
-
-use axum::extract::Json;
+use axum::extract::{State, Json};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use banyan_task::TaskLikeExt;
-use cid::multibase::Base;
-use cid::Cid;
-use jwt_simple::prelude::*;
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
-use crate::app::PlatformAuthKey;
-use crate::car_analyzer::{CarReport, StreamingCarAnalyzer, StreamingCarAnalyzerError};
-use crate::database::{BareId, SqlxError};
-use crate::extractors::{CoreIdentity, Database};
+use crate::app::State as AppState;
+use crate::extractors::CoreIdentity;
 use crate::tasks::{PruneBlock, PruneBlocksTask};
 
 pub async fn handler(
     _ci: CoreIdentity,
-    db: Database,
+    State(state): State<AppState>,
     Json(prune_blocks): Json<Vec<PruneBlock>>,
 ) -> Result<Response, PruneBlocksError> {
-    let mut db = db.0;
+    let mut db = state.database();
     PruneBlocksTask::new(prune_blocks)
         .enqueue::<banyan_task::SqliteTaskStore>(&mut db)
         .await

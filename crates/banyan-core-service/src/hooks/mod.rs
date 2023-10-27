@@ -1,7 +1,5 @@
 mod mailgun;
-mod storage;
-
-use storage::router as storage_router;
+mod prune_blocks;
 
 use axum::routing::post;
 use axum::Router;
@@ -16,7 +14,7 @@ pub fn router(state: AppState) -> Router<AppState> {
 
     Router::new()
         .route("/mailgun", post(mailgun::handler))
-        .nest("/storage", storage_router(state.clone()))
+        .route("/storage/prune", post(prune_blocks::handler))
         .with_state(state)
         .layer(cors_layer)
 }

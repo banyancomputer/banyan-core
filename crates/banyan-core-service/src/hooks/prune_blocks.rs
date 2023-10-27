@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
@@ -21,6 +23,10 @@ pub async fn handler(
 
     for prune_block in request {
         let normalized_cid = prune_block.normalized_cid;
+        // Try and interpret the cid to make sure it's valid
+        let _ = cid::Cid::from_str(&normalized_cid)
+            .map_err(PruneBlocksHookError::InvalidCid)?;
+
         let metadata_id = prune_block.metadata_id;
 
         let block_id =
@@ -55,14 +61,22 @@ pub async fn handler(
 pub enum PruneBlocksHookError {
     #[error("the task encountered a sql error: {0}")]
     SqlxError(#[from] sqlx::Error),
+    #[error("the task encountered an invalid cid: {0}")]
+    InvalidCid(#[from] cid::Error),
 }
 
 impl IntoResponse for PruneBlocksHookError {
     fn into_response(self) -> Response {
-        {
-            tracing::error!("{self}");
-            let err_msg = serde_json::json!({"msg": "backend service experienced an issue servicing the request"});
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
+        match &self {
+            PruneBlocksHookError::InvalidCid(_) => {
+                let err_msg = serde_json::json!({"msg": "invalid CID provided in the list"});
+                (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
+            }
+            _ => {
+                tracing::error!("{self}");
+                let err_msg = serde_json::json!({"msg": "backend service experienced an issue servicing the request"});
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
+            }
         }
     }
 }
