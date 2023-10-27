@@ -11,6 +11,7 @@ mod storage_class;
 pub use bucket::Bucket;
 pub use bucket_key::BucketKey;
 pub use bucket_type::BucketType;
+#[allow(unused)]
 pub use email_message::EmailMessage;
 pub use email_message_state::EmailMessageState;
 pub use metadata_state::MetadataState;

@@ -184,7 +184,7 @@ async fn approve_key_fingerprints(
 ) -> Result<(), PushMetadataError> {
     for device_key_fingerprint in keys.iter() {
         sqlx::query!(
-            "UPDATE bucket_keys SET approved = 'true' WHERE bucket_id = $1 AND fingerprint = $2;",
+            "UPDATE bucket_keys SET approved = 1 WHERE bucket_id = $1 AND fingerprint = $2;",
             bucket_id,
             device_key_fingerprint,
         )
@@ -348,7 +348,7 @@ async fn mark_current(database: &Database, metadata_id: &str) -> Result<(), sqlx
     .await?;
 
     sqlx::query!(
-        "UPDATE metadata SET state = 'outdated' WHERE id != $1 AND state = 'current';",
+        "UPDATE metadata SET state = 'outdated' WHERE id <> $1 AND state = 'current';",
         metadata_id,
     )
     .execute(database)
@@ -705,7 +705,7 @@ pub struct PushMetadataRequest {
     pub metadata_cid: String,
 
     pub expected_data_size: i64,
-
+    /// Fingerprints of Public Bucket Keys
     #[serde(rename = "valid_keys")]
     pub included_key_fingerprints: Vec<String>,
 

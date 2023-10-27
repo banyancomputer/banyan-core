@@ -74,6 +74,10 @@ export function prettyFingerprint(buf: Uint8Array): string {
 		.join(':');
 }
 
+// Interpret a Uint8Array as a fingerprint
+export function hexFingerprint(buf: Uint8Array): string {
+	return prettyFingerprint(buf).replaceAll(':', '');
+}
 
 // How we join an iv and cipher into a cipher text
 export function joinCipherText(

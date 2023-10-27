@@ -16,7 +16,7 @@ pub async fn handler(
     let event_bus = state.event_bus().subscribe();
 
     let registration_event = timeout(
-        Duration::from_secs(3),
+        Duration::from_secs(20),
         watch_for_fingerprint(fingerprint, event_bus),
     )
     .await
@@ -48,7 +48,6 @@ async fn watch_for_fingerprint(
             (SystemEvent::DeviceKeyRegistration, data) => {
                 let event: RegistrationEvent =
                     bincode::deserialize(&data[..]).map_err(StartRegwaitError::InvalidEvent)?;
-
                 if event.fingerprint == fingerprint {
                     return Ok(event);
                 }

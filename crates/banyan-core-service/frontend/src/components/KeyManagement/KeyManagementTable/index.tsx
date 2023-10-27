@@ -4,11 +4,15 @@ import { useIntl } from 'react-intl';
 import { KeyActions } from '@components/KeyManagement/KeyActions';
 import { Bucket } from '@/lib/interfaces/bucket';
 import { ActionsCell } from '@/components/common/ActionsCell';
+import { fingerprintEcPem } from '@/lib/crypto/utils';
+import Bucket from '@/pages/bucket/[id]';
+import { prettyFingerprintApiKeyPem } from '@/utils/fingerprint';
 
 export const KeyManagementTable: React.FC<{ buckets: Bucket[] }> = ({ buckets }) => {
     const { messages } = useIntl();
     const tableRef = useRef<HTMLDivElement | null>(null);
     const [tableScroll, setTableScroll] = useState(0);
+    const [fingerprints, setFingerprints] = useState(new Map([]));
 
     useEffect(() => {
         /** Weird typescript issue with scrollTop which exist, but not for typescript */
@@ -18,6 +22,26 @@ export const KeyManagementTable: React.FC<{ buckets: Bucket[] }> = ({ buckets })
 
         return () => tableRef.current?.removeEventListener('scroll', listener);
     }, [tableRef]);
+
+    useEffect(() => {
+        async function getFingerprints() {
+            let fingerprintMap = new Map([]);
+            for (const bucket of buckets) {
+                for (const index in bucket.keys) {
+                    const key = bucket.keys[index];
+                    const pem = key.pem();
+                    const id = key.id();
+                    const fingerprint = await prettyFingerprintApiKeyPem(pem);
+                    fingerprintMap.set(id, fingerprint);
+                }
+            };
+            setFingerprints(fingerprintMap);
+        }
+        
+        if (fingerprints.size == 0) {
+            getFingerprints();
+        }
+    }, []);
 
     return (
         <div
@@ -41,33 +65,39 @@ export const KeyManagementTable: React.FC<{ buckets: Bucket[] }> = ({ buckets })
                     </tr>
                 </thead>
                 <tbody>
-                    {buckets.map(bucket =>
-                        <React.Fragment key={bucket.id}>
-                            <tr className="bg-table-cellBackground text-text-900 border-1 border-b-border-regular">
-                                <td className="px-6 py-4">{bucket.name}</td>
+                    {buckets.map(bucket => {
+                        return (<React.Fragment key={bucket.id}>
+                        <tr className="bg-table-cellBackground text-gray-900">
+                            <td className="px-6 py-4">{bucket.name}</td>
+                            <td className="px-6 py-4"></td>
+                            <td className="px-6 py-4"></td>
+                            <td className="px-6 py-4"></td>
+                            <td className="px-6 py-4"></td>
+                        </tr>
+                        {
+                            bucket?.keys?.map(bucketKey => {
+                                const approved = bucketKey.approved();
+                                const bucket_key_id = bucketKey.id();
+                                const fingerprint = fingerprints.get(bucket_key_id);
+
+                                return <tr key={bucket_key_id}>
                                 <td className="px-6 py-4"></td>
-                                <td className="px-6 py-4"></td>
-                                <td className="px-6 py-4"></td>
-                                <td className="px-6 py-4"></td>
+                                <td className="px-6 py-4">{bucket_key_id}</td>
+                                <td className="px-6 py-4">{fingerprint}</td>
+                                <td className="px-6 py-4">{approved ? `${messages.approved}` : `${messages.noAccess}`}</td>
+                                <td className="px-6 py-4">
+                                    <ActionsCell
+                                        actions={<KeyActions bucket={bucket} bucketKey={bucketKey} />}
+                                        offsetTop={tableScroll}
+                                        tableRef={tableRef}
+                                    />
+                                </td>
                             </tr>
-                            {
-                                bucket?.keys?.map(bucketKey =>
-                                    <tr key={bucketKey.id} className="border-1 border-b-border-regular">
-                                        <td className="px-6 py-4"></td>
-                                        <td className="px-6 py-4"></td>
-                                        <td className="px-6 py-4"></td>
-                                        <td className="px-6 py-4">{bucketKey.approved ? `${messages.approved}` : `${messages.noAccess}`}</td>
-                                        <td className="px-6 py-4">
-                                            <ActionsCell
-                                                actions={<KeyActions bucket={bucket} bucketKey={bucketKey} />}
-                                                offsetTop={tableScroll}
-                                                tableRef={tableRef}
-                                            />
-                                        </td>
-                                    </tr>
-                                )
-                            }
-                        </React.Fragment>
+                            })
+                        }
+                    </React.Fragment>);
+                    }
+                        
                     )}
                 </tbody>
             </table >

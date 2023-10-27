@@ -128,5 +128,5 @@ pub fn fingerprint_key(keys: &ES384KeyPair) -> String {
         .iter()
         .map(|byte| format!("{byte:02x}"))
         .collect::<Vec<_>>()
-        .join(":")
+        .join("")
 }
