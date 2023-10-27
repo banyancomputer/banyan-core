@@ -61,7 +61,6 @@ export default async(req: NextApiRequest, res: NextApiResponse) => {
 
         // Try to create the device API key in the db
         try {
-            console.log("validating key: " + JSON.stringify(deviceApiKey));
             await DeviceApiKeyFactory.create(deviceApiKey);
         } catch (e: any) {
             // If the request was formatted incorrectly in a known way
