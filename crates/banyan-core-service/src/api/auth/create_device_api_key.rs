@@ -20,8 +20,6 @@ pub async fn handler(
     let database = state.database();
     let fingerprint = sha1_fingerprint_publickey(&public_device_key);
 
-    tracing::info!("inserting fingerprint {}", fingerprint);
-
     let device_api_key_id = sqlx::query_scalar!(
         r#"INSERT INTO device_api_keys (account_id, fingerprint, pem)
             VALUES ($1, $2, $3)

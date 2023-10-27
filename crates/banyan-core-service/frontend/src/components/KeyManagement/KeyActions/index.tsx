@@ -21,7 +21,7 @@ export const KeyActions: React.FC<{ bucket: Bucket; bucketKey: BucketKey }> = ({
         } catch (error: any) { }
     };
 
-    var approved = bucketKey.approved();
+    const approved = bucketKey.approved();
 
     return (
         <div className="w-52 text-xs font-medium bg-mainBackground rounded-xl shadow-md z-10 text-gray-900 overflow-hidden">

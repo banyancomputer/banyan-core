@@ -42,12 +42,7 @@ pub async fn handler(
     )
     .fetch_all(&database)
     .await
-    .map_err(|err|{
-        tracing::info!("failed to query.......");
-        AuthorizationGrantError::LookupFailed(err)
-    })?;
-
-    tracing::info!("authorized amounts: {:?}", authorized_amounts);
+    .map_err(AuthorizationGrantError::LookupFailed)?;
 
     if authorized_amounts.is_empty() {
         return Err(AuthorizationGrantError::NotFound);

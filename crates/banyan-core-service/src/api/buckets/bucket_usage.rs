@@ -15,12 +15,6 @@ pub async fn handler(
 
     let database = state.database();
 
-    tracing::info!(
-        "searching for bucket usage on account_id {} with bucket id {}",
-        api_id.account_id,
-        bucket_id
-    );
-
     let query_count_result: Result<i32, _> = sqlx::query_scalar!(
         r#"SELECT COUNT(id) 
                FROM buckets b 

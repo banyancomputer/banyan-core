@@ -56,7 +56,7 @@ export const KeyManagementTable: React.FC<{ buckets: Bucket[] }> = ({ buckets })
                             {`${messages.client}`}
                         </th>
                         <th className="py-3 px-6 text-left font-medium">
-                            {`${ messages.fingerprint}`}
+                            {`${messages.fingerprint}`}
                         </th>
                         <th className="py-3 px-6 w-32 text-left font-medium">
                             {`${messages.status}`}

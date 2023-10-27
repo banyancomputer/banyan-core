@@ -78,11 +78,6 @@ pub async fn handler(
     let request_data: PushMetadataRequest = serde_json::from_slice(&request_data_bytes)
         .map_err(PushMetadataError::InvalidRequestData)?;
 
-    tracing::info!(
-        "approving new prints: {:?}",
-        request_data.included_key_fingerprints
-    );
-
     approve_key_fingerprints(
         &database,
         &authorized_bucket_id,
@@ -186,7 +181,6 @@ async fn approve_key_fingerprints(
     keys: &[String],
 ) -> Result<(), PushMetadataError> {
     for device_key_fingerprint in keys.iter() {
-        tracing::info!("approving: {}", device_key_fingerprint);
         sqlx::query!(
             "UPDATE bucket_keys SET approved = 1 WHERE bucket_id = $1 AND fingerprint = $2;",
             bucket_id,
@@ -195,8 +189,6 @@ async fn approve_key_fingerprints(
         .execute(database)
         .await
         .map_err(PushMetadataError::KeyApprovalFailed)?;
-
-        tracing::info!("approved");
     }
 
     Ok(())

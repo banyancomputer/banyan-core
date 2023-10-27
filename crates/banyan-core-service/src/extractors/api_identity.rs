@@ -99,8 +99,6 @@ where
 
         let database = Database::from_ref(state);
 
-        tracing::info!("searching for key_id: {:?}", key_id);
-
         let db_device_api_key = sqlx::query_as!(
             DeviceApiKey,
             r#"SELECT dak.id, a.id as account_id, a.userId as user_id, dak.pem

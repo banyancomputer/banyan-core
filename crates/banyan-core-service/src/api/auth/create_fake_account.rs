@@ -39,8 +39,6 @@ pub async fn handler(
 
     let fingerprint = sha1_fingerprint_publickey(&public_key);
 
-    tracing::info!("inserting (fake) fingerprint {}", fingerprint);
-
     sqlx::query!(
         "INSERT INTO device_api_keys (account_id, fingerprint, pem) VALUES ($1, $2, $3);",
         account_id,
