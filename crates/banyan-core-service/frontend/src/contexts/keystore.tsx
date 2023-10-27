@@ -3,7 +3,7 @@ import ECCKeystore from '@/lib/crypto/ecc/keystore';
 import { importKeyPair } from '@/lib/crypto/ecc';
 import {
     fingerprintEcPem,
-    prettyFingerprint,
+    hexFingerprint,
 } from '@/lib/crypto/utils';
 import { useSession } from 'next-auth/react';
 import { DeviceApiKey } from '@/lib/interfaces';
@@ -289,7 +289,7 @@ export const KeystoreProvider = ({ children }: any) => {
             escrowedKeyMaterial.apiKeyPem,
             EccCurve.P_384,
             KeyUse.Write
-        ).then(prettyFingerprint).catch((err) => {
+        ).then(hexFingerprint).catch((err) => {
             setError('Error fingerprinting API key: ' + err.message);
             throw new Error('Error fingerprinting API key: ' + err.message);
         });

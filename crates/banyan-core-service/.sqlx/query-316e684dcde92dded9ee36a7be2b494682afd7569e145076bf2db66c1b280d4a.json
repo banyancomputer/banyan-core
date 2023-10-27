@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT COALESCE(SUM(m.data_size), 0) as size\n               FROM metadata m\n               JOIN buckets b ON m.bucket_id = b.id\n               WHERE b.account_id = $1 AND b.id = $2;",
+  "describe": {
+    "columns": [
+      {
+        "name": "size",
+        "ordinal": 0,
+        "type_info": "Int"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "316e684dcde92dded9ee36a7be2b494682afd7569e145076bf2db66c1b280d4a"
+}

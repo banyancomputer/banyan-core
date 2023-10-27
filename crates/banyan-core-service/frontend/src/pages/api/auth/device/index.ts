@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { Session } from 'next-auth';
 import { authOptions } from '../[...nextauth]';
 import { AccountFactory, DeviceApiKeyFactory } from '@/lib/db';
-import { isPrettyFingerprint } from '@/utils';
+import { isHexFingerprint } from '@/utils';
 
 export default async(req: NextApiRequest, res: NextApiResponse) => {
     // Get the user's session
@@ -25,7 +25,7 @@ export default async(req: NextApiRequest, res: NextApiResponse) => {
 
     const fingerprint = req.query.fingerprint;
     if (fingerprint) {
-        if (typeof fingerprint !== 'string' || !isPrettyFingerprint(fingerprint)) {
+        if (typeof fingerprint !== 'string' || !isHexFingerprint(fingerprint)) {
             res.status(400).send('bad request'); // Bad Request
 
             return;

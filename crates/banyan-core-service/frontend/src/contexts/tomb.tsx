@@ -41,7 +41,7 @@ interface TombInterface {
     purgeSnapshot: (id: string) => void;
     deleteFile: (bucket: Bucket, path: string[], name: string) => void;
     completeDeviceKeyRegistration: (fingerprint: string) => Promise<void>;
-    approveBucketAccess: (id: string) => Promise<void>;
+    approveBucketAccess: (bucket: Bucket, bucket_key_id: string) => Promise<void>;
     removeBucketAccess: (id: string) => Promise<void>;
     restore: (bucket: Bucket, snapshot: WasmSnapshot) => Promise<void>;
 };
@@ -117,11 +117,14 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     const getBucketsKeys = async () => {
         setAreBucketsLoading(true);
         tombMutex(tomb, async tomb => {
+            const key = await getEncryptionKey();
             let wasm_bukets: Bucket[] = [];
             for (let bucket of buckets) {
+                const mount = await tomb!.mount(bucket.id, key);
                 const keys = await tomb!.listBucketKeys(bucket.id);
                 wasm_bukets.push({
                     ...bucket,
+                    mount,
                     keys
                 });
             }
@@ -217,8 +220,15 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         /** TODO: implement sharing logic when it will be added to tomb. */
         return '';
     };
+    
+    /** Approves access key for bucket */
+    const approveBucketAccess = async (bucket: Bucket, bucket_key_id: string) => {
+        await tombMutex(bucket.mount, async mount => {
+            await mount.shareWith(bucket_key_id);
+        });
+    };
 
-    const getBucketKeys = async (id: string) => await tombMutex(tomb, async tomb => await tomb!.listBucketKeys(id));
+    const getBucketKeys = async (bucket_id: string) => await tombMutex(tomb, async tomb => await tomb!.listBucketKeys(bucket_id));
 
     /** Returns list of snapshots for selected bucket */
     const getBucketShapshots = async (id: string) => await tombMutex(tomb, async tomb => await tomb!.listBucketSnapshots(id));
@@ -228,11 +238,6 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         return await tombMutex(tomb, async tomb => await tomb!.completeDeviceKeyRegistration(fingerprint));
     };
 
-    /** Approves access key for bucket */
-    const approveBucketAccess = async (id: string) => {
-        /** TODO:  connect approveBucketAccess method when in will be implemented.  */
-        // await tomb.approveBucketAccess(id);
-    };
 
     /** Deletes access key for bucket */
     const removeBucketAccess = async (id: string) => {

@@ -9,8 +9,9 @@ import getServerSideProps from '@/utils/session';
 import { useTomb } from '@/contexts/tomb';
 import { useModal } from '@/contexts/modals';
 import { b64UrlDecode } from '@/utils/b64';
-import { prettyFingerprintApiKeySpki, publicPemWrap } from '@/utils';
+import { hexFingerprintApiKeySpki, prettyFingerprintApiKeySpki, publicPemWrap } from '@/utils';
 import { ClientApi } from '@/lib/api/auth';
+import { DeviceApiKey } from '@/lib/interfaces';
 
 export { getServerSideProps };
 
@@ -24,12 +25,13 @@ const DeviceKeyApproval: NextPageWithLayout = () => {
     const urlSpki = searchParams.get('spki')!;
     const spki = b64UrlDecode(urlSpki as string);
     const pem = publicPemWrap(spki);
-    const [fingerprint, setFingerprint] = useState('');
+    const [prettyFingerprint, setPrettyFingerprint] = useState('');
+    const [hexFingerprint, setHexFingerprint] = useState('');
 
     useEffect(() => {
         const getFingerprint = async() => {
-            const fingerprint: string = await prettyFingerprintApiKeySpki(spki);
-            setFingerprint(fingerprint);
+            setHexFingerprint(await hexFingerprintApiKeySpki(spki));
+            setPrettyFingerprint(await prettyFingerprintApiKeySpki(spki));
         };
         getFingerprint();
     }, []);
@@ -37,13 +39,21 @@ const DeviceKeyApproval: NextPageWithLayout = () => {
     // Perform all functions required to complete
     const completeRegistration = async() => {
         try {
-            await api.registerDeviceApiKey(pem);
-            await completeDeviceKeyRegistration(fingerprint);
-            console.log('finished device key registration');
-            alert('successfully authorized new device!');
-        } catch (error: any) {
-            alert('failed to authorize new device!');
-            console.log(`error: ${error}`);
+            let keys: DeviceApiKey[] = await api.readDeviceApiKeys();
+            if (keys.some(key => key.fingerprint == hexFingerprint)) {
+                console.log("key already registered; sending completion signal");
+                await completeDeviceKeyRegistration(hexFingerprint);
+            } else {
+                console.log("failed to find an existing key with that fingerprint; adding " + hexFingerprint);
+                await api.registerDeviceApiKey(pem);
+                await completeDeviceKeyRegistration(hexFingerprint);
+            }
+
+            console.log("finished device key completion");
+            alert("successfully authorized device!");
+        } catch (error: any) { 
+            alert("failed to authorize new device!");
+            console.log("error: " + error);
         }
     };
 
@@ -61,7 +71,7 @@ const DeviceKeyApproval: NextPageWithLayout = () => {
                         </p>
 
                         <h4 className="text-m font-semibold">Fingerprint:</h4>
-                        <p className="mt-2 text-text-600">{`${fingerprint}`}</p>
+                        <p className="mt-2 text-text-600">{`${prettyFingerprint}`}</p>
 
                         <h4 className="text-m font-semibold">PEM:</h4>
                         <p className="mt-2 text-text-600">{`${spki}`}</p>
