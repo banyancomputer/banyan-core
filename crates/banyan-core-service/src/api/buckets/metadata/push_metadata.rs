@@ -491,6 +491,7 @@ where
 struct UniqueBlockLocation {
     block_id: String,
     metadata_id: String,
+    storage_host_id: String,
 }
 
 async fn expire_deleted_blocks(
@@ -512,12 +513,13 @@ async fn expire_deleted_blocks(
             .to_string_of_base(Base::Base64Url)
             .map_err(PushMetadataError::InvalidCid)?;
 
-        // Get all the unique blocks that have this cid contained within the bucket
+        // Get all the unique blocks locations for this CID [(block_id, metadata_id, storage_host_id)]
         let unique_block_locations = sqlx::query_as!(
             UniqueBlockLocation,
-            r#"SELECT blocks.id AS block_id, m.id AS metadata_id
+            r#"SELECT blocks.id AS block_id, m.id AS metadata_id, sh.id AS storage_host_id
                 FROM block_locations AS bl
                 JOIN blocks ON blocks.id = bl.block_id
+                JOIN storage_hosts AS sh ON sh.id = bl.storage_host_id
                 JOIN metadata AS m ON m.id = bl.metadata_id
                 JOIN buckets AS b ON b.id = m.bucket_id
                 WHERE b.account_id = $1 AND b.id = $2 AND blocks.cid = $3;"#,
@@ -533,45 +535,41 @@ async fn expire_deleted_blocks(
             return Err(PushMetadataError::NoBlock(original_cid));
         }
 
+        // Collect all the unique blocks into a single set
+        let mut unique_blocks: BTreeSet<(String, String)> = BTreeSet::new();
+        // Collect all the unique blocks into a map of prune blocks tasks for different storage hosts
         for unique_block_location in unique_block_locations {
-            // Query for all storage_host ids that have this block
-            let storage_host_ids: Vec<String> = sqlx::query_scalar!(
-                r#"SELECT storage_host_id
-                FROM block_locations AS bl
-                WHERE bl.block_id = $1 AND bl.metadata_id = $2;"#,
-                unique_block_location.block_id,
-                unique_block_location.metadata_id,
-            )
-            .fetch_all(&mut *transaction)
-            .await
-            .map_err(PushMetadataError::UnableToExpireBlocks)?;
-
-            // Update all the rows in place
-            sqlx::query_scalar!(
-                r#"UPDATE block_locations AS bl
-                SET expired_at = CURRENT_TIMESTAMP
-                WHERE bl.block_id = $1 AND bl.metadata_id = $2;"#,
-                unique_block_location.block_id,
-                unique_block_location.metadata_id,
-            )
-            .execute(&mut *transaction)
-            .await
-            .map_err(PushMetadataError::UnableToExpireBlocks)?;
-
-            // Associate unqiue block into the map
+            let unique_block = (
+                unique_block_location.block_id.clone(),
+                unique_block_location.metadata_id.clone(),
+            );
+            unique_blocks.insert(unique_block);
             let prune_block = PruneBlock {
                 normalized_cid: normalized_cid.clone(),
                 metadata_id: Uuid::parse_str(&unique_block_location.metadata_id)
                     .map_err(PushMetadataError::DatabaseUuidCorrupted)?,
             };
-            for storage_host_id in storage_host_ids {
-                let storage_host_id = Uuid::parse_str(&storage_host_id)
-                    .map_err(PushMetadataError::DatabaseUuidCorrupted)?;
-                prune_blocks_tasks_map
-                    .entry(storage_host_id)
-                    .or_default()
-                    .push(prune_block.clone());
-            }
+            let storage_host_id = Uuid::parse_str(&unique_block_location.storage_host_id)
+                .map_err(PushMetadataError::DatabaseUuidCorrupted)?;
+            prune_blocks_tasks_map
+                .entry(storage_host_id)
+                .or_default()
+                .push(prune_block.clone());
+        }
+
+        // Iterate over the collected unique blocks and update their expired_at to now
+        for unique_block in unique_blocks {
+            // Update all the rows in place
+            sqlx::query_scalar!(
+                r#"UPDATE block_locations AS bl
+                SET expired_at = CURRENT_TIMESTAMP
+                WHERE bl.block_id = $1 AND bl.metadata_id = $2;"#,
+                unique_block.0,
+                unique_block.1,
+            )
+            .execute(&mut *transaction)
+            .await
+            .map_err(PushMetadataError::UnableToExpireBlocks)?;
         }
     }
     // Create background tasks for our storage hosts to notify them to prune blocks
