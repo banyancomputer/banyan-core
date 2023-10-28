@@ -5,33 +5,14 @@ use jwt_simple::prelude::*;
 use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use sqlx::SqlitePool;
 use url::Url;
 use uuid::Uuid;
 
 use banyan_task::{CurrentTask, TaskLike};
 
-use crate::app::ServiceSigningKey;
+use crate::app::AppState;
 
-#[derive(Clone)]
-pub struct PruneBlocksTaskContext {
-    db_pool: SqlitePool,
-    auth_key: ServiceSigningKey,
-}
-
-impl PruneBlocksTaskContext {
-    pub fn new(db_pool: SqlitePool, auth_key: ServiceSigningKey) -> Self {
-        Self { db_pool, auth_key }
-    }
-
-    pub fn db_pool(&self) -> &SqlitePool {
-        &self.db_pool
-    }
-
-    pub fn auth_key(&self) -> &ServiceSigningKey {
-        &self.auth_key
-    }
-}
+pub type PruneBlocksTaskContext = AppState;
 
 #[non_exhaustive]
 #[derive(Debug, thiserror::Error)]
@@ -76,11 +57,11 @@ impl TaskLike for PruneBlocksTask {
 
     async fn run(&self, _task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
         let mut db_conn = ctx
-            .db_pool()
+            .database()
             .acquire()
             .await
             .map_err(PruneBlocksTaskError::SqlxError)?;
-        let auth_key = ctx.auth_key();
+        let auth_key = ctx.secrets().service_signing_key();
 
         // Determine where to send the prune list
         let storage_host_id = self.storage_host_id.to_string();

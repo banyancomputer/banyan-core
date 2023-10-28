@@ -3,7 +3,6 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use axum::extract::FromRef;
-use banyan_task::SqliteTaskStore;
 use jwt_simple::prelude::*;
 use object_store::local::LocalFileSystem;
 
@@ -91,12 +90,6 @@ impl FromRef<State> for Secrets {
 impl FromRef<State> for ServiceVerificationKey {
     fn from_ref(state: &State) -> Self {
         state.service_verifier()
-    }
-}
-
-impl FromRef<State> for SqliteTaskStore {
-    fn from_ref(state: &State) -> Self {
-        SqliteTaskStore::new(state.database())
     }
 }
 
