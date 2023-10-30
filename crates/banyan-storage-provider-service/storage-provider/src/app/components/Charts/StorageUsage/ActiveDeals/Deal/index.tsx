@@ -1,23 +1,28 @@
 import React, { useState } from 'react';
 
-import { convertFileSize } from '@app/utils/storage';
-import { AvailiableDeal } from '@/entities/deals';
+import { ActionsCell } from '@components/common/ActionsCell';
+
+import { ActiveDeal } from '@/entities/deals';
+import { getDealDateLabel } from '@app/utils/time';
 import { useAppDispatch } from '@app/store';
-import { acceptDeal, declineDeal, downloadDeal, getActiceDeals, getAvailableDeals } from '@app/store/deals/actions';
+import { downloadDeal, getActiceDeals, proofDeal } from '@app/store/deals/actions';
 
 import { ChevronDown, Download } from '@static/images';
-import { getDealDateLabel } from '@app/utils/time';
 
-export const Deal: React.FC<AvailiableDeal> =
-    ({ id,
+export const Deal: React.FC<ActiveDeal & { dealsRef: React.MutableRefObject<HTMLDivElement | null>, dealsScroll: number }> =
+    ({
+        id,
         size,
-        accept_by,
-        sealed_by,
         payment,
+        accepted_at,
+        canceled_at,
+        sealed_by,
         status,
+        dealsRef,
+        dealsScroll
     }) => {
-        const dispatch = useAppDispatch();
         const [isAdditionalWInfoVisible, setIsAdditionalInfoVisible] = useState(false);
+        const dispatch = useAppDispatch();
 
         const toggleVisibility = () => {
             setIsAdditionalInfoVisible(prev => !prev);
@@ -29,53 +34,35 @@ export const Deal: React.FC<AvailiableDeal> =
             } catch (erro: any) { }
         };
 
-        const accept = async () => {
+        const proof = async () => {
             try {
-                await dispatch(acceptDeal(id));
+                await dispatch(proofDeal(id));
                 await getActiceDeals();
-                await getAvailableDeals();
             } catch (erro: any) { }
         };
-
-        const decline = async () => {
-            try {
-                await dispatch(declineDeal(id));
-                await getAvailableDeals();
-            } catch (erro: any) { }
-        };
-
 
         return (
-            <div className='rounded-xl overflow-hidden border-1 border-tableBorder transition-all' id={id}>
+            <div className='rounded-xl overflow-hidden border-1 border-tableBorder' id={id}>
                 <table className="w-full">
                     <thead className='bg-tableHead text-12'>
                         <tr>
-                            <th className='p-3 text-justify border-1 border-t-0 border-l-0 border-tableBorder'>Size</th>
                             <th className='p-3 text-justify border-1 border-t-0 border-tableBorder'>Negotiated Price</th>
-                            <th className='p-3 text-justify border-1 border-t-0 border-tableBorder'>Seal by</th>
-                            <th className='p-3 text-justify border-1 border-t-0 border-r-0 border-tableBorder w-60'>Accept Deal?</th>
+                            <th className='p-3 text-justify border-1 border-t-0 border-tableBorder'>Deal Duration</th>
+                            <th className='p-3 text-justify border-1 border-t-0 border-r-0 border-tableBorder w-80'>Status</th>
+                            <th className='p-3 text-justify border-1 border-t-0 border-r-0 border-tableBorder w-10'>Actions</th>
                         </tr>
                     </thead>
                     <tbody className='bg-tableBody text-14'>
                         <tr>
-                            <td className='py-4 px-3'>{convertFileSize(+size)}</td>
                             <td className='py-4 px-3'>{payment}</td>
-                            <td className='py-4 px-3'>{getDealDateLabel(new Date(sealed_by))}</td>
-                            <td className='py-4 px-3'>
-                                <div className='flex items-center justify-between gap-2'>
-                                    <button
-                                        className='flex-grow px-5 py-2.5 border-1 border-highlightColor rounded-lg font-semibold'
-                                        onClick={accept}
-                                    >
-                                        Accept
-                                    </button>
-                                    <button
-                                        className='flex-grow px-5 py-2.5 border-1 border-redHighlightColor rounded-lg font-semibold'
-                                        onClick={decline}
-                                    >
-                                        Decline
-                                    </button>
-                                </div>
+                            <td className='py-4 px-3'>{getDealDateLabel(new Date(accepted_at))}</td>
+                            <td className='py-4 px-3 capitalize'>{status}</td>
+                            <td className='py-4 px-3 cursor-pointer'>
+                                <ActionsCell
+                                    actions={<></>}
+                                    offsetTop={dealsScroll}
+                                    tableRef={dealsRef}
+                                />
                             </td>
                         </tr>
                     </tbody>
@@ -106,12 +93,24 @@ export const Deal: React.FC<AvailiableDeal> =
                             </span>
                         </div>
                         <div className='flex items-center gap-10 p-3'>
-                            <span className='w-32 text-12 text-tableExtendText'>Deal Duration</span>
-                            <span className='text-14 font-medium'>{''}</span>
+                            <span className='w-32 text-12 text-tableExtendText'>Proof</span>
+                            <span className='text-14 font-medium underline' onClick={proof}>Click here for proof</span>
                         </div>
                         <div className='flex items-center gap-10 p-3'>
-                            <span className='w-32 text-12 text-tableExtendText'>Deal Identifier</span>
-                            <span className='text-14 font-medium'>{id}</span>
+                            <span className='w-32 text-12 text-tableExtendText'>NFS Path</span>
+                            <span className='text-14 font-medium underline'>
+                                <a href="nfs://10.100.50.120/deals/..." target="_blank">
+                                    nfs://10.100.50.120/deals/...
+                                </a>
+                            </span>
+                        </div>
+                        <div className='flex items-center gap-10 p-3'>
+                            <span className='w-32 text-12 text-tableExtendText'>Accepted At</span>
+                            <span className='text-14 font-medium'>{getDealDateLabel(new Date(accepted_at))}</span>
+                        </div>
+                        <div className='flex items-center gap-10 p-3'>
+                            <span className='w-32 text-12 text-tableExtendText'>Expected Sealed By</span>
+                            <span className='text-14 font-medium'>{getDealDateLabel(new Date(sealed_by))}</span>
                         </div>
                     </div>
                 }
