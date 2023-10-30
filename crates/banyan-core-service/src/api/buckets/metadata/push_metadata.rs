@@ -500,6 +500,7 @@ async fn expire_deleted_blocks(
     bucket_id: &Uuid,
     request: &PushMetadataRequest,
 ) -> Result<(), PushMetadataError> {
+
     let account_id = api_id.account_id.clone();
     let bucket_id = bucket_id.to_string();
     let mut prune_blocks_tasks_map: HashMap<Uuid, Vec<PruneBlock>> = HashMap::new();
@@ -572,13 +573,16 @@ async fn expire_deleted_blocks(
             .map_err(PushMetadataError::UnableToExpireBlocks)?;
         }
     }
+
     // Create background tasks for our storage hosts to notify them to prune blocks
     for (storage_host_id, prune_blocks) in prune_blocks_tasks_map {
         PruneBlocksTask::new(storage_host_id, prune_blocks)
-            .enqueue::<banyan_task::SqliteTaskStore>(&mut *database)
+            .enqueue_with_connection::<banyan_task::SqliteTaskStore>(&mut transaction)
             .await
             .map_err(PushMetadataError::UnableEnqueuePruneBlocksTask)?;
     }
+    
+    // Commit the txn
     transaction
         .commit()
         .await
@@ -652,13 +656,13 @@ pub enum PushMetadataError {
     #[error("unable to identify how much data user has stored with each storage provider")]
     UnableToIdentifyStoredAmount(sqlx::Error),
 
-    #[error("couldn't locate existing storage authorizations for account: {0}")]
+    #[error("unable to locate existing storage authorizations for account: {0}")]
     UnableToRetrieveAuthorizations(sqlx::Error),
 
-    #[error("couldn't mark blocks as expired: {0}")]
+    #[error("unable to mark blocks as expired: {0}")]
     UnableToExpireBlocks(sqlx::Error),
 
-    #[error("couldn't enqueue a task to prune blocks")]
+    #[error("unable to enqueue a task to prune blocks {0}")]
     UnableEnqueuePruneBlocksTask(banyan_task::TaskStoreError),
 
     #[error("failed to store metadata on disk: {0}, marking as failed might have had an error as well: {1:?}")]
