@@ -91,7 +91,8 @@ CREATE TABLE uploads_blocks (
 
   byte_offset INTEGER NOT NULL CHECK (byte_offset >= 0) CONSTRAINT byte_offset_positive,
 
-  associated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+  associated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  pruned_at TIMESTAMP
 );
 
 CREATE UNIQUE INDEX idx_uploads_blocks_on_upload_id_block_id

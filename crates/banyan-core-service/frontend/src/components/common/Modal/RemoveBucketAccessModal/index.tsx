@@ -13,6 +13,7 @@ export const RemoveBucketAccessModal: React.FC<{ bucketKey: BucketKey }> = ({ bu
     const removeAccess = async() => {
         try {
             await removeBucketAccess(bucketKey.id);
+            closeModal();
         } catch (error: any) { }
     };
 

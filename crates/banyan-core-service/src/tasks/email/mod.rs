@@ -4,14 +4,19 @@ mod product_invoice;
 mod reaching_storage_limit;
 mod scheduled_maintenance;
 
+#[allow(unused)]
 pub use ga_release::GaReleaseEmailTask;
+#[allow(unused)]
 pub use payment_failed::PaymentFailedEmailTask;
+#[allow(unused)]
 pub use product_invoice::ProductInvoiceEmailTask;
+#[allow(unused)]
 pub use reaching_storage_limit::ReachingStorageLimitEmailTask;
+#[allow(unused)]
 pub use scheduled_maintenance::ScheduledMaintenanceEmailTask;
 
 use sqlx::SqlitePool;
-use tracing;
+
 use uuid::Uuid;
 
 use crate::email::config::EmailConfig;

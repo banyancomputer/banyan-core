@@ -13,6 +13,7 @@ mod extractors;
 mod health_check;
 mod hooks;
 mod http_server;
+mod tasks;
 mod utils;
 
 use app::{AppState, Config};

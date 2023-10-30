@@ -21,7 +21,7 @@ pub const EXPIRATION_WINDOW_SECS: u64 = 900;
 
 static KEY_ID_VALIDATOR: OnceLock<regex::Regex> = OnceLock::new();
 
-const KEY_ID_REGEX: &str = r"^[0-9a-f]{2}(:[0-9a-f]{2}){19}$";
+const KEY_ID_REGEX: &str = r"^[0-9a-f]{40}$";
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -81,7 +81,7 @@ where
         // TODO: eventually implement aud restriction
         // Restrict audience as our clients will use the same API key for authorization to multiple
         // services
-        // token_validator.set_audience(&["banyan-platform"]);
+        token_validator.set_audience(&["banyan-platform"]);
         // Require all of our keys except for the attestations and proofs
         token_validator.set_required_spec_claims(&["exp", "nbf", "sub", "iat"]);
 

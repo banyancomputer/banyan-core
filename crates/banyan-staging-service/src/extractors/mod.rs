@@ -3,15 +3,16 @@ use std::sync::OnceLock;
 use regex::Regex;
 
 pub mod authenticated_client;
-pub mod database;
+pub mod core_identity;
 pub mod storage_grant;
 pub mod upload_store;
 
-static PAIRED_ID_PATTERN: &str = r"^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})@([0-9a-f]{2}(:[0-9a-f]{2}){19})$";
+static PAIRED_ID_PATTERN: &str =
+    r"^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})@([0-9a-f]{40})$";
 
 static PAIRED_ID_VALIDATOR: OnceLock<Regex> = OnceLock::new();
 
-static FINGERPRINT_PATTERN: &str = r"^([0-9a-f]{2}(:[0-9a-f]{2}){19})$";
+static FINGERPRINT_PATTERN: &str = r"^[0-9a-f]{40}$";
 
 static FINGERPRINT_VALIDATOR: OnceLock<Regex> = OnceLock::new();
 
@@ -24,6 +25,6 @@ pub fn paired_id_validator() -> &'static Regex {
 }
 
 pub use authenticated_client::AuthenticatedClient;
-pub use database::Database;
+pub use core_identity::CoreIdentity;
 pub use storage_grant::StorageGrant;
 pub use upload_store::UploadStore;

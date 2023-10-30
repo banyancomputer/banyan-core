@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT storage_hosts.url FROM storage_hosts\n                   JOIN block_locations ON block_locations.storage_host_id = storage_hosts.id\n                   JOIN blocks ON block_locations.block_id = blocks.id\n                   JOIN metadata ON metadata.id = block_locations.metadata_id\n                   JOIN buckets ON buckets.id = metadata.bucket_id\n                   WHERE buckets.account_id = $1\n                       AND blocks.cid = $2\n                       AND block_locations.expired_at IS NOT NULL\n                   ORDER BY RANDOM()\n                   LIMIT 5;",
+  "describe": {
+    "columns": [
+      {
+        "name": "url",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "f0785fc82db7ddd65b468747c4527d035ebed433c0ba7538bc480683a7537231"
+}
