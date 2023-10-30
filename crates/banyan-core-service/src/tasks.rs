@@ -6,7 +6,7 @@ pub use email::{
     EmailTaskContext, EmailTaskError, GaReleaseEmailTask, PaymentFailedEmailTask,
     ProductInvoiceEmailTask, ReachingStorageLimitEmailTask, ScheduledMaintenanceEmailTask,
 };
-pub use prune_blocks::{PruneBlock, PruneBlocksTask, PruneBlocksTaskContext, PruneBlocksTaskError};
+pub use prune_blocks::{PruneBlock, PruneBlocksTask};
 
 use tokio::sync::watch;
 use tokio::task::JoinHandle;
