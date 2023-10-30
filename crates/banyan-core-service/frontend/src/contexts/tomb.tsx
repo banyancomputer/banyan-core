@@ -97,7 +97,6 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         setAreBucketsLoading(true);
         tombMutex(tomb, async tomb => {
             const key = await getEncryptionKey();
-            console.log("key: " + key);
             let wasm_bukets: Bucket[] = [];
             for (let bucket of buckets) {
                 const mount = await tomb!.mount(bucket.id, key.privatePem);

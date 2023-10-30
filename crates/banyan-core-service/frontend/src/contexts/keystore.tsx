@@ -180,7 +180,7 @@ export const KeystoreProvider = ({ children }: any) => {
     };
 
     // TODO: Just return the key material eventually
-    // Get the user's Encryption Key Pair as a CryptoKeyPair
+    // Get the user's Encryption Key Pair as a Public / Private PEM combo
     const getEncryptionKey = async (): Promise<{ privatePem: String, publicPem: String }> => {
         // TODO: better error handling
         if (!keystore) {
@@ -210,7 +210,7 @@ export const KeystoreProvider = ({ children }: any) => {
     };
 
     // TODO: Just return the key material eventually
-    // Get the user's API Key as a CryptoKeyPair
+    // Get the user's API Key as a Private / Public PEM combo
     const getApiKey = async (): Promise<{ privatePem: String, publicPem: String }> => {
         // TODO: better error handling
         if (!keystore || !keystoreInitialized) {
