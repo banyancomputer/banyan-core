@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import React, { useEffect } from 'react';
+import { useRouter } from 'next/router';
 
 import { NextPageWithLayout } from '../page';
 import { useTomb } from '@/contexts/tomb';
@@ -14,8 +14,8 @@ import BucketHeader from '@/components/Bucket/Header';
 export { getServerSideProps };
 
 const Bucket: NextPageWithLayout = () => {
-    const searchParams = useSearchParams();
-    const bucketId = searchParams.get('id');
+    const router = useRouter();
+    const bucketId = router.query.id;
     const { buckets, areBucketsLoading, selectedBucket, selectBucket, getSelectedBucketFiles } = useTomb();
     const folderLocation = useFolderLocation();
 

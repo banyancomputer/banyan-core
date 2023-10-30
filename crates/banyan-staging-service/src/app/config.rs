@@ -15,7 +15,7 @@ pub struct Config {
     listen_addr: SocketAddr,
     log_level: Level,
 
-    db_url: Option<String>,
+    db_url: String,
     hostname: Url,
 
     platform_auth_key_path: PathBuf,
@@ -26,8 +26,8 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn db_url(&self) -> Option<&str> {
-        self.db_url.as_ref().map(String::as_ref)
+    pub fn db_url(&self) -> &str {
+        &self.db_url
     }
 
     pub fn hostname(&self) -> Url {
@@ -108,7 +108,13 @@ impl Config {
             .opt_value_from_str("--platform-url")?
             .unwrap_or("http://127.0.0.1:3001".parse().unwrap());
 
-        let db_url = args.opt_value_from_str("--db-url")?;
+        let db_url = match args.opt_value_from_str("--db-url")? {
+            Some(du) => du,
+            None => match std::env::var("DATABASE_URL") {
+                Ok(du) if !du.is_empty() => du,
+                _ => "sqlite://./data/server.db".to_string(),
+            },
+        };
 
         let platform_verification_key_path: PathBuf = args
             .opt_value_from_str("--verifier-key")?
