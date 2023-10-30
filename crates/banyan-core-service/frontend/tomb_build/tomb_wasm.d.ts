@@ -108,12 +108,12 @@ export class TombWasm {
 * A new TombWasm instance
 *
 * Don't call it from multiple threads in parallel!
-* @param {any} web_signing_key
+* @param {string} signing_key_pem
 * @param {string} account_id
 * @param {string} core_endpoint
 * @param {string} data_endpoint
 */
-  constructor(web_signing_key: any, account_id: string, core_endpoint: string, data_endpoint: string);
+  constructor(signing_key_pem: string, account_id: string, core_endpoint: string, data_endpoint: string);
 /**
 * Get the total consume storage space for the current account in bytes
 * @returns {Promise<bigint>}
@@ -191,10 +191,10 @@ export class TombWasm {
 * @param {string} name
 * @param {string} storage_class
 * @param {string} bucket_type
-* @param {CryptoKey} initial_key
+* @param {string} initial_bucket_key_pem
 * @returns {Promise<WasmBucket>}
 */
-  createBucket(name: string, storage_class: string, bucket_type: string, initial_key: CryptoKey): Promise<WasmBucket>;
+  createBucket(name: string, storage_class: string, bucket_type: string, initial_bucket_key_pem: string): Promise<WasmBucket>;
 /**
 * Create a bucket key for a bucket
 * # Arguments
@@ -229,10 +229,10 @@ export class TombWasm {
 * # Returns
 * A WasmMount instance
 * @param {string} bucket_id
-* @param {any} key_pair
+* @param {string} encryption_key_pem
 * @returns {Promise<WasmMount>}
 */
-  mount(bucket_id: string, key_pair: any): Promise<WasmMount>;
+  mount(bucket_id: string, encryption_key_pem: string): Promise<WasmMount>;
 }
 /**
 */
