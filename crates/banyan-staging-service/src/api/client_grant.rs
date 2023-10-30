@@ -22,7 +22,6 @@ pub async fn handler(
 ) -> Result<Response, GrantError> {
     let database = state.database();
     let grant_user_id = ensure_grant_user(&database, &grant, request).await?;
-    tracing::info!(client_id = ?grant_user_id, grant_id = ?grant.grant_id(), authorization_amount = ?grant.authorized_data_size(), "update user's authorized storage amount");
     create_storage_grant(grant_user_id, &database, &grant).await?;
     Ok((StatusCode::NO_CONTENT, ()).into_response())
 }
