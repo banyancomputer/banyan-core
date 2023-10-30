@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use async_trait::async_trait;
-use sqlx::{Acquire, SqlitePool, SqliteConnection};
+use sqlx::{Acquire, SqliteConnection, SqlitePool};
 use time::OffsetDateTime;
 
 use crate::{
@@ -64,12 +64,12 @@ impl TaskStore for SqliteTaskStore {
     ) -> Result<Option<String>, TaskStoreError> {
         let background_task_id = TaskInstanceBuilder::for_task(task)
             .await?
-            .create(&mut* connection)
+            .create(&mut *connection)
             .await?;
 
         Ok(background_task_id)
     }
-    
+
     async fn next(
         &self,
         queue_name: &str,

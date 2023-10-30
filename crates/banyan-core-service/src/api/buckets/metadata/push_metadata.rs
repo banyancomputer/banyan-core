@@ -500,7 +500,6 @@ async fn expire_deleted_blocks(
     bucket_id: &Uuid,
     request: &PushMetadataRequest,
 ) -> Result<(), PushMetadataError> {
-
     let account_id = api_id.account_id.clone();
     let bucket_id = bucket_id.to_string();
     let mut prune_blocks_tasks_map: HashMap<Uuid, Vec<PruneBlock>> = HashMap::new();
@@ -581,7 +580,7 @@ async fn expire_deleted_blocks(
             .await
             .map_err(PushMetadataError::UnableEnqueuePruneBlocksTask)?;
     }
-    
+
     // Commit the txn
     transaction
         .commit()

@@ -29,7 +29,7 @@ pub trait TaskLikeExt {
         self,
         pool: &mut S::Pool,
     ) -> Result<Option<String>, TaskStoreError>;
-    
+
     async fn enqueue_with_connection<S: TaskStore>(
         self,
         pool: &mut S::Connection,
