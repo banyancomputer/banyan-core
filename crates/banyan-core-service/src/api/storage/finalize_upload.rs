@@ -74,7 +74,7 @@ pub async fn handler(
 
     let bucket_id = sqlx::query_scalar!(
         r#"UPDATE metadata
-             SET state = 'current' AND data_size = $1
+             SET state = 'current', data_size = $1
              WHERE id = $2 AND state = 'pending'
              RETURNING bucket_id;"#,
         db_data_size,
