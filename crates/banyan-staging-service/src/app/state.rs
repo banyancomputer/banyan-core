@@ -30,16 +30,8 @@ impl State {
         LocalFileSystem::new_with_prefix(&upload_directory)
             .map_err(Error::InaccessibleUploadDirectory)?;
 
-        let db_url = match config.db_url() {
-            Some(du) => du.to_string(),
-            None => match std::env::var("DATABASE_URL") {
-                Ok(du) => du,
-                Err(_) => "sqlite://:memory:".to_string(),
-            },
-        };
-
-        // Configure the database instance we're going use
-        let db_url = Url::parse(&db_url).map_err(Error::InvalidDatabaseUrl)?;
+        let db_url = config.db_url();
+        let db_url = Url::parse(db_url).map_err(Error::InvalidDatabaseUrl)?;
         let database = database::connect(&db_url)
             .await
             .map_err(Error::DatabaseSetup)?;

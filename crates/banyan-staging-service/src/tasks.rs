@@ -17,7 +17,7 @@ pub async fn start_background_workers(
     let task_store = SqliteTaskStore::new(state.database());
 
     WorkerPool::new(task_store.clone(), move || state.clone())
-        .configure_queue(QueueConfig::new("prune_blocks").with_worker_count(5))
+        .configure_queue(QueueConfig::new("default").with_worker_count(5))
         .register_task_type::<PruneBlocksTask>()
         .start(async move {
             let _ = shutdown_rx.changed().await;
