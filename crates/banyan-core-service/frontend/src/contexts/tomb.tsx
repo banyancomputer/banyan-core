@@ -96,10 +96,11 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     const getBucketsFiles = async () => {
         setAreBucketsLoading(true);
         tombMutex(tomb, async tomb => {
-            const privatePem = await getEncryptionKey().privatePem;
+            const key = await getEncryptionKey();
+            console.log("key: " + key);
             let wasm_bukets: Bucket[] = [];
             for (let bucket of buckets) {
-                const mount = await tomb!.mount(bucket.id, privatePem);
+                const mount = await tomb!.mount(bucket.id, key.privatePem);
                 const files: BrowserObject[] = await mount.ls([]) || [];
                 const snapshots = await tomb!.listBucketSnapshots(bucket.id);
                 wasm_bukets.push({
@@ -117,10 +118,10 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     const getBucketsKeys = async () => {
         setAreBucketsLoading(true);
         tombMutex(tomb, async tomb => {
-            const privatePem = await getEncryptionKey().privatePem;
+            const key = await getEncryptionKey();
             let wasm_bukets: Bucket[] = [];
             for (let bucket of buckets) {
-                const mount = await tomb!.mount(bucket.id, privatePem);
+                const mount = await tomb!.mount(bucket.id, key.privatePem);
                 const keys = await tomb!.listBucketKeys(bucket.id);
                 wasm_bukets.push({
                     ...bucket,
@@ -158,9 +159,9 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
             return;
         };
 
-        const privatePem = await getEncryptionKey().privatePem;
+        const key = await getEncryptionKey();
         await tombMutex(tomb, async tomb => {
-            const mount = await tomb!.mount(bucket?.id, privatePem);
+            const mount = await tomb!.mount(bucket?.id, key.privatePem);
             setSelectedBucket({ ...bucket, mount });
         })
     };
