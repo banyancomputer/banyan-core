@@ -11,6 +11,7 @@ import { ClientApi } from '@/lib/api/auth';
 import {
     publicPemUnwrap,
     privatePemUnwrap,
+    privatePemWrap,
 } from '@/utils';
 import { EscrowedKeyMaterial, KeyUse, EccCurve, ExportedKeyMaterial } from '@/lib/crypto/types';
 import { setCookie, destroyCookie, parseCookies } from 'nookies';
@@ -61,9 +62,9 @@ export const KeystoreContext = createContext<{
     // Initialize a keystore based on the user's passphrase
     initializeKeystore: (passkey: string) => Promise<void>;
     // Get the user's Encryption Key Pair
-    getEncryptionKey: () => Promise<CryptoKeyPair>;
+    getEncryptionKey: () => Promise<{ privatePem: String, publicPem: String }>;
     // Get the user's API Key Pair
-    getApiKey: () => Promise<CryptoKeyPair>;
+    getApiKey: () => Promise<{ privatePem: String, publicPem: String }>;
     // Purge the keystore from storage
     purgeKeystore: () => Promise<void>;
     isLoading: boolean,
@@ -180,7 +181,7 @@ export const KeystoreProvider = ({ children }: any) => {
 
     // TODO: Just return the key material eventually
     // Get the user's Encryption Key Pair as a CryptoKeyPair
-    const getEncryptionKey = async (): Promise<CryptoKeyPair> => {
+    const getEncryptionKey = async (): Promise<{ privatePem: String, publicPem: String }> => {
         // TODO: better error handling
         if (!keystore) {
             setError('No keystore');
@@ -198,23 +199,19 @@ export const KeystoreProvider = ({ children }: any) => {
         const exportKeyMaterial = await keystore.retrieveCachedKeyMaterial(
             sessionKey.sessionKey, sessionKey.sessionId
         );
-        const encryptionPublicKeyPem = escrowedDevice.encryptionKeyPem;
-        const encryptionPublicKeySpki = publicPemUnwrap(encryptionPublicKeyPem);
-        const encryptionPrivateKeyPem = exportKeyMaterial.encryptionKeyPem;
-        const encryptionPrivateKeyPkcs8 = privatePemUnwrap(encryptionPrivateKeyPem);
-        // Assume P-384 for now 
-        const encryptionKeyPair = await importKeyPair(
-            encryptionPublicKeySpki,
-            encryptionPrivateKeyPkcs8,
-            EccCurve.P_384,
-            KeyUse.Exchange
-        );
-        return encryptionKeyPair;
+        // Get pems to return
+        let publicPem = escrowedDevice.encryptionKeyPem;
+        // TODO the field in this struct shouldnt be labeled a pem if it isnt one.
+        let privatePem = privatePemWrap(exportKeyMaterial.encryptionKeyPem);
+        return {
+            privatePem,
+            publicPem
+        };
     };
 
     // TODO: Just return the key material eventually
     // Get the user's API Key as a CryptoKeyPair
-    const getApiKey = async (): Promise<CryptoKeyPair> => {
+    const getApiKey = async (): Promise<{ privatePem: String, publicPem: String }> => {
         // TODO: better error handling
         if (!keystore || !keystoreInitialized) {
             setError('Keystore not initialized');
@@ -228,18 +225,14 @@ export const KeystoreProvider = ({ children }: any) => {
         const exportKeyMaterial = await keystore.retrieveCachedKeyMaterial(
             sessionKey.sessionKey, sessionKey.sessionId
         );
-        const apiKeyPublicKeyPem = escrowedDevice.apiKeyPem;
-        const apiKeyPublicKeySpki = publicPemUnwrap(apiKeyPublicKeyPem);
-        const apiKeyPrivateKeyPem = exportKeyMaterial.apiKeyPem;
-        const apiKeyPrivateKeyPkcs8 = privatePemUnwrap(apiKeyPrivateKeyPem);
-        // Assume P-384 for now
-        const apiKeyPair = await importKeyPair(
-            apiKeyPublicKeySpki,
-            apiKeyPrivateKeyPkcs8,
-            EccCurve.P_384,
-            KeyUse.Write
-        );
-        return apiKeyPair;
+        // Get pems to return
+        let publicPem = escrowedDevice.apiKeyPem;
+        // TODO the field in this struct shouldnt be labeled a pem if it isnt one.
+        let privatePem = privatePemWrap(exportKeyMaterial.apiKeyPem);
+        return {
+            privatePem,
+            publicPem
+        };
     };
 
     // Purge the keystore from storage
