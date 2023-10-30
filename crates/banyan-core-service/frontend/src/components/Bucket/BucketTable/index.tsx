@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/router';
 import { useIntl } from 'react-intl';
 import Image from 'next/image';
 
@@ -16,8 +16,8 @@ import emptyIcon from '@static/images/common/emptyIcon.png';
 
 export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const tableRef = useRef<HTMLDivElement | null>(null);
-    const searchParams = useSearchParams();
-    const bucketId = searchParams.get('id');
+    const router = useRouter();
+    const bucketId = router.query.id;
     /** Created to prevent sotring logic affect initial buckets array */
     const [bucketCopy, setBucketCopy] = useState(bucket);
     const { messages } = useIntl();

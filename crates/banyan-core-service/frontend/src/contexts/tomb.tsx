@@ -220,7 +220,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         /** TODO: implement sharing logic when it will be added to tomb. */
         return '';
     };
-    
+
     /** Approves access key for bucket */
     const approveBucketAccess = async (bucket: Bucket, bucket_key_id: string) => {
         await tombMutex(bucket.mount, async mount => {
