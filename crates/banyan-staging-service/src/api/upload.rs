@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use axum::extract::{BodyStream, Json};
+use axum::extract::{BodyStream, Json, State};
 use axum::headers::{ContentLength, ContentType};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
@@ -17,9 +17,10 @@ use tokio::io::{AsyncWrite, AsyncWriteExt};
 use uuid::Uuid;
 
 use crate::app::PlatformAuthKey;
+use crate::app::State as AppState;
 use crate::car_analyzer::{CarReport, StreamingCarAnalyzer, StreamingCarAnalyzerError};
-use crate::database::{BareId, DbError, Executor};
-use crate::extractors::{AuthenticatedClient, Database, UploadStore};
+use crate::database::{map_sqlx_error, BareId, Database, SqlxError};
+use crate::extractors::{AuthenticatedClient, UploadStore};
 
 /// Limit on the size of the JSON request that accompanies an upload.
 const UPLOAD_REQUEST_SIZE_LIMIT: u64 = 100 * 1_024;
@@ -31,7 +32,7 @@ pub struct UploadRequest {
 }
 
 pub async fn handler(
-    db: Database,
+    State(state): State<AppState>,
     client: AuthenticatedClient,
     store: UploadStore,
     auth_key: PlatformAuthKey,
@@ -39,6 +40,7 @@ pub async fn handler(
     TypedHeader(content_type): TypedHeader<ContentType>,
     body: BodyStream,
 ) -> Result<Response, UploadError> {
+    let db = state.database();
     let reported_body_length = content_len.0;
     if reported_body_length > client.remaining_storage() {
         tracing::warn!(upload_size = ?reported_body_length, remaining_storage = ?client.remaining_storage(), "staging believes the user doesn't have sufficient storage capacity remaining");
@@ -174,50 +176,21 @@ async fn handle_successful_upload(
 
     // todo: should definitely do a db transaction before the attempted rename, committing only if
     // the rename is successfuly
-
-    match db.ex() {
-        #[cfg(feature = "postgres")]
-        Executor::Postgres(ref mut conn) => {
-            use crate::database::postgres;
-
-            sqlx::query(
-                r#"
-                    UPDATE uploads SET
-                            state = 'complete',
-                            final_size = $1,
-                            integrity_hash  = $2
-                        WHERE id = $3::uuid;
-                "#,
-            )
-            .bind(car_report.total_size() as i64)
-            .bind(car_report.integrity_hash())
-            .bind(upload_id)
-            .execute(conn)
-            .await
-            .map_err(postgres::map_sqlx_error)?;
-        }
-
-        #[cfg(feature = "sqlite")]
-        Executor::Sqlite(ref mut conn) => {
-            use crate::database::sqlite;
-
-            sqlx::query(
-                r#"
+    sqlx::query(
+        r#"
                     UPDATE uploads SET
                             state = 'complete',
                             final_size = $1,
                             integrity_hash  = $2
                         WHERE id = $3;
                 "#,
-            )
-            .bind(car_report.total_size() as i64)
-            .bind(car_report.integrity_hash())
-            .bind(upload_id)
-            .execute(conn)
-            .await
-            .map_err(sqlite::map_sqlx_error)?;
-        }
-    }
+    )
+    .bind(car_report.total_size() as i64)
+    .bind(car_report.integrity_hash())
+    .bind(upload_id)
+    .execute(db)
+    .await
+    .map_err(map_sqlx_error)?;
 
     Ok(())
 }
@@ -234,88 +207,35 @@ async fn record_upload_beginning(
 
     let tmp_upload_path = tmp_upload_path.display().to_string();
 
-    let upload_id = match db.ex() {
-        #[cfg(feature = "postgres")]
-        Executor::Postgres(ref mut conn) => {
-            use crate::database::postgres;
-
-            sqlx::query_scalar(
-                r#"
-                    INSERT INTO
-                        uploads (client_id, metadata_id, reported_size, file_path, state)
-                        VALUES ($1::uuid, $2::uuid, $3, $4, 'started')
-                        RETURNING CAST(id AS TEXT) as id;
-                "#,
-            )
-            .bind(client_id.to_string())
-            .bind(metadata_id.to_string())
-            .bind(reported_size as i64)
-            .bind(&tmp_upload_path)
-            .fetch_one(conn)
-            .await
-            .map_err(postgres::map_sqlx_error)
-            .map_err(UploadError::Database)?
-        }
-
-        #[cfg(feature = "sqlite")]
-        Executor::Sqlite(ref mut conn) => {
-            use crate::database::sqlite;
-
-            sqlx::query_scalar(
-                r#"
+    let upload_id = sqlx::query_scalar(
+        r#"
                     INSERT INTO
                         uploads (client_id, metadata_id, reported_size, file_path, state)
                         VALUES ($1, $2, $3, $4, 'started')
                         RETURNING id;
                 "#,
-            )
-            .bind(client_id.to_string())
-            .bind(metadata_id.to_string())
-            .bind(reported_size as i64)
-            .bind(&tmp_upload_path)
-            .fetch_one(conn)
-            .await
-            .map_err(sqlite::map_sqlx_error)
-            .map_err(UploadError::Database)?
-        }
-    };
-
+    )
+    .bind(client_id.to_string())
+    .bind(metadata_id.to_string())
+    .bind(reported_size as i64)
+    .bind(&tmp_upload_path)
+    .fetch_one(db)
+    .await
+    .map_err(map_sqlx_error)
+    .map_err(UploadError::Database)?;
     Ok((upload_id, tmp_upload_path))
 }
 
 async fn record_upload_failed(db: &Database, upload_id: &str) -> Result<(), UploadError> {
-    match db.ex() {
-        #[cfg(feature = "postgres")]
-        Executor::Postgres(ref mut conn) => {
-            use crate::database::postgres;
-
-            let _rows_affected: i32 = sqlx::query_scalar(
-                r#"
-                    UPDATE uploads SET state = 'failed' WHERE id = $1::uuid;
-                "#,
-            )
-            .bind(upload_id)
-            .fetch_one(conn)
-            .await
-            .map_err(postgres::map_sqlx_error)?;
-        }
-
-        #[cfg(feature = "sqlite")]
-        Executor::Sqlite(ref mut conn) => {
-            use crate::database::sqlite;
-
-            let _rows_affected: i32 = sqlx::query_scalar(
-                r#"
+    let _rows_affected: i32 = sqlx::query_scalar(
+        r#"
                     UPDATE uploads SET state = 'failed' WHERE id = $1;
                 "#,
-            )
-            .bind(upload_id)
-            .fetch_one(conn)
-            .await
-            .map_err(sqlite::map_sqlx_error)?;
-        }
-    }
-
+    )
+    .bind(upload_id)
+    .fetch_one(db)
+    .await
+    .map_err(map_sqlx_error)?;
     Ok(())
 }
 
@@ -371,7 +291,7 @@ async fn report_upload_to_platform(
     let response = request
         .send()
         .await
-        .map_err(|_| UploadError::FailedReport("unable to connect"))?;
+        .map_err(|_| UploadError::FailedReport("unable to connect to platform"))?;
 
     if response.status().is_success() {
         Ok(())
@@ -413,118 +333,45 @@ where
                 .to_string_of_base(cid::multibase::Base::Base64Url)
                 .expect("parsed cid to unparse");
 
-            match db.ex() {
-                #[cfg(feature = "postgres")]
-                Executor::Postgres(ref mut conn) => {
-                    use crate::database::postgres;
-
-                    sqlx::query(
-                        r#"
-                            INSERT INTO
-                                blocks (cid, data_length)
-                                VALUES ($1, $2)
-                                ON CONFLICT(cid) DO NOTHING;
-                        "#,
-                    )
-                    .bind(cid_string.clone())
-                    .bind(block_meta.length() as i64)
-                    .execute(conn)
-                    .await
-                    .map_err(postgres::map_sqlx_error)?;
-                }
-
-                #[cfg(feature = "sqlite")]
-                Executor::Sqlite(ref mut conn) => {
-                    use crate::database::sqlite;
-
-                    sqlx::query(
-                        r#"
+            sqlx::query(
+                r#"
                             INSERT OR IGNORE INTO
                                 blocks (cid, data_length)
                                 VALUES ($1, $2);
                         "#,
-                    )
-                    .bind(cid_string.clone())
-                    .bind(block_meta.length() as i64)
-                    .execute(conn)
-                    .await
-                    .map_err(sqlite::map_sqlx_error)?;
-                }
-            };
+            )
+            .bind(cid_string.clone())
+            .bind(block_meta.length() as i64)
+            .execute(db)
+            .await
+            .map_err(map_sqlx_error)?;
 
-            let block_id: Uuid = match db.ex() {
-                #[cfg(feature = "postgres")]
-                Executor::Postgres(ref mut conn) => {
-                    use crate::database::postgres;
+            let block_id: Uuid = {
+                let cid_id: String =
+                    sqlx::query_scalar("SELECT id FROM blocks WHERE cid = $1 LIMIT 1;")
+                        .bind(cid_string)
+                        .fetch_one(db)
+                        .await
+                        .map_err(map_sqlx_error)?;
 
-                    let cid_id: String = sqlx::query_scalar(
-                        "SELECT CAST(id AS TEXT) as id FROM blocks WHERE cid = $1 LIMIT 1;",
-                    )
-                    .bind(cid_string)
-                    .fetch_one(conn)
-                    .await
-                    .map_err(postgres::map_sqlx_error)?;
-
-                    Uuid::parse_str(&cid_id)
-                        .map_err(|_| UploadStreamError::DatabaseCorruption("cid uuid parsing"))?
-                }
-
-                #[cfg(feature = "sqlite")]
-                Executor::Sqlite(ref mut conn) => {
-                    use crate::database::sqlite;
-
-                    let cid_id: String =
-                        sqlx::query_scalar("SELECT id FROM blocks WHERE cid = $1 LIMIT 1;")
-                            .bind(cid_string)
-                            .fetch_one(conn)
-                            .await
-                            .map_err(sqlite::map_sqlx_error)?;
-
-                    Uuid::parse_str(&cid_id)
-                        .map_err(|_| UploadStreamError::DatabaseCorruption("cid uuid parsing"))?
-                }
+                Uuid::parse_str(&cid_id)
+                    .map_err(|_| UploadStreamError::DatabaseCorruption("cid uuid parsing"))?
             };
 
             // create uploads_blocks row with the block information
-            match db.ex() {
-                #[cfg(feature = "postgres")]
-                Executor::Postgres(ref mut conn) => {
-                    use crate::database::postgres;
-
-                    sqlx::query(
-                        r#"
-                                INSERT INTO
-                                    uploads_blocks (upload_id, block_id, byte_offset)
-                                    VALUES ($1::uuid, $2::uuid, $3);
-                            "#,
-                    )
-                    .bind(upload_id)
-                    .bind(block_id.to_string())
-                    .bind(block_meta.offset() as i64)
-                    .execute(conn)
-                    .await
-                    .map_err(postgres::map_sqlx_error)?;
-                }
-
-                #[cfg(feature = "sqlite")]
-                Executor::Sqlite(ref mut conn) => {
-                    use crate::database::sqlite;
-
-                    sqlx::query(
-                        r#"
+            sqlx::query(
+                r#"
                                 INSERT INTO
                                     uploads_blocks (upload_id, block_id, byte_offset)
                                     VALUES ($1, $2, $3);
                             "#,
-                    )
-                    .bind(upload_id)
-                    .bind(block_id.to_string())
-                    .bind(block_meta.offset() as i64)
-                    .execute(conn)
-                    .await
-                    .map_err(sqlite::map_sqlx_error)?;
-                }
-            };
+            )
+            .bind(upload_id)
+            .bind(block_id.to_string())
+            .bind(block_meta.offset() as i64)
+            .execute(db)
+            .await
+            .map_err(map_sqlx_error)?;
         }
 
         if car_analyzer.seen_bytes() as usize > expected_size && !warning_issued {
@@ -553,7 +400,7 @@ struct MetadataSizeRequest {
 #[derive(Debug, thiserror::Error)]
 pub enum UploadError {
     #[error("a database error occurred during an upload {0}")]
-    Database(#[from] DbError),
+    Database(#[from] SqlxError),
 
     #[error("we expected a data field but received nothing")]
     DataFieldMissing,
@@ -619,7 +466,7 @@ pub enum UploadStreamError {
     DatabaseCorruption(&'static str),
 
     #[error("unable to record details about the stream in the database")]
-    DatabaseFailure(#[from] DbError),
+    DatabaseFailure(#[from] SqlxError),
 
     #[error("uploaded file was not a properly formatted car file")]
     ParseError(#[from] StreamingCarAnalyzerError),

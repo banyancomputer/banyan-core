@@ -30,27 +30,8 @@ pub mod tests {
     pub use current_task::tests::{default_current_task, increment_current_task_attempt_count};
 }
 
-use sqlx::SqlitePool;
-use tokio::sync::watch;
-use tokio::task::JoinHandle;
-
 pub const MAXIMUM_CHECK_DELAY: Duration = Duration::from_millis(250);
 
 pub const TASK_EXECUTION_TIMEOUT: Duration = Duration::from_secs(30);
 
 pub const WORKER_SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(5);
-
-pub async fn start_background_workers(
-    pool: SqlitePool,
-    mut shutdown_rx: watch::Receiver<()>,
-) -> Result<JoinHandle<()>, &'static str> {
-    let task_store = SqliteTaskStore::new(pool.clone());
-
-    WorkerPool::new(task_store.clone(), move || pool.clone())
-        .configure_queue(QueueConfig::new("default").with_worker_count(5))
-        .start(async move {
-            let _ = shutdown_rx.changed().await;
-        })
-        .await
-        .map_err(|_| "worker startup failed")
-}

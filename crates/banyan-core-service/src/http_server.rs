@@ -8,7 +8,6 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::{Json, Router};
 use axum::{Server, ServiceExt};
-use banyan_task::start_background_workers;
 use futures::future::join_all;
 use http::header;
 use tokio::sync::watch;
@@ -24,6 +23,7 @@ use tower_http::{LatencyUnit, ServiceBuilderExt};
 use tracing::Level;
 
 use crate::app::AppState;
+use crate::tasks::start_background_workers;
 use crate::{api, auth, health_check, hooks};
 
 // TODO: might want a longer timeout in some parts of the API and I'd like to be able customize a
@@ -85,8 +85,7 @@ async fn not_found_handler() -> impl IntoResponse {
 pub async fn run(listen_addr: SocketAddr, app_state: AppState) {
     let (shutdown_handle, mut shutdown_rx) = graceful_shutdown_blocker().await;
 
-    let database = app_state.database();
-    let worker_handle = start_background_workers(database, shutdown_rx.clone())
+    let worker_handle = start_background_workers(app_state.clone(), shutdown_rx.clone())
         .await
         .expect("background workers to start");
 

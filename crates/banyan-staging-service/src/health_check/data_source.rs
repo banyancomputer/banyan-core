@@ -5,7 +5,7 @@ use axum::async_trait;
 use axum::extract::{FromRef, FromRequestParts};
 use http::request::Parts;
 
-use crate::database::{Database, Executor};
+use crate::database::Database;
 
 #[async_trait]
 pub trait DataSource {
@@ -48,23 +48,10 @@ struct DbSource {
 #[async_trait]
 impl DataSource for DbSource {
     async fn is_ready(&self) -> Result<(), DataSourceError> {
-        match self.db.ex() {
-            #[cfg(feature = "postgres")]
-            Executor::Postgres(ref mut conn) => {
-                let _ = sqlx::query("SELECT 1 as id;")
-                    .fetch_one(conn)
-                    .await
-                    .map_err(|_| DataSourceError::DependencyFailure)?;
-            }
-
-            #[cfg(feature = "sqlite")]
-            Executor::Sqlite(ref mut conn) => {
-                let _ = sqlx::query("SELECT 1 as id;")
-                    .fetch_one(conn)
-                    .await
-                    .map_err(|_| DataSourceError::DependencyFailure)?;
-            }
-        }
+        let _ = sqlx::query("SELECT 1 as id;")
+            .fetch_one(&self.db)
+            .await
+            .map_err(|_| DataSourceError::DependencyFailure)?;
 
         Ok(())
     }

@@ -39,6 +39,7 @@ pub async fn handler(
                    JOIN buckets ON buckets.id = metadata.bucket_id
                    WHERE buckets.account_id = $1
                        AND blocks.cid = $2
+                       AND block_locations.expired_at IS NOT NULL
                    ORDER BY RANDOM()
                    LIMIT 5;"#,
             account_id,

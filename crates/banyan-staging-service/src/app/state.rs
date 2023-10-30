@@ -39,7 +39,10 @@ impl State {
         };
 
         // Configure the database instance we're going use
-        let database = database::connect(&db_url).await?;
+        let db_url = Url::parse(&db_url).map_err(Error::InvalidDatabaseUrl)?;
+        let database = database::connect(&db_url)
+            .await
+            .map_err(Error::DatabaseSetup)?;
 
         // Parse the platform authentication key (this will be used to communicate with the
         // metadata service).
@@ -81,8 +84,16 @@ impl State {
         self.platform_verification_key.clone()
     }
 
+    pub fn platform_auth_key(&self) -> PlatformAuthKey {
+        self.platform_auth_key.clone()
+    }
+
     pub fn upload_directory(&self) -> PathBuf {
         self.upload_directory.clone()
+    }
+
+    pub fn database(&self) -> Database {
+        self.database.clone()
     }
 }
 

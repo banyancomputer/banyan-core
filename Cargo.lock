@@ -305,7 +305,9 @@ dependencies = [
 name = "banyan-staging-service"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "axum",
+ "banyan-task",
  "blake3",
  "bytes",
  "cid",
