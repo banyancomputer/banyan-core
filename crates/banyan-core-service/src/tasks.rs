@@ -1,6 +1,7 @@
 mod email;
 mod prune_blocks;
 
+#[allow(unused_imports)]
 pub use email::{
     EmailTaskContext, EmailTaskError, GaReleaseEmailTask, PaymentFailedEmailTask,
     ProductInvoiceEmailTask, ReachingStorageLimitEmailTask, ScheduledMaintenanceEmailTask,
