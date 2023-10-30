@@ -1327,6 +1327,11 @@ export function __wbindgen_string_new(arg0, arg1) {
     return addHeapObject(ret);
 };
 
+export function __wbg_wasmmount_new(arg0) {
+    const ret = WasmMount.__wrap(arg0);
+    return addHeapObject(ret);
+};
+
 export function __wbg_wasmbucket_new(arg0) {
     const ret = WasmBucket.__wrap(arg0);
     return addHeapObject(ret);
@@ -1337,18 +1342,13 @@ export function __wbg_tombwasm_new(arg0) {
     return addHeapObject(ret);
 };
 
-export function __wbindgen_bigint_from_u64(arg0) {
-    const ret = BigInt.asUintN(64, arg0);
-    return addHeapObject(ret);
-};
-
 export function __wbg_wasmbucketkey_new(arg0) {
     const ret = WasmBucketKey.__wrap(arg0);
     return addHeapObject(ret);
 };
 
-export function __wbg_wasmmount_new(arg0) {
-    const ret = WasmMount.__wrap(arg0);
+export function __wbindgen_bigint_from_u64(arg0) {
+    const ret = BigInt.asUintN(64, arg0);
     return addHeapObject(ret);
 };
 
@@ -1362,6 +1362,15 @@ export function __wbindgen_number_new(arg0) {
     return addHeapObject(ret);
 };
 
+export function __wbindgen_string_get(arg0, arg1) {
+    const obj = getObject(arg1);
+    const ret = typeof(obj) === 'string' ? obj : undefined;
+    var ptr1 = isLikeNone(ret) ? 0 : passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    var len1 = WASM_VECTOR_LEN;
+    getInt32Memory0()[arg0 / 4 + 1] = len1;
+    getInt32Memory0()[arg0 / 4 + 0] = ptr1;
+};
+
 export function __wbindgen_cb_drop(arg0) {
     const obj = takeObject(arg0).original;
     if (obj.cnt-- == 1) {
@@ -1370,15 +1379,6 @@ export function __wbindgen_cb_drop(arg0) {
     }
     const ret = false;
     return ret;
-};
-
-export function __wbindgen_string_get(arg0, arg1) {
-    const obj = getObject(arg1);
-    const ret = typeof(obj) === 'string' ? obj : undefined;
-    var ptr1 = isLikeNone(ret) ? 0 : passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    var len1 = WASM_VECTOR_LEN;
-    getInt32Memory0()[arg0 / 4 + 1] = len1;
-    getInt32Memory0()[arg0 / 4 + 0] = ptr1;
 };
 
 export function __wbg_new_abda76e883ba8a5f() {
@@ -1897,12 +1897,12 @@ export function __wbindgen_memory() {
     return addHeapObject(ret);
 };
 
-export function __wbindgen_closure_wrapper2537(arg0, arg1, arg2) {
-    const ret = makeMutClosure(arg0, arg1, 1051, __wbg_adapter_32);
+export function __wbindgen_closure_wrapper2559(arg0, arg1, arg2) {
+    const ret = makeMutClosure(arg0, arg1, 1052, __wbg_adapter_32);
     return addHeapObject(ret);
 };
 
-export function __wbindgen_closure_wrapper3931(arg0, arg1, arg2) {
+export function __wbindgen_closure_wrapper3953(arg0, arg1, arg2) {
     const ret = makeMutClosure(arg0, arg1, 1339, __wbg_adapter_35);
     return addHeapObject(ret);
 };
