@@ -2,9 +2,10 @@
 
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
+use url::Url;
 use uuid::Uuid;
 
-use crate::email::message::PaymentFailed;
+use crate::email::message::ProductInvoice;
 use banyan_task::CurrentTask;
 use banyan_task::TaskLike;
 
@@ -14,19 +15,20 @@ use super::EmailTaskContext;
 use super::EmailTaskError;
 
 #[derive(Deserialize, Serialize)]
-pub struct PaymentFailedEmailTask {
+pub struct ProductInvoiceEmailTask {
     account_id: Uuid,
+    url: Url,
 }
 
-impl PaymentFailedEmailTask {
-    pub fn new(account_id: Uuid) -> Self {
-        Self { account_id }
+impl ProductInvoiceEmailTask {
+    pub fn new(account_id: Uuid, url: Url) -> Self {
+        Self { account_id, url }
     }
 }
 
 #[async_trait]
-impl TaskLike for PaymentFailedEmailTask {
-    const TASK_NAME: &'static str = "payment_failed_email_task";
+impl TaskLike for ProductInvoiceEmailTask {
+    const TASK_NAME: &'static str = "product_invoice_email_task";
 
     type Error = EmailTaskError;
     type Context = EmailTaskContext;
@@ -36,7 +38,9 @@ impl TaskLike for PaymentFailedEmailTask {
         if !should_send_email_message(self.account_id, &ctx).await? {
             return Ok(());
         }
-        let message = PaymentFailed {};
+        let message = ProductInvoice {
+            url: self.url.clone(),
+        };
         send_email_message(self.account_id, &message, &ctx).await
     }
 }
@@ -44,13 +48,14 @@ impl TaskLike for PaymentFailedEmailTask {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::email::tasks::tests::test_setup;
+    use crate::tasks::email::tests::test_setup;
 
     #[tokio::test]
-    /// PaymentFailedEmailTask should succeed in a valid context
+    /// ProductInvoiceEmailTask should succeed in a valid context
     async fn success() {
         let (ctx, account_id, current_task) = test_setup().await;
-        let task = PaymentFailedEmailTask::new(account_id);
+        let task =
+            ProductInvoiceEmailTask::new(account_id, Url::parse("https://example.com").unwrap());
         let result = task.run(current_task, ctx).await;
         assert!(result.is_ok());
     }

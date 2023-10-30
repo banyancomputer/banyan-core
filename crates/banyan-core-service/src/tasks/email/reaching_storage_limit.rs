@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::email::message::GaRelease;
+use crate::email::message::ReachingStorageLimit;
 use banyan_task::CurrentTask;
 use banyan_task::TaskLike;
 
@@ -14,19 +14,25 @@ use super::EmailTaskContext;
 use super::EmailTaskError;
 
 #[derive(Deserialize, Serialize)]
-pub struct GaReleaseEmailTask {
+pub struct ReachingStorageLimitEmailTask {
     account_id: Uuid,
+    current_usage: usize,
+    max_usage: usize,
 }
 
-impl GaReleaseEmailTask {
-    pub fn new(account_id: Uuid) -> Self {
-        Self { account_id }
+impl ReachingStorageLimitEmailTask {
+    pub fn new(account_id: Uuid, current_usage: usize, max_usage: usize) -> Self {
+        Self {
+            account_id,
+            current_usage,
+            max_usage,
+        }
     }
 }
 
 #[async_trait]
-impl TaskLike for GaReleaseEmailTask {
-    const TASK_NAME: &'static str = "ga_release_email_task";
+impl TaskLike for ReachingStorageLimitEmailTask {
+    const TASK_NAME: &'static str = "reaching_storage_limit_email_task";
 
     type Error = EmailTaskError;
     type Context = EmailTaskContext;
@@ -36,7 +42,10 @@ impl TaskLike for GaReleaseEmailTask {
         if !should_send_email_message(self.account_id, &ctx).await? {
             return Ok(());
         }
-        let message = GaRelease {};
+        let message = ReachingStorageLimit {
+            current_usage: self.current_usage,
+            max_usage: self.max_usage,
+        };
         send_email_message(self.account_id, &message, &ctx).await
     }
 }
@@ -44,13 +53,13 @@ impl TaskLike for GaReleaseEmailTask {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::email::tasks::tests::test_setup;
+    use crate::tasks::email::tests::test_setup;
 
     #[tokio::test]
-    /// GaReleaseEmailTask should succeed in a valid context
+    /// ReachingStorageLimitEmailTask should succeed in a valid context
     async fn success() {
         let (ctx, account_id, current_task) = test_setup().await;
-        let task = GaReleaseEmailTask::new(account_id);
+        let task = ReachingStorageLimitEmailTask::new(account_id, 0, 0);
         let result = task.run(current_task, ctx).await;
         assert!(result.is_ok());
     }

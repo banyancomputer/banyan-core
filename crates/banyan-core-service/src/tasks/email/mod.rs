@@ -16,7 +16,7 @@ pub use reaching_storage_limit::ReachingStorageLimitEmailTask;
 pub use scheduled_maintenance::ScheduledMaintenanceEmailTask;
 
 use sqlx::SqlitePool;
-use tracing;
+
 use uuid::Uuid;
 
 use crate::email::config::EmailConfig;
