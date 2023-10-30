@@ -14,10 +14,10 @@ if [ -z "${EMAIL_TO_ALLOW}" ]; then
 fi
 
 rm -rf crates/banyan-core-service/data/s* \
-	crates/banyan-core-service/data/uploads/* \
-	crates/banyan-staging-service/data/pl* \
-	crates/banyan-staging-service/data/uploads/* \
-	crates/banyan-staging-service/data/s*
+  crates/banyan-core-service/data/uploads/* \
+  crates/banyan-staging-service/data/pl* \
+  crates/banyan-staging-service/data/server* \
+  crates/banyan-staging-service/data/uploads/*
 
 (
 	cd crates/banyan-core-service
