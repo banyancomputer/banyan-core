@@ -1,7 +1,7 @@
 import React from 'react';
-import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/router';
 import { useIntl } from 'react-intl';
 
 import { UploadFileModal } from '@/components/common/Modal/UploadFileModal';
@@ -13,11 +13,11 @@ import { useTomb } from '@/contexts/tomb';
 import { PlusBold } from '@static/images/common';
 
 const BucketHeader = () => {
-    const searchParams = useSearchParams();
     const { messages } = useIntl();
     const folderLocation = useFolderLocation();
     const { selectedBucket } = useTomb();
-    const bucketId = searchParams.get('id');
+    const router = useRouter();
+    const bucketId = router.query.id;
     const { openModal } = useModal();
 
     const uploadFile = () => {

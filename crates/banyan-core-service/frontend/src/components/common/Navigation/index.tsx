@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
 import { useRouter } from 'next/router';
 import { useIntl } from 'react-intl';
 import { signOut } from 'next-auth/react';
@@ -15,9 +14,8 @@ import { popupClickHandler } from '@/utils';
 import { ChevronUp, Home, Info, Logo, Logout, Mail, Plus, Question, Trash } from '@static/images/common';
 
 export const Navigation = () => {
-    const searchParams = useSearchParams();
     const router = useRouter();
-    const bucketId = searchParams.get('id');
+    const bucketId = router.query.id;
     const { buckets, trash } = useTomb();
     const { purgeKeystore } = useKeystore();
     const [isBucketsVisible, setIsBucketsVisible] = useState(false);
