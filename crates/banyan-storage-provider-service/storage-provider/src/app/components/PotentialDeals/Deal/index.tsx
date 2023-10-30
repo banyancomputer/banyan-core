@@ -4,9 +4,10 @@ import { convertFileSize } from '@app/utils/storage';
 import { AvailiableDeal } from '@/entities/deals';
 import { useAppDispatch } from '@app/store';
 import { acceptDeal, declineDeal, downloadDeal, getActiceDeals, getAvailableDeals } from '@app/store/deals/actions';
+import { getDealDateLabel } from '@app/utils/time';
+import { getUSDAmount } from '@app/utils/price';
 
 import { ChevronDown, Download } from '@static/images';
-import { getDealDateLabel } from '@app/utils/time';
 
 export const Deal: React.FC<AvailiableDeal> =
     ({ id,
@@ -59,7 +60,7 @@ export const Deal: React.FC<AvailiableDeal> =
                     <tbody className='bg-tableBody text-14'>
                         <tr>
                             <td className='py-4 px-3'>{convertFileSize(+size)}</td>
-                            <td className='py-4 px-3'>{payment}</td>
+                            <td className='py-4 px-3'>{`$${getUSDAmount(payment)}/TB`}</td>
                             <td className='py-4 px-3'>{getDealDateLabel(new Date(sealed_by))}</td>
                             <td className='py-4 px-3'>
                                 <div className='flex items-center justify-between gap-2'>

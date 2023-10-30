@@ -6,6 +6,7 @@ import { ActiveDeal } from '@/entities/deals';
 import { getDealDateLabel } from '@app/utils/time';
 import { useAppDispatch } from '@app/store';
 import { downloadDeal, getActiceDeals, proofDeal } from '@app/store/deals/actions';
+import { getUSDAmount } from '@app/utils/price';
 
 import { ChevronDown, Download } from '@static/images';
 
@@ -54,7 +55,7 @@ export const Deal: React.FC<ActiveDeal & { dealsRef: React.MutableRefObject<HTML
                     </thead>
                     <tbody className='bg-tableBody text-14'>
                         <tr>
-                            <td className='py-4 px-3'>{payment}</td>
+                            <td className='py-4 px-3'>{`$${getUSDAmount(payment)}/TB`}</td>
                             <td className='py-4 px-3'>{getDealDateLabel(new Date(accepted_at))}</td>
                             <td className='py-4 px-3 capitalize'>{status}</td>
                             <td className='py-4 px-3 cursor-pointer'>

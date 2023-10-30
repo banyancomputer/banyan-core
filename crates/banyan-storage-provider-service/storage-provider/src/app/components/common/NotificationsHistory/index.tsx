@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 
 import { useAppDispatch, useAppSelector } from '@app/store'
 import { getNotifications, getNotificationsHistory } from '@app/store/notifications/actions';
@@ -8,7 +8,6 @@ import { getNotiifcationDateLabel } from '@app/utils/time';
 export const NotificationsHistory = () => {
     const dispatch = useAppDispatch();
     const { notificationsHistory } = useAppSelector(state => state.notifications);
-    const { activeDeals, availiableDeals } = useAppSelector(state => state.deals);
 
     const scrollIntoView = (id: string) => {
         const deal = document.getElementById('12');
