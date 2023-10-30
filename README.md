@@ -7,6 +7,7 @@ Some cleanup from prior runs, assumes you're in the root of this repository:
 ```
 rm -rf crates/banyan-core-service/data/s* \
   crates/banyan-core-service/data/uploads/* \
+  crates/banyan-staging-service/data/server* \
   crates/banyan-staging-service/data/pl* \
   crates/banyan-staging-service/data/uploads/*
 ```
