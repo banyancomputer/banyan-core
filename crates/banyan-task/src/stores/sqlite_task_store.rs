@@ -121,7 +121,7 @@ impl TaskStore for SqliteTaskStore {
                    LIMIT 10;"#,
             timed_out_start_threshold,
         )
-        .fetch_all(&mut* connection)
+        .fetch_all(&mut *connection)
         .await;
 
         // if this query fails or any of our rescheduling fails, we still want to process our task,
@@ -171,7 +171,7 @@ impl TaskStore for SqliteTaskStore {
         )
         .fetch_one(&mut *connection)
         .await?;
-        
+
         Ok(Some(chosen_task))
     }
 

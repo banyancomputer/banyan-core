@@ -23,15 +23,18 @@ pub async fn handler(
 
     for prune_block in request {
         // Try and interpret the cid to make sure it's valid
-        let _ = cid::Cid::from_str(&prune_block.normalized_cid).map_err(PruneBlocksHookError::InvalidCid)?;
+        let _ = cid::Cid::from_str(&prune_block.normalized_cid)
+            .map_err(PruneBlocksHookError::InvalidCid)?;
 
         let metadata_id = prune_block.metadata_id.to_string();
 
-        let block_id =
-            sqlx::query_scalar!(r#"SELECT id FROM blocks WHERE cid = $1;"#, prune_block.normalized_cid)
-                .fetch_one(&mut *transaction)
-                .await
-                .map_err(PruneBlocksHookError::SqlxError)?;
+        let block_id = sqlx::query_scalar!(
+            r#"SELECT id FROM blocks WHERE cid = $1;"#,
+            prune_block.normalized_cid
+        )
+        .fetch_one(&mut *transaction)
+        .await
+        .map_err(PruneBlocksHookError::SqlxError)?;
 
         let _pruned_at = sqlx::query!(
             r#"UPDATE block_locations
