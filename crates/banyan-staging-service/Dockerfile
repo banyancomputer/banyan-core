@@ -4,7 +4,6 @@
 FROM docker.io/library/rust:1.71.0 AS build
 
 ARG CI_BUILD_REF=
-ARG FEATURES=sqlite
 ARG SERVICE_NAME=banyan-staging-service
 
 RUN mkdir -p /usr/src/build
