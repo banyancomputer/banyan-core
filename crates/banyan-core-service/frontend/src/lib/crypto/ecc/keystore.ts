@@ -101,7 +101,6 @@ export default class ECCKeyStore extends KeyStoreBase implements KeyStore {
   // Recover Key Material from escrowed key material and return to the caller
   // Performs recovery of the key material from the platform
   async recoverKeyMaterial(escrowedKeyMaterial: EscrowedKeyMaterial, passphrase: string, cfg?: Partial<Config>): Promise<PrivateKeyMaterial> {
-    console.log('Recovering key material');
     const mergedCfg = config.merge(this.cfg, cfg);
     const salt = utils.base64ToArrBuf(escrowedKeyMaterial.passKeySalt);
     console.log('Salt: ', salt);
@@ -112,9 +111,6 @@ export default class ECCKeyStore extends KeyStoreBase implements KeyStore {
       ['decrypt'],
       config.symmKeyOpts(mergedCfg)
     );
-    console.log('Key: ', key);
-    console.log('Escrowed Key Material: ', escrowedKeyMaterial);
-    console.log('Encrypted Private Key Material: ', escrowedKeyMaterial.encryptedPrivateKeyMaterial);
     
     let privateKeyMaterialString = await aes.decrypt(
       escrowedKeyMaterial.encryptedPrivateKeyMaterial,
