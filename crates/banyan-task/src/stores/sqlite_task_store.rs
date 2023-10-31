@@ -76,7 +76,7 @@ impl TaskStore for SqliteTaskStore {
         queue_name: &str,
         _task_names: &[&str],
     ) -> Result<Option<Task>, TaskStoreError> {
-        let mut connection = self.pool.acquire().await?;
+        let mut connection = self.pool.clone().acquire().await?;
         let mut transaction = connection.begin().await?;
 
         // todo: need to dynamically build up the task_names portion of this query since sqlx
