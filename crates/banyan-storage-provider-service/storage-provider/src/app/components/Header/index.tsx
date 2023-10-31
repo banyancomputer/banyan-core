@@ -2,12 +2,13 @@ import React, { useEffect, useRef, useState } from 'react';
 
 import { Bolt, Headphones, Logo, Mail, Question } from '@static/images'
 import { popupClickHandler } from '@app/utils/clickHandlers';
+import { NotificationsHistory } from '@components/common/NotificationsHistory';
 
 export const Header = () => {
-    const [isNotoficationsVisible, setIsNotoficationsVisible] = useState(false);
+    const [isNotificationsVisible, setIsNotificationsVisible] = useState(false);
     const [isFAQVisible, setIsFAQVisible] = useState(false);
     const faqRef = useRef<HTMLDivElement | null>(null);
-
+    const notificationsRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
         const listener = popupClickHandler(faqRef.current!, setIsFAQVisible);
@@ -18,13 +19,31 @@ export const Header = () => {
         };
     }, [faqRef]);
 
+    useEffect(() => {
+        const listener = popupClickHandler(notificationsRef.current!, setIsNotificationsVisible);
+        document.addEventListener('click', listener);
+
+        return () => {
+            document.removeEventListener('click', listener);
+        };
+    }, [notificationsRef]);
+
+
+
     return (
         <header className='flex items-center justify-between px-12 py-10 bg-mainBackground text-lightText'>
             <Logo />
             <div className='flex items-center gap-3 text-darkText'>
-                <button className='p-2.5'>
+                <div
+                    className='relative p-2.5 cursor-pointer'
+                    onClick={() => setIsNotificationsVisible(prev => !prev)}
+                    ref={notificationsRef}
+                >
                     <Bolt />
-                </button>
+                    {isNotificationsVisible &&
+                        <NotificationsHistory />
+                    }
+                </div>
                 <div
                     className='p-2.5 relative cursor-pointer'
                     onClick={() => setIsFAQVisible(prev => !prev)}

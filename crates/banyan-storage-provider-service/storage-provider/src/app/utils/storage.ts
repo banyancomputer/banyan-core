@@ -1,4 +1,4 @@
-export function convertFileSize(bytes: number) {
+export function convertFileSize(bytes: number, floatLength: number = 2) {
     if(typeof bytes !== 'number') return;
 
     let size = bytes;
@@ -11,5 +11,5 @@ export function convertFileSize(bytes: number) {
         counter++;
     };
 
-    return `${+size.toFixed(2)} ${labels[counter]}`;
+    return `${+size.toFixed(floatLength)} ${labels[counter]}`;
 };
