@@ -19,8 +19,8 @@ pub struct Task {
 
     // will need a live-cancel signal and likely a custom Future impl to ensure its used for proper
     // timeout handling
-    pub payload: serde_json::Value,
-    pub error: Option<String>,
+    pub payload: Vec<u8>,
+    pub error: Option<Vec<u8>>,
 
     pub scheduled_at: OffsetDateTime,
     pub scheduled_to_run_at: OffsetDateTime,
