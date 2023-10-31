@@ -70,7 +70,7 @@ impl TaskStore for SqliteTaskStore {
         Ok(background_task_id)
     }
 
-    #[tracing::instrument(level = debug, skip(self))]
+    #[tracing::instrument(skip(self))]
     async fn next(
         &self,
         queue_name: &str,
