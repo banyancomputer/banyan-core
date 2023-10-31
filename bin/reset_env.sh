@@ -7,17 +7,11 @@ set -o nounset
 cd $(pwd)
 pwd
 
-EMAIL_TO_ALLOW="${1:-}"
-if [ -z "${EMAIL_TO_ALLOW}" ]; then
-	echo "Need to provide an email to allow as the first argument"
-	exit 1
-fi
-
 rm -rf crates/banyan-core-service/data/s* \
-  crates/banyan-core-service/data/uploads/* \
-  crates/banyan-staging-service/data/pl* \
-  crates/banyan-staging-service/data/server* \
-  crates/banyan-staging-service/data/uploads/*
+	crates/banyan-core-service/data/uploads/* \
+	crates/banyan-staging-service/data/pl* \
+	crates/banyan-staging-service/data/server* \
+	crates/banyan-staging-service/data/uploads/*
 
 (
 	cd crates/banyan-core-service
@@ -47,8 +41,6 @@ cat <<ESQL | sqlite3 ./crates/banyan-core-service/data/server.db
 INSERT INTO storage_hosts
   (name, url, used_storage, available_storage, fingerprint, pem)
   VALUES ('${STORAGE_HOST_NAME}', '${STORAGE_HOST_URL}', 0, ${STORAGE_HOST_BYTE_LIMIT}, '${STORAGE_HOST_FINGERPRINT}', '${STORAGE_HOST_PUBKEY}');
-
-INSERT INTO allowed_emails (email) VALUES ('${EMAIL_TO_ALLOW}');
 ESQL
 
 NEW_NEXTAUTH_SECRET="$(openssl rand -base64 9 | tr -dc 'a-zA-Z0-9' | cut -c1-12)"
