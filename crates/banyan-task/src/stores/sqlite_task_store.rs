@@ -70,7 +70,6 @@ impl TaskStore for SqliteTaskStore {
         Ok(background_task_id)
     }
 
-    #[tracing::instrument(skip(self))]
     async fn next(
         &self,
         queue_name: &str,
@@ -111,8 +110,6 @@ impl TaskStore for SqliteTaskStore {
         }
 
         transaction.commit().await?;
-
-        tracing::debug!(?next_task_id, "queried for next task to run");
 
         let timed_out_start_threshold = time::OffsetDateTime::now_utc() - TASK_EXECUTION_TIMEOUT;
         let pending_retry_tasks = sqlx::query_scalar!(
@@ -158,8 +155,6 @@ impl TaskStore for SqliteTaskStore {
             }
         }
 
-        tracing::debug!("cleaned up retryable tasks");
-
         let chosen_task_id = match next_task_id {
             Some(nti) => nti,
             None => return Ok(None),
@@ -173,8 +168,6 @@ impl TaskStore for SqliteTaskStore {
         )
         .fetch_one(&self.pool)
         .await?;
-
-        tracing::info!(?chosen_task, "located task to be run");
 
         Ok(Some(chosen_task))
     }

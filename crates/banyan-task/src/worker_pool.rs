@@ -15,7 +15,7 @@ use crate::{
 pub type ExecuteTaskFn<Context> = Arc<
     dyn Fn(
             CurrentTask,
-            serde_json::Value,
+            Vec<u8>,
             Context,
         ) -> Pin<Box<dyn Future<Output = Result<(), TaskExecError>> + Send>>
         + Send
@@ -173,14 +173,14 @@ pub enum WorkerPoolError {
 
 fn deserialize_and_run_task<TL>(
     current_task: CurrentTask,
-    payload: serde_json::Value,
+    payload: Vec<u8>,
     context: TL::Context,
 ) -> Pin<Box<dyn Future<Output = Result<(), TaskExecError>> + Send>>
 where
     TL: TaskLike,
 {
     Box::pin(async move {
-        let task: TL = serde_json::from_value(payload)?;
+        let task: TL = serde_json::from_slice(&payload)?;
 
         match task.run(current_task, context).await {
             Ok(_) => Ok(()),
