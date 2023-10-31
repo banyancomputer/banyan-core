@@ -8,7 +8,7 @@ pub struct TaskInstanceBuilder {
     queue_name: String,
     maximum_attempts: i64,
 
-    payload: serde_json::Value,
+    payload: Vec<u8>,
     current_attempt: i64,
     state: TaskState,
 
@@ -32,7 +32,6 @@ impl TaskInstanceBuilder {
             }
         }
 
-        let payload = self.payload.to_string();
         let background_task_id: String = sqlx::query_scalar!(
             r#"INSERT INTO background_tasks (
                            task_name, queue_name, unique_key, payload,
@@ -44,7 +43,7 @@ impl TaskInstanceBuilder {
             self.task_name,
             self.queue_name,
             self.unique_key,
-            payload,
+            self.payload,
             self.current_attempt,
             self.maximum_attempts,
             self.state,
@@ -59,7 +58,7 @@ impl TaskInstanceBuilder {
 
     pub async fn for_task<T: TaskLike>(instance: T) -> Result<Self, TaskStoreError> {
         let unique_key = instance.unique_key().await;
-        let payload = serde_json::to_value(&instance).map_err(TaskStoreError::EncodeFailed)?;
+        let payload = serde_json::to_vec(&instance).map_err(TaskStoreError::EncodeFailed)?;
 
         Ok(Self {
             task_name: T::TASK_NAME.to_string(),

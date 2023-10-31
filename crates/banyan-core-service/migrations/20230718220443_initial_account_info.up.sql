@@ -69,19 +69,7 @@ CREATE TABLE verification_tokens (
 
 -- Migration for WebUI data
 
--- Migration for table specifying allow-listed emails for alpha
-CREATE TABLE allowed_emails (
-  id TEXT NOT NULL PRIMARY KEY DEFAULT (
-    lower(hex(randomblob(4))) || '-' ||
-    lower(hex(randomblob(2))) || '-4' ||
-    substr(lower(hex(randomblob(2))), 2) || '-a' ||
-    substr(lower(hex(randomblob(2))), 2) || '-6' ||
-    substr(lower(hex(randomblob(6))), 2)
-  ),
-  email TEXT NOT NULL UNIQUE
-);
-
--- Mggration for Escrowed Devices
+-- Migration for Escrowed Devices
 CREATE TABLE escrowed_devices (
   id TEXT NOT NULL PRIMARY KEY DEFAULT (
     lower(hex(randomblob(4))) || '-' ||

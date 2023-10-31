@@ -22,8 +22,8 @@ CREATE TABLE background_tasks (
   current_attempt INTEGER NOT NULL DEFAULT 1,
   maximum_attempts INTEGER NOT NULL,
 
-  payload TEXT NOT NULL,
-  error TEXT,
+  payload BLOB NOT NULL,
+  error BLOB,
 
   scheduled_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   scheduled_to_run_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
