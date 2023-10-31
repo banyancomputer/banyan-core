@@ -8,7 +8,7 @@ cd $(dirname %0)
 DEPLOY_HOST="distributor.data.banyan.computer"
 DEPLOY_BASE_FOLDER="containers"
 
-SERVICE_NAME="${1:-banyan-staging-service}"
+SERVICE_NAME="${1:-distributor-banyan}"
 SERVICE_PORT="${2:-3000}"
 SERVICE_ARGUMENTS="--auth-key /data/platform-auth.key --hostname https://${DEPLOY_HOST}/ --verifier-key /data/platform-verifier.public --upload-dir /data/uploads --platform-url https://api.data.banyan.computer"
 SERVICE_FEATURES="postgres"
