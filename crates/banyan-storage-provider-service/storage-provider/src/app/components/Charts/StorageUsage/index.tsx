@@ -1,22 +1,26 @@
-import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend, CartesianGrid } from 'recharts';
+import { useEffect, useMemo } from 'react';
+import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from 'recharts';
+import { useAppDispatch, useAppSelector } from '@app/store';
+
+import { getStorageUsage } from '@app/store/metrics/actions';
+import { convertFileSize } from '@app/utils/storage';
+import { getDateLabel } from '@app/utils/time';
 
 import { Info } from '@static/images';
 
-
 export const StorageUsage = () => {
-    const data = [
-        { 'Current storage use': 0, 'Capacity': 0, month: 'Jan' },
-        { 'Current storage use': 6, 'Capacity': 2.5, month: 'Feb' },
-        { 'Current storage use': 10, 'Capacity': 5, month: 'Mar' },
-        { 'Current storage use': 7, 'Capacity': 3, month: 'Apr' },
-        { 'Current storage use': 5.6, 'Capacity': 1.25, month: 'Jun' },
-        { 'Current storage use': 8.75, 'Capacity': 4.6, month: 'Jul' },
-        { 'Current storage use': 6, 'Capacity': 2.5, month: 'Feb' },
-        { 'Current storage use': 8.8, 'Capacity': 5.1, month: 'Mar' },
-        { 'Current storage use': 7, 'Capacity': 3, month: 'Apr' },
-        { 'Current storage use': 5.6, 'Capacity': 1.25, month: 'Jun' },
-        { 'Current storage use': 8.75, 'Capacity': 4.6, month: 'Jul' },
-    ];
+    const dispatch = useAppDispatch();
+    const { storageUsage } = useAppSelector(state => state.metrics);
+
+    const tableData = useMemo(() => storageUsage.map(usage => ({ 'Current storage use': usage.used, 'Capacity': usage.available, date: getDateLabel(new Date(usage.date[0], 0, usage.date[1]), false) })), [storageUsage]);
+
+    useEffect(() => {
+        try {
+            (async () => {
+                await dispatch(getStorageUsage());
+            })()
+        } catch (error: any) { }
+    }, []);
 
     return (
         <div className='w-3/5 bg-storageBackground text-lightText rounded-xl'>
@@ -32,39 +36,42 @@ export const StorageUsage = () => {
             <div className='py-6 pb-10 pr-9 h-60' >
                 <ResponsiveContainer >
                     <AreaChart
-                        data={data}
+                        data={tableData}
                         style={{ padding: 'none' }}
-                        margin={{ top: 0, left: -20, right: 0, bottom: 0 }}
+                        margin={{ top: 5, left: -20, right: 0, bottom: 0 }}
                     >
                         <YAxis
-                            tickCount={20}
+                            tickCount={9}
                             tickLine={false}
                             fontSize={9}
                             axisLine={false}
-                            interval={'preserveStartEnd'}
+                            interval={0}
+                            tickFormatter={value => convertFileSize(value, 0)!}
+                            width={80}
                         />
                         <XAxis
-                            dataKey="month"
+                            interval={1}
+                            dataKey="date"
                             tickLine={false}
                             axisLine={false}
                             fontSize={9}
                         />
-                        <Tooltip />
+                        <Tooltip formatter={(value, name) => [convertFileSize(+value), name]} />
                         <CartesianGrid
                             strokeDasharray="3 3"
                             stroke='#648B60'
-                        />
-                        <Area
-                            dataKey="Current storage use"
-                            fill='#D99C67'
-                            fillOpacity={1}
-                            stroke="#D99C67"
                         />
                         <Area
                             dataKey="Capacity"
                             fill='#352F43'
                             fillOpacity={1}
                             stroke="#352F43"
+                        />
+                        <Area
+                            dataKey="Current storage use"
+                            fill='#D99C67'
+                            fillOpacity={1}
+                            stroke="#D99C67"
                         />
                     </AreaChart>
                 </ResponsiveContainer>
