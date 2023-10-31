@@ -95,7 +95,7 @@ export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBu
                 >
                     {
                         folder.length ? <li
-                            className="flex justify-between items-center p-2.5 transition-all hover:bg-hover cursor-pointer"
+                            className="flex justify-between items-center p-2.5 transition-all hover:bg-bucket-bucketHoverBackground cursor-pointer"
                             onClick={goAbove}
                         >
                             ...
@@ -106,7 +106,7 @@ export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBu
                     <AddNewOption label={`${messages.createNewFolder}`} action={addNewFolder} />
                     {folders.map((folderItem, index) =>
                         <li
-                            className="flex justify-between items-center p-2.5 transition-all hover:bg-hover cursor-pointer"
+                            className="flex justify-between items-center p-2.5 transition-all hover:bg-bucket-bucketHoverBackground cursor-pointer"
                             key={index}
                             onClick={() => handleSelect([...folder, folderItem.name])}
                         >

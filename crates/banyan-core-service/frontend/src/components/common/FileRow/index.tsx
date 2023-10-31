@@ -29,7 +29,7 @@ export const FileRow: React.FC<{
 
     return (
         <tr
-            className="cursor-pointer border-1 border-t-border-regular border-b-border-regular text-text-900 font-normal"
+            className="cursor-pointer border-b-1 border-b-border-regular text-text-900 font-normal last:border-b-0"
             onClick={event => previewFile(event, bucket, file)}
         >
             <td

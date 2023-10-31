@@ -37,7 +37,7 @@ export const KeyManagementTable: React.FC<{ buckets: Bucket[] }> = ({ buckets })
             };
             setFingerprints(fingerprintMap);
         }
-        
+
         if (fingerprints.size == 0) {
             getFingerprints();
         }
@@ -49,7 +49,7 @@ export const KeyManagementTable: React.FC<{ buckets: Bucket[] }> = ({ buckets })
             className="max-h-[calc(100vh-320px)] overflow-x-auto border-2 border-border-regular bg-secondaryBackground rounded-xl"
         >
             <table className="table table-pin-rows w-full text-text-600 rounded-xl">
-                <thead className="border-b-table-cellBackground text-xxs font-normal text-text-600">
+                <thead className="border-b-reg text-xxs font-normal text-text-600 border-b-2 border-border-regular">
                     <tr className="border-b-table-cellBackground bg-table-headBackground border-none">
                         <th className="py-3 px-6 w-44 whitespace-break-spaces text-left font-medium">{`${messages.locationForKey}`}</th>
                         <th className="py-3 px-6 text-left font-medium whitespace-pre">
@@ -67,37 +67,37 @@ export const KeyManagementTable: React.FC<{ buckets: Bucket[] }> = ({ buckets })
                 <tbody>
                     {buckets.map(bucket => {
                         return (<React.Fragment key={bucket.id}>
-                        <tr className="bg-table-cellBackground text-gray-900">
-                            <td className="px-6 py-4">{bucket.name}</td>
-                            <td className="px-6 py-4"></td>
-                            <td className="px-6 py-4"></td>
-                            <td className="px-6 py-4"></td>
-                            <td className="px-6 py-4"></td>
-                        </tr>
-                        {
-                            bucket?.keys?.map(bucketKey => {
-                                const approved = bucketKey.approved();
-                                const bucket_key_id = bucketKey.id();
-                                const fingerprint = fingerprints.get(bucket_key_id);
-
-                                return <tr key={bucket_key_id}>
+                            <tr className="bg-table-cellBackground text-gray-900 border-b-2 border-y-border-regular ">
+                                <td className="px-6 py-4">{bucket.name}</td>
                                 <td className="px-6 py-4"></td>
-                                <td className="px-6 py-4">{bucket_key_id}</td>
-                                <td className="px-6 py-4">{fingerprint}</td>
-                                <td className="px-6 py-4">{approved ? `${messages.approved}` : `${messages.noAccess}`}</td>
-                                <td className="px-6 py-4">
-                                    <ActionsCell
-                                        actions={<KeyActions bucket={bucket} bucketKey={bucketKey} />}
-                                        offsetTop={tableScroll}
-                                        tableRef={tableRef}
-                                    />
-                                </td>
+                                <td className="px-6 py-4"></td>
+                                <td className="px-6 py-4"></td>
+                                <td className="px-6 py-4"></td>
                             </tr>
-                            })
-                        }
-                    </React.Fragment>);
+                            {
+                                bucket?.keys?.map(bucketKey => {
+                                    const approved = bucketKey.approved();
+                                    const bucket_key_id = bucketKey.id();
+                                    const fingerprint = fingerprints.get(bucket_key_id);
+
+                                    return <tr key={bucket_key_id}>
+                                        <td className="px-6 py-4"></td>
+                                        <td className="px-6 py-4">{bucket_key_id}</td>
+                                        <td className="px-6 py-4">{fingerprint}</td>
+                                        <td className="px-6 py-4">{approved ? `${messages.approved}` : `${messages.noAccess}`}</td>
+                                        <td className="px-6 py-4">
+                                            <ActionsCell
+                                                actions={<KeyActions bucket={bucket} bucketKey={bucketKey} />}
+                                                offsetTop={tableScroll}
+                                                tableRef={tableRef}
+                                            />
+                                        </td>
+                                    </tr>
+                                })
+                            }
+                        </React.Fragment>);
                     }
-                        
+
                     )}
                 </tbody>
             </table >

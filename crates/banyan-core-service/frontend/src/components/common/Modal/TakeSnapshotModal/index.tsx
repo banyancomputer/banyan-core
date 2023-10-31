@@ -25,7 +25,7 @@ export const TakeSnapshotModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
 
     return (
         <div className="w-modal flex flex-col gap-5">
-            <span className="p-3 w-min rounded-full bg-gray-200">
+            <span className="p-3 w-min rounded-full bg-button-disabled">
                 <HiOutlineLightningBolt size="24px" />
             </span>
             <div>
