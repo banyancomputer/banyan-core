@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "UPDATE metadata\n             SET state = 'current' AND data_size = $1\n             WHERE id = $2 AND state = 'pending'\n             RETURNING bucket_id;",
+  "query": "UPDATE metadata\n             SET state = 'current', data_size = $1\n             WHERE id = $2 AND state = 'pending'\n             RETURNING bucket_id;",
   "describe": {
     "columns": [
       {
@@ -16,5 +16,5 @@
       false
     ]
   },
-  "hash": "f7d4b963daec14b9f2be1246ccd75a879610afeabf6a0858cc14209a64ce00b4"
+  "hash": "f72e816de80c4df698af677aceeb7435340e9d8d0db842f86b1fe059e4dae8cd"
 }
