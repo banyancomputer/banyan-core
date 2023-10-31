@@ -169,6 +169,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     const createBucket = async (name: string, storageClass: string, bucketType: string) => {
         await tombMutex(tomb, async tomb => {
             const key = await getEncryptionKey();
+            console.log('key', key);
             let wasmBucket = await tomb!.createBucket(name, storageClass, bucketType, key.publicPem);
             let mount = await tomb!.mount(wasmBucket.id(), key.privatePem);
             const files = await mount.ls([]);

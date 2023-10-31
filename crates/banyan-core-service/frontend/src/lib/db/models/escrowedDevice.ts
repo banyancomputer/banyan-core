@@ -25,19 +25,15 @@ const EscrowedDeviceModel = (
                 type: DataTypes.STRING,
                 allowNull: false,
             },
-            apiKeyPem: {
+            apiPublicKeyPem: {
                 type: DataTypes.STRING,
                 allowNull: false,
             },
-            encryptionKeyPem: {
+            encryptionPublicKeyPem: {
                 type: DataTypes.STRING,
                 allowNull: false,
             },
-            wrappedApiKey: {
-                type: DataTypes.STRING,
-                allowNull: false,
-            },
-            wrappedEncryptionKey: {
+            encryptedPrivateKeyMaterial: {
                 type: DataTypes.STRING,
                 allowNull: false,
             },
@@ -67,24 +63,19 @@ const EscrowedDeviceModel = (
     );
 
     EscrowedDevice.prototype.validate = async function() {
-        if (!isPem(this.apiKeyPem)) {
-            console.log('invalid api key pem');
-            console.log(this.apiKeyPem);
-            console.log(typeof this.apiKeyPem);
-            console.log(isPem(this.apiKeyPem));
-            throw new Error('invalid api key pem');
+        if (!isPem(this.apiPublicKeyPem)) {
+            throw new Error('invalid api public key pem');
         }
-        if (!isPem(this.encryptionKeyPem)) {
-            throw new Error('invalid encryption key pem');
+        if (!isPem(this.encryptionPublicKeyPem)) {
+            throw new Error('invalid encryption public key pem');
         }
         // Make sure all other fields are not null, base64 strings
         if (
-            !this.wrappedApiKey ||
-			!this.wrappedEncryptionKey ||
+            !this.encryptedPrivateKeyMaterial ||
 			!this.passKeySalt
         ) {
             throw new Error(
-                'invalid wrapped api key, wrapped encryption key, or pass key salt'
+                'invalid encrypted private key material or pass key salt'
             );
         }
         await validateOrReject(this);
