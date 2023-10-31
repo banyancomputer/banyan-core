@@ -75,7 +75,7 @@ impl TaskStore for SqliteTaskStore {
         queue_name: &str,
         _task_names: &[&str],
     ) -> Result<Option<Task>, TaskStoreError> {
-        let mut connection = self.pool.acquire().await?;
+        let mut connection = self.pool.clone().acquire().await?;
         let mut transaction = connection.begin().await?;
 
         // todo: need to dynamically build up the task_names portion of this query since sqlx
@@ -85,8 +85,8 @@ impl TaskStore for SqliteTaskStore {
             r#"SELECT id FROM background_tasks
                    WHERE queue_name = $1
                       AND state IN ('new', 'retry')
-                      AND scheduled_to_run_at <= DATETIME('now')
-                   ORDER BY scheduled_to_run_at ASC, scheduled_at ASC
+                      AND DATETIME(scheduled_to_run_at) <= DATETIME('now')
+                   ORDER BY DATETIME(scheduled_to_run_at) ASC, DATETIME(scheduled_at) ASC
                    LIMIT 1;"#,
             queue_name,
         )
@@ -115,8 +115,8 @@ impl TaskStore for SqliteTaskStore {
         let pending_retry_tasks = sqlx::query_scalar!(
             r#"SELECT id FROM background_tasks
                    WHERE state IN ('in_progress', 'retry')
-                      AND started_at <= $1
-                   ORDER BY started_at ASC
+                      AND DATETIME(started_at) <= $1
+                   ORDER BY DATETIME(started_at) ASC
                    LIMIT 10;"#,
             timed_out_start_threshold,
         )

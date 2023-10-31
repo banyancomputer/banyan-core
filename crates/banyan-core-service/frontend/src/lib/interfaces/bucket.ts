@@ -16,10 +16,10 @@ export interface BrowserObject {
 };
 
 export interface BucketKey {
-    id: string;
-    bucket_id: string;
-    pem: string;
-    approved: boolean;
+    id: () => string;
+    bucket_id: () => string;
+    pem: () => string;
+    approved: () => boolean;
 };
 
 export interface BucketSnapshot {
