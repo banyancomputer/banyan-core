@@ -27,7 +27,7 @@ export default ({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
 
   return defineConfig({
-    base: "/",
+    base: "/dist/",
     define: {
       "process.env": JSON.stringify(env),
     },
@@ -37,7 +37,7 @@ export default ({ mode }) => {
     },
     build: {
       minify: "esbuild",
-      outDir: path.resolve(__dirname, "dist/"),
+      outDir: path.resolve('../dist', "dist/"),
       cssCodeSplit: false,
     },
     plugins: isProduction ? PRODUCTION_PLUGINS : DEVELOPMENT_PLUGINS,

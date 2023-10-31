@@ -21,6 +21,7 @@ module.exports = {
       },
       maxHeight: {
         table: "1000px",
+        notifications: "400px",
       },
       maxWidth: {
         wrapper: "1140px",
@@ -37,8 +38,10 @@ module.exports = {
         boogy: ["BoogyBrut"],
       },
       fontSize: {
+        10: ["10px", { lineHeight: "18px" }],
         12: ["12px", { lineHeight: "18px" }],
         14: ["14px", { lineHeight: "20px" }],
+        18: ["18px", { lineHeight: "18px" }],
         20: ["20px", { lineHeight: "32px" }],
         42: ["42px", { lineHeight: "50px" }],
         80: ["80px", { lineHeight: "80px" }],

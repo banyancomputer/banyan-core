@@ -1,29 +1,25 @@
-import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend, CartesianGrid } from 'recharts';
+import { useEffect, useMemo } from 'react';
+import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, CartesianGrid, Tooltip } from 'recharts';
+import { useAppDispatch, useAppSelector } from '@app/store';
+
+import { getBandwidthUsage } from '@app/store/metrics/actions';
+import { convertFileSize } from '@app/utils/storage';
 
 import { Info } from '@static/images';
-
+import { getDateLabel } from '@app/utils/time';
 
 export const BandwidthUsage = () => {
-    const data = [
-        { 'Usage Data': 0, month: '1h' },
-        { 'Usage Data': 6, month: '2h' },
-        { 'Usage Data': 10, month: '3h' },
-        { 'Usage Data': 7, month: '4h' },
-        { 'Usage Data': -5.6, month: '5h' },
-        { 'Usage Data': 8.75, month: '6h' },
-        { 'Usage Data': -6, month: '7h' },
-        { 'Usage Data': 8.8, month: '8h' },
-        { 'Usage Data': 7, month: '9h' },
-        { 'Usage Data': 5.6, month: '10h' },
-        { 'Usage Data': 8.75, month: '11h' },
-    ];
+    const dispatch = useAppDispatch();
+    const { bandWidthUsage } = useAppSelector(state => state.metrics);
+    const tableData = useMemo(() => bandWidthUsage.map(usage => ({ 'Egress': usage.egress, 'Ingress': -usage.ingress, date: getDateLabel(new Date(usage.date[0], 0, usage.date[1]), false) })), [bandWidthUsage]);
 
-    const gradientOffset = () => {
-        const dataMax = Math.max(...data.map(i => i['Usage Data']));
-        const dataMin = Math.min(...data.map(i => i['Usage Data']));
-
-        return dataMax / (dataMax - dataMin);
-    };
+    useEffect(() => {
+        try {
+            (async () => {
+                await dispatch(getBandwidthUsage());
+            })()
+        } catch (error: any) { }
+    }, []);
 
     return (
         <div className=' w-2/5 bg-storageBackground text-lightText rounded-xl'>
@@ -37,41 +33,44 @@ export const BandwidthUsage = () => {
                 <p className='text-12'>Secondary text</p>
             </div>
             <div className='py-6 pb-10 pr-9 h-60'>
-                <ResponsiveContainer>
+                <ResponsiveContainer >
                     <AreaChart
-                        data={data}
+                        data={tableData}
                         style={{ padding: 'none' }}
-                        margin={{ top: 0, left: -20, right: 0, bottom: 0 }}
+                        margin={{ top: 5, left: -20, right: 0, bottom: 0 }}
                     >
                         <YAxis
-                            tickCount={20}
+                            tickCount={9}
+                            interval={0}
                             tickLine={false}
                             fontSize={9}
                             axisLine={false}
-                            interval={'preserveStartEnd'}
+                            tickFormatter={value => convertFileSize(Math.abs(value), 0)!}
+                            width={80}
                         />
                         <XAxis
-                            dataKey="month"
+                            dataKey="date"
                             tickLine={false}
                             axisLine={false}
                             fontSize={9}
+                            interval={2}
                         />
+                        <Tooltip formatter={(value, name) => [convertFileSize(Math.abs(+value)), name]} />
                         <CartesianGrid
                             strokeDasharray="3 3"
                             stroke='#648B60'
                         />
-                        <defs>
-                            <linearGradient id="splitColor" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset={gradientOffset()} stopColor="#D99C67" stopOpacity={1} />
-                                <stop offset={gradientOffset()} stopColor="#352F43" stopOpacity={1} />
-                            </linearGradient>
-                        </defs>
                         <Area
-                            type="monotone"
-                            dataKey="Usage Data"
+                            dataKey="Egress"
+                            fill='#352F43'
                             fillOpacity={1}
-                            stroke='transparent'
-                            fill="url(#splitColor)"
+                            stroke="#352F43"
+                        />
+                        <Area
+                            dataKey="Ingress"
+                            fill='#D99C67'
+                            fillOpacity={1}
+                            stroke="#D99C67"
                         />
                     </AreaChart>
                 </ResponsiveContainer>

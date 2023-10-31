@@ -6,7 +6,6 @@ import { ActiveDeal } from '@/entities/deals';
 import { getDealDateLabel } from '@app/utils/time';
 import { useAppDispatch } from '@app/store';
 import { downloadDeal, getActiceDeals, proofDeal } from '@app/store/deals/actions';
-import { getUSDAmount } from '@app/utils/price';
 
 import { ChevronDown, Download } from '@static/images';
 
@@ -43,7 +42,7 @@ export const Deal: React.FC<ActiveDeal & { dealsRef: React.MutableRefObject<HTML
         };
 
         return (
-            <div className='rounded-xl overflow-hidden border-1 border-tableBorder transition-all' id={id}>
+            <div className='rounded-xl overflow-hidden border-1 border-tableBorder' id={id}>
                 <table className="w-full">
                     <thead className='bg-tableHead text-12'>
                         <tr>
@@ -55,7 +54,7 @@ export const Deal: React.FC<ActiveDeal & { dealsRef: React.MutableRefObject<HTML
                     </thead>
                     <tbody className='bg-tableBody text-14'>
                         <tr>
-                            <td className='py-4 px-3'>{`$${getUSDAmount(payment)}/TB`}</td>
+                            <td className='py-4 px-3'>{payment}</td>
                             <td className='py-4 px-3'>{getDealDateLabel(new Date(accepted_at))}</td>
                             <td className='py-4 px-3 capitalize'>{status}</td>
                             <td className='py-4 px-3 cursor-pointer'>
@@ -96,6 +95,14 @@ export const Deal: React.FC<ActiveDeal & { dealsRef: React.MutableRefObject<HTML
                         <div className='flex items-center gap-10 p-3'>
                             <span className='w-32 text-12 text-tableExtendText'>Proof</span>
                             <span className='text-14 font-medium underline' onClick={proof}>Click here for proof</span>
+                        </div>
+                        <div className='flex items-center gap-10 p-3'>
+                            <span className='w-32 text-12 text-tableExtendText'>NFS Path</span>
+                            <span className='text-14 font-medium underline'>
+                                <a href="nfs://10.100.50.120/deals/..." target="_blank">
+                                    nfs://10.100.50.120/deals/...
+                                </a>
+                            </span>
                         </div>
                         <div className='flex items-center gap-10 p-3'>
                             <span className='w-32 text-12 text-tableExtendText'>Accepted At</span>
