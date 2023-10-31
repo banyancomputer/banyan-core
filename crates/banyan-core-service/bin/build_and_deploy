@@ -10,7 +10,7 @@ DEPLOY_BASE_FOLDER="containers"
 
 SERVICE_NAME="${1:-core-banyan}"
 SERVICE_PORT="${2:-3001}"
-SERVICE_ARGUMENTS="--db-url /shared/platform.db --signing-key /data/signing-key.pem --upload-dir /data/uploads"
+SERVICE_ARGUMENTS="--db-url sqlite:///shared/platform.db --signing-key /data/signing-key.pem --upload-dir /data/uploads"
 
 # Everything beyond this point isn't expected to be changed between services
 

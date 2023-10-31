@@ -65,7 +65,7 @@ impl Config {
 
         let session_key_str = match cli_args.opt_value_from_str("--signing-key")? {
             Some(path) => path,
-            None => match std::env::var("SESSION_KEY") {
+            None => match std::env::var("SIGNING_KEY") {
                 Ok(sk) if !sk.is_empty() => sk,
                 _ => "./data/signing-key.pem".to_string(),
             },
