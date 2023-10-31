@@ -43,7 +43,7 @@ pub async fn handler(
     TypedHeader(content_type): TypedHeader<ContentType>,
     body: BodyStream,
 ) -> Result<Response, PushMetadataError> {
-    let mut database = state.database();
+    let database = state.database();
     let service_signing_key = state.secrets().service_signing_key();
 
     let unvalidated_bid = bucket_id.to_string();
@@ -115,7 +115,7 @@ pub async fn handler(
         .await
         .map_err(PushMetadataError::DataMetaStoreFailed)?;
 
-    expire_deleted_blocks(&mut database, &api_id, &bucket_id, &request_data).await?;
+    expire_deleted_blocks(&database, &api_id, &bucket_id, &request_data).await?;
 
     let expected_total_storage = currently_consumed_storage(&database, &api_id.account_id)
         .await
@@ -495,7 +495,7 @@ struct UniqueBlockLocation {
 }
 
 async fn expire_deleted_blocks(
-    database: &mut Database,
+    database: &Database,
     api_id: &ApiIdentity,
     bucket_id: &Uuid,
     request: &PushMetadataRequest,
