@@ -74,6 +74,8 @@ export enum KeyUse {
 }
 
 // Generated device key material on platform sign-up
+// This is the only time CryptoKeyPairs are generated,
+// after which everything is PEM formatted Strings
 export interface KeyMaterial {
   encryptionKeyPair: CryptoKeyPair,
   apiKeyPair: CryptoKeyPair,
@@ -81,27 +83,30 @@ export interface KeyMaterial {
 
 // Escrowed device key material stored on the platform
 export interface EscrowedKeyMaterial {
-  encryptionKeyPem: string,
-  apiKeyPem: string,
-  wrappedEncryptionKey: string,
-  wrappedApiKey: string,
+  // SPKI encoded public key pem
+  encryptionPublicKeyPem: string,
+  // SPKI encoded public key pem
+  apiPublicKeyPem: string,
+  // AES encrypted instance of Json.stringify(PrivateKeyMaterial)
+  encryptedPrivateKeyMaterial: string,
+  // Salt used to derive the decryption key
   passKeySalt: string,
 }
 
 // Exported private key material that can be used by rust
-export interface ExportedKeyMaterial {
+export interface PrivateKeyMaterial {
   // Pkcs8 encoded private key pem
-  encryptionKeyPem: string,
+  encryptionPrivateKeyPem: string,
   // Pkcs8 encoded private key pem
-  apiKeyPem: string,
+  apiPrivateKeyPem: string,
 }
 
 // Format of cached key material blob placed in user's browser storage
 export interface CachedKeyMaterial {
-  // The encrypted key material
-  encryptedExportedKeyMaterial: string,
+  // AES encrypted instance of Json.stringify(PrivateKeyMaterial)
+  encryptedPrivateKeyMaterial: string,
   // The salt needed to derive the session key
-  salt: string,
+  sessionKeySalt: string,
 }
 
 export interface KeyStore {
@@ -114,17 +119,17 @@ export interface KeyStore {
   destroy(): Promise<void>
 
   // Cache exported key material associated with the current session
-  cacheKeyMaterial(
-    keyMaterial: ExportedKeyMaterial,
+  cachePrivateKeyMaterial(
+    privateKeyMaterial: PrivateKeyMaterial,
     sessionKey: string,
     sessionId: string,
     cfg?: Partial<Config>
   ): Promise<void>
 
   // Retrieve cached key material associated with the current session
-  retrieveCachedKeyMaterial(
+  retrieveCachedPrivateKeyMaterial(
     sessionKey: string,
     sessionId: string,
     cfg?: Partial<Config>
-  ): Promise<ExportedKeyMaterial>
+  ): Promise<PrivateKeyMaterial>
 }

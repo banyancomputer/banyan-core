@@ -1,19 +1,13 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import ECCKeystore from '@/lib/crypto/ecc/keystore';
-import { importKeyPair } from '@/lib/crypto/ecc';
 import {
-    fingerprintEcPem,
+    fingerprintDeviceApiPublicKeyPem,
     hexFingerprint,
 } from '@/lib/crypto/utils';
 import { useSession } from 'next-auth/react';
 import { DeviceApiKey } from '@/lib/interfaces';
 import { ClientApi } from '@/lib/api/auth';
-import {
-    publicPemUnwrap,
-    privatePemUnwrap,
-    privatePemWrap,
-} from '@/utils';
-import { EscrowedKeyMaterial, KeyUse, EccCurve, ExportedKeyMaterial } from '@/lib/crypto/types';
+import { EscrowedKeyMaterial, PrivateKeyMaterial} from '@/lib/crypto/types';
 import { setCookie, destroyCookie, parseCookies } from 'nookies';
 
 const KEY_STORE_NAME_PREFIX = 'banyan-key-cache';
@@ -62,9 +56,9 @@ export const KeystoreContext = createContext<{
     // Initialize a keystore based on the user's passphrase
     initializeKeystore: (passkey: string) => Promise<void>;
     // Get the user's Encryption Key Pair
-    getEncryptionKey: () => Promise<{ privatePem: String, publicPem: String }>;
+    getEncryptionKey: () => Promise<{ privatePem: string, publicPem: string }>;
     // Get the user's API Key Pair
-    getApiKey: () => Promise<{ privatePem: String, publicPem: String }>;
+    getApiKey: () => Promise<{ privatePem: string, publicPem: string }>;
     // Purge the keystore from storage
     purgeKeystore: () => Promise<void>;
     isLoading: boolean,
@@ -121,7 +115,7 @@ export const KeystoreProvider = ({ children }: any) => {
                 let initialized = false;
                 let sessionKey = getSessionKey();
                 try {
-                    await ks.retrieveCachedKeyMaterial(
+                    await ks.retrieveCachedPrivateKeyMaterial(
                         sessionKey.sessionKey, sessionKey.sessionId
                     );
                     initialized = true;
@@ -152,7 +146,7 @@ export const KeystoreProvider = ({ children }: any) => {
 
     // Initialize a keystore based on the user's passphrase
     const initializeKeystore = async (passkey: string): Promise<void> => {
-        let exportedKeyMaterial: ExportedKeyMaterial;
+        let privateKeyMaterial: PrivateKeyMaterial;
         // TODO: better error handling
         if (!keystore) {
             setError('No keystore');
@@ -160,14 +154,14 @@ export const KeystoreProvider = ({ children }: any) => {
         }
         try {
             if (escrowedDevice) {
-                exportedKeyMaterial = await recoverDevice(passkey);
+                privateKeyMaterial = await recoverDevice(passkey);
             } else {
-                exportedKeyMaterial = await escrowDevice(passkey);
+                privateKeyMaterial = await escrowDevice(passkey);
             }
             let sessionKey = getSessionKey();
             // Cache the key material encrypted with the session key
-            await keystore.cacheKeyMaterial(
-                exportedKeyMaterial,
+            await keystore.cachePrivateKeyMaterial(
+                privateKeyMaterial,
                 sessionKey.sessionKey,
                 sessionKey.sessionId
             );
@@ -181,7 +175,7 @@ export const KeystoreProvider = ({ children }: any) => {
 
     // TODO: Just return the key material eventually
     // Get the user's Encryption Key Pair as a Public / Private PEM combo
-    const getEncryptionKey = async (): Promise<{ privatePem: String, publicPem: String }> => {
+    const getEncryptionKey = async (): Promise<{ privatePem: string, publicPem: string }> => {
         // TODO: better error handling
         if (!keystore) {
             setError('No keystore');
@@ -196,13 +190,12 @@ export const KeystoreProvider = ({ children }: any) => {
             throw new Error('Missing escrowed data');
         }
         let sessionKey = getSessionKey();
-        const exportKeyMaterial = await keystore.retrieveCachedKeyMaterial(
+        const keyMaterial = await keystore.retrieveCachedPrivateKeyMaterial(
             sessionKey.sessionKey, sessionKey.sessionId
         );
         // Get pems to return
-        let publicPem = escrowedDevice.encryptionKeyPem;
-        // TODO the field in this struct shouldnt be labeled a pem if it isnt one.
-        let privatePem = privatePemWrap(exportKeyMaterial.encryptionKeyPem);
+        let publicPem = escrowedDevice.encryptionPublicKeyPem;
+        let privatePem = keyMaterial.encryptionPrivateKeyPem;
         return {
             privatePem,
             publicPem
@@ -211,7 +204,7 @@ export const KeystoreProvider = ({ children }: any) => {
 
     // TODO: Just return the key material eventually
     // Get the user's API Key as a Private / Public PEM combo
-    const getApiKey = async (): Promise<{ privatePem: String, publicPem: String }> => {
+    const getApiKey = async (): Promise<{ privatePem: string, publicPem: string }> => {
         // TODO: better error handling
         if (!keystore || !keystoreInitialized) {
             setError('Keystore not initialized');
@@ -222,13 +215,12 @@ export const KeystoreProvider = ({ children }: any) => {
             throw new Error('Missing escrowed data');
         }
         let sessionKey = getSessionKey();
-        const exportKeyMaterial = await keystore.retrieveCachedKeyMaterial(
+        const privateKeyMaterial = await keystore.retrieveCachedPrivateKeyMaterial(
             sessionKey.sessionKey, sessionKey.sessionId
         );
         // Get pems to return
-        let publicPem = escrowedDevice.apiKeyPem;
-        // TODO the field in this struct shouldnt be labeled a pem if it isnt one.
-        let privatePem = privatePemWrap(exportKeyMaterial.apiKeyPem);
+        let publicPem = escrowedDevice.apiPublicKeyPem;
+        let privatePem = privateKeyMaterial.apiPrivateKeyPem; 
         return {
             privatePem,
             publicPem
@@ -254,19 +246,18 @@ export const KeystoreProvider = ({ children }: any) => {
     /* Helpers */
 
     // Register a new user in firestore
-    const escrowDevice = async (passphrase: string): Promise<ExportedKeyMaterial> => {
+    const escrowDevice = async (passphrase: string): Promise<PrivateKeyMaterial> => {
         if (!keystore) {
             setError('No keystore');
             throw new Error('No keystore');
         }
         const keyMaterial = await keystore.genKeyMaterial();
+        const privateKeyMaterial = await keystore.exportPrivateKeyMaterial(keyMaterial);
         const escrowedKeyMaterial = await keystore.escrowKeyMaterial(
             keyMaterial,
             passphrase
         );
         setEscrowedDevice(escrowedKeyMaterial);
-        const exportedKeyMaterial = await keystore.exportKeyMaterial(keyMaterial);
-
         // Escrow the user's private key material
         await api
             .escrowDevice(escrowedKeyMaterial)
@@ -274,22 +265,17 @@ export const KeystoreProvider = ({ children }: any) => {
                 setEscrowedDevice(resp);
             })
             .catch((err) => {
-                setError("Error escrowing device: " + err.message);
                 throw new Error("Error escrowing device: " + err.message);
             });
 
-        const apiKeyFingerprint = await fingerprintEcPem(
-            escrowedKeyMaterial.apiKeyPem,
-            EccCurve.P_384,
-            KeyUse.Write
-        ).then(hexFingerprint).catch((err) => {
-            setError('Error fingerprinting API key: ' + err.message);
-            throw new Error('Error fingerprinting API key: ' + err.message);
-        });
+        const apiKeyFingerprint = await fingerprintDeviceApiPublicKeyPem(escrowedKeyMaterial.apiPublicKeyPem)
+            .then(hexFingerprint).catch((err) => {
+                throw new Error('Error fingerprinting API key: ' + err.message);
+            });
 
         // Register the user's public key material
         await api
-            .registerDeviceApiKey(escrowedKeyMaterial.apiKeyPem)
+            .registerDeviceApiKey(escrowedKeyMaterial.apiPublicKeyPem)
             .then((resp: DeviceApiKey) => {
                 if (resp.fingerprint !== apiKeyFingerprint) {
                     setError('Fingerprint mismatch on registration');
@@ -300,7 +286,7 @@ export const KeystoreProvider = ({ children }: any) => {
                 setError(err.message);
                 throw new Error(err.message);
             });
-        return exportedKeyMaterial;
+        return privateKeyMaterial;
     };
 
     // Recovers a device's private key material from escrow

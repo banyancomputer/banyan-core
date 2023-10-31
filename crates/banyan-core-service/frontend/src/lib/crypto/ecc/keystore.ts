@@ -4,6 +4,7 @@ import { ECCNotEnabled } from '../errors';
 import * as ecc from './index';
 import utils from '../utils';
 import KeyStoreBase from '../keystore/base';
+import aes from '../aes/index';
 import {
   Config,
   KeyStore,
@@ -12,7 +13,7 @@ import {
   KeyUse,
   KeyMaterial,
   EscrowedKeyMaterial,
-  ExportedKeyMaterial
+  PrivateKeyMaterial
 } from '../types';
 import { DEFAULT_SALT_LENGTH } from '../constants';
 import pbkdf2 from '../pbkdf2/index';
@@ -45,16 +46,14 @@ export default class ECCKeyStore extends KeyStoreBase implements KeyStore {
     } as KeyMaterial;
   }
   
-  // Escrow Stuff
-
-  async exportKeyMaterial(keyMaterial: KeyMaterial, cfg?: Partial<Config>): Promise<ExportedKeyMaterial> {
+  async exportPrivateKeyMaterial(keyMaterial: KeyMaterial, cfg?: Partial<Config>): Promise<PrivateKeyMaterial> {
     const mergedCfg = config.merge(this.cfg, cfg);
-    const encryptionKeyPem = await ecc.exportPrivateKey(keyMaterial.encryptionKeyPair.privateKey as PrivateKey);
-    const apiKeyPem = await ecc.exportPrivateKey(keyMaterial.apiKeyPair.privateKey as PrivateKey);
+    const encryptionPrivateKeyPem = await ecc.exportPrivateKeyPem(keyMaterial.encryptionKeyPair.privateKey as PrivateKey);
+    const apiPrivateKeyPem = await ecc.exportPrivateKeyPem(keyMaterial.apiKeyPair.privateKey as PrivateKey);
     return {
-      encryptionKeyPem,
-      apiKeyPem
-    } as ExportedKeyMaterial;
+      encryptionPrivateKeyPem,
+      apiPrivateKeyPem
+    } as PrivateKeyMaterial;
   }
 
   // Escrow Key Material and return to the caller
@@ -62,75 +61,62 @@ export default class ECCKeyStore extends KeyStoreBase implements KeyStore {
   async escrowKeyMaterial(keyMaterial: KeyMaterial, passphrase: string, cfg?: Partial<Config>): Promise<EscrowedKeyMaterial> {
     const mergedCfg = config.merge(this.cfg, cfg);
     const salt = utils.randomBuf(DEFAULT_SALT_LENGTH);
+
+    // Get the public key pems from the key material
+    const encryptionPublicKeyPem = await ecc.exportPublicKeyPem(keyMaterial.encryptionKeyPair.publicKey as PublicKey);
+    const apiPublicKeyPem = await ecc.exportPublicKeyPem(keyMaterial.apiKeyPair.publicKey as PublicKey);
+
+    // Get the PrivateKeyMaterial from the key material
+    const encryptionPrivateKeyPem = await ecc.exportPrivateKeyPem(keyMaterial.encryptionKeyPair.privateKey as PrivateKey);
+    const apiPrivateKeyPem = await ecc.exportPrivateKeyPem(keyMaterial.apiKeyPair.privateKey as PrivateKey);
+    let privateKeyMaterial = {
+      encryptionPrivateKeyPem,
+      apiPrivateKeyPem
+    } as PrivateKeyMaterial;
+
+    // Derive a key from the passphrase and salt
     const key = await pbkdf2.deriveKey(
       passphrase,
       salt,
       mergedCfg.hashAlg,
-      ['wrapKey', 'unwrapKey'],
+      ['encrypt'],
       config.symmKeyOpts(mergedCfg)
     );
-    // Get the public key pems from the key material
-    const encryptionKey = await ecc.exportPublicKey(keyMaterial.encryptionKeyPair.publicKey as PublicKey);
-    const encryptionKeyPem = publicPemWrap(encryptionKey);
-    const apiKey = await ecc.exportPublicKey(keyMaterial.apiKeyPair.publicKey as PublicKey);
-    const apiKeyPem = publicPemWrap(apiKey);
-    // Get the wrapped private keys from the key material
-    const wrappedEncryptionKey = await ecc.exportEscrowedPrivateKey(
-      keyMaterial.encryptionKeyPair.privateKey as PrivateKey,
-      key
+
+    const privateKeyMaterialString = JSON.stringify(privateKeyMaterial);
+    const encryptedPrivateKeyMaterial = await aes.encrypt(
+      privateKeyMaterialString,
+      key,
     );
-    const wrappedApiKey = await ecc.exportEscrowedPrivateKey(
-      keyMaterial.apiKeyPair.privateKey as PrivateKey,
-      key
-    );
+    
     // Return the escrowed key material
     return {
-      encryptionKeyPem,
-      apiKeyPem,
-      wrappedEncryptionKey,
-      wrappedApiKey,
-      passKeySalt: utils.arrBufToBase64(salt)
+      encryptionPublicKeyPem,
+      apiPublicKeyPem,
+      encryptedPrivateKeyMaterial,
+      passKeySalt: utils.arrBufToBase64(salt),
     } as EscrowedKeyMaterial;
   }
 
   // Recover Key Material from escrowed key material and return to the caller
   // Performs recovery of the key material from the platform
-  async recoverKeyMaterial(escrowedKeyMaterial: EscrowedKeyMaterial, passphrase: string, cfg?: Partial<Config>): Promise<ExportedKeyMaterial> {
+  async recoverKeyMaterial(escrowedKeyMaterial: EscrowedKeyMaterial, passphrase: string, cfg?: Partial<Config>): Promise<PrivateKeyMaterial> {
     const mergedCfg = config.merge(this.cfg, cfg);
     const salt = utils.base64ToArrBuf(escrowedKeyMaterial.passKeySalt);
+    console.log('Salt: ', salt);
     const key = await pbkdf2.deriveKey(
       passphrase,
       salt,
       mergedCfg.hashAlg,
-      ['wrapKey', 'unwrapKey'],
+      ['decrypt'],
       config.symmKeyOpts(mergedCfg)
     );
-    // Import the key pairs from the escrowed key material
-    const encryptionPublicKey = publicPemUnwrap(escrowedKeyMaterial.encryptionKeyPem);
-    const encryptionKeyPair = await ecc.importEscrowedKeyPair(
-      encryptionPublicKey,
-      escrowedKeyMaterial.wrappedEncryptionKey,
-      key,
-      mergedCfg.curve,
-      KeyUse.Exchange
+    
+    let privateKeyMaterialString = await aes.decrypt(
+      escrowedKeyMaterial.encryptedPrivateKeyMaterial,
+      key
     );
-    const apiPublicKey = publicPemUnwrap(escrowedKeyMaterial.apiKeyPem);
-    const apiKeyPair = await ecc.importEscrowedKeyPair(
-      apiPublicKey,
-      escrowedKeyMaterial.wrappedApiKey,
-      key,
-      mergedCfg.curve,
-      KeyUse.Write
-    );
-    // Export the private key pems from the key material
-    const encryptionKey= await ecc.exportPrivateKey(encryptionKeyPair.privateKey as PrivateKey);
-    const apiKey= await ecc.exportPrivateKey(apiKeyPair.privateKey as PrivateKey);
-    const encryptionKeyPem = privatePemWrap(encryptionKey);
-    const apiKeyPem = privatePemWrap(apiKey);
-    // Return the exported key material
-    return {
-      encryptionKeyPem,
-      apiKeyPem
-    } as ExportedKeyMaterial;
+    let privateKeyMaterial = JSON.parse(privateKeyMaterialString);
+    return privateKeyMaterial as PrivateKeyMaterial;
   }
 }
