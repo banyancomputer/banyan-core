@@ -86,8 +86,8 @@ impl TaskStore for SqliteTaskStore {
             r#"SELECT id FROM background_tasks
                    WHERE queue_name = $1
                       AND state IN ('new', 'retry')
-                      AND scheduled_to_run_at <= DATETIME('now')
-                   ORDER BY scheduled_to_run_at ASC, scheduled_at ASC
+                      AND DATETIME(scheduled_to_run_at) <= DATETIME('now')
+                   ORDER BY DATETIME(scheduled_to_run_at) ASC, DATETIME(scheduled_at) ASC
                    LIMIT 1;"#,
             queue_name,
         )
@@ -118,8 +118,8 @@ impl TaskStore for SqliteTaskStore {
         let pending_retry_tasks = sqlx::query_scalar!(
             r#"SELECT id FROM background_tasks
                    WHERE state IN ('in_progress', 'retry')
-                      AND started_at <= $1
-                   ORDER BY started_at ASC
+                      AND DATETIME(started_at) <= $1
+                   ORDER BY DATETIME(started_at) ASC
                    LIMIT 10;"#,
             timed_out_start_threshold,
         )
@@ -174,7 +174,7 @@ impl TaskStore for SqliteTaskStore {
         .fetch_one(&self.pool)
         .await?;
 
-        tracing::info!(?task, "located task to be run");
+        tracing::info!(?chosen_task, "located task to be run");
 
         Ok(Some(chosen_task))
     }
