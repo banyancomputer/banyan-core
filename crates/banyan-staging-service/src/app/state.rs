@@ -30,16 +30,11 @@ impl State {
         LocalFileSystem::new_with_prefix(&upload_directory)
             .map_err(Error::InaccessibleUploadDirectory)?;
 
-        let db_url = match config.db_url() {
-            Some(du) => du.to_string(),
-            None => match std::env::var("DATABASE_URL") {
-                Ok(du) => du,
-                Err(_) => "sqlite://:memory:".to_string(),
-            },
-        };
-
-        // Configure the database instance we're going use
-        let database = database::connect(&db_url).await?;
+        let db_url = config.db_url();
+        let db_url = Url::parse(db_url).map_err(Error::InvalidDatabaseUrl)?;
+        let database = database::connect(&db_url)
+            .await
+            .map_err(Error::DatabaseSetup)?;
 
         // Parse the platform authentication key (this will be used to communicate with the
         // metadata service).
@@ -81,8 +76,16 @@ impl State {
         self.platform_verification_key.clone()
     }
 
+    pub fn platform_auth_key(&self) -> PlatformAuthKey {
+        self.platform_auth_key.clone()
+    }
+
     pub fn upload_directory(&self) -> PathBuf {
         self.upload_directory.clone()
+    }
+
+    pub fn database(&self) -> Database {
+        self.database.clone()
     }
 }
 
@@ -117,5 +120,5 @@ pub fn fingerprint_key(keys: &ES384KeyPair) -> String {
         .iter()
         .map(|byte| format!("{byte:02x}"))
         .collect::<Vec<_>>()
-        .join(":")
+        .join("")
 }

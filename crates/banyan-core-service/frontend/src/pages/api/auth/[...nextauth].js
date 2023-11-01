@@ -2,7 +2,7 @@ import NextAuth from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import SequelizeAdapter from '@auth/sequelize-adapter';
 import client, { models } from '@/lib/db/models';
-import { AccountFactory, AllowedEmailFactory, EscrowedDeviceFactory } from '@/lib/db';
+import { AccountFactory, EscrowedDeviceFactory } from '@/lib/db';
 import { joinProviderId } from '@/utils';
 
 export const authOptions = {
@@ -17,7 +17,7 @@ export const authOptions = {
 		signIn: '/login',
 		signOut: 'login',
 		error: '/login',
-        verifyRequest: '/login'
+		verifyRequest: '/login'
 	},
 	providers: [
 		GoogleProvider({
@@ -52,10 +52,9 @@ export const authOptions = {
 			).then((device) => {
 				let escrowedDevice = device.toJSON();
 				return {
-					apiKeyPem: escrowedDevice.apiKeyPem,
-					encryptionKeyPem: escrowedDevice.encryptionKeyPem,
-					wrappedApiKey: escrowedDevice.wrappedApiKey,
-					wrappedEncryptionKey: escrowedDevice.wrappedEncryptionKey,
+					apiPublicKeyPem: escrowedDevice.apiPublicKeyPem,
+					encryptionPublicKeyPem: escrowedDevice.encryptionPublicKeyPem,
+					encryptedPrivateKeyMaterial: escrowedDevice.encryptedPrivateKeyMaterial,
 					passKeySalt: escrowedDevice.passKeySalt
 				};
 			}).catch((_err) => {
@@ -66,14 +65,8 @@ export const authOptions = {
 			return session;
 		},
 
-		async signIn({ account, profile }) {
-			// Prevent sign in if the account is not allowed
-			if (account.provider !== 'google') {
-				return false;
-			}
-			const allowed = await AllowedEmailFactory.readByEmail(profile.email);
-
-			return !!allowed;
+		async signIn({ account }) {
+			return account.provider == 'google'
 		},
 	},
 };

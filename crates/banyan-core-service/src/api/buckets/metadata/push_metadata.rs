@@ -1,4 +1,4 @@
-use std::collections::{BTreeSet, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 use std::str::FromStr;
 
 use axum::extract::{BodyStream, Path, State};
@@ -6,6 +6,7 @@ use axum::headers::ContentType;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::{Json, TypedHeader};
+use banyan_task::TaskLikeExt;
 use cid::{multibase::Base, Cid};
 use futures::{TryStream, TryStreamExt};
 use jwt_simple::prelude::*;
@@ -18,6 +19,7 @@ use crate::app::{AppState, ServiceSigningKey};
 use crate::database::models::MetadataState;
 use crate::database::Database;
 use crate::extractors::{ApiIdentity, DataStore};
+use crate::tasks::{PruneBlock, PruneBlocksTask};
 use crate::utils::car_buffer::CarBuffer;
 
 /// The default quota we assume each storage host / staging service to provide
@@ -182,7 +184,7 @@ async fn approve_key_fingerprints(
 ) -> Result<(), PushMetadataError> {
     for device_key_fingerprint in keys.iter() {
         sqlx::query!(
-            "UPDATE bucket_keys SET approved = 'true' WHERE bucket_id = $1 AND fingerprint = $2;",
+            "UPDATE bucket_keys SET approved = 1 WHERE bucket_id = $1 AND fingerprint = $2;",
             bucket_id,
             device_key_fingerprint,
         )
@@ -346,7 +348,7 @@ async fn mark_current(database: &Database, metadata_id: &str) -> Result<(), sqlx
     .await?;
 
     sqlx::query!(
-        "UPDATE metadata SET state = 'outdated' WHERE id != $1 AND state = 'current';",
+        "UPDATE metadata SET state = 'outdated' WHERE id <> $1 AND state = 'current';",
         metadata_id,
     )
     .execute(database)
@@ -489,6 +491,7 @@ where
 struct UniqueBlockLocation {
     block_id: String,
     metadata_id: String,
+    storage_host_id: String,
 }
 
 async fn expire_deleted_blocks(
@@ -499,6 +502,7 @@ async fn expire_deleted_blocks(
 ) -> Result<(), PushMetadataError> {
     let account_id = api_id.account_id.clone();
     let bucket_id = bucket_id.to_string();
+    let mut prune_blocks_tasks_map: HashMap<Uuid, Vec<PruneBlock>> = HashMap::new();
     let mut transaction = database
         .begin()
         .await
@@ -509,11 +513,13 @@ async fn expire_deleted_blocks(
             .to_string_of_base(Base::Base64Url)
             .map_err(PushMetadataError::InvalidCid)?;
 
+        // Get all the unique blocks locations for this CID [(block_id, metadata_id, storage_host_id)]
         let unique_block_locations = sqlx::query_as!(
             UniqueBlockLocation,
-            r#"SELECT blocks.id AS block_id, m.id AS metadata_id
+            r#"SELECT blocks.id AS block_id, m.id AS metadata_id, sh.id AS storage_host_id
                 FROM block_locations AS bl
                 JOIN blocks ON blocks.id = bl.block_id
+                JOIN storage_hosts AS sh ON sh.id = bl.storage_host_id
                 JOIN metadata AS m ON m.id = bl.metadata_id
                 JOIN buckets AS b ON b.id = m.bucket_id
                 WHERE b.account_id = $1 AND b.id = $2 AND blocks.cid = $3;"#,
@@ -529,19 +535,53 @@ async fn expire_deleted_blocks(
             return Err(PushMetadataError::NoBlock(original_cid));
         }
 
+        // Collect all the unique blocks into a single set
+        let mut unique_blocks: BTreeSet<(String, String)> = BTreeSet::new();
+        // Collect all the unique blocks into a map of prune blocks tasks for different storage hosts
         for unique_block_location in unique_block_locations {
-            sqlx::query!(
+            let unique_block = (
+                unique_block_location.block_id.clone(),
+                unique_block_location.metadata_id.clone(),
+            );
+            unique_blocks.insert(unique_block);
+            let prune_block = PruneBlock {
+                normalized_cid: normalized_cid.clone(),
+                metadata_id: Uuid::parse_str(&unique_block_location.metadata_id)
+                    .map_err(PushMetadataError::DatabaseUuidCorrupted)?,
+            };
+            let storage_host_id = Uuid::parse_str(&unique_block_location.storage_host_id)
+                .map_err(PushMetadataError::DatabaseUuidCorrupted)?;
+            prune_blocks_tasks_map
+                .entry(storage_host_id)
+                .or_default()
+                .push(prune_block.clone());
+        }
+
+        // Iterate over the collected unique blocks and update their expired_at to now
+        for unique_block in unique_blocks {
+            // Update all the rows in place
+            sqlx::query_scalar!(
                 r#"UPDATE block_locations AS bl
                 SET expired_at = CURRENT_TIMESTAMP
                 WHERE bl.block_id = $1 AND bl.metadata_id = $2;"#,
-                unique_block_location.block_id,
-                unique_block_location.metadata_id,
+                unique_block.0,
+                unique_block.1,
             )
             .execute(&mut *transaction)
             .await
             .map_err(PushMetadataError::UnableToExpireBlocks)?;
         }
     }
+
+    // Create background tasks for our storage hosts to notify them to prune blocks
+    for (storage_host_id, prune_blocks) in prune_blocks_tasks_map {
+        PruneBlocksTask::new(storage_host_id, prune_blocks)
+            .enqueue_with_connection::<banyan_task::SqliteTaskStore>(&mut transaction)
+            .await
+            .map_err(PushMetadataError::UnableEnqueuePruneBlocksTask)?;
+    }
+
+    // Commit the txn
     transaction
         .commit()
         .await
@@ -563,6 +603,9 @@ pub enum PushMetadataError {
 
     #[error("failed to record metadata size and hash: {0}")]
     DataMetaStoreFailed(sqlx::Error),
+
+    #[error("corrupted uuid provided: {0}")]
+    DatabaseUuidCorrupted(uuid::Error),
 
     #[error("failed to mark bucket key as approved: {0}")]
     KeyApprovalFailed(sqlx::Error),
@@ -612,11 +655,14 @@ pub enum PushMetadataError {
     #[error("unable to identify how much data user has stored with each storage provider")]
     UnableToIdentifyStoredAmount(sqlx::Error),
 
-    #[error("couldn't locate existing storage authorizations for account: {0}")]
+    #[error("unable to locate existing storage authorizations for account: {0}")]
     UnableToRetrieveAuthorizations(sqlx::Error),
 
-    #[error("couldn't mark blocks as expired: {0}")]
+    #[error("unable to mark blocks as expired: {0}")]
     UnableToExpireBlocks(sqlx::Error),
+
+    #[error("unable to enqueue a task to prune blocks {0}")]
+    UnableEnqueuePruneBlocksTask(banyan_task::TaskStoreError),
 
     #[error("failed to store metadata on disk: {0}, marking as failed might have had an error as well: {1:?}")]
     UploadStoreFailed(StoreMetadataError, Option<sqlx::Error>),
@@ -662,7 +708,7 @@ pub struct PushMetadataRequest {
     pub metadata_cid: String,
 
     pub expected_data_size: i64,
-
+    /// Fingerprints of Public Bucket Keys
     #[serde(rename = "valid_keys")]
     pub included_key_fingerprints: Vec<String>,
 

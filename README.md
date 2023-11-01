@@ -7,6 +7,7 @@ Some cleanup from prior runs, assumes you're in the root of this repository:
 ```
 rm -rf crates/banyan-core-service/data/s* \
   crates/banyan-core-service/data/uploads/* \
+  crates/banyan-staging-service/data/server* \
   crates/banyan-staging-service/data/pl* \
   crates/banyan-staging-service/data/uploads/*
 ```
@@ -60,7 +61,6 @@ root of the repository.
 ```
 cd crates/banyan-core-server/frontend
 yarn install
-./bin/allow_list.sh $YOUR_EMAIL
 cp .env.example .env.dev
 ```
 
@@ -100,7 +100,7 @@ where the imported key's service lives.
 
 ```
 cd crates/banyan-staging-service
-cargo run -- --listen 127.0.0.1:3002 --db-url sqlite://./data/server.db
+cargo run -- --listen 127.0.0.1:3002
 ```
 
 Here we're listening on the address the script registered for the staging

@@ -41,7 +41,7 @@ interface TombInterface {
     purgeSnapshot: (id: string) => void;
     deleteFile: (bucket: Bucket, path: string[], name: string) => void;
     completeDeviceKeyRegistration: (fingerprint: string) => Promise<void>;
-    approveBucketAccess: (id: string) => Promise<void>;
+    approveBucketAccess: (bucket: Bucket, bucket_key_id: string) => Promise<void>;
     removeBucketAccess: (id: string) => Promise<void>;
     restore: (bucket: Bucket, snapshot: WasmSnapshot) => Promise<void>;
 };
@@ -99,7 +99,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
             const key = await getEncryptionKey();
             let wasm_bukets: Bucket[] = [];
             for (let bucket of buckets) {
-                const mount = await tomb!.mount(bucket.id, key);
+                const mount = await tomb!.mount(bucket.id, key.privatePem);
                 const files: BrowserObject[] = await mount.ls([]) || [];
                 const snapshots = await tomb!.listBucketSnapshots(bucket.id);
                 wasm_bukets.push({
@@ -117,11 +117,14 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     const getBucketsKeys = async () => {
         setAreBucketsLoading(true);
         tombMutex(tomb, async tomb => {
+            const key = await getEncryptionKey();
             let wasm_bukets: Bucket[] = [];
             for (let bucket of buckets) {
+                const mount = await tomb!.mount(bucket.id, key.privatePem);
                 const keys = await tomb!.listBucketKeys(bucket.id);
                 wasm_bukets.push({
                     ...bucket,
+                    mount,
                     keys
                 });
             }
@@ -157,7 +160,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
         const key = await getEncryptionKey();
         await tombMutex(tomb, async tomb => {
-            const mount = await tomb!.mount(bucket?.id, key);
+            const mount = await tomb!.mount(bucket?.id, key.privatePem);
             setSelectedBucket({ ...bucket, mount });
         })
     };
@@ -166,8 +169,8 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     const createBucket = async (name: string, storageClass: string, bucketType: string) => {
         await tombMutex(tomb, async tomb => {
             const key = await getEncryptionKey();
-            let wasmBucket = await tomb!.createBucket(name, storageClass, bucketType, key.publicKey);
-            let mount = await tomb!.mount(wasmBucket.id(), key);
+            let wasmBucket = await tomb!.createBucket(name, storageClass, bucketType, key.publicPem);
+            let mount = await tomb!.mount(wasmBucket.id(), key.privatePem);
             const files = await mount.ls([]);
             const snapshots = await tomb!.listBucketSnapshots(wasmBucket.id());
             const keys = await tomb!.listBucketKeys(wasmBucket.id())
@@ -218,7 +221,14 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         return '';
     };
 
-    const getBucketKeys = async (id: string) => await tombMutex(tomb, async tomb => await tomb!.listBucketKeys(id));
+    /** Approves access key for bucket */
+    const approveBucketAccess = async (bucket: Bucket, bucket_key_id: string) => {
+        await tombMutex(bucket.mount, async mount => {
+            await mount.shareWith(bucket_key_id);
+        });
+    };
+
+    const getBucketKeys = async (bucket_id: string) => await tombMutex(tomb, async tomb => await tomb!.listBucketKeys(bucket_id));
 
     /** Returns list of snapshots for selected bucket */
     const getBucketShapshots = async (id: string) => await tombMutex(tomb, async tomb => await tomb!.listBucketSnapshots(id));
@@ -228,11 +238,6 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         return await tombMutex(tomb, async tomb => await tomb!.completeDeviceKeyRegistration(fingerprint));
     };
 
-    /** Approves access key for bucket */
-    const approveBucketAccess = async (id: string) => {
-        /** TODO:  connect approveBucketAccess method when in will be implemented.  */
-        // await tomb.approveBucketAccess(id);
-    };
 
     /** Deletes access key for bucket */
     const removeBucketAccess = async (id: string) => {
@@ -349,7 +354,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
                 const apiKey = await getApiKey();
                 const TombWasm = (await import('tomb-wasm-experimental')).TombWasm;
                 const tomb = new TombWasm(
-                    apiKey,
+                    apiKey.privatePem,
                     session.accountId,
                     process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
                     process.env.NEXT_PUBLIC_DATA_URL || 'http://localhost:3002',
