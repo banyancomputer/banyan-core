@@ -2,17 +2,15 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useIntl } from 'react-intl';
 
 import { KeyActions } from '@components/KeyManagement/KeyActions';
-import { Bucket } from '@/lib/interfaces/bucket';
+import { Bucket as IBucket } from '@/lib/interfaces/bucket';
 import { ActionsCell } from '@/components/common/ActionsCell';
-import { fingerprintEcPem } from '@/lib/crypto/utils';
-import Bucket from '@/pages/bucket/[id]';
 import { prettyFingerprintApiKeyPem } from '@/utils/fingerprint';
 
-export const KeyManagementTable: React.FC<{ buckets: Bucket[] }> = ({ buckets }) => {
+export const KeyManagementTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
     const { messages } = useIntl();
     const tableRef = useRef<HTMLDivElement | null>(null);
     const [tableScroll, setTableScroll] = useState(0);
-    const [fingerprints, setFingerprints] = useState(new Map([]));
+    const [fingerprints, setFingerprints] = useState<Map<string, string>>(new Map([]));
 
     useEffect(() => {
         /** Weird typescript issue with scrollTop which exist, but not for typescript */
@@ -25,7 +23,7 @@ export const KeyManagementTable: React.FC<{ buckets: Bucket[] }> = ({ buckets })
 
     useEffect(() => {
         async function getFingerprints() {
-            let fingerprintMap = new Map([]);
+            let fingerprintMap: Map<string, string> = new Map([]);
             for (const bucket of buckets) {
                 for (const index in bucket.keys) {
                     const key = bucket.keys[index];
@@ -65,9 +63,9 @@ export const KeyManagementTable: React.FC<{ buckets: Bucket[] }> = ({ buckets })
                     </tr>
                 </thead>
                 <tbody>
-                    {buckets.map(bucket => {
-                        return (<React.Fragment key={bucket.id}>
-                            <tr className="bg-table-cellBackground text-gray-900 border-b-2 border-y-border-regular ">
+                    {buckets.map(bucket =>
+                        <React.Fragment key={bucket.id}>
+                            <tr className="bg-table-cellBackground text-gray-900 border-b-2 border-y-border-regular">
                                 <td className="px-6 py-4">{bucket.name}</td>
                                 <td className="px-6 py-4"></td>
                                 <td className="px-6 py-4"></td>
@@ -95,9 +93,7 @@ export const KeyManagementTable: React.FC<{ buckets: Bucket[] }> = ({ buckets })
                                     </tr>
                                 })
                             }
-                        </React.Fragment>);
-                    }
-
+                        </React.Fragment>
                     )}
                 </tbody>
             </table >

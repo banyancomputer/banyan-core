@@ -83,10 +83,9 @@ CREATE TABLE escrowed_devices (
     REFERENCES accounts(id)
     ON DELETE CASCADE,
 
-  api_key_pem TEXT NOT NULL,
-  encryption_key_pem TEXT NOT NULL,
-  wrapped_api_key TEXT NOT NULL,
-  wrapped_encryption_key TEXT NOT NULL,
+  api_public_key_pem TEXT NOT NULL,
+  encryption_public_key_pem TEXT NOT NULL,
+  encrypted_private_key_material TEXT NOT NULL,
   pass_key_salt TEXT NOT NULL,
 
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

@@ -75,7 +75,7 @@ impl TaskLike for PruneBlocksTask {
         let storage_host_url = Url::parse(&storage_host_url)
             .map_err(|_| PruneBlocksTaskError::SqlxError(sqlx::Error::RowNotFound))?;
         let storage_host_url = storage_host_url
-            .join("/api/core/prune")
+            .join("/api/v1/core/prune")
             .map_err(|_| PruneBlocksTaskError::SqlxError(sqlx::Error::RowNotFound))?;
 
         // Construct the client to handle the prune request

@@ -5,7 +5,7 @@ import utils from '../utils';
 import config from '../config';
 import { 
   Config,
-  ExportedKeyMaterial,
+  PrivateKeyMaterial,
   CachedKeyMaterial
  } from '../types';
 import { DEFAULT_SALT_LENGTH } from '../constants';
@@ -47,8 +47,8 @@ export default class KeyStoreBase {
   /* Cache Management */
 
   // Cache exported key material associated with the current session
-  async cacheKeyMaterial(
-    keyMaterial: ExportedKeyMaterial,
+  async cachePrivateKeyMaterial(
+    privateKeyMaterial: PrivateKeyMaterial,
     sessionKey: string,
     sessionId: string,
     cfg?: Partial<Config>
@@ -62,14 +62,14 @@ export default class KeyStoreBase {
       ['encrypt'],
       config.symmKeyOpts(mergedCfg)
     );
-    const exportedKeyMaterial = JSON.stringify(keyMaterial);
-    const encryptedExportedKeyMaterial = await aes.encrypt(
-      exportedKeyMaterial,
+    const privateKeyMaterialString = JSON.stringify(privateKeyMaterial);
+    const encryptedPrivateKeyMaterial = await aes.encrypt(
+      privateKeyMaterialString,
       key,
     );
     const cachedKeyMaterial: CachedKeyMaterial = {
-      encryptedExportedKeyMaterial,
-      salt: utils.arrBufToBase64(salt),
+      encryptedPrivateKeyMaterial,
+      sessionKeySalt: utils.arrBufToBase64(salt),
     };
     const cachedKeyMaterialStr = JSON.stringify(cachedKeyMaterial);
     const cachedKeyMaterialBlob = new Blob([cachedKeyMaterialStr], {
@@ -79,11 +79,11 @@ export default class KeyStoreBase {
   }
 
   // Retrieve cached key material associated with the current session
-  async retrieveCachedKeyMaterial(
+  async retrieveCachedPrivateKeyMaterial(
     sessionKey: string,
     sessionId: string,
     cfg?: Partial<Config>
-  ): Promise<ExportedKeyMaterial> {
+  ): Promise<PrivateKeyMaterial> {
     const mergedCfg = config.merge(this.cfg, cfg);
     return idb.getBlob(sessionId, this.store).then((blob) => {
       if (blob === null) {
@@ -93,7 +93,7 @@ export default class KeyStoreBase {
         const cachedKeyMaterial: CachedKeyMaterial = JSON.parse(
           cachedKeyMaterialStr
         );
-        const salt = utils.base64ToArrBuf(cachedKeyMaterial.salt);
+        const salt = utils.base64ToArrBuf(cachedKeyMaterial.sessionKeySalt);
         return pbkdf2.deriveKey(
           sessionKey,
           salt,
@@ -102,11 +102,11 @@ export default class KeyStoreBase {
           config.symmKeyOpts(mergedCfg)
         ).then((key) => {
           return aes.decrypt(
-            cachedKeyMaterial.encryptedExportedKeyMaterial,
+            cachedKeyMaterial.encryptedPrivateKeyMaterial,
             key
           );
-        }).then((exportedKeyMaterialStr) => {
-          return JSON.parse(exportedKeyMaterialStr);
+        }).then((privateKeyMaterialStr) => {
+          return JSON.parse(privateKeyMaterialStr);
         }).catch((err) => {
           throw new Error('Failed to decrypt cached key material');
         });

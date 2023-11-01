@@ -52,10 +52,9 @@ export const authOptions = {
 			).then((device) => {
 				let escrowedDevice = device.toJSON();
 				return {
-					apiKeyPem: escrowedDevice.apiKeyPem,
-					encryptionKeyPem: escrowedDevice.encryptionKeyPem,
-					wrappedApiKey: escrowedDevice.wrappedApiKey,
-					wrappedEncryptionKey: escrowedDevice.wrappedEncryptionKey,
+					apiPublicKeyPem: escrowedDevice.apiPublicKeyPem,
+					encryptionPublicKeyPem: escrowedDevice.encryptionPublicKeyPem,
+					encryptedPrivateKeyMaterial: escrowedDevice.encryptedPrivateKeyMaterial,
 					passKeySalt: escrowedDevice.passKeySalt
 				};
 			}).catch((_err) => {
