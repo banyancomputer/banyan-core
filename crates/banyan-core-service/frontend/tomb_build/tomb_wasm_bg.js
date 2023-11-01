@@ -1333,11 +1333,6 @@ export function __wbindgen_string_new(arg0, arg1) {
     return addHeapObject(ret);
 };
 
-export function __wbindgen_bigint_from_u64(arg0) {
-    const ret = BigInt.asUintN(64, arg0);
-    return addHeapObject(ret);
-};
-
 export function __wbg_tombwasm_new(arg0) {
     const ret = TombWasm.__wrap(arg0);
     return addHeapObject(ret);
@@ -1348,13 +1343,18 @@ export function __wbg_wasmbucket_new(arg0) {
     return addHeapObject(ret);
 };
 
+export function __wbg_wasmbucketkey_new(arg0) {
+    const ret = WasmBucketKey.__wrap(arg0);
+    return addHeapObject(ret);
+};
+
 export function __wbg_wasmmount_new(arg0) {
     const ret = WasmMount.__wrap(arg0);
     return addHeapObject(ret);
 };
 
-export function __wbg_wasmbucketkey_new(arg0) {
-    const ret = WasmBucketKey.__wrap(arg0);
+export function __wbindgen_bigint_from_u64(arg0) {
+    const ret = BigInt.asUintN(64, arg0);
     return addHeapObject(ret);
 };
 
@@ -1866,13 +1866,13 @@ export function __wbindgen_memory() {
     return addHeapObject(ret);
 };
 
-export function __wbindgen_closure_wrapper3134(arg0, arg1, arg2) {
-    const ret = makeMutClosure(arg0, arg1, 1194, __wbg_adapter_32);
+export function __wbindgen_closure_wrapper3137(arg0, arg1, arg2) {
+    const ret = makeMutClosure(arg0, arg1, 1197, __wbg_adapter_32);
     return addHeapObject(ret);
 };
 
-export function __wbindgen_closure_wrapper3148(arg0, arg1, arg2) {
-    const ret = makeMutClosure(arg0, arg1, 1197, __wbg_adapter_35);
+export function __wbindgen_closure_wrapper3151(arg0, arg1, arg2) {
+    const ret = makeMutClosure(arg0, arg1, 1200, __wbg_adapter_35);
     return addHeapObject(ret);
 };
 
