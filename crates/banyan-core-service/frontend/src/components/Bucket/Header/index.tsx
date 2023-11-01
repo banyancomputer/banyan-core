@@ -32,7 +32,7 @@ const BucketHeader = () => {
     return (
         <div className="mb-4 flex w-full justify-between items-center">
             <h2 className="text-xl font-semibold">
-                <Link href="/">{`${messages.myBuckets}`}</Link>
+                <Link href="/">{`${messages.myDrives}`}</Link>
                 {' > '}
                 <Link href={`/bucket/${bucketId}`}>{selectedBucket?.name}</Link>
                 {folderLocation.map((folder, index) =>

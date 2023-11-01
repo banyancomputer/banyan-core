@@ -24,7 +24,7 @@ const Buckets: NextPageWithLayout = () => {
     const { messages } = useIntl();
 
     const uploadFile = () => {
-        openModal(<UploadFileModal  path={[]}/>);
+        openModal(<UploadFileModal path={[]} />);
     };
 
     useEffect(() => {
@@ -39,7 +39,7 @@ const Buckets: NextPageWithLayout = () => {
         <section className="py-9 px-4" id="buckets">
             <div className="mb-4 flex w-full justify-between items-center">
                 <h2 className="text-xl font-semibold">
-                    {`${messages.myBuckets}`}
+                    {`${messages.myDrives}`}
                 </h2>
                 <button
                     className="btn-highlighted gap-2 w-40 py-2 px-4"
@@ -59,7 +59,7 @@ const Buckets: NextPageWithLayout = () => {
                     :
                     <div className="h-full flex flex-col items-center justify-center saturate-0">
                         <Image src={emptyIcon} alt="emptyIcon" />
-                        <p className="mt-4">{`${messages.noBuckets}`}</p>
+                        <p className="mt-4">{`${messages.noDrives}`}</p>
                     </div>
                 }
             </Fallback>

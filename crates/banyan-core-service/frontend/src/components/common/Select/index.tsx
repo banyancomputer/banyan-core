@@ -61,7 +61,7 @@ export const Select: React.FC<SelectProps> = ({ initialOption, onChange, options
                     {initialOption ? initialOption : null}
                     {options.map((option, index) =>
                         <li
-                            className="flex justify-between items-center p-2.5 transition-all hover:bg-hover cursor-pointer"
+                            className="flex justify-between items-center p-2.5 transition-all hover:bg-bucket-bucketHoverBackground cursor-pointer"
                             key={index}
                             onClick={() => handleSelect(option)}
                         >

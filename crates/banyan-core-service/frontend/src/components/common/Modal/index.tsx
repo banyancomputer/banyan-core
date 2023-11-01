@@ -23,7 +23,7 @@ export const Modal = () => {
                     onClick={close}
                 >
                     <div
-                        className="relative p-6 bg-secondaryBackground rounded-xl"
+                        className="relative p-6 bg-modalBackground rounded-xl"
                         ref={modalRef}
                     >
                         {onBack &&

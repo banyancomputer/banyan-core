@@ -8,14 +8,14 @@ import { useTomb } from '@/contexts/tomb';
 import { ToastNotifications } from '@/utils/toastNotifications';
 import { useFolderLocation } from '@/hooks/useFolderLocation';
 
-export const RenameFileModal: React.FC<{ bucket: Bucket; file: BrowserObject; path: string[]}> = ({ bucket, file, path }) => {
+export const RenameFileModal: React.FC<{ bucket: Bucket; file: BrowserObject; path: string[] }> = ({ bucket, file, path }) => {
     const { closeModal } = useModal();
     const { moveTo, getSelectedBucketFiles, selectBucket } = useTomb();
     const { messages } = useIntl();
     const [newName, setNewName] = useState('');
     const folderLocation = useFolderLocation();
 
-    const save = async() => {
+    const save = async () => {
         try {
             await moveTo(bucket, [...path, file.name], [...path, newName]);
             ToastNotifications.notify(`${messages.fileWasRenamed}`, <MdDone size="20px" />);
@@ -44,7 +44,7 @@ export const RenameFileModal: React.FC<{ bucket: Bucket; file: BrowserObject; pa
                     <input
                         className="mt-2 input w-full h-11 py-3 px-4 rounded-lg border-border-darken shadow-sm focus:outline-none"
                         type="text"
-                        placeholder={`${messages.enterNewBucketName}`}
+                        placeholder={`${messages.enterNewDriveName}`}
                         value={newName}
                         onChange={event => setNewName(event.target.value)}
                     />

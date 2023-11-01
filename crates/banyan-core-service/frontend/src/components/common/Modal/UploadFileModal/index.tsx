@@ -31,13 +31,13 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null; folder?: Browse
         setSelectedFolder(option);
     };
 
-    const handleChange = async(event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         if (!event.target.files) { return; }
 
         setFiles(Array.from(event.target.files).map(file => ({ file, isUploaded: false })));
     };
 
-    const handleDrop = async(event: React.DragEvent<HTMLInputElement | HTMLLabelElement>) => {
+    const handleDrop = async (event: React.DragEvent<HTMLInputElement | HTMLLabelElement>) => {
         event.preventDefault();
         event.stopPropagation();
 
@@ -46,12 +46,12 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null; folder?: Browse
         setFiles(Array.from(event.dataTransfer.files).map(file => ({ file, isUploaded: false })));
     };
 
-    const handleDrag = async(event: React.DragEvent<HTMLInputElement | HTMLLabelElement>) => {
+    const handleDrag = async (event: React.DragEvent<HTMLInputElement | HTMLLabelElement>) => {
         event.preventDefault();
         event.stopPropagation();
     };
 
-    const upload = async() => {
+    const upload = async () => {
         if (!files.length) { return; }
         try {
             closeModal();
@@ -77,13 +77,13 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null; folder?: Browse
             {
                 !bucket &&
                 <div>
-                    <span className="inline-block mb-1 text-xs font-normal">{`${messages.selectBucket}`}:</span>
+                    <span className="inline-block mb-1 text-xs font-normal">{`${messages.selectDrive}`}:</span>
                     <Select
                         selectedOption={selectedBucket}
                         onChange={selectBucket}
                         options={buckets.filter(bucket => bucket.bucketType !== 'backup').map(bucket => ({ value: bucket, label: bucket.name }))}
-                        placeholder={`${messages.selectBucket}`}
-                        initialOption={<AddNewOption label={`${messages.createNewBucket}`} action={addNewBucket} />}
+                        placeholder={`${messages.selectDrive}`}
+                        initialOption={<AddNewOption label={`${messages.createNewDrive}`} action={addNewBucket} />}
                     />
                 </div>
             }

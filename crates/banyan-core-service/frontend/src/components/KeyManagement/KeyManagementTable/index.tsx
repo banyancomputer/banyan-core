@@ -47,7 +47,7 @@ export const KeyManagementTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }
             className="max-h-[calc(100vh-320px)] overflow-x-auto border-2 border-border-regular bg-secondaryBackground rounded-xl"
         >
             <table className="table table-pin-rows w-full text-text-600 rounded-xl">
-                <thead className="border-b-table-cellBackground text-xxs font-normal text-text-600">
+                <thead className="border-b-reg text-xxs font-normal text-text-600 border-b-2 border-border-regular">
                     <tr className="border-b-table-cellBackground bg-table-headBackground border-none">
                         <th className="py-3 px-6 w-44 whitespace-break-spaces text-left font-medium">{`${messages.locationForKey}`}</th>
                         <th className="py-3 px-6 text-left font-medium whitespace-pre">
@@ -65,7 +65,7 @@ export const KeyManagementTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }
                 <tbody>
                     {buckets.map(bucket =>
                         <React.Fragment key={bucket.id}>
-                            <tr className="bg-table-cellBackground text-gray-900">
+                            <tr className="bg-table-cellBackground text-gray-900 border-b-2 border-y-border-regular">
                                 <td className="px-6 py-4">{bucket.name}</td>
                                 <td className="px-6 py-4"></td>
                                 <td className="px-6 py-4"></td>
