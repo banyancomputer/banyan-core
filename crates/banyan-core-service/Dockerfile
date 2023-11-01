@@ -3,8 +3,10 @@
 # produced binary to the final production container later.
 FROM docker.io/library/rust:1.71.0 AS build
 
-ARG CI_BUILD_REF=
-ARG SERVICE_NAME=banyan-core-service
+ARG CI_BUILD_REF
+ARG SERVICE_NAME
+
+RUN test -n "$SERVICE_NAME" || (echo "ERROR: SERVICE_NAME build argument needs to be provided during container build" && false)
 
 RUN mkdir -p /usr/src/build
 WORKDIR /usr/src/build

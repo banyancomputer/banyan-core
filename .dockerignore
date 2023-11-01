@@ -1,2 +1,2 @@
-crates/banyan-core-service/frontend/node_modules
-target
+crates/banyan-core-service/frontend/node_modules/
+target/

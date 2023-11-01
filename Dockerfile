@@ -3,10 +3,11 @@
 # produced binary to the final production container later.
 FROM docker.io/library/rust:1.71.0 AS build
 
+<<<<<<< HEAD
 ARG CI_BUILD_REF=development-container
-ARG SERVICE_NAME
+ARG CRATE_NAME
 
-RUN test -n "$SERVICE_NAME" || { echo "Service name must be passed to container build"; exit 1; }
+RUN test -n "$CRATE_NAME" || { echo "Crate name must be passed to container build"; exit 1; }
 
 RUN mkdir -p /usr/src/build
 #WORKDIR /usr/src/build
@@ -15,7 +16,7 @@ RUN mkdir -p /usr/src/build
 # binary project, to allow the dependencies to build and be cached. This
 # prevents rebuilding them in the future if only the service's source has
 # changed.
-#RUN cargo init --name $SERVICE_NAME
+#RUN cargo init --name $CRATE_NAME
 #COPY Cargo.toml Cargo.lock /usr/src/build
 #RUN cargo build --release
 
@@ -32,11 +33,11 @@ COPY . /usr/src/build
 # system from outside.
 ENV CI_BUILD_REF=$CI_BUILD_REF
 
-WORKDIR /usr/src/build/crates/$SERVICE_NAME
+WORKDIR /usr/src/build/crates/$CRATE_NAME
 
-RUN cargo install --bins --path ./
-RUN strip --strip-unneeded /usr/local/cargo/bin/$SERVICE_NAME
-RUN mv /usr/local/cargo/bin/$SERVICE_NAME /usr/local/cargo/bin/service
+RUN cargo install --bin $CRATE_NAME --path ./
+RUN strip --strip-unneeded /usr/local/cargo/bin/$CRATE_NAME
+RUN mv /usr/local/cargo/bin/$CRATE_NAME /usr/local/cargo/bin/service
 
 # Use an absolutely minimal container with the barest permissions to limit
 # sources of security vulnerabilities, and ensure that any security issues are

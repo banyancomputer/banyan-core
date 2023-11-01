@@ -46,11 +46,9 @@ if which docker &> /dev/null; then
 fi
 
 # Create the actual container
-cp -f ../../Cargo.lock ./
-${CONTAINER_RUNTIME} build -t ${FULL_IMAGE_NAME} \
+(cd ../..; ${CONTAINER_RUNTIME} build -t ${FULL_IMAGE_NAME} \
   --build-arg CI_BUILD_REF=${COMMIT_ID} \
-  --build-arg SERVICE_NAME=${SERVICE_NAME} .
-rm -f Cargo.lock
+  --build-arg CRATE_NAME=banyan-core-service .)
 
 ${CONTAINER_RUNTIME} save -o ${TMP_IMAGE} ${FULL_IMAGE_NAME} &>/dev/null
 
