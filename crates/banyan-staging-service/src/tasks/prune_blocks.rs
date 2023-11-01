@@ -70,18 +70,19 @@ impl TaskLike for PruneBlocksTask {
             .map_err(PruneBlocksTaskError::SqlxError)?;
 
         for prune_block in &self.prune_blocks {
+            let metadata_id = prune_block.metadata_id.to_string();
             // Get the block id
             let unique_uploads_block = sqlx::query_as!(
                 UniqueUploadsBlock,
                 r#"
-                    SELECT u.id AS upload_id, blocks.id AS block_id
+                    SELECT u.id AS upload_id, b.id AS block_id
                     FROM uploads_blocks AS ub
-                    JOIN blocks ON blocks.id = ub.block_id
+                    JOIN blocks AS b ON b.id = ub.block_id
                     JOIN uploads AS u ON u.id = ub.upload_id
-                    WHERE blocks.cid = $1 AND u.metadata_id = $2;
+                    WHERE b.cid = $1 AND u.metadata_id = $2;
                 "#,
                 prune_block.normalized_cid,
-                prune_block.metadata_id
+                metadata_id
             )
             .fetch_one(&mut *transaction)
             .await

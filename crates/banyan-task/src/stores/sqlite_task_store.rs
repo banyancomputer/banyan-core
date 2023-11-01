@@ -75,8 +75,8 @@ impl TaskStore for SqliteTaskStore {
         queue_name: &str,
         _task_names: &[&str],
     ) -> Result<Option<Task>, TaskStoreError> {
-        let mut connection = self.pool.acquire().await?;
-        let mut transaction = connection.begin().await?;
+        // TODO: Wow these first two transactions should really be using a transaction
+        let mut connection = self.pool.clone().acquire().await?;
 
         // todo: need to dynamically build up the task_names portion of this query since sqlx
         // doesn't support generation of IN queries or have a concept of arrays for sqlite.l
@@ -85,14 +85,15 @@ impl TaskStore for SqliteTaskStore {
             r#"SELECT id FROM background_tasks
                    WHERE queue_name = $1
                       AND state IN ('new', 'retry')
-                      AND scheduled_to_run_at <= DATETIME('now')
-                   ORDER BY scheduled_to_run_at ASC, scheduled_at ASC
+                      AND DATETIME(scheduled_to_run_at) <= DATETIME('now')
+                   ORDER BY DATETIME(scheduled_to_run_at) ASC, DATETIME(scheduled_at) ASC
                    LIMIT 1;"#,
             queue_name,
         )
-        .fetch_optional(&mut *transaction)
+        .fetch_optional(&mut *connection)
         .await?;
 
+        let mut connection = self.pool.clone().acquire().await?;
         // If we found it claim it for this worker in the same transaction
         //
         // todo: should add a worker identifier when picking up a job for both logging/tracking as
@@ -105,18 +106,18 @@ impl TaskStore for SqliteTaskStore {
                        WHERE id = $1;"#,
                 id,
             )
-            .execute(&mut *transaction)
+            .execute(&mut *connection)
             .await?;
         }
 
-        transaction.commit().await?;
+        let mut connection = self.pool.clone().acquire().await?;
 
         let timed_out_start_threshold = time::OffsetDateTime::now_utc() - TASK_EXECUTION_TIMEOUT;
         let pending_retry_tasks = sqlx::query_scalar!(
             r#"SELECT id FROM background_tasks
                    WHERE state IN ('in_progress', 'retry')
-                      AND started_at <= $1
-                   ORDER BY started_at ASC
+                      AND DATETIME(started_at) <= $1
+                   ORDER BY DATETIME(started_at) ASC
                    LIMIT 10;"#,
             timed_out_start_threshold,
         )
@@ -131,6 +132,7 @@ impl TaskStore for SqliteTaskStore {
         // extra complicated logic we don't need right now
         if let Ok(task_ids) = pending_retry_tasks {
             for id in task_ids.into_iter() {
+                let mut connection = self.pool.clone().acquire().await?;
                 // we don't care of these fail either, but we'll stop attempting to retry them once
                 // we hit an error. Something else can handle the trouble
 
@@ -142,7 +144,7 @@ impl TaskStore for SqliteTaskStore {
                           WHERE id = $1"#,
                     id,
                 )
-                .execute(&self.pool)
+                .execute(&mut *connection)
                 .await;
 
                 if state_update_res.is_err() {
@@ -161,19 +163,20 @@ impl TaskStore for SqliteTaskStore {
         };
 
         // pull the full current version of the task
+        let mut connection = self.pool.clone().acquire().await?;
         let chosen_task = sqlx::query_as!(
             Task,
             "SELECT * FROM background_tasks WHERE id = $1;",
             chosen_task_id
         )
-        .fetch_one(&self.pool)
+        .fetch_one(&mut *connection)
         .await?;
 
         Ok(Some(chosen_task))
     }
 
     async fn retry(&self, id: String) -> Result<Option<String>, TaskStoreError> {
-        let mut connection = self.pool.acquire().await?;
+        let mut connection = self.pool.clone().acquire().await?;
         let mut transaction = connection.begin().await?;
 
         // We only care about tasks that are capable of being retried so some filters here allow
@@ -209,7 +212,7 @@ impl TaskStore for SqliteTaskStore {
     }
 
     async fn update_state(&self, id: String, new_state: TaskState) -> Result<(), TaskStoreError> {
-        let mut connection = self.pool.acquire().await?;
+        let mut connection = self.pool.clone().acquire().await?;
 
         // this could probably use some protection against invalid state transitions but I'll leave
         // that as future work for now.

@@ -1,10 +1,10 @@
+import { importPublicKeyPem } from './ecc';
 import { webcrypto } from 'one-webcrypto';
 import * as uint8arrays from 'uint8arrays';
 import errors from './errors';
 import { CharSize, EccCurve, ExportKeyFormat, KeyUse, Msg, PublicKey } from './types';
 import { DEFAULT_SALT_LENGTH } from './constants';
 import { publicPemUnwrap } from '@/utils';
-import { importPublicKey } from './ecc/keys';
 
 /* Cryto */
 
@@ -22,20 +22,20 @@ export function eccCurveToBitLength(namedCurve: EccCurve): number {
 	return bitLength;	
 }
 
+
 /**
- * Fingerprint an ec public key by its PEM
+ * Fingerprint an ec device api public key by its PEM
  */
-export async function fingerprintEcPem(
-	pem: string, curve: EccCurve, usage: KeyUse
+export async function fingerprintDeviceApiPublicKeyPem(
+	pem: string
 ): Promise<Uint8Array> {
-	const spki = publicPemUnwrap(pem);
-	const publicKey = await importPublicKey(
-		spki,
-		curve,
-		usage
+	const publicKey = await importPublicKeyPem(
+		pem,
+		EccCurve.P_384,
+		KeyUse.Write
 	);
 	return fingerprintEcPublicKey(publicKey);
-}
+  }
 
 /**
  * Fingerprint an ec public key -- does not generalize to curves other than P-384
@@ -235,7 +235,6 @@ export async function structuralClone(obj: any) {
 
 export default {
 	joinCipherText,
-	fingerprintEcPublicKey,
 	prettyFingerprint,
 	eccCurveToBitLength,
 	splitCipherText,
