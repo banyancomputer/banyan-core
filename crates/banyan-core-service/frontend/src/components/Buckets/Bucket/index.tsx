@@ -105,8 +105,11 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
                 <BucketIcon />
             </div>
             <div className="flex flex-col gap-2 items-start text-xs font-normal">
-                <div className={`px-2 rounded-full text-mainBackground ${storageClassNames[bucket.storageClass]} capitalize`}>
-                    {`${messages[bucket.storageClass]}`}
+                <div className='flex items-center justify-between'>
+                    <div className={`px-2 rounded-full text-mainBackground ${storageClassNames[bucket.storageClass]} capitalize`}>
+                        {`${messages[bucket.storageClass]}`}
+                    </div>
+                    <div></div>
                 </div>
                 <div className="capitalize">{bucket.bucketType}</div>
                 {bucket.snapshots.length ? <div>{bucket.snapshots.length} {`${messages.coldSnapshots}`}</div> : null}
