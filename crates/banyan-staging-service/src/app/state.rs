@@ -36,29 +36,22 @@ impl State {
             .await
             .map_err(Error::DatabaseSetup)?;
 
-        // Parse the platform authentication key (this will be used to communicate with the
-        // metadata service).
-        let key_bytes =
-            std::fs::read(config.platform_auth_key_path()).map_err(Error::UnreadableSessionKey)?;
-        let pem = String::from_utf8_lossy(&key_bytes);
-        let auth_raw = ES384KeyPair::from_pem(&pem).map_err(Error::BadAuthenticationKey)?;
-        let fingerprint = fingerprint_key(&auth_raw);
-        let platform_auth_key = auth_raw.with_key_id(&fingerprint);
+        let platform_auth_key = load_or_create_platform_auth_key(config.platform_base_url(), &config.platform_auth_key_path())?;
 
         // Parse the public grant verification key (this will be the one coming from the platform)
         let key_bytes = std::fs::read(config.platform_verification_key_path())
             .map_err(Error::UnreadableSessionKey)?;
         let pem = String::from_utf8_lossy(&key_bytes);
-        let platform_verification_key =
-            ES384PublicKey::from_pem(&pem).map_err(Error::BadAuthenticationKey)?;
+        let platform_pub_key = ES384PublicKey::from_pem(&pem).map_err(Error::BadAuthenticationKey)?;
+        let platform_verification_key = PlatformVerificationKey::new(platform_pub_key);
 
         Ok(Self {
             database,
             hostname: config.hostname(),
 
-            platform_auth_key: PlatformAuthKey::new(config.platform_base_url(), platform_auth_key),
+            platform_auth_key,
             platform_base_url: config.platform_base_url(),
-            platform_verification_key: PlatformVerificationKey::new(platform_verification_key),
+            platform_verification_key,
 
             upload_directory: config.upload_directory(),
         })
@@ -121,4 +114,45 @@ pub fn fingerprint_key(keys: &ES384KeyPair) -> String {
         .map(|byte| format!("{byte:02x}"))
         .collect::<Vec<_>>()
         .join("")
+}
+
+fn load_or_create_platform_auth_key(
+    platform_url: reqwest::Url,
+    private_path: &PathBuf,
+) -> Result<PlatformAuthKey, Error> {
+    let mut auth_raw = if private_path.exists() {
+        let key_bytes =
+            std::fs::read(&private_path).map_err(Error::UnreadableSessionKey)?;
+        let private_pem = String::from_utf8_lossy(&key_bytes);
+
+        ES384KeyPair::from_pem(&private_pem).map_err(Error::BadAuthenticationKey)?
+    } else {
+        let new_key = ES384KeyPair::generate();
+        let private_pem = new_key.to_pem().expect("fresh keys to export");
+
+        std::fs::write(private_path, &private_pem).map_err(Error::PlatformAuthKeyWriteFailed)?;
+
+        let public_spki = new_key
+            .public_key()
+            .to_pem()
+            .expect("fresh key to have public component");
+
+        let mut public_path = private_path.clone();
+        public_path.set_extension("public");
+        std::fs::write(public_path, public_spki).map_err(Error::PublicKeyWriteFailed)?;
+
+        new_key
+    };
+
+    let fingerprint = fingerprint_key(&auth_raw);
+    let auth_raw = auth_raw.with_key_id(&fingerprint);
+
+    let mut fingerprint_path = private_path.clone();
+    fingerprint_path.set_extension("fingerprint");
+    if !fingerprint_path.exists() {
+        std::fs::write(fingerprint_path, fingerprint)
+            .map_err(Error::FingerprintWriteFailed)?;
+    }
+
+    Ok(PlatformAuthKey::new(platform_url, auth_raw))
 }
