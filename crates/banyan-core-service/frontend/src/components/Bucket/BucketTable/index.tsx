@@ -71,8 +71,8 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
             </div>
             <div >
                 <table className="table table-pin-rows w-full text-text-600 rounded-xl table-fixed">
-                    <thead className="border-b-border-regular text-xxs font-normal text-text-900">
-                        <tr className="border-b-border-regular bg-secondaryBackground font-normal">
+                    <thead className="border-b-border-regular text-xxs border-b-2 font-normal text-text-900">
+                        <tr className=" bg-secondaryBackground font-normal">
                             <th className="flex items-center gap-3 px-6 py-4 text-left font-medium">
                                 <SortCell
                                     criteria="name"
@@ -89,7 +89,7 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                                     text={`${messages.lastEdited}`}
                                 />
                             </th>
-                            <th className="px-6 py-4 text-left font-medium w-36">
+                            <th className="px-6 py-4 text-left font-medium w-36  ">
                                 <SortCell
                                     criteria="fileSize"
                                     onChange={sort}

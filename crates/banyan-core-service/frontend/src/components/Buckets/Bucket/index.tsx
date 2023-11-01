@@ -67,7 +67,7 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
 
     return (
         <div
-            className="px-3 py-6 border-1 rounded-xl cursor-pointer transition-all bg-secondaryBackground hover:bg-bucket-bucketHoverBackground"
+            className="px-3 py-6 rounded-xl cursor-pointer transition-all bg-secondaryBackground hover:bg-bucket-bucketHoverBackground"
             ref={bucketRef}
             onContextMenu={onContextMenu}
             onClick={openBucket}

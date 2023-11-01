@@ -56,11 +56,14 @@ module.exports = {
 				bucket: {
 					bucketIconBackground: 'var(--bucket-icon-background)',
 					bucketHoverBackground: 'var(--bucket-hover-background)',
+					bucketBorder: 'var(--bucket-border)',
 					bucketClasshot: 'var(--bucket-class-hot)',
 					bucketClasswarm: 'var(--bucket-class-hot)',
 					bucketClasscold: 'var(--bucket-class-cold)',
 					actionsBackground: 'var(--bucket-actions-background)',
+					actionsText: 'var(--bucket-actions-text)',
 				},
+				modalBackground: 'var(--modal-background)',
 				border: {
 					darken: 'var(--darken-border)',
 					regular: 'var(--regular-border)',
