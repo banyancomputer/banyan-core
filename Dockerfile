@@ -3,7 +3,6 @@
 # produced binary to the final production container later.
 FROM docker.io/library/rust:1.71.0 AS build
 
-<<<<<<< HEAD
 ARG CI_BUILD_REF=development-container
 ARG CRATE_NAME
 
