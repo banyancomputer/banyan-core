@@ -1,35 +1,41 @@
 # Do most of our build in one container, we don't need the intermediate
 # artifacts or build requirements in our release container. We'll copy in our
 # produced binary to the final production container later.
-FROM docker.io/library/rust:1.70.0 AS build
+FROM docker.io/library/rust:1.71.0 AS build
 
-RUN mkdir -p /usr/src/build/crates
+ARG CI_BUILD_REF
+ARG CRATE_NAME
+
+RUN test -n "$CRATE_NAME" || (echo "ERROR: CRATE_NAME build argument needs to be provided during container build" && false)
+
+RUN mkdir -p /usr/src/build
 WORKDIR /usr/src/build
-
-# This must be specified, the run command here provides friendly errors as a
-# bandaid over the inability to mark an argument as required.
-ARG SERVICE
-RUN if [ -z "$SERVICE" ]; then echo 'ERROR: container build requires SERVICE argument to be provided wiht the --build-arg flag.' && exit 1; fi
 
 # Perform a release build only using the dependencies and an otherwise empty
 # binary project, to allow the dependencies to build and be cached. This
 # prevents rebuilding them in the future if only the service's source has
 # changed.
-#
-# If additional repository local crates are needed in the future (such as
-# library crates), those will need to be added via new COPY commands before the
-# build command.
-COPY Cargo.toml Cargo.lock ./
-RUN cargo new crates/$SERVICE
-COPY crates/$SERVICE/Cargo.toml /usr/src/build/crates/$SERVICE/
-RUN cargo build -p $SERVICE --release
+#RUN cargo init --name $CRATE_NAME
+#COPY Cargo.toml Cargo.lock /usr/src/build
+#RUN cargo build --release
 
 # Copy in the actual service source code, and perform the release build
 # (install is release mode by default).
-COPY crates/$SERVICE/build.rs /usr/src/build/crates/$SERVICE/build.rs
-COPY crates/$SERVICE/migrations /usr/src/build/crates/$SERVICE/migrations
-COPY crates/$SERVICE/src /usr/src/build/crates/$SERVICE/src
-RUN cargo install --path crates/$SERVICE/ --bins
+#COPY build.rs /usr/src/build/build.rs
+#COPY migrations /usr/src/build/migrations
+#COPY src /usr/src/build/src
+#COPY .sqlx /usr/src/build/.sqlx
+
+# The container build environment doesn't have access to the entire git repo
+# only the immediate sources. We get around this by passing it into the build
+# system from outside.
+ENV CI_BUILD_REF=$CI_BUILD_REF
+
+COPY . /usr/src/build
+
+RUN (cd crates/$CRATE_NAME; cargo install --bin $CRATE_NAME --path ./)
+RUN strip --strip-unneeded /usr/local/cargo/bin/$CRATE_NAME
+RUN mv /usr/local/cargo/bin/$CRATE_NAME /usr/local/cargo/bin/service
 
 # Use an absolutely minimal container with the barest permissions to limit
 # sources of security vulnerabilities, and ensure that any security issues are
@@ -37,9 +43,8 @@ RUN cargo install --path crates/$SERVICE/ --bins
 FROM gcr.io/distroless/cc-debian11:nonroot
 
 # Bring in just our final compiled artifact
-COPY --from=build /usr/local/cargo/bin/$SERVICE /usr/bin/$SERVICE
+COPY --from=build /usr/local/cargo/bin/service /usr/bin/service
 
-EXPOSE 3000
 VOLUME /data
 
-CMD ["/usr/bin/$SERVICE"]
+ENTRYPOINT ["/usr/bin/service"]
