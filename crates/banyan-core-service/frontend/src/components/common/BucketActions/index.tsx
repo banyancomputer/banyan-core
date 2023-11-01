@@ -85,7 +85,7 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const uploadAction = new Action(`${messages.upload}`, <FiUpload size="18px" />, upload);
     const createSnapshotAction = new Action(`${messages.takeColdSnapshot}`, <HiOutlineLightningBolt size="18px" />, takeSnapshot, `${messages.tooltipExplanation}`);
     const viewBucketSnapshotsAction = bucket.snapshots.length ? new Action(`${messages.viewColdSnapshots}`, <MdRestore size="18px" />, viewBucketSnapshots) : null;
-    const viewBucketVersionsAction = new Action(`${messages.viewBucketVersions}`, <MdRestore size="18px" />, viewBucketVersions);
+    const viewBucketVersionsAction = new Action(`${messages.viewDriveVersions}`, <MdRestore size="18px" />, viewBucketVersions);
     const renameAction = new Action(`${messages.rename}`, <FiEdit size="18px" />, rename);
     const createFolderAction = new Action(`${messages.createNewFolder}`, <PiFolderNotchPlusBold size="18px" />, createFolder);
     const restoreColdVersionAction = new Action(`${messages.restoreCold}`, <MdOutlineRestoreFromTrash size="18px" />, retoreColdVersion);
