@@ -13,25 +13,25 @@ export const RenameBucketModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const [newName, setNewName] = useState('');
     const { } = useTomb();
 
-    const rename = async() => {
+    const rename = async () => {
         try {
             /** TODO: add rename function after it will be added into tomb-wasm */
-            ToastNotifications.notify(`${messages.bucket} "${bucket.name}" ${messages.wasRenamed}`, <MdDone size="20px" />);
+            ToastNotifications.notify(`${messages.drive} "${bucket.name}" ${messages.wasRenamed}`, <MdDone size="20px" />);
         } catch (error: any) { };
     };
 
     return (
         <div className="w-modal flex flex-col gap-8" >
             <div>
-                <h4 className="text-m font-semibold ">{`${messages.renameBucket}`}</h4>
+                <h4 className="text-m font-semibold ">{`${messages.renameDrive}`}</h4>
             </div>
             <div>
                 <label>
-                    {`${messages.bucketName}`}
+                    {`${messages.driveName}`}
                     <input
                         className="mt-2 input w-full h-11 py-3 px-4 rounded-lg border-border-darken focus:outline-none"
                         type="text"
-                        placeholder={`${messages.enterNewBucketName}`}
+                        placeholder={`${messages.enterNewDriveName}`}
                         value={newName}
                         onChange={event => setNewName(event.target.value)}
                     />

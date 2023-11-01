@@ -39,7 +39,7 @@ export const Navigation = () => {
         openModal(<CreateBucketModal />);
     };
 
-    const logout = async() => {
+    const logout = async () => {
         await signOut();
         await purgeKeystore();
     };
@@ -71,7 +71,7 @@ export const Navigation = () => {
                 >
                     <Home />
                     <span className="flex-grow">
-                        {`${messages.myBuckets}`}
+                        {`${messages.myDrives}`}
                     </span>
                     <span
                         onClick={toggleBucketsVisibility}
@@ -118,7 +118,7 @@ export const Navigation = () => {
                     className="mt-2 flex items-center gap-3 py-2 px-3 text-navigation-textSecondary"
                 >
                     <Plus />
-                    {`${messages.newBucket}`}
+                    {`${messages.newDrive}`}
                 </button>
             </div>
             <div className="flex flex-col gap-2 mt-6 pl-2 pt-3 pr-8 text-navigation-textSecondary text-xs">
