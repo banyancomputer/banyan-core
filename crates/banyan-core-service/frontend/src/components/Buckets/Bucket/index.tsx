@@ -8,6 +8,7 @@ import { popupClickHandler } from '@/utils';
 import { BucketActions } from '@/components/common/BucketActions';
 
 import { BucketIcon } from '@static/images/buckets';
+import { Dots, Question } from '@static/images/common';
 
 export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
     const { messages } = useIntl();
@@ -40,7 +41,9 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
         setIsContextMenuVisible(true);
     };
 
-    const openBucket = () => {
+    const openBucket = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+        // @ts-ignore
+        if (event.target.id === 'bucketContextMenu') { return; }
         push(`/bucket/${bucket.id}`);
     };
 
@@ -81,15 +84,34 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
             >
                 <BucketActions bucket={bucket} />
             </div>
-            <h4 className="mb-3 text-text-900 font-semibold">
+            <h4 className="mb-3 flex items-center justify-between text-text-900 font-semibold">
                 {bucket.name}
+                <div
+                    className="p-1 cursor-pointer"
+                    onClick={event => {
+                        event.stopPropagation();
+                        onContextMenu(event);
+                    }}
+                    id="bucketContextMenu"
+                >
+                    <span className='pointer-events-none'>
+                        <Dots />
+                    </span>
+                </div>
             </h4>
-            <div className="mb-6 flex justify-center py-10 bg-bucket-bucketIconBackground rounded-xl">
+            <div
+                className="mb-6 flex justify-center py-10 bg-bucket-bucketIconBackground rounded-xl"
+            >
                 <BucketIcon />
             </div>
             <div className="flex flex-col gap-2 items-start text-xs font-normal">
-                <div className={`px-2 rounded-full text-mainBackground ${storageClassNames[bucket.storageClass]} capitalize`}>
-                    {`${messages[bucket.storageClass]}`}
+                <div className='flex items-center justify-between w-full'>
+                    <div className={`px-2 rounded-full text-mainBackground ${storageClassNames[bucket.storageClass]} capitalize`}>
+                        {`${messages[bucket.storageClass]}`}
+                    </div>
+                    <div className="text-text-400">
+                        <Question width="24px" height="24px" />
+                    </div>
                 </div>
                 <div className="capitalize">{bucket.bucketType}</div>
                 {bucket.snapshots.length ? <div>{bucket.snapshots.length} {`${messages.coldSnapshots}`}</div> : null}

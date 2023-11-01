@@ -15,7 +15,7 @@ export const CreateBucketModal = () => {
     const [storageClass, setStorageClass] = useState('hot');
     const isBucketDataFilled = useMemo(() =>
         !!bucketType && !!(bucketName.length >= 3),
-    [bucketName, bucketName]);
+        [bucketName, bucketName]);
 
     const bucketTypes = [
         new Selectoption('Interactive', 'interactive'),
@@ -33,7 +33,7 @@ export const CreateBucketModal = () => {
         setBucketName(event.target.value);
     };
 
-    const create = async() => {
+    const create = async () => {
         try {
             await createBucket(bucketName, storageClass, bucketType);
             closeModal();
@@ -45,29 +45,29 @@ export const CreateBucketModal = () => {
     return (
         <div className="w-modal flex flex-col gap-5" >
             <div>
-                <h4 className="text-m font-semibold ">{`${messages.createNewBucket}`}</h4>
+                <h4 className="text-m font-semibold ">{`${messages.createNewDrive}`}</h4>
             </div>
             <div>
                 <label>
-                    {`${messages.bucketName}`}
+                    {`${messages.driveName}`}
                     <input
                         className="mt-2 input w-full h-11 py-3 px-4 rounded-lg border-border-darken focus:outline-none"
                         type="text"
-                        placeholder={`${messages.enterNewBucketName}`}
+                        placeholder={`${messages.enterNewDriveName}`}
                         value={bucketName}
                         onChange={changeBucketName}
                     />
                 </label>
             </div>
-            <div>
-                <label className="inline-block mb-1 text-xs font-normal">{`${messages.bucketType}`}:</label>
+            {/* <div>
+                <label className="inline-block mb-1 text-xs font-normal">{`${messages.driveType}`}:</label>
                 <Select
                     selectedOption={bucketType}
                     onChange={selectBucketType}
                     options={bucketTypes}
-                    placeholder={`${messages.bucketType}`}
+                    placeholder={`${messages.driveType}`}
                 />
-            </div>
+            </div> */}
             <div className="flex items-center gap-3 text-xs" >
                 <button
                     className="btn-secondary flex-grow py-3 px-4"

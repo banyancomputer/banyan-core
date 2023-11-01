@@ -135,7 +135,7 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
             {!bucketCopy.files.length ?
                 <div className="h-full flex m-12 flex-col items-center justify-center saturate-0">
                     <Image src={emptyIcon} alt="emptyIcon" />
-                    <p className="mt-4">{`${messages.bucketIsEmpty}`}</p>
+                    <p className="mt-4">{`${messages.driveIsEmpty}`}</p>
                 </div>
                 :
                 null

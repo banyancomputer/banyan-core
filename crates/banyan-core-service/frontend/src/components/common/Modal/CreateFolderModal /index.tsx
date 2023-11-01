@@ -18,7 +18,7 @@ export const CreateFolderModal: React.FC<{ bucket: Bucket; onSuccess?: () => voi
         setfolderName(event.target.value);
     };
 
-    const create = async() => {
+    const create = async () => {
         try {
             await createDirectory(bucket, path, folderName);
             onSuccess();
@@ -38,7 +38,7 @@ export const CreateFolderModal: React.FC<{ bucket: Bucket; onSuccess?: () => voi
                     <input
                         className="mt-2 input w-full h-11 py-3 px-4 rounded-lg border-border-darken focus:outline-none"
                         type="text"
-                        placeholder={`${messages.enterNewBucketName}`}
+                        placeholder={`${messages.enterNewDriveName}`}
                         value={folderName}
                         onChange={changeName}
                     />

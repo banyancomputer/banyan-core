@@ -70,6 +70,7 @@ module.exports = {
 				},
 				text: {
 					200: 'var(--text-200)',
+					400: 'var(--text-400)',
 					600: 'var(--text-600)',
 					800: 'var(--text-800)',
 					900: 'var(--text-900)',

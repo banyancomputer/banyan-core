@@ -6,6 +6,9 @@ import { SessionProvider } from 'next-auth/react';
 
 import en from '@static/locales/en.json';
 import fr from '@static/locales/fr.json';
+import de from '@static/locales/de.json';
+import ja from '@static/locales/ja.json';
+import zh from '@static/locales/zh.json';
 import { NextPageWithLayout } from '@/pages/page';
 import { KeystoreProvider } from '@/contexts/keystore';
 import { TombProvider } from '@/contexts/tomb';
@@ -23,6 +26,9 @@ import '@static/styles/globals.css';
 const TRANSLATES: Record<string, Record<string, string>> = {
     en,
     fr,
+    de,
+    ja,
+    zh
 };
 
 interface AppPropsWithLayout extends AppProps {
