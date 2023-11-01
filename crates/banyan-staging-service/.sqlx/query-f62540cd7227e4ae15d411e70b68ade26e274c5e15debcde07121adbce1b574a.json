@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                    SELECT u.id AS upload_id, b.id AS block_id\n                    FROM uploads_blocks AS ub\n                    JOIN blocks AS b ON b.id = ub.block_id\n                    JOIN uploads AS u ON u.id = ub.upload_id\n                    WHERE b.cid = $1 AND u.metadata_id = $2;\n                ",
+  "describe": {
+    "columns": [
+      {
+        "name": "upload_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "block_id",
+        "ordinal": 1,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "f62540cd7227e4ae15d411e70b68ade26e274c5e15debcde07121adbce1b574a"
+}
