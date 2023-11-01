@@ -8,7 +8,7 @@ import { popupClickHandler } from '@/utils';
 import { BucketActions } from '@/components/common/BucketActions';
 
 import { BucketIcon } from '@static/images/buckets';
-import { Dots } from '@static/images/common';
+import { Dots, Question } from '@static/images/common';
 
 export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
     const { messages } = useIntl();
@@ -105,11 +105,13 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
                 <BucketIcon />
             </div>
             <div className="flex flex-col gap-2 items-start text-xs font-normal">
-                <div className='flex items-center justify-between'>
+                <div className='flex items-center justify-between w-full'>
                     <div className={`px-2 rounded-full text-mainBackground ${storageClassNames[bucket.storageClass]} capitalize`}>
                         {`${messages[bucket.storageClass]}`}
                     </div>
-                    <div></div>
+                    <div className="text-text-400">
+                        <Question width="24px" height="24px" />
+                    </div>
                 </div>
                 <div className="capitalize">{bucket.bucketType}</div>
                 {bucket.snapshots.length ? <div>{bucket.snapshots.length} {`${messages.coldSnapshots}`}</div> : null}
