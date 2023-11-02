@@ -19,6 +19,8 @@ interface TombInterface {
     isTrashLoading: boolean;
     areBucketsLoading: boolean;
     selectedBucket: Bucket | null;
+    error: string;
+    setError: React.Dispatch<React.SetStateAction<string>>;
     getBuckets: () => Promise<void>;
     getBucketsFiles: () => Promise<void>;
     getBucketsKeys: () => Promise<void>;
@@ -62,6 +64,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     const [usageLimit, setUsageLimit] = useState<number>(0);
     const [isTrashLoading, setIsTrashLoading] = useState<boolean>(true);
     const [areBucketsLoading, setAreBucketsLoading] = useState<boolean>(false);
+    const [error, setError] = useState<string>('');
     const folderLocation = useFolderLocation();
 
     /** Prevents rust recursion error. */
@@ -69,8 +72,8 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         const release = await mutex.acquire();
         try {
             return await callback(tomb);
-        } catch (err) {
-            console.error('tombMutex', err);
+        } catch (err: any) {
+            setError(err.message);
         } finally {
             release();
         }
@@ -360,8 +363,8 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
                     process.env.NEXT_PUBLIC_DATA_URL || 'http://localhost:3002',
                 );
                 setTomb(await tomb);
-            } catch (err) {
-                console.error(err);
+            } catch (error: any) {
+                setError(error.message);
             }
         })();
     }, [keystoreInitialized, session?.accountId, escrowedDevice]);
@@ -372,7 +375,9 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
                 try {
                     await getBuckets();
                     await getStorageUsageState();
-                } catch (error: any) { };
+                } catch (error: any) {
+                    setError(error.message);
+                };
             })();
         };
     }, [tomb]);
@@ -380,12 +385,12 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     return (
         <TombContext.Provider
             value={{
-                tomb, buckets, trash, usedStorage, usageLimit, areBucketsLoading, isTrashLoading, selectedBucket,
+                tomb, buckets, trash, usedStorage, usageLimit, areBucketsLoading, isTrashLoading, selectedBucket, error,
                 getBuckets, getBucketsFiles, getBucketsKeys, selectBucket, getSelectedBucketFiles,
                 takeColdSnapshot, getBucketShapshots, createBucket, deleteBucket, getTrashBucket,
                 getFile, createDirectory, uploadFile, getBucketKeys, purgeSnapshot,
                 removeBucketAccess, approveBucketAccess, completeDeviceKeyRegistration, shareFile, download, moveTo,
-                restore, deleteFile, makeCopy, getExpandedFolderFiles
+                restore, deleteFile, makeCopy, getExpandedFolderFiles, setError
             }}
         >
             {children}

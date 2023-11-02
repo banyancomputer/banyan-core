@@ -3,6 +3,8 @@ import { useRouter } from 'next/router';
 
 import { Header } from '@components/common/Header';
 import { Navigation } from '@components/common/Navigation';
+import { ErrorBanner } from '@/components/common/ErrorBanner';
+
 import { useKeystore } from '@/contexts/keystore';
 import { useModal } from '@/contexts/modals';
 
@@ -26,6 +28,7 @@ const BaseLayout: React.FC<IBaseLayout> = ({ children }) => {
             <Navigation />
             <div className="flex-grow">
                 <Header />
+                <ErrorBanner />
                 {children}
             </div>
         </section>
