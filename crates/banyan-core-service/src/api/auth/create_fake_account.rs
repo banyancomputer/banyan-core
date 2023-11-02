@@ -45,9 +45,6 @@ pub async fn handler(
 
 #[derive(Debug, thiserror::Error)]
 pub enum CreateFakeAccountError {
-    #[error("failed to create an account associated with dummy user: {0}")]
-    AccountCreationFailed(sqlx::Error),
-
     #[error("failed to create API key for dummy use: {0}")]
     ApiKeyCreationFailed(sqlx::Error),
 

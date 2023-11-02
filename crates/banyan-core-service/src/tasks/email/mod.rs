@@ -425,10 +425,11 @@ pub mod tests {
             .await
             .expect("db setup");
         sqlx::query!(
-            r#"INSERT INTO users (id, email)
-            VALUES ($1, $2)"#,
+            r#"INSERT INTO users (id, email, display_name)
+            VALUES ($1, $2, $3)"#,
             USER_ID,
-            USER_EMAIL
+            USER_EMAIL,
+            "test user"
         )
         .execute(&db_conn)
         .await
