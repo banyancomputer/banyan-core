@@ -45,11 +45,11 @@ input {
 
 /* Button default styles */
 .btn-secondary {
-    @apply flex items-center justify-center font-semibold rounded-lg bg-transparent border-2 border-button-primary text-gray-900;
+    @apply flex items-center justify-center font-semibold rounded-lg bg-transparent border-2 border-button-primary text-text-900;
 }
 
 .btn-secondary:hover {
-    @apply bg-transparent border-gray-900;
+    @apply bg-transparent border-button-primary;
 }
 
 .btn-highlighted {
@@ -107,4 +107,10 @@ input {
     background-color: #5299E0 !important;
     border: none;
     --tglbg: var(--text-200);
+}
+
+.table {
+    tr {
+        color: unset;
+    }
 }

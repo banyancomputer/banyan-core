@@ -59,7 +59,7 @@ export const LanguageSelect = () => {
                 >
                     {locales?.map(language =>
                         <Link
-                            className="flex items-center gap-2 p-2.5 transition-all hover:bg-hover cursor-pointer"
+                            className="flex items-center gap-2 p-2.5 transition-all hover:bg-bucket-bucketHoverBackground cursor-pointer"
                             href={window.location.pathname.replace(locale || '', '')}
                             locale={language}
                             key={language}

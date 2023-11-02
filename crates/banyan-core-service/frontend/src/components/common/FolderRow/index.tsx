@@ -34,7 +34,7 @@ export const FolderRow: React.FC<{
         push(`/bucket/${bucket.id}?${path.length ? `${path.join('/')}/${folder.name}` : folder.name}`);
     };
 
-    const expandFolder = async(event: any) => {
+    const expandFolder = async (event: any) => {
         event.stopPropagation();
 
         try {
@@ -52,7 +52,7 @@ export const FolderRow: React.FC<{
     return (
         <>
             <tr
-                className="cursor-pointer border-1 border-t-border-regular border-b-border-regular text-text-900 font-normal"
+                className="cursor-pointer border-b-2 border-b-border-regular text-text-900 font-normal last:border-b-0"
                 onClick={event => goToFolder(event, bucket)}
             >
                 <td

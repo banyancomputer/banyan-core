@@ -85,7 +85,7 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const uploadAction = new Action(`${messages.upload}`, <FiUpload size="18px" />, upload);
     const createSnapshotAction = new Action(`${messages.takeColdSnapshot}`, <HiOutlineLightningBolt size="18px" />, takeSnapshot, `${messages.tooltipExplanation}`);
     const viewBucketSnapshotsAction = bucket.snapshots.length ? new Action(`${messages.viewColdSnapshots}`, <MdRestore size="18px" />, viewBucketSnapshots) : null;
-    const viewBucketVersionsAction = new Action(`${messages.viewBucketVersions}`, <MdRestore size="18px" />, viewBucketVersions);
+    const viewBucketVersionsAction = new Action(`${messages.viewDriveVersions}`, <MdRestore size="18px" />, viewBucketVersions);
     const renameAction = new Action(`${messages.rename}`, <FiEdit size="18px" />, rename);
     const createFolderAction = new Action(`${messages.createNewFolder}`, <PiFolderNotchPlusBold size="18px" />, createFolder);
     const restoreColdVersionAction = new Action(`${messages.restoreCold}`, <MdOutlineRestoreFromTrash size="18px" />, retoreColdVersion);
@@ -122,13 +122,13 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     };
 
     return (
-        <div className={'w-56 text-xs font-medium bg-bucket-actionsBackground rounded-xl shadow-md z-10 select-none text-text-900'}>
+        <div className={'w-56 text-xs font-medium bg-bucket-actionsBackground rounded-xl overflow-hidden shadow-md z-10 select-none text-bucket-actionsText'}>
             {
                 actions[bucketType].map(action =>
                     action ?
                         <div
                             key={action.label}
-                            className="w-full flex items-center gap-2 py-2 px-3 border-b-1 border-border-regular transition-all hover:bg-hover"
+                            className="w-full flex items-center gap-2 py-2 px-3 transition-all hover:bg-hover"
                             onClick={action.value}
                         >
                             <span className="text-button-primary">
