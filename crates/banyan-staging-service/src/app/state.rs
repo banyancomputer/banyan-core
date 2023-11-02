@@ -120,7 +120,7 @@ fn load_or_create_platform_auth_key(
     platform_url: reqwest::Url,
     private_path: &PathBuf,
 ) -> Result<PlatformAuthKey, Error> {
-    let mut auth_raw = if private_path.exists() {
+    let auth_raw = if private_path.exists() {
         let key_bytes =
             std::fs::read(&private_path).map_err(Error::UnreadableSessionKey)?;
         let private_pem = String::from_utf8_lossy(&key_bytes);
@@ -130,7 +130,7 @@ fn load_or_create_platform_auth_key(
         let new_key = ES384KeyPair::generate();
         let private_pem = new_key.to_pem().expect("fresh keys to export");
 
-        std::fs::write(private_path, &private_pem).map_err(Error::PlatformAuthKeyWriteFailed)?;
+        std::fs::write(private_path, &private_pem).map_err(Error::PlatformAuthFailedWrite)?;
 
         let public_spki = new_key
             .public_key()
