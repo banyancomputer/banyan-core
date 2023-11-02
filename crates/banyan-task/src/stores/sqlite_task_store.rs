@@ -75,9 +75,7 @@ impl TaskStore for SqliteTaskStore {
         queue_name: &str,
         _task_names: &[&str],
     ) -> Result<Option<Task>, TaskStoreError> {
-        // TODO: Wow these first two transactions should really be using a transaction
-        let mut connection = self.pool.clone().acquire().await?;
-
+        let mut transaction = self.pool.clone().begin().await?;
         // todo: need to dynamically build up the task_names portion of this query since sqlx
         // doesn't support generation of IN queries or have a concept of arrays for sqlite.l
 
@@ -90,10 +88,9 @@ impl TaskStore for SqliteTaskStore {
                    LIMIT 1;"#,
             queue_name,
         )
-        .fetch_optional(&mut *connection)
+        .fetch_optional(&mut *transaction)
         .await?;
 
-        let mut connection = self.pool.clone().acquire().await?;
         // If we found it claim it for this worker in the same transaction
         //
         // todo: should add a worker identifier when picking up a job for both logging/tracking as
@@ -106,23 +103,26 @@ impl TaskStore for SqliteTaskStore {
                        WHERE id = $1;"#,
                 id,
             )
-            .execute(&mut *connection)
+            .execute(&mut *transaction)
             .await?;
         }
 
+        transaction.commit().await?;
         let mut connection = self.pool.clone().acquire().await?;
 
         let timed_out_start_threshold = time::OffsetDateTime::now_utc() - TASK_EXECUTION_TIMEOUT;
         let pending_retry_tasks = sqlx::query_scalar!(
             r#"SELECT id FROM background_tasks
                    WHERE state IN ('in_progress', 'retry')
-                      AND DATETIME(started_at) <= $1
+                      AND DATETIME(started_at) <= DATETIME($1)
                    ORDER BY DATETIME(started_at) ASC
                    LIMIT 10;"#,
             timed_out_start_threshold,
         )
         .fetch_all(&mut *connection)
         .await;
+
+        connection.close().await?;
 
         // if this query fails or any of our rescheduling fails, we still want to process our task,
         // let these retry again sometime in the future. Ideally we'd randomly shuffle some of
@@ -146,6 +146,8 @@ impl TaskStore for SqliteTaskStore {
                 )
                 .execute(&mut *connection)
                 .await;
+
+                connection.close().await?;
 
                 if state_update_res.is_err() {
                     break;
@@ -171,7 +173,7 @@ impl TaskStore for SqliteTaskStore {
         )
         .fetch_one(&mut *connection)
         .await?;
-
+        connection.close().await?;
         Ok(Some(chosen_task))
     }
 
