@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use sqlx::migrate::Migrator;
 use sqlx::sqlite::{
     SqliteConnectOptions, SqliteJournalMode, SqlitePool, SqlitePoolOptions, SqliteSynchronous,
@@ -20,10 +18,8 @@ pub async fn connect_sqlite(url: &Url) -> Result<SqlitePool, DatabaseSetupError>
         .synchronous(SqliteSynchronous::Normal);
 
     SqlitePoolOptions::new()
-        .idle_timeout(Duration::from_secs(90))
-        .max_lifetime(Duration::from_secs(1_800))
         .min_connections(1)
-        .max_connections(16)
+        .max_connections(1)
         .connect_with(connection_options)
         .await
         .map_err(DatabaseSetupError::Unavailable)
