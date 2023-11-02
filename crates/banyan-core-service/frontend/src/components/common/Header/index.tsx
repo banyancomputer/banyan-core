@@ -51,7 +51,7 @@ export const Header = () => {
 
     return (
         <header className="flex items-center justify-between p-4 bg-mainBackground">
-            <SearchInput />
+            {/* <SearchInput /> */}
             <div className="flex flex-grow items-center justify-end gap-6">
                 <div
                     className="relative w-10 h-10 rounded-full cursor-pointer "
@@ -71,7 +71,7 @@ export const Header = () => {
                     }
                     {areProfileOptionsVisible &&
                         <div
-                            className="absolute z-10 right-0 top-12 flex flex-col items-stretch shadow-xl rounded-xl text-xs font-semibold overflow-hidden  bg-mainBackground cursor-pointer border-1 border-border-darken"
+                            className="absolute z-10 right-0 top-12 flex flex-col items-stretch shadow-xl rounded-xl text-xs font-semibold overflow-hidden  bg-bucket-actionsBackground text-bucket-actionsText cursor-pointer border-1 border-border-darken"
                         >
                             {options.map(option =>
                                 <div

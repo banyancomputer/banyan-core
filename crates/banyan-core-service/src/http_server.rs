@@ -4,6 +4,7 @@ use std::time::Duration;
 
 use axum::error_handling::HandleErrorLayer;
 use axum::extract::DefaultBodyLimit;
+use axum::handler::HandlerWithoutStateExt;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::{Json, Router};
@@ -17,6 +18,7 @@ use tower_http::request_id::MakeRequestUuid;
 use tower_http::sensitive_headers::{
     SetSensitiveRequestHeadersLayer, SetSensitiveResponseHeadersLayer,
 };
+use tower_http::services::ServeDir;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnFailure, DefaultOnResponse, TraceLayer};
 use tower_http::validate_request::ValidateRequestHeaderLayer;
 use tower_http::{LatencyUnit, ServiceBuilderExt};
@@ -123,13 +125,15 @@ pub async fn run(listen_addr: SocketAddr, app_state: AppState) {
             sensitive_headers,
         ));
 
+    let static_assets = ServeDir::new("dist").not_found_service(not_found_handler.into_service());
+
     let root_router = Router::new()
         .nest("/api/v1", api::router(app_state.clone()))
         .nest("/auth", auth::router(app_state.clone()))
         .nest("/hooks", hooks::router(app_state.clone()))
         .nest("/_status", health_check::router(app_state.clone()))
         .with_state(app_state)
-        .fallback(not_found_handler);
+        .fallback_service(static_assets);
 
     let app = middleware_stack.service(root_router);
 

@@ -132,7 +132,7 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BrowserObject; parren
     };
 
     return (
-        <div className="absolute w-48 right-8 text-xs font-medium bg-mainBackground rounded-xl shadow-md z-10 text-text-900 select-none">{
+        <div className="absolute w-48 right-8 text-xs font-medium bg-bucket-actionsBackground rounded-xl shadow-md z-10 text-bucket-actionsText select-none">{
             actions[bucketType].map(action =>
                 <div
                     key={action.label}

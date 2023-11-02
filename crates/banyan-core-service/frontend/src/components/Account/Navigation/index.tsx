@@ -29,7 +29,7 @@ export const AccountNavigation = () => {
                     {`${messages.account}`}
                 </h2>
             </div>
-            <ul className="flex justify-between p-1.5 rounded-lg bg-gray-200">
+            <ul className="flex justify-between p-1.5 rounded-lg bg-mainBackground">
                 {links.map(link =>
                     <li className="flex-grow" key={link.label}>
                         <Link

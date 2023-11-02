@@ -83,11 +83,11 @@ export const FolderActions: React.FC<{ bucket: Bucket; file: BrowserObject; parr
     };
 
     return (
-        <div className="w-48 right-8 text-xs font-medium bg-mainBackground rounded-xl shadow-md z-10 select-none text-text-900">{
+        <div className="w-48 right-8 text-xs font-medium bg-bucket-actionsBackground rounded-xl shadow-md z-10 select-none text-bucket-actionsText overflow-hidden">{
             actions[bucketType].map(action =>
                 <div
                     key={action.label}
-                    className="w-full flex items-center gap-2 py-2 px-3 border-b-1 border-border-regular transition-all hover:bg-hover"
+                    className="w-full flex items-center gap-2 py-2 px-3 transition-all hover:bg-hover"
                     onClick={action.value}
                     id="action"
                 >

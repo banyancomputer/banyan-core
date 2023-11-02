@@ -4,9 +4,9 @@ const nextConfig = {
 		domains: ['lh3.googleusercontent.com'],
 	},
 	i18n: {
-		locales: ['en', 'fr'],
+		locales: ['en', 'fr', 'de', 'ja', 'zh'],
 		localeDetection: false,
-		defaultLocale: 'en'
+		defaultLocale: 'en',
 	},
 	eslint: {
 		ignoreDuringBuilds: true,
