@@ -23,8 +23,8 @@ pub async fn handler(
     .map_err(|_| StartRegwaitError::TimedOut)??;
 
     match registration_event.status {
-        RegistrationEventStatus::Approved(account_id) => {
-            let resp_msg = serde_json::json!({"account_id": account_id});
+        RegistrationEventStatus::Approved(user_id) => {
+            let resp_msg = serde_json::json!({"user_id": user_id});
             Ok((StatusCode::OK, Json(resp_msg)).into_response())
         }
         RegistrationEventStatus::Rejected => {

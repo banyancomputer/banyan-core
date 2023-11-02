@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO escrowed_devices (user_id, api_public_key_pem, encryption_public_key_pem, encrypted_private_key_material, pass_key_salt)\n            VALUES ($1, $2, $3, $4, $5);",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "c2e74d1a6fa88d7d49f9be6ba2c1b5e59052a06dc892bb07f0f596ac986c3bd9"
+}

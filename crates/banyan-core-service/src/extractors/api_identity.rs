@@ -52,7 +52,6 @@ impl ApiToken {
 }
 
 pub struct ApiIdentity {
-    pub account_id: String,
     pub user_id: String,
     pub device_api_key_id: String,
     pub device_api_key_fingerprint: String,
@@ -98,9 +97,9 @@ where
 
         let db_device_api_key = sqlx::query_as!(
             DeviceApiKey,
-            r#"SELECT dak.id, a.id as account_id, a.userId as user_id, dak.pem
+            r#"SELECT dak.id, u.id as user_id, dak.pem
                    FROM device_api_keys AS dak
-                   JOIN accounts AS a ON dak.account_id = a.id
+                   JOIN users AS u ON dak.user_id = u.id
                    WHERE dak.fingerprint = $1;"#,
             key_id
         )
@@ -131,12 +130,11 @@ where
             }
         }
 
-        if db_device_api_key.account_id != claims.subject {
+        if db_device_api_key.user_id != claims.subject {
             return Err(ApiIdentityError::MismatchedSubject);
         }
 
         let api_identity = ApiIdentity {
-            account_id: db_device_api_key.account_id,
             user_id: db_device_api_key.user_id,
             device_api_key_id: db_device_api_key.id,
             device_api_key_fingerprint: key_id,
@@ -193,7 +191,6 @@ impl IntoResponse for ApiIdentityError {
 #[derive(sqlx::FromRow)]
 struct DeviceApiKey {
     id: String,
-    account_id: String,
     user_id: String,
     pem: String,
 }

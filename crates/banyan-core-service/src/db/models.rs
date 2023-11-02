@@ -13,7 +13,7 @@ pub struct CreatedResource {
 #[derive(Debug, FromRow)]
 pub struct DeviceApiKey {
     pub id: String,
-    pub account_id: String,
+    pub user_id: String,
     pub fingerprint: String,
     pub pem: String,
 }
@@ -62,13 +62,13 @@ impl From<String> for StorageClass {
 #[derive(Debug, FromRow)]
 pub struct Bucket {
     pub id: String,
-    pub account_id: String,
+    pub user_id: String,
     pub name: String,
     pub r#type: BucketType,
     pub storage_class: StorageClass,
 }
 
-// TODO: should we add the account_id to this?
+// TODO: should we add the user_id to this?
 /// BucketKey - data associated with a bucket key
 #[derive(Serialize, Debug)]
 pub struct BucketKey {
@@ -249,7 +249,7 @@ impl From<String> for EmailMessageState {
 #[derive(Debug, Serialize, FromRow)]
 pub struct EmailMessage {
     pub id: String,
-    pub account_id: String,
+    pub user_id: String,
     pub sent_at: time::OffsetDateTime,
     pub r#type: String,
     pub state: EmailMessageState,

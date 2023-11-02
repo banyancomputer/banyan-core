@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM buckets WHERE user_id = $1 AND id = $2;",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "510fa1ffebad8dc52704189f570e1f8abdb4495b56f2e8558c6a87375b2e41a4"
+}

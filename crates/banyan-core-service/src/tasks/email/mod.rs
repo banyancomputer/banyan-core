@@ -59,16 +59,16 @@ impl EmailTaskContext {
 
 /// Tests recipient for filtering conditions against the provided context
 /// # Arguments
-/// * `account_id` - The account id of the user to get the email address for
+/// * `user_id` - The account id of the user to get the email address for
 /// * `ctx` - The context to use for the task
 /// # Returns
 /// * `Result<bool, EmailTaskError>` - Whether or not the user should be sent an email
 pub async fn should_send_email_message(
-    account_id: Uuid,
+    user_id: Uuid,
     ctx: &EmailTaskContext,
 ) -> Result<bool, EmailTaskError> {
     let mut db_conn = ctx.db_pool.acquire().await?;
-    let account_id_string = account_id.to_string();
+    let user_id_string = user_id.to_string();
 
     // If our last email we sent to the user resulting in a status of unsubscribe we should not send the message
     let unsubscribed = sqlx::query_scalar!(
@@ -80,16 +80,16 @@ pub async fn should_send_email_message(
             FROM (
                 SELECT state
                 FROM emails e
-                WHERE e.account_id = $1
+                WHERE e.user_id = $1
                 ORDER BY e.sent_at DESC
                 LIMIT 1
             ) AS last_email;"#,
-        account_id_string
+        user_id_string
     )
     .fetch_optional(&mut *db_conn)
     .await?;
     if unsubscribed == Some(1) {
-        tracing::info!("user {account_id_string} has unsubscribed");
+        tracing::info!("user {user_id_string} has unsubscribed");
         return Ok(false);
     }
 
@@ -100,23 +100,23 @@ pub async fn should_send_email_message(
             FROM (
                 SELECT state
                 FROM emails e
-                WHERE e.account_id = $1
+                WHERE e.user_id = $1
                 ORDER BY e.sent_at DESC
                 LIMIT 3 
             ) AS last_three_emails;"#,
-        account_id_string
+        user_id_string
     )
     .fetch_one(&mut *db_conn)
     .await?;
     if failures >= Some(3) {
-        tracing::info!("user {account_id_string} has had 3 or more consecutive failed emails");
+        tracing::info!("user {user_id_string} has had 3 or more consecutive failed emails");
         return Ok(false);
     }
 
     // If we have sent 3 or more email to the user which have been marked as spam we should not send the message
     sqlx::query!(
-        r#"INSERT OR IGNORE INTO email_stats (account_id) VALUES ($1);"#,
-        account_id_string
+        r#"INSERT OR IGNORE INTO email_stats (user_id) VALUES ($1);"#,
+        user_id_string
     )
     .execute(&mut *db_conn)
     .await?;
@@ -124,14 +124,14 @@ pub async fn should_send_email_message(
         r#"SELECT
                 complained
             FROM email_stats e
-            WHERE e.account_id = $1
+            WHERE e.user_id = $1
             LIMIT 1"#,
-        account_id_string
+        user_id_string
     )
     .fetch_one(&mut *db_conn)
     .await?;
     if complaints >= 3 {
-        tracing::info!("user {account_id_string} has had 3 or more spam complaints");
+        tracing::info!("user {user_id_string} has had 3 or more spam complaints");
         return Ok(false);
     }
     Ok(true)
@@ -142,13 +142,13 @@ pub async fn should_send_email_message(
 /// - Records the outgoing message in the context and asigns it a message id
 /// - Sends the message -- Note, if this fails the message will not be retried!
 /// # Arguments
-/// * `account_id` - The account id of the user to get the email address for
+/// * `user_id` - The account id of the user to get the email address for
 /// * `message` - The message to send
 /// * `ctx` - The context to use for the task
 /// # Returns
 /// * `Result<(), EmailTaskError>` - The message id of the recorded message
 pub async fn send_email_message(
-    account_id: Uuid,
+    user_id: Uuid,
     message: &impl EmailMessage,
     ctx: &EmailTaskContext,
 ) -> Result<(), EmailTaskError> {
@@ -156,26 +156,25 @@ pub async fn send_email_message(
     let transport = ctx.email_config.transport()?;
     let from_address = ctx.email_config.from();
     let mailgun_test_mode = ctx.email_config.test_mode();
-    let account_id_string = account_id.to_string();
+    let user_id_string = user_id.to_string();
     let message_type_name = message.type_name();
 
     // Get the recipient address -- do this first to prevent side effects from this failing
     let recipient_address = sqlx::query_scalar!(
         r#"SELECT u.email as "email!"
         FROM users u
-        JOIN accounts a ON u.id = a.userId
-        WHERE a.id = $1;"#,
-        account_id_string
+        WHERE u.id = $1;"#,
+        user_id_string
     )
     .fetch_one(&mut *db_conn)
     .await?;
 
     // Record the outgoing message
     let new_email_id = sqlx::query_scalar!(
-        r#"INSERT INTO emails (account_id, type)
+        r#"INSERT INTO emails (user_id, type)
          VALUES ($1, $2)
          RETURNING id"#,
-        account_id_string,
+        user_id_string,
         message_type_name
     )
     .fetch_one(&mut *db_conn)
@@ -209,14 +208,14 @@ pub mod tests {
     use banyan_task::tests::default_current_task;
     use banyan_task::{CurrentTask, TaskLike};
 
-    const ACCOUNT_ID: &str = "00000000-0000-0000-0000-000000000000";
+    const USER_ID: &str = "00000000-0000-0000-0000-000000000000";
     const USER_EMAIL: &str = "user@user.email";
 
     /// Return a base context and a test account id
     pub async fn test_setup() -> (EmailTaskContext, Uuid, CurrentTask) {
         (
             email_task_context().await,
-            Uuid::parse_str(ACCOUNT_ID).expect("account id parse"),
+            Uuid::parse_str(USER_ID).expect("account id parse"),
             default_current_task(),
         )
     }
@@ -227,9 +226,9 @@ pub mod tests {
             r#"SELECT
                 COUNT(*) AS sent
             FROM emails e
-            WHERE e.account_id = $1
+            WHERE e.user_id = $1
                 AND e.state = 'sent'"#,
-            ACCOUNT_ID
+            USER_ID
         )
         .fetch_one(&mut *db_conn)
         .await
@@ -316,7 +315,7 @@ pub mod tests {
 
     async fn example_email_task(ctx: EmailTaskContext) -> Result<(), EmailTaskError> {
         // Use GaReleaseEmailTask as a stand in for any email task here
-        let task = GaReleaseEmailTask::new(Uuid::parse_str(ACCOUNT_ID).unwrap());
+        let task = GaReleaseEmailTask::new(Uuid::parse_str(USER_ID).unwrap());
         task.run(default_current_task(), ctx).await?;
         Ok(())
     }
@@ -324,10 +323,10 @@ pub mod tests {
     async fn delivered_email(ctx: &EmailTaskContext, when: OffsetDateTime) -> OffsetDateTime {
         let mut db_conn = ctx.db_pool().acquire().await.unwrap();
         sqlx::query!(
-            r#"INSERT INTO emails (sent_at, account_id, state, type)
+            r#"INSERT INTO emails (sent_at, user_id, state, type)
             VALUES ($1, $2, 'delivered', 'na')"#,
             when,
-            ACCOUNT_ID
+            USER_ID
         )
         .execute(&mut *db_conn)
         .await
@@ -335,8 +334,8 @@ pub mod tests {
         sqlx::query!(
             r#"UPDATE email_stats
             SET delivered = delivered + 1
-            WHERE account_id = $1"#,
-            ACCOUNT_ID
+            WHERE user_id = $1"#,
+            USER_ID
         )
         .execute(&mut *db_conn)
         .await
@@ -348,10 +347,10 @@ pub mod tests {
     async fn failed_email(ctx: &EmailTaskContext, when: OffsetDateTime) -> OffsetDateTime {
         let mut db_conn = ctx.db_pool().acquire().await.unwrap();
         sqlx::query!(
-            r#"INSERT INTO emails (sent_at, account_id, state, type)
+            r#"INSERT INTO emails (sent_at, user_id, state, type)
             VALUES ($1, $2, 'failed', 'na')"#,
             when,
-            ACCOUNT_ID
+            USER_ID
         )
         .execute(&mut *db_conn)
         .await
@@ -359,8 +358,8 @@ pub mod tests {
         sqlx::query!(
             r#"UPDATE email_stats
             SET failed = failed + 1
-            WHERE account_id = $1"#,
-            ACCOUNT_ID
+            WHERE user_id = $1"#,
+            USER_ID
         )
         .execute(&mut *db_conn)
         .await
@@ -372,10 +371,10 @@ pub mod tests {
     async fn complained_email(ctx: &EmailTaskContext, when: OffsetDateTime) -> OffsetDateTime {
         let mut db_conn = ctx.db_pool().acquire().await.unwrap();
         sqlx::query!(
-            r#"INSERT INTO emails (sent_at, account_id, state, type)
+            r#"INSERT INTO emails (sent_at, user_id, state, type)
             VALUES ($1, $2, 'complained', 'na')"#,
             when,
-            ACCOUNT_ID
+            USER_ID
         )
         .execute(&mut *db_conn)
         .await
@@ -383,8 +382,8 @@ pub mod tests {
         sqlx::query!(
             r#"UPDATE email_stats
             SET complained = complained + 1
-            WHERE account_id = $1"#,
-            ACCOUNT_ID
+            WHERE user_id = $1"#,
+            USER_ID
         )
         .execute(&mut *db_conn)
         .await
@@ -396,10 +395,10 @@ pub mod tests {
     async fn unsubscribed_email(ctx: &EmailTaskContext, when: OffsetDateTime) -> OffsetDateTime {
         let mut db_conn = ctx.db_pool().acquire().await.unwrap();
         sqlx::query!(
-            r#"INSERT INTO emails (sent_at, account_id, state, type)
+            r#"INSERT INTO emails (sent_at, user_id, state, type)
             VALUES ($1, $2, 'unsubscribed', 'na')"#,
             when,
-            ACCOUNT_ID
+            USER_ID
         )
         .execute(&mut *db_conn)
         .await
@@ -407,8 +406,8 @@ pub mod tests {
         sqlx::query!(
             r#"UPDATE email_stats
             SET unsubscribed = unsubscribed + 1
-            WHERE account_id = $1"#,
-            ACCOUNT_ID
+            WHERE user_id = $1"#,
+            USER_ID
         )
         .execute(&mut *db_conn)
         .await
@@ -428,7 +427,7 @@ pub mod tests {
         sqlx::query!(
             r#"INSERT INTO users (id, email)
             VALUES ($1, $2)"#,
-            ACCOUNT_ID,
+            USER_ID,
             USER_EMAIL
         )
         .execute(&db_conn)
@@ -436,19 +435,9 @@ pub mod tests {
         .expect("db setup");
 
         sqlx::query!(
-            r#"INSERT INTO accounts (id, userId, type, provider, providerAccountId)
-            VALUES ($1, $1, 'email', 'email', $2)"#,
-            ACCOUNT_ID,
-            USER_EMAIL
-        )
-        .execute(&db_conn)
-        .await
-        .expect("db setup");
-
-        sqlx::query!(
-            r#"INSERT INTO email_stats (account_id)
+            r#"INSERT INTO email_stats (user_id)
             VALUES ($1)"#,
-            ACCOUNT_ID
+            USER_ID
         )
         .execute(&db_conn)
         .await

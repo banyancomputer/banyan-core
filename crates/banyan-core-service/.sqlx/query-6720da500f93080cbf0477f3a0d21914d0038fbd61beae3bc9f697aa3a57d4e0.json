@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT OR IGNORE INTO email_stats (user_id) VALUES ($1);",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "6720da500f93080cbf0477f3a0d21914d0038fbd61beae3bc9f697aa3a57d4e0"
+}

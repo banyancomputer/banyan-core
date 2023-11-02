@@ -24,8 +24,8 @@ pub async fn handler(
     let metadata_state = sqlx::query_scalar!(
         r#"SELECT m.state as 'state: MetadataState' FROM metadata AS m
                JOIN buckets AS b ON m.bucket_id = b.id
-               WHERE b.account_id = $1 AND b.id = $2 AND m.id = $3;"#,
-        api_id.account_id,
+               WHERE b.user_id = $1 AND b.id = $2 AND m.id = $3;"#,
+        api_id.user_id,
         bucket_id,
         metadata_id,
     )

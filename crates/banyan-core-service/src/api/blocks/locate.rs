@@ -22,7 +22,7 @@ pub async fn handler(
 ) -> Result<Response, BlockLocationError> {
     let database = state.database();
 
-    let account_id = api_id.account_id;
+    let user_id = api_id.user_id;
     let mut result_map: HashMap<String, Vec<String>> = HashMap::new();
 
     for original_cid in request {
@@ -37,12 +37,12 @@ pub async fn handler(
                    JOIN blocks ON block_locations.block_id = blocks.id
                    JOIN metadata ON metadata.id = block_locations.metadata_id
                    JOIN buckets ON buckets.id = metadata.bucket_id
-                   WHERE buckets.account_id = $1
+                   WHERE buckets.user_id = $1
                        AND blocks.cid = $2
                        AND block_locations.expired_at IS NULL
                    ORDER BY RANDOM()
                    LIMIT 5;"#,
-            account_id,
+            user_id,
             normalized_cid,
         )
         .fetch_all(&database)

@@ -27,8 +27,8 @@ pub async fn handler(api_id: ApiIdentity, State(state): State<AppState>) -> Resp
         INNER JOIN
             buckets b ON b.id = m.bucket_id
         WHERE
-            b.account_id = $1 AND m.state IN ('current', 'outdated', 'pending');"#,
-        api_id.account_id,
+            b.user_id = $1 AND m.state IN ('current', 'outdated', 'pending');"#,
+        api_id.user_id,
     )
     .fetch_one(&database)
     .await;

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM bucket_keys\n                WHERE id IN (\n                    SELECT bk.id FROM bucket_keys AS bk\n                        JOIN buckets AS b ON bk.bucket_id = b.id\n                        WHERE b.user_id = $1 AND bk.id = $2 AND bk.bucket_id = $3\n                );",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "1261ed0a0a84bb7cf9559439990e3ea06b0edb0080e8e2e3a003bc4ae747552f"
+}

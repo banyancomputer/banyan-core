@@ -15,15 +15,15 @@ use super::EmailTaskError;
 
 #[derive(Deserialize, Serialize)]
 pub struct ScheduledMaintenanceEmailTask {
-    account_id: Uuid,
+    user_id: Uuid,
     start: String,
     end: String,
 }
 
 impl ScheduledMaintenanceEmailTask {
-    pub fn new(account_id: Uuid, start: String, end: String) -> Self {
+    pub fn new(user_id: Uuid, start: String, end: String) -> Self {
         Self {
-            account_id,
+            user_id,
             start,
             end,
         }
@@ -39,14 +39,14 @@ impl TaskLike for ScheduledMaintenanceEmailTask {
 
     async fn run(&self, _task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
         // Filter out innapropriate emails
-        if !should_send_email_message(self.account_id, &ctx).await? {
+        if !should_send_email_message(self.user_id, &ctx).await? {
             return Ok(());
         }
         let message = ScheduledMaintenance {
             start: self.start.clone(),
             end: self.end.clone(),
         };
-        send_email_message(self.account_id, &message, &ctx).await
+        send_email_message(self.user_id, &message, &ctx).await
     }
 }
 
@@ -58,9 +58,9 @@ mod tests {
     #[tokio::test]
     /// ScheduledMaintenanceEmailTask should succeed in a valid context
     async fn success() {
-        let (ctx, account_id, current_task) = test_setup().await;
+        let (ctx, user_id, current_task) = test_setup().await;
         let task = ScheduledMaintenanceEmailTask::new(
-            account_id,
+            user_id,
             "2021-01-01".to_string(),
             "2021-01-02".to_string(),
         );

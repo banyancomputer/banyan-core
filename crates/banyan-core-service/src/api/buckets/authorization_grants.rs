@@ -23,10 +23,10 @@ pub async fn handler(
     let authorized_amounts = sqlx::query_as!(
         AuthorizedAmounts,
         r#"WITH current_grants AS (
-            SELECT id, storage_host_id, account_id, MAX(redeemed_at) AS most_recently_redeemed_at
+            SELECT id, storage_host_id, user_id, MAX(redeemed_at) AS most_recently_redeemed_at
             FROM storage_grants
-            WHERE redeemed_at IS NOT NULL AND account_id = $1
-            GROUP BY storage_host_id, account_id
+            WHERE redeemed_at IS NOT NULL AND user_id = $1
+            GROUP BY storage_host_id, user_id
         )
             SELECT sg.id AS storage_grant_id, sg.authorized_amount, sh.name AS storage_host_name, sh.url AS storage_host_url
                 FROM current_grants AS cg
@@ -35,10 +35,10 @@ pub async fn handler(
                 JOIN metadata AS m ON m.id = shms.metadata_id
                 JOIN buckets AS b ON b.id = m.bucket_id
                 JOIN storage_grants AS sg ON sg.id = cg.id
-                WHERE b.account_id = $1 
+                WHERE b.user_id = $1 
                     AND b.id = $2
                     AND m.state NOT IN ('deleted', 'upload_failed');"#,
-        api_id.account_id,
+        api_id.user_id,
         bucket_id,
     )
     .fetch_all(&database)

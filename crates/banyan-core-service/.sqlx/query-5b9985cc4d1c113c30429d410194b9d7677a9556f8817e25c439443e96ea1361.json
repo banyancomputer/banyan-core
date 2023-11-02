@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE email_stats\n            SET delivered = delivered + 1\n            WHERE user_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "5b9985cc4d1c113c30429d410194b9d7677a9556f8817e25c439443e96ea1361"
+}

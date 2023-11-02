@@ -9,8 +9,8 @@ CREATE TABLE emails (
     substr(lower(hex(randomblob(6))), 2)
   ),
   
-  -- The account_id of the user who should receive this email
-  account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  -- The user_id of the user who should receive this email
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 
   -- When the email was sent
   sent_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -40,7 +40,7 @@ CREATE TABLE email_stats (
     substr(lower(hex(randomblob(6))), 2)
   ),
 
-  account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 
   sent INTEGER NOT NULL DEFAULT 0,
   accepted INTEGER NOT NULL DEFAULT 0,
@@ -52,5 +52,5 @@ CREATE TABLE email_stats (
   failed INTEGER NOT NULL DEFAULT 0
 );
 
-CREATE UNIQUE INDEX idx_email_stats_on_account_id
-  ON email_stats(account_id);
+CREATE UNIQUE INDEX idx_email_stats_on_user_id
+  ON email_stats(user_id);

@@ -21,10 +21,10 @@ pub async fn handler(
     let fingerprint = sha1_fingerprint_publickey(&public_device_key);
 
     let device_api_key_id = sqlx::query_scalar!(
-        r#"INSERT INTO device_api_keys (account_id, fingerprint, pem)
+        r#"INSERT INTO device_api_keys (user_id, fingerprint, pem)
             VALUES ($1, $2, $3)
             RETURNING id;"#,
-        api_id.account_id,
+        api_id.user_id,
         fingerprint,
         request.pem,
     )

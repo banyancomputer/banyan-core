@@ -48,7 +48,7 @@ pub async fn handler(
 
     let unvalidated_bid = bucket_id.to_string();
     let authorized_bucket_id =
-        authorized_bucket_id(&database, &api_id.account_id, &unvalidated_bid).await?;
+        authorized_bucket_id(&database, &api_id.user_id, &unvalidated_bid).await?;
 
     // Read the body from the request, checking for size limits
     let mime_ct = mime::Mime::from(content_type);
@@ -117,13 +117,13 @@ pub async fn handler(
 
     expire_deleted_blocks(&database, &api_id, &bucket_id, &request_data).await?;
 
-    let expected_total_storage = currently_consumed_storage(&database, &api_id.account_id)
+    let expected_total_storage = currently_consumed_storage(&database, &api_id.user_id)
         .await
         .map_err(PushMetadataError::UnableToCheckAccounting)?
         as i64;
 
     if expected_total_storage > ACCOUNT_STORAGE_QUOTA {
-        tracing::warn!(account_id = ?api_id.account_id, ?expected_total_storage, "account reached storage limit");
+        tracing::warn!(user_id = ?api_id.user_id, ?expected_total_storage, "account reached storage limit");
         let fail_res = fail_upload(&database, &new_metadata_id).await;
         return Err(PushMetadataError::LimitReached(fail_res.err()));
     }
@@ -140,11 +140,11 @@ pub async fn handler(
     let storage_host = select_storage_host(&database, request_data.expected_data_size).await?;
 
     let current_authorized_amount =
-        existing_authorization(&database, &api_id.account_id, &storage_host.id)
+        existing_authorization(&database, &api_id.user_id, &storage_host.id)
             .await
             .map_err(PushMetadataError::UnableToRetrieveAuthorizations)?;
     let current_stored_amount =
-        currently_stored_at_provider(&database, &api_id.account_id, &storage_host.id)
+        currently_stored_at_provider(&database, &api_id.user_id, &storage_host.id)
             .await
             .map_err(PushMetadataError::UnableToIdentifyStoredAmount)?;
 
@@ -198,12 +198,12 @@ async fn approve_key_fingerprints(
 
 async fn authorized_bucket_id(
     database: &Database,
-    account_id: &str,
+    user_id: &str,
     bucket_id: &str,
 ) -> Result<String, PushMetadataError> {
     sqlx::query_scalar!(
-        r#"SELECT id FROM buckets WHERE account_id = $1 AND id = $2;"#,
-        account_id,
+        r#"SELECT id FROM buckets WHERE user_id = $1 AND id = $2;"#,
+        user_id,
         bucket_id,
     )
     .fetch_optional(database)
@@ -214,7 +214,7 @@ async fn authorized_bucket_id(
 
 async fn currently_consumed_storage(
     database: &Database,
-    account_id: &str,
+    user_id: &str,
 ) -> Result<i32, sqlx::Error> {
     let maybe_stored = sqlx::query_scalar!(
         r#"SELECT
@@ -225,8 +225,8 @@ async fn currently_consumed_storage(
         INNER JOIN
             buckets b ON b.id = m.bucket_id
         WHERE
-            b.account_id = $1 AND m.state IN ('current', 'outdated', 'pending');"#,
-        account_id,
+            b.user_id = $1 AND m.state IN ('current', 'outdated', 'pending');"#,
+        user_id,
     )
     .fetch_optional(database)
     .await?;
@@ -236,15 +236,15 @@ async fn currently_consumed_storage(
 
 async fn currently_stored_at_provider(
     database: &Database,
-    account_id: &str,
+    user_id: &str,
     storage_host_id: &str,
 ) -> Result<i64, sqlx::Error> {
     let res: Result<Option<i64>, _> = sqlx::query_scalar!(
         r#"SELECT SUM(m.data_size) as total_data_size FROM metadata m
                JOIN storage_hosts_metadatas_storage_grants shmg ON shmg.metadata_id = m.id
                JOIN storage_grants sg ON shmg.storage_grant_id = sg.id
-               WHERE sg.account_id = $1 AND shmg.storage_host_id = $2;"#,
-        account_id,
+               WHERE sg.user_id = $1 AND shmg.storage_host_id = $2;"#,
+        user_id,
         storage_host_id,
     )
     .fetch_one(database)
@@ -255,17 +255,17 @@ async fn currently_stored_at_provider(
 
 async fn existing_authorization(
     database: &Database,
-    account_id: &str,
+    user_id: &str,
     storage_host_id: &str,
 ) -> Result<i64, sqlx::Error> {
     sqlx::query_scalar!(
         r#"SELECT authorized_amount FROM storage_grants
-               WHERE account_id = $1
+               WHERE user_id = $1
                    AND storage_host_id = $2
                    AND redeemed_at IS NOT NULL
                ORDER BY created_at DESC
                LIMIT 1;"#,
-        account_id,
+        user_id,
         storage_host_id,
     )
     .fetch_optional(database)
@@ -298,11 +298,11 @@ async fn generate_new_storage_authorization(
     authorized_amount: i64,
 ) -> Result<String, StorageAuthorizationError> {
     let storage_grant_id = sqlx::query_scalar!(
-        r#"INSERT INTO storage_grants (storage_host_id, account_id, authorized_amount)
+        r#"INSERT INTO storage_grants (storage_host_id, user_id, authorized_amount)
             VALUES ($1, $2, $3)
             RETURNING id;"#,
         storage_host.id,
-        api_id.account_id,
+        api_id.user_id,
         authorized_amount,
     )
     .fetch_one(database)
@@ -500,7 +500,7 @@ async fn expire_deleted_blocks(
     bucket_id: &Uuid,
     request: &PushMetadataRequest,
 ) -> Result<(), PushMetadataError> {
-    let account_id = api_id.account_id.clone();
+    let user_id = api_id.user_id.clone();
     let bucket_id = bucket_id.to_string();
     let mut prune_blocks_tasks_map: HashMap<Uuid, Vec<PruneBlock>> = HashMap::new();
     let mut transaction = database
@@ -522,8 +522,8 @@ async fn expire_deleted_blocks(
                 JOIN storage_hosts AS sh ON sh.id = bl.storage_host_id
                 JOIN metadata AS m ON m.id = bl.metadata_id
                 JOIN buckets AS b ON b.id = m.bucket_id
-                WHERE b.account_id = $1 AND b.id = $2 AND blocks.cid = $3;"#,
-            account_id,
+                WHERE b.user_id = $1 AND b.id = $2 AND blocks.cid = $3;"#,
+            user_id,
             bucket_id,
             normalized_cid,
         )

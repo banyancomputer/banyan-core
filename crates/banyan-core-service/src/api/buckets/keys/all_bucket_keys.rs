@@ -20,15 +20,15 @@ pub async fn handler(
         BucketKey,
         "SELECT bk.* FROM bucket_keys AS bk
              JOIN buckets AS b ON bk.bucket_id = b.id
-             WHERE b.account_id = $1 AND bk.bucket_id = $2;",
-        api_id.account_id,
+             WHERE b.user_id = $1 AND bk.bucket_id = $2;",
+        api_id.user_id,
         bucket_id,
     )
     .fetch_all(&database)
     .await
     .map_err(AllBucketKeysError::DatabaseFailure)?;
 
-    // note: this also includes account_id which wasn't being returned before and may cause
+    // note: this also includes user_id which wasn't being returned before and may cause
     // compatibility issues
 
     let buckets: Vec<_> = query_result.into_iter().map(ApiBucketKey::from).collect();

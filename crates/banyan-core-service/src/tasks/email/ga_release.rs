@@ -15,12 +15,12 @@ use super::EmailTaskError;
 
 #[derive(Deserialize, Serialize)]
 pub struct GaReleaseEmailTask {
-    account_id: Uuid,
+    user_id: Uuid,
 }
 
 impl GaReleaseEmailTask {
-    pub fn new(account_id: Uuid) -> Self {
-        Self { account_id }
+    pub fn new(user_id: Uuid) -> Self {
+        Self { user_id }
     }
 }
 
@@ -33,11 +33,11 @@ impl TaskLike for GaReleaseEmailTask {
 
     async fn run(&self, _task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
         // Filter out innapropriate emails
-        if !should_send_email_message(self.account_id, &ctx).await? {
+        if !should_send_email_message(self.user_id, &ctx).await? {
             return Ok(());
         }
         let message = GaRelease {};
-        send_email_message(self.account_id, &message, &ctx).await
+        send_email_message(self.user_id, &message, &ctx).await
     }
 }
 
@@ -49,8 +49,8 @@ mod tests {
     #[tokio::test]
     /// GaReleaseEmailTask should succeed in a valid context
     async fn success() {
-        let (ctx, account_id, current_task) = test_setup().await;
-        let task = GaReleaseEmailTask::new(account_id);
+        let (ctx, user_id, current_task) = test_setup().await;
+        let task = GaReleaseEmailTask::new(user_id);
         let result = task.run(current_task, ctx).await;
         assert!(result.is_ok());
     }

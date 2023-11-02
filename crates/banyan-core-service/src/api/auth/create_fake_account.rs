@@ -27,21 +27,11 @@ pub async fn handler(
         .await
         .map_err(CreateFakeAccountError::UserCreationFailed)?;
 
-    let account_id = sqlx::query_scalar!(
-        r#"INSERT INTO accounts (userId, type, provider, providerAccountId)
-                   VALUES ($1, "oauth", "not-google", 100033331337)
-                   RETURNING id;"#,
-        user_id,
-    )
-    .fetch_one(&database)
-    .await
-    .map_err(CreateFakeAccountError::AccountCreationFailed)?;
-
     let fingerprint = sha1_fingerprint_publickey(&public_key);
 
     sqlx::query!(
-        "INSERT INTO device_api_keys (account_id, fingerprint, pem) VALUES ($1, $2, $3);",
-        account_id,
+        "INSERT INTO device_api_keys (user_id, fingerprint, pem) VALUES ($1, $2, $3);",
+        user_id,
         fingerprint,
         request.device_api_key_pem,
     )
@@ -49,7 +39,7 @@ pub async fn handler(
     .await
     .map_err(CreateFakeAccountError::ApiKeyCreationFailed)?;
 
-    let response = serde_json::json!({"id": account_id});
+    let response = serde_json::json!({"id": user_id});
     Ok((StatusCode::OK, Json(response)).into_response())
 }
 

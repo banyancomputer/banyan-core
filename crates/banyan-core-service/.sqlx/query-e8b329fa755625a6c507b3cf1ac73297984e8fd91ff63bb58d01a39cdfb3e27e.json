@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO emails (user_id, type)\n         VALUES ($1, $2)\n         RETURNING id",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "e8b329fa755625a6c507b3cf1ac73297984e8fd91ff63bb58d01a39cdfb3e27e"
+}

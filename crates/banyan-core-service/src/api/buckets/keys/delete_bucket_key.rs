@@ -21,9 +21,9 @@ pub async fn handler(
                 WHERE id IN (
                     SELECT bk.id FROM bucket_keys AS bk
                         JOIN buckets AS b ON bk.bucket_id = b.id
-                        WHERE b.account_id = $1 AND bk.id = $2 AND bk.bucket_id = $3
+                        WHERE b.user_id = $1 AND bk.id = $2 AND bk.bucket_id = $3
                 );"#,
-        api_id.account_id,
+        api_id.user_id,
         bucket_key_id,
         bucket_id,
     )
