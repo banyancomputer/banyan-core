@@ -125,8 +125,7 @@ pub async fn run(listen_addr: SocketAddr, app_state: AppState) {
             sensitive_headers,
         ));
 
-    let static_assets = ServeDir::new("dist")
-        .not_found_service(not_found_handler.into_service());
+    let static_assets = ServeDir::new("dist").not_found_service(not_found_handler.into_service());
 
     let root_router = Router::new()
         .nest("/api/v1", api::router(app_state.clone()))
