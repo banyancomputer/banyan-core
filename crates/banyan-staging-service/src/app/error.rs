@@ -30,6 +30,9 @@ pub enum Error {
     #[error("failed to write public key for auth key")]
     PublicKeyWriteFailed(std::io::Error),
 
-    #[error("provided session key was unable to be read: {0}")]
-    UnreadableSessionKey(std::io::Error),
+    #[error("unreadable platform verification key: {0}")]
+    UnreadablePlatformVerificationKey(std::io::Error),
+
+    #[error("provided signing key was unable to be read: {0}")]
+    UnreadableSigningKey(std::io::Error),
 }

@@ -40,7 +40,7 @@ impl State {
 
         // Parse the public grant verification key (this will be the one coming from the platform)
         let key_bytes = std::fs::read(config.platform_verification_key_path())
-            .map_err(Error::UnreadableSessionKey)?;
+            .map_err(Error::UnreadablePlatformVerificationKey)?;
         let pem = String::from_utf8_lossy(&key_bytes);
         let platform_pub_key = ES384PublicKey::from_pem(&pem).map_err(Error::BadAuthenticationKey)?;
         let platform_verification_key = PlatformVerificationKey::new(platform_pub_key);
@@ -118,11 +118,12 @@ pub fn fingerprint_key(keys: &ES384KeyPair) -> String {
 
 fn load_or_create_platform_auth_key(
     platform_url: reqwest::Url,
-    private_path: &PathBuf,
+    path: &PathBuf,
 ) -> Result<PlatformAuthKey, Error> {
-    let auth_raw = if private_path.exists() {
+    tracing::info!(?path, "attempting to load or create platform auth key");
+    let auth_raw = if path.exists() {
         let key_bytes =
-            std::fs::read(&private_path).map_err(Error::UnreadableSessionKey)?;
+            std::fs::read(&path).map_err(Error::UnreadableSigningKey)?;
         let private_pem = String::from_utf8_lossy(&key_bytes);
 
         ES384KeyPair::from_pem(&private_pem).map_err(Error::BadAuthenticationKey)?
@@ -130,14 +131,14 @@ fn load_or_create_platform_auth_key(
         let new_key = ES384KeyPair::generate();
         let private_pem = new_key.to_pem().expect("fresh keys to export");
 
-        std::fs::write(private_path, &private_pem).map_err(Error::PlatformAuthFailedWrite)?;
+        std::fs::write(path, &private_pem).map_err(Error::PlatformAuthFailedWrite)?;
 
         let public_spki = new_key
             .public_key()
             .to_pem()
             .expect("fresh key to have public component");
 
-        let mut public_path = private_path.clone();
+        let mut public_path = path.clone();
         public_path.set_extension("public");
         std::fs::write(public_path, public_spki).map_err(Error::PublicKeyWriteFailed)?;
 
@@ -147,7 +148,7 @@ fn load_or_create_platform_auth_key(
     let fingerprint = fingerprint_key(&auth_raw);
     let auth_raw = auth_raw.with_key_id(&fingerprint);
 
-    let mut fingerprint_path = private_path.clone();
+    let mut fingerprint_path = path.clone();
     fingerprint_path.set_extension("fingerprint");
     if !fingerprint_path.exists() {
         std::fs::write(fingerprint_path, fingerprint)
