@@ -3,7 +3,6 @@
 module.exports = {
 	mode: 'jit',
 	content: ['./src/**/*.{js,jsx,ts,tsx}'],
-	plugins: [require('daisyui')],
 	theme: {
 		extend: {
 			boxShadow: {
@@ -39,7 +38,8 @@ module.exports = {
 					disabled: 'var(--disabled)',
 				},
 				error: 'var(--error)',
-				errorBanner: 'var(--errorBanner)',
+				errorBanner: 'var(--error-banner)',
+				errorBannerBorder: 'var(--error-banner-border)',
 				login: 'var(--login)',
 				navigation: {
 					primary: 'var(--navigation-primary)',
