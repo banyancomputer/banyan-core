@@ -23,7 +23,7 @@ impl RegistrationEvent {
 }
 
 #[derive(Deserialize, Serialize)]
-#[serde(rename_all = "snake_case", tag = "t")]
+#[serde(rename_all = "snake_case")]
 pub enum RegistrationEventStatus {
     Approved(String),
     Rejected,
