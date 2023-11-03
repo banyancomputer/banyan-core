@@ -9,6 +9,7 @@ import {
 } from '@/app/types/bucket';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 import { SessionData } from '@app/types';
+import { useSession } from './session';
 
 interface TombInterface {
     tomb: TombWasm | null;
@@ -53,7 +54,7 @@ const TombContext = createContext<TombInterface>({} as TombInterface);
 
 export const TombProvider = ({ children }: { children: ReactNode }) => {
     /** TODO: rework session logic. */
-    const session: SessionData = {} as SessionData;
+    const session = useSession();
     const { keystoreInitialized, getEncryptionKey, getApiKey, escrowedDevice } = useKeystore();
     const [tomb, setTomb] = useState<TombWasm | null>(null);
     const [buckets, setBuckets] = useState<TombBucket[]>([]);

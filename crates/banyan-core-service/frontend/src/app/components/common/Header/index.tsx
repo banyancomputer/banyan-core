@@ -8,6 +8,7 @@ import { popupClickHandler } from '@/app/utils';
 import { useKeystore } from '@/app/contexts/keystore';
 import { Action } from '../FileActions';
 import { SessionData } from '@app/types';
+import { useSession } from '@app/contexts/session';
 
 import { Key, LogoutAlternative, Settings } from '@static/images/common';
 
@@ -16,7 +17,7 @@ export const Header = () => {
     const { purgeKeystore } = useKeystore();
     const { messages } = useIntl();
     /** TODO: rework session logic. */
-    const session: SessionData = {} as SessionData;
+    const session = useSession();
     const navigate = useNavigate();
     const [areProfileOptionsVisible, setAreProfileOptionsVisible] = useState(false);
 

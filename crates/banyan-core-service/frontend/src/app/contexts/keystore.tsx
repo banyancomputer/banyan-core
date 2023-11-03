@@ -8,6 +8,7 @@ import { DeviceApiKey, SessionData } from '@/app/types';
 import { ClientApi } from '@/app/lib/api/auth';
 import { EscrowedKeyMaterial, PrivateKeyMaterial } from '@/app/lib/crypto/types';
 import { setCookie, destroyCookie, parseCookies } from 'nookies';
+import { useSession } from './session';
 
 const KEY_STORE_NAME_PREFIX = 'banyan-key-cache';
 const KEY_STORE_COOKIE_NAME = 'banyan-key-cookie';
@@ -78,7 +79,7 @@ export const KeystoreContext = createContext<{
 
 export const KeystoreProvider = ({ children }: any) => {
     /** TODO: rework session logic. */
-    const session: SessionData = {} as SessionData;
+    const session = useSession();
 
     // External State
     const [keystoreInitialized, setKeystoreInitialized] = useState<boolean>(false);

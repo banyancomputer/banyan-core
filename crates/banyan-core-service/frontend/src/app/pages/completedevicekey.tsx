@@ -8,13 +8,14 @@ import { b64UrlDecode } from '@/app/utils/b64';
 import { hexFingerprintApiKeySpki, prettyFingerprintApiKeySpki, publicPemWrap } from '@/app/utils';
 import { ClientApi } from '@/app/lib/api/auth';
 import { DeviceApiKey, SessionData } from '@/app/types';
+import { useSession } from '@app/contexts/session';
 
 const DeviceKeyApproval = () => {
     const api = new ClientApi();
     const { openModal } = useModal();
     const { messages } = useIntl();
     /** TODO: rework session logic. */
-    const session: SessionData = {} as SessionData;
+    const session = useSession();
     const { completeDeviceKeyRegistration } = useTomb();
     const searchParams = useParams();
     const urlSpki = searchParams.spki;
