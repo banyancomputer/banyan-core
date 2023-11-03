@@ -7,7 +7,7 @@ use base64::Engine;
 use ecdsa::signature::RandomizedDigestSigner;
 use jwt_simple::algorithms::ECDSAP384KeyPairLike;
 use oauth2::{AuthorizationCode, CsrfToken, PkceCodeVerifier, TokenResponse};
-use serde::Deserialize;
+use serde::{Serialize, Deserialize};
 use std::time::Duration;
 use time::OffsetDateTime;
 use url::Url;
@@ -16,9 +16,27 @@ use uuid::Uuid;
 use crate::app::AppState;
 
 use crate::auth::{
-    oauth_client, AuthenticationError, NEW_USER_COOKIE_NAME, SESSION_COOKIE_NAME, SESSION_TTL,
+    oauth_client, AuthenticationError, NEW_USER_COOKIE_NAME, SESSION_COOKIE_NAME, USER_DATA_COOKIE_NAME, SESSION_TTL, escrowed_device::EscrowedDevice
 };
 use crate::extractors::ServerBase;
+
+// Represents a User in the Database
+#[derive(sqlx::FromRow, Serialize)]
+struct User {
+    id: String,
+    email: String,
+    verified_email: bool,
+    display_name: String,
+    locale: Option<String>,
+    profile_image: Option<String>
+}
+
+// Data returned in the User Data Cookie
+#[derive(Serialize)]
+struct UserData {
+    user: User,
+    escrowed_device: Option<EscrowedDevice>
+}
 
 pub async fn handler(
     mut cookie_jar: CookieJar,
@@ -168,6 +186,34 @@ pub async fn handler(
     let expires_at = time::OffsetDateTime::now_utc() + Duration::from_secs(SESSION_TTL);
     let db_uid = user_id.clone().to_string();
 
+    // Lookup User Data to attach include in the CookieJar
+    let user = sqlx::query_as!(
+        User,
+        r#"SELECT 
+            id, email, verified_email, display_name, locale, profile_image
+        FROM users
+        WHERE id = $1;"#,
+        db_uid
+    )
+    .fetch_one(&database)
+    .await
+    .map_err(AuthenticationError::UserDataLookupFailed)?;
+
+    let escrowed_device = sqlx::query_as!(
+        EscrowedDevice,
+        r#"SELECT
+            api_public_key_pem, encryption_public_key_pem, encrypted_private_key_material, pass_key_salt
+        FROM escrowed_devices
+        WHERE user_id = $1;"#,
+        db_uid
+    )
+    .fetch_optional(&database)
+    .await
+    .map_err(AuthenticationError::UserDataLookupFailed)?;
+
+    let user_data = UserData { user, escrowed_device };
+
+    // Create a Session to record in the database and attach to the CookieJar
     let new_sid_row = sqlx::query!(
         "INSERT INTO sessions
             (user_id, provider, access_token, access_expires_at, refresh_token, expires_at)
@@ -198,10 +244,23 @@ pub async fn handler(
         .sign_digest_with_rng(&mut rng, digest);
 
     let auth_tag = B64.encode(signature.to_vec());
+    
     let session_value = format!("{session_enc}{auth_tag}");
+    let user_data_value = serde_json::to_string(&user_data).expect("user daya to serialize");
 
+    // Populate the CookieJar
     cookie_jar = cookie_jar.add(
         Cookie::build(SESSION_COOKIE_NAME, session_value)
+            .http_only(true)
+            .expires(expires_at)
+            .same_site(SameSite::Lax)
+            .path("/")
+            .domain(cookie_domain.clone())
+            .secure(cookie_secure)
+            .finish(),
+    );
+    cookie_jar = cookie_jar.add(
+        Cookie::build(USER_DATA_COOKIE_NAME, user_data_value)
             .http_only(true)
             .expires(expires_at)
             .same_site(SameSite::Lax)

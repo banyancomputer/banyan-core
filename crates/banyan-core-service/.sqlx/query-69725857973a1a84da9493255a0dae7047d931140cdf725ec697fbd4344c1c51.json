@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT api_public_key_pem, encryption_public_key_pem, encrypted_private_key_material, pass_key_salt\n            FROM escrowed_devices\n            WHERE user_id = $1;",
+  "query": "SELECT\n            api_public_key_pem, encryption_public_key_pem, encrypted_private_key_material, pass_key_salt\n        FROM escrowed_devices\n        WHERE user_id = $1;",
   "describe": {
     "columns": [
       {
@@ -34,5 +34,5 @@
       false
     ]
   },
-  "hash": "a18c370b7d65847d90fa70df8a91d4b01528edf01394875d3b23805c64f911bb"
+  "hash": "69725857973a1a84da9493255a0dae7047d931140cdf725ec697fbd4344c1c51"
 }
