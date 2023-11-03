@@ -59,6 +59,7 @@ impl TaskLike for PruneBlocksTask {
 
     async fn run(&self, _task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
         let auth_key = ctx.platform_auth_key();
+        let auth_name = ctx.platform_name();
         let mut db_conn = ctx
             .database()
             .acquire()
@@ -102,7 +103,7 @@ impl TaskLike for PruneBlocksTask {
             .map_err(PruneBlocksTaskError::SqlxError)?;
         }
 
-        report_pruned_blocks(&auth_key, &self.prune_blocks).await?;
+        report_pruned_blocks(&auth_key, auth_name, &self.prune_blocks).await?;
 
         transaction
             .commit()
@@ -114,6 +115,7 @@ impl TaskLike for PruneBlocksTask {
 
 async fn report_pruned_blocks(
     auth_key: &PlatformAuthKey,
+    auth_name: &str,
     prune_blocks: &Vec<PruneBlock>,
 ) -> Result<(), PruneBlocksTaskError> {
     let mut default_headers = HeaderMap::new();
@@ -131,7 +133,7 @@ async fn report_pruned_blocks(
 
     let mut claims = Claims::create(Duration::from_secs(60))
         .with_audiences(HashSet::from_strings(&["banyan-platform"]))
-        .with_subject("banyan-staging")
+        .with_subject(auth_name)
         .invalid_before(Clock::now_since_epoch() - Duration::from_secs(30));
 
     claims.create_nonce();
