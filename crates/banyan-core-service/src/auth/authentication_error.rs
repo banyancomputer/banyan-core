@@ -31,6 +31,9 @@ pub enum AuthenticationError {
     #[error("failed to spawn blocking task for handle oauth code exchange: {0}")]
     SpawnFailure(tokio::task::JoinError),
 
+    #[error("failed to lookup user data")]
+    UserDataLookupFailed(sqlx::Error),
+    
     #[error("attempted to authenticate against an unknown provider")]
     UnknownProvider,
 

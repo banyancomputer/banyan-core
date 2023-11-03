@@ -2,40 +2,36 @@ use axum::extract::{Json, State};
 use axum::response::{IntoResponse, Response};
 use http::StatusCode;
 use jwt_simple::prelude::ES384PublicKey;
-use serde::Deserialize;
 
 use crate::app::AppState;
 use crate::extractors::SessionIdentity;
 use crate::utils::keys::sha1_fingerprint_publickey;
-
-#[derive(Deserialize)]
-pub struct CreateEscrowDeviceRequest {
-    api_public_key_pem: String,
-    encryption_public_key_pem: String,
-    encrypted_private_key_material: String,
-    pass_key_salt: String,
-}
+use crate::auth::escrowed_device::EscrowedDevice;
 
 pub async fn handler(
     session: Option<SessionIdentity>,
     State(state): State<AppState>,
-    Json(request): Json<CreateEscrowDeviceRequest>,
+    Json(request): Json<EscrowedDevice>,
 ) -> Result<Response, CreateEscrowedDeviceError> {
     let session = match session {
         Some(session) => session,
         None => return Err(CreateEscrowedDeviceError::Unauthorized),
     };
+    let api_public_key_pem = request.api_public_key_pem();
+    let encryption_public_key_pem = request.encryption_public_key_pem();
 
     // Validate that the public key material is valid
-    let public_device_api_key = ES384PublicKey::from_pem(&request.api_public_key_pem)
+    let public_device_api_key = ES384PublicKey::from_pem(&api_public_key_pem)
         .map_err(CreateEscrowedDeviceError::InvalidPublicKey)?;
-    let _public_encryption_key = ES384PublicKey::from_pem(&request.encryption_public_key_pem)
+    let _public_encryption_key = ES384PublicKey::from_pem(&encryption_public_key_pem)
         .map_err(CreateEscrowedDeviceError::InvalidPublicKey)?;
     let device_api_key_fingerprint = sha1_fingerprint_publickey(&public_device_api_key);
     // TODO: Validate the salt here too
 
     let database = state.database();
     let user_id = session.user_id();
+    let encrypted_private_key_material = request.encrypted_private_key_material();
+    let pass_key_salt = request.pass_key_salt();
 
     // Check if the user has an escrow device already
     if sqlx::query!(
@@ -57,10 +53,10 @@ pub async fn handler(
         r#"INSERT INTO escrowed_devices (user_id, api_public_key_pem, encryption_public_key_pem, encrypted_private_key_material, pass_key_salt)
             VALUES ($1, $2, $3, $4, $5);"#,
         user_id,
-        request.api_public_key_pem,
-        request.encryption_public_key_pem,
-        request.encrypted_private_key_material,
-        request.pass_key_salt,
+        api_public_key_pem,
+        encryption_public_key_pem,
+        encrypted_private_key_material,
+        pass_key_salt
     )
     .execute(&mut *transaction)
     .await
@@ -81,7 +77,7 @@ pub async fn handler(
             VALUES ($1, $2, $3);"#,
         user_id,
         device_api_key_fingerprint,
-        request.api_public_key_pem,
+        api_public_key_pem,
     )
     .execute(&mut *transaction)
     .await
@@ -148,7 +144,7 @@ impl IntoResponse for CreateEscrowedDeviceError {
             }
             _ => {
                 tracing::error!("{self}");
-                let err_msg = serde_json::json!({"msg": "backend service experienced an issue servicing the request"});
+                let err_msg = serde_json::json!({"msg": "backend service experienced an issue servicing the &request"});
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
             }
         }

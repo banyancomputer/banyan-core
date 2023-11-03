@@ -7,12 +7,12 @@ use url::Url;
 use crate::app::{AppState, Secrets};
 
 mod authentication_error;
+mod escrowed_device;
 mod create_escrowed_device;
 mod login;
 mod logout;
 mod oauth_callback;
 mod provider_config;
-mod read_escrowed_device;
 
 use authentication_error::AuthenticationError;
 use provider_config::ProviderConfig;
@@ -36,6 +36,7 @@ pub static PROVIDER_CONFIGS: phf::Map<&'static str, ProviderConfig> = phf::phf_m
 };
 
 pub static SESSION_COOKIE_NAME: &str = "_session_id";
+pub static USER_DATA_COOKIE_NAME: &str = "_user_data";
 
 pub const SESSION_TTL: u64 = 28 * 24 * 60 * 60;
 
@@ -44,7 +45,6 @@ pub fn router(state: AppState) -> Router<AppState> {
         .route("/callback/:provider", get(oauth_callback::handler))
         .route("/login/:provider", get(login::handler))
         .route("/logout", get(logout::handler))
-        .route("/escrow", get(read_escrowed_device::handler))
         .route("/escrow", post(create_escrowed_device::handler))
         .with_state(state)
 }
