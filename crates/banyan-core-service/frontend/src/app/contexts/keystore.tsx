@@ -138,8 +138,8 @@ export const KeystoreProvider = ({ children }: any) => {
     // Occurs on update to the session context
     useEffect(() => {
         if (session) {
-            setEscrowedDevice(session.escrowedKeyMaterial);
-            !session.escrowedKeyMaterial && purgeKeystore();
+            setEscrowedDevice(session.escrowedKey);
+            !session.escrowedKey && purgeKeystore();
         }
     }, [session]);
 

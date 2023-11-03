@@ -22,6 +22,7 @@ import de from '@static/locales/de.json';
 import ja from '@static/locales/ja.json';
 import zh from '@static/locales/zh.json';
 import { getLocalStorageItem, setLocalStorageItem } from './utils/localStorage';
+import { SessionProvider } from './contexts/session';
 
 const TRANSLATES: Record<string, Record<string, string>> = {
     en,
@@ -37,7 +38,6 @@ const App = () => {
     const [locale, setLocale] = useState('en');
 
     useEffect(() => {
-        console.log(parseCookies());
         window.addEventListener('storage', () => {
             const selectedLanguage = getLocalStorageItem('lang');
             setLocale(selectedLanguage || 'en');
@@ -54,32 +54,34 @@ const App = () => {
     return (
         <main className="flex flex-col h-screen font-sans bg-mainBackground text-text-900">
             <BrowserRouter basename="/" >
-                <KeystoreProvider>
-                    <TombProvider>
-                        <ModalProvider>
-                            <FileUploadProvider>
-                                <FilePreviewProvider>
-                                    <IntlProvider locale={locale} messages={TRANSLATES[locale]}>
-                                        <Notifications />
-                                        <Modal />
-                                        <FilePreview />
-                                        <Modal />
-                                        <Notifications />
-                                        <section className="flex flex-grow">
-                                            <Navigation />
-                                            <div className="flex-grow">
-                                                <Header />
-                                                <Suspense>
-                                                    <Routes />
-                                                </Suspense>
-                                            </div>
-                                        </section>
-                                    </IntlProvider>
-                                </FilePreviewProvider>
-                            </FileUploadProvider>
-                        </ModalProvider>
-                    </TombProvider>
-                </KeystoreProvider>
+                <SessionProvider>
+                    <KeystoreProvider>
+                        <TombProvider>
+                            <ModalProvider>
+                                <FileUploadProvider>
+                                    <FilePreviewProvider>
+                                        <IntlProvider locale={locale} messages={TRANSLATES[locale]}>
+                                            <Notifications />
+                                            <Modal />
+                                            <FilePreview />
+                                            <Modal />
+                                            <Notifications />
+                                            <section className="flex flex-grow">
+                                                <Navigation />
+                                                <div className="flex-grow">
+                                                    <Header />
+                                                    <Suspense>
+                                                        <Routes />
+                                                    </Suspense>
+                                                </div>
+                                            </section>
+                                        </IntlProvider>
+                                    </FilePreviewProvider>
+                                </FileUploadProvider>
+                            </ModalProvider>
+                        </TombProvider>
+                    </KeystoreProvider>
+                </SessionProvider>
             </BrowserRouter>
         </main>
     );
