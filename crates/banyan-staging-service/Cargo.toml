@@ -15,7 +15,7 @@ tokio = { version = "^1", features = ["macros", "net", "rt", "rt-multi-thread", 
 async-trait = "^0.1"
 blake3 = "^1"
 bytes = "^1"
-cid = "^0.10"
+cid = { version = "^0.10", features = ["serde-codec"] }
 jwt-simple = "^0.11"
 mime = "^0.3"
 regex = { version = "^1", default-features = false, features = ["std"] }
