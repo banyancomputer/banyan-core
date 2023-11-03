@@ -124,6 +124,7 @@ pub async fn handler(
             // todo: should be a background task
             report_upload_to_platform(
                 auth_key,
+                state.platform_name(),
                 client.storage_grant_id(),
                 request.metadata_id,
                 &cr,
@@ -241,6 +242,7 @@ async fn record_upload_failed(db: &Database, upload_id: &str) -> Result<(), Uplo
 
 async fn report_upload_to_platform(
     auth_key: PlatformAuthKey,
+    platform_name: &str,
     storage_authorization_id: String,
     metadata_id: Uuid,
     report: &CarReport,
@@ -275,7 +277,7 @@ async fn report_upload_to_platform(
 
     let mut claims = Claims::create(Duration::from_secs(60))
         .with_audiences(HashSet::from_strings(&["banyan-platform"]))
-        .with_subject("banyan-staging")
+        .with_subject(platform_name)
         .invalid_before(Clock::now_since_epoch() - Duration::from_secs(30));
 
     claims.create_nonce();
