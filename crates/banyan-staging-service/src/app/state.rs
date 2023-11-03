@@ -14,6 +14,7 @@ pub struct State {
     database: Database,
     hostname: Url,
 
+    platform_name: String,
     platform_auth_key: PlatformAuthKey,
     platform_base_url: reqwest::Url,
     platform_verification_key: PlatformVerificationKey,
@@ -56,6 +57,7 @@ impl State {
             database,
             hostname: config.hostname(),
 
+            platform_name: config.platform_name().to_string(),
             platform_auth_key: PlatformAuthKey::new(config.platform_base_url(), platform_auth_key),
             platform_base_url: config.platform_base_url(),
             platform_verification_key: PlatformVerificationKey::new(platform_verification_key),
@@ -66,6 +68,10 @@ impl State {
 
     pub fn hostname(&self) -> Url {
         self.hostname.clone()
+    }
+
+    pub fn platform_name(&self) -> &str {
+        &self.platform_name
     }
 
     pub fn platform_base_url(&self) -> Url {

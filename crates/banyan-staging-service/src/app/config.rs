@@ -18,6 +18,7 @@ pub struct Config {
     db_url: String,
     hostname: Url,
 
+    platform_name: String,
     platform_auth_key_path: PathBuf,
     platform_base_url: reqwest::Url,
     platform_verification_key_path: PathBuf,
@@ -52,6 +53,10 @@ impl Config {
 
     pub fn parse_cli_arguments() -> Result<Self, Error> {
         let mut args = Arguments::from_env();
+
+        let platform_name = args
+            .opt_value_from_str("--platform-name")?
+            .unwrap_or("banyan-staging".into());
 
         let platform_auth_key_path: PathBuf = args
             .opt_value_from_str("--auth-key")?
@@ -131,12 +136,17 @@ impl Config {
             db_url,
             hostname,
 
+            platform_name,
             platform_auth_key_path,
             platform_base_url,
             platform_verification_key_path,
 
             upload_directory,
         })
+    }
+
+    pub fn platform_name(&self) -> &str {
+        &self.platform_name
     }
 
     pub fn platform_auth_key_path(&self) -> PathBuf {
