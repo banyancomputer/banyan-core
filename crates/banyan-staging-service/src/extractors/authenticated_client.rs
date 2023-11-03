@@ -31,7 +31,7 @@ pub struct AuthenticatedClient {
     authorized_storage: u64,
     consumed_storage: u64,
 
-    storage_grant_id: String,
+    storage_grant_id: Uuid,
 }
 
 impl AuthenticatedClient {
@@ -55,8 +55,8 @@ impl AuthenticatedClient {
         self.platform_id
     }
 
-    pub fn storage_grant_id(&self) -> String {
-        self.storage_grant_id.clone()
+    pub fn storage_grant_id(&self) -> Uuid {
+        self.storage_grant_id
     }
 
     pub fn remaining_storage(&self) -> u64 {
@@ -128,7 +128,7 @@ where
         let consumed_storage = current_consumed_storage(&database, &client_id.id).await?;
 
         let internal_id = match Uuid::parse_str(&client_id.id) {
-            Ok(pi) => pi,
+            Ok(ii) => ii,
             Err(err) => return Err(Self::Rejection::CorruptInternalId(err)),
         };
 
@@ -141,6 +141,11 @@ where
             authorized_storage.allowed_bytes,
             authorized_storage.grant_id,
         );
+
+        let storage_grant_id = match Uuid::parse_str(&storage_grant_id) {
+            Ok(sgi) => sgi,
+            Err(err) => return Err(Self::Rejection::CorruptPlatformId(err)),
+        };
 
         Ok(AuthenticatedClient {
             id: internal_id,

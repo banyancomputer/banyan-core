@@ -1,5 +1,5 @@
-mod mailgun;
-mod storage;
+mod prune_blocks;
+mod report_upload;
 
 use axum::routing::post;
 use axum::Router;
@@ -12,8 +12,8 @@ pub fn router(state: AppState) -> Router<AppState> {
     let cors_layer = CorsLayer::very_permissive();
 
     Router::new()
-        .route("/mailgun", post(mailgun::handler))
-        .nest("/storage", storage::router(state.clone()))
+        .route("/report/:metadata_id", post(report_upload::handler))
+        .route("/prune", post(prune_blocks::handler))
         .with_state(state)
         .layer(cors_layer)
 }

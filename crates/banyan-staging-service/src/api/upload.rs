@@ -5,6 +5,7 @@ use axum::headers::{ContentLength, ContentType};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::TypedHeader;
+use banyan_task::TaskLikeExt;
 use cid::multibase::Base;
 use cid::Cid;
 use futures::{TryFutureExt, TryStream, TryStreamExt};
@@ -21,6 +22,7 @@ use crate::app::State as AppState;
 use crate::car_analyzer::{CarReport, StreamingCarAnalyzer, StreamingCarAnalyzerError};
 use crate::database::{map_sqlx_error, BareId, Database, SqlxError};
 use crate::extractors::{AuthenticatedClient, UploadStore};
+use crate::tasks::ReportUploadTask;
 
 /// Limit on the size of the JSON request that accompanies an upload.
 const UPLOAD_REQUEST_SIZE_LIMIT: u64 = 100 * 1_024;
@@ -35,12 +37,11 @@ pub async fn handler(
     State(state): State<AppState>,
     client: AuthenticatedClient,
     store: UploadStore,
-    auth_key: PlatformAuthKey,
     TypedHeader(content_len): TypedHeader<ContentLength>,
     TypedHeader(content_type): TypedHeader<ContentType>,
     body: BodyStream,
 ) -> Result<Response, UploadError> {
-    let db = state.database();
+    let mut db = state.database();
     let reported_body_length = content_len.0;
     if reported_body_length > client.remaining_storage() {
         tracing::warn!(upload_size = ?reported_body_length, remaining_storage = ?client.remaining_storage(), "staging believes the user doesn't have sufficient storage capacity remaining");
@@ -121,14 +122,15 @@ pub async fn handler(
                 .map_err(UploadStreamError::WriteFailed)?;
 
             handle_successful_upload(&db, &store, &cr, &upload_id, &store_path).await?;
-            // todo: should be a background task
-            report_upload_to_platform(
-                auth_key,
+            ReportUploadTask::new(
                 client.storage_grant_id(),
                 request.metadata_id,
-                &cr,
+                cr.cids(),
+                cr.total_size(),
             )
-            .await?;
+            .enqueue::<banyan_task::SqliteTaskStore>(&mut db)
+            .await
+            .map_err(UploadError::FailedToEnqueueTask)?;
 
             Ok((StatusCode::NO_CONTENT, ()).into_response())
         }
@@ -239,67 +241,6 @@ async fn record_upload_failed(db: &Database, upload_id: &str) -> Result<(), Uplo
     Ok(())
 }
 
-async fn report_upload_to_platform(
-    auth_key: PlatformAuthKey,
-    storage_authorization_id: String,
-    metadata_id: Uuid,
-    report: &CarReport,
-) -> Result<(), UploadError> {
-    let normalized_cids = report
-        .cids()
-        .iter()
-        .map(|c| {
-            c.to_string_of_base(Base::Base64Url)
-                .map_err(UploadError::InvalidInternalCid)
-        })
-        .collect::<Result<Vec<_>, UploadError>>()?;
-
-    let metadata_size = MetadataSizeRequest {
-        data_size: report.total_size(),
-        storage_authorization_id,
-        normalized_cids,
-    };
-
-    let mut default_headers = HeaderMap::new();
-    default_headers.insert("Content-Type", HeaderValue::from_static("application/json"));
-
-    let client = Client::builder()
-        .default_headers(default_headers)
-        .build()
-        .unwrap();
-
-    let report_endpoint = auth_key
-        .base_url()
-        .join(format!("/api/v1/storage/{}", metadata_id).as_str())
-        .unwrap();
-
-    let mut claims = Claims::create(Duration::from_secs(60))
-        .with_audiences(HashSet::from_strings(&["banyan-platform"]))
-        .with_subject("banyan-staging")
-        .invalid_before(Clock::now_since_epoch() - Duration::from_secs(30));
-
-    claims.create_nonce();
-    claims.issued_at = Some(Clock::now_since_epoch());
-
-    let bearer_token = auth_key.sign(claims).unwrap();
-
-    let request = client
-        .post(report_endpoint)
-        .json(&metadata_size)
-        .bearer_auth(bearer_token);
-
-    let response = request
-        .send()
-        .await
-        .map_err(|_| UploadError::FailedReport("unable to connect to platform"))?;
-
-    if response.status().is_success() {
-        Ok(())
-    } else {
-        Err(UploadError::FailedReport("server returned error response"))
-    }
-}
-
 async fn process_upload_stream<S>(
     db: &Database,
 
@@ -390,13 +331,6 @@ where
     Ok(car_analyzer.report()?)
 }
 
-#[derive(Serialize)]
-struct MetadataSizeRequest {
-    data_size: u64,
-    normalized_cids: Vec<String>,
-    storage_authorization_id: String,
-}
-
 #[derive(Debug, thiserror::Error)]
 pub enum UploadError {
     #[error("a database error occurred during an upload {0}")]
@@ -408,8 +342,8 @@ pub enum UploadError {
     #[error("failed to acquire data field from body")]
     DataFieldUnavailable(multer::Error),
 
-    #[error("failed to report upload status to platform")]
-    FailedReport(&'static str),
+    #[error("failed to enqueue a task: {0}")]
+    FailedToEnqueueTask(#[from] banyan_task::TaskStoreError),
 
     #[error("account is not authorized to store {0} bytes, {1} bytes are still authorized")]
     InsufficientAuthorizedStorage(u64, u64),
@@ -438,7 +372,7 @@ impl IntoResponse for UploadError {
         use UploadError::*;
 
         match self {
-            Database(_) | FailedReport(_) | InvalidInternalCid(_) | StoreUnavailable(_) => {
+            Database(_) | FailedToEnqueueTask(_) | InvalidInternalCid(_) | StoreUnavailable(_) => {
                 tracing::error!("{self}");
                 let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
