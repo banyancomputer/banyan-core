@@ -34,8 +34,8 @@ CREATE TABLE storage_grants (
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_storage_grants_on_grant_id
-  ON storage_grants(grant_id);
+CREATE UNIQUE INDEX idx_storage_grants_on_grant_id
+  ON storage_grants(client_id, grant_id);
 CREATE INDEX idx_storage_grants_on_created_at
   ON storage_grants(created_at);
 
