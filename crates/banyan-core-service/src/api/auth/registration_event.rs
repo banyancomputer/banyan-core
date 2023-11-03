@@ -7,10 +7,10 @@ pub struct RegistrationEvent {
 }
 
 impl RegistrationEvent {
-    pub fn approved(fingerprint: String, account_id: String) -> Self {
+    pub fn approved(fingerprint: String, user_id: String) -> Self {
         Self {
             fingerprint,
-            status: RegistrationEventStatus::Approved(account_id),
+            status: RegistrationEventStatus::Approved(user_id),
         }
     }
 

@@ -12,13 +12,13 @@ pub async fn handler(api_id: ApiIdentity, State(state): State<AppState>) -> Resp
 
     let query_result = sqlx::query_as!(
         Bucket,
-        "SELECT * FROM buckets WHERE account_id = $1;",
-        api_id.account_id,
+        "SELECT * FROM buckets WHERE user_id = $1;",
+        api_id.user_id,
     )
     .fetch_all(&database)
     .await;
 
-    // note: this also includes account_id which wasn't being returned before and may cause
+    // note: this also includes user_id which wasn't being returned before and may cause
     // compatibility issues
 
     match query_result {

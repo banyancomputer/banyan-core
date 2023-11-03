@@ -1,4 +1,4 @@
-use axum::routing::get;
+use axum::routing::{get, post};
 use axum::Router;
 use oauth2::basic::BasicClient;
 use oauth2::RedirectUrl;
@@ -7,10 +7,12 @@ use url::Url;
 use crate::app::{AppState, Secrets};
 
 mod authentication_error;
+mod create_escrowed_device;
 mod login;
 mod logout;
 mod oauth_callback;
 mod provider_config;
+mod read_escrowed_device;
 
 use authentication_error::AuthenticationError;
 use provider_config::ProviderConfig;
@@ -42,6 +44,8 @@ pub fn router(state: AppState) -> Router<AppState> {
         .route("/callback/:provider", get(oauth_callback::handler))
         .route("/login/:provider", get(login::handler))
         .route("/logout", get(logout::handler))
+        .route("/escrow", get(read_escrowed_device::handler))
+        .route("/escrow", post(create_escrowed_device::handler))
         .with_state(state)
 }
 

@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT api_public_key_pem, encryption_public_key_pem, encrypted_private_key_material, pass_key_salt\n            FROM escrowed_devices\n            WHERE user_id = $1;",
+  "describe": {
+    "columns": [
+      {
+        "name": "api_public_key_pem",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "encryption_public_key_pem",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "encrypted_private_key_material",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "pass_key_salt",
+        "ordinal": 3,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "a18c370b7d65847d90fa70df8a91d4b01528edf01394875d3b23805c64f911bb"
+}

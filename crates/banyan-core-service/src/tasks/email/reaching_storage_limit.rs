@@ -15,15 +15,15 @@ use super::EmailTaskError;
 
 #[derive(Deserialize, Serialize)]
 pub struct ReachingStorageLimitEmailTask {
-    account_id: Uuid,
+    user_id: Uuid,
     current_usage: usize,
     max_usage: usize,
 }
 
 impl ReachingStorageLimitEmailTask {
-    pub fn new(account_id: Uuid, current_usage: usize, max_usage: usize) -> Self {
+    pub fn new(user_id: Uuid, current_usage: usize, max_usage: usize) -> Self {
         Self {
-            account_id,
+            user_id,
             current_usage,
             max_usage,
         }
@@ -39,14 +39,14 @@ impl TaskLike for ReachingStorageLimitEmailTask {
 
     async fn run(&self, _task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
         // Filter out innapropriate emails
-        if !should_send_email_message(self.account_id, &ctx).await? {
+        if !should_send_email_message(self.user_id, &ctx).await? {
             return Ok(());
         }
         let message = ReachingStorageLimit {
             current_usage: self.current_usage,
             max_usage: self.max_usage,
         };
-        send_email_message(self.account_id, &message, &ctx).await
+        send_email_message(self.user_id, &message, &ctx).await
     }
 }
 
@@ -58,8 +58,8 @@ mod tests {
     #[tokio::test]
     /// ReachingStorageLimitEmailTask should succeed in a valid context
     async fn success() {
-        let (ctx, account_id, current_task) = test_setup().await;
-        let task = ReachingStorageLimitEmailTask::new(account_id, 0, 0);
+        let (ctx, user_id, current_task) = test_setup().await;
+        let task = ReachingStorageLimitEmailTask::new(user_id, 0, 0);
         let result = task.run(current_task, ctx).await;
         assert!(result.is_ok());
     }

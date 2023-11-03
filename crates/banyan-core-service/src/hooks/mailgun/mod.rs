@@ -38,7 +38,7 @@ pub async fn handler(
     let email_id = request.message_id().to_string();
     let email_state = sqlx::query_as!(
         EmailState,
-        "SELECT account_id, state as 'state: EmailMessageState' FROM emails WHERE id = $1;",
+        "SELECT user_id, state as 'state: EmailMessageState' FROM emails WHERE id = $1;",
         email_id,
     )
     .fetch_optional(&mut *transaction)
@@ -52,13 +52,13 @@ pub async fn handler(
     }
 
     let stat_sql = format!(
-        r#"INSERT INTO email_stats(account_id, {reported_state})
+        r#"INSERT INTO email_stats(user_id, {reported_state})
                VALUES ($1, 1)
-               ON CONFLICT(account_id) DO UPDATE SET {reported_state} = {reported_state} + 1;"#,
+               ON CONFLICT(user_id) DO UPDATE SET {reported_state} = {reported_state} + 1;"#,
     );
 
     sqlx::query(&stat_sql)
-        .bind(email_state.account_id)
+        .bind(email_state.user_id)
         .execute(&mut *transaction)
         .await
         .map_err(MailgunHookError::QueryFailed)?;
@@ -94,7 +94,7 @@ pub async fn handler(
 
 #[derive(sqlx::FromRow)]
 struct EmailState {
-    account_id: String,
+    user_id: String,
     state: EmailMessageState,
 }
 

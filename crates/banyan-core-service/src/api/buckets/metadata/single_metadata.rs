@@ -15,7 +15,7 @@ pub async fn handler(
 ) -> Response {
     let query_result = PartialMetadataWithSnapshot::locate_specific(
         &state.database(),
-        api_id.account_id,
+        api_id.user_id,
         bucket_id,
         metadata_id,
     )

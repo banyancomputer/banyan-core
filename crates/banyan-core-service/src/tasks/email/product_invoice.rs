@@ -16,13 +16,13 @@ use super::EmailTaskError;
 
 #[derive(Deserialize, Serialize)]
 pub struct ProductInvoiceEmailTask {
-    account_id: Uuid,
+    user_id: Uuid,
     url: Url,
 }
 
 impl ProductInvoiceEmailTask {
-    pub fn new(account_id: Uuid, url: Url) -> Self {
-        Self { account_id, url }
+    pub fn new(user_id: Uuid, url: Url) -> Self {
+        Self { user_id, url }
     }
 }
 
@@ -35,13 +35,13 @@ impl TaskLike for ProductInvoiceEmailTask {
 
     async fn run(&self, _task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
         // Filter out innapropriate emails
-        if !should_send_email_message(self.account_id, &ctx).await? {
+        if !should_send_email_message(self.user_id, &ctx).await? {
             return Ok(());
         }
         let message = ProductInvoice {
             url: self.url.clone(),
         };
-        send_email_message(self.account_id, &message, &ctx).await
+        send_email_message(self.user_id, &message, &ctx).await
     }
 }
 
@@ -53,9 +53,9 @@ mod tests {
     #[tokio::test]
     /// ProductInvoiceEmailTask should succeed in a valid context
     async fn success() {
-        let (ctx, account_id, current_task) = test_setup().await;
+        let (ctx, user_id, current_task) = test_setup().await;
         let task =
-            ProductInvoiceEmailTask::new(account_id, Url::parse("https://example.com").unwrap());
+            ProductInvoiceEmailTask::new(user_id, Url::parse("https://example.com").unwrap());
         let result = task.run(current_task, ctx).await;
         assert!(result.is_ok());
     }

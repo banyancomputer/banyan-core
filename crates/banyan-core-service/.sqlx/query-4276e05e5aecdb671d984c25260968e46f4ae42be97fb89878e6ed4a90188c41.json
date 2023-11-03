@@ -1,0 +1,44 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT bk.* FROM bucket_keys AS bk\n               JOIN buckets b ON bk.bucket_id = b.id\n               WHERE b.user_id = $1\n                   AND bk.bucket_id = $2\n                   AND bk.id = $3;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "bucket_id",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "pem",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "fingerprint",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "approved",
+        "ordinal": 4,
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "4276e05e5aecdb671d984c25260968e46f4ae42be97fb89878e6ed4a90188c41"
+}

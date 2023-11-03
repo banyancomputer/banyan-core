@@ -25,8 +25,8 @@ pub async fn handler(
     // we need to authorize the bucket belongs to the account before we associate the key to the
     // bucket
     let maybe_bucket_id: Option<String> = sqlx::query_scalar!(
-        "SELECT id FROM buckets WHERE account_id = $1 AND id = $2;",
-        api_id.account_id,
+        "SELECT id FROM buckets WHERE user_id = $1 AND id = $2;",
+        api_id.user_id,
         bucket_id,
     )
     .fetch_optional(&database)

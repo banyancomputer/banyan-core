@@ -25,10 +25,10 @@ pub async fn handler(
     let database = state.database();
 
     let bucket_id = sqlx::query_scalar!(
-        r#"INSERT INTO buckets (account_id, name, type, storage_class)
+        r#"INSERT INTO buckets (user_id, name, type, storage_class)
                VALUES ($1, $2, $3, $4)
                RETURNING id;"#,
-        api_id.account_id,
+        api_id.user_id,
         request.name,
         request.bucket_type,
         request.storage_class,

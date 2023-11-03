@@ -9,7 +9,7 @@
         "type_info": "Text"
       },
       {
-        "name": "account_id",
+        "name": "user_id",
         "ordinal": 1,
         "type_info": "Text"
       },

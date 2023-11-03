@@ -1,6 +1,6 @@
 -- NEXT AUTH TABLES --
 
--- Migration for users table
+-- Users table for all auth providers
 CREATE TABLE users (
   id TEXT NOT NULL PRIMARY KEY DEFAULT (
     lower(hex(randomblob(4))) || '-' ||
@@ -9,14 +9,25 @@ CREATE TABLE users (
     substr(lower(hex(randomblob(2))), 2) || '-6' ||
     substr(lower(hex(randomblob(6))), 2)
   ),
-  name TEXT,
-  email TEXT UNIQUE,
-  email_verified TEXT,
-  image TEXT
+
+
+  -- User Email Information
+  email TEXT NOT NULL,
+  verified_email BOOLEAN NOT NULL DEFAULT false,
+
+  -- User Profile Information
+  display_name TEXT NOT NULL,
+  locale TEXT,
+  profile_image TEXT,
+
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Migration for accounts table
-CREATE TABLE accounts (
+CREATE UNIQUE INDEX idx_unique_users_on_email ON
+  users(email);
+
+-- OAuth Provider Accounts
+CREATE TABLE oauth_provider_accounts (
   id TEXT NOT NULL PRIMARY KEY DEFAULT (
     lower(hex(randomblob(4))) || '-' ||
     lower(hex(randomblob(2))) || '-4' ||
@@ -24,21 +35,42 @@ CREATE TABLE accounts (
     substr(lower(hex(randomblob(2))), 2) || '-6' ||
     substr(lower(hex(randomblob(6))), 2)
   ),
-  userId TEXT NOT NULL,
-  type TEXT NOT NULL,
+
+  user_id TEXT NOT NULL
+    REFERENCES users(id)
+    ON DELETE CASCADE,
+
+  -- Name of the provider
   provider TEXT NOT NULL,
-  providerAccountId TEXT NOT NULL,
-  refresh_token TEXT,
-  access_token TEXT,
-  expires_at INTEGER,
-  token_type TEXT,
-  scope TEXT,
-  id_token TEXT,
-  session_state TEXT,
-  FOREIGN KEY (userId) REFERENCES users(id)
+  -- Account ID on the provider
+  provider_id TEXT NOT NULL,
+  -- TODO: Is this required? What does it mean?
+  -- provider_email TEXT NOT NULL,
+
+  associated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Migration for sessions table
+CREATE UNIQUE INDEX idx_unique_oauth_provider_accounts_on_provider_provider_id
+  ON oauth_provider_accounts(provider, provider_id);
+-- TODO: Figure out if this is needed
+-- CREATE UNIQUE INDEX idx_unique_oauth_provider_accounts_on_provider_provider_email
+--   ON oauth_provider_accounts(provider, provider_email);
+
+-- Table for managing OAuth login state
+CREATE TABLE oauth_state (
+  provider TEXT NOT NULL,
+  csrf_secret TEXT NOT NULL,
+  pkce_verifier_secret TEXT NOT NULL,
+
+  next_url TEXT,
+
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE UNIQUE INDEX idx_unique_oauth_state_on_provider_csrf_secret
+  ON oauth_state(provider, csrf_secret);
+
+-- Table for managing OAuth Sessions
 CREATE TABLE sessions (
   id TEXT NOT NULL PRIMARY KEY DEFAULT (
     lower(hex(randomblob(4))) || '-' ||
@@ -47,24 +79,19 @@ CREATE TABLE sessions (
     substr(lower(hex(randomblob(2))), 2) || '-6' ||
     substr(lower(hex(randomblob(6))), 2)
   ),
-  sessionToken TEXT UNIQUE,
-  userId TEXT NOT NULL,
-  expires TEXT NOT NULL,
-  FOREIGN KEY (userId) REFERENCES users(id)
-);
 
--- Migration for verification_tokens table
-CREATE TABLE verification_tokens (
-  id TEXT NOT NULL PRIMARY KEY DEFAULT (
-    lower(hex(randomblob(4))) || '-' ||
-    lower(hex(randomblob(2))) || '-4' ||
-    substr(lower(hex(randomblob(2))), 2) || '-a' ||
-    substr(lower(hex(randomblob(2))), 2) || '-6' ||
-    substr(lower(hex(randomblob(6))), 2)
-  ),
-  token TEXT NOT NULL,
-  identifier TEXT NOT NULL,
-  expires TEXT NOT NULL
+  user_id TEXT NOT NULL REFERENCES users(id),
+  provider TEXT NOT NULL,
+
+  client_ip TEXT,
+  user_agent TEXT,
+
+  access_token TEXT NOT NULL,
+  access_expires_at TIMESTAMP,
+  refresh_token TEXT,
+
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  expires_at TIMESTAMP NOT NULL
 );
 
 -- Migration for WebUI data
@@ -79,8 +106,8 @@ CREATE TABLE escrowed_devices (
     substr(lower(hex(randomblob(6))), 2)
   ),
 
-  account_id TEXT NOT NULL
-    REFERENCES accounts(id)
+  user_id TEXT NOT NULL
+    REFERENCES users(id)
     ON DELETE CASCADE,
 
   api_public_key_pem TEXT NOT NULL,
@@ -88,12 +115,11 @@ CREATE TABLE escrowed_devices (
   encrypted_private_key_material TEXT NOT NULL,
   pass_key_salt TEXT NOT NULL,
 
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE UNIQUE INDEX idx_escrowed_device_keys_on_unique_account_id
-  ON escrowed_devices(account_id);
+CREATE UNIQUE INDEX idx_escrowed_device_keys_on_unique_user_id
+  ON escrowed_devices(user_id);
 
 -- Businesss Logic Tables
 
@@ -107,8 +133,8 @@ CREATE TABLE device_api_keys (
     substr(lower(hex(randomblob(2))), 2) || '-6' ||
     substr(lower(hex(randomblob(6))), 2)),
 
-  account_id TEXT NOT NULL
-    REFERENCES accounts(id)
+  user_id TEXT NOT NULL
+    REFERENCES users(id)
     ON DELETE CASCADE,
 
   fingerprint VARCHAR(50) NOT NULL,
@@ -131,8 +157,8 @@ CREATE TABLE buckets (
     substr(lower(hex(randomblob(2))), 2) || '-6' ||
     substr(lower(hex(randomblob(6))), 2)),
 
-  account_id TEXT NOT NULL
-    REFERENCES accounts(id)
+  user_id TEXT NOT NULL
+    REFERENCES users(id)
     ON DELETE CASCADE,
 
   name VARCHAR(128) NOT NULL,
@@ -146,8 +172,8 @@ CREATE TABLE buckets (
   -- todo: this needs created_at and updated_at fields
 );
 
-CREATE UNIQUE INDEX idx_buckets_on_unique_account_id_and_name
-  ON buckets(account_id, name);
+CREATE UNIQUE INDEX idx_buckets_on_unique_user_id_and_name
+  ON buckets(user_id, name);
 
 -- Migrations for Bucket Keys
 CREATE TABLE bucket_keys (
@@ -276,7 +302,7 @@ CREATE TABLE storage_grants (
     substr(lower(hex(randomblob(6))), 2)),
 
   storage_host_id TEXT NOT NULL REFERENCES storage_hosts(id),
-  account_id TEXT NOT NULL REFERENCES accounts(id),
+  user_id TEXT NOT NULL REFERENCES users(id),
   authorized_amount INTEGER NOT NULL DEFAULT 0,
 
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

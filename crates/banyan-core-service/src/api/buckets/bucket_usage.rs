@@ -19,8 +19,8 @@ pub async fn handler(
         r#"SELECT COALESCE(SUM(m.data_size), 0) as size
                FROM metadata m
                JOIN buckets b ON m.bucket_id = b.id
-               WHERE b.account_id = $1 AND b.id = $2;"#,
-        api_id.account_id,
+               WHERE b.user_id = $1 AND b.id = $2;"#,
+        api_id.user_id,
         bucket_id,
     )
     .fetch_one(&database)
