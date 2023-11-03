@@ -73,6 +73,7 @@ impl TaskLike for ReportUploadTask {
 
     async fn run(&self, _task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
         let auth_key = ctx.platform_auth_key();
+        let auth_name = ctx.platform_name();
         let metadata_id = self.metadata_id.to_string();
         let storage_authorization_id = self.storage_authorization_id.to_string();
         let data_size = self.data_size;
@@ -100,7 +101,7 @@ impl TaskLike for ReportUploadTask {
 
         let mut claims = Claims::create(Duration::from_secs(60))
             .with_audiences(HashSet::from_strings(&["banyan-platform"]))
-            .with_subject("banyan-staging")
+            .with_subject(auth_name)
             .invalid_before(Clock::now_since_epoch() - Duration::from_secs(30));
 
         claims.create_nonce();
