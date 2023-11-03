@@ -15,7 +15,7 @@ export const CreateBucketModal = () => {
     const [storageClass, setStorageClass] = useState('hot');
     const isBucketDataFilled = useMemo(() =>
         !!bucketType && !!(bucketName.length >= 3),
-        [bucketName, bucketName]);
+    [bucketName, bucketName]);
 
     const bucketTypes = [
         new Selectoption('Interactive', 'interactive'),
@@ -33,7 +33,7 @@ export const CreateBucketModal = () => {
         setBucketName(event.target.value);
     };
 
-    const create = async () => {
+    const create = async() => {
         try {
             await createBucket(bucketName, storageClass, bucketType);
             closeModal();

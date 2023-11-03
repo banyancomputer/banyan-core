@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { useIntl } from 'react-intl';
 
 import { UploadFileModal } from '@/app/components/common/Modal/UploadFileModal';
@@ -14,7 +14,8 @@ const BucketHeader = () => {
     const { messages } = useIntl();
     const folderLocation = useFolderLocation();
     const { selectedBucket } = useTomb();
-    const bucketId = 'outer.query.id;'
+    const params = useParams();
+    const bucketId = params.id;
     const { openModal } = useModal();
 
     const uploadFile = () => {

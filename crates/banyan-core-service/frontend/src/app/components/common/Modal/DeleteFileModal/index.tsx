@@ -14,7 +14,7 @@ export const DeleteFileModal: React.FC<{ bucket: Bucket; file: BrowserObject; pa
     const { deleteFile, getSelectedBucketFiles, getExpandedFolderFiles } = useTomb();
     const folderLocation = useFolderLocation();
 
-    const removeFile = async () => {
+    const removeFile = async() => {
         try {
             await deleteFile(bucket, [...path], file.name);
             if (path.join('/') === folderLocation.join('/')) {

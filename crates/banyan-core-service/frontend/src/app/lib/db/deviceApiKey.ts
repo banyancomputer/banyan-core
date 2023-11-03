@@ -4,8 +4,8 @@ import { DeviceApiKey as DeviceApiKeyAttributes } from '@app/lib/interfaces';
 export const DeviceApiKeyFactory = {
     create: async(attrs: Partial<DeviceApiKeyAttributes> = {}) => DeviceApiKey.create(attrs),
 
-    readAllByAccountId: async(accountId: string) => DeviceApiKey.findAll({
-        where: { accountId },
+    readAllByAccountId: async(userId: string) => DeviceApiKey.findAll({
+        where: { userId },
     }),
 
     readByFingerprint: async(fingerprint: string) => DeviceApiKey.findOne({
@@ -13,11 +13,11 @@ export const DeviceApiKeyFactory = {
     }),
 
     deleteByAccountIdAndFingerprint: async(
-        accountId: string,
+        userId: string,
         fingerprint: string
     ) => DeviceApiKey.destroy({
         where: {
-            accountId,
+            userId,
             fingerprint,
         },
     }),

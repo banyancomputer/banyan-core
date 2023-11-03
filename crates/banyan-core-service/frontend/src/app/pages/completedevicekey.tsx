@@ -1,20 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { useIntl } from 'react-intl';
+import { useParams } from 'react-router-dom';
 
 import { useTomb } from '@/app/contexts/tomb';
 import { useModal } from '@/app/contexts/modals';
 import { b64UrlDecode } from '@/app/utils/b64';
 import { hexFingerprintApiKeySpki, prettyFingerprintApiKeySpki, publicPemWrap } from '@/app/utils';
 import { ClientApi } from '@/app/lib/api/auth';
-import { DeviceApiKey } from '@/app/types';
-import { useParams } from 'react-router-dom';
+import { DeviceApiKey, SessionData } from '@/app/types';
 
 const DeviceKeyApproval = () => {
     const api = new ClientApi();
     const { openModal } = useModal();
     const { messages } = useIntl();
     /** TODO: rework session logic. */
-    const session: any = '';
+    const session: SessionData = {} as SessionData;
     const { completeDeviceKeyRegistration } = useTomb();
     const searchParams = useParams();
     const urlSpki = searchParams.spki;
@@ -24,7 +24,7 @@ const DeviceKeyApproval = () => {
     const [hexFingerprint, setHexFingerprint] = useState('');
 
     useEffect(() => {
-        const getFingerprint = async () => {
+        const getFingerprint = async() => {
             setHexFingerprint(await hexFingerprintApiKeySpki(spki));
             setPrettyFingerprint(await prettyFingerprintApiKeySpki(spki));
         };
@@ -32,23 +32,23 @@ const DeviceKeyApproval = () => {
     }, []);
 
     // Perform all functions required to complete
-    const completeRegistration = async () => {
+    const completeRegistration = async() => {
         try {
-            let keys: DeviceApiKey[] = await api.readDeviceApiKeys();
+            const keys: DeviceApiKey[] = await api.readDeviceApiKeys();
             if (keys.some(key => key.fingerprint == hexFingerprint)) {
-                console.log("key already registered; sending completion signal");
+                console.log('key already registered; sending completion signal');
                 await completeDeviceKeyRegistration(hexFingerprint);
             } else {
-                console.log("failed to find an existing key with that fingerprint; adding " + hexFingerprint);
+                console.log(`failed to find an existing key with that fingerprint; adding ${hexFingerprint}`);
                 await api.registerDeviceApiKey(pem);
                 await completeDeviceKeyRegistration(hexFingerprint);
             }
 
-            console.log("finished device key completion");
-            alert("successfully authorized device!");
+            console.log('finished device key completion');
+            alert('successfully authorized device!');
         } catch (error: any) {
-            alert("failed to authorize new device!");
-            console.log("error: " + error);
+            alert('failed to authorize new device!');
+            console.log(`error: ${error}`);
         }
     };
 

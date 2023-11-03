@@ -1,3 +1,5 @@
+import { EscrowedKeyMaterial } from "@app/lib/crypto/types";
+
 /**
  * Represents an OAuth2 account from NextAuth.js
  * Do not change!
@@ -15,4 +17,14 @@ export interface Account {
     scope: string | null;
     id_token: string | null;
     session_state: string | null;
+};
+
+export interface SessionData {
+    accountId: string;
+    email: string,
+    verified_email: boolean,
+    name: string,
+    locale: string,
+    image: string,
+    escrowedKey: EscrowedKeyMaterial
 }

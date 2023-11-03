@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useIntl } from 'react-intl';
+import { useParams } from 'react-router-dom';
 
 import { ActionsCell } from '@components/common/ActionsCell';
 import { BucketActions } from '@/app/components/common/BucketActions';
@@ -10,8 +11,8 @@ import { FileRow } from '@/app/components/common/FileRow';
 import { Bucket } from '@/app/types/bucket';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 
+//@ts-ignore
 import emptyIcon from '@static/images/common/emptyIcon.png';
-import { useParams } from 'react-router-dom';
 
 export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const tableRef = useRef<HTMLDivElement | null>(null);

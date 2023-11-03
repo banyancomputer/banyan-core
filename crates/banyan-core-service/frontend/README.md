@@ -1,46 +1,80 @@
-# Getting Started with Create React App
+# Tomb-WWW
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Experimental frontend for Tomb.
 
-## Available Scripts
+## Dependencies
 
-In the project directory, you can run:
+- [Node.js](https://nodejs.org/en/)
+- [Yarn](https://yarnpkg.com/)
+- Next.js
+- Docker
 
-### `npm start`
+## Development Setup
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+Install dependencies:
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+```bash
+yarn install
+```
 
-### `npm test`
+### Environment and Services
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+There is a `.env.example` file in the root of the project. Copy this file to `.env.dev` and fill in the values. See below for more information on each variable.
 
-### `npm run build`
+#### **Next Auth Setup**
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+NextAuth needs to know where it's running, and a secret to encrypt sessions with. Set:
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+```
+NEXTAUTH_URL=<where_next_is_running>
+NEXTAUTH_SECRET=<some_random_string>
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+For development the default values should be fine, but you can change them if you'd like.
 
-### `npm run eject`
+#### **Google Project Setup**
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+This project relies on Google OAuth2.0 for authentication.
+You'll need to create a Google OAuth Client ID and Secret. You can do this by following the instructions [here](https://next-auth.js.org/providers/google).
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+Once you have these secrets, store them in the `.env.dev` file you created above:
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+```
+GOOGLE_CLIENT_ID=<client_id>
+GOOGLE_CLIENT_SECRET=<client_secret>
+```
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+### Running the Development Server
 
-## Learn More
+Make sure to create a `.env.dev` file as described above.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+Run the core server from the rust project:
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```bash
+cd .. && cargo run
+```
+
+This should set up the database and run the server.
+
+Run the frontend:
+
+```bash
+export DB_PATH=$(pwd)/../data/server.db
+source ./.env.dev
+yarn dev
+```
+
+This should start the frontend server on port 3000.
+
+<!-- ### Running with Docker
+Build a development docker image:
+```bash
+docker-compose build
+```
+Run a development docker container:
+```bash
+docker-compose up
+```
+If you have a properly configured `.env.dev` file, the frontend will be available at http://localhost:3000.
+### Running Dev Server Locally
+You can run this project locally without docker, if you prefer, but I'm not going to document that here. You will need to run Postgres locally and point your NextJs app at it, as demonstrated in the `docker-compose.yml` file. -->

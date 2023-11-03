@@ -50,7 +50,7 @@ export class RoutesConfig {
             RoutesConfig.ManageKeys,
             RoutesConfig.Services,
             RoutesConfig.Settings,
-        ])
+        ]),
     ];
 }
 

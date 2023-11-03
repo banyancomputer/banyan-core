@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useIntl } from 'react-intl';
-import { Link, NavLink, useParams } from 'react-router-dom';
+import { Link, NavLink, useNavigate, useParams } from 'react-router-dom';
 
 import { CreateBucketModal } from '../Modal/CreateBucketModal';
 
@@ -18,6 +18,7 @@ export const Navigation = () => {
     const [areHelpOpionsVisible, setAreHelpOpionsVisible] = useState(false);
     const { messages } = useIntl();
     const { openModal } = useModal();
+    const navigate = useNavigate();
     const helpRef = useRef<HTMLDivElement | null>(null);
 
     const toggleBucketsVisibility = (event: React.MouseEvent<HTMLDivElement>) => {
@@ -25,7 +26,6 @@ export const Navigation = () => {
         event.preventDefault();
         setIsBucketsVisible(prev => !prev);
     };
-
 
     const toggleHelpOptionsVisibility = (event: any) => {
         setAreHelpOpionsVisible(prev => !prev);
@@ -36,8 +36,8 @@ export const Navigation = () => {
     };
 
     const logout = async () => {
-        // await signOut();
         await purgeKeystore();
+        navigate('/auth/logout');
     };
 
     useEffect(() => {

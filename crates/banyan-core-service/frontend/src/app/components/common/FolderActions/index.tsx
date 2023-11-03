@@ -37,7 +37,7 @@ export const FolderActions: React.FC<{ bucket: Bucket; file: BrowserObject; parr
         );
     };
 
-    const rename = async () => {
+    const rename = async() => {
         openModal(
             <RenameFileModal
                 bucket={bucket}
@@ -47,7 +47,7 @@ export const FolderActions: React.FC<{ bucket: Bucket; file: BrowserObject; parr
         );
     };
 
-    const remove = async () => {
+    const remove = async() => {
         openModal(
             <DeleteFileModal
                 bucket={bucket}

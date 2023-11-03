@@ -3,10 +3,10 @@ import { FiChevronDown } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 
 import { localeToAlpha2CountryCode, localeToLanguage } from '@app/utils/locales';
-import { popupClickHandler } from '@/app/utils';
 import { useIntl } from 'react-intl';
 import { locales } from '@app/App';
 import { setLocalStorageItem } from '@app/utils/localStorage';
+import { popupClickHandler } from '@/app/utils';
 
 export const LanguageSelect = () => {
     const selectRef = useRef<HTMLDivElement | null>(null);
@@ -19,7 +19,7 @@ export const LanguageSelect = () => {
 
     const changeLanguage = (language: string) => {
         setLocalStorageItem('lang', language);
-        window.dispatchEvent(new Event('storage'))
+        window.dispatchEvent(new Event('storage'));
         toggleSelect();
     };
 

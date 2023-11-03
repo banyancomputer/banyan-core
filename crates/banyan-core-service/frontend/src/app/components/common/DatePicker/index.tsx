@@ -1,12 +1,12 @@
 import React, { ReactElement, useEffect, useRef, useState } from 'react';
 import { FiChevronDown } from 'react-icons/fi';
 import { popupClickHandler } from '@/app/utils';
-//@ts-ignore
+// @ts-ignore
 import { DateRange } from 'react-date-range';
 
 export interface SelectProps {
     from: Date;
-    to: Date
+    to: Date;
     onChange: (startDate: Date, endDate: Date) => void;
     className?: string;
 };
@@ -23,8 +23,8 @@ export const DatePicker: React.FC<SelectProps> = ({ onChange, from, to, classNam
         event.stopPropagation();
     };
 
-    const changeDateRange = (dates: { startDate: Date, endDate: Date, key: string }) => {
-        onChange(dates.startDate, dates.endDate)
+    const changeDateRange = (dates: { startDate: Date; endDate: Date; key: string }) => {
+        onChange(dates.startDate, dates.endDate);
     };
 
     useEffect(() => {
@@ -48,7 +48,7 @@ export const DatePicker: React.FC<SelectProps> = ({ onChange, from, to, classNam
             />
             {isOptionstVisible &&
                 <div
-                    className='absolute right-0 top-12 border-1 border-border-darken rounded-lg shadow-sm overflow-hidden'
+                    className="absolute right-0 top-12 border-1 border-border-darken rounded-lg shadow-sm overflow-hidden"
                     onClick={stopPropagation}
                 >
                     <DateRange

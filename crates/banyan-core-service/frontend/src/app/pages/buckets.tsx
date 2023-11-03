@@ -8,6 +8,7 @@ import { Bucket } from '@/app/components/Buckets/Bucket';
 import { useTomb } from '@/app/contexts/tomb';
 import { useModal } from '@/app/contexts/modals';
 
+//@ts-ignore
 import emptyIcon from '@static/images/common/emptyIcon.png';
 import { PlusBold } from '@static/images/common';
 

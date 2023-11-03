@@ -94,7 +94,7 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
                     }}
                     id="bucketContextMenu"
                 >
-                    <span className='pointer-events-none'>
+                    <span className="pointer-events-none">
                         <Dots />
                     </span>
                 </div>
@@ -105,7 +105,7 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
                 <BucketIcon />
             </div>
             <div className="flex flex-col gap-2 items-start text-xs font-normal">
-                <div className='flex items-center justify-between w-full'>
+                <div className="flex items-center justify-between w-full">
                     <div className={`px-2 rounded-full text-mainBackground ${storageClassNames[bucket.storageClass]} capitalize`}>
                         {`${messages[bucket.storageClass]}`}
                     </div>

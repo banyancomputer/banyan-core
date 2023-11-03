@@ -4,7 +4,7 @@ import {
     fingerprintDeviceApiPublicKeyPem,
     hexFingerprint,
 } from '@/app/lib/crypto/utils';
-import { DeviceApiKey } from '@/app/types';
+import { DeviceApiKey, SessionData } from '@/app/types';
 import { ClientApi } from '@/app/lib/api/auth';
 import { EscrowedKeyMaterial, PrivateKeyMaterial } from '@/app/lib/crypto/types';
 import { setCookie, destroyCookie, parseCookies } from 'nookies';
@@ -78,7 +78,7 @@ export const KeystoreContext = createContext<{
 
 export const KeystoreProvider = ({ children }: any) => {
     /** TODO: rework session logic. */
-    const session: any = '';
+    const session: SessionData = {} as SessionData;
 
     // External State
     const [keystoreInitialized, setKeystoreInitialized] = useState<boolean>(false);

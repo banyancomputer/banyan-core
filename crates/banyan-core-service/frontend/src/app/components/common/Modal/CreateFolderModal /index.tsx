@@ -18,7 +18,7 @@ export const CreateFolderModal: React.FC<{ bucket: Bucket; onSuccess?: () => voi
         setfolderName(event.target.value);
     };
 
-    const create = async () => {
+    const create = async() => {
         try {
             await createDirectory(bucket, path, folderName);
             onSuccess();

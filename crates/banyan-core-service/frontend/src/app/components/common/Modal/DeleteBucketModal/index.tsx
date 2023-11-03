@@ -12,7 +12,7 @@ export const DeleteBucketModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const { messages } = useIntl();
     const { deleteBucket } = useTomb();
 
-    const removeBucket = async () => {
+    const removeBucket = async() => {
         try {
             await deleteBucket(bucket.id);
             closeModal();

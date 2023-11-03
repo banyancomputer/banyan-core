@@ -18,7 +18,7 @@ export const BucketSnapshotsModal: React.FC<{ bucketId: string }> = ({ bucketId 
     useEffect(() => {
         if (!tomb) { return; }
 
-        (async () => {
+        (async() => {
             try {
                 const snapshots = await getBucketShapshots(bucketId);
                 setSnapshots(snapshots);

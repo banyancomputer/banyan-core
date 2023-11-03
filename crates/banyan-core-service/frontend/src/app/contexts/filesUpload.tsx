@@ -1,9 +1,9 @@
-import { Bucket, BrowserObject } from '@/app/types/bucket';
 import React, { FC, ReactNode, createContext, useContext, useState } from 'react';
 import { useTomb } from './tomb';
+import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 
-export interface UploadingFile { file: File, isUploaded: boolean };
+export interface UploadingFile { file: File; isUploaded: boolean };
 interface FilesUploadState {
     files: UploadingFile[];
     setFiles: React.Dispatch<React.SetStateAction<UploadingFile[]>>;
@@ -16,12 +16,12 @@ export const FileUploadProvider: FC<{ children: ReactNode }> = ({ children }) =>
     const { uploadFile } = useTomb();
     const [files, setFiles] = useState<UploadingFile[]>([]);
 
-    const uploadFiles = async (bucket: Bucket, path: string[], folder?: BrowserObject) => {
+    const uploadFiles = async(bucket: Bucket, path: string[], folder?: BrowserObject) => {
         let filesCopy = [...files];
-        for (let file of files) {
+        for (const file of files) {
             const arrayBuffer = await file.file.arrayBuffer();
             await uploadFile(bucket, path, file.file.name, arrayBuffer, folder);
-            filesCopy = filesCopy.map(item => item.file.name === file.file.name ? ({ ...item, isUploaded: true }) : item);
+            filesCopy = filesCopy.map(item => item.file.name === file.file.name ? { ...item, isUploaded: true } : item);
             await setFiles(filesCopy);
         };
         ToastNotifications.close();

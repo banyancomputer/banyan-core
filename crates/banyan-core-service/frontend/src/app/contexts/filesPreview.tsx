@@ -26,7 +26,7 @@ export const FilePreviewProvider: FC<{ children: ReactNode }> = ({ children }) =
     const [file, setFile] = useState(initialState);
     const { getFile } = useTomb();
 
-    const openFile = async (bucket: Bucket, file: string, path: string[]) => {
+    const openFile = async(bucket: Bucket, file: string, path: string[]) => {
         const isFileSupported = SUPPORTED_EXTENSIONS.includes(file.split('.')[1]);
         try {
             setFile({
@@ -43,7 +43,7 @@ export const FilePreviewProvider: FC<{ children: ReactNode }> = ({ children }) =
             const blob = new Blob([arrayBuffer], { type: 'application/octet-stream' });
 
             reader.readAsDataURL(blob);
-            reader.onload = function (event) {
+            reader.onload = function(event) {
                 const result = event.target?.result as string;
                 setFile({
                     data: result || '',

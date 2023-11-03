@@ -1,7 +1,7 @@
 import React from 'react';
 import { useIntl } from 'react-intl';
 
-import { ErrorBanner } from "@components/Account/Billing/ErrorBanner"
+import { ErrorBanner } from '@components/Account/Billing/ErrorBanner';
 import { BillingInfo } from '@/app/components/Account/Billing/BillingInfo';
 import { PaymentMethods } from '@/app/components/Account/Billing/PaymentMethods';
 import { BillingHistory } from '@/app/components/Account/Billing/BillingHistory';

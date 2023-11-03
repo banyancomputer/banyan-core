@@ -23,7 +23,7 @@ const DeviceApiKeyModel = (
                 defaultValue: DataTypes.UUIDV4,
                 primaryKey: true,
             },
-            accountId: {
+            userId: {
                 type: DataTypes.STRING,
                 allowNull: false,
             },

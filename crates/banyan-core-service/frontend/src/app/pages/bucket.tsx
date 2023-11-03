@@ -1,13 +1,13 @@
 import React, { useEffect } from 'react';
 // import { useRouter } from 'next/router';
 
+import { useParams } from 'react-router-dom';
 import { useTomb } from '@/app/contexts/tomb';
 
 import { BucketTable } from '@/app/components/Bucket/BucketTable';
 import { Fallback } from '@/app/components/common/Fallback';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 import BucketHeader from '@/app/components/Bucket/Header';
-import { useParams } from 'react-router-dom';
 
 const Bucket = () => {
     const params = useParams();
@@ -18,7 +18,7 @@ const Bucket = () => {
 
     useEffect(() => {
         if (selectedBucket?.id !== bucketId) { return; }
-        (async () => {
+        (async() => {
             try {
                 getSelectedBucketFiles(folderLocation);
             } catch (error: any) { };
@@ -30,10 +30,8 @@ const Bucket = () => {
         bucket && selectBucket(bucket);
     }, [bucketId, buckets.length]);
 
-    useEffect(() => {
-        return () => {
-            selectBucket(null);
-        };
+    useEffect(() => () => {
+        selectBucket(null);
     }, []);
 
     return (

@@ -4,7 +4,6 @@
  * Exposes get, post and delete methods for JSON.
  */
 export class HttpClient {
-
     /**
    * Performs POST http request with JSON body.
    * @param path
@@ -93,6 +92,7 @@ export class HttpClient {
             body,
             headers,
         };
+
         return await fetch(path, request);
     }
 }

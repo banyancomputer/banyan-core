@@ -7,16 +7,16 @@ import { SearchInput } from '../SearchInput';
 import { popupClickHandler } from '@/app/utils';
 import { useKeystore } from '@/app/contexts/keystore';
 import { Action } from '../FileActions';
+import { SessionData } from '@app/types';
 
 import { Key, LogoutAlternative, Settings } from '@static/images/common';
 
 export const Header = () => {
     const userControlsRef = useRef<HTMLDivElement | null>(null);
-    const faqRef = useRef<HTMLDivElement | null>(null);
     const { purgeKeystore } = useKeystore();
     const { messages } = useIntl();
-        /** TODO: rework session logic. */
-    const session: any = '';
+    /** TODO: rework session logic. */
+    const session: SessionData = {} as SessionData;
     const navigate = useNavigate();
     const [areProfileOptionsVisible, setAreProfileOptionsVisible] = useState(false);
 
@@ -25,8 +25,8 @@ export const Header = () => {
     };
 
     const logout = async () => {
-        // await signOut();
         await purgeKeystore();
+        navigate('/auth/logout');
     };
 
     const goTo = (path: string) => function () {
@@ -57,10 +57,10 @@ export const Header = () => {
                     onClick={toggleProfileOptionsVisibility}
                     ref={userControlsRef}
                 >
-                    {session?.user?.image ?
+                    {session?.image ?
                         <img
                             className="rounded-full"
-                            src={session?.user?.image}
+                            src={session?.image}
                             width={40}
                             height={40}
                             alt="User Avatar"

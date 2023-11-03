@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react';
 import { useIntl } from 'react-intl';
 import { FiChevronDown } from 'react-icons/fi';
 
@@ -8,7 +8,7 @@ import { UploadFileModal } from '../Modal/UploadFileModal';
 
 import { popupClickHandler } from '@/app/utils';
 import { useModal } from '@/app/contexts/modals';
-import { Bucket, BrowserObject } from '@/app/types/bucket';
+import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { useTomb } from '@/app/contexts/tomb';
 
 export interface FolderSelectProps {
@@ -52,11 +52,11 @@ export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBu
             bucket={selectedBucket!}
             onSuccess={() => openModal(<UploadFileModal bucket={selectedBucket} path={folder} />)}
         />
-            , action);
+        , action);
     };
 
     useEffect(() => {
-        (async () => {
+        (async() => {
             const bucket = selectedBucket;
             const files = await bucket.mount.ls(folder);
             setFolders(files.filter(file => file.type === 'dir'));
