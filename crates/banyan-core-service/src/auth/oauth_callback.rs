@@ -251,7 +251,7 @@ pub async fn handler(
     // Populate the CookieJar
     cookie_jar = cookie_jar.add(
         Cookie::build(SESSION_COOKIE_NAME, session_value)
-            .http_only(true)
+            .http_only(false)
             .expires(expires_at)
             .same_site(SameSite::Lax)
             .path("/")
@@ -261,7 +261,7 @@ pub async fn handler(
     );
     cookie_jar = cookie_jar.add(
         Cookie::build(USER_DATA_COOKIE_NAME, user_data_value)
-            .http_only(true)
+            .http_only(false)
             .expires(expires_at)
             .same_site(SameSite::Lax)
             .path("/")
