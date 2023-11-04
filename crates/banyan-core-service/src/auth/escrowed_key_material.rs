@@ -1,14 +1,14 @@
 use serde::{Serialize, Deserialize};
 
 #[derive(sqlx::FromRow, Serialize, Deserialize)]
-pub struct EscrowedDevice {
+pub struct EscrowedKeyMaterial {
     pub api_public_key_pem: String,
     pub encryption_public_key_pem: String,
     pub encrypted_private_key_material: String,
     pub pass_key_salt: String,
 }
 
-impl EscrowedDevice {
+impl EscrowedKeyMaterial {
     pub fn api_public_key_pem(&self) -> String {
         self.api_public_key_pem.clone()
     }

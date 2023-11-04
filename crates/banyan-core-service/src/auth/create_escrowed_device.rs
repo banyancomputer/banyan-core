@@ -6,12 +6,12 @@ use jwt_simple::prelude::ES384PublicKey;
 use crate::app::AppState;
 use crate::extractors::SessionIdentity;
 use crate::utils::keys::sha1_fingerprint_publickey;
-use crate::auth::escrowed_device::EscrowedDevice;
+use crate::auth::escrowed_key_material::EscrowedKeyMaterial;
 
 pub async fn handler(
     session: Option<SessionIdentity>,
     State(state): State<AppState>,
-    Json(request): Json<EscrowedDevice>,
+    Json(request): Json<EscrowedKeyMaterial>,
 ) -> Result<Response, CreateEscrowedDeviceError> {
     let session = match session {
         Some(session) => session,

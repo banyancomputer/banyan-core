@@ -1,3 +1,3 @@
-export * from './escrowedDevice';
+export * from './escrowedKeyMaterial';
 export * from './deviceApiKey';
-export * from './account';
+export * from './user';

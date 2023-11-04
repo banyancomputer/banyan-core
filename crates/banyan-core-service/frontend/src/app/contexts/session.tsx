@@ -1,29 +1,45 @@
-import { EscrowedKeyMaterial } from '@app/lib/crypto/types';
-import { SessionData } from '@app/types';
-import React, { Dispatch, FC, ReactElement, ReactNode, SetStateAction, createContext, useContext, useState } from 'react';
+import React, { Dispatch, FC, ReactElement, ReactNode, SetStateAction, createContext, useContext, useEffect, useState } from 'react';
+import { LocalKey, UserData, getLocalKey, destroyLocalKey, getSessionKey, getUserData } from '@/app/utils/cookies';
 
+export interface SessionState {
+	localKey: LocalKey;
+	userData: UserData | null;
+	sessionKey: string | null;
 
-export const SessionContext = createContext<SessionData>({} as SessionData);
+	getLocalKey: () => LocalKey;
+	destroyLocalKey: () => void;
+	getUserData: () => UserData | null;
+	getSessionKey: () => string | null
+}
 
-const initialState: SessionData = {
-    accountId: '',
-    email: '',
-    escrowedKey: {} as EscrowedKeyMaterial,
-    image: '',
-    locale: '',
-    name: '',
-    verified_email: false
-};
+export const SessionContext = createContext<SessionState>({} as SessionState);
 
 export const SessionProvider: FC<{ children: ReactNode }> = ({ children }) => {
-    const [sessionState, setSessionState] = useState(initialState);
+	const [sessionState, setSessionState] = useState({
+		localKey: getLocalKey(),
+		userData: null,
+		sessionKey: null,
+		getLocalKey: getLocalKey,
+		destroyLocalKey: destroyLocalKey,
+		getSessionKey: getSessionKey,
+		getUserData: getUserData
+	} as SessionState);
+
+	useEffect(() => {
+		setSessionState({
+			...sessionState,
+			userData: getUserData(),
+			sessionKey: getSessionKey(),
+		})
+	}, [])
 
 
-    return (
-        <SessionContext.Provider value={sessionState}>
-            {children}
-        </SessionContext.Provider>
-    );
+
+	return (
+		<SessionContext.Provider value={sessionState}>
+			{children}
+		</SessionContext.Provider>
+	);
 };
 
 export const useSession = () => useContext(SessionContext);

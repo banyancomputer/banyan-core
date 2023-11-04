@@ -14,7 +14,6 @@ import { FileUploadProvider } from './contexts/filesUpload';
 import { TombProvider } from './contexts/tomb';
 import { Navigation } from '@components/common/Navigation';
 import { Header } from '@components/common/Header';
-import { setCookie, destroyCookie, parseCookies } from 'nookies';
 
 import en from '@static/locales/en.json';
 import fr from '@static/locales/fr.json';
@@ -25,66 +24,66 @@ import { getLocalStorageItem, setLocalStorageItem } from './utils/localStorage';
 import { SessionProvider } from './contexts/session';
 
 const TRANSLATES: Record<string, Record<string, string>> = {
-    en,
-    fr,
-    de,
-    ja,
-    zh,
+	en,
+	fr,
+	de,
+	ja,
+	zh,
 };
 
 export const locales = Object.keys(TRANSLATES);
 
 const App = () => {
-    const [locale, setLocale] = useState('en');
+	const [locale, setLocale] = useState('en');
 
-    useEffect(() => {
-        window.addEventListener('storage', () => {
-            const selectedLanguage = getLocalStorageItem('lang');
-            setLocale(selectedLanguage || 'en');
-        });
+	useEffect(() => {
+		window.addEventListener('storage', () => {
+			const selectedLanguage = getLocalStorageItem('lang');
+			setLocale(selectedLanguage || 'en');
+		});
 
-        const selectedLanguage = getLocalStorageItem('lang');
-        setLocale(selectedLanguage || 'en');
+		const selectedLanguage = getLocalStorageItem('lang');
+		setLocale(selectedLanguage || 'en');
 
-        if (selectedLanguage) { return; }
+		if (selectedLanguage) { return; }
 
-        setLocalStorageItem('lang', navigator.language.includes('-') ? navigator.language.split('-')[0] : navigator.language);
-    }, []);
+		setLocalStorageItem('lang', navigator.language.includes('-') ? navigator.language.split('-')[0] : navigator.language);
+	}, []);
 
-    return (
-        <main className="flex flex-col h-screen font-sans bg-mainBackground text-text-900">
-            <BrowserRouter basename="/" >
-                <SessionProvider>
-                    <KeystoreProvider>
-                        <TombProvider>
-                            <ModalProvider>
-                                <FileUploadProvider>
-                                    <FilePreviewProvider>
-                                        <IntlProvider locale={locale} messages={TRANSLATES[locale]}>
-                                            <Notifications />
-                                            <Modal />
-                                            <FilePreview />
-                                            <Modal />
-                                            <Notifications />
-                                            <section className="flex flex-grow">
-                                                <Navigation />
-                                                <div className="flex-grow">
-                                                    <Header />
-                                                    <Suspense>
-                                                        <Routes />
-                                                    </Suspense>
-                                                </div>
-                                            </section>
-                                        </IntlProvider>
-                                    </FilePreviewProvider>
-                                </FileUploadProvider>
-                            </ModalProvider>
-                        </TombProvider>
-                    </KeystoreProvider>
-                </SessionProvider>
-            </BrowserRouter>
-        </main>
-    );
+	return (
+		<main className="flex flex-col h-screen font-sans bg-mainBackground text-text-900">
+			<BrowserRouter basename="/" >
+				<SessionProvider>
+					<KeystoreProvider>
+						<TombProvider>
+							<ModalProvider>
+								<FileUploadProvider>
+									<FilePreviewProvider>
+										<IntlProvider locale={locale} messages={TRANSLATES[locale]}>
+											<Notifications />
+											<Modal />
+											<FilePreview />
+											<Modal />
+											<Notifications />
+											<section className="flex flex-grow">
+												<Navigation />
+												<div className="flex-grow">
+													<Header />
+													<Suspense>
+														<Routes />
+													</Suspense>
+												</div>
+											</section>
+										</IntlProvider>
+									</FilePreviewProvider>
+								</FileUploadProvider>
+							</ModalProvider>
+						</TombProvider>
+					</KeystoreProvider>
+				</SessionProvider>
+			</BrowserRouter>
+		</main>
+	);
 };
 
 export default App;

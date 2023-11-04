@@ -16,7 +16,7 @@ use uuid::Uuid;
 use crate::app::AppState;
 
 use crate::auth::{
-    oauth_client, AuthenticationError, NEW_USER_COOKIE_NAME, SESSION_COOKIE_NAME, USER_DATA_COOKIE_NAME, SESSION_TTL, escrowed_device::EscrowedDevice
+    oauth_client, AuthenticationError, NEW_USER_COOKIE_NAME, SESSION_COOKIE_NAME, USER_DATA_COOKIE_NAME, SESSION_TTL, escrowed_key_material::EscrowedKeyMaterial
 };
 use crate::extractors::ServerBase;
 
@@ -35,7 +35,7 @@ struct User {
 #[derive(Serialize)]
 struct UserData {
     user: User,
-    escrowed_device: Option<EscrowedDevice>
+    escrowed_key_material: Option<EscrowedKeyMaterial>
 }
 
 pub async fn handler(
@@ -199,8 +199,8 @@ pub async fn handler(
     .await
     .map_err(AuthenticationError::UserDataLookupFailed)?;
 
-    let escrowed_device = sqlx::query_as!(
-        EscrowedDevice,
+    let escrowed_key_material = sqlx::query_as!(
+        EscrowedKeyMaterial,
         r#"SELECT
             api_public_key_pem, encryption_public_key_pem, encrypted_private_key_material, pass_key_salt
         FROM escrowed_devices
@@ -211,7 +211,7 @@ pub async fn handler(
     .await
     .map_err(AuthenticationError::UserDataLookupFailed)?;
 
-    let user_data = UserData { user, escrowed_device };
+    let user_data = UserData { user, escrowed_key_material };
 
     // Create a Session to record in the database and attach to the CookieJar
     let new_sid_row = sqlx::query!(
