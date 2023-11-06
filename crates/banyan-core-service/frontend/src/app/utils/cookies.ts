@@ -1,6 +1,5 @@
 import { EscrowedKeyMaterial, User } from '@/app/types';
-import * as Cookies from 'js-cookie';
-import Nookies from 'nookies';
+import { parseCookies, setCookie, destroyCookie } from 'nookies';
 
 /* Cookie State Management. This should probably be within a context but watching for cookie changes proved difficult */
 
@@ -22,17 +21,17 @@ export interface UserData {
 }
 
 export const getSessionKey = (): string | null => {
-	const cookies = Nookies.get();
+
+	const cookies = parseCookies();
 	return cookies[SESSION_KEY_COOKIE_NAME];
 }
 
 export const getLocalKey = (): LocalKey => {
-	const cookies = Nookies.get();
-
+	const cookies = parseCookies();
 	if (!cookies[LOCAL_KEY_COOKIE_NAME]) {
 		const id = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 		const key = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-		Nookies.set(null,LOCAL_KEY_COOKIE_NAME, `${id}:${key}`, {
+		setCookie(null, LOCAL_KEY_COOKIE_NAME, `${id}:${key}`, {
 			maxAge: COOKIE_MAX_AGE,
 			lax: process.env.NODE_ENV === 'development',
 			sameSite: 'strict',
@@ -45,21 +44,15 @@ export const getLocalKey = (): LocalKey => {
 }
 
 export const destroyLocalKey = () => {
-	Cookies.remove(LOCAL_KEY_COOKIE_NAME)
+	destroyCookie(null, LOCAL_KEY_COOKIE_NAME)
 }
 
 export const getUserData = (): UserData | null => {
-	console.log("getUserData");
-	const cookies = Nookies.get();
-	console.log(cookies);
-
+	const cookies = parseCookies();
 	if (!cookies[USER_DATA_COOKIE_NAME]) {
-		console.log("huh");
 		return null;
 	}
-	console.log("huh");
 	const userDataRaw = cookies[USER_DATA_COOKIE_NAME];
-	console.log("raw: ", userDataRaw);
 	const userDataJson = JSON.parse(userDataRaw);
 	let escrowedKeyMaterial = null;
 	if (userDataJson.escrowed_key_material) {
