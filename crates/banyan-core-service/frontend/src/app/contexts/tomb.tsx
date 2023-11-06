@@ -1,6 +1,7 @@
 import React, { ReactNode, createContext, useContext, useEffect, useState } from 'react';
 import { TombWasm, WasmBucket, WasmMount, WasmSnapshot } from 'tomb-wasm-experimental';
 import { Mutex } from 'async-mutex';
+import { useModal } from '@/app/contexts/modals';
 
 import { useKeystore } from './keystore';
 import {
@@ -53,8 +54,9 @@ const TombContext = createContext<TombInterface>({} as TombInterface);
 
 export const TombProvider = ({ children }: { children: ReactNode }) => {
 	/** TODO: rework session logic. */
-	const { userData, getLocalKey, destroyLocalKey } = useSession();
-	const { keystoreInitialized, getEncryptionKey, getApiKey, escrowedKeyMaterial } = useKeystore();
+	const { userData } = useSession();
+	const { openEscrowModal } = useModal();
+	const { isLoading, keystoreInitialized, getEncryptionKey, getApiKey, escrowedKeyMaterial } = useKeystore();
 	const [tomb, setTomb] = useState<TombWasm | null>(null);
 	const [buckets, setBuckets] = useState<TombBucket[]>([]);
 	const [trash, setTrash] = useState<TombBucket>(new MockBucket());
@@ -349,7 +351,11 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
 	// Initialize the tomb client
 	useEffect(() => {
-		if (!keystoreInitialized || !userData || !escrowedKeyMaterial) { return; }
+		if (!userData) { return; }
+		if (!keystoreInitialized && !isLoading) {
+			openEscrowModal(!!escrowedKeyMaterial);
+			return;
+		};
 		(async () => {
 			try {
 				const apiKey = await getApiKey();
@@ -365,7 +371,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 				console.error(err);
 			}
 		})();
-	}, [keystoreInitialized, userData?.user, escrowedKeyMaterial]);
+	}, [userData, keystoreInitialized, isLoading, escrowedKeyMaterial]);
 
 	useEffect(() => {
 		if (tomb) {

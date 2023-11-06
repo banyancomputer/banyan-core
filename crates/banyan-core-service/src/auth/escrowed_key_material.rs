@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(sqlx::FromRow, Serialize, Deserialize)]
+#[derive(sqlx::FromRow, Serialize, Deserialize, Debug)]
 pub struct EscrowedKeyMaterial {
     pub api_public_key_pem: String,
     pub encryption_public_key_pem: String,

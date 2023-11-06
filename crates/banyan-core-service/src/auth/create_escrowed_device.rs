@@ -13,6 +13,7 @@ pub async fn handler(
     State(state): State<AppState>,
     Json(request): Json<EscrowedKeyMaterial>,
 ) -> Result<Response, CreateEscrowedDeviceError> {
+    tracing::info!("POST auth/escrow");
     let session = match session {
         Some(session) => session,
         None => return Err(CreateEscrowedDeviceError::Unauthorized),
@@ -20,6 +21,7 @@ pub async fn handler(
     let api_public_key_pem = request.api_public_key_pem();
     let encryption_public_key_pem = request.encryption_public_key_pem();
 
+    tracing::info!("gettting keys ");
     // Validate that the public key material is valid
     let public_device_api_key = ES384PublicKey::from_pem(&api_public_key_pem)
         .map_err(CreateEscrowedDeviceError::InvalidPublicKey)?;
@@ -29,10 +31,12 @@ pub async fn handler(
     // TODO: Validate the salt here too
 
     let database = state.database();
-    let user_id = session.user_id();
+    let user_id = session.user_id().to_string();
+    tracing::info!("user id: {}", user_id);
     let encrypted_private_key_material = request.encrypted_private_key_material();
     let pass_key_salt = request.pass_key_salt();
 
+    tracing::info!("checking for previopus devices");
     // Check if the user has an escrow device already
     if sqlx::query!(
         r#"SELECT id 
@@ -46,7 +50,8 @@ pub async fn handler(
     {
         return Err(CreateEscrowedDeviceError::EscrowedDeviceAlreadyExists);
     };
-
+    
+    tracing::info!("inserting device for user: {}", user_id);
     // Create the Escrowed Device
     let mut transaction = database.begin().await?;
     sqlx::query!(
@@ -72,6 +77,7 @@ pub async fn handler(
             None => err.into()
         }
     })?;
+    tracing::info!("inserting device api key");
     sqlx::query!(
         r#"INSERT INTO device_api_keys (user_id, fingerprint, pem)
             VALUES ($1, $2, $3);"#,

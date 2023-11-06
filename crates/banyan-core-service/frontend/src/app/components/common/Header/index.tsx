@@ -8,9 +8,11 @@ import { popupClickHandler } from '@/app/utils';
 import { useKeystore } from '@/app/contexts/keystore';
 import { Action } from '../FileActions';
 import { useSession } from '@app/contexts/session';
+import { HttpClient } from '@/api/http/client';
 
 import { Key, LogoutAlternative, Settings } from '@static/images/common';
 
+// TODO: Is this header used anywhere?
 export const Header = () => {
 	const userControlsRef = useRef<HTMLDivElement | null>(null);
 	const { purgeKeystore } = useKeystore();
@@ -25,8 +27,16 @@ export const Header = () => {
 	};
 
 	const logout = async () => {
-		await purgeKeystore();
-		navigate('/auth/logout');
+		let api = new HttpClient;
+		try {
+			console.log("logging out");
+			await api.get('/auth/logout');
+			await purgeKeystore();
+			goTo('/');
+		}
+		catch (err: any) {
+			console.error("An Error occurred trying to logout: ", err.message);
+		}
 	};
 
 	const goTo = (path: string) => function() {
@@ -57,8 +67,8 @@ export const Header = () => {
 					onClick={toggleProfileOptionsVisibility}
 					ref={userControlsRef}
 				>
-					{userData?.user.profileImage ?
-						<img
+					{false ? //TODO: this is causing a 403 -> userData?.user.profileImage ?
+						< img
 							className="rounded-full"
 							src={userData?.user.profileImage}
 							width={40}

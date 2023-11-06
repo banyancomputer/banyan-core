@@ -57,20 +57,20 @@ export const getUserData = (): UserData | null => {
 	let escrowedKeyMaterial = null;
 	if (userDataJson.escrowed_key_material) {
 		escrowedKeyMaterial = {
-			apiPublicKeyPem: userDataJson.api_public_key_pem,
-			encryptionPublicKeyPem: userDataJson.encryption_public_key_pem,
-			encryptedPrivateKeyMaterial: userDataJson.encrypted_private_key_material,
-			passKeySalt: userDataJson.pass_key_salt
+			apiPublicKeyPem: userDataJson.escrowed_key_material.api_public_key_pem,
+			encryptionPublicKeyPem: userDataJson.escrowed_key_material.encryption_public_key_pem,
+			encryptedPrivateKeyMaterial: userDataJson.escrowed_key_material.encrypted_private_key_material,
+			passKeySalt: userDataJson.escrowed_key_material.pass_key_salt
 		} as EscrowedKeyMaterial;
 	}
 	let user = {
-		id: userDataJson.id,
-		email: userDataJson.email,
-		verifiedEmail: userDataJson.verified_email,
-		displayName: userDataJson.display_name,
-		locale: userDataJson.locale,
-		profileImage: userDataJson.profile_image
-	}
+		id: userDataJson.user.id,
+		email: userDataJson.user.email,
+		verifiedEmail: userDataJson.user.verified_email,
+		displayName: userDataJson.user.display_name,
+		locale: userDataJson.user.locale,
+		profileImage: userDataJson.user.profile_image
+	} as User;
 
 	return {
 		user, escrowedKeyMaterial

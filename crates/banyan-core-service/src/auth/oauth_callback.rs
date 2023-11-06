@@ -22,7 +22,7 @@ use crate::auth::{
 use crate::extractors::ServerBase;
 
 // Represents a User in the Database
-#[derive(sqlx::FromRow, Serialize)]
+#[derive(sqlx::FromRow, Serialize, std::fmt::Debug)]
 struct User {
     id: String,
     email: String,
@@ -33,7 +33,7 @@ struct User {
 }
 
 // Data returned in the User Data Cookie
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 struct UserData {
     user: User,
     escrowed_key_material: Option<EscrowedKeyMaterial>,
@@ -217,6 +217,8 @@ pub async fn handler(
         escrowed_key_material,
     };
 
+    tracing::info!("user data: {:?}", user_data);
+
     // Create a Session to record in the database and attach to the CookieJar
     let new_sid_row = sqlx::query!(
         "INSERT INTO sessions
@@ -250,7 +252,7 @@ pub async fn handler(
     let auth_tag = B64.encode(signature.to_vec());
 
     let session_value = format!("{session_enc}{auth_tag}");
-    let user_data_value = serde_json::to_string(&user_data).expect("user daya to serialize");
+    let user_data_value = serde_json::to_string(&user_data).expect("user data to serialize");
 
     // Populate the CookieJar
     cookie_jar = cookie_jar.add(
