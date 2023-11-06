@@ -102,12 +102,10 @@ export const KeystoreProvider = ({ children }: any) => {
 	}, [keystore]);
 
 	// Handle loading the escrowed key material from the Next Auth session
-	// Occurs on update to the session context
+	// Occurs on update to the `userData` portion of the session context
 	useEffect(() => {
-		console.log("Initializing Keystore with UserData: ", userData);
 		if (userData) {
 			setEscrowedKeyMaterial(userData.escrowedKeyMaterial);
-			!userData.escrowedKeyMaterial && purgeKeystore();
 		}
 	}, [userData]);
 
