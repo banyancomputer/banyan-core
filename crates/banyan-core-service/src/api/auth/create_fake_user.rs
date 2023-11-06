@@ -7,7 +7,7 @@ use jwt_simple::prelude::*;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
-pub struct CreateFakeAccountRequest {
+pub struct CreateFakeUserRequest {
     device_api_key_pem: String,
 }
 
@@ -15,19 +15,24 @@ pub struct CreateFakeAccountRequest {
 #[axum::debug_handler]
 pub async fn handler(
     State(state): State<AppState>,
-    Json(request): Json<CreateFakeAccountRequest>,
-) -> Result<Response, CreateFakeAccountError> {
+    Json(request): Json<CreateFakeUserRequest>,
+) -> Result<Response, CreateFakeUserError> {
     let public_key = ES384PublicKey::from_pem(&request.device_api_key_pem)
-        .map_err(CreateFakeAccountError::InvalidPublicKey)?;
+        .map_err(CreateFakeUserError::InvalidPublicKey)?;
 
     let database = state.database();
-
-    let user_id = sqlx::query_scalar!("INSERT INTO users DEFAULT VALUES RETURNING id;")
-        .fetch_one(&database)
-        .await
-        .map_err(CreateFakeAccountError::UserCreationFailed)?;
-
     let fingerprint = sha1_fingerprint_publickey(&public_key);
+
+    let email = format!("{fingerprint}@user.com");
+    let display_name = "fake_user";
+    let user_id = sqlx::query_scalar!(
+        r#"INSERT INTO users (display_name, email) VALUES ($1, $2) RETURNING id;"#,
+        display_name,
+        email
+    )
+    .fetch_one(&database)
+    .await
+    .map_err(CreateFakeUserError::UserCreationFailed)?;
 
     sqlx::query!(
         "INSERT INTO device_api_keys (user_id, fingerprint, pem) VALUES ($1, $2, $3);",
@@ -37,14 +42,14 @@ pub async fn handler(
     )
     .execute(&database)
     .await
-    .map_err(CreateFakeAccountError::ApiKeyCreationFailed)?;
+    .map_err(CreateFakeUserError::ApiKeyCreationFailed)?;
 
     let response = serde_json::json!({"id": user_id});
     Ok((StatusCode::OK, Json(response)).into_response())
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum CreateFakeAccountError {
+pub enum CreateFakeUserError {
     #[error("failed to create API key for dummy use: {0}")]
     ApiKeyCreationFailed(sqlx::Error),
 
@@ -55,9 +60,9 @@ pub enum CreateFakeAccountError {
     UserCreationFailed(sqlx::Error),
 }
 
-impl IntoResponse for CreateFakeAccountError {
+impl IntoResponse for CreateFakeUserError {
     fn into_response(self) -> Response {
-        use CreateFakeAccountError as CFAE;
+        use CreateFakeUserError as CFAE;
 
         match self {
             CFAE::InvalidPublicKey(_) => {

@@ -7,7 +7,7 @@ use base64::Engine;
 use ecdsa::signature::RandomizedDigestSigner;
 use jwt_simple::algorithms::ECDSAP384KeyPairLike;
 use oauth2::{AuthorizationCode, CsrfToken, PkceCodeVerifier, TokenResponse};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::time::Duration;
 use time::OffsetDateTime;
 use url::Url;
@@ -16,7 +16,8 @@ use uuid::Uuid;
 use crate::app::AppState;
 
 use crate::auth::{
-    oauth_client, AuthenticationError, NEW_USER_COOKIE_NAME, SESSION_COOKIE_NAME, USER_DATA_COOKIE_NAME, SESSION_TTL, escrowed_key_material::EscrowedKeyMaterial
+    escrowed_key_material::EscrowedKeyMaterial, oauth_client, AuthenticationError,
+    NEW_USER_COOKIE_NAME, SESSION_COOKIE_NAME, SESSION_TTL, USER_DATA_COOKIE_NAME,
 };
 use crate::extractors::ServerBase;
 
@@ -28,14 +29,14 @@ struct User {
     verified_email: bool,
     display_name: String,
     locale: Option<String>,
-    profile_image: Option<String>
+    profile_image: Option<String>,
 }
 
 // Data returned in the User Data Cookie
 #[derive(Serialize)]
 struct UserData {
     user: User,
-    escrowed_key_material: Option<EscrowedKeyMaterial>
+    escrowed_key_material: Option<EscrowedKeyMaterial>,
 }
 
 pub async fn handler(
@@ -211,7 +212,10 @@ pub async fn handler(
     .await
     .map_err(AuthenticationError::UserDataLookupFailed)?;
 
-    let user_data = UserData { user, escrowed_key_material };
+    let user_data = UserData {
+        user,
+        escrowed_key_material,
+    };
 
     // Create a Session to record in the database and attach to the CookieJar
     let new_sid_row = sqlx::query!(
@@ -244,7 +248,7 @@ pub async fn handler(
         .sign_digest_with_rng(&mut rng, digest);
 
     let auth_tag = B64.encode(signature.to_vec());
-    
+
     let session_value = format!("{session_enc}{auth_tag}");
     let user_data_value = serde_json::to_string(&user_data).expect("user daya to serialize");
 
