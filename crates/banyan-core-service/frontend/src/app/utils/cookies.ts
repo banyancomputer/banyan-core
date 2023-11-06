@@ -21,6 +21,7 @@ export interface UserData {
 }
 
 export const getSessionKey = (): string | null => {
+
 	const cookies = parseCookies();
 	return cookies[SESSION_KEY_COOKIE_NAME];
 }
