@@ -5,8 +5,8 @@ import { BrowserRouter, useLocation } from 'react-router-dom';
 import { Modal } from '@components/common/Modal';
 import { Notifications } from '@components/common/Notifications';
 import { Routes } from './routes';
-import { KeystoreProvider } from './contexts/keystore';
-import { ModalProvider } from './contexts/modals';
+import { KeystoreProvider, useKeystore } from './contexts/keystore';
+import { useModal } from './contexts/modals';
 import { FilePreviewProvider } from './contexts/filesPreview';
 import { IntlProvider } from 'react-intl';
 import { FilePreview } from '@components/common/FilePreview';
@@ -34,7 +34,15 @@ const TRANSLATES: Record<string, Record<string, string>> = {
 export const locales = Object.keys(TRANSLATES);
 
 const App = () => {
+	const { openEscrowModal } = useModal();
+	const { keystoreInitialized, isLoading, escrowedKeyMaterial } = useKeystore();
 	const [locale, setLocale] = useState('en');
+
+	useEffect(() => {
+		if (!keystoreInitialized && !isLoading) {
+			openEscrowModal(!!escrowedKeyMaterial);
+		};
+	}, [keystoreInitialized, isLoading, escrowedKeyMaterial]);
 
 	useEffect(() => {
 		window.addEventListener('storage', () => {
@@ -52,32 +60,30 @@ const App = () => {
 
 	return (
 		<main className="flex flex-col h-screen font-sans bg-mainBackground text-text-900">
-			<BrowserRouter basename="/" >
+			<BrowserRouter basename="/dist" >
 				<SessionProvider>
 					<KeystoreProvider>
 						<TombProvider>
-							<ModalProvider>
-								<FileUploadProvider>
-									<FilePreviewProvider>
-										<IntlProvider locale={locale} messages={TRANSLATES[locale]}>
-											<Notifications />
-											<Modal />
-											<FilePreview />
-											<Modal />
-											<Notifications />
-											<section className="flex flex-grow">
-												<Navigation />
-												<div className="flex-grow">
-													<Header />
-													<Suspense>
-														<Routes />
-													</Suspense>
-												</div>
-											</section>
-										</IntlProvider>
-									</FilePreviewProvider>
-								</FileUploadProvider>
-							</ModalProvider>
+							<FileUploadProvider>
+								<FilePreviewProvider>
+									<IntlProvider locale={locale} messages={TRANSLATES[locale]}>
+										<Notifications />
+										<Modal />
+										<FilePreview />
+										<Modal />
+										<Notifications />
+										<section className="flex flex-grow">
+											<Navigation />
+											<div className="flex-grow">
+												<Header />
+												<Suspense>
+													<Routes />
+												</Suspense>
+											</div>
+										</section>
+									</IntlProvider>
+								</FilePreviewProvider>
+							</FileUploadProvider>
 						</TombProvider>
 					</KeystoreProvider>
 				</SessionProvider>

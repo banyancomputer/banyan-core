@@ -10,68 +10,31 @@
     />
     <style type="text/css" rel="stylesheet">
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
-​
+
+        body {
+            margin: 0 !important;
+        }
+
         * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: "Inter", sans-serif;
-        }
-        .main {
-            display: flex;
-            align-items: stretch;
-            height: 100vh;
-            width: 100vw;
-            background-color: #F7F7F7;
-        }
-        .logo-wrapper {
-            width: 60%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: #FFECC5;
-        }
-​
-        .controls-area {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-​
-        .header {
-            text-align: left;
-            margin-bottom: 48px;
-            font-size: 64px;
-            font-weight: 500;
-        }
-​
-        .button {
-            width: 320px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 12px;
-            font-size: 16px;
-            line-height: 24px;
-            font-weight: 500;
-            border: none;
-            border-radius: 8px;
-            background-color: white;
-            cursor: pointer;
+            box-sizing: border-box !important;
+            font-family: "Inter", sans-serif !important;
         }
     </style>
-    <script>
+    <script defer>
         function login () {
             window.location.href = '/auth/login/google'
         }
     </script>
 </head>
 <body>
-    <main class="main">
-        <div class="logo-wrapper">
+    <main
+        class="main"
+        style="display: flex; align-items: stretch; height: 100vh; width: 100vw; background-color: #F7F7F7;"
+    >
+        <div
+            class="logo-wrapper"
+            style="width: 60%; display: flex; justify-content: center; align-items: center; background-color: #FFECC5;"
+        >
             <svg width="427" height="88" viewBox="0 0 427 88" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M34.0147 33.4527C26.4142 33.4527 20.1547 39.3021 19.4692 46.7421H24.0075C24.673 41.7955 28.9009 37.9675 34.0147 37.9675H45.6684H50.4118H62.0852V37.9327C70.1409 37.9327 76.6958 31.3607 76.6958 23.2836V15.3872C76.6858 7.31024 70.1361 0.738281 62.0752 0.738281H34.0098C25.9539 0.738281 19.3991 7.31024 19.3991 15.3872V18.0712H15.3162C7.20526 18.0712 0.605469 24.6883 0.605469 32.8255V38.635C0.605469 46.767 7.20526 53.3841 15.3162 53.3841H35.6009C40.8298 53.3841 45.4229 50.635 48.0349 46.5012C50.6469 50.6301 55.2401 53.3841 60.4689 53.3841H72.1827V56.003C72.1827 61.5915 67.6492 66.1367 62.0752 66.1367H34.0098C28.4357 66.1367 23.9024 61.5915 23.9024 56.003V55.3707H19.3991V56.003C19.3991 64.0798 25.9539 70.6518 34.0098 70.6518H62.0752C70.1309 70.6518 76.6858 64.0798 76.6858 56.003V53.3841H80.7687C88.8795 53.3841 95.4795 46.767 95.4795 38.635V32.8255C95.4795 24.6933 88.8795 18.0762 80.7687 18.0762H78.7372V22.7368H80.7687C86.3178 22.7368 90.8309 27.2619 90.8309 32.8255V38.635C90.8309 44.1984 86.3178 48.7235 80.7687 48.7235H60.4641C55.3652 48.7235 51.1472 44.8958 50.4967 39.9592H45.5632C44.9127 44.8958 40.6947 48.7235 35.5958 48.7235H15.3162C9.76714 48.7235 5.25386 44.1984 5.25386 38.635V32.8255C5.25386 27.2619 9.76714 22.7368 15.3162 22.7368H35.6009C40.6795 22.7368 44.8778 26.5294 45.5581 31.4358H50.5118C51.1924 26.5294 55.3904 22.7368 60.4689 22.7368H70.1661V18.0762H60.4689C55.2401 18.0762 50.6469 20.8254 48.0349 24.9592C45.4229 20.8304 40.8298 18.0762 35.6009 18.0762H23.9024V15.3922C23.9024 9.80356 28.4357 5.25838 34.0098 5.25838H62.0752C67.6492 5.25838 72.1827 9.80356 72.1827 15.3922V23.2886C72.1827 28.8772 67.6492 33.4224 62.0752 33.4224H50.4018H45.6584" fill="black"/>
                 <path d="M114.52 0.738281H145.594C161.562 0.738281 170.563 6.43404 170.563 16.9632C170.563 25.3414 164.457 31.0372 154.596 33.1881C166.383 35.1235 173.884 41.7818 173.884 52.4215C173.884 64.1338 164.347 70.5767 147.31 70.5767H114.52V69.0724C120.2 67.6735 122.556 67.0318 122.556 60.905V10.4101C122.556 4.2881 120.2 3.64133 114.52 2.24245V0.738281ZM132.307 4.2831V31.8947H144.844C154.916 31.8947 160.382 25.8779 160.382 17.7103C160.382 9.97387 155.881 4.2831 144.844 4.2831H132.307ZM132.307 35.4392V67.027H146.56C158.666 67.027 163.707 60.4738 163.707 51.5541C163.707 42.6344 157.706 35.4392 146.56 35.4392H132.307Z" fill="black"/>
@@ -82,10 +45,13 @@
                 <path d="M385.737 60.9068C385.737 67.0288 387.772 67.8911 392.703 69.0745V70.5785H369.343V69.0745C374.275 67.8911 376.309 67.0336 376.309 60.9068V22.9818H367.203V21.4776L385.1 15.4609V26.8475C390.457 20.184 396.457 15.7818 403.855 15.7818C412.855 15.7818 417.892 22.0141 417.892 32.5433V60.9068C417.892 67.0288 419.926 67.8911 424.857 69.0745V70.5785H401.497V69.0745C406.429 67.8911 408.466 67.0336 408.466 60.9068V34.3682C408.466 26.6319 405.249 22.9818 399.035 22.9818C393.569 22.9818 389.497 25.9901 385.746 30.7182V60.9068H385.737Z" fill="black"/>
             </svg>
         </div>
-        <div class="controls-area">
+        <div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;">
             <div>
-            <h3 class="header">Log in</h3>
-                <button class="button" onclick="login()">
+            <h3 style="text-align: left; margin-bottom: 48px; font-size: 64px; font-weight: 500;">Log in</h3>
+                <button
+                    style="width: 320px; display: flex; justify-content: center; align-items: center; gap: 8px; padding: 10px 12px; font-size: 16px; line-height: 24px; font-weight: 500; border: none; border-radius: 8px; background-color: white; cursor: pointer;"
+                    onclick="login()"
+                >
                     <svg width="25" height="24" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M20.16 12.1793C20.16 11.6527 20.1133 11.1527 20.0333 10.666H12.5V13.6727H16.8133C16.62 14.6593 16.0533 15.4927 15.2133 16.0593V18.0593H17.7867C19.2933 16.666 20.16 14.6127 20.16 12.1793Z" fill="#4285F4"/>
                         <path d="M12.4994 20.0007C14.6594 20.0007 16.466 19.2807 17.786 18.0607L15.2127 16.0607C14.4927 16.5407 13.5794 16.834 12.4994 16.834C10.4127 16.834 8.64604 15.4273 8.01271 13.5273H5.35938V15.5873C6.67271 18.2007 9.3727 20.0007 12.4994 20.0007Z" fill="#34A853"/>
