@@ -33,7 +33,7 @@ pub enum AuthenticationError {
 
     #[error("failed to lookup user data")]
     UserDataLookupFailed(sqlx::Error),
-    
+
     #[error("attempted to authenticate against an unknown provider")]
     UnknownProvider,
 

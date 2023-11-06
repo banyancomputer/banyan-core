@@ -7,8 +7,8 @@ use url::Url;
 use crate::app::{AppState, Secrets};
 
 mod authentication_error;
-mod escrowed_key_material;
 mod create_escrowed_device;
+mod escrowed_key_material;
 mod login;
 mod logout;
 mod oauth_callback;

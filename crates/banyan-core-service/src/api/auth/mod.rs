@@ -13,7 +13,7 @@ pub(crate) mod registration_event;
 mod start_regwait;
 
 #[cfg(feature = "fake")]
-mod create_fake_account;
+mod create_fake_user;
 
 mod who_am_i;
 
@@ -36,10 +36,7 @@ pub fn router(state: AppState) -> Router<AppState> {
             "/device_api_key/end_regwait/:fingerprint",
             get(end_regwait::handler),
         )
-        .route(
-            "/fake_account",
-            axum::routing::post(create_fake_account::handler),
-        )
+        .route("/fake_user", axum::routing::post(create_fake_user::handler))
         .route("/who_am_i", get(who_am_i::handler))
         .with_state(state)
 }

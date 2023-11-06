@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "INSERT INTO users DEFAULT VALUES RETURNING id;",
+  "query": "INSERT INTO users (display_name, email) VALUES ($1, $2) RETURNING id;",
   "describe": {
     "columns": [
       {
@@ -10,11 +10,11 @@
       }
     ],
     "parameters": {
-      "Right": 0
+      "Right": 2
     },
     "nullable": [
       false
     ]
   },
-  "hash": "5f7884fbd748ea1e13bb8984738a55e3b6bfa8c9625456b51b2cc4a34eb165e5"
+  "hash": "d0e1201a21f821fa02ca987c97e4d05cb0d7c49b24a7edcfd8a84f1c0a87d15a"
 }
