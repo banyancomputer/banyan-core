@@ -15,13 +15,13 @@ import { TombProvider } from './contexts/tomb';
 import { Navigation } from '@components/common/Navigation';
 import { Header } from '@components/common/Header';
 
+import { getLocalStorageItem, setLocalStorageItem } from './utils/localStorage';
+import { SessionProvider } from './contexts/session';
 import en from '@static/locales/en.json';
 import fr from '@static/locales/fr.json';
 import de from '@static/locales/de.json';
 import ja from '@static/locales/ja.json';
 import zh from '@static/locales/zh.json';
-import { getLocalStorageItem, setLocalStorageItem } from './utils/localStorage';
-import { SessionProvider } from './contexts/session';
 
 const TRANSLATES: Record<string, Record<string, string>> = {
 	en,
@@ -39,6 +39,9 @@ const App = () => {
 	const [locale, setLocale] = useState('en');
 
 	useEffect(() => {
+		const theme = getLocalStorageItem('theme');
+		theme && document.documentElement.setAttribute('prefers-color-scheme', theme);
+
 		window.addEventListener('storage', () => {
 			const selectedLanguage = getLocalStorageItem('lang');
 			setLocale(selectedLanguage || 'en');
