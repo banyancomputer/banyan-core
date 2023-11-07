@@ -1,11 +1,11 @@
 
 import { Suspense, useEffect, useState } from 'react';
-import { BrowserRouter, useLocation } from 'react-router-dom';
+import { BrowserRouter } from 'react-router-dom';
 
 import { Modal } from '@components/common/Modal';
 import { Notifications } from '@components/common/Notifications';
 import { Routes } from './routes';
-import { KeystoreProvider, useKeystore } from './contexts/keystore';
+import { KeystoreProvider } from './contexts/keystore';
 import { ModalProvider } from './contexts/modals';
 import { FilePreviewProvider } from './contexts/filesPreview';
 import { IntlProvider } from 'react-intl';
@@ -34,8 +34,6 @@ const TRANSLATES: Record<string, Record<string, string>> = {
 export const locales = Object.keys(TRANSLATES);
 
 const App = () => {
-	// const { openEscrowModal } = useModal();
-	const { keystoreInitialized, isLoading, escrowedKeyMaterial } = useKeystore();
 	const [locale, setLocale] = useState('en');
 
 	useEffect(() => {
