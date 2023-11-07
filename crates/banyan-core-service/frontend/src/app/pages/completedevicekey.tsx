@@ -3,16 +3,13 @@ import { useIntl } from 'react-intl';
 import { useParams } from 'react-router-dom';
 
 import { useTomb } from '@/app/contexts/tomb';
-import { useModal } from '@/app/contexts/modals';
 import { b64UrlDecode } from '@/app/utils/b64';
 import { hexFingerprintApiKeySpki, prettyFingerprintApiKeySpki, publicPemWrap } from '@/app/utils';
-import { ClientApi } from '@/app/lib/api/auth';
 import { DeviceApiKey } from '@/app/types';
-import { useSession } from '@app/contexts/session';
+import { AuthClient } from '@/api/auth';
 
 const DeviceKeyApproval = () => {
-	const api = new ClientApi();
-	const { openModal } = useModal();
+	const api = new AuthClient();
 	const { messages } = useIntl();
 	const { completeDeviceKeyRegistration } = useTomb();
 	const searchParams = useParams();

@@ -4,7 +4,7 @@ import {
     fingerprintEcPublicKey,
     hexFingerprint,
     prettyFingerprint,
-} from '@/app/lib/crypto/utils';
+} from '@app/utils/crypto/utils';
 import { publicPemUnwrap } from './pem';
 
 export const prettyFingerprintApiKeySpki = async(

@@ -1,13 +1,8 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import ECCKeystore from '@/app/lib/crypto/ecc/keystore';
-import {
-	fingerprintDeviceApiPublicKeyPem,
-	hexFingerprint,
-} from '@/app/lib/crypto/utils';
-import { DeviceApiKey } from '@/app/types';
-import { ClientApi } from '@/app/lib/api/auth';
-import { EscrowedKeyMaterial, PrivateKeyMaterial } from '@/app/lib/crypto/types';
+import ECCKeystore from '@app/utils/crypto/ecc/keystore';
+import { EscrowedKeyMaterial, PrivateKeyMaterial } from '@app/utils/crypto/types';
 import { useSession } from '@/app/contexts/session';
+import { AuthClient } from '@/api/auth';
 
 // The name of the keystore
 const KEY_STORE_NAME_PREFIX = 'banyan-key-cache';
@@ -52,7 +47,7 @@ export const KeystoreProvider = ({ children }: any) => {
 	const [isLoading, setIsLoading] = useState<boolean>(true);
 
 	// Internal State
-	const api = new ClientApi();
+	const api = new AuthClient();
 	const [keystore, setKeystore] = useState<ECCKeystore | null>(null);
 	const [escrowedKeyMaterial, setEscrowedKeyMaterial] = useState<EscrowedKeyMaterial | null>(() => getUserData()?.escrowedKeyMaterial || null);
 	const [error, setError] = useState<string | null>(null);

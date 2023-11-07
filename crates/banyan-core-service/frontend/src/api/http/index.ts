@@ -62,7 +62,7 @@ const INTERNAL_ERROR = 500;
  */
 export class APIClient {
     protected readonly http: HttpClient = new HttpClient();
-    protected readonly ROOT_PATH = `${process.env.API_URL}`;
+    protected readonly ROOT_PATH = `${process.env.API_URL || ''}`;
 
     /**
          * handles error due to response code.

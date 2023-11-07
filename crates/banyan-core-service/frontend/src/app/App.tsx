@@ -1,11 +1,11 @@
 
 import { Suspense, useEffect, useState } from 'react';
-import { BrowserRouter, useLocation } from 'react-router-dom';
+import { BrowserRouter } from 'react-router-dom';
 
 import { Modal } from '@components/common/Modal';
 import { Notifications } from '@components/common/Notifications';
 import { Routes } from './routes';
-import { KeystoreProvider, useKeystore } from './contexts/keystore';
+import { KeystoreProvider } from './contexts/keystore';
 import { ModalProvider } from './contexts/modals';
 import { FilePreviewProvider } from './contexts/filesPreview';
 import { IntlProvider } from 'react-intl';
@@ -15,13 +15,13 @@ import { TombProvider } from './contexts/tomb';
 import { Navigation } from '@components/common/Navigation';
 import { Header } from '@components/common/Header';
 
+import { getLocalStorageItem, setLocalStorageItem } from './utils/localStorage';
+import { SessionProvider } from './contexts/session';
 import en from '@static/locales/en.json';
 import fr from '@static/locales/fr.json';
 import de from '@static/locales/de.json';
 import ja from '@static/locales/ja.json';
 import zh from '@static/locales/zh.json';
-import { getLocalStorageItem, setLocalStorageItem } from './utils/localStorage';
-import { SessionProvider } from './contexts/session';
 
 const TRANSLATES: Record<string, Record<string, string>> = {
 	en,
@@ -34,11 +34,12 @@ const TRANSLATES: Record<string, Record<string, string>> = {
 export const locales = Object.keys(TRANSLATES);
 
 const App = () => {
-	// const { openEscrowModal } = useModal();
-	const { keystoreInitialized, isLoading, escrowedKeyMaterial } = useKeystore();
 	const [locale, setLocale] = useState('en');
 
 	useEffect(() => {
+		const theme = getLocalStorageItem('theme');
+		theme && document.documentElement.setAttribute('prefers-color-scheme', theme);
+
 		window.addEventListener('storage', () => {
 			const selectedLanguage = getLocalStorageItem('lang');
 			setLocale(selectedLanguage || 'en');
