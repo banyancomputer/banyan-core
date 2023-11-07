@@ -2,6 +2,7 @@ use axum_extra::either::Either;
 
 use super::{ApiIdentity, SessionIdentity};
 
+// Enum Describing the two types of identities that can be used to authenticate a user.
 pub type UserIdentity = Either<SessionIdentity, ApiIdentity>;
 
 pub trait Identity {
