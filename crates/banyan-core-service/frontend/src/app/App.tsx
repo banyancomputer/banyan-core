@@ -54,7 +54,7 @@ const App = () => {
 
 	return (
 		<main className="flex flex-col h-screen font-sans bg-mainBackground text-text-900">
-			<BrowserRouter basename="/dist" >
+			<BrowserRouter basename="/" >
 				<SessionProvider>
 					<KeystoreProvider>
 						<ModalProvider>
@@ -69,12 +69,12 @@ const App = () => {
 											<Notifications />
 											<section className="flex flex-grow">
 												<Navigation />
-												<div className="flex-grow">
+												<section className="flex-grow h-screen overflow-y-scroll">
 													<Header />
 													<Suspense>
 														<Routes />
 													</Suspense>
-												</div>
+												</section>
 											</section>
 										</IntlProvider>
 									</FilePreviewProvider>

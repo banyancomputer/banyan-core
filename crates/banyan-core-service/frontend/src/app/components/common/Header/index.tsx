@@ -39,7 +39,7 @@ export const Header = () => {
 		}
 	};
 
-	const goTo = (path: string) => function() {
+	const goTo = (path: string) => function () {
 		navigate(path);
 	};
 
@@ -67,7 +67,7 @@ export const Header = () => {
 					onClick={toggleProfileOptionsVisibility}
 					ref={userControlsRef}
 				>
-					{false ? //TODO: this is causing a 403 -> userData?.user.profileImage ?
+					{userData?.user?.profileImage ?
 						< img
 							className="rounded-full"
 							src={userData?.user.profileImage}

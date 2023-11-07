@@ -51,7 +51,7 @@ export const CreateBucketModal = () => {
                 <label>
                     {`${messages.driveName}`}
                     <input
-                        className="mt-2 input w-full h-11 py-3 px-4 rounded-lg border-border-darken focus:outline-none"
+                        className="mt-2 input w-full h-11 py-3 px-4 rounded-lg border-1 border-border-darken focus:outline-none"
                         type="text"
                         placeholder={`${messages.enterNewDriveName}`}
                         value={bucketName}

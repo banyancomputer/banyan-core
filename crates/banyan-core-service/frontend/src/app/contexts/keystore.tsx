@@ -70,7 +70,6 @@ export const KeystoreProvider = ({ children }: any) => {
 	// Occurs on context initialization
 	useEffect(() => {
 		const createKeystore = async () => {
-			console.log("createKeystore");
 			try {
 				const ks = await ECCKeystore.init({
 					storeName: KEY_STORE_NAME_PREFIX,

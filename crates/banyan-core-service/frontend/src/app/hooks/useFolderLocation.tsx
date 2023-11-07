@@ -5,7 +5,7 @@ import { useLocation } from 'react-router-dom';
 export const useFolderLocation = () => {
     const { search } = useLocation();
 
-    const foldersPaths = useMemo(() => search.split('/') || [], [search]);
+    const foldersPaths = useMemo(() => search ? search.split('/') : [], [search]);
 
     return foldersPaths;
 };

@@ -351,30 +351,30 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
 	// Initialize the tomb client
 	useEffect(() => {
-		if (!userData) { return; }
+		if (!userData || !keystoreInitialized) { return; }
 
+		(async () => {
+			try {
+				const apiKey = await getApiKey();
+				const TombWasm = (await import('tomb-wasm-experimental')).TombWasm;
+				const tomb = new TombWasm(
+					apiKey.privatePem,
+					userData.user.id,
+					process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
+					process.env.NEXT_PUBLIC_DATA_URL || 'http://localhost:3002',
+				);
+				setTomb(await tomb);
+			} catch (err) {
+				console.error(err);
+			}
+		})();
+	}, [userData, keystoreInitialized, isLoading, escrowedKeyMaterial]);
+
+	useEffect(() => {
 		if (!keystoreInitialized && !isLoading) {
 			openEscrowModal(!!escrowedKeyMaterial);
-			return;
-		}
-		else {
-			(async () => {
-				try {
-					const apiKey = await getApiKey();
-					const TombWasm = (await import('tomb-wasm-experimental')).TombWasm;
-					const tomb = new TombWasm(
-						apiKey.privatePem,
-						userData.user.id,
-						process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
-						process.env.NEXT_PUBLIC_DATA_URL || 'http://localhost:3002',
-					);
-					setTomb(await tomb);
-				} catch (err) {
-					console.error(err);
-				}
-			})();
-		}
-	}, [userData, keystoreInitialized, isLoading, escrowedKeyMaterial]);
+		};
+	}, [isLoading, keystoreInitialized]);
 
 	useEffect(() => {
 		if (tomb) {
