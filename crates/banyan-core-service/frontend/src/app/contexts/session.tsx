@@ -1,4 +1,6 @@
-import React, { Dispatch, FC, ReactElement, ReactNode, SetStateAction, createContext, useContext, useEffect, useState } from 'react';
+import { FC, ReactNode, createContext, useContext, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+
 import { LocalKey, UserData, getLocalKey, destroyLocalKey, getSessionKey, getUserData } from '@/app/utils/cookies';
 
 export interface SessionState {
@@ -15,6 +17,7 @@ export interface SessionState {
 export const SessionContext = createContext<SessionState>({} as SessionState);
 
 export const SessionProvider: FC<{ children: ReactNode }> = ({ children }) => {
+	const navigate = useNavigate();
 	const [sessionState, setSessionState] = useState({
 		localKey: getLocalKey(),
 		userData: null,
@@ -26,14 +29,20 @@ export const SessionProvider: FC<{ children: ReactNode }> = ({ children }) => {
 	} as SessionState);
 
 	useEffect(() => {
+		const userData = getUserData()
+		const sessionKey = getSessionKey();
+
+		if (!userData || !sessionKey) {
+			navigate('/login.html');
+			return;
+		}
+
 		setSessionState({
 			...sessionState,
 			userData: getUserData(),
 			sessionKey: getSessionKey(),
 		})
-	}, [])
-
-
+	}, []);
 
 	return (
 		<SessionContext.Provider value={sessionState}>

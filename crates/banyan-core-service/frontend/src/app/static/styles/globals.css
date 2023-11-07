@@ -2,10 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-@import "react-toastify/dist/ReactToastify.min.css";
 @import "@static/styles/_variables.css";
-@import "react-date-range/dist/styles";
-@import "react-date-range/dist/theme/default";
 
 @font-face {
     font-family: "Inter";
