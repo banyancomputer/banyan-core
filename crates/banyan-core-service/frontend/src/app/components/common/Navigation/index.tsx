@@ -36,12 +36,14 @@ export const Navigation = () => {
 		openModal(<CreateBucketModal />);
 	};
 
+
 	const logout = async () => {
 		let api = new HttpClient;
 		try {
 			console.log("logging out");
 			await purgeKeystore();
 			await api.get('/auth/logout');
+			window.location.href = '/';
 		}
 		catch (err: any) {
 			console.error("An Error occurred trying to logout: ", err.message);
