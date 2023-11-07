@@ -3,6 +3,7 @@
 module.exports = {
 	mode: 'jit',
 	content: ['./src/**/*.{js,jsx,ts,tsx}'],
+	plugins: [require('daisyui')],
 	theme: {
 		extend: {
 			boxShadow: {

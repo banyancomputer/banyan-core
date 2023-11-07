@@ -12,7 +12,6 @@ import BucketHeader from '@/app/components/Bucket/Header';
 const Bucket = () => {
     const params = useParams();
     const bucketId = params.id;
-
     const { buckets, areBucketsLoading, selectedBucket, selectBucket, getSelectedBucketFiles } = useTomb();
     const folderLocation = useFolderLocation();
 

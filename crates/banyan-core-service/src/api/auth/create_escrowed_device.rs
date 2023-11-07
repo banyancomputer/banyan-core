@@ -3,15 +3,15 @@ use axum::response::{IntoResponse, Response};
 use http::StatusCode;
 use jwt_simple::prelude::ES384PublicKey;
 
+use crate::api::models::ApiEscrowedKeyMaterial;
 use crate::app::AppState;
-use crate::auth::escrowed_key_material::EscrowedKeyMaterial;
 use crate::extractors::SessionIdentity;
 use crate::utils::keys::sha1_fingerprint_publickey;
 
 pub async fn handler(
     session: Option<SessionIdentity>,
     State(state): State<AppState>,
-    Json(request): Json<EscrowedKeyMaterial>,
+    Json(request): Json<ApiEscrowedKeyMaterial>,
 ) -> Result<Response, CreateEscrowedDeviceError> {
     let session = match session {
         Some(session) => session,
@@ -29,7 +29,7 @@ pub async fn handler(
     // TODO: Validate the salt here too
 
     let database = state.database();
-    let user_id = session.user_id();
+    let user_id = session.user_id().to_string();
     let encrypted_private_key_material = request.encrypted_private_key_material();
     let pass_key_salt = request.pass_key_salt();
 
@@ -72,6 +72,7 @@ pub async fn handler(
             None => err.into()
         }
     })?;
+
     sqlx::query!(
         r#"INSERT INTO device_api_keys (user_id, fingerprint, pem)
             VALUES ($1, $2, $3);"#,

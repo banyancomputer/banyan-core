@@ -45,7 +45,7 @@ export const KeystoreContext = createContext<{
 });
 
 export const KeystoreProvider = ({ children }: any) => {
-	const { userData, getLocalKey, destroyLocalKey } = useSession();
+	const { getLocalKey, getUserData, destroyLocalKey } = useSession();
 
 	// External State
 	const [keystoreInitialized, setKeystoreInitialized] = useState<boolean>(false);
@@ -54,7 +54,7 @@ export const KeystoreProvider = ({ children }: any) => {
 	// Internal State
 	const api = new ClientApi();
 	const [keystore, setKeystore] = useState<ECCKeystore | null>(null);
-	const [escrowedKeyMaterial, setEscrowedKeyMaterial] = useState<EscrowedKeyMaterial | null>(null);
+	const [escrowedKeyMaterial, setEscrowedKeyMaterial] = useState<EscrowedKeyMaterial | null>(() => getUserData()?.escrowedKeyMaterial || null);
 	const [error, setError] = useState<string | null>(null);
 
 	/* Effects */
@@ -70,7 +70,6 @@ export const KeystoreProvider = ({ children }: any) => {
 	// Occurs on context initialization
 	useEffect(() => {
 		const createKeystore = async () => {
-			console.log("createKeystore");
 			try {
 				const ks = await ECCKeystore.init({
 					storeName: KEY_STORE_NAME_PREFIX,
@@ -85,6 +84,7 @@ export const KeystoreProvider = ({ children }: any) => {
 						localKey.key, localKey.id
 					);
 					initialized = true;
+					console.log("createKeystore: using cached key");
 				} catch (err) {
 					console.log("No valid cached key material found for this session");
 				} finally {
@@ -99,15 +99,7 @@ export const KeystoreProvider = ({ children }: any) => {
 		if (!keystore) {
 			createKeystore()
 		}
-	}, [keystore]);
-
-	// Handle loading the escrowed key material from the Next Auth session
-	// Occurs on update to the `userData` portion of the session context
-	useEffect(() => {
-		if (userData) {
-			setEscrowedKeyMaterial(userData.escrowedKeyMaterial);
-		}
-	}, [userData]);
+	}, []);
 
 	// Initialize a keystore based on the user's passphrase
 	const initializeKeystore = async (passkey: string): Promise<void> => {
@@ -218,35 +210,14 @@ export const KeystoreProvider = ({ children }: any) => {
 			keyMaterial,
 			passphrase
 		);
-		setEscrowedKeyMaterial(escrowedKeyMaterial);
 		// Escrow the user's private key material
 		await api
 			.escrowDevice(escrowedKeyMaterial)
-			.then((resp) => {
-				setEscrowedKeyMaterial(resp);
-			})
+			.then(() => setEscrowedKeyMaterial(escrowedKeyMaterial))
 			.catch((err) => {
 				throw new Error("Error escrowing device: " + err.message);
 			});
 
-		const apiKeyFingerprint = await fingerprintDeviceApiPublicKeyPem(escrowedKeyMaterial.apiPublicKeyPem)
-			.then(hexFingerprint).catch((err) => {
-				throw new Error('Error fingerprinting API key: ' + err.message);
-			});
-
-		// Register the user's public key material
-		await api
-			.registerDeviceApiKey(escrowedKeyMaterial.apiPublicKeyPem)
-			.then((resp: DeviceApiKey) => {
-				if (resp.fingerprint !== apiKeyFingerprint) {
-					setError('Fingerprint mismatch on registration');
-					throw new Error('Fingerprint mismatch on registration');
-				}
-			})
-			.catch((err) => {
-				setError(err.message);
-				throw new Error(err.message);
-			});
 		return privateKeyMaterial;
 	};
 

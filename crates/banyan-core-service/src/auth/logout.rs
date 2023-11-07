@@ -4,7 +4,9 @@ use axum_extra::extract::cookie::Cookie;
 use axum_extra::extract::CookieJar;
 
 use crate::app::AppState;
-use crate::auth::{NEW_USER_COOKIE_NAME, SESSION_COOKIE_NAME};
+use crate::auth::{
+    LOCAL_KEY_COOKIE_NAME, NEW_USER_COOKIE_NAME, SESSION_COOKIE_NAME, USER_DATA_COOKIE_NAME,
+};
 use crate::extractors::SessionIdentity;
 
 pub async fn handler(
@@ -27,6 +29,8 @@ pub async fn handler(
 
     cookie_jar = remove_cookie(NEW_USER_COOKIE_NAME, cookie_jar);
     cookie_jar = remove_cookie(SESSION_COOKIE_NAME, cookie_jar);
+    cookie_jar = remove_cookie(USER_DATA_COOKIE_NAME, cookie_jar);
+    cookie_jar = remove_cookie(LOCAL_KEY_COOKIE_NAME, cookie_jar);
 
     (cookie_jar, Redirect::to("/")).into_response()
 }
