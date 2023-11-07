@@ -85,6 +85,7 @@ export const KeystoreProvider = ({ children }: any) => {
 						localKey.key, localKey.id
 					);
 					initialized = true;
+					console.log("createKeystore: using cached key");
 				} catch (err) {
 					console.log("No valid cached key material found for this session");
 				} finally {
@@ -210,10 +211,10 @@ export const KeystoreProvider = ({ children }: any) => {
 			keyMaterial,
 			passphrase
 		);
-		setEscrowedKeyMaterial(escrowedKeyMaterial);
 		// Escrow the user's private key material
 		await api
 			.escrowDevice(escrowedKeyMaterial)
+			.then(() => setEscrowedKeyMaterial(escrowedKeyMaterial))
 			.catch((err) => {
 				throw new Error("Error escrowing device: " + err.message);
 			});

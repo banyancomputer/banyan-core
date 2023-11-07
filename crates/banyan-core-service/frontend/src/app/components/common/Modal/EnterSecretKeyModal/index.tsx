@@ -44,7 +44,6 @@ export const EnterSecretKeyModal = () => {
 				<HiOutlineLightningBolt size="24px" />
 			</span>
 			<div>
-				<h2> wtf </h2>
 				<h4 className="text-m font-semibold">{`${messages.inputSecretKey}`}</h4>
 				<p className="mt-2 text-text-600">
 					{`${messages.enterSecretKey}`}

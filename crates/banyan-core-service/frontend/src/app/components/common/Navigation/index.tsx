@@ -13,7 +13,7 @@ import { popupClickHandler } from '@/app/utils';
 import { ChevronUp, Home, Info, Logo, Logout, Mail, Plus, Question, Trash } from '@static/images/common';
 
 export const Navigation = () => {
-	const { buckets, trash } = useTomb();
+	const { buckets } = useTomb();
 	const { purgeKeystore } = useKeystore();
 	const [isBucketsVisible, setIsBucketsVisible] = useState(false);
 	const [areHelpOpionsVisible, setAreHelpOpionsVisible] = useState(false);
@@ -40,9 +40,8 @@ export const Navigation = () => {
 		let api = new HttpClient;
 		try {
 			console.log("logging out");
-			await api.get('/auth/logout');
 			await purgeKeystore();
-			navigate('/');
+			await api.get('/auth/logout');
 		}
 		catch (err: any) {
 			console.error("An Error occurred trying to logout: ", err.message);

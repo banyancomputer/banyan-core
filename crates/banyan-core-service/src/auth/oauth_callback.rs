@@ -16,27 +16,17 @@ use uuid::Uuid;
 use crate::app::AppState;
 
 use crate::auth::{
-    escrowed_key_material::EscrowedKeyMaterial, oauth_client, AuthenticationError,
+    oauth_client, AuthenticationError,
     NEW_USER_COOKIE_NAME, SESSION_COOKIE_NAME, SESSION_TTL, USER_DATA_COOKIE_NAME,
 };
+use crate::api::models::{ApiUser, ApiEscrowedKeyMaterial};
 use crate::extractors::ServerBase;
 
-// Represents a User in the Database
-#[derive(sqlx::FromRow, Serialize, std::fmt::Debug)]
-struct User {
-    id: String,
-    email: String,
-    verified_email: bool,
-    display_name: String,
-    locale: Option<String>,
-    profile_image: Option<String>,
-}
-
 // Data returned in the User Data Cookie
-#[derive(Serialize, Debug)]
+#[derive(Serialize)]
 struct UserData {
-    user: User,
-    escrowed_key_material: Option<EscrowedKeyMaterial>,
+    user: ApiUser,
+    escrowed_key_material: Option<ApiEscrowedKeyMaterial>,
 }
 
 pub async fn handler(
@@ -189,7 +179,7 @@ pub async fn handler(
 
     // Lookup User Data to attach include in the CookieJar
     let user = sqlx::query_as!(
-        User,
+        ApiUser,
         r#"SELECT 
             id, email, verified_email, display_name, locale, profile_image
         FROM users
@@ -201,7 +191,7 @@ pub async fn handler(
     .map_err(AuthenticationError::UserDataLookupFailed)?;
 
     let escrowed_key_material = sqlx::query_as!(
-        EscrowedKeyMaterial,
+        ApiEscrowedKeyMaterial,
         r#"SELECT
             api_public_key_pem, encryption_public_key_pem, encrypted_private_key_material, pass_key_salt
         FROM escrowed_devices
@@ -216,8 +206,6 @@ pub async fn handler(
         user,
         escrowed_key_material,
     };
-
-    tracing::info!("user data: {:?}", user_data);
 
     // Create a Session to record in the database and attach to the CookieJar
     let new_sid_row = sqlx::query!(
@@ -276,7 +264,8 @@ pub async fn handler(
             .finish(),
     );
 
-    let redirect_url = next_url.unwrap_or("/".to_string());
+    // TODO: make this point at the root url
+    let redirect_url = next_url.unwrap_or("/dist".to_string());
     Ok((cookie_jar, Redirect::to(&redirect_url)).into_response())
 }
 

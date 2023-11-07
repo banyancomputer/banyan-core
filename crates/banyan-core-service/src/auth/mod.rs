@@ -1,4 +1,4 @@
-use axum::routing::{get, post};
+use axum::routing::get;
 use axum::Router;
 use oauth2::basic::BasicClient;
 use oauth2::RedirectUrl;
@@ -7,8 +7,6 @@ use url::Url;
 use crate::app::{AppState, Secrets};
 
 mod authentication_error;
-mod create_escrowed_device;
-mod escrowed_key_material;
 mod login;
 mod logout;
 mod oauth_callback;
@@ -35,8 +33,12 @@ pub static PROVIDER_CONFIGS: phf::Map<&'static str, ProviderConfig> = phf::phf_m
     ),
 };
 
+// Session Id Cookie
 pub static SESSION_COOKIE_NAME: &str = "_session_id";
+// User Data Cookie for sharing on login
 pub static USER_DATA_COOKIE_NAME: &str = "_user_data";
+// Local Key Cookie -- kept for enforcing deletion on client
+pub const LOCAL_KEY_COOKIE_NAME: &str = "_local_key";
 
 pub const SESSION_TTL: u64 = 28 * 24 * 60 * 60;
 
@@ -45,7 +47,6 @@ pub fn router(state: AppState) -> Router<AppState> {
         .route("/callback/:provider", get(oauth_callback::handler))
         .route("/login/:provider", get(login::handler))
         .route("/logout", get(logout::handler))
-        .route("/escrow", post(create_escrowed_device::handler))
         .with_state(state)
 }
 

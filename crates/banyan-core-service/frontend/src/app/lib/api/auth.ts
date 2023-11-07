@@ -36,8 +36,8 @@ export class ClientApi {
  */
 	public escrowDevice = async (
 		request: EscrowedKeyMaterial
-	): Promise<EscrowedDevice> => {
-		const url = `${this.url}/auth/escrow`;
+	): Promise<void> => {
+		const url = `${this.url}/api/v1/auth/create_escrowed_device`;
 		const body = JSON.stringify({
 			api_public_key_pem: request.apiPublicKeyPem,
 			encryption_public_key_pem: request.encryptionPublicKeyPem,
@@ -45,11 +45,17 @@ export class ClientApi {
 			pass_key_salt: request.passKeySalt
 		});
 		const opts = {
+			headers: {
+				'Content-Type': 'application/json',
+			},
 			method: 'POST',
 			body,
 		};
 
-		return await fetchJson<EscrowedDevice>(url, opts);
+		let status = await fetchStatus(url, opts);
+		if (status != 200) {
+			throw new Error("failed to escrow device")
+		}
 	};
 
 	/* Api Key Lifecycle */
