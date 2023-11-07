@@ -264,8 +264,7 @@ pub async fn handler(
             .finish(),
     );
 
-    // TODO: make this point at the root url
-    let redirect_url = next_url.unwrap_or("/dist".to_string());
+    let redirect_url = next_url.unwrap_or("/".to_string());
     Ok((cookie_jar, Redirect::to(&redirect_url)).into_response())
 }
 

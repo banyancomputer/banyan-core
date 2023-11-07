@@ -33,7 +33,7 @@ export const SessionProvider: FC<{ children: ReactNode }> = ({ children }) => {
 		const sessionKey = getSessionKey();
 
 		if (!userData || !sessionKey) {
-			navigate('/login.html');
+			window.location.href = '/login';
 			return;
 		}
 

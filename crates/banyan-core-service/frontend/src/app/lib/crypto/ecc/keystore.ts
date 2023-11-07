@@ -102,7 +102,6 @@ export default class ECCKeyStore extends KeyStoreBase implements KeyStore {
   async recoverKeyMaterial(escrowedKeyMaterial: EscrowedKeyMaterial, passphrase: string, cfg?: Partial<Config>): Promise<PrivateKeyMaterial> {
     const mergedCfg = config.merge(this.cfg, cfg);
     const salt = utils.base64ToArrBuf(escrowedKeyMaterial.passKeySalt);
-    console.log('Salt: ', salt);
     const key = await pbkdf2.deriveKey(
       passphrase,
       salt,

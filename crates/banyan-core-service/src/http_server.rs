@@ -2,15 +2,11 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
 
-use axum::body::{boxed, BoxBody};
+use axum::routing::{get, get_service};
 use axum::error_handling::HandleErrorLayer;
 use axum::extract::DefaultBodyLimit;
-use axum::handler::HandlerWithoutStateExt;
-use axum::http::Request;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::response::Response;
-use axum::routing::get;
 use axum::{Json, Router};
 use axum::{Server, ServiceExt};
 use futures::future::join_all;
@@ -18,20 +14,23 @@ use http::header;
 use tokio::sync::watch;
 use tokio::task::JoinHandle;
 use tower::ServiceBuilder;
-use tower::ServiceExt as OtherServiceExt;
 use tower_http::request_id::MakeRequestUuid;
 use tower_http::sensitive_headers::{
     SetSensitiveRequestHeadersLayer, SetSensitiveResponseHeadersLayer,
 };
-use tower_http::services::ServeDir;
-use tower_http::services::ServeFile;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnFailure, DefaultOnResponse, TraceLayer};
 use tower_http::validate_request::ValidateRequestHeaderLayer;
 use tower_http::{LatencyUnit, ServiceBuilderExt};
 use tracing::Level;
 
+use axum::body::{boxed, BoxBody};
+use axum::http::Request;
+use axum::response::Response;
+use tower::ServiceExt as OtherServiceExt;
+
+use tower_http::services::ServeDir;
+use tower_http::services::ServeFile;
 use crate::app::AppState;
-use crate::extractors::SessionIdentity;
 use crate::tasks::start_background_workers;
 use crate::{api, auth, health_check, hooks};
 
@@ -84,6 +83,8 @@ pub async fn graceful_shutdown_blocker() -> (JoinHandle<()>, watch::Receiver<()>
     (handle, rx)
 }
 
+// TODO: find someplace for this. For now missing routes are served the dist/index.html file
+#[allow(dead_code)]
 async fn not_found_handler() -> impl IntoResponse {
     (
         StatusCode::NOT_FOUND,
@@ -91,27 +92,16 @@ async fn not_found_handler() -> impl IntoResponse {
     )
 }
 
-async fn static_index_handler<B: std::marker::Send + 'static>(
-    session: Option<SessionIdentity>,
+async fn login_page_handler<B: std::marker::Send + 'static>(
     req: Request<B>,
 ) -> Result<Response<BoxBody>, (StatusCode, String)> {
-    if session.is_some() {
-        match ServeDir::new("./dist").oneshot(req).await {
-            Ok(res) => Ok(res.map(boxed)),
-            Err(err) => Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Something went wrong serving the SPA index: {}", err),
-            )),
-        }
-    } else {
-        match ServeFile::new("./dist/login.html").oneshot(req).await {
+    match ServeFile::new("./dist/login.html").oneshot(req).await {
             Ok(res) => Ok(res.map(boxed)),
             Err(err) => Err((
                 StatusCode::INTERNAL_SERVER_ERROR,
                 format!("Something went wrong serving the login page: {}", err),
             )),
         }
-    }
 }
 
 pub async fn run(listen_addr: SocketAddr, app_state: AppState) {
@@ -154,16 +144,20 @@ pub async fn run(listen_addr: SocketAddr, app_state: AppState) {
         .layer(SetSensitiveResponseHeadersLayer::from_shared(
             sensitive_headers,
         ));
-
-    // Make sure all static assets are accessible
-    let static_assets = ServeDir::new("dist").not_found_service(not_found_handler.into_service());
-
+    
+    let static_assets = ServeDir::new("dist")
+        .not_found_service(
+            get_service(ServeFile::new("./dist/index.html")).handle_error(
+                |_| async move { (StatusCode::INTERNAL_SERVER_ERROR, "internal server error") },
+            ),
+        );
+    
     let root_router = Router::new()
         .nest("/api/v1", api::router(app_state.clone()))
         .nest("/auth", auth::router(app_state.clone()))
         .nest("/hooks", hooks::router(app_state.clone()))
         .nest("/_status", health_check::router(app_state.clone()))
-        .route("/", get(static_index_handler))
+        .route("/login", get(login_page_handler))
         .with_state(app_state)
         .fallback_service(static_assets);
 
