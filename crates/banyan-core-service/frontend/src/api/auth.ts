@@ -20,35 +20,4 @@ export class AuthClient extends APIClient {
             await this.handleError(response);
         }
 	};
-
-    /**
-    * Register a device api key for a user
-    * @param spki - the public key of the device's API key in PEM format
-    * @return void
-    */
-	public async registerDeviceApiKey(pem: string): Promise<DeviceApiKey> {
-		const spki = publicPemUnwrap(pem);
-		const urlSpki = b64UrlEncode(spki);
-        const response = await this.http.get(`${this.ROOT_PATH}/auth/device/register?spki=${urlSpki}`);
-
-        if (!response.ok) {
-            await this.handleError(response);
-        }
-
-        return await response.json();
-	};
-
-    /**
-    * Get the device api keys for a user
-    * @return the device api keys for a user
-    */
-	public async readDeviceApiKeys(): Promise<DeviceApiKey[]> {
-        const response = await this.http.get(`${this.ROOT_PATH}/auth/device`);
-
-        if (!response.ok) {
-            await this.handleError(response);
-        }
-
-        return await response.json();
-	};
 }

@@ -1,5 +1,4 @@
 import React, { useEffect } from 'react';
-// import { useRouter } from 'next/router';
 
 import { useParams } from 'react-router-dom';
 import { useTomb } from '@/app/contexts/tomb';

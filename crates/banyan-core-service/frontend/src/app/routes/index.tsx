@@ -4,6 +4,7 @@ import { useLocation, useNavigate, useRoutes } from 'react-router-dom';
 const Buckets = lazy(() => import('@app/pages/buckets'));
 const Bucket = lazy(() => import('@app/pages/bucket'));
 const Account = lazy(() => import('@app/pages/account'));
+const RegisterDevice = lazy(() => import('@app/pages/registerDevice'));
 const Billing = lazy(() => import('@components/Account/Billing'));
 const ManageKeys = lazy(() => import('@components/Account/ManageKeys'));
 const Services = lazy(() => import('@components/Account/Services'));
@@ -36,6 +37,7 @@ export class RoutesConfig {
     public static Buckets = new Route('/', <Buckets />);
     public static Bucket = new Route('/bucket/:id', <Bucket />);
     public static Account = new Route('/account', <Account />);
+    public static RegisterDevice = new Route('/register-device/:id', <RegisterDevice />);
     public static Billing = new Route('billing', <Billing />);
     public static ManageKeys = new Route('manage-keys', <ManageKeys />);
     public static Services = new Route('services', <Services />);
@@ -45,6 +47,7 @@ export class RoutesConfig {
     public static routes: Route[] = [
         RoutesConfig.Buckets,
         RoutesConfig.Bucket,
+        RoutesConfig.RegisterDevice,
         RoutesConfig.Account.addChildren([
             RoutesConfig.Billing,
             RoutesConfig.ManageKeys,
@@ -56,6 +59,5 @@ export class RoutesConfig {
 
 export const Routes = () => {
     const routes = useRoutes(RoutesConfig.routes);
-
     return routes;
 };
