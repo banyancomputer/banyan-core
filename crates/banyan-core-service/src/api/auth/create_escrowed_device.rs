@@ -3,8 +3,8 @@ use axum::response::{IntoResponse, Response};
 use http::StatusCode;
 use jwt_simple::prelude::ES384PublicKey;
 
-use crate::app::AppState;
 use crate::api::models::ApiEscrowedKeyMaterial;
+use crate::app::AppState;
 use crate::extractors::SessionIdentity;
 use crate::utils::keys::sha1_fingerprint_publickey;
 

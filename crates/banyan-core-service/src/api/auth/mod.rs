@@ -4,10 +4,10 @@ use axum::Router;
 use crate::app::AppState;
 
 mod create_device_api_key;
+mod create_escrowed_device;
 mod delete_device_api_key;
 mod read_all_device_api_keys;
 mod read_device_api_key;
-mod create_escrowed_device;
 
 mod end_regwait;
 pub(crate) mod registration_event;
@@ -39,7 +39,7 @@ pub fn router(state: AppState) -> Router<AppState> {
         )
         .route(
             "/create_escrowed_device",
-            post(create_escrowed_device::handler)
+            post(create_escrowed_device::handler),
         )
         .route("/fake_user", axum::routing::post(create_fake_user::handler))
         .route("/who_am_i", get(who_am_i::handler))
@@ -67,7 +67,7 @@ pub fn router(state: AppState) -> Router<AppState> {
         )
         .route(
             "/create_escrowed_device",
-            post(create_escrowed_device::handler)
+            post(create_escrowed_device::handler),
         )
         .route("/who_am_i", get(who_am_i::handler))
         .with_state(state)

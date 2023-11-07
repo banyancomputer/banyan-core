@@ -98,22 +98,18 @@ async fn static_index_handler<B: std::marker::Send + 'static>(
     if session.is_some() {
         match ServeDir::new("./dist").oneshot(req).await {
             Ok(res) => Ok(res.map(boxed)),
-            Err(err) => {
-                return Err((
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("Something went wrong serving the SPA index: {}", err),
-                ))
-            }
+            Err(err) => Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Something went wrong serving the SPA index: {}", err),
+            )),
         }
     } else {
         match ServeFile::new("./dist/login.html").oneshot(req).await {
             Ok(res) => Ok(res.map(boxed)),
-            Err(err) => {
-                return Err((
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("Something went wrong serving the login page: {}", err),
-                ))
-            }
+            Err(err) => Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Something went wrong serving the login page: {}", err),
+            )),
         }
     }
 }

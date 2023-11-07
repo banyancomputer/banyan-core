@@ -10,4 +10,3 @@ pub struct ApiUser {
     pub locale: Option<String>,
     pub profile_image: Option<String>,
 }
-
