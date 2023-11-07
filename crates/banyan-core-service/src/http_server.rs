@@ -2,11 +2,11 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
 
-use axum::routing::{get, get_service};
 use axum::error_handling::HandleErrorLayer;
 use axum::extract::DefaultBodyLimit;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
+use axum::routing::{get, get_service};
 use axum::{Json, Router};
 use axum::{Server, ServiceExt};
 use futures::future::join_all;
@@ -28,11 +28,11 @@ use axum::http::Request;
 use axum::response::Response;
 use tower::ServiceExt as OtherServiceExt;
 
-use tower_http::services::ServeDir;
-use tower_http::services::ServeFile;
 use crate::app::AppState;
 use crate::tasks::start_background_workers;
 use crate::{api, auth, health_check, hooks};
+use tower_http::services::ServeDir;
+use tower_http::services::ServeFile;
 
 // TODO: might want a longer timeout in some parts of the API and I'd like to be able customize a
 // few layers eventually such as CORS and request timeouts but that's for something down the line
@@ -96,12 +96,12 @@ async fn login_page_handler<B: std::marker::Send + 'static>(
     req: Request<B>,
 ) -> Result<Response<BoxBody>, (StatusCode, String)> {
     match ServeFile::new("./dist/login.html").oneshot(req).await {
-            Ok(res) => Ok(res.map(boxed)),
-            Err(err) => Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Something went wrong serving the login page: {}", err),
-            )),
-        }
+        Ok(res) => Ok(res.map(boxed)),
+        Err(err) => Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Something went wrong serving the login page: {}", err),
+        )),
+    }
 }
 
 pub async fn run(listen_addr: SocketAddr, app_state: AppState) {
@@ -144,14 +144,13 @@ pub async fn run(listen_addr: SocketAddr, app_state: AppState) {
         .layer(SetSensitiveResponseHeadersLayer::from_shared(
             sensitive_headers,
         ));
-    
-    let static_assets = ServeDir::new("dist")
-        .not_found_service(
-            get_service(ServeFile::new("./dist/index.html")).handle_error(
-                |_| async move { (StatusCode::INTERNAL_SERVER_ERROR, "internal server error") },
-            ),
-        );
-    
+
+    let static_assets = ServeDir::new("dist").not_found_service(
+        get_service(ServeFile::new("./dist/index.html")).handle_error(|_| async move {
+            (StatusCode::INTERNAL_SERVER_ERROR, "internal server error")
+        }),
+    );
+
     let root_router = Router::new()
         .nest("/api/v1", api::router(app_state.clone()))
         .nest("/auth", auth::router(app_state.clone()))
