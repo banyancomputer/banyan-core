@@ -15,10 +15,12 @@ use uuid::Uuid;
 use crate::app::ServiceVerificationKey;
 use crate::auth::{LOGIN_PATH, SESSION_COOKIE_NAME};
 use crate::database::Database;
+use crate::utils::keys::sha1_fingerprint_publickey;
 
 pub struct SessionIdentity {
     session_id: Uuid,
     user_id: Uuid,
+    key_id: String,
 
     created_at: OffsetDateTime,
     expires_at: OffsetDateTime,
@@ -31,6 +33,10 @@ impl SessionIdentity {
 
     pub fn user_id(&self) -> Uuid {
         self.user_id
+    }
+
+    pub fn key_id(&self) -> &str {
+        &self.key_id
     }
 }
 
@@ -73,6 +79,7 @@ where
         digest.update(session_id_b64);
 
         let verification_key = ServiceVerificationKey::from_ref(state);
+        let key_id = sha1_fingerprint_publickey(verification_key.as_ref());
         verification_key
             .public_key()
             .as_ref()
@@ -117,6 +124,7 @@ where
         Ok(SessionIdentity {
             session_id,
             user_id,
+            key_id,
 
             created_at: db_session.created_at,
             expires_at: db_session.expires_at,

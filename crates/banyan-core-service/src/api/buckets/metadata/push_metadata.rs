@@ -18,7 +18,7 @@ use uuid::Uuid;
 use crate::app::{AppState, ServiceSigningKey};
 use crate::database::models::MetadataState;
 use crate::database::Database;
-use crate::extractors::{ApiIdentity, DataStore};
+use crate::extractors::{DataStore, Identity, UserIdentity};
 use crate::tasks::{PruneBlock, PruneBlocksTask};
 use crate::utils::car_buffer::CarBuffer;
 
@@ -36,7 +36,7 @@ const REQUEST_DATA_SIZE_LIMIT: u64 = 128 * 1_024;
 pub const STORAGE_TICKET_DURATION: u64 = 15 * 60; // 15 minutes
 
 pub async fn handler(
-    api_id: ApiIdentity,
+    user_id: UserIdentity,
     State(state): State<AppState>,
     store: DataStore,
     Path(bucket_id): Path<Uuid>,
@@ -46,9 +46,10 @@ pub async fn handler(
     let database = state.database();
     let service_signing_key = state.secrets().service_signing_key();
 
+    let user_id_string = user_id.user_id();
     let unvalidated_bid = bucket_id.to_string();
     let authorized_bucket_id =
-        authorized_bucket_id(&database, &api_id.user_id, &unvalidated_bid).await?;
+        authorized_bucket_id(&database, &user_id_string, &unvalidated_bid).await?;
 
     // Read the body from the request, checking for size limits
     let mime_ct = mime::Mime::from(content_type);
@@ -115,15 +116,16 @@ pub async fn handler(
         .await
         .map_err(PushMetadataError::DataMetaStoreFailed)?;
 
-    expire_deleted_blocks(&database, &api_id, &bucket_id, &request_data).await?;
+    expire_deleted_blocks(&database, &user_id, &bucket_id, &request_data).await?;
 
-    let expected_total_storage = currently_consumed_storage(&database, &api_id.user_id)
+    let expected_total_storage = currently_consumed_storage(&database, &user_id.user_id())
         .await
         .map_err(PushMetadataError::UnableToCheckAccounting)?
         as i64;
 
+    let user_id_string = user_id.user_id();
     if expected_total_storage > ACCOUNT_STORAGE_QUOTA {
-        tracing::warn!(user_id = ?api_id.user_id, ?expected_total_storage, "account reached storage limit");
+        tracing::warn!(user_id = ?user_id_string, ?expected_total_storage, "account reached storage limit");
         let fail_res = fail_upload(&database, &new_metadata_id).await;
         return Err(PushMetadataError::LimitReached(fail_res.err()));
     }
@@ -140,11 +142,11 @@ pub async fn handler(
     let storage_host = select_storage_host(&database, request_data.expected_data_size).await?;
 
     let current_authorized_amount =
-        existing_authorization(&database, &api_id.user_id, &storage_host.id)
+        existing_authorization(&database, &user_id_string, &storage_host.id)
             .await
             .map_err(PushMetadataError::UnableToRetrieveAuthorizations)?;
     let current_stored_amount =
-        currently_stored_at_provider(&database, &api_id.user_id, &storage_host.id)
+        currently_stored_at_provider(&database, &user_id_string, &storage_host.id)
             .await
             .map_err(PushMetadataError::UnableToIdentifyStoredAmount)?;
 
@@ -157,7 +159,7 @@ pub async fn handler(
         let new_authorization = generate_new_storage_authorization(
             &database,
             &service_signing_key,
-            &api_id,
+            &user_id,
             &storage_host,
             data_size_rounded,
         )
@@ -293,16 +295,17 @@ struct Capabilities {
 async fn generate_new_storage_authorization(
     database: &Database,
     service_signing_key: &ServiceSigningKey,
-    api_id: &ApiIdentity,
+    user_id: &UserIdentity,
     storage_host: &SelectedStorageHost,
     authorized_amount: i64,
 ) -> Result<String, StorageAuthorizationError> {
+    let user_id_string = user_id.user_id();
     let storage_grant_id = sqlx::query_scalar!(
         r#"INSERT INTO storage_grants (storage_host_id, user_id, authorized_amount)
             VALUES ($1, $2, $3)
             RETURNING id;"#,
         storage_host.id,
-        api_id.user_id,
+        user_id_string,
         authorized_amount,
     )
     .fetch_one(database)
@@ -323,10 +326,7 @@ async fn generate_new_storage_authorization(
     )
     .with_audiences(HashSet::from_strings(&[storage_host.name.as_str()]))
     .with_issuer("banyan-platform")
-    .with_subject(format!(
-        "{}@{}",
-        api_id.user_id, api_id.device_api_key_fingerprint
-    ))
+    .with_subject(format!("{}@{}", user_id.user_id(), user_id.key_id()))
     .invalid_before(Clock::now_since_epoch() - Duration::from_secs(30));
 
     claims.create_nonce();
@@ -496,11 +496,11 @@ struct UniqueBlockLocation {
 
 async fn expire_deleted_blocks(
     database: &Database,
-    api_id: &ApiIdentity,
+    user_id: &UserIdentity,
     bucket_id: &Uuid,
     request: &PushMetadataRequest,
 ) -> Result<(), PushMetadataError> {
-    let user_id = api_id.user_id.clone();
+    let user_id = user_id.user_id().clone();
     let bucket_id = bucket_id.to_string();
     let mut prune_blocks_tasks_map: HashMap<Uuid, Vec<PruneBlock>> = HashMap::new();
     let mut transaction = database

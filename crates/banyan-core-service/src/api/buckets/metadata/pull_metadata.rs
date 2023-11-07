@@ -8,11 +8,11 @@ use object_store::ObjectStore;
 use uuid::Uuid;
 
 use crate::app::AppState;
-use crate::extractors::ApiIdentity;
 use crate::extractors::DataStore;
+use crate::extractors::{Identity, UserIdentity};
 
 pub async fn handler(
-    api_id: ApiIdentity,
+    user_id: UserIdentity,
     store: DataStore,
     Path((bucket_id, metadata_id)): Path<(Uuid, Uuid)>,
     State(state): State<AppState>,
@@ -22,12 +22,13 @@ pub async fn handler(
     let db_bucket_id = bucket_id.to_string();
     let db_metadata_id = metadata_id.to_string();
 
+    let user_id: String = user_id.user_id();
     let authorized_bucket_data = sqlx::query_as!(
         PullBucketData,
         r#"SELECT m.bucket_id, m.id as metadata_id FROM metadata AS m
                JOIN buckets AS b ON m.bucket_id = b.id
                WHERE b.user_id = $1 AND b.id = $2 AND m.id = $3;"#,
-        api_id.user_id,
+        user_id,
         db_bucket_id,
         db_metadata_id,
     )

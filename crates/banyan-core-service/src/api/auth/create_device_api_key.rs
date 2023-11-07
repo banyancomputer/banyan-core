@@ -5,12 +5,12 @@ use jwt_simple::prelude::*;
 use serde::Deserialize;
 
 use crate::app::AppState;
-use crate::extractors::ApiIdentity;
+use crate::extractors::{Identity, UserIdentity};
 use crate::utils::keys::sha1_fingerprint_publickey;
 
 /// Register a new device api key with an account
 pub async fn handler(
-    api_id: ApiIdentity,
+    user_id: UserIdentity,
     State(state): State<AppState>,
     Json(request): Json<CreateDeviceApiKeyRequest>,
 ) -> Result<Response, CreateDeviceApiKeyError> {
@@ -20,11 +20,12 @@ pub async fn handler(
     let database = state.database();
     let fingerprint = sha1_fingerprint_publickey(&public_device_key);
 
+    let user_id = user_id.user_id();
     let device_api_key_id = sqlx::query_scalar!(
         r#"INSERT INTO device_api_keys (user_id, fingerprint, pem)
             VALUES ($1, $2, $3)
             RETURNING id;"#,
-        api_id.user_id,
+        user_id,
         fingerprint,
         request.pem,
     )

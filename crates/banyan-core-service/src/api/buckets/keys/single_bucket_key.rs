@@ -6,10 +6,10 @@ use uuid::Uuid;
 use crate::api::models::ApiBucketKey;
 use crate::app::AppState;
 use crate::database::models::BucketKey;
-use crate::extractors::ApiIdentity;
+use crate::extractors::{Identity, UserIdentity};
 
 pub async fn handler(
-    api_id: ApiIdentity,
+    user_id: UserIdentity,
     State(state): State<AppState>,
     Path((bucket_id, bucket_key_id)): Path<(Uuid, Uuid)>,
 ) -> Result<Response, SingleBucketKeyError> {
@@ -18,6 +18,7 @@ pub async fn handler(
     let bucket_id = bucket_id.to_string();
     let bucket_key_id = bucket_key_id.to_string();
 
+    let user_id = user_id.user_id();
     let maybe_bucket_key = sqlx::query_as!(
         BucketKey,
         r#"SELECT bk.* FROM bucket_keys AS bk
@@ -25,7 +26,7 @@ pub async fn handler(
                WHERE b.user_id = $1
                    AND bk.bucket_id = $2
                    AND bk.id = $3;"#,
-        api_id.user_id,
+        user_id,
         bucket_id,
         bucket_key_id,
     )

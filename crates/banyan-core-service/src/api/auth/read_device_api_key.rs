@@ -5,23 +5,24 @@ use serde::Serialize;
 use uuid::Uuid;
 
 use crate::app::AppState;
-use crate::extractors::ApiIdentity;
+use crate::extractors::{Identity, UserIdentity};
 
 pub async fn handler(
-    api_id: ApiIdentity,
+    user_id: UserIdentity,
     State(state): State<AppState>,
     Path(key_id): Path<Uuid>,
 ) -> Response {
     let key_id = key_id.to_string();
     let database = state.database();
 
+    let user_id = user_id.user_id();
     let query_result = sqlx::query_as!(
         DeviceApiKey,
         r#"SELECT id, user_id, fingerprint, pem
                FROM device_api_keys
                WHERE id = $1 AND user_id = $2;"#,
         key_id,
-        api_id.user_id,
+        user_id,
     )
     .fetch_one(&database)
     .await;

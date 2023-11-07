@@ -6,23 +6,24 @@ use uuid::Uuid;
 use crate::api::models::ApiSnapshot;
 use crate::app::AppState;
 use crate::database::models::Snapshot;
-use crate::extractors::ApiIdentity;
+use crate::extractors::{Identity, UserIdentity};
 
 pub async fn handler(
-    api_id: ApiIdentity,
+    user_id: UserIdentity,
     State(state): State<AppState>,
     Path(bucket_id): Path<Uuid>,
 ) -> Result<Response, AllSnapshotsError> {
     let database = state.database();
     let bucket_id = bucket_id.to_string();
 
+    let user_id: String = user_id.user_id();
     let query_result = sqlx::query_as!(
         Snapshot,
         "SELECT s.* FROM snapshots AS s
              JOIN metadata AS m ON s.metadata_id = m.id
              JOIN buckets AS b ON m.bucket_id = b.id
              WHERE b.user_id = $1 AND m.bucket_id = $2;",
-        api_id.user_id,
+        user_id,
         bucket_id,
     )
     .fetch_all(&database)

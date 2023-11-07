@@ -5,18 +5,16 @@ use axum::response::{IntoResponse, Response};
 use crate::api::models::ApiBucket;
 use crate::app::AppState;
 use crate::database::models::Bucket;
-use crate::extractors::ApiIdentity;
+use crate::extractors::{Identity, UserIdentity};
 
-pub async fn handler(api_id: ApiIdentity, State(state): State<AppState>) -> Response {
+pub async fn handler(user_id: UserIdentity, State(state): State<AppState>) -> Response {
     let database = state.database();
 
-    let query_result = sqlx::query_as!(
-        Bucket,
-        "SELECT * FROM buckets WHERE user_id = $1;",
-        api_id.user_id,
-    )
-    .fetch_all(&database)
-    .await;
+    let user_id: String = user_id.user_id();
+    let query_result =
+        sqlx::query_as!(Bucket, "SELECT * FROM buckets WHERE user_id = $1;", user_id,)
+            .fetch_all(&database)
+            .await;
 
     // note: this also includes user_id which wasn't being returned before and may cause
     // compatibility issues

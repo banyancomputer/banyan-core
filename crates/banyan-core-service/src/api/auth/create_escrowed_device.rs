@@ -5,18 +5,14 @@ use jwt_simple::prelude::ES384PublicKey;
 
 use crate::api::models::ApiEscrowedKeyMaterial;
 use crate::app::AppState;
-use crate::extractors::SessionIdentity;
+use crate::extractors::{Identity, UserIdentity};
 use crate::utils::keys::sha1_fingerprint_publickey;
 
 pub async fn handler(
-    session: Option<SessionIdentity>,
+    user_id: UserIdentity,
     State(state): State<AppState>,
     Json(request): Json<ApiEscrowedKeyMaterial>,
 ) -> Result<Response, CreateEscrowedDeviceError> {
-    let session = match session {
-        Some(session) => session,
-        None => return Err(CreateEscrowedDeviceError::Unauthorized),
-    };
     let api_public_key_pem = request.api_public_key_pem();
     let encryption_public_key_pem = request.encryption_public_key_pem();
 
@@ -29,7 +25,7 @@ pub async fn handler(
     // TODO: Validate the salt here too
 
     let database = state.database();
-    let user_id = session.user_id().to_string();
+    let user_id = user_id.user_id();
     let encrypted_private_key_material = request.encrypted_private_key_material();
     let pass_key_salt = request.pass_key_salt();
 
@@ -112,9 +108,6 @@ pub enum CreateEscrowedDeviceError {
 
     #[error("provided public key was not a valid EC P384 pem")]
     InvalidPublicKey(jwt_simple::Error),
-
-    #[error("request did not contain a valid session")]
-    Unauthorized,
 }
 
 impl From<sqlx::Error> for CreateEscrowedDeviceError {
@@ -138,10 +131,6 @@ impl IntoResponse for CreateEscrowedDeviceError {
             CEDE::FingerprintAlreadyExists => {
                 let err_msg = serde_json::json!({"msg": "another device api key exists with the same fingerprint"});
                 (StatusCode::CONFLICT, Json(err_msg)).into_response()
-            }
-            CEDE::Unauthorized => {
-                let err_msg = serde_json::json!({"msg": "unauthorized"});
-                (StatusCode::UNAUTHORIZED, Json(err_msg)).into_response()
             }
             _ => {
                 tracing::error!("{self}");

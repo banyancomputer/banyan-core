@@ -4,10 +4,10 @@ use axum::response::{IntoResponse, Response};
 use uuid::Uuid;
 
 use crate::app::AppState;
-use crate::extractors::ApiIdentity;
+use crate::extractors::{Identity, UserIdentity};
 
 pub async fn handler(
-    api_id: ApiIdentity,
+    user_id: UserIdentity,
     State(state): State<AppState>,
     Path(bucket_id): Path<Uuid>,
 ) -> Response {
@@ -15,12 +15,13 @@ pub async fn handler(
 
     let database = state.database();
 
+    let user_id = user_id.user_id();
     let query_result: Result<i32, _> = sqlx::query_scalar!(
         r#"SELECT COALESCE(SUM(m.data_size), 0) as size
                FROM metadata m
                JOIN buckets b ON m.bucket_id = b.id
                WHERE b.user_id = $1 AND b.id = $2;"#,
-        api_id.user_id,
+        user_id,
         bucket_id,
     )
     .fetch_one(&database)

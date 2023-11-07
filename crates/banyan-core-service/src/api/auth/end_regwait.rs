@@ -5,20 +5,21 @@ use axum::response::{IntoResponse, Response};
 use crate::api::auth::registration_event::RegistrationEvent;
 use crate::app::AppState;
 use crate::event_bus::{EventBusError, SystemEvent};
-use crate::extractors::ApiIdentity;
+use crate::extractors::{Identity, UserIdentity};
 
 pub async fn handler(
-    api_id: ApiIdentity,
+    user_id: UserIdentity,
     State(state): State<AppState>,
     Path(fingerprint): Path<String>,
 ) -> Result<Response, EndRegwaitError> {
     let database = state.database();
 
+    let user_id = user_id.user_id();
     let maybe_present = sqlx::query_scalar!(
         r#"SELECT 1 FROM device_api_keys
                WHERE user_id = $1
                    AND fingerprint = $2;"#,
-        api_id.user_id,
+        user_id,
         fingerprint,
     )
     .fetch_optional(&database)
@@ -26,7 +27,7 @@ pub async fn handler(
     .map_err(EndRegwaitError::LookupFailed)?;
 
     let registration_event = match maybe_present {
-        Some(_) => RegistrationEvent::approved(fingerprint, api_id.user_id),
+        Some(_) => RegistrationEvent::approved(fingerprint, user_id),
         None => RegistrationEvent::rejected(fingerprint),
     };
 

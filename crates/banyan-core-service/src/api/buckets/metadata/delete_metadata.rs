@@ -5,10 +5,10 @@ use uuid::Uuid;
 
 use crate::app::AppState;
 use crate::database::models::MetadataState;
-use crate::extractors::ApiIdentity;
+use crate::extractors::{Identity, UserIdentity};
 
 pub async fn handler(
-    api_id: ApiIdentity,
+    user_id: UserIdentity,
     State(state): State<AppState>,
     Path((bucket_id, metadata_id)): Path<(Uuid, Uuid)>,
 ) -> Result<Response, DeleteMetadataError> {
@@ -21,11 +21,12 @@ pub async fn handler(
         .await
         .map_err(DeleteMetadataError::TransactionUnavailable)?;
 
+    let user_id = user_id.user_id();
     let metadata_state = sqlx::query_scalar!(
         r#"SELECT m.state as 'state: MetadataState' FROM metadata AS m
                JOIN buckets AS b ON m.bucket_id = b.id
                WHERE b.user_id = $1 AND b.id = $2 AND m.id = $3;"#,
-        api_id.user_id,
+        user_id,
         bucket_id,
         metadata_id,
     )

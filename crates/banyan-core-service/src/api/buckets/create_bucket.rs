@@ -7,11 +7,11 @@ use validify::{Validate, Validify};
 
 use crate::app::AppState;
 use crate::database::models::{Bucket, BucketKey, BucketType, StorageClass};
-use crate::extractors::ApiIdentity;
+use crate::extractors::{Identity, UserIdentity};
 use crate::utils::keys::sha1_fingerprint_publickey;
 
 pub async fn handler(
-    api_id: ApiIdentity,
+    user_id: UserIdentity,
     State(state): State<AppState>,
     Json(request): Json<CreateBucketRequest>,
 ) -> Result<Response, CreateBucketError> {
@@ -24,11 +24,12 @@ pub async fn handler(
 
     let database = state.database();
 
+    let user_id = user_id.user_id();
     let bucket_id = sqlx::query_scalar!(
         r#"INSERT INTO buckets (user_id, name, type, storage_class)
                VALUES ($1, $2, $3, $4)
                RETURNING id;"#,
-        api_id.user_id,
+        user_id,
         request.name,
         request.bucket_type,
         request.storage_class,
