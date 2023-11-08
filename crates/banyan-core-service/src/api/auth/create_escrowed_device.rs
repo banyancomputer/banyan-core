@@ -17,8 +17,8 @@ pub async fn handler(
         Some(session) => session,
         None => return Err(CreateEscrowedDeviceError::Unauthorized),
     };
-    let api_public_key_pem = request.api_public_key_pem();
-    let encryption_public_key_pem = request.encryption_public_key_pem();
+    let api_public_key_pem = request.api_public_key_pem;
+    let encryption_public_key_pem = request.encryption_public_key_pem;
 
     // Validate that the public key material is valid
     let public_device_api_key = ES384PublicKey::from_pem(&api_public_key_pem)
@@ -30,8 +30,8 @@ pub async fn handler(
 
     let database = state.database();
     let user_id = session.user_id().to_string();
-    let encrypted_private_key_material = request.encrypted_private_key_material();
-    let pass_key_salt = request.pass_key_salt();
+    let encrypted_private_key_material = request.encrypted_private_key_material;
+    let pass_key_salt = request.pass_key_salt;
 
     // Check if the user has an escrow device already
     if sqlx::query!(

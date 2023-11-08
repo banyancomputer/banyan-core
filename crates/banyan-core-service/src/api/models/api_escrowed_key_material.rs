@@ -7,18 +7,3 @@ pub struct ApiEscrowedKeyMaterial {
     pub encrypted_private_key_material: String,
     pub pass_key_salt: String,
 }
-
-impl ApiEscrowedKeyMaterial {
-    pub fn api_public_key_pem(&self) -> String {
-        self.api_public_key_pem.clone()
-    }
-    pub fn encryption_public_key_pem(&self) -> String {
-        self.encryption_public_key_pem.clone()
-    }
-    pub fn encrypted_private_key_material(&self) -> String {
-        self.encrypted_private_key_material.clone()
-    }
-    pub fn pass_key_salt(&self) -> String {
-        self.pass_key_salt.clone()
-    }
-}
