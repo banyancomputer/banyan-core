@@ -5,15 +5,16 @@ use axum::response::{IntoResponse, Response};
 use crate::api::models::ApiBucket;
 use crate::app::AppState;
 use crate::database::models::Bucket;
-use crate::extractors::ApiIdentity;
+use crate::extractors::UserIdentity;
 
-pub async fn handler(api_id: ApiIdentity, State(state): State<AppState>) -> Response {
+pub async fn handler(user_identity: UserIdentity, State(state): State<AppState>) -> Response {
     let database = state.database();
 
+    let user_id = user_identity.id().to_string();
     let query_result = sqlx::query_as!(
         Bucket,
         "SELECT * FROM buckets WHERE user_id = $1;",
-        api_id.user_id,
+        user_id,
     )
     .fetch_all(&database)
     .await;

@@ -11,15 +11,15 @@ use crate::extractors::session_identity::{SessionIdentity, SessionIdentityError}
 pub struct UserIdentity(Either<SessionIdentity, ApiIdentity>);
 
 impl UserIdentity {
-    fn id(&self) -> Uuid {
-        match self.0 {
+    pub fn id(&self) -> Uuid {
+        match &self.0 {
             Either::E1(api) => api.user_id(),
             Either::E2(session) => session.user_id(),
         }
     }
 
-    fn key_fingerprint(&self) -> &str {
-        match self.0 {
+    pub fn key_fingerprint(&self) -> &str {
+        match &self.0 {
             Either::E1(api) => api.key_fingerprint(),
             Either::E2(session) => session.key_fingerprint(),
         }

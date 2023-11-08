@@ -4,7 +4,7 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 
 use crate::app::AppState;
-use crate::extractors::ApiIdentity;
+use crate::extractors::UserIdentity;
 
 #[derive(sqlx::FromRow)]
 struct ConsumedStorage {
@@ -12,11 +12,12 @@ struct ConsumedStorage {
     meta_size: i32,
 }
 
-pub async fn handler(api_id: ApiIdentity, State(state): State<AppState>) -> Response {
+pub async fn handler(user_identity: UserIdentity, State(state): State<AppState>) -> Response {
     let database = state.database();
 
     // we need to include outdated currently as they include blocks referenced by the current
     // version, todo: we'll need a better way of calculating this
+    let user_id = user_identity.id().to_string();
     let query_result = sqlx::query_as!(
         ConsumedStorage,
         r#"SELECT
@@ -28,7 +29,7 @@ pub async fn handler(api_id: ApiIdentity, State(state): State<AppState>) -> Resp
             buckets b ON b.id = m.bucket_id
         WHERE
             b.user_id = $1 AND m.state IN ('current', 'outdated', 'pending');"#,
-        api_id.user_id,
+        user_id,
     )
     .fetch_one(&database)
     .await;

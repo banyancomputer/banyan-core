@@ -4,10 +4,10 @@ use axum::response::{IntoResponse, Response};
 use uuid::Uuid;
 
 use crate::app::AppState;
-use crate::extractors::ApiIdentity;
+use crate::extractors::UserIdentity;
 
 pub async fn handler(
-    api_id: ApiIdentity,
+    user_identity: UserIdentity,
     State(state): State<AppState>,
     Path((bucket_id, metadata_id)): Path<(Uuid, Uuid)>,
 ) -> Result<Response, CreateSnapshotError> {
@@ -16,6 +16,7 @@ pub async fn handler(
     let bucket_id = bucket_id.to_string();
     let metadata_id = metadata_id.to_string();
 
+    let user_id = user_identity.id().to_string();
     let owned_metadata_id = sqlx::query_scalar!(
         r#"SELECT m.id FROM metadata AS m
                JOIN buckets AS b ON m.bucket_id = b.id
@@ -24,7 +25,7 @@ pub async fn handler(
                    AND b.id = $2
                    AND m.id = $3
                    AND s.id IS NULL;"#,
-        api_id.user_id,
+        user_id,
         bucket_id,
         metadata_id,
     )

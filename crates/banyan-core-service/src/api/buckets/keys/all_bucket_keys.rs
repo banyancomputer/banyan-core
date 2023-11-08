@@ -6,22 +6,23 @@ use uuid::Uuid;
 use crate::api::models::ApiBucketKey;
 use crate::app::AppState;
 use crate::database::models::BucketKey;
-use crate::extractors::ApiIdentity;
+use crate::extractors::UserIdentity;
 
 pub async fn handler(
-    api_id: ApiIdentity,
+    user_identity: UserIdentity,
     State(state): State<AppState>,
     Path(bucket_id): Path<Uuid>,
 ) -> Result<Response, AllBucketKeysError> {
     let database = state.database();
     let bucket_id = bucket_id.to_string();
 
+    let user_id = user_identity.id().to_string();
     let query_result = sqlx::query_as!(
         BucketKey,
         "SELECT bk.* FROM bucket_keys AS bk
              JOIN buckets AS b ON bk.bucket_id = b.id
              WHERE b.user_id = $1 AND bk.bucket_id = $2;",
-        api_id.user_id,
+        user_id,
         bucket_id,
     )
     .fetch_all(&database)

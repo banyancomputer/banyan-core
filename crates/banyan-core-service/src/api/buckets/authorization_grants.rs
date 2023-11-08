@@ -8,10 +8,10 @@ use uuid::Uuid;
 
 use crate::api::buckets::metadata::STORAGE_TICKET_DURATION;
 use crate::app::AppState;
-use crate::extractors::ApiIdentity;
+use crate::extractors::UserIdentity;
 
 pub async fn handler(
-    api_id: ApiIdentity,
+    user_identity: UserIdentity,
     State(state): State<AppState>,
     Path(bucket_id): Path<Uuid>,
 ) -> Result<Response, AuthorizationGrantError> {
@@ -20,6 +20,7 @@ pub async fn handler(
 
     let bucket_id = bucket_id.to_string();
 
+    let user_id = user_identity.id().to_string();
     let authorized_amounts = sqlx::query_as!(
         AuthorizedAmounts,
         r#"WITH current_grants AS (
@@ -38,7 +39,7 @@ pub async fn handler(
                 WHERE b.user_id = $1 
                     AND b.id = $2
                     AND m.state NOT IN ('deleted', 'upload_failed');"#,
-        api_id.user_id,
+        user_id,
         bucket_id,
     )
     .fetch_all(&database)
@@ -74,7 +75,7 @@ pub async fn handler(
         .with_issuer("banyan-platform")
         .with_subject(format!(
             "{}@{}",
-            api_id.user_id, api_id.device_api_key_fingerprint
+            user_id, user_identity.key_fingerprint()
         ))
         .invalid_before(Clock::now_since_epoch() - Duration::from_secs(30));
 

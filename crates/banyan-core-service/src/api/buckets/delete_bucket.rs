@@ -4,10 +4,10 @@ use axum::response::{IntoResponse, Response};
 use uuid::Uuid;
 
 use crate::app::AppState;
-use crate::extractors::ApiIdentity;
+use crate::extractors::UserIdentity;
 
 pub async fn handler(
-    api_id: ApiIdentity,
+    user_identity: UserIdentity,
     State(state): State<AppState>,
     Path(bucket_id): Path<Uuid>,
 ) -> Response {
@@ -17,9 +17,10 @@ pub async fn handler(
 
     // todo: need to delete all the hot data stored at various storage hosts
 
+    let user_id = user_identity.id().to_string();
     let query_result = sqlx::query!(
         r#"DELETE FROM buckets WHERE user_id = $1 AND id = $2;"#,
-        api_id.user_id,
+        user_id,
         bucket_id,
     )
     .execute(&database)

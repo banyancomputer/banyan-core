@@ -6,11 +6,11 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::app::AppState;
-use crate::extractors::ApiIdentity;
+use crate::extractors::UserIdentity;
 use crate::utils::keys::sha1_fingerprint_publickey;
 
 pub async fn handler(
-    api_id: ApiIdentity,
+    user_identity: UserIdentity,
     State(state): State<AppState>,
     Path(bucket_id): Path<Uuid>,
     Json(bucket_key_req): Json<CreateBucketKeyRequest>,
@@ -24,9 +24,10 @@ pub async fn handler(
 
     // we need to authorize the bucket belongs to the account before we associate the key to the
     // bucket
+    let user_id = user_identity.id().to_string();
     let maybe_bucket_id: Option<String> = sqlx::query_scalar!(
         "SELECT id FROM buckets WHERE user_id = $1 AND id = $2;",
-        api_id.user_id,
+        user_id,
         bucket_id,
     )
     .fetch_optional(&database)
