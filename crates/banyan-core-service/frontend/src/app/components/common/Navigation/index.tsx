@@ -106,18 +106,6 @@ export const Navigation = () => {
 						}
 					</ul>
 				}
-				{/* <Link
-                    href="/trash"
-                    className={`flex items-center justify-between  gap-2 py-2 px-3 w-full h-10 cursor-pointer rounded-md text-xs ${router.pathname === '/trash' && 'bg-navigation-secondary'}`}
-                >
-                    <Trash />
-                    <span className="flex-grow">
-                        {`${messages.trash}`}
-                    </span>
-                    <span className={`px-2 py-1 bg-navigation-text text-navigation-secondary rounded-full text-xxs ${!trash.files.length && 'hidden'}`}>
-                        {trash.files.length}
-                    </span>
-                </Link> */}
 				<button
 					onClick={createBucket}
 					className="mt-2 flex items-center gap-3 py-2 px-3 text-navigation-textSecondary"

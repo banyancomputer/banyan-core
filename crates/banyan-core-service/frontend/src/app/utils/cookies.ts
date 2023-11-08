@@ -52,8 +52,7 @@ export const getUserData = (): UserData | null => {
 	if (!cookies[USER_DATA_COOKIE_NAME]) {
 		return null;
 	}
-	const userDataRaw = cookies[USER_DATA_COOKIE_NAME];
-	const userDataJson = JSON.parse(userDataRaw);
+	const userDataJson = JSON.parse(cookies[USER_DATA_COOKIE_NAME]);
 	let escrowedKeyMaterial = null;
 	if (userDataJson.escrowed_key_material) {
 		escrowedKeyMaterial = {
