@@ -4,10 +4,10 @@ use axum::response::{IntoResponse, Response};
 use uuid::Uuid;
 
 use crate::app::AppState;
-use crate::extractors::ApiIdentity;
+use crate::extractors::UserIdentity;
 
 pub async fn handler(
-    api_id: ApiIdentity,
+    user_identity: UserIdentity,
     State(state): State<AppState>,
     Path((bucket_id, metadata_id)): Path<(Uuid, Uuid)>,
 ) -> Result<Response, RestoreSnapshotError> {
@@ -16,6 +16,7 @@ pub async fn handler(
     let bucket_id = bucket_id.to_string();
     let metadata_id = metadata_id.to_string();
 
+    let user_id = user_identity.id().to_string();
     let snapshot_id = sqlx::query_scalar!(
         r#"SELECT s.id FROM snapshots AS s
                JOIN metadata AS m ON s.metadata_id = m.id
@@ -23,7 +24,7 @@ pub async fn handler(
                WHERE b.user_id = $1
                    AND b.id = $2
                    AND m.id = $3;"#,
-        api_id.user_id,
+        user_id,
         bucket_id,
         metadata_id,
     )
@@ -36,7 +37,7 @@ pub async fn handler(
         r#"INSERT INTO snapshot_restore_requests (user_id, snapshot_id, state)
                VALUES ($1, $2, 'pending')
                RETURNING id;"#,
-        api_id.user_id,
+        user_id,
         snapshot_id,
     )
     .fetch_one(&database)

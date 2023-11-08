@@ -9,20 +9,20 @@ use cid::multibase::Base;
 use cid::Cid;
 
 use crate::app::AppState;
-use crate::extractors::ApiIdentity;
+use crate::extractors::UserIdentity;
 
 const NA_LABEL: &str = "NA";
 
 pub type LocationRequest = Vec<String>;
 
 pub async fn handler(
-    api_id: ApiIdentity,
+    user_identity: UserIdentity,
     State(state): State<AppState>,
     Json(request): Json<LocationRequest>,
 ) -> Result<Response, BlockLocationError> {
     let database = state.database();
 
-    let user_id = api_id.user_id;
+    let user_id = user_identity.id().to_string();
     let mut result_map: HashMap<String, Vec<String>> = HashMap::new();
 
     for original_cid in request {
