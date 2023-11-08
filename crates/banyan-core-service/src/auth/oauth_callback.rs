@@ -15,6 +15,7 @@ use uuid::Uuid;
 
 use crate::app::AppState;
 
+use crate::database::models::{User, EscrowedDevice};
 use crate::api::models::{ApiEscrowedKeyMaterial, ApiUser};
 use crate::auth::{
     oauth_client, AuthenticationError, NEW_USER_COOKIE_NAME, SESSION_COOKIE_NAME, SESSION_TTL,
@@ -179,9 +180,8 @@ pub async fn handler(
 
     // Lookup User Data to attach include in the CookieJar
     let user = sqlx::query_as!(
-        ApiUser,
-        r#"SELECT 
-            id, email, verified_email, display_name, locale, profile_image
+        User,
+        r#"SELECT *
         FROM users
         WHERE id = $1;"#,
         db_uid
@@ -190,10 +190,9 @@ pub async fn handler(
     .await
     .map_err(AuthenticationError::UserDataLookupFailed)?;
 
-    let escrowed_key_material = sqlx::query_as!(
-        ApiEscrowedKeyMaterial,
-        r#"SELECT
-            api_public_key_pem, encryption_public_key_pem, encrypted_private_key_material, pass_key_salt
+    let escrowed_device = sqlx::query_as!(
+        EscrowedDevice,
+        r#"SELECT *
         FROM escrowed_devices
         WHERE user_id = $1;"#,
         db_uid
@@ -203,8 +202,8 @@ pub async fn handler(
     .map_err(AuthenticationError::UserDataLookupFailed)?;
 
     let user_data = UserData {
-        user,
-        escrowed_key_material,
+        user: user.into(),
+        escrowed_key_material: escrowed_device.map(|ed| ed.into()),
     };
 
     // Create a Session to record in the database and attach to the CookieJar

@@ -1,3 +1,5 @@
+mod user;
+mod escrowed_device;
 mod bucket;
 mod bucket_key;
 mod bucket_type;
@@ -8,6 +10,8 @@ mod partial_metadata_with_snapshot;
 mod snapshot;
 mod storage_class;
 
+pub use user::User;
+pub use escrowed_device::EscrowedDevice;
 pub use bucket::Bucket;
 pub use bucket_key::BucketKey;
 pub use bucket_type::BucketType;
