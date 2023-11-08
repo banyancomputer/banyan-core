@@ -13,6 +13,7 @@ use axum::response::IntoResponse;
 use axum::{Json, RequestPartsExt};
 use jsonwebtoken::{decode, decode_header, Algorithm, DecodingKey, Validation};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use crate::database::Database;
 
@@ -51,10 +52,22 @@ impl ApiToken {
     }
 }
 
+/// Extracted identity from an API request made with a client-signed JWT
 pub struct ApiIdentity {
-    pub user_id: String,
-    pub device_api_key_id: String,
-    pub device_api_key_fingerprint: String,
+    /// The user id of the user who owns the API key
+    user_id: Uuid,
+    /// The hex formatted fingerprint of the API key used to sign the JWT
+    key_fingerprint: String
+}
+
+impl ApiIdentity {
+    pub fn user_id(&self) -> Uuid {
+        self.user_id
+    }
+
+    pub fn key_fingerprint(&self) -> &str {
+        &self.key_fingerprint
+    }
 }
 
 #[async_trait]
@@ -134,12 +147,10 @@ where
             return Err(ApiIdentityError::MismatchedSubject);
         }
 
-        let api_identity = ApiIdentity {
-            user_id: db_device_api_key.user_id,
-            device_api_key_id: db_device_api_key.id,
-            device_api_key_fingerprint: key_id,
-        };
-
+        let user_id = Uuid::parse_str(&claims.subject)
+            .map_err(ApiIdentityError::DatabaseUuidCorrupt)?;
+        let key_fingerprint = key_id.clone();
+        let api_identity = ApiIdentity { user_id, key_fingerprint };
         Ok(api_identity)
     }
 }
@@ -151,6 +162,9 @@ pub enum ApiIdentityError {
 
     #[error("public key '{0}' stored in database is corrupted")]
     DatabaseCorrupt(String, jsonwebtoken::errors::Error),
+
+    #[error("uuid '{0}' stored in database is corrupted")]
+    DatabaseUuidCorrupt(uuid::Error),
 
     #[error("unable to lookup device API key in database")]
     DeviceApiKeyNotFound(sqlx::Error),
