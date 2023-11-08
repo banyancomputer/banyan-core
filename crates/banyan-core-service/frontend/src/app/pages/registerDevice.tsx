@@ -32,7 +32,6 @@ const RegisterDevice = () => {
 						<p className="mt-2 text-text-600">
 							{`${messages.wantToApproveAccess}?`}
 						</p>
-
 						<h4 className="text-m font-semibold">Fingerprint:</h4>
 						<p className="mt-2 text-text-600">{`${fingerprint}`}</p>
 					</div>
@@ -49,7 +48,6 @@ const RegisterDevice = () => {
 						>{`${messages.approveAccess}`}</button>
 					</div>
 				</div>
-
 			</div>
 		</section>
 	);
