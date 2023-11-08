@@ -69,13 +69,10 @@ export class APIClient {
          * @param response - response from server.
          *
          * @throws {@link NotFoundError}
-         * This exception is thrown if the input is not a valid ISBN number.
          *
          * @throws {@link UnauthorizedError}
-         * Thrown if the ISBN number is valid, but no such book exists in the catalog.
          *
          * @throws {@link InternalError}
-         * Thrown if the ISBN number is valid, but no such book exists in the catalog.
          *
          * @private
          */

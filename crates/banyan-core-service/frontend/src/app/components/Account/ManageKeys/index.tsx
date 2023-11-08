@@ -13,7 +13,7 @@ const ManageKeys = () => {
     useEffect(() => {
         if (!tomb) { return; }
 
-        (async() => {
+        (async () => {
             await getBucketsKeys();
         })();
     }, [buckets.length, tomb]);

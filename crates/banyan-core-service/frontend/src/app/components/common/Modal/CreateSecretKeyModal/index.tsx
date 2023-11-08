@@ -27,7 +27,7 @@ export const CreateSecretKeyModal = () => {
     const { keyphrase, keyphraseConfirmation } = watch();
     const isDataCorrect = !Object.keys(errors).length && !!keyphrase && !!keyphraseConfirmation && keyphraseConfirmation === keyphrase;
 
-    const confirm = async() => {
+    const confirm = async () => {
         try {
             await initializeKeystore(keyphrase);
             closeModal();

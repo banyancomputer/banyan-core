@@ -33,7 +33,7 @@ export const CreateBucketModal = () => {
         setBucketName(event.target.value);
     };
 
-    const create = async() => {
+    const create = async () => {
         try {
             await createBucket(bucketName, storageClass, bucketType);
             closeModal();

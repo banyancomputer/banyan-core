@@ -9,7 +9,7 @@ export const EmptyTrashModal = () => {
     const { closeModal } = useModal();
     const { messages } = useIntl();
 
-    const clearTrash = async() => {
+    const clearTrash = async () => {
         ToastNotifications.notify(`${messages.trashWasCleaned}`, <FiTrash2 size="20px" />);
     };
 

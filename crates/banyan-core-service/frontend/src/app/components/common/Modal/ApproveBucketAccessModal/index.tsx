@@ -10,7 +10,7 @@ export const ApproveBucketAccessModal: React.FC<{ bucket: Bucket; bucketKey: Buc
     const { approveBucketAccess } = useTomb();
     const { closeModal } = useModal();
 
-    const approveAccess = async() => {
+    const approveAccess = async () => {
         try {
             await approveBucketAccess(bucket, bucketKey.id);
             closeModal();

@@ -16,7 +16,7 @@ const Bucket = () => {
 
     useEffect(() => {
         if (selectedBucket?.id !== bucketId) { return; }
-        (async() => {
+        (async () => {
             try {
                 getSelectedBucketFiles(folderLocation);
             } catch (error: any) { };

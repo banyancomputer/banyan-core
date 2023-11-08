@@ -111,7 +111,7 @@ repository:
 
 ```
 cd crates/banyan-core-service/frontend
-yard dev
+yarn dev
 ```
 
 You should now be able to open up your web-browser to
