@@ -21,8 +21,8 @@ pub async fn handler(
         "SELECT s.* FROM snapshots AS s
              JOIN metadata AS m ON s.metadata_id = m.id
              JOIN buckets AS b ON m.bucket_id = b.id
-             WHERE b.account_id = $1 AND m.bucket_id = $2;",
-        api_id.account_id,
+             WHERE b.user_id = $1 AND m.bucket_id = $2;",
+        api_id.user_id,
         bucket_id,
     )
     .fetch_all(&database)

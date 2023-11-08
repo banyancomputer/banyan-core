@@ -16,9 +16,9 @@ pub async fn handler(
 
     let maybe_present = sqlx::query_scalar!(
         r#"SELECT 1 FROM device_api_keys
-               WHERE account_id = $1
+               WHERE user_id = $1
                    AND fingerprint = $2;"#,
-        api_id.account_id,
+        api_id.user_id,
         fingerprint,
     )
     .fetch_optional(&database)
@@ -26,7 +26,7 @@ pub async fn handler(
     .map_err(EndRegwaitError::LookupFailed)?;
 
     let registration_event = match maybe_present {
-        Some(_) => RegistrationEvent::approved(fingerprint, api_id.account_id),
+        Some(_) => RegistrationEvent::approved(fingerprint, api_id.user_id),
         None => RegistrationEvent::rejected(fingerprint),
     };
 

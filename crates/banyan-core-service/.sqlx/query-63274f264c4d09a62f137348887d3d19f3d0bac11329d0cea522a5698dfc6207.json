@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO storage_grants (storage_host_id, user_id, authorized_amount)\n            VALUES ($1, $2, $3)\n            RETURNING id;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "63274f264c4d09a62f137348887d3d19f3d0bac11329d0cea522a5698dfc6207"
+}

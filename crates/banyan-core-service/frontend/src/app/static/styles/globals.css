@@ -1,0 +1,113 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import "@static/styles/_variables.css";
+
+@font-face {
+    font-family: "Inter";
+    font-style: normal;
+    font-display: swap;
+    src: url("../fonts/Inter.ttf") format("truetype");
+}
+
+h1,
+h2,
+h3 {
+    @apply font-bold;
+}
+
+h4,
+h5,
+h6 {
+	@apply font-medium;
+}
+
+body,
+input {
+	@apply font-sans;
+}
+
+.btn-primary {
+	@apply flex items-center justify-center font-semibold rounded-lg border-2 border-button-primary bg-button-primary text-white transition-all;
+};
+
+.btn-primary:hover {
+	@apply bg-button-primary border-button-primary shadow-lg;
+}
+
+.btn-primary:disabled {
+    @apply cursor-not-allowed bg-button-disabled border-button-disabled;
+}
+
+/* Button default styles */
+.btn-secondary {
+    @apply flex items-center justify-center font-semibold rounded-lg bg-transparent border-2 border-button-primary text-text-900;
+}
+
+.btn-secondary:hover {
+    @apply bg-transparent border-button-primary;
+}
+
+.btn-highlighted {
+    @apply flex items-center justify-center font-semibold rounded-lg border-2 border-button-highLight bg-button-highLight text-white transition-all;
+};
+
+.btn-highlighted:hover {
+    @apply bg-button-highLight border-button-highLight shadow-lg;
+}
+
+.input {
+    @apply bg-secondaryBackground
+}
+
+*::-webkit-scrollbar {
+        margin-right: 5px;
+        width: 6px;
+}
+
+*::-webkit-scrollbar-thumb {
+    border-radius: 8px;
+    background-color: #686868;
+}
+
+.Toastify__toast-container {
+    width: unset !important;
+}
+
+.Toastify__toast-icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.react-pdf__Page__canvas {
+    border-radius: 16px;
+    margin-bottom: 32px;
+    overflow: hidden;
+}
+
+.preview-wrapper {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    padding: 35px 0px;
+}
+
+.preview-file > img {
+    border-radius: 16px;
+}
+
+.toggle {
+    background-color: #5299E0 !important;
+    border: none;
+    --tglbg: var(--text-200);
+}
+
+.table {
+    tr {
+        color: unset;
+    }
+}

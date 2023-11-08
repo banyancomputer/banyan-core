@@ -7,7 +7,7 @@ use base64::Engine;
 use ecdsa::signature::RandomizedDigestSigner;
 use jwt_simple::algorithms::ECDSAP384KeyPairLike;
 use oauth2::{AuthorizationCode, CsrfToken, PkceCodeVerifier, TokenResponse};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::time::Duration;
 use time::OffsetDateTime;
 use url::Url;
@@ -15,10 +15,19 @@ use uuid::Uuid;
 
 use crate::app::AppState;
 
+use crate::api::models::{ApiEscrowedKeyMaterial, ApiUser};
 use crate::auth::{
     oauth_client, AuthenticationError, NEW_USER_COOKIE_NAME, SESSION_COOKIE_NAME, SESSION_TTL,
+    USER_DATA_COOKIE_NAME,
 };
 use crate::extractors::ServerBase;
+
+// Data returned in the User Data Cookie
+#[derive(Serialize)]
+struct UserData {
+    user: ApiUser,
+    escrowed_key_material: Option<ApiEscrowedKeyMaterial>,
+}
 
 pub async fn handler(
     mut cookie_jar: CookieJar,
@@ -92,10 +101,11 @@ pub async fn handler(
     }
 
     // We're back in provider specific land for getting information about the authenticated user,
-    // todo: allow for providers other than Google here...
+    // TODO: allow for providers other than Google here, deprecate hard-coded parameters
 
+    // Attempt to look up the user in the database, if they don't exist, create them
     let user_row = sqlx::query!(
-        "SELECT id FROM rust_users WHERE email = LOWER($1);",
+        "SELECT id FROM users WHERE email = LOWER($1);",
         user_info.email
     )
     .fetch_optional(&database)
@@ -111,17 +121,44 @@ pub async fn handler(
     let user_id = match user_row {
         Some(u) => Uuid::parse_str(&u.id.to_string()).expect("db ids to be valid"),
         None => {
-            let new_user_row = sqlx::query!(
-                r#"INSERT INTO rust_users (email, display_name, locale, profile_image)
-                        VALUES (LOWER($1), $2, $3, $4) RETURNING id;"#,
+            let mut transcation = database
+                .begin()
+                .await
+                .map_err(AuthenticationError::CreationFailed)?;
+
+            // Try creating the top level User record
+            let new_user_id = sqlx::query_scalar!(
+                r#"INSERT 
+                    INTO users (email, verified_email, display_name, locale, profile_image)
+                    VALUES (LOWER($1), $2, $3, $4, $5)
+                RETURNING id;"#,
                 user_info.email,
+                user_info.verified_email,
                 user_info.name,
                 user_info.locale,
                 user_info.picture,
             )
-            .fetch_one(&database)
+            .fetch_one(&mut *transcation)
             .await
             .map_err(AuthenticationError::CreationFailed)?;
+
+            // TODO: rm hardcoded provider
+            // Try creating the provider account record
+            sqlx::query!(
+                r#"INSERT 
+                    INTO oauth_provider_accounts (user_id, provider, provider_id)
+                    VALUES ($1, 'google', $2);"#,
+                new_user_id,
+                user_info.id,
+            )
+            .execute(&mut *transcation)
+            .await
+            .map_err(AuthenticationError::CreationFailed)?;
+
+            transcation
+                .commit()
+                .await
+                .map_err(AuthenticationError::CreationFailed)?;
 
             cookie_jar = cookie_jar.add(
                 Cookie::build(NEW_USER_COOKIE_NAME, "yes")
@@ -133,15 +170,46 @@ pub async fn handler(
                     .finish(),
             );
 
-            Uuid::parse_str(&new_user_row.id).expect("db ids to be valid")
+            Uuid::parse_str(&new_user_id).expect("db ids to be valid")
         }
     };
 
     let expires_at = time::OffsetDateTime::now_utc() + Duration::from_secs(SESSION_TTL);
     let db_uid = user_id.clone().to_string();
 
+    // Lookup User Data to attach include in the CookieJar
+    let user = sqlx::query_as!(
+        ApiUser,
+        r#"SELECT 
+            id, email, verified_email, display_name, locale, profile_image
+        FROM users
+        WHERE id = $1;"#,
+        db_uid
+    )
+    .fetch_one(&database)
+    .await
+    .map_err(AuthenticationError::UserDataLookupFailed)?;
+
+    let escrowed_key_material = sqlx::query_as!(
+        ApiEscrowedKeyMaterial,
+        r#"SELECT
+            api_public_key_pem, encryption_public_key_pem, encrypted_private_key_material, pass_key_salt
+        FROM escrowed_devices
+        WHERE user_id = $1;"#,
+        db_uid
+    )
+    .fetch_optional(&database)
+    .await
+    .map_err(AuthenticationError::UserDataLookupFailed)?;
+
+    let user_data = UserData {
+        user,
+        escrowed_key_material,
+    };
+
+    // Create a Session to record in the database and attach to the CookieJar
     let new_sid_row = sqlx::query!(
-        "INSERT INTO rust_sessions
+        "INSERT INTO sessions
             (user_id, provider, access_token, access_expires_at, refresh_token, expires_at)
             VALUES ($1, $2, $3, $4, $5, $6)
             RETURNING id;",
@@ -170,11 +238,24 @@ pub async fn handler(
         .sign_digest_with_rng(&mut rng, digest);
 
     let auth_tag = B64.encode(signature.to_vec());
-    let session_value = format!("{session_enc}{auth_tag}");
 
+    let session_value = format!("{session_enc}{auth_tag}");
+    let user_data_value = serde_json::to_string(&user_data).expect("user data to serialize");
+
+    // Populate the CookieJar
     cookie_jar = cookie_jar.add(
         Cookie::build(SESSION_COOKIE_NAME, session_value)
-            .http_only(true)
+            .http_only(false)
+            .expires(expires_at)
+            .same_site(SameSite::Lax)
+            .path("/")
+            .domain(cookie_domain.clone())
+            .secure(cookie_secure)
+            .finish(),
+    );
+    cookie_jar = cookie_jar.add(
+        Cookie::build(USER_DATA_COOKIE_NAME, user_data_value)
+            .http_only(false)
             .expires(expires_at)
             .same_site(SameSite::Lax)
             .path("/")
@@ -195,6 +276,7 @@ pub struct CallbackParameters {
 
 #[derive(Deserialize)]
 pub struct GoogleUserProfile {
+    id: String,
     name: String,
     email: String,
     verified_email: bool,

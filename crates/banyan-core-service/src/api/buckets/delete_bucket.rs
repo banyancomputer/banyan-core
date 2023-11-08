@@ -18,8 +18,8 @@ pub async fn handler(
     // todo: need to delete all the hot data stored at various storage hosts
 
     let query_result = sqlx::query!(
-        r#"DELETE FROM buckets WHERE account_id = $1 AND id = $2;"#,
-        api_id.account_id,
+        r#"DELETE FROM buckets WHERE user_id = $1 AND id = $2;"#,
+        api_id.user_id,
         bucket_id,
     )
     .execute(&database)

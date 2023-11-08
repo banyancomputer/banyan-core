@@ -20,10 +20,10 @@ pub async fn handler(
         r#"SELECT s.id FROM snapshots AS s
                JOIN metadata AS m ON s.metadata_id = m.id
                JOIN buckets AS b ON m.bucket_id = b.id
-               WHERE b.account_id = $1
+               WHERE b.user_id = $1
                    AND b.id = $2
                    AND m.id = $3;"#,
-        api_id.account_id,
+        api_id.user_id,
         bucket_id,
         metadata_id,
     )

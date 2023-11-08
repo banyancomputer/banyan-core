@@ -1,9 +1,10 @@
-use axum::routing::get;
+use axum::routing::{get, post};
 use axum::Router;
 
 use crate::app::AppState;
 
 mod create_device_api_key;
+mod create_escrowed_device;
 mod delete_device_api_key;
 mod read_all_device_api_keys;
 mod read_device_api_key;
@@ -13,7 +14,7 @@ pub(crate) mod registration_event;
 mod start_regwait;
 
 #[cfg(feature = "fake")]
-mod create_fake_account;
+mod create_fake_user;
 
 mod who_am_i;
 
@@ -37,9 +38,10 @@ pub fn router(state: AppState) -> Router<AppState> {
             get(end_regwait::handler),
         )
         .route(
-            "/fake_account",
-            axum::routing::post(create_fake_account::handler),
+            "/create_escrowed_device",
+            post(create_escrowed_device::handler),
         )
+        .route("/fake_user", axum::routing::post(create_fake_user::handler))
         .route("/who_am_i", get(who_am_i::handler))
         .with_state(state)
 }
@@ -62,6 +64,10 @@ pub fn router(state: AppState) -> Router<AppState> {
         .route(
             "/device_api_key/end_regwait/:fingerprint",
             get(end_regwait::handler),
+        )
+        .route(
+            "/create_escrowed_device",
+            post(create_escrowed_device::handler),
         )
         .route("/who_am_i", get(who_am_i::handler))
         .with_state(state)

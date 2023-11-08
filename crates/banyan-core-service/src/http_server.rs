@@ -4,9 +4,9 @@ use std::time::Duration;
 
 use axum::error_handling::HandleErrorLayer;
 use axum::extract::DefaultBodyLimit;
-use axum::handler::HandlerWithoutStateExt;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
+use axum::routing::{get, get_service};
 use axum::{Json, Router};
 use axum::{Server, ServiceExt};
 use futures::future::join_all;
@@ -18,15 +18,21 @@ use tower_http::request_id::MakeRequestUuid;
 use tower_http::sensitive_headers::{
     SetSensitiveRequestHeadersLayer, SetSensitiveResponseHeadersLayer,
 };
-use tower_http::services::ServeDir;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnFailure, DefaultOnResponse, TraceLayer};
 use tower_http::validate_request::ValidateRequestHeaderLayer;
 use tower_http::{LatencyUnit, ServiceBuilderExt};
 use tracing::Level;
 
+use axum::body::{boxed, BoxBody};
+use axum::http::Request;
+use axum::response::Response;
+use tower::ServiceExt as OtherServiceExt;
+
 use crate::app::AppState;
 use crate::tasks::start_background_workers;
 use crate::{api, auth, health_check, hooks};
+use tower_http::services::ServeDir;
+use tower_http::services::ServeFile;
 
 // TODO: might want a longer timeout in some parts of the API and I'd like to be able customize a
 // few layers eventually such as CORS and request timeouts but that's for something down the line
@@ -77,11 +83,25 @@ pub async fn graceful_shutdown_blocker() -> (JoinHandle<()>, watch::Receiver<()>
     (handle, rx)
 }
 
+// TODO: find someplace for this. For now missing routes are served the dist/index.html file
+#[allow(dead_code)]
 async fn not_found_handler() -> impl IntoResponse {
     (
         StatusCode::NOT_FOUND,
         Json(serde_json::json!({"status": "not found"})),
     )
+}
+
+async fn login_page_handler<B: std::marker::Send + 'static>(
+    req: Request<B>,
+) -> Result<Response<BoxBody>, (StatusCode, String)> {
+    match ServeFile::new("./dist/login.html").oneshot(req).await {
+        Ok(res) => Ok(res.map(boxed)),
+        Err(err) => Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Something went wrong serving the login page: {}", err),
+        )),
+    }
 }
 
 pub async fn run(listen_addr: SocketAddr, app_state: AppState) {
@@ -125,13 +145,18 @@ pub async fn run(listen_addr: SocketAddr, app_state: AppState) {
             sensitive_headers,
         ));
 
-    let static_assets = ServeDir::new("dist").not_found_service(not_found_handler.into_service());
+    let static_assets = ServeDir::new("dist").not_found_service(
+        get_service(ServeFile::new("./dist/index.html")).handle_error(|_| async move {
+            (StatusCode::INTERNAL_SERVER_ERROR, "internal server error")
+        }),
+    );
 
     let root_router = Router::new()
         .nest("/api/v1", api::router(app_state.clone()))
         .nest("/auth", auth::router(app_state.clone()))
         .nest("/hooks", hooks::router(app_state.clone()))
         .nest("/_status", health_check::router(app_state.clone()))
+        .route("/login", get(login_page_handler))
         .with_state(app_state)
         .fallback_service(static_assets);
 

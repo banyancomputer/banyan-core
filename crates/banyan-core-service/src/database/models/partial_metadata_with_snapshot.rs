@@ -21,7 +21,7 @@ pub struct PartialMetadataWithSnapshot {
 }
 
 impl PartialMetadataWithSnapshot {
-    pub async fn all(database: &Database, account_id: String) -> Result<Vec<Self>, sqlx::Error> {
+    pub async fn all(database: &Database, user_id: String) -> Result<Vec<Self>, sqlx::Error> {
         sqlx::query_as!(
             Self,
             r#"SELECT
@@ -32,8 +32,8 @@ impl PartialMetadataWithSnapshot {
                     JOIN buckets b ON m.bucket_id = b.id
                     LEFT JOIN snapshots s ON s.metadata_id = m.id
                     WHERE m.state NOT IN ('upload_failed', 'deleted')
-                          AND b.account_id = $1;"#,
-            account_id,
+                          AND b.user_id = $1;"#,
+            user_id,
         )
         .fetch_all(database)
         .await
@@ -41,7 +41,7 @@ impl PartialMetadataWithSnapshot {
 
     pub async fn locate_current(
         database: &Database,
-        account_id: String,
+        user_id: String,
         bucket_id: Uuid,
     ) -> Result<Option<Self>, sqlx::Error> {
         let bucket_id = bucket_id.to_string();
@@ -55,8 +55,8 @@ impl PartialMetadataWithSnapshot {
                 FROM metadata m
                     JOIN buckets b ON m.bucket_id = b.id
                     LEFT JOIN snapshots s ON s.metadata_id = m.id
-                    WHERE m.state = 'current' AND b.account_id = $1 AND b.id = $2;"#,
-            account_id,
+                    WHERE m.state = 'current' AND b.user_id = $1 AND b.id = $2;"#,
+            user_id,
             bucket_id,
         )
         .fetch_one(database)
@@ -71,7 +71,7 @@ impl PartialMetadataWithSnapshot {
 
     pub async fn locate_specific(
         database: &Database,
-        account_id: String,
+        user_id: String,
         bucket_id: Uuid,
         metadata_id: Uuid,
     ) -> Result<Option<Self>, sqlx::Error> {
@@ -87,9 +87,9 @@ impl PartialMetadataWithSnapshot {
                 FROM metadata m
                     JOIN buckets b ON m.bucket_id = b.id
                     LEFT JOIN snapshots s ON s.metadata_id = m.id
-                    WHERE m.id = $1 AND b.account_id = $2 AND b.id = $3;"#,
+                    WHERE m.id = $1 AND b.user_id = $2 AND b.id = $3;"#,
             metadata_id,
-            account_id,
+            user_id,
             bucket_id,
         )
         .fetch_one(database)

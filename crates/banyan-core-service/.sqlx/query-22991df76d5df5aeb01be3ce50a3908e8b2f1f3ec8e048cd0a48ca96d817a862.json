@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE email_stats\n            SET unsubscribed = unsubscribed + 1\n            WHERE user_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "22991df76d5df5aeb01be3ce50a3908e8b2f1f3ec8e048cd0a48ca96d817a862"
+}

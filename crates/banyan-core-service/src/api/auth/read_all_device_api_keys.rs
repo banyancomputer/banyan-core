@@ -11,8 +11,8 @@ pub async fn handler(api_id: ApiIdentity, State(state): State<AppState>) -> Resp
 
     let query_result = sqlx::query_as!(
         DeviceApiKey,
-        r#"SELECT id, account_id, fingerprint, pem FROM device_api_keys WHERE account_id = $1;"#,
-        api_id.account_id,
+        r#"SELECT id, user_id, fingerprint, pem FROM device_api_keys WHERE user_id = $1;"#,
+        api_id.user_id,
     )
     .fetch_all(&database)
     .await;
@@ -30,7 +30,7 @@ pub async fn handler(api_id: ApiIdentity, State(state): State<AppState>) -> Resp
 #[derive(sqlx::FromRow, Serialize)]
 pub struct DeviceApiKey {
     id: String,
-    account_id: String,
+    user_id: String,
     fingerprint: String,
     pem: String,
 }

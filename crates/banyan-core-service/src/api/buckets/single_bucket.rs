@@ -19,8 +19,8 @@ pub async fn handler(
 
     let query_result = sqlx::query_as!(
         Bucket,
-        "SELECT * FROM buckets WHERE account_id = $1 AND id = $2;",
-        api_id.account_id,
+        "SELECT * FROM buckets WHERE user_id = $1 AND id = $2;",
+        api_id.user_id,
         bucket_id,
     )
     .fetch_one(&database)

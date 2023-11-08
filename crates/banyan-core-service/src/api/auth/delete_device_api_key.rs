@@ -16,9 +16,9 @@ pub async fn handler(
 
     let query_result = sqlx::query!(
         r#"DELETE FROM device_api_keys
-            WHERE id = $1 AND account_id = $2;"#,
+            WHERE id = $1 AND user_id = $2;"#,
         key_id,
-        api_id.account_id,
+        api_id.user_id,
     )
     .execute(&database)
     .await;

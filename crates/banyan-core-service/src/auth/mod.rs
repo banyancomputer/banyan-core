@@ -33,7 +33,12 @@ pub static PROVIDER_CONFIGS: phf::Map<&'static str, ProviderConfig> = phf::phf_m
     ),
 };
 
+// Session Id Cookie
 pub static SESSION_COOKIE_NAME: &str = "_session_id";
+// User Data Cookie for sharing on login
+pub static USER_DATA_COOKIE_NAME: &str = "_user_data";
+// Local Key Cookie -- kept for enforcing deletion on client
+pub const LOCAL_KEY_COOKIE_NAME: &str = "_local_key";
 
 pub const SESSION_TTL: u64 = 28 * 24 * 60 * 60;
 

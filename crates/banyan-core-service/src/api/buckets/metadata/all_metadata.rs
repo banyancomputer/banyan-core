@@ -8,7 +8,7 @@ use crate::database::models::PartialMetadataWithSnapshot;
 use crate::extractors::ApiIdentity;
 
 pub async fn handler(api_id: ApiIdentity, State(state): State<AppState>) -> Response {
-    let query_result = PartialMetadataWithSnapshot::all(&state.database(), api_id.account_id).await;
+    let query_result = PartialMetadataWithSnapshot::all(&state.database(), api_id.user_id).await;
 
     match query_result {
         Ok(db_meta) => {

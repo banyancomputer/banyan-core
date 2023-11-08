@@ -99,7 +99,7 @@ export class TombWasm {
 * # Arguments
 *
 * * `web_signing_key` - The CryptoKeyPair to use for signing requests
-* * `account_id` - The id of the account to use
+* * `user_id` - The id of the account to use
 * * `core_endpoint` - The API endpoint to use for core
 * * `data_endpoint` - The API endpoint to use for data
 *
@@ -109,11 +109,11 @@ export class TombWasm {
 *
 * Don't call it from multiple threads in parallel!
 * @param {string} signing_key_pem
-* @param {string} account_id
+* @param {string} user_id
 * @param {string} core_endpoint
 * @param {string} data_endpoint
 */
-  constructor(signing_key_pem: string, account_id: string, core_endpoint: string, data_endpoint: string);
+  constructor(signing_key_pem: string, user_id: string, core_endpoint: string, data_endpoint: string);
 /**
 * Get the total consume storage space for the current account in bytes
 * @returns {Promise<bigint>}

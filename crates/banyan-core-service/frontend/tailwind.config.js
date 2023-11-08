@@ -39,7 +39,8 @@ module.exports = {
 					disabled: 'var(--disabled)',
 				},
 				error: 'var(--error)',
-				errorBanner: 'var(--errorBanner)',
+				errorBanner: 'var(--error-banner)',
+				errorBannerBorder: 'var(--error-banner-border)',
 				login: 'var(--login)',
 				navigation: {
 					primary: 'var(--navigation-primary)',

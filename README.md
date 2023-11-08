@@ -111,12 +111,11 @@ repository:
 
 ```
 cd crates/banyan-core-service/frontend
-source .env.dev
-yard run dev
+yarn dev
 ```
 
 You should now be able to open up your web-browser to
-[http://127.0.0.1:3000](http://127.0.0.1:3000), login, and use the platform.
+[http://127.0.0.1:3001](http://127.0.0.1:3001), login, and use the platform.
 
 ## Updating Tomb WASM
 

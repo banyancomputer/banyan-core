@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT\n                CASE\n                    WHEN last_email.state = 'unsubscribed' THEN 1\n                    ELSE 0\n                END\n            FROM (\n                SELECT state\n                FROM emails e\n                WHERE e.user_id = $1\n                ORDER BY e.sent_at DESC\n                LIMIT 1\n            ) AS last_email;",
+  "describe": {
+    "columns": [
+      {
+        "name": "CASE\n                    WHEN last_email.state = 'unsubscribed' THEN 1\n                    ELSE 0\n                END",
+        "ordinal": 0,
+        "type_info": "Int"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "5352040bbcb803d3d96625a8d52ca36505741bc947c02faef15c5a42e46c0d12"
+}
