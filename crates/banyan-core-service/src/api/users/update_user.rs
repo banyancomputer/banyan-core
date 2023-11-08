@@ -36,12 +36,10 @@ pub enum UpdateUserError {
 
 impl IntoResponse for UpdateUserError {
     fn into_response(self) -> Response {
-        match &self {
-            _ => {
-                tracing::error!("encountered error reading user: {self}");
-                let err_msg = serde_json::json!({"msg": "backend service experienced an issue servicing the request"});
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
-            }
+        {
+            tracing::error!("encountered error reading user: {self}");
+            let err_msg = serde_json::json!({"msg": "backend service experienced an issue servicing the request"});
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
         }
     }
 }
