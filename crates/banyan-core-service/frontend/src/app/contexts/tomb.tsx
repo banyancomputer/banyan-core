@@ -1,8 +1,8 @@
 import React, { ReactNode, createContext, useContext, useEffect, useState } from 'react';
 import { TombWasm, WasmBucket, WasmMount, WasmSnapshot } from 'tomb-wasm-experimental';
 import { Mutex } from 'async-mutex';
-import { useModal } from '@/app/contexts/modals';
 
+import { useModal } from '@/app/contexts/modals';
 import { useKeystore } from './keystore';
 import {
 	BrowserObject, Bucket, BucketKey,
@@ -21,6 +21,8 @@ interface TombInterface {
 	isTrashLoading: boolean;
 	areBucketsLoading: boolean;
 	selectedBucket: Bucket | null;
+	error: string;
+    setError: React.Dispatch<React.SetStateAction<string>>;
 	getBuckets: () => Promise<void>;
 	getBucketsFiles: () => Promise<void>;
 	getBucketsKeys: () => Promise<void>;
@@ -66,6 +68,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	const [isTrashLoading, setIsTrashLoading] = useState<boolean>(true);
 	const [areBucketsLoading, setAreBucketsLoading] = useState<boolean>(false);
 	const folderLocation = useFolderLocation();
+	const [error, setError] = useState<string>('');
 
 	/** Prevents rust recursion error. */
 	const tombMutex = async <T,>(tomb: T, callback: (tomb: T) => Promise<any>) => {
@@ -369,9 +372,9 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 					process.env.NEXT_PUBLIC_DATA_URL || 'http://localhost:3002',
 				);
 				setTomb(await tomb);
-			} catch (err) {
-				console.error(err);
-			}
+			} catch (error: any) {
+                setError(error.message);
+            }
 		})();
 	}, [userData, keystoreInitialized, isLoading, escrowedKeyMaterial]);
 
@@ -387,7 +390,9 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 				try {
 					await getBuckets();
 					await getStorageUsageState();
-				} catch (error: any) { };
+				} catch (error: any) {
+					setError(error.message);
+				}
 			})();
 		};
 	}, [tomb]);
@@ -395,10 +400,10 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	return (
 		<TombContext.Provider
 			value={{
-				tomb, buckets, trash, usedStorage, usageLimit, areBucketsLoading, isTrashLoading, selectedBucket,
+				tomb, buckets, trash, usedStorage, usageLimit, areBucketsLoading, isTrashLoading, selectedBucket, error,
 				getBuckets, getBucketsFiles, getBucketsKeys, selectBucket, getSelectedBucketFiles,
 				takeColdSnapshot, getBucketShapshots, createBucket, deleteBucket, getTrashBucket,
-				getFile, createDirectory, uploadFile, purgeSnapshot,
+				getFile, createDirectory, uploadFile, purgeSnapshot, setError,
 				removeBucketAccess, approveBucketAccess, completeDeviceKeyRegistration, shareFile, download, moveTo,
 				restore, deleteFile, makeCopy, getExpandedFolderFiles,
 			}}

@@ -1,11 +1,11 @@
 import React from 'react';
 import { useIntl } from 'react-intl';
 
-import { ApproveBucketAccessModal } from '@/app/components/common/Modal/ApproveBucketAccessModal';
-import { RemoveBucketAccessModal } from '@/app/components/common/Modal/RemoveBucketAccessModal';
+import { ApproveBucketAccessModal } from '@app/components/common/Modal/ApproveBucketAccessModal';
+import { RemoveBucketAccessModal } from '@app/components/common/Modal/RemoveBucketAccessModal';
 
-import { Bucket, BucketKey } from '@/app/types/bucket';
-import { useModal } from '@/app/contexts/modals';
+import { Bucket, BucketKey } from '@app/types/bucket';
+import { useModal } from '@app/contexts/modals';
 
 export const KeyActions: React.FC<{ bucket: Bucket; bucketKey: BucketKey }> = ({ bucket, bucketKey }) => {
     const { messages } = useIntl();

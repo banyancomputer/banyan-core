@@ -14,6 +14,7 @@ import { FileUploadProvider } from './contexts/filesUpload';
 import { TombProvider } from './contexts/tomb';
 import { Navigation } from '@components/common/Navigation';
 import { Header } from '@components/common/Header';
+import { ErrorBanner } from '@components/common/ErrorBanner';
 
 import { getLocalStorageItem, setLocalStorageItem } from './utils/localStorage';
 import { SessionProvider } from './contexts/session';
@@ -56,9 +57,9 @@ const App = () => {
 	return (
 		<main className="flex flex-col h-screen font-sans bg-mainBackground text-text-900">
 			<BrowserRouter basename="/" >
-				<SessionProvider>
-					<KeystoreProvider>
-						<ModalProvider>
+				<ModalProvider>
+					<SessionProvider>
+						<KeystoreProvider>
 							<TombProvider>
 								<FileUploadProvider>
 									<FilePreviewProvider>
@@ -72,6 +73,7 @@ const App = () => {
 												<Navigation />
 												<section className="flex-grow h-screen overflow-y-scroll">
 													<Header />
+													<ErrorBanner />
 													<Suspense>
 														<Routes />
 													</Suspense>
@@ -81,9 +83,9 @@ const App = () => {
 									</FilePreviewProvider>
 								</FileUploadProvider>
 							</TombProvider>
-						</ModalProvider>
-					</KeystoreProvider>
-				</SessionProvider>
+						</KeystoreProvider>
+					</SessionProvider>
+				</ModalProvider>
 			</BrowserRouter>
 		</main>
 	);
