@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useIntl } from 'react-intl';
 
-import { KeyActions } from '@components/KeyManagement/KeyActions';
+import { KeyActions } from '@components/Account/ManageKeys/KeyActions';
 import { Bucket as IBucket } from '@/app/types/bucket';
 import { ActionsCell } from '@/app/components/common/ActionsCell';
 

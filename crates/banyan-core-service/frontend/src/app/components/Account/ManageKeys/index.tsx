@@ -3,7 +3,7 @@ import { useIntl } from 'react-intl';
 import { useEffect } from 'react';
 
 import { useTomb } from '@/app/contexts/tomb';
-import { KeyManagementTable } from '@/app/components/KeyManagement/KeyManagementTable';
+import { KeyManagementTable } from '@/app/components/Account/ManageKeys/KeyManagementTable';
 import { Fallback } from '@/app/components/common/Fallback';
 
 const ManageKeys = () => {
