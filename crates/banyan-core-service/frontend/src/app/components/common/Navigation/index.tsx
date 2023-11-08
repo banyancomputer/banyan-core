@@ -40,7 +40,6 @@ export const Navigation = () => {
 	const logout = async () => {
 		let api = new HttpClient;
 		try {
-			console.log("logging out");
 			await purgeKeystore();
 			await api.get('/auth/logout');
 			window.location.href = '/';

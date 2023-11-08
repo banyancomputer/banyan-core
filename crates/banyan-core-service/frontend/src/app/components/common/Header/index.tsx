@@ -1,8 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useIntl } from 'react-intl';
 import { useNavigate } from 'react-router-dom';
-
-import { SearchInput } from '../SearchInput';
 
 import { popupClickHandler } from '@/app/utils';
 import { useKeystore } from '@/app/contexts/keystore';
@@ -29,10 +27,9 @@ export const Header = () => {
 	const logout = async () => {
 		let api = new HttpClient;
 		try {
-			console.log("logging out");
-			await api.get('/auth/logout');
 			await purgeKeystore();
-			goTo('/');
+			await api.get('/auth/logout');
+			window.location.href = '/';
 		}
 		catch (err: any) {
 			console.error("An Error occurred trying to logout: ", err.message);
