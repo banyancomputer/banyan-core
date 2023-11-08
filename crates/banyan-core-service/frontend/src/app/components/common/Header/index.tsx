@@ -10,7 +10,6 @@ import { HttpClient } from '@/api/http/client';
 
 import { Key, LogoutAlternative, Settings } from '@static/images/common';
 
-// TODO: Is this header used anywhere?
 export const Header = () => {
 	const userControlsRef = useRef<HTMLDivElement | null>(null);
 	const { purgeKeystore } = useKeystore();
