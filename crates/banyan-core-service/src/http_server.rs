@@ -38,6 +38,9 @@ use tower_http::services::ServeFile;
 // few layers eventually such as CORS and request timeouts but that's for something down the line
 const REQUEST_TIMEOUT_SECS: u64 = 90;
 
+// Name of the text file containing the current terms of service
+const CURRENT_TOS: &str = "2023-11-08.txt";
+
 // TODO: probably want better fallback error pages...
 async fn handle_error(error: tower::BoxError) -> impl IntoResponse {
     if error.is::<tower::timeout::error::Elapsed>() {
@@ -104,6 +107,18 @@ async fn login_page_handler<B: std::marker::Send + 'static>(
     }
 }
 
+async fn tos_handler<B: std::marker::Send + 'static>(
+    req: Request<B>,
+) -> Result<Response<BoxBody>, (StatusCode, String)> {
+    match ServeFile::new(format!("./dist/tos/{}", CURRENT_TOS)).oneshot(req).await {
+        Ok(res) => Ok(res.map(boxed)),
+        Err(err) => Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Something went wrong serving the tos content: {}", err),
+        )),
+    }
+}
+
 pub async fn run(listen_addr: SocketAddr, app_state: AppState) {
     let (shutdown_handle, mut shutdown_rx) = graceful_shutdown_blocker().await;
 
@@ -157,6 +172,7 @@ pub async fn run(listen_addr: SocketAddr, app_state: AppState) {
         .nest("/hooks", hooks::router(app_state.clone()))
         .nest("/_status", health_check::router(app_state.clone()))
         .route("/login", get(login_page_handler))
+        .route("/tos", get(tos_handler))
         .with_state(app_state)
         .fallback_service(static_assets);
 
