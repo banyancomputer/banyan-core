@@ -57,7 +57,7 @@ pub struct ApiIdentity {
     /// The user id of the user who owns the API key
     user_id: Uuid,
     /// The hex formatted fingerprint of the API key used to sign the JWT
-    key_fingerprint: String
+    key_fingerprint: String,
 }
 
 impl ApiIdentity {
@@ -147,10 +147,13 @@ where
             return Err(ApiIdentityError::MismatchedSubject);
         }
 
-        let user_id = Uuid::parse_str(&claims.subject)
-            .map_err(ApiIdentityError::DatabaseUuidCorrupt)?;
+        let user_id =
+            Uuid::parse_str(&claims.subject).map_err(ApiIdentityError::DatabaseUuidCorrupt)?;
         let key_fingerprint = key_id.clone();
-        let api_identity = ApiIdentity { user_id, key_fingerprint };
+        let api_identity = ApiIdentity {
+            user_id,
+            key_fingerprint,
+        };
         Ok(api_identity)
     }
 }

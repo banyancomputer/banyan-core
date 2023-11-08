@@ -18,7 +18,7 @@ use uuid::Uuid;
 use crate::app::{AppState, ServiceSigningKey};
 use crate::database::models::MetadataState;
 use crate::database::Database;
-use crate::extractors::{UserIdentity, DataStore};
+use crate::extractors::{DataStore, UserIdentity};
 use crate::tasks::{PruneBlock, PruneBlocksTask};
 use crate::utils::car_buffer::CarBuffer;
 
@@ -48,8 +48,7 @@ pub async fn handler(
 
     let user_id = user_identity.id().to_string();
     let unvalidated_bid = bucket_id.to_string();
-    let authorized_bucket_id =
-        authorized_bucket_id(&database, &user_id, &unvalidated_bid).await?;
+    let authorized_bucket_id = authorized_bucket_id(&database, &user_id, &unvalidated_bid).await?;
 
     // Read the body from the request, checking for size limits
     let mime_ct = mime::Mime::from(content_type);
@@ -140,14 +139,12 @@ pub async fn handler(
 
     let storage_host = select_storage_host(&database, request_data.expected_data_size).await?;
 
-    let current_authorized_amount =
-        existing_authorization(&database, &user_id, &storage_host.id)
-            .await
-            .map_err(PushMetadataError::UnableToRetrieveAuthorizations)?;
-    let current_stored_amount =
-        currently_stored_at_provider(&database, &user_id, &storage_host.id)
-            .await
-            .map_err(PushMetadataError::UnableToIdentifyStoredAmount)?;
+    let current_authorized_amount = existing_authorization(&database, &user_id, &storage_host.id)
+        .await
+        .map_err(PushMetadataError::UnableToRetrieveAuthorizations)?;
+    let current_stored_amount = currently_stored_at_provider(&database, &user_id, &storage_host.id)
+        .await
+        .map_err(PushMetadataError::UnableToIdentifyStoredAmount)?;
 
     let mut storage_authorization: Option<String> = None;
     if (current_authorized_amount - current_stored_amount) < request_data.expected_data_size {
@@ -326,10 +323,7 @@ async fn generate_new_storage_authorization(
     )
     .with_audiences(HashSet::from_strings(&[storage_host.name.as_str()]))
     .with_issuer("banyan-platform")
-    .with_subject(format!(
-        "{}@{}",
-        user_id, key_fingerprint
-    ))
+    .with_subject(format!("{}@{}", user_id, key_fingerprint))
     .invalid_before(Clock::now_since_epoch() - Duration::from_secs(30));
 
     claims.create_nonce();

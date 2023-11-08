@@ -31,12 +31,13 @@ impl<S> FromRequestParts<S> for UserIdentity
 where
     SessionIdentity: FromRequestParts<S, Rejection = SessionIdentityError>,
     ApiIdentity: FromRequestParts<S, Rejection = ApiIdentityError>,
-    S: Send + Sync
+    S: Send + Sync,
 {
     type Rejection = ApiIdentityError;
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        let either: Either<SessionIdentity, ApiIdentity> = Either::from_request_parts(parts, state).await?;
+        let either: Either<SessionIdentity, ApiIdentity> =
+            Either::from_request_parts(parts, state).await?;
         Ok(UserIdentity(either))
     }
 }

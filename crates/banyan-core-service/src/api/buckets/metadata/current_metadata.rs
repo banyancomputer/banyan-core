@@ -15,8 +15,7 @@ pub async fn handler(
 ) -> Response {
     let user_id = user_identity.id().to_string();
     let query_result =
-        PartialMetadataWithSnapshot::locate_current(&state.database(), user_id, bucket_id)
-            .await;
+        PartialMetadataWithSnapshot::locate_current(&state.database(), user_id, bucket_id).await;
 
     match query_result {
         Ok(Some(m)) => (StatusCode::OK, Json(ApiMetadata::from(m))).into_response(),

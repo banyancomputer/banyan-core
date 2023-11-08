@@ -73,10 +73,7 @@ pub async fn handler(
     let mut claims = Claims::with_custom_claims(caps, Duration::from_secs(STORAGE_TICKET_DURATION))
         .with_audiences(audiences)
         .with_issuer("banyan-platform")
-        .with_subject(format!(
-            "{}@{}",
-            user_id, user_identity.key_fingerprint()
-        ))
+        .with_subject(format!("{}@{}", user_id, user_identity.key_fingerprint()))
         .invalid_before(Clock::now_since_epoch() - Duration::from_secs(30));
 
     claims.create_nonce();
