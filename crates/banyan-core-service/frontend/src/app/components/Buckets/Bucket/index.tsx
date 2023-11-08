@@ -99,9 +99,7 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
                     </span>
                 </div>
             </h4>
-            <div
-                className="mb-6 flex justify-center py-10 bg-bucket-bucketIconBackground rounded-xl"
-            >
+            <div className="mb-6 flex justify-center py-10 bg-bucket-bucketIconBackground rounded-xl">
                 <BucketIcon />
             </div>
             <div className="flex flex-col gap-2 items-start text-xs font-normal">
@@ -109,7 +107,7 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
                     <div className={`px-2 rounded-full text-mainBackground ${storageClassNames[bucket.storageClass]} capitalize`}>
                         {`${messages[bucket.storageClass]}`}
                     </div>
-                    <div className="text-text-400">
+                    <div className="text-text-400" title={`${messages[`${bucket.storageClass}Tooltip`]}`}>
                         <Question width="24px" height="24px" />
                     </div>
                 </div>

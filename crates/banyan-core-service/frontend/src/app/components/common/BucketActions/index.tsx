@@ -24,7 +24,7 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const bucketType = `${bucket.bucketType}_${bucket.storageClass}`;
     const folderLocation = useFolderLocation();
 
-    const upload = async() => {
+    const upload = async () => {
         try {
             openModal(<UploadFileModal
                 bucket={bucket}
@@ -34,56 +34,56 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         } catch (error: any) { }
     };
 
-    const takeSnapshot = async() => {
+    const takeSnapshot = async () => {
         try {
             openModal(<TakeSnapshotModal bucket={bucket} />);
         } catch (error: any) { }
     };
 
-    const viewBucketSnapshots = async() => {
+    const viewBucketSnapshots = async () => {
         try {
             openModal(<BucketSnapshotsModal bucketId={bucket.id} />);
         } catch (error: any) { }
     };
 
-    const viewBucketVersions = async() => {
+    const viewBucketVersions = async () => {
         try {
             // openModal(<BucketSnapshotsModal bucketId={bucket.id} />);
         } catch (error: any) { }
     };
 
-    const rename = async() => {
+    const rename = async () => {
         openModal(<RenameBucketModal bucket={bucket} />);
     };
 
-    const createFolder = async() => {
+    const createFolder = async () => {
         openModal(<CreateFolderModal bucket={bucket} path={folderLocation} onSuccess={closeModal} />);
     };
 
-    const retoreColdVersion = async() => {
+    const retoreColdVersion = async () => {
         try {
 
         } catch (error: any) { }
     };
-    const deleteHotData = async() => {
+    const deleteHotData = async () => {
         try {
 
         } catch (error: any) { }
     };
 
-    const deleteBucket = async() => {
+    const deleteBucket = async () => {
         try {
             openModal(<DeleteBucketModal bucket={bucket} />);
         } catch (error: any) { }
     };
 
-    const purgeColdKeys = async() => {
+    const purgeColdKeys = async () => {
         try {
         } catch (error: any) { }
     };
 
     const uploadAction = new Action(`${messages.upload}`, <FiUpload size="18px" />, upload);
-    const createSnapshotAction = new Action(`${messages.takeColdSnapshot}`, <HiOutlineLightningBolt size="18px" />, takeSnapshot, `${messages.tooltipExplanation}`);
+    const createSnapshotAction = new Action(`${messages.takeColdSnapshot}`, <HiOutlineLightningBolt size="18px" />, takeSnapshot, `${messages.snapshotTooltip}`);
     const viewBucketSnapshotsAction = bucket.snapshots.length ? new Action(`${messages.viewColdSnapshots}`, <MdRestore size="18px" />, viewBucketSnapshots) : null;
     const viewBucketVersionsAction = new Action(`${messages.viewDriveVersions}`, <MdRestore size="18px" />, viewBucketVersions);
     const renameAction = new Action(`${messages.rename}`, <FiEdit size="18px" />, rename);

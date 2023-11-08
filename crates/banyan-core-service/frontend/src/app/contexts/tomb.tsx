@@ -10,6 +10,7 @@ import {
 } from '@/app/types/bucket';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 import { useSession } from './session';
+import { prettyFingerprintApiKeyPem } from '@app/utils';
 
 interface TombInterface {
 	tomb: TombWasm | null;
@@ -38,7 +39,6 @@ interface TombInterface {
 	makeCopy: (bucket: Bucket, path: string[], name: string) => void;
 	moveTo: (bucket: Bucket, from: string[], to: string[]) => Promise<void>;
 	uploadFile: (nucket: Bucket, path: string[], name: string, file: any, folder?: BrowserObject) => Promise<void>;
-	getBucketKeys: (id: string) => Promise<BucketKey[]>;
 	purgeSnapshot: (id: string) => void;
 	deleteFile: (bucket: Bucket, path: string[], name: string) => void;
 	completeDeviceKeyRegistration: (fingerprint: string) => Promise<void>;
@@ -124,7 +124,15 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 			const wasm_bukets: Bucket[] = [];
 			for (const bucket of buckets) {
 				const mount = await tomb!.mount(bucket.id, key.privatePem);
-				const keys = await tomb!.listBucketKeys(bucket.id);
+				const rawKeys = await tomb!.listBucketKeys(bucket.id);
+				const keys: BucketKey[] = [];
+				for (let key of rawKeys) {
+					const pem = key.pem();
+					const approved = key.approved();
+					const id = key.id();
+					const fingerPrint = await prettyFingerprintApiKeyPem(pem);
+					keys.push({ approved, bucket_id: bucket.id, fingerPrint, id, pem })
+				};
 				wasm_bukets.push({
 					...bucket,
 					mount,
@@ -177,7 +185,6 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 			const mount = await tomb!.mount(wasmBucket.id(), key.privatePem);
 			const files = await mount.ls([]);
 			const snapshots = await tomb!.listBucketSnapshots(wasmBucket.id());
-			const keys = await tomb!.listBucketKeys(wasmBucket.id());
 			const bucket = {
 				mount,
 				id: wasmBucket.id(),
@@ -186,7 +193,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 				bucketType: wasmBucket.bucketType(),
 				files: files || [],
 				snapshots,
-				keys,
+				keys: [],
 			};
 
 			setBuckets(prev => [...prev, bucket]);
@@ -229,8 +236,6 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 			await mount.shareWith(bucket_key_id);
 		});
 	};
-
-	const getBucketKeys = async (bucket_id: string) => await tombMutex(tomb, async tomb => await tomb!.listBucketKeys(bucket_id));
 
 	/** Returns list of snapshots for selected bucket */
 	const getBucketShapshots = async (id: string) => await tombMutex(tomb, async tomb => await tomb!.listBucketSnapshots(id));
@@ -393,7 +398,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 				tomb, buckets, trash, usedStorage, usageLimit, areBucketsLoading, isTrashLoading, selectedBucket,
 				getBuckets, getBucketsFiles, getBucketsKeys, selectBucket, getSelectedBucketFiles,
 				takeColdSnapshot, getBucketShapshots, createBucket, deleteBucket, getTrashBucket,
-				getFile, createDirectory, uploadFile, getBucketKeys, purgeSnapshot,
+				getFile, createDirectory, uploadFile, purgeSnapshot,
 				removeBucketAccess, approveBucketAccess, completeDeviceKeyRegistration, shareFile, download, moveTo,
 				restore, deleteFile, makeCopy, getExpandedFolderFiles,
 			}}

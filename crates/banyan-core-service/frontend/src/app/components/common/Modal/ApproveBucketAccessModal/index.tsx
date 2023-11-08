@@ -12,7 +12,7 @@ export const ApproveBucketAccessModal: React.FC<{ bucket: Bucket; bucketKey: Buc
 
     const approveAccess = async() => {
         try {
-            await approveBucketAccess(bucket, bucketKey.id());
+            await approveBucketAccess(bucket, bucketKey.id);
             closeModal();
         } catch (error: any) { }
     };
