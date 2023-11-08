@@ -15,12 +15,12 @@ use uuid::Uuid;
 
 use crate::app::AppState;
 
-use crate::database::models::{User, EscrowedDevice};
 use crate::api::models::{ApiEscrowedKeyMaterial, ApiUser};
 use crate::auth::{
     oauth_client, AuthenticationError, NEW_USER_COOKIE_NAME, SESSION_COOKIE_NAME, SESSION_TTL,
     USER_DATA_COOKIE_NAME,
 };
+use crate::database::models::{EscrowedDevice, User};
 use crate::extractors::ServerBase;
 
 // Data returned in the User Data Cookie

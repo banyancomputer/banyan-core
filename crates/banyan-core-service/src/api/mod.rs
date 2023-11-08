@@ -4,8 +4,8 @@ use tower_http::cors::CorsLayer;
 mod auth;
 mod blocks;
 mod buckets;
-mod users;
 pub mod models;
+mod users;
 
 use crate::app::AppState;
 

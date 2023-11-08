@@ -110,7 +110,10 @@ async fn login_page_handler<B: std::marker::Send + 'static>(
 async fn tos_handler<B: std::marker::Send + 'static>(
     req: Request<B>,
 ) -> Result<Response<BoxBody>, (StatusCode, String)> {
-    match ServeFile::new(format!("./dist/tos/{}", CURRENT_TOS)).oneshot(req).await {
+    match ServeFile::new(format!("./dist/tos/{}", CURRENT_TOS))
+        .oneshot(req)
+        .await
+    {
         Ok(res) => Ok(res.map(boxed)),
         Err(err) => Err((
             StatusCode::INTERNAL_SERVER_ERROR,

@@ -1,15 +1,15 @@
-use axum::http::StatusCode;
 use axum::extract::{Json, State};
+use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
-use crate::database::models::User;
 use crate::api::models::ApiUser;
-use crate::extractors::UserIdentity;
 use crate::app::AppState;
+use crate::database::models::User;
+use crate::extractors::UserIdentity;
 
 pub async fn handler(
     user_identity: UserIdentity,
-    State(state): State<AppState>
+    State(state): State<AppState>,
 ) -> Result<Response, ReadUserError> {
     let database = state.database();
     let user_id = user_identity.id().to_string();
@@ -29,11 +29,11 @@ pub async fn handler(
 
 #[derive(Debug, thiserror::Error)]
 pub enum ReadUserError {
-    #[error("could not read user")] 
-    UnableToReadUser(sqlx::Error)
+    #[error("could not read user")]
+    UnableToReadUser(sqlx::Error),
 }
 
-impl IntoResponse for ReadUserError { 
+impl IntoResponse for ReadUserError {
     fn into_response(self) -> Response {
         match &self {
             _ => {

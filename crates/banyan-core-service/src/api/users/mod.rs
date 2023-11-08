@@ -10,7 +10,7 @@ pub fn router(state: AppState) -> Router<AppState> {
     Router::new()
         .route(
             "/current",
-            get(read_user::handler).put(update_user::handler)
+            get(read_user::handler).put(update_user::handler),
         )
         .with_state(state)
 }
