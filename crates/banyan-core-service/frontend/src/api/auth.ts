@@ -1,7 +1,5 @@
-import { DeviceApiKey, EscrowedKeyMaterial } from "@app/types";
+import { EscrowedKeyMaterial } from "@app/types";
 import { APIClient } from "./http";
-import { publicPemUnwrap } from "@app/utils";
-import { b64UrlEncode } from "@app/utils/b64";
 
 export class AuthClient extends APIClient {
     /**
