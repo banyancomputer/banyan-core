@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useState } from 'react';
+
 import ECCKeystore from '@app/utils/crypto/ecc/keystore';
 import { EscrowedKeyMaterial, PrivateKeyMaterial } from '@app/utils/crypto/types';
+import { setUserDataEscrowedKeyMaterial } from '@app/utils/cookies';
 import { useSession } from '@/app/contexts/session';
 import { AuthClient } from '@/api/auth';
 
@@ -103,7 +105,8 @@ export const KeystoreProvider = ({ children }: any) => {
 		if (!keystore) {
 			setError('No keystore');
 			throw new Error('Keystore not initialized');
-		}
+		};
+
 		try {
 			if (escrowedKeyMaterial) {
 				privateKeyMaterial = await recoverDevice(passkey);
@@ -208,11 +211,14 @@ export const KeystoreProvider = ({ children }: any) => {
 		// Escrow the user's private key material
 		await api
 			.escrowDevice(escrowedKeyMaterial)
-			.then(() => setEscrowedKeyMaterial(escrowedKeyMaterial))
+			.then(() => {
+				// Set the escrowed key material in the context state and cookies
+				setEscrowedKeyMaterial(escrowedKeyMaterial)
+				setUserDataEscrowedKeyMaterial(escrowedKeyMaterial);
+			})
 			.catch((err) => {
 				throw new Error("Error escrowing device: " + err.message);
 			});
-
 		return privateKeyMaterial;
 	};
 
