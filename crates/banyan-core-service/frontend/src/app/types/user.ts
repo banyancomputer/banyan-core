@@ -13,4 +13,5 @@ export interface User {
 	displayName: string,
 	locale: string,
 	profileImage: string,
+	acceptedTosAt: number | null,
 }

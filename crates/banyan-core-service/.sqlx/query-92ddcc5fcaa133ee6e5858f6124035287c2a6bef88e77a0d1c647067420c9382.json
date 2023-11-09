@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT \n            id, email, verified_email, display_name, locale, profile_image\n        FROM users\n        WHERE id = $1;",
+  "query": "SELECT *\n            FROM users WHERE id = $1;",
   "describe": {
     "columns": [
       {
@@ -32,6 +32,16 @@
         "name": "profile_image",
         "ordinal": 5,
         "type_info": "Text"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 6,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "accepted_tos_at",
+        "ordinal": 7,
+        "type_info": "Datetime"
       }
     ],
     "parameters": {
@@ -43,8 +53,10 @@
       false,
       false,
       true,
+      true,
+      false,
       true
     ]
   },
-  "hash": "7659b1f6afc0c5a3358e06bff454f48c0e99e84aad17cd1f3450e60906425a9c"
+  "hash": "92ddcc5fcaa133ee6e5858f6124035287c2a6bef88e77a0d1c647067420c9382"
 }
