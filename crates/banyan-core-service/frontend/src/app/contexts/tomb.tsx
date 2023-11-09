@@ -77,6 +77,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 			return await callback(tomb);
 		} catch (err) {
 			console.error('tombMutex', err);
+			setAreBucketsLoading(false);
 		} finally {
 			release();
 		}
@@ -238,6 +239,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 		await tombMutex(bucket.mount, async mount => {
 			await mount.shareWith(bucket_key_id);
 		});
+		await getBucketsKeys();
 	};
 
 	/** Returns list of snapshots for selected bucket */
@@ -250,6 +252,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	/** Deletes access key for bucket */
 	const removeBucketAccess = async (id: string) => {
 		/** TODO:  connect removeBucketAccess method when in will be implemented.  */
+		await getBucketsKeys();
 	};
 
 	const purgeSnapshot = async (id: string) => {
@@ -373,8 +376,8 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 				);
 				setTomb(await tomb);
 			} catch (error: any) {
-                setError(error.message);
-            }
+				setError(error.message);
+			}
 		})();
 	}, [userData, keystoreInitialized, isLoading, escrowedKeyMaterial]);
 
