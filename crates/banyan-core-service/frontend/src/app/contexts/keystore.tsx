@@ -1,4 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
+import { setCookie, parseCookies } from 'nookies';
+
 import ECCKeystore from '@app/utils/crypto/ecc/keystore';
 import { EscrowedKeyMaterial, PrivateKeyMaterial } from '@app/utils/crypto/types';
 import { useSession } from '@/app/contexts/session';
@@ -103,7 +105,8 @@ export const KeystoreProvider = ({ children }: any) => {
 		if (!keystore) {
 			setError('No keystore');
 			throw new Error('Keystore not initialized');
-		}
+		};
+
 		try {
 			if (escrowedKeyMaterial) {
 				privateKeyMaterial = await recoverDevice(passkey);
@@ -212,7 +215,16 @@ export const KeystoreProvider = ({ children }: any) => {
 			.catch((err) => {
 				throw new Error("Error escrowing device: " + err.message);
 			});
-
+		const cookies = parseCookies();
+		const userDataJson = JSON.parse(cookies['_user_data']);
+		setCookie(null, '_user_data', JSON.stringify({
+			...userDataJson, escrowed_key_material: {
+				api_public_key_pem: escrowedKeyMaterial.apiPublicKeyPem,
+				encryption_public_key_pem: escrowedKeyMaterial.encryptionPublicKeyPem,
+				encrypted_private_key_material: escrowedKeyMaterial.encryptedPrivateKeyMaterial,
+				pass_key_salt: escrowedKeyMaterial.passKeySalt
+			}
+		}));
 		return privateKeyMaterial;
 	};
 
