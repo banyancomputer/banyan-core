@@ -13,6 +13,7 @@
     --chart-dark: #352F43;
     --chart-light: #D99C67;
     --context-menu-background: #F4F3F3;
+    --context-menu-hover-background: #e5e5e5;
 }
 
 [prefers-color-scheme="dark"]:root {
@@ -28,5 +29,6 @@
     --red-highlight-color: #F94144;
     --chart-dark: #352F43;
     --chart-light: #D99C67;
-    --context-menu-background: #fff;
+    --context-menu-background: #F4F3F3;
+    --context-menu-hover-background: #e5e5e5;
     }
