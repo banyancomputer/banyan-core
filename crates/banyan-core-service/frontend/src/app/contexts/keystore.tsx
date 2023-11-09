@@ -1,8 +1,8 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { setCookie, parseCookies } from 'nookies';
 
 import ECCKeystore from '@app/utils/crypto/ecc/keystore';
 import { EscrowedKeyMaterial, PrivateKeyMaterial } from '@app/utils/crypto/types';
+import { setUserDataEscrowedKeyMaterial } from '@app/utils/cookies';
 import { useSession } from '@/app/contexts/session';
 import { AuthClient } from '@/api/auth';
 
@@ -211,20 +211,14 @@ export const KeystoreProvider = ({ children }: any) => {
 		// Escrow the user's private key material
 		await api
 			.escrowDevice(escrowedKeyMaterial)
-			.then(() => setEscrowedKeyMaterial(escrowedKeyMaterial))
+			.then(() => {
+				// Set the escrowed key material in the context state and cookies
+				setEscrowedKeyMaterial(escrowedKeyMaterial)
+				setUserDataEscrowedKeyMaterial(escrowedKeyMaterial);
+			})
 			.catch((err) => {
 				throw new Error("Error escrowing device: " + err.message);
 			});
-		const cookies = parseCookies();
-		const userDataJson = JSON.parse(cookies['_user_data']);
-		setCookie(null, '_user_data', JSON.stringify({
-			...userDataJson, escrowed_key_material: {
-				api_public_key_pem: escrowedKeyMaterial.apiPublicKeyPem,
-				encryption_public_key_pem: escrowedKeyMaterial.encryptionPublicKeyPem,
-				encrypted_private_key_material: escrowedKeyMaterial.encryptedPrivateKeyMaterial,
-				pass_key_salt: escrowedKeyMaterial.passKeySalt
-			}
-		}));
 		return privateKeyMaterial;
 	};
 
