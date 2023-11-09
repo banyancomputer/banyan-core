@@ -28,11 +28,11 @@ export const AccountNavigation = () => {
                     {`${messages.account}`}
                 </h2>
             </div>
-            <ul className="flex justify-between p-1.5 rounded-lg bg-mainBackground">
+            <ul className="flex justify-between p-1.5 rounded-lg bg-secondaryBackground">
                 {links.map(link =>
                     <li className="flex-grow" key={link.label}>
                         <Link
-                            className={`flex justify-center w-full py-3 rounded-lg text-xs transition-all ${pathname == link.path && 'bg-secondaryBackground'} `}
+                            className={`flex justify-center w-full py-3 rounded-lg text-xs transition-all ${pathname == link.path && 'bg-mainBackground'} `}
                             to={link.path}
                         >
                             {link.label}
