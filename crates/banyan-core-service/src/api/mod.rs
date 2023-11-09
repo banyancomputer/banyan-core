@@ -5,6 +5,7 @@ mod auth;
 mod blocks;
 mod buckets;
 pub mod models;
+mod users;
 
 use crate::app::AppState;
 
@@ -17,6 +18,7 @@ pub fn router(state: AppState) -> Router<AppState> {
 
     Router::new()
         .nest("/auth", auth::router(state.clone()))
+        .nest("/users", users::router(state.clone()))
         .nest("/blocks", blocks::router(state.clone()))
         .nest("/buckets", buckets::router(state.clone()))
         .with_state(state)
