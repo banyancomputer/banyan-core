@@ -9,6 +9,7 @@ import { downloadDeal, getActiceDeals, proofDeal } from '@app/store/deals/action
 import { getUSDAmount } from '@app/utils/price';
 
 import { ChevronDown, Download } from '@static/images';
+import { Actions } from './Actions';
 
 export const Deal: React.FC<ActiveDeal & { dealsRef: React.MutableRefObject<HTMLDivElement | null>, dealsScroll: number }> =
     ({
@@ -43,7 +44,7 @@ export const Deal: React.FC<ActiveDeal & { dealsRef: React.MutableRefObject<HTML
         };
 
         return (
-            <div className='rounded-xl overflow-hidden border-1 border-tableBorder transition-all' id={id}>
+            <div className='rounded-xl border-1 border-tableBorder transition-all' id={id}>
                 <table className="w-full">
                     <thead className='bg-tableHead text-12'>
                         <tr>
@@ -59,11 +60,7 @@ export const Deal: React.FC<ActiveDeal & { dealsRef: React.MutableRefObject<HTML
                             <td className='py-4 px-3'>{getDealDateLabel(new Date(accepted_at))}</td>
                             <td className='py-4 px-3 capitalize'>{status}</td>
                             <td className='py-4 px-3 cursor-pointer'>
-                                <ActionsCell
-                                    actions={<></>}
-                                    offsetTop={dealsScroll}
-                                    tableRef={dealsRef}
-                                />
+                                <ActionsCell actions={<Actions />}/>
                             </td>
                         </tr>
                     </tbody>

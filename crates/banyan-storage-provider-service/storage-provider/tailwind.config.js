@@ -18,6 +18,7 @@ module.exports = {
         chartDark: "var(--chart-dark)",
         tableBorder: "var(--table-border)",
         contextMenuBackground: "var(--context-menu-background)",
+        contextMenuHoverackground: "var(--context-menu-hover-background)",
       },
       maxHeight: {
         table: "1000px",
