@@ -77,3 +77,7 @@ export const Dots = () => <svg xmlns="http://www.w3.org/2000/svg" width="21" hei
     <path d="M10.4993 4.99967C10.9596 4.99967 11.3327 4.62658 11.3327 4.16634C11.3327 3.7061 10.9596 3.33301 10.4993 3.33301C10.0391 3.33301 9.66602 3.7061 9.66602 4.16634C9.66602 4.62658 10.0391 4.99967 10.4993 4.99967Z" stroke="#0F3A4A" strokeWidth="1.66667" strokeLinecap="round" strokeLinejoin="round" />
     <path d="M10.4993 16.6663C10.9596 16.6663 11.3327 16.2932 11.3327 15.833C11.3327 15.3728 10.9596 14.9997 10.4993 14.9997C10.0391 14.9997 9.66602 15.3728 9.66602 15.833C9.66602 16.2932 10.0391 16.6663 10.4993 16.6663Z" stroke="#0F3A4A" strokeWidth="1.66667" strokeLinecap="round" strokeLinejoin="round" />
 </svg>;
+
+export const Clock = () => <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M17.025 10.125L15.5254 8.625L14.025 10.125M15.75 9C15.75 12.7279 12.7279 15.75 9 15.75C5.27208 15.75 2.25 12.7279 2.25 9C2.25 5.27208 5.27208 2.25 9 2.25C11.4764 2.25 13.6414 3.5836 14.8159 5.57182M9 5.25V9L11.25 10.5" stroke="#5299E0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+</svg>;

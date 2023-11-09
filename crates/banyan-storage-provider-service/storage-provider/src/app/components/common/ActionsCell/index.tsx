@@ -4,19 +4,9 @@ import { popupClickHandler } from '@app/utils/clickHandlers';
 
 import { Dots } from '@static/images';
 
-export const ActionsCell: React.FC<{
-    actions: ReactElement;
-    offsetTop: number;
-    tableRef: React.MutableRefObject<HTMLDivElement | null>;
-}> = ({
-    actions,
-    offsetTop,
-    tableRef,
-}) => {
+export const ActionsCell: React.FC<{ actions: ReactElement; }> = ({ actions }) => {
     const actionsRef = useRef<HTMLDivElement | null>(null);
-    const actionsBodyRef = useRef<HTMLDivElement | null>(null);
     const [isActionsVisible, setIsActionsVisible] = useState(false);
-    const [overflow, setOverflow] = useState(0);
 
     const toggleActionsVisibility = () => {
         setIsActionsVisible(prev => !prev);
@@ -31,16 +21,6 @@ export const ActionsCell: React.FC<{
         };
     }, [actionsRef]);
 
-    useEffect(() => {
-        setIsActionsVisible(false);
-    }, [offsetTop]);
-
-    useEffect(() => {
-        if (!isActionsVisible) { return; }
-        const rect = actionsBodyRef.current?.getBoundingClientRect();
-        setOverflow(window.innerHeight - (rect?.bottom! - tableRef.current?.scrollTop! + 20));
-    }, [actionsBodyRef, tableRef, isActionsVisible, offsetTop]);
-
     return (
         <div
             id="actionsCell"
@@ -52,21 +32,17 @@ export const ActionsCell: React.FC<{
                 <Dots />
             </span>
             {isActionsVisible &&
+                <div className="absolute -top-4 right-6">
                     <div
-                        className="fixed right-14"
-                        ref={actionsBodyRef}
+                        className="relative"
+                        onClick={event => {
+                            event.stopPropagation();
+                            toggleActionsVisibility();
+                        }}
                     >
-                        <div
-                            className="relative"
-                            style={{ top: `-${offsetTop - Math.min(overflow, 0)}px` }}
-                            onClick={event => {
-                                event.stopPropagation();
-                                toggleActionsVisibility();
-                            }}
-                        >
-                            {actions}
-                        </div>
+                        {actions}
                     </div>
+                </div>
             }
         </div>
     );

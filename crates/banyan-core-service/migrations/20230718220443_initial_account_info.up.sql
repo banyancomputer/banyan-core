@@ -20,7 +20,8 @@ CREATE TABLE users (
   locale TEXT,
   profile_image TEXT,
 
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  accepted_tos_at TIMESTAMP
 );
 
 CREATE UNIQUE INDEX idx_unique_users_on_email ON

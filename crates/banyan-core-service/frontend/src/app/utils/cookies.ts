@@ -68,7 +68,8 @@ export const getUserData = (): UserData | null => {
 		verifiedEmail: userDataJson.user.verified_email,
 		displayName: userDataJson.user.display_name,
 		locale: userDataJson.user.locale,
-		profileImage: userDataJson.user.profile_image
+		profileImage: userDataJson.user.profile_image,
+		acceptedTosAt: userDataJson.user.accepted_tos_at
 	} as User;
 
 	return {
