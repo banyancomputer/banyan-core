@@ -58,7 +58,7 @@ jobs:
           # Nightly is needed for code coverage collection
           toolchain: nightly
           override: true
-      # Swatinem/rust-cache@v2 is useful for nightly builds, so just use very basic caching
+      # Swatinem/rust-cache@v2 is not useful for nightly builds, so just use very basic caching
       - uses: actions/cache@v3
         name: Set up cargo cache for nightly tests
         continue-on-error: false
