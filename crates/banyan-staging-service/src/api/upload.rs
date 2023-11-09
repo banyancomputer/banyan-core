@@ -44,13 +44,10 @@ pub async fn handler(
     let mut db = state.database();
     let reported_body_length = content_len.0;
     if reported_body_length > client.remaining_storage() {
-        tracing::warn!(upload_size = ?reported_body_length, remaining_storage = ?client.remaining_storage(), "staging believes the user doesn't have sufficient storage capacity remaining");
-        // Disable storage authorization check, turns out the storage ticket authorizations aren't
-        // getting calculated correctly.
-        //return Err(UploadError::InsufficientAuthorizedStorage(
-        //    reported_body_length,
-        //    client.remaining_storage(),
-        //));
+        return Err(UploadError::InsufficientAuthorizedStorage(
+           reported_body_length,
+           client.remaining_storage(),
+        ));
     }
 
     let mime_ct = mime::Mime::from(content_type);
@@ -385,7 +382,8 @@ impl IntoResponse for UploadError {
                 let err_msg = serde_json::json!({ "msg": format!("{self}") });
                 (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
             }
-            InsufficientAuthorizedStorage(_, _) => {
+            InsufficientAuthorizedStorage(requested_bytes, remaining_bytes) => {
+                tracing::warn!(upload_size = ?requested_bytes, remaining_storage = ?remaining_bytes, "staging believes the user doesn't have sufficient storage capacity remaining");
                 let err_msg = serde_json::json!({ "msg": format!("{self}") });
                 (StatusCode::PAYLOAD_TOO_LARGE, Json(err_msg)).into_response()
             }
