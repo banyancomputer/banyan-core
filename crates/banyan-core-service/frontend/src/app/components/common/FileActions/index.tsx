@@ -1,20 +1,17 @@
 import React, { ReactElement, useMemo } from 'react';
 import { useIntl } from 'react-intl';
-import { FiDownload, FiEdit, FiTrash2 } from 'react-icons/fi';
-import { AiOutlineLink } from 'react-icons/ai';
-import { PiArrowsLeftRight, PiCopySimple } from 'react-icons/pi';
-import { GoDotFill } from 'react-icons/go';
-import { MdDone } from 'react-icons/md';
-import { BiShareAlt } from 'react-icons/bi';
 
 import { MoveToModal } from '../../common/Modal/MoveToModal';
 import { RenameFileModal } from '../../common/Modal/RenameFileModal';
 import { ShareFileModal } from '../Modal/ShareFileModal';
-import { useTomb } from '@/app/contexts/tomb';
+import { DeleteFileModal } from '@/app/components/common/Modal/DeleteFileModal';
+
 import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { useModal } from '@/app/contexts/modals';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
-import { DeleteFileModal } from '@/app/components/common/Modal/DeleteFileModal';
+import { useTomb } from '@/app/contexts/tomb';
+
+import { Copy, Done, Download, LinkIcon, MoveTo, Rename, Share, Trash } from '@static/images/common';
 
 export class Action {
     constructor(
@@ -33,7 +30,7 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BrowserObject; parren
 
     const downloadFile = async () => {
         try {
-            await ToastNotifications.promise(`${messages.downloading}...`, `${messages.fileWasDownloaded}`, <MdDone size="20px" />,
+            await ToastNotifications.promise(`${messages.downloading}...`, `${messages.fileWasDownloaded}`, <Done width="20px" height="20px" />,
                 download(bucket, path, file.name)
             );
         } catch (error: any) { }
@@ -53,7 +50,7 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BrowserObject; parren
     const copy = async () => {
         try {
             await makeCopy(bucket, path, file.name);
-            ToastNotifications.notify(`${messages.copyOf} ${file.name} ${messages.wasCreated}`, <AiOutlineLink size="20px" />);
+            ToastNotifications.notify(`${messages.copyOf} ${file.name} ${messages.wasCreated}`, <LinkIcon width="20px" height="20px" />);
         } catch (error: any) { }
     };
 
@@ -95,16 +92,16 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BrowserObject; parren
         } catch (error: any) { }
     };
 
-    const downloadAction = useMemo(() => new Action(`${messages.download}`, <FiDownload size="18px" />, downloadFile), []);
-    const moveToAction = new Action(`${messages.moveTo}`, <PiArrowsLeftRight size="18px" />, moveTo);
-    const makeCopyAction = new Action(`${messages.makeCopy}`, <PiCopySimple size="18px" />, copy);
-    const vierFileVersionsAction = new Action(`${messages.viewFileVersions}`, <AiOutlineLink size="18px" />, viewFileVersions);
-    const renameAction = new Action(`${messages.rename}`, <FiEdit size="18px" />, rename);
-    const removeAction = new Action(`${messages.remove}`, <FiTrash2 size="18px" />, remove);
-    const shareAction = new Action(`${messages.shareFile}`, <BiShareAlt size="18px" />, share);
+    const downloadAction = useMemo(() => new Action(`${messages.download}`, <Download width="18px" height="18px" />, downloadFile), []);
+    const moveToAction = new Action(`${messages.moveTo}`, <MoveTo width="18px" height="18px" />, moveTo);
+    const makeCopyAction = new Action(`${messages.makeCopy}`, <Copy width="18px" height="18px" />, copy);
+    const vierFileVersionsAction = new Action(`${messages.viewFileVersions}`, <LinkIcon width="18px" height="18px" />, viewFileVersions);
+    const renameAction = new Action(`${messages.rename}`, <Rename width="18px" height="18px" />, rename);
+    const removeAction = new Action(`${messages.remove}`, <Trash width="18px" height="18px" />, remove);
+    const shareAction = new Action(`${messages.shareFile}`, <Share width="18px" height="18px" />, share);
 
     const hotInrecactiveActions = [
-        downloadAction, moveToAction, makeCopyAction, renameAction, removeAction,
+        downloadAction, moveToAction, makeCopyAction, renameAction, removeAction
     ];
     const warmInrecactiveActions = [
         downloadAction, moveToAction, makeCopyAction, renameAction, removeAction,
@@ -146,11 +143,11 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BrowserObject; parren
                 </div>
             )
         }
-        <div
-            className="w-full flex justify-between items-center gap-2 py-2 px-3 border-b-1 border-border-regular transition-all hover:bg-hover"
-        >
-                Your file is secure <GoDotFill fill="#2bb65e" />
-        </div>
+            <div
+                className="w-full flex justify-between items-center gap-2 py-2 px-3 border-b-1 border-border-regular transition-all hover:bg-hover"
+            >
+                Your file is secure <span className='rounded-full w-2 h-2' style={{ background: "#2bb65e" }} />
+            </div>
         </div>
     );
 };

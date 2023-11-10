@@ -1,14 +1,14 @@
-import React, { ReactElement } from 'react';
+import React from 'react';
 import { useIntl } from 'react-intl';
-import { FiTrash2 } from 'react-icons/fi';
-import { PiArrowsLeftRight } from 'react-icons/pi';
 
 import { MoveToModal } from '../../common/Modal/MoveToModal';
-import { Action } from '../../common/FileActions';
-import { useTomb } from '@/app/contexts/tomb';
 import { BrowserObject, Bucket } from '@/app/types/bucket';
+import { Action } from '../../common/FileActions';
+
+import { useTomb } from '@/app/contexts/tomb';
 import { useModal } from '@/app/contexts/modals';
 
+import { MoveTo, Trash } from '@static/images/common';
 
 export const TrashActions: React.FC<{ bucket: Bucket; file: BrowserObject }> = ({ bucket, file }) => {
     const { messages } = useIntl();
@@ -31,8 +31,8 @@ export const TrashActions: React.FC<{ bucket: Bucket; file: BrowserObject }> = (
     };
 
     const acrions = [
-        new Action(`${messages.moveTo}`, <PiArrowsLeftRight size="18px" />, moveTo),
-        new Action(`${messages.remove}`, <FiTrash2 size="18px" />, remove),
+        new Action(`${messages.moveTo}`, <MoveTo width="18px" height="18px" />, moveTo),
+        new Action(`${messages.remove}`, <Trash width="18px" height="18px" />, remove),
     ];
 
     return (

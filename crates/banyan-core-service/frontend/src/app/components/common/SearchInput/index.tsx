@@ -1,7 +1,6 @@
-import React, { ReactElement, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useIntl } from 'react-intl';
-import { IoMdClose } from 'react-icons/io';
-import { FiSearch } from 'react-icons/fi';
 
 import { useTomb } from '@/app/contexts/tomb';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
@@ -9,7 +8,7 @@ import { useFilePreview } from '@/app/contexts/filesPreview';
 import { Bucket } from '@/app/types/bucket';
 
 import { FileIcon } from '../FileIcon';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Close, SearchIcon } from '@static/images/common';
 
 interface SearchOption {
     bucket: Bucket;
@@ -63,7 +62,7 @@ export const SearchInput = React.memo(() => {
     return (
         <div className="flex relative flex-grow max-w-xl">
             <span className="absolute left-4 top-1/2 -translate-y-1/2">
-                <FiSearch size="20px" stroke="#667085" />
+                <SearchIcon />
             </span>
             <input
                 className={'input w-full h-10 py-3 px-4 rounded-xl bg-secondaryBackground border-border-darken  pl-12 focus:outline-none'}
@@ -77,7 +76,7 @@ export const SearchInput = React.memo(() => {
                         className="absolute right-4 top-1/2 -translate-y-1/2 text-text-900 bg-border h-fit rounded-full cursor-pointer"
                         onClick={clearSearch}
                     >
-                        <IoMdClose size="20px" />
+                        <Close />
                     </span>
                     <div
                         className="absolute top-11 left-0 w-full max-h-48 flex flex-col items-stretch z-10 bg-secondaryBackground rounded-lg shadow-md overflow-y-scroll"

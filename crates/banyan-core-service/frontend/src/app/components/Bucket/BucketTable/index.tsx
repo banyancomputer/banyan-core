@@ -11,8 +11,7 @@ import { FileRow } from '@/app/components/common/FileRow';
 import { Bucket } from '@/app/types/bucket';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 
-//@ts-ignore
-import emptyIcon from '@static/images/common/emptyIcon.png';
+import { EmptyIcon } from '@static/images/common';
 
 export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const tableRef = useRef<HTMLDivElement | null>(null);
@@ -134,7 +133,7 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
             </div>
             {!bucketCopy.files.length ?
                 <div className="h-full flex m-12 flex-col items-center justify-center saturate-0">
-                    <img src={emptyIcon} alt="emptyIcon" />
+                    <EmptyIcon />
                     <p className="mt-4">{`${messages.driveIsEmpty}`}</p>
                 </div>
                 :

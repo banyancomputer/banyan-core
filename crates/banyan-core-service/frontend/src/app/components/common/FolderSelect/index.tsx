@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useIntl } from 'react-intl';
-import { FiChevronDown } from 'react-icons/fi';
 
 import { AddNewOption } from '../Select/AddNewOption';
 import { CreateFolderModal } from '../Modal/CreateFolderModal ';
@@ -10,6 +9,8 @@ import { popupClickHandler } from '@/app/utils';
 import { useModal } from '@/app/contexts/modals';
 import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { useTomb } from '@/app/contexts/tomb';
+
+import { ChevronUp } from '@static/images/common';
 
 export interface FolderSelectProps {
     onChange: (option: string[]) => void;
@@ -83,11 +84,9 @@ export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBu
             <span className="overflow-hidden text-ellipsis">
                 /{folder.join('/')}
             </span>
-            <FiChevronDown
-                className={`${isOptionstVisible && 'rotate-180'}`}
-                stroke="#667085"
-                size="20px"
-            />
+            <span className={`${isOptionstVisible? 'rotate-0': 'rotate-180'}`}>
+                <ChevronUp />
+            </span>
             {isOptionstVisible &&
                 <ul
                     onClick={stopPropagation}

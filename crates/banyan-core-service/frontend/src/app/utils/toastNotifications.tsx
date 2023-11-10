@@ -1,8 +1,9 @@
 import { ReactElement } from 'react';
-import { IoMdClose } from 'react-icons/io';
 import { toast } from 'react-toastify';
 
 import { UploadFileProgress } from '@/app/components/common/UploadFileProgress';
+
+import { Close } from '@static/images/common';
 
 /** Defines toast notifications with message, toast type and theme. */
 export class ToastNotifications {
@@ -73,8 +74,8 @@ export class ToastNotifications {
                 </button>
             </div>,
             {
-                icon: <span className="bg-gray-200 p-2 rounded-full">
-                    <IoMdClose size="20px" fill="#4A5578" />
+                icon: <span className="bg-mainBackground p-2 rounded-full">
+                    <Close />
                 </span>,
                 hideProgressBar: true,
                 autoClose: 2000,

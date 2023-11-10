@@ -1,21 +1,20 @@
-import React from 'react';
 import { useIntl } from 'react-intl';
-import { FiTrash2 } from 'react-icons/fi';
 
 import { useModal } from '@/app/contexts/modals';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
+import { Trash } from '@static/images/common';
 
 export const EmptyTrashModal = () => {
     const { closeModal } = useModal();
     const { messages } = useIntl();
 
     const clearTrash = async () => {
-        ToastNotifications.notify(`${messages.trashWasCleaned}`, <FiTrash2 size="20px" />);
+        ToastNotifications.notify(`${messages.trashWasCleaned}`, <Trash width="20px" height="20px" />);
     };
 
     return (
         <div className="w-modal flex flex-col gap-5">
-            <FiTrash2 size="24px" stroke="#5e6c97" />
+            <Trash width="24px" height="24px" />
             <div>
                 <h4 className="text-m font-semibold">{`${messages.deleteBucket}`}</h4>
                 <p className="mt-2 text-text-600">
