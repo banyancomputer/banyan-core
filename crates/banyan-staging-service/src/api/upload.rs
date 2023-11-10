@@ -45,8 +45,8 @@ pub async fn handler(
     let reported_body_length = content_len.0;
     if reported_body_length > client.remaining_storage() {
         return Err(UploadError::InsufficientAuthorizedStorage(
-           reported_body_length,
-           client.remaining_storage(),
+            reported_body_length,
+            client.remaining_storage(),
         ));
     }
 
