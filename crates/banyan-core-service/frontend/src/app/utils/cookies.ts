@@ -76,3 +76,23 @@ export const getUserData = (): UserData | null => {
 		user, escrowedKeyMaterial
 	}
 }
+
+export const setUserDataEscrowedKeyMaterial = (escrowedKeyMaterial: EscrowedKeyMaterial) => {
+	const cookies = parseCookies();
+	if (!cookies[USER_DATA_COOKIE_NAME]) {
+		return;
+	}
+	const userDataJson = JSON.parse(cookies[USER_DATA_COOKIE_NAME]);
+	userDataJson.escrowed_key_material = {
+		api_public_key_pem: escrowedKeyMaterial.apiPublicKeyPem,
+		encryption_public_key_pem: escrowedKeyMaterial.encryptionPublicKeyPem,
+		encrypted_private_key_material: escrowedKeyMaterial.encryptedPrivateKeyMaterial,
+		pass_key_salt: escrowedKeyMaterial.passKeySalt
+	};
+	setCookie(null, USER_DATA_COOKIE_NAME, JSON.stringify(userDataJson), {
+		maxAge: COOKIE_MAX_AGE,
+		lax: process.env.NODE_ENV === 'development',
+		sameSite: 'strict',
+		path: '/',
+	});
+}
