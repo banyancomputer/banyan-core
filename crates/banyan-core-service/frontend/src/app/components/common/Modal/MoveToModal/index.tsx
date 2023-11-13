@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { useIntl } from 'react-intl';
-import { MdDone } from 'react-icons/md';
 
 import { FolderSelect } from '../../FolderSelect';
+
 import { useModal } from '@/app/contexts/modals';
 import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { useTomb } from '@/app/contexts/tomb';
-
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
+
+import { Done } from '@static/images/common';
 
 export const MoveToModal: React.FC<{ file: BrowserObject; bucket: Bucket; path: string[]; parrentFolder: BrowserObject }> = ({ file, bucket, path, parrentFolder }) => {
     const { messages } = useIntl();
@@ -20,7 +21,7 @@ export const MoveToModal: React.FC<{ file: BrowserObject; bucket: Bucket; path: 
     const move = async () => {
         try {
             await moveTo(bucket, [...path, file.name], [...selectedFolder, file.name]);
-            ToastNotifications.notify(`${messages.fileWasMoved}`, <MdDone size="20px" />);
+            ToastNotifications.notify(`${messages.fileWasMoved}`, <Done width="20px" height="20px" />);
             if (path.join('/') === folderLocation.join('/')) {
                 await getSelectedBucketFiles(folderLocation);
                 closeModal();

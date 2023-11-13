@@ -1,10 +1,10 @@
 import React from 'react';
 import { useIntl } from 'react-intl';
-import { FiEdit, FiTrash2, FiUpload } from 'react-icons/fi';
-import { HiOutlineLightningBolt } from 'react-icons/hi';
-import { MdOutlineRestoreFromTrash, MdRestore } from 'react-icons/md';
-import { BsBoxSeam } from 'react-icons/bs';
-import { PiFolderNotchPlusBold } from 'react-icons/pi';
+
+import { BucketSnapshotsModal } from '@/app/components/common/Modal/BucketSnapshotsModal';
+import { RenameBucketModal } from '@/app/components/common/Modal/RenameBucketModal';
+import { DeleteBucketModal } from '@/app/components/common/Modal/DeleteBucketModal';
+import { TakeSnapshotModal } from '@/app/components/common/Modal/TakeSnapshotModal';
 
 import { Action } from '../FileActions';
 import { UploadFileModal } from '../Modal/UploadFileModal';
@@ -13,10 +13,9 @@ import { useModal } from '@/app/contexts/modals';
 import { Bucket } from '@/app/types/bucket';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 
-import { BucketSnapshotsModal } from '@/app/components/common/Modal/BucketSnapshotsModal';
-import { RenameBucketModal } from '@/app/components/common/Modal/RenameBucketModal';
-import { DeleteBucketModal } from '@/app/components/common/Modal/DeleteBucketModal';
-import { TakeSnapshotModal } from '@/app/components/common/Modal/TakeSnapshotModal';
+
+import { Bolt, DeleteHotData, Rename, Trash, Upload, Versions } from '@static/images/common';
+import { Folder } from '@static/images/buckets';
 
 export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const { messages } = useIntl();
@@ -82,19 +81,19 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         } catch (error: any) { }
     };
 
-    const uploadAction = new Action(`${messages.upload}`, <FiUpload size="18px" />, upload);
-    const createSnapshotAction = new Action(`${messages.takeColdSnapshot}`, <HiOutlineLightningBolt size="18px" />, takeSnapshot, `${messages.snapshotTooltip}`);
-    const viewBucketSnapshotsAction = bucket.snapshots.length ? new Action(`${messages.viewColdSnapshots}`, <MdRestore size="18px" />, viewBucketSnapshots) : null;
-    const viewBucketVersionsAction = new Action(`${messages.viewDriveVersions}`, <MdRestore size="18px" />, viewBucketVersions);
-    const renameAction = new Action(`${messages.rename}`, <FiEdit size="18px" />, rename);
-    const createFolderAction = new Action(`${messages.createNewFolder}`, <PiFolderNotchPlusBold size="18px" />, createFolder);
-    const restoreColdVersionAction = new Action(`${messages.restoreCold}`, <MdOutlineRestoreFromTrash size="18px" />, retoreColdVersion);
-    const deleteHotDatadAction = new Action(`${messages.deleteHotData}`, <BsBoxSeam size="18px" />, deleteHotData);
-    const deletedAction = new Action(`${messages.delete}`, <FiTrash2 size="18px" />, deleteBucket);
-    const purgeAction = new Action(`${messages.purgeColdKeys}`, <FiTrash2 size="18px" />, purgeColdKeys);
+    const uploadAction = new Action(`${messages.upload}`, <Upload width="18px" height="18px" />, upload);
+    const createSnapshotAction = new Action(`${messages.takeColdSnapshot}`, <Bolt width="18px" height="18px" />, takeSnapshot, `${messages.snapshotTooltip}`);
+    const viewBucketSnapshotsAction = bucket.snapshots.length ? new Action(`${messages.viewColdSnapshots}`, <Versions width="18px" height="18px" />, viewBucketSnapshots) : null;
+    const viewBucketVersionsAction = new Action(`${messages.viewDriveVersions}`, <Versions width="18px" height="18px" />, viewBucketVersions);
+    const renameAction = new Action(`${messages.rename}`, <Rename width="18px" height="18px" />, rename);
+    const createFolderAction = new Action(`${messages.createNewFolder}`, <Folder width="18px" height="18px" />, createFolder);
+    const restoreColdVersionAction = new Action(`${messages.restoreCold}`, <Versions width="18px" height="18px" />, retoreColdVersion);
+    const deleteHotDatadAction = new Action(`${messages.deleteHotData}`, <DeleteHotData width="18px" height="18px" />, deleteHotData);
+    const deletedAction = new Action(`${messages.delete}`, <Trash width="18px" height="18px" />, deleteBucket);
+    const purgeAction = new Action(`${messages.purgeColdKeys}`, <Trash width="18px" height="18px" />, purgeColdKeys);
 
     const hotInrecactiveActions = [
-        createFolderAction, uploadAction, createSnapshotAction, viewBucketSnapshotsAction, renameAction, deletedAction,
+        createFolderAction, uploadAction, createSnapshotAction, viewBucketSnapshotsAction, renameAction, deletedAction
     ];
     const warmInrecactiveActions = [
         createFolderAction, uploadAction, createSnapshotAction, restoreColdVersionAction, viewBucketVersionsAction, deleteHotDatadAction, purgeAction, deletedAction,

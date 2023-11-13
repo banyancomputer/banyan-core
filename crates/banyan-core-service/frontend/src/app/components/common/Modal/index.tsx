@@ -1,8 +1,9 @@
-import React, { useEffect, useRef } from 'react';
-import { IoMdClose } from 'react-icons/io';
-import { FiArrowLeft } from 'react-icons/fi';
+import React, { useRef } from 'react';
+
 
 import { useModal } from '@/app/contexts/modals';
+
+import { ArrowDown, Close } from '@static/images/common';
 
 export const Modal = () => {
     const modalRef = useRef<HTMLDivElement | null>(null);
@@ -27,8 +28,8 @@ export const Modal = () => {
                         ref={modalRef}
                     >
                         {onBack &&
-                            <button onClick={onBack}>
-                                <FiArrowLeft size="24px" />
+                            <button onClick={onBack} className="rotate-90">
+                                <ArrowDown width="24px" height="24px" />
                             </button>
                         }
                         {!mandatory &&
@@ -36,7 +37,7 @@ export const Modal = () => {
                                 className="absolute right-6 top-6"
                                 onClick={closeModal}
                             >
-                                <IoMdClose fill="#4A5578" size="24px" />
+                                <Close width="24px" height="24px" />
                             </button>
                         }
                         {content}

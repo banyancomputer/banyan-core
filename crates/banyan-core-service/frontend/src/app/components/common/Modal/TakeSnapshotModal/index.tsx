@@ -1,11 +1,12 @@
 import React from 'react';
 import { useIntl } from 'react-intl';
-import { HiOutlineLightningBolt } from 'react-icons/hi';
 
 import { Bucket } from '@/app/types/bucket';
 import { useModal } from '@/app/contexts/modals';
 import { useTomb } from '@/app/contexts/tomb';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
+
+import { Bolt } from '@static/images/common';
 
 export const TakeSnapshotModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const { closeModal } = useModal();
@@ -15,7 +16,7 @@ export const TakeSnapshotModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const takeSnapshot = async () => {
         try {
             await takeColdSnapshot(bucket);
-            ToastNotifications.notify(`${messages.snapshotWasTaken}`, <HiOutlineLightningBolt size="20px" />);
+            ToastNotifications.notify(`${messages.snapshotWasTaken}`, <Bolt width="20px" height="20px" />);
             closeModal();
         } catch (error: any) {
             closeModal();
@@ -26,7 +27,7 @@ export const TakeSnapshotModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     return (
         <div className="w-modal flex flex-col gap-5">
             <span className="p-3 w-min rounded-full bg-button-disabled">
-                <HiOutlineLightningBolt size="24px" />
+                <Bolt width="24px" height="24px" />
             </span>
             <div>
                 <h4 className="text-m font-semibold">{`${messages.takeColdSnapshot}`}</h4>

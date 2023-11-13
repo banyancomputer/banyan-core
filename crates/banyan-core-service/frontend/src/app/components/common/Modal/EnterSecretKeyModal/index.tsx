@@ -1,5 +1,3 @@
-import React, { useState } from 'react';
-import { HiOutlineLightningBolt } from 'react-icons/hi';
 import { useIntl } from 'react-intl';
 import { useForm } from 'react-hook-form';
 
@@ -8,6 +6,8 @@ import { Input } from '../../Input';
 import { useKeystore } from '@/app/contexts/keystore';
 import { useModal } from '@/app/contexts/modals';
 import { validateKeyphrase } from '@/app/utils/validation';
+
+import { Bolt } from '@static/images/common';
 
 export const EnterSecretKeyModal = () => {
 	const { messages } = useIntl();
@@ -41,7 +41,7 @@ export const EnterSecretKeyModal = () => {
 			onSubmit={handleSubmit(confirm)}
 		>
 			<span className="p-3 w-min rounded-full bg-button-disabled">
-				<HiOutlineLightningBolt size="24px" />
+				<Bolt width="24px" height="24px" />
 			</span>
 			<div>
 				<h4 className="text-m font-semibold">{`${messages.inputSecretKey}`}</h4>
