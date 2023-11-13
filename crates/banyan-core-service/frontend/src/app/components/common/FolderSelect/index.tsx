@@ -44,6 +44,7 @@ export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBu
 
     const goAbove = () => {
         setFolder(prev => prev.slice(0, -1));
+        handleSelect(folder.slice(0, -1));
     };
 
     const addNewFolder = () => {
