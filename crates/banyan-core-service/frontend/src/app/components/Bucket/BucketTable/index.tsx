@@ -8,8 +8,9 @@ import { SortCell } from '@/app/components/common/SortCell';
 import { FolderRow } from '@/app/components/common/FolderRow';
 import { FileRow } from '@/app/components/common/FileRow';
 
-import { Bucket } from '@/app/types/bucket';
+import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
+import { sortByType, sortFiles } from '@app/utils';
 
 import { EmptyIcon } from '@static/images/common';
 
@@ -20,7 +21,7 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     /** Created to prevent sotring logic affect initial buckets array */
     const [bucketCopy, setBucketCopy] = useState(bucket);
     const { messages } = useIntl();
-    const [sortState, setSortState] = useState<{ criteria: string; direction: 'ASC' | 'DESC' | '' }>({ criteria: '', direction: '' });
+    const [sortState, setSortState] = useState<{ criteria: string; direction: 'ASC' | 'DESC' | '' }>({ criteria: 'name', direction: 'DESC' });
     const [tableScroll, setTableScroll] = useState(0);
     const folderLocation = useFolderLocation();
 
@@ -29,29 +30,23 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     };
 
     useEffect(() => {
-        if (sortState.criteria === 'name') {
-            setBucketCopy(bucket => {
-                const files = [...bucket.files];
-                files.sort((a, b) => sortState.direction !== 'ASC' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name));
-
-                return { ...bucket, files };
-            });
-        } else {
-            setBucketCopy(bucket => {
-                const files = [...bucket.files];
-                files.sort((a, b) => sortState.direction !== 'ASC' ? Number(a.metadata[sortState.criteria]) - Number(b.metadata[sortState.criteria]) : Number(b.metadata[sortState.criteria]) - Number(a.metadata[sortState.criteria]));
-
-                return { ...bucket, files };
-            });
-        }
+        if (!bucket.files) return;
+        setBucketCopy(bucket => ({
+            ...bucket,
+            files: [...bucket.files].sort((prev: BrowserObject, next: BrowserObject) => sortFiles(prev, next, sortState.criteria, sortState.direction !== 'ASC')).sort(sortByType)
+        }));
     }, [sortState, bucket]);
+
+    useEffect(() => {
+        setSortState(prev => ({ ...prev }));
+    }, [bucketCopy]);
 
     useEffect(() => {
         setBucketCopy(bucket);
     }, [bucket]);
 
     useEffect(() => {
-        setSortState({ criteria: '', direction: '' });
+        setSortState({ criteria: 'name', direction: 'DESC' });
     }, [bucketId]);
 
     useEffect(() => {
@@ -90,7 +85,7 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                             </th>
                             <th className="px-6 py-4 text-left font-medium w-36  ">
                                 <SortCell
-                                    criteria="fileSize"
+                                    criteria="size"
                                     onChange={sort}
                                     sortState={sortState}
                                     text={`${messages.fileSize}`}
@@ -107,7 +102,7 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                     </thead>
                     <tbody>
                         {
-                            bucketCopy.files.map((file, index) =>
+                            bucketCopy.files.map(file =>
                                 file.type === 'dir' ?
                                     <FolderRow
                                         bucket={bucket}
@@ -115,7 +110,7 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                                         tableRef={tableRef}
                                         tableScroll={tableScroll}
                                         path={folderLocation}
-                                        key={index}
+                                        key={file.name}
                                     />
                                     :
                                     <FileRow
@@ -124,7 +119,7 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                                         tableRef={tableRef}
                                         tableScroll={tableScroll}
                                         path={folderLocation}
-                                        key={index}
+                                        key={file.name}
                                     />
                             )
                         }
