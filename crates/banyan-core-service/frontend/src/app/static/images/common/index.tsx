@@ -44,6 +44,11 @@ export const Plus = (params: SVGProps<any>) => <svg width="20" height="20" viewB
     <path d="M16.4583 9.16667H10.4167V3.125C10.4167 2.77982 10.1368 2.5 9.79167 2.5C9.44649 2.5 9.16667 2.77982 9.16667 3.125V9.16667H3.125C2.77982 9.16667 2.5 9.44649 2.5 9.79167C2.5 10.1368 2.77982 10.4167 3.125 10.4167H9.16667V16.4583C9.16667 16.8035 9.44649 17.0833 9.79167 17.0833C10.1368 17.0833 10.4167 16.8035 10.4167 16.4583V10.4167H16.4583C16.8035 10.4167 17.0833 10.1368 17.0833 9.79167C17.0833 9.44649 16.8035 9.16667 16.4583 9.16667Z" fill="currentColor" />
 </svg>;
 
+export const Close = (params: SVGProps<any>) => <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" {...params}>
+    <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" stroke-opacity="0.2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+</svg>;
+
 export const PlusBold = (params: SVGProps<any>) => <svg width="21" height="20" viewBox="0 0 21 20" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M10.4998 4.1665V15.8332M4.6665 9.99984H16.3332" stroke="currentColor" strokeWidth="1.66667" strokeLinecap="round" strokeLinejoin="round" />
 </svg>;
@@ -75,6 +80,7 @@ export const LogoutAlternative = (params: SVGProps<any>) => <svg width="18" heig
 export const ChevronUp = (params: SVGProps<any>) => <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" {...params}>
     <path d="M11.5279 10.4712C11.7883 10.7316 12.2104 10.7316 12.4708 10.4712C12.7311 10.2109 12.7311 9.78878 12.4708 9.52843L8.47075 5.52843C8.2104 5.26808 7.78829 5.26808 7.52795 5.52843L3.52795 9.52843C3.2676 9.78878 3.2676 10.2109 3.52795 10.4712C3.78829 10.7316 4.2104 10.7316 4.47075 10.4712L7.99935 6.94265L11.5279 10.4712Z" fill="currentColor" />
 </svg>;
+
 
 export const ArrowDown = (params: SVGProps<any>) => <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" {...params}>
     <path d="M5.9987 1.33398V10.6673M5.9987 10.6673L10.6654 6.00065M5.9987 10.6673L1.33203 6.00065" stroke="currentColor" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round" />
@@ -124,4 +130,152 @@ export const Dots = (params: SVGProps<any>) => <svg width="20" height="20" viewB
     <path d="M10.0001 16.6666C10.4603 16.6666 10.8334 16.2935 10.8334 15.8333C10.8334 15.373 10.4603 14.9999 10.0001 14.9999C9.53984 14.9999 9.16675 15.373 9.16675 15.8333C9.16675 16.2935 9.53984 16.6666 10.0001 16.6666Z" stroke="currentColor" strokeWidth="1.66667" strokeLinecap="round" strokeLinejoin="round" />
 </svg>;
 
+export const EmptyIcon = (params: SVGProps<any>) => <svg width="220" height="160" viewBox="0 0 220 160" fill="none" xmlns="http://www.w3.org/2000/svg" {...params}>
+    <g>
+        <circle cx="110" cy="80" r="80" fill="#E9D7FE" />
+        <g filter="url(#filter0_dd_1452_37840)">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M113.486 16C96.7495 16 81.9448 24.2701 72.9354 36.9466C69.9934 36.2528 66.9253 35.8857 63.7714 35.8857C41.8063 35.8857 24 53.692 24 75.6571C24 97.6223 41.8063 115.429 63.7714 115.429H163.2C182.42 115.429 198 99.8481 198 80.6286C198 61.4091 182.42 45.8286 163.2 45.8286C161.835 45.8286 160.488 45.9072 159.164 46.0601C151.546 28.3784 133.961 16 113.486 16Z" fill="#F9F5FF" />
+            <circle cx="63.7714" cy="75.6581" r="39.7714" fill="url(#paint0_linear_1452_37840)" />
+            <circle cx="113.484" cy="65.7143" r="49.7143" fill="url(#paint1_linear_1452_37840)" />
+            <circle cx="163.198" cy="80.6281" r="34.8" fill="url(#paint2_linear_1452_37840)" />
+        </g>
+        <g filter="url(#filter1_b_1452_37840)">
+            <rect x="82" y="84" width="56" height="56" rx="28" fill="#6941C6" fill-opacity="0.4" />
+            <path d="M120.5 122.5L116.417 118.417M119.333 111.417C119.333 116.893 114.893 121.333 109.417 121.333C103.94 121.333 99.5 116.893 99.5 111.417C99.5 105.94 103.94 101.5 109.417 101.5C114.893 101.5 119.333 105.94 119.333 111.417Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        </g>
+    </g>
+    <defs>
+        <filter id="filter0_dd_1452_37840" x="4" y="16" width="214" height="139.43" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+            <feFlood flood-opacity="0" result="BackgroundImageFix" />
+            <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha" />
+            <feMorphology radius="4" operator="erode" in="SourceAlpha" result="effect1_dropShadow_1452_37840" />
+            <feOffset dy="8" />
+            <feGaussianBlur stdDeviation="4" />
+            <feColorMatrix type="matrix" values="0 0 0 0 0.0627451 0 0 0 0 0.0941176 0 0 0 0 0.156863 0 0 0 0.03 0" />
+            <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_1452_37840" />
+            <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha" />
+            <feMorphology radius="4" operator="erode" in="SourceAlpha" result="effect2_dropShadow_1452_37840" />
+            <feOffset dy="20" />
+            <feGaussianBlur stdDeviation="12" />
+            <feColorMatrix type="matrix" values="0 0 0 0 0.0627451 0 0 0 0 0.0941176 0 0 0 0 0.156863 0 0 0 0.08 0" />
+            <feBlend mode="normal" in2="effect1_dropShadow_1452_37840" result="effect2_dropShadow_1452_37840" />
+            <feBlend mode="normal" in="SourceGraphic" in2="effect2_dropShadow_1452_37840" result="shape" />
+        </filter>
+        <filter id="filter1_b_1452_37840" x="74" y="76" width="72" height="72" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+            <feFlood flood-opacity="0" result="BackgroundImageFix" />
+            <feGaussianBlur in="BackgroundImageFix" stdDeviation="4" />
+            <feComposite in2="SourceAlpha" operator="in" result="effect1_backgroundBlur_1452_37840" />
+            <feBlend mode="normal" in="SourceGraphic" in2="effect1_backgroundBlur_1452_37840" result="shape" />
+        </filter>
+        <linearGradient id="paint0_linear_1452_37840" x1="33.2326" y1="49.3806" x2="103.543" y2="115.43" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#E9D7FE" />
+            <stop offset="0.350715" stop-color="white" stop-opacity="0" />
+        </linearGradient>
+        <linearGradient id="paint1_linear_1452_37840" x1="75.3103" y1="32.8673" x2="163.198" y2="115.428" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#E9D7FE" />
+            <stop offset="0.350715" stop-color="white" stop-opacity="0" />
+        </linearGradient>
+        <linearGradient id="paint2_linear_1452_37840" x1="136.477" y1="57.6353" x2="197.998" y2="115.428" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#E9D7FE" />
+            <stop offset="0.350715" stop-color="white" stop-opacity="0" />
+        </linearGradient>
+    </defs>
+</svg>;
 
+export const ErrorBannerIcon = () => <svg width="21" height="20" viewBox="0 0 21 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M10.4982 7.50019V10.8335M10.4982 14.1669H10.5065M9.34427 3.24329L2.49019 15.0821C2.11002 15.7388 1.91994 16.0671 1.94803 16.3366C1.97254 16.5716 2.09568 16.7852 2.28681 16.9242C2.50594 17.0835 2.88533 17.0835 3.6441 17.0835H17.3522C18.111 17.0835 18.4904 17.0835 18.7095 16.9242C18.9007 16.7852 19.0238 16.5716 19.0483 16.3366C19.0764 16.0671 18.8863 15.7388 18.5061 15.0821L11.6521 3.24329C11.2733 2.58899 11.0839 2.26184 10.8368 2.15196C10.6212 2.05612 10.3751 2.05612 10.1596 2.15196C9.91248 2.26184 9.72307 2.58899 9.34427 3.24329Z" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
+</svg>;
+
+export const Bolt = (params: SVGProps<any>) => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...params}>
+    <path d="M13.0028 2L4.09625 12.6879C3.74744 13.1064 3.57303 13.3157 3.57037 13.4925C3.56805 13.6461 3.63652 13.7923 3.75605 13.8889C3.89354 14 4.16597 14 4.71083 14H12.0028L11.0028 22L19.9093 11.3121C20.2581 10.8936 20.4325 10.6843 20.4352 10.5075C20.4375 10.3539 20.3691 10.2077 20.2495 10.1111C20.112 10 19.8396 10 19.2948 10H12.0028L13.0028 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+</svg>;
+
+export const Rename = (params: SVGProps<any>) => <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" {...params}>
+    <g clip-path="url(#clip0_3091_22198)">
+        <path d="M8.25 2.99993H5.1C3.83988 2.99993 3.20982 2.99993 2.72852 3.24516C2.30516 3.46088 1.96095 3.80508 1.74524 4.22845C1.5 4.70975 1.5 5.33981 1.5 6.59993V12.8999C1.5 14.16 1.5 14.7901 1.74524 15.2714C1.96095 15.6948 2.30516 16.039 2.72852 16.2547C3.20982 16.4999 3.83988 16.4999 5.1 16.4999H11.4C12.6601 16.4999 13.2902 16.4999 13.7715 16.2547C14.1948 16.039 14.539 15.6948 14.7548 15.2714C15 14.7901 15 14.16 15 12.8999V9.74993M5.99998 11.9999H7.25589C7.62277 11.9999 7.80622 11.9999 7.97885 11.9585C8.1319 11.9217 8.27822 11.8611 8.41243 11.7789C8.5638 11.6861 8.69352 11.5564 8.95294 11.297L16.125 4.12493C16.7463 3.50361 16.7463 2.49625 16.125 1.87493C15.5037 1.25361 14.4963 1.25361 13.875 1.87492L6.70293 9.04698C6.4435 9.30641 6.31378 9.43612 6.22102 9.5875C6.13878 9.72171 6.07817 9.86802 6.04143 10.0211C5.99998 10.1937 5.99998 10.3772 5.99998 10.744V11.9999Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+    </g>
+    <defs>
+        <clipPath id="clip0_3091_22198">
+            <rect width="18" height="18" fill="white" />
+        </clipPath>
+    </defs>
+</svg>;
+
+export const Versions = (params: SVGProps<any>) => <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" {...params}>
+    <path d="M17.025 10.125L15.5254 8.625L14.025 10.125M15.75 9C15.75 12.7279 12.7279 15.75 9 15.75C5.27208 15.75 2.25 12.7279 2.25 9C2.25 5.27208 5.27208 2.25 9 2.25C11.4764 2.25 13.6414 3.5836 14.8159 5.57182M9 5.25V9L11.25 10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+</svg>;
+
+export const Upload = (params: SVGProps<any>) => <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" {...params}>
+    <path d="M2.25 6.75L2.25 5.85C2.25 4.58988 2.25 3.95983 2.49524 3.47852C2.71095 3.05516 3.05516 2.71095 3.47852 2.49524C3.95982 2.25 4.58988 2.25 5.85 2.25L12.15 2.25C13.4101 2.25 14.0402 2.25 14.5215 2.49524C14.9448 2.71095 15.289 3.05516 15.5048 3.47852C15.75 3.95982 15.75 4.58988 15.75 5.85L15.75 6.75M5.25 10.5L9 6.75M9 6.75L12.75 10.5M9 6.75L9 15.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+</svg>;
+
+export const DeleteHotData = (params: SVGProps<any>) => <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" {...params}>
+    <path d="M15.375 5.45825L8.99998 8.99992M8.99998 8.99992L2.62498 5.45825M8.99998 8.99992L9 16.1249M10.5 15.6666L9.58277 16.1762C9.37007 16.2943 9.26372 16.3534 9.15109 16.3766C9.05141 16.3971 8.9486 16.3971 8.84891 16.3766C8.73628 16.3534 8.62993 16.2943 8.41723 16.1762L2.86723 13.0928C2.64259 12.968 2.53026 12.9056 2.44847 12.8169C2.37612 12.7384 2.32136 12.6453 2.28786 12.5439C2.25 12.4293 2.25 12.3008 2.25 12.0439V5.95603C2.25 5.69904 2.25 5.57055 2.28786 5.45595C2.32136 5.35457 2.37612 5.26151 2.44847 5.18299C2.53026 5.09424 2.64259 5.03184 2.86723 4.90704L8.41723 1.8237C8.62993 1.70554 8.73629 1.64645 8.84891 1.62329C8.9486 1.60278 9.05141 1.60278 9.15109 1.62329C9.26372 1.64645 9.37007 1.70553 9.58277 1.8237L15.1328 4.90704C15.3574 5.03184 15.4697 5.09424 15.5515 5.18299C15.6239 5.26151 15.6786 5.35457 15.7121 5.45595C15.75 5.57055 15.75 5.69904 15.75 5.95603V9.74994M5.625 3.37494L12.375 7.12494M12 13.4999H16.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+</svg>;
+
+export const Folder = (params: SVGProps<any>) => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...params}>
+    <path d="M13 7L11.8845 4.76892C11.5634 4.1268 11.4029 3.80573 11.1634 3.57116C10.9516 3.36373 10.6963 3.20597 10.4161 3.10931C10.0992 3 9.74021 3 9.02229 3H5.2C4.0799 3 3.51984 3 3.09202 3.21799C2.71569 3.40973 2.40973 3.71569 2.21799 4.09202C2 4.51984 2 5.0799 2 6.2V7M2 7H17.2C18.8802 7 19.7202 7 20.362 7.32698C20.9265 7.6146 21.3854 8.07354 21.673 8.63803C22 9.27976 22 10.1198 22 11.8V16.2C22 17.8802 22 18.7202 21.673 19.362C21.3854 19.9265 20.9265 20.3854 20.362 20.673C19.7202 21 18.8802 21 17.2 21H6.8C5.11984 21 4.27976 21 3.63803 20.673C3.07354 20.3854 2.6146 19.9265 2.32698 19.362C2 18.7202 2 17.8802 2 16.2V7Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+</svg>;
+
+export const Download = (params: SVGProps<any>) => <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" {...params}>
+    <path d="M15.75 11.25V12.15C15.75 13.4101 15.75 14.0402 15.5048 14.5215C15.289 14.9448 14.9448 15.289 14.5215 15.5048C14.0402 15.75 13.4101 15.75 12.15 15.75H5.85C4.58988 15.75 3.95982 15.75 3.47852 15.5048C3.05516 15.289 2.71095 14.9448 2.49524 14.5215C2.25 14.0402 2.25 13.4101 2.25 12.15V11.25M12.75 7.5L9 11.25M9 11.25L5.25 7.5M9 11.25V2.25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+</svg>;
+
+export const Copy = (params: SVGProps<any>) => <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" {...params}>
+    <path d="M5.625 2.25H10.95C12.6302 2.25 13.4702 2.25 14.112 2.57698C14.6765 2.8646 15.1354 3.32354 15.423 3.88803C15.75 4.52976 15.75 5.36984 15.75 7.05V12.375M4.65 15.75H10.725C11.5651 15.75 11.9851 15.75 12.306 15.5865C12.5882 15.4427 12.8177 15.2132 12.9615 14.931C13.125 14.6101 13.125 14.1901 13.125 13.35V7.275C13.125 6.43492 13.125 6.01488 12.9615 5.69401C12.8177 5.41177 12.5882 5.1823 12.306 5.03849C11.9851 4.875 11.5651 4.875 10.725 4.875H4.65C3.80992 4.875 3.38988 4.875 3.06901 5.03849C2.78677 5.1823 2.5573 5.41177 2.41349 5.69401C2.25 6.01488 2.25 6.43492 2.25 7.275V13.35C2.25 14.1901 2.25 14.6101 2.41349 14.931C2.5573 15.2132 2.78677 15.4427 3.06901 15.5865C3.38988 15.75 3.80992 15.75 4.65 15.75Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+</svg>;
+
+export const MoveTo = (params: SVGProps<any>) => <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" {...params}>
+    <path d="M15 12.75H3M3 12.75L6 9.75M3 12.75L6 15.75M3 5.25H15M15 5.25L12 2.25M15 5.25L12 8.25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+</svg>;
+
+export const Share = (params: SVGProps<any>) => <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" {...params}>
+    <g clip-path="url(#clip0_3091_33015)">
+        <path d="M13.5 12.06C12.93 12.06 12.42 12.285 12.03 12.6375L6.6825 9.525C6.72 9.3525 6.75 9.18 6.75 9C6.75 8.82 6.72 8.6475 6.6825 8.475L11.97 5.3925C12.375 5.7675 12.9075 6 13.5 6C14.745 6 15.75 4.995 15.75 3.75C15.75 2.505 14.745 1.5 13.5 1.5C12.255 1.5 11.25 2.505 11.25 3.75C11.25 3.93 11.28 4.1025 11.3175 4.275L6.03 7.3575C5.625 6.9825 5.0925 6.75 4.5 6.75C3.255 6.75 2.25 7.755 2.25 9C2.25 10.245 3.255 11.25 4.5 11.25C5.0925 11.25 5.625 11.0175 6.03 10.6425L11.37 13.7625C11.3325 13.92 11.31 14.085 11.31 14.25C11.31 15.4575 12.2925 16.44 13.5 16.44C14.7075 16.44 15.69 15.4575 15.69 14.25C15.69 13.0425 14.7075 12.06 13.5 12.06ZM13.5 3C13.9125 3 14.25 3.3375 14.25 3.75C14.25 4.1625 13.9125 4.5 13.5 4.5C13.0875 4.5 12.75 4.1625 12.75 3.75C12.75 3.3375 13.0875 3 13.5 3ZM4.5 9.75C4.0875 9.75 3.75 9.4125 3.75 9C3.75 8.5875 4.0875 8.25 4.5 8.25C4.9125 8.25 5.25 8.5875 5.25 9C5.25 9.4125 4.9125 9.75 4.5 9.75ZM13.5 15.015C13.0875 15.015 12.75 14.6775 12.75 14.265C12.75 13.8525 13.0875 13.515 13.5 13.515C13.9125 13.515 14.25 13.8525 14.25 14.265C14.25 14.6775 13.9125 15.015 13.5 15.015Z" fill="currentColor" />
+    </g>
+    <defs>
+        <clipPath id="clip0_3091_33015">
+            <rect width="18" height="18" fill="white" />
+        </clipPath>
+    </defs>
+</svg>;
+
+export const LinkIcon = (params: SVGProps<any>) => <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" {...params}>
+    <path d="M9.53067 13.7728L8.47001 14.8335C7.00554 16.2979 4.63118 16.2979 3.16671 14.8335C1.70224 13.369 1.70224 10.9946 3.16671 9.53018L4.22737 8.46952M13.7733 9.53018L14.834 8.46952C16.2984 7.00506 16.2984 4.63069 14.834 3.16622C13.3695 1.70175 10.9951 1.70175 9.53067 3.16622L8.47001 4.22688M6.37534 11.6248L11.6253 6.37484" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+</svg>;
+
+export const Done = (params: SVGProps<any>) => <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" {...params}>
+    <path d="M16.6668 5L7.50016 14.1667L3.3335 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+</svg>;
+
+export const TextFileIcon = (params: SVGProps<any>) => <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" {...params}>
+    <path d="M11.6663 9.16602H6.66634M8.33301 12.4993H6.66634M13.333 5.83268H6.66634M16.6663 5.66602V14.3327C16.6663 15.7328 16.6663 16.4329 16.3939 16.9677C16.1542 17.4381 15.7717 17.8205 15.3013 18.0602C14.7665 18.3327 14.0665 18.3327 12.6663 18.3327H7.33301C5.93288 18.3327 5.23281 18.3327 4.69803 18.0602C4.22763 17.8205 3.84517 17.4381 3.60549 16.9677C3.33301 16.4329 3.33301 15.7328 3.33301 14.3327V5.66602C3.33301 4.26588 3.33301 3.56582 3.60549 3.03104C3.84517 2.56063 4.22763 2.17818 4.69803 1.9385C5.23281 1.66602 5.93288 1.66602 7.33301 1.66602H12.6663C14.0665 1.66602 14.7665 1.66602 15.3013 1.9385C15.7717 2.17818 16.1542 2.56063 16.3939 3.03104C16.6663 3.56582 16.6663 4.26588 16.6663 5.66602Z" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
+</svg>;
+
+export const VideoFileIcon = (params: SVGProps<any>) => <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" {...params}>
+    <g clip-path="url(#clip0_2873_22857)">
+        <path d="M10.0001 18.3327V1.66602M5.83342 18.3327V14.166M5.83341 5.83268V1.66602M14.1667 18.3327V14.166M14.1667 5.83268V1.66602M1.66675 5.83268H18.3334M1.66675 14.166H18.3334M18.3334 14.3327V5.66602C18.3334 4.26588 18.3334 3.56582 18.0609 3.03104C17.8212 2.56063 17.4388 2.17818 16.9684 1.9385C16.4336 1.66602 15.7335 1.66602 14.3334 1.66602L5.66675 1.66602C4.26662 1.66602 3.56655 1.66602 3.03177 1.9385C2.56137 2.17818 2.17892 2.56063 1.93923 3.03104C1.66675 3.56582 1.66675 4.26588 1.66675 5.66602L1.66675 14.3327C1.66675 15.7328 1.66675 16.4329 1.93923 16.9677C2.17892 17.4381 2.56137 17.8205 3.03177 18.0602C3.56655 18.3327 4.26662 18.3327 5.66675 18.3327H14.3334C15.7335 18.3327 16.4336 18.3327 16.9684 18.0602C17.4388 17.8205 17.8212 17.4381 18.0609 16.9677C18.3334 16.4329 18.3334 15.7328 18.3334 14.3327Z" stroke="currendColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
+    </g>
+    <defs>
+        <clipPath id="clip0_2873_22857">
+            <rect width="20" height="20" fill="white" />
+        </clipPath>
+    </defs>
+</svg>;
+
+export const CommonFileIcon = (params: SVGProps<any>) => <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" {...params}>
+    <path d="M11.6666 1.89057V5.33268C11.6666 5.79939 11.6666 6.03275 11.7574 6.21101C11.8373 6.36781 11.9648 6.49529 12.1216 6.57519C12.2999 6.66602 12.5332 6.66602 12.9999 6.66602H16.442M16.6666 8.32287V14.3327C16.6666 15.7328 16.6666 16.4329 16.3941 16.9677C16.1544 17.4381 15.772 17.8205 15.3016 18.0602C14.7668 18.3327 14.0667 18.3327 12.6666 18.3327H7.33325C5.93312 18.3327 5.23306 18.3327 4.69828 18.0602C4.22787 17.8205 3.84542 17.4381 3.60574 16.9677C3.33325 16.4329 3.33325 15.7328 3.33325 14.3327V5.66602C3.33325 4.26588 3.33325 3.56582 3.60574 3.03104C3.84542 2.56063 4.22787 2.17818 4.69828 1.9385C5.23306 1.66602 5.93312 1.66602 7.33325 1.66602H10.0097C10.6212 1.66602 10.9269 1.66602 11.2147 1.73509C11.4698 1.79633 11.7136 1.89734 11.9373 2.03442C12.1896 2.18902 12.4058 2.40521 12.8382 2.83759L15.495 5.49444C15.9274 5.92682 16.1436 6.14301 16.2982 6.3953C16.4353 6.61898 16.5363 6.86285 16.5975 7.11794C16.6666 7.40566 16.6666 7.71139 16.6666 8.32287Z" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
+</svg>;
+
+export const ImageFileIcon = (params: SVGProps<any>) => <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" {...params}>
+    <path d="M13.5 17.5H5.77614C5.2713 17.5 5.01887 17.5 4.90199 17.4002C4.80056 17.3135 4.74674 17.1836 4.75721 17.0506C4.76927 16.8974 4.94776 16.7189 5.30474 16.3619L12.3905 9.27614C12.7205 8.94613 12.8855 8.78112 13.0758 8.7193C13.2432 8.66492 13.4235 8.66492 13.5908 8.7193C13.7811 8.78112 13.9461 8.94613 14.2761 9.27614L17.5 12.5V13.5M13.5 17.5C14.9001 17.5 15.6002 17.5 16.135 17.2275C16.6054 16.9878 16.9878 16.6054 17.2275 16.135C17.5 15.6002 17.5 14.9001 17.5 13.5M13.5 17.5H6.5C5.09987 17.5 4.3998 17.5 3.86502 17.2275C3.39462 16.9878 3.01217 16.6054 2.77248 16.135C2.5 15.6002 2.5 14.9001 2.5 13.5V6.5C2.5 5.09987 2.5 4.3998 2.77248 3.86502C3.01217 3.39462 3.39462 3.01217 3.86502 2.77248C4.3998 2.5 5.09987 2.5 6.5 2.5H13.5C14.9001 2.5 15.6002 2.5 16.135 2.77248C16.6054 3.01217 16.9878 3.39462 17.2275 3.86502C17.5 4.3998 17.5 5.09987 17.5 6.5V13.5M8.75 7.08333C8.75 8.00381 8.00381 8.75 7.08333 8.75C6.16286 8.75 5.41667 8.00381 5.41667 7.08333C5.41667 6.16286 6.16286 5.41667 7.08333 5.41667C8.00381 5.41667 8.75 6.16286 8.75 7.08333Z" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
+</svg>;
+
+export const Spinner = (params: SVGProps<any>) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" {...params}>
+    <path className="bg" d="M16 0a16 16 0 0 0 0 32 16 16 0 0 0 0-32m0 4a12 12 0 0 1 0 24 12 12 0 0 1 0-24" fill="#ffffff00" />
+    <path className="fg" d="M16 0a16 16 0 0 1 16 16h-4A12 12 0 0 0 16 4V0zm0 32A16 16 0 0 1 0 16h4a12 12 0 0 0 12 12v4z" fill="#currentColor" />
+</svg>;
+
+export const SearchIcon = (params: SVGProps<any>) => <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" {...params}>
+    <path d="M17.5 17.5L14.5834 14.5833M16.6667 9.58333C16.6667 13.4954 13.4954 16.6667 9.58333 16.6667C5.67132 16.6667 2.5 13.4954 2.5 9.58333C2.5 5.67132 5.67132 2.5 9.58333 2.5C13.4954 2.5 16.6667 5.67132 16.6667 9.58333Z" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
+</svg>;

@@ -1,12 +1,13 @@
 import React, { useRef } from 'react';
 // @ts-ignore
 import FilePreviewer from 'react-file-previewer';
-import { FiArrowLeft } from 'react-icons/fi';
 import { useIntl } from 'react-intl';
 
 import { Loader } from '../Loader';
 
 import { SUPPORTED_EXTENSIONS, useFilePreview } from '@/app/contexts/filesPreview';
+
+import { ArrowDown } from '@static/images/common';
 
 export const FilePreview = () => {
     const { file, closeFile } = useFilePreview();
@@ -32,7 +33,9 @@ export const FilePreview = () => {
                         onClick={close}
                         className="absolute left-12 top-20 flex items-center gap-3 text-white font-semibold"
                     >
-                        <FiArrowLeft size="24px" />
+                        <span className='rotate-90'>
+                            <ArrowDown width="24px" height="24px" />
+                        </span>
                         {`${messages.backToFiles}`}
                     </button>
                     <div

@@ -1,12 +1,13 @@
 import React from 'react';
 import { useIntl } from 'react-intl';
-import { FiTrash2 } from 'react-icons/fi';
 
 import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { useModal } from '@/app/contexts/modals';
 import { useTomb } from '@/app/contexts/tomb';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
+
+import { Trash } from '@static/images/common';
 
 export const DeleteFileModal: React.FC<{ bucket: Bucket; file: BrowserObject; path: string[]; parrentFolder: BrowserObject }> = ({ bucket, file, path, parrentFolder }) => {
     const { closeModal } = useModal();
@@ -23,7 +24,7 @@ export const DeleteFileModal: React.FC<{ bucket: Bucket; file: BrowserObject; pa
                 await getExpandedFolderFiles(path, parrentFolder, bucket);
             };
             closeModal();
-            ToastNotifications.notify(`${messages.file} "${file.name}" ${messages.wasDeleted}`, <FiTrash2 size="20px" />);
+            ToastNotifications.notify(`${messages.file} "${file.name}" ${messages.wasDeleted}`, <Trash width="20px" height="20px" />);
         } catch (error: any) {
             ToastNotifications.error(`${messages.deletionError}`, `${messages.tryAgain}`, removeFile);
         };
@@ -31,7 +32,7 @@ export const DeleteFileModal: React.FC<{ bucket: Bucket; file: BrowserObject; pa
 
     return (
         <div className="w-modal flex flex-col gap-5">
-            <FiTrash2 size="24px" stroke="#5e6c97" />
+            <Trash width="24px" height="24px" />
             <div>
                 <h4 className="text-m font-semibold">{`${messages.removeFile}`}</h4>
                 <p className="mt-2 text-text-600">

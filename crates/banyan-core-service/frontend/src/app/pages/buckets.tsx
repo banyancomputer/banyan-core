@@ -8,9 +8,7 @@ import { Bucket } from '@/app/components/Buckets/Bucket';
 import { useTomb } from '@/app/contexts/tomb';
 import { useModal } from '@/app/contexts/modals';
 
-//@ts-ignore
-import emptyIcon from '@static/images/common/emptyIcon.png';
-import { PlusBold } from '@static/images/common';
+import { EmptyIcon, PlusBold } from '@static/images/common';
 
 const Buckets = () => {
     const { openModal } = useModal();
@@ -54,7 +52,7 @@ const Buckets = () => {
                     </div>
                     :
                     <div className="h-full flex flex-col items-center justify-center saturate-0">
-                        <img src={emptyIcon} alt="emptyIcon" />
+                        <EmptyIcon />
                         <p className="mt-4">{`${messages.noDrives}`}</p>
                     </div>
                 }

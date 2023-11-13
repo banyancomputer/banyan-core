@@ -10,7 +10,7 @@ import {
 } from '@/app/types/bucket';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 import { useSession } from './session';
-import { prettyFingerprintApiKeyPem } from '@app/utils';
+import { prettyFingerprintApiKeyPem, sortByType } from '@app/utils';
 
 interface TombInterface {
 	tomb: TombWasm | null;
@@ -22,7 +22,7 @@ interface TombInterface {
 	areBucketsLoading: boolean;
 	selectedBucket: Bucket | null;
 	error: string;
-    setError: React.Dispatch<React.SetStateAction<string>>;
+	setError: React.Dispatch<React.SetStateAction<string>>;
 	getBuckets: () => Promise<void>;
 	getBucketsFiles: () => Promise<void>;
 	getBucketsKeys: () => Promise<void>;
@@ -153,7 +153,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 		tombMutex(selectedBucket!.mount, async mount => {
 			setAreBucketsLoading(true);
 			const files = await mount.ls(path);
-			await setSelectedBucket(bucket => bucket ? { ...bucket, files } : bucket);
+			await setSelectedBucket(bucket => ({...bucket!, files: files.sort(sortByType)}));
 			setAreBucketsLoading(false);
 		});
 	};
@@ -162,7 +162,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 		await tombMutex(selectedBucket!.mount, async mount => {
 			const files = await mount.ls(path);
 			folder.files = files;
-			selectBucket({ ...bucket });
+			setSelectedBucket(prev => ({ ...prev! }));
 		});
 	};
 
@@ -291,7 +291,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 			await mount.mkdir([...path, name]);
 			if (path.join('') !== folderLocation.join('')) { return; }
 			const files = await mount.ls(path) || [];
-			await updateBucketsState('files', files, bucket.id);
+			await updateBucketsState('files', files.sort(sortByType), bucket.id);
 		});
 	};
 
@@ -313,7 +313,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 				if (folder) {
 					const files = await mount.ls(uploadPath);
 					folder.files = files;
-					selectBucket({ ...bucket });
+					setSelectedBucket(prev => ({ ...prev! }));
 
 					return;
 				}

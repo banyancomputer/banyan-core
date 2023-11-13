@@ -8,5 +8,4 @@ const Account = () =>
         <Outlet />
     </section>;
 
-
 export default Account;

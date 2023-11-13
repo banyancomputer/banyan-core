@@ -3,7 +3,6 @@ import React, { ReactElement, useEffect, useRef, useState } from 'react';
 import { Dots } from '@static/images/common';
 import { popupClickHandler } from '@/app/utils';
 
-
 export const ActionsCell: React.FC<{
     actions: ReactElement;
     offsetTop: number;

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { IoMdClose } from 'react-icons/io';
+
+import { Close } from '@static/images/common';
 
 export const ErrorBanner: React.FC<{ title: string; description: string }> = ({ description, title }) => {
     const [isVisible, setIsVisible] = useState(true);
@@ -16,7 +17,7 @@ export const ErrorBanner: React.FC<{ title: string; description: string }> = ({ 
                         onClick={toggleStorageVisibility}
                         className="absolute right-4 top-5"
                     >
-                        <IoMdClose size="20px" />
+                        <Close />
                     </button>
                     <h4 className="mb-1 text-xs font-semibold">{title}</h4>
                     <p className="text-xs">{description}</p>

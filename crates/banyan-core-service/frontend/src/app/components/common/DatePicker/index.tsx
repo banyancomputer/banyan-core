@@ -1,8 +1,10 @@
 import React, { ReactElement, useEffect, useRef, useState } from 'react';
-import { FiChevronDown } from 'react-icons/fi';
-import { popupClickHandler } from '@/app/utils';
 // @ts-ignore
 import { DateRange } from 'react-date-range';
+
+import { popupClickHandler } from '@/app/utils';
+
+import { ChevronUp } from '@static/images/common';
 
 export interface SelectProps {
     from: Date;
@@ -38,17 +40,15 @@ export const DatePicker: React.FC<SelectProps> = ({ onChange, from, to, classNam
         <div
             ref={datePickerRef}
             onClick={toggleSelect}
-            className={`relative p-2.5 flex justify-between items-center text-sm font-medium border-1 border-border-darken rounded-lg shadow-sm cursor-pointer select-none ${className}`}
+            className={`relative p-2.5 flex justify-between items-center gap-2 text-sm font-medium border-1 border-border-darken rounded-lg shadow-sm cursor-pointer select-none text-text-900 ${className}`}
         >
             {`${from?.toLocaleDateString()} - ${to?.toLocaleDateString()}`}
-            <FiChevronDown
-                className={`${isOptionstVisible && 'rotate-180'}`}
-                stroke="#667085"
-                size="20px"
-            />
+            <span className={`${isOptionstVisible? 'rotate-0': 'rotate-180'}`}>
+                <ChevronUp />
+            </span>
             {isOptionstVisible &&
                 <div
-                    className="absolute right-0 top-12 border-1 border-border-darken rounded-lg shadow-sm overflow-hidden"
+                    className="absolute right-0 top-14 border-1 border-border-darken rounded-lg shadow-sm overflow-hidden"
                     onClick={stopPropagation}
                 >
                     <DateRange
