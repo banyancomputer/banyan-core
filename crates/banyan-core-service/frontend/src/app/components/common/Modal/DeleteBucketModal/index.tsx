@@ -1,11 +1,12 @@
 import React from 'react';
 import { useIntl } from 'react-intl';
-import { FiTrash2 } from 'react-icons/fi';
 
 import { Bucket } from '@/app/types/bucket';
 import { useModal } from '@/app/contexts/modals';
 import { useTomb } from '@/app/contexts/tomb';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
+
+import { Trash } from '@static/images/common';
 
 export const DeleteBucketModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const { closeModal } = useModal();
@@ -16,7 +17,7 @@ export const DeleteBucketModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         try {
             await deleteBucket(bucket.id);
             closeModal();
-            ToastNotifications.notify(`${messages.drive} "${bucket.name}" ${messages.wasDeleted}`, <FiTrash2 size="20px" />);
+            ToastNotifications.notify(`${messages.drive} "${bucket.name}" ${messages.wasDeleted}`,<Trash width="20px" height="20px" />);
         } catch (error: any) {
             ToastNotifications.error(`${messages.deletionError}`, `${messages.tryAgain}`, removeBucket);
             closeModal();
@@ -25,7 +26,7 @@ export const DeleteBucketModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
 
     return (
         <div className="w-modal flex flex-col gap-5">
-            <FiTrash2 size="24px" stroke="#5e6c97" />
+            <Trash width="24px" height="24px" />
             <div>
                 <h4 className="text-m font-semibold">{`${messages.deleteBucket}`}</h4>
                 <p className="mt-2 text-text-600">

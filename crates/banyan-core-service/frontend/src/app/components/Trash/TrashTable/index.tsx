@@ -1,14 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useIntl } from 'react-intl';
 
-import { Bucket, BrowserObject } from '@/app/types/bucket';
-import { getDateLabel } from '@/app/utils/date';
-import { convertFileSize } from '@/app/utils/storage';
-
 import { ActionsCell } from '@components/common/ActionsCell';
 import { TrashActions } from '../TrashFileActions';
 import { FileIcon } from '@/app/components/common/FileIcon';
 import { SortCell } from '@/app/components/common/SortCell';
+
+import { Bucket, BrowserObject } from '@/app/types/bucket';
+import { getDateLabel } from '@/app/utils/date';
+import { convertFileSize } from '@/app/utils/storage';
 
 export const TrashTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const tableRef = useRef<HTMLDivElement | null>(null);

@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useIntl } from 'react-intl';
-import { MdDone } from 'react-icons/md';
 
 import { useModal } from '@/app/contexts/modals';
 import { Bucket } from '@/app/types/bucket';
 import { useTomb } from '@/app/contexts/tomb';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
+
+import { Done } from '@static/images/common';
 
 export const RenameBucketModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const { closeModal } = useModal();
@@ -16,7 +17,7 @@ export const RenameBucketModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const rename = async () => {
         try {
             /** TODO: add rename function after it will be added into tomb-wasm */
-            ToastNotifications.notify(`${messages.drive} "${bucket.name}" ${messages.wasRenamed}`, <MdDone size="20px" />);
+            ToastNotifications.notify(`${messages.drive} "${bucket.name}" ${messages.wasRenamed}`, <Done width="20px" height="20px" />);
         } catch (error: any) { };
     };
 

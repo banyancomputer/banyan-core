@@ -1,11 +1,11 @@
 import React from 'react';
 import { useIntl } from 'react-intl';
-import { MdDone } from 'react-icons/md';
 
 import { Loader } from '../Loader';
 import { FileIcon } from '../FileIcon';
 
 import { useFilesUpload } from '@/app/contexts/filesUpload';
+import { Done } from '@static/images/common';
 
 export const UploadFileProgress = () => {
     const { messages } = useIntl();
@@ -22,12 +22,12 @@ export const UploadFileProgress = () => {
                         className="flex items-center px-3 py-2 gap-2 text-xs font-normal text-text-800"
                         key={file.file.name}
                     >
-                        <FileIcon size="20px" fileName={file.file.name} />
+                        <FileIcon fileName={file.file.name} />
                         <span className="flex-grow text-text-900">{file.file.name}</span>
                         <span className="w-5 h-5">
                             {file.isUploaded ?
                                 <span className="flex items-center justify-center p-1 bg-gray-800 text-white rounded-full">
-                                    <MdDone size="12px" />
+                                    <Done width="12px" height="12px" />
                                 </span>
                                 :
                                 <Loader spinnerSize="20px" containerHeight="100%" />

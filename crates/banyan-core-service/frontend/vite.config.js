@@ -44,7 +44,7 @@ export default ({ mode }) => {
 			port: 3000,
 		},
 		build: {
-			minify: "esbuild",
+			minify: isProduction ? "esbuild": false,
 			outDir: path.resolve(__dirname, "../dist/"),
 			cssCodeSplit: false,
 		},
@@ -58,6 +58,6 @@ export default ({ mode }) => {
 			},
 		},
 		clean: true,
-		minify: true,
+		minify: isProduction,
 	});
 };

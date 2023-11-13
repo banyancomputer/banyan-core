@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useIntl } from 'react-intl';
-import { FiChevronRight } from 'react-icons/fi';
 import { Bucket } from './Bucket';
 import { DatePicker } from '@/app/components/common/DatePicker';
+import { ChevronUp } from '@static/images/common';
 
 export interface BucketBillingInfo {
     name: string;
@@ -72,10 +72,10 @@ export const BillingHistory = () => {
             <div className="flex items-center justify-between ">
                 <h3 className="font-semibold mb-1.5">{`${messages.billingHistory}`}</h3>
                 <button
-                    className={`text-text-600 ${isVisible && 'rotate-90'}`}
+                    className={`text-text-600 ${isVisible ? 'rotate-180' : 'rotate-90'}`}
                     onClick={() => setIsVisible(prev => !prev)}
                 >
-                    <FiChevronRight size="20px" />
+                    <ChevronUp  width="20px" height="20px"/>
                 </button>
             </div>
             {isVisible &&

@@ -1,7 +1,7 @@
 import React, { ReactElement, useEffect, useRef, useState } from 'react';
-import { MdDone } from 'react-icons/md';
 import { popupClickHandler } from '@/app/utils';
-import { ChevronUp } from '@static/images/common';
+
+import { ChevronUp, Done } from '@static/images/common';
 
 export class Selectoption {
     constructor(
@@ -66,7 +66,7 @@ export const Select: React.FC<SelectProps> = ({ initialOption, onChange, options
                             onClick={() => handleSelect(option)}
                         >
                             {option.label}
-                            {selectedOption === option.value && <MdDone stroke="#667085" size="20px" />}
+                            {selectedOption === option.value && <Done width="20px" height="20px" />}
                         </li>
                     )}
                 </ul>
