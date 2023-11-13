@@ -484,9 +484,10 @@ where
     Ok((hash.to_string(), bytes_written))
 }
 
-#[derive(sqlx::FromRow)]
+#[derive(sqlx::FromRow, Clone, Debug)]
 struct UniqueBlockLocation {
     block_id: String,
+    normalized_cid: String,
     metadata_id: String,
     storage_host_id: String,
 }
@@ -500,75 +501,111 @@ async fn expire_deleted_blocks(
     let user_id = user_identity.id().to_string();
     let bucket_id = bucket_id.to_string();
     let mut prune_blocks_tasks_map: HashMap<Uuid, Vec<PruneBlock>> = HashMap::new();
+
+    // Check if block set is empty
+    if request.deleted_block_cids.is_empty() {
+        return Ok(());
+    }
+
+    // Begin a transaction
     let mut transaction = database
         .begin()
         .await
         .map_err(PushMetadataError::UnableToExpireBlocks)?;
-    for original_cid in request.deleted_block_cids.clone() {
-        let normalized_cid = Cid::from_str(&original_cid)
-            .map_err(PushMetadataError::InvalidCid)?
-            .to_string_of_base(Base::Base64Url)
-            .map_err(PushMetadataError::InvalidCid)?;
 
-        // Get all the unique blocks locations for this CID [(block_id, metadata_id, storage_host_id)]
-        let unique_block_locations = sqlx::query_as!(
-            UniqueBlockLocation,
-            r#"SELECT blocks.id AS block_id, m.id AS metadata_id, sh.id AS storage_host_id
-                FROM block_locations AS bl
-                JOIN blocks ON blocks.id = bl.block_id
-                JOIN storage_hosts AS sh ON sh.id = bl.storage_host_id
-                JOIN metadata AS m ON m.id = bl.metadata_id
-                JOIN buckets AS b ON b.id = m.bucket_id
-                WHERE b.user_id = $1 AND b.id = $2 AND blocks.cid = $3;"#,
-            user_id,
-            bucket_id,
-            normalized_cid,
-        )
+    // Extract the CIDs from the request
+    let normalized_cids = request
+        .deleted_block_cids
+        .iter()
+        .map(|cid| {
+            let normalized_cid = Cid::from_str(cid)
+                .map_err(PushMetadataError::InvalidCid)?
+                .to_string_of_base(Base::Base64Url)
+                .map_err(PushMetadataError::InvalidCid)?;
+            Ok(normalized_cid)
+        })
+        .collect::<Result<Vec<String>, PushMetadataError>>()?;
+
+    // Build a query to identify the blocks that need to get expired
+    let mut builder = sqlx::query_builder::QueryBuilder::new(
+        r#"SELECT blocks.id AS block_id, blocks.cid AS normalized_cid, m.id AS metadata_id, sh.id AS storage_host_id
+            FROM block_locations AS bl
+            JOIN blocks ON blocks.id = bl.block_id
+            JOIN storage_hosts AS sh ON sh.id = bl.storage_host_id
+            JOIN metadata AS m ON m.id = bl.metadata_id
+            JOIN buckets AS b ON b.id = m.bucket_id
+            WHERE b.user_id ="#,
+    );
+    builder.push_bind(user_id);
+    builder.push(" AND b.id = ");
+    builder.push_bind(bucket_id);
+    builder.push(" AND blocks.cid IN (");
+    for (i, cid) in normalized_cids.iter().enumerate() {
+        if i > 0 {
+            builder.push(", ");
+        }
+        builder.push_bind(cid);
+    }
+    builder.push(")");
+
+    // Execute the query
+    let query = builder.build_query_as::<UniqueBlockLocation>();
+    let unique_block_locations = query
         .fetch_all(&mut *transaction)
         .await
         .map_err(PushMetadataError::UnableToExpireBlocks)?;
 
-        if unique_block_locations.is_empty() {
-            return Err(PushMetadataError::NoBlock(original_cid));
-        }
-
-        // Collect all the unique blocks into a single set
-        let mut unique_blocks: BTreeSet<(String, String)> = BTreeSet::new();
-        // Collect all the unique blocks into a map of prune blocks tasks for different storage hosts
-        for unique_block_location in unique_block_locations {
-            let unique_block = (
-                unique_block_location.block_id.clone(),
-                unique_block_location.metadata_id.clone(),
-            );
-            unique_blocks.insert(unique_block);
-            let prune_block = PruneBlock {
-                normalized_cid: normalized_cid.clone(),
-                metadata_id: Uuid::parse_str(&unique_block_location.metadata_id)
-                    .map_err(PushMetadataError::DatabaseUuidCorrupted)?,
-            };
-            let storage_host_id = Uuid::parse_str(&unique_block_location.storage_host_id)
-                .map_err(PushMetadataError::DatabaseUuidCorrupted)?;
-            prune_blocks_tasks_map
-                .entry(storage_host_id)
-                .or_default()
-                .push(prune_block.clone());
-        }
-
-        // Iterate over the collected unique blocks and update their expired_at to now
-        for unique_block in unique_blocks {
-            // Update all the rows in place
-            sqlx::query_scalar!(
-                r#"UPDATE block_locations AS bl
-                SET expired_at = CURRENT_TIMESTAMP
-                WHERE bl.block_id = $1 AND bl.metadata_id = $2;"#,
-                unique_block.0,
-                unique_block.1,
-            )
-            .execute(&mut *transaction)
-            .await
-            .map_err(PushMetadataError::UnableToExpireBlocks)?;
-        }
+    // If no blocks were found, we can stop here.
+    if unique_block_locations.is_empty() {
+        return Err(PushMetadataError::UnrecordedBlocks);
     }
+
+    // Collect all the unique blocks into a single set
+    let mut unique_blocks: BTreeSet<(String, String)> = BTreeSet::new();
+    // Collect all the unique blocks into a map of prune blocks tasks for different storage hosts
+    for unique_block_location in unique_block_locations {
+        let unique_block = (
+            unique_block_location.block_id.clone(),
+            unique_block_location.metadata_id.clone(),
+        );
+        unique_blocks.insert(unique_block);
+        let prune_block = PruneBlock {
+            normalized_cid: unique_block_location.normalized_cid.clone(),
+            metadata_id: Uuid::parse_str(&unique_block_location.metadata_id)
+                .map_err(PushMetadataError::DatabaseUuidCorrupted)?,
+        };
+        let storage_host_id = Uuid::parse_str(&unique_block_location.storage_host_id)
+            .map_err(PushMetadataError::DatabaseUuidCorrupted)?;
+        prune_blocks_tasks_map
+            .entry(storage_host_id)
+            .or_default()
+            .push(prune_block.clone());
+    }
+
+    // Update the unique blocks that need to get expired
+    let mut builder = sqlx::query_builder::QueryBuilder::new(
+        r#"UPDATE block_locations
+        SET expired_at = CURRENT_TIMESTAMP
+        WHERE (block_id, metadata_id) IN ("#,
+    );
+    for (i, (block_id, metadata_id)) in unique_blocks.iter().enumerate() {
+        if i > 0 {
+            builder.push(", ");
+        }
+        builder.push("(");
+        builder.push_bind(block_id);
+        builder.push(", ");
+        builder.push_bind(metadata_id);
+        builder.push(")");
+    }
+    builder.push(")");
+
+    // Execute the query
+    let query = builder.build();
+    query
+        .execute(&mut *transaction)
+        .await
+        .map_err(PushMetadataError::UnableToExpireBlocks)?;
 
     // Create background tasks for our storage hosts to notify them to prune blocks
     for (storage_host_id, prune_blocks) in prune_blocks_tasks_map {
@@ -628,8 +665,8 @@ pub enum PushMetadataError {
     #[error("request did not contain required metadata segment")]
     MissingMetadata,
 
-    #[error("unable to locate block with provided CID: {0}")]
-    NoBlock(String),
+    #[error("unrecorded blocks were specified in the request")]
+    UnrecordedBlocks,
 
     #[error("unable to locate a bucket for the current authorized user")]
     NoAuthorizedBucket,
@@ -672,7 +709,7 @@ impl IntoResponse for PushMetadataError {
             | PushMetadataError::InvalidBoundary(_)
             | PushMetadataError::InvalidRequestData(_)
             | PushMetadataError::InvalidCid(_)
-            | PushMetadataError::NoBlock(_)
+            | PushMetadataError::UnrecordedBlocks
             | PushMetadataError::MissingRequestData => {
                 let err_msg = serde_json::json!({"msg": "invalid request"});
                 (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
