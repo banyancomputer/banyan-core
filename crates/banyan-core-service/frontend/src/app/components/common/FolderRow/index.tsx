@@ -10,7 +10,7 @@ import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { getDateLabel } from '@/app/utils/date';
 import { convertFileSize } from '@/app/utils/storage';
 import { useTomb } from '@/app/contexts/tomb';
-import { stringToHex } from '@app/utils/hex';
+import { stringToBase64 } from '@app/utils/base64';
 
 import { ChevronUp } from '@static/images/common';
 
@@ -31,7 +31,7 @@ export const FolderRow: React.FC<{
         // @ts-ignore
         if (event.target.id === 'actionsCell') { return; }
 
-        navigate(`/bucket/${bucket.id}?${path.length ? `${path.map(element => stringToHex(element)).join('/')}/${stringToHex(folder.name)}` : stringToHex(folder.name)}`);
+        navigate(`/bucket/${bucket.id}?${path.length ? `${path.map(element => stringToBase64(element)).join('/')}/${stringToBase64(folder.name)}` : stringToBase64(folder.name)}`);
     };
 
     const expandFolder = async (event: any) => {
