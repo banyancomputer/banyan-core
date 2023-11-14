@@ -513,24 +513,6 @@ async fn expire_deleted_blocks(
         return Ok(());
     }
 
-    // Begin a transaction
-    let mut transaction = database
-        .begin()
-        .await
-        .map_err(PushMetadataError::UnableToExpireBlocks)?;
-
-    // Extract the CIDs from the request
-    let normalized_cids = deleted_block_cids
-        .iter()
-        .map(|cid| {
-            let normalized_cid = Cid::from_str(cid)
-                .map_err(PushMetadataError::InvalidCid)?
-                .to_string_of_base(Base::Base64Url)
-                .map_err(PushMetadataError::InvalidCid)?;
-            Ok(normalized_cid)
-        })
-        .collect::<Result<Vec<String>, PushMetadataError>>()?;
-
     // Build a query to identify the blocks that need to get expired
     let mut builder = sqlx::query_builder::QueryBuilder::new(
         r#"SELECT blocks.id AS block_id, blocks.cid AS normalized_cid, m.id AS metadata_id, sh.id AS storage_host_id
@@ -545,18 +527,24 @@ async fn expire_deleted_blocks(
     builder.push(" AND b.id = ");
     builder.push_bind(bucket_id);
     builder.push(" AND blocks.cid IN (");
-    for (i, cid) in normalized_cids.iter().enumerate() {
+    for (i, cid) in deleted_block_cids.iter().enumerate() {
+        let normalized_cid = Cid::from_str(cid)
+            .map_err(PushMetadataError::InvalidCid)?
+            .to_string_of_base(Base::Base64Url)
+            .map_err(PushMetadataError::InvalidCid)?;
+
         if i > 0 {
             builder.push(", ");
         }
-        builder.push_bind(cid);
+
+        builder.push_bind(normalized_cid);
     }
     builder.push(")");
 
     // Execute the query
     let query = builder.build_query_as::<UniqueBlockLocation>();
     let unique_block_locations = query
-        .fetch_all(&mut *transaction)
+        .fetch_all(database)
         .await
         .map_err(PushMetadataError::UnableToExpireBlocks)?;
 
@@ -605,7 +593,13 @@ async fn expire_deleted_blocks(
     }
     builder.push(")");
 
-    // Execute the query
+    // Begin a transaction for updating block and task state
+    let mut transaction = database
+        .begin()
+        .await
+        .map_err(PushMetadataError::UnableToExpireBlocks)?;
+    
+    // Execute the query to update blocks
     let query = builder.build();
     query
         .execute(&mut *transaction)
