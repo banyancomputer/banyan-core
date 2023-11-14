@@ -598,7 +598,7 @@ async fn expire_deleted_blocks(
         .begin()
         .await
         .map_err(PushMetadataError::UnableToExpireBlocks)?;
-    
+
     // Execute the query to update blocks
     let query = builder.build();
     query
