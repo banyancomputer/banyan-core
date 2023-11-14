@@ -7,6 +7,7 @@ import { UploadFileModal } from '@/app/components/common/Modal/UploadFileModal';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 import { useModal } from '@/app/contexts/modals';
 import { useTomb } from '@/app/contexts/tomb';
+import { stringToHex } from '@app/utils/hex';
 
 import { PlusBold } from '@static/images/common';
 
@@ -36,7 +37,7 @@ const BucketHeader = () => {
                 {folderLocation.map((folder, index) =>
                     <React.Fragment key={index}>
                         {' > '}
-                        <Link to={`/bucket/${bucketId}?${folderLocation.slice(0, ++index).join('/')}`}>{folder}</Link>
+                        <Link to={`/bucket/${bucketId}?${folderLocation.slice(0, ++index).map(element => stringToHex(element)).join('/')}`}>{folder}</Link>
                     </React.Fragment>
                 )}
             </h2>
