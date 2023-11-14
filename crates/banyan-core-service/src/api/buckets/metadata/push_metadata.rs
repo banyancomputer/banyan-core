@@ -115,7 +115,13 @@ pub async fn handler(
         .await
         .map_err(PushMetadataError::DataMetaStoreFailed)?;
 
-    expire_deleted_blocks(&database, &user_identity.id(), &bucket_id, &request_data.deleted_block_cids).await?;
+    expire_deleted_blocks(
+        &database,
+        &user_identity.id(),
+        &bucket_id,
+        &request_data.deleted_block_cids,
+    )
+    .await?;
 
     let expected_total_storage = currently_consumed_storage(&database, &user_id)
         .await
@@ -496,7 +502,7 @@ async fn expire_deleted_blocks(
     database: &Database,
     user_id: &Uuid,
     bucket_id: &Uuid,
-    deleted_block_cids: &BTreeSet<String>
+    deleted_block_cids: &BTreeSet<String>,
 ) -> Result<(), PushMetadataError> {
     let user_id = user_id.to_string();
     let bucket_id = bucket_id.to_string();
@@ -814,12 +820,12 @@ mod tests {
     const BLOCK_CID_4: &str = "bafkreiainfete3i5wkr4aia3jtw263j53h3gwj6weuqldwluqr4kdtet5y";
 
     // 6 example block locations over 3 metadatas, 4 blocks, and 2 storage hosts
-    const BLOCK_LOCATION_1: (&str, &str, &str) = (METADATA_ID_1, BLOCK_ID_1, STORAGE_HOST_ID_1); 
-    const BLOCK_LOCATION_2: (&str, &str, &str) = (METADATA_ID_1, BLOCK_ID_2, STORAGE_HOST_ID_1); 
-    const BLOCK_LOCATION_3: (&str, &str, &str) = (METADATA_ID_2, BLOCK_ID_2, STORAGE_HOST_ID_1); 
-    const BLOCK_LOCATION_4: (&str, &str, &str) = (METADATA_ID_2, BLOCK_ID_3, STORAGE_HOST_ID_2); 
-    const BLOCK_LOCATION_5: (&str, &str, &str) = (METADATA_ID_3, BLOCK_ID_3, STORAGE_HOST_ID_2); 
-    const BLOCK_LOCATION_6: (&str, &str, &str) = (METADATA_ID_3, BLOCK_ID_4, STORAGE_HOST_ID_2); 
+    const BLOCK_LOCATION_1: (&str, &str, &str) = (METADATA_ID_1, BLOCK_ID_1, STORAGE_HOST_ID_1);
+    const BLOCK_LOCATION_2: (&str, &str, &str) = (METADATA_ID_1, BLOCK_ID_2, STORAGE_HOST_ID_1);
+    const BLOCK_LOCATION_3: (&str, &str, &str) = (METADATA_ID_2, BLOCK_ID_2, STORAGE_HOST_ID_1);
+    const BLOCK_LOCATION_4: (&str, &str, &str) = (METADATA_ID_2, BLOCK_ID_3, STORAGE_HOST_ID_2);
+    const BLOCK_LOCATION_5: (&str, &str, &str) = (METADATA_ID_3, BLOCK_ID_3, STORAGE_HOST_ID_2);
+    const BLOCK_LOCATION_6: (&str, &str, &str) = (METADATA_ID_3, BLOCK_ID_4, STORAGE_HOST_ID_2);
 
     #[tokio::test]
     async fn expire_bucket_1_blocks() {
@@ -832,15 +838,10 @@ mod tests {
         deleted_blocks.insert(BLOCK_CID_3.to_string());
         deleted_blocks.insert(BLOCK_CID_4.to_string());
 
-        expire_deleted_blocks(
-            &db_conn,
-            &user_id,
-            &bucket_id,
-            &deleted_blocks
-        )
-        .await
-        .expect("success");
-        
+        expire_deleted_blocks(&db_conn, &user_id, &bucket_id, &deleted_blocks)
+            .await
+            .expect("success");
+
         expect_all_expired(
             &db_conn,
             &[
@@ -848,15 +849,10 @@ mod tests {
                 BLOCK_LOCATION_2,
                 BLOCK_LOCATION_3,
                 BLOCK_LOCATION_4,
-            ]
-        ).await;
-        expect_none_expired(
-            &db_conn,
-            &[
-                BLOCK_LOCATION_5,
-                BLOCK_LOCATION_6,
-            ]
-        ).await;
+            ],
+        )
+        .await;
+        expect_none_expired(&db_conn, &[BLOCK_LOCATION_5, BLOCK_LOCATION_6]).await;
     }
 
     #[tokio::test]
@@ -869,23 +865,12 @@ mod tests {
         deleted_blocks.insert(BLOCK_CID_2.to_string());
         deleted_blocks.insert(BLOCK_CID_3.to_string());
         deleted_blocks.insert(BLOCK_CID_4.to_string());
-        
-        expire_deleted_blocks(
-            &db_conn,
-            &user_id,
-            &bucket_id,
-            &deleted_blocks
-        )
-        .await
-        .expect("success");
-        
-        expect_all_expired(
-            &db_conn,
-            &[
-                BLOCK_LOCATION_5,
-                BLOCK_LOCATION_6,
-            ]
-        ).await;
+
+        expire_deleted_blocks(&db_conn, &user_id, &bucket_id, &deleted_blocks)
+            .await
+            .expect("success");
+
+        expect_all_expired(&db_conn, &[BLOCK_LOCATION_5, BLOCK_LOCATION_6]).await;
         expect_none_expired(
             &db_conn,
             &[
@@ -893,8 +878,9 @@ mod tests {
                 BLOCK_LOCATION_2,
                 BLOCK_LOCATION_3,
                 BLOCK_LOCATION_4,
-            ]
-        ).await;
+            ],
+        )
+        .await;
     }
 
     #[tokio::test]
@@ -903,16 +889,11 @@ mod tests {
         let user_id = Uuid::parse_str(USER_ID).expect("user_id");
         let bucket_id = Uuid::parse_str(BUCKET_ID_1).expect("bucket_id");
         let deleted_blocks = BTreeSet::new();
-        
-        expire_deleted_blocks(
-            &db_conn,
-            &user_id,
-            &bucket_id,
-            &deleted_blocks
-        )
-        .await
-        .expect("success");
-        
+
+        expire_deleted_blocks(&db_conn, &user_id, &bucket_id, &deleted_blocks)
+            .await
+            .expect("success");
+
         expect_none_expired(
             &db_conn,
             &[
@@ -922,10 +903,11 @@ mod tests {
                 BLOCK_LOCATION_4,
                 BLOCK_LOCATION_5,
                 BLOCK_LOCATION_6,
-            ]
-        ).await;
+            ],
+        )
+        .await;
     }
-    
+
     #[tokio::test]
     async fn expire_na_block() {
         let db_conn = setup_expired_blocks_test().await;
@@ -933,17 +915,13 @@ mod tests {
         let bucket_id = Uuid::parse_str(BUCKET_ID_1).expect("bucket_id");
         let mut deleted_blocks = BTreeSet::new();
         // Specify an unknown block
-        deleted_blocks.insert("bafkreidz7iubrzo2vmzns47oqjqre3yzts3mzjuk4nciouhvljv2axxynm".to_string());
-        
-        expire_deleted_blocks(
-            &db_conn,
-            &user_id,
-            &bucket_id,
-            &deleted_blocks
-        )
-        .await
-        .expect("success");
-        
+        deleted_blocks
+            .insert("bafkreidz7iubrzo2vmzns47oqjqre3yzts3mzjuk4nciouhvljv2axxynm".to_string());
+
+        expire_deleted_blocks(&db_conn, &user_id, &bucket_id, &deleted_blocks)
+            .await
+            .expect("success");
+
         expect_none_expired(
             &db_conn,
             &[
@@ -953,16 +931,16 @@ mod tests {
                 BLOCK_LOCATION_4,
                 BLOCK_LOCATION_5,
                 BLOCK_LOCATION_6,
-            ]
-        ).await;
+            ],
+        )
+        .await;
     }
-
 
     async fn expect_all_expired(db_conn: &sqlx::SqlitePool, locs: &[(&str, &str, &str)]) {
         let mut builder = sqlx::query_builder::QueryBuilder::new(
-            r#"SELECT * FROM block_locations WHERE expired_at = NULL AND (metadata_id, block_id, storage_host_id) IN ("#
+            r#"SELECT * FROM block_locations WHERE expired_at = NULL AND (metadata_id, block_id, storage_host_id) IN ("#,
         );
-    
+
         for (i, (metadata_id, block_id, storage_host_id)) in locs.iter().enumerate() {
             if i > 0 {
                 builder.push(", ");
@@ -979,18 +957,15 @@ mod tests {
 
         // Execute the query
         let query = builder.build();
-        let rows = query
-            .fetch_all(db_conn)
-            .await
-            .expect("db operation");
+        let rows = query.fetch_all(db_conn).await.expect("db operation");
         assert!(rows.is_empty());
     }
 
     async fn expect_none_expired(db_conn: &sqlx::SqlitePool, locs: &[(&str, &str, &str)]) {
         let mut builder = sqlx::query_builder::QueryBuilder::new(
-            r#"SELECT * FROM block_locations WHERE expired_at != NULL AND (metadata_id, block_id, storage_host_id) IN ("#
+            r#"SELECT * FROM block_locations WHERE expired_at != NULL AND (metadata_id, block_id, storage_host_id) IN ("#,
         );
-    
+
         for (i, (metadata_id, block_id, storage_host_id)) in locs.iter().enumerate() {
             if i > 0 {
                 builder.push(", ");
@@ -1007,10 +982,7 @@ mod tests {
 
         // Execute the query
         let query = builder.build();
-        let rows = query
-            .fetch_all(db_conn)
-            .await
-            .expect("db operation");
+        let rows = query.fetch_all(db_conn).await.expect("db operation");
         assert!(rows.is_empty());
     }
 
@@ -1022,7 +994,7 @@ mod tests {
             .run(&db_conn)
             .await
             .expect("db setup");
-        
+
         // Create a fake user
         sqlx::query!(
             r#"INSERT INTO users (id, email, display_name)
@@ -1034,7 +1006,7 @@ mod tests {
         .execute(&db_conn)
         .await
         .expect("db setup");
-        
+
         // Create fake storage hosts
         sqlx::query!(
             r#"INSERT INTO storage_hosts (id, name, url, fingerprint, pem, used_storage, available_storage)
@@ -1141,7 +1113,7 @@ mod tests {
             r#"INSERT INTO blocks (id, cid)
             VALUES ($1, $2);"#,
             BLOCK_ID_1,
-            normalized_block_cid 
+            normalized_block_cid
         )
         .execute(&db_conn)
         .await
@@ -1249,6 +1221,5 @@ mod tests {
         .expect("db setup");
 
         db_conn
-
     }
 }
