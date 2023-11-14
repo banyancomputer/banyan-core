@@ -67,7 +67,7 @@ export const Navigation = () => {
 	return (
 		<nav className="flex flex-col w-navbar min-w-navbar bg-navigation-primary py-8 px-4 text-navigation-text border-r-2 border-r-navigation-border">
 			<Link to="/" className="mb-7 flex text-xs" >
-				<Logo width="174px" height="36px" />
+				<Logo width="246px" height="56px" />
 			</Link>
 			<div className="flex-grow py-8 border-t-2 border-b-2 border-navigation-separator text-navigation-text">
 				<NavLink
