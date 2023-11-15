@@ -244,6 +244,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "banyan-car-analyzer"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "blake3",
+ "bytes",
+ "cid",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-appender",
+ "tracing-futures",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "banyan-core-service"
 version = "0.1.0"
 dependencies = [
@@ -307,6 +324,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "axum",
+ "banyan-car-analyzer",
  "banyan-task",
  "blake3",
  "bytes",
@@ -345,10 +363,14 @@ dependencies = [
  "axum",
  "futures",
  "http",
+ "jwt-simple",
+ "object_store",
+ "pico-args",
  "rand",
  "reqwest",
  "serde",
  "serde_json",
+ "sha1",
  "sqlx",
  "thiserror",
  "time",
@@ -358,6 +380,7 @@ dependencies = [
  "tracing-appender",
  "tracing-futures",
  "tracing-subscriber",
+ "url",
  "uuid",
 ]
 

@@ -11,8 +11,8 @@ use sqlx::{Acquire, SqlitePool};
 use url::Url;
 use uuid::Uuid;
 
-use banyan_car_analyzer::CarReport;
 use banyan_task::{CurrentTask, TaskLike};
+use banyan_car_analyzer::CarReport;
 
 use crate::app::{PlatformAuthKey, State};
 

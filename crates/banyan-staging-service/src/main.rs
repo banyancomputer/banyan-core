@@ -8,7 +8,6 @@ use tracing_subscriber::{EnvFilter, Layer};
 
 mod api;
 mod app;
-mod car_analyzer;
 mod database;
 mod extractors;
 mod health_check;

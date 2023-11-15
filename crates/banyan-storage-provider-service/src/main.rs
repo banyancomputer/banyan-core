@@ -1,5 +1,11 @@
 #![allow(dead_code)]
 
+mod app;
+mod utils;
+mod database;
+
+use app::{AppState, Config};
+
 use std::fmt::{self, Display, Formatter};
 use std::time::Duration;
 
@@ -14,7 +20,6 @@ use http::header::{CONTENT_DISPOSITION, CONTENT_TYPE};
 use http::{HeaderMap, HeaderValue};
 use rand::Rng;
 use serde::Serialize;
-use sqlx::SqlitePool;
 use time::ext::NumericalDuration;
 use time::{Date, OffsetDateTime};
 use tokio::sync::watch;
@@ -37,6 +42,9 @@ async fn main() {
         .with_default_directive(Level::INFO.into())
         .from_env_lossy();
 
+    let config = Config::parse_cli_arguments().expect("valid");
+    let state = AppState::from_config(&config).await.expect("valid");
+
     let stderr_layer = tracing_subscriber::fmt::layer()
         .compact()
         .with_writer(non_blocking_writer)
@@ -46,7 +54,6 @@ async fn main() {
 
     let (shutdown_handle, mut shutdown_rx) = graceful_shutdown_blocker().await;
 
-    let state = AppState::new().await;
     let static_assets = ServeDir::new("dist").not_found_service(not_found_handler.into_service());
 
     let app = Router::new()
@@ -92,22 +99,22 @@ async fn main() {
     let _ = tokio::time::timeout(Duration::from_secs(5), join_all([web_handle])).await;
 }
 
-#[derive(Clone)]
-pub struct AppState {
-    database: SqlitePool,
-}
+// #[derive(Clone)]
+// pub struct AppState {
+//     database: SqlitePool,
+// }
 
-impl AppState {
-    pub async fn new() -> Self {
-        Self {
-            database: SqlitePool::connect("sqlite::memory:").await.expect("valid"),
-        }
-    }
+// impl AppState {
+//     pub async fn new() -> Self {
+//         Self {
+//             database: SqlitePool::connect("sqlite::memory:").await.expect("valid"),
+//         }
+//     }
 
-    pub fn database(&self) -> SqlitePool {
-        self.database.clone()
-    }
-}
+//     pub fn database(&self) -> SqlitePool {
+//         self.database.clone()
+//     }
+// }
 
 pub async fn alerts_handler() -> Response {
     let resp_msg = serde_json::json!([Alert::random(), Alert::random(), Alert::random()]);

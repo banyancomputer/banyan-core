@@ -1,8 +1,7 @@
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
-use blake3::Hasher;
-use bytes::{BufMut, Bytes, BytesMut};
+use bytes::{Bytes, BytesMut};
 use cid::Cid;
 
 const CAR_HEADER_UPPER_LIMIT: u64 = 16 * 1024 * 1024; // Limit car headers to 16MiB
@@ -427,6 +426,7 @@ fn try_read_varint_u64(buf: &[u8]) -> Result<Option<(u64, u64)>, StreamingCarAna
 mod tests {
     use super::*;
 
+    use bytes::BufMut;
     use cid::multihash::{Code, MultihashDigest};
     use cid::Cid;
 

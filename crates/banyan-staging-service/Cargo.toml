@@ -6,6 +6,8 @@ license = "LicenseRef-LICENSE.txt"
 
 [dependencies]
 banyan-task = { path = "../banyan-task", version = "^0.1" }
+banyan-car-analyzer = { path = "../banyan-car-analyzer", version = "^0.1" }
+
 futures = "^0.3"
 itertools = "^0.11"
 pico-args = "^0.5"
