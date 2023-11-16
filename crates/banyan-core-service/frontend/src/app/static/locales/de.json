@@ -172,5 +172,6 @@
 	"snapshotTooltip": "Kalt-Snapshots bieten einen zeitlichen Blick auf die Datei und sind nützlich für die Versionierung.",
 	"coldTooltip": "Bei der Archivspeicherung handelt es sich um Dateien, die Sie über einen längeren Zeitraum hinweg sicher aufbewahren möchten und auf die Sie nicht häufig zugreifen möchten.",
 	"hotTooltip": "On-Demand-Speicher ist für Dateien gedacht, auf die Sie häufig zugreifen möchten und auf die Sie schnell zugreifen müssen",
-	"warmTooltip": "On-Demand-Speicher ist für Dateien gedacht, auf die Sie häufig zugreifen möchten und auf die Sie schnell zugreifen müssen"
+	"warmTooltip": "On-Demand-Speicher ist für Dateien gedacht, auf die Sie häufig zugreifen möchten und auf die Sie schnell zugreifen müssen",
+	"unlock": "Freischalten"
 }

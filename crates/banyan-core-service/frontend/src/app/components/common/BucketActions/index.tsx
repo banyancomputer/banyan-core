@@ -15,7 +15,7 @@ import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 
 
 import { Bolt, DeleteHotData, Rename, Trash, Upload, Versions } from '@static/images/common';
-import { Folder } from '@static/images/buckets';
+import { Folder, Lock } from '@static/images/buckets';
 
 export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const { messages } = useIntl();
@@ -81,6 +81,11 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         } catch (error: any) { }
     };
 
+    const unlock = async () => {
+        try {
+        } catch (error: any) { }
+    }
+
     const uploadAction = new Action(`${messages.upload}`, <Upload width="18px" height="18px" />, upload);
     const createSnapshotAction = new Action(`${messages.takeColdSnapshot}`, <Bolt width="18px" height="18px" />, takeSnapshot, `${messages.snapshotTooltip}`);
     const viewBucketSnapshotsAction = bucket.snapshots.length ? new Action(`${messages.viewColdSnapshots}`, <Versions width="18px" height="18px" />, viewBucketSnapshots) : null;
@@ -123,26 +128,37 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     return (
         <div className={'w-56 text-xs font-medium bg-bucket-actionsBackground rounded-xl overflow-hidden shadow-md z-10 select-none text-bucket-actionsText'}>
             {
-                actions[bucketType].map(action =>
-                    action ?
-                        <div
-                            key={action.label}
-                            className="w-full flex items-center gap-2 py-2 px-3 transition-all hover:bg-hover"
-                            onClick={action.value}
-                        >
-                            <span className="text-button-primary">
-                                {action.icon}
-                            </span>
-                            {action.label}
-                            {action.tooltip ?
-                                <span className="text-button-primary" title={action.tooltip}>(?)</span>
-                                :
-                                null
-                            }
-                        </div>
-                        :
-                        null
-                )
+                !bucket.locked ?
+                    <div
+                        className="w-full flex items-center gap-2 py-2 px-3 transition-all hover:bg-hover"
+                        onClick={unlock}
+                    >
+                        <span className="text-button-primary">
+                            <Lock width="18px" height="18px" />
+                        </span>
+                        {`${messages.unlock}`}
+                    </div>
+                    :
+                    actions[bucketType].map(action =>
+                        action ?
+                            <div
+                                key={action.label}
+                                className="w-full flex items-center gap-2 py-2 px-3 transition-all hover:bg-hover"
+                                onClick={action.value}
+                            >
+                                <span className="text-button-primary">
+                                    {action.icon}
+                                </span>
+                                {action.label}
+                                {action.tooltip ?
+                                    <span className="text-button-primary" title={action.tooltip}>(?)</span>
+                                    :
+                                    null
+                                }
+                            </div>
+                            :
+                            null
+                    )
             }
         </div>
     );
