@@ -83,6 +83,7 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
 
     const unlock = async () => {
         try {
+            /** TODO: implement after will be added into tomb wasm. */
         } catch (error: any) { }
     }
 
