@@ -88,6 +88,12 @@ pub struct StreamingCarAnalyzer {
     hasher: blake3::Hasher,
 }
 
+impl Default for StreamingCarAnalyzer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl StreamingCarAnalyzer {
     pub fn add_chunk(&mut self, bytes: &Bytes) -> Result<(), StreamingCarAnalyzerError> {
         self.exceeds_buffer_limit(bytes.len() as u64)?;
