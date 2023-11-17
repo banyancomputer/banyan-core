@@ -11,7 +11,6 @@ pub async fn handler() -> Response {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
 
     #[tokio::test]
     async fn test_handler_direct() {

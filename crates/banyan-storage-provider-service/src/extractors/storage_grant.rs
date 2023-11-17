@@ -11,7 +11,7 @@ use axum::{async_trait, Json, RequestPartsExt};
 use jwt_simple::prelude::*;
 use uuid::Uuid;
 
-use crate::app::{ServiceHostname, PlatformVerificationKey};
+use crate::app::{PlatformVerificationKey, ServiceHostname};
 use crate::extractors::paired_id_validator;
 
 // todo: will need a way for a client to refresh their storage grant

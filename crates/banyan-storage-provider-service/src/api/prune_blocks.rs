@@ -3,7 +3,6 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use banyan_task::TaskLikeExt;
 
-
 use crate::app::AppState;
 use crate::extractors::PlatformIdentity;
 use crate::tasks::{PruneBlock, PruneBlocksTask};
@@ -29,7 +28,6 @@ pub enum PruneBlocksError {
 
 impl IntoResponse for PruneBlocksError {
     fn into_response(self) -> Response {
-        
         {
             tracing::error!("{self}");
             let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });

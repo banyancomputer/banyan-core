@@ -22,14 +22,14 @@ pub struct Config {
     database_url: Url,
     /// Where to store uploaded objects
     upload_directory: PathBuf,
-    
+
     /// The unique name fo the service, as registered with the platform
     service_name: String,
     /// The hostname of this service
     service_hostname: Url,
     /// The path to the signing key used for authenticating requests to the platform and other services
     service_key_path: PathBuf,
-    
+
     /// The name of the platform
     platform_name: String,
     /// The base URL of the platform
@@ -117,7 +117,7 @@ impl Config {
             },
         };
         let database_url = Url::parse(&database_str).map_err(ConfigError::InvalidDatabaseUrl)?;
-        
+
         let upload_dir_str = match args.opt_value_from_str("--upload-dir")? {
             Some(path) => path,
             None => match std::env::var("UPLOAD_DIR") {
@@ -231,10 +231,14 @@ fn print_help() {
     println!("Service may be configured using the following CLI flags\n");
     println!("  Available options:");
     println!("    -h, --help                            Print this notice and exit");
-    println!("    -v, --version                         Display the version of this compiled version");
+    println!(
+        "    -v, --version                         Display the version of this compiled version"
+    );
     println!("                                          and exit\n");
     println!("    --generate-auth                       Generate a new signing key for the service. Exits upon key generation if used.\n");
-    println!("    --listen LISTEN_ADDR                  Specify the address to bind to, by default");
+    println!(
+        "    --listen LISTEN_ADDR                  Specify the address to bind to, by default"
+    );
     println!("                                          this is 127.0.0.1:3001");
     println!("    --log-level LOG_LEVEL                 Specify the log level to use, by default");
     println!("                                          this is INFO\n");

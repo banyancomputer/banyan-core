@@ -8,22 +8,21 @@ use axum::{Server, ServiceExt};
 use futures::future::join_all;
 use http::header;
 
-
 use tokio::task::JoinHandle;
 use tower::ServiceBuilder;
-use tower_http::services::ServeDir;
 use tower_http::classify::{ServerErrorsAsFailures, SharedClassifier};
 use tower_http::request_id::MakeRequestUuid;
 use tower_http::sensitive_headers::{
     SetSensitiveRequestHeadersLayer, SetSensitiveResponseHeadersLayer,
 };
+use tower_http::services::ServeDir;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnFailure, DefaultOnResponse, TraceLayer};
 use tower_http::validate_request::ValidateRequestHeaderLayer;
 use tower_http::{LatencyUnit, ServiceBuilderExt};
 use tracing::Level;
 
-use crate::app::{AppState, Config};
 use crate::api;
+use crate::app::{AppState, Config};
 use crate::health_check;
 use crate::tasks::start_background_workers;
 

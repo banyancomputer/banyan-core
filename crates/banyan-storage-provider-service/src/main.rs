@@ -2,41 +2,21 @@
 
 mod http_server;
 
-mod app;
 mod api;
-mod extractors;
+mod app;
 mod database;
-mod upload_store;
+mod extractors;
 mod health_check;
 mod tasks;
+mod upload_store;
 mod utils;
 
-use app::{Config};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+use app::Config;
 
 use tracing::Level;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::{EnvFilter, Layer};
-
 
 #[tokio::main]
 async fn main() {

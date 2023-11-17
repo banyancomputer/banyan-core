@@ -20,8 +20,8 @@ use rand::Rng;
 use serde::Serialize;
 use time::ext::NumericalDuration;
 use time::{Date, OffsetDateTime};
-use uuid::Uuid;
 use tower_http::cors::CorsLayer;
+use uuid::Uuid;
 
 mod block_retrieval;
 mod client_grant;

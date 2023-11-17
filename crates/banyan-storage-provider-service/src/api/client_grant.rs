@@ -1,5 +1,3 @@
-
-
 use axum::extract::{Json, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
@@ -7,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::app::AppState;
-use crate::database::{map_sqlx_error, BareId, Database, DbResult, DatabaseError};
+use crate::database::{map_sqlx_error, BareId, Database, DatabaseError, DbResult};
 use crate::extractors::StorageGrant;
 
 #[derive(Deserialize, Serialize)]

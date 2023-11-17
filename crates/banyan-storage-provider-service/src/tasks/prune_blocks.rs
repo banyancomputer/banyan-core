@@ -5,14 +5,13 @@ use jwt_simple::prelude::*;
 use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use sqlx::{Acquire};
+use sqlx::Acquire;
 
 use uuid::Uuid;
 
 use banyan_task::{CurrentTask, TaskLike};
 
 use crate::app::AppState;
-
 
 pub type PruneBlocksTaskContext = AppState;
 
@@ -144,7 +143,9 @@ async fn report_pruned_blocks(
     claims.create_nonce();
     claims.issued_at = Some(Clock::now_since_epoch());
 
-    let bearer_token = service_signing_key.sign(claims).map_err(PruneBlocksTaskError::JwtError)?;
+    let bearer_token = service_signing_key
+        .sign(claims)
+        .map_err(PruneBlocksTaskError::JwtError)?;
 
     let request = client
         .post(report_endpoint)

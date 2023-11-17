@@ -1,5 +1,5 @@
-use std::path::PathBuf;
 use std::ops::Deref;
+use std::path::PathBuf;
 
 use axum::extract::FromRef;
 use jwt_simple::prelude::*;
@@ -8,7 +8,7 @@ use url::Url;
 
 use crate::app::{Config, Secrets};
 use crate::database::{self, Database, DatabaseSetupError};
-use crate::utils::{sha1_fingerprint_publickey, fingerprint_key_pair, SigningKey, VerificationKey};
+use crate::utils::{fingerprint_key_pair, sha1_fingerprint_publickey, SigningKey, VerificationKey};
 
 // Helper struct for extracting state from requests
 pub struct ServiceName(String);
@@ -21,28 +21,24 @@ pub struct PlatformVerificationKey(VerificationKey);
 #[derive(Clone)]
 pub struct State {
     // Resources
-
     /// Access to the database
     database: Database,
     /// Directory where uploaded files are stored
     upload_directory: PathBuf,
 
     // Secrets
-
     /// All runtime secrets
     secrets: Secrets,
 
     // Service identity
-
     /// The unique name of the service, as registered with the platform
-    service_name: String, 
+    service_name: String,
     /// The hostname of the service
     service_hostname: Url,
     /// Key used to verify service tokens. See [`Secrets::service_signing_key`] for complimentary key.
     service_verification_key: VerificationKey,
 
     // Platform authentication
-
     /// The unique name of the platform
     platform_name: String,
     /// The hostname of the platform
@@ -65,7 +61,8 @@ impl State {
         let service_signing_key = load_service_key(&config.service_key_path())?;
         let service_verification_key = service_signing_key.verifier();
 
-        let platform_verification_key = load_platform_verfication_key(&config.platform_verification_key_path())?;
+        let platform_verification_key =
+            load_platform_verfication_key(&config.platform_verification_key_path())?;
 
         let secrets = Secrets::new(service_signing_key);
 
@@ -74,7 +71,7 @@ impl State {
             upload_directory: config.upload_directory(),
 
             secrets,
-            
+
             service_name: config.service_name().to_string(),
             service_hostname: config.service_hostname().clone(),
             service_verification_key,
@@ -225,7 +222,7 @@ pub enum StateSetupError {
 
     #[error("failed to setup the database: {0}")]
     DatabaseSetupError(#[from] DatabaseSetupError),
-    
+
     #[error("failed to read private service key: {0}")]
     ServiceKeyReadError(std::io::Error),
 

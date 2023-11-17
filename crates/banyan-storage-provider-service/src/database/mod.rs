@@ -39,7 +39,6 @@ pub enum DatabaseSetupError {
     SetupFailed(sqlx::Error),
 }
 
-
 #[derive(Debug, thiserror::Error)]
 pub enum DatabaseError {
     #[error("query to database contained invalid syntax")]

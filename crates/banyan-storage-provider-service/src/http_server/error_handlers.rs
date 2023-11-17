@@ -2,7 +2,6 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 
-
 pub async fn server_error_handler(error: tower::BoxError) -> Response {
     let mut errors = vec![error.to_string()];
     let mut source = error.source();

@@ -7,10 +7,8 @@ use axum::response::{IntoResponse, Response};
 use axum::TypedHeader;
 use banyan_task::TaskLikeExt;
 
-
 use futures::{TryStream, TryStreamExt};
 use object_store::ObjectStore;
-
 
 use serde::{Deserialize, Serialize};
 use tokio::io::{AsyncWrite, AsyncWriteExt};
@@ -19,10 +17,10 @@ use uuid::Uuid;
 use banyan_car_analyzer::{CarReport, StreamingCarAnalyzer, StreamingCarAnalyzerError};
 
 use crate::app::AppState;
-use crate::upload_store::UploadStore;
 use crate::database::{map_sqlx_error, Database, DatabaseError};
 use crate::extractors::AuthenticatedClient;
 use crate::tasks::ReportUploadTask;
+use crate::upload_store::UploadStore;
 
 /// Limit on the size of the JSON request that accompanies an upload.
 const UPLOAD_REQUEST_SIZE_LIMIT: u64 = 100 * 1_024;

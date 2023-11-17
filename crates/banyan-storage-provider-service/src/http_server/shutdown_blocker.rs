@@ -1,19 +1,5 @@
-
-
-
-
-
-
 use tokio::sync::watch;
 use tokio::task::JoinHandle;
-
-
-
-
-
-
-
-
 
 /// Follow k8s signal handling rules for these different signals. The order of shutdown events are:
 ///

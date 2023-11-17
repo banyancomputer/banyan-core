@@ -6,12 +6,7 @@ mod version;
 pub use config::{Config, ConfigError};
 pub use secrets::Secrets;
 pub use state::{
-    State as AppState,
-    ServiceName,
-    ServiceHostname,
-    ServiceVerificationKey,
-    PlatformName,
-    PlatformHostname,
-    PlatformVerificationKey,
+    PlatformHostname, PlatformName, PlatformVerificationKey, ServiceHostname, ServiceName,
+    ServiceVerificationKey, State as AppState,
 };
 pub use version::Version;

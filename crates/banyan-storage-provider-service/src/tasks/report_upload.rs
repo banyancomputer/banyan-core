@@ -8,11 +8,9 @@ use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
-
 use uuid::Uuid;
 
 use banyan_task::{CurrentTask, TaskLike};
-
 
 use crate::app::AppState;
 

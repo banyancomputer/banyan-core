@@ -1,10 +1,7 @@
-
-
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
 
 use axum::async_trait;
-
 
 use crate::app::AppState;
 use crate::upload_store::{UploadStore, UploadStoreError};
@@ -23,4 +20,3 @@ impl FromRequestParts<AppState> for UploadStore {
         Self::new(&state.upload_directory())
     }
 }
-

@@ -1,3 +1,3 @@
 mod keys;
 
-pub use keys::{sha1_fingerprint_publickey, fingerprint_key_pair, SigningKey, VerificationKey};
+pub use keys::{fingerprint_key_pair, sha1_fingerprint_publickey, SigningKey, VerificationKey};

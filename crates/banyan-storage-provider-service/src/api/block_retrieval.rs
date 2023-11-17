@@ -1,17 +1,15 @@
-
 use axum::extract::{Path, State};
 
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 
-use object_store::{ObjectStore};
-
+use object_store::ObjectStore;
 
 use crate::app::AppState;
 use crate::database::Database;
-use crate::upload_store::UploadStore;
 use crate::extractors::AuthenticatedClient;
+use crate::upload_store::UploadStore;
 
 pub async fn handler(
     State(state): State<AppState>,
