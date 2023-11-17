@@ -72,7 +72,7 @@ exceptions = [
     { name = "banyan-staging-service", allow = ["LicenseRef-LICENSE.txt"] },
     { name = "banyan-storage-provider-service", allow = ["LicenseRef-LICENSE.txt"] },
     { name = "banyan-task", allow =  [ "LicenseRef-LICENSE.txt"] },
-    { name = "banyan-car-analyzer" allow =  [ "LicenseRef-LICENSE.txt"] } 
+    { name = "banyan-car-analyzer", allow =  [ "LicenseRef-LICENSE.txt"] } 
 ]
 
 # Ring doesn't specify the license in their Cargo manifest, we have to
