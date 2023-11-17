@@ -13,7 +13,7 @@ module.exports = {
 				navbar: '72px',
 			},
 			width: {
-				navbar: '320px',
+				navbar: '280px',
 				modal: '400px',
 				toast: '480px',
 				snapshotsModal: '530px',
@@ -26,7 +26,7 @@ module.exports = {
 				1.5: '6px',
 			},
 			minWidth: {
-				navbar: '320px',
+				navbar: '280px',
 				login: '590px',
 			},
 			maxWidth: {

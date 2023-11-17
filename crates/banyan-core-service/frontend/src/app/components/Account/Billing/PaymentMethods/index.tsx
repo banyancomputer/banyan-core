@@ -1,13 +1,10 @@
 import React, { useState } from 'react';
 import { useIntl } from 'react-intl';
-import { MdOutlineAdd } from 'react-icons/md';
 
-
-import { useModal } from '@/app/contexts/modals';
+import { PlusBold } from '@static/images/common';
 
 export const PaymentMethods = () => {
     const { messages } = useIntl();
-    const { openModal } = useModal();
 
     const addPaymentMethod = () => {
         /** TODO: implement when stripe will be integrated. */
@@ -24,7 +21,7 @@ export const PaymentMethods = () => {
                 <span
                     className="flex items-center justify-center w-12 h-12 border-1 border-border-regular rounded-xl text-gray-300"
                 >
-                    <MdOutlineAdd size="30px" />
+                    <PlusBold width="30px" height="30px" />
                 </span>
             </div>
         </div>
