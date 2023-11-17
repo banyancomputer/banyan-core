@@ -56,14 +56,14 @@ impl Config {
             #[cfg(debug_assertions)]
             tracing::warn!("no dot-environment file detected");
         }
-        
+
         let mut args = Arguments::from_env();
 
         let platform_name = match args.opt_value_from_str("--platform-name")? {
             Some(pn) => pn,
             None => match std::env::var("PLATFORM_NAME") {
                 Ok(pn) if !pn.is_empty() => pn,
-                _ => "banyan-staging".to_string()
+                _ => "banyan-staging".to_string(),
             },
         };
 
