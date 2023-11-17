@@ -5,14 +5,14 @@ use jwt_simple::prelude::*;
 use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use sqlx::{Acquire, SqlitePool};
-use url::Url;
+use sqlx::{Acquire};
+
 use uuid::Uuid;
 
 use banyan_task::{CurrentTask, TaskLike};
 
 use crate::app::AppState;
-use crate::utils::SigningKey;
+
 
 pub type PruneBlocksTaskContext = AppState;
 

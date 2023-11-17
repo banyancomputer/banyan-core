@@ -11,7 +11,7 @@ pub async fn handler() -> Response {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::json;
+    
 
     #[tokio::test]
     async fn test_handler_direct() {

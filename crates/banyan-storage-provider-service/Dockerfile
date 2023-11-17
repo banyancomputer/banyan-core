@@ -5,7 +5,7 @@ FROM docker.io/library/rust:1.71.0 AS build
 
 ARG CI_BUILD_REF=
 ARG FEATURES=sqlite
-ARG SERVICE_NAME=banyan-staging-service
+ARG SERVICE_NAME=banyan-storage-provider-service
 
 RUN mkdir -p /usr/src/build
 WORKDIR /usr/src/build
@@ -15,7 +15,7 @@ WORKDIR /usr/src/build
 # prevents rebuilding them in the future if only the service's source has
 # changed.
 RUN cargo init --name $SERVICE_NAME
-COPY Cargo.toml Cargo.lock /usr/src/build/
+COPY Cargo.toml Cargo.lock /usr/src/build
 RUN cargo build --release --no-default-features --features $FEATURES
 
 # Copy in the actual service source code, and perform the release build

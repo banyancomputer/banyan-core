@@ -4,7 +4,7 @@ mod report_upload;
 pub use prune_blocks::{PruneBlock, PruneBlocksTask, PruneBlocksTaskContext, PruneBlocksTaskError};
 pub use report_upload::{ReportUploadTask, ReportUploadTaskContext, ReportUploadTaskError};
 
-use sqlx::SqlitePool;
+
 use tokio::sync::watch;
 use tokio::task::JoinHandle;
 
@@ -20,8 +20,8 @@ pub async fn start_background_workers(
 
     WorkerPool::new(task_store.clone(), move || state.clone())
         .configure_queue(QueueConfig::new("default").with_worker_count(5))
-        // .register_task_type::<ReportUploadTask>()
-        // .register_task_type::<PruneBlocksTask>()
+        .register_task_type::<ReportUploadTask>()
+        .register_task_type::<PruneBlocksTask>()
         .start(async move {
             let _ = shutdown_rx.changed().await;
         })

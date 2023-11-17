@@ -7,8 +7,8 @@ use axum::Router;
 use axum::{Server, ServiceExt};
 use futures::future::join_all;
 use http::header;
-use tokio::signal::unix::{signal, SignalKind};
-use tokio::sync::watch;
+
+
 use tokio::task::JoinHandle;
 use tower::ServiceBuilder;
 use tower_http::services::ServeDir;
@@ -23,7 +23,7 @@ use tower_http::{LatencyUnit, ServiceBuilderExt};
 use tracing::Level;
 
 use crate::app::{AppState, Config};
-// use crate::api;
+use crate::api;
 use crate::health_check;
 use crate::tasks::start_background_workers;
 
@@ -109,7 +109,7 @@ pub async fn run(config: Config) {
         ServeDir::new("dist").not_found_service(error_handlers::not_found_handler.into_service());
     // Cretae our root router for handling requests
     let root_router = Router::new()
-        // .nest("/api/v1", api::router(app_state.clone()))
+        .nest("/api/v1", api::router(app_state.clone()))
         .nest("/_status", health_check::router(app_state.clone()))
         .with_state(app_state)
         .fallback_service(static_assets);

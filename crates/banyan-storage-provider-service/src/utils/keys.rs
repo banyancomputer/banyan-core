@@ -1,8 +1,9 @@
-use sha1::{Digest, Sha1};
 use std::ops::Deref;
 use std::sync::Arc;
 
 use jwt_simple::prelude::*;
+use sha1::{Digest, Sha1};
+use sha2::Sha256;
 
 /// Verification key for verifying singnature of JWTs.
 #[derive(Clone)]
@@ -59,4 +60,20 @@ fn format_fingerprint_bytes(bytes: &[u8]) -> String {
     bytes
         .iter()
         .fold(String::new(), |chain, byte| format!("{chain}{byte:02x}"))
+}
+
+pub fn fingerprint_key_pair(keys: &ES384KeyPair) -> String {
+    let key_pair = keys.key_pair();
+    let public_key = key_pair.public_key();
+    let compressed_point = public_key.as_ref().to_encoded_point(true);
+
+    let mut hasher = Sha256::new();
+    hasher.update(compressed_point);
+    let hashed_bytes = hasher.finalize();
+
+    hashed_bytes
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<Vec<_>>()
+        .join("")
 }

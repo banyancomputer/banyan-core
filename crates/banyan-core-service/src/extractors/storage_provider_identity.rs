@@ -19,6 +19,7 @@ pub const EXPIRATION_WINDOW_SECS: u64 = 900;
 
 static KEY_ID_VALIDATOR: OnceLock<regex::Regex> = OnceLock::new();
 
+// TODO: This is a different regex than the one used in the api_identity.rs file. Is this a bug?
 const KEY_ID_REGEX: &str = r"^[0-9a-f]{64}$";
 
 #[derive(Deserialize, Serialize)]

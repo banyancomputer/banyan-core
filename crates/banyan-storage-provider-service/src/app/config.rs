@@ -9,7 +9,7 @@ use tracing::Level;
 use url::Url;
 
 use crate::app::Version;
-use crate::utils::sha1_fingerprint_publickey;
+use crate::utils::fingerprint_key_pair;
 
 #[derive(Debug)]
 pub struct Config {
@@ -87,7 +87,7 @@ impl Config {
 
             key_path.set_extension("fingerprint");
 
-            let fingerprint = sha1_fingerprint_publickey(&public_new_key);
+            let fingerprint = fingerprint_key_pair(&private_new_key);
 
             let mut file =
                 std::fs::File::create(key_path).map_err(ConfigError::ServiceKeyWriteFailed)?;

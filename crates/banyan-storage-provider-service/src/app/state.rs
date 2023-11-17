@@ -8,7 +8,7 @@ use url::Url;
 
 use crate::app::{Config, Secrets};
 use crate::database::{self, Database, DatabaseSetupError};
-use crate::utils::{sha1_fingerprint_publickey, SigningKey, VerificationKey};
+use crate::utils::{sha1_fingerprint_publickey, fingerprint_key_pair, SigningKey, VerificationKey};
 
 // Helper struct for extracting state from requests
 pub struct ServiceName(String);
@@ -246,7 +246,7 @@ fn load_service_key(path: &PathBuf) -> Result<SigningKey, StateSetupError> {
     let service_key_inner =
         ES384KeyPair::from_pem(&private_pem).map_err(StateSetupError::InvalidServiceKey)?;
 
-    let fingerprint = sha1_fingerprint_publickey(&service_key_inner.public_key());
+    let fingerprint = fingerprint_key_pair(&service_key_inner);
     let service_key_inner = service_key_inner.with_key_id(&fingerprint);
 
     Ok(SigningKey::new(service_key_inner))

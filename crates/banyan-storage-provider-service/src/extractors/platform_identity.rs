@@ -1,7 +1,7 @@
-use std::collections::HashSet;
-use std::sync::OnceLock;
 
-use axum::extract::rejection::TypedHeaderRejection;
+
+
+
 use axum::extract::{FromRef, FromRequestParts, TypedHeader};
 use axum::headers::authorization::Bearer;
 use axum::headers::Authorization;
@@ -10,9 +10,9 @@ use axum::response::{IntoResponse, Response};
 use axum::{async_trait, Json, RequestPartsExt};
 use http::request::Parts;
 use jwt_simple::prelude::*;
-use regex::Regex;
-use sqlx::FromRow;
-use uuid::Uuid;
+
+
+
 
 use crate::app::PlatformVerificationKey;
 use crate::extractors::fingerprint_validator;

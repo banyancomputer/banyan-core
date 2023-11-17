@@ -6,13 +6,12 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::TypedHeader;
 use banyan_task::TaskLikeExt;
-use cid::multibase::Base;
-use cid::Cid;
-use futures::{TryFutureExt, TryStream, TryStreamExt};
-use jwt_simple::prelude::*;
+
+
+use futures::{TryStream, TryStreamExt};
 use object_store::ObjectStore;
-use reqwest::header::{HeaderMap, HeaderValue};
-use reqwest::{Client, Url};
+
+
 use serde::{Deserialize, Serialize};
 use tokio::io::{AsyncWrite, AsyncWriteExt};
 use uuid::Uuid;
@@ -21,7 +20,7 @@ use banyan_car_analyzer::{CarReport, StreamingCarAnalyzer, StreamingCarAnalyzerE
 
 use crate::app::AppState;
 use crate::upload_store::UploadStore;
-use crate::database::{map_sqlx_error, BareId, Database, DatabaseError};
+use crate::database::{map_sqlx_error, Database, DatabaseError};
 use crate::extractors::AuthenticatedClient;
 use crate::tasks::ReportUploadTask;
 
