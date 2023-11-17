@@ -4,12 +4,12 @@ use axum::response::{IntoResponse, Response};
 use banyan_task::TaskLikeExt;
 use serde::{Deserialize, Serialize};
 
-use crate::app::State as AppState;
-use crate::extractors::CoreIdentity;
+use crate::app::AppState;
+use crate::extractors::PlatformIdentity;
 use crate::tasks::{PruneBlock, PruneBlocksTask};
 
 pub async fn handler(
-    _ci: CoreIdentity,
+    _ci: PlatformIdentity,
     State(state): State<AppState>,
     Json(prune_blocks): Json<Vec<PruneBlock>>,
 ) -> Result<Response, PruneBlocksError> {

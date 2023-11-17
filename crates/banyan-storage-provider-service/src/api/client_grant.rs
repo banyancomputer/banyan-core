@@ -6,8 +6,8 @@ use axum::response::{IntoResponse, Response};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::app::State as AppState;
-use crate::database::{map_sqlx_error, BareId, Database, DbResult, SqlxError};
+use crate::app::AppState;
+use crate::database::{map_sqlx_error, BareId, Database, DbResult, DatabaseError};
 use crate::extractors::StorageGrant;
 
 #[derive(Deserialize, Serialize)]
@@ -83,7 +83,7 @@ async fn create_storage_grant(
 
     match grant_id {
         Ok(gid) => Ok(Uuid::parse_str(gid.id.as_str()).unwrap()),
-        Err(SqlxError::RecordExists) => Err(GrantError::AlreadyRecorded),
+        Err(DatabaseError::RecordExists) => Err(GrantError::AlreadyRecorded),
         Err(err) => Err(GrantError::Database(err)),
     }
 }
@@ -94,7 +94,7 @@ pub enum GrantError {
     AlreadyRecorded,
 
     #[error("database issue occurred")]
-    Database(#[from] SqlxError),
+    Database(#[from] DatabaseError),
 }
 
 impl IntoResponse for GrantError {

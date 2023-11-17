@@ -1,6 +1,6 @@
+use sha1::{Digest, Sha1};
 use std::ops::Deref;
 use std::sync::Arc;
-use sha1::{Digest, Sha1};
 
 use jwt_simple::prelude::*;
 

@@ -19,8 +19,10 @@ pub struct Config {
     hostname: Url,
 
     platform_name: String,
+    // TODO: rename to `service_key_path`
     platform_auth_key_path: PathBuf,
     platform_base_url: reqwest::Url,
+    // TODO: rename to `platform_public_key_path`
     platform_verification_key_path: PathBuf,
 
     upload_directory: PathBuf,
@@ -58,9 +60,10 @@ impl Config {
             .opt_value_from_str("--platform-name")?
             .unwrap_or("banyan-staging".into());
 
+        // TODO: change flag name to `--service-key-path`
         let platform_auth_key_path: PathBuf = args
             .opt_value_from_str("--auth-key")?
-            .unwrap_or("./data/platform-auth.key".into());
+            .unwrap_or("./data/service-key.private".into());
 
         if args.contains("--generate-auth") {
             let mut key_path = platform_auth_key_path.clone();
@@ -121,9 +124,10 @@ impl Config {
             },
         };
 
+        // TODO: rename flag to `--platform-public-key-path`
         let platform_verification_key_path: PathBuf = args
             .opt_value_from_str("--verifier-key")?
-            .unwrap_or("./data/platform-verifier.public".into());
+            .unwrap_or("./data/platform-key.public".into());
 
         let upload_directory = args
             .opt_value_from_str("--upload-dir")?

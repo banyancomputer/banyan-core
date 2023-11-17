@@ -7,16 +7,16 @@ use tower_http::limit::RequestBodyLimitLayer;
 
 mod data_source;
 mod liveness;
-pub mod readiness;
+mod readiness;
 mod version;
 
-use crate::app::State;
+use crate::app::AppState;
 
 /// Healthcheck endpoints generally shouldn't contain anything other than headers which are counted
 /// among these bytes in the limit. Large requests here should always be rejected.
 const HEALTHCHECK_REQUEST_SIZE_LIMIT: usize = 1_024;
 
-pub fn router(state: State) -> Router<State> {
+pub fn router(state: AppState) -> Router<AppState> {
     let cors_layer = CorsLayer::new()
         .allow_methods(vec![Method::GET])
         .allow_headers(vec![ACCEPT, ORIGIN])

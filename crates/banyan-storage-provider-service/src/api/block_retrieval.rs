@@ -8,9 +8,10 @@ use cid::Cid;
 use object_store::{GetOptions, ObjectStore};
 use uuid::Uuid;
 
-use crate::app::State as AppState;
+use crate::app::AppState;
 use crate::database::Database;
-use crate::extractors::{AuthenticatedClient, UploadStore};
+use crate::upload_store::UploadStore;
+use crate::extractors::AuthenticatedClient;
 
 pub async fn handler(
     State(state): State<AppState>,

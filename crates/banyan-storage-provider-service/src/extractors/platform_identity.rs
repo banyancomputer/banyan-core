@@ -22,15 +22,15 @@ use crate::extractors::fingerprint_validator;
 /// we'll reject the token even if its otherwise valid.
 const MAXIMUM_TOKEN_AGE: u64 = 900;
 
-pub struct CoreIdentity;
+pub struct PlatformIdentity;
 
 #[async_trait]
-impl<S> FromRequestParts<S> for CoreIdentity
+impl<S> FromRequestParts<S> for PlatformIdentity
 where
     PlatformVerificationKey: FromRef<S>,
     S: Send + Sync,
 {
-    type Rejection = CoreIdentityError;
+    type Rejection = PlatformIdentityError;
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
         let TypedHeader(Authorization(bearer)) = parts
@@ -75,7 +75,7 @@ where
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum CoreIdentityError {
+pub enum PlatformIdentityError {
     #[error("nonce wasn't present or insufficiently long")]
     BadNonce,
 
@@ -95,9 +95,9 @@ pub enum CoreIdentityError {
     ValidationFailed(jwt_simple::Error),
 }
 
-impl IntoResponse for CoreIdentityError {
+impl IntoResponse for PlatformIdentityError {
     fn into_response(self) -> Response {
-        use CoreIdentityError::*;
+        use PlatformIdentityError::*;
 
         match &self {
             BadNonce | CorruptHeader(_) | InvalidKeyId | MissingKeyId | ValidationFailed(_) => {

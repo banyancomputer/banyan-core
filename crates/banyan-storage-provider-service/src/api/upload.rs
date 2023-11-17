@@ -19,10 +19,10 @@ use uuid::Uuid;
 
 use banyan_car_analyzer::{CarReport, StreamingCarAnalyzer, StreamingCarAnalyzerError};
 
-use crate::app::PlatformAuthKey;
-use crate::app::State as AppState;
-use crate::database::{map_sqlx_error, BareId, Database, SqlxError};
-use crate::extractors::{AuthenticatedClient, UploadStore};
+use crate::app::AppState;
+use crate::upload_store::UploadStore;
+use crate::database::{map_sqlx_error, BareId, Database, DatabaseError};
+use crate::extractors::AuthenticatedClient;
 use crate::tasks::ReportUploadTask;
 
 /// Limit on the size of the JSON request that accompanies an upload.
@@ -335,7 +335,7 @@ where
 #[derive(Debug, thiserror::Error)]
 pub enum UploadError {
     #[error("a database error occurred during an upload {0}")]
-    Database(#[from] SqlxError),
+    Database(#[from] DatabaseError),
 
     #[error("we expected a data field but received nothing")]
     DataFieldMissing,
@@ -401,7 +401,7 @@ pub enum UploadStreamError {
     DatabaseCorruption(&'static str),
 
     #[error("unable to record details about the stream in the database")]
-    DatabaseFailure(#[from] SqlxError),
+    DatabaseFailure(#[from] DatabaseError),
 
     #[error("uploaded file was not a properly formatted car file")]
     ParseError(#[from] StreamingCarAnalyzerError),

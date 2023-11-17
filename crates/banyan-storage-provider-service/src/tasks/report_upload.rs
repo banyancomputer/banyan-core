@@ -14,9 +14,9 @@ use uuid::Uuid;
 use banyan_task::{CurrentTask, TaskLike};
 use banyan_car_analyzer::CarReport;
 
-use crate::app::{PlatformAuthKey, State};
+use crate::app::AppState;
 
-pub type ReportUploadTaskContext = State;
+pub type ReportUploadTaskContext = AppState;
 
 #[non_exhaustive]
 #[derive(Debug, thiserror::Error)]
@@ -24,7 +24,7 @@ pub enum ReportUploadTaskError {
     #[error("the task encountered an invalid cid: {0}")]
     InvalidInternalCid(#[from] cid::Error),
     #[error("the task encountered a sql error: {0}")]
-    SqlxError(#[from] sqlx::Error),
+    DatabaseError(#[from] sqlx::Error),
     #[error("the task encountered a reqwest error: {0}")]
     ReqwestError(#[from] reqwest::Error),
     #[error("the task encountered a jwt error: {0}")]
@@ -72,8 +72,11 @@ impl TaskLike for ReportUploadTask {
     type Context = ReportUploadTaskContext;
 
     async fn run(&self, _task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
-        let auth_key = ctx.platform_auth_key();
-        let auth_name = ctx.platform_name();
+        let service_signing_key = ctx.secrets().service_signing_key();
+        let service_name = ctx.service_name();
+        let platform_name = ctx.platform_name();
+        let platform_hostname = ctx.platform_hostname();
+
         let metadata_id = self.metadata_id.to_string();
         let storage_authorization_id = self.storage_authorization_id.to_string();
         let data_size = self.data_size;
@@ -94,20 +97,19 @@ impl TaskLike for ReportUploadTask {
             .build()
             .unwrap();
 
-        let report_endpoint = auth_key
-            .base_url()
+        let report_endpoint = platform_hostname
             .join(&format!("/hooks/storage/report/{}", metadata_id))
             .unwrap();
 
         let mut claims = Claims::create(Duration::from_secs(60))
-            .with_audiences(HashSet::from_strings(&["banyan-platform"]))
-            .with_subject(auth_name)
+            .with_audiences(HashSet::from_strings(&[platform_name]))
+            .with_subject(service_name)
             .invalid_before(Clock::now_since_epoch() - Duration::from_secs(30));
 
         claims.create_nonce();
         claims.issued_at = Some(Clock::now_since_epoch());
 
-        let bearer_token = auth_key.sign(claims).unwrap();
+        let bearer_token = service_signing_key.sign(claims).unwrap();
 
         let report_upload = ReportUpload {
             data_size,

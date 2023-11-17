@@ -1,12 +1,12 @@
-use std::io::Write;
-use std::path::PathBuf;
 use std::fs::OpenOptions;
+use std::io::Write;
 use std::net::{IpAddr, Ipv6Addr, SocketAddr};
+use std::path::PathBuf;
 
+use jwt_simple::prelude::*;
 use pico_args::Arguments;
 use tracing::Level;
 use url::Url;
-use jwt_simple::prelude::*;
 
 use crate::app::Version;
 use crate::utils::sha1_fingerprint_publickey;
@@ -20,21 +20,22 @@ pub struct Config {
 
     /// The URL of the database to use (SQLite)
     database_url: Url,
-    /// The hostname of this service
-    hostname: Url,
-
-    /// The naem fo the service, as registered with the platform
-    platform_name: String,
-    /// The path to the public key used for authenticating requests from the platform
-    platform_public_key_path: PathBuf,
-    /// The base URL of the platform
-    platform_base_url: Url,
-
-    /// The path to the signing key used for authenticating requests to the platform and other services
-    service_key_path: PathBuf,
-
     /// Where to store uploaded objects
     upload_directory: PathBuf,
+    
+    /// The unique name fo the service, as registered with the platform
+    service_name: String,
+    /// The hostname of this service
+    service_hostname: Url,
+    /// The path to the signing key used for authenticating requests to the platform and other services
+    service_key_path: PathBuf,
+    
+    /// The name of the platform
+    platform_name: String,
+    /// The base URL of the platform
+    platform_hostname: Url,
+    /// The path to the public key used for authenticating requests from the platform
+    platform_verfication_key_path: PathBuf,
 }
 
 impl Config {
@@ -51,9 +52,11 @@ impl Config {
             std::process::exit(0);
         }
 
+        // Generate a new signing key for the service if requested
+
         let service_key_path: PathBuf = args
-            .opt_value_from_str("--serice-key-path")?
-            .unwrap_or("./data/serice.key".into());
+            .opt_value_from_str("--service-key-path")?
+            .unwrap_or("./data/service-key.private".into());
 
         if args.contains("--generate-auth") {
             let mut key_path = service_key_path.clone();
@@ -98,11 +101,13 @@ impl Config {
 
         let listen_addr = args
             .opt_value_from_str("--listen")?
-            .unwrap_or(SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), 3000));
+            .unwrap_or(SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), 3003));
 
         let log_level = args
             .opt_value_from_str("--log-level")?
             .unwrap_or(Level::INFO);
+
+        // Resource configuration
 
         let database_str = match args.opt_value_from_str("--database-url")? {
             Some(du) => du,
@@ -112,23 +117,7 @@ impl Config {
             },
         };
         let database_url = Url::parse(&database_str).map_err(ConfigError::InvalidDatabaseUrl)?;
-
-        let hostname = args
-            .opt_value_from_str("--hostname")?
-            .unwrap_or("http://127.0.0.1:3003".parse().unwrap());
-
-        let platform_name = args
-            .opt_value_from_str("--platform-name")?
-            .unwrap_or("banyan-storage-provider".into());
-
-        let platform_public_key_path: PathBuf = args
-            .opt_value_from_str("--platform-public-key-path")?
-            .unwrap_or("./data/platform-public.key".into());
         
-        let platform_base_url = args
-            .opt_value_from_str("--platform-url")?
-            .unwrap_or("http://127.0.0.1:3001".parse().unwrap());
-
         let upload_dir_str = match args.opt_value_from_str("--upload-dir")? {
             Some(path) => path,
             None => match std::env::var("UPLOAD_DIR") {
@@ -138,20 +127,44 @@ impl Config {
         };
         let upload_directory = PathBuf::from(upload_dir_str);
 
+        // Service identity configuration
+
+        let service_name = args
+            .opt_value_from_str("--service-name")?
+            .unwrap_or("banyan-storage-provider".into());
+
+        let service_hostname = args
+            .opt_value_from_str("--service-hostname")?
+            .unwrap_or("http://127.0.0.1:3003".parse().unwrap());
+
+        // Platform configuration
+
+        let platform_name = args
+            .opt_value_from_str("--platform-name")?
+            .unwrap_or("banyan-platform".into());
+
+        let platform_hostname = args
+            .opt_value_from_str("--platform-hostname")?
+            .unwrap_or("http://127.0.0.1:3001".parse().unwrap());
+
+        let platform_verfication_key_path: PathBuf = args
+            .opt_value_from_str("--platform-key-verifier-path")?
+            .unwrap_or("./data/platform-key.public".into());
+
         Ok(Config {
             listen_addr,
             log_level,
 
             database_url,
-            hostname,
+            upload_directory,
 
-            platform_name,
-            platform_public_key_path,
-            platform_base_url,
-
+            service_name,
+            service_hostname,
             service_key_path,
 
-            upload_directory,
+            platform_name,
+            platform_hostname,
+            platform_verfication_key_path,
         })
     }
 
@@ -167,28 +180,32 @@ impl Config {
         self.database_url.clone()
     }
 
-    pub fn hostname(&self) -> Url {
-        self.hostname.clone()
+    pub fn upload_directory(&self) -> PathBuf {
+        self.upload_directory.clone()
     }
 
-    pub fn platform_name(&self) -> &str {
-        &self.platform_name
+    pub fn service_name(&self) -> &str {
+        &self.service_name
     }
 
-    pub fn platform_public_key_path(&self) -> PathBuf {
-        self.platform_public_key_path.clone()
-    }
-
-    pub fn platform_base_url(&self) -> Url {
-        self.platform_base_url.clone()
+    pub fn service_hostname(&self) -> Url {
+        self.service_hostname.clone()
     }
 
     pub fn service_key_path(&self) -> PathBuf {
         self.service_key_path.clone()
     }
 
-    pub fn upload_directory(&self) -> PathBuf {
-        self.upload_directory.clone()
+    pub fn platform_name(&self) -> &str {
+        &self.platform_name
+    }
+
+    pub fn platform_hostname(&self) -> Url {
+        self.platform_hostname.clone()
+    }
+
+    pub fn platform_verification_key_path(&self) -> PathBuf {
+        self.platform_verfication_key_path.clone()
     }
 }
 
@@ -203,32 +220,35 @@ pub enum ConfigError {
     #[error("invalid listening address: {0}")]
     InvalidListenAddr(std::net::AddrParseError),
 
-    #[error("service key gen failed: {0}")]
+    #[error("signing key gen failed: {0}")]
     ServiceKeyGenFailed(jwt_simple::Error),
 
-    #[error("unable to write service key: {0}")]
+    #[error("unable to write signing key: {0}")]
     ServiceKeyWriteFailed(std::io::Error),
 }
 
 fn print_help() {
-    println!("Service may be configured using the environment or CLI flags\n");
+    println!("Service may be configured using the following CLI flags\n");
     println!("  Available options:");
-    println!("    -h, --help                    Print this notice and exit");
-    println!("    -v, --version                 Display the version of this compiled version");
-    println!("                                  and exit\n");
-    println!("    --listen, LISTEN_ADDR         Specify the address to bind to, by default");
-    println!("                                  this is 127.0.0.1:3001");
-    println!("    --mailgun, MAILGUN_KEY        Webhook signature verification key issued by");
-    println!("                                  mailgun");
-    println!("    --signing-key, SESSION_KEY    Path to the p384 private key used for session");
-    println!("                                  key generation and verification");
-    println!("    --upload-dir, UPLOAD_DIR      Path used to store uploaded client data\n");
-    println!("    --db-url, DATABASE_URL        Configure the url and settings of the sqlite");
-    println!("                                  database (default in memory)");
-    println!("  Additional Environment Options:");
-    println!("    GOOGLE_OAUTH_CLIENT_ID        The client ID associated with this app for");
-    println!("                                  performing authentication using Google services.");
-    println!("    GOOGLE_OAUTH_CLIENT_SECRET    The client secret paired with the client ID.");
+    println!("    -h, --help                            Print this notice and exit");
+    println!("    -v, --version                         Display the version of this compiled version");
+    println!("                                          and exit\n");
+    println!("    --generate-auth                       Generate a new signing key for the service. Exits upon key generation if used.\n");
+    println!("    --listen LISTEN_ADDR                  Specify the address to bind to, by default");
+    println!("                                          this is 127.0.0.1:3001");
+    println!("    --log-level LOG_LEVEL                 Specify the log level to use, by default");
+    println!("                                          this is INFO\n");
+    println!("    --database-url DATABASE_URL           Configure the url for the sqlite database (default ./data/server.db)");
+    println!("    --upload-dir UPLOAD_DIR               Path used to store uploaded client data. (default ./data/uploads)\n");
+    println!("    --service-name SERVICE_NAME           The unique name of the service, as registered with the platform. (default banyan-storage-provider)");
+    println!("    --service-hostname SERVICE_HOSTNAME   The hostname of this service (default http://127.0.0.1:3002)");
+    println!("    --service-key-path SERVICE_KEY_PATH   Path to the p384 private key used for service token signing and verification");
+    println!("                                          (default ./data/service-key.private)\n");
+    println!("    --platform-name PLATFORM_NAME         The name of the platform (default banyan-platform)");
+    println!("    --platform-hostname PLATFORM_HOSTNAME The base URL of the platform (default http://127.0.0.1:3001)");
+    println!("    --platform-key-verifier-path PLATFORM_KEY_VERIFIER_PATH");
+    println!("                                          Path to the public key used for authenticating requests from the platform");
+    println!("                                          (default ./data/platform-key.public)\n");
 }
 
 fn print_version() {

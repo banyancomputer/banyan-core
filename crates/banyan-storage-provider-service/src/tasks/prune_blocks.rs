@@ -11,15 +11,16 @@ use uuid::Uuid;
 
 use banyan_task::{CurrentTask, TaskLike};
 
-use crate::app::{PlatformAuthKey, State};
+use crate::app::AppState;
+use crate::utils::SigningKey;
 
-pub type PruneBlocksTaskContext = State;
+pub type PruneBlocksTaskContext = AppState;
 
 #[non_exhaustive]
 #[derive(Debug, thiserror::Error)]
 pub enum PruneBlocksTaskError {
     #[error("the task encountered a sql error: {0}")]
-    SqlxError(#[from] sqlx::Error),
+    DatabaseError(#[from] sqlx::Error),
     #[error("the task encountered a reqwest error: {0}")]
     ReqwestError(#[from] reqwest::Error),
     #[error("the task encountered a jwt error: {0}")]
@@ -58,17 +59,18 @@ impl TaskLike for PruneBlocksTask {
     type Context = PruneBlocksTaskContext;
 
     async fn run(&self, _task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
-        let auth_key = ctx.platform_auth_key();
-        let auth_name = ctx.platform_name();
+        // let service_signing_key = ctx.secrets().service_signing_key();
+        // let service_name = ctx.service_name();
+        // let platform_hostname = ctx.platform_hostname();
         let mut db_conn = ctx
             .database()
             .acquire()
             .await
-            .map_err(PruneBlocksTaskError::SqlxError)?;
+            .map_err(PruneBlocksTaskError::DatabaseError)?;
         let mut transaction = db_conn
             .begin()
             .await
-            .map_err(PruneBlocksTaskError::SqlxError)?;
+            .map_err(PruneBlocksTaskError::DatabaseError)?;
 
         for prune_block in &self.prune_blocks {
             let metadata_id = prune_block.metadata_id.to_string();
@@ -87,7 +89,7 @@ impl TaskLike for PruneBlocksTask {
             )
             .fetch_one(&mut *transaction)
             .await
-            .map_err(PruneBlocksTaskError::SqlxError)?;
+            .map_err(PruneBlocksTaskError::DatabaseError)?;
 
             // Set the specifiec block as pruned
             sqlx::query!(
@@ -100,24 +102,28 @@ impl TaskLike for PruneBlocksTask {
             )
             .execute(&mut *transaction)
             .await
-            .map_err(PruneBlocksTaskError::SqlxError)?;
+            .map_err(PruneBlocksTaskError::DatabaseError)?;
         }
 
-        report_pruned_blocks(&auth_key, auth_name, &self.prune_blocks).await?;
+        report_pruned_blocks(&ctx, &self.prune_blocks).await?;
 
         transaction
             .commit()
             .await
-            .map_err(PruneBlocksTaskError::SqlxError)?;
+            .map_err(PruneBlocksTaskError::DatabaseError)?;
         Ok(())
     }
 }
 
 async fn report_pruned_blocks(
-    auth_key: &PlatformAuthKey,
-    auth_name: &str,
+    ctx: &PruneBlocksTaskContext,
     prune_blocks: &Vec<PruneBlock>,
 ) -> Result<(), PruneBlocksTaskError> {
+    let service_signing_key = ctx.secrets().service_signing_key();
+    let service_name = ctx.service_name();
+    let platform_name = ctx.platform_name();
+    let platform_hostname = ctx.platform_hostname();
+
     let mut default_headers = HeaderMap::new();
     default_headers.insert("Content-Type", HeaderValue::from_static("application/json"));
 
@@ -126,20 +132,19 @@ async fn report_pruned_blocks(
         .build()
         .unwrap();
 
-    let report_endpoint = auth_key
-        .base_url()
+    let report_endpoint = platform_hostname
         .join("/hooks/storage/prune".to_string().as_str())
         .unwrap();
 
     let mut claims = Claims::create(Duration::from_secs(60))
-        .with_audiences(HashSet::from_strings(&["banyan-platform"]))
-        .with_subject(auth_name)
+        .with_audiences(HashSet::from_strings(&[platform_name]))
+        .with_subject(service_name)
         .invalid_before(Clock::now_since_epoch() - Duration::from_secs(30));
 
     claims.create_nonce();
     claims.issued_at = Some(Clock::now_since_epoch());
 
-    let bearer_token = auth_key.sign(claims).unwrap();
+    let bearer_token = service_signing_key.sign(claims).map_err(PruneBlocksTaskError::JwtError)?;
 
     let request = client
         .post(report_endpoint)

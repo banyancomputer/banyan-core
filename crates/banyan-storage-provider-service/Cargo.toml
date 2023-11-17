@@ -5,10 +5,20 @@ edition = "2021"
 license = "LicenseRef-LICENSE.txt"
 
 [dependencies]
+banyan-task = { path = "../banyan-task", version = "^0.1" }
+banyan-car-analyzer = { path = "../banyan-car-analyzer", version = "^0.1" }
+
+async-trait = "^0.1"
 futures = "^0.3"
 rand = "^0.8"
 thiserror = "^1"
 tokio = { version = "^1", features = ["macros", "net", "rt", "rt-multi-thread", "signal", "sync", "time"] }
+cid = { version = "^0.10" }
+bytes = "^1"
+blake3 = "^1"
+mime = "^0.3"
+regex = { version = "^1", default-features = false, features = ["std"] }
+hyper = "^0.14"
 
 pico-args = "^0.5"
 
@@ -20,10 +30,12 @@ sha1 = "^0.10"
 axum = { version = "^0.6", features = ["headers", "http2", "macros", "multipart", "tracing"] }
 http = "^0.2"
 jwt-simple = "^0.11"
+multer = { version = "^2", features = ["json", "tokio", "tokio-io"] }
 reqwest = { version = "^0.11", default-features = false, features = ["json", "rustls-tls-native-roots"] }
 sqlx = { version = "^0.7", default-features = false, features = ["macros", "migrate", "runtime-tokio", "sqlite", "tls-rustls", "uuid"] }
 time = { version = "^0.3", features = ["formatting", "serde"] }
-tower-http = { version = "^0.4", features = ["fs"] }
+tower = { version = "^0.4", features = ["timeout", "load-shed", "limit", "util"] }
+tower-http = { version = "^0.4", features = ["auth", "cors", "limit", "fs", "propagate-header", "request-id", "sensitive-headers", "set-header", "util", "trace", "validate-request"] }
 object_store = "^0.6"
 url = "^2.4"
 
