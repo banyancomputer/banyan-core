@@ -129,7 +129,7 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     return (
         <div className={'w-56 text-xs font-medium bg-bucket-actionsBackground rounded-xl overflow-hidden shadow-md z-10 select-none text-bucket-actionsText'}>
             {
-                !bucket.locked ?
+                bucket.locked ?
                     <div
                         className="w-full flex items-center gap-2 py-2 px-3 transition-all hover:bg-hover"
                         onClick={unlock}
