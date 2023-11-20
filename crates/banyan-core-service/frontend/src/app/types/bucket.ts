@@ -41,6 +41,7 @@ export interface Bucket {
     files: BrowserObject[];
     snapshots: BucketSnapshot[];
     keys: BucketKey[];
+    locked: boolean;
 };
 
 export class MockBucket {
@@ -52,4 +53,5 @@ export class MockBucket {
     public files = [];
     public snapshots = [];
     public keys = [];
+    public locked = false;
 };
