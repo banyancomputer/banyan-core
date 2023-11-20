@@ -164,7 +164,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	const getExpandedFolderFiles = async (path: string[], folder: BrowserObject, bucket: Bucket) => {
 		await tombMutex(selectedBucket!.mount, async mount => {
 			const files = await mount.ls(path);
-			folder.files = files;
+			folder.files = files.sort(sortByType);
 			setSelectedBucket(prev => ({ ...prev! }));
 		});
 	};
@@ -307,7 +307,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 				await mount.write([...uploadPath, name], file);
 				if (folder) {
 					const files = await mount.ls(uploadPath);
-					folder.files = files;
+					folder.files = files.sort(sortByType);
 					setSelectedBucket(prev => ({ ...prev! }));
 
 					return;
