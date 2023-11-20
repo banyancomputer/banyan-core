@@ -14,15 +14,30 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
+
       - name: Set up Node.js with Yarn
         uses: actions/setup-node@v2
         with:
           node-version-file: ./crates/banyan-core-service/frontend/.nvmrc
           cache-dependency-path: ./crates/banyan-core-service/frontend/yarn.lock
           cache: 'yarn'
-
+      
+      - name: Cache Yarn Dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/yarn
+          key: yarn-${{ runner.os }}-frontend-${{ hashFiles('crates/banyan-core-service/frontend/yarn.lock') }}
+          restore-keys: yarn-${{ runner.os }}-frontend-
+      
       - name: Install Dependencies
         run: yarn install
 
+      - name: Cache Build Artifacts
+        uses: actions/cache@v2
+        with:
+          path: crates/banyan-core-service/frontend/dist
+          key: build-${{ runner.os }}-frontend-${{ hashFiles('crates/banyan-core-service/frontend/package.json') }}
+          restore-keys: build-${{ runner.os }}-frontend-
+      
       - name: Build Core Web Application
         run: yarn build
