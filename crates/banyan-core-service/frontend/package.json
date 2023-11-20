@@ -5,6 +5,7 @@
   "dependencies": {
     "@auth/sequelize-adapter": "^1.0.1",
     "async-mutex": "0.4.0",
+    "buffer": "^6.0.3",
     "class-validator": "^0.14.0",
     "daisyui": "3.5.1",
     "date-fns": "^2.30.0",
@@ -33,12 +34,14 @@
     "dev": "tsc && vite build --watch --mode development",
     "build": "tsc && vite build",
     "start": "vite",
-    "lint": "eslint --fix --ext .js,.ts,.tsx ."
+    "lint": "eslint --fix --ext .js,.ts,.tsx .",
+    "test": "jest --config=jest.config.js"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "5.16.5",
     "@testing-library/react": "13.3.0",
     "@testing-library/user-event": "13.5.0",
+    "@types/jest": "27.5.2",
     "@types/node": "18.15.5",
     "@types/react": "18.2.31",
     "@types/react-dom": "18.2.14",
@@ -53,6 +56,7 @@
     "postcss": "8.4.31",
     "prettier": "3.0.3",
     "tailwindcss": "3.3.4",
+    "ts-jest": "27.1.4",
     "typescript": "5.2.2",
     "vite": "4.4.7",
     "vite-plugin-compression": "0.5.1",
@@ -69,6 +73,12 @@
       "last 1 chrome version",
       "last 1 firefox version",
       "last 1 safari version"
+    ]
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
     ]
   }
 }
