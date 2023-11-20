@@ -41,3 +41,4 @@ jobs:
       
       - name: Build Core Web Application
         run: yarn build
+
