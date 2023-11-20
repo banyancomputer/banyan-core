@@ -1,8 +1,8 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::database::models::{Bucket, BucketType, StorageClass};
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct ApiBucket {
     pub id: String,
     pub name: String,
