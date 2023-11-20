@@ -6,6 +6,7 @@ mod all_buckets;
 mod create_bucket;
 mod delete_bucket;
 mod single_bucket;
+mod update_bucket;
 
 mod bucket_usage;
 mod current_total_usage;
@@ -22,7 +23,9 @@ pub fn router(state: AppState) -> Router<AppState> {
     Router::new()
         .route(
             "/:bucket_id",
-            get(single_bucket::handler).delete(delete_bucket::handler),
+            get(single_bucket::handler)
+                .put(update_bucket::handler)
+                .delete(delete_bucket::handler),
         )
         .nest("/:bucket_id/keys", keys::router(state.clone()))
         .nest("/:bucket_id/metadata", metadata::router(state.clone()))
