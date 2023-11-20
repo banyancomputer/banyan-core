@@ -10,13 +10,8 @@ import { AuthClient } from '@/api/auth';
 const KEY_STORE_NAME_PREFIX = 'banyan-key-cache';
 
 export const KeystoreContext = createContext<{
-	// External State
-
 	// Whether the user's keystore has been initialized
 	keystoreInitialized: boolean;
-
-	// External Methods
-
 	// Initialize a keystore based on the user's passphrase
 	initializeKeystore: (passkey: string) => Promise<void>;
 	// Get the user's Encryption Key Pair

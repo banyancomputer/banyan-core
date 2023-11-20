@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { useIntl } from 'react-intl';
-import { MdDone } from 'react-icons/md';
 
 import { useModal } from '@/app/contexts/modals';
 import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { useTomb } from '@/app/contexts/tomb';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
+
+import { Done } from '@static/images/common';
 
 export const RenameFileModal: React.FC<{ bucket: Bucket; file: BrowserObject; path: string[] }> = ({ bucket, file, path }) => {
     const { closeModal } = useModal();
@@ -18,7 +19,7 @@ export const RenameFileModal: React.FC<{ bucket: Bucket; file: BrowserObject; pa
     const save = async () => {
         try {
             await moveTo(bucket, [...path, file.name], [...path, newName]);
-            ToastNotifications.notify(`${messages.fileWasRenamed}`, <MdDone size="20px" />);
+            ToastNotifications.notify(`${messages.fileWasRenamed}`,<Done width="20px" height="20px" />);
             if (path.join('/') === folderLocation.join('/')) {
                 await getSelectedBucketFiles(folderLocation);
                 closeModal();

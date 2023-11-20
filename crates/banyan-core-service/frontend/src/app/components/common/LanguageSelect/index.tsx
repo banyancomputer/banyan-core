@@ -1,12 +1,12 @@
-import React, { ReactElement, useEffect, useRef, useState } from 'react';
-import { FiChevronDown } from 'react-icons/fi';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useRef, useState } from 'react';
 
 import { localeToAlpha2CountryCode, localeToLanguage } from '@app/utils/locales';
 import { useIntl } from 'react-intl';
 import { locales } from '@app/App';
 import { setLocalStorageItem } from '@app/utils/localStorage';
 import { popupClickHandler } from '@/app/utils';
+
+import { ChevronUp } from '@static/images/common';
 
 export const LanguageSelect = () => {
     const selectRef = useRef<HTMLDivElement | null>(null);
@@ -49,11 +49,9 @@ export const LanguageSelect = () => {
             <span className="flex-grow">
                 {localeToLanguage[locale || 'en']}
             </span>
-            <FiChevronDown
-                className={`${isOptionstVisible && 'rotate-180'}`}
-                stroke="#667085"
-                size="20px"
-            />
+            <span className={`${isOptionstVisible ? 'rotate-0' : 'rotate-180'}`}>
+                <ChevronUp />
+            </span>
             {isOptionstVisible &&
                 <ul
                     onClick={stopPropagation}
@@ -61,7 +59,7 @@ export const LanguageSelect = () => {
                 >
                     {locales?.map((language: string) =>
                         <div
-                            className="flex items-center gap-2 p-2.5 transition-all hover:bg-bucket-bucketHoverBackground cursor-pointer"
+                            className="flex items-center gap-2 p-2.5 transition-all bg-secondaryBackground hover:bg-bucket-bucketHoverBackground cursor-pointer"
                             key={language}
                             onClick={() => changeLanguage(language)}
                         >

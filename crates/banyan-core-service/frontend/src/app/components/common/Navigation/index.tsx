@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useIntl } from 'react-intl';
-import { Link, NavLink, useNavigate, useParams } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 
 import { CreateBucketModal } from '../Modal/CreateBucketModal';
 
@@ -19,8 +19,8 @@ export const Navigation = () => {
 	const [areHelpOpionsVisible, setAreHelpOpionsVisible] = useState(false);
 	const { messages } = useIntl();
 	const { openModal } = useModal();
-	const navigate = useNavigate();
 	const helpRef = useRef<HTMLDivElement | null>(null);
+	const location = useLocation();
 
 	const toggleBucketsVisibility = (event: React.MouseEvent<HTMLDivElement>) => {
 		event.stopPropagation();
@@ -67,7 +67,7 @@ export const Navigation = () => {
 	return (
 		<nav className="flex flex-col w-navbar min-w-navbar bg-navigation-primary py-8 px-4 text-navigation-text border-r-2 border-r-navigation-border">
 			<Link to="/" className="mb-7 flex text-xs" >
-				<Logo width="174px" height="36px" />
+				<Logo width="246px" height="56px" />
 			</Link>
 			<div className="flex-grow py-8 border-t-2 border-b-2 border-navigation-separator text-navigation-text">
 				<NavLink
@@ -93,11 +93,11 @@ export const Navigation = () => {
 								<li key={bucket.id}>
 									<NavLink
 										to={`/bucket/${bucket.id}`}
-										className={'relative flex items-center justify-between gap-2  w-full h-10  cursor-pointer '}
+										className="relative flex items-center justify-between gap-2  w-full h-10  cursor-pointer"
 									>
 										<span className="absolute w-4 h-11 bottom-1/2 border-2 border-transparent border-l-navigation-secondary border-b-navigation-secondary">
 										</span>
-										<span className={`ml-5 py-2 px-2 flex-grow whitespace-nowrap overflow-hidden rounded-md verflow-ellipsis active:bg-navigation-secondary`}>
+										<span className={`ml-5 py-2 px-2 flex-grow whitespace-nowrap overflow-hidden rounded-md verflow-ellipsis ${location.pathname.includes(bucket.id) && 'bg-navigation-secondary'}`}>
 											{bucket.name}
 										</span>
 									</NavLink>
