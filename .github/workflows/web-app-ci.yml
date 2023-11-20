@@ -9,7 +9,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: crates/banyan-core-service/frontend
+        working-directory: ./crates/banyan-core-service/frontend
 
     steps:
       - name: Checkout Code
@@ -18,7 +18,8 @@ jobs:
       - name: Set up Node.js with Yarn
         uses: actions/setup-node@v2
         with:
-          node-version: 18
+          node-version-file: ./crates/banyan-core-service/frontend/.nvmrc
+          cache-dependency-path: ./crates/banyan-core-service/frontend/yarn.lock
           cache: 'yarn'
 
       - name: Install Dependencies
