@@ -1,10 +1,10 @@
-name: 🌐 Frontend Applications CI
+name: 🌐 Continuous Integration
 
 on:
   - pull_request
 
 jobs:
-  build:
+  build_core_frontend:
     runs-on: ubuntu-latest
 
     defaults:
