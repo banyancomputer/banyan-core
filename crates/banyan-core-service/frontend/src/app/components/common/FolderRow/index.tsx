@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { ActionsCell } from '../ActionsCell';
@@ -23,7 +23,6 @@ export const FolderRow: React.FC<{
     nestingLevel?: number;
     parrentFolder?: BrowserObject;
 }> = ({ folder, bucket, tableRef, tableScroll, nestingLevel = 0.25, path = [], parrentFolder }) => {
-    const [isVisible, setIsVisible] = useState(false);
     const navigate = useNavigate();
     const { getExpandedFolderFiles, selectBucket } = useTomb();
 
@@ -38,14 +37,12 @@ export const FolderRow: React.FC<{
         event.stopPropagation();
 
         try {
-            if (isVisible) {
+            if (folder.files?.length) {
                 folder.files = [];
                 selectBucket({ ...bucket });
             } else {
                 await getExpandedFolderFiles([...path, folder.name], folder, bucket);
             };
-
-            setIsVisible(prev => !prev);
         } catch (error: any) { };
     };
 
@@ -60,7 +57,7 @@ export const FolderRow: React.FC<{
                     style={{ paddingLeft: `${nestingLevel * 60}px` }}
                 >
                     <span
-                        className={`${!isVisible && 'rotate-180'} cursor-pointer p-2`}
+                        className={`${!folder.files?.length && 'rotate-180'} cursor-pointer p-2`}
                         onClick={expandFolder}
                     >
                         <ChevronUp />
@@ -89,7 +86,7 @@ export const FolderRow: React.FC<{
                     }
                 </td>
             </tr>
-            {isVisible &&
+            {folder.files?.length ?
                 folder.files?.map((file, index) =>
                     file.type === 'dir' ?
                         <FolderRow
@@ -114,6 +111,8 @@ export const FolderRow: React.FC<{
                             key={index}
                         />
                 )
+                :
+                null
             }
         </>
     );

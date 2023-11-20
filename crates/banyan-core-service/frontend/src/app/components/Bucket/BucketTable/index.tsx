@@ -35,7 +35,7 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
             ...bucket,
             files: [...bucket.files].sort((prev: BrowserObject, next: BrowserObject) => sortFiles(prev, next, sortState.criteria, sortState.direction !== 'ASC')).sort(sortByType)
         }));
-    }, [sortState, bucket]);
+    }, [sortState.criteria, sortState.direction, bucket]);
 
     useEffect(() => {
         setSortState(prev => ({ ...prev }));

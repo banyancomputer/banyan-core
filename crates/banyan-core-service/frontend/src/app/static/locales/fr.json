@@ -172,5 +172,6 @@
 	"snapshotTooltip": "Les instantanés archivés offrent un aperçu à un instant donné du fichier et sont utiles pour la versionnage.",
 	"coldTooltip": "Le stockage d'archives est destiné aux fichiers que vous souhaitez conserver en toute sécurité pendant une longue période et auxquels vous ne prévoyez pas d'accéder très fréquemment.",
 	"hotTooltip": "Le stockage à la demande est destiné aux fichiers auxquels vous prévoyez d'accéder fréquemment et auxquels vous avez besoin d'un accès rapide.",
-	"warmTooltip": "Le stockage à la demande est destiné aux fichiers auxquels vous prévoyez d'accéder fréquemment et auxquels vous avez besoin d'un accès rapide."
+	"warmTooltip": "Le stockage à la demande est destiné aux fichiers auxquels vous prévoyez d'accéder fréquemment et auxquels vous avez besoin d'un accès rapide.",
+	"unlock": "Ouvrir"
 }
