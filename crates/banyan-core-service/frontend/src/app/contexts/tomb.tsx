@@ -86,32 +86,38 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	/** Returns list of buckets. */
 	const getBuckets = async () => {
 		tombMutex(tomb, async tomb => {
+			const key = await getEncryptionKey();
 			const wasm_buckets: WasmBucket[] = await tomb!.listBuckets();
-			setBuckets(wasm_buckets.map(bucket => ({
-				mount: {} as WasmMount,
-				id: bucket.id(),
-				name: bucket.name(),
-				storageClass: bucket.storageClass(),
-				bucketType: bucket.bucketType(),
-				files: [],
-				snapshots: [],
-				keys: [],
-			})));
+			const buckets: Bucket[] = [];
+			for (let bucket of wasm_buckets) {
+				const mount = await tomb!.mount(bucket.id(), key.privatePem);
+				const locked = await mount.locked();
+				buckets.push({
+					mount,
+					id: bucket.id(),
+					name: bucket.name(),
+					storageClass: bucket.storageClass(),
+					bucketType: bucket.bucketType(),
+					files: [],
+					snapshots: [],
+					keys: [],
+					locked
+				});
+			};
+
+			setBuckets(buckets);
 		});
 	};
 
 	const getBucketsFiles = async () => {
 		setAreBucketsLoading(true);
 		tombMutex(tomb, async tomb => {
-			const key = await getEncryptionKey();
 			const wasm_bukets: Bucket[] = [];
 			for (const bucket of buckets) {
-				const mount = await tomb!.mount(bucket.id, key.privatePem);
-				const files: BrowserObject[] = await mount.ls([]) || [];
+				const files: BrowserObject[] = await bucket.mount.ls([]) || [];
 				const snapshots = await tomb!.listBucketSnapshots(bucket.id);
 				wasm_bukets.push({
 					...bucket,
-					mount,
 					snapshots,
 					files,
 				});
@@ -124,10 +130,8 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	const getBucketsKeys = async () => {
 		setAreBucketsLoading(true);
 		tombMutex(tomb, async tomb => {
-			const key = await getEncryptionKey();
 			const wasm_bukets: Bucket[] = [];
 			for (const bucket of buckets) {
-				const mount = await tomb!.mount(bucket.id, key.privatePem);
 				const rawKeys = await tomb!.listBucketKeys(bucket.id);
 				const keys: BucketKey[] = [];
 				for (let key of rawKeys) {
@@ -139,7 +143,6 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 				};
 				wasm_bukets.push({
 					...bucket,
-					mount,
 					keys,
 				});
 			}
@@ -153,7 +156,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 		tombMutex(selectedBucket!.mount, async mount => {
 			setAreBucketsLoading(true);
 			const files = await mount.ls(path);
-			await setSelectedBucket(bucket => ({...bucket!, files: files.sort(sortByType)}));
+			await setSelectedBucket(bucket => ({ ...bucket!, files: files.sort(sortByType) }));
 			setAreBucketsLoading(false);
 		});
 	};
@@ -161,24 +164,14 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	const getExpandedFolderFiles = async (path: string[], folder: BrowserObject, bucket: Bucket) => {
 		await tombMutex(selectedBucket!.mount, async mount => {
 			const files = await mount.ls(path);
-			folder.files = files;
+			folder.files = files.sort(sortByType);
 			setSelectedBucket(prev => ({ ...prev! }));
 		});
 	};
 
 	/** Sets selected bucket into state */
 	const selectBucket = async (bucket: Bucket | null) => {
-		if (!bucket) {
-			setSelectedBucket(null);
-
-			return;
-		};
-
-		const key = await getEncryptionKey();
-		await tombMutex(tomb, async tomb => {
-			const mount = await tomb!.mount(bucket?.id, key.privatePem);
-			setSelectedBucket({ ...bucket, mount });
-		});
+		setSelectedBucket(bucket);
 	};
 
 	/** Creates new bucket with recieved parameters of type and storag class. */
@@ -189,6 +182,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 			const mount = await tomb!.mount(wasmBucket.id(), key.privatePem);
 			const files = await mount.ls([]);
 			const snapshots = await tomb!.listBucketSnapshots(wasmBucket.id());
+			const locked = await mount.locked();
 			const bucket = {
 				mount,
 				id: wasmBucket.id(),
@@ -198,6 +192,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 				files: files || [],
 				snapshots,
 				keys: [],
+				locked
 			};
 
 			setBuckets(prev => [...prev, bucket]);
@@ -312,7 +307,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 				await mount.write([...uploadPath, name], file);
 				if (folder) {
 					const files = await mount.ls(uploadPath);
-					folder.files = files;
+					folder.files = files.sort(sortByType);
 					setSelectedBucket(prev => ({ ...prev! }));
 
 					return;

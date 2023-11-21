@@ -329,6 +329,7 @@ dependencies = [
  "blake3",
  "bytes",
  "cid",
+ "dotenvy",
  "futures",
  "http",
  "hyper",

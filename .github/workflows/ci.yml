@@ -58,7 +58,19 @@ jobs:
           # Nightly is needed for code coverage collection
           toolchain: nightly
           override: true
-      - uses: Swatinem/rust-cache@v2
+      # Swatinem/rust-cache@v2 is not useful for nightly builds, so just use very basic caching
+      - uses: actions/cache@v3
+        name: Set up cargo cache for nightly tests
+        continue-on-error: false
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/            
+          key: ${{ runner.os }}-rust-nightly-tests-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-rust-nightly-tests-
 
       - uses: actions-rs/cargo@v1
         name: Run all workspace tests

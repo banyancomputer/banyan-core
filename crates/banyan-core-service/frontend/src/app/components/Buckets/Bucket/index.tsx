@@ -7,7 +7,7 @@ import { popupClickHandler } from '@/app/utils';
 
 import { BucketActions } from '@/app/components/common/BucketActions';
 
-import { BucketIcon } from '@static/images/buckets';
+import { BucketIcon, Lock } from '@static/images/buckets';
 import { Dots, Question } from '@static/images/common';
 
 export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
@@ -73,7 +73,7 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
             onClick={openBucket}
         >
             <div
-                className={`absolute ${!isContextMenuVisible && 'invisible'} transition-none`}
+                className={`absolute ${!isContextMenuVisible && 'invisible'} transition-none z-10`}
                 ref={bucketActionsRef}
                 style={{ top: `${position.y}px`, left: `${position.x}px` }}
                 id="bucketActions"
@@ -99,7 +99,12 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
                     </span>
                 </div>
             </h4>
-            <div className="mb-6 flex justify-center py-10 bg-bucket-bucketIconBackground rounded-xl">
+            <div className="relative mb-6 flex justify-center py-10 bg-bucket-bucketIconBackground rounded-xl z-0">
+                    {bucket.locked ?
+                        <div className="absolute right-2 top-2 text-text-400"><Lock /></div>
+                        :
+                        null
+                    }
                 <BucketIcon />
             </div>
             <div className="flex flex-col gap-2 items-start text-xs font-normal">
@@ -115,7 +120,6 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
                 {bucket.snapshots.length ? <div>{bucket.snapshots.length} {`${messages.coldSnapshots}`}</div> : null}
                 <div className="flex justify-between items-center">
                     <div>{bucket.files.length} {`${messages.files}`}</div>
-                    <div>{ }</div>
                 </div>
             </div>
         </div>
