@@ -490,7 +490,7 @@ where
     Ok((hash.to_string(), bytes_written))
 }
 
-#[derive(sqlx::FromRow, Clone, Debug)]
+#[derive(sqlx::FromRow)]
 struct UniqueBlockLocation {
     block_id: String,
     normalized_cid: String,
