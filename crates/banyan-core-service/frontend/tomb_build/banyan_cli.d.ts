@@ -91,6 +91,7 @@ export class ReadableStreamGetReaderOptions {
   readonly mode: any;
 }
 /**
+* Wrapper around a Client
 */
 export class TombWasm {
   free(): void;
@@ -206,6 +207,17 @@ export class TombWasm {
 */
   createBucketKey(bucket_id: string): Promise<WasmBucketKey>;
 /**
+* Rename a bucket
+* # Arguments
+* * `bucket_id` - The id of the bucket to rename
+* * `name` - the new name to give to the bucket
+* # Returns Promise<void> in js speak
+* @param {string} bucket_id
+* @param {string} name
+* @returns {Promise<void>}
+*/
+  renameBucket(bucket_id: string, name: string): Promise<void>;
+/**
 * Delete a bucket
 * # Arguments
 * * `bucket_id` - The id of the bucket to delete
@@ -277,7 +289,6 @@ export class WasmBucketKey {
   pem(): string;
 }
 /**
-* A wrapper around a bucket metadata
 */
 export class WasmBucketMetadata {
   free(): void;
@@ -309,6 +320,11 @@ export class WasmMount {
 * @returns {boolean}
 */
   locked(): boolean;
+/**
+* Returns the Bucket behind the mount
+* @returns {WasmBucket}
+*/
+  bucket(): WasmBucket;
 /**
 * Returns the Metadata for the bucket
 * @returns {WasmBucketMetadata}
@@ -387,7 +403,7 @@ export class WasmMount {
 * # Returns
 * A Promise<ArrayBuffer> in js speak
 * @param {Array<any>} path_segments
-* @param {string | undefined} _version
+* @param {string | undefined} [_version]
 * @returns {Promise<Uint8Array>}
 */
   readBytes(path_segments: Array<any>, _version?: string): Promise<Uint8Array>;
@@ -454,6 +470,17 @@ export class WasmMount {
 * @returns {Promise<string>}
 */
   snapshot(): Promise<string>;
+/**
+* Rename the mounted bucket
+* # Arguments
+* * `name` - the new name for the bucket
+* # Returns
+* A Promise<void> in js speak. Should also update the internal state of the bucket
+* on a successful update
+* @param {string} name
+* @returns {Promise<void>}
+*/
+  rename(name: string): Promise<void>;
 /**
 * Restore a mounted bucket
 * # Arguments

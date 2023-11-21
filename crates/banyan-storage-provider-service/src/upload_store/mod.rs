@@ -7,6 +7,7 @@ use axum::Json;
 use object_store::local::LocalFileSystem;
 
 pub struct UploadStore(LocalFileSystem);
+pub use object_store::ObjectStore;
 
 impl Deref for UploadStore {
     type Target = LocalFileSystem;

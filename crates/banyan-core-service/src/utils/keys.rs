@@ -1,30 +1,19 @@
 use jwt_simple::prelude::*;
-use sha1::Sha1;
-use sha2::{Digest, Sha256};
+use blake3::Hasher;
 
-pub fn sha1_fingerprint_publickey(public_key: &ES384PublicKey) -> String {
+/// Number of bytes present in an unformatted fingerprint.
+pub const FINGERPRINT_SIZE: usize = 20;
+
+/// Compute the blake3 fingerprint of a public key.
+pub fn fingerprint_public_key(public_key: &ES384PublicKey) -> String {
     let compressed_point = public_key.public_key().as_ref().to_encoded_point(true);
-
-    let mut hasher = Sha1::new();
+    let compressed_point = compressed_point.as_bytes();
+    let mut hasher = Hasher::new();
     hasher.update(compressed_point);
-    let hashed_bytes = hasher.finalize();
-
-    format_fingerprint_bytes(&hashed_bytes)
-}
-
-#[allow(dead_code)]
-pub fn sha256_fingerprint_publickey(public_key: &ES384PublicKey) -> String {
-    let compressed_point = public_key.public_key().as_ref().to_encoded_point(true);
-
-    let mut hasher = Sha256::new();
-    hasher.update(compressed_point);
-    let hashed_bytes = hasher.finalize();
-
-    format_fingerprint_bytes(&hashed_bytes)
-}
-
-pub fn format_fingerprint_bytes(bytes: &[u8]) -> String {
-    bytes
+    let mut output = [0u8; FINGERPRINT_SIZE];
+    let mut output_reader = hasher.finalize_xof();
+    output_reader.fill(&mut output);
+    output
         .iter()
         .fold(String::new(), |chain, byte| format!("{chain}{byte:02x}"))
 }

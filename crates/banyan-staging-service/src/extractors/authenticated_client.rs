@@ -11,12 +11,9 @@ use sqlx::FromRow;
 use uuid::Uuid;
 
 use crate::database::Database;
-use crate::extractors::fingerprint_validator;
+use crate::app::PlatformName;
 
-/// Defines the maximum length of time we consider any individual token valid in seconds. If the
-/// expiration is still in the future, but it was issued more than this many seconds in the past
-/// we'll reject the token even if its otherwise valid.
-const MAXIMUM_TOKEN_AGE: u64 = 900;
+use super::{fingerprint_validator, MAXIMUM_TOKEN_AGE};
 
 pub struct AuthenticatedClient {
     id: Uuid,
@@ -69,6 +66,7 @@ impl AuthenticatedClient {
 #[async_trait]
 impl<S> FromRequestParts<S> for AuthenticatedClient
 where
+    PlatformName: FromRef<S>,
     Database: FromRef<S>,
     S: Send + Sync,
 {
@@ -98,8 +96,7 @@ where
 
         let verification_options = VerificationOptions {
             accept_future: false,
-            // TODO: this might not be a quite right, but it's probably fine for now
-            //allowed_audiences: Some(HashSet::from_strings(&["banyan-platform"])),
+            allowed_audiences: Some(HashSet::from_strings(&[PlatformName::from_ref(state).to_string()])),
             max_validity: Some(Duration::from_secs(MAXIMUM_TOKEN_AGE)),
             time_tolerance: Some(Duration::from_secs(15)),
             ..Default::default()

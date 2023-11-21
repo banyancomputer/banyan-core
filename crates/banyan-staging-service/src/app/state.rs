@@ -8,7 +8,7 @@ use url::Url;
 
 use crate::app::{Config, Secrets};
 use crate::database::{self, Database, DatabaseSetupError};
-use crate::utils::{fingerprint_key_pair, sha1_fingerprint_publickey, SigningKey, VerificationKey};
+use crate::utils::{fingerprint_key_pair, fingerprint_public_key, SigningKey, VerificationKey};
 
 // Helper struct for extracting state from requests
 pub struct ServiceName(String);
@@ -288,7 +288,7 @@ fn load_platform_verfication_key(path: &PathBuf) -> Result<VerificationKey, Stat
         ES384PublicKey::from_pem(&public_pem).map_err(StateSetupError::InvalidPlatformKey)?;
 
     // TODO: use normalized fingerprint -- blake3
-    let fingerprint = sha1_fingerprint_publickey(&platform_verification_key_inner);
+    let fingerprint = fingerprint_public_key(&platform_verification_key_inner);
     let platform_verification_key_inner = platform_verification_key_inner.with_key_id(&fingerprint);
 
     Ok(VerificationKey::new(platform_verification_key_inner))

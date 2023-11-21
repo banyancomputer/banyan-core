@@ -2,8 +2,10 @@ use std::ops::Deref;
 use std::sync::Arc;
 
 use jwt_simple::prelude::*;
-use sha1::{Digest, Sha1};
-use sha2::Sha256;
+use blake3::Hasher;
+
+/// Number of bytes present in an unformatted fingerprint.
+pub const FINGERPRINT_SIZE: usize = 20;
 
 /// Verification key for verifying singnature of JWTs.
 #[derive(Clone)]
@@ -46,34 +48,32 @@ impl Deref for SigningKey {
     }
 }
 
-pub fn sha1_fingerprint_publickey(public_key: &ES384PublicKey) -> String {
+/// Compute the blake3 fingerprint of a public key.
+pub fn fingerprint_public_key(public_key: &ES384PublicKey) -> String {
     let compressed_point = public_key.public_key().as_ref().to_encoded_point(true);
-
-    let mut hasher = Sha1::new();
+    let compressed_point = compressed_point.as_bytes();
+    let mut hasher = Hasher::new();
     hasher.update(compressed_point);
-    let hashed_bytes = hasher.finalize();
-
-    format_fingerprint_bytes(&hashed_bytes)
-}
-
-fn format_fingerprint_bytes(bytes: &[u8]) -> String {
-    bytes
+    let mut output = [0u8; FINGERPRINT_SIZE];
+    let mut output_reader = hasher.finalize_xof();
+    output_reader.fill(&mut output);
+    output
         .iter()
         .fold(String::new(), |chain, byte| format!("{chain}{byte:02x}"))
 }
 
+/// Compute the blake3 fingerprint of a key pair.
 pub fn fingerprint_key_pair(keys: &ES384KeyPair) -> String {
     let key_pair = keys.key_pair();
     let public_key = key_pair.public_key();
     let compressed_point = public_key.as_ref().to_encoded_point(true);
-
-    let mut hasher = Sha256::new();
+    let compressed_point = compressed_point.as_bytes();
+    let mut hasher = Hasher::new();
     hasher.update(compressed_point);
-    let hashed_bytes = hasher.finalize();
-
-    hashed_bytes
+    let mut output = [0u8; FINGERPRINT_SIZE];
+    let mut output_reader = hasher.finalize_xof();
+    output_reader.fill(&mut output);
+    output
         .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect::<Vec<_>>()
-        .join("")
+        .fold(String::new(), |chain, byte| format!("{chain}{byte:02x}"))
 }

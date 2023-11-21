@@ -65,16 +65,16 @@ INSERT INTO storage_hosts
   VALUES ('${STAGING_HOST_NAME}', '${STAGING_HOST_URL}', 0, ${STAGING_HOST_BYTE_LIMIT}, '${STAGING_HOST_FINGERPRINT}', '${STAGING_HOST_PUBKEY}');
 ESQL
 
-export STORAGE_HOST_PUBKEY="$(cat crates/banyan-storage-provider-service/data/service-key.public)"
-export STORAGE_HOST_FINGERPRINT="$(cat crates/banyan-storage-provider-service/data/service-key.fingerprint)"
-export STORAGE_HOST_NAME="banyan-storage-provider"
-export STORAGE_HOST_URL="http://127.0.0.1:3003/"
-export STORAGE_HOST_BYTE_LIMIT="549755813888000"
+# export STORAGE_HOST_PUBKEY="$(cat crates/banyan-storage-provider-service/data/service-key.public)"
+# export STORAGE_HOST_FINGERPRINT="$(cat crates/banyan-storage-provider-service/data/service-key.fingerprint)"
+# export STORAGE_HOST_NAME="banyan-storage-provider"
+# export STORAGE_HOST_URL="http://127.0.0.1:3003/"
+# export STORAGE_HOST_BYTE_LIMIT="549755813888000"
 
-cat <<ESQL | sqlite3 ./crates/banyan-core-service/data/server.db
-INSERT INTO storage_hosts
-  (name, url, used_storage, available_storage, fingerprint, pem)
-  VALUES ('${STORAGE_HOST_NAME}', '${STORAGE_HOST_URL}', 0, ${STORAGE_HOST_BYTE_LIMIT}, '${STORAGE_HOST_FINGERPRINT}', '${STORAGE_HOST_PUBKEY}');
-ESQL
+# cat <<ESQL | sqlite3 ./crates/banyan-core-service/data/server.db
+# INSERT INTO storage_hosts
+#   (name, url, used_storage, available_storage, fingerprint, pem)
+#   VALUES ('${STORAGE_HOST_NAME}', '${STORAGE_HOST_URL}', 0, ${STORAGE_HOST_BYTE_LIMIT}, '${STORAGE_HOST_FINGERPRINT}', '${STORAGE_HOST_PUBKEY}');
+# ESQL
 
 echo 'environment reset complete'

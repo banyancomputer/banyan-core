@@ -59,7 +59,7 @@ impl Config {
             Some(la) => la,
             None => match std::env::var("LISTEN_ADDR") {
                 Ok(la) if !la.is_empty() => la.parse().map_err(ConfigError::InvalidListenAddr)?,
-                _ => SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), 3003),
+                _ => SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), 3002),
             },
         };
 
@@ -97,7 +97,7 @@ impl Config {
             Some(sn) => sn,
             None => match std::env::var("SERVICE_NAME") {
                 Ok(sn) if !sn.is_empty() => sn,
-                _ => "banyan-storage-provider".into(),
+                _ => "banyan-staging".into(),
             },
         };
 

@@ -11,11 +11,9 @@ use axum::{async_trait, Json, RequestPartsExt};
 use jwt_simple::prelude::*;
 use uuid::Uuid;
 
-use crate::app::{PlatformVerificationKey, ServiceHostname};
-use crate::extractors::paired_id_validator;
+use crate::app::{PlatformVerificationKey, ServiceHostname, ServiceName};
 
-// todo: will need a way for a client to refresh their storage grant
-const MAXIMUM_GRANT_AGE: u64 = 900;
+use super::{paired_id_validator, MAXIMUM_TOKEN_AGE};
 
 #[derive(Debug)]
 pub struct StorageGrant {
@@ -48,6 +46,7 @@ impl StorageGrant {
 #[async_trait]
 impl<S> FromRequestParts<S> for StorageGrant
 where
+    ServiceName: FromRef<S>,
     ServiceHostname: FromRef<S>,
     PlatformVerificationKey: FromRef<S>,
     S: Sync,
@@ -61,11 +60,10 @@ where
             .map_err(Self::Rejection::MissingHeader)?;
 
         let raw_token = bearer.token();
-
         let verification_options = VerificationOptions {
             accept_future: false,
-            //allowed_audiences: Some(HashSet::from_strings(&["banyan-staging"])),
-            max_validity: Some(Duration::from_secs(MAXIMUM_GRANT_AGE)),
+            allowed_audiences: Some(HashSet::from_strings(&[ServiceName::from_ref(state).to_string()])),
+            max_validity: Some(Duration::from_secs(MAXIMUM_TOKEN_AGE)),
             time_tolerance: Some(Duration::from_secs(15)),
             ..Default::default()
         };

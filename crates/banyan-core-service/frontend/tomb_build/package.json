@@ -1,21 +1,29 @@
 {
-	"name": "tomb-wasm-experimental",
-	"version": "1.5.0",
-	"license": "MIT",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/banyancomputer/tomb"
-	},
-	"files": [
-		"tomb_wasm_bg.wasm",
-		"tomb_wasm.js",
-		"tomb_wasm_bg.js",
-		"tomb_wasm.d.ts"
-	],
-	"module": "tomb_wasm.js",
-	"types": "tomb_wasm.d.ts",
-	"sideEffects": [
-		"./tomb_wasm.js",
-		"./snippets/*"
-	]
+  "name": "tomb-wasm-experimental",
+  "description": "Banyan manages data and security for use with Filecoin",
+  "version": "1.6.0",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/banyancomputer/tomb"
+  },
+  "files": [
+    "banyan_cli_bg.wasm",
+    "banyan_cli.js",
+    "banyan_cli_bg.js",
+    "banyan_cli.d.ts"
+  ],
+  "module": "banyan_cli.js",
+  "homepage": "https://banyan.computer",
+  "types": "banyan_cli.d.ts",
+  "sideEffects": [
+    "./banyan_cli.js",
+    "./snippets/*"
+  ],
+  "keywords": [
+    "decentralization",
+    "filecoin",
+    "ipfs",
+    "storage"
+  ]
 }

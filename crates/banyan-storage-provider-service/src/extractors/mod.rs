@@ -7,6 +7,11 @@ pub mod platform_identity;
 pub mod storage_grant;
 pub mod upload_store;
 
+/// Defines the maximum length of time we consider any individual token valid in seconds. If the
+/// expiration is still in the future, but it was issued more than this many seconds in the past
+/// we'll reject the token even if its otherwise valid.
+const MAXIMUM_TOKEN_AGE: u64 = 900;
+
 static PAIRED_ID_PATTERN: &str =
     r"^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})@([0-9a-f]{40})$";
 
