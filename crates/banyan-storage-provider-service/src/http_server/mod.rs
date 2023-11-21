@@ -54,7 +54,7 @@ fn create_trace_layer(log_level: Level) -> TraceLayer<SharedClassifier<ServerErr
                 .include_headers(false)
                 .level(log_level)
                 .latency_unit(LatencyUnit::Micros),
-            )
+        )
         .on_failure(DefaultOnFailure::new().latency_unit(LatencyUnit::Micros))
 }
 

@@ -10,8 +10,8 @@ use jwt_simple::prelude::*;
 use sqlx::FromRow;
 use uuid::Uuid;
 
-use crate::database::Database;
 use crate::app::PlatformName;
+use crate::database::Database;
 
 use super::{fingerprint_validator, MAXIMUM_TOKEN_AGE};
 
@@ -96,7 +96,9 @@ where
 
         let verification_options = VerificationOptions {
             accept_future: false,
-            allowed_audiences: Some(HashSet::from_strings(&[PlatformName::from_ref(state).to_string()])),
+            allowed_audiences: Some(HashSet::from_strings(&[
+                PlatformName::from_ref(state).to_string()
+            ])),
             max_validity: Some(Duration::from_secs(MAXIMUM_TOKEN_AGE)),
             time_tolerance: Some(Duration::from_secs(15)),
             ..Default::default()

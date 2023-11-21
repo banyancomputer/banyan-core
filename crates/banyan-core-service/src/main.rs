@@ -42,7 +42,7 @@ async fn main() {
     tracing_subscriber::registry().with(stderr_layer).init();
 
     register_panic_logger();
-    
+
     http_server::run(config).await;
 }
 

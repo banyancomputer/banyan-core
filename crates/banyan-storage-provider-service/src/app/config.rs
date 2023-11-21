@@ -105,7 +105,7 @@ impl Config {
             Some(sh) => sh,
             None => match std::env::var("SERVICE_HOSTNAME") {
                 Ok(sh) if !sh.is_empty() => sh,
-                _ => "http://127.0.0.1:3002".to_string()
+                _ => "http://127.0.0.1:3002".to_string(),
             },
         };
         let service_hostname = Url::parse(&service_hostname_str).unwrap();
@@ -117,7 +117,6 @@ impl Config {
                 _ => "./data/service-key.private".into(),
             },
         };
-
 
         // Platform configuration
 
@@ -138,13 +137,14 @@ impl Config {
         };
         let platform_hostname = Url::parse(&platform_hostname_str).unwrap();
 
-        let platform_public_key_path: PathBuf = match cli_args.opt_value_from_str("--platform-public-key-path")? {
-            Some(pk) => pk,
-            None => match std::env::var("PLATFORM_PUBLIC_KEY_PATH") {
-                Ok(pk) if !pk.is_empty() => pk.into(),
-                _ => "./data/platform-key.public".into(),
-            },
-        };
+        let platform_public_key_path: PathBuf =
+            match cli_args.opt_value_from_str("--platform-public-key-path")? {
+                Some(pk) => pk,
+                None => match std::env::var("PLATFORM_PUBLIC_KEY_PATH") {
+                    Ok(pk) if !pk.is_empty() => pk.into(),
+                    _ => "./data/platform-key.public".into(),
+                },
+            };
 
         Ok(Config {
             listen_addr,

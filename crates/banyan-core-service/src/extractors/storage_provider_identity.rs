@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::database::Database;
 
-use super::{KEY_ID_REGEX, KEY_ID_VALIDATOR, EXPIRATION_WINDOW_SECS};
+use super::{EXPIRATION_WINDOW_SECS, KEY_ID_REGEX, KEY_ID_VALIDATOR};
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]

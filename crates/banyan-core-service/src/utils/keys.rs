@@ -1,5 +1,5 @@
-use jwt_simple::prelude::*;
 use blake3::Hasher;
+use jwt_simple::prelude::*;
 
 /// Number of bytes present in an unformatted fingerprint.
 pub const FINGERPRINT_SIZE: usize = 20;

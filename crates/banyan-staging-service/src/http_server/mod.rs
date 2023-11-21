@@ -101,7 +101,7 @@ pub async fn run(config: Config) {
     let worker_handle = start_background_workers(app_state.clone(), shutdown_rx.clone())
         .await
         .expect("background workers to start");
-    
+
     // Create our root router for handling requests
     let root_router = Router::new()
         .nest("/api/v1", api::router(app_state.clone()))

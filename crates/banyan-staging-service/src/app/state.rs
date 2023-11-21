@@ -133,12 +133,11 @@ pub enum StateSetupError {
     InvalidPlatformKey(jwt_simple::Error),
 }
 
-fn load_or_create_service_key(
-    path: &PathBuf,
-) -> Result<SigningKey, StateSetupError> {
+fn load_or_create_service_key(path: &PathBuf) -> Result<SigningKey, StateSetupError> {
     // Try to load or otherwise generate a new key
     let service_key_inner = if path.exists() {
-        let service_key_bytes = std::fs::read(path).map_err(StateSetupError::ServiceKeyReadError)?;
+        let service_key_bytes =
+            std::fs::read(path).map_err(StateSetupError::ServiceKeyReadError)?;
         let service_key_pem = String::from_utf8_lossy(&service_key_bytes);
         let service_key =
             ES384KeyPair::from_pem(&service_key_pem).map_err(StateSetupError::InvalidServiceKey)?;
@@ -151,9 +150,8 @@ fn load_or_create_service_key(
 
         // Write out the private key
         let service_key_pem = service_key.to_pem().expect("key to export");
-        std::fs::write(path, service_key_pem)
-            .map_err(StateSetupError::ServiceKeyWriteFailed)?;
-        
+        std::fs::write(path, service_key_pem).map_err(StateSetupError::ServiceKeyWriteFailed)?;
+
         // Write out the public key
         let mut path = path.clone();
         path.set_extension("public");
@@ -165,8 +163,7 @@ fn load_or_create_service_key(
         let mut path = path.clone();
         path.set_extension("fingerprint");
         let fingerprint = fingerprint_key_pair(&service_key);
-        std::fs::write(path, &fingerprint)
-            .map_err(StateSetupError::ServiceKeyWriteFailed)?;
+        std::fs::write(path, &fingerprint).map_err(StateSetupError::ServiceKeyWriteFailed)?;
 
         service_key.with_key_id(&fingerprint)
     };

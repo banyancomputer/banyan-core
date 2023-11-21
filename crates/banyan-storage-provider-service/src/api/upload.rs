@@ -19,7 +19,7 @@ use crate::app::AppState;
 use crate::database::{map_sqlx_error, Database, DatabaseError};
 use crate::extractors::AuthenticatedClient;
 use crate::tasks::ReportUploadTask;
-use crate::upload_store::{UploadStore, ObjectStore};
+use crate::upload_store::{ObjectStore, UploadStore};
 
 /// Limit on the size of the JSON request that accompanies an upload.
 const UPLOAD_REQUEST_SIZE_LIMIT: u64 = 100 * 1_024;
