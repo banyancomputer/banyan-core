@@ -65,6 +65,7 @@ INSERT INTO storage_hosts
   VALUES ('${STAGING_HOST_NAME}', '${STAGING_HOST_URL}', 0, ${STAGING_HOST_BYTE_LIMIT}, '${STAGING_HOST_FINGERPRINT}', '${STAGING_HOST_PUBKEY}');
 ESQL
 
+# TODO: add back when the retrieval bug is fixed (client hard codes what storage provider to use)
 # export STORAGE_HOST_PUBKEY="$(cat crates/banyan-storage-provider-service/data/service-key.public)"
 # export STORAGE_HOST_FINGERPRINT="$(cat crates/banyan-storage-provider-service/data/service-key.fingerprint)"
 # export STORAGE_HOST_NAME="banyan-storage-provider"

@@ -58,9 +58,6 @@ impl TaskLike for PruneBlocksTask {
     type Context = PruneBlocksTaskContext;
 
     async fn run(&self, _task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
-        // let service_signing_key = ctx.secrets().service_signing_key();
-        // let service_name = ctx.service_name();
-        // let platform_hostname = ctx.platform_hostname();
         let mut db_conn = ctx
             .database()
             .acquire()

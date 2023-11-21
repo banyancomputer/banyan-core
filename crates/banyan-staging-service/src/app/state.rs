@@ -1,7 +1,5 @@
-use std::ops::Deref;
 use std::path::PathBuf;
 
-use axum::extract::FromRef;
 use jwt_simple::prelude::*;
 use object_store::local::LocalFileSystem;
 use url::Url;
@@ -9,14 +7,6 @@ use url::Url;
 use crate::app::{Config, Secrets};
 use crate::database::{self, Database, DatabaseSetupError};
 use crate::utils::{fingerprint_key_pair, fingerprint_public_key, SigningKey, VerificationKey};
-
-// Helper struct for extracting state from requests
-pub struct ServiceName(String);
-pub struct ServiceHostname(Url);
-pub struct ServiceVerificationKey(VerificationKey);
-pub struct PlatformName(String);
-pub struct PlatformHostname(Url);
-pub struct PlatformVerificationKey(VerificationKey);
 
 #[derive(Clone)]
 pub struct State {
@@ -116,102 +106,6 @@ impl State {
 
     pub fn platform_verification_key(&self) -> VerificationKey {
         self.platform_verification_key.clone()
-    }
-}
-
-impl FromRef<State> for Database {
-    fn from_ref(state: &State) -> Self {
-        state.database()
-    }
-}
-
-impl FromRef<State> for Secrets {
-    fn from_ref(state: &State) -> Self {
-        state.secrets()
-    }
-}
-
-impl FromRef<State> for ServiceName {
-    fn from_ref(state: &State) -> Self {
-        ServiceName(state.service_name().to_string())
-    }
-}
-
-impl FromRef<State> for ServiceHostname {
-    fn from_ref(state: &State) -> Self {
-        ServiceHostname(state.service_hostname().clone())
-    }
-}
-
-impl FromRef<State> for ServiceVerificationKey {
-    fn from_ref(state: &State) -> Self {
-        ServiceVerificationKey(state.service_verification_key().clone())
-    }
-}
-
-impl FromRef<State> for PlatformName {
-    fn from_ref(state: &State) -> Self {
-        PlatformName(state.platform_name().to_string())
-    }
-}
-
-impl FromRef<State> for PlatformHostname {
-    fn from_ref(state: &State) -> Self {
-        PlatformHostname(state.platform_hostname().clone())
-    }
-}
-
-impl FromRef<State> for PlatformVerificationKey {
-    fn from_ref(state: &State) -> Self {
-        PlatformVerificationKey(state.platform_verification_key().clone())
-    }
-}
-
-impl Deref for ServiceName {
-    type Target = String;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl Deref for ServiceHostname {
-    type Target = Url;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl Deref for ServiceVerificationKey {
-    type Target = VerificationKey;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl Deref for PlatformName {
-    type Target = String;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl Deref for PlatformHostname {
-    type Target = Url;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl Deref for PlatformVerificationKey {
-    type Target = VerificationKey;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
     }
 }
 
