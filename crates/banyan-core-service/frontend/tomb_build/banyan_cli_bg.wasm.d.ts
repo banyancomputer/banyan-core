@@ -1,12 +1,17 @@
 /* tslint:disable */
 /* eslint-disable */
 export const memory: WebAssembly.Memory;
+export function __wbg_wasmbucket_free(a: number): void;
+export function wasmbucket_bucketType(a: number, b: number): void;
+export function wasmbucket_id(a: number, b: number): void;
+export function wasmbucket_name(a: number, b: number): void;
+export function wasmbucket_storageClass(a: number, b: number): void;
 export function __wbg_wasmsnapshot_free(a: number): void;
 export function wasmsnapshot_bucket_id(a: number, b: number): void;
 export function wasmsnapshot_created_at(a: number): number;
-export function wasmsnapshot_id(a: number, b: number): void;
 export function wasmsnapshot_metadata_id(a: number, b: number): void;
 export function wasmsnapshot_size(a: number): number;
+export function wasmsnapshot_id(a: number, b: number): void;
 export function __wbg_tombwasm_free(a: number): void;
 export function tombwasm_new(a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number): number;
 export function tombwasm_getUsage(a: number): number;
@@ -20,11 +25,6 @@ export function tombwasm_renameBucket(a: number, b: number, c: number, d: number
 export function tombwasm_deleteBucket(a: number, b: number, c: number): number;
 export function tombwasm_completeDeviceKeyRegistration(a: number, b: number, c: number): number;
 export function tombwasm_mount(a: number, b: number, c: number, d: number, e: number): number;
-export function __wbg_wasmbucket_free(a: number): void;
-export function wasmbucket_bucketType(a: number, b: number): void;
-export function wasmbucket_id(a: number, b: number): void;
-export function wasmbucket_name(a: number, b: number): void;
-export function wasmbucket_storageClass(a: number, b: number): void;
 export function __wbg_wasmmount_free(a: number): void;
 export function wasmmount_dirty(a: number): number;
 export function wasmmount_locked(a: number): number;

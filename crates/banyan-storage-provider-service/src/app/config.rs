@@ -105,7 +105,7 @@ impl Config {
             Some(sh) => sh,
             None => match std::env::var("SERVICE_HOSTNAME") {
                 Ok(sh) if !sh.is_empty() => sh,
-                _ => "http://127.0.0.1:3002".to_string(),
+                _ => "http://127.0.0.1:3003".to_string(),
             },
         };
         let service_hostname = Url::parse(&service_hostname_str).unwrap();

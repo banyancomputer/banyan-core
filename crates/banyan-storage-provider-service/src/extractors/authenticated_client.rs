@@ -10,7 +10,7 @@ use jwt_simple::prelude::*;
 use sqlx::FromRow;
 use uuid::Uuid;
 
-use crate::app::ServiceName;
+use crate::app::PlatformName;
 use crate::database::Database;
 
 use super::{fingerprint_validator, MAXIMUM_TOKEN_AGE};
@@ -66,7 +66,7 @@ impl AuthenticatedClient {
 #[async_trait]
 impl<S> FromRequestParts<S> for AuthenticatedClient
 where
-    ServiceName: FromRef<S>,
+    PlatformName: FromRef<S>,
     Database: FromRef<S>,
     S: Send + Sync,
 {
@@ -97,7 +97,7 @@ where
         let verification_options = VerificationOptions {
             accept_future: false,
             allowed_audiences: Some(HashSet::from_strings(&[
-                ServiceName::from_ref(state).to_string()
+                PlatformName::from_ref(state).to_string()
             ])),
             max_validity: Some(Duration::from_secs(MAXIMUM_TOKEN_AGE)),
             time_tolerance: Some(Duration::from_secs(15)),

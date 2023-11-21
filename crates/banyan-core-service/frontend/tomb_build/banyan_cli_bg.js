@@ -1327,7 +1327,7 @@ export class WasmSnapshot {
         let deferred1_1;
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-            wasm.wasmsnapshot_id(retptr, this.__wbg_ptr);
+            wasm.wasmbucket_id(retptr, this.__wbg_ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
             deferred1_0 = r0;
@@ -1892,13 +1892,13 @@ export function __wbindgen_memory() {
     return addHeapObject(ret);
 };
 
-export function __wbindgen_closure_wrapper3261(arg0, arg1, arg2) {
-    const ret = makeMutClosure(arg0, arg1, 1198, __wbg_adapter_32);
+export function __wbindgen_closure_wrapper3251(arg0, arg1, arg2) {
+    const ret = makeMutClosure(arg0, arg1, 1202, __wbg_adapter_32);
     return addHeapObject(ret);
 };
 
-export function __wbindgen_closure_wrapper3350(arg0, arg1, arg2) {
-    const ret = makeMutClosure(arg0, arg1, 1242, __wbg_adapter_35);
+export function __wbindgen_closure_wrapper3340(arg0, arg1, arg2) {
+    const ret = makeMutClosure(arg0, arg1, 1246, __wbg_adapter_35);
     return addHeapObject(ret);
 };
 
