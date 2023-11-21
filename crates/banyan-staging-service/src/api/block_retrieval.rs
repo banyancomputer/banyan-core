@@ -7,7 +7,7 @@ use axum::Json;
 use crate::app::AppState;
 use crate::database::Database;
 use crate::extractors::AuthenticatedClient;
-use crate::upload_store::{UploadStore, ObjectStore};
+use crate::upload_store::{ObjectStore, UploadStore};
 
 pub async fn handler(
     State(state): State<AppState>,
