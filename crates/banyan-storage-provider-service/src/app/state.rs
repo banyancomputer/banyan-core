@@ -58,11 +58,11 @@ impl State {
             .await
             .map_err(StateSetupError::DatabaseSetupError)?;
 
-        let service_signing_key = load_service_key(&config.service_key_path())?;
+        let service_signing_key = load_or_create_service_key(&config.service_key_path())?;
         let service_verification_key = service_signing_key.verifier();
 
         let platform_verification_key =
-            load_platform_verfication_key(&config.platform_verification_key_path())?;
+            load_platform_verfication_key(&config.platform_public_key_path())?;
 
         let secrets = Secrets::new(service_signing_key);
 
@@ -226,6 +226,9 @@ pub enum StateSetupError {
     #[error("failed to read private service key: {0}")]
     ServiceKeyReadError(std::io::Error),
 
+    #[error("failed to write service key: {0}")]
+    ServiceKeyWriteFailed(std::io::Error),
+
     #[error("failed to read public platform key: {0}")]
     PlatformKeyReadError(std::io::Error),
 
@@ -236,15 +239,43 @@ pub enum StateSetupError {
     InvalidPlatformKey(jwt_simple::Error),
 }
 
-fn load_service_key(path: &PathBuf) -> Result<SigningKey, StateSetupError> {
-    let key_bytes = std::fs::read(path).map_err(StateSetupError::ServiceKeyReadError)?;
-    let private_pem = String::from_utf8_lossy(&key_bytes);
+fn load_or_create_service_key(
+    path: &PathBuf,
+) -> Result<SigningKey, StateSetupError> {
+    // Try to load or otherwise generate a new key
+    let service_key_inner = if path.exists() {
+        let service_key_bytes = std::fs::read(path).map_err(StateSetupError::ServiceKeyReadError)?;
+        let service_key_pem = String::from_utf8_lossy(&service_key_bytes);
+        let service_key =
+            ES384KeyPair::from_pem(&service_key_pem).map_err(StateSetupError::InvalidServiceKey)?;
 
-    let service_key_inner =
-        ES384KeyPair::from_pem(&private_pem).map_err(StateSetupError::InvalidServiceKey)?;
+        let fingerprint = fingerprint_key_pair(&service_key);
 
-    let fingerprint = fingerprint_key_pair(&service_key_inner);
-    let service_key_inner = service_key_inner.with_key_id(&fingerprint);
+        service_key.with_key_id(&fingerprint)
+    } else {
+        let service_key = ES384KeyPair::generate();
+
+        // Write out the private key
+        let service_key_pem = service_key.to_pem().expect("key to export");
+        std::fs::write(path, service_key_pem)
+            .map_err(StateSetupError::ServiceKeyWriteFailed)?;
+        
+        // Write out the public key
+        let mut path = path.clone();
+        path.set_extension("public");
+        let service_public_key_pem = service_key.public_key().to_pem().expect("key to export");
+        std::fs::write(path.clone(), service_public_key_pem)
+            .map_err(StateSetupError::ServiceKeyWriteFailed)?;
+
+        // Write out the fingerprint
+        let mut path = path.clone();
+        path.set_extension("fingerprint");
+        let fingerprint = fingerprint_key_pair(&service_key);
+        std::fs::write(path, &fingerprint)
+            .map_err(StateSetupError::ServiceKeyWriteFailed)?;
+
+        service_key.with_key_id(&fingerprint)
+    };
 
     Ok(SigningKey::new(service_key_inner))
 }
@@ -256,6 +287,7 @@ fn load_platform_verfication_key(path: &PathBuf) -> Result<VerificationKey, Stat
     let platform_verification_key_inner =
         ES384PublicKey::from_pem(&public_pem).map_err(StateSetupError::InvalidPlatformKey)?;
 
+    // TODO: use normalized fingerprint -- blake3
     let fingerprint = sha1_fingerprint_publickey(&platform_verification_key_inner);
     let platform_verification_key_inner = platform_verification_key_inner.with_key_id(&fingerprint);
 

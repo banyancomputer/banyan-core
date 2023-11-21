@@ -1,15 +1,11 @@
-use std::fs::OpenOptions;
-use std::io::Write;
 use std::net::{IpAddr, Ipv6Addr, SocketAddr};
 use std::path::PathBuf;
 
-use jwt_simple::prelude::*;
 use pico_args::Arguments;
 use tracing::Level;
 use url::Url;
 
 use crate::app::Version;
-use crate::utils::fingerprint_key_pair;
 
 #[derive(Debug)]
 pub struct Config {
@@ -35,81 +31,49 @@ pub struct Config {
     /// The base URL of the platform
     platform_hostname: Url,
     /// The path to the public key used for authenticating requests from the platform
-    platform_verfication_key_path: PathBuf,
+    platform_public_key_path: PathBuf,
 }
 
 impl Config {
     pub fn parse_cli_arguments() -> Result<Self, ConfigError> {
-        let mut args = Arguments::from_env();
+        if dotenvy::dotenv().is_err() {
+            #[cfg(debug_assertions)]
+            tracing::warn!("no dot-environment file detected");
+        }
 
-        if args.contains("-h") || args.contains("--help") {
+        let mut cli_args = Arguments::from_env();
+
+        if cli_args.contains("-h") || cli_args.contains("--help") {
             print_help();
             std::process::exit(0);
         }
 
-        if args.contains("-v") || args.contains("--version") {
+        if cli_args.contains("-v") || cli_args.contains("--version") {
             print_version();
             std::process::exit(0);
         }
 
-        // Generate a new signing key for the service if requested
+        // Server configuration
 
-        let service_key_path: PathBuf = args
-            .opt_value_from_str("--service-key-path")?
-            .unwrap_or("./data/service-key.private".into());
+        let listen_addr = match cli_args.opt_value_from_str("--listen")? {
+            Some(la) => la,
+            None => match std::env::var("LISTEN_ADDR") {
+                Ok(la) if !la.is_empty() => la.parse().map_err(ConfigError::InvalidListenAddr)?,
+                _ => SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), 3003),
+            },
+        };
 
-        if args.contains("--generate-auth") {
-            let mut key_path = service_key_path.clone();
-            tracing::info!("generating new service key at {key_path:?}");
-
-            let mut file = OpenOptions::new()
-                .write(true)
-                .create_new(true)
-                .open(key_path.clone())
-                .map_err(ConfigError::ServiceKeyWriteFailed)?;
-
-            let private_new_key = ES384KeyPair::generate();
-            let new_key_pem = private_new_key.to_pem().unwrap();
-            file.write_all(new_key_pem.as_bytes())
-                .map_err(ConfigError::ServiceKeyWriteFailed)?;
-
-            key_path.set_extension("public");
-
-            let public_new_key = private_new_key.public_key();
-            let public_pem = public_new_key
-                .to_pem()
-                .map_err(ConfigError::ServiceKeyGenFailed)?;
-
-            let mut file = std::fs::File::create(key_path.clone())
-                .map_err(ConfigError::ServiceKeyWriteFailed)?;
-            file.write_all(public_pem.as_bytes())
-                .map_err(ConfigError::ServiceKeyWriteFailed)?;
-
-            key_path.set_extension("fingerprint");
-
-            let fingerprint = fingerprint_key_pair(&private_new_key);
-
-            let mut file =
-                std::fs::File::create(key_path).map_err(ConfigError::ServiceKeyWriteFailed)?;
-            file.write_all(fingerprint.as_bytes())
-                .map_err(ConfigError::ServiceKeyWriteFailed)?;
-
-            tracing::info!("key generation complete");
-
-            std::process::exit(0);
-        }
-
-        let listen_addr = args
-            .opt_value_from_str("--listen")?
-            .unwrap_or(SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), 3003));
-
-        let log_level = args
-            .opt_value_from_str("--log-level")?
-            .unwrap_or(Level::INFO);
+        let log_level = match cli_args.opt_value_from_str("--log-level")? {
+            Some(ll) => ll,
+            None => match std::env::var("LOG_LEVEL") {
+                Ok(ll) if !ll.is_empty() => ll.parse().map_err(ConfigError::InvalidLogLevel)?,
+                _ => Level::INFO,
+            },
+        };
 
         // Resource configuration
 
-        let database_str = match args.opt_value_from_str("--database-url")? {
+        let database_str = match cli_args.opt_value_from_str("--database-url")? {
             Some(du) => du,
             None => match std::env::var("DATABASE_URL") {
                 Ok(du) if !du.is_empty() => du,
@@ -118,7 +82,7 @@ impl Config {
         };
         let database_url = Url::parse(&database_str).map_err(ConfigError::InvalidDatabaseUrl)?;
 
-        let upload_dir_str = match args.opt_value_from_str("--upload-dir")? {
+        let upload_dir_str = match cli_args.opt_value_from_str("--upload-dir")? {
             Some(path) => path,
             None => match std::env::var("UPLOAD_DIR") {
                 Ok(ud) if !ud.is_empty() => ud,
@@ -129,27 +93,58 @@ impl Config {
 
         // Service identity configuration
 
-        let service_name = args
-            .opt_value_from_str("--service-name")?
-            .unwrap_or("banyan-storage-provider".into());
+        let service_name = match cli_args.opt_value_from_str("--service-name")? {
+            Some(sn) => sn,
+            None => match std::env::var("SERVICE_NAME") {
+                Ok(sn) if !sn.is_empty() => sn,
+                _ => "banyan-storage-provider".into(),
+            },
+        };
 
-        let service_hostname = args
-            .opt_value_from_str("--service-hostname")?
-            .unwrap_or("http://127.0.0.1:3003".parse().unwrap());
+        let service_hostname_str = match cli_args.opt_value_from_str("--service-hostname")? {
+            Some(sh) => sh,
+            None => match std::env::var("SERVICE_HOSTNAME") {
+                Ok(sh) if !sh.is_empty() => sh,
+                _ => SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), 3003).to_string(),
+            },
+        };
+        let service_hostname = Url::parse(&service_hostname_str).unwrap();
+
+        let service_key_path: PathBuf = match cli_args.opt_value_from_str("--service-key-path")? {
+            Some(sk) => sk,
+            None => match std::env::var("SERVICE_KEY_PATH") {
+                Ok(sk) if !sk.is_empty() => sk.into(),
+                _ => "./data/service-key.private".into(),
+            },
+        };
+
 
         // Platform configuration
 
-        let platform_name = args
-            .opt_value_from_str("--platform-name")?
-            .unwrap_or("banyan-platform".into());
+        let platform_name = match cli_args.opt_value_from_str("--platform-name")? {
+            Some(pn) => pn,
+            None => match std::env::var("PLATFORM_NAME") {
+                Ok(pn) if !pn.is_empty() => pn,
+                _ => "banyan-platform".into(),
+            },
+        };
 
-        let platform_hostname = args
-            .opt_value_from_str("--platform-hostname")?
-            .unwrap_or("http://127.0.0.1:3001".parse().unwrap());
+        let platform_hostname_str = match cli_args.opt_value_from_str("--platform-hostname")? {
+            Some(ph) => ph,
+            None => match std::env::var("PLATFORM_HOSTNAME") {
+                Ok(ph) if !ph.is_empty() => ph,
+                _ => SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), 3001).to_string(),
+            },
+        };
+        let platform_hostname = Url::parse(&platform_hostname_str).unwrap();
 
-        let platform_verfication_key_path: PathBuf = args
-            .opt_value_from_str("--platform-key-verifier-path")?
-            .unwrap_or("./data/platform-key.public".into());
+        let platform_public_key_path: PathBuf = match cli_args.opt_value_from_str("--platform-public-key-path")? {
+            Some(pk) => pk,
+            None => match std::env::var("PLATFORM_PUBLIC_KEY_PATH") {
+                Ok(pk) if !pk.is_empty() => pk.into(),
+                _ => "./data/platform-key.public".into(),
+            },
+        };
 
         Ok(Config {
             listen_addr,
@@ -164,7 +159,7 @@ impl Config {
 
             platform_name,
             platform_hostname,
-            platform_verfication_key_path,
+            platform_public_key_path,
         })
     }
 
@@ -204,8 +199,8 @@ impl Config {
         self.platform_hostname.clone()
     }
 
-    pub fn platform_verification_key_path(&self) -> PathBuf {
-        self.platform_verfication_key_path.clone()
+    pub fn platform_public_key_path(&self) -> PathBuf {
+        self.platform_public_key_path.clone()
     }
 }
 
@@ -219,6 +214,9 @@ pub enum ConfigError {
 
     #[error("invalid listening address: {0}")]
     InvalidListenAddr(std::net::AddrParseError),
+
+    #[error("invalid log level: {0}")]
+    InvalidLogLevel(tracing::metadata::ParseLevelError),
 
     #[error("signing key gen failed: {0}")]
     ServiceKeyGenFailed(jwt_simple::Error),
@@ -235,7 +233,6 @@ fn print_help() {
         "    -v, --version                         Display the version of this compiled version"
     );
     println!("                                          and exit\n");
-    println!("    --generate-auth                       Generate a new signing key for the service. Exits upon key generation if used.\n");
     println!(
         "    --listen LISTEN_ADDR                  Specify the address to bind to, by default"
     );
@@ -250,7 +247,7 @@ fn print_help() {
     println!("                                          (default ./data/service-key.private)\n");
     println!("    --platform-name PLATFORM_NAME         The name of the platform (default banyan-platform)");
     println!("    --platform-hostname PLATFORM_HOSTNAME The base URL of the platform (default http://127.0.0.1:3001)");
-    println!("    --platform-key-verifier-path PLATFORM_KEY_VERIFIER_PATH");
+    println!("    --platform-public-key-path PLATFORM_PUBLIC_KEY_PATH");
     println!("                                          Path to the public key used for authenticating requests from the platform");
     println!("                                          (default ./data/platform-key.public)\n");
 }

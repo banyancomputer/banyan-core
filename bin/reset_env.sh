@@ -30,26 +30,24 @@ rm -rf \
 	timeout 3s cargo run || true
 )
 
-# Run staging
+# Copy core public key to staging and storage provider
 cp -f crates/banyan-core-service/data/service-key.public crates/banyan-staging-service/data/platform-key.public
+cp -f crates/banyan-core-service/data/service-key.public crates/banyan-storage-provider-service/data/platform-key.public
 
+# TODO: deprecate -- --generate-auth
+# Run staging
 (
 	cd crates/banyan-staging-service
 	cargo build
-	timeout 10s cargo run -- --generate-auth
+	timeout 3s cargo run -- --generate-auth
 )
 
 # Run storage provider
-cp -f crates/banyan-core-service/data/service-key.public crates/banyan-storage-provider-service/data/platform-key.public
-
 (
 	cd crates/banyan-storage-provider-service
 	cargo build
-	timeout 10s cargo run -- --generate-auth
+	timeout 3s cargo run || true
 )
-
-
-#(cd crates/banyan-core-server/frontend; yarn install; source .env.dev; timeout 5s yarn run dev)
 
 [ ! -f "crates/banyan-staging-service/data/service-key.public" ] && exit 8
 [ ! -f "crates/banyan-staging-service/data/service-key.fingerprint" ] && exit 9

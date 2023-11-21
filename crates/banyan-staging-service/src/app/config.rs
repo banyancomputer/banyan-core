@@ -18,9 +18,11 @@ pub struct Config {
     db_url: String,
     hostname: Url,
 
+    // TODO: rename to `service_name`
     platform_name: String,
     // TODO: rename to `service_key_path`
     platform_auth_key_path: PathBuf,
+    // TODO: rename to `platform_hostname`
     platform_base_url: reqwest::Url,
     // TODO: rename to `platform_public_key_path`
     platform_verification_key_path: PathBuf,
@@ -53,15 +55,15 @@ impl Config {
         self.log_level
     }
 
-    pub fn parse_cli_arguments() -> Result<Self, Error> {
+    pub fn from_env_and_args() -> Result<Self, Error> {
         if dotenvy::dotenv().is_err() {
             #[cfg(debug_assertions)]
             tracing::warn!("no dot-environment file detected");
         }
 
-        let mut args = Arguments::from_env();
+        let mut cli_args = Arguments::from_env();
 
-        let platform_name = match args.opt_value_from_str("--platform-name")? {
+        let platform_name = match cli_args.opt_value_from_str("--platform-name")? {
             Some(pn) => pn,
             None => match std::env::var("PLATFORM_NAME") {
                 Ok(pn) if !pn.is_empty() => pn,
@@ -70,62 +72,27 @@ impl Config {
         };
 
         // TODO: change flag name to `--service-key-path`
-        let platform_auth_key_path: PathBuf = args
+        let platform_auth_key_path: PathBuf = cli_args
             .opt_value_from_str("--auth-key")?
             .unwrap_or("./data/service-key.private".into());
 
-        if args.contains("--generate-auth") {
-            let mut key_path = platform_auth_key_path.clone();
-            tracing::info!("generating new platform key at {key_path:?}");
-
-            let mut file = OpenOptions::new()
-                .write(true)
-                .create_new(true)
-                .open(key_path.clone())
-                .map_err(Error::PlatformAuthFailedWrite)?;
-
-            let private_new_key = ES384KeyPair::generate();
-            let new_key_pem = private_new_key.to_pem().unwrap();
-            file.write_all(new_key_pem.as_bytes())
-                .map_err(Error::PlatformAuthFailedWrite)?;
-
-            key_path.set_extension("public");
-
-            let public_new_key = private_new_key.public_key();
-            let public_pem = public_new_key.to_pem().unwrap();
-
-            let mut file = std::fs::File::create(key_path.clone()).unwrap();
-            file.write_all(public_pem.as_bytes()).unwrap();
-
-            key_path.set_extension("fingerprint");
-
-            let fingerprint = crate::app::state::fingerprint_key(&private_new_key);
-
-            let mut file = std::fs::File::create(key_path).unwrap();
-            file.write_all(fingerprint.as_bytes()).unwrap();
-
-            tracing::info!("key generation complete");
-
-            std::process::exit(0);
-        }
-
-        let hostname = args
+        let hostname = cli_args
             .opt_value_from_str("--hostname")?
             .unwrap_or("http://127.0.0.1:3002".parse().unwrap());
 
-        let listen_addr = args
+        let listen_addr = cli_args
             .opt_value_from_str("--listen")?
             .unwrap_or(SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), 3000));
 
-        let log_level = args
+        let log_level = cli_args
             .opt_value_from_str("--log-level")?
             .unwrap_or(Level::INFO);
 
-        let platform_base_url = args
+        let platform_base_url = cli_args
             .opt_value_from_str("--platform-url")?
             .unwrap_or("http://127.0.0.1:3001".parse().unwrap());
 
-        let db_url = match args.opt_value_from_str("--db-url")? {
+        let db_url = match cli_args.opt_value_from_str("--db-url")? {
             Some(du) => du,
             None => match std::env::var("DATABASE_URL") {
                 Ok(du) if !du.is_empty() => du,
@@ -134,11 +101,11 @@ impl Config {
         };
 
         // TODO: rename flag to `--platform-public-key-path`
-        let platform_verification_key_path: PathBuf = args
+        let platform_verification_key_path: PathBuf = cli_args
             .opt_value_from_str("--verifier-key")?
             .unwrap_or("./data/platform-key.public".into());
 
-        let upload_directory = args
+        let upload_directory = cli_args
             .opt_value_from_str("--upload-dir")?
             .unwrap_or("./data/uploads".into());
 

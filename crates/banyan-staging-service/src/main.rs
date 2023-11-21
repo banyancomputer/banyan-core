@@ -40,7 +40,7 @@ async fn main() -> Result<(), Error> {
 
     register_panic_logger();
 
-    let config = Config::parse_cli_arguments()?;
+    let config = Config::from_env_and_args()?;
     http_server::run(config).await?;
 
     tracing::info!("shutting down normally");
