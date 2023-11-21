@@ -11,7 +11,7 @@ use axum::{async_trait, Json, RequestPartsExt};
 use jwt_simple::prelude::*;
 use uuid::Uuid;
 
-use crate::app::{Hostname, PlatformVerificationKey};
+use crate::app::{PlatformVerificationKey, ServiceHostname};
 use crate::extractors::paired_id_validator;
 
 // todo: will need a way for a client to refresh their storage grant
@@ -48,7 +48,7 @@ impl StorageGrant {
 #[async_trait]
 impl<S> FromRequestParts<S> for StorageGrant
 where
-    Hostname: FromRef<S>,
+    ServiceHostname: FromRef<S>,
     PlatformVerificationKey: FromRef<S>,
     S: Sync,
 {
@@ -116,15 +116,15 @@ where
             None => return Err(Self::Rejection::SubjectInvalid),
         };
 
-        let hostname = Hostname::from_ref(state);
+        let hostname = ServiceHostname::from_ref(state).clone();
 
         // todo: need to take in the domain the provider will be running as to lookup expectedUsage
         // what we were authorized as but we can fake it for now by assuming we're the only one
         // present.
-        let usage = match claims.custom.capabilities.get(&hostname.0.to_string()) {
+        let usage = match claims.custom.capabilities.get(&hostname.to_string()) {
             Some(u) => u,
             None => {
-                tracing::info!("expecting hostname with value of {}", &hostname.0);
+                tracing::info!("expecting hostname with value of {}", &hostname);
                 tracing::error!("received valid storage grant but didn't authorize extra storage for this host: {:?}", claims.custom);
                 return Err(Self::Rejection::WrongTarget);
             }

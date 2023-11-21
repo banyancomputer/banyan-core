@@ -3,7 +3,7 @@ use std::sync::OnceLock;
 use regex::Regex;
 
 pub mod authenticated_client;
-pub mod core_identity;
+pub mod platform_identity;
 pub mod storage_grant;
 pub mod upload_store;
 
@@ -25,6 +25,5 @@ pub fn paired_id_validator() -> &'static Regex {
 }
 
 pub use authenticated_client::AuthenticatedClient;
-pub use core_identity::CoreIdentity;
+pub use platform_identity::PlatformIdentity;
 pub use storage_grant::StorageGrant;
-pub use upload_store::UploadStore;

@@ -6,23 +6,21 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::TypedHeader;
 use banyan_task::TaskLikeExt;
-use cid::multibase::Base;
-use cid::Cid;
+
 use futures::{TryStream, TryStreamExt};
 use object_store::ObjectStore;
-use reqwest::header::{HeaderMap, HeaderValue};
-use reqwest::{Client, Url};
+
 use serde::{Deserialize, Serialize};
 use tokio::io::{AsyncWrite, AsyncWriteExt};
 use uuid::Uuid;
 
 use banyan_car_analyzer::{CarReport, StreamingCarAnalyzer, StreamingCarAnalyzerError};
 
-use crate::app::PlatformAuthKey;
-use crate::app::State as AppState;
-use crate::database::{map_sqlx_error, BareId, Database, SqlxError};
-use crate::extractors::{AuthenticatedClient, UploadStore};
+use crate::app::AppState;
+use crate::database::{map_sqlx_error, Database, DatabaseError};
+use crate::extractors::AuthenticatedClient;
 use crate::tasks::ReportUploadTask;
+use crate::upload_store::UploadStore;
 
 /// Limit on the size of the JSON request that accompanies an upload.
 const UPLOAD_REQUEST_SIZE_LIMIT: u64 = 100 * 1_024;
@@ -331,7 +329,7 @@ where
 #[derive(Debug, thiserror::Error)]
 pub enum UploadError {
     #[error("a database error occurred during an upload {0}")]
-    Database(#[from] SqlxError),
+    Database(#[from] DatabaseError),
 
     #[error("we expected a data field but received nothing")]
     DataFieldMissing,
@@ -383,7 +381,7 @@ impl IntoResponse for UploadError {
                 (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
             }
             InsufficientAuthorizedStorage(requested_bytes, remaining_bytes) => {
-                tracing::warn!(upload_size = ?requested_bytes, remaining_storage = ?remaining_bytes, "staging believes the user doesn't have sufficient storage capacity remaining");
+                tracing::warn!(upload_size = ?requested_bytes, remaining_storage = ?remaining_bytes, "user doesn't have sufficient storage capacity remaining");
                 let err_msg = serde_json::json!({ "msg": format!("{self}") });
                 (StatusCode::PAYLOAD_TOO_LARGE, Json(err_msg)).into_response()
             }
@@ -398,7 +396,7 @@ pub enum UploadStreamError {
     DatabaseCorruption(&'static str),
 
     #[error("unable to record details about the stream in the database")]
-    DatabaseFailure(#[from] SqlxError),
+    DatabaseFailure(#[from] DatabaseError),
 
     #[error("uploaded file was not a properly formatted car file")]
     ParseError(#[from] StreamingCarAnalyzerError),

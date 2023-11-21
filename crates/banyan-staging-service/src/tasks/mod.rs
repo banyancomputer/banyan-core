@@ -4,16 +4,15 @@ mod report_upload;
 pub use prune_blocks::{PruneBlock, PruneBlocksTask, PruneBlocksTaskContext, PruneBlocksTaskError};
 pub use report_upload::{ReportUploadTask, ReportUploadTaskContext, ReportUploadTaskError};
 
-use sqlx::SqlitePool;
 use tokio::sync::watch;
 use tokio::task::JoinHandle;
 
 use banyan_task::{QueueConfig, SqliteTaskStore, WorkerPool};
 
-use crate::app::State;
+use crate::app::AppState;
 
 pub async fn start_background_workers(
-    state: State,
+    state: AppState,
     mut shutdown_rx: watch::Receiver<()>,
 ) -> Result<JoinHandle<()>, &'static str> {
     let task_store = SqliteTaskStore::new(state.database());

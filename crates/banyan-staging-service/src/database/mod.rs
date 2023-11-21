@@ -1,25 +1,21 @@
 use sqlx::{FromRow, SqlitePool};
 
-pub mod sqlite;
+mod sqlite;
 
-// todo: should be a UUID but Sqlite needs a from UUID implementation
 #[derive(FromRow)]
 pub struct BareId {
     pub id: String,
 }
 
+impl BareId {
+    pub fn uuid(&self) -> Result<uuid::Uuid, DatabaseError> {
+        uuid::Uuid::parse_str(&self.id).map_err(DatabaseError::CorruptId)
+    }
+}
+
 pub type Database = SqlitePool;
 
 pub async fn connect(db_url: &url::Url) -> Result<Database, DatabaseSetupError> {
-    // todo: I should figure out a way to delay the actual connection and running of migrations,
-    // and reflect the service being unavailable in the readiness check until they're complete. If
-    // our connection fails we should try a couple of times with a backoff before failing the
-    // entire service...
-    //
-    // maybe a tokio task with a channel or shared state directly that can be consumed by the
-    // healthcheck and database extractor... Maybe this state belongs on the database executor
-    // itself...
-
     if db_url.scheme() == "sqlite" {
         let db = sqlite::connect_sqlite(db_url).await?;
         sqlite::mitrate_sqlite(&db).await?;
@@ -33,23 +29,26 @@ pub async fn connect(db_url: &url::Url) -> Result<Database, DatabaseSetupError> 
 
 #[derive(Debug, thiserror::Error)]
 pub enum DatabaseSetupError {
+    #[error("requested database type was not recognized: {0}")]
+    UnknownDbType(String),
+
     #[error("error occurred while attempting database migration: {0}")]
     MigrationFailed(sqlx::migrate::MigrateError),
 
     #[error("unable to perform initial connection and check of the database: {0}")]
-    Unavailable(sqlx::Error),
-
-    #[error("requested database type was not recognized: {0}")]
-    UnknownDbType(String),
+    SetupFailed(sqlx::Error),
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum SqlxError {
+pub enum DatabaseError {
     #[error("query to database contained invalid syntax")]
     BadSyntax(sqlx::Error),
 
     #[error("unable to load data from database, appears to be invalid")]
     CorruptData(sqlx::Error),
+
+    #[error("encountered corrupt database id")]
+    CorruptId(uuid::Error),
 
     #[error("unable to communicate with the database")]
     DatabaseUnavailable(sqlx::Error),
@@ -67,16 +66,16 @@ pub enum SqlxError {
     RecordNotFound,
 }
 
-pub type DbResult<T = ()> = Result<T, SqlxError>;
+pub type DbResult<T = ()> = Result<T, DatabaseError>;
 
-pub fn map_sqlx_error(err: sqlx::Error) -> SqlxError {
+pub fn map_sqlx_error(err: sqlx::Error) -> DatabaseError {
     match err {
-        sqlx::Error::ColumnDecode { .. } => SqlxError::CorruptData(err),
-        sqlx::Error::RowNotFound => SqlxError::RecordNotFound,
+        sqlx::Error::ColumnDecode { .. } => DatabaseError::CorruptData(err),
+        sqlx::Error::RowNotFound => DatabaseError::RecordNotFound,
         err if err.to_string().contains("FOREIGN KEY constraint failed") => {
-            SqlxError::RecordNotFound
+            DatabaseError::RecordNotFound
         }
-        err if err.to_string().contains("UNIQUE constraint failed") => SqlxError::RecordExists,
-        err => SqlxError::InternalError(err),
+        err if err.to_string().contains("UNIQUE constraint failed") => DatabaseError::RecordExists,
+        err => DatabaseError::InternalError(err),
     }
 }

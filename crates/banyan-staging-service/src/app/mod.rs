@@ -1,15 +1,12 @@
 mod config;
-mod error;
-mod hostname;
-mod platform_auth_key;
-mod platform_verification_key;
+mod secrets;
 mod state;
 mod version;
 
-pub use config::Config;
-pub use error::Error;
-pub use hostname::Hostname;
-pub use platform_auth_key::PlatformAuthKey;
-pub use platform_verification_key::PlatformVerificationKey;
-pub use state::State;
+pub use config::{Config, ConfigError};
+pub use secrets::Secrets;
+pub use state::{
+    PlatformHostname, PlatformName, PlatformVerificationKey, ServiceHostname, ServiceName,
+    ServiceVerificationKey, State as AppState,
+};
 pub use version::Version;

@@ -1,16 +1,15 @@
-use axum::body::StreamBody;
 use axum::extract::{Path, State};
-use axum::headers::{ContentLength, ContentType};
+
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
-use cid::Cid;
-use object_store::{GetOptions, ObjectStore};
-use uuid::Uuid;
 
-use crate::app::State as AppState;
+use object_store::ObjectStore;
+
+use crate::app::AppState;
 use crate::database::Database;
-use crate::extractors::{AuthenticatedClient, UploadStore};
+use crate::extractors::AuthenticatedClient;
+use crate::upload_store::UploadStore;
 
 pub async fn handler(
     State(state): State<AppState>,

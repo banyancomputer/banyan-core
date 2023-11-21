@@ -34,12 +34,11 @@ rm -rf \
 cp -f crates/banyan-core-service/data/service-key.public crates/banyan-staging-service/data/platform-key.public
 cp -f crates/banyan-core-service/data/service-key.public crates/banyan-storage-provider-service/data/platform-key.public
 
-# TODO: deprecate -- --generate-auth
 # Run staging
 (
 	cd crates/banyan-staging-service
 	cargo build
-	timeout 3s cargo run -- --generate-auth
+	timeout 3s cargo run || true 
 )
 
 # Run storage provider

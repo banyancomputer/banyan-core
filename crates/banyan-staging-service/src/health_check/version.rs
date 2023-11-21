@@ -16,7 +16,6 @@ mod tests {
     async fn test_handler_direct() {
         let response = handler().await;
         assert_eq!(response.status(), StatusCode::OK);
-
-        // todo: test the contents at least a little bit...
+        // TODO: this is a bit fragile, but it's the best we can do for now
     }
 }

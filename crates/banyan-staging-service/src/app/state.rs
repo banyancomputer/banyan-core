@@ -1,130 +1,295 @@
-use std::fmt::Write;
+use std::ops::Deref;
 use std::path::PathBuf;
 
+use axum::extract::FromRef;
 use jwt_simple::prelude::*;
 use object_store::local::LocalFileSystem;
-use sha2::Digest;
 use url::Url;
 
-use crate::app::{Config, Error, PlatformAuthKey, PlatformVerificationKey};
-use crate::database::{self, Database};
+use crate::app::{Config, Secrets};
+use crate::database::{self, Database, DatabaseSetupError};
+use crate::utils::{fingerprint_key_pair, sha1_fingerprint_publickey, SigningKey, VerificationKey};
+
+// Helper struct for extracting state from requests
+pub struct ServiceName(String);
+pub struct ServiceHostname(Url);
+pub struct ServiceVerificationKey(VerificationKey);
+pub struct PlatformName(String);
+pub struct PlatformHostname(Url);
+pub struct PlatformVerificationKey(VerificationKey);
 
 #[derive(Clone)]
 pub struct State {
+    // Resources
+    /// Access to the database
     database: Database,
-    hostname: Url,
-
-    platform_name: String,
-    platform_auth_key: PlatformAuthKey,
-    platform_base_url: reqwest::Url,
-    platform_verification_key: PlatformVerificationKey,
-
+    /// Directory where uploaded files are stored
     upload_directory: PathBuf,
+
+    // Secrets
+    /// All runtime secrets
+    secrets: Secrets,
+
+    // Service identity
+    /// The unique name of the service, as registered with the platform
+    service_name: String,
+    /// The hostname of the service
+    service_hostname: Url,
+    /// Key used to verify service tokens. See [`Secrets::service_signing_key`] for complimentary key.
+    service_verification_key: VerificationKey,
+
+    // Platform authentication
+    /// The unique name of the platform
+    platform_name: String,
+    /// The hostname of the platform
+    platform_hostname: Url,
+    /// Key used to verify platform tokens.
+    platform_verification_key: VerificationKey,
 }
 
 impl State {
-    // not implemented as a From trait so it can be async
-    pub async fn from_config(config: &Config) -> Result<Self, Error> {
-        // Make sure our upload directory is present and at least readable, could do a test write
-        // which wouldn't be a bad idea...
-        let upload_directory = config.upload_directory().clone();
-        LocalFileSystem::new_with_prefix(&upload_directory)
-            .map_err(Error::InaccessibleUploadDirectory)?;
+    pub async fn from_config(config: &Config) -> Result<Self, StateSetupError> {
+        // Do a test setup to make sure the upload directory exists and is writable as an early
+        // sanity check
+        LocalFileSystem::new_with_prefix(config.upload_directory())
+            .map_err(StateSetupError::InaccessibleUploadDirectory)?;
 
-        let db_url = config.db_url();
-        let db_url = Url::parse(db_url).map_err(Error::InvalidDatabaseUrl)?;
-        let database = database::connect(&db_url)
+        let database = database::connect(&config.database_url())
             .await
-            .map_err(Error::DatabaseSetup)?;
+            .map_err(StateSetupError::DatabaseSetupError)?;
 
-        // Parse the platform authentication key (this will be used to communicate with the
-        // metadata service).
-        let key_bytes =
-            std::fs::read(config.platform_auth_key_path()).map_err(Error::UnreadableSessionKey)?;
-        let pem = String::from_utf8_lossy(&key_bytes);
-        let auth_raw = ES384KeyPair::from_pem(&pem).map_err(Error::BadAuthenticationKey)?;
-        let fingerprint = fingerprint_key(&auth_raw);
-        let platform_auth_key = auth_raw.with_key_id(&fingerprint);
+        let service_signing_key = load_or_create_service_key(&config.service_key_path())?;
+        let service_verification_key = service_signing_key.verifier();
 
-        // Parse the public grant verification key (this will be the one coming from the platform)
-        let key_bytes = std::fs::read(config.platform_verification_key_path())
-            .map_err(Error::UnreadableSessionKey)?;
-        let pem = String::from_utf8_lossy(&key_bytes);
         let platform_verification_key =
-            ES384PublicKey::from_pem(&pem).map_err(Error::BadAuthenticationKey)?;
+            load_platform_verfication_key(&config.platform_public_key_path())?;
+
+        let secrets = Secrets::new(service_signing_key);
 
         Ok(Self {
             database,
-            hostname: config.hostname(),
+            upload_directory: config.upload_directory(),
+
+            secrets,
+
+            service_name: config.service_name().to_string(),
+            service_hostname: config.service_hostname().clone(),
+            service_verification_key,
 
             platform_name: config.platform_name().to_string(),
-            platform_auth_key: PlatformAuthKey::new(config.platform_base_url(), platform_auth_key),
-            platform_base_url: config.platform_base_url(),
-            platform_verification_key: PlatformVerificationKey::new(platform_verification_key),
-
-            upload_directory: config.upload_directory(),
+            platform_hostname: config.platform_hostname().clone(),
+            platform_verification_key,
         })
     }
 
-    pub fn hostname(&self) -> Url {
-        self.hostname.clone()
-    }
-
-    pub fn platform_name(&self) -> &str {
-        &self.platform_name
-    }
-
-    pub fn platform_base_url(&self) -> Url {
-        self.platform_base_url.clone()
-    }
-
-    pub fn platform_verification_key(&self) -> PlatformVerificationKey {
-        self.platform_verification_key.clone()
-    }
-
-    pub fn platform_auth_key(&self) -> PlatformAuthKey {
-        self.platform_auth_key.clone()
+    pub fn database(&self) -> Database {
+        self.database.clone()
     }
 
     pub fn upload_directory(&self) -> PathBuf {
         self.upload_directory.clone()
     }
 
-    pub fn database(&self) -> Database {
-        self.database.clone()
+    pub fn secrets(&self) -> Secrets {
+        self.secrets.clone()
+    }
+
+    pub fn service_name(&self) -> &str {
+        &self.service_name
+    }
+
+    pub fn service_hostname(&self) -> Url {
+        self.service_hostname.clone()
+    }
+
+    pub fn service_verification_key(&self) -> VerificationKey {
+        self.service_verification_key.clone()
+    }
+
+    pub fn platform_name(&self) -> &str {
+        &self.platform_name
+    }
+
+    pub fn platform_hostname(&self) -> Url {
+        self.platform_hostname.clone()
+    }
+
+    pub fn platform_verification_key(&self) -> VerificationKey {
+        self.platform_verification_key.clone()
     }
 }
 
-impl axum::extract::FromRef<State> for Database {
+impl FromRef<State> for Database {
     fn from_ref(state: &State) -> Self {
-        state.database.clone()
+        state.database()
     }
 }
 
-impl axum::extract::FromRef<State> for PlatformVerificationKey {
+impl FromRef<State> for Secrets {
     fn from_ref(state: &State) -> Self {
-        state.platform_verification_key.clone()
+        state.secrets()
     }
 }
 
-impl axum::extract::FromRef<State> for PlatformAuthKey {
+impl FromRef<State> for ServiceName {
     fn from_ref(state: &State) -> Self {
-        state.platform_auth_key.clone()
+        ServiceName(state.service_name().to_string())
     }
 }
 
-pub fn fingerprint_key(keys: &ES384KeyPair) -> String {
-    let key_pair = keys.key_pair();
-    let public_key = key_pair.public_key();
-    let compressed_point = public_key.as_ref().to_encoded_point(true);
+impl FromRef<State> for ServiceHostname {
+    fn from_ref(state: &State) -> Self {
+        ServiceHostname(state.service_hostname().clone())
+    }
+}
 
-    let mut hasher = sha2::Sha256::new();
-    hasher.update(compressed_point);
-    let hashed_bytes = hasher.finalize();
+impl FromRef<State> for ServiceVerificationKey {
+    fn from_ref(state: &State) -> Self {
+        ServiceVerificationKey(state.service_verification_key().clone())
+    }
+}
 
-    hashed_bytes
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect::<Vec<_>>()
-        .join("")
+impl FromRef<State> for PlatformName {
+    fn from_ref(state: &State) -> Self {
+        PlatformName(state.platform_name().to_string())
+    }
+}
+
+impl FromRef<State> for PlatformHostname {
+    fn from_ref(state: &State) -> Self {
+        PlatformHostname(state.platform_hostname().clone())
+    }
+}
+
+impl FromRef<State> for PlatformVerificationKey {
+    fn from_ref(state: &State) -> Self {
+        PlatformVerificationKey(state.platform_verification_key().clone())
+    }
+}
+
+impl Deref for ServiceName {
+    type Target = String;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl Deref for ServiceHostname {
+    type Target = Url;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl Deref for ServiceVerificationKey {
+    type Target = VerificationKey;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl Deref for PlatformName {
+    type Target = String;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl Deref for PlatformHostname {
+    type Target = Url;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl Deref for PlatformVerificationKey {
+    type Target = VerificationKey;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum StateSetupError {
+    #[error("unable to access configured upload directory: {0}")]
+    InaccessibleUploadDirectory(object_store::Error),
+
+    #[error("failed to setup the database: {0}")]
+    DatabaseSetupError(#[from] DatabaseSetupError),
+
+    #[error("failed to read private service key: {0}")]
+    ServiceKeyReadError(std::io::Error),
+
+    #[error("failed to write service key: {0}")]
+    ServiceKeyWriteFailed(std::io::Error),
+
+    #[error("failed to read public platform key: {0}")]
+    PlatformKeyReadError(std::io::Error),
+
+    #[error("private service key could not be loaded: {0}")]
+    InvalidServiceKey(jwt_simple::Error),
+
+    #[error("public platform key could not be loaded: {0}")]
+    InvalidPlatformKey(jwt_simple::Error),
+}
+
+fn load_or_create_service_key(
+    path: &PathBuf,
+) -> Result<SigningKey, StateSetupError> {
+    // Try to load or otherwise generate a new key
+    let service_key_inner = if path.exists() {
+        let service_key_bytes = std::fs::read(path).map_err(StateSetupError::ServiceKeyReadError)?;
+        let service_key_pem = String::from_utf8_lossy(&service_key_bytes);
+        let service_key =
+            ES384KeyPair::from_pem(&service_key_pem).map_err(StateSetupError::InvalidServiceKey)?;
+
+        let fingerprint = fingerprint_key_pair(&service_key);
+
+        service_key.with_key_id(&fingerprint)
+    } else {
+        let service_key = ES384KeyPair::generate();
+
+        // Write out the private key
+        let service_key_pem = service_key.to_pem().expect("key to export");
+        std::fs::write(path, service_key_pem)
+            .map_err(StateSetupError::ServiceKeyWriteFailed)?;
+        
+        // Write out the public key
+        let mut path = path.clone();
+        path.set_extension("public");
+        let service_public_key_pem = service_key.public_key().to_pem().expect("key to export");
+        std::fs::write(path.clone(), service_public_key_pem)
+            .map_err(StateSetupError::ServiceKeyWriteFailed)?;
+
+        // Write out the fingerprint
+        let mut path = path.clone();
+        path.set_extension("fingerprint");
+        let fingerprint = fingerprint_key_pair(&service_key);
+        std::fs::write(path, &fingerprint)
+            .map_err(StateSetupError::ServiceKeyWriteFailed)?;
+
+        service_key.with_key_id(&fingerprint)
+    };
+
+    Ok(SigningKey::new(service_key_inner))
+}
+
+fn load_platform_verfication_key(path: &PathBuf) -> Result<VerificationKey, StateSetupError> {
+    let key_bytes = std::fs::read(path).map_err(StateSetupError::PlatformKeyReadError)?;
+    let public_pem = String::from_utf8_lossy(&key_bytes);
+
+    let platform_verification_key_inner =
+        ES384PublicKey::from_pem(&public_pem).map_err(StateSetupError::InvalidPlatformKey)?;
+
+    // TODO: use normalized fingerprint -- blake3
+    let fingerprint = sha1_fingerprint_publickey(&platform_verification_key_inner);
+    let platform_verification_key_inner = platform_verification_key_inner.with_key_id(&fingerprint);
+
+    Ok(VerificationKey::new(platform_verification_key_inner))
 }
