@@ -2,7 +2,6 @@ use std::time::Duration;
 
 use axum::error_handling::HandleErrorLayer;
 use axum::extract::DefaultBodyLimit;
-use axum::handler::HandlerWithoutStateExt;
 use axum::Router;
 use axum::{Server, ServiceExt};
 use futures::future::join_all;
@@ -15,7 +14,6 @@ use tower_http::request_id::MakeRequestUuid;
 use tower_http::sensitive_headers::{
     SetSensitiveRequestHeadersLayer, SetSensitiveResponseHeadersLayer,
 };
-use tower_http::services::ServeDir;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnFailure, DefaultOnResponse, TraceLayer};
 use tower_http::validate_request::ValidateRequestHeaderLayer;
 use tower_http::{LatencyUnit, ServiceBuilderExt};
@@ -53,7 +51,7 @@ fn create_trace_layer(log_level: Level) -> TraceLayer<SharedClassifier<ServerErr
             DefaultOnResponse::new()
                 .include_headers(false)
                 .level(log_level)
-                .latency_unit(LatencyUnit::Nanos),
+                .latency_unit(LatencyUnit::Micros),
         )
         .on_failure(DefaultOnFailure::new().latency_unit(LatencyUnit::Micros))
 }
@@ -103,15 +101,14 @@ pub async fn run(config: Config) {
     let worker_handle = start_background_workers(app_state.clone(), shutdown_rx.clone())
         .await
         .expect("background workers to start");
-    // Serve static assets
-    let static_assets =
-        ServeDir::new("dist").not_found_service(error_handlers::not_found_handler.into_service());
-    // Cretae our root router for handling requests
+    
+    // Create our root router for handling requests
     let root_router = Router::new()
         .nest("/api/v1", api::router(app_state.clone()))
         .nest("/_status", health_check::router(app_state.clone()))
         .with_state(app_state)
-        .fallback_service(static_assets);
+        .fallback(error_handlers::not_found_handler);
+
     // Create our app service
     let app = middleware_stack.service(root_router);
 

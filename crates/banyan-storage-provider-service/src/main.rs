@@ -1,22 +1,22 @@
+// TODO: dead code cleanup
 #![allow(dead_code)]
 
-mod http_server;
+use tracing::Level;
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
+use tracing_subscriber::{EnvFilter, Layer};
 
 mod api;
 mod app;
 mod database;
 mod extractors;
 mod health_check;
+mod http_server;
 mod tasks;
 mod upload_store;
 mod utils;
 
 use app::Config;
-
-use tracing::Level;
-use tracing_subscriber::layer::SubscriberExt;
-use tracing_subscriber::util::SubscriberInitExt;
-use tracing_subscriber::{EnvFilter, Layer};
 
 #[tokio::main]
 async fn main() {

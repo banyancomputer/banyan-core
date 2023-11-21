@@ -1,14 +1,7 @@
-// use axum::routing::{get, post};
-// use axum::Router;
-// use http::header::{ACCEPT, ORIGIN};
-// use http::{HeaderValue, Method};
-// use tower_http::cors::{Any, CorsLayer};
-
 use std::fmt::{self, Display, Formatter};
 use std::time::Duration;
 
 use axum::extract::Path;
-
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};

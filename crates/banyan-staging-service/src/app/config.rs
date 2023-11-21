@@ -105,7 +105,7 @@ impl Config {
             Some(sh) => sh,
             None => match std::env::var("SERVICE_HOSTNAME") {
                 Ok(sh) if !sh.is_empty() => sh,
-                _ => SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), 3003).to_string(),
+                _ => "http://127.0.0.1:3002".to_string()
             },
         };
         let service_hostname = Url::parse(&service_hostname_str).unwrap();
@@ -133,7 +133,7 @@ impl Config {
             Some(ph) => ph,
             None => match std::env::var("PLATFORM_HOSTNAME") {
                 Ok(ph) if !ph.is_empty() => ph,
-                _ => SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), 3001).to_string(),
+                _ => "http://127.0.0.1:3001".to_string(),
             },
         };
         let platform_hostname = Url::parse(&platform_hostname_str).unwrap();

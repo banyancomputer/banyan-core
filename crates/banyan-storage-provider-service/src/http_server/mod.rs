@@ -53,8 +53,8 @@ fn create_trace_layer(log_level: Level) -> TraceLayer<SharedClassifier<ServerErr
             DefaultOnResponse::new()
                 .include_headers(false)
                 .level(log_level)
-                .latency_unit(LatencyUnit::Nanos),
-        )
+                .latency_unit(LatencyUnit::Micros),
+            )
         .on_failure(DefaultOnFailure::new().latency_unit(LatencyUnit::Micros))
 }
 
@@ -106,7 +106,7 @@ pub async fn run(config: Config) {
     // Serve static assets
     let static_assets =
         ServeDir::new("dist").not_found_service(error_handlers::not_found_handler.into_service());
-    // Cretae our root router for handling requests
+    // Create our root router for handling requests
     let root_router = Router::new()
         .nest("/api/v1", api::router(app_state.clone()))
         .nest("/_status", health_check::router(app_state.clone()))
