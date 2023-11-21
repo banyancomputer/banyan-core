@@ -4,12 +4,10 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 
-use object_store::ObjectStore;
-
 use crate::app::AppState;
 use crate::database::Database;
 use crate::extractors::AuthenticatedClient;
-use crate::upload_store::UploadStore;
+use crate::upload_store::{UploadStore, ObjectStore};
 
 pub async fn handler(
     State(state): State<AppState>,

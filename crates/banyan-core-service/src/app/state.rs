@@ -43,8 +43,6 @@ impl State {
 
         let mailgun_signing_key = config.mailgun_signing_key().map(MailgunSigningKey::new);
 
-        // TODO: This probably shouldn't create a new key
-        // the --generate-auth workflow in other services is preferable heres
         let service_key = load_or_create_service_key(&config.session_key_path())?;
         let service_verifier = service_key.verifier();
 
