@@ -33,11 +33,11 @@ const BucketHeader = () => {
             <h2 className="text-xl font-semibold">
                 <Link to="/">{`${messages.myDrives}`}</Link>
                 {' > '}
-                <Link to={`/bucket/${bucketId}`}>{selectedBucket?.name}</Link>
+                <Link to={`/drive/${bucketId}`}>{selectedBucket?.name}</Link>
                 {folderLocation.map((folder, index) =>
                     <React.Fragment key={index}>
                         {' > '}
-                        <Link to={`/bucket/${bucketId}?${folderLocation.slice(0, ++index).map(element => stringToBase64(element)).join('/')}`}>{folder}</Link>
+                        <Link to={`/drive/${bucketId}?${folderLocation.slice(0, ++index).map(element => stringToBase64(element)).join('/')}`}>{folder}</Link>
                     </React.Fragment>
                 )}
             </h2>
