@@ -6,8 +6,9 @@ import { Bucket as IBucket } from '@/app/types/bucket';
 import { popupClickHandler } from '@/app/utils';
 
 import { BucketActions } from '@/app/components/common/BucketActions';
+import { LockedTooltip } from '@components/common/Navigation/LockedTooltip';
 
-import { BucketIcon, Lock } from '@static/images/buckets';
+import { BucketIcon } from '@static/images/buckets';
 import { Dots, Question } from '@static/images/common';
 
 export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
@@ -84,8 +85,16 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
             >
                 <BucketActions bucket={bucket} />
             </div>
-            <h4 className="mb-3 flex items-center justify-between text-text-900 font-semibold">
-                {bucket.name}
+            <div className="mb-3 flex items-center justify-between text-text-900 font-semibold">
+                <span className="text-ellipsis overflow-hidden whitespace-nowrap">
+                    {bucket.name}
+                </span>
+                {bucket.locked &&
+                    <>
+                        <span className="relative w-7 z-10"><LockedTooltip bucket={bucket} /></span>
+                        <span className="flex-grow"></span>
+                    </>
+                }
                 <div
                     className="p-1 cursor-pointer"
                     onClick={event => {
@@ -98,13 +107,8 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
                         <Dots />
                     </span>
                 </div>
-            </h4>
+            </div>
             <div className="relative mb-6 flex justify-center py-10 bg-bucket-bucketIconBackground rounded-xl z-0">
-                    {bucket.locked ?
-                        <div className="absolute right-2 top-2 text-text-400"><Lock /></div>
-                        :
-                        null
-                    }
                 <BucketIcon />
             </div>
             <div className="flex flex-col gap-2 items-start text-xs font-normal">
