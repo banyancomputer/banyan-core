@@ -173,5 +173,10 @@
 	"coldTooltip": "Bei der Archivspeicherung handelt es sich um Dateien, die Sie über einen längeren Zeitraum hinweg sicher aufbewahren möchten und auf die Sie nicht häufig zugreifen möchten.",
 	"hotTooltip": "On-Demand-Speicher ist für Dateien gedacht, auf die Sie häufig zugreifen möchten und auf die Sie schnell zugreifen müssen",
 	"warmTooltip": "On-Demand-Speicher ist für Dateien gedacht, auf die Sie häufig zugreifen möchten und auf die Sie schnell zugreifen müssen",
-	"unlock": "Freischalten"
+	"unlock": "Freischalten",
+	"archivalSnapshots": "Archiv-Snapshots",
+	"driveHasSnapshot": "Dieses Laufwerk hat bereits einen Snapshot",
+	"driveHasNoSnapshot": "Dieses Laufwerk hat keine Snapshots",
+	"whatIsSnapshot": "Was ist ein Snapshot?",
+	"makeSnapshot": "Einen Snapshot erstellen"
 }

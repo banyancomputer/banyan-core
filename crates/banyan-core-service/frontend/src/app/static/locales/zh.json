@@ -173,5 +173,10 @@
 	"coldTooltip": "存檔儲存適用於您想要長期安全儲存且不打算頻繁存取的檔案。",
 	"hotTooltip": "按需儲存適用於您計劃經常存取且需要快速存取的文件。",
 	"warmTooltip": "按需儲存適用於您計劃經常存取且需要快速存取的文件。",
-	"unlock": "開鎖"
+	"unlock": "開鎖",
+	"archivalSnapshots": "归档快照",
+	"driveHasSnapshot": "此驱动器已经有快照",
+	"driveHasNoSnapshot": "此驱动器没有快照",
+	"whatIsSnapshot": "什么是快照？",
+	"makeSnapshot": "创建快照"
 }
