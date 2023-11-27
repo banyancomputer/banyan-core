@@ -12,7 +12,7 @@ use crate::app::{
 };
 use crate::database::{self, Database, DatabaseSetupError};
 use crate::event_bus::EventBus;
-use crate::utils::keys::sha1_fingerprint_publickey;
+use crate::utils::keys::fingerprint_public_key;
 
 #[derive(Clone)]
 pub struct State {
@@ -144,7 +144,7 @@ fn load_or_create_service_key(
         new_key
     };
 
-    let fingerprint = sha1_fingerprint_publickey(&session_key_raw.public_key());
+    let fingerprint = fingerprint_public_key(&session_key_raw.public_key());
     session_key_raw = session_key_raw.with_key_id(&fingerprint);
 
     let mut fingerprint_path = private_path.clone();

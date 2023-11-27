@@ -6,7 +6,7 @@ use serde::Deserialize;
 
 use crate::app::AppState;
 use crate::extractors::UserIdentity;
-use crate::utils::keys::sha1_fingerprint_publickey;
+use crate::utils::keys::fingerprint_public_key;
 
 /// Register a new device api key with an account
 pub async fn handler(
@@ -18,7 +18,7 @@ pub async fn handler(
         .map_err(CreateDeviceApiKeyError::InvalidPublicKey)?;
 
     let database = state.database();
-    let fingerprint = sha1_fingerprint_publickey(&public_device_key);
+    let fingerprint = fingerprint_public_key(&public_device_key);
 
     let user_id = user_identity.id().to_string();
     let device_api_key_id = sqlx::query_scalar!(

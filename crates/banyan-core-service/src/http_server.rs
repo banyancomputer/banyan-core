@@ -1,4 +1,3 @@
-use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -28,7 +27,7 @@ use axum::http::Request;
 use axum::response::Response;
 use tower::ServiceExt as OtherServiceExt;
 
-use crate::app::AppState;
+use crate::app::{AppState, Config};
 use crate::tasks::start_background_workers;
 use crate::{api, auth, health_check, hooks};
 use tower_http::services::ServeDir;
@@ -122,8 +121,12 @@ async fn tos_handler<B: std::marker::Send + 'static>(
     }
 }
 
-pub async fn run(listen_addr: SocketAddr, app_state: AppState) {
+pub async fn run(config: Config) {
     let (shutdown_handle, mut shutdown_rx) = graceful_shutdown_blocker().await;
+    let listen_addr = config.listen_addr();
+    let app_state = AppState::from_config(&config)
+        .await
+        .expect("app state to be created");
 
     let worker_handle = start_background_workers(app_state.clone(), shutdown_rx.clone())
         .await
