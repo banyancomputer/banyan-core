@@ -1,5 +1,5 @@
 use crate::app::AppState;
-use crate::utils::keys::sha1_fingerprint_publickey;
+use crate::utils::keys::fingerprint_public_key;
 use axum::extract::{Json, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
@@ -21,7 +21,7 @@ pub async fn handler(
         .map_err(CreateFakeUserError::InvalidPublicKey)?;
 
     let database = state.database();
-    let fingerprint = sha1_fingerprint_publickey(&public_key);
+    let fingerprint = fingerprint_public_key(&public_key);
 
     let email = format!("{fingerprint}@user.com");
     let display_name = "fake_user";

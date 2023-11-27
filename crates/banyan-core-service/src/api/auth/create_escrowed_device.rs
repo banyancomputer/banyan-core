@@ -6,7 +6,7 @@ use jwt_simple::prelude::ES384PublicKey;
 use crate::api::models::ApiEscrowedKeyMaterial;
 use crate::app::AppState;
 use crate::extractors::UserIdentity;
-use crate::utils::keys::sha1_fingerprint_publickey;
+use crate::utils::keys::fingerprint_public_key;
 
 pub async fn handler(
     user_identity: UserIdentity,
@@ -21,7 +21,7 @@ pub async fn handler(
         .map_err(CreateEscrowedDeviceError::InvalidPublicKey)?;
     let _public_encryption_key = ES384PublicKey::from_pem(&encryption_public_key_pem)
         .map_err(CreateEscrowedDeviceError::InvalidPublicKey)?;
-    let device_api_key_fingerprint = sha1_fingerprint_publickey(&public_device_api_key);
+    let device_api_key_fingerprint = fingerprint_public_key(&public_device_api_key);
     // TODO: Validate the salt here too
 
     let database = state.database();

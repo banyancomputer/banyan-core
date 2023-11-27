@@ -15,7 +15,7 @@ use uuid::Uuid;
 use crate::app::ServiceVerificationKey;
 use crate::auth::{LOGIN_PATH, SESSION_COOKIE_NAME};
 use crate::database::Database;
-use crate::utils::keys::sha1_fingerprint_publickey;
+use crate::utils::keys::fingerprint_public_key;
 
 /// Extracted identity from a request made with a server-signed JWT
 pub struct SessionIdentity {
@@ -123,7 +123,7 @@ where
             Uuid::parse_str(&db_session.id).map_err(SessionIdentityError::CorruptDatabaseId)?;
         let user_id = Uuid::parse_str(&db_session.user_id)
             .map_err(SessionIdentityError::CorruptDatabaseId)?;
-        let key_fingerprint = sha1_fingerprint_publickey(&verification_key);
+        let key_fingerprint = fingerprint_public_key(&verification_key);
 
         Ok(SessionIdentity {
             session_id,

@@ -19,6 +19,7 @@ pub struct Config {
 
     mailgun_signing_key: Option<String>,
 
+    // TODO: rename to `service_key_path`
     session_key_path: PathBuf,
     upload_directory: PathBuf,
 }
@@ -46,6 +47,7 @@ impl Config {
             std::process::exit(0);
         }
 
+        // TODO: rename flag to `--database-url`
         let database_str = match cli_args.opt_value_from_str("--db-url")? {
             Some(du) => du,
             None => match std::env::var("DATABASE_URL") {
@@ -63,11 +65,13 @@ impl Config {
             },
         };
 
+        // TODO: rename flag to `--service-key-path`
         let session_key_str = match cli_args.opt_value_from_str("--signing-key")? {
             Some(path) => path,
+            // TODO: rename env var to `SERVICE_KEY_PATH`
             None => match std::env::var("SESSION_KEY") {
                 Ok(sk) if !sk.is_empty() => sk,
-                _ => "./data/signing-key.pem".to_string(),
+                _ => "./data/service-key.private".to_string(),
             },
         };
         let session_key_path = PathBuf::from(session_key_str);
