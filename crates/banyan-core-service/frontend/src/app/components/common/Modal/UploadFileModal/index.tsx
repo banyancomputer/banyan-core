@@ -124,7 +124,7 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null; folder?: Browse
                 }
                 <input
                     type="file"
-                    multiple={false}
+                    multiple={true}
                     className="hidden"
                     onChange={handleChange}
                 />

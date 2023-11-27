@@ -7,7 +7,7 @@ use uuid::Uuid;
 
 use crate::app::AppState;
 use crate::extractors::UserIdentity;
-use crate::utils::keys::sha1_fingerprint_publickey;
+use crate::utils::keys::fingerprint_public_key;
 
 pub async fn handler(
     user_identity: UserIdentity,
@@ -17,7 +17,7 @@ pub async fn handler(
 ) -> Result<Response, CreateBucketKeyError> {
     let public_key = ES384PublicKey::from_pem(&bucket_key_req.public_key)
         .map_err(CreateBucketKeyError::InvalidPublicKey)?;
-    let fingerprint = sha1_fingerprint_publickey(&public_key);
+    let fingerprint = fingerprint_public_key(&public_key);
 
     let database = state.database();
     let bucket_id = bucket_id.to_string();

@@ -1,7 +1,5 @@
 #![allow(dead_code)]
 
-use std::sync::OnceLock;
-
 use axum::async_trait;
 use axum::extract::rejection::TypedHeaderRejection;
 use axum::extract::{FromRef, FromRequestParts, TypedHeader};
@@ -17,12 +15,7 @@ use uuid::Uuid;
 
 use crate::database::Database;
 
-// Allow 15 minute token windows for now, this is likely to change in the future
-pub const EXPIRATION_WINDOW_SECS: u64 = 900;
-
-static KEY_ID_VALIDATOR: OnceLock<regex::Regex> = OnceLock::new();
-
-const KEY_ID_REGEX: &str = r"^[0-9a-f]{40}$";
+use super::{EXPIRATION_WINDOW_SECS, KEY_ID_REGEX, KEY_ID_VALIDATOR};
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]

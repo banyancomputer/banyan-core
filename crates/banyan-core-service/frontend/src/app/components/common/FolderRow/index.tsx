@@ -25,12 +25,13 @@ export const FolderRow: React.FC<{
 }> = ({ folder, bucket, tableRef, tableScroll, nestingLevel = 0.25, path = [], parrentFolder }) => {
     const navigate = useNavigate();
     const { getExpandedFolderFiles, selectBucket } = useTomb();
+    const isChildFolderOpened = folder.files?.some(folder => folder.files?.length > 0);
 
     const goToFolder = (event: React.MouseEvent<HTMLTableRowElement, MouseEvent>, bucket: Bucket) => {
         // @ts-ignore
         if (event.target.id === 'actionsCell') { return; }
 
-        navigate(`/bucket/${bucket.id}?${path.length ? `${path.map(element => stringToBase64(element)).join('/')}/${stringToBase64(folder.name)}` : stringToBase64(folder.name)}`);
+        navigate(`/drive/${bucket.id}?${path.length ? `${path.map(element => stringToBase64(element)).join('/')}/${stringToBase64(folder.name)}` : stringToBase64(folder.name)}`);
     };
 
     const expandFolder = async (event: any) => {
@@ -87,7 +88,7 @@ export const FolderRow: React.FC<{
                 </td>
             </tr>
             {folder.files?.length ?
-                folder.files?.map((file, index) =>
+                folder.files?.filter(file => isChildFolderOpened ? file.type === 'dir' : file).map((file, index) =>
                     file.type === 'dir' ?
                         <FolderRow
                             bucket={bucket}

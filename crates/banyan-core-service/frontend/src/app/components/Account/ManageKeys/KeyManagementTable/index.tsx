@@ -58,11 +58,13 @@ export const KeyManagementTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }
                                         <td className="px-6 py-4">{bucketKey.fingerPrint}</td>
                                         <td className="px-6 py-4">{bucketKey.approved ? `${messages.approved}` : `${messages.noAccess}`}</td>
                                         <td className="px-6 py-4">
-                                            <ActionsCell
-                                                actions={<KeyActions bucket={bucket} bucketKey={bucketKey} />}
-                                                offsetTop={tableScroll}
-                                                tableRef={tableRef}
-                                            />
+                                            {bucket.keys.length > 1 &&
+                                                <ActionsCell
+                                                    actions={<KeyActions bucket={bucket} bucketKey={bucketKey} />}
+                                                    offsetTop={tableScroll}
+                                                    tableRef={tableRef}
+                                                />
+                                            }
                                         </td>
                                     </tr>
                                 )
