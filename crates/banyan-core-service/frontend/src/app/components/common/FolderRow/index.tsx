@@ -31,7 +31,7 @@ export const FolderRow: React.FC<{
         // @ts-ignore
         if (event.target.id === 'actionsCell') { return; }
 
-        navigate(`/bucket/${bucket.id}?${path.length ? `${path.map(element => stringToBase64(element)).join('/')}/${stringToBase64(folder.name)}` : stringToBase64(folder.name)}`);
+        navigate(`/drive/${bucket.id}?${path.length ? `${path.map(element => stringToBase64(element)).join('/')}/${stringToBase64(folder.name)}` : stringToBase64(folder.name)}`);
     };
 
     const expandFolder = async (event: any) => {

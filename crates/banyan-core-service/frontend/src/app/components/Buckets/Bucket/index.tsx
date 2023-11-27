@@ -44,7 +44,7 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
     const openBucket = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
         // @ts-ignore
         if (event.target.id === 'bucketContextMenu') { return; }
-        navigate(`/bucket/${bucket.id}`);
+        navigate(`/drive/${bucket.id}`);
     };
 
     useEffect(() => {
