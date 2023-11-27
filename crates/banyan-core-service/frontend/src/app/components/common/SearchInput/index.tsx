@@ -41,11 +41,11 @@ export const SearchInput = React.memo(() => {
 
     /** Ceates array of single-level elements to be able to go through them by search */
     useEffect(() => {
-        if (pathname === '/bucket/[id]') {
+        if (pathname === '/drive/[id]') {
             setSearchList(
                 selectedBucket ? [
-                    ...selectedBucket.files?.map(file => ({ bucket: selectedBucket, label: file.name, path: file.type === 'dir' ? `/bucket/${selectedBucket?.id}?${folderLocation.join('/')}${folderLocation.length ? `/${file.name}` : file.name}` : '' })),
-                    { bucket: selectedBucket, label: selectedBucket?.name, path: `/bucket/${selectedBucket?.id}` },
+                    ...selectedBucket.files?.map(file => ({ bucket: selectedBucket, label: file.name, path: file.type === 'dir' ? `/drive/${selectedBucket?.id}?${folderLocation.join('/')}${folderLocation.length ? `/${file.name}` : file.name}` : '' })),
+                    { bucket: selectedBucket, label: selectedBucket?.name, path: `/drive/${selectedBucket?.id}` },
                 ] : []
             );
 
@@ -53,8 +53,8 @@ export const SearchInput = React.memo(() => {
         };
 
         setSearchList(buckets.map(bucket =>
-            [...bucket?.files?.map(file => ({ bucket, label: file.name, path: file.type === 'dir' ? `/bucket/${bucket?.id}?${folderLocation.join('/')}${folderLocation.length ? `/${file.name}` : file.name}` : '' })),
-            { bucket, label: bucket.name, path: `/bucket/${bucket.id}` }]
+            [...bucket?.files?.map(file => ({ bucket, label: file.name, path: file.type === 'dir' ? `/drive/${bucket?.id}?${folderLocation.join('/')}${folderLocation.length ? `/${file.name}` : file.name}` : '' })),
+            { bucket, label: bucket.name, path: `/drive/${bucket.id}` }]
         ).flat()
         );
     }, [buckets, selectedBucket, pathname]);
