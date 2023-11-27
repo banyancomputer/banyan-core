@@ -15,7 +15,7 @@ lazy_static = "^1.4"
 pico-args = "^0.5"
 rand = "^0.8"
 thiserror = "^1"
-tokio = { version = "^1", features = ["macros", "net", "rt", "rt-multi-thread", "signal", "sync", "time", "fs"] }
+tokio = { version = "^1", features = ["macros", "net", "rt", "rt-multi-thread", "signal", "sync", "time"] }
 
 blake3 = "^1.4"
 ecdsa = { version = "^0.16", features = ["signing", "verifying"] }

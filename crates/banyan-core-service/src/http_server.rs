@@ -10,8 +10,6 @@ use axum::{Json, Router};
 use axum::{Server, ServiceExt};
 use futures::future::join_all;
 use http::header;
-use tokio::fs::File;
-use tokio::io::AsyncReadExt;
 use tokio::sync::watch;
 use tokio::task::JoinHandle;
 use tower::ServiceBuilder;
@@ -42,7 +40,10 @@ const REQUEST_TIMEOUT_SECS: u64 = 90;
 // The timestamp of the current TOS file.
 // Used to select the correct TOS file to serve.
 // Forrmatted: YYYYMMDD
-const CURRENT_TOS_DATE: &str = "20231127";
+const TOS_DATE: &str = "20231127";
+// CAREFUL: because how include_str! works, we can only use string literals here
+// Make sure the right TOS are being included
+const TOS_CONTENT: &str = include_str!("../dist/tos/20231127");
 
 // TODO: probably want better fallback error pages...
 async fn handle_error(error: tower::BoxError) -> impl IntoResponse {
@@ -104,34 +105,11 @@ async fn login_page_handler<B: std::marker::Send + 'static>(
 async fn tos_handler<B: std::marker::Send + 'static>(
     _req: Request<B>,
 ) -> Result<Response<BoxBody>, (StatusCode, String)> {
-    // Read the TOS content from the file specified by CURRENT_TOS_DATE
-    let current_tos_date = CURRENT_TOS_DATE;
-    let file_path = format!("./dist/tos/{}_tos.txt", current_tos_date);
-    let mut file = match File::open(&file_path).await {
-        Ok(file) => file,
-        Err(err) => {
-            tracing::error!("Failed to open TOS file: {err}");
-            return Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "A backend service issue occurred".to_string(),
-            ));
-        }
-    };
-
-    let mut tos_content = String::new();
-    if let Err(err) = file.read_to_string(&mut tos_content).await {
-        tracing::error!("Failed to read TOS file: {err}");
-        return Err((
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "A backend service issue occurred".to_string(),
-        ));
-    }
-
     let tos_response = serde_json::json!({
         // Text context
-        "tos_content": tos_content,
+        "tos_content": TOS_CONTENT,
         // YYYYMMDD formatted date
-        "current_tos_date": current_tos_date,
+        "tos_date": TOS_DATE,
     });
 
     Ok((StatusCode::OK, Json(tos_response)).into_response())
