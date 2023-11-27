@@ -173,5 +173,14 @@
 	"coldTooltip": "Le stockage d'archives est destiné aux fichiers que vous souhaitez conserver en toute sécurité pendant une longue période et auxquels vous ne prévoyez pas d'accéder très fréquemment.",
 	"hotTooltip": "Le stockage à la demande est destiné aux fichiers auxquels vous prévoyez d'accéder fréquemment et auxquels vous avez besoin d'un accès rapide.",
 	"warmTooltip": "Le stockage à la demande est destiné aux fichiers auxquels vous prévoyez d'accéder fréquemment et auxquels vous avez besoin d'un accès rapide.",
-	"unlock": "Ouvrir"
+	"unlock": "Ouvrir",
+	"youHaveNoAccess": "Vous n'avez pas accès à ce lecteur",
+	"requestAccess": "Demander l'accès",
+	"here": "ici",
+	"requestAccessDescription": "Voulez-vous demander l'accès ?",
+	"archivalSnapshots": "Instantanés d'archives",
+	"driveHasSnapshot": "Ce lecteur a déjà un instantané",
+	"driveHasNoSnapshot": "Ce lecteur n'a pas d'instantané",
+	"whatIsSnapshot": "Qu'est-ce qu'un instantané ?",
+	"makeSnapshot": "Faire un instantané"
 }

@@ -35,7 +35,7 @@ class Route {
  */
 export class RoutesConfig {
     public static Buckets = new Route('/', <Buckets />);
-    public static Bucket = new Route('/bucket/:id', <Bucket />);
+    public static Bucket = new Route('/drive/:id', <Bucket />);
     public static Account = new Route('/account', <Account />);
     public static RegisterDevice = new Route('/register-device/:id', <RegisterDevice />);
     public static Billing = new Route('billing', <Billing />);

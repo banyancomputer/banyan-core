@@ -173,5 +173,14 @@
 	"coldTooltip": "Archival storage is for files you want stored safely for a long time and don't plan to access very frequently.",
 	"hotTooltip": "On-demand storage is for files you plan to access frequently and require quick access to.",
 	"warmTooltip": "On-demand storage is for files you plan to access frequently and require quick access to.",
-	"unlock": "Unlock"
+	"unlock": "Unlock",
+	"youHaveNoAccess": "You don't have access to this drive",
+	"requestAccess": "Request access",
+	"here": "here",
+	"requestAccessDescription": "Do you want to request access?",
+	"archivalSnapshots": "Archival Snapshots",
+	"driveHasSnapshot": "This drive already has a snapshot",
+	"driveHasNoSnapshot": "This drive has no snapshots",
+	"whatIsSnapshot": "What is a snapshot?",
+	"makeSnapshot": "Make a Snapshot"
 }
