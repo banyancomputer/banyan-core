@@ -92,7 +92,7 @@ pub async fn graceful_shutdown_blocker() -> (JoinHandle<()>, watch::Receiver<()>
 
 async fn login_page_handler<B: std::marker::Send + 'static>(
     req: Request<B>,
-) -> Result<Response, (StatusCode, String)> {
+) -> Result<Response<BoxBody>, (StatusCode, String)> {
     match ServeFile::new("./dist/login.html").oneshot(req).await {
         Ok(res) => Ok(res.map(boxed)),
         Err(err) => Err((
@@ -104,7 +104,7 @@ async fn login_page_handler<B: std::marker::Send + 'static>(
 
 async fn tos_handler<B: std::marker::Send + 'static>(
     _req: Request<B>,
-) -> Result<Response<BoxBody>, (StatusCode, String)> {
+) -> Result<Response, (StatusCode, String)> {
     let tos_response = serde_json::json!({
         // Text context
         "tos_content": TOS_CONTENT,
