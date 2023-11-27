@@ -38,8 +38,10 @@ use tower_http::services::ServeFile;
 // few layers eventually such as CORS and request timeouts but that's for something down the line
 const REQUEST_TIMEOUT_SECS: u64 = 90;
 
-// Name of the text file containing the current terms of service
-const CURRENT_TOS: &str = "2023-11-08.txt";
+// The timestamp of the current TOS file.
+// Used to select the correct TOS file to serve.
+// Forrmatted: YYYYMMDDHHMMSS
+const CURRENT_TOS_TIMESTAMP: &str = "20231127000000";
 
 // TODO: probably want better fallback error pages...
 async fn handle_error(error: tower::BoxError) -> impl IntoResponse {
@@ -110,11 +112,22 @@ async fn login_page_handler<B: std::marker::Send + 'static>(
 async fn tos_handler<B: std::marker::Send + 'static>(
     req: Request<B>,
 ) -> Result<Response<BoxBody>, (StatusCode, String)> {
-    match ServeFile::new(format!("./dist/tos/{}", CURRENT_TOS))
+    match ServeFile::new(format!("./dist/tos/{}_tos.txt", CURRENT_TOS_TIMESTAMP))
         .oneshot(req)
         .await
     {
-        Ok(res) => Ok(res.map(boxed)),
+        Ok(mut res) => {
+            let headers = res.headers_mut();
+            headers.insert(
+                header::CONTENT_TYPE,
+                header::HeaderValue::from_static("text/plain"),
+            );
+            headers.insert(
+                "x-tos-timestamp",
+                header::HeaderValue::from_static(CURRENT_TOS_TIMESTAMP),
+            );
+            Ok(res.map(boxed))
+        },
         Err(err) => Err((
             StatusCode::INTERNAL_SERVER_ERROR,
             format!("Something went wrong serving the tos content: {}", err),
