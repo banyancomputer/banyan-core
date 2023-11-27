@@ -173,5 +173,9 @@
 	"coldTooltip": "存檔儲存適用於您想要長期安全儲存且不打算頻繁存取的檔案。",
 	"hotTooltip": "按需儲存適用於您計劃經常存取且需要快速存取的文件。",
 	"warmTooltip": "按需儲存適用於您計劃經常存取且需要快速存取的文件。",
-	"unlock": "開鎖"
+	"unlock": "開鎖",
+	"youHaveNoAccess": "您没有访问该驱动器的权限",
+	"requestAccess": "请求访问权限",
+	"here": "这里",
+	"requestAccessDescription": "您是否要请求访问权限？"
 }

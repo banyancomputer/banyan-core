@@ -173,5 +173,9 @@
 	"coldTooltip": "Bei der Archivspeicherung handelt es sich um Dateien, die Sie über einen längeren Zeitraum hinweg sicher aufbewahren möchten und auf die Sie nicht häufig zugreifen möchten.",
 	"hotTooltip": "On-Demand-Speicher ist für Dateien gedacht, auf die Sie häufig zugreifen möchten und auf die Sie schnell zugreifen müssen",
 	"warmTooltip": "On-Demand-Speicher ist für Dateien gedacht, auf die Sie häufig zugreifen möchten und auf die Sie schnell zugreifen müssen",
-	"unlock": "Freischalten"
+	"unlock": "Freischalten",
+	"youHaveNoAccess": "Sie haben keinen Zugriff auf dieses Laufwerk",
+	"requestAccess": "Zugriff anfordern",
+	"here": "hier",
+	"requestAccessDescription": "Möchten Sie Zugriff anfordern?"
 }

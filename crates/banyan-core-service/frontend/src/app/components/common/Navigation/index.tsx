@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useIntl } from 'react-intl';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 
+import { LockedTooltip } from './LockedTooltip'
 import { CreateBucketModal } from '../Modal/CreateBucketModal';
 
 import { HttpClient } from '@/api/http/client';
@@ -97,8 +98,11 @@ export const Navigation = () => {
 									>
 										<span className="absolute w-4 h-11 bottom-1/2 border-2 border-transparent border-l-navigation-secondary border-b-navigation-secondary">
 										</span>
-										<span className={`ml-5 py-2 px-2 flex-grow whitespace-nowrap overflow-hidden rounded-md verflow-ellipsis ${location.pathname.includes(bucket.id) && 'bg-navigation-secondary'}`}>
+										<span
+											className={` relative ml-5 py-2 px-2 ${bucket.locked ? 'pr-6' : 'pr-2'} flex-grow whitespace-nowrap rounded-md overflow-ellipsis z-10 ${location.pathname.includes(bucket.id) && 'bg-navigation-secondary'}`}
+										>
 											{bucket.name}
+											{bucket.locked && <LockedTooltip bucket={bucket} />}
 										</span>
 									</NavLink>
 								</li>
