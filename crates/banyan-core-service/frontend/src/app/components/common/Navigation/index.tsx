@@ -93,7 +93,7 @@ export const Navigation = () => {
 							buckets.map(bucket =>
 								<li key={bucket.id}>
 									<NavLink
-										to={`/bucket/${bucket.id}`}
+										to={`/drive/${bucket.id}`}
 										className="relative flex items-center justify-between gap-2  w-full h-10  cursor-pointer"
 									>
 										<span className="absolute w-4 h-11 bottom-1/2 border-2 border-transparent border-l-navigation-secondary border-b-navigation-secondary">

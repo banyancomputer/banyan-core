@@ -328,6 +328,7 @@ async fn generate_new_storage_authorization(
         Duration::from_secs(STORAGE_TICKET_DURATION),
     )
     .with_audiences(HashSet::from_strings(&[storage_host.name.as_str()]))
+    // TODO: this should be configurable
     .with_issuer("banyan-platform")
     .with_subject(format!("{}@{}", user_id, key_fingerprint))
     .invalid_before(Clock::now_since_epoch() - Duration::from_secs(30));

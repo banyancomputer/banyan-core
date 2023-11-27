@@ -11,6 +11,7 @@ import {
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 import { useSession } from './session';
 import { prettyFingerprintApiKeyPem, sortByType } from '@app/utils';
+import { useNavigate } from 'react-router-dom';
 
 interface TombInterface {
 	tomb: TombWasm | null;
@@ -57,6 +58,7 @@ const TombContext = createContext<TombInterface>({} as TombInterface);
 export const TombProvider = ({ children }: { children: ReactNode }) => {
 	/** TODO: rework session logic. */
 	const { userData } = useSession();
+	const navigate = useNavigate();
 	const { openEscrowModal } = useModal();
 	const { isLoading, keystoreInitialized, getEncryptionKey, getApiKey, escrowedKeyMaterial } = useKeystore();
 	const [tomb, setTomb] = useState<TombWasm | null>(null);
@@ -199,7 +201,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 				isSnapshotValid
 			};
 
-			setBuckets(prev => [...prev, bucket]);
+			setBuckets(prev => [...prev, bucket].sort((a, b) => a.name.localeCompare(b.name)));
 		});
 	};
 
@@ -357,6 +359,9 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 		await tomb?.deleteBucket(id);
 		await getBuckets();
 		await getStorageUsageState();
+		if (selectedBucket?.id === id) {
+			navigate('/')
+		}
 	};
 
 	const deleteFile = async (bucket: Bucket, path: string[], name: string) => {
