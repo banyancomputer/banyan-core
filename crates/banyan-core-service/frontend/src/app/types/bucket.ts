@@ -40,6 +40,7 @@ export interface Bucket {
     storageClass: string;
     files: BrowserObject[];
     snapshots: BucketSnapshot[];
+    isSnapshotValid: boolean;
     keys: BucketKey[];
     locked: boolean;
 };
@@ -51,6 +52,7 @@ export class MockBucket {
     public storageClass = '';
     public mount = {} as WasmMount;
     public files = [];
+    public isSnapshotValid = false;
     public snapshots = [];
     public keys = [];
     public locked = false;
