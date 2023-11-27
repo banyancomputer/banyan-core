@@ -1,5 +1,5 @@
+// TODO: dead code cleanup
 #![allow(dead_code)]
-#![allow(unused_imports)]
 
 use tracing::Level;
 use tracing_subscriber::layer::SubscriberExt;
@@ -8,18 +8,27 @@ use tracing_subscriber::{EnvFilter, Layer};
 
 mod api;
 mod app;
-mod car_analyzer;
 mod database;
 mod extractors;
 mod health_check;
 mod http_server;
 mod tasks;
+mod upload_store;
+mod utils;
 
-use app::{Config, Error, Version};
+use app::Config;
 
 #[tokio::main]
-async fn main() -> Result<(), Error> {
-    let (non_blocking_writer, _guard) = tracing_appender::non_blocking(std::io::stderr());
+async fn main() {
+    let config = match Config::parse_cli_arguments() {
+        Ok(c) => c,
+        Err(err) => {
+            println!("failed load a valid config from arguments: {err}");
+            std::process::exit(1);
+        }
+    };
+
+    let (non_blocking_writer, _guard) = tracing_appender::non_blocking(std::io::stdout());
     let env_filter = EnvFilter::builder()
         .with_default_directive(Level::INFO.into())
         .from_env_lossy();
@@ -27,26 +36,14 @@ async fn main() -> Result<(), Error> {
     let stderr_layer = tracing_subscriber::fmt::layer()
         .compact()
         .with_writer(non_blocking_writer)
+        .with_ansi(std::env::var("BUILD_PROFILE").unwrap_or_default() != "release")
         .with_filter(env_filter);
 
     tracing_subscriber::registry().with(stderr_layer).init();
 
-    let version = Version::new();
-    tracing::info!(
-        build_profile = ?version.build_profile,
-        features = ?version.features,
-        version = ?version.version,
-        "service starting up"
-    );
-
     register_panic_logger();
 
-    let config = Config::parse_cli_arguments()?;
-    http_server::run(config).await?;
-
-    tracing::info!("shutting down normally");
-
-    Ok(())
+    http_server::run(config).await;
 }
 
 /// Sets up system panics to use the tracing infrastructure to log reported issues. This doesn't
@@ -65,6 +62,3 @@ fn register_panic_logger() {
         None => tracing::error!(message = %panic),
     }));
 }
-
-#[cfg(test)]
-mod tests;

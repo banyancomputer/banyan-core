@@ -7,34 +7,68 @@ set -o nounset
 cd $(pwd)
 pwd
 
-rm -rf crates/banyan-core-service/data/s* \
+# Remove all data
+rm -rf \
+	crates/banyan-core-service/data/service-key* \
+	crates/banyan-core-service/data/server* \
 	crates/banyan-core-service/data/uploads/* \
-	crates/banyan-staging-service/data/pl* \
+	\
+	crates/banyan-staging-service/data/service-key* \
+	crates/banyan-staging-service/data/platform-key* \
 	crates/banyan-staging-service/data/server* \
-	crates/banyan-staging-service/data/uploads/*
+	crates/banyan-staging-service/data/uploads/* \
+	\
+	crates/banyan-storage-provider-service/data/service-key* \
+	crates/banyan-storage-provider-service/data/platform-key* \
+	crates/banyan-storage-provider-service/data/server* \
+	crates/banyan-storage-provider-service/data/uploads/*
 
+# Run core
 (
 	cd crates/banyan-core-service
 	cargo build
 	timeout 3s cargo run || true
 )
-cp -f crates/banyan-core-service/data/signing-key.public crates/banyan-staging-service/data/platform-verifier.public
 
+# Copy core public key to staging and storage provider
+cp -f crates/banyan-core-service/data/service-key.public crates/banyan-staging-service/data/platform-key.public
+cp -f crates/banyan-core-service/data/service-key.public crates/banyan-storage-provider-service/data/platform-key.public
+
+# Run staging
 (
 	cd crates/banyan-staging-service
 	cargo build
-	timeout 10s cargo run -- --generate-auth
+	timeout 3s cargo run || true 
 )
 
-#(cd crates/banyan-core-server/frontend; yarn install; source .env.dev; timeout 5s yarn run dev)
+# Run storage provider
+(
+	cd crates/banyan-storage-provider-service
+	cargo build
+	timeout 3s cargo run || true
+)
 
-[ ! -f "crates/banyan-staging-service/data/platform-auth.public" ] && exit 8
-[ ! -f "crates/banyan-staging-service/data/platform-auth.fingerprint" ] && exit 9
+[ ! -f "crates/banyan-staging-service/data/service-key.public" ] && exit 8
+[ ! -f "crates/banyan-staging-service/data/service-key.fingerprint" ] && exit 9
+[ ! -f "crates/banyan-storage-provider-service/data/service-key.public" ] && exit 10
+[ ! -f "crates/banyan-storage-provider-service/data/service-key.fingerprint" ] && exit 11
 
-export STORAGE_HOST_PUBKEY="$(cat crates/banyan-staging-service/data/platform-auth.public)"
-export STORAGE_HOST_FINGERPRINT="$(cat crates/banyan-staging-service/data/platform-auth.fingerprint)"
-export STORAGE_HOST_NAME="banyan-staging"
-export STORAGE_HOST_URL="http://127.0.0.1:3002/"
+export STAGING_HOST_PUBKEY="$(cat crates/banyan-staging-service/data/service-key.public)"
+export STAGING_HOST_FINGERPRINT="$(cat crates/banyan-staging-service/data/service-key.fingerprint)"
+export STAGING_HOST_NAME="banyan-staging"
+export STAGING_HOST_URL="http://127.0.0.1:3002/"
+export STAGING_HOST_BYTE_LIMIT="549755813888000"
+
+cat <<ESQL | sqlite3 ./crates/banyan-core-service/data/server.db
+INSERT INTO storage_hosts
+  (name, url, used_storage, available_storage, fingerprint, pem)
+  VALUES ('${STAGING_HOST_NAME}', '${STAGING_HOST_URL}', 0, ${STAGING_HOST_BYTE_LIMIT}, '${STAGING_HOST_FINGERPRINT}', '${STAGING_HOST_PUBKEY}');
+ESQL
+
+export STORAGE_HOST_PUBKEY="$(cat crates/banyan-storage-provider-service/data/service-key.public)"
+export STORAGE_HOST_FINGERPRINT="$(cat crates/banyan-storage-provider-service/data/service-key.fingerprint)"
+export STORAGE_HOST_NAME="banyan-storage-provider"
+export STORAGE_HOST_URL="http://127.0.0.1:3003/"
 export STORAGE_HOST_BYTE_LIMIT="549755813888000"
 
 cat <<ESQL | sqlite3 ./crates/banyan-core-service/data/server.db
@@ -42,14 +76,5 @@ INSERT INTO storage_hosts
   (name, url, used_storage, available_storage, fingerprint, pem)
   VALUES ('${STORAGE_HOST_NAME}', '${STORAGE_HOST_URL}', 0, ${STORAGE_HOST_BYTE_LIMIT}, '${STORAGE_HOST_FINGERPRINT}', '${STORAGE_HOST_PUBKEY}');
 ESQL
-
-NEW_NEXTAUTH_SECRET="$(openssl rand -base64 9 | tr -dc 'a-zA-Z0-9' | cut -c1-12)"
-
-# If Linux
-if [ "$(uname)" == "Linux" ]; then
-	sed -i "s/^export NEXTAUTH_SECRET=.*/export NEXTAUTH_SECRET=${NEW_NEXTAUTH_SECRET}/" crates/banyan-core-service/frontend/.env.dev
-else
-	sed -i '' "s/^export NEXTAUTH_SECRET=.*/export NEXTAUTH_SECRET=${NEW_NEXTAUTH_SECRET}/" crates/banyan-core-service/frontend/.env.dev
-fi
 
 echo 'environment reset complete'
