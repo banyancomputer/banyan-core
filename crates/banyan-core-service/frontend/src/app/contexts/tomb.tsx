@@ -94,6 +94,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 			for (let bucket of wasm_buckets) {
 				const mount = await tomb!.mount(bucket.id(), key.privatePem);
 				const locked = await mount.locked();
+				const isSnapshotValid = await mount.hasSnapshot();
 				buckets.push({
 					mount,
 					id: bucket.id(),
@@ -103,7 +104,8 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 					files: [],
 					snapshots: [],
 					keys: [],
-					locked
+					locked,
+					isSnapshotValid
 				});
 			};
 
@@ -185,6 +187,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 			const files = await mount.ls([]);
 			const snapshots = await tomb!.listBucketSnapshots(wasmBucket.id());
 			const locked = await mount.locked();
+			const isSnapshotValid = await mount.hasSnapshot();
 			const bucket = {
 				mount,
 				id: wasmBucket.id(),
@@ -194,7 +197,8 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 				files: files || [],
 				snapshots,
 				keys: [],
-				locked
+				locked,
+				isSnapshotValid
 			};
 
 			setBuckets(prev => [...prev, bucket].sort((a, b) => a.name.localeCompare(b.name)));
@@ -261,16 +265,16 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	const moveTo = async (bucket: Bucket, from: string[], to: string[]) => {
 		await tombMutex(bucket.mount, async mount => {
 			await mount.mv(from, to);
+			const isSnapshotValid = await mount.hasSnapshot();
+			await updateBucketsState('isSnapshotValid', isSnapshotValid, bucket.id);
 		});
 	};
 
 	/** Internal function which looking for selected bucket and updates it, or bucket in buckets list if no bucket selected. */
-	const updateBucketsState = (key: 'keys' | 'files' | 'snapshots', elements: BrowserObject[] | BucketSnapshot[], id: string,) => {
+	const updateBucketsState = (key: 'keys' | 'files' | 'snapshots' | 'isSnapshotValid', elements: BrowserObject[] | BucketSnapshot[] | boolean, id: string,) => {
 		/** If we are on buckets list screen there is no selected bucket in state. */
 		if (selectedBucket?.id === id) {
 			setSelectedBucket(bucket => bucket ? { ...bucket, [key]: elements } : bucket);
-
-			return;
 		};
 
 		setBuckets(buckets => buckets.map(bucket => {
@@ -289,6 +293,8 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 			if (path.join('') !== folderLocation.join('')) { return; }
 			const files = await mount.ls(path) || [];
 			await updateBucketsState('files', files.sort(sortByType), bucket.id);
+			const isSnapshotValid = await mount.hasSnapshot();
+			await updateBucketsState('isSnapshotValid', isSnapshotValid, bucket.id);
 		});
 	};
 
@@ -317,6 +323,8 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 				if (uploadPath.join('') !== folderLocation.join('')) { return; }
 				const files = await mount.ls(uploadPath) || [];
 				await updateBucketsState('files', files, bucket.id);
+				const isSnapshotValid = await mount.hasSnapshot();
+				await updateBucketsState('isSnapshotValid', isSnapshotValid, bucket.id);
 			});
 			await getStorageUsageState();
 		} catch (error: any) {
@@ -332,6 +340,8 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 		await tombMutex(tomb, async tomb => {
 			const snapshots = await tomb!.listBucketSnapshots(bucket.id);
 			await updateBucketsState('snapshots', snapshots, bucket.id);
+			const isSnapshotValid = await bucket.mount.hasSnapshot();
+			await updateBucketsState('isSnapshotValid', isSnapshotValid, bucket.id);
 		});
 	};
 
@@ -357,6 +367,8 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	const deleteFile = async (bucket: Bucket, path: string[], name: string) => {
 		await tombMutex(bucket.mount, async mount => {
 			await mount.rm([...path, name]);
+			const isSnapshotValid = await mount.hasSnapshot();
+			await updateBucketsState('isSnapshotValid', isSnapshotValid, bucket.id);
 		});
 	};
 
