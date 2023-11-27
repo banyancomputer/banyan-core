@@ -177,5 +177,10 @@
 	"youHaveNoAccess": "このドライブへのアクセス権がありません",
 	"requestAccess": "アクセスをリクエストする",
 	"here": "こちら",
-	"requestAccessDescription": "アクセスをリクエストしますか？"
+	"requestAccessDescription": "アクセスをリクエストしますか？",
+	"archivalSnapshots": "アーカイブスナップショット",
+	"driveHasSnapshot": "このドライブにはすでにスナップショットがあります",
+	"driveHasNoSnapshot": "このドライブにはスナップショットがありません",
+	"whatIsSnapshot": "スナップショットとは何ですか？",
+	"makeSnapshot": "スナップショットを作成する"
 }

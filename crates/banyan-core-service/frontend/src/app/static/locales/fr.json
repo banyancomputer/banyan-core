@@ -177,5 +177,10 @@
 	"youHaveNoAccess": "Vous n'avez pas accès à ce lecteur",
 	"requestAccess": "Demander l'accès",
 	"here": "ici",
-	"requestAccessDescription": "Voulez-vous demander l'accès ?"
+	"requestAccessDescription": "Voulez-vous demander l'accès ?",
+	"archivalSnapshots": "Instantanés d'archives",
+	"driveHasSnapshot": "Ce lecteur a déjà un instantané",
+	"driveHasNoSnapshot": "Ce lecteur n'a pas d'instantané",
+	"whatIsSnapshot": "Qu'est-ce qu'un instantané ?",
+	"makeSnapshot": "Faire un instantané"
 }

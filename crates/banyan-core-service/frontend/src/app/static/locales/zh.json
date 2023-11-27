@@ -177,5 +177,10 @@
 	"youHaveNoAccess": "您没有访问该驱动器的权限",
 	"requestAccess": "请求访问权限",
 	"here": "这里",
-	"requestAccessDescription": "您是否要请求访问权限？"
+	"requestAccessDescription": "您是否要请求访问权限？",
+	"archivalSnapshots": "归档快照",
+	"driveHasSnapshot": "此驱动器已经有快照",
+	"driveHasNoSnapshot": "此驱动器没有快照",
+	"whatIsSnapshot": "什么是快照？",
+	"makeSnapshot": "创建快照"
 }

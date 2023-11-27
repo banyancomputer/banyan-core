@@ -177,5 +177,10 @@
 	"youHaveNoAccess": "Sie haben keinen Zugriff auf dieses Laufwerk",
 	"requestAccess": "Zugriff anfordern",
 	"here": "hier",
-	"requestAccessDescription": "Möchten Sie Zugriff anfordern?"
+	"requestAccessDescription": "Möchten Sie Zugriff anfordern?",
+	"archivalSnapshots": "Archiv-Snapshots",
+	"driveHasSnapshot": "Dieses Laufwerk hat bereits einen Snapshot",
+	"driveHasNoSnapshot": "Dieses Laufwerk hat keine Snapshots",
+	"whatIsSnapshot": "Was ist ein Snapshot?",
+	"makeSnapshot": "Einen Snapshot erstellen"
 }
