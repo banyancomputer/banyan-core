@@ -64,6 +64,9 @@ echo '==> Image successfully built and exported'
 rm -rf dist/*
 git checkout ./dist
 
+export VITE_PUBLIC_API_URL='https://api.data.banyan.computer'
+export VITE_PUBLIC_STAGING_URL='https://distributor.data.banyan.computer'
+
 (cd frontend/ && yarn && yarn build)
 
 echo '==> Compiled frontend successfully built'

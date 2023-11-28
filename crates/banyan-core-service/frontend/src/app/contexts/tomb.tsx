@@ -376,6 +376,19 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	useEffect(() => {
 		if (!userData || !keystoreInitialized) { return; }
 
+		let public_api_url = import.meta.env.VITE_PUBLIC_API_URL;
+		let public_staging_url = import.meta.env.VITE_PUBLIC_STAGING_URL;
+
+		if (import.meta.env.DEV) {
+			public_api_url = public_api_url || 'http://localhost:3001';
+			public_staging_url = public_staging_url || 'http://localhost:3002';
+		}
+
+		if (!public_api_url || !public_staging_url) {
+			console.log("build did not include required service details");
+			return;
+		}
+
 		(async () => {
 			try {
 				const apiKey = await getApiKey();
@@ -383,8 +396,8 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 				const tomb = new TombWasm(
 					apiKey.privatePem,
 					userData.user.id,
-					process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
-					process.env.NEXT_PUBLIC_DATA_URL || 'http://localhost:3002',
+					public_api_url,
+					public_staging_url,
 				);
 				setTomb(await tomb);
 			} catch (error: any) {
