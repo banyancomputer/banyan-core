@@ -59,13 +59,17 @@ ${CONTAINER_RUNTIME} save -o ${TMP_IMAGE} ${FULL_IMAGE_NAME} &>/dev/null
 
 echo '==> Image successfully built and exported'
 
-TMP_SERVICE="$(mktemp /tmp/${SERVICE_NAME}.XXXXX.service)"
-VERSIONED_SVC_NAME="${SERVICE_NAME}-${TIMESTAMP}-${COMMIT_ID}"
+(cd frontend/ && yarn build)
+
+echo '==> Compiled frontend successfully built'
 
 if [ "${DRY_RUN}" = "1" ]; then
 	echo "Dry run completed successfully"
 	exit 0
 fi
+
+TMP_SERVICE="$(mktemp /tmp/${SERVICE_NAME}.XXXXX.service)"
+VERSIONED_SVC_NAME="${SERVICE_NAME}-${TIMESTAMP}-${COMMIT_ID}"
 
 cat <<EOF >${TMP_SERVICE}
 [Unit]
@@ -114,5 +118,7 @@ nohup sh -c "\
   systemctl --user daemon-reload
 "
 EOS
+
+rsync -avrh --progress --delete --exclude offline.html --exclude 404.html ./dist/ /srv/http/data.banyan.computer/beta/
 
 echo '==> Artifacts staged for deployment'
