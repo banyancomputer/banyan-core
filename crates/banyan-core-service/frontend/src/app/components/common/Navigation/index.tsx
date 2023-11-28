@@ -10,18 +10,24 @@ import { useTomb } from '@/app/contexts/tomb';
 import { useModal } from '@/app/contexts/modals';
 import { useKeystore } from '@/app/contexts/keystore';
 import { popupClickHandler } from '@/app/utils';
+import { useFilesUpload } from '@app/contexts/filesUpload';
+import { ToastNotifications } from '@app/utils/toastNotifications';
+import { Bucket } from '@app/types/bucket';
+import { preventDefaultDragAction } from '@app/utils/dragHandlers';
 
 import { ChevronUp, Home, Info, Logo, Logout, Mail, Plus, Question, Trash } from '@static/images/common';
 
 export const Navigation = () => {
 	const { buckets } = useTomb();
 	const { purgeKeystore } = useKeystore();
+	const { uploadFiles, setFiles, files } = useFilesUpload();
 	const [isBucketsVisible, setIsBucketsVisible] = useState(false);
 	const [areHelpOpionsVisible, setAreHelpOpionsVisible] = useState(false);
 	const { messages } = useIntl();
 	const { openModal } = useModal();
 	const helpRef = useRef<HTMLDivElement | null>(null);
 	const location = useLocation();
+	const [droppedBucket, setDroppedBucket] = useState<null | Bucket>(null)
 
 	const toggleBucketsVisibility = (event: React.MouseEvent<HTMLDivElement>) => {
 		event.stopPropagation();
@@ -37,7 +43,6 @@ export const Navigation = () => {
 		openModal(<CreateBucketModal />);
 	};
 
-
 	const logout = async () => {
 		let api = new HttpClient;
 		try {
@@ -49,6 +54,30 @@ export const Navigation = () => {
 			console.error("An Error occurred trying to logout: ", err.message);
 		}
 	};
+
+	const handleDrop = async (event: React.DragEvent<HTMLAnchorElement>, bucket: Bucket) => {
+		preventDefaultDragAction(event);
+
+		if (!event?.dataTransfer.files.length) { return; }
+
+		setFiles(Array.from(event.dataTransfer.files).map(file => ({ file, isUploaded: false })));
+		setDroppedBucket(bucket!);
+	};
+
+	useEffect(() => {
+		if (!files.length || !droppedBucket) return;
+
+		(async () => {
+			try {
+				ToastNotifications.uploadProgress();
+				await uploadFiles(droppedBucket, []);
+				setDroppedBucket(null);
+			} catch (error: any) {
+				setDroppedBucket(null);
+				ToastNotifications.error(`${messages.uploadError}`, `${messages.tryAgain}`, () => { });
+			}
+		})()
+	}, [files, droppedBucket]);
 
 	useEffect(() => {
 		if (isBucketsVisible) { return; }
@@ -93,7 +122,10 @@ export const Navigation = () => {
 							buckets.map(bucket =>
 								<li key={bucket.id}>
 									<NavLink
+										id={bucket.id}
 										to={`/drive/${bucket.id}`}
+										onDrag={preventDefaultDragAction}
+										onDrop={event => handleDrop(event, bucket)}
 										className="relative flex items-center justify-between gap-2  w-full h-10  cursor-pointer"
 									>
 										<span className="absolute w-4 h-11 bottom-1/2 border-2 border-transparent border-l-navigation-secondary border-b-navigation-secondary">
