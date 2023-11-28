@@ -33,9 +33,11 @@ rm -rf crates/banyan-storage-provider-service/data/serv* \
 	timeout 3s cargo run || true
 )
 
+[ -f "crates/banyan-core-service/data/signing-key.public" ] || fail 1 "core didn't generate public key"
+
 # Copy core public key to staging and storage provider
-cp -f crates/banyan-core-service/data/service-key.public crates/banyan-staging-service/data/platform-key.public
-cp -f crates/banyan-core-service/data/service-key.public crates/banyan-storage-provider-service/data/platform-key.public
+cp -f crates/banyan-core-service/data/signing-key.public crates/banyan-staging-service/data/platform-key.public
+cp -f crates/banyan-core-service/data/signing-key.public crates/banyan-storage-provider-service/data/platform-key.public
 
 # Run staging
 (
@@ -44,8 +46,8 @@ cp -f crates/banyan-core-service/data/service-key.public crates/banyan-storage-p
 	timeout 3s cargo run || true
 )
 
-[ -f "crates/banyan-staging-service/data/service-key.public" ] || fail 1 "staging missing public service key"
-[ -f "crates/banyan-staging-service/data/service-key.fingerprint" ] || fail 2 "staging missing service fingerprint"
+[ -f "crates/banyan-staging-service/data/service-key.public" ] || fail 2 "staging missing public service key"
+[ -f "crates/banyan-staging-service/data/service-key.fingerprint" ] || fail 3 "staging missing service fingerprint"
 
 export STAGING_HOST_PUBKEY="$(cat crates/banyan-staging-service/data/service-key.public)"
 export STAGING_HOST_FINGERPRINT="$(cat crates/banyan-staging-service/data/service-key.fingerprint)"
@@ -53,7 +55,7 @@ export STAGING_HOST_NAME="banyan-staging"
 export STAGING_HOST_URL="http://127.0.0.1:3002/"
 export STAGING_HOST_BYTE_LIMIT="549755813888000"
 
-cat <<ESQL | sqlite3 ./crates/banyan-core-service/data/server.db || fail 3 "creating staging server storage host record"
+cat <<ESQL | sqlite3 ./crates/banyan-core-service/data/server.db || fail 4 "creating staging server storage host record"
 INSERT INTO storage_hosts
   (name, url, used_storage, available_storage, fingerprint, pem)
   VALUES ('${STAGING_HOST_NAME}', '${STAGING_HOST_URL}', 0, ${STAGING_HOST_BYTE_LIMIT}, '${STAGING_HOST_FINGERPRINT}', '${STAGING_HOST_PUBKEY}');
@@ -66,8 +68,8 @@ ESQL
 	timeout 3s cargo run || true
 )
 
-[ -f "crates/banyan-storage-provider-service/data/service-key.public" ] || fail 4, "storage provider missing public service key"
-[ -f "crates/banyan-storage-provider-service/data/service-key.fingerprint" ] || fail 5, "storage provider missing service fingerprint"
+[ -f "crates/banyan-storage-provider-service/data/service-key.public" ] || fail 5 "storage provider missing public service key"
+[ -f "crates/banyan-storage-provider-service/data/service-key.fingerprint" ] || fail 6 "storage provider missing service fingerprint"
 
 export STORAGE_HOST_PUBKEY="$(cat crates/banyan-storage-provider-service/data/service-key.public)"
 export STORAGE_HOST_FINGERPRINT="$(cat crates/banyan-storage-provider-service/data/service-key.fingerprint)"
@@ -75,7 +77,7 @@ export STORAGE_HOST_NAME="banyan-storage-provider"
 export STORAGE_HOST_URL="http://127.0.0.1:3003/"
 export STORAGE_HOST_BYTE_LIMIT="549755813888000"
 
-cat <<ESQL | sqlite3 ./crates/banyan-core-service/data/server.db || fail 6 "creating storage server storage host record"
+cat <<ESQL | sqlite3 ./crates/banyan-core-service/data/server.db || fail 7 "creating storage server storage host record"
 INSERT INTO storage_hosts
   (name, url, used_storage, available_storage, fingerprint, pem)
   VALUES ('${STORAGE_HOST_NAME}', '${STORAGE_HOST_URL}', 0, ${STORAGE_HOST_BYTE_LIMIT}, '${STORAGE_HOST_FINGERPRINT}', '${STORAGE_HOST_PUBKEY}');
