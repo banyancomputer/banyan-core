@@ -43,7 +43,7 @@ impl State {
 
         let mailgun_signing_key = config.mailgun_signing_key().map(MailgunSigningKey::new);
 
-        let service_key = load_or_create_service_key(&config.session_key_path())?;
+        let service_key = load_or_create_signing_key(&config.signing_key_path())?;
         let service_verifier = service_key.verifier();
 
         let mut credentials = BTreeMap::new();
@@ -117,7 +117,7 @@ pub enum StateSetupError {
     UnreadableServiceKey(std::io::Error),
 }
 
-fn load_or_create_service_key(
+fn load_or_create_signing_key(
     private_path: &PathBuf,
 ) -> Result<ServiceSigningKey, StateSetupError> {
     let mut session_key_raw = if private_path.exists() {

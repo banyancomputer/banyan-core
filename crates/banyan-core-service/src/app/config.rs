@@ -19,8 +19,7 @@ pub struct Config {
 
     mailgun_signing_key: Option<String>,
 
-    // TODO: rename to `service_key_path`
-    session_key_path: PathBuf,
+    signing_key_path: PathBuf,
     upload_directory: PathBuf,
 }
 
@@ -47,7 +46,6 @@ impl Config {
             std::process::exit(0);
         }
 
-        // TODO: rename flag to `--database-url`
         let database_str = match cli_args.opt_value_from_str("--db-url")? {
             Some(du) => du,
             None => match std::env::var("DATABASE_URL") {
@@ -65,16 +63,14 @@ impl Config {
             },
         };
 
-        // TODO: rename flag to `--service-key-path`
-        let session_key_str = match cli_args.opt_value_from_str("--signing-key")? {
+        let signing_key_str = match cli_args.opt_value_from_str("--signing-key")? {
             Some(path) => path,
-            // TODO: rename env var to `SERVICE_KEY_PATH`
-            None => match std::env::var("SESSION_KEY") {
+            None => match std::env::var("SIGNING_KEY") {
                 Ok(sk) if !sk.is_empty() => sk,
-                _ => "./data/service-key.private".to_string(),
+                _ => "./data/signing-key.pem".to_string(),
             },
         };
-        let session_key_path = PathBuf::from(session_key_str);
+        let signing_key_path = PathBuf::from(signing_key_str);
 
         let upload_dir_str = match cli_args.opt_value_from_str("--upload-dir")? {
             Some(path) => path,
@@ -118,7 +114,7 @@ impl Config {
 
             mailgun_signing_key,
 
-            session_key_path,
+            signing_key_path,
             upload_directory,
         })
     }
@@ -143,8 +139,8 @@ impl Config {
         self.mailgun_signing_key.as_deref()
     }
 
-    pub fn session_key_path(&self) -> PathBuf {
-        self.session_key_path.clone()
+    pub fn signing_key_path(&self) -> PathBuf {
+        self.signing_key_path.clone()
     }
 
     pub fn upload_directory(&self) -> PathBuf {
@@ -180,7 +176,7 @@ fn print_help() {
     println!("                                  this is 127.0.0.1:3001");
     println!("    --mailgun, MAILGUN_KEY        Webhook signature verification key issued by");
     println!("                                  mailgun");
-    println!("    --signing-key, SESSION_KEY    Path to the p384 private key used for session");
+    println!("    --signing-key, SIGNING_KEY    Path to the p384 private key used for signing");
     println!("                                  key generation and verification");
     println!("    --upload-dir, UPLOAD_DIR      Path used to store uploaded client data\n");
     println!("    --db-url, DATABASE_URL        Configure the url and settings of the sqlite");
