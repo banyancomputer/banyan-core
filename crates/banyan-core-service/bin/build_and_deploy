@@ -8,6 +8,8 @@ cd $(dirname %0)
 DEPLOY_HOST="api.data.banyan.computer"
 DEPLOY_BASE_FOLDER="containers"
 
+DRY_RUN="${DRY_RUN:-0}"
+
 SERVICE_NAME="${1:-core-banyan}"
 SERVICE_PORT="${2:-3001}"
 SERVICE_ARGUMENTS="--db-url sqlite:///shared/platform.db --signing-key /data/signing-key.pem --upload-dir /data/uploads"
@@ -27,8 +29,8 @@ DEPLOY_SHARED_DIRECTORY="${DEPLOY_BASE_FOLDER}/shared"
 DEPLOY_STATE="${DEPLOY_BASE_FOLDER}/state"
 
 if ! git diff-index --quiet HEAD -- || ! git diff-files --quiet; then
-  echo "!!> Branch is dirty, can't build and deploy from this branch"
-  #exit 1
+	echo "!!> Branch is dirty, can't build and deploy from this branch"
+	#exit 1
 fi
 
 COMMIT_ID="$(git describe --always --dirty --long --tags)"
@@ -41,14 +43,17 @@ FULL_IMAGE_NAME="${ORG}/${NAMESPACE}/${IMAGE}:${COMMIT_ID}"
 TMP_IMAGE="$(mktemp /tmp/${SERVICE_NAME}.XXXXX.tar)"
 
 CONTAINER_RUNTIME="podman"
-if which docker &> /dev/null; then
-  CONTAINER_RUNTIME="docker"
+if which docker &>/dev/null; then
+	CONTAINER_RUNTIME="docker"
 fi
 
 # Create the actual container
-(cd ../..; ${CONTAINER_RUNTIME} build -t ${FULL_IMAGE_NAME} \
-  --build-arg CI_BUILD_REF=${COMMIT_ID} \
-  --build-arg CRATE_NAME=banyan-core-service .)
+(
+	cd ../..
+	${CONTAINER_RUNTIME} build -t ${FULL_IMAGE_NAME} \
+		--build-arg CI_BUILD_REF=${COMMIT_ID} \
+		--build-arg CRATE_NAME=banyan-core-service .
+)
 
 ${CONTAINER_RUNTIME} save -o ${TMP_IMAGE} ${FULL_IMAGE_NAME} &>/dev/null
 
@@ -57,7 +62,12 @@ echo '==> Image successfully built and exported'
 TMP_SERVICE="$(mktemp /tmp/${SERVICE_NAME}.XXXXX.service)"
 VERSIONED_SVC_NAME="${SERVICE_NAME}-${TIMESTAMP}-${COMMIT_ID}"
 
-cat << EOF > ${TMP_SERVICE}
+if [ "${DRY_RUN}" = "1" ]; then
+	echo "Dry run completed successfully"
+	exit 0
+fi
+
+cat <<EOF >${TMP_SERVICE}
 [Unit]
 Description=${SERVICE_NAME}
 After=network-online.target
