@@ -9,22 +9,6 @@ ARG CRATE_NAME
 RUN test -n "$CRATE_NAME" || { echo "Crate name must be passed to container build"; exit 1; }
 
 RUN mkdir -p /usr/src/build
-#WORKDIR /usr/src/build
-
-# Perform a release build only using the dependencies and an otherwise empty
-# binary project, to allow the dependencies to build and be cached. This
-# prevents rebuilding them in the future if only the service's source has
-# changed.
-#RUN cargo init --name $CRATE_NAME
-#COPY Cargo.toml Cargo.lock /usr/src/build
-#RUN cargo build --release
-
-# Copy in the actual service source code, and perform the release build
-# (install is release mode by default).
-#COPY build.rs /usr/src/build/build.rs
-#COPY migrations /usr/src/build/migrations
-#COPY src /usr/src/build/src
-#COPY .sqlx /usr/src/build/.sqlx
 COPY . /usr/src/build
 
 # The container build environment doesn't have access to the entire git repo
@@ -43,8 +27,13 @@ RUN mv /usr/local/cargo/bin/$CRATE_NAME /usr/local/cargo/bin/service
 # extremely scoped in how they can be exploited.
 FROM gcr.io/distroless/cc-debian11:nonroot
 
+ARG CRATE_NAME
+
 # Bring in just our final compiled artifact
 COPY --from=build /usr/local/cargo/bin/service /usr/bin/service
+
+COPY --from=build /usr/src/build/crates/$CRATE_NAME/migrations /svc/root/migrations
+WORKDIR /svc/root
 
 VOLUME /data
 
