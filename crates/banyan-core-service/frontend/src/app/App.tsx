@@ -18,6 +18,7 @@ import { ErrorBanner } from '@components/common/ErrorBanner';
 
 import { getLocalStorageItem, setLocalStorageItem } from './utils/localStorage';
 import { SessionProvider } from './contexts/session';
+import { preventDefaultDragAction } from './utils/dragHandlers';
 import en from '@static/locales/en.json';
 import fr from '@static/locales/fr.json';
 import de from '@static/locales/de.json';
@@ -55,7 +56,11 @@ const App = () => {
 	}, []);
 
 	return (
-		<main className="flex flex-col h-screen font-sans bg-mainBackground text-text-900">
+		<main
+			className="flex flex-col h-screen font-sans bg-mainBackground text-text-900"
+			onDragOver={preventDefaultDragAction}
+			onDrop={preventDefaultDragAction}
+		>
 			<BrowserRouter basename="/" >
 				<ModalProvider>
 					<SessionProvider>
