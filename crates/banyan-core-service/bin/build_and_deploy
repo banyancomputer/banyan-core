@@ -59,6 +59,7 @@ ${CONTAINER_RUNTIME} save -o ${TMP_IMAGE} ${FULL_IMAGE_NAME} &>/dev/null
 
 echo '==> Image successfully built and exported'
 
+rm -rf dist/*
 (cd frontend/ && yarn build)
 
 echo '==> Compiled frontend successfully built'
