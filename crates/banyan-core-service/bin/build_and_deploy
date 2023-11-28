@@ -124,7 +124,7 @@ nohup sh -c "\
 "
 EOS
 
-rsync -avrh --progress --delete --exclude offline.html --exclude 404.html \
+rsync -vrh --progress --delete --exclude offline.html --exclude 404.html \
 	./dist/ ${DEPLOY_HOST}:/srv/http/data.banyan.computer/beta/
 
 echo '==> Artifacts staged for deployment'
