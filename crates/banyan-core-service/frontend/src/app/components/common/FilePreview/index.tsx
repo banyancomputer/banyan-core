@@ -26,7 +26,7 @@ export const FilePreview = () => {
         <>
             {(file.data || !isFileSupported || file.isLoading) &&
                 <div
-                    className="absolute w-screen h-screen bg flex items-start justify-center py-24 z-10 bg-slate-800 bg-opacity-80 backdrop-blur-sm overflow-scroll"
+                    className="absolute w-screen h-screen bg flex items-start justify-center py-24 z-20 bg-slate-800 bg-opacity-80 backdrop-blur-sm overflow-scroll"
                     onClick={close}
                 >
                     <button
