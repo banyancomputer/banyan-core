@@ -13,7 +13,6 @@ DRY_RUN="${DRY_RUN:-0}"
 SERVICE_NAME="${1:-banyan-staging-service}"
 SERVICE_PORT="${2:-3000}"
 SERVICE_ARGUMENTS="--auth-key /data/platform-auth.key --hostname https://${DEPLOY_HOST}/ --verifier-key /data/platform-verifier.public --upload-dir /data/uploads --platform-url https://api.data.banyan.computer"
-SERVICE_FEATURES="postgres"
 
 # Everything beyond this point isn't expected to be changed between services
 
@@ -48,12 +47,12 @@ if which docker &>/dev/null; then
 fi
 
 # Create the actual container
-cp -f ../../Cargo.lock ./
-${CONTAINER_RUNTIME} build -t ${FULL_IMAGE_NAME} \
-	--build-arg CI_BUILD_REF=${COMMIT_ID} \
-	--build-arg FEATURES=${SERVICE_FEATURES} \
-	--build-arg SERVICE_NAME=${SERVICE_NAME} .
-rm -f Cargo.lock
+(
+	cd ../..
+	${CONTAINER_RUNTIME} build -t ${FULL_IMAGE_NAME} \
+		--build-arg CI_BUILD_REF=${COMMIT_ID} \
+		--build-arg SERVICE_NAME=${SERVICE_NAME} .
+)
 
 ${CONTAINER_RUNTIME} save -o ${TMP_IMAGE} ${FULL_IMAGE_NAME} &>/dev/null
 
