@@ -59,8 +59,12 @@ ${CONTAINER_RUNTIME} save -o ${TMP_IMAGE} ${FULL_IMAGE_NAME} &>/dev/null
 
 echo '==> Image successfully built and exported'
 
+# We need to remove all the generated files, leaving the commited ones. This is
+# the fastest way to clean the slate
 rm -rf dist/*
-(cd frontend/ && yarn build)
+git checkout ./dist
+
+(cd frontend/ && yarn && yarn build)
 
 echo '==> Compiled frontend successfully built'
 
