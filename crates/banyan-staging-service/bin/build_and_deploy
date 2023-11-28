@@ -12,7 +12,7 @@ DRY_RUN="${DRY_RUN:-0}"
 
 SERVICE_NAME="${1:-distributor-banyan}"
 SERVICE_PORT="${2:-3000}"
-SERVICE_ARGUMENTS="--service-key-path /data/service-key.private --service-hostname https://${DEPLOY_HOST}/ --platform-public-key-path /data/platform-key.public --upload-dir /data/uploads --platform-hostname https://api.data.banyan.computer"
+SERVICE_ARGUMENTS="--service-key-path /data/service-key.private --service-hostname https://${DEPLOY_HOST}/ --platform-public-key-path /data/platform-key.public --upload-dir /data/uploads --platform-hostname https://api.data.banyan.computer --service-name ${SERVICE_NAME}"
 
 # Everything beyond this point isn't expected to be changed between services
 
