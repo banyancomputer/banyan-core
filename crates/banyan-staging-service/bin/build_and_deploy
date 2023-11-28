@@ -8,6 +8,8 @@ cd $(dirname %0)
 DEPLOY_HOST="distributor.data.banyan.computer"
 DEPLOY_BASE_FOLDER="containers"
 
+DRY_RUN="${DRY_RUN:-0}"
+
 SERVICE_NAME="${1:-banyan-staging-service}"
 SERVICE_PORT="${2:-3000}"
 SERVICE_ARGUMENTS="--auth-key /data/platform-auth.key --hostname https://${DEPLOY_HOST}/ --verifier-key /data/platform-verifier.public --upload-dir /data/uploads --platform-url https://api.data.banyan.computer"
@@ -27,8 +29,8 @@ DEPLOY_SERVICE_DIRECTORY="${DEPLOY_BASE_FOLDER}/services"
 DEPLOY_STATE="${DEPLOY_BASE_FOLDER}/state"
 
 if ! git diff-index --quiet HEAD -- || ! git diff-files --quiet; then
-  echo "!!> Branch is dirty, can't build and deploy from this branch"
-  exit 1
+	echo "!!> Branch is dirty, can't build and deploy from this branch"
+	exit 1
 fi
 
 COMMIT_ID="$(git describe --always --dirty --long --tags)"
@@ -41,26 +43,31 @@ FULL_IMAGE_NAME="${ORG}/${NAMESPACE}/${IMAGE}:${COMMIT_ID}"
 TMP_IMAGE="$(mktemp /tmp/${SERVICE_NAME}.XXXXX.tar)"
 
 CONTAINER_RUNTIME="podman"
-if which docker &> /dev/null; then
-  CONTAINER_RUNTIME="docker"
+if which docker &>/dev/null; then
+	CONTAINER_RUNTIME="docker"
 fi
 
 # Create the actual container
 cp -f ../../Cargo.lock ./
 ${CONTAINER_RUNTIME} build -t ${FULL_IMAGE_NAME} \
-  --build-arg CI_BUILD_REF=${COMMIT_ID} \
-  --build-arg FEATURES=${SERVICE_FEATURES} \
-  --build-arg SERVICE_NAME=${SERVICE_NAME} .
+	--build-arg CI_BUILD_REF=${COMMIT_ID} \
+	--build-arg FEATURES=${SERVICE_FEATURES} \
+	--build-arg SERVICE_NAME=${SERVICE_NAME} .
 rm -f Cargo.lock
 
 ${CONTAINER_RUNTIME} save -o ${TMP_IMAGE} ${FULL_IMAGE_NAME} &>/dev/null
 
 echo '==> Image successfully built and exported'
 
+if [ "${DRY_RUN}" = "1" ]; then
+	echo "Dry run completed successfully"
+	exit 0
+fi
+
 TMP_SERVICE="$(mktemp /tmp/${SERVICE_NAME}.XXXXX.service)"
 VERSIONED_SVC_NAME="${SERVICE_NAME}-${TIMESTAMP}-${COMMIT_ID}"
 
-cat << EOF > ${TMP_SERVICE}
+cat <<EOF >${TMP_SERVICE}
 [Unit]
 Description=${SERVICE_NAME}
 After=network-online.target
