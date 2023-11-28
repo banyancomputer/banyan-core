@@ -182,5 +182,13 @@
 	"driveHasSnapshot": "Ce lecteur a déjà un instantané",
 	"driveHasNoSnapshot": "Ce lecteur n'a pas d'instantané",
 	"whatIsSnapshot": "Qu'est-ce qu'un instantané ?",
-	"makeSnapshot": "Faire un instantané"
+	"makeSnapshot": "Faire un instantané",
+	"termsOfService": "Conditions d'utilisation et politique de confidentialité",
+	"decline": "Refuser",
+	"acceptTermsAndService": "J'ai lu et j'accepte les conditions d'utilisation de Banyan",
+	"isThisAWorkAccount": "S'agit-il d'un compte professionnel ?",
+	"organizationName": "Nom de l'organisation",
+	"enterName": "Entrez le nom",
+	"thisIsNotWorkingAccount": "Ce n'est pas un compte professionnel",
+	"done": "Terminé"
 }

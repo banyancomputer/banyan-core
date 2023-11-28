@@ -32,7 +32,9 @@ export const ShareFileModal: React.FC<{ link: string }> = ({ link }) => {
                 <button
                     className="btn-primary flex-grow py-3 px-4"
                     onClick={copy}
-                >{`${messages.copyLink}`}</button>
+                >
+                    {`${messages.copyLink}`}
+                </button>
             </div>
         </div >
     );

@@ -182,5 +182,13 @@
 	"driveHasSnapshot": "This drive already has a snapshot",
 	"driveHasNoSnapshot": "This drive has no snapshots",
 	"whatIsSnapshot": "What is a snapshot?",
-	"makeSnapshot": "Make a Snapshot"
+	"makeSnapshot": "Make a Snapshot",
+	"termsOfService": "Terms of Service & Privacy Policy",
+	"decline": "Decline",
+	"acceptTermsAndService": "I have read and accept Banyan`s Terms of Service",
+	"isThisAWorkAccount": "Is this a work account?",
+	"organizationName": "Organization name",
+	"enterName": "Enter name",
+	"thisIsNotWorkingAccount": "This isn’t a work account",
+	"done": "Done"
 }

@@ -11,6 +11,7 @@ module.exports = {
 			},
 			height: {
 				navbar: '72px',
+				termsAndConditions: '756px'
 			},
 			width: {
 				navbar: '280px',
@@ -19,6 +20,8 @@ module.exports = {
 				snapshotsModal: '530px',
 				keyManagement: '1128px',
 				filePreview: '80vw',
+				termsAndConditions: '1283px',
+				termsAndConditionsText: '1184px'
 			},
 			padding: {
 				keyManagement: '72px',

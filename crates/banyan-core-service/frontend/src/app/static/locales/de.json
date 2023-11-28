@@ -182,5 +182,13 @@
 	"driveHasSnapshot": "Dieses Laufwerk hat bereits einen Snapshot",
 	"driveHasNoSnapshot": "Dieses Laufwerk hat keine Snapshots",
 	"whatIsSnapshot": "Was ist ein Snapshot?",
-	"makeSnapshot": "Einen Snapshot erstellen"
+	"makeSnapshot": "Einen Snapshot erstellen",
+	"termsOfService": "Nutzungsbedingungen & Datenschutzrichtlinie",
+	"decline": "Ablehnen",
+	"acceptTermsAndService": "Ich habe die Nutzungsbedingungen von Banyan gelesen und akzeptiere sie",
+	"isThisAWorkAccount": "Ist dies ein Arbeitskonto?",
+	"organizationName": "Organisationsname",
+	"enterName": "Name eingeben",
+	"thisIsNotWorkingAccount": "Dies ist kein Arbeitskonto",
+	"done": "Fertig"
 }

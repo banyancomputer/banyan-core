@@ -182,5 +182,13 @@
 	"driveHasSnapshot": "このドライブにはすでにスナップショットがあります",
 	"driveHasNoSnapshot": "このドライブにはスナップショットがありません",
 	"whatIsSnapshot": "スナップショットとは何ですか？",
-	"makeSnapshot": "スナップショットを作成する"
+	"makeSnapshot": "スナップショットを作成する",
+	"termsOfService": "利用規約およびプライバシーポリシー",
+	"decline": "辞退する",
+	"acceptTermsAndService": "Banyanの利用規約を読んで同意します",
+	"isThisAWorkAccount": "これは仕事のアカウントですか？",
+	"organizationName": "組織名",
+	"enterName": "名前を入力",
+	"thisIsNotWorkingAccount": "これは仕事のアカウントではありません",
+	"done": "完了"
 }
