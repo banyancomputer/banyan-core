@@ -8,8 +8,10 @@ ARG CRATE_NAME
 
 RUN test -n "$CRATE_NAME" || { echo "Crate name must be passed to container build"; exit 1; }
 
-RUN mkdir -p /usr/src/build
 COPY . /usr/src/build
+
+# Core has this, the others dont
+RUN mkdir -p /usr/src/build/crates/$CRATE_NAME/dist
 
 # The container build environment doesn't have access to the entire git repo
 # only the immediate sources. We get around this by passing it into the build
@@ -32,7 +34,9 @@ ARG CRATE_NAME
 # Bring in just our final compiled artifact
 COPY --from=build /usr/local/cargo/bin/service /usr/bin/service
 
+COPY --from=build /usr/src/build/crates/$CRATE_NAME/dist /svc/root/dist
 COPY --from=build /usr/src/build/crates/$CRATE_NAME/migrations /svc/root/migrations
+
 WORKDIR /svc/root
 
 VOLUME /data
