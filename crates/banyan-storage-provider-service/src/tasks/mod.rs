@@ -1,8 +1,8 @@
 mod prune_blocks;
 mod report_upload;
 
-pub use prune_blocks::{PruneBlock, PruneBlocksTask, PruneBlocksTaskContext, PruneBlocksTaskError};
-pub use report_upload::{ReportUploadTask, ReportUploadTaskContext, ReportUploadTaskError};
+pub use prune_blocks::{PruneBlock, PruneBlocksTask};
+pub use report_upload::ReportUploadTask;
 
 use tokio::sync::watch;
 use tokio::task::JoinHandle;
