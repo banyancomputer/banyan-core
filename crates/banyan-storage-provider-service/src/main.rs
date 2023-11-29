@@ -36,7 +36,7 @@ async fn main() {
     let stderr_layer = tracing_subscriber::fmt::layer()
         .compact()
         .with_writer(non_blocking_writer)
-        .with_ansi(std::env::var("BUILD_PROFILE").unwrap_or_default() != "release")
+        .with_ansi(cfg!(debug_assertions))
         .with_filter(env_filter);
 
     tracing_subscriber::registry().with(stderr_layer).init();
