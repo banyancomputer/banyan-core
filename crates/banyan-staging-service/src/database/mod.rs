@@ -22,9 +22,7 @@ pub async fn connect(db_url: &url::Url) -> Result<Database, DatabaseSetupError> 
         return Ok(db);
     }
 
-    Err(DatabaseSetupError::UnknownDbType(
-        db_url.scheme().to_string(),
-    ))
+    Err(DatabaseSetupError::UnknownDbType(db_url.scheme().to_string()))
 }
 
 #[derive(Debug, thiserror::Error)]

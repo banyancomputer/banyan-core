@@ -318,9 +318,7 @@ where
     }
     let hash = hasher.finalize().to_string();
     if hash != content_hash {
-        return Err(UploadStreamError::ParseError(
-            StreamingCarAnalyzerError::MismatchedHash,
-        ));
+        return Err(UploadStreamError::ParseError(StreamingCarAnalyzerError::MismatchedHash));
     }
     Ok(car_analyzer.report()?)
 }

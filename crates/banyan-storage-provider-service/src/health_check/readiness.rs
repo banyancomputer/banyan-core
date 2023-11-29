@@ -34,10 +34,8 @@ mod tests {
         let response = handler(StateDataSource::new(Arc::new(MockReadiness::Ready))).await;
         assert_eq!(response.status(), StatusCode::OK);
 
-        let response = handler(StateDataSource::new(Arc::new(
-            MockReadiness::DependencyFailure,
-        )))
-        .await;
+        let response =
+            handler(StateDataSource::new(Arc::new(MockReadiness::DependencyFailure))).await;
         assert_eq!(response.status(), StatusCode::SERVICE_UNAVAILABLE);
 
         let response = handler(StateDataSource::new(Arc::new(MockReadiness::ShuttingDown))).await;

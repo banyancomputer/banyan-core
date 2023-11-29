@@ -111,16 +111,17 @@ impl TaskStore for SqliteTaskStore {
         let mut connection = self.pool.clone().acquire().await?;
 
         let timed_out_start_threshold = time::OffsetDateTime::now_utc() - TASK_EXECUTION_TIMEOUT;
-        let pending_retry_tasks = sqlx::query_scalar!(
-            r#"SELECT id FROM background_tasks
+        let pending_retry_tasks =
+            sqlx::query_scalar!(
+                r#"SELECT id FROM background_tasks
                    WHERE state IN ('in_progress', 'retry')
                       AND DATETIME(started_at) <= DATETIME($1)
                    ORDER BY DATETIME(started_at) ASC
                    LIMIT 10;"#,
-            timed_out_start_threshold,
-        )
-        .fetch_all(&mut *connection)
-        .await;
+                timed_out_start_threshold,
+            )
+            .fetch_all(&mut *connection)
+            .await;
 
         connection.close().await?;
 
@@ -166,13 +167,14 @@ impl TaskStore for SqliteTaskStore {
 
         // pull the full current version of the task
         let mut connection = self.pool.clone().acquire().await?;
-        let chosen_task = sqlx::query_as!(
-            Task,
-            "SELECT * FROM background_tasks WHERE id = $1;",
-            chosen_task_id
-        )
-        .fetch_one(&mut *connection)
-        .await?;
+        let chosen_task =
+            sqlx::query_as!(
+                Task,
+                "SELECT * FROM background_tasks WHERE id = $1;",
+                chosen_task_id
+            )
+            .fetch_one(&mut *connection)
+            .await?;
         connection.close().await?;
         Ok(Some(chosen_task))
     }

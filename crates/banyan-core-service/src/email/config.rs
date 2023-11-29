@@ -19,10 +19,11 @@ impl EmailConfig {
         from: &str,
         test_mode: bool,
     ) -> Result<Self, EmailError> {
-        let smtp_connection = match maybe_smtp_url {
-            Some(smtp_url) => Some(SmtpConnection::new(smtp_url)?),
-            None => None,
-        };
+        let smtp_connection =
+            match maybe_smtp_url {
+                Some(smtp_url) => Some(SmtpConnection::new(smtp_url)?),
+                None => None,
+            };
         Ok(Self {
             smtp_connection,
             from: from.to_string(),
@@ -83,15 +84,11 @@ impl SmtpConnection {
         let url = Url::parse(smtp_url)
             .map_err(|e| EmailError::invalid_smtp_url(&format!("Invalid SMTP URL: {}", e)))?;
         if url.scheme() != "smtps" {
-            return Err(EmailError::invalid_smtp_url(
-                "SMTP URL must use the smtps scheme",
-            ));
+            return Err(EmailError::invalid_smtp_url("SMTP URL must use the smtps scheme"));
         };
         let username = url.username();
         if username.is_empty() {
-            return Err(EmailError::invalid_smtp_url(
-                "SMTP URL must contain a username",
-            ));
+            return Err(EmailError::invalid_smtp_url("SMTP URL must contain a username"));
         };
 
         // If the username would have had an @ in it, correct it

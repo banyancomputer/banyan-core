@@ -94,15 +94,16 @@ where
         let client_verification_key = ES384PublicKey::from_pem(&client_id.public_key)
             .map_err(Self::Rejection::CorruptDatabaseKey)?;
 
-        let verification_options = VerificationOptions {
-            accept_future: false,
-            allowed_audiences: Some(HashSet::from_strings(&[
-                PlatformName::from_ref(state).to_string()
-            ])),
-            max_validity: Some(Duration::from_secs(MAXIMUM_TOKEN_AGE)),
-            time_tolerance: Some(Duration::from_secs(15)),
-            ..Default::default()
-        };
+        let verification_options =
+            VerificationOptions {
+                accept_future: false,
+                allowed_audiences: Some(
+                    HashSet::from_strings(&[PlatformName::from_ref(state).to_string()])
+                ),
+                max_validity: Some(Duration::from_secs(MAXIMUM_TOKEN_AGE)),
+                time_tolerance: Some(Duration::from_secs(15)),
+                ..Default::default()
+            };
 
         let claims = client_verification_key
             .verify_token::<TokenClaims>(raw_token, Some(verification_options))

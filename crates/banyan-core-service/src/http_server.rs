@@ -122,9 +122,10 @@ pub async fn run(config: Config) {
         .await
         .expect("app state to be created");
 
-    let worker_handle = start_background_workers(app_state.clone(), shutdown_rx.clone())
-        .await
-        .expect("background workers to start");
+    let worker_handle =
+        start_background_workers(app_state.clone(), shutdown_rx.clone())
+            .await
+            .expect("background workers to start");
 
     let sensitive_headers: Arc<[_]> = Arc::new([
         header::AUTHORIZATION,
@@ -148,22 +149,18 @@ pub async fn run(config: Config) {
         .load_shed()
         .concurrency_limit(1024)
         .timeout(Duration::from_secs(REQUEST_TIMEOUT_SECS))
-        .layer(SetSensitiveRequestHeadersLayer::from_shared(Arc::clone(
-            &sensitive_headers,
-        )))
+        .layer(SetSensitiveRequestHeadersLayer::from_shared(Arc::clone(&sensitive_headers)))
         .set_x_request_id(MakeRequestUuid)
         .layer(trace_layer)
         .propagate_x_request_id()
         .layer(DefaultBodyLimit::disable())
         .layer(ValidateRequestHeaderLayer::accept("application/json"))
-        .layer(SetSensitiveResponseHeadersLayer::from_shared(
-            sensitive_headers,
-        ));
+        .layer(SetSensitiveResponseHeadersLayer::from_shared(sensitive_headers));
 
     let static_assets = ServeDir::new("dist").not_found_service(
-        get_service(ServeFile::new("./dist/index.html")).handle_error(|_| async move {
-            (StatusCode::INTERNAL_SERVER_ERROR, "internal server error")
-        }),
+        get_service(ServeFile::new("./dist/index.html")).handle_error(
+            |_| async move { (StatusCode::INTERNAL_SERVER_ERROR, "internal server error") }
+        ),
     );
 
     let root_router = Router::new()
@@ -193,9 +190,10 @@ pub async fn run(config: Config) {
     // wait for a shutdown signal, let everything run in the background
     let _ = shutdown_handle.await;
 
-    let _ = tokio::time::timeout(
-        Duration::from_secs(5),
-        join_all([worker_handle, web_handle]),
-    )
-    .await;
+    let _ =
+        tokio::time::timeout(
+            Duration::from_secs(5),
+            join_all([worker_handle, web_handle]),
+        )
+        .await;
 }

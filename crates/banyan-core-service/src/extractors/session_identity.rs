@@ -56,15 +56,16 @@ where
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
         let cookie_jar: CookieJar = CookieJar::from_headers(&parts.headers);
 
-        let session_cookie = match cookie_jar.get(SESSION_COOKIE_NAME) {
-            Some(st) => st,
-            None => {
-                let OriginalUri(uri) = OriginalUri::from_request_parts(parts, state)
-                    .await
-                    .expect("infallible conversion");
-                return Err(SessionIdentityError::NoSession(uri.to_string()));
-            }
-        };
+        let session_cookie =
+            match cookie_jar.get(SESSION_COOKIE_NAME) {
+                Some(st) => st,
+                None => {
+                    let OriginalUri(uri) = OriginalUri::from_request_parts(parts, state)
+                        .await
+                        .expect("infallible conversion");
+                    return Err(SessionIdentityError::NoSession(uri.to_string()));
+                }
+            };
 
         let raw_cookie_val = session_cookie.value();
         if raw_cookie_val.len() != 150 {

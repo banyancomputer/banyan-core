@@ -30,14 +30,15 @@ pub async fn handler(
     };
 
     // todo: should return an error here
-    let oauth_client = match oauth_client(&provider, hostname, state.secrets()) {
-        Ok(oc) => oc,
-        Err(err) => {
-            tracing::error!("failed to build oauth client: {err}");
-            let response = serde_json::json!({"msg": "unable to use login services"});
-            return (StatusCode::INTERNAL_SERVER_ERROR, Json(response)).into_response();
-        }
-    };
+    let oauth_client =
+        match oauth_client(&provider, hostname, state.secrets()) {
+            Ok(oc) => oc,
+            Err(err) => {
+                tracing::error!("failed to build oauth client: {err}");
+                let response = serde_json::json!({"msg": "unable to use login services"});
+                return (StatusCode::INTERNAL_SERVER_ERROR, Json(response)).into_response();
+            }
+        };
 
     let (pkce_code_challenge, pkce_code_verifier) = PkceCodeChallenge::new_random_sha256();
     let mut auth_request = oauth_client.authorize_url(CsrfToken::new_random);

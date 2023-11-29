@@ -32,11 +32,12 @@ impl IntoResponse for Response {
     fn into_response(self) -> axum::response::Response {
         use Response::*;
 
-        let status_code = match self {
-            Error { .. } => StatusCode::INTERNAL_SERVER_ERROR,
-            Pending { .. } => StatusCode::SERVICE_UNAVAILABLE,
-            Ready => StatusCode::OK,
-        };
+        let status_code =
+            match self {
+                Error { .. } => StatusCode::INTERNAL_SERVER_ERROR,
+                Pending { .. } => StatusCode::SERVICE_UNAVAILABLE,
+                Ready => StatusCode::OK,
+            };
 
         (status_code, Json(self)).into_response()
     }

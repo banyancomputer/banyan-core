@@ -160,14 +160,15 @@ pub async fn send_email_message(
     let message_type_name = message.type_name();
 
     // Get the recipient address -- do this first to prevent side effects from this failing
-    let recipient_address = sqlx::query_scalar!(
-        r#"SELECT u.email as "email!"
+    let recipient_address =
+        sqlx::query_scalar!(
+            r#"SELECT u.email as "email!"
         FROM users u
         WHERE u.id = $1;"#,
-        user_id_string
-    )
-    .fetch_one(&mut *db_conn)
-    .await?;
+            user_id_string
+        )
+        .fetch_one(&mut *db_conn)
+        .await?;
 
     // Record the outgoing message
     let new_email_id = sqlx::query_scalar!(

@@ -137,14 +137,15 @@ impl Config {
         };
         let platform_hostname = Url::parse(&platform_hostname_str).unwrap();
 
-        let platform_public_key_path: PathBuf =
-            match cli_args.opt_value_from_str("--platform-public-key-path")? {
-                Some(pk) => pk,
-                None => match std::env::var("PLATFORM_PUBLIC_KEY_PATH") {
-                    Ok(pk) if !pk.is_empty() => pk.into(),
-                    _ => "./data/platform-key.public".into(),
-                },
-            };
+        let platform_public_key_path: PathBuf = match cli_args
+            .opt_value_from_str("--platform-public-key-path")?
+        {
+            Some(pk) => pk,
+            None => match std::env::var("PLATFORM_PUBLIC_KEY_PATH") {
+                Ok(pk) if !pk.is_empty() => pk.into(),
+                _ => "./data/platform-key.public".into(),
+            },
+        };
 
         Ok(Config {
             listen_addr,

@@ -105,13 +105,14 @@ pub async fn handler(
     // TODO: allow for providers other than Google here, deprecate hard-coded parameters
 
     // Attempt to look up the user in the database, if they don't exist, create them
-    let user_row = sqlx::query!(
-        "SELECT id FROM users WHERE email = LOWER($1);",
-        user_info.email
-    )
-    .fetch_optional(&database)
-    .await
-    .map_err(AuthenticationError::LookupFailed)?;
+    let user_row =
+        sqlx::query!(
+            "SELECT id FROM users WHERE email = LOWER($1);",
+            user_info.email
+        )
+        .fetch_optional(&database)
+        .await
+        .map_err(AuthenticationError::LookupFailed)?;
 
     let cookie_domain = hostname
         .host_str()
