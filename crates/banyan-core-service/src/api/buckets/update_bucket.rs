@@ -18,15 +18,14 @@ pub async fn handler(
     let bucket_id = bucket_id.to_string();
     let name = bucket.name;
 
-    let query_result =
-        sqlx::query!(
-            r#"UPDATE buckets SET name = $1 WHERE id = $2 and user_id = $3;"#,
-            name,
-            bucket_id,
-            user_id
-        )
-        .execute(&database)
-        .await;
+    let query_result = sqlx::query!(
+        r#"UPDATE buckets SET name = $1 WHERE id = $2 and user_id = $3;"#,
+        name,
+        bucket_id,
+        user_id
+    )
+    .execute(&database)
+    .await;
 
     match query_result {
         Ok(result) => {

@@ -58,9 +58,9 @@ fn oauth_client(
     let provider_config = PROVIDER_CONFIGS
         .get(config_id)
         .ok_or(AuthenticationError::UnknownProvider)?;
-    let provider_credentials = secrets
-        .provider_credential(config_id)
-        .ok_or(AuthenticationError::ProviderNotConfigured(config_id.to_string()))?;
+    let provider_credentials = secrets.provider_credential(config_id).ok_or(
+        AuthenticationError::ProviderNotConfigured(config_id.to_string()),
+    )?;
 
     let auth_url = provider_config.auth_url();
     let token_url = provider_config.token_url();
@@ -69,14 +69,13 @@ fn oauth_client(
     redirect_url.set_path(&CALLBACK_PATH_TEMPLATE.replace("{}", config_id));
     let redirect_url = RedirectUrl::from_url(redirect_url);
 
-    let mut client =
-        BasicClient::new(
-            provider_credentials.id(),
-            Some(provider_credentials.secret()),
-            auth_url,
-            token_url,
-        )
-        .set_redirect_uri(redirect_url);
+    let mut client = BasicClient::new(
+        provider_credentials.id(),
+        Some(provider_credentials.secret()),
+        auth_url,
+        token_url,
+    )
+    .set_redirect_uri(redirect_url);
 
     if let Some(ru) = provider_config.revocation_url() {
         client = client.set_revocation_uri(ru);

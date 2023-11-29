@@ -88,13 +88,12 @@ where
         .await
         .map_err(StorageProviderIdentityError::DatabaseUnavailable)?;
 
-        let storage_host =
-            match maybe_storage_host {
-                Some(sh) => sh,
-                None => {
-                    return Err(StorageProviderIdentityError::StorageHostNotFound);
-                }
-            };
+        let storage_host = match maybe_storage_host {
+            Some(sh) => sh,
+            None => {
+                return Err(StorageProviderIdentityError::StorageHostNotFound);
+            }
+        };
 
         let key = DecodingKey::from_ec_pem(storage_host.pem.as_bytes())
             .map_err(StorageProviderIdentityError::FormatError)?;

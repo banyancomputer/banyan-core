@@ -38,10 +38,9 @@ impl TaskLike for ProductInvoiceEmailTask {
         if !should_send_email_message(self.user_id, &ctx).await? {
             return Ok(());
         }
-        let message =
-            ProductInvoice {
-                url: self.url.clone(),
-            };
+        let message = ProductInvoice {
+            url: self.url.clone(),
+        };
         send_email_message(self.user_id, &message, &ctx).await
     }
 }

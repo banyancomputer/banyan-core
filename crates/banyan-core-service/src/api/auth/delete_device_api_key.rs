@@ -15,15 +15,14 @@ pub async fn handler(
     let database = state.database();
 
     let user_id = user_identity.id().to_string();
-    let query_result =
-        sqlx::query!(
-            r#"DELETE FROM device_api_keys
+    let query_result = sqlx::query!(
+        r#"DELETE FROM device_api_keys
             WHERE id = $1 AND user_id = $2;"#,
-            key_id,
-            user_id,
-        )
-        .execute(&database)
-        .await;
+        key_id,
+        user_id,
+    )
+    .execute(&database)
+    .await;
 
     match query_result {
         Ok(_) => (StatusCode::NO_CONTENT, ()).into_response(),

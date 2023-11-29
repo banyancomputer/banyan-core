@@ -39,13 +39,12 @@ const REQUEST_MAX_SIZE: usize = 256 * 1_024;
 /// error.
 const REQUEST_TIMEOUT_SECS: u64 = 15;
 
-const SENSITIVE_HEADERS: &[http::HeaderName] =
-    &[
-        header::AUTHORIZATION,
-        header::COOKIE,
-        header::PROXY_AUTHORIZATION,
-        header::SET_COOKIE,
-    ];
+const SENSITIVE_HEADERS: &[http::HeaderName] = &[
+    header::AUTHORIZATION,
+    header::COOKIE,
+    header::PROXY_AUTHORIZATION,
+    header::SET_COOKIE,
+];
 
 fn create_trace_layer(log_level: Level) -> TraceLayer<SharedClassifier<ServerErrorsAsFailures>> {
     TraceLayer::new_for_http()
@@ -73,7 +72,9 @@ pub async fn run(config: Config) {
         .layer(trace_layer)
         .layer(HandleErrorLayer::new(error_handlers::server_error_handler))
         // Ensure any sensitive headers are stripped before we do any logging
-        .layer(SetSensitiveRequestHeadersLayer::from_shared(SENSITIVE_HEADERS.into()))
+        .layer(SetSensitiveRequestHeadersLayer::from_shared(
+            SENSITIVE_HEADERS.into(),
+        ))
         // Set a timeout for any request that comes in -- this is a hard timeout and will drop the request
         .timeout(Duration::from_secs(REQUEST_TIMEOUT_SECS))
         // Pre-empt overloading by responding with a 503 resources are unavailable
@@ -90,17 +91,18 @@ pub async fn run(config: Config) {
         // Restrict requests to only those that are JSON
         .layer(ValidateRequestHeaderLayer::accept("application/json"))
         // Filter out any sensitive headers from the response
-        .layer(SetSensitiveResponseHeadersLayer::from_shared(SENSITIVE_HEADERS.into()));
+        .layer(SetSensitiveResponseHeadersLayer::from_shared(
+            SENSITIVE_HEADERS.into(),
+        ));
     // Create a new instance of our application state
     let app_state = AppState::from_config(&config)
         .await
         .expect("app state to be created");
     // TODO: service index.html from dist if not found
     // Start background workers
-    let worker_handle =
-        start_background_workers(app_state.clone(), shutdown_rx.clone())
-            .await
-            .expect("background workers to start");
+    let worker_handle = start_background_workers(app_state.clone(), shutdown_rx.clone())
+        .await
+        .expect("background workers to start");
     // Serve static assets
     let static_assets =
         ServeDir::new("dist").not_found_service(error_handlers::not_found_handler.into_service());
@@ -128,10 +130,9 @@ pub async fn run(config: Config) {
     // wait for a shutdown signal, let everything run in the background
     let _ = shutdown_handle.await;
 
-    let _ =
-        tokio::time::timeout(
-            Duration::from_secs(5),
-            join_all([worker_handle, web_handle]),
-        )
-        .await;
+    let _ = tokio::time::timeout(
+        Duration::from_secs(5),
+        join_all([worker_handle, web_handle]),
+    )
+    .await;
 }

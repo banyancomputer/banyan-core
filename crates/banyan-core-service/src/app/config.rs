@@ -57,14 +57,13 @@ impl Config {
         };
         let database_url = Url::parse(&database_str).map_err(ConfigError::InvalidDatabaseUrl)?;
 
-        let mailgun_signing_key =
-            match cli_args.opt_value_from_str("--mailgun")? {
-                Some(key) => Some(key),
-                None => match std::env::var("MAILGUN_KEY") {
-                    Ok(mk) if !mk.is_empty() => Some(mk),
-                    _ => None,
-                },
-            };
+        let mailgun_signing_key = match cli_args.opt_value_from_str("--mailgun")? {
+            Some(key) => Some(key),
+            None => match std::env::var("MAILGUN_KEY") {
+                Ok(mk) if !mk.is_empty() => Some(mk),
+                _ => None,
+            },
+        };
 
         // TODO: rename flag to `--service-key-path`
         let session_key_str = match cli_args.opt_value_from_str("--signing-key")? {

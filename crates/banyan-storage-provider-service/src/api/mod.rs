@@ -70,12 +70,11 @@ pub async fn alerts_handler() -> Response {
 }
 
 pub async fn alert_history_handler() -> Response {
-    let resp_msg =
-        serde_json::json!([
-            Alert::random(),
-            Alert::random_resolved(),
-            Alert::random_resolved(),
-        ]);
+    let resp_msg = serde_json::json!([
+        Alert::random(),
+        Alert::random_resolved(),
+        Alert::random_resolved(),
+    ]);
 
     (StatusCode::OK, Json(resp_msg)).into_response()
 }
@@ -177,16 +176,15 @@ pub async fn deal_single_handler(Path(deal_id): Path<Uuid>) -> Response {
 }
 
 pub async fn healthcheck_handler() -> Response {
-    let resp_msg =
-        serde_json::json!({
-            "health_status": HealthCheckStatus::Green,
-            "database": "healthy",
-            "job_queue": {
-                "active": 1,
-                "errored": 23,
-                "scheduled": 178,
-            },
-        });
+    let resp_msg = serde_json::json!({
+        "health_status": HealthCheckStatus::Green,
+        "database": "healthy",
+        "job_queue": {
+            "active": 1,
+            "errored": 23,
+            "scheduled": 178,
+        },
+    });
 
     (StatusCode::OK, Json(resp_msg)).into_response()
 }

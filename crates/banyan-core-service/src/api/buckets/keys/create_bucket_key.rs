@@ -53,12 +53,11 @@ pub async fn handler(
     .await
     .map_err(CreateBucketKeyError::DatabaseFailure)?;
 
-    let resp_msg =
-        serde_json::json!({
-            "id": bucket_key_id,
-            "approved": false,
-            "fingerprint": fingerprint,
-        });
+    let resp_msg = serde_json::json!({
+        "id": bucket_key_id,
+        "approved": false,
+        "fingerprint": fingerprint,
+    });
 
     Ok((StatusCode::OK, Json(resp_msg)).into_response())
 }

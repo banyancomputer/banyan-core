@@ -10,14 +10,13 @@ pub async fn handler(user_identity: UserIdentity, State(state): State<AppState>)
     let database = state.database();
 
     let user_id = user_identity.id().to_string();
-    let query_result =
-        sqlx::query_as!(
-            DeviceApiKey,
-            r#"SELECT id, user_id, fingerprint, pem FROM device_api_keys WHERE user_id = $1;"#,
-            user_id,
-        )
-        .fetch_all(&database)
-        .await;
+    let query_result = sqlx::query_as!(
+        DeviceApiKey,
+        r#"SELECT id, user_id, fingerprint, pem FROM device_api_keys WHERE user_id = $1;"#,
+        user_id,
+    )
+    .fetch_all(&database)
+    .await;
 
     match query_result {
         Ok(keys) => (StatusCode::OK, Json(keys)).into_response(),

@@ -42,11 +42,10 @@ impl TaskLike for ReachingStorageLimitEmailTask {
         if !should_send_email_message(self.user_id, &ctx).await? {
             return Ok(());
         }
-        let message =
-            ReachingStorageLimit {
-                current_usage: self.current_usage,
-                max_usage: self.max_usage,
-            };
+        let message = ReachingStorageLimit {
+            current_usage: self.current_usage,
+            max_usage: self.max_usage,
+        };
         send_email_message(self.user_id, &message, &ctx).await
     }
 }

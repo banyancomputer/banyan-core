@@ -114,7 +114,9 @@ impl StreamingCarAnalyzer {
         let new_byte_total = self.stream_offset + new_bytes;
 
         if new_byte_total > CAR_FILE_UPPER_LIMIT {
-            return Err(StreamingCarAnalyzerError::MaxCarSizeExceeded(new_byte_total));
+            return Err(StreamingCarAnalyzerError::MaxCarSizeExceeded(
+                new_byte_total,
+            ));
         }
 
         Ok(())
@@ -225,7 +227,9 @@ impl StreamingCarAnalyzer {
                     };
 
                     if hdr_len >= CAR_HEADER_UPPER_LIMIT {
-                        return Err(StreamingCarAnalyzerError::HeaderSegmentSizeExceeded(hdr_len));
+                        return Err(StreamingCarAnalyzerError::HeaderSegmentSizeExceeded(
+                            hdr_len,
+                        ));
                     }
 
                     // todo: decode dag-cbor inside of block
@@ -305,9 +309,10 @@ impl StreamingCarAnalyzer {
                         Ok(cid) => cid,
                         Err(err) => {
                             tracing::error!("uploaded car file contained an invalid CID: {err}");
-                            return Err(
-                                StreamingCarAnalyzerError::InvalidBlockCid(self.stream_offset, err)
-                            );
+                            return Err(StreamingCarAnalyzerError::InvalidBlockCid(
+                                self.stream_offset,
+                                err,
+                            ));
                         }
                     };
                     let cid_length = cid.encoded_len() as u64;
@@ -557,13 +562,12 @@ mod tests {
         assert!(sca.next().await.expect("still valid").is_none());
         assert_eq!(sca.stream_offset, 72);
 
-        let first_block =
-            CarState::Block {
-                block_start: 171,
-                data_end: 71 + data_length,
-                index_start: 71 + data_length + 20,
-                block_length: None,
-            };
+        let first_block = CarState::Block {
+            block_start: 171,
+            data_end: 71 + data_length,
+            index_start: 71 + data_length + 20,
+            block_length: None,
+        };
         assert_eq!(sca.state, first_block);
         assert_eq!(sca.buffer.len(), 0);
 

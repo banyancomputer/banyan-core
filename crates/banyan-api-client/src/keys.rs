@@ -15,22 +15,21 @@ pub fn create_private_ec_pem() -> String {
 pub fn fingerprint_public_pem(public_pem: &str) -> String {
     let public_key = PKey::public_key_from_pem(public_pem.as_bytes()).unwrap();
 
-    let fingerprint_bytes =
-        {
-            use openssl::bn::BigNumContext;
-            use openssl::ec::PointConversionForm;
+    let fingerprint_bytes = {
+        use openssl::bn::BigNumContext;
+        use openssl::ec::PointConversionForm;
 
-            let ec_group = EcGroup::from_curve_name(Nid::SECP384R1).unwrap();
-            let mut big_num_ctx = BigNumContext::new().unwrap();
+        let ec_group = EcGroup::from_curve_name(Nid::SECP384R1).unwrap();
+        let mut big_num_ctx = BigNumContext::new().unwrap();
 
-            let ec_pub_key = public_key.ec_key().unwrap();
-            let compressed_key = ec_pub_key
-                .public_key()
-                .to_bytes(&ec_group, PointConversionForm::COMPRESSED, &mut big_num_ctx)
-                .unwrap();
+        let ec_pub_key = public_key.ec_key().unwrap();
+        let compressed_key = ec_pub_key
+            .public_key()
+            .to_bytes(&ec_group, PointConversionForm::COMPRESSED, &mut big_num_ctx)
+            .unwrap();
 
-            openssl::sha::sha1(&compressed_key)
-        };
+        openssl::sha::sha1(&compressed_key)
+    };
 
     fingerprint_bytes
         .iter()

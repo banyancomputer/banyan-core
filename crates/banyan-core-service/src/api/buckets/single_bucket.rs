@@ -18,15 +18,14 @@ pub async fn handler(
     let bucket_id = bucket_id.to_string();
 
     let user_id = user_identity.id().to_string();
-    let query_result =
-        sqlx::query_as!(
-            Bucket,
-            "SELECT * FROM buckets WHERE user_id = $1 AND id = $2;",
-            user_id,
-            bucket_id,
-        )
-        .fetch_one(&database)
-        .await;
+    let query_result = sqlx::query_as!(
+        Bucket,
+        "SELECT * FROM buckets WHERE user_id = $1 AND id = $2;",
+        user_id,
+        bucket_id,
+    )
+    .fetch_one(&database)
+    .await;
 
     match query_result {
         Ok(b) => (StatusCode::OK, Json(ApiBucket::from(b))).into_response(),

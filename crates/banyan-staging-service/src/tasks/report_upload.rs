@@ -109,12 +109,11 @@ impl TaskLike for ReportUploadTask {
 
         let bearer_token = service_signing_key.sign(claims).unwrap();
 
-        let report_upload =
-            ReportUpload {
-                data_size,
-                storage_authorization_id,
-                normalized_cids,
-            };
+        let report_upload = ReportUpload {
+            data_size,
+            storage_authorization_id,
+            normalized_cids,
+        };
 
         let request = client
             .post(report_endpoint)
