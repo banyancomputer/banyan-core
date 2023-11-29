@@ -8,11 +8,11 @@ use http::request::Parts;
 
 mod mailgun_signing_key;
 mod provider_credential;
-mod service_signing_key;
+mod service_key;
 
 pub use mailgun_signing_key::MailgunSigningKey;
 pub use provider_credential::ProviderCredential;
-pub use service_signing_key::ServiceSigningKey;
+pub use service_key::ServiceKey;
 
 use crate::app::AppState;
 
@@ -20,7 +20,7 @@ use crate::app::AppState;
 pub struct Secrets {
     mailgun_signing_key: Option<MailgunSigningKey>,
     provider_credentials: Arc<BTreeMap<Arc<str>, ProviderCredential>>,
-    service_signing_key: ServiceSigningKey,
+    service_key: ServiceKey,
 }
 
 impl Secrets {
@@ -31,12 +31,12 @@ impl Secrets {
     pub fn new(
         credentials: BTreeMap<Arc<str>, ProviderCredential>,
         mailgun_signing_key: Option<MailgunSigningKey>,
-        service_signing_key: ServiceSigningKey,
+        service_key: ServiceKey,
     ) -> Self {
         Self {
             mailgun_signing_key,
             provider_credentials: Arc::new(credentials),
-            service_signing_key,
+            service_key,
         }
     }
 
@@ -44,8 +44,8 @@ impl Secrets {
         self.provider_credentials.get(config_id)
     }
 
-    pub fn service_signing_key(&self) -> ServiceSigningKey {
-        self.service_signing_key.clone()
+    pub fn service_key(&self) -> ServiceKey {
+        self.service_key.clone()
     }
 }
 

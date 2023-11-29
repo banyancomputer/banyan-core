@@ -3,8 +3,8 @@
 mod api_identity;
 mod data_store;
 mod server_base;
+mod service_key;
 mod session_identity;
-mod signing_key;
 mod storage_provider_identity;
 mod user_identity;
 

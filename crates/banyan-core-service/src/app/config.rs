@@ -19,7 +19,7 @@ pub struct Config {
 
     mailgun_signing_key: Option<String>,
 
-    signing_key_path: PathBuf,
+    service_key_path: PathBuf,
     upload_directory: PathBuf,
 }
 
@@ -63,14 +63,14 @@ impl Config {
             },
         };
 
-        let signing_key_str = match cli_args.opt_value_from_str("--signing-key")? {
+        let service_key_str = match cli_args.opt_value_from_str("--service-key")? {
             Some(path) => path,
-            None => match std::env::var("SIGNING_KEY") {
+            None => match std::env::var("SERVICE_KEY") {
                 Ok(sk) if !sk.is_empty() => sk,
-                _ => "./data/signing-key.pem".to_string(),
+                _ => "./data/service-key.pem".to_string(),
             },
         };
-        let signing_key_path = PathBuf::from(signing_key_str);
+        let service_key_path = PathBuf::from(service_key_str);
 
         let upload_dir_str = match cli_args.opt_value_from_str("--upload-dir")? {
             Some(path) => path,
@@ -114,7 +114,7 @@ impl Config {
 
             mailgun_signing_key,
 
-            signing_key_path,
+            service_key_path,
             upload_directory,
         })
     }
@@ -139,8 +139,8 @@ impl Config {
         self.mailgun_signing_key.as_deref()
     }
 
-    pub fn signing_key_path(&self) -> PathBuf {
-        self.signing_key_path.clone()
+    pub fn service_key_path(&self) -> PathBuf {
+        self.service_key_path.clone()
     }
 
     pub fn upload_directory(&self) -> PathBuf {
@@ -176,8 +176,8 @@ fn print_help() {
     println!("                                  this is 127.0.0.1:3001");
     println!("    --mailgun, MAILGUN_KEY        Webhook signature verification key issued by");
     println!("                                  mailgun");
-    println!("    --signing-key, SIGNING_KEY    Path to the p384 private key used for signing");
-    println!("                                  key generation and verification");
+    println!("    --service-key, SERVICE_KEY    Path to the p384 private key used for signing");
+    println!("                                  tokens and identifying to other services");
     println!("    --upload-dir, UPLOAD_DIR      Path used to store uploaded client data\n");
     println!("    --db-url, DATABASE_URL        Configure the url and settings of the sqlite");
     println!("                                  database (default in memory)");

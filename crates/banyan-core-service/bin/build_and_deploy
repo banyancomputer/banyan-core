@@ -12,7 +12,7 @@ DRY_RUN="${DRY_RUN:-0}"
 
 SERVICE_NAME="${1:-core-banyan}"
 SERVICE_PORT="${2:-3001}"
-SERVICE_ARGUMENTS="--db-url sqlite:///shared/platform.db --signing-key /data/signing-key.pem --upload-dir /data/uploads"
+SERVICE_ARGUMENTS="--db-url sqlite:///shared/platform.db --service-key /data/service-key.pem --upload-dir /data/uploads"
 
 # Everything beyond this point isn't expected to be changed between services
 
