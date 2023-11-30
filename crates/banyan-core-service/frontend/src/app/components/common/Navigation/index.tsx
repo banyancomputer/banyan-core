@@ -48,7 +48,7 @@ export const Navigation = () => {
 		try {
 			await purgeKeystore();
 			await api.get('/auth/logout');
-			window.location.href = '/';
+			window.location.href = '/login';
 		}
 		catch (err: any) {
 			console.error("An Error occurred trying to logout: ", err.message);
