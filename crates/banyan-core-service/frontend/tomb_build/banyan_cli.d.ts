@@ -452,6 +452,12 @@ export class WasmMount {
 */
   shareWith(bucket_key_id: string): Promise<void>;
 /**
+* Share a file snapshot
+* @param {Array<any>} path_segments
+* @returns {Promise<string>}
+*/
+  shareFile(path_segments: Array<any>): Promise<string>;
+/**
 * Return boolean indiciating whether or not the currently mounted bucket is snapshotted
 * # Returns
 * A boolean
@@ -491,6 +497,32 @@ export class WasmMount {
 * @returns {Promise<void>}
 */
   restore(wasm_snapshot: WasmSnapshot): Promise<void>;
+}
+/**
+*/
+export class WasmSharedFile {
+  free(): void;
+/**
+* @returns {string}
+*/
+  export_b64_url(): string;
+/**
+* @param {string} b64_string
+* @returns {WasmSharedFile}
+*/
+  static import_b64_url(b64_string: string): WasmSharedFile;
+/**
+* @returns {string | undefined}
+*/
+  mimeType(): string | undefined;
+/**
+* @returns {string | undefined}
+*/
+  size(): string | undefined;
+/**
+* @returns {string}
+*/
+  fileName(): string;
 }
 /**
 */
