@@ -29,6 +29,7 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const [tableScroll, setTableScroll] = useState(0);
     const folderLocation = useFolderLocation();
     const [areFilesDropped, setAreFilesDropped] = useState(false);
+    
 
     const sort = (criteria: string) => {
         setSortState(prev => ({ criteria, direction: prev.direction === 'ASC' ? 'DESC' : 'ASC' }));

@@ -322,7 +322,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 				}
 				if (uploadPath.join('') !== folderLocation.join('')) { return; }
 				const files = await mount.ls(uploadPath) || [];
-				await updateBucketsState('files', files, bucket.id);
+				await updateBucketsState('files', files.sort(sortByType), bucket.id);
 				const isSnapshotValid = await mount.hasSnapshot();
 				await updateBucketsState('isSnapshotValid', isSnapshotValid, bucket.id);
 			});
