@@ -6,6 +6,7 @@ use uuid::Uuid;
 
 use crate::app::AppState;
 use crate::database::Database;
+use crate::database::models::MetadataState;
 use crate::extractors::StorageProviderIdentity;
 
 /// When a client finishes uploading their data to either staging or a storage host, the storage
@@ -22,8 +23,19 @@ pub async fn handler(
 
     let database = state.database();
 
-    redeem_storage_grant(&database, &storage_provider.id, &request.storage_authorization_id).await?;
-    associate_upload(&database, &storage_provider.id, &db_metadata_id, &request.storage_authorization_id).await?;
+    redeem_storage_grant(
+        &database,
+        &storage_provider.id,
+        &request.storage_authorization_id,
+    )
+    .await?;
+    associate_upload(
+        &database,
+        &storage_provider.id,
+        &db_metadata_id,
+        &request.storage_authorization_id,
+    )
+    .await?;
 
     for block_cid in request.normalized_cids.iter() {
         sqlx::query!("INSERT OR IGNORE INTO blocks (cid) VALUES ($1);", block_cid)
@@ -115,12 +127,23 @@ async fn mark_metadata_current(
     metadata_id: &str,
     stored_size: i64,
 ) -> Result<(), ReportUploadError> {
+    let current_state = sqlx::query_scalar!(
+        r#"SELECT state as 'state: MetadataState'
+               FROM metadata
+               WHERE id = $1;"#,
+        metadata_id,
+    )
+    .fetch_one(database)
+    .await
+    .map_err(ReportUploadError::MarkCurrentFailed)?;
+
+    if current_state == MetadataState::Current {
+        return Ok(());
+    }
+
     sqlx::query_scalar!(
-        r#"UPDATE metadata
-             SET state = 'current',
-                data_size = $2
-             WHERE id = $1
-                AND state = 'pending';"#,
+        r#"UPDATE metadata SET state = 'current', data_size = $2
+               WHERE id = $1;"#,
         metadata_id,
         stored_size,
     )
@@ -177,12 +200,65 @@ async fn redeem_storage_grant(
 mod tests {
     use super::*;
 
-    use crate::database::tests::setup_database;
+    use crate::database::test_helpers;
+    use crate::database::models::MetadataState;
+
+    async fn pending_metadata(db: &Database, bucket_id: &str) -> String {
+        test_helpers::create_metadata(
+            &db,
+            &bucket_id,
+            "root-cid",
+            "pending-metadata-cid",
+            1_000_000,
+            MetadataState::Current,
+        )
+        .await
+        .expect("current metadata creation")
+    }
+
+    async fn sample_bucket(db: &Database) -> String {
+        let user_id = sample_user(&db).await;
+
+        test_helpers::create_hot_bucket(&db, &user_id, "Habernero")
+            .await
+            .expect("bucket creation")
+    }
+
+    async fn sample_user(db: &Database) -> String {
+        test_helpers::create_user(&db, "francesca@sample.users.org", "Francesca Tester")
+            .await
+            .expect("user creation")
+    }
 
     #[tokio::test]
-    async fn test_example() {
-        let _pool = setup_database().await;
+    async fn test_marking_metadata_current() {
+        let db = test_helpers::setup_database().await;
 
-        // Your test code here
+        let bucket_id = sample_bucket(&db).await;
+        let pending_metadata_id = pending_metadata(&db, &bucket_id).await;
+
+        mark_metadata_current(&db, &pending_metadata_id, 1_200_000)
+            .await
+            .expect("update to succeed");
+
+        let state = sqlx::query_scalar!(
+            r#"SELECT state as 'state: MetadataState' FROM metadata WHERE id = $1;"#,
+            pending_metadata_id,
+        )
+        .fetch_one(&db)
+        .await
+        .expect("metadata existence");
+
+        assert_eq!(state, MetadataState::Current);
+    }
+
+    #[tokio::test]
+    async fn test_marking_metadata_missing_error() {
+        let db = test_helpers::setup_database().await;
+
+        let result = mark_metadata_current(&db, "not-a-real-id", 1_200_000)
+            .await;
+
+        assert!(result.is_err());
     }
 }

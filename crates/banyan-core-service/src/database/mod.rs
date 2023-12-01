@@ -3,6 +3,9 @@ use sqlx::SqlitePool;
 pub mod models;
 pub mod sqlite;
 
+#[cfg(test)]
+pub(crate) mod test_helpers;
+
 pub type Database = SqlitePool;
 
 pub async fn connect(db_url: &url::Url) -> Result<Database, DatabaseSetupError> {
@@ -36,26 +39,4 @@ pub enum DatabaseSetupError {
 
     #[error("requested database type was not recognized: {0}")]
     UnknownDbType(String),
-}
-
-#[cfg(test)]
-pub(crate) mod tests {
-    use sqlx::{Pool, Sqlite};
-    use sqlx::sqlite::SqlitePoolOptions;
-
-    use crate::database::Database;
-
-    pub async fn setup_database() -> Database {
-        let pool = SqlitePoolOptions::new()
-            .connect("sqlite::memory:")
-            .await
-            .expect("Failed to connect to the database");
-
-        sqlx::migrate!()
-            .run(&pool)
-            .await
-            .expect("failed to run migrations");
-
-        pool
-    }
 }
