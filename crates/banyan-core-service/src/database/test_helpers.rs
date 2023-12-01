@@ -27,7 +27,6 @@ pub(crate) async fn create_metadata(
     bucket_id: &str,
     root_cid: &str,
     metadata_cid: &str,
-    expected_data_size: i64,
     state: MetadataState,
 ) -> Result<String, sqlx::Error> {
     sqlx::query_scalar!(
@@ -38,7 +37,7 @@ pub(crate) async fn create_metadata(
         bucket_id,
         root_cid,
         metadata_cid,
-        expected_data_size,
+        12_123_100,
         state,
     )
     .fetch_one(database)
@@ -60,6 +59,43 @@ pub(crate) async fn create_user(
     )
     .fetch_one(database)
     .await
+}
+
+pub(crate) async fn current_metadata(db: &Database, bucket_id: &str, counter: usize) -> String {
+    sample_metadata(db, bucket_id, counter, MetadataState::Current).await
+}
+
+pub(crate) async fn pending_metadata(db: &Database, bucket_id: &str, counter: usize) -> String {
+    sample_metadata(db, bucket_id, counter, MetadataState::Pending).await
+}
+
+pub(crate) async fn sample_bucket(db: &Database) -> String {
+    let user_id = sample_user(&db).await;
+
+    create_hot_bucket(&db, &user_id, "Habernero")
+        .await
+        .expect("bucket creation")
+}
+
+pub(crate) async fn sample_metadata(db: &Database, bucket_id: &str, counter: usize, state: MetadataState) -> String {
+    let root_cid = format!("root-cid-{}", counter);
+    let metadata_cid = format!("metadata-cid-{}", counter);
+
+    create_metadata(
+        &db,
+        &bucket_id,
+        &root_cid,
+        &metadata_cid,
+        state,
+    )
+    .await
+    .expect("current metadata creation")
+}
+
+pub(crate) async fn sample_user(db: &Database) -> String {
+    create_user(&db, "francesca@sample.users.org", "Francesca Tester")
+        .await
+        .expect("user creation")
 }
 
 pub(crate) async fn setup_database() -> Database {

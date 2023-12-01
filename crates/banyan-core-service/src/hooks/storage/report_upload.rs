@@ -203,39 +203,12 @@ mod tests {
     use crate::database::test_helpers;
     use crate::database::models::MetadataState;
 
-    async fn pending_metadata(db: &Database, bucket_id: &str) -> String {
-        test_helpers::create_metadata(
-            &db,
-            &bucket_id,
-            "root-cid",
-            "pending-metadata-cid",
-            1_000_000,
-            MetadataState::Current,
-        )
-        .await
-        .expect("current metadata creation")
-    }
-
-    async fn sample_bucket(db: &Database) -> String {
-        let user_id = sample_user(&db).await;
-
-        test_helpers::create_hot_bucket(&db, &user_id, "Habernero")
-            .await
-            .expect("bucket creation")
-    }
-
-    async fn sample_user(db: &Database) -> String {
-        test_helpers::create_user(&db, "francesca@sample.users.org", "Francesca Tester")
-            .await
-            .expect("user creation")
-    }
-
     #[tokio::test]
     async fn test_marking_metadata_current() {
         let db = test_helpers::setup_database().await;
 
-        let bucket_id = sample_bucket(&db).await;
-        let pending_metadata_id = pending_metadata(&db, &bucket_id).await;
+        let bucket_id = test_helpers::sample_bucket(&db).await;
+        let pending_metadata_id = test_helpers::pending_metadata(&db, &bucket_id, 1).await;
 
         mark_metadata_current(&db, &pending_metadata_id, 1_200_000)
             .await
@@ -253,12 +226,22 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_marking_metadata_missing_error() {
+    async fn test_marking_metadata_when_missing_errors() {
         let db = test_helpers::setup_database().await;
 
         let result = mark_metadata_current(&db, "not-a-real-id", 1_200_000)
             .await;
 
         assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_marking_metadata_outdated() {
+        let db = test_helpers::setup_database().await;
+
+        let bucket_id = test_helpers::sample_bucket(&db).await;
+
+        let _current_metadata_id = test_helpers::current_metadata(&db, &bucket_id, 1).await;
+        let _pending_metadata_id = test_helpers::pending_metadata(&db, &bucket_id, 2).await;
     }
 }
