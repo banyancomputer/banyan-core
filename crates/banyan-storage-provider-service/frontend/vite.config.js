@@ -27,7 +27,7 @@ export default ({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
 
   return defineConfig({
-    base: "/dist/",
+    base: "/",
     define: {
       "process.env": JSON.stringify(env),
     },
