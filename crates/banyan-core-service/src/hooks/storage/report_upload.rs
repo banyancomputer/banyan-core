@@ -5,6 +5,7 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::app::AppState;
+use crate::database::Database;
 use crate::extractors::StorageProviderIdentity;
 
 /// When a client finishes uploading their data to either staging or a storage host, the storage
@@ -17,35 +18,12 @@ pub async fn handler(
     Path(metadata_id): Path<Uuid>,
     Json(request): Json<ReportUploadRequest>,
 ) -> Result<Response, ReportUploadError> {
-    let db_data_size = request.data_size;
     let db_metadata_id = metadata_id.to_string();
 
     let database = state.database();
 
-    sqlx::query!(
-        r#"UPDATE storage_grants
-               SET redeemed_at = CURRENT_TIMESTAMP
-               WHERE storage_host_id = $1
-                   AND id = $2
-                   AND redeemed_at IS NULL;"#,
-        storage_provider.id,
-        request.storage_authorization_id,
-    )
-    .execute(&database)
-    .await
-    .map_err(ReportUploadError::RedeemFailed)?;
-
-    sqlx::query!(
-        r#"INSERT INTO storage_hosts_metadatas_storage_grants
-               (storage_host_id, metadata_id, storage_grant_id)
-               VALUES ($1, $2, $3);"#,
-        storage_provider.id,
-        db_metadata_id,
-        request.storage_authorization_id,
-    )
-    .execute(&database)
-    .await
-    .map_err(ReportUploadError::NoUploadAssociation)?;
+    redeem_storage_grant(&database, &storage_provider.id, &request.storage_authorization_id).await?;
+    associate_upload(&database, &storage_provider.id, &db_metadata_id, &request.storage_authorization_id).await?;
 
     for block_cid in request.normalized_cids.iter() {
         sqlx::query!("INSERT OR IGNORE INTO blocks (cid) VALUES ($1);", block_cid)
@@ -72,30 +50,8 @@ pub async fn handler(
         .map_err(ReportUploadError::UnableToRecordBlock)?;
     }
 
-    let bucket_id = sqlx::query_scalar!(
-        r#"UPDATE metadata
-             SET state = 'current', data_size = $1
-             WHERE id = $2 AND state = 'pending'
-             RETURNING bucket_id;"#,
-        db_data_size,
-        db_metadata_id,
-    )
-    .fetch_one(&database)
-    .await
-    .map_err(ReportUploadError::MarkCurrentFailed)?;
-
-    // Downgrade other metadata for this bucket to outdated if they were in current state
-    // Except for the metadata that was just updated
-    sqlx::query!(
-        r#"UPDATE metadata
-             SET state = 'outdated'
-             WHERE bucket_id = $1 AND state = 'current' AND id != $2;"#,
-        bucket_id,
-        db_metadata_id,
-    )
-    .execute(&database)
-    .await
-    .map_err(ReportUploadError::MarkOutdatedFailed)?;
+    mark_metadata_current(&database, &db_metadata_id, request.data_size).await?;
+    mark_outdated_metadata(&database, &db_metadata_id).await?;
 
     Ok((StatusCode::NO_CONTENT, ()).into_response())
 }
@@ -130,5 +86,103 @@ impl IntoResponse for ReportUploadError {
         tracing::error!("{self}");
         let err_msg = serde_json::json!({"msg": "internal server error"});
         (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
+    }
+}
+
+async fn associate_upload(
+    database: &Database,
+    provider_id: &str,
+    metadata_id: &str,
+    authorization_id: &str,
+) -> Result<(), ReportUploadError> {
+    sqlx::query!(
+        r#"INSERT INTO storage_hosts_metadatas_storage_grants
+               (storage_host_id, metadata_id, storage_grant_id)
+               VALUES ($1, $2, $3);"#,
+        provider_id,
+        metadata_id,
+        authorization_id,
+    )
+    .execute(database)
+    .await
+    .map_err(ReportUploadError::NoUploadAssociation)?;
+
+    Ok(())
+}
+
+async fn mark_metadata_current(
+    database: &Database,
+    metadata_id: &str,
+    stored_size: i64,
+) -> Result<(), ReportUploadError> {
+    sqlx::query_scalar!(
+        r#"UPDATE metadata
+             SET state = 'current',
+                data_size = $2
+             WHERE id = $1
+                AND state = 'pending';"#,
+        metadata_id,
+        stored_size,
+    )
+    .execute(database)
+    .await
+    .map_err(ReportUploadError::MarkCurrentFailed)?;
+
+    Ok(())
+}
+
+// Downgrade other metadata for this bucket to outdated if they were in current state except for
+// the metadata that was just updated
+async fn mark_outdated_metadata(
+    database: &Database,
+    metadata_id: &str,
+) -> Result<(), ReportUploadError> {
+    sqlx::query!(
+        r#"UPDATE metadata
+             SET state = 'outdated'
+             WHERE bucket_id = (SELECT bucket_id FROM metadata WHERE id = $1)
+                AND state = 'current'
+                AND id != $1;"#,
+        metadata_id,
+    )
+    .execute(database)
+    .await
+    .map_err(ReportUploadError::MarkOutdatedFailed)?;
+
+    Ok(())
+}
+
+async fn redeem_storage_grant(
+    database: &Database,
+    provider_id: &str,
+    authorization_id: &str,
+) -> Result<(), ReportUploadError> {
+    sqlx::query!(
+        r#"UPDATE storage_grants
+               SET redeemed_at = CURRENT_TIMESTAMP
+               WHERE storage_host_id = $1
+                   AND id = $2
+                   AND redeemed_at IS NULL;"#,
+        provider_id,
+        authorization_id,
+    )
+    .execute(database)
+    .await
+    .map_err(ReportUploadError::RedeemFailed)?;
+
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use crate::database::tests::setup_database;
+
+    #[tokio::test]
+    async fn test_example() {
+        let _pool = setup_database().await;
+
+        // Your test code here
     }
 }

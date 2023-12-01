@@ -37,3 +37,25 @@ pub enum DatabaseSetupError {
     #[error("requested database type was not recognized: {0}")]
     UnknownDbType(String),
 }
+
+#[cfg(test)]
+pub(crate) mod tests {
+    use sqlx::{Pool, Sqlite};
+    use sqlx::sqlite::SqlitePoolOptions;
+
+    use crate::database::Database;
+
+    pub async fn setup_database() -> Database {
+        let pool = SqlitePoolOptions::new()
+            .connect("sqlite::memory:")
+            .await
+            .expect("Failed to connect to the database");
+
+        sqlx::migrate!()
+            .run(&pool)
+            .await
+            .expect("failed to run migrations");
+
+        pool
+    }
+}
