@@ -1,14 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="icon" href="/assets/favicon-70c014a4.svg" />
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Banyan</title>
-    <link
-        rel="icon"
-        href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzUiIGhlaWdodD0iMjUiIHZpZXdCb3g9IjAgMCAzNSAyNSIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyLjU0MTIgMTEuOTAyNkM5Ljg1MDc2IDExLjkwMjYgNy42MzQ5OCAxMy44OTY4IDcuMzkyMzMgMTYuNDMzMUg4Ljk5ODgxQzkuMjM0MzggMTQuNzQ2OCAxMC43MzEgMTMuNDQxOCAxMi41NDEyIDEzLjQ0MThIMTYuNjY2NEgxOC4zNDU2SDIyLjQ3NzhWMTMuNDI5OUMyNS4zMjk0IDEzLjQyOTkgMjcuNjQ5NyAxMS4xODk0IDI3LjY0OTcgOC40MzU5MVY1Ljc0Mzk1QzI3LjY0NjIgMi45OTA0NCAyNS4zMjc3IDAuNzUgMjIuNDc0MiAwLjc1SDEyLjUzOTVDOS42ODc4MiAwLjc1IDcuMzY3NTMgMi45OTA0NCA3LjM2NzUzIDUuNzQzOTVWNi42NTg5NEg1LjkyMjIyQzMuMDUxMDcgNi42NTg5NCAwLjcxNDg0NCA4LjkxNDc4IDAuNzE0ODQ0IDExLjY4ODhWMTMuNjY5M0MwLjcxNDg0NCAxNi40NDE2IDMuMDUxMDcgMTguNjk3NCA1LjkyMjIyIDE4LjY5NzRIMTMuMTAyN0MxNC45NTM3IDE4LjY5NzQgMTYuNTc5NiAxNy43NjAyIDE3LjUwNDIgMTYuMzUxQzE4LjQyODggMTcuNzU4NiAyMC4wNTQ3IDE4LjY5NzQgMjEuOTA1NiAxOC42OTc0SDI2LjA1MjFWMTkuNTkwMkMyNi4wNTIxIDIxLjQ5NTQgMjQuNDQ3MyAyMy4wNDQ5IDIyLjQ3NDIgMjMuMDQ0OUgxMi41Mzk1QzEwLjU2NjMgMjMuMDQ0OSA4Ljk2MTYxIDIxLjQ5NTQgOC45NjE2MSAxOS41OTAyVjE5LjM3NDdINy4zNjc1M1YxOS41OTAyQzcuMzY3NTMgMjIuMzQzNyA5LjY4NzgyIDI0LjU4NDIgMTIuNTM5NSAyNC41ODQySDIyLjQ3NDJDMjUuMzI1OCAyNC41ODQyIDI3LjY0NjIgMjIuMzQzNyAyNy42NDYyIDE5LjU5MDJWMTguNjk3NEgyOS4wOTE0QzMxLjk2MjYgMTguNjk3NCAzNC4yOTg5IDE2LjQ0MTYgMzQuMjk4OSAxMy42NjkzVjExLjY4ODhDMzQuMjk4OSA4LjkxNjQ4IDMxLjk2MjYgNi42NjA2NiAyOS4wOTE0IDYuNjYwNjZIMjguMzcyM1Y4LjI0OTQ5SDI5LjA5MTRDMzEuMDU1NyA4LjI0OTQ5IDMyLjY1MzMgOS43OTIxNCAzMi42NTMzIDExLjY4ODhWMTMuNjY5M0MzMi42NTMzIDE1LjU2NTkgMzEuMDU1NyAxNy4xMDg2IDI5LjA5MTQgMTcuMTA4NkgyMS45MDM5QzIwLjA5OSAxNy4xMDg2IDE4LjYwNTkgMTUuODAzNyAxOC4zNzU2IDE0LjEyMDhIMTYuNjI5MkMxNi4zOTg5IDE1LjgwMzcgMTQuOTA1OCAxNy4xMDg2IDEzLjEwMDkgMTcuMTA4Nkg1LjkyMjIyQzMuOTU3OTQgMTcuMTA4NiAyLjM2MDMgMTUuNTY1OSAyLjM2MDMgMTMuNjY5M1YxMS42ODg4QzIuMzYwMyA5Ljc5MjE0IDMuOTU3OTQgOC4yNDk0OSA1LjkyMjIyIDguMjQ5NDlIMTMuMTAyN0MxNC45MDA1IDguMjQ5NDkgMTYuMzg2NiA5LjU0MjQ0IDE2LjYyNzQgMTEuMjE1MUgxOC4zODA5QzE4LjYyMTkgOS41NDI0NCAyMC4xMDc5IDguMjQ5NDkgMjEuOTA1NiA4LjI0OTQ5SDI1LjMzODNWNi42NjA2NkgyMS45MDU2QzIwLjA1NDcgNi42NjA2NiAxOC40Mjg4IDcuNTk3ODggMTcuNTA0MiA5LjAwNzEzQzE2LjU3OTYgNy41OTk1OSAxNC45NTM3IDYuNjYwNjYgMTMuMTAyNyA2LjY2MDY2SDguOTYxNjFWNS43NDU2N0M4Ljk2MTYxIDMuODQwNDMgMTAuNTY2MyAyLjI5MDk0IDEyLjUzOTUgMi4yOTA5NEgyMi40NzQyQzI0LjQ0NzMgMi4yOTA5NCAyNi4wNTIxIDMuODQwNDMgMjYuMDUyMSA1Ljc0NTY3VjguNDM3NjFDMjYuMDUyMSAxMC4zNDI4IDI0LjQ0NzMgMTEuODkyMyAyMi40NzQyIDExLjg5MjNIMTguMzQySDE2LjY2MjkiIGZpbGw9ImJsYWNrIi8+Cjwvc3ZnPgo="
-    />
-    <style type="text/css" rel="stylesheet">
+    <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
 
         body {
@@ -23,16 +20,17 @@
     <style>
         .main {
             display: flex;
+            flex-direction: column;
             align-items: stretch;
             height: 100vh;
             width: 100vw;
         }
 
         .logo-wrapper {
-            width: 50%;
             display: flex;
             justify-content: center;
             align-items: center;
+            padding: 28px 0;
             background-color: #FFECC5;
         }
 
@@ -46,49 +44,30 @@
         }
 
         .heading {
-            text-align: left;
-            margin-bottom: 16px;
-            font-size: 32px;
-            letter-spacing: -0.64px;
+            font-size: 24px;
             font-weight: 500;
+            letter-spacing: -0.24px;
+            margin: 24px auto 12px !important;
+        }
+
+        .subheading {
+            margin: 0 auto 16px !important;
         }
 
         .submit {
             width: 100%;
-            max-width: 428px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
-            padding: 13px 12px;
-            font-size: 16px;
-            line-height: 24px;
-            font-weight: 600;
-            border: 1px solid #DFDFDF;
+            padding: 13px 16px;
+            background-color: #207C9D;
+            color: white;
+            border: none;
             border-radius: 4px;
-            background-color: white;
-            cursor: pointer;
-        }
-
-        @media(max-width: 600px) {
-            .main {
-                flex-direction: column;
-            }
-            .logo-wrapper {
-                width: 100%;
-                padding: 28px 0;
-            }
-
-            .heading {
-                font-size: 24px;
-            }
+            outline: none;
+            font-size: 16px;
+            font-style: normal;
+            font-weight: 700;
+            line-height: 20px; /* 125% */
         }
     </style>
-    <script defer>
-        function login () {
-            window.location.href = '/auth/login/google'
-        }
-    </script>
 </head>
 <body>
     <main class="main">
@@ -104,19 +83,15 @@
             </svg>
         </div>
         <div class="text-area">
-            <h3 class="heading">Login or sign up</h3>
-                <button
-                    class="submit"
-                    onclick="login()"
-                >
-                    <svg width="25" height="24" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M20.16 12.1793C20.16 11.6527 20.1133 11.1527 20.0333 10.666H12.5V13.6727H16.8133C16.62 14.6593 16.0533 15.4927 15.2133 16.0593V18.0593H17.7867C19.2933 16.666 20.16 14.6127 20.16 12.1793Z" fill="#4285F4"/>
-                        <path d="M12.4994 20.0007C14.6594 20.0007 16.466 19.2807 17.786 18.0607L15.2127 16.0607C14.4927 16.5407 13.5794 16.834 12.4994 16.834C10.4127 16.834 8.64604 15.4273 8.01271 13.5273H5.35938V15.5873C6.67271 18.2007 9.3727 20.0007 12.4994 20.0007Z" fill="#34A853"/>
-                        <path d="M8.01333 13.5274C7.84666 13.0474 7.75999 12.5341 7.75999 12.0007C7.75999 11.4674 7.85333 10.9541 8.01333 10.4741V8.41406H5.36C4.81333 9.49406 4.5 10.7074 4.5 12.0007C4.5 13.2941 4.81333 14.5074 5.36 15.5874L8.01333 13.5274Z" fill="#FBBC05"/>
-                        <path d="M12.4994 7.16666C13.6794 7.16666 14.7327 7.57333 15.566 8.36666L17.846 6.08666C16.466 4.79333 14.6594 4 12.4994 4C9.3727 4 6.67271 5.8 5.35938 8.41333L8.01271 10.4733C8.64604 8.57333 10.4127 7.16666 12.4994 7.16666Z" fill="#EA4335"/>
-                    </svg>
-                    Continue with Google
-                </button>
+            <svg width="233" height="196" viewBox="0 0 233 196" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M49.6771 126.537C49.0858 128.96 50.5711 131.404 52.9946 131.996L196.192 166.936C198.615 167.528 201.059 166.042 201.651 163.619L226.911 60.0944C227.502 57.6709 226.017 55.2268 223.593 54.6355L139.17 34.0358C137.706 33.6787 136.517 32.6153 135.999 31.2005L129.954 14.6903C129.436 13.2755 128.247 12.2121 126.783 11.8549L84.8084 1.61294C82.3848 1.02159 79.9408 2.50687 79.3494 4.93042L68.0863 51.0902" fill="#D99C67"/>
+                <path d="M68.0863 51.0902L79.3494 4.93042C79.9408 2.50687 82.3848 1.02159 84.8084 1.61294L126.783 11.8549C128.247 12.2121 129.436 13.2755 129.954 14.6903L135.999 31.2005C136.517 32.6153 137.706 33.6787 139.17 34.0358L223.593 54.6355C226.017 55.2268 227.502 57.6709 226.911 60.0944L201.651 163.619C201.059 166.042 198.615 167.528 196.192 166.936L52.9946 131.996C50.5711 131.404 49.0858 128.96 49.6771 126.537L68.0863 51.0902Z" stroke="#57221E" stroke-width="0.70458" stroke-miterlimit="10"/>
+                <path d="M26.1973 191.019C26.6641 193.47 29.0302 195.078 31.4813 194.611L176.266 166.978C178.716 166.51 180.323 164.146 179.856 161.696L158.636 50.3303C158.168 47.8792 155.803 46.2711 153.352 46.7389L67.9929 63.0299C66.513 63.3124 64.9897 62.8384 63.9313 61.7661L51.5805 49.2528C50.5222 48.1805 48.9989 47.7065 47.519 47.989L5.07868 56.0888C2.62826 56.5565 1.02093 58.9221 1.4886 61.3725L10.3961 108.044" fill="#C3D5DA"/>
+                <path d="M10.3961 108.044L1.4886 61.3725C1.02093 58.9221 2.62826 56.5565 5.07868 56.0888L47.519 47.989C48.9989 47.7065 50.5222 48.1805 51.5805 49.2528L63.9313 61.7661C64.9896 62.8384 66.5129 63.3124 67.9929 63.0299L153.352 46.7389C155.803 46.2711 158.168 47.8792 158.636 50.3303L179.856 161.696C180.323 164.146 178.716 166.51 176.266 166.978L31.4813 194.611C29.0302 195.078 26.6641 193.47 26.1973 191.019L10.3961 108.044Z" stroke="#57221E" stroke-width="0.70458" stroke-miterlimit="10"/>
+            </svg>
+            <h4 class="heading">You’re ready to start!</h4>
+            <p class="subheading">To start using Banyan please use desktop</p>
+            <button class="submit">Open in desktop</button>
         </div>
     </main>
 </body>
