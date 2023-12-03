@@ -2,11 +2,20 @@ import React from 'react';
 
 import { FileIcon } from '@components/common/FileIcon';
 
-export const DraggingPreview: React.FC<{ name: string }> = ({ name }) => {
+export const DraggingPreview: React.FC<{ name: string, isDragging: boolean }> = ({ name, isDragging }) => {
     return (
-        <div className='flex items-start  gap-3 p-2 border-1 text-xs leading-3 border-border-darken'>
-            <FileIcon fileName={name} size='24px' />
-            {name}
-        </div>
+        <>
+            {isDragging ?
+                <div
+                    className='fixed flex items-center gap-3 p-2 border-1 text-xs leading-3 bg-secondaryBackground border-border-darken rounded-xl z-max pointer-events-none'
+                    id={`dragging-preview-${name}`}
+                >
+                    <FileIcon fileName={name} size='24px' />
+                    {name}
+                </div>
+                :
+                null
+            }
+        </>
     )
 };
