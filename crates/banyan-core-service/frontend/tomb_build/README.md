@@ -27,13 +27,16 @@
 
 ## Outline
 
-- [](#)
 - [Outline](#outline)
 - [What is the Banyan CLI?](#what-is-the-banyan-cli)
 - [Installation](#installation)
   - [Using `cargo`](#using-cargo)
 - [Usage](#usage)
 - [Testing the Project](#testing-the-project)
+- [Benchmarking the Project](#benchmarking-the-project)
+  - [Configuring the benchmarks](#configuring-the-benchmarks)
+  - [Running the benchmarks](#running-the-benchmarks)
+  - [Profiling the binary](#profiling-the-binary)
 - [Contributing](#contributing)
   - [Formatting](#formatting)
   - [Pre-commit Hook](#pre-commit-hook)

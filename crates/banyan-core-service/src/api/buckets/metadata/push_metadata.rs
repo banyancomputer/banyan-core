@@ -15,7 +15,7 @@ use serde::Deserialize;
 use tokio::io::{AsyncWrite, AsyncWriteExt};
 use uuid::Uuid;
 
-use crate::app::{AppState, ServiceSigningKey};
+use crate::app::{AppState, ServiceKey};
 use crate::database::models::MetadataState;
 use crate::database::Database;
 use crate::extractors::{DataStore, UserIdentity};
@@ -44,7 +44,7 @@ pub async fn handler(
     body: BodyStream,
 ) -> Result<Response, PushMetadataError> {
     let database = state.database();
-    let service_signing_key = state.secrets().service_signing_key();
+    let service_key = state.secrets().service_key();
 
     let user_id = user_identity.id().to_string();
     let unvalidated_bid = bucket_id.to_string();
@@ -160,7 +160,7 @@ pub async fn handler(
 
         let new_authorization = generate_new_storage_authorization(
             &database,
-            &service_signing_key,
+            &service_key,
             &user_identity,
             &storage_host,
             data_size_rounded,
@@ -296,7 +296,7 @@ struct Capabilities {
 
 async fn generate_new_storage_authorization(
     database: &Database,
-    service_signing_key: &ServiceSigningKey,
+    service_key: &ServiceKey,
     user_identity: &UserIdentity,
     storage_host: &SelectedStorageHost,
     authorized_amount: i64,
@@ -336,7 +336,7 @@ async fn generate_new_storage_authorization(
     claims.create_nonce();
     claims.issued_at = Some(Clock::now_since_epoch());
 
-    let bearer_token = service_signing_key
+    let bearer_token = service_key
         .sign(claims)
         .map_err(StorageAuthorizationError::SignatureFailed)?;
 

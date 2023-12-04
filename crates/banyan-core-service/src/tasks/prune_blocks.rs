@@ -61,7 +61,7 @@ impl TaskLike for PruneBlocksTask {
             .acquire()
             .await
             .map_err(PruneBlocksTaskError::SqlxError)?;
-        let auth_key = ctx.secrets().service_signing_key();
+        let auth_key = ctx.secrets().service_key();
 
         // Determine where to send the prune list
         let storage_host_id = self.storage_host_id.to_string();

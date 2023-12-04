@@ -367,8 +367,8 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 				const tomb = new TombWasm(
 					apiKey.privatePem,
 					userData.user.id,
-					process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
-					process.env.NEXT_PUBLIC_DATA_URL || 'http://localhost:3002',
+					process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001',
+					process.env.NEXT_PUBLIC_DATA_URL || 'http://127.0.0.1:3002',
 				);
 				setTomb(await tomb);
 			} catch (error: any) {

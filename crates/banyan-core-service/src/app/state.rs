@@ -7,8 +7,7 @@ use jwt_simple::prelude::*;
 use object_store::local::LocalFileSystem;
 
 use crate::app::{
-    Config, MailgunSigningKey, ProviderCredential, Secrets, ServiceSigningKey,
-    ServiceVerificationKey,
+    Config, MailgunSigningKey, ProviderCredential, Secrets, ServiceKey, ServiceVerificationKey,
 };
 use crate::database::{self, Database, DatabaseSetupError};
 use crate::event_bus::EventBus;
@@ -43,7 +42,7 @@ impl State {
 
         let mailgun_signing_key = config.mailgun_signing_key().map(MailgunSigningKey::new);
 
-        let service_key = load_or_create_service_key(&config.session_key_path())?;
+        let service_key = load_or_create_service_key(&config.service_key_path())?;
         let service_verifier = service_key.verifier();
 
         let mut credentials = BTreeMap::new();
@@ -117,9 +116,7 @@ pub enum StateSetupError {
     UnreadableServiceKey(std::io::Error),
 }
 
-fn load_or_create_service_key(
-    private_path: &PathBuf,
-) -> Result<ServiceSigningKey, StateSetupError> {
+fn load_or_create_service_key(private_path: &PathBuf) -> Result<ServiceKey, StateSetupError> {
     let mut session_key_raw = if private_path.exists() {
         let key_bytes =
             std::fs::read(private_path).map_err(StateSetupError::UnreadableServiceKey)?;
@@ -154,5 +151,5 @@ fn load_or_create_service_key(
             .map_err(StateSetupError::FingerprintWriteFailed)?;
     }
 
-    Ok(ServiceSigningKey::new(session_key_raw))
+    Ok(ServiceKey::new(session_key_raw))
 }
