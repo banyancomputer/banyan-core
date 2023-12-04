@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO\n                users (email, verified_email, display_name)\n                VALUES ($1, true, $2)\n                RETURNING id;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "c0adbfa7efbc263bb1464a47a94f5a6da4ba45f77a724dd0419f262db16d5aad"
+}

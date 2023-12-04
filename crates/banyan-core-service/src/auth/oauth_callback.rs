@@ -230,8 +230,8 @@ pub async fn handler(
     digest.update(session_enc.as_bytes());
     let mut rng = rand::thread_rng();
 
-    let service_signing_key = state.secrets().service_signing_key();
-    let signature: ecdsa::Signature<p384::NistP384> = service_signing_key
+    let service_key = state.secrets().service_key();
+    let signature: ecdsa::Signature<p384::NistP384> = service_key
         .key_pair()
         .as_ref()
         .sign_digest_with_rng(&mut rng, digest);

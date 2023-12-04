@@ -3,6 +3,9 @@ use sqlx::SqlitePool;
 pub mod models;
 pub mod sqlite;
 
+#[cfg(test)]
+pub(crate) mod test_helpers;
+
 pub type Database = SqlitePool;
 
 pub async fn connect(db_url: &url::Url) -> Result<Database, DatabaseSetupError> {

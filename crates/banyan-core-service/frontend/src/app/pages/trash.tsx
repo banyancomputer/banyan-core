@@ -11,7 +11,7 @@ import { useModal } from '@/app/contexts/modals';
 import { ArrowDown, Close, EmptyIcon, ErrorBannerIcon } from '@static/images/common';
 
 const Trash = () => {
-    const { trash, isTrashLoading } = useTomb();
+    const { trash } = useTomb();
     const { messages } = useIntl();
     const { openModal } = useModal();
     const [isLabelVisible, setIsLabelVisible] = useState(true);
@@ -31,8 +31,8 @@ const Trash = () => {
                     {`${messages.trash}`}
                 </h2>
             </div>
-            <Fallback shouldRender={!isTrashLoading}>
-                {trash.files.length ?
+            <Fallback shouldRender>
+                {trash?.files.length ?
                     <>
                         {isLabelVisible &&
                             <div className="relative mb-5 flex items-start gap-3 p-4 border-1 rounded-lg bg-gray-200 border-gray-600">

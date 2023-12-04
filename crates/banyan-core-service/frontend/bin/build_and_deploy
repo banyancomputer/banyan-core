@@ -5,12 +5,12 @@ set -o errexit
 cd $(dirname %0)
 
 # Should probably make these configurable or source them from the project...
-DEPLOY_HOST="alpha.data.banyan.computer"
+DEPLOY_HOST="beta.data.banyan.computer"
 API_URL="https://api.data.banyan.computer"
 DATA_URL="https://distributor.data.banyan.computer"
 DEPLOY_BASE_FOLDER="containers"
 
-SERVICE_NAME="${1:-temporary-frontend-server}"
+SERVICE_NAME="${1:-frontend-temp}"
 SERVICE_PORT="${2:-3002}"
 SERVICE_ARGUMENTS=""
 

@@ -27,7 +27,7 @@ export const FilePreviewProvider: FC<{ children: ReactNode }> = ({ children }) =
     const { getFile } = useTomb();
 
     const openFile = async(bucket: Bucket, file: string, path: string[]) => {
-        const isFileSupported = SUPPORTED_EXTENSIONS.includes(file.split('.')[1]);
+        const isFileSupported = SUPPORTED_EXTENSIONS.includes([...file.split('.')].pop() || '');
         try {
             setFile({
                 data: '',

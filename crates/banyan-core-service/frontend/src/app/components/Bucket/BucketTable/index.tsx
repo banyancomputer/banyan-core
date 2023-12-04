@@ -3,10 +3,10 @@ import { useIntl } from 'react-intl';
 import { useParams } from 'react-router-dom';
 
 import { ActionsCell } from '@components/common/ActionsCell';
-import { BucketActions } from '@/app/components/common/BucketActions';
-import { SortCell } from '@/app/components/common/SortCell';
-import { FolderRow } from '@/app/components/common/FolderRow';
-import { FileRow } from '@/app/components/common/FileRow';
+import { BucketActions } from '@components/common/BucketActions';
+import { SortCell } from '@components/common/SortCell';
+import { FolderRow } from '@components/Bucket/BucketTable/FolderRow';
+import { FileRow } from '@components/Bucket/BucketTable/FileRow';
 
 import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
@@ -29,6 +29,7 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const [tableScroll, setTableScroll] = useState(0);
     const folderLocation = useFolderLocation();
     const [areFilesDropped, setAreFilesDropped] = useState(false);
+
 
     const sort = (criteria: string) => {
         setSortState(prev => ({ criteria, direction: prev.direction === 'ASC' ? 'DESC' : 'ASC' }));

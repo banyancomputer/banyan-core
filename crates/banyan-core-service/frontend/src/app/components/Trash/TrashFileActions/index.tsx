@@ -1,10 +1,10 @@
 import React from 'react';
 import { useIntl } from 'react-intl';
 
-import { MoveToModal } from '../../common/Modal/MoveToModal';
-import { BrowserObject, Bucket } from '@/app/types/bucket';
-import { Action } from '../../common/FileActions';
+import { MoveToModal } from '@components/common/Modal/MoveToModal';
+import { Action } from '@components/Bucket/BucketTable/FileActions';
 
+import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { useTomb } from '@/app/contexts/tomb';
 import { useModal } from '@/app/contexts/modals';
 

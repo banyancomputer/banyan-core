@@ -6,7 +6,7 @@ mod version;
 
 #[allow(unused)]
 pub use config::{Config, ConfigError};
-pub use secrets::{MailgunSigningKey, ProviderCredential, Secrets, ServiceSigningKey};
+pub use secrets::{MailgunSigningKey, ProviderCredential, Secrets, ServiceKey};
 pub use service_verification_key::ServiceVerificationKey;
 pub use state::State as AppState;
 pub use version::Version;

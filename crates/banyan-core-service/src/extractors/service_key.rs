@@ -2,10 +2,10 @@ use axum::async_trait;
 use axum::extract::{FromRef, FromRequestParts};
 use jsonwebtoken::EncodingKey;
 
-pub struct SigningKey(pub(crate) EncodingKey);
+pub struct ServiceKey(pub(crate) EncodingKey);
 
 #[async_trait]
-impl<S> FromRequestParts<S> for SigningKey
+impl<S> FromRequestParts<S> for ServiceKey
 where
     EncodingKey: FromRef<S>,
     S: Send + Sync,

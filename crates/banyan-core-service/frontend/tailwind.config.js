@@ -30,7 +30,7 @@ module.exports = {
 				login: '590px',
 			},
 			maxWidth: {
-				filePreview: '80vw',
+				filePreview: '70vw',
 			},
 			colors: {
 				button: {
@@ -42,6 +42,8 @@ module.exports = {
 				errorBanner: 'var(--error-banner)',
 				errorBannerBorder: 'var(--error-banner-border)',
 				login: 'var(--login)',
+				dragging: 'var(--dragging)',
+				draggingBorder: 'var(--draggingBorder)',
 				navigation: {
 					primary: 'var(--navigation-primary)',
 					secondary: 'var(--navigation-secondary)',
