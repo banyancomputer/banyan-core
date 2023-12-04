@@ -384,7 +384,6 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 					apiKey.privatePem,
 					userData.user.id,
 					process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
-					process.env.NEXT_PUBLIC_DATA_URL || 'http://localhost:3002',
 				);
 				setTomb(await tomb);
 			} catch (error: any) {
