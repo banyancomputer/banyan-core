@@ -33,11 +33,11 @@ rm -rf crates/banyan-storage-provider-service/data/serv* \
 	timeout 3s cargo run || true
 )
 
-[ -f "crates/banyan-core-service/data/signing-key.public" ] || fail 1 "core didn't generate public key"
+[ -f "crates/banyan-core-service/data/service-key.public" ] || fail 1 "core didn't generate public key"
 
 # Copy core public key to staging and storage provider
-cp -f crates/banyan-core-service/data/signing-key.public crates/banyan-staging-service/data/platform-key.public
-cp -f crates/banyan-core-service/data/signing-key.public crates/banyan-storage-provider-service/data/platform-key.public
+cp -f crates/banyan-core-service/data/service-key.public crates/banyan-staging-service/data/platform-key.public
+cp -f crates/banyan-core-service/data/service-key.public crates/banyan-storage-provider-service/data/platform-key.public
 
 # Run staging
 (
