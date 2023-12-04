@@ -70,9 +70,9 @@ pub(crate) async fn pending_metadata(db: &Database, bucket_id: &str, counter: us
 }
 
 pub(crate) async fn sample_bucket(db: &Database) -> String {
-    let user_id = sample_user(&db).await;
+    let user_id = sample_user(db).await;
 
-    create_hot_bucket(&db, &user_id, "Habernero")
+    create_hot_bucket(db, &user_id, "Habernero")
         .await
         .expect("bucket creation")
 }
@@ -86,13 +86,13 @@ pub(crate) async fn sample_metadata(
     let root_cid = format!("root-cid-{}", counter);
     let metadata_cid = format!("metadata-cid-{}", counter);
 
-    create_metadata(&db, &bucket_id, &root_cid, &metadata_cid, state)
+    create_metadata(db, bucket_id, &root_cid, &metadata_cid, state)
         .await
         .expect("current metadata creation")
 }
 
 pub(crate) async fn sample_user(db: &Database) -> String {
-    create_user(&db, "francesca@sample.users.org", "Francesca Tester")
+    create_user(db, "francesca@sample.users.org", "Francesca Tester")
         .await
         .expect("user creation")
 }
