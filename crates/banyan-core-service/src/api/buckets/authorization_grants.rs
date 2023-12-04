@@ -16,7 +16,7 @@ pub async fn handler(
     Path(bucket_id): Path<Uuid>,
 ) -> Result<Response, AuthorizationGrantError> {
     let database = state.database();
-    let service_signing_key = state.secrets().service_signing_key();
+    let service_key = state.secrets().service_key();
 
     let bucket_id = bucket_id.to_string();
 
@@ -79,7 +79,7 @@ pub async fn handler(
     claims.create_nonce();
     claims.issued_at = Some(Clock::now_since_epoch());
 
-    let bearer_token = service_signing_key
+    let bearer_token = service_key
         .sign(claims)
         .map_err(AuthorizationGrantError::SigningFailed)?;
 
