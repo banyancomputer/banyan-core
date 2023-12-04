@@ -113,9 +113,7 @@ mod tests {
         let mut cx = Context::from_waker(futures::task::noop_waker_ref());
 
         while let Poll::Ready(data_opt) = Pin::new(&mut body).as_mut().poll_data(&mut cx) {
-            if let Some(Ok(data)) = data_opt {
-                body.total_bytes += data.remaining();
-            } else {
+            if let None = data_opt {
                 break;
             }
         }
