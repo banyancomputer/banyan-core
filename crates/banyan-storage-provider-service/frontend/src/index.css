@@ -11,14 +11,14 @@
     font-style: normal;
     font-display: swap;
     src: url("@static/fonts/Inter.ttf") format("truetype");
-};
+}
 
 @font-face {
     font-family: "BoogyBrut";
     font-style: normal;
     font-display: swap;
     src: url("@static/fonts/BoogyBrut-Light.otf") format("truetype");
-};
+}
 
 *::-webkit-scrollbar {
     margin-right: 5px;
@@ -45,4 +45,4 @@ background-color: #686868;
 
 * {
     scroll-behavior: smooth;
-};
+}
