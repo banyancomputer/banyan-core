@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 import { popupClickHandler } from '@/app/utils';
 import { useKeystore } from '@/app/contexts/keystore';
-import { Action } from '../FileActions';
+import { Action } from '@components/Bucket/BucketTable/FileActions';
 import { useSession } from '@app/contexts/session';
 import { HttpClient } from '@/api/http/client';
 import { NotFoundError } from '@/api/http';
