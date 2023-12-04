@@ -1,9 +1,9 @@
 import React, { ReactElement, useMemo } from 'react';
 import { useIntl } from 'react-intl';
 
-import { MoveToModal } from '../../common/Modal/MoveToModal';
-import { RenameFileModal } from '../../common/Modal/RenameFileModal';
-import { ShareFileModal } from '../Modal/ShareFileModal';
+import { MoveToModal } from '@components/common/Modal/MoveToModal';
+import { RenameFileModal } from '@components/common/Modal/RenameFileModal';
+import { ShareFileModal } from '@components/common/Modal/ShareFileModal';
 import { DeleteFileModal } from '@/app/components/common/Modal/DeleteFileModal';
 
 import { BrowserObject, Bucket } from '@/app/types/bucket';

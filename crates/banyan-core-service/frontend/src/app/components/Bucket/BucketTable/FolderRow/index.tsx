@@ -2,9 +2,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useIntl } from 'react-intl';
 
-import { ActionsCell } from '../ActionsCell';
-import { FolderActions } from '../FolderActions';
-import { FileCell } from '../FileCell';
+import { ActionsCell } from '../../../common/ActionsCell';
+import { FolderActions } from '../../../common/FolderActions';
+import { FileCell } from '../../../common/FileCell';
 import { FileRow } from '../FileRow';
 import { DraggingPreview } from '../FileRow/DraggingPreview';
 

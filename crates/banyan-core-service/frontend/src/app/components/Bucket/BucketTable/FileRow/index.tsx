@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 
-import { ActionsCell } from '../ActionsCell';
+import { ActionsCell } from '@components/common/ActionsCell';
 import { FileActions } from '../FileActions';
-import { FileCell } from '../FileCell';
+import { FileCell } from '@components/common/FileCell';
 
 import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { getDateLabel } from '@/app/utils/date';
