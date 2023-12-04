@@ -13,19 +13,11 @@ rm -rf crates/banyan-core-service/data/s* \
 ```
 
 We need to generate the platform signing keys, this can be done by simply
-starting up the core service and shutting it down:
+starting up the core service and shutting it down (for running against the tomb CLI add "--features fake" flag):
 
 ```
 cd crates/banyan-core-service
 cargo run
-```
-
-Once you see the 'server listening' line, press Ctrl-C to exit the application.
-We need to provide the public portion of this to the staging service so it can
-validate storage grants issued by our platform:
-
-```
-cp ./data/signing-key.public ../banyan-staging-service/data/platform-verifier.public
 ```
 
 The staging service has its own authentication material that needs to be
@@ -33,19 +25,7 @@ generated to authenticate back to the core service.
 
 ```
 cd ../banyan-staging-service
-cargo run -- --generate-auth
-```
-
-This will exit automatically after generating the required keys so nothing else
-needs to be done here. We need to go back to the core service and inform it of
-the staging service's credentials. There is a script that will load this up
-automatically. This script assumes the staging service will be accessible to
-clients at the address http://127.0.0.1:3002 which we'll need later when
-starting the service up.
-
-```
-cd ../banyan-core-service
-./bin/add_storage_host.sh;
+cargo run
 ```
 
 The services should now be ready to interact with each other. The steps so far
@@ -83,28 +63,6 @@ another if you'd like to run the front end). A terminal multiplexer like tmux
 is recommended.
 
 From the root of the repository:
-
-```
-cd crates/banyan-core-service
-cargo run --features fake
-```
-
-This will start up the core service running locally on port 3001, and all the
-use of a fake authentication provider that does not depend on Google auth. The
-fake authentication provider is used by tests, it doesn't disable the normal
-authentication mechanism if you'd prefer to use that.
-
-In the next terminal bring up the staging service, from the root of the
-repository. The address and port came from the assumption earlier that this is
-where the imported key's service lives.
-
-```
-cd crates/banyan-staging-service
-cargo run -- --listen 127.0.0.1:3002
-```
-
-Here we're listening on the address the script registered for the staging
-service earlier. These must match for our services to interoperate.
 
 To run the frontend switch to your third terminal and from the root of the
 repository:

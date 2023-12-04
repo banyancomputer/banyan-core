@@ -16,7 +16,7 @@ const PRODUCTION_PLUGINS = [
     },
     threshold: 10240,
     minRatio: 0.8,
-    deleteOriginalAssets: false,
+    deleteOriginalAssets: true,
   })
 ];
 
@@ -27,7 +27,7 @@ export default ({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
 
   return defineConfig({
-    base: "/dist/",
+    base: "/",
     define: {
       "process.env": JSON.stringify(env),
     },
@@ -36,8 +36,8 @@ export default ({ mode }) => {
       port: 3000,
     },
     build: {
-      minify: "esbuild",
-      outDir: path.resolve('../dist', "dist/"),
+      minify: isProduction ? "esbuild": false,
+      outDir: path.resolve(__dirname, "../dist/"),
       cssCodeSplit: false,
     },
     plugins: isProduction ? PRODUCTION_PLUGINS : DEVELOPMENT_PLUGINS,
@@ -50,6 +50,6 @@ export default ({ mode }) => {
       },
     },
     clean: true,
-    minify: true,
+    minify: isProduction,
   });
 };
