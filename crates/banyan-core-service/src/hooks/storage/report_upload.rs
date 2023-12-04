@@ -5,8 +5,8 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::app::AppState;
-use crate::database::Database;
 use crate::database::models::MetadataState;
+use crate::database::Database;
 use crate::extractors::StorageProviderIdentity;
 
 /// When a client finishes uploading their data to either staging or a storage host, the storage
@@ -232,8 +232,8 @@ async fn redeem_storage_grant(
 mod tests {
     use super::*;
 
-    use crate::database::test_helpers;
     use crate::database::models::MetadataState;
+    use crate::database::test_helpers;
 
     #[tokio::test]
     async fn test_marking_metadata_current() {
@@ -261,8 +261,7 @@ mod tests {
     async fn test_marking_metadata_when_missing_errors() {
         let db = test_helpers::setup_database().await;
 
-        let result = mark_metadata_current(&db, "not-a-real-id", 1_200_000)
-            .await;
+        let result = mark_metadata_current(&db, "not-a-real-id", 1_200_000).await;
 
         assert!(result.is_err());
     }
@@ -279,13 +278,17 @@ mod tests {
         let older_pending_metadata_id = test_helpers::pending_metadata(&db, &bucket_id, 1).await;
 
         // no current metadata present, so we can become current
-        assert!(can_become_current(&db, &older_pending_metadata_id).await.expect("can check"));
+        assert!(can_become_current(&db, &older_pending_metadata_id)
+            .await
+            .expect("can check"));
 
         tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
         test_helpers::current_metadata(&db, &bucket_id, 2).await;
 
         // there is a newer version, we can't become current anymore
-        assert!(!can_become_current(&db, &older_pending_metadata_id).await.expect("can check"));
+        assert!(!can_become_current(&db, &older_pending_metadata_id)
+            .await
+            .expect("can check"));
 
         // the id is newer than the current one and exists
         tokio::time::sleep(std::time::Duration::from_millis(1000)).await;

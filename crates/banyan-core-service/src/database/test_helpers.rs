@@ -77,19 +77,18 @@ pub(crate) async fn sample_bucket(db: &Database) -> String {
         .expect("bucket creation")
 }
 
-pub(crate) async fn sample_metadata(db: &Database, bucket_id: &str, counter: usize, state: MetadataState) -> String {
+pub(crate) async fn sample_metadata(
+    db: &Database,
+    bucket_id: &str,
+    counter: usize,
+    state: MetadataState,
+) -> String {
     let root_cid = format!("root-cid-{}", counter);
     let metadata_cid = format!("metadata-cid-{}", counter);
 
-    create_metadata(
-        &db,
-        &bucket_id,
-        &root_cid,
-        &metadata_cid,
-        state,
-    )
-    .await
-    .expect("current metadata creation")
+    create_metadata(&db, &bucket_id, &root_cid, &metadata_cid, state)
+        .await
+        .expect("current metadata creation")
 }
 
 pub(crate) async fn sample_user(db: &Database) -> String {
