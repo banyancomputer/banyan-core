@@ -14,14 +14,16 @@ import { sortByType, sortFiles } from '@app/utils';
 import { useFilesUpload } from '@app/contexts/filesUpload';
 import { ToastNotifications } from '@app/utils/toastNotifications';
 import { preventDefaultDragAction } from '@app/utils/dragHandlers';
+import { useTomb } from '@app/contexts/tomb';
 
-import { EmptyIcon } from '@static/images/common';
+import { Done, EmptyIcon } from '@static/images/common';
 
 export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const tableRef = useRef<HTMLDivElement | null>(null);
     const params = useParams();
     const bucketId = params.id;
     const { uploadFiles, setFiles, files } = useFilesUpload();
+    const { getSelectedBucketFiles, moveTo } = useTomb();
     /** Created to prevent sotring logic affect initial buckets array */
     const [bucketCopy, setBucketCopy] = useState(bucket);
     const { messages } = useIntl();
@@ -38,10 +40,24 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const handleDrop = async (event: React.DragEvent<HTMLDivElement>) => {
         preventDefaultDragAction(event);
 
-        if (!event?.dataTransfer.files.length) { return; }
+        if (event?.dataTransfer.files.length) {
+            setFiles(Array.from(event.dataTransfer.files).map(file => ({ file, isUploaded: false })));
+            setAreFilesDropped(true);
+            return;
+        }
 
-        setFiles(Array.from(event.dataTransfer.files).map(file => ({ file, isUploaded: false })));
-        setAreFilesDropped(true);
+        const dragData = event.dataTransfer.getData('browserObject');
+        if (dragData) {
+            const droppedItem: { item: BrowserObject, path: string[] } = JSON.parse(dragData);
+
+            if (!droppedItem.path.length) return;
+
+            await moveTo(bucket, [...droppedItem.path, droppedItem.item.name], [droppedItem.item.name]);
+            ToastNotifications.notify(`${messages.fileWasMoved}`, <Done width="20px" height="20px" />);
+            await getSelectedBucketFiles([]);
+
+            return;
+        }
     };
 
     useEffect(() => {
@@ -98,7 +114,7 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
             <div >
                 <table className="table table-pin-rows w-full text-text-600 rounded-xl table-fixed">
                     <thead className="border-b-border-regular text-xxs border-b-2 font-normal text-text-900">
-                        <tr className=" bg-secondaryBackground font-normal">
+                        <tr className=" bg-secondaryBackground font-normal border-none">
                             <th className="flex items-center gap-3 px-6 py-4 text-left font-medium">
                                 <SortCell
                                     criteria="name"
