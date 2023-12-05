@@ -3,8 +3,8 @@ use axum::response::{IntoResponse, Response};
 use http::StatusCode;
 
 use crate::api::models::ApiEscrowedKeyMaterial;
-use crate::database::models::EscrowedDevice;
 use crate::app::AppState;
+use crate::database::models::EscrowedDevice;
 use crate::extractors::UserIdentity;
 
 pub async fn handler(
