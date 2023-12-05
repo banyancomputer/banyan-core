@@ -5,7 +5,7 @@ use serde::Serialize;
 
 use crate::{Task, TaskExecError, TaskLike, TaskState};
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Eq, PartialEq)]
 pub struct TaskStoreMetrics {
     pub(crate) total: i32,
     pub(crate) new: i32,
@@ -74,6 +74,16 @@ pub trait TaskStore: Send + Sync + 'static {
     async fn retry(&self, id: String) -> Result<Option<String>, TaskStoreError>;
 
     async fn metrics(&self) -> Result<TaskStoreMetrics, TaskStoreError>;
+
+    async fn queue_metrics(
+        &self,
+        queue_name: &'static str,
+    ) -> Result<TaskStoreMetrics, TaskStoreError>;
+
+    async fn task_metrics(
+        &self,
+        task_name: &'static str,
+    ) -> Result<TaskStoreMetrics, TaskStoreError>;
 
     async fn update_state(&self, id: String, state: TaskState) -> Result<(), TaskStoreError>;
 }

@@ -26,8 +26,9 @@ pub use worker::{Worker, WorkerError};
 pub use worker_pool::{ExecuteTaskFn, StateFn, WorkerPool, WorkerPoolError};
 
 pub mod tests {
-    use super::{current_task, task_store};
+    use super::{current_task, task_like, task_store};
     pub use current_task::tests::{default_current_task, increment_current_task_attempt_count};
+    pub use task_like::tests::TestTask;
     pub use task_store::tests::default_task_store_metrics;
 }
 
