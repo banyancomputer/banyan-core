@@ -32,6 +32,7 @@ pub fn router(state: AppState) -> Router<AppState> {
         .layer(RequestBodyLimitLayer::new(REQUEST_BODY_LIMIT))
         .route("/healthz", get(handlers::liveness_check))
         .route("/readyz", get(handlers::readiness_check))
+        .route("/task_store_metrics", get(handlers::task_store_metrics))
         .route("/version", get(handlers::version))
         .with_state(state)
 }

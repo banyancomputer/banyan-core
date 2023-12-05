@@ -8,6 +8,7 @@ use crate::{Task, TaskExecError, TaskLike, TaskState};
 pub trait TaskStore: Send + Sync + 'static {
     type Pool: Send;
     type Connection: Send;
+    type Metrics: Send;
 
     async fn cancel(&self, id: String) -> Result<(), TaskStoreError> {
         self.update_state(id, TaskState::Cancelled).await
@@ -55,6 +56,8 @@ pub trait TaskStore: Send + Sync + 'static {
     ) -> Result<Option<Task>, TaskStoreError>;
 
     async fn retry(&self, id: String) -> Result<Option<String>, TaskStoreError>;
+
+    async fn metrics(&self) -> Result<Self::Metrics, TaskStoreError>;
 
     async fn update_state(&self, id: String, state: TaskState) -> Result<(), TaskStoreError>;
 }

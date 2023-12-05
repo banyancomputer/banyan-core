@@ -2,7 +2,9 @@ use std::fmt::{Display, Formatter, Result};
 
 #[derive(Debug)]
 #[non_exhaustive]
-pub struct Error;
+pub enum Error {
+    TaskStoreError(banyan_task::TaskStoreError),
+}
 
 impl Error {
     pub fn is_temporary(&self) -> bool {

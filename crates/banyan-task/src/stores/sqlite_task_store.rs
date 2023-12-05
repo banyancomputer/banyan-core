@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use async_trait::async_trait;
+use serde::Serialize;
 use sqlx::{Acquire, SqliteConnection, SqlitePool};
 use time::OffsetDateTime;
 
@@ -12,6 +13,36 @@ use crate::{
 #[derive(Clone)]
 pub struct SqliteTaskStore {
     pool: SqlitePool,
+}
+
+#[derive(Clone, Debug, Serialize, sqlx::FromRow)]
+pub struct SqliteTaskStoreMetrics {
+    /// Total number of tasks in the system
+    pub(crate) total: i32,
+    /// Number of tasks scheduled to run in the past
+    pub(crate) need_run: i32,
+    /// Number of tasks scheduled to run in the future
+    pub(crate) to_run: i32,
+    /// Number of dead tasks
+    pub(crate) dead: i32,
+}
+
+impl SqliteTaskStoreMetrics {
+    pub fn total(&self) -> i32 {
+        self.total
+    }
+
+    pub fn need_run(&self) -> i32 {
+        self.need_run
+    }
+
+    pub fn to_run(&self) -> i32 {
+        self.to_run
+    }
+
+    pub fn dead(&self) -> i32 {
+        self.dead
+    }
 }
 
 impl SqliteTaskStore {
@@ -40,6 +71,7 @@ impl SqliteTaskStore {
 impl TaskStore for SqliteTaskStore {
     type Pool = SqlitePool;
     type Connection = SqliteConnection;
+    type Metrics = SqliteTaskStoreMetrics;
 
     async fn enqueue<T: TaskLike>(
         pool: &mut Self::Pool,
@@ -211,6 +243,24 @@ impl TaskStore for SqliteTaskStore {
         transaction.commit().await?;
 
         Ok(new_task_id)
+    }
+
+    async fn metrics(&self) -> Result<Self::Metrics, TaskStoreError> {
+        let mut connection = self.pool.clone().acquire().await?;
+
+        let metrics = sqlx::query_as!(
+            SqliteTaskStoreMetrics,
+            r#"SELECT
+                       COUNT(*) AS total,
+                       COALESCE(SUM(CASE WHEN DATETIME(scheduled_to_run_at) <= DATETIME('now') THEN 1 ELSE 0 END), 0) AS need_run,
+                       COALESCE(SUM(CASE WHEN DATETIME(scheduled_to_run_at) > DATETIME('now') THEN 1 ELSE 0 END), 0) AS to_run,
+                       COALESCE(SUM(CASE WHEN state = 'dead' THEN 1 ELSE 0 END), 0) AS dead
+                   FROM background_tasks;"#,
+        )
+        .fetch_one(&mut *connection)
+        .await?;
+
+        Ok(metrics)
     }
 
     async fn update_state(&self, id: String, new_state: TaskState) -> Result<(), TaskStoreError> {
