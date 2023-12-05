@@ -12,6 +12,7 @@ export const handleDragStart = async (
     setIsDragging: React.Dispatch<React.SetStateAction<boolean>>,
     path: string[],
     ) => {
+    event.stopPropagation()
     event.dataTransfer.setData('browserObject', JSON.stringify({ item, path }));
     event.dataTransfer.setDragImage(new Image(), 0, 0);
     setIsDragging(true);
@@ -20,8 +21,10 @@ export const handleDragStart = async (
 /** Gets drag preview element, and sets its position according to cursors */
 export const handleDrag = (event: React.DragEvent<HTMLDivElement>, name: string) => {
     const element = document.getElementById(`dragging-preview-${name}`);
-    element!.style.top = `${event?.clientY}px`;
-    element!.style.left = `${event?.clientX}px`;
+    if(element) {
+        element.style.top = `${event?.clientY}px`;
+        element.style.left = `${event?.clientX}px`;
+    }
 };
 
 /** Sets dragging state to false, ,which will hide drag preview. */
