@@ -27,24 +27,6 @@ pub struct SqliteTaskStoreMetrics {
     pub(crate) dead: i32,
 }
 
-impl SqliteTaskStoreMetrics {
-    pub fn total(&self) -> i32 {
-        self.total
-    }
-
-    pub fn need_run(&self) -> i32 {
-        self.need_run
-    }
-
-    pub fn to_run(&self) -> i32 {
-        self.to_run
-    }
-
-    pub fn dead(&self) -> i32 {
-        self.dead
-    }
-}
-
 impl SqliteTaskStore {
     pub async fn is_key_present(
         conn: &mut SqliteConnection,
