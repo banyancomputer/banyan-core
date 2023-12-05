@@ -1,30 +1,17 @@
 use std::time::Duration;
 
 use async_trait::async_trait;
-use serde::Serialize;
 use sqlx::{Acquire, SqliteConnection, SqlitePool};
 use time::OffsetDateTime;
 
 use crate::{
-    Task, TaskInstanceBuilder, TaskLike, TaskState, TaskStore, TaskStoreError,
+    Task, TaskInstanceBuilder, TaskLike, TaskState, TaskStore, TaskStoreError, TaskStoreMetrics,
     TASK_EXECUTION_TIMEOUT,
 };
 
 #[derive(Clone)]
 pub struct SqliteTaskStore {
     pool: SqlitePool,
-}
-
-#[derive(Clone, Debug, Serialize, sqlx::FromRow)]
-pub struct SqliteTaskStoreMetrics {
-    /// Total number of tasks in the system
-    pub(crate) total: i32,
-    /// Number of tasks scheduled to run in the past
-    pub(crate) need_run: i32,
-    /// Number of tasks scheduled to run in the future
-    pub(crate) to_run: i32,
-    /// Number of dead tasks
-    pub(crate) dead: i32,
 }
 
 impl SqliteTaskStore {
@@ -53,7 +40,6 @@ impl SqliteTaskStore {
 impl TaskStore for SqliteTaskStore {
     type Pool = SqlitePool;
     type Connection = SqliteConnection;
-    type Metrics = SqliteTaskStoreMetrics;
 
     async fn enqueue<T: TaskLike>(
         pool: &mut Self::Pool,
@@ -227,22 +213,30 @@ impl TaskStore for SqliteTaskStore {
         Ok(new_task_id)
     }
 
-    async fn metrics(&self) -> Result<Self::Metrics, TaskStoreError> {
+    async fn metrics(&self) -> Result<TaskStoreMetrics, TaskStoreError> {
         let mut connection = self.pool.clone().acquire().await?;
 
         let metrics = sqlx::query_as!(
             SqliteTaskStoreMetrics,
             r#"SELECT
-                       COUNT(*) AS total,
-                       COALESCE(SUM(CASE WHEN DATETIME(scheduled_to_run_at) <= DATETIME('now') THEN 1 ELSE 0 END), 0) AS need_run,
-                       COALESCE(SUM(CASE WHEN DATETIME(scheduled_to_run_at) > DATETIME('now') THEN 1 ELSE 0 END), 0) AS to_run,
-                       COALESCE(SUM(CASE WHEN state = 'dead' THEN 1 ELSE 0 END), 0) AS dead
-                   FROM background_tasks;"#,
+                   COUNT(*) AS total,
+                   COALESCE(SUM(CASE WHEN state = 'new' THEN 1 ELSE 0 END), 0) AS new,
+                   COALESCE(SUM(CASE WHEN state = 'in_progress' THEN 1 ELSE 0 END), 0) AS in_progress,
+                   COALESCE(SUM(CASE WHEN state = 'panicked' THEN 1 ELSE 0 END), 0) AS panicked,
+                   COALESCE(SUM(CASE WHEN state = 'retry' THEN 1 ELSE 0 END), 0) AS retried,
+                   COALESCE(SUM(CASE WHEN state = 'cancelled' THEN 1 ELSE 0 END), 0) AS cancelled,
+                   COALESCE(SUM(CASE WHEN state = 'error' THEN 1 ELSE 0 END), 0) AS errored,
+                   COALESCE(SUM(CASE WHEN state = 'complete' THEN 1 ELSE 0 END), 0) AS completed,
+                   COALESCE(SUM(CASE WHEN state = 'timed_out' THEN 1 ELSE 0 END), 0) AS timed_out,
+                   COALESCE(SUM(CASE WHEN state = 'dead' THEN 1 ELSE 0 END), 0) AS dead,
+                   COALESCE(SUM(CASE WHEN DATETIME(scheduled_to_run_at) <= DATETIME('now') THEN 1 ELSE 0 END), 0) AS scheduled,
+                   COALESCE(SUM(CASE WHEN DATETIME(scheduled_to_run_at) > DATETIME('now') THEN 1 ELSE 0 END), 0) AS scheduled_future
+                FROM background_tasks;"#,
         )
         .fetch_one(&mut *connection)
         .await?;
 
-        Ok(metrics)
+        Ok(metrics.into())
     }
 
     async fn update_state(&self, id: String, new_state: TaskState) -> Result<(), TaskStoreError> {
@@ -261,5 +255,40 @@ impl TaskStore for SqliteTaskStore {
         .await?;
 
         Ok(())
+    }
+}
+
+#[derive(sqlx::FromRow)]
+struct SqliteTaskStoreMetrics {
+    total: i32,
+    new: i32,
+    in_progress: i32,
+    panicked: i32,
+    retried: i32,
+    cancelled: i32,
+    errored: i32,
+    completed: i32,
+    timed_out: i32,
+    dead: i32,
+    scheduled: i32,
+    scheduled_future: i32,
+}
+
+impl From<SqliteTaskStoreMetrics> for TaskStoreMetrics {
+    fn from(m: SqliteTaskStoreMetrics) -> Self {
+        Self {
+            total: m.total,
+            new: m.new,
+            in_progress: m.in_progress,
+            panicked: m.panicked,
+            retried: m.retried,
+            cancelled: m.cancelled,
+            errored: m.errored,
+            completed: m.completed,
+            timed_out: m.timed_out,
+            dead: m.dead,
+            scheduled: m.scheduled,
+            scheduled_future: m.scheduled_future,
+        }
     }
 }

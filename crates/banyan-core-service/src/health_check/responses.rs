@@ -3,8 +3,6 @@ use axum::response::IntoResponse;
 use axum::Json;
 use serde::Serialize;
 
-use banyan_task::SqliteTaskStoreMetrics;
-
 use crate::health_check::HealthCheckError;
 use crate::utils::collect_error_messages;
 
@@ -14,7 +12,6 @@ pub enum Response {
     Error { errors: Vec<String> },
     Pending { message: String },
     Ready,
-    TaskStoreMetrics(SqliteTaskStoreMetrics),
 }
 
 impl From<HealthCheckError> for Response {
@@ -38,7 +35,7 @@ impl IntoResponse for Response {
         let status_code = match self {
             Error { .. } => StatusCode::INTERNAL_SERVER_ERROR,
             Pending { .. } => StatusCode::SERVICE_UNAVAILABLE,
-            _ => StatusCode::OK,
+            Ready => StatusCode::OK,
         };
 
         (status_code, Json(self)).into_response()

@@ -16,12 +16,12 @@ mod worker_pool;
 
 pub use current_task::{CurrentTask, CurrentTaskError};
 pub use queue_config::QueueConfig;
-pub use stores::{SqliteTaskStore, SqliteTaskStoreMetrics};
+pub use stores::SqliteTaskStore;
 pub use task::{Task, TaskExecError};
 pub use task_instance_builder::TaskInstanceBuilder;
 pub use task_like::{TaskLike, TaskLikeExt};
 pub use task_state::TaskState;
-pub use task_store::{TaskStore, TaskStoreError};
+pub use task_store::{TaskStore, TaskStoreError, TaskStoreMetrics};
 pub use worker::{Worker, WorkerError};
 pub use worker_pool::{ExecuteTaskFn, StateFn, WorkerPool, WorkerPoolError};
 

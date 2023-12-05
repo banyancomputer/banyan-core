@@ -1,14 +1,30 @@
 #![allow(dead_code)]
 
 use async_trait::async_trait;
+use serde::Serialize;
 
 use crate::{Task, TaskExecError, TaskLike, TaskState};
+
+#[derive(Debug, Serialize)]
+pub struct TaskStoreMetrics {
+    pub(crate) total: i32,
+    pub(crate) new: i32,
+    pub(crate)  in_progress: i32,
+    pub(crate) panicked: i32,
+    pub(crate) retried: i32,
+    pub(crate) cancelled: i32,
+    pub(crate) errored: i32,
+    pub(crate) completed: i32,
+    pub(crate) timed_out: i32,
+    pub(crate) dead: i32,
+    pub(crate) scheduled: i32,
+    pub(crate) scheduled_future: i32,
+}
 
 #[async_trait]
 pub trait TaskStore: Send + Sync + 'static {
     type Pool: Send;
     type Connection: Send;
-    type Metrics: Send;
 
     async fn cancel(&self, id: String) -> Result<(), TaskStoreError> {
         self.update_state(id, TaskState::Cancelled).await
@@ -57,7 +73,7 @@ pub trait TaskStore: Send + Sync + 'static {
 
     async fn retry(&self, id: String) -> Result<Option<String>, TaskStoreError>;
 
-    async fn metrics(&self) -> Result<Self::Metrics, TaskStoreError>;
+    async fn metrics(&self) -> Result<TaskStoreMetrics, TaskStoreError>;
 
     async fn update_state(&self, id: String, state: TaskState) -> Result<(), TaskStoreError>;
 }

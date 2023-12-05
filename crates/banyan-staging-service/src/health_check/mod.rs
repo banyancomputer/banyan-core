@@ -6,6 +6,7 @@ use tower_http::cors::{Any, CorsLayer};
 use tower_http::limit::RequestBodyLimitLayer;
 
 mod data_source;
+mod jobs;
 mod liveness;
 mod readiness;
 mod version;
@@ -26,6 +27,7 @@ pub fn router(state: AppState) -> Router<AppState> {
     Router::new()
         .route("/healthz", get(liveness::handler))
         .route("/readyz", get(readiness::handler))
+        .route("/jobz", get(jobs::handler))
         .route("/version", get(version::handler))
         .layer(cors_layer)
         .layer(RequestBodyLimitLayer::new(HEALTHCHECK_REQUEST_SIZE_LIMIT))
