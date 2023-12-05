@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 
 import { ActionsCell } from '@components/common/ActionsCell';
 import { FileActions } from '../FileActions';
@@ -21,7 +21,7 @@ export const FileRow: React.FC<{
     nestingLevel?: number;
     parrentFolder?: BrowserObject;
 }> = ({ file, bucket, tableScroll, tableRef, nestingLevel = 0.25, path = [], parrentFolder, siblingFiles }) => {
-    const { openFile } = useMemo(() => useFilePreview(), []);
+    const { openFile } = useFilePreview();
     const [isDragging, setIsDragging] = useState(false);
 
     const previewFile = (event: React.MouseEvent<HTMLTableRowElement, MouseEvent>, bucket: Bucket, file: BrowserObject) => {

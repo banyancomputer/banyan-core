@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 // @ts-ignore
 import FilePreviewer from 'react-file-previewer';
 import { useIntl } from 'react-intl';
@@ -15,7 +15,7 @@ export const FilePreview = () => {
     const filePreviewRef = useRef<HTMLDivElement | null>(null);
     const fileExtension = [...file.name.split('.')].pop();
     const isFileSupported = file.name ? SUPPORTED_EXTENSIONS.includes(fileExtension || '') : true;
-    const selectedFileIndex = files.indexOf(file.name);
+    const [selectedFileIndex, setSelectedFileIndex] = useState(0);
 
     const close = (event: React.MouseEvent<HTMLDivElement | HTMLButtonElement>) => {
         if (!filePreviewRef.current!.contains(event.target as Node)) {
@@ -31,9 +31,33 @@ export const FilePreview = () => {
         openFile(bucket!, files[selectedFileIndex + 1], files, path);
     };
 
+    useEffect(() => {
+        const listener = (event: KeyboardEvent) => {
+            if(file.isLoading) {
+                document.removeEventListener('keydown', listener);
+                return;
+            }
+            if (event.code === 'ArrowLeft' && selectedFileIndex) {
+                document.removeEventListener('keydown', listener);
+                openPrevious();
+            } else if (event.code === 'ArrowRight' && !(selectedFileIndex === files.length - 1)) {
+                document.removeEventListener('keydown', listener);
+                openNext();
+            }
+        };
+
+        document.addEventListener('keydown', listener);
+    }, [selectedFileIndex, files.length, file.isLoading]);
+
+    useEffect(() => {
+        if (!file.name) return;
+
+        setSelectedFileIndex(files.indexOf(file.name));
+    }, [file.name, files]);
+
     return (
         <>
-            {(file.data || !isFileSupported || file.isLoading) &&
+            {(file.data || files.length || !isFileSupported || file.isLoading) &&
                 <>
                     <button
                         onClick={close}

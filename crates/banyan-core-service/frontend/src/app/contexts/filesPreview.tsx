@@ -36,6 +36,8 @@ export const FilePreviewProvider: FC<{ children: ReactNode }> = ({ children }) =
         setFiles(files);
         setBucket(bucket);
         setPath(path);
+        if (!file) return;
+
         const isFileSupported = SUPPORTED_EXTENSIONS.includes([...file.split('.')].pop() || '');
         try {
             setFile({
@@ -68,6 +70,7 @@ export const FilePreviewProvider: FC<{ children: ReactNode }> = ({ children }) =
 
     const closeFile = () => {
         setFile(initialState);
+        setFiles([]);
     };
 
     return (
