@@ -12,12 +12,13 @@ use futures::{TryStream, TryStreamExt};
 use jwt_simple::prelude::*;
 use object_store::ObjectStore;
 use serde::Deserialize;
+use sqlx::QueryBuilder;
 use tokio::io::{AsyncWrite, AsyncWriteExt};
 use uuid::Uuid;
 
 use crate::app::{AppState, ServiceKey};
-use crate::database::models::MetadataState;
-use crate::database::Database;
+use crate::database::models::{Bucket, MetadataState};
+use crate::database::{Database, DatabaseConnection};
 use crate::extractors::{DataStore, UserIdentity};
 use crate::tasks::{PruneBlock, PruneBlocksTask};
 use crate::utils::car_buffer::CarBuffer;
@@ -35,24 +36,57 @@ const REQUEST_DATA_SIZE_LIMIT: u64 = 128 * 1_024;
 
 pub const STORAGE_TICKET_DURATION: u64 = 15 * 60; // 15 minutes
 
+async fn bucket_change_in_progress(
+    _conn: &DatabaseConnection,
+    _bucket_id: &str,
+) -> Result<bool, PushMetadataError> {
+    Ok(false)
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum PushMetadataRequestError {
+    #[error("error occurred while querying database: {0}")]
+    DbQueryFailure(#[from] sqlx::Error),
+
+    #[error("the request was badly formatted: {0}")]
+    InvalidMultipart(#[from] multer::Error),
+}
+
 pub async fn handler(
-    user_identity: UserIdentity,
+    user_id: UserIdentity,
     State(state): State<AppState>,
     store: DataStore,
     Path(bucket_id): Path<Uuid>,
     TypedHeader(content_type): TypedHeader<ContentType>,
     body: BodyStream,
-) -> Result<Response, PushMetadataError> {
+) -> Result<Response, PushMetadataRequestError> {
+    let bucket_id = bucket_id.to_string();
+    let user_id = user_id.id().to_string();
+
+    let span = tracing::info_span!("push_metadata_handler", bucket_id, user_id);
+    let _guard = span.enter();
+
     let database = state.database();
     let service_key = state.secrets().service_key();
 
-    let user_id = user_identity.id().to_string();
-    let unvalidated_bid = bucket_id.to_string();
-    let authorized_bucket_id = authorized_bucket_id(&database, &user_id, &unvalidated_bid).await?;
+    let mut conn = database.begin().await?;
 
-    // Read the body from the request, checking for size limits
+    if !Bucket::is_owned_by_user_id(&mut conn, &bucket_id, &user_id).await? {
+        let err_msg = serde_json::json!({"msg": "not found"});
+        return Ok((StatusCode::NOT_FOUND, Json(err_msg)).into_response());
+    }
+
+    if Bucket::change_in_progress(&mut conn, &bucket_id).await? {
+        tracing::warn!("attempted upload to bucket while other write was in progress");
+        let err_msg = serde_json::json!({"msg": "waiting for other upload to complete"});
+        return Ok((StatusCode::CONFLICT, Json(err_msg)).into_response());
+    }
+
+    // Request is authorized, and we're ready to receive it. Start processing the multipart
+    // payload...
+
     let mime_ct = mime::Mime::from(content_type);
-    let boundary = multer::parse_boundary(mime_ct).map_err(PushMetadataError::InvalidBoundary)?;
+    let boundary = multer::parse_boundary(mime_ct)?;
 
     let constraints = multer::Constraints::new()
         .allowed_fields(vec!["request-data", "car-upload"])
@@ -63,38 +97,61 @@ pub async fn handler(
         );
     let mut multipart = multer::Multipart::with_constraints(body, boundary, constraints);
 
-    // Process the request data
-    let request_data_field = multipart
-        .next_field()
-        .await
-        .map_err(PushMetadataError::BrokenMultipartField)?
-        .ok_or(PushMetadataError::MissingRequestData)?;
+    let request_field = match multipart.next_field().await? {
+        Some(f) => f,
+        None => {
+            tracing::warn!("upload contained no request details");
+            let err_msg = serde_json::json!({"msg": "missing request details"});
+            return Ok((StatusCode::BAD_REQUEST, Json(err_msg)).into_response());
+        }
+    };
 
-    // todo: validate name is request-data (request_data_field.name())
-    // todo: validate type is application/json (request_data_field.content_type())
-    let request_data_bytes = request_data_field
-        .bytes()
-        .await
-        .map_err(PushMetadataError::RequestDataUnavailable)?;
+    // For now warn if our clients aren't well behaved, once we've confirmed our official clients
+    // are behaving correctly these should become BAD_REQUEST error responses.
 
-    let request_data: PushMetadataRequest = serde_json::from_slice(&request_data_bytes)
-        .map_err(PushMetadataError::InvalidRequestData)?;
+    if request_field.name() != Some("request-data") {
+        tracing::warn!(
+            "initial multipart field was not named correctly: {:?}",
+            request_field.name()
+        );
+    }
+
+    if request_field.content_type() != Some(&mime::APPLICATION_JSON) {
+        tracing::warn!(
+            "initial multipart field had an unexpected content type: {:?}",
+            request_field.content_type()
+        );
+    }
+
+    let request_data_bytes = request_field.bytes().await?;
+    let request_data: PushMetadataRequest = match serde_json::from_slice(&request_data_bytes) {
+        Ok(d) => d,
+        Err(_) => {
+            let err_msg = serde_json::json!({"msg": "request data was not a valid JSON object"});
+            return Ok((StatusCode::BAD_REQUEST, Json(err_msg)).into_response());
+        }
+    };
 
     approve_key_fingerprints(
-        &database,
-        &authorized_bucket_id,
-        &request_data.included_key_fingerprints,
+        &mut conn,
+        &bucket_id,
+        request_data
+            .included_key_fingerprints
+            .iter()
+            .map(String::as_str),
     )
     .await?;
 
-    let new_metadata_id =
-        record_upload_start(&database, &authorized_bucket_id, &request_data).await?;
+    let new_metadata_id = record_upload_start(&database, &bucket_id, &request_data).await?;
 
-    let data_body = multipart
-        .next_field()
-        .await
-        .map_err(PushMetadataError::BrokenMultipartField)?
-        .ok_or(PushMetadataError::MissingMetadata)?;
+    let data_field = match multipart.next_field().await? {
+        Some(d) => d,
+        None => {
+            tracing::warn!("upload contained no data");
+            let err_msg = serde_json::json!({"msg": "missing request data"});
+            return Ok((StatusCode::BAD_REQUEST, Json(err_msg)).into_response());
+        }
+    };
 
     // todo: validate name is car-upload (request_data_field.name())
     // todo: validate type is "application/vnd.ipld.car; version=2" (request_data_field.content_type())
@@ -182,38 +239,45 @@ pub async fn handler(
 }
 
 async fn approve_key_fingerprints(
-    database: &Database,
+    conn: &mut DatabaseConnection,
     bucket_id: &str,
-    keys: &[String],
-) -> Result<(), PushMetadataError> {
-    for device_key_fingerprint in keys.iter() {
-        sqlx::query!(
-            "UPDATE bucket_keys SET approved = 1 WHERE bucket_id = $1 AND fingerprint = $2;",
-            bucket_id,
-            device_key_fingerprint,
-        )
-        .execute(database)
-        .await
-        .map_err(PushMetadataError::KeyApprovalFailed)?;
+    keys: impl IntoIterator<Item = &str>,
+) -> Result<(), sqlx::Error> {
+    let mut builder = QueryBuilder::new(
+        "UPDATE bucket_keys SET approved = 1 WHERE bucket_id = $1 AND fingerprint IN (",
+    );
+    builder.push_bind(bucket_id);
+
+    let mut key_iterator = keys.into_iter().peekable();
+    while let Some(key) = key_iterator.next() {
+        builder.push("?");
+        builder.push_bind(key);
+
+        if key_iterator.peek().is_some() {
+            builder.push(",");
+        }
     }
+
+    builder.push(");");
+    builder.build().execute(&mut *conn).await?;
 
     Ok(())
 }
 
-async fn authorized_bucket_id(
+async fn bucked_owned_by_user_id(
     database: &Database,
     user_id: &str,
     bucket_id: &str,
-) -> Result<String, PushMetadataError> {
-    sqlx::query_scalar!(
+) -> Result<bool, sqlx::Error> {
+    let id = sqlx::query_scalar!(
         r#"SELECT id FROM buckets WHERE user_id = $1 AND id = $2;"#,
         user_id,
         bucket_id,
     )
     .fetch_optional(database)
-    .await
-    .map_err(PushMetadataError::BucketAuthorizationFailed)?
-    .ok_or(PushMetadataError::NoAuthorizedBucket)
+    .await?;
+
+    Ok(id.is_some())
 }
 
 async fn currently_consumed_storage(
@@ -388,8 +452,8 @@ async fn record_upload_start(
     database: &Database,
     bucket_id: &str,
     request: &PushMetadataRequest,
-) -> Result<String, PushMetadataError> {
-    sqlx::query_scalar!(
+) -> Result<String, sqlx::Error> {
+    let new_id = sqlx::query_scalar!(
         r#"INSERT INTO metadata (bucket_id, root_cid, metadata_cid, expected_data_size, state)
                VALUES ($1, $2, $3, $4, 'uploading')
                RETURNING id;"#,
@@ -399,8 +463,9 @@ async fn record_upload_start(
         request.expected_data_size,
     )
     .fetch_one(database)
-    .await
-    .map_err(PushMetadataError::MetadataRegistrationFailed)
+    .await?;
+
+    Ok(new_id)
 }
 
 async fn select_storage_host(
@@ -515,7 +580,7 @@ async fn expire_deleted_blocks(
     }
 
     // Build a query to identify the blocks that need to get expired
-    let mut builder = sqlx::query_builder::QueryBuilder::new(
+    let mut builder = sqlx::QueryBuilder::new(
         r#"SELECT blocks.id AS block_id, blocks.cid AS normalized_cid, m.id AS metadata_id, sh.id AS storage_host_id
             FROM block_locations AS bl
             JOIN blocks ON blocks.id = bl.block_id
@@ -613,6 +678,10 @@ async fn expire_deleted_blocks(
             .enqueue_with_connection::<banyan_task::SqliteTaskStore>(&mut transaction)
             .await
             .map_err(PushMetadataError::UnableEnqueuePruneBlocksTask)?;
+
+        Queue::name("default")
+            .metrics::<banyan_task::SqliteTaskStore>(&mut transaction)
+            .await?;
     }
 
     // Commit the txn
@@ -626,111 +695,122 @@ async fn expire_deleted_blocks(
 
 #[derive(Debug, thiserror::Error)]
 pub enum PushMetadataError {
-    #[error("failed updating zero data metadata to current")]
-    ActivationFailed(sqlx::Error),
-
-    #[error("failed to validate bucket was authorized by user: {0}")]
-    BucketAuthorizationFailed(sqlx::Error),
-
-    #[error("unable to pull next multipart field: {0}")]
-    BrokenMultipartField(multer::Error),
-
-    #[error("failed to record metadata size and hash: {0}")]
-    DataMetaStoreFailed(sqlx::Error),
-
-    #[error("corrupted uuid provided: {0}")]
-    DatabaseUuidCorrupted(uuid::Error),
-
-    #[error("failed to mark bucket key as approved: {0}")]
-    KeyApprovalFailed(sqlx::Error),
-
-    #[error("failed to create entry for metadata in the database: {0}")]
-    MetadataRegistrationFailed(sqlx::Error),
-
-    #[error("unable to parse valid boundary: {0}")]
-    InvalidBoundary(multer::Error),
-
-    #[error("provided request data couldn't be decoded: {0}")]
-    InvalidRequestData(serde_json::Error),
-
-    #[error("invalid CID provided: {0}")]
-    InvalidCid(cid::Error),
-
-    #[error("account reached upload quota and recording the failure may have failed: {0:?}")]
-    LimitReached(Option<sqlx::Error>),
-
-    #[error("request did not contain required data segment")]
-    MissingRequestData,
-
-    #[error("request did not contain required metadata segment")]
-    MissingMetadata,
-
-    #[error("unable to locate a bucket for the current authorized user")]
-    NoAuthorizedBucket,
-
-    #[error("no storage host is available with sufficient storage")]
-    NoAvailableStorage,
-
-    #[error("unable to retrieve request data: {0}")]
-    RequestDataUnavailable(multer::Error),
-
-    #[error("failed to query for available storage host: {0}")]
-    StorageHostLookupFailed(sqlx::Error),
-
-    #[error("unable to determine if user is within their quota: {0}")]
-    UnableToCheckAccounting(sqlx::Error),
-
-    #[error("failed to create new storage authorization: {0}")]
-    UnableToGenerateAuthorization(#[from] StorageAuthorizationError),
-
-    #[error("unable to identify how much data user has stored with each storage provider")]
-    UnableToIdentifyStoredAmount(sqlx::Error),
-
-    #[error("unable to locate existing storage authorizations for account: {0}")]
-    UnableToRetrieveAuthorizations(sqlx::Error),
-
-    #[error("unable to mark blocks as expired: {0}")]
-    UnableToExpireBlocks(sqlx::Error),
-
-    #[error("unable to enqueue a task to prune blocks {0}")]
-    UnableEnqueuePruneBlocksTask(banyan_task::TaskStoreError),
-
-    #[error("failed to store metadata on disk: {0}, marking as failed might have had an error as well: {1:?}")]
-    UploadStoreFailed(StoreMetadataError, Option<sqlx::Error>),
+    #[error("failed to run query: {0}")]
+    QueryFailure(#[from] sqlx::Error),
 }
 
-impl IntoResponse for PushMetadataError {
-    fn into_response(self) -> Response {
-        match &self {
-            PushMetadataError::BrokenMultipartField(_)
-            | PushMetadataError::InvalidBoundary(_)
-            | PushMetadataError::InvalidRequestData(_)
-            | PushMetadataError::InvalidCid(_)
-            | PushMetadataError::MissingRequestData => {
-                let err_msg = serde_json::json!({"msg": "invalid request"});
-                (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
-            }
-            PushMetadataError::LimitReached(_) => {
-                let err_msg = serde_json::json!({"msg": "you have hit your account storage limit"});
-                (StatusCode::PAYLOAD_TOO_LARGE, Json(err_msg)).into_response()
-            }
-            PushMetadataError::NoAvailableStorage => {
-                tracing::error!("no storage host available with capacity to store pushed data!");
-                let err_msg = serde_json::json!({"msg": "an internal server error occurred"});
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
-            }
-            PushMetadataError::NoAuthorizedBucket => {
-                let err_msg = serde_json::json!({"msg": "not found"});
-                (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
-            }
-            _ => {
-                tracing::error!("failed to push metadata: {self}");
-                let err_msg = serde_json::json!({"msg": "an internal server error occurred"});
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
-            }
-        }
-    }
-}
+//#[derive(Debug, thiserror::Error)]
+//pub enum PushMetadataError {
+//
+//    #[error("failed updating zero data metadata to current")]
+//    ActivationFailed(sqlx::Error),
+//
+//    #[error("failed to validate bucket was authorized by user: {0}")]
+//    BucketAuthorizationFailed(sqlx::Error),
+//
+//    #[error("unable to pull next multipart field: {0}")]
+//    BrokenMultipartField(multer::Error),
+//
+//    #[error("failed to record metadata size and hash: {0}")]
+//    DataMetaStoreFailed(sqlx::Error),
+//
+//    #[error("corrupted uuid provided: {0}")]
+//    DatabaseUuidCorrupted(uuid::Error),
+//
+//    #[error("failed to mark bucket key as approved: {0}")]
+//    KeyApprovalFailed(sqlx::Error),
+//
+//    #[error("failed to create entry for metadata in the database: {0}")]
+//    MetadataRegistrationFailed(sqlx::Error),
+//
+//    #[error("unable to parse valid boundary: {0}")]
+//    InvalidBoundary(multer::Error),
+//
+//    #[error("provided request data couldn't be decoded: {0}")]
+//    InvalidRequestData(serde_json::Error),
+//
+//    #[error("invalid CID provided: {0}")]
+//    InvalidCid(cid::Error),
+//
+//    #[error("account reached upload quota and recording the failure may have failed: {0:?}")]
+//    LimitReached(Option<sqlx::Error>),
+//
+//    #[error("request did not contain required data segment")]
+//    MissingRequestData,
+//
+//    #[error("request did not contain required metadata segment")]
+//    MissingMetadata,
+//
+//    #[error("unable to locate a bucket for the current authorized user")]
+//    NoAuthorizedBucket,
+//
+//    #[error("no storage host is available with sufficient storage")]
+//    NoAvailableStorage,
+//
+//    #[error("unable to retrieve request data: {0}")]
+//    RequestDataUnavailable(multer::Error),
+//
+//    #[error("failed to query for available storage host: {0}")]
+//    StorageHostLookupFailed(sqlx::Error),
+//
+//    #[error("unable to determine if user is within their quota: {0}")]
+//    UnableToCheckAccounting(sqlx::Error),
+//
+//    #[error("failed to create new storage authorization: {0}")]
+//    UnableToGenerateAuthorization(#[from] StorageAuthorizationError),
+//
+//    #[error("unable to identify how much data user has stored with each storage provider")]
+//    UnableToIdentifyStoredAmount(sqlx::Error),
+//
+//    #[error("unable to locate existing storage authorizations for account: {0}")]
+//    UnableToRetrieveAuthorizations(sqlx::Error),
+//
+//    #[error("unable to mark blocks as expired: {0}")]
+//    UnableToExpireBlocks(sqlx::Error),
+//
+//    #[error("unable to enqueue a task to prune blocks {0}")]
+//    UnableEnqueuePruneBlocksTask(banyan_task::TaskStoreError),
+//
+//    #[error("failed to store metadata on disk: {0}, marking as failed might have had an error as well: {1:?}")]
+//    UploadStoreFailed(StoreMetadataError, Option<sqlx::Error>),
+//}
+//
+//impl IntoResponse for PushMetadataError {
+//    fn into_response(self) -> Response {
+//        match &self {
+//            PushMetadataError::ChangeInProgress => {
+//                let err_msg = serde_json::json!({"msg": "metadata write already in progress!"});
+//                (StatusCode::CONFLICT, Json(err_msg)).into_response()
+//            }
+//            PushMetadataError::BrokenMultipartField(_)
+//            | PushMetadataError::InvalidBoundary(_)
+//            | PushMetadataError::InvalidRequestData(_)
+//            | PushMetadataError::InvalidCid(_)
+//            | PushMetadataError::MissingRequestData => {
+//                let err_msg = serde_json::json!({"msg": "invalid request"});
+//                (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
+//            }
+//            PushMetadataError::LimitReached(_) => {
+//                let err_msg = serde_json::json!({"msg": "you have hit your account storage limit"});
+//                (StatusCode::PAYLOAD_TOO_LARGE, Json(err_msg)).into_response()
+//            }
+//            PushMetadataError::NoAvailableStorage => {
+//                tracing::error!("no storage host available with capacity to store pushed data!");
+//                let err_msg = serde_json::json!({"msg": "an internal server error occurred"});
+//                (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
+//            }
+//            PushMetadataError::NoAuthorizedBucket => {
+//                let err_msg = serde_json::json!({"msg": "not found"});
+//                (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
+//            }
+//            _ => {
+//                tracing::error!("failed to push metadata: {self}");
+//                let err_msg = serde_json::json!({"msg": "an internal server error occurred"});
+//                (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
+//            }
+//        }
+//    }
+//}
 
 #[derive(Deserialize)]
 pub struct PushMetadataRequest {
@@ -932,7 +1012,7 @@ mod tests {
     }
 
     async fn expect_all_expired(db_conn: &sqlx::SqlitePool, locs: &[(&str, &str, &str)]) {
-        let mut builder = sqlx::query_builder::QueryBuilder::new(
+        let mut builder = sqlx::QueryBuilder::new(
             r#"SELECT * FROM block_locations WHERE expired_at = NULL AND (metadata_id, block_id, storage_host_id) IN ("#,
         );
 
@@ -957,7 +1037,7 @@ mod tests {
     }
 
     async fn expect_none_expired(db_conn: &sqlx::SqlitePool, locs: &[(&str, &str, &str)]) {
-        let mut builder = sqlx::query_builder::QueryBuilder::new(
+        let mut builder = sqlx::QueryBuilder::new(
             r#"SELECT * FROM block_locations WHERE expired_at != NULL AND (metadata_id, block_id, storage_host_id) IN ("#,
         );
 

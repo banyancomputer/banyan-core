@@ -8,6 +8,8 @@ pub(crate) mod test_helpers;
 
 pub type Database = SqlitePool;
 
+pub type DatabaseConnection = sqlx::SqliteConnection;
+
 pub async fn connect(db_url: &url::Url) -> Result<Database, DatabaseSetupError> {
     // todo: I should figure out a way to delay the actual connection and running of migrations,
     // and reflect the service being unavailable in the readiness check until they're complete. If
