@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useIntl } from 'react-intl';
 
 import { ActionsCell } from '../../../common/ActionsCell';
-import { FolderActions } from '../../../common/FolderActions';
+import { FolderActions } from '../FolderActions';
 import { FileCell } from '../../../common/FileCell';
 import { FileRow } from '../FileRow';
 import { DraggingPreview } from '../FileRow/DraggingPreview';
