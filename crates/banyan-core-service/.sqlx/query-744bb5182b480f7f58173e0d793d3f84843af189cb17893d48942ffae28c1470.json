@@ -1,0 +1,56 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT *\n            FROM escrowed_devices WHERE user_id = $1;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "user_id",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "api_public_key_pem",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "encryption_public_key_pem",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "encrypted_private_key_material",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "pass_key_salt",
+        "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 6,
+        "type_info": "Datetime"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "744bb5182b480f7f58173e0d793d3f84843af189cb17893d48942ffae28c1470"
+}
