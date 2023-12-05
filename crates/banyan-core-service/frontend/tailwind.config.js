@@ -15,6 +15,7 @@ module.exports = {
 			width: {
 				navbar: '280px',
 				modal: '400px',
+				takeSnapshotModal: '420px',
 				toast: '480px',
 				snapshotsModal: '530px',
 				keyManagement: '1128px',
