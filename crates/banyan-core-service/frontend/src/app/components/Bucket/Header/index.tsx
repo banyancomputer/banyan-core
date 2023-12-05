@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useIntl } from 'react-intl';
 
@@ -18,7 +18,7 @@ const BucketHeader = () => {
     const { selectedBucket } = useTomb();
     const params = useParams();
     const bucketId = params.id;
-    const { openModal } = useModal();
+    const { openModal } = useMemo(() => useModal(), []);
 
     const uploadFile = () => {
         if (selectedBucket) {

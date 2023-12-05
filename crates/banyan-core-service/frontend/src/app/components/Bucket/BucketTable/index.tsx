@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useIntl } from 'react-intl';
 import { useParams } from 'react-router-dom';
 
@@ -29,7 +29,7 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const [tableScroll, setTableScroll] = useState(0);
     const folderLocation = useFolderLocation();
     const [areFilesDropped, setAreFilesDropped] = useState(false);
-
+    const siblingFiles = useMemo(() => bucketCopy.files?.filter(file => file.type !== 'dir').map(file => file.name), [bucketCopy.files])
 
     const sort = (criteria: string) => {
         setSortState(prev => ({ criteria, direction: prev.direction === 'ASC' ? 'DESC' : 'ASC' }));
@@ -151,6 +151,7 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                                         tableRef={tableRef}
                                         tableScroll={tableScroll}
                                         path={folderLocation}
+                                        siblingFiles={siblingFiles}
                                         key={file.name}
                                     />
                             )

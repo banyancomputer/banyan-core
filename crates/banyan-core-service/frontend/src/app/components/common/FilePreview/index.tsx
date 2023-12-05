@@ -7,19 +7,28 @@ import { Loader } from '../Loader';
 
 import { SUPPORTED_EXTENSIONS, useFilePreview } from '@/app/contexts/filesPreview';
 
-import { ArrowDown } from '@static/images/common';
+import { ArrowDown, ChevronUp } from '@static/images/common';
 
 export const FilePreview = () => {
-    const { file, closeFile } = useFilePreview();
+    const { bucket, file, files, path, openFile, closeFile } = useFilePreview();
     const { messages } = useIntl();
     const filePreviewRef = useRef<HTMLDivElement | null>(null);
     const fileExtension = [...file.name.split('.')].pop();
     const isFileSupported = file.name ? SUPPORTED_EXTENSIONS.includes(fileExtension || '') : true;
+    const selectedFileIndex = files.indexOf(file.name);
 
     const close = (event: React.MouseEvent<HTMLDivElement | HTMLButtonElement>) => {
         if (!filePreviewRef.current!.contains(event.target as Node)) {
             closeFile();
         };
+    };
+
+    const openPrevious = () => {
+        openFile(bucket!, files[selectedFileIndex - 1], files, path);
+    };
+
+    const openNext = () => {
+        openFile(bucket!, files[selectedFileIndex + 1], files, path);
     };
 
     return (
@@ -35,8 +44,26 @@ export const FilePreview = () => {
                         </span>
                         {`${messages.backToFiles}`}
                     </button>
+                    {selectedFileIndex ?
+                        <button
+                            onClick={openPrevious}
+                            className="fixed top-1/2 left-4 -translate-y-1/2 p-4 rounded-full bg-black text-white z-40 -rotate-90 transition-all hover:bg-gray-800"
+                        >
+                            <ChevronUp width="40px" height="40px" />
+                        </button>
+                        : null
+                    }
+                    {!(selectedFileIndex === files.length - 1) ?
+                        <button
+                            onClick={openNext}
+                            className="fixed top-1/2 right-4 -translate-y-1/2 p-4 rounded-full bg-black text-white z-40 rotate-90 transition-all hover:bg-gray-800"
+                        >
+                            <ChevronUp width="40px" height="40px" />
+                        </button>
+                        : null
+                    }
                     <div
-                        className={`fixed w-screen h-screen flex ${isFileSupported ? 'items-start' : 'items-center'} justify-center py-10 z-20 bg-slate-800 bg-opacity-80 backdrop-blur-sm overflow-scroll`}
+                        className={`fixed w-screen h-[105vh] flex ${isFileSupported ? 'items-start' : 'items-center'} justify-center py-10 pb-20 z-20 bg-slate-800 bg-opacity-80 backdrop-blur-sm overflow-scroll`}
                         onClick={close}
                     >
                         <div

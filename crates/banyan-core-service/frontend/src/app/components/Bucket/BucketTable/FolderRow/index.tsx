@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useIntl } from 'react-intl';
 
@@ -38,6 +38,7 @@ export const FolderRow: React.FC<{
     const [areFilesDropped, setAreFilesDropped] = useState(false);
     const [isFolderDraggingOver, setIsFolderDragingOver] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
+    const siblingFiles = useMemo(() => folder.files?.filter(file => file.type !== 'dir').map(file => file.name), [folder.files])
 
     const goToFolder = (event: React.MouseEvent<HTMLTableRowElement, MouseEvent>, bucket: Bucket) => {
         // @ts-ignore
@@ -176,6 +177,7 @@ export const FolderRow: React.FC<{
                             nestingLevel={nestingLevel + 1}
                             parrentFolder={folder}
                             path={[...path, folder.name]}
+                            siblingFiles={siblingFiles}
                             key={index}
                         />
                 )
