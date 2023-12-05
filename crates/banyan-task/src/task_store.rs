@@ -9,7 +9,7 @@ use crate::{Task, TaskExecError, TaskLike, TaskState};
 pub struct TaskStoreMetrics {
     pub(crate) total: i32,
     pub(crate) new: i32,
-    pub(crate)  in_progress: i32,
+    pub(crate) in_progress: i32,
     pub(crate) panicked: i32,
     pub(crate) retried: i32,
     pub(crate) cancelled: i32,
@@ -99,5 +99,26 @@ pub enum TaskStoreError {
 impl From<sqlx::Error> for TaskStoreError {
     fn from(value: sqlx::Error) -> Self {
         TaskStoreError::ConnectionFailure(value.to_string())
+    }
+}
+
+pub mod tests {
+    use super::TaskStoreMetrics;
+
+    pub fn default_task_store_metrics() -> TaskStoreMetrics {
+        TaskStoreMetrics {
+            total: 0,
+            new: 0,
+            in_progress: 0,
+            panicked: 0,
+            retried: 0,
+            cancelled: 0,
+            errored: 0,
+            completed: 0,
+            timed_out: 0,
+            dead: 0,
+            scheduled: 0,
+            scheduled_future: 0,
+        }
     }
 }

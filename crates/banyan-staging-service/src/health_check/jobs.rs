@@ -10,7 +10,10 @@ use crate::app::AppState;
 pub async fn handler(state: State<AppState>) -> Result<Response, ReadMetricsError> {
     let database = state.database();
     let task_store = SqliteTaskStore::new(database);
-    let metrics = task_store.metrics().await.map_err(ReadMetricsError::UnableToReadMetrics)?;
+    let metrics = task_store
+        .metrics()
+        .await
+        .map_err(ReadMetricsError::UnableToReadMetrics)?;
     Ok((StatusCode::OK, Json(metrics)).into_response())
 }
 
