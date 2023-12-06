@@ -65,8 +65,9 @@ impl TaskLike for PruneBlocksTask {
 
         // Determine where to send the prune list
         let storage_host_id = self.storage_host_id.to_string();
-        let storage_host_url = sqlx::query_scalar!(
-            "SELECT url FROM storage_hosts WHERE id = $1;",
+        let storage_host_info = sqlx::query_as!(
+            StorageHostInfo,
+            "SELECT url, name FROM storage_hosts WHERE id = $1;",
             storage_host_id
         )
         .fetch_one(&mut *db_conn)
@@ -86,7 +87,7 @@ impl TaskLike for PruneBlocksTask {
             .build()
             .map_err(PruneBlocksTaskError::Reqwest)?;
         let mut claims = Claims::create(Duration::from_secs(60))
-            .with_audiences(HashSet::from_strings(&["banyan-platform"]))
+            .with_audiences(HashSet::from_strings(&[storage_host_info.name]))
             .with_subject("banyan-core")
             .invalid_before(Clock::now_since_epoch() - Duration::from_secs(30));
         claims.create_nonce();
@@ -111,4 +112,10 @@ impl TaskLike for PruneBlocksTask {
             ))
         }
     }
+}
+
+#[derive(sqlx::FromRow)]
+struct StorageHostInfo {
+    pub url: String,
+    pub name: String,
 }
