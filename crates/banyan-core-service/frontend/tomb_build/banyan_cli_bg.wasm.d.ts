@@ -8,12 +8,30 @@ export function tombwasm_getUsageLimit(a: number): number;
 export function tombwasm_listBuckets(a: number): number;
 export function tombwasm_listBucketSnapshots(a: number, b: number, c: number): number;
 export function tombwasm_listBucketKeys(a: number, b: number, c: number): number;
+<<<<<<< Updated upstream
 export function tombwasm_createBucket(a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number): number;
+=======
+export function tombwasm_createBucket(a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number, k: number): number;
+>>>>>>> Stashed changes
 export function tombwasm_createBucketKey(a: number, b: number, c: number): number;
 export function tombwasm_renameBucket(a: number, b: number, c: number, d: number, e: number): number;
 export function tombwasm_deleteBucket(a: number, b: number, c: number): number;
 export function tombwasm_completeDeviceKeyRegistration(a: number, b: number, c: number): number;
 export function tombwasm_mount(a: number, b: number, c: number, d: number, e: number): number;
+<<<<<<< Updated upstream
+=======
+export function __wbg_wasmbucket_free(a: number): void;
+export function wasmbucket_bucketType(a: number, b: number): void;
+export function wasmbucket_id(a: number, b: number): void;
+export function wasmbucket_name(a: number, b: number): void;
+export function wasmbucket_storageClass(a: number, b: number): void;
+export function register_log(): void;
+export function __wbg_wasmbucketkey_free(a: number): void;
+export function wasmbucketkey_approved(a: number): number;
+export function wasmbucketkey_bucketId(a: number, b: number): void;
+export function wasmbucketkey_id(a: number, b: number): void;
+export function wasmbucketkey_pem(a: number, b: number): void;
+>>>>>>> Stashed changes
 export function __wbg_wasmmount_free(a: number): void;
 export function wasmmount_dirty(a: number): number;
 export function wasmmount_locked(a: number): number;
@@ -31,6 +49,7 @@ export function wasmmount_hasSnapshot(a: number): number;
 export function wasmmount_snapshot(a: number): number;
 export function wasmmount_rename(a: number, b: number, c: number): number;
 export function wasmmount_restore(a: number, b: number): number;
+<<<<<<< Updated upstream
 export function __wbg_wasmbucket_free(a: number): void;
 export function wasmbucket_bucketType(a: number, b: number): void;
 export function wasmbucket_id(a: number, b: number): void;
@@ -41,6 +60,14 @@ export function wasmbucketkey_approved(a: number): number;
 export function wasmbucketkey_bucketId(a: number, b: number): void;
 export function wasmbucketkey_id(a: number, b: number): void;
 export function wasmbucketkey_pem(a: number, b: number): void;
+=======
+export function __wbg_wasmsharedfile_free(a: number): void;
+export function wasmsharedfile_export_b64_url(a: number, b: number): void;
+export function wasmsharedfile_import_b64_url(a: number, b: number, c: number): void;
+export function wasmsharedfile_mimeType(a: number, b: number): void;
+export function wasmsharedfile_size(a: number, b: number): void;
+export function wasmsharedfile_fileName(a: number, b: number): void;
+>>>>>>> Stashed changes
 export function __wbg_wasmbucketmetadata_free(a: number): void;
 export function wasmbucketmetadata_id(a: number, b: number): void;
 export function wasmbucketmetadata_bucket_id(a: number, b: number): void;
@@ -48,8 +75,10 @@ export function wasmbucketmetadata_snapshot_id(a: number, b: number): void;
 export function __wbg_wasmsnapshot_free(a: number): void;
 export function wasmsnapshot_bucket_id(a: number, b: number): void;
 export function wasmsnapshot_created_at(a: number): number;
+export function wasmsnapshot_id(a: number, b: number): void;
 export function wasmsnapshot_metadata_id(a: number, b: number): void;
 export function wasmsnapshot_size(a: number): number;
+<<<<<<< Updated upstream
 export function wasmsnapshot_id(a: number, b: number): void;
 export function __wbg_wasmsharedfile_free(a: number): void;
 export function wasmsharedfile_export_b64_url(a: number, b: number): void;
@@ -70,6 +99,8 @@ export function intounderlyingbytesource_cancel(a: number): void;
 export function __wbg_intounderlyingsource_free(a: number): void;
 export function intounderlyingsource_pull(a: number, b: number): number;
 export function intounderlyingsource_cancel(a: number): void;
+=======
+>>>>>>> Stashed changes
 export function __wbg_readablestreamgetreaderoptions_free(a: number): void;
 export function readablestreamgetreaderoptions_mode(a: number): number;
 export function __wbg_pipeoptions_free(a: number): void;
@@ -77,6 +108,7 @@ export function pipeoptions_preventClose(a: number): number;
 export function pipeoptions_preventCancel(a: number): number;
 export function pipeoptions_preventAbort(a: number): number;
 export function pipeoptions_signal(a: number): number;
+<<<<<<< Updated upstream
 export function __wbg_queuingstrategy_free(a: number): void;
 export function queuingstrategy_highWaterMark(a: number): number;
 export function __wbindgen_malloc(a: number, b: number): number;
@@ -88,3 +120,29 @@ export function __wbindgen_add_to_stack_pointer(a: number): number;
 export function __wbindgen_free(a: number, b: number, c: number): void;
 export function __wbindgen_exn_store(a: number): void;
 export function wasm_bindgen__convert__closures__invoke2_mut__h2adcce9afb67781b(a: number, b: number, c: number, d: number): void;
+=======
+export function __wbg_intounderlyingsource_free(a: number): void;
+export function intounderlyingsource_pull(a: number, b: number): number;
+export function intounderlyingsource_cancel(a: number): void;
+export function __wbg_intounderlyingbytesource_free(a: number): void;
+export function intounderlyingbytesource_type(a: number, b: number): void;
+export function intounderlyingbytesource_autoAllocateChunkSize(a: number): number;
+export function intounderlyingbytesource_start(a: number, b: number): void;
+export function intounderlyingbytesource_pull(a: number, b: number): number;
+export function intounderlyingbytesource_cancel(a: number): void;
+export function __wbg_queuingstrategy_free(a: number): void;
+export function queuingstrategy_highWaterMark(a: number): number;
+export function __wbg_intounderlyingsink_free(a: number): void;
+export function intounderlyingsink_write(a: number, b: number): number;
+export function intounderlyingsink_close(a: number): number;
+export function intounderlyingsink_abort(a: number, b: number): number;
+export function __wbindgen_malloc(a: number, b: number): number;
+export function __wbindgen_realloc(a: number, b: number, c: number, d: number): number;
+export const __wbindgen_export_2: WebAssembly.Table;
+export function _dyn_core__ops__function__FnMut__A____Output___R_as_wasm_bindgen__closure__WasmClosure___describe__invoke__h80b68de57fc7205e(a: number, b: number, c: number): void;
+export function __wbindgen_add_to_stack_pointer(a: number): number;
+export function __wbindgen_free(a: number, b: number, c: number): void;
+export function __wbindgen_exn_store(a: number): void;
+export function wasm_bindgen__convert__closures__invoke2_mut__h1cefc3a9eed1f5ad(a: number, b: number, c: number, d: number): void;
+export function __wbindgen_start(): void;
+>>>>>>> Stashed changes

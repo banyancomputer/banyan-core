@@ -178,7 +178,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	const createBucket = async (name: string, storageClass: string, bucketType: string) => {
 		await tombMutex(tomb, async tomb => {
 			const key = await getEncryptionKey();
-			const wasmBucket = await tomb!.createBucket(name, storageClass, bucketType, key.publicPem);
+			const wasmBucket = await tomb!.createBucket(name, storageClass, bucketType, key.privatePem, key.publicPem);
 			const mount = await tomb!.mount(wasmBucket.id(), key.privatePem);
 			const files = await mount.ls([]);
 			const snapshots = await tomb!.listBucketSnapshots(wasmBucket.id());
@@ -368,6 +368,10 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 					apiKey.privatePem,
 					userData.user.id,
 					process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001',
+<<<<<<< Updated upstream
+=======
+					// process.env.NEXT_PUBLIC_DATA_URL || 'http://127.0.0.1:3002',
+>>>>>>> Stashed changes
 				);
 				setTomb(await tomb);
 			} catch (error: any) {

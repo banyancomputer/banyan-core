@@ -1,3 +1,5 @@
+use rand::Rng;
+use rand::distributions::Alphanumeric;
 use sqlx::sqlite::SqlitePoolOptions;
 
 use crate::database::models::{BucketType, MetadataState, StorageClass};
@@ -92,7 +94,13 @@ pub(crate) async fn sample_metadata(
 }
 
 pub(crate) async fn sample_user(db: &Database) -> String {
-    create_user(db, "francesca@sample.users.org", "Francesca Tester")
+    let name: String = rand::thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(7)
+        .map(char::from)
+        .collect();
+
+    create_user(db, &format!("tester_{name}@sample.users.org"), &format!("{name} Tester"))
         .await
         .expect("user creation")
 }
