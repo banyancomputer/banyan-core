@@ -25,7 +25,7 @@ export const FileRow: React.FC<{
     const [isDragging, setIsDragging] = useState(false);
 
     const previewFile = (bucket: Bucket, file: BrowserObject) => {
-        openFile(bucket, file.name, path);
+        openFile(bucket, file.name, siblingFiles, path);
     };
 
     return (
