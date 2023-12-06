@@ -17,14 +17,14 @@ pub type PruneBlocksTaskContext = AppState;
 #[non_exhaustive]
 #[derive(Debug, thiserror::Error)]
 pub enum PruneBlocksTaskError {
-    #[error("the task encountered a sql error: {0}")]
+    #[error("sql error: {0}")]
     SqlxError(#[from] sqlx::Error),
-    #[error("the task encountered a reqwest error: {0}")]
+    #[error("reqwest error: {0}")]
     ReqwestError(#[from] reqwest::Error),
-    #[error("the task encountered a jwt error: {0}")]
+    #[error("jwt error: {0}")]
     JwtError(#[from] jwt_simple::Error),
-    #[error("the task encountered a non success response")]
-    NonSuccessResponse(http::StatusCode),
+    #[error("http error: {0} response from {1}")]
+    HttpError(http::StatusCode, Url),
 }
 
 #[derive(Deserialize, Serialize, Clone)]
@@ -95,7 +95,7 @@ impl TaskLike for PruneBlocksTask {
 
         // Send the request and handle the response
         let request = client
-            .post(storage_host_url)
+            .post(storage_host_url.clone())
             .json(&self.prune_blocks)
             .bearer_auth(bearer_token);
         let response = request
@@ -105,7 +105,10 @@ impl TaskLike for PruneBlocksTask {
         if response.status().is_success() {
             Ok(())
         } else {
-            Err(PruneBlocksTaskError::NonSuccessResponse(response.status()))
+            Err(PruneBlocksTaskError::HttpError(
+                response.status(),
+                storage_host_url,
+            ))
         }
     }
 }

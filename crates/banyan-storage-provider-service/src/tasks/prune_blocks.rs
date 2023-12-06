@@ -7,6 +7,7 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use sqlx::Acquire;
 
+use url::Url;
 use uuid::Uuid;
 
 use banyan_task::{CurrentTask, TaskLike};
@@ -18,14 +19,14 @@ pub type PruneBlocksTaskContext = AppState;
 #[non_exhaustive]
 #[derive(Debug, thiserror::Error)]
 pub enum PruneBlocksTaskError {
-    #[error("the task encountered a sql error: {0}")]
+    #[error("sql error: {0}")]
     DatabaseError(#[from] sqlx::Error),
-    #[error("the task encountered a reqwest error: {0}")]
+    #[error("reqwest error: {0}")]
     ReqwestError(#[from] reqwest::Error),
-    #[error("the task encountered a jwt error: {0}")]
+    #[error("jwt error: {0}")]
     JwtError(#[from] jwt_simple::Error),
-    #[error("the task encountered a non success response")]
-    NonSuccessResponse(http::StatusCode),
+    #[error("http error: {0} response from {1}")]
+    HttpError(http::StatusCode, Url),
 }
 
 #[derive(Deserialize, Serialize, Clone)]
@@ -145,7 +146,7 @@ async fn report_pruned_blocks(
         .map_err(PruneBlocksTaskError::JwtError)?;
 
     let request = client
-        .post(report_endpoint)
+        .post(report_endpoint.clone())
         .json(&prune_blocks)
         .bearer_auth(bearer_token);
 
@@ -157,6 +158,9 @@ async fn report_pruned_blocks(
     if response.status().is_success() {
         Ok(())
     } else {
-        Err(PruneBlocksTaskError::NonSuccessResponse(response.status()))
+        Err(PruneBlocksTaskError::HttpError(
+            response.status(),
+            report_endpoint,
+        ))
     }
 }
