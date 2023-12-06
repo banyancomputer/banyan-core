@@ -182,5 +182,6 @@
 	"driveHasSnapshot": "Ce lecteur a déjà un instantané",
 	"driveHasNoSnapshot": "Ce lecteur n'a pas d'instantané",
 	"whatIsSnapshot": "Qu'est-ce qu'un instantané ?",
-	"makeSnapshot": "Faire un instantané"
+	"makeSnapshot": "Faire un instantané",
+	"betaBannerWarning": "Banyan Storage est toujours en version bêta et n'est pas prêt pour la production. Nous vous recommandons d'utiliser une méthode de stockage de sauvegarde pour tout ce qui est stocké sur Banyan en ce moment. Si vous avez besoin de stocker des données en production aujourd'hui, contactez tim@banyan.computer."
 }

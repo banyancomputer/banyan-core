@@ -1,21 +1,21 @@
-
 import { Suspense, useEffect, useState } from 'react';
+import { IntlProvider } from 'react-intl';
 import { BrowserRouter } from 'react-router-dom';
 
 import { Modal } from '@components/common/Modal';
 import { Notifications } from '@components/common/Notifications';
-import { Routes } from './routes';
-import { KeystoreProvider } from './contexts/keystore';
-import { ModalProvider } from './contexts/modals';
-import { FilePreviewProvider } from './contexts/filesPreview';
-import { IntlProvider } from 'react-intl';
 import { FilePreview } from '@components/common/FilePreview';
-import { FileUploadProvider } from './contexts/filesUpload';
-import { TombProvider } from './contexts/tomb';
 import { Navigation } from '@components/common/Navigation';
 import { Header } from '@components/common/Header';
 import { ErrorBanner } from '@components/common/ErrorBanner';
+import { BetaBanner } from '@components/common/BetaBanner';
 
+import { Routes } from './routes';
+import { KeystoreProvider } from './contexts/keystore';
+import { FilePreviewProvider } from './contexts/filesPreview';
+import { ModalProvider } from './contexts/modals';
+import { FileUploadProvider } from './contexts/filesUpload';
+import { TombProvider } from './contexts/tomb';
 import { getLocalStorageItem, setLocalStorageItem } from './utils/localStorage';
 import { SessionProvider } from './contexts/session';
 import { preventDefaultDragAction } from './utils/dragHandlers';
@@ -78,6 +78,7 @@ const App = () => {
 												<Navigation />
 												<section className="flex-grow h-screen overflow-y-scroll">
 													<Header />
+													<BetaBanner />
 													<ErrorBanner />
 													<Suspense>
 														<Routes />
