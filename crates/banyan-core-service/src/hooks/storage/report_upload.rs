@@ -196,9 +196,9 @@ async fn mark_outdated_metadata(
         r#"UPDATE metadata
              SET state = 'outdated'
              WHERE bucket_id = (SELECT bucket_id FROM metadata WHERE id = $1)
-             AND state = 'current' 
-             AND id != $1;"#,
-        metadata_id
+                AND state = 'current'
+                AND id != $1;"#,
+        metadata_id,
     )
     .execute(database)
     .await
