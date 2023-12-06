@@ -110,6 +110,7 @@
 	"AccessDenied": "此电子邮件地址未获Alpha批准；请使用您获Alpha批准的电子邮件地址。如果问题仍然存在，请联系sam@banyan.computer",
 	"createSecretKey": "创建秘密密钥",
 	"andEnterIntoTextField": "并输入到文本字段中",
+	"secretKeyDescription": "您的密钥是解锁您的帐户的方式；创建一个您可以记住并保持安全的密钥 - 没有其他人能够访问它，甚至包括 Banyan ，因此请确保您能够记住它以解锁您的帐户。",
 	"secretKey": "秘密密钥",
 	"confirmSecretKey": "确认秘密密钥",
 	"keyRequirements": "密钥必须至少包含8个字符",

@@ -54,7 +54,7 @@ export const CreateSecretKeyModal = () => {
             <div>
                 <h4 className="text-m font-semibold">{`${messages.createSecretKey}`}</h4>
                 <p className="mt-2 text-text-600">
-                    {`${messages.andEnterIntoTextField}`}
+                    {`${messages.secretKeyDescription}`}
                 </p>
             </div>
             <Input

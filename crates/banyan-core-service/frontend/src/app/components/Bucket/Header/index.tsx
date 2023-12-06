@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useIntl } from 'react-intl';
 
@@ -10,7 +10,8 @@ import { useModal } from '@/app/contexts/modals';
 import { useTomb } from '@/app/contexts/tomb';
 import { stringToBase64 } from '@app/utils/base64';
 
-import { Copy, PlusBold } from '@static/images/common';
+import { Close, Copy, PlusBold } from '@static/images/common';
+import { getLocalStorageItem, setLocalStorageItem } from '@app/utils/localStorage';
 
 const BucketHeader = () => {
     const { messages } = useIntl();
@@ -19,6 +20,7 @@ const BucketHeader = () => {
     const params = useParams();
     const bucketId = params.id;
     const { openModal } = useModal();
+    const [isBannerVisible, setIsBannerVisible] = useState(false);
 
     const uploadFile = () => {
         if (selectedBucket) {
@@ -34,6 +36,24 @@ const BucketHeader = () => {
             selectedBucket && openModal(<TakeSnapshotModal bucket={selectedBucket} />);
         } catch (error: any) { }
     };
+
+    const closeBanner = () => {
+        setIsBannerVisible(false);
+        setLocalStorageItem('has_dissmissed_snapshot_banner', 'true');
+    };
+
+    useEffect(() => {
+        const hasUserDissmissedBanner = getLocalStorageItem('has_dissmissed_snapshot_banner');
+        if (hasUserDissmissedBanner) return;
+
+        if (selectedBucket?.files.length && !selectedBucket.isSnapshotValid) {
+            setIsBannerVisible(true);
+        };
+
+        if (selectedBucket?.isSnapshotValid) {
+            setIsBannerVisible(false);
+        };
+    }, [selectedBucket?.files, selectedBucket?.isSnapshotValid]);
 
     return (
         <div className="mb-6">
@@ -59,23 +79,28 @@ const BucketHeader = () => {
                     </button>
                 }
             </div>
-            <div className="flex items-center justify-center gap-3 px-5 py-4 bg-secondaryBackground rounded-xl">
-                <span className="p-2.5 rounded-full bg-button-primary">
-                    <Copy />
-                </span>
-                <div className="flex-grow flex flex-col text-text-900">
-                    <h6 className="font-semibold">{`${messages.archivalSnapshots}`}</h6>
-                    <p>{`${selectedBucket?.isSnapshotValid ? messages.driveHasSnapshot : messages.driveHasNoSnapshot}`}</p>
-                    <p className="underline cursor-pointer" title={`${messages.snapshotTooltip}`}>{`${messages.whatIsSnapshot}`}</p>
+            {isBannerVisible &&
+                <div className="relative flex items-center justify-center gap-3 px-5 py-4 bg-secondaryBackground rounded-xl">
+                    <span className="p-2.5 rounded-full bg-button-primary">
+                        <Copy />
+                    </span>
+                    <div className="flex-grow flex flex-col text-text-900">
+                        <h6 className="font-semibold">{`${messages.archivalSnapshots}`}</h6>
+                        <p>{`${selectedBucket?.isSnapshotValid ? messages.driveHasSnapshot : messages.driveHasNoSnapshot}`}</p>
+                        <p className="underline cursor-pointer" title={`${messages.snapshotTooltip}`}>{`${messages.whatIsSnapshot}`}</p>
+                    </div>
+                    <button
+                        onClick={takeSnapshot}
+                        disabled={selectedBucket?.isSnapshotValid}
+                        className='px-4 py-2.5 border-1 border-button-highLight rounded-xl disabled:border-text-900 disabled:opacity-20 disabled:cursor-not-allowed'
+                    >
+                        {`${messages.makeSnapshot}`}
+                    </button>
+                    <button onClick={closeBanner}>
+                        <Close />
+                    </button>
                 </div>
-                <button
-                    onClick={takeSnapshot}
-                    disabled={selectedBucket?.isSnapshotValid}
-                    className='px-4 py-2.5 border-1 border-button-highLight rounded-xl disabled:border-text-900 disabled:opacity-20 disabled:cursor-not-allowed'
-                >
-                    {`${messages.makeSnapshot}`}
-                </button>
-            </div>
+            }
         </div>
     );
 };
