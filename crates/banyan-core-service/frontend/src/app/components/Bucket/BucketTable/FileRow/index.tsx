@@ -17,9 +17,10 @@ export const FileRow: React.FC<{
     tableScroll: number;
     tableRef: React.MutableRefObject<HTMLDivElement | null>;
     path: string[];
+    siblingFiles: string[];
     nestingLevel?: number;
     parrentFolder?: BrowserObject;
-}> = ({ file, bucket, tableScroll, tableRef, nestingLevel = 0.25, path = [], parrentFolder }) => {
+}> = ({ file, bucket, tableScroll, tableRef, nestingLevel = 0.25, path = [], parrentFolder, siblingFiles }) => {
     const { openFile } = useFilePreview();
     const [isDragging, setIsDragging] = useState(false);
 

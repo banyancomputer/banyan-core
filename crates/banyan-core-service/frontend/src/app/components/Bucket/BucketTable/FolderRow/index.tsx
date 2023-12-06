@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useIntl } from 'react-intl';
 
@@ -38,6 +38,7 @@ export const FolderRow: React.FC<{
     const [areFilesDropped, setAreFilesDropped] = useState(false);
     const [isFolderDraggingOver, setIsFolderDragingOver] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
+    const siblingFiles = useMemo(() => folder.files?.filter(file => file.type !== 'dir').map(file => file.name), [folder.files])
 
     const goToFolder = (bucket: Bucket) => {
         navigate(`/drive/${bucket.id}?${path.length ? `${path.map(element => stringToBase64(element)).join('/')}/${stringToBase64(folder.name)}` : stringToBase64(folder.name)}`);
@@ -192,6 +193,7 @@ export const FolderRow: React.FC<{
                                                 tableScroll={tableScroll}
                                                 nestingLevel={nestingLevel + 1}
                                                 parrentFolder={folder}
+                                                siblingFiles={siblingFiles}
                                                 path={[...path, folder.name]}
                                                 key={index}
                                             />
