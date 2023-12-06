@@ -29,7 +29,7 @@ interface TombInterface {
 	getExpandedFolderFiles: (path: string[], folder: BrowserObject, bucket: Bucket) => Promise<void>;
 	takeColdSnapshot: (bucket: Bucket) => Promise<void>;
 	getBucketShapshots: (id: string) => Promise<BucketSnapshot[]>;
-	createBucket: (name: string, storageClass: string, bucketType: string) => Promise<void>;
+	createBucketAndMount: (name: string, storageClass: string, bucketType: string) => Promise<void>;
 	deleteBucket: (id: string) => void;
 	createDirectory: (bucket: Bucket, path: string[], name: string) => Promise<void>;
 	download: (bucket: Bucket, path: string[], name: string) => Promise<void>;
@@ -175,17 +175,18 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	};
 
 	/** Creates new bucket with recieved parameters of type and storag class. */
-	const createBucket = async (name: string, storageClass: string, bucketType: string) => {
+	const createBucketAndMount = async (name: string, storageClass: string, bucketType: string) => {
 		await tombMutex(tomb, async tomb => {
 			const key = await getEncryptionKey();
-			const wasmBucket = await tomb!.createBucket(name, storageClass, bucketType, key.publicPem);
-			const mount = await tomb!.mount(wasmBucket.id(), key.privatePem);
-			const files = await mount.ls([]);
+			const wasmBucketMount = await tomb!.createBucketAndMount(name, storageClass, bucketType, key.privatePem, key.publicPem);
+			const wasmBucket = wasmBucketMount.bucket;
+			const wasmMount = wasmBucketMount.mount;
+			const files = await wasmMount.ls([]);
 			const snapshots = await tomb!.listBucketSnapshots(wasmBucket.id());
-			const locked = await mount.locked();
-			const isSnapshotValid = await mount.hasSnapshot();
+			const locked = await wasmMount.locked();
+			const isSnapshotValid = await wasmMount.hasSnapshot();
 			const bucket = {
-				mount,
+				mount: wasmMount,
 				id: wasmBucket.id(),
 				name: wasmBucket.name(),
 				storageClass: wasmBucket.storageClass(),
@@ -400,7 +401,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 			value={{
 				tomb, buckets, storageUsage, trash, areBucketsLoading, selectedBucket, error,
 				getBuckets, getBucketsFiles, getBucketsKeys, selectBucket, getSelectedBucketFiles,
-				takeColdSnapshot, getBucketShapshots, createBucket, deleteBucket,
+				takeColdSnapshot, getBucketShapshots, createBucketAndMount, deleteBucket,
 				getFile, createDirectory, uploadFile, purgeSnapshot,
 				removeBucketAccess, approveBucketAccess, completeDeviceKeyRegistration, shareFile, download, moveTo,
 				restore, deleteFile, makeCopy, getExpandedFolderFiles,

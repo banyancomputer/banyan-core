@@ -2,6 +2,9 @@
 /* eslint-disable */
 /**
 */
+export function register_log(): void;
+/**
+*/
 export class IntoUnderlyingByteSource {
   free(): void;
 /**
@@ -181,19 +184,19 @@ export class TombWasm {
 * The bucket's metadata as a WasmBucket
 * ```json
 * {
-* "id": "uuid",
 * "name": "string"
-* "type": "string",
+* "bucket_type": "string",
 * "storage_class": "string",
 * }
 * ```
 * @param {string} name
 * @param {string} storage_class
 * @param {string} bucket_type
-* @param {string} initial_bucket_key_pem
-* @returns {Promise<WasmBucket>}
+* @param {string} private_pem
+* @param {string} public_pem
+* @returns {Promise<WasmBucketMount>}
 */
-  createBucket(name: string, storage_class: string, bucket_type: string, initial_bucket_key_pem: string): Promise<WasmBucket>;
+  createBucketAndMount(name: string, storage_class: string, bucket_type: string, private_pem: string, public_pem: string): Promise<WasmBucketMount>;
 /**
 * Create a bucket key for a bucket
 * # Arguments
@@ -299,6 +302,23 @@ export class WasmBucketMetadata {
 /**
 */
   readonly snapshotId: string;
+}
+/**
+*/
+export class WasmBucketMount {
+  free(): void;
+/**
+* @param {WasmBucket} bucket
+* @param {WasmMount} mount
+* @returns {WasmBucketMount}
+*/
+  static new(bucket: WasmBucket, mount: WasmMount): WasmBucketMount;
+/**
+*/
+  readonly bucket: WasmBucket;
+/**
+*/
+  readonly mount: WasmMount;
 }
 /**
 * Mount point for a Bucket in WASM
