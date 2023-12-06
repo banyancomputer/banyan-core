@@ -20,13 +20,13 @@ pub type PruneBlocksTaskContext = AppState;
 #[derive(Debug, thiserror::Error)]
 pub enum PruneBlocksTaskError {
     #[error("sql error: {0}")]
-    DatabaseError(#[from] sqlx::Error),
+    Database(#[from] sqlx::Error),
     #[error("reqwest error: {0}")]
-    ReqwestError(#[from] reqwest::Error),
+    Reqwest(#[from] reqwest::Error),
     #[error("jwt error: {0}")]
-    JwtError(#[from] jwt_simple::Error),
+    Jwt(#[from] jwt_simple::Error),
     #[error("http error: {0} response from {1}")]
-    HttpError(http::StatusCode, Url),
+    Http(http::StatusCode, Url),
 }
 
 #[derive(Deserialize, Serialize, Clone)]
@@ -63,11 +63,11 @@ impl TaskLike for PruneBlocksTask {
             .database()
             .acquire()
             .await
-            .map_err(PruneBlocksTaskError::DatabaseError)?;
+            .map_err(PruneBlocksTaskError::Database)?;
         let mut transaction = db_conn
             .begin()
             .await
-            .map_err(PruneBlocksTaskError::DatabaseError)?;
+            .map_err(PruneBlocksTaskError::Database)?;
 
         for prune_block in &self.prune_blocks {
             let metadata_id = prune_block.metadata_id.to_string();
@@ -86,7 +86,7 @@ impl TaskLike for PruneBlocksTask {
             )
             .fetch_one(&mut *transaction)
             .await
-            .map_err(PruneBlocksTaskError::DatabaseError)?;
+            .map_err(PruneBlocksTaskError::Database)?;
 
             // Set the specifiec block as pruned
             sqlx::query!(
@@ -99,7 +99,7 @@ impl TaskLike for PruneBlocksTask {
             )
             .execute(&mut *transaction)
             .await
-            .map_err(PruneBlocksTaskError::DatabaseError)?;
+            .map_err(PruneBlocksTaskError::Database)?;
         }
 
         report_pruned_blocks(&ctx, &self.prune_blocks).await?;
@@ -107,7 +107,7 @@ impl TaskLike for PruneBlocksTask {
         transaction
             .commit()
             .await
-            .map_err(PruneBlocksTaskError::DatabaseError)?;
+            .map_err(PruneBlocksTaskError::Database)?;
         Ok(())
     }
 }
@@ -143,7 +143,7 @@ async fn report_pruned_blocks(
 
     let bearer_token = service_signing_key
         .sign(claims)
-        .map_err(PruneBlocksTaskError::JwtError)?;
+        .map_err(PruneBlocksTaskError::Jwt)?;
 
     let request = client
         .post(report_endpoint.clone())
@@ -153,12 +153,12 @@ async fn report_pruned_blocks(
     let response = request
         .send()
         .await
-        .map_err(PruneBlocksTaskError::ReqwestError)?;
+        .map_err(PruneBlocksTaskError::Reqwest)?;
 
     if response.status().is_success() {
         Ok(())
     } else {
-        Err(PruneBlocksTaskError::HttpError(
+        Err(PruneBlocksTaskError::Http(
             response.status(),
             report_endpoint,
         ))

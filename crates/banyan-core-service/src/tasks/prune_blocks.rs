@@ -18,13 +18,13 @@ pub type PruneBlocksTaskContext = AppState;
 #[derive(Debug, thiserror::Error)]
 pub enum PruneBlocksTaskError {
     #[error("sql error: {0}")]
-    SqlxError(#[from] sqlx::Error),
+    Sqlx(#[from] sqlx::Error),
     #[error("reqwest error: {0}")]
-    ReqwestError(#[from] reqwest::Error),
+    Reqwest(#[from] reqwest::Error),
     #[error("jwt error: {0}")]
-    JwtError(#[from] jwt_simple::Error),
+    Jwt(#[from] jwt_simple::Error),
     #[error("http error: {0} response from {1}")]
-    HttpError(http::StatusCode, Url),
+    Http(http::StatusCode, Url),
 }
 
 #[derive(Deserialize, Serialize, Clone)]
@@ -60,7 +60,7 @@ impl TaskLike for PruneBlocksTask {
             .database()
             .acquire()
             .await
-            .map_err(PruneBlocksTaskError::SqlxError)?;
+            .map_err(PruneBlocksTaskError::Sqlx)?;
         let auth_key = ctx.secrets().service_key();
 
         // Determine where to send the prune list
@@ -71,12 +71,12 @@ impl TaskLike for PruneBlocksTask {
         )
         .fetch_one(&mut *db_conn)
         .await
-        .map_err(PruneBlocksTaskError::SqlxError)?;
+        .map_err(PruneBlocksTaskError::Sqlx)?;
         let storage_host_url = Url::parse(&storage_host_url)
-            .map_err(|_| PruneBlocksTaskError::SqlxError(sqlx::Error::RowNotFound))?;
+            .map_err(|_| PruneBlocksTaskError::Sqlx(sqlx::Error::RowNotFound))?;
         let storage_host_url = storage_host_url
             .join("/api/v1/core/prune")
-            .map_err(|_| PruneBlocksTaskError::SqlxError(sqlx::Error::RowNotFound))?;
+            .map_err(|_| PruneBlocksTaskError::Sqlx(sqlx::Error::RowNotFound))?;
 
         // Construct the client to handle the prune request
         let mut default_headers = HeaderMap::new();
@@ -84,7 +84,7 @@ impl TaskLike for PruneBlocksTask {
         let client = Client::builder()
             .default_headers(default_headers)
             .build()
-            .map_err(PruneBlocksTaskError::ReqwestError)?;
+            .map_err(PruneBlocksTaskError::Reqwest)?;
         let mut claims = Claims::create(Duration::from_secs(60))
             .with_audiences(HashSet::from_strings(&["banyan-platform"]))
             .with_subject("banyan-core")
@@ -101,11 +101,11 @@ impl TaskLike for PruneBlocksTask {
         let response = request
             .send()
             .await
-            .map_err(PruneBlocksTaskError::ReqwestError)?;
+            .map_err(PruneBlocksTaskError::Reqwest)?;
         if response.status().is_success() {
             Ok(())
         } else {
-            Err(PruneBlocksTaskError::HttpError(
+            Err(PruneBlocksTaskError::Http(
                 response.status(),
                 storage_host_url,
             ))
