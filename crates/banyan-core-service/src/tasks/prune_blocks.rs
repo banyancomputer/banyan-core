@@ -73,7 +73,7 @@ impl TaskLike for PruneBlocksTask {
         .fetch_one(&mut *db_conn)
         .await
         .map_err(PruneBlocksTaskError::Sqlx)?;
-        let storage_host_url = Url::parse(&storage_host_url)
+        let storage_host_url = Url::parse(&storage_host_info.url)
             .map_err(|_| PruneBlocksTaskError::Sqlx(sqlx::Error::RowNotFound))?;
         let storage_host_url = storage_host_url
             .join("/api/v1/core/prune")
