@@ -110,6 +110,7 @@
     "AccessDenied": "Diese E-Mail-Adresse ist nicht für Alpha zugelassen; bitte verwenden Sie Ihre Alpha-zugelassene E-Mail-Adresse. Wenn Probleme weiterhin auftreten, kontaktieren Sie sam@banyan.computer",
 	"createSecretKey": "Geheime Schlüssel erstellen",
 	"andEnterIntoTextField": "und in das Textfeld eingeben",
+	"secretKeyDescription": "Ihr geheimer Schlüssel ist der Weg, um Ihr Konto zu entsperren; erstellen Sie einen geheimen Schlüssel, den Sie sich merken können, und bewahren Sie ihn sicher auf – niemand sonst hat Zugriff darauf, nicht einmal Banyan, also stellen Sie sicher, dass Sie sich daran erinnern können, um Ihr Konto zu entsperren.",
 	"secretKey": "Geheimer Schlüssel",
 	"confirmSecretKey": "Geheimen Schlüssel bestätigen",
 	"keyRequirements": "Der Schlüssel muss mindestens 8 Zeichen lang sein",
