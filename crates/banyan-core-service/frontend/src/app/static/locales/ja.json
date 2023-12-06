@@ -183,5 +183,6 @@
 	"driveHasSnapshot": "このドライブにはすでにスナップショットがあります",
 	"driveHasNoSnapshot": "このドライブにはスナップショットがありません",
 	"whatIsSnapshot": "スナップショットとは何ですか？",
-	"makeSnapshot": "スナップショットを作成する"
+	"makeSnapshot": "スナップショットを作成する",
+	"betaBannerWarning": "Banyan Storage はまだベータ版であり、本番環境で使用する準備が整っていません。現時点でBanyanに保存されているものに対しては、バックアップストレージの使用をお勧めします。今日すぐにデータを本番環境で保存する必要がある場合は、tim@banyan.computerに連絡してください。"
 }

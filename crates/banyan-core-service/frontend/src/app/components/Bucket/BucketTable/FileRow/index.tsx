@@ -23,17 +23,14 @@ export const FileRow: React.FC<{
     const { openFile } = useFilePreview();
     const [isDragging, setIsDragging] = useState(false);
 
-    const previewFile = (event: React.MouseEvent<HTMLTableRowElement, MouseEvent>, bucket: Bucket, file: BrowserObject) => {
-        // @ts-ignore
-        if (event.target.id === 'actionsCell') { return; }
-
+    const previewFile = (bucket: Bucket, file: BrowserObject) => {
         openFile(bucket, file.name, path);
     };
 
     return (
         <tr
             className={`cursor-pointer border-b-1 border-b-border-regular text-text-900 font-normal transition-all last:border-b-0 hover:bg-bucket-bucketHoverBackground`}
-            onClick={event => previewFile(event, bucket, file)}
+            onDoubleClick={() => previewFile(bucket, file)}
             onDrag={event => handleDrag(event, file.name)}
             onDragStart={event => handleDragStart(event, file, setIsDragging, path)}
             onDragEnd={() => handleDragEnd(setIsDragging)}
