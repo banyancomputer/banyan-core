@@ -1,9 +1,6 @@
-use rand::distributions::Alphanumeric;
-use rand::Rng;
-use sqlx::sqlite::SqlitePoolOptions;
-
 use crate::database::models::{BucketType, MetadataState, StorageClass};
 use crate::database::Database;
+use sqlx::sqlite::SqlitePoolOptions;
 
 pub(crate) async fn create_hot_bucket(
     database: &Database,
@@ -72,7 +69,7 @@ pub(crate) async fn pending_metadata(db: &Database, bucket_id: &str, counter: us
 }
 
 pub(crate) async fn sample_bucket(db: &Database) -> String {
-    let user_id = sample_user(db).await;
+    let user_id = sample_user(db, 1).await;
 
     create_hot_bucket(db, &user_id, "Habernero")
         .await
@@ -93,17 +90,27 @@ pub(crate) async fn sample_metadata(
         .expect("current metadata creation")
 }
 
-pub(crate) async fn sample_user(db: &Database) -> String {
-    let name: String = rand::thread_rng()
-        .sample_iter(&Alphanumeric)
-        .take(7)
-        .map(char::from)
-        .collect();
+pub(crate) async fn assert_metadata_state(
+    db: &Database,
+    metadata_id: &str,
+    expected_state: MetadataState,
+) {
+    let found_state = sqlx::query_scalar!(
+        r#"SELECT state as 'state: MetadataState' FROM metadata WHERE id = $1;"#,
+        metadata_id,
+    )
+    .fetch_one(db)
+    .await
+    .expect("metadata existence");
 
+    assert_eq!(found_state, expected_state);
+}
+
+pub(crate) async fn sample_user(db: &Database, counter: usize) -> String {
     create_user(
         db,
-        &format!("tester_{name}@sample.users.org"),
-        &format!("{name} Tester"),
+        &format!("jessica_{counter}@sample.users.org"),
+        &format!("Jessica {counter} Tester"),
     )
     .await
     .expect("user creation")
