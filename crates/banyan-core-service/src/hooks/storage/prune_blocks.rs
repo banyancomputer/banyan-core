@@ -63,7 +63,7 @@ pub async fn handler(
 pub enum PruneBlocksHookError {
     #[error("sql error: {0}")]
     SqlxError(#[from] sqlx::Error),
-    #[error("the invalid cid: {0}")]
+    #[error("invalid cid: {0}")]
     InvalidCid(#[from] cid::Error),
 }
 

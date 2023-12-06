@@ -20,7 +20,7 @@ pub type ReportUploadTaskContext = AppState;
 #[non_exhaustive]
 #[derive(Debug, thiserror::Error)]
 pub enum ReportUploadTaskError {
-    #[error("the invalid cid: {0}")]
+    #[error("invalid cid: {0}")]
     InvalidInternalCid(#[from] cid::Error),
     #[error("sql error: {0}")]
     DatabaseError(#[from] sqlx::Error),
