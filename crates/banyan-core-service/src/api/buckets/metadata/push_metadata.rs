@@ -155,7 +155,7 @@ pub async fn handler(
 
     // todo: validate name is car-upload (request_data_field.name())
     // todo: validate type is "application/vnd.ipld.car; version=2" (request_data_field.content_type())
-    let file_name = format!("{authorized_bucket_id}/{new_metadata_id}.car");
+    let file_name = format!("{bucket_id}/{new_metadata_id}.car");
     let (hash, uploaded_size) =
         match store_metadata_stream(&store, file_name.as_str(), data_body).await {
             Ok(mhs) => mhs,
@@ -243,25 +243,6 @@ async fn approve_key_fingerprints(
     bucket_id: &str,
     keys: impl IntoIterator<Item = &str>,
 ) -> Result<(), sqlx::Error> {
-    let mut builder = QueryBuilder::new(
-        "UPDATE bucket_keys SET approved = 1 WHERE bucket_id = $1 AND fingerprint IN (",
-    );
-    builder.push_bind(bucket_id);
-
-    let mut key_iterator = keys.into_iter().peekable();
-    while let Some(key) = key_iterator.next() {
-        builder.push("?");
-        builder.push_bind(key);
-
-        if key_iterator.peek().is_some() {
-            builder.push(",");
-        }
-    }
-
-    builder.push(");");
-    builder.build().execute(&mut *conn).await?;
-
-    Ok(())
 }
 
 async fn bucked_owned_by_user_id(
@@ -814,6 +795,9 @@ pub enum PushMetadataError {
 
 #[derive(Deserialize)]
 pub struct PushMetadataRequest {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub previous_metadata_cid: Option<String>,
+
     pub root_cid: String,
     pub metadata_cid: String,
 

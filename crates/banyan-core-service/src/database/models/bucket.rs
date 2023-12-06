@@ -13,9 +13,48 @@ pub struct Bucket {
 }
 
 impl Bucket {
-    pub async fn change_in_progress(
+    /// For a particular bucket mark keys with the fingerprints contained within as having been
+    /// approved for use with that bucket. We can't verify the key payload correctly contains valid
+    /// copies of the inner filesystem key, so there is a little bit of trust here. Key lifecycle
+    /// details should be documented elsewhere.
+    ///
+    /// Hazard: This does not check if the length of the iterator is over the bind limit supported
+    /// by sqlx or the database. If the iterator returns > 60k entries these calls will fail with
+    /// an obtuse error.
+    pub async fn approve_keys_by_fingerprint(
         conn: &mut DatabaseConnection,
         bucket_id: &str,
+        fingerprints: impl IntoIterator<Item = &str>,
+    ) -> Result<u64, sqlx::Error> {
+        let mut builder = sqlx::QueryBuilder::new(
+            "UPDATE bucket_keys SET approved = 1 WHERE bucket_id = $1 AND fingerprint IN (",
+        );
+        builder.push_bind(bucket_id);
+
+        let mut key_iterator = fingerprints.into_iter().peekable();
+        while let Some(key) = key_iterator.next() {
+            builder.push("?");
+            builder.push_bind(key);
+
+            if key_iterator.peek().is_some() {
+                builder.push(",");
+            }
+        }
+
+        builder.push(");");
+
+        let query_result = builder.build().execute(&mut *conn).await?;
+        let changed_rows = query_result.rows_affected();
+
+        Ok(changed_rows)
+    }
+
+    /// When a new metadata is pushed to this service we mark it as pending until we receive
+    /// appropriate data also uploaded to our storage hosts. To prevent overwrites of data before
+    /// they're fully committed
+    pub async fn change_in_progress(
+        _conn: &mut DatabaseConnection,
+        _bucket_id: &str,
     ) -> Result<bool, sqlx::Error> {
         todo!()
     }
@@ -39,3 +78,6 @@ impl Bucket {
         Ok(found_bucket.is_some())
     }
 }
+
+#[cfg(test)]
+mod tests {}
