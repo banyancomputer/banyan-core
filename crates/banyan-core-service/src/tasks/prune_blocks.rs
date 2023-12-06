@@ -48,6 +48,12 @@ impl PruneBlocksTask {
     }
 }
 
+#[derive(sqlx::FromRow)]
+struct StorageHostInfo {
+    pub url: String,
+    pub name: String,
+}
+
 #[async_trait]
 impl TaskLike for PruneBlocksTask {
     const TASK_NAME: &'static str = "prune_blocks_task";
@@ -65,14 +71,15 @@ impl TaskLike for PruneBlocksTask {
 
         // Determine where to send the prune list
         let storage_host_id = self.storage_host_id.to_string();
-        let storage_host_url = sqlx::query_scalar!(
-            "SELECT url FROM storage_hosts WHERE id = $1;",
+        let storage_host_info = sqlx::query_as!(
+            StorageHostInfo,
+            "SELECT url, name FROM storage_hosts WHERE id = $1;",
             storage_host_id
         )
         .fetch_one(&mut *db_conn)
         .await
         .map_err(PruneBlocksTaskError::SqlxError)?;
-        let storage_host_url = Url::parse(&storage_host_url)
+        let storage_host_url = Url::parse(&storage_host_info.url)
             .map_err(|_| PruneBlocksTaskError::SqlxError(sqlx::Error::RowNotFound))?;
         let storage_host_url = storage_host_url
             .join("/api/v1/core/prune")
@@ -86,7 +93,7 @@ impl TaskLike for PruneBlocksTask {
             .build()
             .map_err(PruneBlocksTaskError::ReqwestError)?;
         let mut claims = Claims::create(Duration::from_secs(60))
-            .with_audiences(HashSet::from_strings(&["banyan-platform"]))
+            .with_audiences(HashSet::from_strings(&[storage_host_info.name]))
             .with_subject("banyan-core")
             .invalid_before(Clock::now_since_epoch() - Duration::from_secs(30));
         claims.create_nonce();
