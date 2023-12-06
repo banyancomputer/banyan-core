@@ -329,12 +329,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "banyan-middleware"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "bytes",
+ "futures",
+ "futures-util",
+ "http",
+ "http-body",
+ "pin-project-lite",
+ "pin-utils",
+ "tokio",
+ "tower",
+ "tower-layer",
+]
+
+[[package]]
 name = "banyan-staging-service"
 version = "0.1.0"
 dependencies = [
  "async-trait",
  "axum",
  "banyan-car-analyzer",
+ "banyan-middleware",
  "banyan-task",
  "blake3",
  "bytes",
