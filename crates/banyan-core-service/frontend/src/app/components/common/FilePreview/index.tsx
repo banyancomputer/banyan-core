@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 // @ts-ignore
 import FilePreviewer from 'react-file-previewer';
 import { useIntl } from 'react-intl';
@@ -8,6 +8,7 @@ import { Loader } from '../Loader';
 import { SUPPORTED_EXTENSIONS, useFilePreview } from '@/app/contexts/filesPreview';
 
 import { ArrowDown, ChevronUp } from '@static/images/common';
+import { FileIcon } from '../FileIcon';
 
 export const FilePreview = () => {
     const { bucket, file, files, path, openFile, closeFile } = useFilePreview();
@@ -15,7 +16,6 @@ export const FilePreview = () => {
     const filePreviewRef = useRef<HTMLDivElement | null>(null);
     const fileExtension = [...file.name.split('.')].pop();
     const isFileSupported = file.name ? SUPPORTED_EXTENSIONS.includes(fileExtension || '') : true;
-    const [selectedFileIndex, setSelectedFileIndex] = useState(0);
 
     const close = (event: React.MouseEvent<HTMLDivElement | HTMLButtonElement>) => {
         if (!filePreviewRef.current!.contains(event.target as Node)) {
@@ -24,36 +24,38 @@ export const FilePreview = () => {
     };
 
     const openPrevious = () => {
+        const selectedFileIndex = files.indexOf(file.name);
+        if (!selectedFileIndex) return;
         openFile(bucket!, files[selectedFileIndex - 1], files, path);
     };
 
     const openNext = () => {
+        const selectedFileIndex = files.indexOf(file.name);
+        if (selectedFileIndex >= files.length - 1) return;
         openFile(bucket!, files[selectedFileIndex + 1], files, path);
     };
 
     useEffect(() => {
         const listener = (event: KeyboardEvent) => {
-            if(file.isLoading) {
+            if (file.isLoading) {
                 document.removeEventListener('keydown', listener);
                 return;
             }
-            if (event.code === 'ArrowLeft' && selectedFileIndex) {
+            if (event.code === 'ArrowLeft') {
                 document.removeEventListener('keydown', listener);
                 openPrevious();
-            } else if (event.code === 'ArrowRight' && !(selectedFileIndex === files.length - 1)) {
+            } else if (event.code === 'ArrowRight') {
                 document.removeEventListener('keydown', listener);
                 openNext();
             }
         };
 
         document.addEventListener('keydown', listener);
-    }, [selectedFileIndex, files.length, file.isLoading]);
 
-    useEffect(() => {
-        if (!file.name) return;
-
-        setSelectedFileIndex(files.indexOf(file.name));
-    }, [file.name, files]);
+        return () => {
+            document.removeEventListener('keydown', listener);
+        }
+    }, [files, file]);
 
     return (
         <>
@@ -66,9 +68,10 @@ export const FilePreview = () => {
                         <span className='rotate-90'>
                             <ArrowDown width="24px" height="24px" />
                         </span>
-                        {`${messages.backToFiles}`}
+                        <FileIcon fileName={file.name} />
+                        {`${file.name}`}
                     </button>
-                    {selectedFileIndex ?
+                    {files.indexOf(file.name) ?
                         <button
                             onClick={openPrevious}
                             className="fixed top-1/2 left-4 -translate-y-1/2 p-4 rounded-full bg-black text-white z-40 -rotate-90 transition-all hover:bg-gray-800"
@@ -77,7 +80,7 @@ export const FilePreview = () => {
                         </button>
                         : null
                     }
-                    {!(selectedFileIndex === files.length - 1) ?
+                    {!(files.indexOf(file.name) === files.length - 1) ?
                         <button
                             onClick={openNext}
                             className="fixed top-1/2 right-4 -translate-y-1/2 p-4 rounded-full bg-black text-white z-40 rotate-90 transition-all hover:bg-gray-800"
@@ -87,14 +90,14 @@ export const FilePreview = () => {
                         : null
                     }
                     <div
-                        className={`fixed w-screen h-[105vh] flex ${isFileSupported ? 'items-start' : 'items-center'} justify-center py-10 pb-20 z-20 bg-slate-800 bg-opacity-80 backdrop-blur-sm overflow-scroll`}
+                        className={`fixed w-screen h-[105vh] flex ${isFileSupported ? 'items-start' : 'items-center'} justify-center py-16 pb-20 z-20 bg-slate-800 bg-opacity-80 backdrop-blur-sm overflow-scroll`}
                         onClick={close}
                     >
                         <div
                             className={`relative max-w-filePreview ${fileExtension === 'pdf' && 'w-filePreview'} ${!isFileSupported && 'pointer-events-none'} flex justify-center items-start `}
                             ref={filePreviewRef}
                         >
-                            {file.isLoading ?
+                            {file.isLoading && file.data ?
                                 <Loader spinnerSize="50px" containerHeight="100vh" className="text-white" />
                                 :
                                 <>
