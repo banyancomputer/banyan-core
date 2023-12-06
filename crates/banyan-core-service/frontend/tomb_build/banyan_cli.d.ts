@@ -194,9 +194,9 @@ export class TombWasm {
 * @param {string} bucket_type
 * @param {string} private_pem
 * @param {string} public_pem
-* @returns {Promise<WasmBucket>}
+* @returns {Promise<WasmBucketMount>}
 */
-  createBucket(name: string, storage_class: string, bucket_type: string, private_pem: string, public_pem: string): Promise<WasmBucket>;
+  createBucketAndMount(name: string, storage_class: string, bucket_type: string, private_pem: string, public_pem: string): Promise<WasmBucketMount>;
 /**
 * Create a bucket key for a bucket
 * # Arguments
@@ -302,6 +302,23 @@ export class WasmBucketMetadata {
 /**
 */
   readonly snapshotId: string;
+}
+/**
+*/
+export class WasmBucketMount {
+  free(): void;
+/**
+* @param {WasmBucket} bucket
+* @param {WasmMount} mount
+* @returns {WasmBucketMount}
+*/
+  static new(bucket: WasmBucket, mount: WasmMount): WasmBucketMount;
+/**
+*/
+  readonly bucket: WasmBucket;
+/**
+*/
+  readonly mount: WasmMount;
 }
 /**
 * Mount point for a Bucket in WASM

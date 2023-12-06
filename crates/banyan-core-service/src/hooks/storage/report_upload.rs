@@ -213,7 +213,13 @@ async fn mark_outdated_metadata(
     metadata_id: &str,
 ) -> Result<(), ReportUploadError> {
     // Get the bucket id
-    let bucket_id = sqlx::query_scalar!(r#"SELECT bucket_id FROM metadata WHERE id = $1"#, metadata_id).fetch_one(database).await.map_err(ReportUploadError::MarkOutdatedFailed)?;
+    let bucket_id = sqlx::query_scalar!(
+        r#"SELECT bucket_id FROM metadata WHERE id = $1"#,
+        metadata_id
+    )
+    .fetch_one(database)
+    .await
+    .map_err(ReportUploadError::MarkOutdatedFailed)?;
 
     tracing::info!("only marking metadata as outdated in {}", bucket_id);
 
@@ -265,61 +271,51 @@ mod tests {
     #[tokio::test]
     async fn test_marking_metadata() {
         let db = test_helpers::setup_database().await;
-
-        let alex_bucket_id = test_helpers::sample_bucket(&db).await;
-        let alex_user_id = sqlx::query_scalar!(
-            r#"SELECT user_id FROM buckets WHERE id = $1;"#,
-            alex_bucket_id
-        )
-        .fetch_one(&db)
-        .await
-        .expect("no bucket id");
-        let alex_other_bucket_id = test_helpers::create_hot_bucket(&db, &alex_user_id, "oranges23").await.expect("failed to create new bucket");
-
-
-        let alex_pending_metadata_id = test_helpers::pending_metadata(&db, &alex_bucket_id, 1).await;
-        let alex_other_pending_metadata_id = test_helpers::pending_metadata(&db, &alex_other_bucket_id, 1).await;
-
-        let vera_bucket_id = test_helpers::sample_bucket(&db).await;
-        let vera_pending_metadata_id = test_helpers::pending_metadata(&db, &vera_bucket_id, 1).await;
+        let user_id = test_helpers::sample_user(&db).await;
+        let first_bucket_id = test_helpers::create_hot_bucket(&db, &user_id, "apples21")
+            .await
+            .expect("failed to create new bucket");
+        let second_bucket_id = test_helpers::create_hot_bucket(&db, &user_id, "oranges23")
+            .await
+            .expect("failed to create new bucket");
+        let first_pending_metadata_id =
+            test_helpers::pending_metadata(&db, &first_bucket_id, 1).await;
+        let second_pending_metadata_id =
+            test_helpers::pending_metadata(&db, &second_bucket_id, 1).await;
 
         // Mark both of them as current
-        mark_metadata_current(&db, &alex_pending_metadata_id, 1_200_000).await.expect("failed to update metadata state");
-        mark_outdated_metadata(&db, &alex_pending_metadata_id).await.expect("failed to mark outdated");
+        mark_metadata_current(&db, &first_pending_metadata_id, 1_200_000)
+            .await
+            .expect("failed to update metadata state");
+        mark_outdated_metadata(&db, &first_pending_metadata_id)
+            .await
+            .expect("failed to mark outdated");
 
-        mark_metadata_current(&db, &alex_other_pending_metadata_id, 1_200_000).await.expect("failed to update metadata state");
-        mark_outdated_metadata(&db, &alex_other_pending_metadata_id).await.expect("failed to mark outdated");
+        mark_metadata_current(&db, &second_pending_metadata_id, 1_200_000)
+            .await
+            .expect("failed to update metadata state");
+        mark_outdated_metadata(&db, &second_pending_metadata_id)
+            .await
+            .expect("failed to mark outdated");
 
-        mark_metadata_current(&db, &vera_pending_metadata_id, 1_200_000).await.expect("failed to update metadata state");
-        mark_outdated_metadata(&db, &vera_pending_metadata_id).await.expect("failed to mark outdated");
-
-        let alex_state = sqlx::query_scalar!(
+        let first_state = sqlx::query_scalar!(
             r#"SELECT state as 'state: MetadataState' FROM metadata WHERE id = $1;"#,
-            alex_pending_metadata_id,
+            first_pending_metadata_id,
         )
         .fetch_one(&db)
         .await
         .expect("metadata existence");
 
-        let alex_other_state = sqlx::query_scalar!(
+        let second_state = sqlx::query_scalar!(
             r#"SELECT state as 'state: MetadataState' FROM metadata WHERE id = $1;"#,
-            alex_other_pending_metadata_id,
+            second_pending_metadata_id,
         )
         .fetch_one(&db)
         .await
         .expect("metadata existence");
 
-        let vera_state = sqlx::query_scalar!(
-            r#"SELECT state as 'state: MetadataState' FROM metadata WHERE id = $1;"#,
-            alex_pending_metadata_id,
-        )
-        .fetch_one(&db)
-        .await
-        .expect("metadata existence");
-        
-        assert_eq!(alex_state, MetadataState::Current);
-        assert_eq!(alex_other_state, MetadataState::Current);
-        assert_eq!(vera_state, MetadataState::Current);
+        assert_eq!(first_state, MetadataState::Current);
+        assert_eq!(second_state, MetadataState::Current);
     }
 
     #[tokio::test]
