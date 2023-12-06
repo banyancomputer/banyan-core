@@ -2,7 +2,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use axum::error_handling::HandleErrorLayer;
-use axum::extract::DefaultBodyLimit;
+use axum::extract::{DefaultBodyLimit, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::{get, get_service};
@@ -91,9 +91,10 @@ pub async fn graceful_shutdown_blocker() -> (JoinHandle<()>, watch::Receiver<()>
 }
 
 async fn login_page_handler<B: std::marker::Send + 'static>(
+    State(state): State<AppState>,
     req: Request<B>,
 ) -> Result<Response<BoxBody>, (StatusCode, String)> {
-    match ServeFile::new("./dist/login.html").oneshot(req).await {
+    match ServeFile::new(&format!("{}/dist/login.html", state.working_dir())).oneshot(req).await {
         Ok(res) => Ok(res.map(boxed)),
         Err(err) => Err((
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -160,8 +161,8 @@ pub async fn run(config: Config) {
             sensitive_headers,
         ));
 
-    let static_assets = ServeDir::new("dist").not_found_service(
-        get_service(ServeFile::new("./dist/index.html")).handle_error(|_| async move {
+    let static_assets = ServeDir::new(&format!("{}/dist", config.working_dir())).not_found_service(
+        get_service(ServeFile::new(&format!("{}/dist/login.html", config.working_dir()))).handle_error(|_| async move {
             (StatusCode::INTERNAL_SERVER_ERROR, "internal server error")
         }),
     );

@@ -19,6 +19,7 @@ pub struct State {
     database: Database,
     event_bus: EventBus,
     secrets: Secrets,
+    working_dir: String,
     service_verifier: ServiceVerificationKey,
     upload_directory: PathBuf,
 }
@@ -57,6 +58,7 @@ impl State {
             database,
             event_bus,
             secrets,
+            working_dir: config.working_dir(),
             service_verifier,
             upload_directory: config.upload_directory(),
         })
@@ -64,6 +66,9 @@ impl State {
 
     pub fn secrets(&self) -> Secrets {
         self.secrets.clone()
+    }
+    pub fn working_dir(&self) -> String {
+        self.working_dir.clone()
     }
 
     pub fn service_verifier(&self) -> ServiceVerificationKey {

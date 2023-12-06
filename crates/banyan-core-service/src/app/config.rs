@@ -11,6 +11,7 @@ use crate::app::Version;
 pub struct Config {
     listen_addr: SocketAddr,
     log_level: Level,
+    working_dir: String,
 
     database_url: Url,
 
@@ -46,6 +47,18 @@ impl Config {
             print_version();
             std::process::exit(0);
         }
+        let working_dir = match cli_args.opt_value_from_str("--working-dir")? {
+            Some(du) => du,
+            None => match std::env::var("WORKING_DIR") {
+                Ok(du) if !du.is_empty() => du,
+                _ =>{ 
+                    let current_file_path = std::env::current_exe().unwrap();
+                    let parent_dir_path = current_file_path.parent().unwrap().parent().unwrap();
+                    
+                    parent_dir_path.to_str().unwrap().to_string()
+                }
+            },
+        };
 
         // TODO: rename flag to `--database-url`
         let database_str = match cli_args.opt_value_from_str("--db-url")? {
@@ -110,6 +123,7 @@ impl Config {
         Ok(Config {
             listen_addr,
             log_level,
+            working_dir,
 
             database_url,
 
@@ -143,6 +157,9 @@ impl Config {
         self.mailgun_signing_key.as_deref()
     }
 
+    pub fn working_dir(&self) -> String {
+        return self. working_dir.clone();
+    }
     pub fn session_key_path(&self) -> PathBuf {
         self.session_key_path.clone()
     }
