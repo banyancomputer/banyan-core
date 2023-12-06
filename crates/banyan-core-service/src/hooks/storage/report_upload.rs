@@ -63,10 +63,8 @@ pub async fn handler(
     }
 
     if can_become_current(&database, &db_metadata_id).await? {
-        // Mark all the metadatas for the bucket as outdated
-        mark_outdated_metadata(&database, &db_metadata_id).await?;
-        // Mark this one as being currents
         mark_metadata_current(&database, &db_metadata_id, request.data_size).await?;
+        mark_outdated_metadata(&database, &db_metadata_id).await?;
     }
 
     Ok((StatusCode::NO_CONTENT, ()).into_response())
@@ -161,8 +159,6 @@ async fn mark_metadata_current(
     metadata_id: &str,
     stored_size: i64,
 ) -> Result<(), ReportUploadError> {
-    tracing::info!("marking {} as current", metadata_id);
-
     let current_state = sqlx::query_scalar!(
         r#"SELECT state as 'state: MetadataState'
                FROM metadata
@@ -173,13 +169,9 @@ async fn mark_metadata_current(
     .await
     .map_err(ReportUploadError::MarkCurrentFailed)?;
 
-    tracing::info!("current state is {}", current_state);
-
     if current_state == MetadataState::Current {
         return Ok(());
     }
-
-    tracing::info!("updating the state");
 
     sqlx::query_scalar!(
         r#"UPDATE metadata SET state = 'current', data_size = $2
@@ -191,18 +183,6 @@ async fn mark_metadata_current(
     .await
     .map_err(ReportUploadError::MarkCurrentFailed)?;
 
-    let new_state = sqlx::query_scalar!(
-        r#"SELECT state as 'state: MetadataState'
-               FROM metadata
-               WHERE id = $1;"#,
-        metadata_id,
-    )
-    .fetch_one(database)
-    .await
-    .map_err(ReportUploadError::MarkCurrentFailed)?;
-
-    tracing::info!("new state is {}", new_state);
-
     Ok(())
 }
 
@@ -212,25 +192,12 @@ async fn mark_outdated_metadata(
     database: &Database,
     metadata_id: &str,
 ) -> Result<(), ReportUploadError> {
-    // Get the bucket id
-    let bucket_id = sqlx::query_scalar!(
-        r#"SELECT bucket_id FROM metadata WHERE id = $1"#,
-        metadata_id
-    )
-    .fetch_one(database)
-    .await
-    .map_err(ReportUploadError::MarkOutdatedFailed)?;
-
-    tracing::info!("only marking metadata as outdated in {}", bucket_id);
-
-    //
     sqlx::query!(
         r#"UPDATE metadata
              SET state = 'outdated'
-             WHERE bucket_id = $1 
+             WHERE bucket_id = (SELECT bucket_id FROM metadata WHERE id = $1)
              AND state = 'current' 
-             AND id <> $2;"#,
-        bucket_id,
+             AND id != $1;"#,
         metadata_id
     )
     .execute(database)
