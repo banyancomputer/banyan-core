@@ -48,12 +48,6 @@ impl PruneBlocksTask {
     }
 }
 
-#[derive(sqlx::FromRow)]
-struct StorageHostInfo {
-    pub url: String,
-    pub name: String,
-}
-
 #[async_trait]
 impl TaskLike for PruneBlocksTask {
     const TASK_NAME: &'static str = "prune_blocks_task";
@@ -115,4 +109,10 @@ impl TaskLike for PruneBlocksTask {
             Err(PruneBlocksTaskError::NonSuccessResponse(response.status()))
         }
     }
+}
+
+#[derive(sqlx::FromRow)]
+struct StorageHostInfo {
+    pub url: String,
+    pub name: String,
 }
