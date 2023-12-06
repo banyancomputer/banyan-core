@@ -110,6 +110,7 @@
 	"AccessDenied": "このメールアドレスはAlphaに承認されていません。Alpha承認のメールアドレスを使用してください。問題が続く場合は、sam@banyan.computerに連絡してください",
 	"createSecretKey": "秘密鍵を作成",
 	"andEnterIntoTextField": "テキストフィールドに入力してください",
+	"secretKeyDescription": "秘密鍵はアカウントを解除する方法です。覚えやすい秘密鍵を作成し、安全に保管してください。他の誰もそれにアクセスできません、Banyanでさえもです。アカウントを解除するために覚えられるようにしてください。",
 	"secretKey": "秘密鍵",
 	"confirmSecretKey": "秘密鍵を確認",
 	"keyRequirements": "鍵は少なくとも8文字である必要があります",
@@ -182,5 +183,6 @@
 	"driveHasSnapshot": "このドライブにはすでにスナップショットがあります",
 	"driveHasNoSnapshot": "このドライブにはスナップショットがありません",
 	"whatIsSnapshot": "スナップショットとは何ですか？",
-	"makeSnapshot": "スナップショットを作成する"
+	"makeSnapshot": "スナップショットを作成する",
+	"betaBannerWarning": "Banyan Storage はまだベータ版であり、本番環境で使用する準備が整っていません。現時点でBanyanに保存されているものに対しては、バックアップストレージの使用をお勧めします。今日すぐにデータを本番環境で保存する必要がある場合は、tim@banyan.computerに連絡してください。"
 }
