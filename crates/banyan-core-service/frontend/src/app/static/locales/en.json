@@ -110,6 +110,7 @@
 	"AccessDenied": "This email address is not approved for Alpha; please use your alpha-approved email. If issues continue, contact sam@banyan.computer",
 	"createSecretKey": "Create a secret key",
 	"andEnterIntoTextField": "and enter into text field",
+	"secretKeyDescription": "Your secret key is the way to unlock your account; create a secret key you can remember and keep it safe – no one else has access to it, not even Banyan, so make sure you can remember it to unlock your account.",
 	"secretKey": "Secret Key",
 	"confirmSecretKey": "Confirm secret key",
 	"keyRequirements": "Key must be at least 8 characters",

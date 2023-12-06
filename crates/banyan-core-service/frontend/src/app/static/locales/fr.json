@@ -110,6 +110,7 @@
 	"AccessDenied": "Cette adresse e-mail n'est pas approuvée pour Alpha; veuillez utiliser votre adresse e-mail approuvée pour Alpha. Si les problèmes persistent, contactez sam@banyan.computer",
 	"createSecretKey": "Créer une clé secrète",
 	"andEnterIntoTextField": "et entrez dans le champ de texte",
+	"secretKeyDescription": "Votre clé secrète est la manière de déverrouiller votre compte ; créez une clé secrète que vous pouvez mémoriser et gardez-la en sécurité - personne d'autre n'y a accès, même pas Banyan, alors assurez-vous de pouvoir la mémoriser pour déverrouiller votre compte.",
 	"secretKey": "Clé secrète",
 	"confirmSecretKey": "Confirmer la clé secrète",
 	"keyRequirements": "La clé doit contenir au moins 8 caractères",
