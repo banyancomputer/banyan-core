@@ -35,7 +35,7 @@ export const SearchInput = React.memo(() => {
     };
 
     const previewFile = (bucket: Bucket, name: string) => {
-        openFile(bucket, name, folderLocation);
+        // openFile(bucket, name, folderLocation);
         clearSearch();
     };
 

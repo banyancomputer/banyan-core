@@ -110,6 +110,7 @@
 	"AccessDenied": "This email address is not approved for Alpha; please use your alpha-approved email. If issues continue, contact sam@banyan.computer",
 	"createSecretKey": "Create a secret key",
 	"andEnterIntoTextField": "and enter into text field",
+	"secretKeyDescription": "Your secret key is the way to unlock your account; create a secret key you can remember and keep it safe – no one else has access to it, not even Banyan, so make sure you can remember it to unlock your account.",
 	"secretKey": "Secret Key",
 	"confirmSecretKey": "Confirm secret key",
 	"keyRequirements": "Key must be at least 8 characters",
@@ -182,5 +183,6 @@
 	"driveHasSnapshot": "This drive already has a snapshot",
 	"driveHasNoSnapshot": "This drive has no snapshots",
 	"whatIsSnapshot": "What is a snapshot?",
-	"makeSnapshot": "Make a Snapshot"
+	"makeSnapshot": "Make a Snapshot",
+	"betaBannerWarning": "Banyan Storage is still in Beta and not production-ready. We recommend using a backup storage method for anything stored on Banyan at this time. If you need to store data in Prod today, contact tim@banyan.computer."
 }
