@@ -9,7 +9,10 @@ interface FilePreviewState {
         data: string;
         isLoading: boolean;
     };
-    openFile: (bucket: Bucket, file: string, path: string[]) => void;
+    files: string[];
+    path: string[];
+    bucket: Bucket | null;
+    openFile: (bucket: Bucket, file: string, files: string[], path: string[]) => void;
     closeFile: () => void;
 };
 
@@ -24,9 +27,17 @@ export const FilePreviewContext = createContext<FilePreviewState>({} as FilePrev
 
 export const FilePreviewProvider: FC<{ children: ReactNode }> = ({ children }) => {
     const [file, setFile] = useState(initialState);
+    const [files, setFiles] = useState<string[]>([]);
+    const [bucket, setBucket] = useState<Bucket | null>(null)
+    const [path, setPath] = useState<string[]>([])
     const { getFile } = useTomb();
 
-    const openFile = async(bucket: Bucket, file: string, path: string[]) => {
+    const openFile = async (bucket: Bucket, file: string, files: string[], path: string[]) => {
+        setFiles(files);
+        setBucket(bucket);
+        setPath(path);
+        if (!file) return;
+
         const isFileSupported = SUPPORTED_EXTENSIONS.includes([...file.split('.')].pop() || '');
         try {
             setFile({
@@ -43,7 +54,7 @@ export const FilePreviewProvider: FC<{ children: ReactNode }> = ({ children }) =
             const blob = new Blob([arrayBuffer], { type: 'application/octet-stream' });
 
             reader.readAsDataURL(blob);
-            reader.onload = function(event) {
+            reader.onload = function (event) {
                 const result = event.target?.result as string;
                 setFile({
                     data: result || '',
@@ -59,10 +70,11 @@ export const FilePreviewProvider: FC<{ children: ReactNode }> = ({ children }) =
 
     const closeFile = () => {
         setFile(initialState);
+        setFiles([]);
     };
 
     return (
-        <FilePreviewContext.Provider value={{ file, openFile, closeFile }}>
+        <FilePreviewContext.Provider value={{ file, files, bucket, path, openFile, closeFile }}>
             {children}
         </FilePreviewContext.Provider>
     );

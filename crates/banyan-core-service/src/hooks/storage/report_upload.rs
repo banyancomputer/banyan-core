@@ -236,25 +236,35 @@ mod tests {
     use crate::database::test_helpers;
 
     #[tokio::test]
-    async fn test_marking_metadata_current() {
+    async fn test_marking_metadata() {
         let db = test_helpers::setup_database().await;
-
-        let bucket_id = test_helpers::sample_bucket(&db).await;
-        let pending_metadata_id = test_helpers::pending_metadata(&db, &bucket_id, 1).await;
-
-        mark_metadata_current(&db, &pending_metadata_id, 1_200_000)
+        let user_id = test_helpers::sample_user(&db, 1).await;
+        let first_bucket_id = test_helpers::create_hot_bucket(&db, &user_id, "apples21")
             .await
-            .expect("update to succeed");
+            .expect("failed to create new bucket");
+        let second_bucket_id = test_helpers::create_hot_bucket(&db, &user_id, "oranges23")
+            .await
+            .expect("failed to create new bucket");
+        let first_metadata_id = test_helpers::pending_metadata(&db, &first_bucket_id, 1).await;
+        let second_metadata_id = test_helpers::pending_metadata(&db, &second_bucket_id, 1).await;
 
-        let state = sqlx::query_scalar!(
-            r#"SELECT state as 'state: MetadataState' FROM metadata WHERE id = $1;"#,
-            pending_metadata_id,
-        )
-        .fetch_one(&db)
-        .await
-        .expect("metadata existence");
+        // Mark both of them as current
+        mark_metadata_current(&db, &first_metadata_id, 1_200_000)
+            .await
+            .expect("failed to update metadata state");
+        mark_outdated_metadata(&db, &first_metadata_id)
+            .await
+            .expect("failed to mark outdated");
 
-        assert_eq!(state, MetadataState::Current);
+        mark_metadata_current(&db, &second_metadata_id, 1_200_000)
+            .await
+            .expect("failed to update metadata state");
+        mark_outdated_metadata(&db, &second_metadata_id)
+            .await
+            .expect("failed to mark outdated");
+
+        test_helpers::assert_metadata_state(&db, &first_metadata_id, MetadataState::Current).await;
+        test_helpers::assert_metadata_state(&db, &second_metadata_id, MetadataState::Current).await;
     }
 
     #[tokio::test]

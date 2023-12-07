@@ -17,23 +17,21 @@ export const FileRow: React.FC<{
     tableScroll: number;
     tableRef: React.MutableRefObject<HTMLDivElement | null>;
     path: string[];
+    siblingFiles: string[];
     nestingLevel?: number;
     parrentFolder?: BrowserObject;
-}> = ({ file, bucket, tableScroll, tableRef, nestingLevel = 0.25, path = [], parrentFolder }) => {
+}> = ({ file, bucket, tableScroll, tableRef, nestingLevel = 0.25, path = [], parrentFolder, siblingFiles }) => {
     const { openFile } = useFilePreview();
     const [isDragging, setIsDragging] = useState(false);
 
-    const previewFile = (event: React.MouseEvent<HTMLTableRowElement, MouseEvent>, bucket: Bucket, file: BrowserObject) => {
-        // @ts-ignore
-        if (event.target.id === 'actionsCell') { return; }
-
-        openFile(bucket, file.name, path);
+    const previewFile = (bucket: Bucket, file: BrowserObject) => {
+        openFile(bucket, file.name, siblingFiles, path);
     };
 
     return (
         <tr
             className={`cursor-pointer border-b-1 border-b-border-regular text-text-900 font-normal transition-all last:border-b-0 hover:bg-bucket-bucketHoverBackground`}
-            onClick={event => previewFile(event, bucket, file)}
+            onDoubleClick={() => previewFile(bucket, file)}
             onDrag={event => handleDrag(event, file.name)}
             onDragStart={event => handleDragStart(event, file, setIsDragging, path)}
             onDragEnd={() => handleDragEnd(setIsDragging)}

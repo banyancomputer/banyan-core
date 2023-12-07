@@ -17,14 +17,14 @@ pub type PruneBlocksTaskContext = AppState;
 #[non_exhaustive]
 #[derive(Debug, thiserror::Error)]
 pub enum PruneBlocksTaskError {
-    #[error("the task encountered a sql error: {0}")]
-    SqlxError(#[from] sqlx::Error),
-    #[error("the task encountered a reqwest error: {0}")]
-    ReqwestError(#[from] reqwest::Error),
-    #[error("the task encountered a jwt error: {0}")]
-    JwtError(#[from] jwt_simple::Error),
-    #[error("the task encountered a non success response")]
-    NonSuccessResponse(http::StatusCode),
+    #[error("sql error: {0}")]
+    Sqlx(#[from] sqlx::Error),
+    #[error("reqwest error: {0}")]
+    Reqwest(#[from] reqwest::Error),
+    #[error("jwt error: {0}")]
+    Jwt(#[from] jwt_simple::Error),
+    #[error("http error: {0} response from {1}")]
+    Http(http::StatusCode, Url),
 }
 
 #[derive(Deserialize, Serialize, Clone)]
@@ -60,23 +60,24 @@ impl TaskLike for PruneBlocksTask {
             .database()
             .acquire()
             .await
-            .map_err(PruneBlocksTaskError::SqlxError)?;
+            .map_err(PruneBlocksTaskError::Sqlx)?;
         let auth_key = ctx.secrets().service_key();
 
         // Determine where to send the prune list
         let storage_host_id = self.storage_host_id.to_string();
-        let storage_host_url = sqlx::query_scalar!(
-            "SELECT url FROM storage_hosts WHERE id = $1;",
+        let storage_host_info = sqlx::query_as!(
+            StorageHostInfo,
+            "SELECT url, name FROM storage_hosts WHERE id = $1;",
             storage_host_id
         )
         .fetch_one(&mut *db_conn)
         .await
-        .map_err(PruneBlocksTaskError::SqlxError)?;
-        let storage_host_url = Url::parse(&storage_host_url)
-            .map_err(|_| PruneBlocksTaskError::SqlxError(sqlx::Error::RowNotFound))?;
+        .map_err(PruneBlocksTaskError::Sqlx)?;
+        let storage_host_url = Url::parse(&storage_host_info.url)
+            .map_err(|_| PruneBlocksTaskError::Sqlx(sqlx::Error::RowNotFound))?;
         let storage_host_url = storage_host_url
             .join("/api/v1/core/prune")
-            .map_err(|_| PruneBlocksTaskError::SqlxError(sqlx::Error::RowNotFound))?;
+            .map_err(|_| PruneBlocksTaskError::Sqlx(sqlx::Error::RowNotFound))?;
 
         // Construct the client to handle the prune request
         let mut default_headers = HeaderMap::new();
@@ -84,9 +85,9 @@ impl TaskLike for PruneBlocksTask {
         let client = Client::builder()
             .default_headers(default_headers)
             .build()
-            .map_err(PruneBlocksTaskError::ReqwestError)?;
+            .map_err(PruneBlocksTaskError::Reqwest)?;
         let mut claims = Claims::create(Duration::from_secs(60))
-            .with_audiences(HashSet::from_strings(&["banyan-platform"]))
+            .with_audiences(HashSet::from_strings(&[storage_host_info.name]))
             .with_subject("banyan-core")
             .invalid_before(Clock::now_since_epoch() - Duration::from_secs(30));
         claims.create_nonce();
@@ -95,17 +96,26 @@ impl TaskLike for PruneBlocksTask {
 
         // Send the request and handle the response
         let request = client
-            .post(storage_host_url)
+            .post(storage_host_url.clone())
             .json(&self.prune_blocks)
             .bearer_auth(bearer_token);
         let response = request
             .send()
             .await
-            .map_err(PruneBlocksTaskError::ReqwestError)?;
+            .map_err(PruneBlocksTaskError::Reqwest)?;
         if response.status().is_success() {
             Ok(())
         } else {
-            Err(PruneBlocksTaskError::NonSuccessResponse(response.status()))
+            Err(PruneBlocksTaskError::Http(
+                response.status(),
+                storage_host_url,
+            ))
         }
     }
+}
+
+#[derive(sqlx::FromRow)]
+struct StorageHostInfo {
+    pub url: String,
+    pub name: String,
 }
