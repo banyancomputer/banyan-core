@@ -238,6 +238,29 @@ pub async fn handler(
     Ok((StatusCode::OK, Json(response)).into_response())
 }
 
+#[tracing::instrument(skip(field))]
+fn validate_field(
+    field: &multer::Field,
+    expected_name: &str,
+    expected_content_type: &mime::Mime,
+) -> bool {
+    let field_name = field.name();
+
+    if field_name != Some(expected_name) {
+        tracing::warn!(field_name, "field name didn't match expected");
+    }
+
+    let field_content_type = field.content_type();
+    if field_content_type != Some(expected_content_type) {
+        tracing::warn!(
+            ?field_content_type,
+            "field content type didn't match expected"
+        );
+    }
+
+    true
+}
+
 async fn approve_key_fingerprints(
     conn: &mut DatabaseConnection,
     bucket_id: &str,

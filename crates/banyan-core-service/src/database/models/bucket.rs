@@ -59,7 +59,7 @@ impl Bucket {
         todo!()
     }
 
-    #[tracing::instrument(skip(self))]
+    #[tracing::instrument(skip(conn))]
     pub async fn current_version(
         conn: &mut DatabaseConnection,
         bucket_id: &str,
