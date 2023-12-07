@@ -8,6 +8,7 @@ use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
+use url::Url;
 use uuid::Uuid;
 
 use banyan_task::{CurrentTask, TaskLike};
@@ -19,16 +20,16 @@ pub type ReportUploadTaskContext = AppState;
 #[non_exhaustive]
 #[derive(Debug, thiserror::Error)]
 pub enum ReportUploadTaskError {
-    #[error("the task encountered an invalid cid: {0}")]
+    #[error("invalid cid: {0}")]
     InvalidInternalCid(#[from] cid::Error),
-    #[error("the task encountered a sql error: {0}")]
+    #[error("sql error: {0}")]
     DatabaseError(#[from] sqlx::Error),
-    #[error("the task encountered a reqwest error: {0}")]
+    #[error("reqwest error: {0}")]
     ReqwestError(#[from] reqwest::Error),
-    #[error("the task encountered a jwt error: {0}")]
+    #[error("jwt error: {0}")]
     JwtError(#[from] jwt_simple::Error),
-    #[error("the task encountered a non success response")]
-    NonSuccessResponse(http::StatusCode),
+    #[error("http error: {0} response from {1}")]
+    HttpError(http::StatusCode, Url),
 }
 
 #[derive(Deserialize, Serialize)]
@@ -116,7 +117,7 @@ impl TaskLike for ReportUploadTask {
         };
 
         let request = client
-            .post(report_endpoint)
+            .post(report_endpoint.clone())
             .json(&report_upload)
             .bearer_auth(bearer_token);
 
@@ -128,7 +129,10 @@ impl TaskLike for ReportUploadTask {
         if response.status().is_success() {
             Ok(())
         } else {
-            Err(ReportUploadTaskError::NonSuccessResponse(response.status()))
+            Err(ReportUploadTaskError::HttpError(
+                response.status(),
+                report_endpoint,
+            ))
         }
     }
 }
