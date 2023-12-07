@@ -1,10 +1,10 @@
 use sqlx::sqlite::SqlitePoolOptions;
 
 use crate::database::models::{BucketType, MetadataState, StorageClass};
-use crate::database::Database;
+use crate::database::{Database, DatabaseConnection};
 
 pub(crate) async fn create_hot_bucket(
-    database: &Database,
+    conn: &mut DatabaseConnection,
     user_id: &str,
     name: &str,
 ) -> Result<String, sqlx::Error> {
@@ -18,12 +18,12 @@ pub(crate) async fn create_hot_bucket(
         BucketType::Interactive,
         StorageClass::Hot,
     )
-    .fetch_one(database)
+    .fetch_one(conn)
     .await
 }
 
 pub(crate) async fn create_metadata(
-    database: &Database,
+    conn: &mut DatabaseConnection,
     bucket_id: &str,
     root_cid: &str,
     metadata_cid: &str,
@@ -40,12 +40,12 @@ pub(crate) async fn create_metadata(
         12_123_100,
         state,
     )
-    .fetch_one(database)
+    .fetch_one(conn)
     .await
 }
 
 pub(crate) async fn create_user(
-    database: &Database,
+    conn: &mut DatabaseConnection,
     email: &str,
     display_name: &str,
 ) -> Result<String, sqlx::Error> {
@@ -57,28 +57,34 @@ pub(crate) async fn create_user(
         email,
         display_name,
     )
-    .fetch_one(database)
+    .fetch_one(conn)
     .await
 }
 
-pub(crate) async fn current_metadata(db: &Database, bucket_id: &str, counter: usize) -> String {
-    sample_metadata(db, bucket_id, counter, MetadataState::Current).await
+pub(crate) async fn current_metadata(
+    conn: &mut DatabaseConnection,
+    bucket_id: &str,
+    counter: usize,
+) -> String {
+    sample_metadata(conn, bucket_id, counter, MetadataState::Current).await
 }
 
-pub(crate) async fn pending_metadata(db: &Database, bucket_id: &str, counter: usize) -> String {
-    sample_metadata(db, bucket_id, counter, MetadataState::Pending).await
+pub(crate) async fn pending_metadata(
+    conn: &mut DatabaseConnection,
+    bucket_id: &str,
+    counter: usize,
+) -> String {
+    sample_metadata(conn, bucket_id, counter, MetadataState::Pending).await
 }
 
-pub(crate) async fn sample_bucket(db: &Database) -> String {
-    let user_id = sample_user(db).await;
-
-    create_hot_bucket(db, &user_id, "Habernero")
+pub(crate) async fn sample_bucket(conn: &mut DatabaseConnection, user_id: &str) -> String {
+    create_hot_bucket(conn, user_id, "Habernero")
         .await
         .expect("bucket creation")
 }
 
 pub(crate) async fn sample_metadata(
-    db: &Database,
+    conn: &mut DatabaseConnection,
     bucket_id: &str,
     counter: usize,
     state: MetadataState,
@@ -86,13 +92,13 @@ pub(crate) async fn sample_metadata(
     let root_cid = format!("root-cid-{}", counter);
     let metadata_cid = format!("metadata-cid-{}", counter);
 
-    create_metadata(db, bucket_id, &root_cid, &metadata_cid, state)
+    create_metadata(conn, bucket_id, &root_cid, &metadata_cid, state)
         .await
         .expect("current metadata creation")
 }
 
-pub(crate) async fn sample_user(db: &Database) -> String {
-    create_user(db, "francesca@sample.users.org", "Francesca Tester")
+pub(crate) async fn sample_user(conn: &mut DatabaseConnection, email: &str) -> String {
+    create_user(conn, email, "Generic Tester")
         .await
         .expect("user creation")
 }

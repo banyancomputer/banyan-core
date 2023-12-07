@@ -6,7 +6,7 @@ use uuid::Uuid;
 
 use crate::app::AppState;
 use crate::database::models::MetadataState;
-use crate::database::Database;
+use crate::database::{Database, DatabaseConnection};
 use crate::extractors::StorageProviderIdentity;
 
 /// When a client finishes uploading their data to either staging or a storage host, the storage
@@ -22,15 +22,16 @@ pub async fn handler(
     let db_metadata_id = metadata_id.to_string();
 
     let database = state.database();
+    let mut db_conn = database.acquire().await?;
 
     redeem_storage_grant(
-        &database,
+        &mut *db_conn,
         &storage_provider.id,
         &request.storage_authorization_id,
     )
     .await?;
     associate_upload(
-        &database,
+        &mut *db_conn,
         &storage_provider.id,
         &db_metadata_id,
         &request.storage_authorization_id,
@@ -39,12 +40,12 @@ pub async fn handler(
 
     for block_cid in request.normalized_cids.iter() {
         sqlx::query!("INSERT OR IGNORE INTO blocks (cid) VALUES ($1);", block_cid)
-            .execute(&database)
+            .execute(&mut *db_conn)
             .await
             .map_err(ReportUploadError::UnableToRecordBlock)?;
 
         let block_id = sqlx::query_scalar!("SELECT id FROM blocks WHERE cid = $1", block_cid)
-            .fetch_one(&database)
+            .fetch_one(&mut *db_conn)
             .await
             .map_err(ReportUploadError::UnableToRecordBlock)?;
 
@@ -57,14 +58,14 @@ pub async fn handler(
             db_metadata_id,
             storage_provider.id,
         )
-        .execute(&database)
+        .execute(&mut *db_conn)
         .await
         .map_err(ReportUploadError::UnableToRecordBlock)?;
     }
 
-    if can_become_current(&database, &db_metadata_id).await? {
-        mark_metadata_current(&database, &db_metadata_id, request.data_size).await?;
-        mark_outdated_metadata(&database, &db_metadata_id).await?;
+    if can_become_current(&mut *db_conn, &db_metadata_id).await? {
+        mark_metadata_current(&mut *db_conn, &db_metadata_id, request.data_size).await?;
+        mark_outdated_metadata(&mut *db_conn, &db_metadata_id).await?;
     }
 
     Ok((StatusCode::NO_CONTENT, ()).into_response())
@@ -79,6 +80,9 @@ pub struct ReportUploadRequest {
 
 #[derive(Debug, thiserror::Error)]
 pub enum ReportUploadError {
+    #[error("failed to run query against database: {0}")]
+    QueryFailed(#[from] sqlx::Error),
+
     #[error("failed to mark the completed upload as current: {0}")]
     MarkCurrentFailed(sqlx::Error),
 
@@ -104,7 +108,7 @@ impl IntoResponse for ReportUploadError {
 }
 
 async fn associate_upload(
-    database: &Database,
+    conn: &mut DatabaseConnection,
     provider_id: &str,
     metadata_id: &str,
     authorization_id: &str,
@@ -117,7 +121,7 @@ async fn associate_upload(
         metadata_id,
         authorization_id,
     )
-    .execute(database)
+    .execute(&mut *conn)
     .await
     .map_err(ReportUploadError::NoUploadAssociation)?;
 
@@ -125,14 +129,14 @@ async fn associate_upload(
 }
 
 async fn can_become_current(
-    database: &Database,
+    conn: &mut DatabaseConnection,
     metadata_id: &str,
 ) -> Result<bool, ReportUploadError> {
     let checked_created_at = sqlx::query_scalar!(
         r#"SELECT created_at FROM metadata WHERE id = $1;"#,
         metadata_id,
     )
-    .fetch_one(database)
+    .fetch_one(&mut *conn)
     .await
     .map_err(ReportUploadError::MarkCurrentFailed)?;
 
@@ -142,7 +146,7 @@ async fn can_become_current(
                ORDER BY created_at DESC
                LIMIT 1;"#
     )
-    .fetch_optional(database)
+    .fetch_optional(&mut *conn)
     .await
     .map_err(ReportUploadError::MarkCurrentFailed)?;
 
@@ -155,7 +159,7 @@ async fn can_become_current(
 }
 
 async fn mark_metadata_current(
-    database: &Database,
+    conn: &mut DatabaseConnection,
     metadata_id: &str,
     stored_size: i64,
 ) -> Result<(), ReportUploadError> {
@@ -165,7 +169,7 @@ async fn mark_metadata_current(
                WHERE id = $1;"#,
         metadata_id,
     )
-    .fetch_one(database)
+    .fetch_one(&mut *conn)
     .await
     .map_err(ReportUploadError::MarkCurrentFailed)?;
 
@@ -179,7 +183,7 @@ async fn mark_metadata_current(
         metadata_id,
         stored_size,
     )
-    .execute(database)
+    .execute(&mut *conn)
     .await
     .map_err(ReportUploadError::MarkCurrentFailed)?;
 
@@ -189,7 +193,7 @@ async fn mark_metadata_current(
 // Downgrade other metadata for this bucket to outdated if they were in current state except for
 // the metadata that was just updated
 async fn mark_outdated_metadata(
-    database: &Database,
+    conn: &mut DatabaseConnection,
     metadata_id: &str,
 ) -> Result<(), ReportUploadError> {
     sqlx::query!(
@@ -200,7 +204,7 @@ async fn mark_outdated_metadata(
                 AND id != $1;"#,
         metadata_id,
     )
-    .execute(database)
+    .execute(&mut *conn)
     .await
     .map_err(ReportUploadError::MarkOutdatedFailed)?;
 
@@ -208,7 +212,7 @@ async fn mark_outdated_metadata(
 }
 
 async fn redeem_storage_grant(
-    database: &Database,
+    conn: &mut DatabaseConnection,
     provider_id: &str,
     authorization_id: &str,
 ) -> Result<(), ReportUploadError> {
@@ -221,7 +225,7 @@ async fn redeem_storage_grant(
         provider_id,
         authorization_id,
     )
-    .execute(database)
+    .execute(&mut *conn)
     .await
     .map_err(ReportUploadError::RedeemFailed)?;
 
@@ -238,11 +242,13 @@ mod tests {
     #[tokio::test]
     async fn test_marking_metadata_current() {
         let db = test_helpers::setup_database().await;
+        let mut conn = db.acquire().await.expect("connection");
 
-        let bucket_id = test_helpers::sample_bucket(&db).await;
-        let pending_metadata_id = test_helpers::pending_metadata(&db, &bucket_id, 1).await;
+        let user_id = test_helpers::sample_user(&mut *conn, "Francesca Tester").await;
+        let bucket_id = test_helpers::sample_bucket(&mut *conn, &user_id).await;
+        let pending_metadata_id = test_helpers::pending_metadata(&mut *conn, &bucket_id, 1).await;
 
-        mark_metadata_current(&db, &pending_metadata_id, 1_200_000)
+        mark_metadata_current(&mut *conn, &pending_metadata_id, 1_200_000)
             .await
             .expect("update to succeed");
 
@@ -250,7 +256,7 @@ mod tests {
             r#"SELECT state as 'state: MetadataState' FROM metadata WHERE id = $1;"#,
             pending_metadata_id,
         )
-        .fetch_one(&db)
+        .fetch_one(&mut *conn)
         .await
         .expect("metadata existence");
 
@@ -260,8 +266,9 @@ mod tests {
     #[tokio::test]
     async fn test_marking_metadata_when_missing_errors() {
         let db = test_helpers::setup_database().await;
+        let mut conn = db.acquire().await.expect("connection");
 
-        let result = mark_metadata_current(&db, "not-a-real-id", 1_200_000).await;
+        let result = mark_metadata_current(&mut conn, "not-a-real-id", 1_200_000).await;
 
         assert!(result.is_err());
     }
@@ -269,32 +276,38 @@ mod tests {
     #[tokio::test]
     async fn test_can_become_current() {
         let db = test_helpers::setup_database().await;
-        let bucket_id = test_helpers::sample_bucket(&db).await;
+        let mut conn = db.acquire().await.expect("connection");
+
+        let user_id = test_helpers::sample_user(&mut *conn, "user@domain.tld").await;
+        let bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
 
         // an unknown ID is an error
-        let result = can_become_current(&db, "missing-id").await;
+        let result = can_become_current(&mut conn, "missing-id").await;
         assert!(result.is_err());
 
-        let older_pending_metadata_id = test_helpers::pending_metadata(&db, &bucket_id, 1).await;
+        let older_pending_metadata_id =
+            test_helpers::pending_metadata(&mut conn, &bucket_id, 1).await;
 
         // no current metadata present, so we can become current
-        assert!(can_become_current(&db, &older_pending_metadata_id)
+        assert!(can_become_current(&mut conn, &older_pending_metadata_id)
             .await
             .expect("can check"));
 
         tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
-        test_helpers::current_metadata(&db, &bucket_id, 2).await;
+        test_helpers::current_metadata(&mut conn, &bucket_id, 2).await;
 
         // there is a newer version, we can't become current anymore
-        assert!(!can_become_current(&db, &older_pending_metadata_id)
+        assert!(!can_become_current(&mut conn, &older_pending_metadata_id)
             .await
             .expect("can check"));
 
         // the id is newer than the current one and exists
         tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
-        let newer_pending_metadata_id = test_helpers::pending_metadata(&db, &bucket_id, 3).await;
-        let result = can_become_current(&db, &newer_pending_metadata_id).await;
-        dbg!(&result);
+
+        let newer_pending_metadata_id =
+            test_helpers::pending_metadata(&mut conn, &bucket_id, 3).await;
+        let result = can_become_current(&mut conn, &newer_pending_metadata_id).await;
+
         assert!(result.expect("can check"));
     }
 }
