@@ -1,7 +1,12 @@
 name: 🌐 Continuous Integration
-
 on:
-  - pull_request
+  pull_request:
+    branches:
+      - main
+  push:
+    tags:
+    branches:
+      - main
 
 jobs:
   build_core_frontend:
