@@ -34,7 +34,7 @@ interface TombInterface {
 	createDirectory: (bucket: Bucket, path: string[], name: string) => Promise<void>;
 	download: (bucket: Bucket, path: string[], name: string) => Promise<void>;
 	getFile: (bucket: Bucket, path: string[], name: string) => Promise<ArrayBuffer>;
-	shareFile: (bucket: Bucket, file: BrowserObject) => Promise<string>;
+	shareFile: (bucket: Bucket, path: string[]) => Promise<string>;
 	makeCopy: (bucket: Bucket, path: string[], name: string) => void;
 	moveTo: (bucket: Bucket, from: string[], to: string[]) => Promise<void>;
 	uploadFile: (nucket: Bucket, path: string[], name: string, file: any, folder?: BrowserObject) => Promise<void>;
@@ -227,10 +227,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	const restore = async (bucket: Bucket, snapshot: WasmSnapshot) => await tombMutex(bucket.mount, async mount => await mount.restore(snapshot));
 
 	/** Generates public link to share file. */
-	const shareFile = async (bucket: Bucket, file: BrowserObject) =>
-		/** TODO: implement sharing logic when it will be added to tomb. */
-		''
-		;
+	const shareFile = async (bucket: Bucket, path: string[]) => await tombMutex(bucket.mount, async mount => await mount.shareFile(path));
 
 	/** Approves access key for bucket */
 	const approveBucketAccess = async (bucket: Bucket, bucket_key_id: string) => {
@@ -400,7 +397,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 		<TombContext.Provider
 			value={{
 				tomb, buckets, storageUsage, trash, areBucketsLoading, selectedBucket, error,
-				getBuckets, getBucketsFiles, getBucketsKeys, selectBucket, getSelectedBucketFiles,
+				getBuckets, getBucketsFiles, getBucketsKeys, selectBucket, getSelectedBucketFiles, 
 				takeColdSnapshot, getBucketShapshots, createBucketAndMount, deleteBucket,
 				getFile, createDirectory, uploadFile, purgeSnapshot,
 				removeBucketAccess, approveBucketAccess, completeDeviceKeyRegistration, shareFile, download, moveTo,

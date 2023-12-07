@@ -36,24 +36,15 @@ pub struct SharedFileQuery {
 #[axum::debug_handler]
 pub async fn handler(
     State(state): State<AppState>,
-    Query(payload): Query<String>,
+    Query(payload): Query<SharedFileQuery>,
 ) -> Result<Response, SharedFileError> {
     let (tx, mut rx) = mpsc::channel(1);
     let database = state.database();
     let service_name = state.service_name().to_string();
     let service_key = state.secrets().service_key();
-    let shared_file = SharedFile::import_b64_url(payload)?;
+    let shared_file = SharedFile::import_b64_url(payload.payload)?;
 
     // Wnfs relies on Rc, so we need to spawn this fetching task on a separate thread
-    // tokio::spawn(async move {
-    //     let result = fetch_data(database, service_name, service_key, shared_file).await;
-    //     if let Err(e) = tx.send(result).await {
-    //         tracing::error!(
-    //             "share call failed to send result back to main thread: {}",
-    //             e
-    //         );
-    //     }
-    // });
     thread::spawn(move || {
         let rt = tokio::runtime::Runtime::new().unwrap();
         rt.block_on(async move {
@@ -120,10 +111,41 @@ pub enum SharedFileError {
 
 impl IntoResponse for SharedFileError {
     fn into_response(self) -> Response {
-        {
-            tracing::error!("encountered error reading user: {self}");
-            let err_msg = serde_json::json!({"msg": "backend service experienced an issue servicing the request"});
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
+        use SharedFileError as SFE;
+
+        match &self {
+            SFE::Database(_)
+            | SFE::Cid(_)
+            | SFE::Reqwest(_)
+            | SFE::Jwt(_)
+            | SFE::Url(_)
+            | SFE::Http(_, _)
+            | SFE::UnableToLoadForest(_)
+            | SFE::Wnfs(_) => {
+                tracing::error!("{self}");
+                let err_msg = serde_json::json!({ "msg": "a backend service experienced an issue servicing the request" });
+                (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
+            }
+            SFE::TemporalShare => {
+                tracing::error!("{self}");
+                let err_msg = serde_json::json!({ "msg": "temporal shares are not supported" });
+                (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
+            }
+            SFE::UnableToDecodePayload(_) => {
+                tracing::error!("{self}");
+                let err_msg = serde_json::json!({ "msg": "invalid share payload" });
+                (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
+            }
+            SFE::ChannelClosed => {
+                tracing::error!("{self}");
+                let err_msg = serde_json::json!({ "msg": "backend service experienced an issue servicing the request" });
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
+            }
+            SFE::Timeout => {
+                tracing::error!("{self}");
+                let err_msg = serde_json::json!({ "msg": "backend service experienced an issue servicing the request" });
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
+            }
         }
     }
 }
@@ -199,9 +221,7 @@ impl ShareBlockStore {
             FROM storage_hosts sh
             JOIN block_locations bl ON sh.id = bl.storage_host_id
             JOIN blocks b ON bl.block_id = b.id
-            WHERE b.cid = $1
-            AND bl.expired_at IS NULL
-            AND bl.pruned_at IS NULL;",
+            WHERE b.cid = $1;",
             normalized_cid
         )
         .fetch_one(&self.database)
@@ -236,7 +256,7 @@ impl ShareBlockStore {
         // Build and Attach the auth token to the request
         let url = Url::parse(&storage_host_info.url)?;
         // Tack on the api route + base32 default CID encoding
-        let url = url.join(&format!("/api/v1/core/block/{cid}"))?;
+        let url = url.join(&format!("/api/v1/blocks/{cid}"))?;
         let request = self.client.get(url.clone()).bearer_auth(bearer_token);
 
         // Send the request and handle the response.
@@ -255,6 +275,7 @@ impl ShareBlockStore {
 #[async_trait(?Send)]
 impl BlockStore for ShareBlockStore {
     async fn get_block(&self, cid: &Cid) -> AnyResult<Cow<Vec<u8>>> {
+        println!("get_block: {:?}", cid);
         // Find the storage host that has the block
         let storage_host_info = self.find_storage_host(cid).await?;
         // Get the block from the storage host
