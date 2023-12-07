@@ -10,7 +10,7 @@ export const CreateBucketModal = () => {
     const { closeModal } = useModal();
     const { messages } = useIntl();
     const [bucketName, setBucketName] = useState('');
-    const { createBucket } = useTomb();
+    const { createBucketAndMount } = useTomb();
     const [bucketType, setBucketType] = useState('interactive');
     const [storageClass, setStorageClass] = useState('hot');
     const isBucketDataFilled = useMemo(() =>
@@ -35,7 +35,7 @@ export const CreateBucketModal = () => {
 
     const create = async () => {
         try {
-            await createBucket(bucketName, storageClass, bucketType);
+            await createBucketAndMount(bucketName, storageClass, bucketType);
             closeModal();
         } catch (error: any) {
             ToastNotifications.error(`${messages.creationError}`, `${messages.tryAgain}`, create);
