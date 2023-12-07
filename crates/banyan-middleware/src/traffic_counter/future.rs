@@ -1,4 +1,3 @@
-use axum::response::IntoResponse;
 use std::{
     future::Future,
     pin::Pin,
@@ -29,7 +28,7 @@ where
 {
     type Output = Result<Response<ResponseCounter<B>>, E>;
 
-    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let this = self.project();
         println!("ResponseFuture poll() start size");
         // return this.inner.poll(cx);

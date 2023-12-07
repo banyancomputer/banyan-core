@@ -3,7 +3,7 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 
 use bytes::Buf;
-use futures::ready;
+use futures_util::ready;
 use http::HeaderMap;
 use http_body::{Body, SizeHint};
 use pin_project_lite::pin_project;

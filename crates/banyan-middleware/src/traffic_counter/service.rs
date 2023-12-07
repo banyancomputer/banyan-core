@@ -1,15 +1,11 @@
 use crate::traffic_counter::body::{RequestCounter, ResponseCounter};
 use crate::traffic_counter::future::ResponseFuture;
-use axum::extract::connect_info::IntoMakeServiceWithConnectInfo;
-use axum::routing::IntoMakeService;
-use axum::ServiceExt;
-use http::{HeaderValue, Request, Response};
+use http::{Request, Response};
 use http_body::Body;
 use std::task::{Context, Poll};
 use tokio::sync::oneshot;
 use tower::Service;
 
-// TrafficCounter Middleware
 #[derive(Clone, Debug)]
 pub struct TrafficCounter<S> {
     inner: S,
@@ -42,7 +38,6 @@ where
             .headers()
             .get("x-banyan-request-id")
             .map_or_else(String::new, |id| id.to_str().unwrap_or("").to_string());
-        let request_size = req.body().total_bytes();
         let res = ResponseFuture {
             inner: self.inner.call(req),
             rx_bytes_received,

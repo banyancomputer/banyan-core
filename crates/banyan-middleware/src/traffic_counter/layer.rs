@@ -1,5 +1,5 @@
 use crate::traffic_counter::service::TrafficCounter;
-use tower_layer::Layer;
+use tower::{Layer};
 
 #[derive(Clone, Debug)]
 pub struct TrafficCounterLayer;
