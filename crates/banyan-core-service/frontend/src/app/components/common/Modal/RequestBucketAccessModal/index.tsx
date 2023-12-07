@@ -1,6 +1,8 @@
 import React from 'react';
 import { useIntl } from 'react-intl';
 
+import { SubmitButton } from '@components/common/SubmitButton';
+
 import { useModal } from '@app/contexts/modals';
 import { Bucket } from '@app/types/bucket';
 
@@ -30,12 +32,11 @@ export const RequestBucketAccessModal: React.FC<{ bucket: Bucket }> = ({ bucket 
                 >
                     {`${messages.cancel}`}
                 </button>
-                <button
-                    className="btn-primary w-1/2 py-3 px-4"
-                    onClick={requestAccess}
-                >
-                    {`${messages.requestAccess}`}
-                </button>
+                <SubmitButton
+                    text={`${messages.requestAccess}`}
+                    action={requestAccess}
+                    className="w-1/2"
+                />
             </div>
         </div>
     )
