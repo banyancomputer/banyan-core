@@ -1,15 +1,20 @@
 use std::sync::Arc;
 use std::time::Duration;
 
+use axum::body::{boxed, BoxBody, Bytes};
 use axum::error_handling::HandleErrorLayer;
-use axum::extract::DefaultBodyLimit;
+use axum::extract::{DefaultBodyLimit, State};
+use axum::http::Request;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
+use axum::response::Response;
 use axum::routing::{get, get_service};
-use axum::{Json, Router};
-use axum::{Server, ServiceExt};
+use axum::{Json, Router, Server, ServiceExt};
+use axum::handler::HandlerWithoutStateExt;
+use banyan_middleware::traffic_counter::layer::TrafficCounterLayer;
 use futures::future::join_all;
-use http::header;
+use http::header::CONTENT_LENGTH;
+use http::{header, HeaderValue};
 use tokio::sync::watch;
 use tokio::task::JoinHandle;
 use tower::ServiceBuilder;
@@ -17,15 +22,14 @@ use tower_http::request_id::MakeRequestUuid;
 use tower_http::sensitive_headers::{
     SetSensitiveRequestHeadersLayer, SetSensitiveResponseHeadersLayer,
 };
-use tower_http::trace::{DefaultMakeSpan, DefaultOnFailure, DefaultOnResponse, TraceLayer};
+use tower_http::trace::{
+    DefaultMakeSpan, DefaultOnFailure, DefaultOnRequest, DefaultOnResponse, OnRequest, OnResponse,
+    TraceLayer,
+};
 use tower_http::validate_request::ValidateRequestHeaderLayer;
 use tower_http::{LatencyUnit, ServiceBuilderExt};
-use tracing::Level;
-
-use axum::body::{boxed, BoxBody};
-use axum::http::Request;
-use axum::response::Response;
-use tower::ServiceExt as OtherServiceExt;
+use tracing::{Level, Span};
+// use tower::ServiceExt as OtherServiceExt;
 
 use crate::app::{AppState, Config};
 use crate::tasks::start_background_workers;
@@ -91,15 +95,20 @@ pub async fn graceful_shutdown_blocker() -> (JoinHandle<()>, watch::Receiver<()>
 }
 
 async fn login_page_handler<B: std::marker::Send + 'static>(
+    State(state): State<AppState>,
     req: Request<B>,
 ) -> Result<Response<BoxBody>, (StatusCode, String)> {
-    match ServeFile::new("./dist/login.html").oneshot(req).await {
-        Ok(res) => Ok(res.map(boxed)),
-        Err(err) => Err((
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Something went wrong serving the login page: {}", err),
-        )),
-    }
+    Ok(Response::default())
+    // match ServeFile::new(&format!("{}/dist/login.html", state.working_dir()))
+    //     .oneshot(req)
+    //     .await
+    // {
+    //     Ok(res) => Ok(res.map(boxed)),
+    //     Err(err) => Err((
+    //         StatusCode::INTERNAL_SERVER_ERROR,
+    //         format!("Something went wrong serving the login page: {}", err),
+    //     )),
+    // }
 }
 
 async fn tos_handler<B: std::marker::Send + 'static>(
@@ -113,6 +122,32 @@ async fn tos_handler<B: std::marker::Send + 'static>(
     });
 
     Ok((StatusCode::OK, Json(tos_response)).into_response())
+}
+#[derive(Clone)]
+
+struct OurOnResponse {}
+#[derive(Clone)]
+struct OurOnRequest {}
+
+impl OurOnResponse {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
+
+impl<B> OnResponse<B> for OurOnResponse {
+    fn on_response(self, response: &http::Response<B>, latency: Duration, span: &Span) {
+        // response.headers().iter().for_each(|(k, v)| {
+        //     tracing::info!("header: {:?} {:?}", k, v);
+        // });
+        let response_size = response
+            .headers()
+            .get(CONTENT_LENGTH)
+            .and_then(|v| v.to_str().ok())
+            .and_then(|v| v.parse::<usize>().ok())
+            .unwrap_or(0);
+        tracing::info!(response_size =?response_size, "finished processing request");
+    }
 }
 
 pub async fn run(config: Config) {
@@ -144,21 +179,22 @@ pub async fn run(config: Config) {
         .on_failure(DefaultOnFailure::new().latency_unit(LatencyUnit::Micros));
 
     let middleware_stack = ServiceBuilder::new()
-        .layer(HandleErrorLayer::new(handle_error))
-        .load_shed()
-        .concurrency_limit(1024)
-        .timeout(Duration::from_secs(REQUEST_TIMEOUT_SECS))
-        .layer(SetSensitiveRequestHeadersLayer::from_shared(Arc::clone(
-            &sensitive_headers,
-        )))
-        .set_x_request_id(MakeRequestUuid)
-        .layer(trace_layer)
-        .propagate_x_request_id()
-        .layer(DefaultBodyLimit::disable())
-        .layer(ValidateRequestHeaderLayer::accept("application/json"))
-        .layer(SetSensitiveResponseHeadersLayer::from_shared(
-            sensitive_headers,
-        ));
+        // .layer(HandleErrorLayer::new(handle_error))
+        // .load_shed()
+        // .concurrency_limit(1024)
+        // .timeout(Duration::from_secs(REQUEST_TIMEOUT_SECS))
+        // .layer(SetSensitiveRequestHeadersLayer::from_shared(Arc::clone(
+        //     &sensitive_headers,
+        // )))
+        // .set_x_request_id(MakeRequestUuid)
+        // .layer(trace_layer)
+        // .propagate_x_request_id()
+        // .layer(DefaultBodyLimit::disable())
+        // .layer(ValidateRequestHeaderLayer::accept("application/json"))
+        // .layer(SetSensitiveResponseHeadersLayer::from_shared(
+        //     sensitive_headers,
+        // ))
+        .layer(TrafficCounterLayer::new());
 
     let static_assets = ServeDir::new("dist").not_found_service(
         get_service(ServeFile::new("./dist/index.html")).handle_error(|_| async move {
@@ -176,7 +212,7 @@ pub async fn run(config: Config) {
         .with_state(app_state)
         .fallback_service(static_assets);
 
-    let app = middleware_stack.service(root_router);
+    let app = middleware_stack.service(root_router.into_make_service());
 
     tracing::info!(listen_addr = ?listen_addr, "service starting up");
 
@@ -197,5 +233,5 @@ pub async fn run(config: Config) {
         Duration::from_secs(5),
         join_all([worker_handle, web_handle]),
     )
-    .await;
+        .await;
 }

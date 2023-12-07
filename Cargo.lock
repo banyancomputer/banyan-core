@@ -278,6 +278,7 @@ dependencies = [
  "async-trait",
  "axum",
  "axum-extra",
+ "banyan-middleware",
  "banyan-task",
  "base64 0.21.5",
  "bincode",
@@ -326,6 +327,23 @@ dependencies = [
  "url",
  "uuid",
  "validify",
+]
+
+[[package]]
+name = "banyan-middleware"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "bytes",
+ "futures",
+ "futures-util",
+ "http",
+ "http-body",
+ "pin-project-lite",
+ "pin-utils",
+ "tokio",
+ "tower",
+ "tower-layer",
 ]
 
 [[package]]

@@ -6,6 +6,7 @@ license = "LicenseRef-LICENSE.txt"
 
 [dependencies]
 banyan-task = { path = "../banyan-task", version = "^0.1"}
+banyan-middleware = { path = "../banyan-middleware", version = "^0.1"}
 
 dotenvy = "^0.15"
 async-trait = "^0.1"
