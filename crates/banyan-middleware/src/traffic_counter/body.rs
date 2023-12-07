@@ -15,7 +15,8 @@ pin_project! {
         total_bytes: usize,
         tx_bytes: Option<oneshot::Sender<usize>>,
         #[pin]
-        inner: B,
+    // inner: Pin<Box<dyn Body<Data = D, Error = E>>>,
+        inner: B ,
     }
 }
 
@@ -66,10 +67,9 @@ impl<B> ResponseCounter<B> {
 impl<B> Body for RequestCounter<B>
 where
     B: Body,
-    B::Error: Into<Box<dyn Error + Send + Sync>>,
 {
     type Data = B::Data;
-    type Error = Box<dyn Error + Send + Sync>;
+    type Error = B::Error;
 
     fn poll_data(
         self: Pin<&mut Self>,

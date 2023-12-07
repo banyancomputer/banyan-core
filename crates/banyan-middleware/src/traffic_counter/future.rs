@@ -4,12 +4,13 @@ use std::{
     task::{Context, Poll},
 };
 
-use crate::traffic_counter::body::ResponseCounter;
 use futures_util::ready;
 use http::Response;
 use http_body::Body;
 use pin_project_lite::pin_project;
 use tokio::sync::oneshot;
+
+use crate::traffic_counter::body::ResponseCounter;
 
 pin_project! {
     #[derive(Debug)]

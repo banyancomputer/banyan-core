@@ -1,10 +1,13 @@
-use crate::traffic_counter::body::{RequestCounter, ResponseCounter};
-use crate::traffic_counter::future::ResponseFuture;
+use std::task::{Context, Poll};
+
 use http::{Request, Response};
 use http_body::Body;
-use std::task::{Context, Poll};
 use tokio::sync::oneshot;
-use tower::Service;
+
+use tower_service::Service;
+
+use crate::traffic_counter::body::ResponseCounter;
+use crate::traffic_counter::future::ResponseFuture;
 
 #[derive(Clone, Debug)]
 pub struct TrafficCounter<S> {
@@ -20,7 +23,9 @@ impl<S> TrafficCounter<S> {
 impl<ReqBody, ResBody, S> Service<Request<ReqBody>> for TrafficCounter<S>
 where
     ResBody: Body,
-    S: Service<Request<RequestCounter<ReqBody>>, Response = Response<ResBody>>,
+    // TODO: Comment out this line and line 40 to reproduce non-implemented trait bound
+    // S: Service<Request<RequestCounter<ReqBody>>, Response = Response<ResBody>>,
+    S: Service<Request<ReqBody>, Response = Response<ResBody>>,
 {
     type Response = Response<ResponseCounter<ResBody>>;
     type Error = S::Error;
@@ -33,11 +38,13 @@ where
 
     fn call(&mut self, req: Request<ReqBody>) -> Self::Future {
         let (tx_bytes_received, rx_bytes_received) = oneshot::channel::<usize>();
-        let req = req.map(|body| RequestCounter::new(body, tx_bytes_received));
+        // TODO: Comment out this line and line 25 to reproduce non-implemented trait bound
+        // let req = req.map(|body| RequestCounter::new(body, tx_bytes_received));
         let request_id = req
             .headers()
             .get("x-banyan-request-id")
             .map_or_else(String::new, |id| id.to_str().unwrap_or("").to_string());
+
         let res = ResponseFuture {
             inner: self.inner.call(req),
             rx_bytes_received,

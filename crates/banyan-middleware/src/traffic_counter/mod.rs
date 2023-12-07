@@ -1,4 +1,4 @@
+pub mod body;
+pub mod future;
 pub mod layer;
-mod service;
-mod body;
-mod future;
+pub mod service;
