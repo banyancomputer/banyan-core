@@ -59,15 +59,8 @@ impl TaskLike for PruneBlocksTask {
     type Context = PruneBlocksTaskContext;
 
     async fn run(&self, _task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
-        let mut db_conn = ctx
-            .database()
-            .acquire()
-            .await
-            .map_err(PruneBlocksTaskError::Database)?;
-        let mut transaction = db_conn
-            .begin()
-            .await
-            .map_err(PruneBlocksTaskError::Database)?;
+        let mut db_conn = ctx.database().acquire().await?;
+        let mut transaction = db_conn.begin().await?;
 
         for prune_block in &self.prune_blocks {
             let metadata_id = prune_block.metadata_id.to_string();
@@ -85,8 +78,7 @@ impl TaskLike for PruneBlocksTask {
                 metadata_id
             )
             .fetch_one(&mut *transaction)
-            .await
-            .map_err(PruneBlocksTaskError::Database)?;
+            .await?;
 
             // Set the specifiec block as pruned
             sqlx::query!(
@@ -98,16 +90,12 @@ impl TaskLike for PruneBlocksTask {
                 unique_uploads_block.block_id
             )
             .execute(&mut *transaction)
-            .await
-            .map_err(PruneBlocksTaskError::Database)?;
+            .await?;
         }
 
         report_pruned_blocks(&ctx, &self.prune_blocks).await?;
 
-        transaction
-            .commit()
-            .await
-            .map_err(PruneBlocksTaskError::Database)?;
+        transaction.commit().await?;
         Ok(())
     }
 }
@@ -141,19 +129,14 @@ async fn report_pruned_blocks(
     claims.create_nonce();
     claims.issued_at = Some(Clock::now_since_epoch());
 
-    let bearer_token = service_signing_key
-        .sign(claims)
-        .map_err(PruneBlocksTaskError::Jwt)?;
+    let bearer_token = service_signing_key.sign(claims)?;
 
     let request = client
         .post(report_endpoint.clone())
         .json(&prune_blocks)
         .bearer_auth(bearer_token);
 
-    let response = request
-        .send()
-        .await
-        .map_err(PruneBlocksTaskError::Reqwest)?;
+    let response = request.send().await?;
 
     if response.status().is_success() {
         Ok(())

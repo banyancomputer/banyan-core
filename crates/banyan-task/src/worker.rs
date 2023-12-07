@@ -2,8 +2,6 @@
 
 use std::collections::BTreeMap;
 
-use tracing_futures::Instrument;
-
 use crate::panic_safe_future::PanicSafeFuture;
 use crate::{
     CurrentTask, CurrentTaskError, ExecuteTaskFn, QueueConfig, StateFn, Task, TaskExecError,
@@ -48,74 +46,63 @@ where
         }
     }
 
+    #[tracing::instrument(level = "error", skip_all, fields(task_name = %task.task_name, task_id = %task.id))]
     pub async fn run(&self, task: Task) -> Result<(), WorkerError> {
-        let task_error_span = tracing::error_span!(
-            "worker::run",
-            task_name = task.task_name.as_str(),
-            task_id = task.id.as_str()
-        );
+        let task_info = CurrentTask::try_from(&task).map_err(WorkerError::CantMakeCurrent)?;
+        let deserialize_and_run_task_fn = self
+            .task_registry
+            .get(task.task_name.as_str())
+            .ok_or_else(|| WorkerError::UnregisteredTaskName(task.task_name))?
+            .clone();
 
-        let task_run = async {
-            let task_info = CurrentTask::try_from(&task).map_err(WorkerError::CantMakeCurrent)?;
-            let deserialize_and_run_task_fn = self
-                .task_registry
-                .get(task.task_name.as_str())
-                .ok_or_else(|| WorkerError::UnregisteredTaskName(task.task_name))?
-                .clone();
+        let safe_runner = PanicSafeFuture::wrap({
+            let context = (self.context_data_fn)();
+            let payload = task.payload.clone();
 
-            let safe_runner = PanicSafeFuture::wrap({
-                let context = (self.context_data_fn)();
-                let payload = task.payload.clone();
+            async move { deserialize_and_run_task_fn(task_info, payload, context).await }
+        });
 
-                async move { deserialize_and_run_task_fn(task_info, payload, context).await }
-            });
+        // an error here occurs only when the task panicks, deserialization and regular task
+        // execution errors are handled next
+        //
+        // todo: should note the task as having panicked if that's why this failed. There is also a
+        // chance that the worker is corrupted in some way by the panic so I should set a flag on
+        // this worker and handle two consecutive panics as a worker problem. The second task
+        // triggering the panic should be presumed innocent and restored to a runnable state.
+        let task_result = match safe_runner.await {
+            Ok(tr) => tr,
+            Err(err) => {
+                tracing::error!("task panicked: {err}");
+                // todo: save panic message into the task.error and save it back to the memory
+                // store somehow...
+                self.store
+                    .update_state(task.id, TaskState::Panicked)
+                    .await
+                    .map_err(WorkerError::UpdateTaskStatusFailed)?;
 
-            // an error here occurs only when the task panicks, deserialization and regular task
-            // execution errors are handled next
-            //
-            // todo: should note the task as having panicked if that's why this failed. There is also a
-            // chance that the worker is corrupted in some way by the panic so I should set a flag on
-            // this worker and handle two consecutive panics as a worker problem. The second task
-            // triggering the panic should be presumed innocent and restored to a runnable state.
-            let task_result = match safe_runner.await {
-                Ok(tr) => tr,
-                Err(err) => {
-                    tracing::error!("task panicked: {err}");
-                    // todo: save panic message into the task.error and save it back to the memory
-                    // store somehow...
-                    self.store
-                        .update_state(task.id, TaskState::Panicked)
-                        .await
-                        .map_err(WorkerError::UpdateTaskStatusFailed)?;
-
-                    // we didn't complete successfully, but we do want to keep processing tasks for
-                    // now. We may be corrupted due to the panic somehow if additional errors crop up.
-                    // Left as future work to handle this edge case.
-                    return Ok(());
-                }
-            };
-
-            match task_result {
-                Ok(_) => {
-                    self.store
-                        .update_state(task.id, TaskState::Complete)
-                        .await
-                        .map_err(WorkerError::UpdateTaskStatusFailed)?;
-                }
-                Err(err) => {
-                    tracing::error!("task failed with error: {err}");
-
-                    self.store
-                        .errored(task.id, TaskExecError::ExecutionFailed(err.to_string()))
-                        .await
-                        .map_err(WorkerError::RetryTaskFailed)?;
-                }
+                // we didn't complete successfully, but we do want to keep processing tasks for
+                // now. We may be corrupted due to the panic somehow if additional errors crop up.
+                // Left as future work to handle this edge case.
+                return Ok(());
             }
-
-            Ok(())
         };
 
-        task_run.instrument(task_error_span).await?;
+        match task_result {
+            Ok(_) => {
+                self.store
+                    .update_state(task.id, TaskState::Complete)
+                    .await
+                    .map_err(WorkerError::UpdateTaskStatusFailed)?;
+            }
+            Err(err) => {
+                tracing::error!("task failed with error: {err}");
+
+                self.store
+                    .errored(task.id, TaskExecError::ExecutionFailed(err.to_string()))
+                    .await
+                    .map_err(WorkerError::RetryTaskFailed)?;
+            }
+        }
 
         Ok(())
     }
