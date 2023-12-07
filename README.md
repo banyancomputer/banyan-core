@@ -81,6 +81,15 @@ make generate-staging-service-key
 make generate-storage-provider-service-key
 ```
 
+Now, the staging and storage provider services must be registered in the sqlite
+database as potential storage providers. This can be done by running the
+following scipts:
+
+```
+source bin/add_staging_host.sh
+source bin/add_storage_host.sh
+```
+
 The services should now be ready to interact with each other. The steps so far
 only need to be run once or when the environment needs to be reset. The
 remaining instructions are for bringing up the project assuming everything is
