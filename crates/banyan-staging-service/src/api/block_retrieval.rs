@@ -1,17 +1,17 @@
 use axum::extract::{Path, State};
-
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
+use axum_extra::either::Either;
 
 use crate::app::AppState;
 use crate::database::Database;
-use crate::extractors::AuthenticatedClient;
+use crate::extractors::{AuthenticatedClient, PlatformIdentity};
 use crate::upload_store::{ObjectStore, UploadStore};
 
 pub async fn handler(
     State(state): State<AppState>,
-    client: AuthenticatedClient,
+    client: Either<AuthenticatedClient, PlatformIdentity>,
     store: UploadStore,
     Path(cid): Path<String>,
 ) -> Result<Response, BlockRetrievalError> {
@@ -22,8 +22,15 @@ pub async fn handler(
         .expect("parsed cid to unparse");
 
     let block_details = block_from_normalized_cid(&db, &normalized_cid).await?;
-    if block_details.platform_id != client.platform_id().to_string() {
-        return Err(BlockRetrievalError::NotBlockOwner);
+    match client {
+        // If this is an authenticated client, we need to make sure they own the block they're trying to retrieve
+        Either::E1(client) => {
+            if block_details.platform_id != client.platform_id().to_string() {
+                return Err(BlockRetrievalError::NotBlockOwner);
+            }
+        }
+        // Otherwise just let the platform identity pass through
+        Either::E2(_) => {}
     }
 
     let byte_start = block_details.byte_offset as usize;
