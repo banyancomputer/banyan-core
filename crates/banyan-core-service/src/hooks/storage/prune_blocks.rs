@@ -61,9 +61,9 @@ pub async fn handler(
 #[non_exhaustive]
 #[derive(Debug, thiserror::Error)]
 pub enum PruneBlocksHookError {
-    #[error("the task encountered a sql error: {0}")]
+    #[error("sql error: {0}")]
     SqlxError(#[from] sqlx::Error),
-    #[error("the task encountered an invalid cid: {0}")]
+    #[error("invalid cid: {0}")]
     InvalidCid(#[from] cid::Error),
 }
 
