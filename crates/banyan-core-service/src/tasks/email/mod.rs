@@ -32,10 +32,10 @@ pub struct EmailTaskContext {
 #[non_exhaustive]
 #[derive(Debug, thiserror::Error)]
 pub enum EmailTaskError {
-    #[error("the task encountered an email error: {0}")]
+    #[error("email error: {0}")]
     EmailError(#[from] EmailError),
 
-    #[error("the task encountered a sql error: {0}")]
+    #[error("sqlx error: {0}")]
     SqlxError(#[from] sqlx::Error),
 }
 
