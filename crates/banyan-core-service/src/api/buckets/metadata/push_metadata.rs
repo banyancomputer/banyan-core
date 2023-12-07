@@ -12,12 +12,11 @@ use futures::{TryStream, TryStreamExt};
 use jwt_simple::prelude::*;
 use object_store::ObjectStore;
 use serde::Deserialize;
-use sqlx::QueryBuilder;
 use tokio::io::{AsyncWrite, AsyncWriteExt};
 use uuid::Uuid;
 
 use crate::app::{AppState, ServiceKey};
-use crate::database::models::{Bucket, MetadataState};
+use crate::database::models::Bucket;
 use crate::database::{Database, DatabaseConnection};
 use crate::extractors::{DataStore, UserIdentity};
 use crate::tasks::{PruneBlock, PruneBlocksTask};
@@ -28,6 +27,9 @@ const ACCOUNT_STORAGE_QUOTA: i64 = 5 * 1_024 * 1_024 * 1_024 * 1_024;
 
 /// Size limit of the pure metadata CAR file that is being uploaded (128MiB)
 const CAR_DATA_SIZE_LIMIT: u64 = 128 * 1_024 * 1_024;
+
+const CAR_MIME_TYPE: &'static mime::Mime =
+    &mime::Mime::from_str("application/vnd.ipfs.car; version=2").expect("valid");
 
 const ONE_HUNDRED_MIB: i64 = 100 * 1024 * 1024;
 
@@ -106,21 +108,9 @@ pub async fn handler(
         }
     };
 
-    // For now warn if our clients aren't well behaved, once we've confirmed our official clients
-    // are behaving correctly these should become BAD_REQUEST error responses.
-
-    if request_field.name() != Some("request-data") {
-        tracing::warn!(
-            "initial multipart field was not named correctly: {:?}",
-            request_field.name()
-        );
-    }
-
-    if request_field.content_type() != Some(&mime::APPLICATION_JSON) {
-        tracing::warn!(
-            "initial multipart field had an unexpected content type: {:?}",
-            request_field.content_type()
-        );
+    if !validate_field(&request_field, "request-data", &mime::APPLICATION_JSON) {
+        let err_msg = serde_json::json!({"msg": "request field is invalid"});
+        return Ok((StatusCode::BAD_REQUEST, Json(err_msg)).into_response());
     }
 
     let request_data_bytes = request_field.bytes().await?;
@@ -132,7 +122,7 @@ pub async fn handler(
         }
     };
 
-    approve_key_fingerprints(
+    Bucket::approve_keys_by_fingerprint(
         &mut conn,
         &bucket_id,
         request_data
@@ -141,8 +131,6 @@ pub async fn handler(
             .map(String::as_str),
     )
     .await?;
-
-    let new_metadata_id = record_upload_start(&database, &bucket_id, &request_data).await?;
 
     let data_field = match multipart.next_field().await? {
         Some(d) => d,
@@ -153,8 +141,13 @@ pub async fn handler(
         }
     };
 
-    // todo: validate name is car-upload (request_data_field.name())
-    // todo: validate type is "application/vnd.ipld.car; version=2" (request_data_field.content_type())
+    if !validate_field(&data_field, "car-upload", CAR_MIME_TYPE) {
+        let err_msg = serde_json::json!({"msg": "upload data is unexpected type"});
+        return Ok((StatusCode::BAD_REQUEST, Json(err_msg)).into_response());
+    }
+
+    let new_metadata_id = record_upload_start(&database, &bucket_id, &request_data).await?;
+
     let file_name = format!("{bucket_id}/{new_metadata_id}.car");
     let (hash, uploaded_size) =
         match store_metadata_stream(&store, file_name.as_str(), data_body).await {
@@ -238,6 +231,10 @@ pub async fn handler(
     Ok((StatusCode::OK, Json(response)).into_response())
 }
 
+/// Validates that a particular multipart field has the expected name and content type. Currently
+/// this only warns when they are mismatched as some of our clients aren't as well behaved as
+/// others. Once our official clients no longer generate warnings this should start rejecting
+/// invalid requests.
 #[tracing::instrument(skip(field))]
 fn validate_field(
     field: &multer::Field,
@@ -245,7 +242,6 @@ fn validate_field(
     expected_content_type: &mime::Mime,
 ) -> bool {
     let field_name = field.name();
-
     if field_name != Some(expected_name) {
         tracing::warn!(field_name, "field name didn't match expected");
     }
@@ -259,29 +255,6 @@ fn validate_field(
     }
 
     true
-}
-
-async fn approve_key_fingerprints(
-    conn: &mut DatabaseConnection,
-    bucket_id: &str,
-    keys: impl IntoIterator<Item = &str>,
-) -> Result<(), sqlx::Error> {
-}
-
-async fn bucked_owned_by_user_id(
-    database: &Database,
-    user_id: &str,
-    bucket_id: &str,
-) -> Result<bool, sqlx::Error> {
-    let id = sqlx::query_scalar!(
-        r#"SELECT id FROM buckets WHERE user_id = $1 AND id = $2;"#,
-        user_id,
-        bucket_id,
-    )
-    .fetch_optional(database)
-    .await?;
-
-    Ok(id.is_some())
 }
 
 async fn currently_consumed_storage(
