@@ -11,7 +11,7 @@ const termsClient = new TermsAndColditionsClient();
 
 export const TermsAndConditionsModal: React.FC<{ terms: string, userData: RawUser }> = ({ terms, userData }) => {
     const { messages } = useIntl();
-    const { openModal } = useModal();
+    const { openModal, closeModal } = useModal();
     const [isTermsRead, setIsTermsRead] = useState(true);
     const termsRef = useRef<HTMLDivElement | null>(null);
 
@@ -20,6 +20,7 @@ export const TermsAndConditionsModal: React.FC<{ terms: string, userData: RawUse
 
         try {
             await termsClient.confirmTermsAndConditions(userData, accepted_tos_at);
+            closeModal();
             /** TODO: uncoment when endpoint would be merged. */
             // openModal(<CompanyNameModal />, null, true);
         } catch (error: any) { }
