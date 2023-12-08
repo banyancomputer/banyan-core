@@ -9,7 +9,9 @@ import { RawUser } from '@app/types';
 
 const termsClient = new TermsAndColditionsClient();
 
-export const TermsAndConditionsModal: React.FC<{ terms: string, userData: RawUser }> = ({ terms, userData }) => {
+export const TermsAndConditionsModal: React.FC<{
+    terms: string, userData: RawUser, setAreTermsAccepted: React.Dispatch<React.SetStateAction<boolean>>
+}> = ({ terms, userData, setAreTermsAccepted }) => {
     const { messages } = useIntl();
     const { openModal } = useModal();
     const [isTermsRead, setIsTermsRead] = useState(true);
@@ -20,6 +22,7 @@ export const TermsAndConditionsModal: React.FC<{ terms: string, userData: RawUse
 
         try {
             await termsClient.confirmTermsAndConditions(userData, accepted_tos_at);
+            setAreTermsAccepted(true);
             openModal(<CompanyNameModal />, null, true);
         } catch (error: any) { }
     };

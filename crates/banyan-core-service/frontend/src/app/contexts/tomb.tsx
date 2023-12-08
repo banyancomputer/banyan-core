@@ -63,7 +63,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	const [tomb, setTomb] = useState<TombWasm | null>(null);
 	const [buckets, setBuckets] = useState<TombBucket[]>([]);
 	const [trash, setTrash] = useState<TombBucket | null>(null);
-
+	const [areTermsAccepted, setAreTermsAccepted] = useState(false);
 	const [selectedBucket, setSelectedBucket] = useState<Bucket | null>(null);
 	const [storageUsage, setStorageUsage] = useState<{ current: number, limit: number }>({ current: 0, limit: 0 });
 	const [areBucketsLoading, setAreBucketsLoading] = useState<boolean>(false);
@@ -382,10 +382,13 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	}, [userData, keystoreInitialized, isLoading, escrowedKeyMaterial]);
 
 	useEffect(() => {
+		/** TODO: uncoment when company name endpoint would be merged. */
+		// if (!areTermsAccepted) return;
+
 		if (!keystoreInitialized && !isLoading) {
 			openEscrowModal(!!escrowedKeyMaterial);
 		};
-	}, [isLoading, keystoreInitialized]);
+	}, [isLoading, keystoreInitialized, areTermsAccepted]);
 
 	useEffect(() => {
 		const userClient = new UserClient();
@@ -399,8 +402,17 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
 				if (!userData.accepted_tos_at || userData.accepted_tos_at <= +termsAndConditions.tos_date) {
 					/** TODO: uncoment when company name endpoint would be merged. */
-					// openModal(<TermsAndConditionsModal terms={termsAndConditions.tos_content} userData={userData} />, null, true);
+					openModal(
+						<TermsAndConditionsModal
+							setAreTermsAccepted={setAreTermsAccepted}
+							terms={termsAndConditions.tos_content}
+							userData={userData} />
+						, null, true);
+
+					return;
 				}
+
+				setAreTermsAccepted(true);
 			} catch (error: any) {
 				console.log(error);
 			}
