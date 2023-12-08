@@ -184,5 +184,6 @@
 	"driveHasNoSnapshot": "This drive has no snapshots",
 	"whatIsSnapshot": "What is a snapshot?",
 	"makeSnapshot": "Make a Snapshot",
-	"betaBannerWarning": "Banyan Storage is still in Beta and not production-ready. We recommend using a backup storage method for anything stored on Banyan at this time. If you need to store data in Prod today, contact tim@banyan.computer."
+	"betaBannerWarning": "Banyan Storage is still in Beta and not production-ready. We recommend using a backup storage method for anything stored on Banyan at this time. If you need to store data in Prod today, contact tim@banyan.computer.",
+	"syncError": "Sync error; please log-out and log-in again to restore latest session"
 }
