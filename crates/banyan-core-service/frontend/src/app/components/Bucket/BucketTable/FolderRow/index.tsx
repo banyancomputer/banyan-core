@@ -8,7 +8,6 @@ import { FileCell } from '../../../common/FileCell';
 import { FileRow } from '../FileRow';
 import { DraggingPreview } from '../FileRow/DraggingPreview';
 
-import { useFolderLocation } from '@app/hooks/useFolderLocation';
 import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { getDateLabel } from '@/app/utils/date';
 import { convertFileSize } from '@/app/utils/storage';
@@ -34,7 +33,6 @@ export const FolderRow: React.FC<{
     const { messages } = useIntl();
     const { getExpandedFolderFiles, getSelectedBucketFiles, moveTo, selectBucket } = useTomb();
     const { uploadFiles, setFiles, files } = useFilesUpload();
-    const folderLocation = useFolderLocation();
     const [areFilesDropped, setAreFilesDropped] = useState(false);
     const [isFolderDraggingOver, setIsFolderDragingOver] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
@@ -126,7 +124,7 @@ export const FolderRow: React.FC<{
                     </thead>
                     <tbody>
                         <tr
-                            className={`cursor-pointer border-b-1 border-b-border-regular text-text-900 font-normal last:border-b-0 hover:bg-bucket-bucketHoverBackground`}
+                            className={`cursor-pointer !border-1 border-transparent border-b-border-regular text-text-900 font-normal last:border-b-0 hover:bg-bucket-bucketHoverBackground ${isFolderDraggingOver && `!border-draggingBorder`}`}
                             onDoubleClick={() => goToFolder(bucket)}
                             draggable
                         >
