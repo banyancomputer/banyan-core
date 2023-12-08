@@ -6,9 +6,9 @@ use super::data_source::*;
 
 pub async fn handler(data_src: StateDataSource) -> Response {
     match data_src.is_ready().await {
-        Ok(_) => {
-            let msg = serde_json::json!({"msg": "ok"});
-            (StatusCode::OK, Json(msg)).into_response()
+        Ok(metrics) => {
+            // TODO: analyze metrics and handle appropriately
+            (StatusCode::OK, Json(metrics)).into_response()
         }
         Err(DataSourceError::DependencyFailure) => {
             let msg = serde_json::json!({"msg": "one or more dependencies aren't available"});
