@@ -61,14 +61,14 @@ const App = () => {
 			onDragOver={preventDefaultDragAction}
 			onDrop={preventDefaultDragAction}
 		>
-			<BrowserRouter basename="/" >
-				<ModalProvider>
-					<SessionProvider>
-						<KeystoreProvider>
-							<TombProvider>
-								<FileUploadProvider>
-									<FilePreviewProvider>
-										<IntlProvider locale={locale} messages={TRANSLATES[locale]}>
+			<IntlProvider locale={locale} messages={TRANSLATES[locale]}>
+				<BrowserRouter basename="/" >
+					<ModalProvider>
+						<SessionProvider>
+							<KeystoreProvider>
+								<TombProvider>
+									<FileUploadProvider>
+										<FilePreviewProvider>
 											<Notifications />
 											<Modal />
 											<FilePreview />
@@ -85,14 +85,14 @@ const App = () => {
 													</Suspense>
 												</section>
 											</section>
-										</IntlProvider>
-									</FilePreviewProvider>
-								</FileUploadProvider>
-							</TombProvider>
-						</KeystoreProvider>
-					</SessionProvider>
-				</ModalProvider>
-			</BrowserRouter>
+										</FilePreviewProvider>
+									</FileUploadProvider>
+								</TombProvider>
+							</KeystoreProvider>
+						</SessionProvider>
+					</ModalProvider>
+				</BrowserRouter>
+			</IntlProvider>
 		</main>
 	);
 };
