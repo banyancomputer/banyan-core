@@ -1,5 +1,6 @@
 use axum::routing::get;
 use axum::Router;
+use serde::de::StdError;
 
 use crate::app::AppState;
 
@@ -7,7 +8,12 @@ mod read_escrowed_device;
 mod read_user;
 mod update_user;
 
-pub fn router(state: AppState) -> Router<AppState> {
+pub fn router<B>(state: AppState) -> Router<AppState,B>
+    where
+        B: axum::body::HttpBody + Send + 'static,
+        B::Data: Send,
+        Box<dyn StdError + Send + Sync + 'static>: From<B::Error>,
+{
     Router::new()
         .route(
             "/current",

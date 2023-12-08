@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use axum::body::boxed;
+use axum::body::{Body, boxed};
 use axum::body::BoxBody;
 use axum::error_handling::HandleErrorLayer;
 use axum::extract::{DefaultBodyLimit, State};
@@ -29,7 +29,9 @@ use tower_http::trace::{
 };
 use tower_http::validate_request::ValidateRequestHeaderLayer;
 use tower_http::{LatencyUnit, ServiceBuilderExt};
+use tower_http::limit::{RequestBodyLimit, RequestBodyLimitLayer};
 use tracing::Level;
+use banyan_middleware::traffic_counter::body::RequestCounter;
 
 use banyan_middleware::traffic_counter::layer::TrafficCounterLayer;
 
@@ -148,22 +150,23 @@ pub async fn run(config: Config) {
         .on_failure(DefaultOnFailure::new().latency_unit(LatencyUnit::Micros));
 
     let middleware_stack = ServiceBuilder::new()
-        .layer(HandleErrorLayer::new(handle_error))
-        .load_shed()
-        .concurrency_limit(1024)
-        .timeout(Duration::from_secs(REQUEST_TIMEOUT_SECS))
-        .layer(SetSensitiveRequestHeadersLayer::from_shared(Arc::clone(
-            &sensitive_headers,
-        )))
-        .set_x_request_id(MakeRequestUuid)
-        .layer(trace_layer)
+        // .layer(HandleErrorLayer::new(handle_error))
+        // .load_shed()
+        // .concurrency_limit(1024)
+        // .timeout(Duration::from_secs(REQUEST_TIMEOUT_SECS))
+        // .layer(SetSensitiveRequestHeadersLayer::from_shared(Arc::clone(
+        //     &sensitive_headers,
+        // )))
+        // .set_x_request_id(MakeRequestUuid)
+        // .layer(trace_layer)
         .layer(TrafficCounterLayer::new())
-        .propagate_x_request_id()
-        .layer(DefaultBodyLimit::disable())
-        .layer(ValidateRequestHeaderLayer::accept("application/json"))
-        .layer(SetSensitiveResponseHeadersLayer::from_shared(
-            sensitive_headers,
-        ));
+        // .propagate_x_request_id()
+        // .layer(DefaultBodyLimit::disable())
+        // .layer(ValidateRequestHeaderLayer::accept("application/json"))
+        // .layer(SetSensitiveResponseHeadersLayer::from_shared(
+        //     sensitive_headers,
+        // ))
+    ;
 
     let static_assets = ServeDir::new("dist").not_found_service(
         get_service(ServeFile::new("./dist/index.html")).handle_error(|_| async move {
@@ -171,10 +174,10 @@ pub async fn run(config: Config) {
         }),
     );
 
-    let root_router = Router::new()
+    let root_router  = Router::new()
         .nest("/api/v1", api::router(app_state.clone()))
         .nest("/auth", auth::router(app_state.clone()))
-        .nest("/hooks", hooks::router(app_state.clone()))
+        // .nest("/hooks", hooks::router(app_state.clone()))
         .nest("/_status", health_check::router(app_state.clone()))
         .route("/login", get(login_page_handler))
         .route("/tos", get(tos_handler))

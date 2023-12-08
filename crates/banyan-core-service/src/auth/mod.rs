@@ -42,7 +42,10 @@ pub const LOCAL_KEY_COOKIE_NAME: &str = "_local_key";
 
 pub const SESSION_TTL: u64 = 28 * 24 * 60 * 60;
 
-pub fn router(state: AppState) -> Router<AppState> {
+pub fn router<B>(state: AppState) -> Router<AppState,B>
+    where
+        B: axum::body::HttpBody + Send + 'static,
+{
     Router::new()
         .route("/callback/:provider", get(oauth_callback::handler))
         .route("/login/:provider", get(login::handler))

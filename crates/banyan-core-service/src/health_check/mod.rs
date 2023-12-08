@@ -1,12 +1,14 @@
+use axum::body::HttpBody;
 use axum::routing::get;
 use axum::Router;
 use http::header::{ACCEPT, ORIGIN};
 use http::Method;
+use serde::ser::StdError;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::limit::RequestBodyLimitLayer;
 
 mod error;
-mod handlers;
+pub mod handlers;
 mod responses;
 mod service;
 
@@ -20,7 +22,11 @@ use crate::app::AppState;
 // larger should be rejected.
 const REQUEST_BODY_LIMIT: usize = 1_024;
 
-pub fn router(state: AppState) -> Router<AppState> {
+pub fn router<B>(state: AppState) -> Router<AppState,B>
+where 
+    B: axum::body::HttpBody + Send + 'static,
+    Box<dyn StdError + Send + Sync + 'static>: From<B::Error>,
+{
     let cors_layer = CorsLayer::new()
         .allow_methods(vec![Method::GET])
         .allow_headers(vec![ACCEPT, ORIGIN])

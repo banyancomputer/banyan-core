@@ -4,11 +4,17 @@ mod report_upload;
 use axum::routing::post;
 use axum::Router;
 use tower_http::cors::CorsLayer;
+use std::error::Error;
 
 use crate::app::AppState;
 
-pub fn router(state: AppState) -> Router<AppState> {
-    // TODO: Find the right cors config for this
+pub fn router<B>(state: AppState) -> Router<AppState,B>
+where
+    B: axum::body::HttpBody + Send + 'static,
+    B::Data: Send + 'static,
+    B::Error: Error + Send + Sync + 'static,
+{
+    // TODO: Find the right cors config for this[
     let cors_layer = CorsLayer::very_permissive();
 
     Router::new()
