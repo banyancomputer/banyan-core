@@ -31,6 +31,7 @@ export const CompanyNameModal = () => {
             <div className=" mt-8 flex items-center gap-3 text-xs">
                 <button
                     className="btn-secondary w-1/2 py-3 px-4"
+                    onClick={() => closeModal()}
                 >
                     {`${messages.thisIsNotWorkingAccount}`}
                 </button>

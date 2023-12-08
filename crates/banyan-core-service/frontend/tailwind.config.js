@@ -21,8 +21,6 @@ module.exports = {
 				snapshotsModal: '530px',
 				keyManagement: '1128px',
 				filePreview: '80vw',
-				termsAndConditions: '1283px',
-				termsAndConditionsText: '1184px'
 			},
 			padding: {
 				keyManagement: '72px',
@@ -34,6 +32,7 @@ module.exports = {
 				login: '590px',
 			},
 			maxWidth: {
+				termsAndConditions: '1283px',
 				filePreview: '70vw',
 			},
 			colors: {

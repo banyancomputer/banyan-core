@@ -1,4 +1,4 @@
 export interface TermsAndConditions {
-    timestamp: string;
-    text: string;
+    tos_date: string;
+    tos_content: string;
 };

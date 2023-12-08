@@ -1,20 +1,29 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useIntl } from 'react-intl';
 
-import { CompanyNameModal } from './CompanyName'
-;
-import { TermsAndConditions } from '@app/types/terms';
-import { useModal } from '@app/contexts/modals';
+import { CompanyNameModal } from './CompanyName';
 
-export const TermsAndConditionsModal: React.FC<{ terms: TermsAndConditions }> = ({ terms }) => {
+import { useModal } from '@app/contexts/modals';
+import { TermsAndColditionsClient } from '@/api/termsAndConditions';
+import { RawUser } from '@app/types';
+
+const termsClient = new TermsAndColditionsClient();
+
+export const TermsAndConditionsModal: React.FC<{ terms: string, userData: RawUser }> = ({ terms, userData }) => {
     const { messages } = useIntl();
     const { openModal } = useModal();
-    const [isTermsRead, setIsTermsRead] = useState(false);
+    const [isTermsRead, setIsTermsRead] = useState(true);
     const termsRef = useRef<HTMLDivElement | null>(null);
 
-    const acceptTerms = () => {
-        openModal(<CompanyNameModal />, null, true);
-    }
+    const acceptTerms = async () => {
+        const accepted_tos_at = Math.trunc(Date.now() / 1000);
+
+        try {
+            await termsClient.confirmTermsAndConditions(userData, accepted_tos_at);
+            /** TODO: uncoment when endpoint would be merged. */
+            // openModal(<CompanyNameModal />, null, true);
+        } catch (error: any) { }
+    };
 
     useEffect(() => {
         if (!termsRef.current) return;
@@ -33,7 +42,7 @@ export const TermsAndConditionsModal: React.FC<{ terms: TermsAndConditions }> = 
     }, [termsRef.current, isTermsRead]);
 
     return (
-        <div className="p-1 w-termsAndConditions h-termsAndConditions flex flex-col gap-6">
+        <div className="p-1 w-[calc(100vw-100px)] max-w-termsAndConditions max-h-full flex flex-col gap-6">
             <h3 className="flex items-center justify-between text-m font-semibold">
                 {`${messages.termsOfService}`}
                 <span>1/2</span>
@@ -44,9 +53,9 @@ export const TermsAndConditionsModal: React.FC<{ terms: TermsAndConditions }> = 
             >
                 <div
                     id="file-preview"
-                    className="w-full p-6 text-xs max-w-termsAndConditionsText whitespace-break-spaces"
+                    className="w-full p-6 text-xs whitespace-break-spaces"
                 >
-                    {terms.text}
+                    {terms}
                 </div>
             </div>
             <div className="flex items-center gap-3 text-xs">
