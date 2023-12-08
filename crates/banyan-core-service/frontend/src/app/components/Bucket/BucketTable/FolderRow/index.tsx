@@ -83,13 +83,8 @@ export const FolderRow: React.FC<{
             if ([...path, folder.name].join('/') === droppedItem.path.join('/')) return;
 
             await moveTo(bucket, [...droppedItem.path, droppedItem.item.name], [...path, folder.name, droppedItem.item.name]);
+            await getSelectedBucketFiles(path);
             ToastNotifications.notify(`${messages.fileWasMoved}`, <Done width="20px" height="20px" />);
-            if (path.join('/') === folderLocation.join('/')) {
-                await getSelectedBucketFiles(folderLocation);
-                return;
-            };
-            await getExpandedFolderFiles(path, parrentFolder!, bucket);
-            await getExpandedFolderFiles(droppedItem.path, parrentFolder!, bucket);
         }
     };
 
@@ -115,7 +110,7 @@ export const FolderRow: React.FC<{
             onDrag={event => handleDrag(event, folder.name)}
             onDragOver={dragOverHandler}
             onDragLeave={dragLeaveHandler}
-            onDragEnd={() => handleDragEnd(setIsDragging)}
+            onDragEnd={() => handleDragEnd(setIsDragging, getExpandedFolderFiles, getSelectedBucketFiles, path, parrentFolder, bucket)}
             onDrop={handleDrop}
             ref={folderRef}
         >
