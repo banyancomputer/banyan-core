@@ -4,28 +4,13 @@ use std::sync::Arc;
 use axum::async_trait;
 use axum::extract::{FromRef, FromRequestParts};
 use http::request::Parts;
-use serde::Serialize;
-
-use banyan_task::{SqliteTaskStore, TaskStore, TaskStoreMetrics};
 
 use crate::database::Database;
-
-// TODO: this should be generic for metrics we would want to collect over a data source.
-#[derive(Debug, Serialize)]
-pub struct DataSourceMetrics {
-    job_queue: TaskStoreMetrics,
-}
-
-impl DataSourceMetrics {
-    pub fn new(job_queue: TaskStoreMetrics) -> Self {
-        Self { job_queue }
-    }
-}
 
 #[async_trait]
 pub trait DataSource {
     /// Perform various checks on the system to ensure its healthy and ready to accept requests.
-    async fn is_ready(&self) -> Result<DataSourceMetrics, DataSourceError>;
+    async fn is_ready(&self) -> Result<(), DataSourceError>;
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -62,23 +47,13 @@ struct DbSource {
 
 #[async_trait]
 impl DataSource for DbSource {
-    async fn is_ready(&self) -> Result<DataSourceMetrics, DataSourceError> {
-        // Simple check to ensure the database is up and running.
+    async fn is_ready(&self) -> Result<(), DataSourceError> {
         let _ = sqlx::query("SELECT 1 as id;")
             .fetch_one(&self.db)
             .await
             .map_err(|_| DataSourceError::DependencyFailure)?;
 
-        // Get metrics
-        let job_queue = SqliteTaskStore::new(self.db.clone())
-            .metrics()
-            .await
-            .map_err(|err| {
-                tracing::error!("failed to get job queue metrics: {err}");
-                DataSourceError::DependencyFailure
-            })?;
-
-        Ok(DataSourceMetrics::new(job_queue))
+        Ok(())
     }
 }
 
@@ -100,7 +75,6 @@ where
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
-    use banyan_task::tests::default_task_store_metrics;
 
     #[derive(Clone)]
     pub(crate) enum MockReadiness {
@@ -111,12 +85,12 @@ pub(crate) mod tests {
 
     #[async_trait]
     impl DataSource for MockReadiness {
-        async fn is_ready(&self) -> Result<DataSourceMetrics, DataSourceError> {
+        async fn is_ready(&self) -> Result<(), DataSourceError> {
             use MockReadiness::*;
 
             match self {
                 DependencyFailure => Err(DataSourceError::DependencyFailure),
-                Ready => Ok(DataSourceMetrics::new(default_task_store_metrics())),
+                Ready => Ok(()),
                 ShuttingDown => Err(DataSourceError::ShuttingDown),
             }
         }
