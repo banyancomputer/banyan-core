@@ -4,7 +4,6 @@ import { TermsAndConditions } from "@app/types/terms";
 
 export class TermsAndColditionsClient extends APIClient {
     public async getTermsAndCondition(): Promise<TermsAndConditions> {
-        /** TODO: implement when api will be implemented. */
         const response = await this.http.get(`${this.ROOT_PATH}/tos`)
 
         if (!response.ok) {
