@@ -1,7 +1,8 @@
 import { useIntl } from 'react-intl';
 import { useForm } from 'react-hook-form';
 
-import { Input } from '../../Input';
+import { Input } from '@components/common/Input';
+import { SubmitButton } from '@components/common/SubmitButton';
 
 import { useKeystore } from '@/app/contexts/keystore';
 import { useModal } from '@/app/contexts/modals';
@@ -59,13 +60,11 @@ export const EnterSecretKeyModal = () => {
 					validate: validateKeyphrase(`${messages.keyRequirements}`),
 				})}
 			/>
-			<button
-				type="submit"
-				className="btn-primary flex-grow py-2.5 px-4"
+			<SubmitButton
+				text={`${messages.confirm}`}
 				disabled={!keyphrase}
-			>
-				{`${messages.confirm}`}
-			</button>
+				className='py-2.5'
+			/>
 		</form >
 	);
 };

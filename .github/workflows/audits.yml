@@ -1,6 +1,12 @@
 name: 🛡 Dependency Security & License Audit 
 on:
-  - pull_request
+  pull_request:
+    branches:
+      - main
+  push:
+    tags:
+    branches:
+      - main
 
 jobs:
   cargo-deny:
