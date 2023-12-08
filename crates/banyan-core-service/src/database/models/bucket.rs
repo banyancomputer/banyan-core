@@ -1,5 +1,11 @@
+use std::time::Duration;
+
 use crate::database::models::{BucketType, StorageClass};
 use crate::database::DatabaseConnection;
+
+/// The maximum amount of time that a pending metadata update will prevent new updates not in a
+/// known chain.
+const PENDING_STATUS_WRITE_LOCK_DURATION: Duration = Duration::from_secs(15);
 
 #[derive(sqlx::FromRow)]
 pub struct Bucket {
@@ -51,10 +57,11 @@ impl Bucket {
 
     /// When a new metadata is pushed to this service we mark it as pending until we receive
     /// appropriate data also uploaded to our storage hosts. To prevent overwrites of data before
-    /// they're fully committed
+    /// they're fully committed. This is gated with an arbitrary timeout now as a stop-gap against
+    /// aggressive overwriting by our clients.
     pub async fn change_in_progress(
-        _conn: &mut DatabaseConnection,
-        _bucket_id: &str,
+        conn: &mut DatabaseConnection,
+        bucket_id: &str,
     ) -> Result<bool, sqlx::Error> {
         todo!()
     }

@@ -28,7 +28,7 @@ impl NewMetadata<'_> {
 pub struct Metadata;
 
 impl Metadata {
-    pub fn upload_complete(
+    pub async fn upload_complete(
         conn: &mut DatabaseConnection,
         metadata_id: &str,
         metadata_hash: &str,

@@ -6,7 +6,7 @@ use uuid::Uuid;
 
 use crate::app::AppState;
 use crate::database::models::MetadataState;
-use crate::database::{Database, DatabaseConnection};
+use crate::database::DatabaseConnection;
 use crate::extractors::StorageProviderIdentity;
 
 /// When a client finishes uploading their data to either staging or a storage host, the storage
