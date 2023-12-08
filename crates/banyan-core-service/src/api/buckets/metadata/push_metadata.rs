@@ -16,14 +16,15 @@ use tokio::io::{AsyncWrite, AsyncWriteExt};
 use uuid::Uuid;
 
 use crate::app::{AppState, ServiceKey};
-use crate::database::models::Bucket;
+use crate::database::models::{Bucket, Metadata, MetadataState, NewMetadata};
 use crate::database::{Database, DatabaseConnection};
 use crate::extractors::{DataStore, UserIdentity};
 use crate::tasks::{PruneBlock, PruneBlocksTask};
 use crate::utils::car_buffer::CarBuffer;
 
-/// The default quota we assume each storage host / staging service to provide
-const ACCOUNT_STORAGE_QUOTA: i64 = 5 * 1_024 * 1_024 * 1_024 * 1_024;
+/// The default quota we assume each storage host / staging service to provide (10 GiB limit until
+/// payment is in place).
+const ACCOUNT_STORAGE_QUOTA: i64 = 10 * 1_024 * 1_024 * 1_024;
 
 /// Size limit of the pure metadata CAR file that is being uploaded (128MiB)
 const CAR_DATA_SIZE_LIMIT: u64 = 128 * 1_024 * 1_024;
@@ -113,25 +114,6 @@ pub async fn handler(
         return Ok((StatusCode::BAD_REQUEST, Json(err_msg)).into_response());
     }
 
-    let request_data_bytes = request_field.bytes().await?;
-    let request_data: PushMetadataRequest = match serde_json::from_slice(&request_data_bytes) {
-        Ok(d) => d,
-        Err(_) => {
-            let err_msg = serde_json::json!({"msg": "request data was not a valid JSON object"});
-            return Ok((StatusCode::BAD_REQUEST, Json(err_msg)).into_response());
-        }
-    };
-
-    Bucket::approve_keys_by_fingerprint(
-        &mut conn,
-        &bucket_id,
-        request_data
-            .included_key_fingerprints
-            .iter()
-            .map(String::as_str),
-    )
-    .await?;
-
     let data_field = match multipart.next_field().await? {
         Some(d) => d,
         None => {
@@ -146,59 +128,77 @@ pub async fn handler(
         return Ok((StatusCode::BAD_REQUEST, Json(err_msg)).into_response());
     }
 
-    let new_metadata_id = record_upload_start(&database, &bucket_id, &request_data).await?;
+    let request_data_bytes = request_field.bytes().await?;
+    let request_data: PushMetadataRequest = match serde_json::from_slice(&request_data_bytes) {
+        Ok(d) => d,
+        Err(_) => {
+            let err_msg = serde_json::json!({"msg": "request data was not a valid JSON object"});
+            return Ok((StatusCode::BAD_REQUEST, Json(err_msg)).into_response());
+        }
+    };
 
-    let file_name = format!("{bucket_id}/{new_metadata_id}.car");
-    let (hash, uploaded_size) =
-        match store_metadata_stream(&store, file_name.as_str(), data_body).await {
-            Ok(mhs) => mhs,
-            Err(store_err) => {
-                let fail_update_res = fail_upload(&database, &new_metadata_id).await.err();
-                return Err(PushMetadataError::UploadStoreFailed(
-                    store_err,
-                    fail_update_res,
-                ));
-            }
-        };
+    let fingerprints = request_data
+            .included_key_fingerprints
+            .iter()
+            .map(String::as_str);
 
-    record_data_stored(&database, &new_metadata_id, uploaded_size, &hash)
-        .await
-        .map_err(PushMetadataError::DataMetaStoreFailed)?;
+    Bucket::approve_keys_by_fingerprint(&mut conn, &bucket_id, fingerprints).await?;
 
     expire_deleted_blocks(
-        &database,
-        &user_identity.id(),
+        &mut conn,
+        &user_id.id(),
         &bucket_id,
         &request_data.deleted_block_cids,
     )
     .await?;
 
-    let expected_total_storage = currently_consumed_storage(&database, &user_id)
+    let metadata_id = NewMetadata {
+        bucket_id: &bucket_id,
+
+        metadata_cid: &request_data.metadata_cid,
+
+        root_cid: &request_data.root_cid,
+        expected_data_size: request_data.expected_data_size,
+    }
+    .save(&mut conn)
+    .await?;
+
+    // Checkpoint the upload to the database so we can track failures, and perform any necessary
+    // clean up behind the scenes.
+    conn.commit().await?;
+
+    let file_name = format!("{bucket_id}/{metadata_id}.car");
+    let (hash, size) = store_metadata_stream(&store, file_name.as_str(), data_field).await?;
+
+    let mut conn = database.begin().await?;
+    Metadata::upload_complete(&mut conn, &metadata_id, &hash, size).await?;
+
+    let expected_total_storage = currently_consumed_storage(&mut conn, &user_id)
         .await
         .map_err(PushMetadataError::UnableToCheckAccounting)?
         as i64;
 
     if expected_total_storage > ACCOUNT_STORAGE_QUOTA {
-        tracing::warn!(user_id = ?user_id, ?expected_total_storage, "account reached storage limit");
-        let fail_res = fail_upload(&database, &new_metadata_id).await;
-        return Err(PushMetadataError::LimitReached(fail_res.err()));
+        tracing::warn!(?expected_total_storage, ?user_id, "account reached storage limit");
+        let err_msg = serde_json::json!({"msg": "account reached available storage threshold"});
+        return Ok((StatusCode::PAYLOAD_TOO_LARGE, Json(err_msg)).into_response());
     }
 
     if request_data.expected_data_size == 0 {
-        mark_current(&database, &new_metadata_id)
+        mark_current(&mut conn, &metadata_id)
             .await
             .map_err(PushMetadataError::ActivationFailed)?;
 
-        let resp_msg = serde_json::json!({"id": new_metadata_id, "state": "current"});
+        let resp_msg = serde_json::json!({"id": metadata_id, "state": "current"});
         return Ok((StatusCode::OK, Json(resp_msg)).into_response());
     }
 
-    let storage_host = select_storage_host(&database, request_data.expected_data_size).await?;
+    let storage_host = select_storage_host(&mut conn, request_data.expected_data_size).await?;
 
-    let current_authorized_amount = existing_authorization(&database, &user_id, &storage_host.id)
+    let current_authorized_amount = existing_authorization(&mut conn, &user_id, &storage_host.id)
         .await
         .map_err(PushMetadataError::UnableToRetrieveAuthorizations)?;
-    let current_stored_amount = currently_stored_at_provider(&database, &user_id, &storage_host.id)
+    let current_stored_amount = currently_stored_at_provider(&mut conn, &user_id, &storage_host.id)
         .await
         .map_err(PushMetadataError::UnableToIdentifyStoredAmount)?;
 
@@ -211,7 +211,7 @@ pub async fn handler(
         let new_authorization = generate_new_storage_authorization(
             &database,
             &service_key,
-            &user_identity,
+            &user_id.id(),
             &storage_host,
             data_size_rounded,
         )
@@ -221,8 +221,10 @@ pub async fn handler(
         storage_authorization = Some(new_authorization);
     }
 
+    conn.commit().await?;
+
     let response = serde_json::json!({
-        "id": new_metadata_id,
+        "id": metadata_id,
         "state": MetadataState::Pending,
         "storage_host": storage_host.url,
         "storage_authorization": storage_authorization,
@@ -318,17 +320,6 @@ async fn existing_authorization(
     .map(|amt| amt.unwrap_or(0))
 }
 
-async fn fail_upload(database: &Database, metadata_id: &str) -> Result<(), sqlx::Error> {
-    sqlx::query!(
-        "UPDATE metadata SET state = 'upload_failed' WHERE id = $1",
-        metadata_id,
-    )
-    .execute(database)
-    .await?;
-
-    Ok(())
-}
-
 #[derive(Debug, Serialize, Deserialize)]
 struct Capabilities {
     #[serde(rename = "cap")]
@@ -400,49 +391,6 @@ async fn mark_current(database: &Database, metadata_id: &str) -> Result<(), sqlx
     .await?;
 
     Ok(())
-}
-
-async fn record_data_stored(
-    database: &Database,
-    metadata_id: &str,
-    uploaded_size: usize,
-    data_hash: &str,
-) -> Result<(), sqlx::Error> {
-    let db_size = uploaded_size as i32;
-
-    sqlx::query!(
-        "UPDATE metadata SET metadata_size = $2, metadata_hash = $3, state = 'pending' WHERE id = $1;",
-        metadata_id,
-        db_size,
-        data_hash,
-    )
-    .execute(database)
-    .await?;
-
-    // todo: if this fails really need to clean up the files and everything... good task for a
-    // background job...
-
-    Ok(())
-}
-
-async fn record_upload_start(
-    database: &Database,
-    bucket_id: &str,
-    request: &PushMetadataRequest,
-) -> Result<String, sqlx::Error> {
-    let new_id = sqlx::query_scalar!(
-        r#"INSERT INTO metadata (bucket_id, root_cid, metadata_cid, expected_data_size, state)
-               VALUES ($1, $2, $3, $4, 'uploading')
-               RETURNING id;"#,
-        bucket_id,
-        request.root_cid,
-        request.metadata_cid,
-        request.expected_data_size,
-    )
-    .fetch_one(database)
-    .await?;
-
-    Ok(new_id)
 }
 
 async fn select_storage_host(
@@ -766,10 +714,6 @@ pub enum PushMetadataError {
 //            | PushMetadataError::MissingRequestData => {
 //                let err_msg = serde_json::json!({"msg": "invalid request"});
 //                (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
-//            }
-//            PushMetadataError::LimitReached(_) => {
-//                let err_msg = serde_json::json!({"msg": "you have hit your account storage limit"});
-//                (StatusCode::PAYLOAD_TOO_LARGE, Json(err_msg)).into_response()
 //            }
 //            PushMetadataError::NoAvailableStorage => {
 //                tracing::error!("no storage host available with capacity to store pushed data!");
