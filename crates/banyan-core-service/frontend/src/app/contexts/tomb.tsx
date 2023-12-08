@@ -391,13 +391,18 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 		const userClient = new UserClient();
 		const termsClient = new TermsAndColditionsClient();
 		(async () => {
-			const termsAndConditions = await termsClient.getTermsAndCondition();
-			const userData = await userClient.getCurrentUser();
+			try {
+				const termsAndConditions = await termsClient.getTermsAndCondition();
+				const userData = await userClient.getCurrentUser();
 
-			if (!userData) return;
+				if (!userData) return;
 
-			if (!userData.accepted_tos_at || userData.accepted_tos_at <= +termsAndConditions.tos_date) {
-				openModal(<TermsAndConditionsModal terms={termsAndConditions.tos_content} userData={userData} />, null, true);
+				if (!userData.accepted_tos_at || userData.accepted_tos_at <= +termsAndConditions.tos_date) {
+					/** TODO: uncoment when company name endpoint would be merged. */
+					// openModal(<TermsAndConditionsModal terms={termsAndConditions.tos_content} userData={userData} />, null, true);
+				}
+			} catch (error: any) {
+				console.log(error);
 			}
 
 		})()
