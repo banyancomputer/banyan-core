@@ -121,6 +121,8 @@ impl IntoResponse for SharedFileError {
             | SFE::Url(_)
             | SFE::Http(_, _)
             | SFE::UnableToLoadForest(_)
+            | SFE::ChannelClosed
+            | SFE::Timeout
             | SFE::Wnfs(_) => {
                 tracing::error!("{self}");
                 let err_msg = serde_json::json!({ "msg": "a backend service experienced an issue servicing the request" });
@@ -135,16 +137,6 @@ impl IntoResponse for SharedFileError {
                 tracing::error!("{self}");
                 let err_msg = serde_json::json!({ "msg": "invalid share payload" });
                 (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
-            }
-            SFE::ChannelClosed => {
-                tracing::error!("{self}");
-                let err_msg = serde_json::json!({ "msg": "backend service experienced an issue servicing the request" });
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
-            }
-            SFE::Timeout => {
-                tracing::error!("{self}");
-                let err_msg = serde_json::json!({ "msg": "backend service experienced an issue servicing the request" });
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
             }
         }
     }
