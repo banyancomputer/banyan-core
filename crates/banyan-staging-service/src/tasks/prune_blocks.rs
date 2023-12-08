@@ -7,7 +7,6 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use sqlx::Acquire;
 
-use url::Url;
 use uuid::Uuid;
 
 use banyan_task::{CurrentTask, TaskLike};
@@ -19,14 +18,14 @@ pub type PruneBlocksTaskContext = AppState;
 #[non_exhaustive]
 #[derive(Debug, thiserror::Error)]
 pub enum PruneBlocksTaskError {
-    #[error("sql error: {0}")]
-    Database(#[from] sqlx::Error),
-    #[error("reqwest error: {0}")]
-    Reqwest(#[from] reqwest::Error),
-    #[error("jwt error: {0}")]
-    Jwt(#[from] jwt_simple::Error),
-    #[error("http error: {0} response from {1}")]
-    Http(http::StatusCode, Url),
+    #[error("the task encountered a sql error: {0}")]
+    DatabaseError(#[from] sqlx::Error),
+    #[error("the task encountered a reqwest error: {0}")]
+    ReqwestError(#[from] reqwest::Error),
+    #[error("the task encountered a jwt error: {0}")]
+    JwtError(#[from] jwt_simple::Error),
+    #[error("the task encountered a non success response")]
+    NonSuccessResponse(http::StatusCode),
 }
 
 #[derive(Deserialize, Serialize, Clone)]
@@ -59,8 +58,15 @@ impl TaskLike for PruneBlocksTask {
     type Context = PruneBlocksTaskContext;
 
     async fn run(&self, _task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
-        let mut db_conn = ctx.database().acquire().await?;
-        let mut transaction = db_conn.begin().await?;
+        let mut db_conn = ctx
+            .database()
+            .acquire()
+            .await
+            .map_err(PruneBlocksTaskError::DatabaseError)?;
+        let mut transaction = db_conn
+            .begin()
+            .await
+            .map_err(PruneBlocksTaskError::DatabaseError)?;
 
         for prune_block in &self.prune_blocks {
             let metadata_id = prune_block.metadata_id.to_string();
@@ -78,7 +84,8 @@ impl TaskLike for PruneBlocksTask {
                 metadata_id
             )
             .fetch_one(&mut *transaction)
-            .await?;
+            .await
+            .map_err(PruneBlocksTaskError::DatabaseError)?;
 
             // Set the specifiec block as pruned
             sqlx::query!(
@@ -90,12 +97,16 @@ impl TaskLike for PruneBlocksTask {
                 unique_uploads_block.block_id
             )
             .execute(&mut *transaction)
-            .await?;
+            .await
+            .map_err(PruneBlocksTaskError::DatabaseError)?;
         }
 
         report_pruned_blocks(&ctx, &self.prune_blocks).await?;
 
-        transaction.commit().await?;
+        transaction
+            .commit()
+            .await
+            .map_err(PruneBlocksTaskError::DatabaseError)?;
         Ok(())
     }
 }
@@ -129,21 +140,23 @@ async fn report_pruned_blocks(
     claims.create_nonce();
     claims.issued_at = Some(Clock::now_since_epoch());
 
-    let bearer_token = service_signing_key.sign(claims)?;
+    let bearer_token = service_signing_key
+        .sign(claims)
+        .map_err(PruneBlocksTaskError::JwtError)?;
 
     let request = client
-        .post(report_endpoint.clone())
+        .post(report_endpoint)
         .json(&prune_blocks)
         .bearer_auth(bearer_token);
 
-    let response = request.send().await?;
+    let response = request
+        .send()
+        .await
+        .map_err(PruneBlocksTaskError::ReqwestError)?;
 
     if response.status().is_success() {
         Ok(())
     } else {
-        Err(PruneBlocksTaskError::Http(
-            response.status(),
-            report_endpoint,
-        ))
+        Err(PruneBlocksTaskError::NonSuccessResponse(response.status()))
     }
 }

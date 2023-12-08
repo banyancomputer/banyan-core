@@ -419,7 +419,6 @@ dependencies = [
  "time",
  "tokio",
  "tracing",
- "tracing-futures",
  "uuid",
 ]
 
