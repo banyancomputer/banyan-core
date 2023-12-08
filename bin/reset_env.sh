@@ -1,80 +1,47 @@
 #!/usr/bin/env bash
+#
+# NB: when changes are made to this file, be sure to update the introductory
+# guide in the project readme.
 
 set -o errexit
 set -o pipefail
 set -o nounset
 
 cd $(pwd)
-pwd
 
-# Remove all data
-rm -rf \
-	crates/banyan-core-service/data/service-key* \
-	crates/banyan-core-service/data/server* \
-	crates/banyan-core-service/data/uploads/* \
-	\
-	crates/banyan-staging-service/data/service-key* \
-	crates/banyan-staging-service/data/platform-key* \
-	crates/banyan-staging-service/data/server* \
-	crates/banyan-staging-service/data/uploads/* \
-	\
-	crates/banyan-storage-provider-service/data/service-key* \
-	crates/banyan-storage-provider-service/data/platform-key* \
-	crates/banyan-storage-provider-service/data/server* \
-	crates/banyan-storage-provider-service/data/uploads/*
+function fail() {
+	local status_code=${1:-1}
+	local err_msg="${2:-an unknown error occurred}"
 
-# Run core
-(
-	cd crates/banyan-core-service
-	cargo build
-	timeout 3s cargo run || true
-)
+	echo "ERROR: ${err_msg}"
+	exit $status_code
+}
 
-# Copy core public key to staging and storage provider
+# Check this script has been invoked from the root of the repository.
+if [ $(basename "$PWD") != "banyan-core" ];
+then
+	fail 9 "this script should be invoked from the root of the banyan-core repository"
+fi
+
+# Remove any state from previous runs before we do anything else.
+make clean
+
+# Generate the core service public key, copy it to the staging and storage provider services.
+make generate-core-service-key
+[ -f "crates/banyan-core-service/data/service-key.public" ] || fail 1 "core didn't generate public key"
 cp -f crates/banyan-core-service/data/service-key.public crates/banyan-staging-service/data/platform-key.public
 cp -f crates/banyan-core-service/data/service-key.public crates/banyan-storage-provider-service/data/platform-key.public
 
-# Run staging
-(
-	cd crates/banyan-staging-service
-	cargo build
-	timeout 3s cargo run || true 
-)
+# Generate the staging service's public key and its fingerprint. Then, add the staging host to the sqlite database.
+make generate-staging-service-key
+[ -f "crates/banyan-staging-service/data/service-key.public" ] || fail 2 "staging missing public service key"
+[ -f "crates/banyan-staging-service/data/service-key.fingerprint" ] || fail 3 "staging missing service fingerprint"
+source bin/add_staging_host.sh
 
-# Run storage provider
-(
-	cd crates/banyan-storage-provider-service
-	cargo build
-	timeout 3s cargo run || true
-)
-
-[ ! -f "crates/banyan-staging-service/data/service-key.public" ] && exit 8
-[ ! -f "crates/banyan-staging-service/data/service-key.fingerprint" ] && exit 9
-[ ! -f "crates/banyan-storage-provider-service/data/service-key.public" ] && exit 10
-[ ! -f "crates/banyan-storage-provider-service/data/service-key.fingerprint" ] && exit 11
-
-export STAGING_HOST_PUBKEY="$(cat crates/banyan-staging-service/data/service-key.public)"
-export STAGING_HOST_FINGERPRINT="$(cat crates/banyan-staging-service/data/service-key.fingerprint)"
-export STAGING_HOST_NAME="banyan-staging"
-export STAGING_HOST_URL="http://127.0.0.1:3002/"
-export STAGING_HOST_BYTE_LIMIT="549755813888000"
-
-cat <<ESQL | sqlite3 ./crates/banyan-core-service/data/server.db
-INSERT INTO storage_hosts
-  (name, url, used_storage, available_storage, fingerprint, pem)
-  VALUES ('${STAGING_HOST_NAME}', '${STAGING_HOST_URL}', 0, ${STAGING_HOST_BYTE_LIMIT}, '${STAGING_HOST_FINGERPRINT}', '${STAGING_HOST_PUBKEY}');
-ESQL
-
-export STORAGE_HOST_PUBKEY="$(cat crates/banyan-storage-provider-service/data/service-key.public)"
-export STORAGE_HOST_FINGERPRINT="$(cat crates/banyan-storage-provider-service/data/service-key.fingerprint)"
-export STORAGE_HOST_NAME="banyan-storage-provider"
-export STORAGE_HOST_URL="http://127.0.0.1:3003/"
-export STORAGE_HOST_BYTE_LIMIT="549755813888000"
-
-cat <<ESQL | sqlite3 ./crates/banyan-core-service/data/server.db
-INSERT INTO storage_hosts
-  (name, url, used_storage, available_storage, fingerprint, pem)
-  VALUES ('${STORAGE_HOST_NAME}', '${STORAGE_HOST_URL}', 0, ${STORAGE_HOST_BYTE_LIMIT}, '${STORAGE_HOST_FINGERPRINT}', '${STORAGE_HOST_PUBKEY}');
-ESQL
+# Generate the storage provider service's public key and its fingerprint. Then, add the storage host to the sqlite database.
+make generate-storage-provider-service-key
+[ -f "crates/banyan-storage-provider-service/data/service-key.public" ] || fail 5 "storage provider missing public service key"
+[ -f "crates/banyan-storage-provider-service/data/service-key.fingerprint" ] || fail 6 "storage provider missing service fingerprint"
+source bin/add_storage_host.sh
 
 echo 'environment reset complete'

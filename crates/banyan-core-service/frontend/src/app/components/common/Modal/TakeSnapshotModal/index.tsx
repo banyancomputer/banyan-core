@@ -1,6 +1,8 @@
 import React from 'react';
 import { useIntl } from 'react-intl';
 
+import { SubmitButton } from '@components/common/SubmitButton';
+
 import { Bucket } from '@/app/types/bucket';
 import { useModal } from '@/app/contexts/modals';
 import { useTomb } from '@/app/contexts/tomb';
@@ -25,7 +27,7 @@ export const TakeSnapshotModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     };
 
     return (
-        <div className="w-modal flex flex-col gap-5">
+        <div className="w-takeSnapshotModal flex flex-col gap-5">
             <span className="p-3 w-min rounded-full bg-button-disabled">
                 <Bolt width="24px" height="24px" />
             </span>
@@ -42,12 +44,11 @@ export const TakeSnapshotModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                 >
                     {`${messages.cancel}`}
                 </button>
-                <button
-                    className="btn-primary w-1/2 py-3 px-4"
-                    onClick={takeSnapshot}
-                >
-                    {`${messages.takeColdSnapshot}`}
-                </button>
+                <SubmitButton
+                    text={`${messages.takeColdSnapshot}`}
+                    action={takeSnapshot}
+                    className="w-1/2"
+                />
             </div>
         </div>
     );

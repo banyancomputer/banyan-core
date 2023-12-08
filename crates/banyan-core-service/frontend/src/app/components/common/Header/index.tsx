@@ -1,17 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
 import { useIntl } from 'react-intl';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import { popupClickHandler } from '@/app/utils';
 import { useKeystore } from '@/app/contexts/keystore';
-import { Action } from '../FileActions';
+import { Action } from '@components/Bucket/BucketTable/FileActions';
 import { useSession } from '@app/contexts/session';
 import { HttpClient } from '@/api/http/client';
+import { NotFoundError } from '@/api/http';
+import { UserClient } from '@/api/user';
 
 import { Key, LogoutAlternative, Settings } from '@static/images/common';
 
+const client = new UserClient();
+
 export const Header = () => {
 	const userControlsRef = useRef<HTMLDivElement | null>(null);
+	const location = useLocation();
 	const { purgeKeystore } = useKeystore();
 	const { messages } = useIntl();
 	/** TODO: rework session logic. */
@@ -28,7 +33,7 @@ export const Header = () => {
 		try {
 			await purgeKeystore();
 			await api.get('/auth/logout');
-			window.location.href = '/';
+			window.location.href = '/login';
 		}
 		catch (err: any) {
 			console.error("An Error occurred trying to logout: ", err.message);
@@ -53,6 +58,21 @@ export const Header = () => {
 			document.removeEventListener('click', listener);
 		};
 	}, [userControlsRef]);
+
+	useEffect(() => {
+		(async () => {
+			try {
+				await client.getCurrentUser();
+			} catch (error: any) {
+				if (error instanceof NotFoundError) {
+					let api = new HttpClient;
+					await purgeKeystore();
+					await api.get('/auth/logout');
+					window.location.href = '/login';
+				}
+			}
+		})()
+	}, [location]);
 
 	return (
 		<header className="flex items-center justify-between p-4 bg-mainBackground">

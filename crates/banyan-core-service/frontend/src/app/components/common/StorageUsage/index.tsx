@@ -5,7 +5,7 @@ import { convertFileSize } from '@/app/utils/storage';
 import { useTomb } from '@/app/contexts/tomb';
 
 export const StorageUsage = () => {
-    const { usedStorage, usageLimit } = useTomb();
+    const { storageUsage } = useTomb();
     const { messages } = useIntl();
 
     return (
@@ -14,11 +14,11 @@ export const StorageUsage = () => {
                 {`${messages.storage}`}
             </span>
             <span className="text-xs font-normal">{` ${messages.youHaveUsed} `}
-                <span className="uppercase">{convertFileSize(usedStorage)}</span>
+                <span className="uppercase">{convertFileSize(storageUsage.current)}</span>
                 {` ${messages.outOf} `}
-                <span className="uppercase">{convertFileSize(usageLimit)}</span>.
+                <span className="uppercase">{convertFileSize(storageUsage.limit)}</span>.
             </span>
-            <progress className="progress w-full" value={usedStorage} max={usageLimit}></progress>
+            <progress className="progress w-full" value={storageUsage.current} max={storageUsage.limit}></progress>
         </div>
     );
 };

@@ -176,11 +176,9 @@ export const KeystoreProvider = ({ children }: any) => {
 	// Purge the keystore from storage
 	const purgeKeystore = async (): Promise<void> => {
 		setIsLoading(true);
-		if (!keystore) {
-			setError('No keystore');
-			throw new Error('No keystore');
+		if (keystore) {
+			await keystore.clear();
 		}
-		await keystore.clear();
 		// Purge the local key cookie
 		destroyLocalKey();
 		setKeystoreInitialized(false);

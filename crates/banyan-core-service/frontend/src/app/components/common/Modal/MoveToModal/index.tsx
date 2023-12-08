@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useIntl } from 'react-intl';
 
-import { FolderSelect } from '../../FolderSelect';
+import { SubmitButton } from '@components/common/SubmitButton';
+import { FolderSelect } from '@components/common/FolderSelect';
 
 import { useModal } from '@/app/contexts/modals';
 import { BrowserObject, Bucket } from '@/app/types/bucket';
@@ -63,12 +64,11 @@ export const MoveToModal: React.FC<{ file: BrowserObject; bucket: Bucket; path: 
                 >
                     {`${messages.cancel}`}
                 </button>
-                <button
-                    className="btn-primary flex-grow py-3 px-4"
-                    onClick={move}
-                >
-                    {`${messages.moveTo}`}
-                </button>
+                <SubmitButton
+                    text={`${messages.moveTo}`}
+                    action={move}
+                    disabled={path.join('/') === selectedFolder.join('/')}
+                />
             </div>
         </div>
     );

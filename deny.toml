@@ -22,10 +22,11 @@ notice = "deny"
 # the other crate their identifier should be added to this list. It should be
 # periodically reviewed and cleaned out as fixes become available.
 ignore = [
-    # Our dependencies are locked on this particular version so we are unable
-    # to update to a non-vulnerable version. That being said we're also not
-    # impacted by this vulnerability as the impacted code is converting between
-    # local timezones from offsets and we only operate on UTC timestamps.
+  # Our dependencies are locked on this particular version so we are unable
+  # to update to a non-vulnerable version. That being said we're also not
+  # impacted by this vulnerability as the impacted code is converting between
+  # local timezones from offsets and we only operate on UTC timestamps.
+  "RUSTSEC-2023-0071",
 ]
 
 [licenses]
@@ -67,12 +68,24 @@ default = "deny"
 # If we need to use a crate that violates our general policy, we can add that
 # to the list here to accept it.
 exceptions = [
-    { name = "banyan-api-client", allow = ["LicenseRef-LICENSE.txt"] },
-    { name = "banyan-core-service", allow = ["LicenseRef-LICENSE.txt"] },
-    { name = "banyan-staging-service", allow = ["LicenseRef-LICENSE.txt"] },
-    { name = "banyan-storage-provider-service", allow = ["LicenseRef-LICENSE.txt"] },
-    { name = "banyan-task", allow =  [ "LicenseRef-LICENSE.txt"] },
-    { name = "banyan-car-analyzer", allow =  [ "LicenseRef-LICENSE.txt"] } 
+  { name = "banyan-api-client", allow = [
+    "LicenseRef-LICENSE.txt",
+  ] },
+  { name = "banyan-core-service", allow = [
+    "LicenseRef-LICENSE.txt",
+  ] },
+  { name = "banyan-staging-service", allow = [
+    "LicenseRef-LICENSE.txt",
+  ] },
+  { name = "banyan-storage-provider-service", allow = [
+    "LicenseRef-LICENSE.txt",
+  ] },
+  { name = "banyan-task", allow = [
+    "LicenseRef-LICENSE.txt",
+  ] },
+  { name = "banyan-car-analyzer", allow = [
+    "LicenseRef-LICENSE.txt",
+  ] },
 ]
 
 # Ring doesn't specify the license in their Cargo manifest, we have to

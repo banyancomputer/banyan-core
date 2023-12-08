@@ -1,7 +1,7 @@
 {
   "name": "tomb-wasm-experimental",
   "description": "Banyan manages data and security for use with Filecoin",
-  "version": "1.7.0",
+  "version": "1.1.1",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -11,7 +11,8 @@
     "banyan_cli_bg.wasm",
     "banyan_cli.js",
     "banyan_cli_bg.js",
-    "banyan_cli.d.ts"
+    "banyan_cli.d.ts",
+    "LICENSE-MIT"
   ],
   "module": "banyan_cli.js",
   "homepage": "https://banyan.computer",

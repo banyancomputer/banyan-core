@@ -2,21 +2,26 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useIntl } from 'react-intl';
 import { useNavigate } from 'react-router-dom';
 
-import { Bucket as IBucket } from '@/app/types/bucket';
-import { popupClickHandler } from '@/app/utils';
-
 import { BucketActions } from '@/app/components/common/BucketActions';
 import { LockedTooltip } from '@components/common/Navigation/LockedTooltip';
+
+import { Bucket as IBucket } from '@/app/types/bucket';
+import { popupClickHandler } from '@/app/utils';
+import { useFilesUpload } from '@app/contexts/filesUpload';
+import { ToastNotifications } from '@app/utils/toastNotifications';
+import { preventDefaultDragAction } from '@app/utils/dragHandlers';
 
 import { BucketIcon } from '@static/images/buckets';
 import { Dots, Question } from '@static/images/common';
 
 export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
     const { messages } = useIntl();
+    const { uploadFiles, setFiles, files } = useFilesUpload();
     const bucketRef = useRef<HTMLDivElement | null>(null);
     const bucketActionsRef = useRef<HTMLDivElement | null>(null);
     const [position, setPosition] = useState({ x: 0, y: 0 });
     const [isContextMenuVisible, setIsContextMenuVisible] = useState(false);
+    const [areFilesDropped, setAreFilesDropped] = useState(false);
     const navigate = useNavigate();
 
     const onContextMenu = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
@@ -48,6 +53,30 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
         navigate(`/drive/${bucket.id}`);
     };
 
+    const handleDrop = async (event: React.DragEvent<HTMLDivElement>) => {
+        preventDefaultDragAction(event);
+
+        if (!event?.dataTransfer.files.length) { return; }
+
+        setFiles(Array.from(event.dataTransfer.files).map(file => ({ file, isUploaded: false })));
+        setAreFilesDropped(true);
+    };
+
+    useEffect(() => {
+        if (!files.length || !areFilesDropped) return;
+
+        (async () => {
+            try {
+                ToastNotifications.uploadProgress();
+                await uploadFiles(bucket, []);
+                setAreFilesDropped(false);
+            } catch (error: any) {
+                setAreFilesDropped(false);
+                ToastNotifications.error(`${messages.uploadError}`, `${messages.tryAgain}`, () => { });
+            }
+        })()
+    }, [files, areFilesDropped]);
+
     useEffect(() => {
         const listener = popupClickHandler(bucketActionsRef.current!, setIsContextMenuVisible);
         const bucketListener = popupClickHandler(bucketRef.current!, setIsContextMenuVisible);
@@ -72,6 +101,8 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
             ref={bucketRef}
             onContextMenu={onContextMenu}
             onClick={openBucket}
+            onDrop={handleDrop}
+            onDragOver={preventDefaultDragAction}
         >
             <div
                 className={`absolute ${!isContextMenuVisible && 'invisible'} transition-none z-10`}

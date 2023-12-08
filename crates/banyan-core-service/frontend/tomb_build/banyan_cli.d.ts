@@ -2,6 +2,9 @@
 /* eslint-disable */
 /**
 */
+export function register_log(): void;
+/**
+*/
 export class IntoUnderlyingByteSource {
   free(): void;
 /**
@@ -102,7 +105,6 @@ export class TombWasm {
 * * `web_signing_key` - The CryptoKeyPair to use for signing requests
 * * `user_id` - The id of the account to use
 * * `core_endpoint` - The API endpoint to use for core
-* * `data_endpoint` - The API endpoint to use for data
 *
 * # Returns
 *
@@ -112,9 +114,8 @@ export class TombWasm {
 * @param {string} signing_key_pem
 * @param {string} user_id
 * @param {string} core_endpoint
-* @param {string} data_endpoint
 */
-  constructor(signing_key_pem: string, user_id: string, core_endpoint: string, data_endpoint: string);
+  constructor(signing_key_pem: string, user_id: string, core_endpoint: string);
 /**
 * Get the total consume storage space for the current account in bytes
 * @returns {Promise<bigint>}
@@ -178,24 +179,27 @@ export class TombWasm {
 * * `name` - The name of the bucket to create
 * * `storage_class` - The storage class of the bucket to create
 * * `bucket_type` - The type of the bucket to create
-* * `encryption_key` - The encryption key to use for the bucket
+* * `private_pem` - The private encryption key to use for the bucket
+* * `public_pem` - The public encryption key to use for the bucket
 * # Returns
 * The bucket's metadata as a WasmBucket
 * ```json
 * {
-* "id": "uuid",
 * "name": "string"
-* "type": "string",
 * "storage_class": "string",
+* "bucket_type": "string",
+* "private_pem": "string",
+* "public_pem": "string",
 * }
 * ```
 * @param {string} name
 * @param {string} storage_class
 * @param {string} bucket_type
-* @param {string} initial_bucket_key_pem
-* @returns {Promise<WasmBucket>}
+* @param {string} private_pem
+* @param {string} public_pem
+* @returns {Promise<WasmBucketMount>}
 */
-  createBucket(name: string, storage_class: string, bucket_type: string, initial_bucket_key_pem: string): Promise<WasmBucket>;
+  createBucketAndMount(name: string, storage_class: string, bucket_type: string, private_pem: string, public_pem: string): Promise<WasmBucketMount>;
 /**
 * Create a bucket key for a bucket
 * # Arguments
@@ -301,6 +305,23 @@ export class WasmBucketMetadata {
 /**
 */
   readonly snapshotId: string;
+}
+/**
+*/
+export class WasmBucketMount {
+  free(): void;
+/**
+* @param {WasmBucket} bucket
+* @param {WasmMount} mount
+* @returns {WasmBucketMount}
+*/
+  static new(bucket: WasmBucket, mount: WasmMount): WasmBucketMount;
+/**
+*/
+  readonly bucket: WasmBucket;
+/**
+*/
+  readonly mount: WasmMount;
 }
 /**
 * Mount point for a Bucket in WASM
@@ -452,6 +473,12 @@ export class WasmMount {
 */
   shareWith(bucket_key_id: string): Promise<void>;
 /**
+* Share a file snapshot
+* @param {Array<any>} path_segments
+* @returns {Promise<string>}
+*/
+  shareFile(path_segments: Array<any>): Promise<string>;
+/**
 * Return boolean indiciating whether or not the currently mounted bucket is snapshotted
 * # Returns
 * A boolean
@@ -491,6 +518,32 @@ export class WasmMount {
 * @returns {Promise<void>}
 */
   restore(wasm_snapshot: WasmSnapshot): Promise<void>;
+}
+/**
+*/
+export class WasmSharedFile {
+  free(): void;
+/**
+* @returns {string}
+*/
+  export_b64_url(): string;
+/**
+* @param {string} b64_string
+* @returns {WasmSharedFile}
+*/
+  static import_b64_url(b64_string: string): WasmSharedFile;
+/**
+* @returns {string | undefined}
+*/
+  mimeType(): string | undefined;
+/**
+* @returns {string | undefined}
+*/
+  size(): string | undefined;
+/**
+* @returns {string}
+*/
+  fileName(): string;
 }
 /**
 */

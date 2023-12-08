@@ -5,14 +5,13 @@ import { BucketSnapshotsModal } from '@/app/components/common/Modal/BucketSnapsh
 import { RenameBucketModal } from '@/app/components/common/Modal/RenameBucketModal';
 import { DeleteBucketModal } from '@/app/components/common/Modal/DeleteBucketModal';
 import { TakeSnapshotModal } from '@/app/components/common/Modal/TakeSnapshotModal';
+import { UploadFileModal } from '@components/common/Modal/UploadFileModal';
+import { CreateFolderModal } from '@components/common/Modal/CreateFolderModal ';
 
-import { Action } from '../FileActions';
-import { UploadFileModal } from '../Modal/UploadFileModal';
-import { CreateFolderModal } from '../Modal/CreateFolderModal ';
+import { Action } from '@components/Bucket/BucketTable/FileActions';
 import { useModal } from '@/app/contexts/modals';
 import { Bucket } from '@/app/types/bucket';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
-
 
 import { Bolt, DeleteHotData, Rename, Trash, Upload, Versions } from '@static/images/common';
 import { Folder, Lock } from '@static/images/buckets';
@@ -127,7 +126,7 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     };
 
     return (
-        <div className={'w-56 text-xs font-medium bg-bucket-actionsBackground rounded-xl overflow-hidden shadow-md z-10 select-none text-bucket-actionsText'}>
+        <div className={'w-64 text-xs font-medium bg-bucket-actionsBackground rounded-xl overflow-hidden shadow-md z-10 select-none text-bucket-actionsText'}>
             {
                 bucket.locked ?
                     <div

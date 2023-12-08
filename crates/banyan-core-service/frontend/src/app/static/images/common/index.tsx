@@ -183,7 +183,7 @@ export const EmptyIcon = (params: SVGProps<any>) => <svg width="220" height="160
     </defs>
 </svg>;
 
-export const ErrorBannerIcon = () => <svg width="21" height="20" viewBox="0 0 21 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+export const ErrorBannerIcon = (params: SVGProps<any>) => <svg width="21" height="20" viewBox="0 0 21 20" fill="none" xmlns="http://www.w3.org/2000/svg" {...params}>
     <path d="M10.4982 7.50019V10.8335M10.4982 14.1669H10.5065M9.34427 3.24329L2.49019 15.0821C2.11002 15.7388 1.91994 16.0671 1.94803 16.3366C1.97254 16.5716 2.09568 16.7852 2.28681 16.9242C2.50594 17.0835 2.88533 17.0835 3.6441 17.0835H17.3522C18.111 17.0835 18.4904 17.0835 18.7095 16.9242C18.9007 16.7852 19.0238 16.5716 19.0483 16.3366C19.0764 16.0671 18.8863 15.7388 18.5061 15.0821L11.6521 3.24329C11.2733 2.58899 11.0839 2.26184 10.8368 2.15196C10.6212 2.05612 10.3751 2.05612 10.1596 2.15196C9.91248 2.26184 9.72307 2.58899 9.34427 3.24329Z" stroke="currentColor" strokeWidth="1.66667" strokeLinecap="round" strokeLinejoin="round" />
 </svg>;
 

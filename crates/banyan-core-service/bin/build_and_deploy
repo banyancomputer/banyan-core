@@ -8,9 +8,11 @@ cd $(dirname %0)
 DEPLOY_HOST="api.data.banyan.computer"
 DEPLOY_BASE_FOLDER="containers"
 
-SERVICE_NAME="${1:-banyan-core-service}"
+DRY_RUN="${DRY_RUN:-0}"
+
+SERVICE_NAME="${1:-core-banyan}"
 SERVICE_PORT="${2:-3001}"
-SERVICE_ARGUMENTS="--db-url /shared/platform.db --signing-key /data/signing-key.pem --upload-dir /data/uploads"
+SERVICE_ARGUMENTS="--db-url sqlite:///shared/platform.db --service-key /data/service-key.pem --upload-dir /data/uploads"
 
 # Everything beyond this point isn't expected to be changed between services
 
@@ -27,8 +29,8 @@ DEPLOY_SHARED_DIRECTORY="${DEPLOY_BASE_FOLDER}/shared"
 DEPLOY_STATE="${DEPLOY_BASE_FOLDER}/state"
 
 if ! git diff-index --quiet HEAD -- || ! git diff-files --quiet; then
-  echo "!!> Branch is dirty, can't build and deploy from this branch"
-  exit 1
+	echo "!!> Branch is dirty, can't build and deploy from this branch"
+	exit 1
 fi
 
 COMMIT_ID="$(git describe --always --dirty --long --tags)"
@@ -41,25 +43,36 @@ FULL_IMAGE_NAME="${ORG}/${NAMESPACE}/${IMAGE}:${COMMIT_ID}"
 TMP_IMAGE="$(mktemp /tmp/${SERVICE_NAME}.XXXXX.tar)"
 
 CONTAINER_RUNTIME="podman"
-if which docker &> /dev/null; then
-  CONTAINER_RUNTIME="docker"
+if which docker &>/dev/null; then
+	CONTAINER_RUNTIME="docker"
 fi
 
+rm -rf dist/assets/*
+(cd frontend/ && yarn && yarn build)
+
 # Create the actual container
-cp -f ../../Cargo.lock ./
-${CONTAINER_RUNTIME} build -t ${FULL_IMAGE_NAME} \
-  --build-arg CI_BUILD_REF=${COMMIT_ID} \
-  --build-arg SERVICE_NAME=${SERVICE_NAME} .
-rm -f Cargo.lock
+(
+	cd ../..
+	${CONTAINER_RUNTIME} build -t ${FULL_IMAGE_NAME} \
+		--build-arg CI_BUILD_REF=${COMMIT_ID} \
+		--build-arg CRATE_NAME=banyan-core-service .
+)
 
 ${CONTAINER_RUNTIME} save -o ${TMP_IMAGE} ${FULL_IMAGE_NAME} &>/dev/null
 
 echo '==> Image successfully built and exported'
 
+echo '==> Compiled frontend successfully built'
+
+if [ "${DRY_RUN}" = "1" ]; then
+	echo "Dry run completed successfully"
+	exit 0
+fi
+
 TMP_SERVICE="$(mktemp /tmp/${SERVICE_NAME}.XXXXX.service)"
 VERSIONED_SVC_NAME="${SERVICE_NAME}-${TIMESTAMP}-${COMMIT_ID}"
 
-cat << EOF > ${TMP_SERVICE}
+cat <<EOF >${TMP_SERVICE}
 [Unit]
 Description=${SERVICE_NAME}
 After=network-online.target
@@ -106,5 +119,8 @@ nohup sh -c "\
   systemctl --user daemon-reload
 "
 EOS
+
+rsync -vrh --progress --delete --exclude offline.html --exclude 404.html \
+	./dist/ ${DEPLOY_HOST}:/srv/http/data.banyan.computer/beta/
 
 echo '==> Artifacts staged for deployment'

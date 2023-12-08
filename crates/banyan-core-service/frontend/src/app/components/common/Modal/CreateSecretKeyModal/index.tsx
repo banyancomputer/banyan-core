@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useIntl } from 'react-intl';
 import { useForm } from 'react-hook-form';
 
-import { Input } from '../../Input';
+import { SubmitButton } from '@components/common/SubmitButton';
+import { Input } from '@components/common/Input';
 
 import { useKeystore } from '@/app/contexts/keystore';
 import { validateKeyphrase } from '@/app/utils/validation';
@@ -54,7 +55,7 @@ export const CreateSecretKeyModal = () => {
             <div>
                 <h4 className="text-m font-semibold">{`${messages.createSecretKey}`}</h4>
                 <p className="mt-2 text-text-600">
-                    {`${messages.andEnterIntoTextField}`}
+                    {`${messages.secretKeyDescription}`}
                 </p>
             </div>
             <Input
@@ -84,13 +85,11 @@ export const CreateSecretKeyModal = () => {
                     },
                 })}
             />
-            <button
-                type="submit"
-                className="btn-primary flex-grow py-2.5 px-4"
+            <SubmitButton
+                text={`${messages.confirm}`}
                 disabled={!isDataCorrect}
-            >
-                {`${messages.confirm}`}
-            </button>
+                className="py-2.5"
+            />
         </form >
     );
 };

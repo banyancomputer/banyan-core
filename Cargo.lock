@@ -291,6 +291,7 @@ dependencies = [
  "hex",
  "hmac-sha512",
  "http",
+ "hyper",
  "itertools 0.11.0",
  "jsonwebtoken 9.1.0",
  "jwt-simple",
@@ -419,6 +420,7 @@ dependencies = [
  "time",
  "tokio",
  "tracing",
+ "tracing-futures",
  "uuid",
 ]
 

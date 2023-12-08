@@ -37,8 +37,13 @@ use tower_http::services::ServeFile;
 // few layers eventually such as CORS and request timeouts but that's for something down the line
 const REQUEST_TIMEOUT_SECS: u64 = 90;
 
-// Name of the text file containing the current terms of service
-const CURRENT_TOS: &str = "2023-11-08.txt";
+// The timestamp of the current TOS file.
+// Used to select the correct TOS file to serve.
+// Forrmatted: YYYYMMDD
+const TOS_DATE: &str = "20231127";
+// CAREFUL: because how include_str! works, we can only use string literals here
+// Make sure the right TOS are being included
+const TOS_CONTENT: &str = include_str!("../dist/tos/20231127");
 
 // TODO: probably want better fallback error pages...
 async fn handle_error(error: tower::BoxError) -> impl IntoResponse {
@@ -85,15 +90,6 @@ pub async fn graceful_shutdown_blocker() -> (JoinHandle<()>, watch::Receiver<()>
     (handle, rx)
 }
 
-// TODO: find someplace for this. For now missing routes are served the dist/index.html file
-#[allow(dead_code)]
-async fn not_found_handler() -> impl IntoResponse {
-    (
-        StatusCode::NOT_FOUND,
-        Json(serde_json::json!({"status": "not found"})),
-    )
-}
-
 async fn login_page_handler<B: std::marker::Send + 'static>(
     req: Request<B>,
 ) -> Result<Response<BoxBody>, (StatusCode, String)> {
@@ -107,18 +103,16 @@ async fn login_page_handler<B: std::marker::Send + 'static>(
 }
 
 async fn tos_handler<B: std::marker::Send + 'static>(
-    req: Request<B>,
-) -> Result<Response<BoxBody>, (StatusCode, String)> {
-    match ServeFile::new(format!("./dist/tos/{}", CURRENT_TOS))
-        .oneshot(req)
-        .await
-    {
-        Ok(res) => Ok(res.map(boxed)),
-        Err(err) => Err((
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Something went wrong serving the tos content: {}", err),
-        )),
-    }
+    _req: Request<B>,
+) -> Result<Response, (StatusCode, String)> {
+    let tos_response = serde_json::json!({
+        // Text context
+        "tos_content": TOS_CONTENT,
+        // YYYYMMDD formatted date
+        "tos_date": TOS_DATE,
+    });
+
+    Ok((StatusCode::OK, Json(tos_response)).into_response())
 }
 
 pub async fn run(config: Config) {

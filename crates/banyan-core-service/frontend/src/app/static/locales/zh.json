@@ -110,6 +110,7 @@
 	"AccessDenied": "此电子邮件地址未获Alpha批准；请使用您获Alpha批准的电子邮件地址。如果问题仍然存在，请联系sam@banyan.computer",
 	"createSecretKey": "创建秘密密钥",
 	"andEnterIntoTextField": "并输入到文本字段中",
+	"secretKeyDescription": "您的密钥是解锁您的帐户的方式；创建一个您可以记住并保持安全的密钥 - 没有其他人能够访问它，甚至包括 Banyan ，因此请确保您能够记住它以解锁您的帐户。",
 	"secretKey": "秘密密钥",
 	"confirmSecretKey": "确认秘密密钥",
 	"keyRequirements": "密钥必须至少包含8个字符",
@@ -190,5 +191,7 @@
 	"organizationName": "组织名称",
 	"enterName": "输入姓名",
 	"thisIsNotWorkingAccount": "这不是工作账户",
-	"done": "完成"
+	"done": "完成",
+	"betaBannerWarning": "Banyan Storage 仍处于测试阶段，尚未准备好投入生产。我们建议目前在Banyan上存储的任何内容都使用备份存储方法。如果您需要今天在生产环境中存储数据，请联系tim@banyan.computer。",
+	"syncError": "同步错误；请注销然后重新登录以恢复最新的会话。"
 }

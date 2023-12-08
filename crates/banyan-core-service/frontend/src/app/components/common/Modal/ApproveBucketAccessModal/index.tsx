@@ -1,6 +1,8 @@
 import React from 'react';
 import { useIntl } from 'react-intl';
 
+import { SubmitButton } from '@components/common/SubmitButton';
+
 import { useModal } from '@/app/contexts/modals';
 import { useTomb } from '@/app/contexts/tomb';
 import { Bucket, BucketKey } from '@/app/types/bucket';
@@ -32,10 +34,11 @@ export const ApproveBucketAccessModal: React.FC<{ bucket: Bucket; bucketKey: Buc
                 >
                     {`${messages.cancel}`}
                 </button>
-                <button
-                    className="btn-primary w-1/2 py-3 px-4"
-                    onClick={approveAccess}
-                >{`${messages.approveAccess}`}</button>
+                <SubmitButton
+                    text={`${messages.approveAccess}`}
+                    action={approveAccess}
+                    className="w-1/2"
+                />
             </div>
         </div>
     );

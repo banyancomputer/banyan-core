@@ -110,6 +110,7 @@
     "AccessDenied": "Diese E-Mail-Adresse ist nicht für Alpha zugelassen; bitte verwenden Sie Ihre Alpha-zugelassene E-Mail-Adresse. Wenn Probleme weiterhin auftreten, kontaktieren Sie sam@banyan.computer",
 	"createSecretKey": "Geheime Schlüssel erstellen",
 	"andEnterIntoTextField": "und in das Textfeld eingeben",
+	"secretKeyDescription": "Ihr geheimer Schlüssel ist der Weg, um Ihr Konto zu entsperren; erstellen Sie einen geheimen Schlüssel, den Sie sich merken können, und bewahren Sie ihn sicher auf – niemand sonst hat Zugriff darauf, nicht einmal Banyan, also stellen Sie sicher, dass Sie sich daran erinnern können, um Ihr Konto zu entsperren.",
 	"secretKey": "Geheimer Schlüssel",
 	"confirmSecretKey": "Geheimen Schlüssel bestätigen",
 	"keyRequirements": "Der Schlüssel muss mindestens 8 Zeichen lang sein",
@@ -190,5 +191,7 @@
 	"organizationName": "Organisationsname",
 	"enterName": "Name eingeben",
 	"thisIsNotWorkingAccount": "Dies ist kein Arbeitskonto",
-	"done": "Fertig"
+	"done": "Fertig",
+	"betaBannerWarning": "Banyan Storage befindet sich noch im Beta-Stadium und ist noch nicht für die Produktion bereit. Wir empfehlen, für alles, was derzeit auf Banyan gespeichert ist, eine Backup-Speichermethode zu verwenden. Wenn Sie heute Daten in der Produktion speichern müssen, kontaktieren Sie tim@banyan.computer.",
+	"syncError": "Synchronisierungsfehler; bitte melden Sie sich ab und wieder an, um die neueste Sitzung wiederherzustellen."
 }
