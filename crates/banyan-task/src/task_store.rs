@@ -1,8 +1,25 @@
 #![allow(dead_code)]
 
 use async_trait::async_trait;
+use serde::Serialize;
 
 use crate::{Task, TaskExecError, TaskLike, TaskState};
+
+#[derive(Debug, Serialize, Eq, PartialEq)]
+pub struct TaskStoreMetrics {
+    pub(crate) total: i32,
+    pub(crate) new: i32,
+    pub(crate) in_progress: i32,
+    pub(crate) panicked: i32,
+    pub(crate) retried: i32,
+    pub(crate) cancelled: i32,
+    pub(crate) errored: i32,
+    pub(crate) completed: i32,
+    pub(crate) timed_out: i32,
+    pub(crate) dead: i32,
+    pub(crate) scheduled: i32,
+    pub(crate) scheduled_future: i32,
+}
 
 #[async_trait]
 pub trait TaskStore: Send + Sync + 'static {
@@ -56,6 +73,18 @@ pub trait TaskStore: Send + Sync + 'static {
 
     async fn retry(&self, id: String) -> Result<Option<String>, TaskStoreError>;
 
+    async fn metrics(&self) -> Result<TaskStoreMetrics, TaskStoreError>;
+
+    async fn queue_metrics(
+        &self,
+        queue_name: &'static str,
+    ) -> Result<TaskStoreMetrics, TaskStoreError>;
+
+    async fn task_metrics(
+        &self,
+        task_name: &'static str,
+    ) -> Result<TaskStoreMetrics, TaskStoreError>;
+
     async fn update_state(&self, id: String, state: TaskState) -> Result<(), TaskStoreError>;
 }
 
@@ -80,5 +109,26 @@ pub enum TaskStoreError {
 impl From<sqlx::Error> for TaskStoreError {
     fn from(value: sqlx::Error) -> Self {
         TaskStoreError::ConnectionFailure(value.to_string())
+    }
+}
+
+pub mod tests {
+    use super::TaskStoreMetrics;
+
+    pub fn default_task_store_metrics() -> TaskStoreMetrics {
+        TaskStoreMetrics {
+            total: 0,
+            new: 0,
+            in_progress: 0,
+            panicked: 0,
+            retried: 0,
+            cancelled: 0,
+            errored: 0,
+            completed: 0,
+            timed_out: 0,
+            dead: 0,
+            scheduled: 0,
+            scheduled_future: 0,
+        }
     }
 }

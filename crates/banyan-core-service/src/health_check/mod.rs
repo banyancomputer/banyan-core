@@ -5,20 +5,16 @@ use http::Method;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::limit::RequestBodyLimitLayer;
 
-mod error;
-mod handlers;
-mod responses;
-mod service;
-
-pub use error::Error as HealthCheckError;
-pub use responses::Response as HealthCheckResponse;
-pub use service::Service as HealthCheckService;
+mod data_source;
+mod liveness;
+mod readiness;
+mod version;
 
 use crate::app::AppState;
 
-// requests to the healthcheck endpoints shouldn't contain anything other than headers, anything
-// larger should be rejected.
-const REQUEST_BODY_LIMIT: usize = 1_024;
+/// Healthcheck endpoints generally shouldn't contain anything other than headers which are counted
+/// among these bytes in the limit. Large requests here should always be rejected.
+const HEALTHCHECK_REQUEST_SIZE_LIMIT: usize = 1_024;
 
 pub fn router(state: AppState) -> Router<AppState> {
     let cors_layer = CorsLayer::new()
@@ -28,10 +24,10 @@ pub fn router(state: AppState) -> Router<AppState> {
         .allow_credentials(false);
 
     Router::new()
+        .route("/healthz", get(liveness::handler))
+        .route("/readyz", get(readiness::handler))
+        .route("/version", get(version::handler))
         .layer(cors_layer)
-        .layer(RequestBodyLimitLayer::new(REQUEST_BODY_LIMIT))
-        .route("/healthz", get(handlers::liveness_check))
-        .route("/readyz", get(handlers::readiness_check))
-        .route("/version", get(handlers::version))
+        .layer(RequestBodyLimitLayer::new(HEALTHCHECK_REQUEST_SIZE_LIMIT))
         .with_state(state)
 }
