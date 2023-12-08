@@ -395,24 +395,24 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 		const termsClient = new TermsAndColditionsClient();
 		(async () => {
 			try {
-				const termsAndConditions = await termsClient.getTermsAndCondition();
-				const userData = await userClient.getCurrentUser();
+				// const termsAndConditions = await termsClient.getTermsAndCondition();
+				// const userData = await userClient.getCurrentUser();
 
-				if (!userData) return;
+				// if (!userData) return;
 
-				if (!userData.accepted_tos_at || userData.accepted_tos_at <= +termsAndConditions.tos_date) {
-					/** TODO: uncoment when company name endpoint would be merged. */
-					// openModal(
-					// 	<TermsAndConditionsModal
-					// 		setAreTermsAccepted={setAreTermsAccepted}
-					// 		terms={termsAndConditions.tos_content}
-					// 		userData={userData} />
-					// 	, null, true);
+				// if (!userData.accepted_tos_at || userData.accepted_tos_at <= +termsAndConditions.tos_date) {
+				// 	/** TODO: uncoment when company name endpoint would be merged. */
+				// 	openModal(
+				// 		<TermsAndConditionsModal
+				// 			setAreTermsAccepted={setAreTermsAccepted}
+				// 			terms={termsAndConditions.tos_content}
+				// 			userData={userData} />
+				// 		, null, true);
 
-					return;
-				}
+				// 	return;
+				// }
 
-				setAreTermsAccepted(true);
+				// setAreTermsAccepted(true);
 			} catch (error: any) {
 				console.log(error);
 			}
