@@ -97,12 +97,12 @@ export const FilePreview = () => {
                             className={`relative max-w-filePreview ${fileExtension === 'pdf' && 'w-filePreview'} ${!isFileSupported && 'pointer-events-none'} flex justify-center items-start `}
                             ref={filePreviewRef}
                         >
-                            {file.isLoading && file.data ?
+                            {file.isLoading ?
                                 <Loader spinnerSize="50px" containerHeight="100vh" className="text-white" />
                                 :
                                 <>
                                     {
-                                        isFileSupported ?
+                                        isFileSupported && file.data ?
                                             <FilePreviewer
                                                 hideControls
                                                 file={{

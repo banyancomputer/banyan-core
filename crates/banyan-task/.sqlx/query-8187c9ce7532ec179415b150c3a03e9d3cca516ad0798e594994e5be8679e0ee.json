@@ -1,0 +1,86 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT\n                   COUNT(*) AS total,\n                   COALESCE(SUM(CASE WHEN state = 'new' THEN 1 ELSE 0 END), 0) AS new,\n                   COALESCE(SUM(CASE WHEN state = 'in_progress' THEN 1 ELSE 0 END), 0) AS in_progress,\n                   COALESCE(SUM(CASE WHEN state = 'panicked' THEN 1 ELSE 0 END), 0) AS panicked,\n                   COALESCE(SUM(CASE WHEN state = 'retry' THEN 1 ELSE 0 END), 0) AS retried,\n                   COALESCE(SUM(CASE WHEN state = 'cancelled' THEN 1 ELSE 0 END), 0) AS cancelled,\n                   COALESCE(SUM(CASE WHEN state = 'error' THEN 1 ELSE 0 END), 0) AS errored,\n                   COALESCE(SUM(CASE WHEN state = 'complete' THEN 1 ELSE 0 END), 0) AS completed,\n                   COALESCE(SUM(CASE WHEN state = 'timed_out' THEN 1 ELSE 0 END), 0) AS timed_out,\n                   COALESCE(SUM(CASE WHEN state = 'dead' THEN 1 ELSE 0 END), 0) AS dead,\n                   COALESCE(SUM(CASE WHEN DATETIME(scheduled_to_run_at) <= DATETIME('now') THEN 1 ELSE 0 END), 0) AS scheduled,\n                   COALESCE(SUM(CASE WHEN DATETIME(scheduled_to_run_at) > DATETIME('now') THEN 1 ELSE 0 END), 0) AS scheduled_future\n                FROM background_tasks;",
+  "describe": {
+    "columns": [
+      {
+        "name": "total",
+        "ordinal": 0,
+        "type_info": "Int"
+      },
+      {
+        "name": "new",
+        "ordinal": 1,
+        "type_info": "Int"
+      },
+      {
+        "name": "in_progress",
+        "ordinal": 2,
+        "type_info": "Int"
+      },
+      {
+        "name": "panicked",
+        "ordinal": 3,
+        "type_info": "Int"
+      },
+      {
+        "name": "retried",
+        "ordinal": 4,
+        "type_info": "Int"
+      },
+      {
+        "name": "cancelled",
+        "ordinal": 5,
+        "type_info": "Int"
+      },
+      {
+        "name": "errored",
+        "ordinal": 6,
+        "type_info": "Int"
+      },
+      {
+        "name": "completed",
+        "ordinal": 7,
+        "type_info": "Int"
+      },
+      {
+        "name": "timed_out",
+        "ordinal": 8,
+        "type_info": "Int"
+      },
+      {
+        "name": "dead",
+        "ordinal": 9,
+        "type_info": "Int"
+      },
+      {
+        "name": "scheduled",
+        "ordinal": 10,
+        "type_info": "Int"
+      },
+      {
+        "name": "scheduled_future",
+        "ordinal": 11,
+        "type_info": "Int"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "8187c9ce7532ec179415b150c3a03e9d3cca516ad0798e594994e5be8679e0ee"
+}

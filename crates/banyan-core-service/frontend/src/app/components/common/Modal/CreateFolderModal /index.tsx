@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useIntl } from 'react-intl';
 
+import { SubmitButton } from '@components/common/SubmitButton';
+
 import { useModal } from '@/app/contexts/modals';
 import { useTomb } from '@/app/contexts/tomb';
 import { Bucket } from '@/app/types/bucket';
@@ -51,13 +53,11 @@ export const CreateFolderModal: React.FC<{ bucket: Bucket; onSuccess?: () => voi
                 >
                     {`${messages.cancel}`}
                 </button>
-                <button
-                    className="btn-primary flex-grow py-3 px-4"
-                    onClick={create}
+                <SubmitButton
+                    text={`${messages.create}`}
+                    action={create}
                     disabled={!folderName}
-                >
-                    {`${messages.create}`}
-                </button>
+                />
             </div>
         </div >
     );
