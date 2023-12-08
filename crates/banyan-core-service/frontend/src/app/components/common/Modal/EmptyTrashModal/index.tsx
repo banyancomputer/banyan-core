@@ -3,6 +3,7 @@ import { useIntl } from 'react-intl';
 import { useModal } from '@/app/contexts/modals';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { Trash } from '@static/images/common';
+import { SubmitButton } from '@components/common/SubmitButton';
 
 export const EmptyTrashModal = () => {
     const { closeModal } = useModal();
@@ -28,12 +29,10 @@ export const EmptyTrashModal = () => {
                 >
                     {`${messages.cancel}`}
                 </button>
-                <button
-                    className="btn-primary flex-grow py-3 px-4"
-                    onClick={clearTrash}
-                >
-                    {`${messages.delete}`}
-                </button>
+                <SubmitButton
+                    text={`${messages.delete}`}
+                    action={clearTrash}
+                />
             </div>
         </div>
     );

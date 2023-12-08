@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useIntl } from 'react-intl';
 
+import { SubmitButton } from '@components/common/SubmitButton';
+
 import { useModal } from '@/app/contexts/modals';
 import { Bucket } from '@/app/types/bucket';
 import { useTomb } from '@/app/contexts/tomb';
@@ -45,12 +47,11 @@ export const RenameBucketModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                 >
                     {`${messages.cancel}`}
                 </button>
-                <button
-                    className="btn-primary flex-grow py-3 px-4"
-                    onClick={rename}
-                >
-                    {`${messages.save}`}
-                </button>
+                <SubmitButton
+                    text={`${messages.save}`}
+                    action={rename}
+                    disabled={newName.length < 3}
+                />
             </div>
         </div >
     );

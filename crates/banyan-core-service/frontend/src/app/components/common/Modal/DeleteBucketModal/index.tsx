@@ -1,6 +1,8 @@
 import React from 'react';
 import { useIntl } from 'react-intl';
 
+import { SubmitButton } from '@components/common/SubmitButton';
+
 import { Bucket } from '@/app/types/bucket';
 import { useModal } from '@/app/contexts/modals';
 import { useTomb } from '@/app/contexts/tomb';
@@ -17,7 +19,7 @@ export const DeleteBucketModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         try {
             await deleteBucket(bucket.id);
             closeModal();
-            ToastNotifications.notify(`${messages.drive} "${bucket.name}" ${messages.wasDeleted}`,<Trash width="20px" height="20px" />);
+            ToastNotifications.notify(`${messages.drive} "${bucket.name}" ${messages.wasDeleted}`, <Trash width="20px" height="20px" />);
         } catch (error: any) {
             ToastNotifications.error(`${messages.deletionError}`, `${messages.tryAgain}`, removeBucket);
             closeModal();
@@ -40,12 +42,10 @@ export const DeleteBucketModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                 >
                     {`${messages.cancel}`}
                 </button>
-                <button
-                    className="btn-primary flex-grow py-3 px-4"
-                    onClick={removeBucket}
-                >
-                    {`${messages.delete}`}
-                </button>
+                <SubmitButton
+                    text={`${messages.delete}`}
+                    action={removeBucket}
+                />
             </div>
         </div>
     );
