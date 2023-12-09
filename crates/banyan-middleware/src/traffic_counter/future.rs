@@ -9,56 +9,55 @@ use http::Response;
 use http_body::Body;
 use pin_project_lite::pin_project;
 use tokio::sync::oneshot;
+use tokio::sync::oneshot::error::TryRecvError;
 
-use crate::traffic_counter::body::ResponseCounter;
+use crate::traffic_counter::body::{OnResponse, RequestInfo, ResponseCounter};
 
 pin_project! {
     #[derive(Debug)]
-    pub struct ResponseFuture<F> {
+    pub struct ResponseFuture<F,OnResponse> {
         #[pin]
         pub(crate) inner: F,
         pub rx_bytes_received: oneshot::Receiver<usize>,
-        pub request_id: String
+        pub request_info: RequestInfo,
+        pub on_response: Option<OnResponse>
     }
 }
 
-impl<F, B, E> Future for ResponseFuture<F>
+impl<F, B, E, OnResponseT> Future for ResponseFuture<F, OnResponseT>
 where
     F: Future<Output = Result<Response<B>, E>>,
+    OnResponseT: OnResponse,
     B: Body,
 {
-    type Output = Result<Response<ResponseCounter<B>>, E>;
+    type Output = Result<Response<ResponseCounter<B, OnResponseT>>, E>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let this = self.project();
-        println!("ResponseFuture poll() start size");
-        // return this.inner.poll(cx);
-        // begin processing response
         let result = ready!(this.inner.poll(cx));
-
-        // If the receiver is set, try polling it
-        // let bytes= ready!(this.rx.poll(cx));
         let total_request_bytes = match this.rx_bytes_received.try_recv() {
-            Ok(bytes_received) => {
-                println!("ResponseFuture poll() end of stream {}", bytes_received);
-                bytes_received
-            }
-            Err(err) => {
-                println!("ResponseFuture poll() no bytes {:?}", err);
+            Ok(bytes_received) => bytes_received,
+            // that should not happen, since the request future would've already been dropped
+            Err(TryRecvError::Empty) => {
+                tracing::error!("ResponseFuture poll() end size: oneshot channel empty");
                 0
             }
+            // that's expected when there are no request bytes
+            Err(TryRecvError::Closed) => 0,
         };
 
-        // await for one shot channel
-        // this.rx.poll_unpin(cx);
         match result {
             Ok(res) => {
                 let (parts, body) = res.into_parts();
                 let res = Response::from_parts(
                     parts,
-                    ResponseCounter::new(body, this.request_id.clone(), total_request_bytes),
+                    ResponseCounter::new(
+                        body,
+                        this.on_response.take().unwrap(),
+                        this.request_info.clone(),
+                        total_request_bytes,
+                    ),
                 );
-                println!("ResponseFuture poll() end size");
                 Poll::Ready(Ok(res))
             }
             Err(err) => Poll::Ready(Err(err)),

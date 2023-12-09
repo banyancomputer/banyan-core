@@ -1,3 +1,4 @@
+use axum::body::HttpBody;
 use axum::Router;
 use serde::de::StdError;
 use tower_http::cors::CorsLayer;
@@ -10,11 +11,12 @@ mod users;
 
 use crate::app::AppState;
 
-pub fn router<B>(state: AppState) -> Router<AppState,B>
+pub fn router<B>(state: AppState) -> Router<AppState, B>
 where
-    B: axum::body::HttpBody + Send + 'static,
-    B::Data:  Send + 'static,
+    B: HttpBody + Send + 'static,
+    B::Data: Send + 'static,
     Box<dyn StdError + Send + Sync + 'static>: From<B::Error>,
+    bytes::Bytes: From<<B as HttpBody>::Data>,
 {
     // TODO: Ideally this would have a wrapper method to allow per route method configuration or
     // even better something that inspected the route matches and applied the correct method config

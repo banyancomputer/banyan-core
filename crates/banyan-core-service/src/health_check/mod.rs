@@ -22,9 +22,9 @@ use crate::app::AppState;
 // larger should be rejected.
 const REQUEST_BODY_LIMIT: usize = 1_024;
 
-pub fn router<B>(state: AppState) -> Router<AppState,B>
-where 
-    B: axum::body::HttpBody + Send + 'static,
+pub fn router<B>(state: AppState) -> Router<AppState, B>
+where
+    B: HttpBody + Send + 'static,
     Box<dyn StdError + Send + Sync + 'static>: From<B::Error>,
 {
     let cors_layer = CorsLayer::new()
@@ -34,10 +34,10 @@ where
         .allow_credentials(false);
 
     Router::new()
-        .layer(cors_layer)
-        .layer(RequestBodyLimitLayer::new(REQUEST_BODY_LIMIT))
         .route("/healthz", get(handlers::liveness_check))
         .route("/readyz", get(handlers::readiness_check))
         .route("/version", get(handlers::version))
+        .layer(cors_layer)
+        .layer(RequestBodyLimitLayer::new(REQUEST_BODY_LIMIT))
         .with_state(state)
 }

@@ -1,8 +1,8 @@
+use crate::app::AppState;
+use axum::body::HttpBody;
 use axum::routing::{get, post};
 use axum::Router;
 use serde::ser::StdError;
-
-use crate::app::AppState;
 
 mod create_device_api_key;
 mod create_escrowed_device;
@@ -20,9 +20,9 @@ mod create_fake_user;
 mod who_am_i;
 
 #[cfg(feature = "fake")]
-pub fn router<B>(state: AppState) -> Router<AppState,B>
+pub fn router<B>(state: AppState) -> Router<AppState, B>
 where
-    B: axum::body::HttpBody + Send + 'static,
+    B: HttpBody + Send + 'static,
     B::Data: Send + 'static,
     Box<dyn StdError + Send + Sync + 'static>: From<B::Error>,
 {
@@ -53,13 +53,12 @@ where
 }
 
 #[cfg(not(feature = "fake"))]
-pub fn router<B>(state: AppState) -> Router<AppState,B>
+pub fn router<B>(state: AppState) -> Router<AppState, B>
 where
-    B: axum::body::HttpBody + Send + 'static,
+    B: HttpBody + Send + 'static,
     B::Data: Send + 'static,
     Box<dyn StdError + Send + Sync + 'static>: From<B::Error>,
 {
-
     Router::new()
         .route(
             "/device_api_key",

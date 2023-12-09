@@ -1,5 +1,7 @@
+use axum::body::HttpBody;
 use axum::routing::{get, post};
 use axum::Router;
+use serde::de::StdError;
 
 mod all_bucket_keys;
 mod create_bucket_key;
@@ -8,7 +10,12 @@ mod single_bucket_key;
 
 use crate::app::AppState;
 
-pub fn router(state: AppState) -> Router<AppState> {
+pub fn router<B>(state: AppState) -> Router<AppState, B>
+where
+    B: HttpBody + Send + 'static,
+    B::Data: Send,
+    Box<dyn StdError + Send + Sync + 'static>: From<B::Error>,
+{
     Router::new()
         .route(
             "/",

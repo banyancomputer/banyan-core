@@ -19,6 +19,9 @@ use tower_http::validate_request::ValidateRequestHeaderLayer;
 use tower_http::{LatencyUnit, ServiceBuilderExt};
 use tracing::Level;
 
+use banyan_middleware::traffic_counter::body::DefaultOnResponse as TrafficCounterDefaultOnResponse;
+use banyan_middleware::traffic_counter::layer::TrafficCounterLayer;
+
 use crate::api;
 use crate::app::{AppState, Config};
 use crate::health_check;
@@ -84,6 +87,9 @@ pub async fn run(config: Config) {
         .set_x_request_id(MakeRequestUuid)
         .propagate_x_request_id()
         // Default request size. Individual handlers can opt-out of this limit, see api/upload.rs for an example.
+        .layer(TrafficCounterLayer::new(
+            TrafficCounterDefaultOnResponse::default(),
+        ))
         .layer(DefaultBodyLimit::max(REQUEST_MAX_SIZE))
         // TODO: is this desired?
         // Restrict requests to only those that are JSON

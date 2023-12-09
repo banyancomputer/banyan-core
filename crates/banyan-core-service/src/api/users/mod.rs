@@ -1,3 +1,4 @@
+use axum::body::HttpBody;
 use axum::routing::get;
 use axum::Router;
 use serde::de::StdError;
@@ -8,11 +9,11 @@ mod read_escrowed_device;
 mod read_user;
 mod update_user;
 
-pub fn router<B>(state: AppState) -> Router<AppState,B>
-    where
-        B: axum::body::HttpBody + Send + 'static,
-        B::Data: Send,
-        Box<dyn StdError + Send + Sync + 'static>: From<B::Error>,
+pub fn router<B>(state: AppState) -> Router<AppState, B>
+where
+    B: HttpBody + Send + 'static,
+    B::Data: Send,
+    Box<dyn StdError + Send + Sync + 'static>: From<B::Error>,
 {
     Router::new()
         .route(
