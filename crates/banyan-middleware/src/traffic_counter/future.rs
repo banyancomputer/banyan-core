@@ -11,23 +11,23 @@ use pin_project_lite::pin_project;
 use tokio::sync::oneshot;
 use tokio::sync::oneshot::error::TryRecvError;
 
-use crate::traffic_counter::body::{OnResponse, RequestInfo, ResponseCounter};
+use crate::traffic_counter::body::{OnResponseEnd, RequestInfo, ResponseCounter};
 
 pin_project! {
     #[derive(Debug)]
-    pub struct ResponseFuture<F,OnResponse> {
+    pub struct ResponseFuture<F,OnResponseEnd> {
         #[pin]
         pub(crate) inner: F,
         pub rx_bytes_received: oneshot::Receiver<usize>,
         pub request_info: RequestInfo,
-        pub on_response: Option<OnResponse>
+        pub on_response_end: Option<OnResponseEnd>
     }
 }
 
 impl<F, B, E, OnResponseT> Future for ResponseFuture<F, OnResponseT>
 where
     F: Future<Output = Result<Response<B>, E>>,
-    OnResponseT: OnResponse,
+    OnResponseT: OnResponseEnd,
     B: Body,
 {
     type Output = Result<Response<ResponseCounter<B, OnResponseT>>, E>;
@@ -53,7 +53,7 @@ where
                     parts,
                     ResponseCounter::new(
                         body,
-                        this.on_response.take().unwrap(),
+                        this.on_response_end.take().unwrap(),
                         this.request_info.clone(),
                         total_request_bytes,
                     ),

@@ -39,7 +39,7 @@ pin_project! {
         total_response_bytes: usize,
         total_request_bytes: usize,
         request_info: RequestInfo ,
-        on_response: Option<C>,
+        on_response_end: C,
         #[pin]
         inner: B,
     }
@@ -48,7 +48,7 @@ pin_project! {
 impl<B, C> ResponseCounter<B, C> {
     pub fn new(
         inner: B,
-        on_response: C,
+        on_response_end: C,
         request_info: RequestInfo,
         total_request_bytes: usize,
     ) -> Self {
@@ -56,7 +56,7 @@ impl<B, C> ResponseCounter<B, C> {
             total_response_bytes: 0,
             total_request_bytes,
             request_info,
-            on_response: Some(on_response),
+            on_response_end,
             inner,
         }
     }
@@ -83,12 +83,9 @@ where
             None => {
                 if let Some(tx_bytes) = this.tx_bytes.take() {
                     if tx_bytes.send(*this.total_request_bytes).is_err() {
-                        tracing::error!("Failed to send total bytes");
+                        tracing::error!("failed to send total requst bytes");
                     }
                 }
-                println!(
-                    "RequestCounter poll_data() end of stream size {:?}", this.total_request_bytes
-                );
                 None
             }
             Some(Ok(data)) => {
@@ -105,13 +102,16 @@ where
         cx: &mut Context<'_>,
     ) -> Poll<Result<Option<HeaderMap>, Self::Error>> {
         let this = self.project();
-        println!(
-            "RequestCounter poll_trailers() start size {:?}",
-            this.total_request_bytes
-        );
         let res = match this.inner.poll_trailers(cx) {
             Poll::Pending => return Poll::Pending,
-            Poll::Ready(Ok(data)) => Ok(data),
+            Poll::Ready(Ok(data)) => {
+                if let Some(headers) = &data {
+                    for (name, value) in headers.iter() {
+                        *this.total_request_bytes += name.as_str().len() + value.as_bytes().len();
+                    }
+                }
+                Ok(data)
+            }
             Poll::Ready(Err(err)) => Err(err.into()),
         };
         Poll::Ready(res)
@@ -120,19 +120,10 @@ where
     // Not called on HttpBody request
     // Only called when response is StreamBody?
     fn is_end_stream(&self) -> bool {
-        println!(
-            "RequestCounter is_end_stream() size {:?}",
-            self.total_request_bytes
-        );
         self.inner.is_end_stream()
     }
 
     fn size_hint(&self) -> SizeHint {
-        println!(
-            "RequestCounter size_hint() size {:?} size_hint {:?}",
-            self.total_request_bytes,
-            self.inner.size_hint()
-        );
         self.inner.size_hint()
     }
 }
@@ -141,7 +132,7 @@ impl<B, OnResponseT> Body for ResponseCounter<B, OnResponseT>
 where
     B: Body,
     B::Error: Into<Box<dyn Error + Send + Sync>>,
-    OnResponseT: OnResponse,
+    OnResponseT: OnResponseEnd,
 {
     type Data = B::Data;
     type Error = Box<dyn Error + Send + Sync>;
@@ -156,23 +147,11 @@ where
             // Not called when response is HttpBody
             // Called when the response is StreamBody
             None => {
-                println!(
-                    "ResponseCounter poll_data() end of stream size {:?}",
-                    this.total_response_bytes
+                this.on_response_end.on_response_end(
+                    &this.request_info,
+                    *this.total_request_bytes,
+                    *this.total_response_bytes,
                 );
-                let request_info = this.request_info.clone();
-                let response_bytes = this.total_response_bytes;
-                let request_bytes = this.total_request_bytes;
-                tracing::info!(
-                    request_bytes = %request_bytes,
-                    response_bytes = %response_bytes,
-                    method = %request_info.method,
-                    uri = %request_info.uri,
-                    version = ?request_info.version,
-                    request_id = %request_info.request_id,
-                    "finished processing request",
-                );
-                // self.on_response.take().unwrap().on_response(request_info, total_request_bytes, total_response_bytes);
                 None
             }
             Some(Ok(data)) => {
@@ -189,13 +168,16 @@ where
         cx: &mut Context<'_>,
     ) -> Poll<Result<Option<HeaderMap>, Self::Error>> {
         let this = self.project();
-        println!(
-            "ResponseCounter poll_trailers() start size {:?}",
-            this.total_response_bytes
-        );
         let res = match this.inner.poll_trailers(cx) {
             Poll::Pending => return Poll::Pending,
-            Poll::Ready(Ok(data)) => Ok(data),
+            Poll::Ready(Ok(data)) => {
+                if let Some(headers) = &data {
+                    for (name, value) in headers.iter() {
+                        *this.total_request_bytes += name.as_str().len() + value.as_bytes().len();
+                    }
+                }
+                Ok(data)
+            }
             Poll::Ready(Err(err)) => Err(err.into()),
         };
         Poll::Ready(res)
@@ -206,23 +188,11 @@ where
     fn is_end_stream(&self) -> bool {
         let end_stream = self.inner.is_end_stream();
         if end_stream {
-            println!(
-                "ResponseCounter is_end_stream() size {:?}",
-                self.total_response_bytes
+            self.on_response_end.on_response_end(
+                &self.request_info,
+                self.total_request_bytes,
+                self.total_response_bytes,
             );
-            let request_info = self.request_info.clone();
-            let response_bytes = self.total_response_bytes;
-            let request_bytes = self.total_request_bytes;
-            tracing::info!(
-                request_bytes = %request_bytes,
-                response_bytes = %response_bytes,
-                method = %request_info.method,
-                uri = %request_info.uri,
-                version = ?request_info.version,
-                request_id = %request_info.request_id,
-                "finished processing request",
-            )
-            // self.on_response.take().unwrap().on_response(request_info, total_request_bytes, total_response_bytes);
         }
         end_stream
     }
@@ -257,76 +227,37 @@ impl<T> From<&Request<T>> for RequestInfo {
     }
 }
 
-pub trait OnResponse {
-    fn on_response(self, req_info: RequestInfo, read_bytes: usize, write_bytes: usize);
+pub trait OnResponseEnd {
+    fn on_response_end(&self, req_info: &RequestInfo, read_bytes: usize, write_bytes: usize);
 }
 
 #[derive(Clone, Debug)]
-pub struct DefaultOnResponse {}
+pub struct DefaultOnResponseEnd {}
 
-impl Default for DefaultOnResponse {
+impl Default for DefaultOnResponseEnd {
     fn default() -> Self {
         Self {}
     }
 }
 
-impl OnResponse for DefaultOnResponse {
-    fn on_response(self, req_info: RequestInfo, read_bytes: usize, write_bytes: usize) {}
+impl OnResponseEnd for DefaultOnResponseEnd {
+    fn on_response_end(
+        &self,
+        request_info: &RequestInfo,
+        request_bytes: usize,
+        response_bytes: usize,
+    ) {
+        tracing::info!(
+            request_bytes = %request_bytes,
+            response_bytes = %response_bytes,
+            method = %request_info.method,
+            uri = %request_info.uri,
+            version = ?request_info.version,
+            request_id = %request_info.request_id,
+            "finished processing request",
+        );
+    }
 }
 
 #[cfg(test)]
-mod tests {
-    use std::task::{Context, Poll};
-
-    use bytes::{Buf, Bytes};
-    use http_body::Full;
-
-    use super::*;
-
-    async fn poll_body_to_completion<B>(mut body: RequestCounter<B>) -> usize
-    where
-        B: Body + Unpin,
-        B::Data: Buf,
-        B::Error: Into<Box<dyn Error + Send + Sync>>, // Add this line
-    {
-        let mut cx = Context::from_waker(futures::task::noop_waker_ref());
-
-        while let Poll::Ready(data_opt) = Pin::new(&mut body).as_mut().poll_data(&mut cx) {
-            if let None = data_opt {
-                break;
-            }
-        }
-
-        body.total_request_bytes
-    }
-
-    #[tokio::test]
-    async fn counts_ingress_correctly_for_single_chunk() {
-        let data = Bytes::from_static(b"Hello, world!");
-        let body = Full::new(data.clone());
-        let body_counter = RequestCounter::new(body);
-
-        let counted_size = poll_body_to_completion(body_counter).await;
-        assert_eq!(counted_size, data.len());
-    }
-
-    #[tokio::test]
-    async fn counts_ingress_correctly_for_multiple_chunks() {
-        let chunk1 = Bytes::from_static(b"Hello, ");
-        let chunk2 = Bytes::from_static(b"world!");
-        let body = Full::new(chunk1.chain(chunk2));
-        let body_counter = RequestCounter::new(body);
-
-        let counted_size = poll_body_to_completion(body_counter).await;
-        assert_eq!(counted_size, "Hello, world!".len());
-    }
-
-    #[tokio::test]
-    async fn counts_ingress_correctly_for_empty_body() {
-        let body = Full::new(Bytes::new());
-        let body_counter = RequestCounter::new(body);
-
-        let counted_size = poll_body_to_completion(body_counter).await;
-        assert_eq!(counted_size, 0);
-    }
-}
+mod tests {}

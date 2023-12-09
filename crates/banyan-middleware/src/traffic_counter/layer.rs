@@ -1,19 +1,19 @@
-use crate::traffic_counter::body::OnResponse;
+use crate::traffic_counter::body::OnResponseEnd;
 use tower_layer::Layer;
 
 use crate::traffic_counter::service::TrafficCounter;
 
 #[derive(Clone, Debug)]
 pub struct TrafficCounterLayer<T> {
-    on_response: T,
+    on_response_end: T,
 }
 
 impl<T> TrafficCounterLayer<T>
 where
-    T: OnResponse,
+    T: OnResponseEnd,
 {
-    pub fn new(on_response: T) -> Self {
-        Self { on_response }
+    pub fn new(on_response_end: T) -> Self {
+        Self { on_response_end }
     }
 }
 
