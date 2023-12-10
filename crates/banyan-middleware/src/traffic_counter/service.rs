@@ -21,7 +21,7 @@ impl<S> TrafficCounter<S> {
     pub fn new(inner: S) -> Self {
         Self {
             inner,
-            on_response_end: DefaultOnResponseEnd::default(),
+            on_response_end: DefaultOnResponseEnd,
         }
     }
 }
@@ -44,14 +44,15 @@ where
 
     fn call(&mut self, req: Request<ReqBody>) -> Self::Future {
         let (tx_bytes_received, rx_bytes_received) = oneshot::channel::<usize>();
-        let req = req.map(|body| RequestCounter::new(body, tx_bytes_received));
+        let (parts, body) = req.into_parts();
+        let body = RequestCounter::new(body, tx_bytes_received);
+        let req = Request::from_parts(parts, body);
         let request_info = (&req).into();
-        let res = ResponseFuture {
+        ResponseFuture {
             inner: self.inner.call(req),
             request_info,
             rx_bytes_received,
             on_response_end: Some(self.on_response_end.clone()),
-        };
-        res
+        }
     }
 }

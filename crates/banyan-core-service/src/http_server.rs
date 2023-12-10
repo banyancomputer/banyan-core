@@ -11,7 +11,7 @@ use axum::response::IntoResponse;
 use axum::response::Response;
 use axum::routing::{get, get_service};
 use axum::{Json, Router, Server, ServiceExt};
-use banyan_middleware::traffic_counter::body::DefaultOnResponseEnd as TrafficCounterDefaultOnResponse;
+use banyan_middleware::traffic_counter::body::DefaultOnResponseEnd;
 use futures::future::join_all;
 use http::header;
 use tokio::sync::watch;
@@ -156,9 +156,7 @@ pub async fn run(config: Config) {
         .set_x_request_id(MakeRequestUuid)
         .layer(trace_layer)
         .propagate_x_request_id()
-        .layer(TrafficCounterLayer::new(
-            TrafficCounterDefaultOnResponse::default(),
-        ))
+        .layer(TrafficCounterLayer::new(DefaultOnResponseEnd))
         .layer(DefaultBodyLimit::disable())
         .layer(ValidateRequestHeaderLayer::accept("application/json"))
         .layer(SetSensitiveResponseHeadersLayer::from_shared(

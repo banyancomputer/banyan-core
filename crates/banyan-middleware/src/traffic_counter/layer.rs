@@ -5,7 +5,7 @@ use crate::traffic_counter::service::TrafficCounter;
 
 #[derive(Clone, Debug)]
 pub struct TrafficCounterLayer<T> {
-    on_response_end: T,
+    pub on_response_end: T,
 }
 
 impl<T> TrafficCounterLayer<T>

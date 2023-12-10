@@ -49,15 +49,15 @@ where
         match result {
             Ok(res) => {
                 let (parts, body) = res.into_parts();
-                let res = Response::from_parts(
-                    parts,
-                    ResponseCounter::new(
-                        body,
-                        this.on_response_end.take().unwrap(),
-                        this.request_info.clone(),
-                        total_request_bytes,
-                    ),
+                let body = ResponseCounter::new(
+                    body,
+                    &parts.headers,
+                    this.on_response_end.take().unwrap(),
+                    this.request_info.clone(),
+                    total_request_bytes,
+                    parts.status,
                 );
+                let res = Response::from_parts(parts, body);
                 Poll::Ready(Ok(res))
             }
             Err(err) => Poll::Ready(Err(err)),
