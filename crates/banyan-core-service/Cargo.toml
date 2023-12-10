@@ -65,5 +65,8 @@ tracing-futures = { version = "^0.2", default-features = false, features = ["std
 tracing-subscriber = { version = "^0.3", default-features = false, features = ["ansi", "env-filter", "fmt", "local-time", "time", "tracing"] }
 hyper = "1.0.1"
 
+[dev-dependencies]
+hyper = "^0.14"
+
 [features]
 fake = []

@@ -28,6 +28,7 @@ pub trait DataSource {
     async fn is_ready(&self) -> Result<DataSourceMetrics, DataSourceError>;
 }
 
+#[allow(dead_code)]
 #[derive(Debug, thiserror::Error)]
 pub enum DataSourceError {
     #[error("one or more dependent services aren't available")]

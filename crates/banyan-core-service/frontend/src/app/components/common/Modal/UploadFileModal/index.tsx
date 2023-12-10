@@ -1,10 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useIntl } from 'react-intl';
 
-import { Select } from '../../Select';
-import { AddNewOption } from '../../Select/AddNewOption';
-import { CreateBucketModal } from '../CreateBucketModal';
-import { FolderSelect } from '../../FolderSelect';
+import { Select } from '@components/common/Select';
+import { AddNewOption } from '@components/common/Select/AddNewOption';
+import { CreateBucketModal } from '@components/common/Modal/CreateBucketModal';
+import { FolderSelect } from '@components/common/FolderSelect';
+import { SubmitButton } from '@components/common/SubmitButton';
 
 import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { useModal } from '@/app/contexts/modals';
@@ -136,13 +137,11 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null; folder?: Browse
                 >
                     {`${messages.cancel}`}
                 </button>
-                <button
-                    className="btn-primary flex-grow py-3 px-4"
-                    onClick={upload}
+                <SubmitButton
+                    action={upload}
+                    text={`${messages.upload}`}
                     disabled={!isUploadDataFilled}
-                >
-                    {`${messages.upload}`}
-                </button>
+                />
             </div>
         </div>
     );

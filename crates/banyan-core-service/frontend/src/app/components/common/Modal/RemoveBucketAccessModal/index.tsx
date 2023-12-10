@@ -1,6 +1,8 @@
 import React from 'react';
 import { useIntl } from 'react-intl';
 
+import { SubmitButton } from '@components/common/SubmitButton';
+
 import { useModal } from '@/app/contexts/modals';
 import { useTomb } from '@/app/contexts/tomb';
 import { BucketKey } from '@/app/types/bucket';
@@ -32,10 +34,11 @@ export const RemoveBucketAccessModal: React.FC<{ bucketKey: BucketKey }> = ({ bu
                 >
                     {`${messages.cancel}`}
                 </button>
-                <button
-                    className="btn-primary w-1/2 py-3 px-4"
-                    onClick={removeAccess}
-                >{`${messages.removeAccess}`}</button>
+                <SubmitButton
+                    text={`${messages.removeAccess}`}
+                    action={removeAccess}
+                    className="w-1/2"
+                />
             </div>
         </div>
     );

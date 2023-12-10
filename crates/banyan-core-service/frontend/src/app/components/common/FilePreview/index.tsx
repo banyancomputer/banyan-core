@@ -14,7 +14,7 @@ export const FilePreview = () => {
     const { bucket, file, files, path, openFile, closeFile } = useFilePreview();
     const { messages } = useIntl();
     const filePreviewRef = useRef<HTMLDivElement | null>(null);
-    const fileExtension = [...file.name.split('.')].pop();
+    const fileExtension = [...file.name?.split('.')].pop();
     const isFileSupported = file.name ? SUPPORTED_EXTENSIONS.includes(fileExtension || '') : true;
 
     const close = (event: React.MouseEvent<HTMLDivElement | HTMLButtonElement>) => {
@@ -97,12 +97,12 @@ export const FilePreview = () => {
                             className={`relative max-w-filePreview ${fileExtension === 'pdf' && 'w-filePreview'} ${!isFileSupported && 'pointer-events-none'} flex justify-center items-start `}
                             ref={filePreviewRef}
                         >
-                            {file.isLoading && file.data ?
+                            {file.isLoading ?
                                 <Loader spinnerSize="50px" containerHeight="100vh" className="text-white" />
                                 :
                                 <>
                                     {
-                                        isFileSupported ?
+                                        isFileSupported && file.data ?
                                             <FilePreviewer
                                                 hideControls
                                                 file={{

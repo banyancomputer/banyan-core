@@ -6,8 +6,8 @@ export const BetaBanner = () => {
     const { messages } = useIntl();
 
     return (
-        <div className="mb-2 flex justify-center items-center gap-3 py-4 px-2.5 bg-errorBanner border-2 border-errorBannerBorder text-xxs font-medium text-text-900">
-            <ErrorBannerIcon />
+        <div className="mb-2 flex justify-center items-center gap-2 py-4 px-2 bg-errorBanner border-2 border-errorBannerBorder text-[10px] leading-3 tracking-tighter font-medium text-text-900">
+            <ErrorBannerIcon width="14px" height="14px" />
             {`${messages.betaBannerWarning}`}
         </div>
     )

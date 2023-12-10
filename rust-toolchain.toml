@@ -1,0 +1,8 @@
+[toolchain]
+channel = "stable"
+components = [ "rustfmt", "clippy" ]
+profile = "minimal"
+
+# NB: for more information, see:
+# - https://rust-lang.github.io/rustup/overrides.html#the-toolchain-file
+# - https://rust-lang.github.io/rustup/concepts/profiles.html

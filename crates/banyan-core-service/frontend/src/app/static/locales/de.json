@@ -184,5 +184,6 @@
 	"driveHasNoSnapshot": "Dieses Laufwerk hat keine Snapshots",
 	"whatIsSnapshot": "Was ist ein Snapshot?",
 	"makeSnapshot": "Einen Snapshot erstellen",
-	"betaBannerWarning": "Banyan Storage befindet sich noch im Beta-Stadium und ist noch nicht für die Produktion bereit. Wir empfehlen, für alles, was derzeit auf Banyan gespeichert ist, eine Backup-Speichermethode zu verwenden. Wenn Sie heute Daten in der Produktion speichern müssen, kontaktieren Sie tim@banyan.computer."
+	"betaBannerWarning": "Banyan Storage befindet sich noch im Beta-Stadium und ist noch nicht für die Produktion bereit. Wir empfehlen, für alles, was derzeit auf Banyan gespeichert ist, eine Backup-Speichermethode zu verwenden. Wenn Sie heute Daten in der Produktion speichern müssen, kontaktieren Sie tim@banyan.computer.",
+	"syncError": "Synchronisierungsfehler; bitte melden Sie sich ab und wieder an, um die neueste Sitzung wiederherzustellen."
 }
