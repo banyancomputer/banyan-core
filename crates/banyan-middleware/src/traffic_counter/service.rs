@@ -3,7 +3,6 @@ use std::task::{Context, Poll};
 use http::{Request, Response};
 use http_body::Body;
 use tokio::sync::oneshot;
-
 use tower_service::Service;
 
 use crate::traffic_counter::body::{FnOnResponseEnd, RequestCounter, ResponseCounter};
