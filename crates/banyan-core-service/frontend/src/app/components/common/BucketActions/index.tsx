@@ -87,7 +87,7 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     }
 
     const uploadAction = new Action(`${messages.upload}`, <Upload width="18px" height="18px" />, upload);
-    const createSnapshotAction = bucket.isSnapshotValid ? null : new Action(`${messages.takeColdSnapshot}`, <Bolt width="18px" height="18px" />, takeSnapshot, `${messages.snapshotTooltip}`);
+    const createSnapshotAction = bucket.isSnapshotValid || !bucket.files.length ? null : new Action(`${messages.takeColdSnapshot}`, <Bolt width="18px" height="18px" />, takeSnapshot, `${messages.snapshotTooltip}`);
     const viewBucketSnapshotsAction = bucket.snapshots.length ? new Action(`${messages.viewColdSnapshots}`, <Versions width="18px" height="18px" />, viewBucketSnapshots) : null;
     const viewBucketVersionsAction = new Action(`${messages.viewDriveVersions}`, <Versions width="18px" height="18px" />, viewBucketVersions);
     const renameAction = new Action(`${messages.rename}`, <Rename width="18px" height="18px" />, rename);
