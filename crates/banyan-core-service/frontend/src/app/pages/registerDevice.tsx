@@ -2,18 +2,20 @@ import { useIntl } from 'react-intl';
 import { useParams } from 'react-router-dom';
 
 import { useTomb } from '@/app/contexts/tomb';
+import { publicPemWrap } from '@app/utils';
 
 // TODO: design must be handed down and implemented
 const RegisterDevice = () => {
 	const params = useParams();
-	const fingerprint = params.id || '';
+	const spki = params.spki || '';
 	const { messages } = useIntl();
-	const { completeDeviceKeyRegistration } = useTomb();
+	const { approveDeviceApiKey } = useTomb();
 
 	// Perform all functions required to complete
 	const completeRegistration = async () => {
-		await completeDeviceKeyRegistration(fingerprint)
-			.then(() => window.location.href = '/')
+		const pem = publicPemWrap(spki);
+		console.log("pem: " + pem);
+		await approveDeviceApiKey(pem)
 			.catch((error: any) => {
 				console.log(`error: ${error}`);
 				alert('failed to authorize new device!');
@@ -32,8 +34,6 @@ const RegisterDevice = () => {
 						<p className="mt-2 text-text-600">
 							{`${messages.wantToApproveAccess}?`}
 						</p>
-						<h4 className="text-m font-semibold">Fingerprint:</h4>
-						<p className="mt-2 text-text-600">{`${fingerprint}`}</p>
 					</div>
 					<div className="mt-3 flex items-center gap-3 text-xs" >
 						<button

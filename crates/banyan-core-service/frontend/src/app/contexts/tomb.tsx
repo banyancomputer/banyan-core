@@ -41,7 +41,7 @@ interface TombInterface {
 	uploadFile: (nucket: Bucket, path: string[], name: string, file: any, folder?: BrowserObject) => Promise<void>;
 	purgeSnapshot: (id: string) => void;
 	deleteFile: (bucket: Bucket, path: string[], name: string) => void;
-	completeDeviceKeyRegistration: (fingerprint: string) => Promise<void>;
+	approveDeviceApiKey: (pem: string) => Promise<void>;
 	approveBucketAccess: (bucket: Bucket, bucket_key_id: string) => Promise<void>;
 	removeBucketAccess: (id: string) => Promise<void>;
 	restore: (bucket: Bucket, snapshot: WasmSnapshot) => Promise<void>;
@@ -245,7 +245,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	const getBucketShapshots = async (id: string) => await tombMutex(tomb, async tomb => await tomb!.listBucketSnapshots(id));
 
 	/** Approves a new deviceKey */
-	const completeDeviceKeyRegistration = async (fingerprint: string) => await tombMutex(tomb, async tomb => await tomb!.completeDeviceKeyRegistration(fingerprint));
+	const approveDeviceApiKey = async (pem: string) => await tombMutex(tomb, async tomb => await tomb!.approveDeviceApiKey(pem));
 
 	/** Deletes access key for bucket */
 	const removeBucketAccess = async (id: string) => {
@@ -412,7 +412,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 				getBuckets, getBucketsFiles, getBucketsKeys, selectBucket, getSelectedBucketFiles,
 				takeColdSnapshot, getBucketShapshots, createBucketAndMount, deleteBucket,
 				getFile, renameBucket, createDirectory, uploadFile, purgeSnapshot,
-				removeBucketAccess, approveBucketAccess, completeDeviceKeyRegistration, shareFile, download, moveTo,
+				removeBucketAccess, approveBucketAccess, approveDeviceApiKey, shareFile, download, moveTo,
 				restore, deleteFile, makeCopy, getExpandedFolderFiles,
 			}}
 		>
