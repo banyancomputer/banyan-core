@@ -35,7 +35,7 @@ use tower_http::services::ServeFile;
 
 // TODO: might want a longer timeout in some parts of the API and I'd like to be able customize a
 // few layers eventually such as CORS and request timeouts but that's for something down the line
-const REQUEST_TIMEOUT_SECS: Duration = std::time::Duration::from_secs(90);
+const REQUEST_TIMEOUT: Duration = std::time::Duration::from_secs(90);
 
 // The timestamp of the current TOS file.
 // Used to select the correct TOS file to serve.
@@ -147,7 +147,7 @@ pub async fn run(config: Config) {
         .layer(HandleErrorLayer::new(handle_error))
         .load_shed()
         .concurrency_limit(1024)
-        .timeout(REQUEST_TIMEOUT_SECS)
+        .timeout(REQUEST_TIMEOUT)
         .layer(SetSensitiveRequestHeadersLayer::from_shared(Arc::clone(
             &sensitive_headers,
         )))
