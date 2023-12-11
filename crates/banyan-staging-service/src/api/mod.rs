@@ -1,7 +1,7 @@
 use axum::body::HttpBody;
 use axum::routing::{get, post};
 use axum::Router;
-use serde::de::StdError;
+use std::error::Error;
 use tower_http::cors::CorsLayer;
 
 mod block_retrieval;
@@ -16,7 +16,7 @@ where
     B: HttpBody + Send + 'static,
     B::Data: Send,
     bytes::Bytes: From<B::Data>,
-    Box<dyn StdError + Send + Sync + 'static>: From<B::Error>,
+    Box<dyn Error + Send + Sync + 'static>: From<B::Error>,
 {
     let cors_layer = CorsLayer::very_permissive();
 

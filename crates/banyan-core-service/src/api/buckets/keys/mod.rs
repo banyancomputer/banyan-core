@@ -1,7 +1,7 @@
 use axum::body::HttpBody;
 use axum::routing::{get, post};
 use axum::Router;
-use serde::de::StdError;
+use std::error::Error;
 
 mod all_bucket_keys;
 mod create_bucket_key;
@@ -14,7 +14,7 @@ pub fn router<B>(state: AppState) -> Router<AppState, B>
 where
     B: HttpBody + Send + 'static,
     B::Data: Send,
-    Box<dyn StdError + Send + Sync + 'static>: From<B::Error>,
+    Box<dyn Error + Send + Sync + 'static>: From<B::Error>,
 {
     Router::new()
         .route(

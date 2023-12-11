@@ -11,7 +11,7 @@ pub use push_metadata::STORAGE_TICKET_DURATION;
 
 use axum::routing::{get, post};
 use axum::Router;
-use serde::de::StdError;
+use std::error::Error;
 
 use crate::app::AppState;
 
@@ -19,7 +19,7 @@ pub fn router<B>(state: AppState) -> Router<AppState, B>
 where
     B: HttpBody + Send + 'static,
     B::Data: Send,
-    Box<dyn StdError + Send + Sync + 'static>: From<B::Error>,
+    Box<dyn Error + Send + Sync + 'static>: From<B::Error>,
     bytes::Bytes: From<<B as HttpBody>::Data>,
 {
     Router::new()

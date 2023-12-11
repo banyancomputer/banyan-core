@@ -32,6 +32,7 @@ impl<B> RequestCounter<B> {
         self.bytes_from_stream
     }
 }
+
 pin_project! {
     #[derive(Debug)]
     pub struct ResponseCounter<B, C> {
