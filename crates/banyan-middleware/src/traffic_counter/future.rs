@@ -1,6 +1,5 @@
 use std::{
     future::Future,
-    mem,
     pin::Pin,
     task::{Context, Poll},
 };
@@ -47,7 +46,7 @@ where
             Err(TryRecvError::Closed) => 0,
         };
         this.request_info.body_bytes = request_body_bytes;
-        let request_info = mem::replace(this.request_info, RequestInfo::default());
+        let request_info = std::mem::take(this.request_info);
 
         match result {
             Ok(res) => {
