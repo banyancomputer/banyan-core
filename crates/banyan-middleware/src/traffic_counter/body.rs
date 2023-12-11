@@ -12,7 +12,7 @@ use tokio::sync::oneshot;
 pin_project! {
     #[derive(Debug)]
     pub struct RequestCounter<B> {
-        total_request_bytes: usize,
+        bytes_from_stream: usize,
         tx_bytes: Option<oneshot::Sender<usize>>,
         #[pin]
         inner: B,
@@ -22,14 +22,14 @@ pin_project! {
 impl<B> RequestCounter<B> {
     pub fn new(inner: B, tx_bytes: oneshot::Sender<usize>) -> Self {
         Self {
-            total_request_bytes: 0,
+            bytes_from_stream: 0,
             tx_bytes: Some(tx_bytes),
             inner,
         }
     }
 
-    pub fn total_request_bytes(&self) -> usize {
-        self.total_request_bytes
+    pub fn bytes_from_stream(&self) -> usize {
+        self.bytes_from_stream
     }
 }
 pin_project! {
@@ -49,20 +49,18 @@ impl<B, C> ResponseCounter<B, C> {
         headers: &HeaderMap,
         on_response_end: C,
         request_info: RequestInfo,
-        total_request_bytes: usize,
         status_code: StatusCode,
     ) -> Self {
         let response_header_bytes = headers
             .iter()
             .map(|(k, v)| k.as_str().len() + v.as_bytes().len())
             .sum();
-        let request_header_bytes = request_info.request_header_bytes;
 
         Self {
             request_info,
             response_info: ResponseInfo {
-                total_response_bytes: response_header_bytes,
-                total_request_bytes: total_request_bytes + request_header_bytes,
+                body_bytes: 0,
+                header_bytes: response_header_bytes,
                 status_code,
             },
             on_response_end,
@@ -71,7 +69,7 @@ impl<B, C> ResponseCounter<B, C> {
     }
 
     pub fn total_response_bytes(&self) -> usize {
-        self.response_info.total_response_bytes
+        self.response_info.header_bytes + self.response_info.body_bytes
     }
 }
 
@@ -89,14 +87,14 @@ where
         let this = self.project();
         match ready!(this.inner.poll_data(cx)) {
             Some(Ok(data)) => {
-                *this.total_request_bytes += data.remaining();
+                *this.bytes_from_stream += data.chunk().len();
                 Poll::Ready(Some(Ok(data)))
             }
             Some(Err(e)) => Poll::Ready(Some(Err(e))),
             // Will not get called at all if request body is empty
             None => {
                 if let Some(tx_bytes) = this.tx_bytes.take() {
-                    if tx_bytes.send(*this.total_request_bytes).is_err() {
+                    if tx_bytes.send(*this.bytes_from_stream).is_err() {
                         tracing::error!("Failed to send total request bytes");
                     }
                 }
@@ -115,7 +113,7 @@ where
             Poll::Ready(Ok(data)) => {
                 if let Some(headers) = &data {
                     for (name, value) in headers.iter() {
-                        *this.total_request_bytes += name.as_str().len() + value.as_bytes().len();
+                        *this.bytes_from_stream += name.as_str().len() + value.as_bytes().len();
                     }
                 }
                 Ok(data)
@@ -153,7 +151,7 @@ where
 
         let res = match ready!(this.inner.poll_data(cx)) {
             Some(Ok(data)) => {
-                this.response_info.total_response_bytes += data.remaining();
+                this.response_info.body_bytes += data.chunk().len();
                 Some(Ok(data))
             }
             Some(Err(err)) => Some(Err(err.into())),
@@ -178,7 +176,7 @@ where
             Poll::Ready(Ok(data)) => {
                 if let Some(headers) = &data {
                     for (name, value) in headers.iter() {
-                        this.response_info.total_response_bytes +=
+                        this.response_info.header_bytes +=
                             name.as_str().len() + value.as_bytes().len();
                     }
                 }
@@ -205,19 +203,20 @@ where
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct RequestInfo {
     request_id: String,
     method: Method,
     uri: Uri,
     version: Version,
-    request_header_bytes: usize,
+    header_bytes: usize,
+    pub body_bytes: usize,
 }
 
 #[derive(Debug, Clone)]
 pub struct ResponseInfo {
-    total_response_bytes: usize,
-    total_request_bytes: usize,
+    body_bytes: usize,
+    header_bytes: usize,
     status_code: StatusCode,
 }
 
@@ -230,7 +229,7 @@ impl<T> From<&Request<T>> for RequestInfo {
             .map_or_else(String::new, |id| {
                 id.to_str().unwrap_or_default().to_string()
             });
-        let request_header_bytes = req
+        let header_bytes = req
             .headers()
             .iter()
             .map(|(k, v)| k.as_str().len() + v.as_bytes().len())
@@ -241,7 +240,8 @@ impl<T> From<&Request<T>> for RequestInfo {
             method: req.method().clone(),
             uri: req.uri().clone(),
             version: req.version(),
-            request_header_bytes,
+            header_bytes,
+            body_bytes: 0,
         }
     }
 }
@@ -257,8 +257,10 @@ impl OnResponseEnd for DefaultOnResponseEnd {
     fn on_response_end(&self, request_info: &RequestInfo, response_info: &ResponseInfo) {
         if !response_info.status_code.is_server_error() {
             tracing::info!(
-                request_bytes = %response_info.total_request_bytes,
-                response_bytes = %response_info.total_response_bytes,
+                request_header_bytes = request_info.header_bytes,
+                request_body_bytes = request_info.body_bytes,
+                response_header_bytes= response_info.header_bytes,
+                response_body_bytes = response_info.body_bytes,
                 status = ?response_info.status_code,
                 method = %request_info.method,
                 uri = %request_info.uri,

@@ -1,5 +1,6 @@
 use std::{
     future::Future,
+    mem,
     pin::Pin,
     task::{Context, Poll},
 };
@@ -35,7 +36,7 @@ where
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let this = self.project();
         let result = ready!(this.inner.poll(cx));
-        let total_request_bytes = match this.rx_bytes_received.try_recv() {
+        let request_body_bytes = match this.rx_bytes_received.try_recv() {
             Ok(bytes_received) => bytes_received,
             // that should not happen, since the request future would've already been dropped
             Err(TryRecvError::Empty) => {
@@ -45,6 +46,8 @@ where
             // that's expected when there are no request bytes
             Err(TryRecvError::Closed) => 0,
         };
+        this.request_info.body_bytes = request_body_bytes;
+        let request_info = mem::replace(this.request_info, RequestInfo::default());
 
         match result {
             Ok(res) => {
@@ -53,8 +56,7 @@ where
                     body,
                     &parts.headers,
                     this.on_response_end.take().unwrap(),
-                    this.request_info.clone(),
-                    total_request_bytes,
+                    request_info,
                     parts.status,
                 );
                 let res = Response::from_parts(parts, body);
