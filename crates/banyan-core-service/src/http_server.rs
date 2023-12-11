@@ -11,7 +11,6 @@ use axum::response::IntoResponse;
 use axum::response::Response;
 use axum::routing::{get, get_service};
 use axum::{Json, Router, Server, ServiceExt};
-use banyan_middleware::traffic_counter::body::{RequestInfo, ResponseInfo};
 use futures::future::join_all;
 use http::header;
 use tokio::sync::watch;
@@ -30,6 +29,7 @@ use tower_http::{LatencyUnit, ServiceBuilderExt};
 use tracing::Level;
 
 use banyan_middleware::traffic_counter::layer::TrafficCounterLayer;
+use banyan_middleware::traffic_counter::body::{RequestInfo, ResponseInfo};
 
 use crate::app::{AppState, Config};
 use crate::tasks::start_background_workers;

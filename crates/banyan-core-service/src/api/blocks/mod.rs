@@ -1,7 +1,8 @@
+use std::error::Error;
+
 use axum::body::HttpBody;
 use axum::routing::post;
 use axum::Router;
-use std::error::Error;
 
 mod locate;
 

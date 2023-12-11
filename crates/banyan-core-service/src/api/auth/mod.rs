@@ -1,8 +1,10 @@
-use crate::app::AppState;
+use std::error::Error;
+
 use axum::body::HttpBody;
 use axum::routing::{get, post};
 use axum::Router;
-use std::error::Error;
+
+use crate::app::AppState;
 
 mod create_device_api_key;
 mod create_escrowed_device;

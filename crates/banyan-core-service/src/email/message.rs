@@ -1,10 +1,11 @@
+use std::error::Error;
+
 use lazy_static::lazy_static;
 use lettre::message::{
     header::{Header, HeaderName, HeaderValue},
     Message,
 };
 use serde::{de::DeserializeOwned, Serialize};
-use std::error::Error;
 use uuid::Uuid;
 
 use super::error::EmailError;

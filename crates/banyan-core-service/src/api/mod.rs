@@ -1,6 +1,7 @@
+use std::error::Error;
+
 use axum::body::HttpBody;
 use axum::Router;
-use std::error::Error;
 use tower_http::cors::CorsLayer;
 
 mod auth;
