@@ -49,20 +49,15 @@ export const FilePreviewProvider: FC<{ children: ReactNode }> = ({ children }) =
             if (!isFileSupported) { return; }
             setFile(prev => ({ ...prev, isLoading: true }));
 
-            const reader = new FileReader();
             const arrayBuffer = await getFile(bucket, path, file);
             const blob = new Blob([arrayBuffer], { type: 'application/octet-stream' });
+            const data = await URL.createObjectURL(blob);
 
-            reader.readAsDataURL(blob);
-            reader.onload = function (event) {
-                const result = event.target?.result as string;
-                setFile({
-                    data: result || '',
-                    name: file,
-                    isLoading: false,
-                });
-            };
-            reader.readAsDataURL(blob);
+            setFile({
+                data,
+                name: file,
+                isLoading: false,
+            });
         } catch (error: any) {
             setFile(initialState);
         }
