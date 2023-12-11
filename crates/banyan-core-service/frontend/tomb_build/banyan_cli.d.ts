@@ -231,11 +231,15 @@ export class TombWasm {
 */
   deleteBucket(bucket_id: string): Promise<void>;
 /**
-* End Registration waiting
-* @param {string} fingerprint
+* Approve the device key and end Registration waiting
+* # Arguments
+* * pem - The public PEM of the key being approved
+* # Returns
+* The result of ending the registration wait
+* @param {string} pem
 * @returns {Promise<void>}
 */
-  completeDeviceKeyRegistration(fingerprint: string): Promise<void>;
+  approveDeviceApiKey(pem: string): Promise<void>;
 /**
 * Mount a bucket as a File System that can be managed by the user
 * # Arguments
