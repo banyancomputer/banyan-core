@@ -35,7 +35,7 @@ const REQUEST_MAX_SIZE: usize = 256 * 1_024;
 
 /// The maximum number of seconds that any individual request can take before it is dropped with an
 /// error.
-const REQUEST_TIMEOUT_SECS: u64 = 15;
+const REQUEST_TIMEOUT_SECS: Duration = Duration::from_secs(15);
 
 const SENSITIVE_HEADERS: &[http::HeaderName] = &[
     header::AUTHORIZATION,
@@ -74,7 +74,7 @@ pub async fn run(config: Config) {
             SENSITIVE_HEADERS.into(),
         ))
         // Set a timeout for any request that comes in -- this is a hard timeout and will drop the request
-        .timeout(Duration::from_secs(REQUEST_TIMEOUT_SECS))
+        .timeout(REQUEST_TIMEOUT_SECS)
         // Pre-empt overloading by responding with a 503 resources are unavailable
         .load_shed()
         // Restrict the number of concurrent in flight requests -- should reflect the number of concurrent requests your service can handle.
