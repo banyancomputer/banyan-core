@@ -34,6 +34,7 @@ export const getLocalKey = (): LocalKey => {
 		setCookie(null, LOCAL_KEY_COOKIE_NAME, `${id}:${key}`, {
 			maxAge: COOKIE_MAX_AGE,
 			sameSite: 'strict',
+			secure: true,
 			path: '/',
 		});
 		return { id, key };
@@ -91,6 +92,7 @@ export const setUserDataEscrowedKeyMaterial = (escrowedKeyMaterial: EscrowedKeyM
 	setCookie(null, USER_DATA_COOKIE_NAME, JSON.stringify(userDataJson), {
 		maxAge: COOKIE_MAX_AGE,
 		sameSite: 'strict',
+		secure: true,
 		path: '/',
 	});
 }
