@@ -123,7 +123,11 @@ where
 
         let claims = token_data.claims;
 
-        match claims.expiration.checked_sub(claims.not_before) {
+        match claims
+            .expiration
+            .checked_sub(claims.not_before)
+            .map(std::time::Duration::from_secs)
+        {
             Some(duration) => {
                 if duration > EXPIRATION_WINDOW_SECS {
                     return Err(ApiIdentityError::ExtremeTokenValidity);
