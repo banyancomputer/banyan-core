@@ -15,7 +15,6 @@ where
     B::Data: Send + 'static,
     B::Error: Error + Send + Sync + 'static,
 {
-    // TODO: Find the right cors config for this[
     let cors_layer = CorsLayer::very_permissive();
 
     Router::new()
