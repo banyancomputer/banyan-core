@@ -11,26 +11,25 @@ use pin_project_lite::pin_project;
 use tokio::sync::oneshot;
 use tokio::sync::oneshot::error::TryRecvError;
 
-use crate::traffic_counter::body::{OnResponseEnd, RequestInfo, ResponseCounter};
+use crate::traffic_counter::body::{FnOnResponseEnd, RequestInfo, ResponseCounter};
 
 pin_project! {
     #[derive(Debug)]
-    pub struct ResponseFuture<F,OnResponseEnd> {
+    pub struct ResponseFuture<F> {
         #[pin]
         pub(crate) inner: F,
         pub rx_bytes_received: oneshot::Receiver<usize>,
         pub request_info: RequestInfo,
-        pub on_response_end: Option<OnResponseEnd>
+        pub on_response_end: Option<FnOnResponseEnd>
     }
 }
 
-impl<F, B, E, OnResponseT> Future for ResponseFuture<F, OnResponseT>
+impl<F, B, E> Future for ResponseFuture<F>
 where
     F: Future<Output = Result<Response<B>, E>>,
-    OnResponseT: OnResponseEnd,
     B: Body,
 {
-    type Output = Result<Response<ResponseCounter<B, OnResponseT>>, E>;
+    type Output = Result<Response<ResponseCounter<B>>, E>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let this = self.project();
@@ -54,9 +53,9 @@ where
                 let body = ResponseCounter::new(
                     body,
                     &parts.headers,
-                    this.on_response_end.take().unwrap(),
                     request_info,
                     parts.status,
+                    this.on_response_end.take(),
                 );
                 let res = Response::from_parts(parts, body);
                 Poll::Ready(Ok(res))

@@ -19,7 +19,7 @@ use tower_http::validate_request::ValidateRequestHeaderLayer;
 use tower_http::{LatencyUnit, ServiceBuilderExt};
 use tracing::Level;
 
-use banyan_middleware::traffic_counter::body::DefaultOnResponseEnd;
+use banyan_middleware::traffic_counter::body::{RequestInfo, ResponseInfo};
 use banyan_middleware::traffic_counter::layer::TrafficCounterLayer;
 
 use crate::api;
@@ -65,6 +65,20 @@ pub async fn run(config: Config) {
     let (shutdown_handle, mut shutdown_rx) = shutdown_blocker::graceful_shutdown_blocker().await;
     // Specify log level for tracing
     let trace_layer = create_trace_layer(config.log_level());
+    let on_response_end = |request_info: &RequestInfo, response_info: &ResponseInfo| {
+        if !response_info.status_code.is_server_error() {
+            tracing::info!(
+                request_bytes = %(request_info.header_bytes +request_info.body_bytes),
+                response_bytes = %(response_info.header_bytes +response_info.body_bytes),
+                status = ?response_info.status_code,
+                method = %request_info.method,
+                uri = %request_info.uri,
+                version = ?request_info.version,
+                request_id = %request_info.request_id,
+                "finished processing request",
+            );
+        }
+    };
     // Create our middleware stack
     // The order of these layers and configuration extensions was carefully chosen as they will see
     // the requests to responses effectively in the order they're defined.
@@ -86,7 +100,7 @@ pub async fn run(config: Config) {
         // Propgate that identifier to any downstream services to avoid untrusted injection of this header.
         .set_x_request_id(MakeRequestUuid)
         .propagate_x_request_id()
-        .layer(TrafficCounterLayer::new(DefaultOnResponseEnd))
+        .layer(TrafficCounterLayer::new(Some(on_response_end)))
         // Default request size. Individual handlers can opt-out of this limit, see api/upload.rs for an example.
         .layer(DefaultBodyLimit::max(REQUEST_MAX_SIZE))
         // TODO: is this desired?

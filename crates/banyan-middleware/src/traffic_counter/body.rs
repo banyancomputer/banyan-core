@@ -32,25 +32,26 @@ impl<B> RequestCounter<B> {
         self.bytes_from_stream
     }
 }
+pub type FnOnResponseEnd = fn(req_info: &RequestInfo, res_info: &ResponseInfo) -> ();
 
 pin_project! {
     #[derive(Debug)]
-    pub struct ResponseCounter<B, C> {
+    pub struct ResponseCounter<B> {
         response_info: ResponseInfo,
         request_info: RequestInfo ,
-        on_response_end: C,
+        on_response_end: Option<FnOnResponseEnd>,
         #[pin]
         inner: B,
     }
 }
 
-impl<B, C> ResponseCounter<B, C> {
+impl<B> ResponseCounter<B> {
     pub fn new(
         inner: B,
         headers: &HeaderMap,
-        on_response_end: C,
         request_info: RequestInfo,
         status_code: StatusCode,
+        on_response_end: Option<FnOnResponseEnd>,
     ) -> Self {
         let response_header_bytes = headers
             .iter()
@@ -135,11 +136,10 @@ where
     }
 }
 
-impl<B, OnResponseT> Body for ResponseCounter<B, OnResponseT>
+impl<B> Body for ResponseCounter<B>
 where
     B: Body,
     B::Error: Into<Box<dyn Error + Send + Sync>>,
-    OnResponseT: OnResponseEnd,
 {
     type Data = B::Data;
     type Error = Box<dyn Error + Send + Sync>;
@@ -159,8 +159,9 @@ where
             // Not called when response is HttpBody
             // Called when the response is StreamBody
             None => {
-                this.on_response_end
-                    .on_response_end(this.request_info, this.response_info);
+                if let Some(on_response_end) = &this.on_response_end {
+                    on_response_end(this.request_info, this.response_info);
+                }
                 None
             }
         };
@@ -193,8 +194,9 @@ where
     fn is_end_stream(&self) -> bool {
         let end_stream = self.inner.is_end_stream();
         if end_stream {
-            self.on_response_end
-                .on_response_end(&self.request_info, &self.response_info);
+            if let Some(on_response_end) = &self.on_response_end {
+                on_response_end(&self.request_info, &self.response_info);
+            }
         }
         end_stream
     }
@@ -206,19 +208,19 @@ where
 
 #[derive(Debug, Clone, Default)]
 pub struct RequestInfo {
-    request_id: String,
-    method: Method,
-    uri: Uri,
-    version: Version,
-    header_bytes: usize,
+    pub request_id: String,
+    pub method: Method,
+    pub uri: Uri,
+    pub version: Version,
+    pub header_bytes: usize,
     pub body_bytes: usize,
 }
 
 #[derive(Debug, Clone)]
 pub struct ResponseInfo {
-    body_bytes: usize,
-    header_bytes: usize,
-    status_code: StatusCode,
+    pub body_bytes: usize,
+    pub header_bytes: usize,
+    pub status_code: StatusCode,
 }
 
 impl<T> From<&Request<T>> for RequestInfo {
@@ -243,32 +245,6 @@ impl<T> From<&Request<T>> for RequestInfo {
             version: req.version(),
             header_bytes,
             body_bytes: 0,
-        }
-    }
-}
-
-pub trait OnResponseEnd {
-    fn on_response_end(&self, req_info: &RequestInfo, res_info: &ResponseInfo);
-}
-
-// Do not remove the Clone. It will break axum trait bounds
-#[derive(Clone)]
-pub struct DefaultOnResponseEnd;
-impl OnResponseEnd for DefaultOnResponseEnd {
-    fn on_response_end(&self, request_info: &RequestInfo, response_info: &ResponseInfo) {
-        if !response_info.status_code.is_server_error() {
-            tracing::info!(
-                request_header_bytes = request_info.header_bytes,
-                request_body_bytes = request_info.body_bytes,
-                response_header_bytes= response_info.header_bytes,
-                response_body_bytes = response_info.body_bytes,
-                status = ?response_info.status_code,
-                method = %request_info.method,
-                uri = %request_info.uri,
-                version = ?request_info.version,
-                request_id = %request_info.request_id,
-                "finished processing request",
-            );
         }
     }
 }

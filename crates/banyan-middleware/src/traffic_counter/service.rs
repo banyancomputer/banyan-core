@@ -6,36 +6,32 @@ use tokio::sync::oneshot;
 
 use tower_service::Service;
 
-use crate::traffic_counter::body::{
-    DefaultOnResponseEnd, OnResponseEnd, RequestCounter, ResponseCounter,
-};
+use crate::traffic_counter::body::{FnOnResponseEnd, RequestCounter, ResponseCounter};
 use crate::traffic_counter::future::ResponseFuture;
 
 #[derive(Clone, Debug)]
-pub struct TrafficCounter<S, OnResponseEndT = DefaultOnResponseEnd> {
+pub struct TrafficCounter<S> {
     inner: S,
-    on_response_end: OnResponseEndT,
+    on_response_end: Option<FnOnResponseEnd>,
 }
 
 impl<S> TrafficCounter<S> {
-    pub fn new(inner: S) -> Self {
+    pub fn new(inner: S, on_response_end: Option<FnOnResponseEnd>) -> Self {
         Self {
             inner,
-            on_response_end: DefaultOnResponseEnd,
+            on_response_end,
         }
     }
 }
 
-impl<ReqBody, ResBody, OnResponseEndT, S> Service<Request<ReqBody>>
-    for TrafficCounter<S, OnResponseEndT>
+impl<ReqBody, ResBody, S> Service<Request<ReqBody>> for TrafficCounter<S>
 where
     ResBody: Body,
-    OnResponseEndT: OnResponseEnd + Clone,
     S: Service<Request<RequestCounter<ReqBody>>, Response = Response<ResBody>>,
 {
-    type Response = Response<ResponseCounter<ResBody, OnResponseEndT>>;
+    type Response = Response<ResponseCounter<ResBody>>;
     type Error = S::Error;
-    type Future = ResponseFuture<S::Future, OnResponseEndT>;
+    type Future = ResponseFuture<S::Future>;
 
     #[inline]
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
@@ -52,7 +48,7 @@ where
             inner: self.inner.call(req),
             request_info,
             rx_bytes_received,
-            on_response_end: Some(self.on_response_end.clone()),
+            on_response_end: self.on_response_end.take(),
         }
     }
 }

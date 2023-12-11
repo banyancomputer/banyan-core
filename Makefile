@@ -2,10 +2,6 @@
 .PHONY: default
 default: build
 
-.PHONY: fmt
-fmt:
-	cargo fmt -p banyan-core-service banyan-staging-service banyan-storage-provider-service banyan-middleware
-
 .PHONY: build
 build:
 	cargo build --workspace

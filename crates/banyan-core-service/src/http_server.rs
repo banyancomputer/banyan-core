@@ -11,7 +11,7 @@ use axum::response::IntoResponse;
 use axum::response::Response;
 use axum::routing::{get, get_service};
 use axum::{Json, Router, Server, ServiceExt};
-use banyan_middleware::traffic_counter::body::DefaultOnResponseEnd;
+use banyan_middleware::traffic_counter::body::{RequestInfo, ResponseInfo};
 use futures::future::join_all;
 use http::header;
 use tokio::sync::watch;
@@ -145,6 +145,21 @@ pub async fn run(config: Config) {
         )
         .on_failure(DefaultOnFailure::new().latency_unit(LatencyUnit::Micros));
 
+    let on_response_end = |request_info: &RequestInfo, response_info: &ResponseInfo| {
+        if !response_info.status_code.is_server_error() {
+            tracing::info!(
+                request_bytes = %(request_info.header_bytes +request_info.body_bytes),
+                response_bytes = %(response_info.header_bytes +response_info.body_bytes),
+                status = ?response_info.status_code,
+                method = %request_info.method,
+                uri = %request_info.uri,
+                version = ?request_info.version,
+                request_id = %request_info.request_id,
+                "finished processing request",
+            );
+        }
+    };
+
     let middleware_stack = ServiceBuilder::new()
         .layer(HandleErrorLayer::new(handle_error))
         .load_shed()
@@ -156,7 +171,7 @@ pub async fn run(config: Config) {
         .set_x_request_id(MakeRequestUuid)
         .layer(trace_layer)
         .propagate_x_request_id()
-        .layer(TrafficCounterLayer::new(DefaultOnResponseEnd))
+        .layer(TrafficCounterLayer::new(Some(on_response_end)))
         .layer(DefaultBodyLimit::disable())
         .layer(ValidateRequestHeaderLayer::accept("application/json"))
         .layer(SetSensitiveResponseHeadersLayer::from_shared(
