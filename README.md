@@ -183,3 +183,12 @@ wasm-pack build --release
 rm -f ${BANYAN_CORE_CHECKOUT}/crates/banyan-core-service/frontend/tomb_build/
 cp -f pkg/* ${BANYAN_CORE_CHECKOUT}/crates/banyan-core-service/frontend/tomb_build/
 ```
+
+
+## Database Schema
+
+### Core Service
+![Core_Service Diagram](./docs/images/db-core-service.png)
+
+### Staging Service
+![Staging Service Diagram](./docs/images/db-staging-service.png)
