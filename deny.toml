@@ -90,10 +90,6 @@ exceptions = [
   ] }
 ]
 
-allow-git = [
-  "https://github.com/banyancomputer/banyan-cli"
-]
-
 # Ring doesn't specify the license in their Cargo manifest, we have to
 # specifically tell cargo-deny what it is.
 [[licenses.clarify]]
@@ -129,4 +125,6 @@ unknown-registry = "deny"
 unknown-git = "deny"
 
 # Crates that have been approved by the lead maintainer to use a git source
-allow-git = []
+allow-git = [
+  "https://github.com/banyancomputer/banyan-cli"
+]
