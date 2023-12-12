@@ -2133,12 +2133,12 @@ export function __wbindgen_memory() {
     return addHeapObject(ret);
 };
 
-export function __wbindgen_closure_wrapper3827(arg0, arg1, arg2) {
+export function __wbindgen_closure_wrapper3825(arg0, arg1, arg2) {
     const ret = makeMutClosure(arg0, arg1, 1471, __wbg_adapter_32);
     return addHeapObject(ret);
 };
 
-export function __wbindgen_closure_wrapper3957(arg0, arg1, arg2) {
+export function __wbindgen_closure_wrapper3955(arg0, arg1, arg2) {
     const ret = makeMutClosure(arg0, arg1, 1509, __wbg_adapter_35);
     return addHeapObject(ret);
 };
