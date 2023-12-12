@@ -85,6 +85,8 @@ exceptions = [
   ] },
   { name = "banyan-car-analyzer", allow = [
     "LicenseRef-LICENSE.txt",
+  ] }, { name = "banyan-traffic-counter", allow = [
+    "LicenseRef-LICENSE.txt",
   ] },
 ]
 
