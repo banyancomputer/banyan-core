@@ -1,0 +1,5 @@
+# Formatting settings.
+#
+# For more information, see: https://rust-lang.github.io/rustfmt
+group_imports = "StdExternalCrate"
+imports_granularity = "Module"

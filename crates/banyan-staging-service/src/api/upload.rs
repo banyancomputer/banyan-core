@@ -5,14 +5,12 @@ use axum::headers::{ContentLength, ContentType};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::TypedHeader;
+use banyan_car_analyzer::{CarReport, StreamingCarAnalyzer, StreamingCarAnalyzerError};
 use banyan_task::TaskLikeExt;
-
 use futures::{TryStream, TryStreamExt};
 use serde::{Deserialize, Serialize};
 use tokio::io::{AsyncWrite, AsyncWriteExt};
 use uuid::Uuid;
-
-use banyan_car_analyzer::{CarReport, StreamingCarAnalyzer, StreamingCarAnalyzerError};
 
 use crate::app::AppState;
 use crate::database::{map_sqlx_error, Database, DatabaseError};

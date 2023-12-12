@@ -1,4 +1,5 @@
-use banyan_api_client::{keys::*, prelude::*};
+use banyan_api_client::keys::*;
+use banyan_api_client::prelude::*;
 use jsonwebtoken::EncodingKey;
 use uuid::Uuid;
 

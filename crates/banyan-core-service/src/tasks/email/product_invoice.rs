@@ -1,18 +1,13 @@
 #![allow(dead_code)]
 
 use async_trait::async_trait;
+use banyan_task::{CurrentTask, TaskLike};
 use serde::{Deserialize, Serialize};
 use url::Url;
 use uuid::Uuid;
 
+use super::{send_email_message, should_send_email_message, EmailTaskContext, EmailTaskError};
 use crate::email::message::ProductInvoice;
-use banyan_task::CurrentTask;
-use banyan_task::TaskLike;
-
-use super::send_email_message;
-use super::should_send_email_message;
-use super::EmailTaskContext;
-use super::EmailTaskError;
 
 #[derive(Deserialize, Serialize)]
 pub struct ProductInvoiceEmailTask {

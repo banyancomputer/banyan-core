@@ -6,14 +6,12 @@ use axum::response::{IntoResponse, Response};
 use axum::{async_trait, Json, RequestPartsExt};
 use http::request::Parts;
 use jwt_simple::prelude::*;
-
 use sqlx::FromRow;
 use uuid::Uuid;
 
+use super::{fingerprint_validator, MAXIMUM_TOKEN_AGE};
 use crate::app::PlatformName;
 use crate::database::Database;
-
-use super::{fingerprint_validator, MAXIMUM_TOKEN_AGE};
 
 pub struct AuthenticatedClient {
     id: Uuid,

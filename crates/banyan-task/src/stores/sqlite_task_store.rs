@@ -325,10 +325,8 @@ impl From<SqliteTaskStoreMetrics> for TaskStoreMetrics {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::{
-        tests::{default_task_store_metrics, TestTask},
-        TaskLikeExt,
-    };
+    use crate::tests::{default_task_store_metrics, TestTask};
+    use crate::TaskLikeExt;
 
     #[tokio::test]
     async fn empty_metrics() {

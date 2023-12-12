@@ -1,10 +1,11 @@
-use crate::app::AppState;
-use crate::utils::keys::fingerprint_public_key;
 use axum::extract::{Json, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use jwt_simple::prelude::*;
 use serde::Deserialize;
+
+use crate::app::AppState;
+use crate::utils::keys::fingerprint_public_key;
 
 #[derive(Deserialize)]
 pub struct CreateFakeUserRequest {

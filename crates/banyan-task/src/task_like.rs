@@ -57,9 +57,10 @@ where
 }
 
 pub mod tests {
-    use super::*;
     use async_trait::async_trait;
     use serde::{Deserialize, Serialize};
+
+    use super::*;
 
     #[derive(Debug, Serialize, Deserialize)]
     pub struct TestTask;
