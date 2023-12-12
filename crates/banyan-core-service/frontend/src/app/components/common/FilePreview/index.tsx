@@ -2,7 +2,7 @@ import React from 'react';
 // @ts-ignore
 import FilePreviewer from 'react-file-previewer';
 
-import { Loader } from '@components/common//Loader';
+import { Loader } from '@components/common/Loader';
 import { FileIcon } from '@components/common/FileIcon';
 
 import { useFilePreview } from '@/app/contexts/filesPreview';
@@ -70,12 +70,12 @@ export const FilePreview = () => {
                     </button>
                     <PreviewArrow
                         action={openPrevious}
-                        isVisivle={!!files.indexOf(file.name)}
+                        isVisible={!!files.indexOf(file.name)}
                         className='left-4 -rotate-90'
                     />
                     <PreviewArrow
                         action={openNext}
-                        isVisivle={!(files.indexOf(file.name) === files.length - 1)}
+                        isVisible={!(files.indexOf(file.name) === files.length - 1)}
                         className='right-4 rotate-90'
                     />
                     <div
