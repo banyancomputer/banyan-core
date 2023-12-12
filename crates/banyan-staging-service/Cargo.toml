@@ -7,7 +7,7 @@ license = "LicenseRef-LICENSE.txt"
 [dependencies]
 banyan-task = { path = "../banyan-task", version = "^0.1" }
 banyan-car-analyzer = { path = "../banyan-car-analyzer", version = "^0.1" }
-banyan-middleware = { path = "../banyan-middleware", version = "^0.1" }
+banyan-traffic-counter = { path = "../banyan-traffic-counter", version = "^0.1" }
 
 dotenvy = "^0.15"
 futures = "^0.3"

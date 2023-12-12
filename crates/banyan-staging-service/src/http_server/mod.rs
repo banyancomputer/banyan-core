@@ -19,8 +19,8 @@ use tower_http::validate_request::ValidateRequestHeaderLayer;
 use tower_http::{LatencyUnit, ServiceBuilderExt};
 use tracing::Level;
 
-use banyan_middleware::traffic_counter::body::{RequestInfo, ResponseInfo};
-use banyan_middleware::traffic_counter::layer::TrafficCounterLayer;
+use banyan_traffic_counter::traffic_counter::body::{RequestInfo, ResponseInfo};
+use banyan_traffic_counter::traffic_counter::layer::TrafficCounterLayer;
 
 use crate::api;
 use crate::app::{AppState, Config};
@@ -74,7 +74,7 @@ pub async fn run(config: Config) {
                 method = %request_info.method,
                 uri = %request_info.uri,
                 version = ?request_info.version,
-                request_id = %request_info.request_id,
+                request_id = %request_info.request_id.map_or_else(|| "".to_string(), |id| id.to_string()),
                 "finished processing request",
             );
         }
@@ -100,7 +100,7 @@ pub async fn run(config: Config) {
         // Propgate that identifier to any downstream services to avoid untrusted injection of this header.
         .set_x_request_id(MakeRequestUuid)
         .propagate_x_request_id()
-        .layer(TrafficCounterLayer::new(Some(on_response_end)))
+        .layer(TrafficCounterLayer::new(on_response_end))
         // Default request size. Individual handlers can opt-out of this limit, see api/upload.rs for an example.
         .layer(DefaultBodyLimit::max(REQUEST_MAX_SIZE))
         // TODO: is this desired?

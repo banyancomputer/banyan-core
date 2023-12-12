@@ -5,11 +5,11 @@ use crate::traffic_counter::service::TrafficCounter;
 
 #[derive(Clone, Debug)]
 pub struct TrafficCounterLayer {
-    pub on_response_end: Option<FnOnResponseEnd>,
+    pub on_response_end: FnOnResponseEnd,
 }
 
 impl TrafficCounterLayer {
-    pub fn new(on_response_end: Option<FnOnResponseEnd>) -> Self {
+    pub fn new(on_response_end: FnOnResponseEnd) -> Self {
         Self { on_response_end }
     }
 }

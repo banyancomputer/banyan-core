@@ -9,6 +9,8 @@ use http_body::{Body, SizeHint};
 use pin_project_lite::pin_project;
 use tokio::sync::oneshot;
 
+const COLON_NEW_LINE_BYTES_LEN: usize= 3;
+
 pin_project! {
     #[derive(Debug)]
     pub struct RequestCounter<B> {
@@ -39,7 +41,7 @@ pin_project! {
     pub struct ResponseCounter<B> {
         response_info: ResponseInfo,
         request_info: RequestInfo ,
-        on_response_end: Option<FnOnResponseEnd>,
+        on_response_end: FnOnResponseEnd,
         #[pin]
         inner: B,
     }
@@ -51,11 +53,11 @@ impl<B> ResponseCounter<B> {
         headers: &HeaderMap,
         request_info: RequestInfo,
         status_code: StatusCode,
-        on_response_end: Option<FnOnResponseEnd>,
+        on_response_end: FnOnResponseEnd,
     ) -> Self {
         let response_header_bytes = headers
             .iter()
-            .map(|(k, v)| k.as_str().len() + v.as_bytes().len())
+            .map(|(k, v)| k.as_str().len() + v.as_bytes().len() + COLON_NEW_LINE_BYTES_LEN)
             .sum();
 
         Self {
@@ -68,10 +70,6 @@ impl<B> ResponseCounter<B> {
             on_response_end,
             inner,
         }
-    }
-
-    pub fn total_response_bytes(&self) -> usize {
-        self.response_info.header_bytes + self.response_info.body_bytes
     }
 }
 
@@ -97,7 +95,7 @@ where
             None => {
                 if let Some(tx_bytes) = this.tx_bytes.take() {
                     if tx_bytes.send(*this.bytes_from_stream).is_err() {
-                        tracing::error!("Failed to send total request bytes");
+                        tracing::warn!("Failed to send total request bytes");
                     }
                 }
                 Poll::Ready(None)
@@ -159,9 +157,7 @@ where
             // Not called when response is HttpBody
             // Called when the response is StreamBody
             None => {
-                if let Some(on_response_end) = &this.on_response_end {
-                    on_response_end(this.request_info, this.response_info);
-                }
+                (this.on_response_end)(this.request_info, this.response_info);
                 None
             }
         };
@@ -194,9 +190,7 @@ where
     fn is_end_stream(&self) -> bool {
         let end_stream = self.inner.is_end_stream();
         if end_stream {
-            if let Some(on_response_end) = &self.on_response_end {
-                on_response_end(&self.request_info, &self.response_info);
-            }
+            (self.on_response_end)(&self.request_info, &self.response_info);
         }
         end_stream
     }
@@ -208,7 +202,7 @@ where
 
 #[derive(Debug, Clone, Default)]
 pub struct RequestInfo {
-    pub request_id: String,
+    pub request_id: Option<String>,
     pub method: Method,
     pub uri: Uri,
     pub version: Version,
@@ -225,17 +219,14 @@ pub struct ResponseInfo {
 
 impl<T> From<&Request<T>> for RequestInfo {
     fn from(req: &Request<T>) -> Self {
-        let request_id = req
-            .headers()
-            // x-request-id is crate private in tower-http
+        let request_id = req.headers()
             .get(HeaderName::from_static("x-request-id"))
-            .map_or_else(String::new, |id| {
-                id.to_str().unwrap_or_default().to_string()
-            });
-        let header_bytes = req
-            .headers()
+            .and_then(|v| v.to_str().ok())
+            .filter(|s| !s.is_empty())
+            .map(|s| s.to_string());
+        let header_bytes = req.headers()
             .iter()
-            .map(|(k, v)| k.as_str().len() + v.as_bytes().len())
+            .map(|(k, v)| k.as_str().len() + v.as_bytes().len() + COLON_NEW_LINE_BYTES_LEN)
             .sum();
 
         RequestInfo {
@@ -248,6 +239,7 @@ impl<T> From<&Request<T>> for RequestInfo {
         }
     }
 }
+
 
 #[cfg(test)]
 mod tests {}

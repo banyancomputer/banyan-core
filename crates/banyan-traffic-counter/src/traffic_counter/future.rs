@@ -20,7 +20,7 @@ pin_project! {
         pub(crate) inner: F,
         pub rx_bytes_received: oneshot::Receiver<usize>,
         pub request_info: RequestInfo,
-        pub on_response_end: Option<FnOnResponseEnd>
+        pub on_response_end: FnOnResponseEnd
     }
 }
 
@@ -55,7 +55,7 @@ where
                     &parts.headers,
                     request_info,
                     parts.status,
-                    this.on_response_end.take(),
+                    this.on_response_end.clone(),
                 );
                 let res = Response::from_parts(parts, body);
                 Poll::Ready(Ok(res))

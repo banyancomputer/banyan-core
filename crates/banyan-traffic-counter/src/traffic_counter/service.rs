@@ -11,11 +11,11 @@ use crate::traffic_counter::future::ResponseFuture;
 #[derive(Clone, Debug)]
 pub struct TrafficCounter<S> {
     inner: S,
-    on_response_end: Option<FnOnResponseEnd>,
+    on_response_end: FnOnResponseEnd,
 }
 
 impl<S> TrafficCounter<S> {
-    pub fn new(inner: S, on_response_end: Option<FnOnResponseEnd>) -> Self {
+    pub fn new(inner: S, on_response_end: FnOnResponseEnd) -> Self {
         Self {
             inner,
             on_response_end,
@@ -43,11 +43,12 @@ where
         let body = RequestCounter::new(body, tx_bytes_received);
         let req = Request::from_parts(parts, body);
         let request_info = (&req).into();
+        let inner = self.inner.call(req);
         ResponseFuture {
-            inner: self.inner.call(req),
+            inner,
             request_info,
             rx_bytes_received,
-            on_response_end: self.on_response_end.take(),
+            on_response_end: self.on_response_end,
         }
     }
 }

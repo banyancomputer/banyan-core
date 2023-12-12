@@ -278,8 +278,8 @@ dependencies = [
  "async-trait",
  "axum",
  "axum-extra",
- "banyan-middleware",
  "banyan-task",
+ "banyan-traffic-counter",
  "base64 0.21.5",
  "bincode",
  "blake3",
@@ -331,30 +331,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "banyan-middleware"
-version = "0.1.0"
-dependencies = [
- "bytes",
- "futures-util",
- "http",
- "http-body",
- "pin-project-lite",
- "pin-utils",
- "tokio",
- "tower-layer",
- "tower-service",
- "tracing",
-]
-
-[[package]]
 name = "banyan-staging-service"
 version = "0.1.0"
 dependencies = [
  "async-trait",
  "axum",
  "banyan-car-analyzer",
- "banyan-middleware",
  "banyan-task",
+ "banyan-traffic-counter",
  "blake3",
  "bytes",
  "cid",
@@ -440,6 +424,23 @@ dependencies = [
  "tracing",
  "tracing-futures",
  "uuid",
+]
+
+[[package]]
+name = "banyan-traffic-counter"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "futures",
+ "futures-util",
+ "http",
+ "http-body",
+ "pin-project-lite",
+ "pin-utils",
+ "tokio",
+ "tower-layer",
+ "tower-service",
+ "tracing",
 ]
 
 [[package]]
