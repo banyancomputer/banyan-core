@@ -1,17 +1,15 @@
 mod email;
 mod prune_blocks;
 
+use banyan_task::{QueueConfig, SqliteTaskStore, WorkerPool};
 #[allow(unused_imports)]
 pub use email::{
     EmailTaskContext, EmailTaskError, GaReleaseEmailTask, PaymentFailedEmailTask,
     ProductInvoiceEmailTask, ReachingStorageLimitEmailTask, ScheduledMaintenanceEmailTask,
 };
 pub use prune_blocks::{PruneBlock, PruneBlocksTask};
-
 use tokio::sync::watch;
 use tokio::task::JoinHandle;
-
-use banyan_task::{QueueConfig, SqliteTaskStore, WorkerPool};
 
 use crate::app::AppState;
 

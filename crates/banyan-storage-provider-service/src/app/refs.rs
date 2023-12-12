@@ -3,10 +3,9 @@ use std::ops::Deref;
 use axum::extract::FromRef;
 use url::Url;
 
+use super::{AppState, Secrets};
 use crate::database::Database;
 use crate::utils::VerificationKey;
-
-use super::{AppState, Secrets};
 
 // Helper struct for extracting state from requests
 pub struct ServiceName(String);

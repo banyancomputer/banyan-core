@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use axum::extract::{Path, Query, State};
 use axum::response::{IntoResponse, Redirect, Response};
 use axum_extra::extract::cookie::{Cookie, SameSite};
@@ -8,14 +10,12 @@ use ecdsa::signature::RandomizedDigestSigner;
 use jwt_simple::algorithms::ECDSAP384KeyPairLike;
 use oauth2::{AuthorizationCode, CsrfToken, PkceCodeVerifier, TokenResponse};
 use serde::{Deserialize, Serialize};
-use std::time::Duration;
 use time::OffsetDateTime;
 use url::Url;
 use uuid::Uuid;
 
-use crate::app::AppState;
-
 use crate::api::models::{ApiEscrowedKeyMaterial, ApiUser};
+use crate::app::AppState;
 use crate::auth::{
     oauth_client, AuthenticationError, NEW_USER_COOKIE_NAME, SESSION_COOKIE_NAME, SESSION_TTL,
     USER_DATA_COOKIE_NAME,

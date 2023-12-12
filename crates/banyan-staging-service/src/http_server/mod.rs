@@ -2,11 +2,9 @@ use std::time::Duration;
 
 use axum::error_handling::HandleErrorLayer;
 use axum::extract::DefaultBodyLimit;
-use axum::Router;
-use axum::{Server, ServiceExt};
+use axum::{Router, Server, ServiceExt};
 use futures::future::join_all;
 use http::header;
-
 use tokio::task::JoinHandle;
 use tower::ServiceBuilder;
 use tower_http::classify::{ServerErrorsAsFailures, SharedClassifier};
@@ -19,13 +17,15 @@ use tower_http::validate_request::ValidateRequestHeaderLayer;
 use tower_http::{LatencyUnit, ServiceBuilderExt};
 use tracing::Level;
 
+
 use banyan_traffic_counter::traffic_counter::body::{RequestInfo, ResponseInfo};
 use banyan_traffic_counter::traffic_counter::layer::TrafficCounterLayer;
 
 use crate::api;
+
 use crate::app::{AppState, Config};
-use crate::health_check;
 use crate::tasks::start_background_workers;
+use crate::{api, health_check};
 
 mod error_handlers;
 mod shutdown_blocker;
@@ -38,7 +38,7 @@ const REQUEST_MAX_SIZE: usize = 256 * 1_024;
 
 /// The maximum number of seconds that any individual request can take before it is dropped with an
 /// error.
-const REQUEST_TIMEOUT_SECS: u64 = 15;
+const REQUEST_TIMEOUT: Duration = Duration::from_secs(15);
 
 const SENSITIVE_HEADERS: &[http::HeaderName] = &[
     header::AUTHORIZATION,
@@ -91,7 +91,7 @@ pub async fn run(config: Config) {
             SENSITIVE_HEADERS.into(),
         ))
         // Set a timeout for any request that comes in -- this is a hard timeout and will drop the request
-        .timeout(Duration::from_secs(REQUEST_TIMEOUT_SECS))
+        .timeout(REQUEST_TIMEOUT)
         // Pre-empt overloading by responding with a 503 resources are unavailable
         .load_shed()
         // Restrict the number of concurrent in flight requests -- should reflect the number of concurrent requests your service can handle.
