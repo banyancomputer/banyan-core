@@ -37,7 +37,7 @@ impl Metadata {
         bucket_id: &str,
         metadata_id: &str,
     ) -> Result<(), sqlx::Error> {
-        let result = sqlx::query!(
+        sqlx::query!(
             "UPDATE metadata SET state = 'current'
                  WHERE bucket_id = $1
                      AND id = $2
@@ -48,10 +48,24 @@ impl Metadata {
         .execute(&mut *conn)
         .await?;
 
-        if result.rows_affected() != 1 {
+        let result = sqlx::query!(
+            r#"UPDATE metadata SET state = 'outdated'
+                   WHERE bucket_id = $1
+                       AND id != $2
+                       AND state = 'current';"#,
+            bucket_id,
+            metadata_id,
+        )
+        .execute(&mut *conn)
+        .await?;
+
+        // Zero and one are both expected numbers (new bucket no old one, and existing bucket being
+        // replaced). Greater than that and something has gone wonky, warn about the issue but keep
+        // going.
+        if result.rows_affected() > 1 {
             tracing::warn!(
-                changes = result.rows_affected(),
-                "changed unexpected number of metadata rows"
+                expired_metadata_count = result.rows_affected(),
+                "multiple metadata versions expired at once"
             );
         }
 

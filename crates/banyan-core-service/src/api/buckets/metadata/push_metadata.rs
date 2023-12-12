@@ -10,13 +10,16 @@ use banyan_task::TaskLikeExt;
 use cid::{multibase::Base, Cid};
 use futures::{TryStream, TryStreamExt};
 use jwt_simple::prelude::*;
+use mime::Mime;
 use object_store::ObjectStore;
 use serde::Deserialize;
 use tokio::io::{AsyncWrite, AsyncWriteExt};
 use uuid::Uuid;
 
 use crate::app::{AppState, ServiceKey};
-use crate::database::models::{Bucket, Metadata, MetadataState, NewMetadata, User};
+use crate::database::models::{
+    Bucket, Metadata, MetadataState, NewMetadata, StorageHost, User, UserStorageReport,
+};
 use crate::database::{Database, DatabaseConnection};
 use crate::extractors::{DataStore, UserIdentity};
 use crate::tasks::{PruneBlock, PruneBlocksTask};
@@ -24,15 +27,16 @@ use crate::utils::car_buffer::CarBuffer;
 
 /// The default quota we assume each storage host / staging service to provide (10 GiB limit until
 /// payment is in place).
-const ACCOUNT_STORAGE_QUOTA: i32 = 10 * 1_024 * 1_024 * 1_024;
+const ACCOUNT_STORAGE_QUOTA: i64 = 10 * 1_024 * 1_024 * 1_024;
 
 /// Size limit of the pure metadata CAR file that is being uploaded (128MiB)
 const CAR_DATA_SIZE_LIMIT: u64 = 128 * 1_024 * 1_024;
 
+/// The "official" mime type registered for CAR files, we specifically only accept version 2
 const CAR_MIME_TYPE: &'static mime::Mime =
-    &mime::Mime::from_str("application/vnd.ipfs.car; version=2").expect("valid");
+    &Mime::from_str("application/vnd.ipfs.car; version=2").unwrap();
 
-const ONE_HUNDRED_MIB: i32 = 100 * 1024 * 1024;
+const ONE_HUNDRED_MIB: i64 = 100 * 1024 * 1024;
 
 /// Upper size limit on the JSON payload that precedes a metadata CAR file upload (128KiB)
 const REQUEST_DATA_SIZE_LIMIT: u64 = 128 * 1_024;
@@ -164,13 +168,12 @@ pub async fn handler(
     conn.commit().await?;
 
     let file_name = format!("{bucket_id}/{metadata_id}.car");
-    let (hash, size) = store_metadata_stream(&store, file_name.as_str(), data_field).await?;
+    let (hash, size) = store_metadata_stream(&store, &file_name, data_field).await?;
 
     let mut conn = database.begin().await?;
     Metadata::upload_complete(&mut conn, &metadata_id, &hash, size as i64).await?;
 
     let consumed_storage = User::consumed_storage(&mut *conn, &user_id).await?;
-
     if consumed_storage > ACCOUNT_STORAGE_QUOTA {
         tracing::warn!(consumed_storage, "account reached storage limit");
         let err_msg = serde_json::json!({"msg": "account reached available storage threshold"});
@@ -183,20 +186,13 @@ pub async fn handler(
         return Ok((StatusCode::OK, Json(resp_msg)).into_response());
     }
 
-    let storage_host = select_storage_host(&mut conn, request_data.expected_data_size).await?;
-
-    let current_authorized_amount = existing_authorization(&mut conn, &user_id, &storage_host.id)
-        .await
-        .map_err(PushMetadataError::UnableToRetrieveAuthorizations)?;
-    let current_stored_amount = currently_stored_at_provider(&mut conn, &user_id, &storage_host.id)
-        .await
-        .map_err(PushMetadataError::UnableToIdentifyStoredAmount)?;
+    let needed_capacity = request_data.expected_data_size;
+    let storage_host_id = StorageHost::select_for_capacity(&mut conn, needed_capacity).await?;
+    let user_report = StorageHost::user_report(&mut conn, &storage_host_id, &user_id).await?;
 
     let mut storage_authorization: Option<String> = None;
-    if (current_authorized_amount - current_stored_amount) < request_data.expected_data_size {
-        let currently_required_amount = current_stored_amount + request_data.expected_data_size;
-        let data_size_rounded =
-            ((currently_required_amount / ONE_HUNDRED_MIB) + 1) * ONE_HUNDRED_MIB;
+    if user_report.authorization_available() < needed_capacity {
+        let new_authorized_capacity = rounded_storage_authorization(&user_report, needed_capacity);
 
         let new_authorization = generate_new_storage_authorization(
             &database,
@@ -221,6 +217,11 @@ pub async fn handler(
     });
 
     Ok((StatusCode::OK, Json(response)).into_response())
+}
+
+fn rounded_storage_authorization(report: &UserStorageReport, additional_capacity: i64) -> i64 {
+    let new_required_amount = report.current_consumption() + additional_capacity;
+    (new_required_amount / ONE_HUNDRED_MIB).ceil() * ONE_HUNDRED_MIB;
 }
 
 /// Validates that a particular multipart field has the expected name and content type. Currently
@@ -343,76 +344,23 @@ async fn generate_new_storage_authorization(
     Ok(bearer_token)
 }
 
-async fn mark_current(database: &Database, metadata_id: &str) -> Result<(), sqlx::Error> {
-    sqlx::query!(
-        "UPDATE metadata SET state = 'current' WHERE id = $1",
-        metadata_id,
-    )
-    .execute(database)
-    .await?;
-
-    sqlx::query!(
-        "UPDATE metadata SET state = 'outdated' WHERE id <> $1 AND state = 'current';",
-        metadata_id,
-    )
-    .execute(database)
-    .await?;
-
-    Ok(())
-}
-
-async fn select_storage_host(
-    database: &Database,
-    required_space: i64,
-) -> Result<SelectedStorageHost, PushMetadataError> {
-    let maybe_storage_host = sqlx::query_as!(
-        SelectedStorageHost,
-        r#"SELECT id, name, url FROM storage_hosts
-               WHERE (available_storage - used_storage) > $1
-               ORDER BY RANDOM()
-               LIMIT 1;"#,
-        required_space,
-    )
-    .fetch_optional(database)
-    .await
-    .map_err(PushMetadataError::StorageHostLookupFailed)?;
-
-    match maybe_storage_host {
-        Some(shi) => Ok(shi),
-        None => {
-            tracing::error!(
-                ?required_space,
-                "failed to locate storage host with sufficient storage"
-            );
-            Err(PushMetadataError::NoAvailableStorage)
-        }
-    }
-}
-
-async fn store_metadata_stream<'a>(
+async fn persist_upload<'a>(
     store: &DataStore,
     path: &str,
     body: multer::Field<'a>,
-) -> Result<(String, usize), StoreMetadataError> {
+) -> Result<(String, usize), std::io::Error> {
     let file_path = object_store::path::Path::from(path);
 
-    let (upload_id, mut writer) = store
-        .put_multipart(&file_path)
-        .await
-        .map_err(StoreMetadataError::PutFailed)?;
+    let (upload_id, mut writer) = store.put_multipart(&file_path).await?;
 
     match stream_upload_to_storage(body, &mut writer).await {
         Ok(store_output) => {
-            writer
-                .shutdown()
-                .await
-                .map_err(StoreMetadataError::NotFinalized)?;
+            writer.shutdown().await?;
             Ok(store_output)
         }
         Err(err) => {
-            let abort_res = store.abort_multipart(&file_path, &upload_id).await;
-
-            Err(StoreMetadataError::StreamingFailed(err, abort_res.err()))
+            let _ = store.abort_multipart(&file_path, &upload_id).await;
+            Err(err)
         }
     }
 }
@@ -420,7 +368,7 @@ async fn store_metadata_stream<'a>(
 async fn stream_upload_to_storage<S>(
     mut stream: S,
     writer: &mut Box<dyn AsyncWrite + Unpin + Send>,
-) -> Result<(String, usize), StreamStoreError>
+) -> Result<(String, usize), std::io::Error>
 where
     S: TryStream<Ok = bytes::Bytes> + Unpin,
     S::Error: std::error::Error,
@@ -429,19 +377,12 @@ where
     let mut hasher = blake3::Hasher::new();
     let mut bytes_written = 0;
 
-    while let Some(chunk) = stream
-        .try_next()
-        .await
-        .map_err(|err| StreamStoreError::NeedChunk(err.to_string()))?
-    {
+    while let Some(chunk) = stream.try_next().await? {
         hasher.update(&chunk);
         car_buffer.add_chunk(&chunk);
         bytes_written += chunk.len();
 
-        writer
-            .write_all(&chunk)
-            .await
-            .map_err(StreamStoreError::WriteFailed)?;
+        writer.write_all(&chunk).await?;
     }
 
     let hash = hasher.finalize();

@@ -175,7 +175,7 @@ impl Bucket {
                 r#"SELECT id FROM metadata
                        WHERE bucket_id = $1
                            AND created_at > $2
-                           AND created_at > DATETIME('now', $3)"
+                           AND created_at > DATETIME('now', $3)
                        ORDER BY created_at DESC
                        LIMIT 1;"#,
                 bucket_id,
