@@ -5,8 +5,8 @@ use http_body::Body;
 use tokio::sync::oneshot;
 use tower_service::Service;
 
-use crate::traffic_counter::body::{FnOnResponseEnd, RequestCounter, ResponseCounter};
-use crate::traffic_counter::future::ResponseFuture;
+use crate::body::{FnOnResponseEnd, RequestCounter, ResponseCounter};
+use crate::future::ResponseFuture;
 
 #[derive(Clone, Debug)]
 pub struct TrafficCounter<S> {

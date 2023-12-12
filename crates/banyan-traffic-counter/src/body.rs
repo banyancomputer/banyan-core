@@ -241,4 +241,122 @@ impl<T> From<&Request<T>> for RequestInfo {
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use std::task::{Context, Poll};
+
+    use bytes::{Buf, Bytes};
+    use http_body::Full;
+    use tokio::sync::oneshot::Receiver;
+
+    use super::*;
+
+    async fn poll_responst_to_completion<B>(mut body: ResponseCounter<B>)
+        where
+            B: Body + Unpin,
+            B::Data: Buf,
+            B::Error: Into<Box<dyn Error + Send + Sync>>
+    {
+        let mut cx = Context::from_waker(futures::task::noop_waker_ref());
+
+        while let Poll::Ready(data_opt) = Pin::new(&mut body).as_mut().poll_data(&mut cx) {
+            if let None = data_opt {
+                break;
+            }
+        }
+    }
+
+
+    async fn poll_request_to_completion<B>(mut body: RequestCounter<B>, rx: Receiver<usize>) -> usize
+        where
+            B: Body + Unpin,
+            B::Data: Buf,
+            B::Error: Into<Box<dyn Error + Send + Sync>>
+    {
+        let mut cx = Context::from_waker(futures::task::noop_waker_ref());
+
+        while let Poll::Ready(data_opt) = Pin::new(&mut body).as_mut().poll_data(&mut cx) {
+            if let None = data_opt {
+                break;
+            }
+        }
+
+        rx.await.unwrap_or(0)
+    }
+
+    #[tokio::test]
+    async fn counts_ingress_correctly_for_single_chunk() {
+        let data = Bytes::from_static(b"Hello, world!");
+        let body = Full::new(data.clone());
+        let (tx, rx) = oneshot::channel();
+        let body_counter = RequestCounter::new(body, tx);
+
+        let counted_size = poll_request_to_completion(body_counter, rx).await;
+        assert_eq!(counted_size, data.len());
+    }
+
+    #[tokio::test]
+    async fn counts_ingress_correctly_for_multiple_chunks() {
+        let chunk1 = Bytes::from_static(b"Hello, ");
+        let chunk2 = Bytes::from_static(b"world!");
+        let body = Full::new(chunk1.chain(chunk2));
+        let (tx, rx) = oneshot::channel();
+        let body_counter = RequestCounter::new(body, tx);
+
+        let counted_size = poll_request_to_completion(body_counter, rx).await;
+        assert_eq!(counted_size, "Hello, world!".len());
+    }
+
+    #[tokio::test]
+    async fn counts_ingress_correctly_for_empty_body() {
+        let body = Full::new(Bytes::new());
+        let (tx, rx) = oneshot::channel();
+        let body_counter = RequestCounter::new(body, tx);
+
+        let counted_size = poll_request_to_completion(body_counter, rx).await;
+        assert_eq!(counted_size, 0);
+    }
+
+    #[tokio::test]
+    async fn counts_egress_correctly_for_single_chunk() {
+        let data = Bytes::from_static(b"Goodbye, world!");
+        let body = Full::new(data.clone());
+        let (tx, rx) = oneshot::channel();
+        let headers = HeaderMap::new();
+        let request_info = RequestInfo::default();
+        let status_code = StatusCode::OK;
+        let on_response_end = FnOnResponseEnd::default();
+        let body_counter = ResponseCounter::new(body, &headers, request_info, status_code, on_response_end);
+
+        let counted_size = poll_responst_to_completion(body_counter).await;
+        assert!(body_counter.on_response_end_called());
+    }
+
+    #[tokio::test]
+    async fn counts_egress_correctly_for_multiple_chunks() {
+        let chunk1 = Bytes::from_static(b"Goodbye, ");
+        let chunk2 = Bytes::from_static(b"world!");
+        let body = Full::new(chunk1.chain(chunk2));
+        let headers = HeaderMap::new();
+        let request_info = RequestInfo::default();
+        let status_code = StatusCode::OK;
+        let on_response_end = FnOnResponseEnd::default();
+        let body_counter = ResponseCounter::new(body,  &headers, request_info, status_code, on_response_end);
+
+        let counted_size = poll_responst_to_completion(body_counter).await;
+        assert!(body_counter.on_response_end_called());
+    }
+
+    #[tokio::test]
+    async fn counts_egress_correctly_for_empty_body() {
+        let body = Full::new(Bytes::new());
+        let headers = HeaderMap::new();
+        let request_info = RequestInfo::default();
+        let status_code = StatusCode::OK;
+        let on_response_end = FnOnResponseEnd::default();
+        let body_counter = ResponseCounter::new(body, &headers, request_info, status_code, on_response_end);
+
+        let counted_size = poll_responst_to_completion(body_counter).await;
+        assert!(body_counter.on_response_end_called());
+    }
+
+}

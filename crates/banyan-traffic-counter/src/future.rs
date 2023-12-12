@@ -9,7 +9,7 @@ use pin_project_lite::pin_project;
 use tokio::sync::oneshot;
 use tokio::sync::oneshot::error::TryRecvError;
 
-use crate::traffic_counter::body::{FnOnResponseEnd, RequestInfo, ResponseCounter};
+use crate::body::{FnOnResponseEnd, RequestInfo, ResponseCounter};
 
 pin_project! {
     #[derive(Debug)]
