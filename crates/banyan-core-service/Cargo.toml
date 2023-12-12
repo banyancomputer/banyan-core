@@ -6,11 +6,11 @@ license = "LicenseRef-LICENSE.txt"
 
 [dependencies]
 banyan-task = { path = "../banyan-task", version = "^0.1"}
-# TODO: make this a git dependency once i push needed observability changes
-banyan-cli = { path = "../../../banyan-cli" }
+banyan-cli = { git = "https://github.com/banyancomputer/banyan-cli.git", branch = "alex/sharing-link-api" }
 wnfs = { git = "https://github.com/banyancomputer/rs-wnfs", branch = "main", version = "^0.1" }
 # TODO: remove anyhow once we have an alternative to wnfs
 anyhow = "1.0.75"
+
 dotenvy = "^0.15"
 async-trait = "^0.1"
 futures = "^0.3"

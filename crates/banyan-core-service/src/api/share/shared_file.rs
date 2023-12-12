@@ -16,7 +16,7 @@ use url::Url;
 
 // TODO: rid ourselves of anyhow
 use anyhow::Result as AnyResult;
-use banyan_cli::prelude::filesystem::{FsMetadata, sharing::{SharedFile, SharingError}};
+use banyan_cli::prelude::filesystem::sharing::{SharedFile, SharingError};
 use wnfs::{
     common::BlockStore,
     libipld::{cid::Cid, error::SerdeError, serde as ipld_serde, IpldCodec},
@@ -157,29 +157,20 @@ async fn fetch_data(
     service_key: ServiceKey,
     shared_file: SharedFile,
 ) -> Result<Vec<u8>, SharedFileError> {
-    
     let forest_cid = shared_file.forest_cid;
     let store = ShareBlockStore::new(database, service_name, service_key)?;
-
-    // let data = FsMetadata::receive_file_content(shared_file, &store).await.unwrap();
-
-    // Ok(data)
 
     // Get the forest first
     let forest_ipld = store.get_deserializable(&forest_cid).await?;
     let forest = ipld_serde::from_ipld::<PrivateForest>(forest_ipld)?;
 
-    println!("forest: {:?}", forest);
-
     // Now get the data now that we have the forest
     match shared_file.payload {
         SharePayload::Temporal(_) => Err(SharedFileError::TemporalShare),
         SharePayload::Snapshot(snapshot) => {
-            println!("snapshot: {:?}", snapshot);
             let file = PrivateNode::load_from_snapshot(snapshot, &forest, &store)
                 .await?
                 .as_file()?;
-            println!("file: {:?}", file);
             let data = file.get_content(&forest, &store).await?;
             Ok(data)
         }
@@ -215,7 +206,6 @@ impl ShareBlockStore {
     pub async fn find_storage_host(&self, cid: &Cid) -> Result<StorageHostInfo, SharedFileError> {
         // Interpreting the CID as a base64url string
         let normalized_cid = cid.to_string_of_base(Base::Base64Url)?;
-        //
         let storage_host_info = sqlx::query_as!(
             StorageHostInfo,
             "SELECT sh.url, sh.name
@@ -276,7 +266,6 @@ impl ShareBlockStore {
 #[async_trait(?Send)]
 impl BlockStore for ShareBlockStore {
     async fn get_block(&self, cid: &Cid) -> AnyResult<Cow<Vec<u8>>> {
-        println!("get_block: {:?}", cid);
         // Find the storage host that has the block
         let storage_host_info = self.find_storage_host(cid).await?;
         // Get the block from the storage host
