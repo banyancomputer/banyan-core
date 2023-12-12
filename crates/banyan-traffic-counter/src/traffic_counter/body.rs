@@ -9,8 +9,6 @@ use http_body::{Body, SizeHint};
 use pin_project_lite::pin_project;
 use tokio::sync::oneshot;
 
-const COLON_NEW_LINE_BYTES_LEN: usize= 3;
-
 pin_project! {
     #[derive(Debug)]
     pub struct RequestCounter<B> {
@@ -57,7 +55,7 @@ impl<B> ResponseCounter<B> {
     ) -> Self {
         let response_header_bytes = headers
             .iter()
-            .map(|(k, v)| k.as_str().len() + v.as_bytes().len() + COLON_NEW_LINE_BYTES_LEN)
+            .map(|(k, v)| k.as_str().len() + v.as_bytes().len() + ": ".len() + "\r\n".len())
             .sum();
 
         Self {
@@ -219,14 +217,16 @@ pub struct ResponseInfo {
 
 impl<T> From<&Request<T>> for RequestInfo {
     fn from(req: &Request<T>) -> Self {
-        let request_id = req.headers()
+        let request_id = req
+            .headers()
             .get(HeaderName::from_static("x-request-id"))
             .and_then(|v| v.to_str().ok())
             .filter(|s| !s.is_empty())
             .map(|s| s.to_string());
-        let header_bytes = req.headers()
+        let header_bytes = req
+            .headers()
             .iter()
-            .map(|(k, v)| k.as_str().len() + v.as_bytes().len() + COLON_NEW_LINE_BYTES_LEN)
+            .map(|(k, v)| k.as_str().len() + v.as_bytes().len() + ": ".len() + "\r\n".len())
             .sum();
 
         RequestInfo {
@@ -239,7 +239,6 @@ impl<T> From<&Request<T>> for RequestInfo {
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {}

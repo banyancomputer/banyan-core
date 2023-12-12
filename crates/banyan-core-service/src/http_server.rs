@@ -154,7 +154,7 @@ pub async fn run(config: Config) {
                 method = %request_info.method,
                 uri = %request_info.uri,
                 version = ?request_info.version,
-                request_id = %request_info.request_id.map_or_else(|| "".to_string(), |id| id.to_string()),
+                request_id = %request_info.request_id.clone().map_or_else(|| "".to_string(), |id| id.to_string()),
                 "finished processing request",
             );
         }
@@ -171,7 +171,7 @@ pub async fn run(config: Config) {
         .set_x_request_id(MakeRequestUuid)
         .layer(trace_layer)
         .propagate_x_request_id()
-        .layer(TrafficCounterLayer::new(Some(on_response_end)))
+        .layer(TrafficCounterLayer::new(on_response_end))
         .layer(DefaultBodyLimit::disable())
         .layer(ValidateRequestHeaderLayer::accept("application/json"))
         .layer(SetSensitiveResponseHeadersLayer::from_shared(

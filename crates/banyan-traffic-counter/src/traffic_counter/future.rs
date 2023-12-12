@@ -55,7 +55,7 @@ where
                     &parts.headers,
                     request_info,
                     parts.status,
-                    this.on_response_end.clone(),
+                    *this.on_response_end,
                 );
                 let res = Response::from_parts(parts, body);
                 Poll::Ready(Ok(res))
