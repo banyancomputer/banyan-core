@@ -1,3 +1,4 @@
+use axum::body::HttpBody;
 use axum::routing::{get, post, put};
 use axum::Router;
 
@@ -7,7 +8,10 @@ mod restore_snapshot;
 
 use crate::app::AppState;
 
-pub fn router(state: AppState) -> Router<AppState> {
+pub fn router<B>(state: AppState) -> Router<AppState, B>
+where
+    B: HttpBody + Send + 'static,
+{
     Router::new()
         .route("/", get(all_snapshots::handler))
         .route("/:metadata_id", post(create_snapshot::handler))
