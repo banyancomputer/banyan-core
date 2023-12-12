@@ -8,8 +8,7 @@ use object_store::ObjectStore;
 use uuid::Uuid;
 
 use crate::app::AppState;
-use crate::extractors::DataStore;
-use crate::extractors::UserIdentity;
+use crate::extractors::{DataStore, UserIdentity};
 
 pub async fn handler(
     user_identity: UserIdentity,
