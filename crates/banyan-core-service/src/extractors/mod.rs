@@ -15,9 +15,10 @@ pub use storage_provider_identity::StorageProviderIdentity;
 pub use user_identity::UserIdentity;
 
 use std::sync::OnceLock;
+use std::time::Duration;
 
 // Allow 15 minute token windows for now, this is likely to change in the future
-pub const EXPIRATION_WINDOW_SECS: u64 = 900;
+pub const EXPIRATION_WINDOW: Duration = Duration::from_secs(900);
 
 static KEY_ID_VALIDATOR: OnceLock<regex::Regex> = OnceLock::new();
 
