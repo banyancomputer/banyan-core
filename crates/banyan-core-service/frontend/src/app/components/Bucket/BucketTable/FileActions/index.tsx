@@ -83,11 +83,10 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BrowserObject; parren
         } catch (error: any) { }
     };
 
-    // TODO: not sure how vlad was thinking to call this function
     const share = async () => {
         try {
-            const link = await shareFile(bucket, [...path, file.name]);
-            console.log(link);
+            const payload = await shareFile(bucket, [...path, file.name]);
+            const link = `${window.location.origin}/api/v1/share?payload=` + payload;
             openModal(
                 <ShareFileModal link={link} />
             );
