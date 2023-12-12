@@ -1,65 +1,62 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 // @ts-ignore
 import FilePreviewer from 'react-file-previewer';
-import { useIntl } from 'react-intl';
 
-import { Loader } from '../Loader';
+import { Loader } from '@components/common/Loader';
+import { FileIcon } from '@components/common/FileIcon';
 
-import { SUPPORTED_EXTENSIONS, useFilePreview } from '@/app/contexts/filesPreview';
+import { useFilePreview } from '@/app/contexts/filesPreview';
 
-import { ArrowDown, ChevronUp } from '@static/images/common';
-import { FileIcon } from '../FileIcon';
+import { ArrowDown } from '@static/images/common';
+import { PreviewArrow } from './Arrow';
 
 export const FilePreview = () => {
-    const { bucket, file, files, path, openFile, closeFile } = useFilePreview();
-    const { messages } = useIntl();
-    const filePreviewRef = useRef<HTMLDivElement | null>(null);
-    const fileExtension = [...file.name?.split('.')].pop();
-    const isFileSupported = file.name ? SUPPORTED_EXTENSIONS.includes(fileExtension || '') : true;
+    const { file, files, openNext, openPrevious, closeFile } = useFilePreview();
 
-    const close = (event: React.MouseEvent<HTMLDivElement | HTMLButtonElement>) => {
-        if (!filePreviewRef.current!.contains(event.target as Node)) {
-            closeFile();
+    const close = () => {
+        closeFile();
+    };
+
+    const getPreviewTag = (data: string, type: string) => {
+        switch (type) {
+            case 'audio':
+                return <audio
+                    src={data}
+                    controls
+                    className="rounded-2xl"
+                    onClick={event => event.stopPropagation()}
+                />;
+            case 'video':
+                return <video
+                    src={data}
+                    controls
+                    className="max-w-filePreview max-h-full object-contain rounded-2xl"
+                    onClick={event => event.stopPropagation()}
+                />;
+            case 'image':
+                return <img
+                    src={data}
+                    className="max-w-filePreview max-h-full object-contain rounded-2xl"
+                    onClick={event => event.stopPropagation()}
+                />;
+            case 'document':
+                return <div className='w-filePreview max-w-filePreview' onClick={event => event.stopPropagation()}>
+                    <FilePreviewer
+                        hideControls
+                        file={{
+                            url: file.data,
+                            mimeType: `application/${[...file.name.split('.')].pop()}`,
+                        }}
+                    />
+                </div>
+            default:
+                return <div className="flex items-center text-white text-lg pointer-events-none">File is not supported for preview</div>
         };
     };
-
-    const openPrevious = () => {
-        const selectedFileIndex = files.indexOf(file.name);
-        if (!selectedFileIndex) return;
-        openFile(bucket!, files[selectedFileIndex - 1], files, path);
-    };
-
-    const openNext = () => {
-        const selectedFileIndex = files.indexOf(file.name);
-        if (selectedFileIndex >= files.length - 1) return;
-        openFile(bucket!, files[selectedFileIndex + 1], files, path);
-    };
-
-    useEffect(() => {
-        const listener = (event: KeyboardEvent) => {
-            if (file.isLoading) {
-                document.removeEventListener('keydown', listener);
-                return;
-            }
-            if (event.code === 'ArrowLeft') {
-                document.removeEventListener('keydown', listener);
-                openPrevious();
-            } else if (event.code === 'ArrowRight') {
-                document.removeEventListener('keydown', listener);
-                openNext();
-            }
-        };
-
-        document.addEventListener('keydown', listener);
-
-        return () => {
-            document.removeEventListener('keydown', listener);
-        }
-    }, [files, file]);
 
     return (
         <>
-            {(file.data || files.length || !isFileSupported || file.isLoading) &&
+            {file.name &&
                 <>
                     <button
                         onClick={close}
@@ -71,51 +68,30 @@ export const FilePreview = () => {
                         <FileIcon fileName={file.name} />
                         {`${file.name}`}
                     </button>
-                    {files.indexOf(file.name) ?
-                        <button
-                            onClick={openPrevious}
-                            className="fixed top-1/2 left-4 -translate-y-1/2 p-4 rounded-full bg-black text-white z-40 -rotate-90 transition-all hover:bg-gray-800"
-                        >
-                            <ChevronUp width="40px" height="40px" />
-                        </button>
-                        : null
-                    }
-                    {!(files.indexOf(file.name) === files.length - 1) ?
-                        <button
-                            onClick={openNext}
-                            className="fixed top-1/2 right-4 -translate-y-1/2 p-4 rounded-full bg-black text-white z-40 rotate-90 transition-all hover:bg-gray-800"
-                        >
-                            <ChevronUp width="40px" height="40px" />
-                        </button>
-                        : null
-                    }
+                    <PreviewArrow
+                        action={openPrevious}
+                        isVisible={!!files.indexOf(file.name)}
+                        className='left-4 -rotate-90'
+                    />
+                    <PreviewArrow
+                        action={openNext}
+                        isVisible={!(files.indexOf(file.name) === files.length - 1)}
+                        className='right-4 rotate-90'
+                    />
                     <div
-                        className={`fixed w-screen h-[105vh] flex ${isFileSupported ? 'items-start' : 'items-center'} justify-center py-16 pb-20 z-20 bg-slate-800 bg-opacity-80 backdrop-blur-sm overflow-scroll`}
+                        className={`fixed w-screen h-[105vh] flex ${file.fileType === 'document' ? 'items-start' : 'items-center'} justify-center py-16 pb-20 z-20 bg-slate-800 bg-opacity-80 backdrop-blur-sm overflow-scroll`}
                         onClick={close}
                     >
-                        <div
-                            className={`relative max-w-filePreview ${fileExtension === 'pdf' && 'w-filePreview'} ${!isFileSupported && 'pointer-events-none'} flex justify-center items-start `}
-                            ref={filePreviewRef}
-                        >
-                            {file.isLoading ?
-                                <Loader spinnerSize="50px" containerHeight="100vh" className="text-white" />
-                                :
-                                <>
-                                    {
-                                        isFileSupported && file.data ?
-                                            <FilePreviewer
-                                                hideControls
-                                                file={{
-                                                    url: file.data,
-                                                    mimeType: `application/${[...file.name.split('.')].pop()}`,
-                                                }}
-                                            />
-                                            :
-                                            <div className="flex items-center text-white text-lg pointer-events-none">File is not supported for preview</div>
-                                    }
-                                </>
-                            }
-                        </div>
+                        {file.isLoading ?
+                            <Loader spinnerSize="50px" containerHeight="80vh" className="text-white" />
+                            :
+                            <>
+                                {
+                                    file.data &&
+                                    getPreviewTag(file.data, file.fileType)
+                                }
+                            </>
+                        }
                     </div>
                 </>
             }

@@ -96,10 +96,6 @@ input {
     padding: 35px 0px;
 }
 
-.preview-file > img {
-    border-radius: 16px;
-}
-
 .toggle {
     background-color: #5299E0 !important;
     border: none;
