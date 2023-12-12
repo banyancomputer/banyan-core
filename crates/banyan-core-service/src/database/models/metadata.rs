@@ -28,22 +28,39 @@ impl NewMetadata<'_> {
 pub struct Metadata;
 
 impl Metadata {
+    /// Upgrades a particular metadata version from pending or uploading to the current version.
+    /// This method does not allow downgrading and will make no changes if the provided metadata
+    /// doesn't match what we're expecting.
+    #[tracing::instrument(skip(conn))]
     pub async fn mark_current(
         conn: &mut DatabaseConnection,
         bucket_id: &str,
-        metadata_cid: &str,
+        metadata_id: &str,
     ) -> Result<(), sqlx::Error> {
-        sqlx::query!(
-            "UPDATE metadata SET state = 'current' WHERE bucket_id = $1 AND id = $2;",
+        let result = sqlx::query!(
+            "UPDATE metadata SET state = 'current'
+                 WHERE bucket_id = $1
+                     AND id = $2
+                     AND state IN ('pending', 'uploading');",
             bucket_id,
             metadata_id,
         )
         .execute(&mut *conn)
         .await?;
 
+        if result.rows_affected() != 1 {
+            tracing::warn!(
+                changes = result.rows_affected(),
+                "changed unexpected number of metadata rows"
+            );
+        }
+
         Ok(())
     }
 
+    /// Marks a metadata upload as complete. This is only for the metadata, the actual filesystem
+    /// content will still need to be uploaded to a storage provider directly which will check in
+    /// before making this new version the current one.
     pub async fn upload_complete(
         conn: &mut DatabaseConnection,
         metadata_id: &str,

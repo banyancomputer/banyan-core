@@ -19,7 +19,7 @@ impl User {
     pub async fn consumed_storage(
         conn: &mut DatabaseConnection,
         user_id: &str,
-    ) -> Result<i64, sqlx::Error> {
+    ) -> Result<i32, sqlx::Error> {
         sqlx::query_scalar!(
             r#"SELECT
                 COALESCE(SUM(m.metadata_size), 0) + COALESCE(SUM(COALESCE(m.data_size, m.expected_data_size)), 0) AS '!size'
@@ -31,7 +31,7 @@ impl User {
                 b.user_id = $1 AND m.state IN ('current', 'outdated', 'pending');"#,
             user_id,
         )
-        .fetch(&mut *conn)
+        .fetch_one(&mut *conn)
         .await
     }
 }

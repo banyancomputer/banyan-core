@@ -24,7 +24,7 @@ use crate::utils::car_buffer::CarBuffer;
 
 /// The default quota we assume each storage host / staging service to provide (10 GiB limit until
 /// payment is in place).
-const ACCOUNT_STORAGE_QUOTA: i64 = 10 * 1_024 * 1_024 * 1_024;
+const ACCOUNT_STORAGE_QUOTA: i32 = 10 * 1_024 * 1_024 * 1_024;
 
 /// Size limit of the pure metadata CAR file that is being uploaded (128MiB)
 const CAR_DATA_SIZE_LIMIT: u64 = 128 * 1_024 * 1_024;
@@ -32,7 +32,7 @@ const CAR_DATA_SIZE_LIMIT: u64 = 128 * 1_024 * 1_024;
 const CAR_MIME_TYPE: &'static mime::Mime =
     &mime::Mime::from_str("application/vnd.ipfs.car; version=2").expect("valid");
 
-const ONE_HUNDRED_MIB: i64 = 100 * 1024 * 1024;
+const ONE_HUNDRED_MIB: i32 = 100 * 1024 * 1024;
 
 /// Upper size limit on the JSON payload that precedes a metadata CAR file upload (128KiB)
 const REQUEST_DATA_SIZE_LIMIT: u64 = 128 * 1_024;
@@ -143,16 +143,6 @@ pub async fn handler(
         .map(String::as_str);
 
     Bucket::approve_keys_by_fingerprint(&mut conn, &bucket_id, fingerprints).await?;
-    Bucket::expire_blocks(&mut conn, &bucket_id, &request_data.deleted_block_cids).await?;
-
-    // todo:
-    //expire_deleted_blocks(
-    //    &mut conn,
-    //    &user_id,
-    //    &bucket_id,
-    //    &request_data.deleted_block_cids,
-    //)
-    //.await?;
 
     let metadata_id = NewMetadata {
         bucket_id: &bucket_id,
@@ -164,6 +154,10 @@ pub async fn handler(
     }
     .save(&mut conn)
     .await?;
+
+    // todo: need to normalize the CIDs before passing these through
+    let cid_iterator = request_data.deleted_block_cids.iter().map(String::as_str);
+    Bucket::expire_blocks(&mut conn, &bucket_id, cid_iterator).await?;
 
     // Checkpoint the upload to the database so we can track failures, and perform any necessary
     // clean up behind the scenes.
@@ -184,7 +178,7 @@ pub async fn handler(
     }
 
     if request_data.expected_data_size == 0 {
-        Bucket::mark_current(&mut conn, &metadata_id).await?;
+        Metadata::mark_current(&mut conn, &bucket_id, &metadata_id).await?;
         let resp_msg = serde_json::json!({"id": metadata_id, "state": "current"});
         return Ok((StatusCode::OK, Json(resp_msg)).into_response());
     }
@@ -253,12 +247,6 @@ fn validate_field(
     }
 
     true
-}
-
-async fn currently_consumed_storage(
-    conn: &mut DatabaseConnection,
-    user_id: &str,
-) -> Result<i64, sqlx::Error> {
 }
 
 async fn currently_stored_at_provider(
@@ -471,12 +459,9 @@ struct UniqueBlockLocation {
 
 //async fn expire_deleted_blocks(
 //    database: &Database,
-//    user_id: &Uuid,
-//    bucket_id: &Uuid,
+//    bucket_id: &str,
 //    deleted_block_cids: &BTreeSet<String>,
 //) -> Result<(), PushMetadataError> {
-//    let user_id = user_id.to_string();
-//    let bucket_id = bucket_id.to_string();
 //    let mut prune_blocks_tasks_map: HashMap<Uuid, Vec<PruneBlock>> = HashMap::new();
 //
 //    // Check if block set is empty

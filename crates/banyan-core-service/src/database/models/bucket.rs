@@ -8,6 +8,11 @@ use crate::database::DatabaseConnection;
 /// data only unbatched changes in the client.
 pub const METADATA_WRITE_LOCK_SECS: i32 = 30;
 
+/// Sets a threshold for how many dynamic binds we restrict individual queries to. Sqlite has a
+/// hard limit here of 65535 binds, but performance impact hits much lower. This value was chosen
+/// somewhat arbitrarily and could likely use tuning in the future.
+pub const DATABASE_CHUNK_LIMIT: usize = 1024;
+
 /// Internal representation of a "Drive", the name is a holdover from a previous design iteration
 /// that referred to these as Buckets. This type is an organization type collecting the contents
 /// and versions of the filesystem changes. Content exists as blocks in the storage providers,
@@ -55,13 +60,90 @@ impl Bucket {
 
         builder.push(");");
 
-        let query_result = builder.build().execute(&mut *conn).await?;
+        let query_result = builder
+            .build()
+            .persistent(false)
+            .execute(&mut *conn)
+            .await?;
         let changed_rows = query_result.rows_affected();
 
         Ok(changed_rows)
     }
 
-    pub async fn expire_blocks(conn: &mut *DatabaseConnection, bucket_id: &str, block_list: impl IntoIterator<Item = &str>) -> Result<(), sqlx::Error> {
+    /// Takes that list of blocks, verifies they're associated with the bucket (part of the query),
+    /// and marks them as expired so they no longer count against a user's quota and can be
+    /// eventually cleaned up.
+    ///
+    /// Blocks are individually added and associated as metadata uploads complete. When we receive
+    /// a new version of the bucket's metadata we also receive a list of blocks that are no longer
+    /// active from the client's perspective. Blocks can be associated to multiple buckets so this
+    /// needs to be careful to on expire associations specific to a bucket and not others.
+    ///
+    /// This expects that the provided bucket ID has already been validated to be owned by a user
+    /// with appropriate write access.
+    #[tracing::instrument(skip(conn, block_list))]
+    pub async fn expire_blocks(
+        conn: &mut DatabaseConnection,
+        bucket_id: &str,
+        block_list: impl IntoIterator<Item = &str>,
+    ) -> Result<(), sqlx::Error> {
+        let mut block_iter = block_list.into_iter().peekable();
+
+        if block_iter.peek().is_none() {
+            return Ok(());
+        }
+
+        let mut validated_block_list = Vec::new();
+        let mut total_block_count = 0;
+
+        while block_iter.peek().is_some() {
+            let mut query_builder = sqlx::QueryBuilder::new(
+                r#"SELECT b.id FROM blocks AS b
+                    JOIN block_locations AS bl ON bl.block_id = b.id
+                    JOIN metadata AS m ON m.id = bl.metadata_id
+                    WHERE m.bucket_id = $1
+                        AND b.cid IN ("#,
+            );
+
+            // Chunking size was chosen a bit arbitrarily, sqlx has a bind limit of 65k so we need to
+            // make sure this is always below that. This could be increased but there is also a hit
+            // when queries get too large.
+            let mut chunk_count = 0;
+            while let Some(cid) = block_iter.next() {
+                query_builder.push("?");
+                query_builder.push_bind(cid);
+
+                total_block_count += 1;
+                chunk_count += 1;
+
+                if chunk_count > DATABASE_CHUNK_LIMIT {
+                    break;
+                }
+
+                if block_iter.peek().is_some() {
+                    query_builder.push(",");
+                }
+            }
+
+            query_builder.push(");");
+            let query = query_builder.build().persistent(false);
+
+            let block_ids = query.fetch_all(&mut *conn).await?;
+            validated_block_list.extend(block_ids);
+        }
+
+        // Some of the blocks either didn't exist, we don't know about them yet, or don't belong to
+        // the user. We still want to expire the blocks that are valid so this is going to just be
+        // a warning to keep an eye on.
+        let validated_count = validated_block_list.len();
+        if validated_count != total_block_count {
+            tracing::warn!(
+                validated_count,
+                total_block_count,
+                "mismatch in expected expired block count"
+            );
+        }
+
         todo!()
     }
 
