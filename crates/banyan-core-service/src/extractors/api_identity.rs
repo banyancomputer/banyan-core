@@ -15,7 +15,7 @@ use uuid::Uuid;
 
 use crate::database::Database;
 
-use super::{EXPIRATION_WINDOW_SECS, KEY_ID_REGEX, KEY_ID_VALIDATOR};
+use super::{EXPIRATION_WINDOW, KEY_ID_REGEX, KEY_ID_VALIDATOR};
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -123,9 +123,13 @@ where
 
         let claims = token_data.claims;
 
-        match claims.expiration.checked_sub(claims.not_before) {
+        match claims
+            .expiration
+            .checked_sub(claims.not_before)
+            .map(std::time::Duration::from_secs)
+        {
             Some(duration) => {
-                if duration > EXPIRATION_WINDOW_SECS {
+                if duration > EXPIRATION_WINDOW {
                     return Err(ApiIdentityError::ExtremeTokenValidity);
                 }
             }

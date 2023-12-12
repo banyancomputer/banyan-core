@@ -52,3 +52,18 @@ generate-storage-provider-service-key:
 		&& cargo build                            \
 		&& (timeout 3s cargo run || true)         \
 	)
+
+# database administration
+# =========================================================================== #
+
+.PHONY: connect-to-core-database
+connect-to-core-database:
+	sqlite3 crates/banyan-core-service/data/server.db
+
+.PHONY: connect-to-staging-database
+connect-to-staging-database:
+	sqlite3 crates/banyan-staging-service/data/server.db
+
+.PHONY: connect-to-storage-provider-database
+connect-to-storage-provider-database:
+	sqlite3 crates/banyan-storage-provider-service/data/server.db
