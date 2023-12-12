@@ -87,9 +87,11 @@ exceptions = [
     "LicenseRef-LICENSE.txt",
   ] }, { name = "banyan-traffic-counter", allow = [
     "LicenseRef-LICENSE.txt",
-  ] }, { name = "banyan-cli", allow-git = [
-    "https://github.com/banyancomputer/banyan-cli"
   ] }
+]
+
+allow-git = [
+  "https://github.com/banyancomputer/banyan-cli"
 ]
 
 # Ring doesn't specify the license in their Cargo manifest, we have to
