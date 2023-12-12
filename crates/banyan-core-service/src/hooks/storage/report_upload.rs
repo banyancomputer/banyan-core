@@ -231,7 +231,6 @@ async fn redeem_storage_grant(
 #[cfg(test)]
 mod tests {
     use super::*;
-
     use crate::database::models::MetadataState;
     use crate::database::test_helpers;
 

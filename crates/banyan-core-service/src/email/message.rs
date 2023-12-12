@@ -1,9 +1,10 @@
+use std::error::Error;
+
 use lazy_static::lazy_static;
-use lettre::message::{
-    header::{Header, HeaderName, HeaderValue},
-    Message,
-};
-use serde::{de::DeserializeOwned, ser::StdError, Serialize};
+use lettre::message::header::{Header, HeaderName, HeaderValue};
+use lettre::message::Message;
+use serde::de::DeserializeOwned;
+use serde::Serialize;
 use uuid::Uuid;
 
 use super::error::EmailError;
@@ -156,7 +157,7 @@ impl Header for MailgunTestMode {
     fn name() -> HeaderName {
         HeaderName::new_from_ascii_str("X-Mailgun-Drop-Message")
     }
-    fn parse(s: &str) -> Result<Self, Box<dyn StdError + Send + Sync>> {
+    fn parse(s: &str) -> Result<Self, Box<dyn Error + Send + Sync>> {
         if s == "yes" {
             Ok(MailgunTestMode)
         } else {
@@ -175,7 +176,7 @@ impl Header for MailgunMessageId {
     fn name() -> HeaderName {
         HeaderName::new_from_ascii_str("X-Mailgun-Variables")
     }
-    fn parse(s: &str) -> Result<Self, Box<dyn StdError + Send + Sync>> {
+    fn parse(s: &str) -> Result<Self, Box<dyn Error + Send + Sync>> {
         let json: serde_json::Value = serde_json::from_str(s)?;
         let message_id = json
             .get("message_id")

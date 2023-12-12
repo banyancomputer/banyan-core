@@ -1,14 +1,13 @@
 use std::collections::HashSet;
 
 use async_trait::async_trait;
+use banyan_task::{CurrentTask, TaskLike};
 use jwt_simple::prelude::*;
 use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use url::Url;
 use uuid::Uuid;
-
-use banyan_task::{CurrentTask, TaskLike};
 
 use crate::app::AppState;
 

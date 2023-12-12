@@ -493,6 +493,7 @@ dependencies = [
  "axum-extra",
  "banyan-cli",
  "banyan-task",
+ "banyan-traffic-counter",
  "base64 0.21.5",
  "bincode",
  "blake3",
@@ -553,6 +554,7 @@ dependencies = [
  "axum-extra",
  "banyan-car-analyzer",
  "banyan-task",
+ "banyan-traffic-counter",
  "blake3",
  "bytes",
  "cid 0.10.1",
@@ -639,6 +641,23 @@ dependencies = [
  "tracing",
  "tracing-futures",
  "uuid",
+]
+
+[[package]]
+name = "banyan-traffic-counter"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "futures",
+ "futures-util",
+ "http",
+ "http-body",
+ "pin-project-lite",
+ "pin-utils",
+ "tokio",
+ "tower-layer",
+ "tower-service",
+ "tracing",
 ]
 
 [[package]]

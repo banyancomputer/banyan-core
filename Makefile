@@ -22,6 +22,14 @@ clean:
 		crates/banyan-storage-provider-service/data/platform* \
 		crates/banyan-storage-provider-service/data/uploads/*
 
+.PHONY: fmt
+fmt:
+	cargo +nightly fmt --all
+
+.PHONY: fmt-check
+fmt-check:
+	cargo +nightly fmt --all -- --check
+
 # generate authentication keys
 # =========================================================================== #
 # TODO: these commands generate a key by starting a service, and terminating
