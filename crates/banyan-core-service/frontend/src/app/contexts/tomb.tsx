@@ -30,6 +30,7 @@ interface TombInterface {
 	takeColdSnapshot: (bucket: Bucket) => Promise<void>;
 	getBucketShapshots: (id: string) => Promise<BucketSnapshot[]>;
 	createBucketAndMount: (name: string, storageClass: string, bucketType: string) => Promise<void>;
+	renameBucket: (bucket: Bucket, newName: string) => void;
 	deleteBucket: (id: string) => void;
 	createDirectory: (bucket: Bucket, path: string[], name: string) => Promise<void>;
 	download: (bucket: Bucket, path: string[], name: string) => Promise<void>;
@@ -58,7 +59,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	const { isLoading, keystoreInitialized, getEncryptionKey, getApiKey, escrowedKeyMaterial } = useKeystore();
 	const [tomb, setTomb] = useState<TombWasm | null>(null);
 	const [buckets, setBuckets] = useState<TombBucket[]>([]);
-	const [trash, setTrash] = useState<TombBucket| null>(null);
+	const [trash, setTrash] = useState<TombBucket | null>(null);
 
 	const [selectedBucket, setSelectedBucket] = useState<Bucket | null>(null);
 	const [storageUsage, setStorageUsage] = useState<{ current: number, limit: number }>({ current: 0, limit: 0 });
@@ -282,6 +283,14 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 		}));
 	};
 
+	const renameBucket = async (bucket: Bucket, newName: string) => {
+		await tombMutex(bucket.mount, async mount => {
+			await mount.rename(newName);
+			bucket.name = newName;
+			setBuckets(prev => prev.map(element => element.id === bucket.id ? { ...element, name: newName } : element));
+		});
+	}
+
 	/** Creates directory inside selected bucket */
 	const createDirectory = async (bucket: Bucket, path: string[], name: string) => {
 		await tombMutex(bucket.mount, async mount => {
@@ -402,7 +411,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 				tomb, buckets, storageUsage, trash, areBucketsLoading, selectedBucket, error,
 				getBuckets, getBucketsFiles, getBucketsKeys, selectBucket, getSelectedBucketFiles,
 				takeColdSnapshot, getBucketShapshots, createBucketAndMount, deleteBucket,
-				getFile, createDirectory, uploadFile, purgeSnapshot,
+				getFile, renameBucket, createDirectory, uploadFile, purgeSnapshot,
 				removeBucketAccess, approveBucketAccess, approveDeviceApiKey, shareFile, download, moveTo,
 				restore, deleteFile, makeCopy, getExpandedFolderFiles,
 			}}

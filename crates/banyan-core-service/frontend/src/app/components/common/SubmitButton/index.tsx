@@ -24,6 +24,7 @@ export const SubmitButton: React.FC<{ text: string, action?: () => void, disable
             <button
                 type={type}
                 disabled={disabled}
+                onClick={action}
                 className={`btn-primary flex-grow py-3 px-4 ${className}`}
             >
                 {text}
