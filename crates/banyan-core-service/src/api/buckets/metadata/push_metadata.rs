@@ -16,7 +16,7 @@ use tokio::io::{AsyncWrite, AsyncWriteExt};
 use uuid::Uuid;
 
 use crate::app::{AppState, ServiceKey};
-use crate::database::models::{Bucket, Metadata, MetadataState, NewMetadata};
+use crate::database::models::{Bucket, Metadata, MetadataState, NewMetadata, User};
 use crate::database::{Database, DatabaseConnection};
 use crate::extractors::{DataStore, UserIdentity};
 use crate::tasks::{PruneBlock, PruneBlocksTask};
@@ -79,7 +79,7 @@ pub async fn handler(
         return Ok((StatusCode::NOT_FOUND, Json(err_msg)).into_response());
     }
 
-    if Bucket::change_in_progress(&mut conn, &bucket_id).await? {
+    if Bucket::is_change_in_progress(&mut conn, &bucket_id).await? {
         tracing::warn!("attempted upload to bucket while other write was in progress");
         let err_msg = serde_json::json!({"msg": "waiting for other upload to complete"});
         return Ok((StatusCode::CONFLICT, Json(err_msg)).into_response());
@@ -138,11 +138,12 @@ pub async fn handler(
     };
 
     let fingerprints = request_data
-            .included_key_fingerprints
-            .iter()
-            .map(String::as_str);
+        .included_key_fingerprints
+        .iter()
+        .map(String::as_str);
 
     Bucket::approve_keys_by_fingerprint(&mut conn, &bucket_id, fingerprints).await?;
+    Bucket::expire_blocks(&mut conn, &bucket_id, &request_data.deleted_block_cids).await?;
 
     // todo:
     //expire_deleted_blocks(
@@ -174,22 +175,16 @@ pub async fn handler(
     let mut conn = database.begin().await?;
     Metadata::upload_complete(&mut conn, &metadata_id, &hash, size as i64).await?;
 
-    let expected_total_storage = currently_consumed_storage(&mut conn, &user_id)
-        .await
-        .map_err(PushMetadataError::UnableToCheckAccounting)?
-        as i64;
+    let consumed_storage = User::consumed_storage(&mut *conn, &user_id).await?;
 
-    if expected_total_storage > ACCOUNT_STORAGE_QUOTA {
-        tracing::warn!(?expected_total_storage, ?user_id, "account reached storage limit");
+    if consumed_storage > ACCOUNT_STORAGE_QUOTA {
+        tracing::warn!(consumed_storage, "account reached storage limit");
         let err_msg = serde_json::json!({"msg": "account reached available storage threshold"});
         return Ok((StatusCode::PAYLOAD_TOO_LARGE, Json(err_msg)).into_response());
     }
 
     if request_data.expected_data_size == 0 {
-        mark_current(&mut conn, &metadata_id)
-            .await
-            .map_err(PushMetadataError::ActivationFailed)?;
-
+        Bucket::mark_current(&mut conn, &metadata_id).await?;
         let resp_msg = serde_json::json!({"id": metadata_id, "state": "current"});
         return Ok((StatusCode::OK, Json(resp_msg)).into_response());
     }
@@ -261,25 +256,9 @@ fn validate_field(
 }
 
 async fn currently_consumed_storage(
-    database: &Database,
+    conn: &mut DatabaseConnection,
     user_id: &str,
-) -> Result<i32, sqlx::Error> {
-    let maybe_stored = sqlx::query_scalar!(
-        r#"SELECT
-            COALESCE(SUM(m.metadata_size), 0) +
-            COALESCE(SUM(COALESCE(m.data_size, m.expected_data_size)), 0)
-        FROM
-            metadata m
-        INNER JOIN
-            buckets b ON b.id = m.bucket_id
-        WHERE
-            b.user_id = $1 AND m.state IN ('current', 'outdated', 'pending');"#,
-        user_id,
-    )
-    .fetch_optional(database)
-    .await?;
-
-    Ok(maybe_stored.unwrap_or(0))
+) -> Result<i64, sqlx::Error> {
 }
 
 async fn currently_stored_at_provider(

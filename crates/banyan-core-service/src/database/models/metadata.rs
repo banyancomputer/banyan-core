@@ -1,16 +1,16 @@
 use crate::database::DatabaseConnection;
 
 pub struct NewMetadata<'a> {
-    bucket_id: &'a str,
+    pub bucket_id: &'a str,
 
-    metadata_cid: &'a str,
-    root_cid: &'a str,
+    pub metadata_cid: &'a str,
+    pub root_cid: &'a str,
 
-    expected_data_size: i64,
+    pub expected_data_size: i64,
 }
 
 impl NewMetadata<'_> {
-    pub async fn save(&self, conn: &DatabaseConnection) -> Result<String, sqlx::Error> {
+    pub async fn save(&self, conn: &mut DatabaseConnection) -> Result<String, sqlx::Error> {
         sqlx::query_scalar!(
             r#"INSERT INTO metadata (bucket_id, metadata_cid, root_cid, expected_data_size, state)
                    VALUES ($1, $2, $3, $4, 'uploading')
@@ -28,6 +28,22 @@ impl NewMetadata<'_> {
 pub struct Metadata;
 
 impl Metadata {
+    pub async fn mark_current(
+        conn: &mut DatabaseConnection,
+        bucket_id: &str,
+        metadata_cid: &str,
+    ) -> Result<(), sqlx::Error> {
+        sqlx::query!(
+            "UPDATE metadata SET state = 'current' WHERE bucket_id = $1 AND id = $2;",
+            bucket_id,
+            metadata_id,
+        )
+        .execute(&mut *conn)
+        .await?;
+
+        Ok(())
+    }
+
     pub async fn upload_complete(
         conn: &mut DatabaseConnection,
         metadata_id: &str,
