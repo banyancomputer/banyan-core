@@ -1,7 +1,8 @@
+use std::error::Error;
+
 use axum::body::HttpBody;
 use axum::routing::{get, post};
 use axum::Router;
-use std::error::Error;
 use tower_http::cors::CorsLayer;
 
 mod block_retrieval;

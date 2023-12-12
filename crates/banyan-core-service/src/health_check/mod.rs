@@ -1,9 +1,10 @@
+use std::error::Error;
+
 use axum::body::HttpBody;
 use axum::routing::get;
 use axum::Router;
 use http::header::{ACCEPT, ORIGIN};
 use http::Method;
-use std::error::Error;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::limit::RequestBodyLimitLayer;
 

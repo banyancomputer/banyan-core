@@ -6,13 +6,12 @@ mod single_metadata;
 mod pull_metadata;
 mod push_metadata;
 
+use std::error::Error;
 
 use axum::body::HttpBody;
-pub use push_metadata::STORAGE_TICKET_DURATION;
-
 use axum::routing::{get, post};
 use axum::Router;
-use std::error::Error;
+pub use push_metadata::STORAGE_TICKET_DURATION;
 
 use crate::app::AppState;
 

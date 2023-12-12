@@ -3,6 +3,8 @@ use std::time::Duration;
 use axum::error_handling::HandleErrorLayer;
 use axum::extract::DefaultBodyLimit;
 use axum::{Router, Server, ServiceExt};
+use banyan_traffic_counter::traffic_counter::body::{RequestInfo, ResponseInfo};
+use banyan_traffic_counter::traffic_counter::layer::TrafficCounterLayer;
 use futures::future::join_all;
 use http::header;
 use tokio::task::JoinHandle;
@@ -16,12 +18,6 @@ use tower_http::trace::{DefaultMakeSpan, DefaultOnFailure, DefaultOnResponse, Tr
 use tower_http::validate_request::ValidateRequestHeaderLayer;
 use tower_http::{LatencyUnit, ServiceBuilderExt};
 use tracing::Level;
-
-
-use banyan_traffic_counter::traffic_counter::body::{RequestInfo, ResponseInfo};
-use banyan_traffic_counter::traffic_counter::layer::TrafficCounterLayer;
-
-use crate::api;
 
 use crate::app::{AppState, Config};
 use crate::tasks::start_background_workers;

@@ -1,6 +1,6 @@
-use crate::traffic_counter::body::FnOnResponseEnd;
 use tower_layer::Layer;
 
+use crate::traffic_counter::body::FnOnResponseEnd;
 use crate::traffic_counter::service::TrafficCounter;
 
 #[derive(Clone, Debug)]

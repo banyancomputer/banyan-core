@@ -1,42 +1,29 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-
-use axum::body::boxed;
-use axum::body::BoxBody;
+use axum::body::{boxed, BoxBody};
 use axum::error_handling::HandleErrorLayer;
 use axum::extract::DefaultBodyLimit;
-use axum::http::Request;
-use axum::http::StatusCode;
-use axum::response::IntoResponse;
-use axum::response::Response;
-
+use axum::http::{Request, StatusCode};
+use axum::response::{IntoResponse, Response};
 use axum::routing::{get, get_service};
 use axum::{Json, Router, Server, ServiceExt};
+use banyan_traffic_counter::traffic_counter::body::{RequestInfo, ResponseInfo};
+use banyan_traffic_counter::traffic_counter::layer::TrafficCounterLayer;
 use futures::future::join_all;
 use http::header;
 use tokio::sync::watch;
 use tokio::task::JoinHandle;
-
-use tower::ServiceBuilder;
-use tower::ServiceExt as OtherServiceExt;
-
+use tower::{ServiceBuilder, ServiceExt as OtherServiceExt};
 use tower_http::request_id::MakeRequestUuid;
 use tower_http::sensitive_headers::{
     SetSensitiveRequestHeadersLayer, SetSensitiveResponseHeadersLayer,
 };
-
-use tower_http::services::ServeDir;
-use tower_http::services::ServeFile;
-
+use tower_http::services::{ServeDir, ServeFile};
 use tower_http::trace::{DefaultMakeSpan, DefaultOnFailure, DefaultOnResponse, TraceLayer};
 use tower_http::validate_request::ValidateRequestHeaderLayer;
 use tower_http::{LatencyUnit, ServiceBuilderExt};
 use tracing::Level;
-
-
-use banyan_traffic_counter::traffic_counter::body::{RequestInfo, ResponseInfo};
-use banyan_traffic_counter::traffic_counter::layer::TrafficCounterLayer;
 
 use crate::app::{AppState, Config};
 use crate::tasks::start_background_workers;
