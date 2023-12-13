@@ -1,4 +1,6 @@
 use std::borrow::Cow;
+use std::collections::HashMap;
+use std::sync::Arc;
 use std::thread;
 
 // TODO: rid ourselves of anyhow
@@ -13,7 +15,7 @@ use cid::multibase::Base;
 use futures::stream::{self, StreamExt};
 use jwt_simple::prelude::*;
 use reqwest::Client;
-use tokio::sync::mpsc;
+use tokio::sync::{oneshot, Mutex};
 use tokio::time::{timeout, Duration as TokioDuration};
 use url::Url;
 use wnfs::common::BlockStore;
@@ -38,41 +40,50 @@ pub async fn handler(
     State(state): State<AppState>,
     Query(payload): Query<SharedFileQuery>,
 ) -> Result<Response, SharedFileError> {
-    let (tx, mut rx) = mpsc::channel(1);
+    let (tx, rx) = oneshot::channel::<Vec<u8>>();
     let database = state.database();
     let service_name = state.service_name().to_string();
     let service_key = state.secrets().service_key();
     let shared_file = SharedFile::import_b64_url(payload.payload)?;
 
     // Wnfs relies on Rc, so we need to spawn this fetching task on a separate thread
+    // We can't utilize tokio threads because this workflow requires us to pass an Rc over an await boundary
+    // WARN: this will just keep on spawning zombie threads each time this endpoint is hit
+    // WARN: this basically creates a time bomb for the server to run out of threads woopeee
     thread::spawn(move || {
         let rt = tokio::runtime::Runtime::new().unwrap();
         rt.block_on(async move {
-            let result = fetch_data(database, service_name, service_key, shared_file).await;
-            if let Err(e) = tx.send(result).await {
-                tracing::error!(
-                    "share call failed to send result back to main thread: {}",
-                    e
-                );
+            // Fetch the file data
+            let result = fetch_data(database, service_name, service_key, shared_file).await?;
+            // Send the result back over the channel. We can't do anything if this fails, so just log it
+            if tx.send(result).is_err() {
+                tracing::error!("share call failed to send result back to main thread",);
             }
+            // This Ok doesn't do anything, but let's be explicit about the return type
+            Ok::<_, SharedFileError>(())
         })
     });
 
-    // Await the response with a timeout from the channel
-    let response = timeout(TokioDuration::from_secs(CHANNEL_TIMEOUT_SECS), rx.recv()).await;
+    // Wait for the result to come back over the channel with a timeout
+    let response: Result<Vec<u8>, oneshot::error::RecvError> =
+        timeout(TokioDuration::from_secs(CHANNEL_TIMEOUT_SECS), rx)
+            .await
+            .map_err(
+                // We timed out, so return a timeout error
+                |_| SharedFileError::Timeout,
+            )?;
 
     // Match on the response and return the file data as a stream if successful
     match response {
-        Ok(Some(Ok(data))) => {
+        // We got the data, so stream it back to the client
+        Ok(data) => {
             let data_stream = stream::iter(data)
                 .map(|item| Ok::<_, std::io::Error>(BytesMut::from(&[item][..]).freeze()));
-
             let response = axum::body::StreamBody::new(data_stream);
             Ok((StatusCode::OK, response).into_response())
         }
-        Ok(Some(Err(e))) => Err(e),
-        Ok(None) => Err(SharedFileError::ChannelClosed),
-        Err(_) => Err(SharedFileError::Timeout),
+        // We didn't get the data, even though the sender didn't error, so return a channel recv error
+        Err(e) => Err(SharedFileError::ChannelReceiveError(e)),
     }
 }
 
@@ -100,10 +111,10 @@ pub enum SharedFileError {
     // Every wnfs error is an anyhow error, so we can just wrap it
     #[error("wnfs error: {0}")]
     Wnfs(#[from] anyhow::Error),
-    #[error("channel closed unexpectedly")]
-    ChannelClosed,
     #[error("operation timed out")]
     Timeout,
+    #[error("error receiving result over channel")]
+    ChannelReceiveError(#[from] oneshot::error::RecvError),
 }
 
 impl IntoResponse for SharedFileError {
@@ -118,8 +129,8 @@ impl IntoResponse for SharedFileError {
             | SFE::Url(_)
             | SFE::Http(_, _)
             | SFE::UnableToLoadForest(_)
-            | SFE::ChannelClosed
             | SFE::Timeout
+            | SFE::ChannelReceiveError(_)
             | SFE::Wnfs(_) => {
                 tracing::error!("{self}");
                 let err_msg = serde_json::json!({ "msg": "a backend service experienced an issue servicing the request" });
@@ -144,6 +155,7 @@ impl IntoResponse for SharedFileError {
 /// Authenticates with the storage hosts using the service key.
 /// # Arguments
 /// * `database` - The database pool
+/// * `service_name` - The service name to use for auth to storage hosts
 /// * `service_key` - The service key to use for auth to storage hosts
 /// * `shared_file` - The shared file to fetch
 /// # Returns
@@ -181,6 +193,7 @@ struct ShareBlockStore {
     service_name: String,
     service_key: ServiceKey,
     client: Client,
+    bearer_tokens: Arc<Mutex<HashMap<String, String>>>,
 }
 
 impl ShareBlockStore {
@@ -194,6 +207,7 @@ impl ShareBlockStore {
             service_name,
             service_key,
             client: Client::builder().build()?,
+            bearer_tokens: Arc::new(Mutex::new(HashMap::new())),
         })
     }
 
@@ -250,8 +264,18 @@ impl ShareBlockStore {
         storage_host_info: StorageHostInfo,
         cid: &Cid,
     ) -> Result<Vec<u8>, SharedFileError> {
-        // Generate a bearer token for the storage host
-        let bearer_token = self.bearer_token(&storage_host_info)?;
+        // Get the lock on the bearer tokens
+        let mut locked_bearer_tokens = self.bearer_tokens.lock().await;
+        // Generate a bearer token for the storage host if we don't already have one
+        let bearer_token = match locked_bearer_tokens.get(&storage_host_info.name) {
+            Some(token) => token.clone(),
+            None => {
+                let token = self.bearer_token(&storage_host_info)?;
+                locked_bearer_tokens.insert(storage_host_info.name.clone(), token.clone());
+                token
+            }
+        };
+
         // Build and Attach the auth token to the request
         let url = Url::parse(&storage_host_info.url)?;
         // Tack on the api route + base32 default CID encoding

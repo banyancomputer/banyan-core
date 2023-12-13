@@ -8,15 +8,18 @@ use crate::extractors::authenticated_client::{AuthenticatedClient, Authenticated
 use crate::extractors::platform_identity::{PlatformIdentity, PlatformIdentityError};
 
 /// Enum encompassing Authentication Strategies for API requests
-pub struct BlockReader(Either<AuthenticatedClient, PlatformIdentity>);
+pub enum BlockReader {
+    AuthenticatedClient(AuthenticatedClient),
+    PlatformIdentity(PlatformIdentity),
+}
 
 impl BlockReader {
     pub fn can_read_block(&self, block: &BlockDetails) -> bool {
-        match &self.0 {
-            // If this is an authenticated client, we need to make sure they own the block they're trying to retrieve
-            Either::E1(client) => block.platform_id == client.platform_id().to_string(),
-            // Otherwise just let the platform identity pass through
-            Either::E2(_) => true,
+        match &self {
+            BlockReader::AuthenticatedClient(client) => {
+                block.platform_id == client.platform_id().to_string()
+            }
+            BlockReader::PlatformIdentity(_) => true,
         }
     }
 }
@@ -34,6 +37,9 @@ where
         // Attempt to extract an authenticated client, if that fails, try to extract a platform identity
         let either: Either<AuthenticatedClient, PlatformIdentity> =
             Either::from_request_parts(parts, state).await?;
-        Ok(BlockReader(either))
+        Ok(match either {
+            Either::E1(client) => BlockReader::AuthenticatedClient(client),
+            Either::E2(identity) => BlockReader::PlatformIdentity(identity),
+        })
     }
 }
