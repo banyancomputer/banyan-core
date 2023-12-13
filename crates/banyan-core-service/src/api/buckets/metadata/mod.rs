@@ -7,6 +7,7 @@ mod single_metadata;
 
 use std::error::Error;
 
+use super::snapshots::create_snapshot;
 use axum::body::HttpBody;
 use axum::routing::{get, post};
 use axum::Router;
@@ -29,5 +30,6 @@ where
             get(single_metadata::handler).delete(delete_metadata::handler),
         )
         .route("/:metadata_id/pull", get(pull_metadata::handler))
+        .route("/:metadata_id/snapshot", post(create_snapshot::handler))
         .with_state(state)
 }
