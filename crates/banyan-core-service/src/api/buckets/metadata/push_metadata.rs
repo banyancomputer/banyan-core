@@ -1,4 +1,4 @@
-use std::collections::{BTreeSet, HashMap, HashSet};
+use std::collections::BTreeSet;
 use std::str::FromStr;
 
 use axum::extract::{BodyStream, Path, State};
@@ -7,14 +7,12 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::{Json, TypedHeader};
 //use banyan_task::TaskLikeExt;
-//use cid::{multibase::Base, Cid};
 use futures::{TryStream, TryStreamExt};
 use jwt_simple::prelude::*;
 use mime::Mime;
 use object_store::ObjectStore;
 use serde::Deserialize;
 use tokio::io::{AsyncWrite, AsyncWriteExt};
-//use url::Url;
 use uuid::Uuid;
 
 use crate::app::AppState;
@@ -43,24 +41,6 @@ const ONE_HUNDRED_MIB: i64 = 100 * 1024 * 1024;
 
 /// Upper size limit on the JSON payload that precedes a metadata CAR file upload (128KiB)
 const REQUEST_DATA_SIZE_LIMIT: u64 = 128 * 1_024;
-
-pub const STORAGE_TICKET_DURATION: Duration = Duration::from_secs(15 * 60); // 15 minutes
-
-/// When creating a new signed JWT, we explicitly set the not before at (minimum timestamp the
-/// ticket is considered valid) as well as its validity period. This constant represents the time
-/// before the ticket was created that we allow the ticket to remain valid (this extends the total
-/// duration the ticket is valid for).
-///
-/// This allows clients and remote hosts a window when they can validate the JWT even if their
-/// clock is a bit behind the core platform.
-pub const JWT_ALLOWED_CLOCK_DRIFT: Duration = Duration::from_secs(30);
-
-async fn bucket_change_in_progress(
-    _conn: &DatabaseConnection,
-    _bucket_id: &str,
-) -> Result<bool, PushMetadataError> {
-    Ok(false)
-}
 
 #[derive(Debug, thiserror::Error)]
 pub enum PushMetadataRequestError {
@@ -303,67 +283,6 @@ fn validate_field(
     }
 
     true
-}
-
-#[derive(Deserialize, Serialize)]
-pub struct StorageTicketClaim {
-    #[serde(rename = "cap")]
-    capabilities: HashMap<String, StorageCapabilities>,
-}
-
-impl StorageTicketClaim {
-    pub fn add_authorization(
-        &mut self,
-        grant_id: String,
-        storage_host_url: String,
-        authorized_amount: i64,
-    ) {
-        let caps = StorageCapabilities {
-            authorized_amount,
-            grant_id,
-        };
-        self.capabilities.insert(storage_host_url, caps);
-    }
-
-    pub fn new() -> Self {
-        Self {
-            capabilities: HashMap::new(),
-        }
-    }
-}
-
-impl Default for StorageTicketClaim {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-#[derive(Deserialize, Serialize)]
-struct StorageCapabilities {
-    #[serde(rename = "available_storage")]
-    authorized_amount: i64,
-    grant_id: String,
-}
-
-fn generate_storage_claim(
-    subject: String,
-    grant_id: String,
-    storage_host: &SelectedStorageHost,
-    authorized_amount: i64,
-) -> JWTClaims<StorageTicketClaim> {
-    let mut ticket = StorageTicketClaim::default();
-    ticket.add_authorization(grant_id, storage_host.url, authorized_amount);
-
-    let mut claims = Claims::with_custom_claims(ticket, STORAGE_TICKET_DURATION)
-        .with_audiences(HashSet::from_strings(&[storage_host.name.as_str()]))
-        .with_issuer("banyan-platform")
-        .with_subject(subject)
-        .invalid_before(Clock::now_since_epoch() - Duration::from_secs(30));
-
-    claims.create_nonce();
-    claims.issued_at = Some(Clock::now_since_epoch());
-
-    claims
 }
 
 async fn persist_upload<'a>(

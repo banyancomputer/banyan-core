@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use axum::routing::get;
 use axum::Router;
 use oauth2::basic::BasicClient;
@@ -11,6 +13,7 @@ mod login;
 mod logout;
 mod oauth_callback;
 mod provider_config;
+mod storage_ticket;
 
 use authentication_error::AuthenticationError;
 use provider_config::ProviderConfig;
@@ -33,14 +36,27 @@ pub static PROVIDER_CONFIGS: phf::Map<&'static str, ProviderConfig> = phf::phf_m
     ),
 };
 
-// Session Id Cookie
+// Name of the cookie used to store the session identifier
 pub static SESSION_COOKIE_NAME: &str = "_session_id";
-// User Data Cookie for sharing on login
+
+/// Name of the cookie used to store user related data
 pub static USER_DATA_COOKIE_NAME: &str = "_user_data";
+
+/// When creating a new signed JWT, we explicitly set the not before at (minimum timestamp the
+/// ticket is considered valid) as well as its validity period. This constant represents the time
+/// before the ticket was created that we allow the ticket to remain valid (this extends the total
+/// duration the ticket is valid for).
+///
+/// This allows clients and remote hosts a window when they can validate the JWT even if their
+/// clock is a bit behind the core platform.
+pub const JWT_ALLOWED_CLOCK_DRIFT: Duration = Duration::from_secs(30);
+
 // Local Key Cookie -- kept for enforcing deletion on client
 pub const LOCAL_KEY_COOKIE_NAME: &str = "_local_key";
 
 pub const SESSION_TTL: u64 = 28 * 24 * 60 * 60;
+
+pub const STORAGE_TICKET_DURATION: Duration = Duration::from_secs(15 * 60); // 15 minutes
 
 pub fn router(state: AppState) -> Router<AppState> {
     Router::new()

@@ -19,7 +19,7 @@ impl NewStorageGrant<'_> {
                    VALUES ($1, $2, $3)
                    RETURNING id;"#,
             self.storage_host_id,
-            self.user_id
+            self.user_id,
             self.authorized_amount,
         )
         .fetch_one(&mut *conn)
