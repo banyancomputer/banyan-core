@@ -1,6 +1,20 @@
+use crate::database::models::ExplicitBigInt;
 use crate::database::DatabaseConnection;
 
-pub struct StorageHost;
+#[derive(sqlx::FromRow)]
+pub struct StorageHost {
+    pub id: String,
+
+    pub name: String,
+    pub url: String,
+    pub fingerprint: String,
+
+    #[sqlx(rename = "pem")]
+    pub public_key: String,
+
+    pub used_storage: i64,
+    pub available_storage: i64,
+}
 
 impl StorageHost {
     /// Find the database ID of a storage host that has the requested capacity currently available.
@@ -9,9 +23,10 @@ impl StorageHost {
     pub async fn select_for_capacity(
         conn: &mut DatabaseConnection,
         required_bytes: i64,
-    ) -> Result<Option<String>, sqlx::Error> {
-        sqlx::query_scalar!(
-            r#"SELECT id FROM storage_hosts
+    ) -> Result<Option<Self>, sqlx::Error> {
+        sqlx::query_as!(
+            StorageHost,
+            r#"SELECT * FROM storage_hosts
                    WHERE (available_storage - used_storage) > $1
                    ORDER BY RANDOM()
                    LIMIT 1;"#,
@@ -21,12 +36,46 @@ impl StorageHost {
         .await
     }
 
+    /// Retrieves the current known amount of data owned by a particular user that is located at
+    /// the requested storage provider as well the reservation capacity the user currently has at
+    /// that storage provider if any.
     pub async fn user_report(
-        _conn: &mut DatabaseConnection,
-        _storage_host_id: &str,
-        _user_id: &str,
+        conn: &mut DatabaseConnection,
+        storage_host_id: &str,
+        user_id: &str,
     ) -> Result<UserStorageReport, sqlx::Error> {
-        todo!()
+        let ex_bigint = sqlx::query_as!(
+            ExplicitBigInt,
+            r#"SELECT COALESCE(SUM(m.data_size), 0) as big_int FROM metadata m
+                   JOIN storage_hosts_metadatas_storage_grants shmg ON shmg.metadata_id = m.id
+                   JOIN storage_grants sg ON shmg.storage_grant_id = sg.id
+                   WHERE shmg.storage_host_id = $2
+                       AND sg.user_id = $1;
+             "#,
+            storage_host_id,
+            user_id,
+        )
+        .fetch_one(&mut *conn)
+        .await?;
+        let current_consumption = ex_bigint.big_int;
+
+        let maximum_authorized = sqlx::query_scalar!(
+            r#"SELECT authorized_amount FROM storage_grants
+                   WHERE storage_host_id = $1
+                       AND user_id = $2
+                       AND redeemed_at IS NOT NULL
+                   ORDER BY created_at DESC
+                   LIMIT 1;"#,
+            storage_host_id,
+            user_id,
+        )
+        .fetch_optional(&mut *conn)
+        .await?;
+
+        Ok(UserStorageReport {
+            current_consumption,
+            maximum_authorized,
+        })
     }
 }
 
@@ -37,22 +86,26 @@ impl StorageHost {
 #[derive(Debug)]
 pub struct UserStorageReport {
     current_consumption: i64,
-    maximum_authorized: i64,
+    maximum_authorized: Option<i64>,
 }
 
 impl UserStorageReport {
     /// Provides the amount of storage a user has remaining on their authorization at the specific
-    /// storage host. If the user has managed to go over their quota somehow this will return 0. It
+    /// storage host. If the user has managed to go over their quota or they don't yet have an
+    /// authorization at a storage host this will return 0.
     /// will never return a negative number.
     pub fn authorization_available(&self) -> i64 {
-        (self.maximum_authorized - self.current_consumption).max(0)
+        match self.maximum_authorized {
+            Some(ma) => (ma - self.current_consumption).max(0),
+            None => 0,
+        }
     }
 
     pub fn current_consumption(&self) -> i64 {
         self.current_consumption
     }
 
-    pub fn maximum_authorized(&self) -> i64 {
+    pub fn maximum_authorized(&self) -> Option<i64> {
         self.maximum_authorized
     }
 }

@@ -213,7 +213,7 @@ impl Bucket {
                 LIMIT 1;"#,
             bucket_id,
         )
-        .fetch_optional(conn)
+        .fetch_optional(&mut *conn)
         .await?;
 
         if let Some(current_id) = result {
@@ -252,7 +252,7 @@ impl Bucket {
             bucket_id,
             user_id,
         )
-        .fetch_optional(&mut conn)
+        .fetch_optional(&mut *conn)
         .await?;
 
         Ok(found_bucket.is_some())

@@ -1,6 +1,7 @@
 use serde::Serialize;
 use time::OffsetDateTime;
 
+use crate::database::models::ExplicitBigInt;
 use crate::database::DatabaseConnection;
 
 #[derive(Debug, Serialize, sqlx::FromRow)]
@@ -31,18 +32,19 @@ impl User {
         conn: &mut DatabaseConnection,
         user_id: &str,
     ) -> Result<i64, sqlx::Error> {
-        sqlx::query_scalar!(
+        let ex_size = sqlx::query_as!(
+            ExplicitBigInt,
             r#"SELECT
-                COALESCE(SUM(m.metadata_size), 0) + COALESCE(SUM(COALESCE(m.data_size, m.expected_data_size)), 0) AS '!size: i64'
-            FROM
-                metadata m
-            INNER JOIN
-                buckets b ON b.id = m.bucket_id
-            WHERE
-                b.user_id = $1 AND m.state IN ('current', 'outdated', pending');"#,
+                 COALESCE(SUM(m.metadata_size), 0) +
+                 COALESCE(SUM(COALESCE(m.data_size, m.expected_data_size)), 0) AS big_int
+            FROM metadata m
+            INNER JOIN buckets b ON b.id = m.bucket_id
+            WHERE b.user_id = $1 AND m.state IN ('current', 'outdated', 'pending');"#,
             user_id,
         )
         .fetch_one(&mut *conn)
-        .await
+        .await?;
+
+        Ok(ex_size.big_int)
     }
 }

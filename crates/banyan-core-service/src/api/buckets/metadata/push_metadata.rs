@@ -201,8 +201,7 @@ pub async fn handler(
     }
 
     let needed_capacity = request_data.expected_data_size;
-    let storage_host_id = match StorageHost::select_for_capacity(&mut conn, needed_capacity).await?
-    {
+    let storage_host = match StorageHost::select_for_capacity(&mut conn, needed_capacity).await? {
         Some(sh) => sh,
         None => {
             tracing::warn!(
@@ -213,7 +212,7 @@ pub async fn handler(
             return Ok((StatusCode::INSUFFICIENT_STORAGE, Json(err_msg)).into_response());
         }
     };
-    let user_report = StorageHost::user_report(&mut conn, &storage_host_id, &user_id).await?;
+    let user_report = StorageHost::user_report(&mut conn, &storage_host.id, &user_id).await?;
 
     let mut storage_authorization: Option<String> = None;
     if user_report.authorization_available() < needed_capacity {
@@ -224,10 +223,9 @@ pub async fn handler(
             &service_key,
             &user_id,
             &storage_host,
-            data_size_rounded,
+            new_authorized_capacity,
         )
-        .await
-        .map_err(PushMetadataError::UnableToGenerateAuthorization)?;
+        .await?;
 
         storage_authorization = Some(new_authorization);
     }
@@ -274,45 +272,6 @@ fn validate_field(
     }
 
     true
-}
-
-async fn currently_stored_at_provider(
-    database: &Database,
-    user_id: &str,
-    storage_host_id: &str,
-) -> Result<i64, sqlx::Error> {
-    let res: Result<Option<i64>, _> = sqlx::query_scalar!(
-        r#"SELECT SUM(m.data_size) as total_data_size FROM metadata m
-               JOIN storage_hosts_metadatas_storage_grants shmg ON shmg.metadata_id = m.id
-               JOIN storage_grants sg ON shmg.storage_grant_id = sg.id
-               WHERE sg.user_id = $1 AND shmg.storage_host_id = $2;"#,
-        user_id,
-        storage_host_id,
-    )
-    .fetch_one(database)
-    .await;
-
-    res.map(|amt| amt.unwrap_or(0))
-}
-
-async fn existing_authorization(
-    database: &Database,
-    user_id: &str,
-    storage_host_id: &str,
-) -> Result<i64, sqlx::Error> {
-    sqlx::query_scalar!(
-        r#"SELECT authorized_amount FROM storage_grants
-               WHERE user_id = $1
-                   AND storage_host_id = $2
-                   AND redeemed_at IS NOT NULL
-               ORDER BY created_at DESC
-               LIMIT 1;"#,
-        user_id,
-        storage_host_id,
-    )
-    .fetch_optional(database)
-    .await
-    .map(|amt| amt.unwrap_or(0))
 }
 
 #[derive(Debug, Serialize, Deserialize)]

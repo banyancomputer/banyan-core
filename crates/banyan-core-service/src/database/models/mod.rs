@@ -26,3 +26,15 @@ pub use snapshot::Snapshot;
 pub use storage_class::StorageClass;
 pub use storage_host::{StorageHost, UserStorageReport};
 pub use user::User;
+
+/// Something about sqlx's type detection fails on complex queries such as the result of COALESCE
+/// that forces it to assume the result is a 32-bit signed integer, and it seems to ignore the sqlx
+/// specific type overrides. To get 64-bit values out of sqlx exclusively in these cases, we need
+/// an explicit wrapping type that we can then extract the desired value from.
+///
+/// note(sstelfox): I consider this a bug in sqlx but the maintainers didn't want to accept it as
+/// such recommending this workaround.
+#[derive(sqlx::FromRow)]
+pub struct ExplicitBigInt {
+    big_int: i64,
+}
