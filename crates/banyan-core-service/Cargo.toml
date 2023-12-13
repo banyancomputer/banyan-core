@@ -6,7 +6,7 @@ license = "LicenseRef-LICENSE.txt"
 
 [dependencies]
 banyan-task = { path = "../banyan-task", version = "^0.1"}
-banyan-cli = { git = "https://github.com/banyancomputer/banyan-cli.git" }
+banyan-cli = { git = "https://github.com/banyancomputer/banyan-cli.git", branch = "main", version = "^0.1" }
 wnfs = { git = "https://github.com/banyancomputer/rs-wnfs", branch = "main", version = "^0.1" }
 # TODO: remove anyhow once we have an alternative to wnfs
 anyhow = "1.0.75"
