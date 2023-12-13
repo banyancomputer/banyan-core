@@ -86,7 +86,11 @@ exceptions = [
   ] },
   { name = "banyan-car-analyzer", allow = [
     "LicenseRef-LICENSE.txt",
-  ] }, { name = "banyan-traffic-counter", allow = [
+  ] }, 
+  { name = "banyan-traffic-counter", allow = [
+    "LicenseRef-LICENSE.txt",
+  ] },
+  { name = "tomb-crypt", allow = [
     "LicenseRef-LICENSE.txt",
   ] }
 ]
@@ -125,12 +129,6 @@ unknown-registry = "deny"
 # required by the CODEOWNERS file).
 unknown-git = "deny"
 
-# Crates that have been approved by the lead maintainer to use a git source
-allow-git = [
-  # Our CLI is needed for implementing sharing
-  "https://github.com/banyancomputer/banyan-cli",
-  # It brings in the following crates:
-  "https://github.com/banyancomputer/dir-assert?branch=non-utf8#2e127661b92bbf6101479728bed01c33e6af24e8",
-  "https://github.com/banyancomputer/tomb-crypt?branch=main#cdd5e07de53b2a2cde830bb56e453f3c5632d2d7",
-  "https://github.com/banyancomputer/rs-wnfs?branch=main#8f38d63306e65dd38725946a4ca2d02a4fc423b6"
-]
+# Allow all crates that we have made
+[sources.allow-org]
+github = ["banyancomputer"]
