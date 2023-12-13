@@ -8,6 +8,7 @@ mod auth;
 mod blocks;
 mod buckets;
 pub mod models;
+mod share;
 mod users;
 
 use crate::app::AppState;
@@ -30,6 +31,7 @@ where
         .nest("/users", users::router(state.clone()))
         .nest("/blocks", blocks::router(state.clone()))
         .nest("/buckets", buckets::router(state.clone()))
+        .nest("/share", share::router(state.clone()))
         .layer(cors_layer)
         .with_state(state)
 }

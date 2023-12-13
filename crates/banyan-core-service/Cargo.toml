@@ -6,6 +6,10 @@ license = "LicenseRef-LICENSE.txt"
 
 [dependencies]
 banyan-task = { path = "../banyan-task", version = "^0.1"}
+banyan-cli = { git = "https://github.com/banyancomputer/banyan-cli.git", branch = "main", version = "^1" }
+wnfs = { git = "https://github.com/banyancomputer/rs-wnfs", branch = "main", version = "^0.1" }
+# TODO: remove anyhow once we have an alternative to wnfs
+anyhow = "1.0.75"
 banyan-traffic-counter = { path = "../banyan-traffic-counter", version = "^0.1"}
 
 dotenvy = "^0.15"
@@ -66,6 +70,8 @@ tracing-subscriber = { version = "^0.3", default-features = false, features = ["
 
 [dev-dependencies]
 hyper = "^0.14"
+proptest = "^1.4.0"
+proptest-derive = "^0.2.0"
 
 [features]
 fake = []

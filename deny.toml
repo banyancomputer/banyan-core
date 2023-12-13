@@ -48,6 +48,7 @@ allow = [
   "OpenSSL",
   "Unicode-DFS-2016",
   "0BSD",
+  "BSL-1.0",
 ]
 
 # We don't care what these organization think of the license, we are making our
@@ -85,9 +86,10 @@ exceptions = [
   ] },
   { name = "banyan-car-analyzer", allow = [
     "LicenseRef-LICENSE.txt",
-  ] }, { name = "banyan-traffic-counter", allow = [
+  ] }, 
+  { name = "banyan-traffic-counter", allow = [
     "LicenseRef-LICENSE.txt",
-  ] },
+  ] }
 ]
 
 # Ring doesn't specify the license in their Cargo manifest, we have to
@@ -124,5 +126,6 @@ unknown-registry = "deny"
 # required by the CODEOWNERS file).
 unknown-git = "deny"
 
-# Crates that have been approved by the lead maintainer to use a git source
-allow-git = []
+# Allow all crates that we have made
+[sources.allow-org]
+github = ["banyancomputer"]
