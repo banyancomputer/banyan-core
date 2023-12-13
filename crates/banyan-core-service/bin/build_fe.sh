@@ -1,1 +1,1 @@
-cd frontend && yarn build
+cd frontend && yarn && yarn build

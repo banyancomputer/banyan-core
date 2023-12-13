@@ -85,7 +85,8 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BrowserObject; parren
 
     const share = async () => {
         try {
-            const link = await shareFile(bucket, file);
+            const payload = await shareFile(bucket, [...path, file.name]);
+            const link = `${window.location.origin}/api/v1/share?payload=` + payload;
             openModal(
                 <ShareFileModal link={link} />
             );
@@ -101,10 +102,10 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BrowserObject; parren
     const shareAction = new Action(`${messages.shareFile}`, <Share width="18px" height="18px" />, share);
 
     const hotInrecactiveActions = [
-        downloadAction, moveToAction, makeCopyAction, renameAction, removeAction
+        downloadAction, moveToAction, makeCopyAction, renameAction, removeAction, shareAction,
     ];
     const warmInrecactiveActions = [
-        downloadAction, moveToAction, makeCopyAction, renameAction, removeAction,
+        downloadAction, moveToAction, makeCopyAction, renameAction, removeAction, shareAction
     ];
     const coldIntecactiveActions = [
         downloadAction,
