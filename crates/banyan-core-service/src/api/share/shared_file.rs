@@ -226,10 +226,7 @@ impl ShareBlockStore {
     /// The token as a String
     /// # Errors
     /// If the token cannot be generated
-    fn bearer_token(
-        &self,
-        storage_host_info: &StorageHostInfo,
-    ) -> Result<String, SharedFileError> {
+    fn bearer_token(&self, storage_host_info: &StorageHostInfo) -> Result<String, SharedFileError> {
         // Create claims againt the storage host
         // They only need to be valid long enough to fulfill the request, which will timeout after CHANNEL_TIMEOUT_SECS
         let mut claims = Claims::create(Duration::from_secs(CHANNEL_TIMEOUT_SECS))
@@ -241,7 +238,7 @@ impl ShareBlockStore {
         let token = self.service_key.sign(claims)?;
         Ok(token)
     }
-        
+
     /// Get the block from the storage host
     /// # Arguments
     /// * `storage_host_info` - The storage host to get the block from
