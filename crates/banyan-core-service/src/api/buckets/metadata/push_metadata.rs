@@ -23,6 +23,7 @@ use crate::database::models::{
 use crate::database::{Database, DatabaseConnection};
 use crate::extractors::{DataStore, UserIdentity};
 use crate::tasks::{PruneBlock, PruneBlocksTask};
+use crate::utils;
 use crate::utils::car_buffer::CarBuffer;
 
 /// The default quota we assume each storage host / staging service to provide (10 GiB limit until
@@ -159,8 +160,21 @@ pub async fn handler(
     .save(&mut conn)
     .await?;
 
-    // todo: need to normalize the CIDs before passing these through
-    let cid_iterator = request_data.deleted_block_cids.iter().map(String::as_str);
+    let normalized_cids: Vec<_> = match request_data
+        .deleted_block_cids
+        .iter()
+        .map(String::as_str)
+        .map(utils::normalize_cid)
+        .collect()
+    {
+        Ok(nc) => nc,
+        Err(_) => {
+            let err_msg = serde_json::json!({"msg": "request data included invalid CID in deleted block list"});
+            return Ok((StatusCode::BAD_REQUEST, Json(err_msg)).into_response());
+        }
+    };
+
+    let cid_iterator = normalized_cids.iter().map(String::as_str);
     Bucket::expire_blocks(&mut conn, &bucket_id, cid_iterator).await?;
 
     // Checkpoint the upload to the database so we can track failures, and perform any necessary
@@ -187,7 +201,18 @@ pub async fn handler(
     }
 
     let needed_capacity = request_data.expected_data_size;
-    let storage_host_id = StorageHost::select_for_capacity(&mut conn, needed_capacity).await?;
+    let storage_host_id = match StorageHost::select_for_capacity(&mut conn, needed_capacity).await?
+    {
+        Some(sh) => sh,
+        None => {
+            tracing::warn!(
+                needed_capacity,
+                "unable to locate host with sufficient capacity"
+            );
+            let err_msg = serde_json::json!({"msg": ""});
+            return Ok((StatusCode::INSUFFICIENT_STORAGE, Json(err_msg)).into_response());
+        }
+    };
     let user_report = StorageHost::user_report(&mut conn, &storage_host_id, &user_id).await?;
 
     let mut storage_authorization: Option<String> = None;
@@ -197,7 +222,7 @@ pub async fn handler(
         let new_authorization = generate_new_storage_authorization(
             &database,
             &service_key,
-            &user_id.id(),
+            &user_id,
             &storage_host,
             data_size_rounded,
         )
@@ -221,7 +246,8 @@ pub async fn handler(
 
 fn rounded_storage_authorization(report: &UserStorageReport, additional_capacity: i64) -> i64 {
     let new_required_amount = report.current_consumption() + additional_capacity;
-    (new_required_amount / ONE_HUNDRED_MIB).ceil() * ONE_HUNDRED_MIB;
+    // Integer division always rounds down, we want to round up to the nearest 100MiB
+    ((new_required_amount / ONE_HUNDRED_MIB) + 1) * ONE_HUNDRED_MIB
 }
 
 /// Validates that a particular multipart field has the expected name and content type. Currently

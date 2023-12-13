@@ -229,7 +229,7 @@ impl Bucket {
                    LIMIT 1;"#,
             bucket_id,
         )
-        .fetch_optional(conn)
+        .fetch_optional(&mut *conn)
         .await?;
 
         if let Some(pending_id) = result {
