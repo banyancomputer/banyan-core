@@ -66,6 +66,8 @@ tracing-subscriber = { version = "^0.3", default-features = false, features = ["
 
 [dev-dependencies]
 hyper = "^0.14"
+proptest = "^1.4.0"
+proptest-derive = "^0.2.0"
 
 [features]
 fake = []
