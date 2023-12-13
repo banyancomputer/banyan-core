@@ -1,18 +1,17 @@
 mod all_metadata;
 mod current_metadata;
 mod delete_metadata;
-mod single_metadata;
-
 mod pull_metadata;
 mod push_metadata;
+mod single_metadata;
 
 use std::error::Error;
 
 use axum::body::HttpBody;
 use axum::routing::{get, post};
 use axum::Router;
-pub use push_metadata::STORAGE_TICKET_DURATION;
 
+pub use self::push_metadata::STORAGE_TICKET_DURATION;
 use crate::app::AppState;
 
 pub fn router<B>(state: AppState) -> Router<AppState, B>

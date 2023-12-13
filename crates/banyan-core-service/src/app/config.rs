@@ -19,6 +19,7 @@ pub struct Config {
 
     mailgun_signing_key: Option<String>,
 
+    service_name: String,
     service_key_path: PathBuf,
     upload_directory: PathBuf,
 }
@@ -63,6 +64,13 @@ impl Config {
             },
         };
 
+        let service_name = match cli_args.opt_value_from_str("--service-name")? {
+            Some(name) => name,
+            None => match std::env::var("SERVICE_NAME") {
+                Ok(sn) if !sn.is_empty() => sn,
+                _ => "banyan-core".to_string(),
+            },
+        };
         let service_key_str = match cli_args.opt_value_from_str("--service-key")? {
             Some(path) => path,
             None => match std::env::var("SERVICE_KEY") {
@@ -114,6 +122,7 @@ impl Config {
 
             mailgun_signing_key,
 
+            service_name,
             service_key_path,
             upload_directory,
         })
@@ -137,6 +146,10 @@ impl Config {
 
     pub fn mailgun_signing_key(&self) -> Option<&str> {
         self.mailgun_signing_key.as_deref()
+    }
+
+    pub fn service_name(&self) -> &str {
+        self.service_name.as_str()
     }
 
     pub fn service_key_path(&self) -> PathBuf {
@@ -176,6 +189,8 @@ fn print_help() {
     println!("                                  this is 127.0.0.1:3001");
     println!("    --mailgun, MAILGUN_KEY        Webhook signature verification key issued by");
     println!("                                  mailgun");
+    println!("    --service-name, SERVICE_NAME  Name of the service, used for identifying");
+    println!("                                  the service to other services");
     println!("    --service-key, SERVICE_KEY    Path to the p384 private key used for signing");
     println!("                                  tokens and identifying to other services");
     println!("    --upload-dir, UPLOAD_DIR      Path used to store uploaded client data\n");

@@ -1,5 +1,6 @@
 use sqlx::{FromRow, SqlitePool};
 
+pub mod models;
 mod sqlite;
 
 #[derive(FromRow)]

@@ -3,6 +3,7 @@ use std::sync::OnceLock;
 use regex::Regex;
 
 pub mod authenticated_client;
+mod block_reader;
 pub mod platform_identity;
 pub mod storage_grant;
 pub mod upload_store;
@@ -30,5 +31,6 @@ pub fn paired_id_validator() -> &'static Regex {
 }
 
 pub use authenticated_client::AuthenticatedClient;
+pub use block_reader::BlockReader;
 pub use platform_identity::PlatformIdentity;
 pub use storage_grant::StorageGrant;

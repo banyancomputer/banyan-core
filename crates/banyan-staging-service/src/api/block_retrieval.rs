@@ -4,13 +4,14 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 
 use crate::app::AppState;
+use crate::database::models::BlockDetails;
 use crate::database::Database;
-use crate::extractors::AuthenticatedClient;
+use crate::extractors::BlockReader;
 use crate::upload_store::{ObjectStore, UploadStore};
 
 pub async fn handler(
     State(state): State<AppState>,
-    client: AuthenticatedClient,
+    client: BlockReader,
     store: UploadStore,
     Path(cid): Path<String>,
 ) -> Result<Response, BlockRetrievalError> {
@@ -21,7 +22,7 @@ pub async fn handler(
         .expect("parsed cid to unparse");
 
     let block_details = block_from_normalized_cid(&db, &normalized_cid).await?;
-    if block_details.platform_id != client.platform_id().to_string() {
+    if !client.can_read_block(&block_details) {
         return Err(BlockRetrievalError::NotBlockOwner);
     }
 
@@ -57,16 +58,6 @@ pub async fn handler(
         .map_err(BlockRetrievalError::RetrievalFailed)?;
 
     Ok((StatusCode::OK, headers, data).into_response())
-}
-
-#[derive(sqlx::FromRow, Debug)]
-pub struct BlockDetails {
-    id: String,
-    platform_id: String,
-
-    file_path: String,
-    byte_offset: i32,
-    length: i32,
 }
 
 pub async fn block_from_normalized_cid(
