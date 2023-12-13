@@ -1,22 +1,16 @@
 use crate::database::models::ExplicitBigInt;
 use crate::database::DatabaseConnection;
 
+/// A partial version of a storage host encompassing only the data needed for clients that need to
+/// send data to the storage host.
 #[derive(sqlx::FromRow)]
-pub struct StorageHost {
+pub struct SelectedStorageHost {
     pub id: String,
-
     pub name: String,
     pub url: String,
-    pub fingerprint: String,
-
-    #[sqlx(rename = "pem")]
-    pub public_key: String,
-
-    pub used_storage: i64,
-    pub available_storage: i64,
 }
 
-impl StorageHost {
+impl SelectedStorageHost {
     /// Find the database ID of a storage host that has the requested capacity currently available.
     /// Will return None if no storage host has the requested capacity available. Does not prefer
     /// any storage host over any other.
@@ -25,8 +19,8 @@ impl StorageHost {
         required_bytes: i64,
     ) -> Result<Option<Self>, sqlx::Error> {
         sqlx::query_as!(
-            StorageHost,
-            r#"SELECT * FROM storage_hosts
+            Self,
+            r#"SELECT id,name,url FROM storage_hosts
                    WHERE (available_storage - used_storage) > $1
                    ORDER BY RANDOM()
                    LIMIT 1;"#,
@@ -35,7 +29,11 @@ impl StorageHost {
         .fetch_optional(&mut *conn)
         .await
     }
+}
 
+pub struct StorageHost;
+
+impl StorageHost {
     /// Retrieves the current known amount of data owned by a particular user that is located at
     /// the requested storage provider as well the reservation capacity the user currently has at
     /// that storage provider if any.

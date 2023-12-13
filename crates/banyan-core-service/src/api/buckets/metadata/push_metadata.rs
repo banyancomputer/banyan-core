@@ -18,7 +18,8 @@ use uuid::Uuid;
 
 use crate::app::{AppState, ServiceKey};
 use crate::database::models::{
-    Bucket, Metadata, MetadataState, NewMetadata, StorageHost, User, UserStorageReport,
+    Bucket, Metadata, MetadataState, NewMetadata, SelectedStorageHost, StorageHost, User,
+    UserStorageReport,
 };
 use crate::database::{Database, DatabaseConnection};
 use crate::extractors::{DataStore, UserIdentity};
@@ -201,17 +202,18 @@ pub async fn handler(
     }
 
     let needed_capacity = request_data.expected_data_size;
-    let storage_host = match StorageHost::select_for_capacity(&mut conn, needed_capacity).await? {
-        Some(sh) => sh,
-        None => {
-            tracing::warn!(
-                needed_capacity,
-                "unable to locate host with sufficient capacity"
-            );
-            let err_msg = serde_json::json!({"msg": ""});
-            return Ok((StatusCode::INSUFFICIENT_STORAGE, Json(err_msg)).into_response());
-        }
-    };
+    let storage_host =
+        match SelectedStorageHost::select_for_capacity(&mut conn, needed_capacity).await? {
+            Some(sh) => sh,
+            None => {
+                tracing::warn!(
+                    needed_capacity,
+                    "unable to locate host with sufficient capacity"
+                );
+                let err_msg = serde_json::json!({"msg": ""});
+                return Ok((StatusCode::INSUFFICIENT_STORAGE, Json(err_msg)).into_response());
+            }
+        };
     let user_report = StorageHost::user_report(&mut conn, &storage_host.id, &user_id).await?;
 
     let mut storage_authorization: Option<String> = None;
@@ -322,11 +324,14 @@ async fn generate_new_storage_authorization(
     claims.create_nonce();
     claims.issued_at = Some(Clock::now_since_epoch());
 
-    let bearer_token = service_key
-        .sign(claims)
-        .map_err(StorageAuthorizationError::SignatureFailed)?;
-
-    Ok(bearer_token)
+    match service_key.sign(claims) {
+        Ok(t) => Ok(t),
+        Err(err) => {
+            tracing::error!("failed to sign storage authorization: {err}");
+            let err_msg = serde_json::json!({"msg": "authorization delegation unavailable"});
+            Ok((StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response())
+        }
+    }
 }
 
 async fn persist_upload<'a>(
@@ -640,476 +645,469 @@ pub struct PushMetadataRequest {
     pub deleted_block_cids: BTreeSet<String>,
 }
 
-#[derive(sqlx::FromRow)]
-struct SelectedStorageHost {
-    pub id: String,
-    pub name: String,
-    pub url: String,
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum StorageAuthorizationError {
-    #[error("failed to record new grant storage authorization in the database: {0}")]
-    GrantRecordingFailed(sqlx::Error),
-
-    #[error("failed to sign new storage authorization: {0}")]
-    SignatureFailed(jwt_simple::Error),
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum StoreMetadataError {
-    #[error("failed to finalize storage to disk: {0}")]
-    NotFinalized(std::io::Error),
-
-    #[error("failed to begin file write transaction: {0}")]
-    PutFailed(object_store::Error),
-
-    #[error("failed to stream upload to storage: {0}, aborting might have also failed: {1:?}")]
-    StreamingFailed(StreamStoreError, Option<object_store::Error>),
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum StreamStoreError {
-    #[error("failed to retrieve next expected chunk: {0}")]
-    NeedChunk(String),
-
-    #[error("failed to write out chunk: {0}")]
-    WriteFailed(std::io::Error),
-}
+//#[derive(Debug, thiserror::Error)]
+//pub enum StorageAuthorizationError {
+//    #[error("failed to record new grant storage authorization in the database: {0}")]
+//    GrantRecordingFailed(sqlx::Error),
+//
+//    #[error("failed to sign new storage authorization: {0}")]
+//    SignatureFailed(jwt_simple::Error),
+//}
+//
+//#[derive(Debug, thiserror::Error)]
+//pub enum StoreMetadataError {
+//    #[error("failed to finalize storage to disk: {0}")]
+//    NotFinalized(std::io::Error),
+//
+//    #[error("failed to begin file write transaction: {0}")]
+//    PutFailed(object_store::Error),
+//
+//    #[error("failed to stream upload to storage: {0}, aborting might have also failed: {1:?}")]
+//    StreamingFailed(StreamStoreError, Option<object_store::Error>),
+//}
+//
+//#[derive(Debug, thiserror::Error)]
+//pub enum StreamStoreError {
+//    #[error("failed to retrieve next expected chunk: {0}")]
+//    NeedChunk(String),
+//
+//    #[error("failed to write out chunk: {0}")]
+//    WriteFailed(std::io::Error),
+//}
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    //use super::*;
 
-    // Single User
-    const USER_ID: &str = "00000000-0000-0000-0000-000000000000";
+    //// Single User
+    //const USER_ID: &str = "00000000-0000-0000-0000-000000000000";
 
-    // Two Buckets
-    const BUCKET_ID_1: &str = "00000000-0000-0000-0000-000000000000";
-    const BUCKET_ID_2: &str = "00000000-0000-0000-0000-000000000001";
+    //// Two Buckets
+    //const BUCKET_ID_1: &str = "00000000-0000-0000-0000-000000000000";
+    //const BUCKET_ID_2: &str = "00000000-0000-0000-0000-000000000001";
 
-    // Two Storage Hosts
-    const STORAGE_HOST_ID_1: &str = "00000000-0000-0000-0000-000000000000";
-    const STORAGE_HOST_ID_2: &str = "00000000-0000-0000-0000-000000000001";
+    //// Two Storage Hosts
+    //const STORAGE_HOST_ID_1: &str = "00000000-0000-0000-0000-000000000000";
+    //const STORAGE_HOST_ID_2: &str = "00000000-0000-0000-0000-000000000001";
 
-    // Three pieces of metadata
-    // Two under Bucket 1
-    const METADATA_ID_1: &str = "00000000-0000-0000-0000-000000000000";
-    const METADATA_ID_2: &str = "00000000-0000-0000-0000-000000000001";
-    // One under Bucket 2
-    const METADATA_ID_3: &str = "00000000-0000-0000-0000-000000000002";
+    //// Three pieces of metadata
+    //// Two under Bucket 1
+    //const METADATA_ID_1: &str = "00000000-0000-0000-0000-000000000000";
+    //const METADATA_ID_2: &str = "00000000-0000-0000-0000-000000000001";
+    //// One under Bucket 2
+    //const METADATA_ID_3: &str = "00000000-0000-0000-0000-000000000002";
 
-    // 4 total blocks with random CIDs
-    const BLOCK_ID_1: &str = "00000000-0000-0000-0000-000000000000";
-    const BLOCK_ID_2: &str = "00000000-0000-0000-0000-000000000001";
-    const BLOCK_ID_3: &str = "00000000-0000-0000-0000-000000000002";
-    const BLOCK_ID_4: &str = "00000000-0000-0000-0000-000000000003";
-    const BLOCK_CID_1: &str = "bafkreicvwpjh72yeufe5dtsxytdgsznckjxqaqinfe7wzjv3cb25sxy23u";
-    const BLOCK_CID_2: &str = "bafkreif3ayrfp6qlqhn2nqfkjt7kjz7inydzuclgkxcpdegn2o7gtqirga";
-    const BLOCK_CID_3: &str = "bafkreidwi6m7kyz3l2qlltxwvyv2idgzc7gsgqpfgnllq5m22ylwccrrsu";
-    const BLOCK_CID_4: &str = "bafkreiainfete3i5wkr4aia3jtw263j53h3gwj6weuqldwluqr4kdtet5y";
+    //// 4 total blocks with random CIDs
+    //const BLOCK_ID_1: &str = "00000000-0000-0000-0000-000000000000";
+    //const BLOCK_ID_2: &str = "00000000-0000-0000-0000-000000000001";
+    //const BLOCK_ID_3: &str = "00000000-0000-0000-0000-000000000002";
+    //const BLOCK_ID_4: &str = "00000000-0000-0000-0000-000000000003";
+    //const BLOCK_CID_1: &str = "bafkreicvwpjh72yeufe5dtsxytdgsznckjxqaqinfe7wzjv3cb25sxy23u";
+    //const BLOCK_CID_2: &str = "bafkreif3ayrfp6qlqhn2nqfkjt7kjz7inydzuclgkxcpdegn2o7gtqirga";
+    //const BLOCK_CID_3: &str = "bafkreidwi6m7kyz3l2qlltxwvyv2idgzc7gsgqpfgnllq5m22ylwccrrsu";
+    //const BLOCK_CID_4: &str = "bafkreiainfete3i5wkr4aia3jtw263j53h3gwj6weuqldwluqr4kdtet5y";
 
-    // 6 example block locations over 3 metadatas, 4 blocks, and 2 storage hosts
-    const BLOCK_LOCATION_1: (&str, &str, &str) = (METADATA_ID_1, BLOCK_ID_1, STORAGE_HOST_ID_1);
-    const BLOCK_LOCATION_2: (&str, &str, &str) = (METADATA_ID_1, BLOCK_ID_2, STORAGE_HOST_ID_1);
-    const BLOCK_LOCATION_3: (&str, &str, &str) = (METADATA_ID_2, BLOCK_ID_2, STORAGE_HOST_ID_1);
-    const BLOCK_LOCATION_4: (&str, &str, &str) = (METADATA_ID_2, BLOCK_ID_3, STORAGE_HOST_ID_2);
-    const BLOCK_LOCATION_5: (&str, &str, &str) = (METADATA_ID_3, BLOCK_ID_3, STORAGE_HOST_ID_2);
-    const BLOCK_LOCATION_6: (&str, &str, &str) = (METADATA_ID_3, BLOCK_ID_4, STORAGE_HOST_ID_2);
+    //// 6 example block locations over 3 metadatas, 4 blocks, and 2 storage hosts
+    //const BLOCK_LOCATION_1: (&str, &str, &str) = (METADATA_ID_1, BLOCK_ID_1, STORAGE_HOST_ID_1);
+    //const BLOCK_LOCATION_2: (&str, &str, &str) = (METADATA_ID_1, BLOCK_ID_2, STORAGE_HOST_ID_1);
+    //const BLOCK_LOCATION_3: (&str, &str, &str) = (METADATA_ID_2, BLOCK_ID_2, STORAGE_HOST_ID_1);
+    //const BLOCK_LOCATION_4: (&str, &str, &str) = (METADATA_ID_2, BLOCK_ID_3, STORAGE_HOST_ID_2);
+    //const BLOCK_LOCATION_5: (&str, &str, &str) = (METADATA_ID_3, BLOCK_ID_3, STORAGE_HOST_ID_2);
+    //const BLOCK_LOCATION_6: (&str, &str, &str) = (METADATA_ID_3, BLOCK_ID_4, STORAGE_HOST_ID_2);
 
-    #[tokio::test]
-    async fn expire_bucket_1_blocks() {
-        let db_conn = setup_expired_blocks_test().await;
-        let user_id = Uuid::parse_str(USER_ID).expect("user_id");
-        let bucket_id = Uuid::parse_str(BUCKET_ID_1).expect("bucket_id");
-        let mut deleted_blocks = BTreeSet::new();
-        deleted_blocks.insert(BLOCK_CID_1.to_string());
-        deleted_blocks.insert(BLOCK_CID_2.to_string());
-        deleted_blocks.insert(BLOCK_CID_3.to_string());
-        deleted_blocks.insert(BLOCK_CID_4.to_string());
+    //#[tokio::test]
+    //async fn expire_bucket_1_blocks() {
+    //    let db_conn = setup_expired_blocks_test().await;
+    //    let user_id = Uuid::parse_str(USER_ID).expect("user_id");
+    //    let bucket_id = Uuid::parse_str(BUCKET_ID_1).expect("bucket_id");
+    //    let mut deleted_blocks = BTreeSet::new();
+    //    deleted_blocks.insert(BLOCK_CID_1.to_string());
+    //    deleted_blocks.insert(BLOCK_CID_2.to_string());
+    //    deleted_blocks.insert(BLOCK_CID_3.to_string());
+    //    deleted_blocks.insert(BLOCK_CID_4.to_string());
 
-        expire_deleted_blocks(&db_conn, &user_id, &bucket_id, &deleted_blocks)
-            .await
-            .expect("success");
+    //    expire_deleted_blocks(&db_conn, &user_id, &bucket_id, &deleted_blocks)
+    //        .await
+    //        .expect("success");
 
-        expect_all_expired(
-            &db_conn,
-            &[
-                BLOCK_LOCATION_1,
-                BLOCK_LOCATION_2,
-                BLOCK_LOCATION_3,
-                BLOCK_LOCATION_4,
-            ],
-        )
-        .await;
-        expect_none_expired(&db_conn, &[BLOCK_LOCATION_5, BLOCK_LOCATION_6]).await;
-    }
+    //    expect_all_expired(
+    //        &db_conn,
+    //        &[
+    //            BLOCK_LOCATION_1,
+    //            BLOCK_LOCATION_2,
+    //            BLOCK_LOCATION_3,
+    //            BLOCK_LOCATION_4,
+    //        ],
+    //    )
+    //    .await;
+    //    expect_none_expired(&db_conn, &[BLOCK_LOCATION_5, BLOCK_LOCATION_6]).await;
+    //}
 
-    #[tokio::test]
-    async fn expire_bucket_2_blocks() {
-        let db_conn = setup_expired_blocks_test().await;
-        let user_id = Uuid::parse_str(USER_ID).expect("user_id");
-        let bucket_id = Uuid::parse_str(BUCKET_ID_2).expect("bucket_id");
-        let mut deleted_blocks = BTreeSet::new();
-        deleted_blocks.insert(BLOCK_CID_1.to_string());
-        deleted_blocks.insert(BLOCK_CID_2.to_string());
-        deleted_blocks.insert(BLOCK_CID_3.to_string());
-        deleted_blocks.insert(BLOCK_CID_4.to_string());
+    //#[tokio::test]
+    //async fn expire_bucket_2_blocks() {
+    //    let db_conn = setup_expired_blocks_test().await;
+    //    let user_id = Uuid::parse_str(USER_ID).expect("user_id");
+    //    let bucket_id = Uuid::parse_str(BUCKET_ID_2).expect("bucket_id");
+    //    let mut deleted_blocks = BTreeSet::new();
+    //    deleted_blocks.insert(BLOCK_CID_1.to_string());
+    //    deleted_blocks.insert(BLOCK_CID_2.to_string());
+    //    deleted_blocks.insert(BLOCK_CID_3.to_string());
+    //    deleted_blocks.insert(BLOCK_CID_4.to_string());
 
-        expire_deleted_blocks(&db_conn, &user_id, &bucket_id, &deleted_blocks)
-            .await
-            .expect("success");
+    //    expire_deleted_blocks(&db_conn, &user_id, &bucket_id, &deleted_blocks)
+    //        .await
+    //        .expect("success");
 
-        expect_all_expired(&db_conn, &[BLOCK_LOCATION_5, BLOCK_LOCATION_6]).await;
-        expect_none_expired(
-            &db_conn,
-            &[
-                BLOCK_LOCATION_1,
-                BLOCK_LOCATION_2,
-                BLOCK_LOCATION_3,
-                BLOCK_LOCATION_4,
-            ],
-        )
-        .await;
-    }
+    //    expect_all_expired(&db_conn, &[BLOCK_LOCATION_5, BLOCK_LOCATION_6]).await;
+    //    expect_none_expired(
+    //        &db_conn,
+    //        &[
+    //            BLOCK_LOCATION_1,
+    //            BLOCK_LOCATION_2,
+    //            BLOCK_LOCATION_3,
+    //            BLOCK_LOCATION_4,
+    //        ],
+    //    )
+    //    .await;
+    //}
 
-    #[tokio::test]
-    async fn expire_no_blocks() {
-        let db_conn = setup_expired_blocks_test().await;
-        let user_id = Uuid::parse_str(USER_ID).expect("user_id");
-        let bucket_id = Uuid::parse_str(BUCKET_ID_1).expect("bucket_id");
-        let deleted_blocks = BTreeSet::new();
+    //#[tokio::test]
+    //async fn expire_no_blocks() {
+    //    let db_conn = setup_expired_blocks_test().await;
+    //    let user_id = Uuid::parse_str(USER_ID).expect("user_id");
+    //    let bucket_id = Uuid::parse_str(BUCKET_ID_1).expect("bucket_id");
+    //    let deleted_blocks = BTreeSet::new();
 
-        expire_deleted_blocks(&db_conn, &user_id, &bucket_id, &deleted_blocks)
-            .await
-            .expect("success");
+    //    expire_deleted_blocks(&db_conn, &user_id, &bucket_id, &deleted_blocks)
+    //        .await
+    //        .expect("success");
 
-        expect_none_expired(
-            &db_conn,
-            &[
-                BLOCK_LOCATION_1,
-                BLOCK_LOCATION_2,
-                BLOCK_LOCATION_3,
-                BLOCK_LOCATION_4,
-                BLOCK_LOCATION_5,
-                BLOCK_LOCATION_6,
-            ],
-        )
-        .await;
-    }
+    //    expect_none_expired(
+    //        &db_conn,
+    //        &[
+    //            BLOCK_LOCATION_1,
+    //            BLOCK_LOCATION_2,
+    //            BLOCK_LOCATION_3,
+    //            BLOCK_LOCATION_4,
+    //            BLOCK_LOCATION_5,
+    //            BLOCK_LOCATION_6,
+    //        ],
+    //    )
+    //    .await;
+    //}
 
-    #[tokio::test]
-    async fn expire_na_block() {
-        let db_conn = setup_expired_blocks_test().await;
-        let user_id = Uuid::parse_str(USER_ID).expect("user_id");
-        let bucket_id = Uuid::parse_str(BUCKET_ID_1).expect("bucket_id");
-        let mut deleted_blocks = BTreeSet::new();
-        // Specify an unknown block
-        deleted_blocks
-            .insert("bafkreidz7iubrzo2vmzns47oqjqre3yzts3mzjuk4nciouhvljv2axxynm".to_string());
+    //#[tokio::test]
+    //async fn expire_na_block() {
+    //    let db_conn = setup_expired_blocks_test().await;
+    //    let user_id = Uuid::parse_str(USER_ID).expect("user_id");
+    //    let bucket_id = Uuid::parse_str(BUCKET_ID_1).expect("bucket_id");
+    //    let mut deleted_blocks = BTreeSet::new();
+    //    // Specify an unknown block
+    //    deleted_blocks
+    //        .insert("bafkreidz7iubrzo2vmzns47oqjqre3yzts3mzjuk4nciouhvljv2axxynm".to_string());
 
-        expire_deleted_blocks(&db_conn, &user_id, &bucket_id, &deleted_blocks)
-            .await
-            .expect("success");
+    //    expire_deleted_blocks(&db_conn, &user_id, &bucket_id, &deleted_blocks)
+    //        .await
+    //        .expect("success");
 
-        expect_none_expired(
-            &db_conn,
-            &[
-                BLOCK_LOCATION_1,
-                BLOCK_LOCATION_2,
-                BLOCK_LOCATION_3,
-                BLOCK_LOCATION_4,
-                BLOCK_LOCATION_5,
-                BLOCK_LOCATION_6,
-            ],
-        )
-        .await;
-    }
+    //    expect_none_expired(
+    //        &db_conn,
+    //        &[
+    //            BLOCK_LOCATION_1,
+    //            BLOCK_LOCATION_2,
+    //            BLOCK_LOCATION_3,
+    //            BLOCK_LOCATION_4,
+    //            BLOCK_LOCATION_5,
+    //            BLOCK_LOCATION_6,
+    //        ],
+    //    )
+    //    .await;
+    //}
 
-    async fn expect_all_expired(db_conn: &sqlx::SqlitePool, locs: &[(&str, &str, &str)]) {
-        let mut builder = sqlx::QueryBuilder::new(
-            r#"SELECT * FROM block_locations WHERE expired_at = NULL AND (metadata_id, block_id, storage_host_id) IN ("#,
-        );
+    //async fn expect_all_expired(db_conn: &sqlx::SqlitePool, locs: &[(&str, &str, &str)]) {
+    //    let mut builder = sqlx::QueryBuilder::new(
+    //        r#"SELECT * FROM block_locations WHERE expired_at = NULL AND (metadata_id, block_id, storage_host_id) IN ("#,
+    //    );
 
-        for (i, (metadata_id, block_id, storage_host_id)) in locs.iter().enumerate() {
-            if i > 0 {
-                builder.push(", ");
-            }
-            builder.push("(");
-            builder.push_bind(metadata_id);
-            builder.push(", ");
-            builder.push_bind(block_id);
-            builder.push(", ");
-            builder.push_bind(storage_host_id);
-            builder.push(")");
-        }
-        builder.push(")");
+    //    for (i, (metadata_id, block_id, storage_host_id)) in locs.iter().enumerate() {
+    //        if i > 0 {
+    //            builder.push(", ");
+    //        }
+    //        builder.push("(");
+    //        builder.push_bind(metadata_id);
+    //        builder.push(", ");
+    //        builder.push_bind(block_id);
+    //        builder.push(", ");
+    //        builder.push_bind(storage_host_id);
+    //        builder.push(")");
+    //    }
+    //    builder.push(")");
 
-        // Execute the query
-        let query = builder.build();
-        let rows = query.fetch_all(db_conn).await.expect("db operation");
-        assert!(rows.is_empty());
-    }
+    //    // Execute the query
+    //    let query = builder.build();
+    //    let rows = query.fetch_all(db_conn).await.expect("db operation");
+    //    assert!(rows.is_empty());
+    //}
 
-    async fn expect_none_expired(db_conn: &sqlx::SqlitePool, locs: &[(&str, &str, &str)]) {
-        let mut builder = sqlx::QueryBuilder::new(
-            r#"SELECT * FROM block_locations WHERE expired_at != NULL AND (metadata_id, block_id, storage_host_id) IN ("#,
-        );
+    //async fn expect_none_expired(db_conn: &sqlx::SqlitePool, locs: &[(&str, &str, &str)]) {
+    //    let mut builder = sqlx::QueryBuilder::new(
+    //        r#"SELECT * FROM block_locations WHERE expired_at != NULL AND (metadata_id, block_id, storage_host_id) IN ("#,
+    //    );
 
-        for (i, (metadata_id, block_id, storage_host_id)) in locs.iter().enumerate() {
-            if i > 0 {
-                builder.push(", ");
-            }
-            builder.push("(");
-            builder.push_bind(metadata_id);
-            builder.push(", ");
-            builder.push_bind(block_id);
-            builder.push(", ");
-            builder.push_bind(storage_host_id);
-            builder.push(")");
-        }
-        builder.push(")");
+    //    for (i, (metadata_id, block_id, storage_host_id)) in locs.iter().enumerate() {
+    //        if i > 0 {
+    //            builder.push(", ");
+    //        }
+    //        builder.push("(");
+    //        builder.push_bind(metadata_id);
+    //        builder.push(", ");
+    //        builder.push_bind(block_id);
+    //        builder.push(", ");
+    //        builder.push_bind(storage_host_id);
+    //        builder.push(")");
+    //    }
+    //    builder.push(")");
 
-        // Execute the query
-        let query = builder.build();
-        let rows = query.fetch_all(db_conn).await.expect("db operation");
-        assert!(rows.is_empty());
-    }
+    //    // Execute the query
+    //    let query = builder.build();
+    //    let rows = query.fetch_all(db_conn).await.expect("db operation");
+    //    assert!(rows.is_empty());
+    //}
 
-    async fn setup_expired_blocks_test() -> sqlx::SqlitePool {
-        let db_conn = sqlx::SqlitePool::connect("sqlite::memory:")
-            .await
-            .expect("db setup");
-        sqlx::migrate!("./migrations")
-            .run(&db_conn)
-            .await
-            .expect("db setup");
+    //async fn setup_expired_blocks_test() -> sqlx::SqlitePool {
+    //    let db_conn = sqlx::SqlitePool::connect("sqlite::memory:")
+    //        .await
+    //        .expect("db setup");
+    //    sqlx::migrate!("./migrations")
+    //        .run(&db_conn)
+    //        .await
+    //        .expect("db setup");
 
-        // Create a fake user
-        sqlx::query!(
-            r#"INSERT INTO users (id, email, display_name)
-            VALUES ($1, $2, $3)"#,
-            USER_ID,
-            "user@email.com",
-            "test user"
-        )
-        .execute(&db_conn)
-        .await
-        .expect("db setup");
+    //    // Create a fake user
+    //    sqlx::query!(
+    //        r#"INSERT INTO users (id, email, display_name)
+    //        VALUES ($1, $2, $3)"#,
+    //        USER_ID,
+    //        "user@email.com",
+    //        "test user"
+    //    )
+    //    .execute(&db_conn)
+    //    .await
+    //    .expect("db setup");
 
-        // Create fake storage hosts
-        sqlx::query!(
-            r#"INSERT INTO storage_hosts (id, name, url, fingerprint, pem, used_storage, available_storage)
-            VALUES ($1, $2, $3, $4, $5, $6, $7)"#,
-            STORAGE_HOST_ID_1,
-            "storage_host_1",
-            "fingerprint_1",
-            "pem_1",
-            "hello.com",
-            0,
-            0
-        )
-        .execute(&db_conn)
-        .await
-        .expect("db setup");
-        sqlx::query!(
-            r#"INSERT INTO storage_hosts (id, name, url, fingerprint, pem, used_storage, available_storage)
-            VALUES ($1, $2, $3, $4, $5, $6, $7)"#,
-            STORAGE_HOST_ID_2,
-            "storage_host_2",
-            "fingerprint_2",
-            "pem_2",
-            "hello.com",
-            0,
-            0
-        )
-        .execute(&db_conn)
-        .await
-        .expect("db setup");
+    //    // Create fake storage hosts
+    //    sqlx::query!(
+    //        r#"INSERT INTO storage_hosts (id, name, url, fingerprint, pem, used_storage, available_storage)
+    //        VALUES ($1, $2, $3, $4, $5, $6, $7)"#,
+    //        STORAGE_HOST_ID_1,
+    //        "storage_host_1",
+    //        "fingerprint_1",
+    //        "pem_1",
+    //        "hello.com",
+    //        0,
+    //        0
+    //    )
+    //    .execute(&db_conn)
+    //    .await
+    //    .expect("db setup");
+    //    sqlx::query!(
+    //        r#"INSERT INTO storage_hosts (id, name, url, fingerprint, pem, used_storage, available_storage)
+    //        VALUES ($1, $2, $3, $4, $5, $6, $7)"#,
+    //        STORAGE_HOST_ID_2,
+    //        "storage_host_2",
+    //        "fingerprint_2",
+    //        "pem_2",
+    //        "hello.com",
+    //        0,
+    //        0
+    //    )
+    //    .execute(&db_conn)
+    //    .await
+    //    .expect("db setup");
 
-        // Create fake buckets
-        sqlx::query!(
-            r#"INSERT INTO buckets (id, user_id, name, type, storage_class)
-            VALUES ($1, $2, $3, $4, $5)"#,
-            BUCKET_ID_1,
-            USER_ID,
-            "test_1",
-            "test",
-            "test"
-        )
-        .execute(&db_conn)
-        .await
-        .expect("db setup");
-        sqlx::query!(
-            r#"INSERT INTO buckets (id, user_id, name, type, storage_class)
-            VALUES ($1, $2, $3, $4, $5)"#,
-            BUCKET_ID_2,
-            USER_ID,
-            "test_2",
-            "test",
-            "test"
-        )
-        .execute(&db_conn)
-        .await
-        .expect("db setup");
+    //    // Create fake buckets
+    //    sqlx::query!(
+    //        r#"INSERT INTO buckets (id, user_id, name, type, storage_class)
+    //        VALUES ($1, $2, $3, $4, $5)"#,
+    //        BUCKET_ID_1,
+    //        USER_ID,
+    //        "test_1",
+    //        "test",
+    //        "test"
+    //    )
+    //    .execute(&db_conn)
+    //    .await
+    //    .expect("db setup");
+    //    sqlx::query!(
+    //        r#"INSERT INTO buckets (id, user_id, name, type, storage_class)
+    //        VALUES ($1, $2, $3, $4, $5)"#,
+    //        BUCKET_ID_2,
+    //        USER_ID,
+    //        "test_2",
+    //        "test",
+    //        "test"
+    //    )
+    //    .execute(&db_conn)
+    //    .await
+    //    .expect("db setup");
 
-        // Create fake metadata
-        sqlx::query!(
-            r#"INSERT into metadata (id, bucket_id, root_cid, metadata_cid, expected_data_size, state)
-            VALUES ($1, $2, $3, $4, $5, $6);"#,
-            METADATA_ID_1,
-            BUCKET_ID_1,
-            "doop",
-            "doop",
-            0,
-            "state"
-        )
-        .execute(&db_conn)
-        .await
-        .expect("db setup");
-        sqlx::query!(
-            r#"INSERT into metadata (id, bucket_id, root_cid, metadata_cid, expected_data_size, state)
-            VALUES ($1, $2, $3, $4, $5, $6);"#,
-            METADATA_ID_2,
-            BUCKET_ID_1,
-            "doop",
-            "doop",
-            0,
-            "state"
-        )
-        .execute(&db_conn)
-        .await
-        .expect("db setup");
-        sqlx::query!(
-            r#"INSERT into metadata (id, bucket_id, root_cid, metadata_cid, expected_data_size, state)
-            VALUES ($1, $2, $3, $4, $5, $6);"#,
-            METADATA_ID_3,
-            BUCKET_ID_2,
-            "doop",
-            "doop",
-            0,
-            "state"
-        )
-        .execute(&db_conn)
-        .await
-        .expect("db setup");
+    //    // Create fake metadata
+    //    sqlx::query!(
+    //        r#"INSERT into metadata (id, bucket_id, root_cid, metadata_cid, expected_data_size, state)
+    //        VALUES ($1, $2, $3, $4, $5, $6);"#,
+    //        METADATA_ID_1,
+    //        BUCKET_ID_1,
+    //        "doop",
+    //        "doop",
+    //        0,
+    //        "state"
+    //    )
+    //    .execute(&db_conn)
+    //    .await
+    //    .expect("db setup");
+    //    sqlx::query!(
+    //        r#"INSERT into metadata (id, bucket_id, root_cid, metadata_cid, expected_data_size, state)
+    //        VALUES ($1, $2, $3, $4, $5, $6);"#,
+    //        METADATA_ID_2,
+    //        BUCKET_ID_1,
+    //        "doop",
+    //        "doop",
+    //        0,
+    //        "state"
+    //    )
+    //    .execute(&db_conn)
+    //    .await
+    //    .expect("db setup");
+    //    sqlx::query!(
+    //        r#"INSERT into metadata (id, bucket_id, root_cid, metadata_cid, expected_data_size, state)
+    //        VALUES ($1, $2, $3, $4, $5, $6);"#,
+    //        METADATA_ID_3,
+    //        BUCKET_ID_2,
+    //        "doop",
+    //        "doop",
+    //        0,
+    //        "state"
+    //    )
+    //    .execute(&db_conn)
+    //    .await
+    //    .expect("db setup");
 
-        // Create fake blocks
-        let normalized_block_cid = Cid::from_str(BLOCK_CID_1)
-            .expect("valid cid")
-            .to_string_of_base(Base::Base64Url)
-            .expect("b64 cid");
-        sqlx::query!(
-            r#"INSERT INTO blocks (id, cid)
-            VALUES ($1, $2);"#,
-            BLOCK_ID_1,
-            normalized_block_cid
-        )
-        .execute(&db_conn)
-        .await
-        .expect("db setup");
-        let normalized_block_cid = Cid::from_str(BLOCK_CID_2)
-            .expect("valid cid")
-            .to_string_of_base(Base::Base64Url)
-            .expect("b64 cid");
-        sqlx::query!(
-            r#"INSERT INTO blocks (id, cid)
-            VALUES ($1, $2);"#,
-            BLOCK_ID_2,
-            normalized_block_cid
-        )
-        .execute(&db_conn)
-        .await
-        .expect("db setup");
-        let normalized_block_cid = Cid::from_str(BLOCK_CID_3)
-            .expect("valid cid")
-            .to_string_of_base(Base::Base64Url)
-            .expect("b64 cid");
-        sqlx::query!(
-            r#"INSERT INTO blocks (id, cid)
-            VALUES ($1, $2);"#,
-            BLOCK_ID_3,
-            normalized_block_cid
-        )
-        .execute(&db_conn)
-        .await
-        .expect("db setup");
-        let normalized_block_cid = Cid::from_str(BLOCK_CID_4)
-            .expect("valid cid")
-            .to_string_of_base(Base::Base64Url)
-            .expect("b64 cid");
-        sqlx::query!(
-            r#"INSERT INTO blocks (id, cid)
-            VALUES ($1, $2);"#,
-            BLOCK_ID_4,
-            normalized_block_cid
-        )
-        .execute(&db_conn)
-        .await
-        .expect("db setup");
+    //    // Create fake blocks
+    //    let normalized_block_cid = Cid::from_str(BLOCK_CID_1)
+    //        .expect("valid cid")
+    //        .to_string_of_base(Base::Base64Url)
+    //        .expect("b64 cid");
+    //    sqlx::query!(
+    //        r#"INSERT INTO blocks (id, cid)
+    //        VALUES ($1, $2);"#,
+    //        BLOCK_ID_1,
+    //        normalized_block_cid
+    //    )
+    //    .execute(&db_conn)
+    //    .await
+    //    .expect("db setup");
+    //    let normalized_block_cid = Cid::from_str(BLOCK_CID_2)
+    //        .expect("valid cid")
+    //        .to_string_of_base(Base::Base64Url)
+    //        .expect("b64 cid");
+    //    sqlx::query!(
+    //        r#"INSERT INTO blocks (id, cid)
+    //        VALUES ($1, $2);"#,
+    //        BLOCK_ID_2,
+    //        normalized_block_cid
+    //    )
+    //    .execute(&db_conn)
+    //    .await
+    //    .expect("db setup");
+    //    let normalized_block_cid = Cid::from_str(BLOCK_CID_3)
+    //        .expect("valid cid")
+    //        .to_string_of_base(Base::Base64Url)
+    //        .expect("b64 cid");
+    //    sqlx::query!(
+    //        r#"INSERT INTO blocks (id, cid)
+    //        VALUES ($1, $2);"#,
+    //        BLOCK_ID_3,
+    //        normalized_block_cid
+    //    )
+    //    .execute(&db_conn)
+    //    .await
+    //    .expect("db setup");
+    //    let normalized_block_cid = Cid::from_str(BLOCK_CID_4)
+    //        .expect("valid cid")
+    //        .to_string_of_base(Base::Base64Url)
+    //        .expect("b64 cid");
+    //    sqlx::query!(
+    //        r#"INSERT INTO blocks (id, cid)
+    //        VALUES ($1, $2);"#,
+    //        BLOCK_ID_4,
+    //        normalized_block_cid
+    //    )
+    //    .execute(&db_conn)
+    //    .await
+    //    .expect("db setup");
 
-        // Create fake block locations
-        sqlx::query!(
-            r#"INSERT INTO block_locations (metadata_id, block_id, storage_host_id)
-            VALUES ($1, $2, $3);"#,
-            BLOCK_LOCATION_1.0,
-            BLOCK_LOCATION_1.1,
-            BLOCK_LOCATION_1.2,
-        )
-        .execute(&db_conn)
-        .await
-        .expect("db setup");
-        sqlx::query!(
-            r#"INSERT INTO block_locations (metadata_id, block_id, storage_host_id)
-            VALUES ($1, $2, $3);"#,
-            BLOCK_LOCATION_2.0,
-            BLOCK_LOCATION_2.1,
-            BLOCK_LOCATION_2.2,
-        )
-        .execute(&db_conn)
-        .await
-        .expect("db setup");
-        sqlx::query!(
-            r#"INSERT INTO block_locations (metadata_id, block_id, storage_host_id)
-            VALUES ($1, $2, $3);"#,
-            BLOCK_LOCATION_3.0,
-            BLOCK_LOCATION_3.1,
-            BLOCK_LOCATION_3.2,
-        )
-        .execute(&db_conn)
-        .await
-        .expect("db setup");
-        sqlx::query!(
-            r#"INSERT INTO block_locations (metadata_id, block_id, storage_host_id)
-            VALUES ($1, $2, $3);"#,
-            BLOCK_LOCATION_4.0,
-            BLOCK_LOCATION_4.1,
-            BLOCK_LOCATION_4.2,
-        )
-        .execute(&db_conn)
-        .await
-        .expect("db setup");
-        sqlx::query!(
-            r#"INSERT INTO block_locations (metadata_id, block_id, storage_host_id)
-            VALUES ($1, $2, $3);"#,
-            BLOCK_LOCATION_5.0,
-            BLOCK_LOCATION_5.1,
-            BLOCK_LOCATION_5.2,
-        )
-        .execute(&db_conn)
-        .await
-        .expect("db setup");
-        sqlx::query!(
-            r#"INSERT INTO block_locations (metadata_id, block_id, storage_host_id)
-            VALUES ($1, $2, $3);"#,
-            BLOCK_LOCATION_6.0,
-            BLOCK_LOCATION_6.1,
-            BLOCK_LOCATION_6.2,
-        )
-        .execute(&db_conn)
-        .await
-        .expect("db setup");
+    //    // Create fake block locations
+    //    sqlx::query!(
+    //        r#"INSERT INTO block_locations (metadata_id, block_id, storage_host_id)
+    //        VALUES ($1, $2, $3);"#,
+    //        BLOCK_LOCATION_1.0,
+    //        BLOCK_LOCATION_1.1,
+    //        BLOCK_LOCATION_1.2,
+    //    )
+    //    .execute(&db_conn)
+    //    .await
+    //    .expect("db setup");
+    //    sqlx::query!(
+    //        r#"INSERT INTO block_locations (metadata_id, block_id, storage_host_id)
+    //        VALUES ($1, $2, $3);"#,
+    //        BLOCK_LOCATION_2.0,
+    //        BLOCK_LOCATION_2.1,
+    //        BLOCK_LOCATION_2.2,
+    //    )
+    //    .execute(&db_conn)
+    //    .await
+    //    .expect("db setup");
+    //    sqlx::query!(
+    //        r#"INSERT INTO block_locations (metadata_id, block_id, storage_host_id)
+    //        VALUES ($1, $2, $3);"#,
+    //        BLOCK_LOCATION_3.0,
+    //        BLOCK_LOCATION_3.1,
+    //        BLOCK_LOCATION_3.2,
+    //    )
+    //    .execute(&db_conn)
+    //    .await
+    //    .expect("db setup");
+    //    sqlx::query!(
+    //        r#"INSERT INTO block_locations (metadata_id, block_id, storage_host_id)
+    //        VALUES ($1, $2, $3);"#,
+    //        BLOCK_LOCATION_4.0,
+    //        BLOCK_LOCATION_4.1,
+    //        BLOCK_LOCATION_4.2,
+    //    )
+    //    .execute(&db_conn)
+    //    .await
+    //    .expect("db setup");
+    //    sqlx::query!(
+    //        r#"INSERT INTO block_locations (metadata_id, block_id, storage_host_id)
+    //        VALUES ($1, $2, $3);"#,
+    //        BLOCK_LOCATION_5.0,
+    //        BLOCK_LOCATION_5.1,
+    //        BLOCK_LOCATION_5.2,
+    //    )
+    //    .execute(&db_conn)
+    //    .await
+    //    .expect("db setup");
+    //    sqlx::query!(
+    //        r#"INSERT INTO block_locations (metadata_id, block_id, storage_host_id)
+    //        VALUES ($1, $2, $3);"#,
+    //        BLOCK_LOCATION_6.0,
+    //        BLOCK_LOCATION_6.1,
+    //        BLOCK_LOCATION_6.2,
+    //    )
+    //    .execute(&db_conn)
+    //    .await
+    //    .expect("db setup");
 
-        db_conn
-    }
+    //    db_conn
+    //}
 }

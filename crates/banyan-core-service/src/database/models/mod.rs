@@ -24,7 +24,7 @@ pub use metadata_state::MetadataState;
 pub use partial_metadata_with_snapshot::PartialMetadataWithSnapshot;
 pub use snapshot::Snapshot;
 pub use storage_class::StorageClass;
-pub use storage_host::{StorageHost, UserStorageReport};
+pub use storage_host::{SelectedStorageHost, StorageHost, UserStorageReport};
 pub use user::User;
 
 /// Something about sqlx's type detection fails on complex queries such as the result of COALESCE
