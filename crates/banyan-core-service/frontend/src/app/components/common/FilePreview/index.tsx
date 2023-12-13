@@ -1,9 +1,8 @@
-import React from 'react';
-// @ts-ignore
-import FilePreviewer from 'react-file-previewer';
+import mime from 'mime';
 
 import { Loader } from '@components/common/Loader';
 import { FileIcon } from '@components/common/FileIcon';
+import { SpreadsheetViewer } from './SpreadsheetViewer';
 
 import { useFilePreview } from '@/app/contexts/filesPreview';
 
@@ -39,14 +38,14 @@ export const FilePreview = () => {
                     className="max-w-filePreview max-h-full object-contain rounded-2xl"
                     onClick={event => event.stopPropagation()}
                 />;
+            case 'spreadsheet':
+                return <SpreadsheetViewer data={file.blob!} />
             case 'document':
-                return <div className='w-filePreview max-w-filePreview' onClick={event => event.stopPropagation()}>
-                    <FilePreviewer
-                        hideControls
-                        file={{
-                            url: file.data,
-                            mimeType: `application/${[...file.name.split('.')].pop()}`,
-                        }}
+                return <div className='w-filePreview max-w-filePreview h-full' onClick={event => event.stopPropagation()}>
+                    <object
+                        data={data}
+                        type={`${mime.getType([...file.name.split('.')].pop() || '')}`}
+                        className="w-full h-full rounded-xl"
                     />
                 </div>
             default:
@@ -79,7 +78,7 @@ export const FilePreview = () => {
                         className='right-4 rotate-90'
                     />
                     <div
-                        className={`fixed w-screen h-[105vh] flex ${file.fileType === 'document' ? 'items-start' : 'items-center'} justify-center py-16 pb-20 z-20 bg-slate-800 bg-opacity-80 backdrop-blur-sm overflow-scroll`}
+                        className={`fixed w-screen h-[105vh] flex ${file.fileType === 'document' || file.fileType === 'spreadsheet' ? 'items-start' : 'items-center'} justify-center py-16 pb-20 z-20 bg-slate-800 bg-opacity-80 backdrop-blur-sm overflow-scroll`}
                         onClick={close}
                     >
                         {file.isLoading ?
@@ -87,7 +86,6 @@ export const FilePreview = () => {
                             :
                             <>
                                 {
-                                    file.data &&
                                     getPreviewTag(file.data, file.fileType)
                                 }
                             </>
