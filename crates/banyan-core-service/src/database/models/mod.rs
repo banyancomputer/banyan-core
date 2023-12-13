@@ -9,6 +9,7 @@ mod metadata_state;
 mod partial_metadata_with_snapshot;
 mod snapshot;
 mod storage_class;
+mod storage_grant;
 mod storage_host;
 mod user;
 
@@ -24,6 +25,7 @@ pub use metadata_state::MetadataState;
 pub use partial_metadata_with_snapshot::PartialMetadataWithSnapshot;
 pub use snapshot::Snapshot;
 pub use storage_class::StorageClass;
+pub use storage_grant::NewStorageGrant;
 pub use storage_host::{SelectedStorageHost, StorageHost, UserStorageReport};
 pub use user::User;
 

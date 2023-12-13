@@ -6,24 +6,25 @@ use axum::headers::ContentType;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::{Json, TypedHeader};
-use banyan_task::TaskLikeExt;
-use cid::{multibase::Base, Cid};
+//use banyan_task::TaskLikeExt;
+//use cid::{multibase::Base, Cid};
 use futures::{TryStream, TryStreamExt};
 use jwt_simple::prelude::*;
 use mime::Mime;
 use object_store::ObjectStore;
 use serde::Deserialize;
 use tokio::io::{AsyncWrite, AsyncWriteExt};
+//use url::Url;
 use uuid::Uuid;
 
 use crate::app::{AppState, ServiceKey};
 use crate::database::models::{
-    Bucket, Metadata, MetadataState, NewMetadata, SelectedStorageHost, StorageHost, User,
-    UserStorageReport,
+    Bucket, Metadata, MetadataState, NewMetadata, NewStorageGrant, SelectedStorageHost,
+    StorageHost, User, UserStorageReport,
 };
-use crate::database::{Database, DatabaseConnection};
+use crate::database::DatabaseConnection;
 use crate::extractors::{DataStore, UserIdentity};
-use crate::tasks::{PruneBlock, PruneBlocksTask};
+//use crate::tasks::{PruneBlock, PruneBlocksTask};
 use crate::utils;
 use crate::utils::car_buffer::CarBuffer;
 
@@ -43,7 +44,16 @@ const ONE_HUNDRED_MIB: i64 = 100 * 1024 * 1024;
 /// Upper size limit on the JSON payload that precedes a metadata CAR file upload (128KiB)
 const REQUEST_DATA_SIZE_LIMIT: u64 = 128 * 1_024;
 
-pub const STORAGE_TICKET_DURATION: u64 = 15 * 60; // 15 minutes
+pub const STORAGE_TICKET_DURATION: Duration = Duration::from_secs(15 * 60); // 15 minutes
+
+/// When creating a new signed JWT, we explicitly set the not before at (minimum timestamp the
+/// ticket is considered valid) as well as its validity period. This constant represents the time
+/// before the ticket was created that we allow the ticket to remain valid (this extends the total
+/// duration the ticket is valid for).
+///
+/// This allows clients and remote hosts a window when they can validate the JWT even if their
+/// clock is a bit behind the core platform.
+pub const JWT_ALLOWED_CLOCK_DRIFT: Duration = Duration::from_secs(30);
 
 async fn bucket_change_in_progress(
     _conn: &DatabaseConnection,
@@ -62,22 +72,24 @@ pub enum PushMetadataRequestError {
 }
 
 pub async fn handler(
-    user_id: UserIdentity,
+    user: UserIdentity,
     State(state): State<AppState>,
     store: DataStore,
     Path(bucket_id): Path<Uuid>,
     TypedHeader(content_type): TypedHeader<ContentType>,
     body: BodyStream,
 ) -> Result<Response, PushMetadataRequestError> {
-    let bucket_id = bucket_id.to_string();
-    let user_id = user_id.id().to_string();
-
-    let span = tracing::info_span!("push_metadata_handler", bucket_id, user_id);
+    let span = tracing::info_span!(
+        "push_metadata_handler",
+        bucket.id = %bucket_id,
+        user.id = %user.id(),
+    );
     let _guard = span.enter();
 
-    let database = state.database();
-    let service_key = state.secrets().service_key();
+    let bucket_id = bucket_id.to_string();
+    let user_id = user.id().to_string();
 
+    let database = state.database();
     let mut conn = database.begin().await?;
 
     if !Bucket::is_owned_by_user_id(&mut conn, &bucket_id, &user_id).await? {
@@ -183,7 +195,7 @@ pub async fn handler(
     conn.commit().await?;
 
     let file_name = format!("{bucket_id}/{metadata_id}.car");
-    let (hash, size) = store_metadata_stream(&store, &file_name, data_field).await?;
+    let (hash, size) = persist_upload(&store, &file_name, data_field).await?;
 
     let mut conn = database.begin().await?;
     Metadata::upload_complete(&mut conn, &metadata_id, &hash, size as i64).await?;
@@ -220,16 +232,33 @@ pub async fn handler(
     if user_report.authorization_available() < needed_capacity {
         let new_authorized_capacity = rounded_storage_authorization(&user_report, needed_capacity);
 
-        let new_authorization = generate_new_storage_authorization(
-            &database,
-            &service_key,
-            &user_id,
-            &storage_host,
-            new_authorized_capacity,
-        )
+        let storage_grant_id = NewStorageGrant {
+            storage_host_id: &storage_host.id,
+            user_id: &user_id,
+            authorized_amount: new_authorized_capacity,
+        }
+        .save(&mut *conn)
         .await?;
 
-        storage_authorization = Some(new_authorization);
+        let user_subject = user.ticket_subject();
+        let new_claim = generate_storage_claim(
+            user_subject,
+            storage_grant_id,
+            &storage_host,
+            new_authorized_capacity,
+        );
+
+        let service_key = state.secrets().service_key();
+        let ticket = match service_key.sign(new_claim) {
+            Ok(t) => t,
+            Err(err) => {
+                tracing::error!("failed to sign storage authorization: {err}");
+                let err_msg = serde_json::json!({"msg": "authorization delegation unavailable"});
+                return Ok((StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response());
+            }
+        };
+
+        storage_authorization = Some(ticket);
     }
 
     conn.commit().await?;
@@ -282,56 +311,65 @@ struct Capabilities {
     capabilities: serde_json::Map<String, serde_json::Value>,
 }
 
-async fn generate_new_storage_authorization(
-    database: &Database,
-    service_key: &ServiceKey,
-    user_identity: &UserIdentity,
+#[derive(Serialize)]
+struct StorageTicketClaim {
+    #[serde(rename = "cap")]
+    capabilities: HashMap<String, StorageCapabilities>,
+}
+
+impl StorageTicketClaim {
+    pub fn add_authorization(
+        &mut self,
+        grant_id: String,
+        storage_host_url: String,
+        authorized_amount: i64,
+    ) {
+        let caps = StorageCapabilities {
+            authorized_amount,
+            grant_id,
+        };
+        self.capabilities.insert(storage_host_url, caps);
+    }
+
+    pub fn new() -> Self {
+        Self {
+            capabilities: HashMap::new(),
+        }
+    }
+}
+
+impl Default for StorageTicketClaim {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[derive(Deserialize, Serialize)]
+struct StorageCapabilities {
+    #[serde(rename = "available_storage")]
+    authorized_amount: i64,
+    grant_id: String,
+}
+
+fn generate_storage_claim(
+    subject: String,
+    grant_id: String,
     storage_host: &SelectedStorageHost,
     authorized_amount: i64,
-) -> Result<String, StorageAuthorizationError> {
-    let user_id = user_identity.id().to_string();
-    let key_fingerprint = user_identity.key_fingerprint().to_string();
-    let storage_grant_id = sqlx::query_scalar!(
-        r#"INSERT INTO storage_grants (storage_host_id, user_id, authorized_amount)
-            VALUES ($1, $2, $3)
-            RETURNING id;"#,
-        storage_host.id,
-        user_id,
-        authorized_amount,
-    )
-    .fetch_one(database)
-    .await
-    .map_err(StorageAuthorizationError::GrantRecordingFailed)?;
+) -> JWTClaims<StorageTicketClaim> {
+    let mut ticket = StorageTicketClaim::default();
+    ticket.add_authorization(grant_id, storage_host.url, authorized_amount);
 
-    let mut storage_details = serde_json::Map::new();
-
-    storage_details.insert("available_storage".to_string(), authorized_amount.into());
-    storage_details.insert("grant_id".to_string(), storage_grant_id.into());
-
-    let mut capabilities = serde_json::Map::new();
-    capabilities.insert(storage_host.url.to_string(), storage_details.into());
-
-    let mut claims = Claims::with_custom_claims(
-        Capabilities { capabilities },
-        Duration::from_secs(STORAGE_TICKET_DURATION),
-    )
-    .with_audiences(HashSet::from_strings(&[storage_host.name.as_str()]))
-    // TODO: this should be configurable
-    .with_issuer("banyan-platform")
-    .with_subject(format!("{}@{}", user_id, key_fingerprint))
-    .invalid_before(Clock::now_since_epoch() - Duration::from_secs(30));
+    let mut claims = Claims::with_custom_claims(ticket, STORAGE_TICKET_DURATION)
+        .with_audiences(HashSet::from_strings(&[storage_host.name.as_str()]))
+        .with_issuer("banyan-platform")
+        .with_subject(subject)
+        .invalid_before(Clock::now_since_epoch() - Duration::from_secs(30));
 
     claims.create_nonce();
     claims.issued_at = Some(Clock::now_since_epoch());
 
-    match service_key.sign(claims) {
-        Ok(t) => Ok(t),
-        Err(err) => {
-            tracing::error!("failed to sign storage authorization: {err}");
-            let err_msg = serde_json::json!({"msg": "authorization delegation unavailable"});
-            Ok((StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response())
-        }
-    }
+    claims
 }
 
 async fn persist_upload<'a>(
@@ -340,7 +378,6 @@ async fn persist_upload<'a>(
     body: multer::Field<'a>,
 ) -> Result<(String, usize), std::io::Error> {
     let file_path = object_store::path::Path::from(path);
-
     let (upload_id, mut writer) = store.put_multipart(&file_path).await?;
 
     match stream_upload_to_storage(body, &mut writer).await {
@@ -380,13 +417,13 @@ where
     Ok((hash.to_string(), bytes_written))
 }
 
-#[derive(sqlx::FromRow)]
-struct UniqueBlockLocation {
-    block_id: String,
-    normalized_cid: String,
-    metadata_id: String,
-    storage_host_id: String,
-}
+//#[derive(sqlx::FromRow)]
+//struct UniqueBlockLocation {
+//    block_id: String,
+//    normalized_cid: String,
+//    metadata_id: String,
+//    storage_host_id: String,
+//}
 
 //async fn expire_deleted_blocks(
 //    database: &Database,
