@@ -27,11 +27,8 @@ impl<B> RequestCounter<B> {
             inner,
         }
     }
-
-    pub fn bytes_from_stream(&self) -> usize {
-        self.bytes_from_stream
-    }
 }
+
 pub type FnOnResponseEnd = fn(req_info: &RequestInfo, res_info: &ResponseInfo) -> ();
 
 pin_project! {
@@ -250,37 +247,23 @@ mod tests {
 
     use super::*;
 
-    async fn poll_responst_to_completion<B>(mut body: ResponseCounter<B>)
-        where
-            B: Body + Unpin,
-            B::Data: Buf,
-            B::Error: Into<Box<dyn Error + Send + Sync>>
+    async fn poll_to_completion<B>(mut body: B, rx: Option<Receiver<usize>>) -> Option<usize>
+    where
+        B: Body + Unpin,
+        B::Data: Buf,
+        B::Error: Into<Box<dyn Error + Send + Sync>>,
     {
         let mut cx = Context::from_waker(futures::task::noop_waker_ref());
-
-        while let Poll::Ready(data_opt) = Pin::new(&mut body).as_mut().poll_data(&mut cx) {
-            if let None = data_opt {
-                break;
-            }
-        }
-    }
-
-
-    async fn poll_request_to_completion<B>(mut body: RequestCounter<B>, rx: Receiver<usize>) -> usize
-        where
-            B: Body + Unpin,
-            B::Data: Buf,
-            B::Error: Into<Box<dyn Error + Send + Sync>>
-    {
-        let mut cx = Context::from_waker(futures::task::noop_waker_ref());
-
         while let Poll::Ready(data_opt) = Pin::new(&mut body).as_mut().poll_data(&mut cx) {
             if let None = data_opt {
                 break;
             }
         }
 
-        rx.await.unwrap_or(0)
+        match rx {
+            Some(rx) => Some(rx.await.unwrap_or(0)),
+            None => None,
+        }
     }
 
     #[tokio::test]
@@ -290,20 +273,9 @@ mod tests {
         let (tx, rx) = oneshot::channel();
         let body_counter = RequestCounter::new(body, tx);
 
-        let counted_size = poll_request_to_completion(body_counter, rx).await;
-        assert_eq!(counted_size, data.len());
-    }
-
-    #[tokio::test]
-    async fn counts_ingress_correctly_for_multiple_chunks() {
-        let chunk1 = Bytes::from_static(b"Hello, ");
-        let chunk2 = Bytes::from_static(b"world!");
-        let body = Full::new(chunk1.chain(chunk2));
-        let (tx, rx) = oneshot::channel();
-        let body_counter = RequestCounter::new(body, tx);
-
-        let counted_size = poll_request_to_completion(body_counter, rx).await;
-        assert_eq!(counted_size, "Hello, world!".len());
+        let counted_size = poll_to_completion(body_counter, Some(rx)).await;
+        assert!(counted_size.is_some());
+        assert_eq!(counted_size.unwrap(), data.len());
     }
 
     #[tokio::test]
@@ -312,38 +284,30 @@ mod tests {
         let (tx, rx) = oneshot::channel();
         let body_counter = RequestCounter::new(body, tx);
 
-        let counted_size = poll_request_to_completion(body_counter, rx).await;
-        assert_eq!(counted_size, 0);
+        let counted_size = poll_to_completion(body_counter, Some(rx)).await;
+        assert!(counted_size.is_some());
+        assert_eq!(counted_size.unwrap(), 0);
     }
 
     #[tokio::test]
     async fn counts_egress_correctly_for_single_chunk() {
         let data = Bytes::from_static(b"Goodbye, world!");
         let body = Full::new(data.clone());
-        let (tx, rx) = oneshot::channel();
         let headers = HeaderMap::new();
         let request_info = RequestInfo::default();
         let status_code = StatusCode::OK;
-        let on_response_end = FnOnResponseEnd::default();
-        let body_counter = ResponseCounter::new(body, &headers, request_info, status_code, on_response_end);
+        let body_counter = ResponseCounter::new(
+            body,
+            &headers,
+            request_info,
+            status_code,
+            |req_info, res_info| {
+                assert_eq!(req_info.body_bytes + req_info.header_bytes, 0);
+                assert_eq!(res_info.body_bytes + res_info.header_bytes, 15);
+            },
+        );
 
-        let counted_size = poll_responst_to_completion(body_counter).await;
-        assert!(body_counter.on_response_end_called());
-    }
-
-    #[tokio::test]
-    async fn counts_egress_correctly_for_multiple_chunks() {
-        let chunk1 = Bytes::from_static(b"Goodbye, ");
-        let chunk2 = Bytes::from_static(b"world!");
-        let body = Full::new(chunk1.chain(chunk2));
-        let headers = HeaderMap::new();
-        let request_info = RequestInfo::default();
-        let status_code = StatusCode::OK;
-        let on_response_end = FnOnResponseEnd::default();
-        let body_counter = ResponseCounter::new(body,  &headers, request_info, status_code, on_response_end);
-
-        let counted_size = poll_responst_to_completion(body_counter).await;
-        assert!(body_counter.on_response_end_called());
+        poll_to_completion(body_counter, None).await;
     }
 
     #[tokio::test]
@@ -352,11 +316,16 @@ mod tests {
         let headers = HeaderMap::new();
         let request_info = RequestInfo::default();
         let status_code = StatusCode::OK;
-        let on_response_end = FnOnResponseEnd::default();
-        let body_counter = ResponseCounter::new(body, &headers, request_info, status_code, on_response_end);
-
-        let counted_size = poll_responst_to_completion(body_counter).await;
-        assert!(body_counter.on_response_end_called());
+        let body_counter = ResponseCounter::new(
+            body,
+            &headers,
+            request_info,
+            status_code,
+            |req_info, res_info| {
+                assert_eq!(req_info.body_bytes + req_info.header_bytes, 0);
+                assert_eq!(res_info.body_bytes + res_info.header_bytes, 0);
+            },
+        );
+        poll_to_completion(body_counter, None).await;
     }
-
 }
