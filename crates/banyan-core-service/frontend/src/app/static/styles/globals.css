@@ -64,6 +64,7 @@ input {
 *::-webkit-scrollbar {
         margin-right: 5px;
         width: 6px;
+        height: 6px;
 }
 
 *::-webkit-scrollbar-thumb {
@@ -105,5 +106,12 @@ input {
 .table {
     tr {
         color: unset;
+    }
+}
+
+.table-pin-cols {
+    th {
+        background-color: white;
+        border-bottom: 1px solid #EFF1F5;
     }
 }

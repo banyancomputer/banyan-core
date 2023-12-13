@@ -24,8 +24,10 @@ export const CreateFolderModal: React.FC<{ bucket: Bucket; onSuccess?: () => voi
     const create = async () => {
         try {
             await createDirectory(bucket, path, folderName);
-            onSuccess();
-            openModal(<UploadFileModal bucket={bucket} path={[...path, folderName]} />);
+            onSuccess ?
+                onSuccess()
+                :
+                openModal(<UploadFileModal bucket={bucket} path={[...path, folderName]} />);
         } catch (error: any) {
             ToastNotifications.error(`${messages.creationError}`, `${messages.tryAgain}`, create);
         };
