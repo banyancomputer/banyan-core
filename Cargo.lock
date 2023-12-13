@@ -430,7 +430,7 @@ dependencies = [
 [[package]]
 name = "banyan-cli"
 version = "1.1.1"
-source = "git+https://github.com/banyancomputer/banyan-cli.git?branch=alex/sharing-link-api#6f09d9a1362e2e7679f9e81d11579e13dfbd0b6a"
+source = "git+https://github.com/banyancomputer/banyan-cli.git#daaccaec281dd170ccf3d74c2f5d6a84e0ffb7de"
 dependencies = [
  "async-recursion",
  "async-trait",

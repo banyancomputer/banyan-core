@@ -10,7 +10,7 @@ use axum::response::{IntoResponse, Response};
 use banyan_cli::prelude::filesystem::sharing::{SharedFile, SharingError};
 use bytes::BytesMut;
 use cid::multibase::Base;
-use futures::stream::{self};
+use futures::stream::{self, StreamExt};
 use jwt_simple::prelude::*;
 use reqwest::Client;
 use tokio::sync::mpsc;
@@ -64,11 +64,8 @@ pub async fn handler(
     // Match on the response and return the file data as a stream if successful
     match response {
         Ok(Some(Ok(data))) => {
-            // TODO: Just did this to compile, does anyone have thoughts on how to do this better?
-            let data_stream = stream::iter(
-                data.into_iter()
-                    .map(|item| Ok::<_, std::io::Error>(BytesMut::from(&[item][..]).freeze())),
-            );
+            let data_stream = stream::iter(data)
+                .map(|item| Ok::<_, std::io::Error>(BytesMut::from(&[item][..]).freeze()));
 
             let response = axum::body::StreamBody::new(data_stream);
             Ok((StatusCode::OK, response).into_response())
@@ -203,7 +200,7 @@ impl ShareBlockStore {
     /// Find which storage host has the block we're looking for
     /// # Arguments
     /// * `cid` - The CID of the block we're looking for
-    pub async fn find_storage_host(&self, cid: &Cid) -> Result<StorageHostInfo, SharedFileError> {
+    async fn find_storage_host(&self, cid: &Cid) -> Result<StorageHostInfo, SharedFileError> {
         // Interpreting the CID as a base64url string
         let normalized_cid = cid.to_string_of_base(Base::Base64Url)?;
         let storage_host_info = sqlx::query_as!(
@@ -222,6 +219,29 @@ impl ShareBlockStore {
         Ok(storage_host_info)
     }
 
+    /// Generate a bearer token for the storage host
+    /// # Arguments
+    /// * `storage_host_info` - The storage host to generate a token for
+    /// # Returns
+    /// The token as a String
+    /// # Errors
+    /// If the token cannot be generated
+    fn bearer_token(
+        &self,
+        storage_host_info: &StorageHostInfo,
+    ) -> Result<String, SharedFileError> {
+        // Create claims againt the storage host
+        // They only need to be valid long enough to fulfill the request, which will timeout after CHANNEL_TIMEOUT_SECS
+        let mut claims = Claims::create(Duration::from_secs(CHANNEL_TIMEOUT_SECS))
+            .with_audiences(HashSet::from_strings(&[storage_host_info.name.clone()]))
+            .with_subject(&self.service_name)
+            .invalid_before(Clock::now_since_epoch() - Duration::from_secs(30));
+        claims.create_nonce();
+        claims.issued_at = Some(Clock::now_since_epoch());
+        let token = self.service_key.sign(claims)?;
+        Ok(token)
+    }
+        
     /// Get the block from the storage host
     /// # Arguments
     /// * `storage_host_info` - The storage host to get the block from
@@ -233,17 +253,8 @@ impl ShareBlockStore {
         storage_host_info: StorageHostInfo,
         cid: &Cid,
     ) -> Result<Vec<u8>, SharedFileError> {
-        // Create claims againt the storage host
-        // They only need to be valid long enough to fulfill the request, which will timeout after CHANNEL_TIMEOUT_SECS
-        let mut claims = Claims::create(Duration::from_secs(CHANNEL_TIMEOUT_SECS))
-            .with_audiences(HashSet::from_strings(&[storage_host_info.name]))
-            .with_subject(&self.service_name)
-            .invalid_before(Clock::now_since_epoch() - Duration::from_secs(30));
-        claims.create_nonce();
-        claims.issued_at = Some(Clock::now_since_epoch());
-        // TODO: better error handling here
-        let bearer_token = self.service_key.sign(claims)?;
-
+        // Generate a bearer token for the storage host
+        let bearer_token = self.bearer_token(&storage_host_info)?;
         // Build and Attach the auth token to the request
         let url = Url::parse(&storage_host_info.url)?;
         // Tack on the api route + base32 default CID encoding

@@ -2,16 +2,15 @@ use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
-use axum_extra::either::Either;
 
 use crate::app::AppState;
-use crate::database::Database;
-use crate::extractors::{AuthenticatedClient, PlatformIdentity};
+use crate::database::{Database, models::BlockDetails};
+use crate::extractors::BlockReader;
 use crate::upload_store::{ObjectStore, UploadStore};
 
 pub async fn handler(
     State(state): State<AppState>,
-    client: Either<AuthenticatedClient, PlatformIdentity>,
+    client: BlockReader,
     store: UploadStore,
     Path(cid): Path<String>,
 ) -> Result<Response, BlockRetrievalError> {
@@ -22,15 +21,8 @@ pub async fn handler(
         .expect("parsed cid to unparse");
 
     let block_details = block_from_normalized_cid(&db, &normalized_cid).await?;
-    match client {
-        // If this is an authenticated client, we need to make sure they own the block they're trying to retrieve
-        Either::E1(client) => {
-            if block_details.platform_id != client.platform_id().to_string() {
-                return Err(BlockRetrievalError::NotBlockOwner);
-            }
-        }
-        // Otherwise just let the platform identity pass through
-        Either::E2(_) => {}
+    if !client.can_read_block(&block_details) {
+        return Err(BlockRetrievalError::NotBlockOwner);
     }
 
     let byte_start = block_details.byte_offset as usize;
@@ -65,16 +57,6 @@ pub async fn handler(
         .map_err(BlockRetrievalError::RetrievalFailed)?;
 
     Ok((StatusCode::OK, headers, data).into_response())
-}
-
-#[derive(sqlx::FromRow, Debug)]
-pub struct BlockDetails {
-    id: String,
-    platform_id: String,
-
-    file_path: String,
-    byte_offset: i32,
-    length: i32,
 }
 
 pub async fn block_from_normalized_cid(
