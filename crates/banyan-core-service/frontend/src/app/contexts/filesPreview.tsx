@@ -1,15 +1,19 @@
 import React, { FC, ReactNode, createContext, useContext, useEffect, useState } from 'react';
+import mime from 'mime';
 
 import { useTomb } from './tomb';
 import { Bucket } from '@/app/types/bucket';
 
+interface FileState {
+    name: string;
+    data: string;
+    blob: File | null;
+    fileType: string,
+    isLoading: boolean;
+};
+
 interface FilePreviewState {
-    file: {
-        name: string;
-        data: string;
-        fileType: string,
-        isLoading: boolean;
-    };
+    file: FileState;
     files: string[];
     bucket: Bucket | null;
     openFile: (bucket: Bucket, file: string, files: string[], path: string[]) => void;
@@ -18,9 +22,10 @@ interface FilePreviewState {
     closeFile: () => void;
 };
 
-const initialState = {
+const initialState: FileState = {
     name: '',
     data: '',
+    blob: null,
     fileType: '',
     isLoading: false,
 };
@@ -28,9 +33,10 @@ const initialState = {
 export const SUPPORTED_AUDIO_EXTENSIONS = ['mp3', 'ogg', 'wav'];
 export const SUPPORTED_DOCUMENT_EXTENSIONS = ['pdf'];
 export const SUPPORTED_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp'];
+export const SUPPORTED_SPREADSHEET_EXTENSIONS = ['csv'];
 export const SUPPORTED_VIDEO_EXTENSIONS = ['mp4', 'webm', 'ogg'];
-export const SUPPORTED_EXTENSIONS = [SUPPORTED_AUDIO_EXTENSIONS, SUPPORTED_DOCUMENT_EXTENSIONS, SUPPORTED_IMAGE_EXTENSIONS, SUPPORTED_VIDEO_EXTENSIONS];
-const fileTypes = ['audio', 'document', 'image', 'video'];
+export const SUPPORTED_EXTENSIONS = [SUPPORTED_AUDIO_EXTENSIONS, SUPPORTED_DOCUMENT_EXTENSIONS, SUPPORTED_IMAGE_EXTENSIONS, SUPPORTED_SPREADSHEET_EXTENSIONS, SUPPORTED_VIDEO_EXTENSIONS];
+const fileTypes = ['audio', 'document', 'image', 'spreadsheet', 'video'];
 export const FilePreviewContext = createContext<FilePreviewState>({} as FilePreviewState);
 
 export const FilePreviewProvider: FC<{ children: ReactNode }> = ({ children }) => {
@@ -43,6 +49,7 @@ export const FilePreviewProvider: FC<{ children: ReactNode }> = ({ children }) =
     const openFile = async (bucket: Bucket, file: string, files: string[], path: string[]) => {
         if (!file) return;
 
+        setFile({...initialState, name: file});
         setFiles(files);
         setBucket(bucket);
         setPath(path);
@@ -59,11 +66,11 @@ export const FilePreviewProvider: FC<{ children: ReactNode }> = ({ children }) =
         };
 
         try {
-            setFile(prev => ({ data: '', name: file, fileType: prev.fileType, isLoading: true }));
+            setFile(prev => ({ ...prev, isLoading: true }));
             const arrayBuffer = await getFile(bucket, path, file);
-            const blob = new Blob([arrayBuffer], { type: 'application/octet-stream' });
-            const data = await URL.createObjectURL(blob);
-            setFile(prev => ({ data, name: file, fileType: prev.fileType, isLoading: false }));
+            const blob = new File([arrayBuffer], file, { type: mime.getType(fileExtension) || '' });
+            const data = URL.createObjectURL(blob);
+            setFile(prev => ({ data, name: file, blob, fileType: prev.fileType, isLoading: false }));
         } catch (error: any) {
             setFile(initialState);
         }
@@ -71,13 +78,11 @@ export const FilePreviewProvider: FC<{ children: ReactNode }> = ({ children }) =
 
     const openNext = () => {
         const selectedFileIndex = files.indexOf(file.name);
-        if (selectedFileIndex >= files.length - 1) return;
         openFile(bucket!, files[selectedFileIndex + 1], files, path);
     };
 
     const openPrevious = () => {
         const selectedFileIndex = files.indexOf(file.name);
-        if (!selectedFileIndex) return;
         openFile(bucket!, files[selectedFileIndex - 1], files, path);
     };
 
@@ -88,14 +93,11 @@ export const FilePreviewProvider: FC<{ children: ReactNode }> = ({ children }) =
 
     useEffect(() => {
         const listener = (event: KeyboardEvent) => {
-            if (file.isLoading) {
-                document.removeEventListener('keydown', listener);
-                return;
-            }
-            if (event.code === 'ArrowLeft') {
+            const selectedFileIndex = files.indexOf(file.name);
+            if (event.code === 'ArrowLeft' && selectedFileIndex) {
                 document.removeEventListener('keydown', listener);
                 openPrevious();
-            } else if (event.code === 'ArrowRight') {
+            } else if (event.code === 'ArrowRight' && (selectedFileIndex < files.length - 1)) {
                 document.removeEventListener('keydown', listener);
                 openNext();
             }
