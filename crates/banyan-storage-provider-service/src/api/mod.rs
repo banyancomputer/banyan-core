@@ -43,10 +43,7 @@ pub fn router(state: AppState) -> Router<AppState> {
         .route("/deals/:deal_id", get(deal_single_handler))
         .route("/deals/:deal_id/accept", get(deal_accept_handler))
         .route("/deals/:deal_id/cancel", get(deal_cancel_handler))
-        .route(
-            "/deals/:deal_id/download",
-            get(deal_download_handler),
-        )
+        .route("/deals/:deal_id/download", get(deal_download_handler))
         .route("/deals/:deal_id/ignore", get(deal_ignore_handler))
         .route("/deals/:deal_id/proof", get(deal_proof_handler))
         .route("/deals", get(deal_all_handler))
@@ -55,10 +52,7 @@ pub fn router(state: AppState) -> Router<AppState> {
             "/metrics/bandwidth/daily",
             get(metrics_bandwidth_daily_handler),
         )
-        .route(
-            "/metrics/storage/daily",
-            get(metrics_storage_daily_handler),
-        )
+        .route("/metrics/storage/daily", get(metrics_storage_daily_handler))
         .layer(cors_layer)
         .with_state(state)
 }
