@@ -37,26 +37,26 @@ pub fn router(state: AppState) -> Router<AppState> {
         .route("/upload", post(upload::handler))
         .route("/core/prune", post(prune_blocks::handler))
         // Storage provider API routes
-        .route("/api/v1/alerts", get(alerts_handler))
-        .route("/api/v1/alerts/history", get(alert_history_handler))
-        .route("/api/v1/deals/available", get(deal_available_handler))
-        .route("/api/v1/deals/:deal_id", get(deal_single_handler))
-        .route("/api/v1/deals/:deal_id/accept", get(deal_accept_handler))
-        .route("/api/v1/deals/:deal_id/cancel", get(deal_cancel_handler))
+        .route("/alerts", get(alerts_handler))
+        .route("/alerts/history", get(alert_history_handler))
+        .route("/deals/available", get(deal_available_handler))
+        .route("/deals/:deal_id", get(deal_single_handler))
+        .route("/deals/:deal_id/accept", get(deal_accept_handler))
+        .route("/deals/:deal_id/cancel", get(deal_cancel_handler))
         .route(
-            "/api/v1/deals/:deal_id/download",
+            "/deals/:deal_id/download",
             get(deal_download_handler),
         )
-        .route("/api/v1/deals/:deal_id/ignore", get(deal_ignore_handler))
-        .route("/api/v1/deals/:deal_id/proof", get(deal_proof_handler))
-        .route("/api/v1/deals", get(deal_all_handler))
-        .route("/api/v1/metrics/current", get(metrics_current_handler))
+        .route("/deals/:deal_id/ignore", get(deal_ignore_handler))
+        .route("/deals/:deal_id/proof", get(deal_proof_handler))
+        .route("/deals", get(deal_all_handler))
+        .route("/metrics/current", get(metrics_current_handler))
         .route(
-            "/api/v1/metrics/bandwidth/daily",
+            "/metrics/bandwidth/daily",
             get(metrics_bandwidth_daily_handler),
         )
         .route(
-            "/api/v1/metrics/storage/daily",
+            "/metrics/storage/daily",
             get(metrics_storage_daily_handler),
         )
         .layer(cors_layer)
