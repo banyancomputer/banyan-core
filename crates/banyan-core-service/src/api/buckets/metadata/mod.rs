@@ -1,10 +1,9 @@
 mod all_metadata;
 mod current_metadata;
 mod delete_metadata;
-mod single_metadata;
-
 mod pull_metadata;
 mod push_metadata;
+mod single_metadata;
 
 use std::error::Error;
 
