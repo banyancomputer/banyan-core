@@ -8,6 +8,7 @@ use sqlx::{Decode, Encode, Sqlite, Type};
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
+#[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 pub enum MetadataState {
     Uploading,
     UploadFailed,
@@ -76,4 +77,20 @@ impl Type<Sqlite> for MetadataState {
 pub enum MetadataStateError {
     #[error("attempted to decode unknown state value")]
     InvalidStateValue,
+}
+
+#[cfg(test)]
+mod property_tests {
+    use proptest::prelude::*;
+
+    use super::*;
+
+    proptest! {
+        /// Show that any [`MetadataState`] may be serialized, and then deserialized.
+        #[test]
+        fn metadata_states_can_be_round_tripped(input in any::<MetadataState>()) {
+            let round_trip = input.to_string().as_str().try_into().unwrap();
+            prop_assert_eq!(input, round_trip);
+        }
+    }
 }
