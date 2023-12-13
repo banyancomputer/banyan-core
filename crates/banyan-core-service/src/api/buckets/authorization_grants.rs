@@ -70,7 +70,7 @@ pub async fn handler(
             .insert(auth_details.storage_host_url, host_caps.into());
     }
 
-    let mut claims = Claims::with_custom_claims(caps, Duration::from_secs(STORAGE_TICKET_DURATION))
+    let mut claims = Claims::with_custom_claims(caps, STORAGE_TICKET_DURATION)
         .with_audiences(audiences)
         .with_issuer("banyan-platform")
         .with_subject(format!("{}@{}", user_id, user_identity.key_fingerprint()))
@@ -121,10 +121,4 @@ impl IntoResponse for AuthorizationGrantError {
             }
         }
     }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct Capabilities {
-    #[serde(rename = "cap")]
-    capabilities: serde_json::Map<String, serde_json::Value>,
 }

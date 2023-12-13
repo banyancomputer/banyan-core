@@ -17,7 +17,7 @@ use tokio::io::{AsyncWrite, AsyncWriteExt};
 //use url::Url;
 use uuid::Uuid;
 
-use crate::app::{AppState, ServiceKey};
+use crate::app::AppState;
 use crate::database::models::{
     Bucket, Metadata, MetadataState, NewMetadata, NewStorageGrant, SelectedStorageHost,
     StorageHost, User, UserStorageReport,
@@ -305,14 +305,8 @@ fn validate_field(
     true
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-struct Capabilities {
-    #[serde(rename = "cap")]
-    capabilities: serde_json::Map<String, serde_json::Value>,
-}
-
-#[derive(Serialize)]
-struct StorageTicketClaim {
+#[derive(Deserialize, Serialize)]
+pub struct StorageTicketClaim {
     #[serde(rename = "cap")]
     capabilities: HashMap<String, StorageCapabilities>,
 }
