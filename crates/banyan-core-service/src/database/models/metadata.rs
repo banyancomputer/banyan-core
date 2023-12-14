@@ -13,6 +13,9 @@ pub struct NewMetadata<'a> {
 }
 
 impl NewMetadata<'_> {
+    /// Persists a new row in the metadata table with the associated data. When successful this
+    /// returns the ID of the newly created row. By default this initialized the state of the
+    /// metadata row to 'uploading', which is the entry-point into the metadata state machine.
     pub async fn save(&self, conn: &mut DatabaseConnection) -> Result<String, sqlx::Error> {
         sqlx::query_scalar!(
             r#"INSERT INTO metadata (bucket_id, metadata_cid, root_cid, expected_data_size, state)
