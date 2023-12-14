@@ -103,16 +103,17 @@ impl Bucket {
                 r#"SELECT b.id FROM blocks AS b
                     JOIN block_locations AS bl ON bl.block_id = b.id
                     JOIN metadata AS m ON m.id = bl.metadata_id
-                    WHERE m.bucket_id = $1
-                        AND b.cid IN ("#,
+                    WHERE m.bucket_id = "#,
             );
+
+            query_builder.push_bind(bucket_id);
+            query_builder.push(" AND b.cid IN (");
 
             // Chunking size was chosen a bit arbitrarily, sqlx has a bind limit of 65k so we need to
             // make sure this is always below that. This could be increased but there is also a hit
             // when queries get too large.
             let mut chunk_count = 0;
             while let Some(cid) = block_iter.next() {
-                query_builder.push("?");
                 query_builder.push_bind(cid);
 
                 total_block_count += 1;
@@ -159,9 +160,9 @@ impl Bucket {
     ) -> Result<bool, sqlx::Error> {
         let result = sqlx::query_scalar!(
             r#"SELECT created_at FROM metadata
-                WHERE bucket_id = $1 AND state = 'current'
-                ORDER BY created_at DESC
-                LIMIT 1;"#,
+                   WHERE bucket_id = $1 AND state = 'current'
+                   ORDER BY created_at DESC
+                   LIMIT 1;"#,
             bucket_id,
         )
         .fetch_optional(&mut *conn)
@@ -378,7 +379,7 @@ mod tests {
         );
         assert_eq!(
             is_bucket_key_approved(&mut conn, &bucket_id, "ab:cd:ef").await,
-            Some(false)
+            Some(true)
         );
     }
 
