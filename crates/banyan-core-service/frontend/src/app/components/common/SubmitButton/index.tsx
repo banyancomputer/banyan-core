@@ -12,13 +12,14 @@ export const SubmitButton: React.FC<{ text: string, action?: () => void, disable
             const listener = async (event: KeyboardEvent) => {
                 if (event.key !== 'Enter' || disabled) return;
                 action();
-                window.removeEventListener('keypress', listener);
             };
 
             window.addEventListener('keypress', listener);
 
-            return () => window.removeEventListener('keypress', listener);
-        }, [disabled]);
+            return () => {
+                window.removeEventListener('keypress', listener);
+            }
+        });
 
         return (
             <button
