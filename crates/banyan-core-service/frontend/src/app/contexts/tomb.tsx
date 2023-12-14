@@ -176,8 +176,8 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	};
 
 	/** Creates new bucket with recieved parameters of type and storag class. */
-	const createBucketAndMount = async (name: string, storageClass: string, bucketType: string) => {
-		await tombMutex(tomb, async tomb => {
+	const createBucketAndMount = async (name: string, storageClass: string, bucketType: string): Promise<string> => {
+		return await tombMutex(tomb, async tomb => {
 			const key = await getEncryptionKey();
 			const wasmBucketMount = await tomb!.createBucketAndMount(name, storageClass, bucketType, key.privatePem, key.publicPem);
 			const wasmBucket = wasmBucketMount.bucket;
@@ -198,8 +198,8 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 				locked,
 				isSnapshotValid
 			};
-
 			setBuckets(prev => [...prev, bucket].sort((a, b) => a.name.localeCompare(b.name)));
+			return bucket.id;
 		});
 	};
 
@@ -406,7 +406,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 		<TombContext.Provider
 			value={{
 				tomb, buckets, storageUsage, trash, areBucketsLoading, selectedBucket, error,
-				getBuckets, getBucketsFiles, getBucketsKeys, selectBucket, getSelectedBucketFiles, 
+				getBuckets, getBucketsFiles, getBucketsKeys, selectBucket, getSelectedBucketFiles,
 				takeColdSnapshot, getBucketShapshots, createBucketAndMount, deleteBucket,
 				getFile, renameBucket, createDirectory, uploadFile, purgeSnapshot,
 				removeBucketAccess, approveBucketAccess, approveDeviceApiKey, shareFile, download, moveTo,
