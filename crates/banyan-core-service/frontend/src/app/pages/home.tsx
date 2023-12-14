@@ -3,14 +3,14 @@ import { useIntl } from 'react-intl';
 
 import { UploadFileModal } from '@/app/components/common/Modal/UploadFileModal';
 import { Fallback } from '@/app/components/common/Fallback';
-import { Bucket } from '@/app/components/Buckets/Bucket';
+import { Bucket } from '@components/Home/Bucket';
 
 import { useTomb } from '@/app/contexts/tomb';
 import { useModal } from '@/app/contexts/modals';
 
 import { EmptyIcon, PlusBold } from '@static/images/common';
 
-const Buckets = () => {
+const Home = () => {
     const { openModal } = useModal();
     const { buckets, areBucketsLoading, getBucketsFiles, tomb } = useTomb();
     const { messages } = useIntl();
@@ -61,4 +61,4 @@ const Buckets = () => {
     );
 };
 
-export default Buckets;
+export default Home;
