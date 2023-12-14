@@ -130,3 +130,7 @@ pub(crate) async fn setup_database() -> Database {
 
     pool
 }
+
+// pub(crate) async fn push_metadata() {
+//     // use banyan_cli::prelude::api::{client::Client, }
+// }

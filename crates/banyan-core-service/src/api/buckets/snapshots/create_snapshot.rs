@@ -6,7 +6,6 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use cid::multibase::Base;
 use cid::Cid;
-use itertools::Itertools;
 use serde::Deserialize;
 use uuid::Uuid;
 
@@ -76,8 +75,11 @@ pub async fn handler(
                 JOIN snapshots AS s WHERE b.cid IN (
         "#,
         );
-        for cid in cid_chunk {
-            builder.push(&format!("\"{cid}\", "));
+        for (i, cid) in cid_chunk.into_iter().enumerate() {
+            if i > 0 {
+                builder.push(", ");
+            }
+            builder.push(&format!("\"{cid}\""));
         }
         builder.push(");");
         builder

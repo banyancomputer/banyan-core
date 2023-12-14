@@ -1,5 +1,5 @@
 use axum::body::HttpBody;
-use axum::routing::{get, post, put};
+use axum::routing::{get, put};
 use axum::Router;
 
 mod all_snapshots;
