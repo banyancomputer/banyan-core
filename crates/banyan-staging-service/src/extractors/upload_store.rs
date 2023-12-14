@@ -16,6 +16,6 @@ impl FromRequestParts<AppState> for UploadStore {
         _parts: &mut Parts,
         state: &AppState,
     ) -> Result<Self, Self::Rejection> {
-        Self::new(&state.upload_directory())
+        Self::new(state.upload_store_connection())
     }
 }

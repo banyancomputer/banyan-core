@@ -2988,13 +2988,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "27c776db4f332b571958444982ff641d2531417a326ca368995073b639205d58"
 dependencies = [
  "async-trait",
+ "base64 0.21.5",
  "bytes",
  "chrono",
  "futures",
  "humantime",
+ "hyper",
  "itertools 0.10.5",
  "parking_lot 0.12.1",
  "percent-encoding",
+ "quick-xml",
+ "rand 0.8.5",
+ "reqwest",
+ "ring 0.16.20",
+ "serde",
+ "serde_json",
  "snafu",
  "tokio",
  "tracing",
@@ -3583,6 +3591,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0ce5e73202a820a31f8a0ee32ada5e21029c81fd9e3ebf668a40832e4219d9d1"
 dependencies = [
  "memchr",
+ "serde",
 ]
 
 [[package]]

@@ -7,7 +7,7 @@ use crate::app::AppState;
 use crate::database::models::BlockDetails;
 use crate::database::Database;
 use crate::extractors::BlockReader;
-use crate::upload_store::{ObjectStore, UploadStore};
+use crate::upload_store::UploadStore;
 
 pub async fn handler(
     State(state): State<AppState>,
