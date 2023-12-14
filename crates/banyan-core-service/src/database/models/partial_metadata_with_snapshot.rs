@@ -109,6 +109,37 @@ impl PartialMetadataWithSnapshot {
         }
     }
 
+    /// Queries the [`Database`], marking the provided metadata entry as `current`.
+    pub async fn mark_metadata_current(
+        database: &Database,
+        metadata_id: &str,
+        stored_size: i64,
+    ) -> Result<(), sqlx::Error> {
+        let current_state = sqlx::query_scalar!(
+            r#"SELECT state as 'state: MetadataState'
+                   FROM metadata
+                   WHERE id = $1;"#,
+            metadata_id,
+        )
+        .fetch_one(database)
+        .await?;
+
+        if current_state == MetadataState::Current {
+            return Ok(());
+        }
+
+        sqlx::query_scalar!(
+            r#"UPDATE metadata SET state = 'current', data_size = $2
+                   WHERE id = $1;"#,
+            metadata_id,
+            stored_size,
+        )
+        .execute(database)
+        .await?;
+
+        Ok(())
+    }
+
     /// Queries the database, marking other rows associated with this entry's bucket as `outdated`.
     ///
     /// This downgrades other metadata for this bucket to `outdated` if they were in the `current`

@@ -5,7 +5,7 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::app::AppState;
-use crate::database::models::{MetadataState, PartialMetadataWithSnapshot};
+use crate::database::models::PartialMetadataWithSnapshot;
 use crate::database::Database;
 use crate::extractors::StorageProviderIdentity;
 
@@ -63,7 +63,13 @@ pub async fn handler(
     }
 
     if can_become_current(&database, &db_metadata_id).await? {
-        mark_metadata_current(&database, &db_metadata_id, request.data_size).await?;
+        PartialMetadataWithSnapshot::mark_metadata_current(
+            &database,
+            &db_metadata_id,
+            request.data_size,
+        )
+        .await
+        .map_err(ReportUploadError::MarkCurrentFailed)?;
         PartialMetadataWithSnapshot::mark_outdated_metadata(&database, &db_metadata_id)
             .await
             .map_err(ReportUploadError::MarkOutdatedFailed)?;
@@ -156,38 +162,6 @@ async fn can_become_current(
     Ok(checked_created_at > current_created_at)
 }
 
-async fn mark_metadata_current(
-    database: &Database,
-    metadata_id: &str,
-    stored_size: i64,
-) -> Result<(), ReportUploadError> {
-    let current_state = sqlx::query_scalar!(
-        r#"SELECT state as 'state: MetadataState'
-               FROM metadata
-               WHERE id = $1;"#,
-        metadata_id,
-    )
-    .fetch_one(database)
-    .await
-    .map_err(ReportUploadError::MarkCurrentFailed)?;
-
-    if current_state == MetadataState::Current {
-        return Ok(());
-    }
-
-    sqlx::query_scalar!(
-        r#"UPDATE metadata SET state = 'current', data_size = $2
-               WHERE id = $1;"#,
-        metadata_id,
-        stored_size,
-    )
-    .execute(database)
-    .await
-    .map_err(ReportUploadError::MarkCurrentFailed)?;
-
-    Ok(())
-}
-
 async fn redeem_storage_grant(
     database: &Database,
     provider_id: &str,
@@ -229,14 +203,14 @@ mod tests {
         let second_metadata_id = test_helpers::pending_metadata(&db, &second_bucket_id, 1).await;
 
         // Mark both of them as current
-        mark_metadata_current(&db, &first_metadata_id, 1_200_000)
+        PartialMetadataWithSnapshot::mark_metadata_current(&db, &first_metadata_id, 1_200_000)
             .await
             .expect("failed to update metadata state");
         PartialMetadataWithSnapshot::mark_outdated_metadata(&db, &first_metadata_id)
             .await
             .expect("failed to mark outdated");
 
-        mark_metadata_current(&db, &second_metadata_id, 1_200_000)
+        PartialMetadataWithSnapshot::mark_metadata_current(&db, &second_metadata_id, 1_200_000)
             .await
             .expect("failed to update metadata state");
         PartialMetadataWithSnapshot::mark_outdated_metadata(&db, &second_metadata_id)
@@ -251,7 +225,9 @@ mod tests {
     async fn test_marking_metadata_when_missing_errors() {
         let db = test_helpers::setup_database().await;
 
-        let result = mark_metadata_current(&db, "not-a-real-id", 1_200_000).await;
+        let result =
+            PartialMetadataWithSnapshot::mark_metadata_current(&db, "not-a-real-id", 1_200_000)
+                .await;
 
         assert!(result.is_err());
     }
