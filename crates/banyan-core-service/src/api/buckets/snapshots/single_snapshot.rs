@@ -15,6 +15,7 @@ pub async fn handler(
 ) -> Result<Response, SingleSnapshotError> {
     let database = state.database();
     let bucket_id = bucket_id.to_string();
+    let snapshot_id = snapshot_id.to_string();
 
     let user_id = user_identity.id().to_string();
     let query_result = sqlx::query_as!(
@@ -22,31 +23,25 @@ pub async fn handler(
         "SELECT s.* FROM snapshots AS s
              JOIN metadata AS m ON s.metadata_id = m.id
              JOIN buckets AS b ON m.bucket_id = b.id
-             WHERE b.user_id = $1 AND m.bucket_id = $2;",
+             WHERE b.user_id = $1 
+             AND m.bucket_id = $2
+             AND s.id = $3;",
         user_id,
         bucket_id,
+        snapshot_id,
     )
-    .fetch_all(&database)
+    .fetch_one(&database)
     .await
     .map_err(SingleSnapshotError::DatabaseFailure)?;
 
-    let snapshots: Vec<_> = query_result.into_iter().map(ApiSnapshot::from).collect();
-
-    for snapshot in snapshots {
-        if snapshot.id == snapshot_id.to_string() {
-            return Ok((StatusCode::OK, Json(snapshot)).into_response());
-        }
-    }
-
-    Err(SingleSnapshotError::NotFound)
+    let snapshot = ApiSnapshot::from(query_result);
+    Ok((StatusCode::OK, Json(snapshot)).into_response())
 }
 
 #[derive(Debug, thiserror::Error)]
 pub enum SingleSnapshotError {
     #[error("failed to query the database: {0}")]
     DatabaseFailure(sqlx::Error),
-    #[error("No snapshot found")]
-    NotFound,
 }
 
 impl IntoResponse for SingleSnapshotError {
