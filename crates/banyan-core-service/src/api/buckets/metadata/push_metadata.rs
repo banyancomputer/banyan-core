@@ -49,6 +49,9 @@ pub enum PushMetadataRequestError {
 
     #[error("the request was badly formatted: {0}")]
     InvalidMultipart(#[from] multer::Error),
+
+    #[error("failed to write metadata to disk: {0}")]
+    StoreFailed(#[from] PersistanceError),
 }
 
 pub async fn handler(
@@ -292,7 +295,7 @@ async fn persist_upload<'a>(
     store: &DataStore,
     path: &str,
     body: multer::Field<'a>,
-) -> Result<(String, usize), std::io::Error> {
+) -> Result<(String, usize), PersistanceError> {
     let file_path = object_store::path::Path::from(path);
     let (upload_id, mut writer) = store.put_multipart(&file_path).await?;
 
@@ -315,7 +318,7 @@ async fn persist_upload<'a>(
 async fn stream_upload_to_storage<S>(
     mut stream: S,
     writer: &mut Box<dyn AsyncWrite + Unpin + Send>,
-) -> Result<(String, usize), std::io::Error>
+) -> Result<(String, usize), PersistanceError>
 where
     S: TryStream<Ok = bytes::Bytes> + Unpin,
     S::Error: std::error::Error,
@@ -335,6 +338,12 @@ where
     let hash = hasher.finalize();
 
     Ok((hash.to_string(), bytes_written))
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum PersistanceError {
+    #[error("an I/O error occurred while writing metadata: {0}")]
+    Io(#[from] std::io::Error),
 }
 
 //#[derive(sqlx::FromRow)]
