@@ -27,11 +27,8 @@ impl<B> RequestCounter<B> {
             inner,
         }
     }
-
-    pub fn bytes_from_stream(&self) -> usize {
-        self.bytes_from_stream
-    }
 }
+
 pub type FnOnResponseEnd = fn(req_info: &RequestInfo, res_info: &ResponseInfo) -> ();
 
 pin_project! {
@@ -241,4 +238,94 @@ impl<T> From<&Request<T>> for RequestInfo {
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use std::task::{Context, Poll};
+
+    use bytes::{Buf, Bytes};
+    use http_body::Full;
+    use tokio::sync::oneshot::Receiver;
+
+    use super::*;
+
+    async fn poll_to_completion<B>(mut body: B, rx: Option<Receiver<usize>>) -> Option<usize>
+    where
+        B: Body + Unpin,
+        B::Data: Buf,
+        B::Error: Into<Box<dyn Error + Send + Sync>>,
+    {
+        let mut cx = Context::from_waker(futures::task::noop_waker_ref());
+        while let Poll::Ready(data_opt) = Pin::new(&mut body).as_mut().poll_data(&mut cx) {
+            if data_opt.is_none() {
+                break;
+            }
+        }
+
+        match rx {
+            Some(rx) => Some(rx.await.unwrap_or(0)),
+            None => None,
+        }
+    }
+
+    #[tokio::test]
+    async fn counts_ingress_correctly_for_single_chunk() {
+        let data = Bytes::from_static(b"Hello, world!");
+        let body = Full::new(data.clone());
+        let (tx, rx) = oneshot::channel();
+        let body_counter = RequestCounter::new(body, tx);
+
+        let counted_size = poll_to_completion(body_counter, Some(rx)).await;
+        assert!(counted_size.is_some());
+        assert_eq!(counted_size.unwrap(), data.len());
+    }
+
+    #[tokio::test]
+    async fn counts_ingress_correctly_for_empty_body() {
+        let body = Full::new(Bytes::new());
+        let (tx, rx) = oneshot::channel();
+        let body_counter = RequestCounter::new(body, tx);
+
+        let counted_size = poll_to_completion(body_counter, Some(rx)).await;
+        assert!(counted_size.is_some());
+        assert_eq!(counted_size.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn counts_egress_correctly_for_single_chunk() {
+        let data = Bytes::from_static(b"Goodbye, world!");
+        let body = Full::new(data.clone());
+        let headers = HeaderMap::new();
+        let request_info = RequestInfo::default();
+        let status_code = StatusCode::OK;
+        let body_counter = ResponseCounter::new(
+            body,
+            &headers,
+            request_info,
+            status_code,
+            |req_info, res_info| {
+                assert_eq!(req_info.body_bytes + req_info.header_bytes, 0);
+                assert_eq!(res_info.body_bytes + res_info.header_bytes, 15);
+            },
+        );
+
+        poll_to_completion(body_counter, None).await;
+    }
+
+    #[tokio::test]
+    async fn counts_egress_correctly_for_empty_body() {
+        let body = Full::new(Bytes::new());
+        let headers = HeaderMap::new();
+        let request_info = RequestInfo::default();
+        let status_code = StatusCode::OK;
+        let body_counter = ResponseCounter::new(
+            body,
+            &headers,
+            request_info,
+            status_code,
+            |req_info, res_info| {
+                assert_eq!(req_info.body_bytes + req_info.header_bytes, 0);
+                assert_eq!(res_info.body_bytes + res_info.header_bytes, 0);
+            },
+        );
+        poll_to_completion(body_counter, None).await;
+    }
+}

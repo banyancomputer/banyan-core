@@ -5,8 +5,8 @@ use http_body::Body;
 use tokio::sync::oneshot;
 use tower_service::Service;
 
-use crate::traffic_counter::body::{FnOnResponseEnd, RequestCounter, ResponseCounter};
-use crate::traffic_counter::future::ResponseFuture;
+use crate::body::{FnOnResponseEnd, RequestCounter, ResponseCounter};
+use crate::future::ResponseFuture;
 
 #[derive(Clone, Debug)]
 pub struct TrafficCounter<S> {
@@ -39,9 +39,7 @@ where
 
     fn call(&mut self, req: Request<ReqBody>) -> Self::Future {
         let (tx_bytes_received, rx_bytes_received) = oneshot::channel::<usize>();
-        let (parts, body) = req.into_parts();
-        let body = RequestCounter::new(body, tx_bytes_received);
-        let req = Request::from_parts(parts, body);
+        let req = req.map(|body| RequestCounter::new(body, tx_bytes_received));
         let request_info = (&req).into();
         let inner = self.inner.call(req);
         ResponseFuture {
