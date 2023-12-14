@@ -72,30 +72,29 @@ pub async fn handler(
         normalized_cids
     );
 
+    // Create query builder that can serve as the basis for every chunk
+    let mut builder = sqlx::QueryBuilder::new(format!(
+        "INSERT INTO snapshot_block_locations 
+            SELECT s.id as snapshot_id, bl.block_id 
+            FROM blocks AS b 
+            JOIN block_locations AS bl ON b.id = bl.block_id 
+            JOIN metadata AS m ON bl.metadata_id = m.id 
+            JOIN snapshots AS s 
+            WHERE m.id = \"{metadata_id}\"
+            AND s.id = \"{snapshot_id}\"
+            AND b.cid IN ("
+    ));
+
     // For every chunk of 1000 CIDs
     for cid_chunk in normalized_cids.chunks(1000) {
-        // Insert all of the Block IDs and Snapshot IDs associated with these CIDs into the table
-        let mut builder = sqlx::QueryBuilder::new(
-            r#"INSERT INTO snapshot_block_locations 
-                SELECT s.id as snapshot_id, bl.block_id 
-                FROM blocks AS b 
-                JOIN block_locations AS bl ON b.id = bl.block_id 
-                JOIN metadata AS m ON bl.metadata_id = m.id 
-                JOIN snapshots AS s 
-                WHERE m.id = "#
-        );
-        builder.push_bind(&metadata_id);
-        builder.push(" AND s.id = ");
-        builder.push_bind(&snapshot_id);
-        builder.push(" AND b.cid IN (");
-
+        // Reset the builder and append the CID list
+        builder.reset();
         let mut separated = builder.separated(", ");
         for cid in cid_chunk {
             separated.push_bind(cid);
         }
         separated.push_unseparated(");");
-        let sql = builder.sql();
-        tracing::warn!("sql: {}", sql);
+
         builder
             .build()
             .execute(&database)
