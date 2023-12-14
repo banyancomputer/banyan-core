@@ -27,7 +27,7 @@ export const SessionProvider: FC<{ children: ReactNode }> = ({ children }) => {
 	} as SessionState);
 
 	useEffect(() => {
-		const userData = getUserData()
+		const userData = getUserData();
 		const sessionKey = getSessionKey();
 
 		if (!userData || !sessionKey) {
@@ -37,8 +37,8 @@ export const SessionProvider: FC<{ children: ReactNode }> = ({ children }) => {
 
 		setSessionState({
 			...sessionState,
-			userData: getUserData(),
-			sessionKey: getSessionKey(),
+			userData,
+			sessionKey,
 		})
 	}, []);
 
