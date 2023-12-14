@@ -406,7 +406,6 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 				if (!userData) return;
 
 				if (!userData.accepted_tos_at || userData.accepted_tos_at <= +termsAndConditions.tos_date) {
-					/** TODO: uncoment when company name endpoint would be merged. */
 					openModal(
 						<TermsAndConditionsModal
 							setAreTermsAccepted={setAreTermsAccepted}
