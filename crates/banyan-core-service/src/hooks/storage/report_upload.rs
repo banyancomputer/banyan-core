@@ -5,7 +5,7 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::app::AppState;
-use crate::database::models::MetadataState;
+use crate::database::models::{MetadataState, PartialMetadataWithSnapshot};
 use crate::database::Database;
 use crate::extractors::StorageProviderIdentity;
 
@@ -64,7 +64,9 @@ pub async fn handler(
 
     if can_become_current(&database, &db_metadata_id).await? {
         mark_metadata_current(&database, &db_metadata_id, request.data_size).await?;
-        mark_outdated_metadata(&database, &db_metadata_id).await?;
+        PartialMetadataWithSnapshot::mark_outdated_metadata(&database, &db_metadata_id)
+            .await
+            .map_err(ReportUploadError::MarkOutdatedFailed)?;
     }
 
     Ok((StatusCode::NO_CONTENT, ()).into_response())
@@ -186,27 +188,6 @@ async fn mark_metadata_current(
     Ok(())
 }
 
-// Downgrade other metadata for this bucket to outdated if they were in current state except for
-// the metadata that was just updated
-async fn mark_outdated_metadata(
-    database: &Database,
-    metadata_id: &str,
-) -> Result<(), ReportUploadError> {
-    sqlx::query!(
-        r#"UPDATE metadata
-             SET state = 'outdated'
-             WHERE bucket_id = (SELECT bucket_id FROM metadata WHERE id = $1)
-                AND state = 'current'
-                AND id != $1;"#,
-        metadata_id,
-    )
-    .execute(database)
-    .await
-    .map_err(ReportUploadError::MarkOutdatedFailed)?;
-
-    Ok(())
-}
-
 async fn redeem_storage_grant(
     database: &Database,
     provider_id: &str,
@@ -251,14 +232,14 @@ mod tests {
         mark_metadata_current(&db, &first_metadata_id, 1_200_000)
             .await
             .expect("failed to update metadata state");
-        mark_outdated_metadata(&db, &first_metadata_id)
+        PartialMetadataWithSnapshot::mark_outdated_metadata(&db, &first_metadata_id)
             .await
             .expect("failed to mark outdated");
 
         mark_metadata_current(&db, &second_metadata_id, 1_200_000)
             .await
             .expect("failed to update metadata state");
-        mark_outdated_metadata(&db, &second_metadata_id)
+        PartialMetadataWithSnapshot::mark_outdated_metadata(&db, &second_metadata_id)
             .await
             .expect("failed to mark outdated");
 

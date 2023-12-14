@@ -108,4 +108,26 @@ impl PartialMetadataWithSnapshot {
             Err(err) => Err(err),
         }
     }
+
+    /// Queries the database, marking other rows associated with this entry's bucket as `outdated`.
+    ///
+    /// This downgrades other metadata for this bucket to `outdated` if they were in the `current`
+    /// state, _except_ for the metadata row with the provided identifier.
+    pub async fn mark_outdated_metadata(
+        database: &Database,
+        metadata_id: &str,
+    ) -> Result<(), sqlx::Error> {
+        sqlx::query!(
+            r#"UPDATE metadata
+             SET state = 'outdated'
+             WHERE bucket_id = (SELECT bucket_id FROM metadata WHERE id = $1)
+                AND state = 'current'
+                AND id != $1;"#,
+            metadata_id,
+        )
+        .execute(database)
+        .await?;
+
+        Ok(())
+    }
 }
