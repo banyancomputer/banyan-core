@@ -3,7 +3,6 @@ use axum::routing::{get, put};
 use axum::Router;
 
 mod all_snapshots;
-pub(crate) mod create_snapshot;
 mod restore_snapshot;
 mod single_snapshot;
 
