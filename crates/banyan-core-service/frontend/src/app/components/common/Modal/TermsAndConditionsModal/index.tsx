@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useIntl } from 'react-intl';
 
-import { CompanyNameModal } from './CompanyName';
 
 import { useModal } from '@app/contexts/modals';
 import { TermsAndColditionsClient } from '@/api/termsAndConditions';
@@ -13,7 +12,7 @@ export const TermsAndConditionsModal: React.FC<{
     terms: string, userData: RawUser, setAreTermsAccepted: React.Dispatch<React.SetStateAction<boolean>>
 }> = ({ terms, userData, setAreTermsAccepted }) => {
     const { messages } = useIntl();
-    const { openModal } = useModal();
+    const { closeModal } = useModal();
     const [isTermsRead, setIsTermsRead] = useState(true);
     const termsRef = useRef<HTMLDivElement | null>(null);
 
@@ -23,7 +22,7 @@ export const TermsAndConditionsModal: React.FC<{
         try {
             await termsClient.confirmTermsAndConditions(userData, accepted_tos_at);
             setAreTermsAccepted(true);
-            openModal(<CompanyNameModal />, null, true);
+            closeModal();
         } catch (error: any) { }
     };
 
