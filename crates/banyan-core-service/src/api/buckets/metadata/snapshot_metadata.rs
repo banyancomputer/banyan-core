@@ -1,6 +1,5 @@
 use std::collections::BTreeSet;
 
-use axum::debug_handler;
 use axum::extract::{Json, Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
@@ -11,7 +10,7 @@ use uuid::Uuid;
 use crate::app::AppState;
 use crate::extractors::UserIdentity;
 
-#[debug_handler]
+#[axum::debug_handler]
 pub async fn handler(
     user_identity: UserIdentity,
     State(state): State<AppState>,
