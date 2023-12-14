@@ -34,25 +34,12 @@ const ACCOUNT_STORAGE_QUOTA: i64 = 10 * 1_024 * 1_024 * 1_024;
 const CAR_DATA_SIZE_LIMIT: u64 = 128 * 1_024 * 1_024;
 
 /// The "official" mime type registered for CAR files, we specifically only accept version 2
-const CAR_MIME_TYPE: &'static mime::Mime =
-    &Mime::from_str("application/vnd.ipfs.car; version=2").unwrap();
+const CAR_MIME_TYPE: &'static str = "application/vnd.ipfs.car; version=2";
 
 const ONE_HUNDRED_MIB: i64 = 100 * 1024 * 1024;
 
 /// Upper size limit on the JSON payload that precedes a metadata CAR file upload (128KiB)
 const REQUEST_DATA_SIZE_LIMIT: u64 = 128 * 1_024;
-
-#[derive(Debug, thiserror::Error)]
-pub enum PushMetadataRequestError {
-    #[error("error occurred while querying database: {0}")]
-    DbQueryFailure(#[from] sqlx::Error),
-
-    #[error("the request was badly formatted: {0}")]
-    InvalidMultipart(#[from] multer::Error),
-
-    #[error("failed to write metadata to disk: {0}")]
-    StoreFailed(#[from] PersistanceError),
-}
 
 pub async fn handler(
     user: UserIdentity,
@@ -61,7 +48,7 @@ pub async fn handler(
     Path(bucket_id): Path<Uuid>,
     TypedHeader(content_type): TypedHeader<ContentType>,
     body: BodyStream,
-) -> Result<Response, PushMetadataRequestError> {
+) -> Result<Response, PushMetadataError> {
     let span = tracing::info_span!(
         "push_metadata_handler",
         bucket.id = %bucket_id,
@@ -124,7 +111,8 @@ pub async fn handler(
         }
     };
 
-    if !validate_field(&data_field, "car-upload", CAR_MIME_TYPE) {
+    let car_mime = Mime::from_str(CAR_MIME_TYPE).expect("static mime validated");
+    if !validate_field(&data_field, "car-upload", &car_mime) {
         let err_msg = serde_json::json!({"msg": "upload data is unexpected type"});
         return Ok((StatusCode::BAD_REQUEST, Json(err_msg)).into_response());
     }
@@ -228,7 +216,7 @@ pub async fn handler(
         ticket_builder.add_audience(user.ticket_subject());
         ticket_builder.add_authorization(
             storage_grant_id,
-            storage_host.url,
+            storage_host.url.clone(),
             new_authorized_capacity,
         );
 
@@ -259,10 +247,83 @@ pub async fn handler(
     Ok((StatusCode::OK, Json(response)).into_response())
 }
 
+#[derive(Debug, thiserror::Error)]
+pub enum PushMetadataError {
+    #[error("failed to run query: {0}")]
+    QueryFailure(#[from] sqlx::Error),
+
+    #[error("the request was badly formatted: {0}")]
+    InvalidMultipart(#[from] multer::Error),
+
+    #[error("failed to persist upload: {0}")]
+    PersistanceFailure(#[from] PersistanceError),
+}
+
+impl IntoResponse for PushMetadataError {
+    fn into_response(self) -> Response {
+        tracing::error!("internal error handling metadata upload: {self}");
+        let err_msg = serde_json::json!({"msg": "a backend service issue encountered an error"});
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
+    }
+}
+
+async fn persist_upload<'a>(
+    store: &DataStore,
+    path: &str,
+    body: multer::Field<'a>,
+) -> Result<(String, usize), PersistanceError> {
+    let file_path = object_store::path::Path::from(path);
+    let (upload_id, mut writer) = store.put_multipart(&file_path).await?;
+
+    let (hash, size) = match stream_upload_to_storage(body, &mut writer).await {
+        Ok(out) => out,
+        Err(err) => {
+            // This abort handles clean-up of stored files, if it fails it can be cleaned up in the
+            // background elsewhere. Ensure we return the error that is most relevant to the
+            // user/process.
+            let _ = store.abort_multipart(&file_path, &upload_id).await;
+            return Err(err);
+        }
+    };
+
+    writer.shutdown().await?;
+
+    Ok((hash, size))
+}
+
 fn rounded_storage_authorization(report: &UserStorageReport, additional_capacity: i64) -> i64 {
     let new_required_amount = report.current_consumption() + additional_capacity;
     // Integer division always rounds down, we want to round up to the nearest 100MiB
     ((new_required_amount / ONE_HUNDRED_MIB) + 1) * ONE_HUNDRED_MIB
+}
+
+async fn stream_upload_to_storage<S>(
+    mut stream: S,
+    writer: &mut Box<dyn AsyncWrite + Unpin + Send>,
+) -> Result<(String, usize), PersistanceError>
+where
+    S: TryStream<Ok = bytes::Bytes> + Unpin,
+    S::Error: std::error::Error,
+{
+    let mut car_buffer = CarBuffer::new();
+    let mut hasher = blake3::Hasher::new();
+    let mut bytes_written = 0;
+
+    while let Some(chunk) = stream
+        .try_next()
+        .await
+        .map_err(|err| PersistanceError::StreamFailure(err.to_string()))?
+    {
+        hasher.update(&chunk);
+        car_buffer.add_chunk(&chunk);
+        bytes_written += chunk.len();
+
+        writer.write_all(&chunk).await?;
+    }
+
+    let hash = hasher.finalize();
+
+    Ok((hash.to_string(), bytes_written))
 }
 
 /// Validates that a particular multipart field has the expected name and content type. Currently
@@ -289,61 +350,6 @@ fn validate_field(
     }
 
     true
-}
-
-async fn persist_upload<'a>(
-    store: &DataStore,
-    path: &str,
-    body: multer::Field<'a>,
-) -> Result<(String, usize), PersistanceError> {
-    let file_path = object_store::path::Path::from(path);
-    let (upload_id, mut writer) = store.put_multipart(&file_path).await?;
-
-    let (hash, size) = match stream_upload_to_storage(body, &mut writer).await {
-        Ok(out) => out,
-        Err(err) => {
-            // This abort handles clean-up of stored files, if it fails it can be cleaned up in the
-            // background elsewhere. Ensure we return the error that is most relevant to the
-            // user/process. 
-            let _ = store.abort_multipart(&file_path, &upload_id).await;
-            return Err(err);
-        }
-    };
-
-    writer.shutdown().await?;
-
-    Ok((hash, size))
-}
-
-async fn stream_upload_to_storage<S>(
-    mut stream: S,
-    writer: &mut Box<dyn AsyncWrite + Unpin + Send>,
-) -> Result<(String, usize), PersistanceError>
-where
-    S: TryStream<Ok = bytes::Bytes> + Unpin,
-    S::Error: std::error::Error,
-{
-    let mut car_buffer = CarBuffer::new();
-    let mut hasher = blake3::Hasher::new();
-    let mut bytes_written = 0;
-
-    while let Some(chunk) = stream.try_next().await? {
-        hasher.update(&chunk);
-        car_buffer.add_chunk(&chunk);
-        bytes_written += chunk.len();
-
-        writer.write_all(&chunk).await?;
-    }
-
-    let hash = hasher.finalize();
-
-    Ok((hash.to_string(), bytes_written))
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum PersistanceError {
-    #[error("an I/O error occurred while writing metadata: {0}")]
-    Io(#[from] std::io::Error),
 }
 
 //#[derive(sqlx::FromRow)]
@@ -481,119 +487,16 @@ pub enum PersistanceError {
 //}
 
 #[derive(Debug, thiserror::Error)]
-pub enum PushMetadataError {
-    #[error("failed to run query: {0}")]
-    QueryFailure(#[from] sqlx::Error),
-}
+pub enum PersistanceError {
+    #[error("an I/O error occurred while writing metadata: {0}")]
+    Io(#[from] std::io::Error),
 
-//#[derive(Debug, thiserror::Error)]
-//pub enum PushMetadataError {
-//
-//    #[error("failed updating zero data metadata to current")]
-//    ActivationFailed(sqlx::Error),
-//
-//    #[error("failed to validate bucket was authorized by user: {0}")]
-//    BucketAuthorizationFailed(sqlx::Error),
-//
-//    #[error("unable to pull next multipart field: {0}")]
-//    BrokenMultipartField(multer::Error),
-//
-//    #[error("failed to record metadata size and hash: {0}")]
-//    DataMetaStoreFailed(sqlx::Error),
-//
-//    #[error("corrupted uuid provided: {0}")]
-//    DatabaseUuidCorrupted(uuid::Error),
-//
-//    #[error("failed to mark bucket key as approved: {0}")]
-//    KeyApprovalFailed(sqlx::Error),
-//
-//    #[error("failed to create entry for metadata in the database: {0}")]
-//    MetadataRegistrationFailed(sqlx::Error),
-//
-//    #[error("unable to parse valid boundary: {0}")]
-//    InvalidBoundary(multer::Error),
-//
-//    #[error("provided request data couldn't be decoded: {0}")]
-//    InvalidRequestData(serde_json::Error),
-//
-//    #[error("invalid CID provided: {0}")]
-//    InvalidCid(cid::Error),
-//
-//    #[error("account reached upload quota and recording the failure may have failed: {0:?}")]
-//    LimitReached(Option<sqlx::Error>),
-//
-//    #[error("request did not contain required data segment")]
-//    MissingRequestData,
-//
-//    #[error("request did not contain required metadata segment")]
-//    MissingMetadata,
-//
-//    #[error("unable to locate a bucket for the current authorized user")]
-//    NoAuthorizedBucket,
-//
-//    #[error("no storage host is available with sufficient storage")]
-//    NoAvailableStorage,
-//
-//    #[error("unable to retrieve request data: {0}")]
-//    RequestDataUnavailable(multer::Error),
-//
-//    #[error("failed to query for available storage host: {0}")]
-//    StorageHostLookupFailed(sqlx::Error),
-//
-//    #[error("unable to determine if user is within their quota: {0}")]
-//    UnableToCheckAccounting(sqlx::Error),
-//
-//    #[error("failed to create new storage authorization: {0}")]
-//    UnableToGenerateAuthorization(#[from] StorageAuthorizationError),
-//
-//    #[error("unable to identify how much data user has stored with each storage provider")]
-//    UnableToIdentifyStoredAmount(sqlx::Error),
-//
-//    #[error("unable to locate existing storage authorizations for account: {0}")]
-//    UnableToRetrieveAuthorizations(sqlx::Error),
-//
-//    #[error("unable to mark blocks as expired: {0}")]
-//    UnableToExpireBlocks(sqlx::Error),
-//
-//    #[error("unable to enqueue a task to prune blocks {0}")]
-//    UnableEnqueuePruneBlocksTask(banyan_task::TaskStoreError),
-//
-//    #[error("failed to store metadata on disk: {0}, marking as failed might have had an error as well: {1:?}")]
-//    UploadStoreFailed(StoreMetadataError, Option<sqlx::Error>),
-//}
-//
-//impl IntoResponse for PushMetadataError {
-//    fn into_response(self) -> Response {
-//        match &self {
-//            PushMetadataError::ChangeInProgress => {
-//                let err_msg = serde_json::json!({"msg": "metadata write already in progress!"});
-//                (StatusCode::CONFLICT, Json(err_msg)).into_response()
-//            }
-//            PushMetadataError::BrokenMultipartField(_)
-//            | PushMetadataError::InvalidBoundary(_)
-//            | PushMetadataError::InvalidRequestData(_)
-//            | PushMetadataError::InvalidCid(_)
-//            | PushMetadataError::MissingRequestData => {
-//                let err_msg = serde_json::json!({"msg": "invalid request"});
-//                (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
-//            }
-//            PushMetadataError::NoAvailableStorage => {
-//                tracing::error!("no storage host available with capacity to store pushed data!");
-//                let err_msg = serde_json::json!({"msg": "an internal server error occurred"});
-//                (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
-//            }
-//            PushMetadataError::NoAuthorizedBucket => {
-//                let err_msg = serde_json::json!({"msg": "not found"});
-//                (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
-//            }
-//            _ => {
-//                tracing::error!("failed to push metadata: {self}");
-//                let err_msg = serde_json::json!({"msg": "an internal server error occurred"});
-//                (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
-//            }
-//        }
-//    }
-//}
+    #[error("upload library encountered setup error: {0}")]
+    StoreError(#[from] object_store::Error),
+
+    #[error("failure in client stream: {0}")]
+    StreamFailure(String),
+}
 
 #[derive(Deserialize)]
 pub struct PushMetadataRequest {
@@ -610,36 +513,6 @@ pub struct PushMetadataRequest {
 
     pub deleted_block_cids: BTreeSet<String>,
 }
-
-//#[derive(Debug, thiserror::Error)]
-//pub enum StorageAuthorizationError {
-//    #[error("failed to record new grant storage authorization in the database: {0}")]
-//    GrantRecordingFailed(sqlx::Error),
-//
-//    #[error("failed to sign new storage authorization: {0}")]
-//    SignatureFailed(jwt_simple::Error),
-//}
-//
-//#[derive(Debug, thiserror::Error)]
-//pub enum StoreMetadataError {
-//    #[error("failed to finalize storage to disk: {0}")]
-//    NotFinalized(std::io::Error),
-//
-//    #[error("failed to begin file write transaction: {0}")]
-//    PutFailed(object_store::Error),
-//
-//    #[error("failed to stream upload to storage: {0}, aborting might have also failed: {1:?}")]
-//    StreamingFailed(StreamStoreError, Option<object_store::Error>),
-//}
-//
-//#[derive(Debug, thiserror::Error)]
-//pub enum StreamStoreError {
-//    #[error("failed to retrieve next expected chunk: {0}")]
-//    NeedChunk(String),
-//
-//    #[error("failed to write out chunk: {0}")]
-//    WriteFailed(std::io::Error),
-//}
 
 #[cfg(test)]
 mod tests {

@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id FROM metadata\n                       WHERE bucket_id = $1\n                           AND created_at > DATETIME('now', $2)\n                       ORDER BY created_at DESC\n                       LIMIT 1;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "cee5152cf7de20f5b0229b4bec2137a0acc32072d47ae52d38be5f668adc512a"
+}

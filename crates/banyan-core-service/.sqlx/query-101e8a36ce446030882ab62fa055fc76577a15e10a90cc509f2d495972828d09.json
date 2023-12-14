@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id FROM metadata\n                   WHERE bucket_id = $1 AND state = 'pending'\n                   ORDER BY created_at ASC\n                   LIMIT 1;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "101e8a36ce446030882ab62fa055fc76577a15e10a90cc509f2d495972828d09"
+}

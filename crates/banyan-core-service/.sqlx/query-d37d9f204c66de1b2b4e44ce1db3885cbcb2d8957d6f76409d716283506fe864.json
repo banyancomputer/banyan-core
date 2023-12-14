@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, name, url FROM storage_hosts\n               WHERE (available_storage - used_storage) > $1\n               ORDER BY RANDOM()\n               LIMIT 1;",
+  "query": "SELECT id,name,url FROM storage_hosts\n                   WHERE (available_storage - used_storage) > $1\n                   ORDER BY RANDOM()\n                   LIMIT 1;",
   "describe": {
     "columns": [
       {
@@ -28,5 +28,5 @@
       false
     ]
   },
-  "hash": "6604a28656da7a91dd10ecadedd5d6ccda76779edc02a5bc3ca0aea3ce6b9217"
+  "hash": "d37d9f204c66de1b2b4e44ce1db3885cbcb2d8957d6f76409d716283506fe864"
 }

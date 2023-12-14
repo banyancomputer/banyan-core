@@ -102,8 +102,4 @@ impl UserStorageReport {
     pub fn current_consumption(&self) -> i64 {
         self.current_consumption
     }
-
-    pub fn maximum_authorized(&self) -> Option<i64> {
-        self.maximum_authorized
-    }
 }

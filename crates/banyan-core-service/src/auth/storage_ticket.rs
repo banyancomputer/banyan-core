@@ -48,7 +48,7 @@ impl StorageTicketBuilder {
     }
 
     pub fn build(self) -> JWTClaims<StorageTicket> {
-        let mut ticket = StorageTicket::with_capabilities(self.capabilities);
+        let ticket = StorageTicket::with_capabilities(self.capabilities);
 
         let mut claims = Claims::with_custom_claims(ticket, STORAGE_TICKET_DURATION.into())
             .with_audiences(self.audience)
@@ -76,7 +76,7 @@ impl StorageTicketBuilder {
 /// platform to track which tickets have been redeemed and in turn are considered active (most
 /// recently generated one that has been redeemed is considered the current one).
 #[derive(Deserialize, Serialize)]
-struct StorageCapabilities {
+pub struct StorageCapabilities {
     /// The number of bytes that a client is allowed to store at the specific storage host
     /// associated with this capability.
     #[serde(rename = "available_storage")]

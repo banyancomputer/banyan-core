@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT authorized_amount FROM storage_grants\n                   WHERE storage_host_id = $1\n                       AND user_id = $2\n                       AND redeemed_at IS NOT NULL\n                   ORDER BY created_at DESC\n                   LIMIT 1;",
+  "describe": {
+    "columns": [
+      {
+        "name": "authorized_amount",
+        "ordinal": 0,
+        "type_info": "Int64"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "1efa20bc7a9bc57402e4e020be191508975c5a0a835f883466ca55fc43d1d977"
+}
