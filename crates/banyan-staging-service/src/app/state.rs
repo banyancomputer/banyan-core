@@ -5,7 +5,9 @@ use url::Url;
 
 use crate::app::{Config, Secrets};
 use crate::database::{self, Database, DatabaseSetupError};
-use crate::upload_store::{UploadStore, UploadStoreConnection, UploadStoreError};
+use crate::upload_store::{
+    UploadStore, UploadStoreConnection, UploadStoreConnectionError, UploadStoreError,
+};
 use crate::utils::{fingerprint_key_pair, fingerprint_public_key, SigningKey, VerificationKey};
 
 #[derive(Clone)]
@@ -14,9 +16,6 @@ pub struct State {
     /// Access to the database
     database: Database,
     /// Connection configuration for the upload store
-    // TODO: it would be great if we could just pass the store and not the connection
-    // TODO: configuring s3 here means that the state is carrying around secrets within the builder
-    //      this is not ideal, but it's also not clear how to avoid it
     upload_store_connection: UploadStoreConnection,
 
     // Secrets
@@ -42,12 +41,13 @@ pub struct State {
 
 impl State {
     pub async fn from_config(config: &Config) -> Result<Self, StateSetupError> {
+        // Try and parse the upload store connection
+        let upload_store_connection = config.upload_store_url().try_into()?;
         // Do a test setup to make sure the upload store exists and is writable as an early
         // sanity check
-        UploadStore::new(config.upload_store_connection())?;
+        UploadStore::new(&upload_store_connection)?;
 
-        let database = database::connect(&config.database_url())
-            .await?;
+        let database = database::connect(&config.database_url()).await?;
 
         let service_signing_key = load_or_create_service_key(&config.service_key_path())?;
         let service_verification_key = service_signing_key.verifier();
@@ -59,7 +59,7 @@ impl State {
 
         Ok(Self {
             database,
-            upload_store_connection: config.upload_store_connection().clone(),
+            upload_store_connection,
 
             secrets,
 
@@ -112,7 +112,10 @@ impl State {
 
 #[derive(Debug, thiserror::Error)]
 pub enum StateSetupError {
-    #[error("unable to access configured upload store: {0}")]
+    #[error("unable to parse url for upload store: {0}")]
+    UploadStoreConnection(#[from] UploadStoreConnectionError),
+
+    #[error("unable to access upload store: {0}")]
     UploadStore(#[from] UploadStoreError),
 
     #[error("failed to setup the database: {0}")]
@@ -137,8 +140,7 @@ pub enum StateSetupError {
 fn load_or_create_service_key(path: &PathBuf) -> Result<SigningKey, StateSetupError> {
     // Try to load or otherwise generate a new key
     let service_key_inner = if path.exists() {
-        let service_key_bytes =
-            std::fs::read(path).map_err(StateSetupError::ServiceKeyRead)?;
+        let service_key_bytes = std::fs::read(path).map_err(StateSetupError::ServiceKeyRead)?;
         let service_key_pem = String::from_utf8_lossy(&service_key_bytes);
         let service_key =
             ES384KeyPair::from_pem(&service_key_pem).map_err(StateSetupError::InvalidServiceKey)?;

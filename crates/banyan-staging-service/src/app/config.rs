@@ -6,7 +6,6 @@ use tracing::Level;
 use url::Url;
 
 use crate::app::Version;
-use crate::upload_store::{AmazonS3Builder, UploadStoreConnection};
 
 #[derive(Debug)]
 pub struct Config {
@@ -18,7 +17,7 @@ pub struct Config {
     /// The URL of the database to use (SQLite)
     database_url: Url,
     /// Where to store uploaded objects
-    upload_store_connection: UploadStoreConnection,
+    upload_store_url: Url,
 
     /// The unique name fo the service, as registered with the platform
     service_name: String,
@@ -84,54 +83,15 @@ impl Config {
         let database_url = Url::parse(&database_str).map_err(ConfigError::InvalidDatabaseUrl)?;
 
         // Try and parse an upload directory from the CLI and Env
-        let maybe_upload_dir_str = match cli_args.opt_value_from_str("--upload-dir")? {
-            Some(path) => Some(path),
-            None => match std::env::var("UPLOAD_DIR") {
-                Ok(ud) if !ud.is_empty() => Some(ud),
-                _ => None,
+        let upload_store_url_str = match cli_args.opt_value_from_str("--upload-store-url")? {
+            Some(usus) => usus,
+            None => match std::env::var("UPLOAD_STORE_URL") {
+                Ok(usus) if !usus.is_empty() => usus,
+                _ => return Err(ConfigError::MissingUploadStoreUrl),
             },
         };
-
-        // Strip off the option and determine if we should use S3 or local storage
-        let upload_store_connection = match maybe_upload_dir_str {
-            Some(upload_dir_str) => {
-                let upload_directory = PathBuf::from(upload_dir_str);
-                if !upload_directory.exists() || !upload_directory.is_dir() {
-                    return Err(ConfigError::InvalidUploadDirectory(upload_directory));
-                }
-                UploadStoreConnection::Local(upload_directory)
-            }
-            None => {
-                // This is the only S3 specific configuration option, everything else should be accessible
-                // through the environment
-                let maybe_upload_bucket = match cli_args.opt_value_from_str("--upload-bucket-name")? {
-                    Some(ub) => Some(ub),
-                    None => match std::env::var("UPLOAD_BUCKET_NAME") {
-                        Ok(ub) if !ub.is_empty() => Some(ub),
-                        _ => None,
-                    },
-                };
-
-                match maybe_upload_bucket {
-                    Some(upload_bucket) => {
-                        // Parse our builder from the environment. We should have:
-                        // - AWS_ACCESS_KEY_ID
-                        // - AWS_SECRET_ACCESS_KEY
-                        // - AWS_REGION 
-                        // - AWS_ENDPOINT
-                        // The bucket should be provided as an argument and already exist at the endpoint
-                        let builder = AmazonS3Builder::from_env()
-                            // Allow HTTP connections in debug mode
-                            .with_allow_http(cfg!(debug_assertions))
-                            .with_bucket_name(upload_bucket);
-                        UploadStoreConnection::S3(builder)
-                    }
-                    None => {
-                        return Err(ConfigError::MissingS3BucketName);
-                    }
-                }
-            }
-        };
+        let upload_store_url =
+            Url::parse(&upload_store_url_str).map_err(ConfigError::InvalidUploadStoreUrl)?;
 
         // Service identity configuration
 
@@ -193,7 +153,7 @@ impl Config {
             log_level,
 
             database_url,
-            upload_store_connection,
+            upload_store_url,
 
             service_name,
             service_hostname,
@@ -217,8 +177,8 @@ impl Config {
         self.database_url.clone()
     }
 
-    pub fn upload_store_connection(&self) -> &UploadStoreConnection {
-        &self.upload_store_connection
+    pub fn upload_store_url(&self) -> Url {
+        self.upload_store_url.clone()
     }
 
     pub fn service_name(&self) -> &str {
@@ -259,12 +219,12 @@ pub enum ConfigError {
 
     #[error("invalid log level: {0}")]
     InvalidLogLevel(tracing::metadata::ParseLevelError),
-    
-    #[error("invalid upload directory: {0}")]
-    InvalidUploadDirectory(PathBuf),
 
-    #[error("missing bucket name for S3 upload storage")]
-    MissingS3BucketName,
+    #[error("invalid upload store URI: {0}")]
+    InvalidUploadStoreUrl(url::ParseError),
+
+    #[error("missing upload store uri")]
+    MissingUploadStoreUrl,
 
     #[error("signing key gen failed: {0}")]
     ServiceKeyGenFailed(jwt_simple::Error),
@@ -288,11 +248,20 @@ fn print_help() {
     println!("    --log-level LOG_LEVEL                 Specify the log level to use, by default");
     println!("                                          this is INFO\n");
     println!("    --database-url DATABASE_URL           Configure the url for the sqlite database (default ./data/server.db)");
-    println!("    --upload-dir UPLOAD_DIR               Path used to store uploaded client data. Takes");
-    println!("                                          precedence over S3 if configured (default ./data/uploads)");
-    println!("    --upload-bucket-name UPLOAD_BUCKET_NAME");
-    println!("                                          The name of the S3 bucket to use for uploads. If specified a proper");
-    println!("                                          S3 connection must also be configured through the environment\n");
+    println!("    --upload-store-url UPLOAD_STORE_URL   Configure the URL for the upload store. There is no default value for this");
+    println!("                                          option, it must be specified. If the URL is a local path, specify it as:");
+    println!("                                          -> file://<PATH_TO_UPLOAD_DIR>");
+    println!("                                          This must be a path to a directory that exists and is writable.");
+    println!(
+        "                                          If the URL is an S3 bucket, specify it as:"
+    );
+    println!("                                          -> http://<AWS_ACCESS_KEY_ID>:<AWS_SECRET_ACCESS_KEY>@<HOST>:<PORT>/<AWS_REGION>/<BUCKET_NAME>/<OPTIONAL_PREFIX>");
+    println!("                                          for connection over http, or");
+    println!("                                          -> https://<AWS_ACCESS_KEY_ID>:<AWS_SECRET_ACCESS_KEY>@s3.<REGION>.<ENDPOINT>/<BUCKET_NAME>/<OPTIONAL_PREFIX>");
+    println!("                                          for connection over https. The AWS credentials must have permission to");
+    println!("                                          read and write to the bucket.\n");
+    println!("                                          If no option is specified, the service will attempt to load the UPLOAD_STORE_URL");
+    println!("                                          environment variable. If not present, the service will fail to start.\n");
     println!("    --service-name SERVICE_NAME           The unique name of the service, as registered with the platform. (default banyan-storage-provider)");
     println!("    --service-hostname SERVICE_HOSTNAME   The hostname of this service (default http://127.0.0.1:3002)");
     println!("    --service-key-path SERVICE_KEY_PATH   Path to the p384 private key used for service token signing and verification");
