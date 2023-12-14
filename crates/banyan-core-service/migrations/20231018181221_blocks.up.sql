@@ -30,11 +30,6 @@ CREATE TABLE block_locations (
   pruned_at TIMESTAMP
 );
 
-CREATE TABLE snapshot_block_locations (
-  snapshot_id TEXT NOT NULL REFERENCES snapshots(id),
-  block_id TEXT NOT NULL REFERENCES blocks(id)
-);
-
 CREATE UNIQUE INDEX idx_uploads_blocks_on_metadata_id_block_id_storage_host_id
   ON block_locations(metadata_id, block_id, storage_host_id)
   WHERE expired_at IS NULL AND pruned_at IS NULL;
