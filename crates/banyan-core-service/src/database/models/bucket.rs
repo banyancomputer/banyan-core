@@ -1,5 +1,8 @@
+use banyan_task::TaskLikeExt;
+
 use crate::database::models::{BucketType, StorageClass};
 use crate::database::DatabaseConnection;
+use crate::tasks::{PruneBlock, PruneBlocksTask};
 
 /// Used to prevent writes of new metadata versions when there is a newer metadata currently being
 /// written. This protection is needed until we can handle merge conflicts and resolve the rapid

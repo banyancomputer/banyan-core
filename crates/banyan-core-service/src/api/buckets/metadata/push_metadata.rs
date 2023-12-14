@@ -6,7 +6,6 @@ use axum::headers::ContentType;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::{Json, TypedHeader};
-//use banyan_task::TaskLikeExt;
 use futures::{TryStream, TryStreamExt};
 use jwt_simple::prelude::*;
 use mime::Mime;
@@ -22,7 +21,6 @@ use crate::database::models::{
     StorageHost, User, UserStorageReport,
 };
 use crate::extractors::{DataStore, UserIdentity};
-//use crate::tasks::{PruneBlock, PruneBlocksTask};
 use crate::utils;
 use crate::utils::car_buffer::CarBuffer;
 
@@ -74,7 +72,7 @@ pub async fn handler(
     }
 
     // Request is authorized, and we're ready to receive it. Start processing the multipart
-    // payload...
+    // segments of the request.
 
     let mime_ct = mime::Mime::from(content_type);
     let boundary = multer::parse_boundary(mime_ct)?;
@@ -88,6 +86,8 @@ pub async fn handler(
         );
     let mut multipart = multer::Multipart::with_constraints(body, boundary, constraints);
 
+    // First multipart is the uploaded metadata request details
+
     let request_field = match multipart.next_field().await? {
         Some(f) => f,
         None => {
@@ -99,21 +99,6 @@ pub async fn handler(
 
     if !validate_field(&request_field, "request-data", &mime::APPLICATION_JSON) {
         let err_msg = serde_json::json!({"msg": "request field is invalid"});
-        return Ok((StatusCode::BAD_REQUEST, Json(err_msg)).into_response());
-    }
-
-    let data_field = match multipart.next_field().await? {
-        Some(d) => d,
-        None => {
-            tracing::warn!("upload contained no data");
-            let err_msg = serde_json::json!({"msg": "missing request data"});
-            return Ok((StatusCode::BAD_REQUEST, Json(err_msg)).into_response());
-        }
-    };
-
-    let car_mime = Mime::from_str(CAR_MIME_TYPE).expect("static mime validated");
-    if !validate_field(&data_field, "car-upload", &car_mime) {
-        let err_msg = serde_json::json!({"msg": "upload data is unexpected type"});
         return Ok((StatusCode::BAD_REQUEST, Json(err_msg)).into_response());
     }
 
@@ -165,6 +150,25 @@ pub async fn handler(
     // clean up behind the scenes. The upload itself will also dwarf the rest of the time of this
     // request, limiting the time in those transactions is a good idea.
     conn.commit().await?;
+
+    // Begin work on the second portion of the multipart request which is the raw data payload for
+    // the encrypted metadata from the client. This is effectively our new FS version, but some
+    // additional book keeping and data transfer needs to occur before we can mark this as active.
+
+    let data_field = match multipart.next_field().await? {
+        Some(d) => d,
+        None => {
+            tracing::warn!("upload contained no data");
+            let err_msg = serde_json::json!({"msg": "missing request data"});
+            return Ok((StatusCode::BAD_REQUEST, Json(err_msg)).into_response());
+        }
+    };
+
+    let car_mime = Mime::from_str(CAR_MIME_TYPE).expect("static mime validated");
+    if !validate_field(&data_field, "car-upload", &car_mime) {
+        let err_msg = serde_json::json!({"msg": "upload data is unexpected type"});
+        return Ok((StatusCode::BAD_REQUEST, Json(err_msg)).into_response());
+    }
 
     let file_name = format!("{bucket_id}/{metadata_id}.car");
     let (hash, size) = persist_upload(&store, &file_name, data_field).await?;
