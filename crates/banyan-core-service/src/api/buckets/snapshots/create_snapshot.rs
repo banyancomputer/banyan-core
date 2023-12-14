@@ -40,6 +40,8 @@ pub async fn handler(
     .map_err(CreateSnapshotError::MetadataUnavailable)?
     .ok_or(CreateSnapshotError::NotFound)?;
 
+    tracing::info!("owned_metadata_id: {}, metadata_id: {}", owned_metadata_id, metadata_id);
+
     let snapshot_id = sqlx::query_scalar!(
         r#"INSERT INTO snapshots (metadata_id, state)
                VALUES ($1, 'pending')
@@ -50,7 +52,7 @@ pub async fn handler(
     .await
     .map_err(CreateSnapshotError::SaveFailed)?;
 
-    // Grab all the cids
+    // Normalize all the CIDs
     let normalized_cids = request
         .active_cids
         .into_iter()
@@ -65,14 +67,21 @@ pub async fn handler(
         normalized_cids
     );
 
-    // Batched writes of 1k
+    
     for cid_chunk in &normalized_cids.into_iter().chunks(1000) {
         // Build a query for all 1k cids
-        let mut builder =
-            sqlx::QueryBuilder::new("INSERT INTO snapshot_block_locations(snapshot_id, block_id) ");
-        builder.push_values(cid_chunk, |mut build, cid| {
-            build.push_bind(snapshot_id.clone()).push_bind(cid);
-        });
+        let mut builder = sqlx::QueryBuilder::new(r#"
+            INSERT INTO snapshot_block_locations 
+                SELECT s.id as snapshot_id, bl.block_id 
+                FROM blocks AS b 
+                JOIN block_locations AS bl ON b.id = bl.block_id 
+                JOIN metadata AS m ON bl.metadata_id = m.id 
+                JOIN snapshots AS s WHERE b.cid IN (
+        "#);
+        for cid in cid_chunk {
+            builder.push(&format!("\"{cid}\", "));
+        }
+        builder.push(");");
         builder
             .build()
             .execute(&database)
