@@ -1,6 +1,12 @@
+use std::collections::BTreeSet;
+
 use axum::extract::{Json, Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
+use cid::multibase::Base;
+use cid::Cid;
+use itertools::Itertools;
+use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::app::AppState;
@@ -10,9 +16,9 @@ pub async fn handler(
     user_identity: UserIdentity,
     State(state): State<AppState>,
     Path((bucket_id, metadata_id)): Path<(Uuid, Uuid)>,
+    Json(request): Json<CreateSnapshotRequest>,
 ) -> Result<Response, CreateSnapshotError> {
     let database = state.database();
-
     let bucket_id = bucket_id.to_string();
     let metadata_id = metadata_id.to_string();
 
@@ -44,6 +50,36 @@ pub async fn handler(
     .await
     .map_err(CreateSnapshotError::SaveFailed)?;
 
+    // Grab all the cids
+    let normalized_cids = request
+        .active_cids
+        .into_iter()
+        .map(|cid| {
+            cid.to_string_of_base(Base::Base64Url)
+                .map_err(CreateSnapshotError::InvalidInternalCid)
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+
+    tracing::info!(
+        "developing associations with these cids for snapshot: {:?}",
+        normalized_cids
+    );
+
+    // Batched writes of 1k
+    for cid_chunk in &normalized_cids.into_iter().chunks(1000) {
+        // Build a query for all 1k cids
+        let mut builder =
+            sqlx::QueryBuilder::new("INSERT INTO snapshot_block_locations(snapshot_id, block_id) ");
+        builder.push_values(cid_chunk, |mut build, cid| {
+            build.push_bind(snapshot_id.clone()).push_bind(cid);
+        });
+        builder
+            .build()
+            .execute(&database)
+            .await
+            .map_err(CreateSnapshotError::BlockAssociationFailed)?;
+    }
+
     let resp_msg = serde_json::json!({ "id": snapshot_id });
     Ok((StatusCode::OK, Json(resp_msg)).into_response())
 }
@@ -56,8 +92,14 @@ pub enum CreateSnapshotError {
     #[error("unable to locate requested metadata: {0}")]
     MetadataUnavailable(sqlx::Error),
 
-    #[error("saving new snapshot association failed")]
+    #[error("saving new snapshot association failed: {0}")]
     SaveFailed(sqlx::Error),
+
+    #[error("associating the snapshot with the block cid failed: {0}")]
+    BlockAssociationFailed(sqlx::Error),
+
+    #[error("active cid list was in some way invalid: {0}")]
+    InvalidInternalCid(cid::Error),
 }
 
 impl IntoResponse for CreateSnapshotError {
@@ -74,4 +116,11 @@ impl IntoResponse for CreateSnapshotError {
             }
         }
     }
+}
+
+#[derive(Deserialize)]
+pub struct CreateSnapshotRequest {
+    pub bucket_id: Uuid,
+    pub metadata_id: Uuid,
+    pub active_cids: BTreeSet<Cid>,
 }

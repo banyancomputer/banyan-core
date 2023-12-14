@@ -7,12 +7,12 @@ mod single_metadata;
 
 use std::error::Error;
 
-use super::snapshots::create_snapshot;
 use axum::body::HttpBody;
 use axum::routing::{get, post};
 use axum::Router;
 
 pub use self::push_metadata::STORAGE_TICKET_DURATION;
+use super::snapshots::create_snapshot;
 use crate::app::AppState;
 
 pub fn router<B>(state: AppState) -> Router<AppState, B>
