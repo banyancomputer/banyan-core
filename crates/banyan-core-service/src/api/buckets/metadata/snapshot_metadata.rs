@@ -65,11 +65,6 @@ pub async fn handler(
         })
         .collect::<Result<Vec<_>, _>>()?;
 
-    tracing::info!(
-        "developing associations with these cids for snapshot: {:?}",
-        normalized_cids
-    );
-
     // Create query builder that can serve as the basis for every chunk
     let mut builder = sqlx::QueryBuilder::new(format!(
         "INSERT INTO snapshot_block_locations 
