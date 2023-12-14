@@ -40,12 +40,6 @@ pub async fn handler(
     .map_err(CreateSnapshotError::MetadataUnavailable)?
     .ok_or(CreateSnapshotError::NotFound)?;
 
-    tracing::info!(
-        "owned_metadata_id: {}, metadata_id: {}",
-        metadata_id,
-        metadata_id
-    );
-
     let snapshot_id = sqlx::query_scalar!(
         r#"INSERT INTO snapshots (metadata_id, state)
                VALUES ($1, 'pending')
