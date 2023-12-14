@@ -62,7 +62,10 @@ pub async fn handler(
         .map_err(ReportUploadError::UnableToRecordBlock)?;
     }
 
-    if can_become_current(&database, &db_metadata_id).await? {
+    if PartialMetadataWithSnapshot::can_become_current(&database, &db_metadata_id)
+        .await
+        .map_err(ReportUploadError::MarkOutdatedFailed)?
+    {
         PartialMetadataWithSnapshot::mark_metadata_current(
             &database,
             &db_metadata_id,
@@ -130,36 +133,6 @@ async fn associate_upload(
     .map_err(ReportUploadError::NoUploadAssociation)?;
 
     Ok(())
-}
-
-async fn can_become_current(
-    database: &Database,
-    metadata_id: &str,
-) -> Result<bool, ReportUploadError> {
-    let checked_created_at = sqlx::query_scalar!(
-        r#"SELECT created_at FROM metadata WHERE id = $1;"#,
-        metadata_id,
-    )
-    .fetch_one(database)
-    .await
-    .map_err(ReportUploadError::MarkCurrentFailed)?;
-
-    let maybe_current_created_at = sqlx::query_scalar!(
-        r#"SELECT created_at FROM metadata
-               WHERE state = 'current'
-               ORDER BY created_at DESC
-               LIMIT 1;"#
-    )
-    .fetch_optional(database)
-    .await
-    .map_err(ReportUploadError::MarkCurrentFailed)?;
-
-    let current_created_at = match maybe_current_created_at {
-        Some(cca) => cca,
-        None => return Ok(true),
-    };
-
-    Ok(checked_created_at > current_created_at)
 }
 
 async fn redeem_storage_grant(
@@ -238,28 +211,33 @@ mod tests {
         let bucket_id = test_helpers::sample_bucket(&db).await;
 
         // an unknown ID is an error
-        let result = can_become_current(&db, "missing-id").await;
+        let result = PartialMetadataWithSnapshot::can_become_current(&db, "missing-id").await;
         assert!(result.is_err());
 
         let older_pending_metadata_id = test_helpers::pending_metadata(&db, &bucket_id, 1).await;
 
         // no current metadata present, so we can become current
-        assert!(can_become_current(&db, &older_pending_metadata_id)
-            .await
-            .expect("can check"));
+        assert!(
+            PartialMetadataWithSnapshot::can_become_current(&db, &older_pending_metadata_id)
+                .await
+                .expect("can check")
+        );
 
         tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
         test_helpers::current_metadata(&db, &bucket_id, 2).await;
 
         // there is a newer version, we can't become current anymore
-        assert!(!can_become_current(&db, &older_pending_metadata_id)
-            .await
-            .expect("can check"));
+        assert!(
+            !PartialMetadataWithSnapshot::can_become_current(&db, &older_pending_metadata_id)
+                .await
+                .expect("can check")
+        );
 
         // the id is newer than the current one and exists
         tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
         let newer_pending_metadata_id = test_helpers::pending_metadata(&db, &bucket_id, 3).await;
-        let result = can_become_current(&db, &newer_pending_metadata_id).await;
+        let result =
+            PartialMetadataWithSnapshot::can_become_current(&db, &newer_pending_metadata_id).await;
         dbg!(&result);
         assert!(result.expect("can check"));
     }

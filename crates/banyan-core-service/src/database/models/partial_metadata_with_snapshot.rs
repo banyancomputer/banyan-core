@@ -161,4 +161,33 @@ impl PartialMetadataWithSnapshot {
 
         Ok(())
     }
+
+    /// Queries the [`Database`], returning `true` if this entry can be marked as `current`.
+    pub async fn can_become_current(
+        database: &Database,
+        metadata_id: &str,
+    ) -> Result<bool, sqlx::Error> {
+        let checked_created_at = sqlx::query_scalar!(
+            r#"SELECT created_at FROM metadata WHERE id = $1;"#,
+            metadata_id,
+        )
+        .fetch_one(database)
+        .await?;
+
+        let maybe_current_created_at = sqlx::query_scalar!(
+            r#"SELECT created_at FROM metadata
+               WHERE state = 'current'
+               ORDER BY created_at DESC
+               LIMIT 1;"#
+        )
+        .fetch_optional(database)
+        .await?;
+
+        let current_created_at = match maybe_current_created_at {
+            Some(cca) => cca,
+            None => return Ok(true),
+        };
+
+        Ok(checked_created_at > current_created_at)
+    }
 }
