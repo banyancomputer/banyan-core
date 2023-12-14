@@ -36,7 +36,7 @@ pub static PROVIDER_CONFIGS: phf::Map<&'static str, ProviderConfig> = phf::phf_m
     ),
 };
 
-// Name of the cookie used to store the session identifier
+/// Name of the cookie used to store the session identifier
 pub static SESSION_COOKIE_NAME: &str = "_session_id";
 
 /// Name of the cookie used to store user related data
