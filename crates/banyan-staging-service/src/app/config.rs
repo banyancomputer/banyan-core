@@ -104,7 +104,7 @@ impl Config {
             None => {
                 // This is the only S3 specific configuration option, everything else should be accessible
                 // through the environment
-                let maybe_upload_bucket = match cli_args.opt_value_from_str("--upload-bucket")? {
+                let maybe_upload_bucket = match cli_args.opt_value_from_str("--upload-bucket-name")? {
                     Some(ub) => Some(ub),
                     None => match std::env::var("UPLOAD_BUCKET_NAME") {
                         Ok(ub) if !ub.is_empty() => Some(ub),
@@ -290,7 +290,7 @@ fn print_help() {
     println!("    --database-url DATABASE_URL           Configure the url for the sqlite database (default ./data/server.db)");
     println!("    --upload-dir UPLOAD_DIR               Path used to store uploaded client data. Takes");
     println!("                                          precedence over S3 if configured (default ./data/uploads)");
-    println!("    --upload-bucket-name UPLOAD_BUCKET_NAME\n");
+    println!("    --upload-bucket-name UPLOAD_BUCKET_NAME");
     println!("                                          The name of the S3 bucket to use for uploads. If specified a proper");
     println!("                                          S3 connection must also be configured through the environment\n");
     println!("    --service-name SERVICE_NAME           The unique name of the service, as registered with the platform. (default banyan-storage-provider)");
