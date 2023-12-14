@@ -1,5 +1,8 @@
 use crate::database::DatabaseConnection;
 
+/// This struct encompasses the minimum amount of data required to create a new metadata row,
+/// omitting data that is populated by the database such as ID and the various timestamps. It
+/// should not be used for querying rows out of the database.
 pub struct NewMetadata<'a> {
     pub bucket_id: &'a str,
 
