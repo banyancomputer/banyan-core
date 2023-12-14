@@ -4,6 +4,7 @@ mod delete_metadata;
 mod pull_metadata;
 mod push_metadata;
 mod single_metadata;
+mod snapshot_metadata;
 
 use std::error::Error;
 
@@ -29,5 +30,6 @@ where
             get(single_metadata::handler).delete(delete_metadata::handler),
         )
         .route("/:metadata_id/pull", get(pull_metadata::handler))
+        .route("/:metadata_id/snapshot", post(snapshot_metadata::handler))
         .with_state(state)
 }
