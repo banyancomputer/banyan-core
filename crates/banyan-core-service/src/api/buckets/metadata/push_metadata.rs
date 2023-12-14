@@ -171,7 +171,8 @@ pub async fn handler(
     Bucket::expire_blocks(&mut conn, &bucket_id, cid_iterator).await?;
 
     // Checkpoint the upload to the database so we can track failures, and perform any necessary
-    // clean up behind the scenes.
+    // clean up behind the scenes. The upload itself will also dwarf the rest of the time of this
+    // request, limiting the time in those transactions is a good idea.
     conn.commit().await?;
 
     let file_name = format!("{bucket_id}/{metadata_id}.car");
@@ -293,16 +294,20 @@ async fn persist_upload<'a>(
     let file_path = object_store::path::Path::from(path);
     let (upload_id, mut writer) = store.put_multipart(&file_path).await?;
 
-    match stream_upload_to_storage(body, &mut writer).await {
-        Ok(store_output) => {
-            writer.shutdown().await?;
-            Ok(store_output)
-        }
+    let (hash, size) = match stream_upload_to_storage(body, &mut writer).await {
+        Ok(out) => out,
         Err(err) => {
+            // This abort handles clean-up of stored files, if it fails it can be cleaned up in the
+            // background elsewhere. Ensure we return the error that is most relevant to the
+            // user/process. 
             let _ = store.abort_multipart(&file_path, &upload_id).await;
-            Err(err)
+            return Err(err);
         }
-    }
+    };
+
+    writer.shutdown().await?;
+
+    Ok((hash, size))
 }
 
 async fn stream_upload_to_storage<S>(
