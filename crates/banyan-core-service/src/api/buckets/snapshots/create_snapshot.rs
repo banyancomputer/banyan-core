@@ -6,7 +6,6 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use cid::multibase::Base;
 use cid::Cid;
-use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::app::AppState;
@@ -17,7 +16,7 @@ pub async fn handler(
     user_identity: UserIdentity,
     State(state): State<AppState>,
     Path((bucket_id, metadata_id)): Path<(Uuid, Uuid)>,
-    Json(request): Json<CreateSnapshotRequest>,
+    Json(request): Json<BTreeSet<Cid>>,
 ) -> Result<Response, CreateSnapshotError> {
     let database = state.database();
     let bucket_id = bucket_id.to_string();
@@ -59,7 +58,6 @@ pub async fn handler(
 
     // Normalize all the CIDs
     let normalized_cids = request
-        .active_cids
         .into_iter()
         .map(|cid| {
             cid.to_string_of_base(Base::Base64Url)
@@ -138,11 +136,4 @@ impl IntoResponse for CreateSnapshotError {
             }
         }
     }
-}
-
-#[derive(Deserialize)]
-pub struct CreateSnapshotRequest {
-    pub bucket_id: Uuid,
-    pub metadata_id: Uuid,
-    pub active_cids: BTreeSet<Cid>,
 }
