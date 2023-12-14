@@ -172,6 +172,13 @@ Use these commands to list databases, indexes, and tables.
 For more information run `.help` in the sqlite prompt, or refer to the
 [Official Documentation](https://www.sqlite.org/docs.html).
 
+### 🐚 Refreshing the `.sqlx` Cache
+
+The `sqlx` library places some files within a `.sqlx/` directory in order to
+typecheck our queries. Sometimes, this cache may need to be refreshed.
+
+Run the `bin/prepare_queries.sh` script(s) if you encounter this error.
+
 ## 🔒 Updating Tomb WASM
 
 In the tomb repository go to the `tomb-wasm` sub-crate. Build it with the
