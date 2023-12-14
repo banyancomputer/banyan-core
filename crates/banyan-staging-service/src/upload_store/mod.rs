@@ -50,7 +50,7 @@ impl UploadStore {
 
 #[derive(Debug, thiserror::Error)]
 pub enum UploadStoreError {
-    #[error("unable to access upload directory")]
+    #[error("unable to access upload store: {0}")]
     ObjectStore(#[from] object_store::Error),
 
 }
