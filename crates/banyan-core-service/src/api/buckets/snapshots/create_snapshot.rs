@@ -1,5 +1,6 @@
 use std::collections::BTreeSet;
 
+use axum::debug_handler;
 use axum::extract::{Json, Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
@@ -12,6 +13,7 @@ use uuid::Uuid;
 use crate::app::AppState;
 use crate::extractors::UserIdentity;
 
+#[debug_handler]
 pub async fn handler(
     user_identity: UserIdentity,
     State(state): State<AppState>,
@@ -40,17 +42,11 @@ pub async fn handler(
     .map_err(CreateSnapshotError::MetadataUnavailable)?
     .ok_or(CreateSnapshotError::NotFound)?;
 
-    tracing::info!("owned_metadata_id: {}, metadata_id: {}", owned_metadata_id, metadata_id);
-
-    let snapshot_id = sqlx::query_scalar!(
-        r#"INSERT INTO snapshots (metadata_id, state)
-               VALUES ($1, 'pending')
-               RETURNING id;"#,
+    tracing::info!(
+        "owned_metadata_id: {}, metadata_id: {}",
         owned_metadata_id,
-    )
-    .fetch_one(&database)
-    .await
-    .map_err(CreateSnapshotError::SaveFailed)?;
+        metadata_id
+    );
 
     // Normalize all the CIDs
     let normalized_cids = request
@@ -67,17 +63,19 @@ pub async fn handler(
         normalized_cids
     );
 
-    
-    for cid_chunk in &normalized_cids.into_iter().chunks(1000) {
-        // Build a query for all 1k cids
-        let mut builder = sqlx::QueryBuilder::new(r#"
+    // For every chunk of 1000 CIDs
+    for cid_chunk in normalized_cids.chunks(1000) {
+        // Insert all of the Block IDs and Snapshot IDs associated with these CIDs into the table
+        let mut builder = sqlx::QueryBuilder::new(
+            r#"
             INSERT INTO snapshot_block_locations 
                 SELECT s.id as snapshot_id, bl.block_id 
                 FROM blocks AS b 
                 JOIN block_locations AS bl ON b.id = bl.block_id 
                 JOIN metadata AS m ON bl.metadata_id = m.id 
                 JOIN snapshots AS s WHERE b.cid IN (
-        "#);
+        "#,
+        );
         for cid in cid_chunk {
             builder.push(&format!("\"{cid}\", "));
         }
@@ -86,8 +84,19 @@ pub async fn handler(
             .build()
             .execute(&database)
             .await
-            .map_err(CreateSnapshotError::BlockAssociationFailed)?;
+            .map_err(CreateSnapshotError::BlockAssociationFailed)?
+            .rows_affected();
     }
+
+    let snapshot_id = sqlx::query_scalar!(
+        r#"INSERT INTO snapshots (metadata_id, state)
+               VALUES ($1, 'pending')
+               RETURNING id;"#,
+        owned_metadata_id,
+    )
+    .fetch_one(&database)
+    .await
+    .map_err(CreateSnapshotError::SaveFailed)?;
 
     let resp_msg = serde_json::json!({ "id": snapshot_id });
     Ok((StatusCode::OK, Json(resp_msg)).into_response())
