@@ -24,7 +24,7 @@ pub async fn handler(
     let metadata_id = metadata_id.to_string();
 
     let user_id = user_identity.id().to_string();
-    let owned_metadata_id = sqlx::query_scalar!(
+    let metadata_id = sqlx::query_scalar!(
         r#"SELECT m.id FROM metadata AS m
                JOIN buckets AS b ON m.bucket_id = b.id
                LEFT JOIN snapshots AS s ON s.metadata_id = m.id
@@ -43,7 +43,7 @@ pub async fn handler(
 
     tracing::info!(
         "owned_metadata_id: {}, metadata_id: {}",
-        owned_metadata_id,
+        metadata_id,
         metadata_id
     );
 
@@ -51,7 +51,7 @@ pub async fn handler(
         r#"INSERT INTO snapshots (metadata_id, state)
                VALUES ($1, 'pending')
                RETURNING id;"#,
-        owned_metadata_id,
+        metadata_id,
     )
     .fetch_one(&database)
     .await
@@ -81,13 +81,21 @@ pub async fn handler(
                 FROM blocks AS b 
                 JOIN block_locations AS bl ON b.id = bl.block_id 
                 JOIN metadata AS m ON bl.metadata_id = m.id 
-                JOIN snapshots AS s WHERE b.cid IN ("#,
+                JOIN snapshots AS s 
+                WHERE m.id = "#
         );
+        builder.push_bind(&metadata_id);
+        builder.push(" AND s.id = ");
+        builder.push_bind(&snapshot_id);
+        builder.push(" AND b.cid IN (");
+
         let mut separated = builder.separated(", ");
         for cid in cid_chunk {
             separated.push_bind(cid);
         }
         separated.push_unseparated(");");
+        let sql = builder.sql();
+        tracing::warn!("sql: {}", sql);
         builder
             .build()
             .execute(&database)
