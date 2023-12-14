@@ -1,4 +1,5 @@
 use banyan_task::TaskLikeExt;
+use sqlx::QueryBuilder;
 
 use crate::database::models::{BucketType, StorageClass};
 use crate::database::DatabaseConnection;
@@ -44,18 +45,18 @@ impl Bucket {
         bucket_id: &str,
         fingerprints: impl IntoIterator<Item = &str>,
     ) -> Result<u64, sqlx::Error> {
-        let mut builder = sqlx::QueryBuilder::new(
-            "UPDATE bucket_keys SET approved = 1 WHERE bucket_id = $1 AND fingerprint IN (",
-        );
+        let mut builder =
+            QueryBuilder::new("UPDATE bucket_keys SET approved = 1 WHERE bucket_id = ");
+
         builder.push_bind(bucket_id);
+        builder.push(" AND fingerprint IN (");
 
         let mut key_iterator = fingerprints.into_iter().peekable();
         while let Some(key) = key_iterator.next() {
-            builder.push("?");
             builder.push_bind(key);
 
             if key_iterator.peek().is_some() {
-                builder.push(",");
+                builder.push(", ");
             }
         }
 
@@ -303,9 +304,29 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_associated_key_approval() {
+    async fn test_associated_key_empty_approval() {
         let db = test_helpers::setup_database().await;
-        let mut conn = db.acquire().await.expect("connection");
+        let mut conn = db.begin().await.expect("connection");
+
+        let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
+        let bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
+
+        create_bucket_key(&mut conn, &bucket_id, "<pubkey>", "00:11:22", false).await;
+
+        Bucket::approve_keys_by_fingerprint(&mut conn, &bucket_id, [].into_iter())
+            .await
+            .expect("appoval success");
+
+        assert_eq!(
+            is_bucket_key_approved(&mut conn, &bucket_id, "00:11:22").await,
+            Some(false)
+        );
+    }
+
+    #[tokio::test]
+    async fn test_associated_key_single_approval() {
+        let db = test_helpers::setup_database().await;
+        let mut conn = db.begin().await.expect("connection");
 
         let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
         let bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
@@ -313,14 +334,9 @@ mod tests {
         create_bucket_key(&mut conn, &bucket_id, "<pubkey>", "00:11:22", false).await;
         create_bucket_key(&mut conn, &bucket_id, "<pubkey>", "00:33:55", false).await;
 
-        let approved_fingerprints = ["00:33:55"];
-        Bucket::approve_keys_by_fingerprint(
-            &mut conn,
-            &bucket_id,
-            approved_fingerprints.into_iter(),
-        )
-        .await
-        .expect("appoval success");
+        Bucket::approve_keys_by_fingerprint(&mut conn, &bucket_id, ["00:33:55"].into_iter())
+            .await
+            .expect("appoval success");
 
         assert_eq!(
             is_bucket_key_approved(&mut conn, &bucket_id, "00:11:22").await,
@@ -329,6 +345,40 @@ mod tests {
         assert_eq!(
             is_bucket_key_approved(&mut conn, &bucket_id, "00:33:55").await,
             Some(true)
+        );
+    }
+
+    #[tokio::test]
+    async fn test_associated_key_multiple_approval() {
+        let db = test_helpers::setup_database().await;
+        let mut conn = db.begin().await.expect("connection");
+
+        let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
+        let bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
+
+        create_bucket_key(&mut conn, &bucket_id, "<pubkey>", "00:11:22", false).await;
+        create_bucket_key(&mut conn, &bucket_id, "<pubkey>", "00:33:55", false).await;
+        create_bucket_key(&mut conn, &bucket_id, "<pubkey>", "ab:cd:ef", false).await;
+
+        Bucket::approve_keys_by_fingerprint(
+            &mut conn,
+            &bucket_id,
+            ["00:11:22", "ab:cd:ef"].into_iter(),
+        )
+        .await
+        .expect("appoval success");
+
+        assert_eq!(
+            is_bucket_key_approved(&mut conn, &bucket_id, "00:11:22").await,
+            Some(true)
+        );
+        assert_eq!(
+            is_bucket_key_approved(&mut conn, &bucket_id, "00:33:55").await,
+            Some(false)
+        );
+        assert_eq!(
+            is_bucket_key_approved(&mut conn, &bucket_id, "ab:cd:ef").await,
+            Some(false)
         );
     }
 
