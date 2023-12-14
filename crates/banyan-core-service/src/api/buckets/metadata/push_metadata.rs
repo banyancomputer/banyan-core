@@ -16,11 +16,11 @@ use tokio::io::{AsyncWrite, AsyncWriteExt};
 use uuid::Uuid;
 
 use crate::app::AppState;
+use crate::auth::storage_ticket::StorageTicketBuilder;
 use crate::database::models::{
     Bucket, Metadata, MetadataState, NewMetadata, NewStorageGrant, SelectedStorageHost,
     StorageHost, User, UserStorageReport,
 };
-use crate::database::DatabaseConnection;
 use crate::extractors::{DataStore, UserIdentity};
 //use crate::tasks::{PruneBlock, PruneBlocksTask};
 use crate::utils;
@@ -221,16 +221,18 @@ pub async fn handler(
         .save(&mut *conn)
         .await?;
 
-        let user_subject = user.ticket_subject();
-        let new_claim = generate_storage_claim(
-            user_subject,
+        let mut ticket_builder = StorageTicketBuilder::new(user.ticket_subject());
+        ticket_builder.add_audience(user.ticket_subject());
+        ticket_builder.add_authorization(
             storage_grant_id,
-            &storage_host,
+            storage_host.url,
             new_authorized_capacity,
         );
 
+        let claim = ticket_builder.build();
+
         let service_key = state.secrets().service_key();
-        let ticket = match service_key.sign(new_claim) {
+        let ticket = match service_key.sign(claim) {
             Ok(t) => t,
             Err(err) => {
                 tracing::error!("failed to sign storage authorization: {err}");

@@ -13,7 +13,7 @@ mod login;
 mod logout;
 mod oauth_callback;
 mod provider_config;
-mod storage_ticket;
+pub mod storage_ticket;
 
 use authentication_error::AuthenticationError;
 use provider_config::ProviderConfig;

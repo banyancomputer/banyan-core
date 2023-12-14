@@ -6,8 +6,6 @@ mod single_metadata;
 mod pull_metadata;
 mod push_metadata;
 
-pub use push_metadata::STORAGE_TICKET_DURATION;
-
 use axum::routing::{get, post};
 use axum::Router;
 
