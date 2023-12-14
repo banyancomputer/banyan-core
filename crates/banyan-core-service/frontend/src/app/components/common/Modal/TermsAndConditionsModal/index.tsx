@@ -13,7 +13,7 @@ export const TermsAndConditionsModal: React.FC<{
 }> = ({ terms, userData, setAreTermsAccepted }) => {
     const { messages } = useIntl();
     const { closeModal } = useModal();
-    const [isTermsRead, setIsTermsRead] = useState(true);
+    const [areTermsRead, setAreTermsRead] = useState(false);
     const termsRef = useRef<HTMLDivElement | null>(null);
 
     const acceptTerms = async () => {
@@ -29,21 +29,28 @@ export const TermsAndConditionsModal: React.FC<{
     useEffect(() => {
         if (!termsRef.current) return;
 
+        const hasScroll = termsRef.current!.offsetHeight < termsRef.current!.scrollHeight;
+        if (!hasScroll) {
+            setAreTermsRead(true);
+            return;
+        };
+
         const listener = () => {
             const preview = document.getElementById('file-preview');
+            const isScrolledToEnd = termsRef.current!.scrollTop >= preview!.clientHeight - termsRef.current!.clientHeight;
 
-            if (termsRef.current!.scrollTop >= preview!.clientHeight - termsRef.current!.clientHeight) {
-                setIsTermsRead(true);
+            if (isScrolledToEnd) {
+                setAreTermsRead(true);
             }
         };
 
         termsRef.current?.addEventListener('scroll', listener);
 
         return () => termsRef.current?.removeEventListener('scroll', listener);
-    }, [termsRef.current, isTermsRead]);
+    }, [termsRef.current, areTermsRead]);
 
     return (
-        <div className="p-1 w-[calc(100vw-100px)] max-w-termsAndConditions max-h-full flex flex-col gap-6">
+        <div className="p-1 w-[calc(100vw-100px)] max-w-termsAndConditions max-h-[80vh] flex flex-col gap-6">
             <h3 className="flex items-center justify-between text-m font-semibold">
                 {`${messages.termsOfService}`}
                 <span>1/2</span>
@@ -67,7 +74,7 @@ export const TermsAndConditionsModal: React.FC<{
                 </button>
                 <button
                     className="btn-primary w-1/2 py-3 px-4"
-                    disabled={!isTermsRead}
+                    disabled={!areTermsRead}
                     onClick={acceptTerms}
                 >
                     {`${messages.acceptTermsAndService}`}
