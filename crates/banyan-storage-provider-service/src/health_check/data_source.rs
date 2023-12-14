@@ -3,10 +3,9 @@ use std::sync::Arc;
 
 use axum::async_trait;
 use axum::extract::{FromRef, FromRequestParts};
+use banyan_task::{SqliteTaskStore, TaskStore, TaskStoreMetrics};
 use http::request::Parts;
 use serde::Serialize;
-
-use banyan_task::{SqliteTaskStore, TaskStore, TaskStoreMetrics};
 
 use crate::database::Database;
 
@@ -99,8 +98,9 @@ where
 
 #[cfg(test)]
 pub(crate) mod tests {
-    use super::*;
     use banyan_task::tests::default_task_store_metrics;
+
+    use super::*;
 
     #[derive(Clone)]
     pub(crate) enum MockReadiness {

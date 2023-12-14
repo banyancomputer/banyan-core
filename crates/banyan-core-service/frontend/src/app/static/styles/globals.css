@@ -64,6 +64,7 @@ input {
 *::-webkit-scrollbar {
         margin-right: 5px;
         width: 6px;
+        height: 6px;
 }
 
 *::-webkit-scrollbar-thumb {
@@ -96,10 +97,6 @@ input {
     padding: 35px 0px;
 }
 
-.preview-file > img {
-    border-radius: 16px;
-}
-
 .toggle {
     background-color: #5299E0 !important;
     border: none;
@@ -109,5 +106,12 @@ input {
 .table {
     tr {
         color: unset;
+    }
+}
+
+.table-pin-cols {
+    th {
+        background-color: white;
+        border-bottom: 1px solid #EFF1F5;
     }
 }

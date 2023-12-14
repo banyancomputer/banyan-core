@@ -1,3 +1,6 @@
+use std::error::Error;
+
+use axum::body::HttpBody;
 use axum::routing::get;
 use axum::Router;
 
@@ -7,7 +10,12 @@ mod read_escrowed_device;
 mod read_user;
 mod update_user;
 
-pub fn router(state: AppState) -> Router<AppState> {
+pub fn router<B>(state: AppState) -> Router<AppState, B>
+where
+    B: HttpBody + Send + 'static,
+    B::Data: Send,
+    Box<dyn Error + Send + Sync + 'static>: From<B::Error>,
+{
     Router::new()
         .route(
             "/current",

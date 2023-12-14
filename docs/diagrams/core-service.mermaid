@@ -1,0 +1,218 @@
+
+classDiagram
+direction BT
+class _sqlx_migrations {
+   text description
+   timestamp installed_on
+   boolean success
+   blob checksum
+   bigint execution_time
+   bigint version
+}
+class background_tasks {
+   text original_task_id
+   text task_name
+   text queue_name
+   text unique_key
+   text state
+   integer current_attempt
+   integer maximum_attempts
+   blob payload
+   blob error
+   timestamp scheduled_at
+   timestamp scheduled_to_run_at
+   timestamp started_at
+   timestamp finished_at
+   text id
+}
+class block_locations {
+   text metadata_id
+   text block_id
+   text storage_host_id
+   timestamp associated_at
+   timestamp expired_at
+   timestamp pruned_at
+}
+class blocks {
+   varchar(64) cid
+   timestamp created_at
+   text id
+}
+class bucket_keys {
+   text bucket_id
+   text pem
+   text fingerprint
+   boolean approved
+   text id
+}
+class buckets {
+   text user_id
+   varchar(128) name
+   varchar(32) type
+   varchar(32) storage_class
+   text id
+}
+class device_api_keys {
+   text user_id
+   varchar(50) fingerprint
+   text pem
+   timestamp created_at
+   timestamp updated_at
+   text id
+}
+class email_stats {
+   text user_id
+   integer sent
+   integer accepted
+   integer delivered
+   integer opened
+   integer complained
+   integer unsubscribed
+   integer rejected
+   integer failed
+   text id
+}
+class emails {
+   text user_id
+   timestamp sent_at
+   text type
+   varchar(32) state
+   text id
+}
+class escrowed_devices {
+   text user_id
+   text api_public_key_pem
+   text encryption_public_key_pem
+   text encrypted_private_key_material
+   text pass_key_salt
+   timestamp created_at
+   text id
+}
+class metadata {
+   text bucket_id
+   text root_cid
+   text metadata_cid
+   integer expected_data_size
+   integer data_size
+   integer metadata_size
+   text metadata_hash
+   text state
+   timestamp created_at
+   timestamp updated_at
+   text id
+}
+class oauth_provider_accounts {
+   text user_id
+   text provider
+   text provider_id
+   timestamp associated_at
+   text id
+}
+class oauth_state {
+   text provider
+   text csrf_secret
+   text pkce_verifier_secret
+   text next_url
+   timestamp created_at
+}
+class sessions {
+   text user_id
+   text provider
+   text client_ip
+   text user_agent
+   text access_token
+   timestamp access_expires_at
+   text refresh_token
+   timestamp created_at
+   timestamp expires_at
+   text id
+}
+class snapshot_restore_requests {
+   text user_id
+   text snapshot_id
+   text storage_host_id
+   text state
+   timestamp created_at
+   timestamp completed_at
+   text id
+}
+class snapshots {
+   text metadata_id
+   text state
+   integer size
+   timestamp created_at
+   text id
+}
+class snapshots_storage_hosts {
+   text snapshot_id
+   text storage_host_id
+   timestamp assigned_at
+   timestamp due_by
+   varchar(32) status
+   timestamp finalized_at
+   text id
+}
+class sqlite_master {
+   text type
+   text name
+   text tbl_name
+   int rootpage
+   text sql
+}
+class storage_grants {
+   text storage_host_id
+   text user_id
+   integer authorized_amount
+   timestamp created_at
+   timestamp redeemed_at
+   text id
+}
+class storage_hosts {
+   varchar(128) name
+   text url
+   integer used_storage
+   integer available_storage
+   varchar(50) fingerprint
+   text pem
+   text id
+}
+class storage_hosts_metadatas_storage_grants {
+   text storage_host_id
+   text metadata_id
+   text storage_grant_id
+}
+class users {
+   text email
+   boolean verified_email
+   text display_name
+   text locale
+   text profile_image
+   timestamp created_at
+   timestamp accepted_tos_at
+   text id
+}
+
+background_tasks "original_task_id" --> "id" background_tasks
+block_locations "block_id" --> "id" blocks
+block_locations "metadata_id" --> "id" metadata
+block_locations "storage_host_id" --> "id" storage_hosts
+bucket_keys "bucket_id" --> "id" buckets
+buckets "user_id" --> "id" users
+device_api_keys "user_id" --> "id" users
+email_stats "user_id" --> "id" users
+emails "user_id" --> "id" users
+escrowed_devices "user_id" --> "id" users
+metadata "bucket_id" --> "id" buckets
+oauth_provider_accounts "user_id" --> "id" users
+sessions "user_id" --> "id" users
+snapshot_restore_requests "snapshot_id" --> "id" snapshots
+snapshot_restore_requests "storage_host_id" --> "id" storage_hosts
+snapshot_restore_requests "user_id" --> "id" users
+snapshots "metadata_id" --> "id" metadata
+snapshots_storage_hosts "snapshot_id" --> "id" snapshots
+snapshots_storage_hosts "storage_host_id" --> "id" storage_hosts
+storage_grants "storage_host_id" --> "id" storage_hosts
+storage_grants "user_id" --> "id" users
+storage_hosts_metadatas_storage_grants "metadata_id" --> "id" metadata
+storage_hosts_metadatas_storage_grants "storage_grant_id" --> "id" storage_grants
+storage_hosts_metadatas_storage_grants "storage_host_id" --> "id" storage_hosts

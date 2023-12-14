@@ -22,6 +22,14 @@ clean:
 		crates/banyan-storage-provider-service/data/platform* \
 		crates/banyan-storage-provider-service/data/uploads/*
 
+.PHONY: fmt
+fmt:
+	cargo +nightly fmt --all
+
+.PHONY: fmt-check
+fmt-check:
+	cargo +nightly fmt --all -- --check
+
 # generate authentication keys
 # =========================================================================== #
 # TODO: these commands generate a key by starting a service, and terminating
@@ -52,3 +60,18 @@ generate-storage-provider-service-key:
 		&& cargo build                            \
 		&& (timeout 3s cargo run || true)         \
 	)
+
+# database administration
+# =========================================================================== #
+
+.PHONY: connect-to-core-database
+connect-to-core-database:
+	sqlite3 crates/banyan-core-service/data/server.db
+
+.PHONY: connect-to-staging-database
+connect-to-staging-database:
+	sqlite3 crates/banyan-staging-service/data/server.db
+
+.PHONY: connect-to-storage-provider-database
+connect-to-storage-provider-database:
+	sqlite3 crates/banyan-storage-provider-service/data/server.db

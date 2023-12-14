@@ -146,6 +146,32 @@ cargo run
 You should now be able to open up your web-browser to
 [http://127.0.0.1:3001](http://127.0.0.1:3001), login, and use the platform.
 
+## 🔌 Connecting to the Databases
+
+It can be helpful during development to query the SQL databases for the
+core, staging, and storage provider services directly.
+
+Each of these services' databases write to their respective `data/` directory.
+The `Makefile` contains some commands to attach a sqlite prompt to each:
+
+```sh
+make connect-to-core-database
+make connect-to-staging-database
+make connect-to-storage-provider-database
+```
+
+### 💭 Helpful Commands
+
+Use these commands to list databases, indexes, and tables.
+
+* `.databases`: list names and files of attached databases
+* `.indexes`: list names of indexes
+* `.tables`: list names of tables
+* `.schema`: show the `CREATE` statements for table(s)
+
+For more information run `.help` in the sqlite prompt, or refer to the
+[Official Documentation](https://www.sqlite.org/docs.html).
+
 ## 🔒 Updating Tomb WASM
 
 In the tomb repository go to the `tomb-wasm` sub-crate. Build it with the
@@ -157,3 +183,12 @@ wasm-pack build --release
 rm -f ${BANYAN_CORE_CHECKOUT}/crates/banyan-core-service/frontend/tomb_build/
 cp -f pkg/* ${BANYAN_CORE_CHECKOUT}/crates/banyan-core-service/frontend/tomb_build/
 ```
+
+
+## Database Schema
+
+### Core Service
+![Core_Service Diagram](./docs/images/db-core-service.png)
+
+### Staging Service
+![Staging Service Diagram](./docs/images/db-staging-service.png)

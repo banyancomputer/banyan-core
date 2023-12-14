@@ -26,7 +26,6 @@ mod tests {
     use std::sync::Arc;
 
     use super::*;
-
     use crate::health_check::data_source::tests::*;
 
     #[tokio::test]

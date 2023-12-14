@@ -1,6 +1,5 @@
 #![allow(dead_code)]
 
-use axum::async_trait;
 use axum::extract::rejection::TypedHeaderRejection;
 use axum::extract::{FromRef, FromRequestParts, TypedHeader};
 use axum::headers::authorization::Bearer;
@@ -8,14 +7,13 @@ use axum::headers::Authorization;
 use axum::http::request::Parts;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::{Json, RequestPartsExt};
+use axum::{async_trait, Json, RequestPartsExt};
 use jsonwebtoken::{decode, decode_header, Algorithm, DecodingKey, Validation};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use super::{EXPIRATION_WINDOW, KEY_ID_REGEX, KEY_ID_VALIDATOR};
 use crate::database::Database;
-
-use super::{EXPIRATION_WINDOW_SECS, KEY_ID_REGEX, KEY_ID_VALIDATOR};
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -123,9 +121,13 @@ where
 
         let claims = token_data.claims;
 
-        match claims.expiration.checked_sub(claims.not_before) {
+        match claims
+            .expiration
+            .checked_sub(claims.not_before)
+            .map(std::time::Duration::from_secs)
+        {
             Some(duration) => {
-                if duration > EXPIRATION_WINDOW_SECS {
+                if duration > EXPIRATION_WINDOW {
                     return Err(ApiIdentityError::ExtremeTokenValidity);
                 }
             }

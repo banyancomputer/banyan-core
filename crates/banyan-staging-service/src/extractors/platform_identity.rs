@@ -7,9 +7,8 @@ use axum::{async_trait, Json, RequestPartsExt};
 use http::request::Parts;
 use jwt_simple::prelude::*;
 
-use crate::app::{PlatformVerificationKey, ServiceName};
-
 use super::{fingerprint_validator, MAXIMUM_TOKEN_AGE};
+use crate::app::{PlatformVerificationKey, ServiceName};
 
 pub struct PlatformIdentity;
 

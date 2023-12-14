@@ -1,6 +1,7 @@
+use sqlx::sqlite::SqlitePoolOptions;
+
 use crate::database::models::{BucketType, MetadataState, StorageClass};
 use crate::database::Database;
-use sqlx::sqlite::SqlitePoolOptions;
 
 pub(crate) async fn create_hot_bucket(
     database: &Database,

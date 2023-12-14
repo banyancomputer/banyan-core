@@ -22,7 +22,7 @@ export const ShareFileModal: React.FC<{ link: string }> = ({ link }) => {
                 <h4 className="text-m font-semibold ">{`${messages.share}`}</h4>
             </div>
             <div className="flex flex-col items-start gap-3">
-                <span className="text-xs">{link}</span>
+                <div className="w-full overflow-hidden text-ellipsis whitespace-nowrap text-xs">{link}</div>
             </div>
             <div className="mt-3 flex items-center gap-3 text-xs" >
                 <button

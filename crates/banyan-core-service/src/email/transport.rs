@@ -1,10 +1,10 @@
-use lettre::{
-    message::Message,
-    transport::{smtp::SmtpTransport, stub::StubTransport},
-    Transport,
-};
+use lettre::message::Message;
+use lettre::transport::smtp::SmtpTransport;
+use lettre::transport::stub::StubTransport;
+use lettre::Transport;
 
-use super::{config::SmtpConnection, error::EmailError};
+use super::config::SmtpConnection;
+use super::error::EmailError;
 
 pub enum EmailTransport {
     Smtp(SmtpTransport),
