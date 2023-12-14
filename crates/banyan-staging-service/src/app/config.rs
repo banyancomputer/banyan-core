@@ -106,7 +106,7 @@ impl Config {
                 // through the environment
                 let maybe_upload_bucket = match cli_args.opt_value_from_str("--upload-bucket")? {
                     Some(ub) => Some(ub),
-                    None => match std::env::var("UPLOAD_BUCKET") {
+                    None => match std::env::var("UPLOAD_BUCKET_NAME") {
                         Ok(ub) if !ub.is_empty() => Some(ub),
                         _ => None,
                     },
@@ -121,6 +121,8 @@ impl Config {
                         // - AWS_ENDPOINT
                         // The bucket should be provided as an argument and already exist at the endpoint
                         let builder = S3Builder::from_env()
+                            // Allow HTTP connections in debug mode
+                            .with_allow_http(cfg!(debug_assertions))
                             .with_bucket_name(upload_bucket);
                         UploadStoreConnection::S3(builder)
                     }
@@ -288,7 +290,8 @@ fn print_help() {
     println!("    --database-url DATABASE_URL           Configure the url for the sqlite database (default ./data/server.db)");
     println!("    --upload-dir UPLOAD_DIR               Path used to store uploaded client data. Takes");
     println!("                                          precedence over S3 if configured (default ./data/uploads)");
-    println!("    --upload-bucket UPLOAD_BUCKET         The name of the S3 bucket to use for uploads. If specified a proper");
+    println!("    --upload-bucket-name UPLOAD_BUCKET_NAME\n");
+    println!("                                          The name of the S3 bucket to use for uploads. If specified a proper");
     println!("                                          S3 connection must also be configured through the environment\n");
     println!("    --service-name SERVICE_NAME           The unique name of the service, as registered with the platform. (default banyan-storage-provider)");
     println!("    --service-hostname SERVICE_HOSTNAME   The hostname of this service (default http://127.0.0.1:3002)");
