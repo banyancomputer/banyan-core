@@ -266,9 +266,70 @@ mod tests {
 
     use crate::database::test_helpers;
 
+    async fn create_bucket_key(
+        conn: &mut DatabaseConnection,
+        bucket_id: &str,
+        public_key: &str,
+        fingerprint: &str,
+        approved: bool,
+    ) -> String {
+        sqlx::query_scalar!(
+            r#"INSERT INTO bucket_keys (bucket_id, pem, fingerprint, approved)
+                   VALUES ($1, $2, $3, $4)
+                   RETURNING id;"#,
+            bucket_id,
+            public_key,
+            fingerprint,
+            approved,
+        )
+        .fetch_one(&mut *conn)
+        .await
+        .expect("successful creation")
+    }
+
+    async fn is_bucket_key_approved(
+        conn: &mut DatabaseConnection,
+        bucket_id: &str,
+        fingerprint: &str,
+    ) -> Option<bool> {
+        sqlx::query_scalar!(
+            "SELECT approved FROM bucket_keys WHERE bucket_id = $1 AND fingerprint = $2;",
+            bucket_id,
+            fingerprint,
+        )
+        .fetch_optional(&mut *conn)
+        .await
+        .expect("query success")
+    }
+
     #[tokio::test]
     async fn test_associated_key_approval() {
-        todo!()
+        let db = test_helpers::setup_database().await;
+        let mut conn = db.acquire().await.expect("connection");
+
+        let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
+        let bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
+
+        create_bucket_key(&mut conn, &bucket_id, "<pubkey>", "00:11:22", false).await;
+        create_bucket_key(&mut conn, &bucket_id, "<pubkey>", "00:33:55", false).await;
+
+        let approved_fingerprints = ["00:33:55"];
+        Bucket::approve_keys_by_fingerprint(
+            &mut conn,
+            &bucket_id,
+            approved_fingerprints.into_iter(),
+        )
+        .await
+        .expect("appoval success");
+
+        assert_eq!(
+            is_bucket_key_approved(&mut conn, &bucket_id, "00:11:22").await,
+            Some(false)
+        );
+        assert_eq!(
+            is_bucket_key_approved(&mut conn, &bucket_id, "00:33:55").await,
+            Some(true)
+        );
     }
 
     #[tokio::test]
@@ -391,6 +452,7 @@ mod tests {
 
     /// After changes have been made to expired blocks, we need to queue a background task that
     /// will perform all the tasks involved in cleaning them up.
+    #[tokio::test]
     async fn test_expire_blocks_queues_prune_task() {
         let db = test_helpers::setup_database().await;
         let mut conn = db.acquire().await.expect("connection");
