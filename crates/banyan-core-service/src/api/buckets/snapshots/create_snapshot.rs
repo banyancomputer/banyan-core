@@ -47,6 +47,16 @@ pub async fn handler(
         metadata_id
     );
 
+    let snapshot_id = sqlx::query_scalar!(
+        r#"INSERT INTO snapshots (metadata_id, state)
+               VALUES ($1, 'pending')
+               RETURNING id;"#,
+        owned_metadata_id,
+    )
+    .fetch_one(&database)
+    .await
+    .map_err(CreateSnapshotError::SaveFailed)?;
+
     // Normalize all the CIDs
     let normalized_cids = request
         .active_cids
@@ -66,39 +76,24 @@ pub async fn handler(
     for cid_chunk in normalized_cids.chunks(1000) {
         // Insert all of the Block IDs and Snapshot IDs associated with these CIDs into the table
         let mut builder = sqlx::QueryBuilder::new(
-            r#"
-            INSERT INTO snapshot_block_locations 
+            r#"INSERT INTO snapshot_block_locations 
                 SELECT s.id as snapshot_id, bl.block_id 
                 FROM blocks AS b 
                 JOIN block_locations AS bl ON b.id = bl.block_id 
                 JOIN metadata AS m ON bl.metadata_id = m.id 
-                JOIN snapshots AS s WHERE b.cid IN (
-        "#,
+                JOIN snapshots AS s WHERE b.cid IN ("#,
         );
-        for (i, cid) in cid_chunk.into_iter().enumerate() {
-            if i > 0 {
-                builder.push(", ");
-            }
-            builder.push(&format!("\"{cid}\""));
+        let mut separated = builder.separated(", ");
+        for cid in cid_chunk {
+            separated.push_bind(cid);
         }
-        builder.push(");");
+        separated.push_unseparated(");");
         builder
             .build()
             .execute(&database)
             .await
-            .map_err(CreateSnapshotError::BlockAssociationFailed)?
-            .rows_affected();
+            .map_err(CreateSnapshotError::BlockAssociationFailed)?;
     }
-
-    let snapshot_id = sqlx::query_scalar!(
-        r#"INSERT INTO snapshots (metadata_id, state)
-               VALUES ($1, 'pending')
-               RETURNING id;"#,
-        owned_metadata_id,
-    )
-    .fetch_one(&database)
-    .await
-    .map_err(CreateSnapshotError::SaveFailed)?;
 
     let resp_msg = serde_json::json!({ "id": snapshot_id });
     Ok((StatusCode::OK, Json(resp_msg)).into_response())
