@@ -6,7 +6,7 @@ use tracing::Level;
 use url::Url;
 
 use crate::app::Version;
-use crate::upload_store::{S3Builder, UploadStoreConnection};
+use crate::upload_store::{AmazonS3Builder, UploadStoreConnection};
 
 #[derive(Debug)]
 pub struct Config {
@@ -120,7 +120,7 @@ impl Config {
                         // - AWS_REGION 
                         // - AWS_ENDPOINT
                         // The bucket should be provided as an argument and already exist at the endpoint
-                        let builder = S3Builder::from_env()
+                        let builder = AmazonS3Builder::from_env()
                             // Allow HTTP connections in debug mode
                             .with_allow_http(cfg!(debug_assertions))
                             .with_bucket_name(upload_bucket);

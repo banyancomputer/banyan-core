@@ -9,12 +9,12 @@ use object_store::{
     local::LocalFileSystem
 };
 
-pub use object_store::aws::AmazonS3Builder as S3Builder;
+pub use object_store::aws::AmazonS3Builder;
 
 #[derive(Debug, Clone)]
 pub enum UploadStoreConnection {
     Local(PathBuf),
-    S3(S3Builder),
+    S3(AmazonS3Builder),
 }
 
 pub enum UploadStore {
