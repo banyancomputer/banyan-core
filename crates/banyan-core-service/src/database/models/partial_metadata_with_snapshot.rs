@@ -21,6 +21,7 @@ pub struct PartialMetadataWithSnapshot {
 }
 
 impl PartialMetadataWithSnapshot {
+    /// Queries the [`Database`] and returns all of metadata entries associated with a user.
     pub async fn all(database: &Database, user_id: String) -> Result<Vec<Self>, sqlx::Error> {
         sqlx::query_as!(
             Self,
@@ -39,6 +40,9 @@ impl PartialMetadataWithSnapshot {
         .await
     }
 
+    /// Queries the [`Database`] for the current metadata entry given user and bucket identifiers.
+    ///
+    /// This returns [`None`] when no row was found.
     pub async fn locate_current(
         database: &Database,
         user_id: String,
@@ -69,6 +73,9 @@ impl PartialMetadataWithSnapshot {
         }
     }
 
+    /// Queries the [`Database`] for a specific metadata entry.
+    ///
+    /// This returns [`None`] when no row was found.
     pub async fn locate_specific(
         database: &Database,
         user_id: String,
