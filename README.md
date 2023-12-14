@@ -13,6 +13,22 @@ out-of-date.
 You should have a working Rust toolchain, yarn, and sqlite installed on your
 machine.
 
+### 💰 Install `sqlx-cli`
+
+This project relies upon [`sqlx`](https://crates.io/crates/sqlx) to interact
+with SQL datases from Rust code. The sqlx command-line interface can be
+installed using the following command.
+
+```sh
+cargo install sqlx-cli --no-default-features --features completions,native-tls,sqlite
+```
+
+*NB:* you may replace the `native-tls` flag with the `openssl-vendored` flag if
+you would like to use a vendored copy of the `openssl` library instead of your
+system's version. Refer to the crate's manifest
+[here](https://github.com/launchbadge/sqlx/blob/main/sqlx-cli/Cargo.toml) to
+see additional features.
+
 ### 🔧 Environment Setup
 
 The core service uses a `.env` file to store environment variables. A sample
@@ -171,6 +187,13 @@ Use these commands to list databases, indexes, and tables.
 
 For more information run `.help` in the sqlite prompt, or refer to the
 [Official Documentation](https://www.sqlite.org/docs.html).
+
+### 🐚 Refreshing the `.sqlx` Cache
+
+The `sqlx` library places some files within a `.sqlx/` directory in order to
+typecheck our queries. Sometimes, this cache may need to be refreshed.
+
+Run the `bin/prepare_queries.sh` script(s) if you encounter this error.
 
 ## 🔒 Updating Tomb WASM
 
