@@ -1,7 +1,7 @@
 use tower_layer::Layer;
 
-use crate::traffic_counter::body::FnOnResponseEnd;
-use crate::traffic_counter::service::TrafficCounter;
+use crate::body::FnOnResponseEnd;
+use crate::service::TrafficCounter;
 
 #[derive(Clone, Debug)]
 pub struct TrafficCounterLayer {
