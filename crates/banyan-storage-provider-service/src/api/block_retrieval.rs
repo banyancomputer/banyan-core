@@ -7,12 +7,12 @@ use crate::app::AppState;
 use crate::database::models::BlockDetails;
 use crate::database::Database;
 use crate::extractors::BlockReader;
-use crate::upload_store::{ObjectStore, UploadStore};
+use banyan_object_store::ObjectStore;
 
 pub async fn handler(
     State(state): State<AppState>,
     client: BlockReader,
-    store: UploadStore,
+    store: ObjectStore,
     Path(cid): Path<String>,
 ) -> Result<Response, BlockRetrievalError> {
     let db = state.database();

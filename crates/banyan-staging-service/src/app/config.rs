@@ -87,11 +87,11 @@ impl Config {
             Some(usus) => usus,
             None => match std::env::var("UPLOAD_STORE_URL") {
                 Ok(usus) if !usus.is_empty() => usus,
-                _ => return Err(ConfigError::MissingUploadStoreUrl),
+                _ => return Err(ConfigError::MissingObjectStoreUrl),
             },
         };
         let upload_store_url =
-            Url::parse(&upload_store_url_str).map_err(ConfigError::InvalidUploadStoreUrl)?;
+            Url::parse(&upload_store_url_str).map_err(ConfigError::InvalidObjectStoreUrl)?;
 
         // Service identity configuration
 
@@ -221,10 +221,10 @@ pub enum ConfigError {
     InvalidLogLevel(tracing::metadata::ParseLevelError),
 
     #[error("invalid upload store URI: {0}")]
-    InvalidUploadStoreUrl(url::ParseError),
+    InvalidObjectStoreUrl(url::ParseError),
 
     #[error("missing upload store uri")]
-    MissingUploadStoreUrl,
+    MissingObjectStoreUrl,
 
     #[error("signing key gen failed: {0}")]
     ServiceKeyGenFailed(jwt_simple::Error),

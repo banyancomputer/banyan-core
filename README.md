@@ -10,7 +10,7 @@ out-of-date.
 
 ### 📦 Dependencies
 
-You should have a working Rust toolchain, yarn, and sqlite installed on your
+You should have a working Rust toolchain, yarn, docker, and sqlite installed on your
 machine.
 
 ### 💰 Install `sqlx-cli`

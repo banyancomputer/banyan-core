@@ -16,7 +16,7 @@ use crate::app::AppState;
 use crate::database::{map_sqlx_error, Database, DatabaseError};
 use crate::extractors::AuthenticatedClient;
 use crate::tasks::ReportUploadTask;
-use crate::upload_store::{ObjectStore, UploadStore};
+use banyan_object_store::ObjectStore;
 
 /// Limit on the size of the JSON request that accompanies an upload.
 const UPLOAD_REQUEST_SIZE_LIMIT: u64 = 100 * 1_024;
@@ -30,7 +30,7 @@ pub struct UploadRequest {
 pub async fn handler(
     State(state): State<AppState>,
     client: AuthenticatedClient,
-    store: UploadStore,
+    store: ObjectStore,
     TypedHeader(content_len): TypedHeader<ContentLength>,
     TypedHeader(content_type): TypedHeader<ContentType>,
     body: BodyStream,
@@ -146,7 +146,7 @@ async fn handle_failed_upload(db: &Database, upload_id: &str) {
 
 async fn handle_successful_upload(
     db: &Database,
-    _store: &UploadStore,
+    _store: &ObjectStore,
     car_report: &CarReport,
     upload_id: &str,
     _file_path: &object_store::path::Path,

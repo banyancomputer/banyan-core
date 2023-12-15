@@ -12,13 +12,13 @@ use object_store::local::LocalFileSystem;
 use url::Url;
 
 #[derive(Debug, Clone)]
-pub enum UploadStoreConnection {
+pub enum ObjectStoreConnection {
     Local(PathBuf),
     S3(AmazonS3Builder),
 }
 
-impl TryFrom<Url> for UploadStoreConnection {
-    type Error = UploadStoreConnectionError;
+impl TryFrom<Url> for ObjectStoreConnection {
+    type Error = ObjectStoreConnectionError;
 
     fn try_from(url: Url) -> Result<Self, Self::Error> {
         match url.scheme() {
@@ -117,12 +117,12 @@ impl TryFrom<Url> for UploadStoreConnection {
     }
 }
 
-pub enum UploadStore {
+pub enum ObjectStore {
     Local(LocalFileSystem),
     S3(AmazonS3),
 }
 
-impl Deref for UploadStore {
+impl Deref for ObjectStore {
     type Target = dyn object_store::ObjectStore;
 
     fn deref(&self) -> &Self::Target {
@@ -133,14 +133,14 @@ impl Deref for UploadStore {
     }
 }
 
-impl UploadStore {
-    pub fn new(connection: &UploadStoreConnection) -> Result<Self, UploadStoreError> {
+impl ObjectStore {
+    pub fn new(connection: &ObjectStoreConnection) -> Result<Self, ObjectStoreError> {
         match connection {
-            UploadStoreConnection::Local(path) => {
+            ObjectStoreConnection::Local(path) => {
                 let store = LocalFileSystem::new_with_prefix(path)?;
                 Ok(Self::Local(store))
             }
-            UploadStoreConnection::S3(builder) => {
+            ObjectStoreConnection::S3(builder) => {
                 let store = builder.clone().build()?;
                 Ok(Self::S3(store))
             }
@@ -149,7 +149,7 @@ impl UploadStore {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum UploadStoreConnectionError {
+pub enum ObjectStoreConnectionError {
     #[error("unable to parse URL: {0}")]
     UrlParse(#[from] url::ParseError),
     #[error("not a file URL")]
@@ -173,15 +173,15 @@ pub enum UploadStoreConnectionError {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum UploadStoreError {
+pub enum ObjectStoreError {
     #[error("unable to access upload store: {0}")]
     ObjectStore(#[from] object_store::Error),
 }
 
-impl IntoResponse for UploadStoreError {
+impl IntoResponse for ObjectStoreError {
     fn into_response(self) -> Response {
         match self {
-            UploadStoreError::ObjectStore(err) => {
+            ObjectStoreError::ObjectStore(err) => {
                 tracing::error!(err = ?err, "configured object store is inaccessible");
                 let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
@@ -199,9 +199,9 @@ mod test {
     #[test]
     fn test_parse_local_url() {
         let url = Url::parse("file:///tmp").unwrap();
-        let connection = UploadStoreConnection::try_from(url).unwrap();
+        let connection = ObjectStoreConnection::try_from(url).unwrap();
         match connection {
-            UploadStoreConnection::Local(path) => {
+            ObjectStoreConnection::Local(path) => {
                 assert_eq!(path, PathBuf::from("/tmp"));
             }
             _ => panic!("expected local connection"),
@@ -211,7 +211,7 @@ mod test {
     #[test]
     fn test_parse_local_url_bad_path() {
         let url = Url::parse("file:///tmp/fake.txt").unwrap();
-        let connection = UploadStoreConnection::try_from(url);
+        let connection = ObjectStoreConnection::try_from(url);
         assert!(connection.is_err());
     }
 
@@ -219,9 +219,9 @@ mod test {
     fn test_parse_http_url() {
         let url =
             Url::parse("http://access_key_id:secret_key@localhost:9000/us-east-1/bucket").unwrap();
-        let connection = UploadStoreConnection::try_from(url).unwrap();
+        let connection = ObjectStoreConnection::try_from(url).unwrap();
         match connection {
-            UploadStoreConnection::S3(builder) => {
+            ObjectStoreConnection::S3(builder) => {
                 assert_eq!(
                     builder.get_config_value(&AmazonS3ConfigKey::AccessKeyId),
                     Some("access_key_id".to_string())
@@ -253,9 +253,9 @@ mod test {
             "http://access_key_id:secret_key@localhost:9000/us-east-1/bucket/path/to/dir",
         )
         .unwrap();
-        let connection = UploadStoreConnection::try_from(url).unwrap();
+        let connection = ObjectStoreConnection::try_from(url).unwrap();
         match connection {
-            UploadStoreConnection::S3(builder) => {
+            ObjectStoreConnection::S3(builder) => {
                 assert_eq!(
                     builder.get_config_value(&AmazonS3ConfigKey::AccessKeyId),
                     Some("access_key_id".to_string())
@@ -286,9 +286,9 @@ mod test {
         let url =
             Url::parse("https://access_key_id:secret_key@s3.us-east-1.awesome.host.org/bucket")
                 .unwrap();
-        let connection = UploadStoreConnection::try_from(url).unwrap();
+        let connection = ObjectStoreConnection::try_from(url).unwrap();
         match connection {
-            UploadStoreConnection::S3(builder) => {
+            ObjectStoreConnection::S3(builder) => {
                 assert_eq!(
                     builder.get_config_value(&AmazonS3ConfigKey::AccessKeyId),
                     Some("access_key_id".to_string())
@@ -320,9 +320,9 @@ mod test {
             "https://access_key_id:secret_key@s3.us-east-1.awesome.host.org/bucket/path/to/dir",
         )
         .unwrap();
-        let connection = UploadStoreConnection::try_from(url).unwrap();
+        let connection = ObjectStoreConnection::try_from(url).unwrap();
         match connection {
-            UploadStoreConnection::S3(builder) => {
+            ObjectStoreConnection::S3(builder) => {
                 assert_eq!(
                     builder.get_config_value(&AmazonS3ConfigKey::AccessKeyId),
                     Some("access_key_id".to_string())

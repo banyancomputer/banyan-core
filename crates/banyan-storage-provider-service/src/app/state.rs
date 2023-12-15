@@ -1,11 +1,13 @@
 use std::path::PathBuf;
 
 use jwt_simple::prelude::*;
-use object_store::local::LocalFileSystem;
 use url::Url;
 
 use crate::app::{Config, Secrets};
 use crate::database::{self, Database, DatabaseSetupError};
+use banyan_object_store::{
+    ObjectStore, ObjectStoreConnection, ObjectStoreConnectionError, ObjectStoreError,
+};
 use crate::utils::{fingerprint_key_pair, fingerprint_public_key, SigningKey, VerificationKey};
 
 #[derive(Clone)]
@@ -13,8 +15,8 @@ pub struct State {
     // Resources
     /// Access to the database
     database: Database,
-    /// Directory where uploaded files are stored
-    upload_directory: PathBuf,
+    /// Connection configuration for the upload store
+    upload_store_connection: ObjectStoreConnection,
 
     // Secrets
     /// All runtime secrets
@@ -39,14 +41,13 @@ pub struct State {
 
 impl State {
     pub async fn from_config(config: &Config) -> Result<Self, StateSetupError> {
-        // Do a test setup to make sure the upload directory exists and is writable as an early
+        // Try and parse the upload store connection
+        let upload_store_connection = config.upload_store_url().try_into()?;
+        // Do a test setup to make sure the upload store exists and is writable as an early
         // sanity check
-        LocalFileSystem::new_with_prefix(config.upload_directory())
-            .map_err(StateSetupError::InaccessibleUploadDirectory)?;
+        ObjectStore::new(&upload_store_connection)?;
 
-        let database = database::connect(&config.database_url())
-            .await
-            .map_err(StateSetupError::DatabaseSetupError)?;
+        let database = database::connect(&config.database_url()).await?;
 
         let service_signing_key = load_or_create_service_key(&config.service_key_path())?;
         let service_verification_key = service_signing_key.verifier();
@@ -58,7 +59,7 @@ impl State {
 
         Ok(Self {
             database,
-            upload_directory: config.upload_directory(),
+            upload_store_connection,
 
             secrets,
 
@@ -76,8 +77,8 @@ impl State {
         self.database.clone()
     }
 
-    pub fn upload_directory(&self) -> PathBuf {
-        self.upload_directory.clone()
+    pub fn upload_store_connection(&self) -> &ObjectStoreConnection {
+        &self.upload_store_connection
     }
 
     pub fn secrets(&self) -> Secrets {
@@ -111,20 +112,23 @@ impl State {
 
 #[derive(Debug, thiserror::Error)]
 pub enum StateSetupError {
-    #[error("unable to access configured upload directory: {0}")]
-    InaccessibleUploadDirectory(object_store::Error),
+    #[error("unable to parse url for upload store: {0}")]
+    ObjectStoreConnection(#[from] ObjectStoreConnectionError),
+
+    #[error("unable to access upload store: {0}")]
+    ObjectStore(#[from] ObjectStoreError),
 
     #[error("failed to setup the database: {0}")]
-    DatabaseSetupError(#[from] DatabaseSetupError),
+    DatabaseSetup(#[from] DatabaseSetupError),
 
     #[error("failed to read private service key: {0}")]
-    ServiceKeyReadError(std::io::Error),
+    ServiceKeyRead(std::io::Error),
 
     #[error("failed to write service key: {0}")]
     ServiceKeyWriteFailed(std::io::Error),
 
     #[error("failed to read public platform key: {0}")]
-    PlatformKeyReadError(std::io::Error),
+    PlatformKeyRead(std::io::Error),
 
     #[error("private service key could not be loaded: {0}")]
     InvalidServiceKey(jwt_simple::Error),
@@ -136,8 +140,7 @@ pub enum StateSetupError {
 fn load_or_create_service_key(path: &PathBuf) -> Result<SigningKey, StateSetupError> {
     // Try to load or otherwise generate a new key
     let service_key_inner = if path.exists() {
-        let service_key_bytes =
-            std::fs::read(path).map_err(StateSetupError::ServiceKeyReadError)?;
+        let service_key_bytes = std::fs::read(path).map_err(StateSetupError::ServiceKeyRead)?;
         let service_key_pem = String::from_utf8_lossy(&service_key_bytes);
         let service_key =
             ES384KeyPair::from_pem(&service_key_pem).map_err(StateSetupError::InvalidServiceKey)?;
@@ -172,7 +175,7 @@ fn load_or_create_service_key(path: &PathBuf) -> Result<SigningKey, StateSetupEr
 }
 
 fn load_platform_verfication_key(path: &PathBuf) -> Result<VerificationKey, StateSetupError> {
-    let key_bytes = std::fs::read(path).map_err(StateSetupError::PlatformKeyReadError)?;
+    let key_bytes = std::fs::read(path).map_err(StateSetupError::PlatformKeyRead)?;
     let public_pem = String::from_utf8_lossy(&key_bytes);
 
     let platform_verification_key_inner =

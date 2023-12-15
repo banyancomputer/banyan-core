@@ -5,8 +5,8 @@ use url::Url;
 
 use crate::app::{Config, Secrets};
 use crate::database::{self, Database, DatabaseSetupError};
-use crate::upload_store::{
-    UploadStore, UploadStoreConnection, UploadStoreConnectionError, UploadStoreError,
+use banyan_object_store::{
+    ObjectStore, ObjectStoreConnection, ObjectStoreConnectionError, ObjectStoreError,
 };
 use crate::utils::{fingerprint_key_pair, fingerprint_public_key, SigningKey, VerificationKey};
 
@@ -16,7 +16,7 @@ pub struct State {
     /// Access to the database
     database: Database,
     /// Connection configuration for the upload store
-    upload_store_connection: UploadStoreConnection,
+    upload_store_connection: ObjectStoreConnection,
 
     // Secrets
     /// All runtime secrets
@@ -45,7 +45,7 @@ impl State {
         let upload_store_connection = config.upload_store_url().try_into()?;
         // Do a test setup to make sure the upload store exists and is writable as an early
         // sanity check
-        UploadStore::new(&upload_store_connection)?;
+        ObjectStore::new(&upload_store_connection)?;
 
         let database = database::connect(&config.database_url()).await?;
 
@@ -77,7 +77,7 @@ impl State {
         self.database.clone()
     }
 
-    pub fn upload_store_connection(&self) -> &UploadStoreConnection {
+    pub fn upload_store_connection(&self) -> &ObjectStoreConnection {
         &self.upload_store_connection
     }
 
@@ -113,10 +113,10 @@ impl State {
 #[derive(Debug, thiserror::Error)]
 pub enum StateSetupError {
     #[error("unable to parse url for upload store: {0}")]
-    UploadStoreConnection(#[from] UploadStoreConnectionError),
+    ObjectStoreConnection(#[from] ObjectStoreConnectionError),
 
     #[error("unable to access upload store: {0}")]
-    UploadStore(#[from] UploadStoreError),
+    ObjectStore(#[from] ObjectStoreError),
 
     #[error("failed to setup the database: {0}")]
     DatabaseSetup(#[from] DatabaseSetupError),
