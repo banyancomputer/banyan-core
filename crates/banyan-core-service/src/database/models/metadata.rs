@@ -108,6 +108,7 @@ impl Metadata {
 mod tests {
     use super::*;
 
+    use crate::database::models::MetadataState;
     use crate::database::test_helpers::*;
 
     #[tokio::test]
@@ -116,9 +117,12 @@ mod tests {
         let mut conn = db.begin().await.expect("connection");
 
         let user_id = sample_user(&mut conn, "user@domain.tld").await;
-        let _bucket_id = sample_bucket(&mut conn, &user_id).await;
+        let bucket_id = sample_bucket(&mut conn, &user_id).await;
 
-        todo!()
+        let pending_metadata_id = pending_metadata(&mut conn, &bucket_id, 1).await;
+
+        Metadata::mark_current(&mut conn, &bucket_id, &metadata_id).await.expect("marking current");
+        assert_metadata_in_state(&mut conn, &pending_metadata_id, MetadataState::Current);
     }
 
     // marking current for a pending metadata

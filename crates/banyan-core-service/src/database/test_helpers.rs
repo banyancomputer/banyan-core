@@ -4,6 +4,22 @@ use time::OffsetDateTime;
 use crate::database::models::{BucketType, MetadataState, StorageClass};
 use crate::database::{Database, DatabaseConnection};
 
+pub(crate) async fn assert_metadata_in_state(
+    conn: &mut DatabaseConnection,
+    metadata_id: &str,
+    expected_state: MetadataState,
+) {
+    let db_state = sqlx::query_scalar!(
+        r#"SELECT state as 'state: MetadataState' FROM metadata WHERE id = $1;"#,
+        metadata_id,
+    )
+    .fetch_one(&mut *conn)
+    .await
+    .expect("query success");
+
+    assert_eq!(db_state, expected_state, "metadata was not in expected state");
+}
+
 pub(crate) async fn create_bucket_key(
     conn: &mut DatabaseConnection,
     bucket_id: &str,
