@@ -28,19 +28,26 @@ impl PendingExpiration {
         }
 
         block_id_builder.push(");");
-        let block_ids: Vec<String> = block_id_builder.build_query_scalar().persistent(false).fetch_all(&mut *conn).await?;
+        let block_ids: Vec<String> = block_id_builder
+            .build_query_scalar()
+            .persistent(false)
+            .fetch_all(&mut *conn)
+            .await?;
 
         let mut pending_association_query = sqlx::QueryBuilder::new(
             "INSERT INTO pending_expirations (metadata_id, block_id) VALUES (",
         );
 
         pending_association_query.push_tuples(block_ids, |mut paq, bid| {
-            paq.push_bind(&metadata_id);
+            paq.push_bind(metadata_id);
             paq.push_bind(bid);
         });
 
         pending_association_query.push(");");
-        pending_association_query.build().execute(&mut *conn).await?;
+        pending_association_query
+            .build()
+            .execute(&mut *conn)
+            .await?;
 
         Ok(())
     }

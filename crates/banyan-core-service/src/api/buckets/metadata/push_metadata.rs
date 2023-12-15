@@ -17,8 +17,8 @@ use uuid::Uuid;
 use crate::app::AppState;
 use crate::auth::storage_ticket::StorageTicketBuilder;
 use crate::database::models::{
-    Bucket, Metadata, MetadataState, NewMetadata, NewStorageGrant, PendingExpiration, SelectedStorageHost,
-    StorageHost, User, UserStorageReport,
+    Bucket, Metadata, MetadataState, NewMetadata, NewStorageGrant, PendingExpiration,
+    SelectedStorageHost, StorageHost, User, UserStorageReport,
 };
 use crate::extractors::{DataStore, UserIdentity};
 use crate::utils;
@@ -144,7 +144,8 @@ pub async fn handler(
     };
 
     let cid_iterator = normalized_cids.iter().map(String::as_str);
-    PendingExpiration::record_pending_block_expirations(&mut conn, &bucket_id, cid_iterator).await?;
+    PendingExpiration::record_pending_block_expirations(&mut conn, &bucket_id, cid_iterator)
+        .await?;
 
     // Checkpoint the upload to the database so we can track failures, and perform any necessary
     // clean up behind the scenes. The upload itself will also dwarf the rest of the time of this
