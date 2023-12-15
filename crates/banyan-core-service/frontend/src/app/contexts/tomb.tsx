@@ -1,6 +1,9 @@
 import React, { ReactNode, createContext, useContext, useEffect, useState } from 'react';
 import { TombWasm, WasmBucket, WasmMount, WasmSnapshot } from 'tomb-wasm-experimental';
 import { Mutex } from 'async-mutex';
+import { useNavigate } from 'react-router-dom';
+
+import { TermsAndConditionsModal } from '@components/common/Modal/TermsAndConditionsModal';
 
 import { useModal } from '@/app/contexts/modals';
 import { useKeystore } from './keystore';
@@ -11,7 +14,8 @@ import {
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 import { useSession } from './session';
 import { prettyFingerprintApiKeyPem, sortByType } from '@app/utils';
-import { useNavigate } from 'react-router-dom';
+import { TermsAndColditionsClient } from '@/api/termsAndConditions';
+import { UserClient } from '@/api/user';
 
 interface TombInterface {
 	tomb: TombWasm | null;
@@ -55,12 +59,12 @@ const TombContext = createContext<TombInterface>({} as TombInterface);
 export const TombProvider = ({ children }: { children: ReactNode }) => {
 	const { userData } = useSession();
 	const navigate = useNavigate();
-	const { openEscrowModal } = useModal();
+	const { openEscrowModal, openModal } = useModal();
 	const { isLoading, keystoreInitialized, getEncryptionKey, getApiKey, escrowedKeyMaterial } = useKeystore();
 	const [tomb, setTomb] = useState<TombWasm | null>(null);
 	const [buckets, setBuckets] = useState<TombBucket[]>([]);
 	const [trash, setTrash] = useState<TombBucket | null>(null);
-
+	const [areTermsAccepted, setAreTermsAccepted] = useState(false);
 	const [selectedBucket, setSelectedBucket] = useState<Bucket | null>(null);
 	const [storageUsage, setStorageUsage] = useState<{ current: number, limit: number }>({ current: 0, limit: 0 });
 	const [areBucketsLoading, setAreBucketsLoading] = useState<boolean>(false);
@@ -384,10 +388,41 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	}, [userData, keystoreInitialized, isLoading, escrowedKeyMaterial]);
 
 	useEffect(() => {
+		if (!areTermsAccepted) return;
+
 		if (!keystoreInitialized && !isLoading) {
 			openEscrowModal(!!escrowedKeyMaterial);
 		};
-	}, [isLoading, keystoreInitialized]);
+	}, [isLoading, keystoreInitialized, areTermsAccepted]);
+
+	useEffect(() => {
+		const userClient = new UserClient();
+		const termsClient = new TermsAndColditionsClient();
+		(async () => {
+			try {
+				const termsAndConditions = await termsClient.getTermsAndCondition();
+				const userData = await userClient.getCurrentUser();
+
+				if (!userData) return;
+
+				if (!userData.accepted_tos_at || userData.accepted_tos_at <= +termsAndConditions.tos_date) {
+					openModal(
+						<TermsAndConditionsModal
+							setAreTermsAccepted={setAreTermsAccepted}
+							terms={termsAndConditions.tos_content}
+							userData={userData} />
+						, null, true);
+
+					return;
+				}
+
+				setAreTermsAccepted(true);
+			} catch (error: any) {
+				console.log(error);
+			}
+
+		})()
+	}, [userData])
 
 	useEffect(() => {
 		if (tomb) {
@@ -406,7 +441,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 		<TombContext.Provider
 			value={{
 				tomb, buckets, storageUsage, trash, areBucketsLoading, selectedBucket, error,
-				getBuckets, getBucketsFiles, getBucketsKeys, selectBucket, getSelectedBucketFiles, 
+				getBuckets, getBucketsFiles, getBucketsKeys, selectBucket, getSelectedBucketFiles,
 				takeColdSnapshot, getBucketShapshots, createBucketAndMount, deleteBucket,
 				getFile, renameBucket, createDirectory, uploadFile, purgeSnapshot,
 				removeBucketAccess, approveBucketAccess, approveDeviceApiKey, shareFile, download, moveTo,
