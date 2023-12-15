@@ -28,17 +28,6 @@ function run-minio {
     start-minio-container
 }
 
-# Stop the Minio container
-function stop-minio {
-    stop-minio-container
-}
-
-# Remove the Minio volume
-function rm-minio-volume {
-    
-    rm -rf ${MINIO_VOLUME_PATH}
-}
-
 # Create the Minio bucket for the staging service
 function create-minio-staging-bucket {
     docker exec ${MINIO_CONTAINER_NAME} mc mb -p ${MINIO_STAGING_BUCKET_MT_PATH}
@@ -62,11 +51,6 @@ function start-minio-container {
     docker start ${MINIO_CONTAINER_NAME}
 }
 
-# Stop the Minio container -- nothing special here
-function stop-minio-container {
-    docker stop ${MINIO_CONTAINER_NAME}
-}
-
 # Create the Minio container if it does not exist
 function insure-minio-container-exists {
     if [ -z "$(docker ps -a -q -f name=${MINIO_CONTAINER_NAME})" ]; then
@@ -77,7 +61,9 @@ function insure-minio-container-exists {
 
 # Create the Minio container
 function create-minio-container {
+    # Create the Minio volume if it does not exist
     create-minio-volume
+    # Create the Minio container with the Minio volume mounted
     docker create \
         -p 9000:9000 \
         -p 9090:9090 \
