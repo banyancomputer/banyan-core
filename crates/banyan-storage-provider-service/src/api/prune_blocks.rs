@@ -2,36 +2,46 @@ use axum::extract::{Json, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use banyan_task::TaskLikeExt;
+use cid::Cid;
 
 use crate::app::AppState;
 use crate::extractors::PlatformIdentity;
-use crate::tasks::{PruneBlock, PruneBlocksTask};
+use crate::tasks::PruneBlocksTask;
+use crate::utils::NORMALIZED_CID_BASE;
 
 pub async fn handler(
     _ci: PlatformIdentity,
     State(state): State<AppState>,
-    Json(prune_blocks): Json<Vec<PruneBlock>>,
+    Json(prune_cids): Json<Vec<Cid>>,
 ) -> Result<Response, PruneBlocksError> {
     let mut db = state.database();
-    PruneBlocksTask::new(prune_blocks)
+
+    // Normalize the block CIDs, warn but keep going on any invalid ones
+    let mut prune_block_list = Vec::new();
+    for cid in prune_cids.into_iter() {
+        match cid.to_string_of_base(NORMALIZED_CID_BASE) {
+            Ok(cid_str) => prune_block_list.push(cid_str),
+            Err(err) => tracing::warn!("failed to normalize CID from platform prune request: {err}"),
+        }
+    }
+
+    PruneBlocksTask::new(prune_block_list)
         .enqueue::<banyan_task::SqliteTaskStore>(&mut db)
-        .await
-        .map_err(PruneBlocksError::UnableToEnqueueTask)?;
+        .await?;
+
     Ok((StatusCode::OK, ()).into_response())
 }
 
 #[derive(Debug, thiserror::Error)]
 pub enum PruneBlocksError {
     #[error("could not enqueue task: {0}")]
-    UnableToEnqueueTask(banyan_task::TaskStoreError),
+    UnableToEnqueueTask(#[from] banyan_task::TaskStoreError),
 }
 
 impl IntoResponse for PruneBlocksError {
     fn into_response(self) -> Response {
-        {
-            tracing::error!("{self}");
-            let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
-        }
+        tracing::error!("{self}");
+        let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
     }
 }

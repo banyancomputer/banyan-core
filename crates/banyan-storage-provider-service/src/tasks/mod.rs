@@ -2,7 +2,7 @@ mod prune_blocks;
 mod report_upload;
 
 use banyan_task::{QueueConfig, SqliteTaskStore, WorkerPool};
-pub use prune_blocks::{PruneBlock, PruneBlocksTask};
+pub use prune_blocks::PruneBlocksTask;
 pub use report_upload::ReportUploadTask;
 use tokio::sync::watch;
 use tokio::task::JoinHandle;
