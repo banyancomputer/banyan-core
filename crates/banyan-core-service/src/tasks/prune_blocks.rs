@@ -74,9 +74,7 @@ impl TaskLike for PruneBlocksTask {
         // Construct the client to handle the prune request
         let mut default_headers = HeaderMap::new();
         default_headers.insert("Content-Type", HeaderValue::from_static("application/json"));
-        let client = Client::builder()
-            .default_headers(default_headers)
-            .build()?;
+        let client = Client::builder().default_headers(default_headers).build()?;
 
         let mut claims = Claims::create(Duration::from_secs(60))
             .with_audiences(HashSet::from_strings(&[storage_host_info.name]))

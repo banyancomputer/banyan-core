@@ -17,7 +17,10 @@ pub(crate) async fn assert_metadata_in_state(
     .await
     .expect("query success");
 
-    assert_eq!(db_state, expected_state, "metadata was not in expected state");
+    assert_eq!(
+        db_state, expected_state,
+        "metadata was not in expected state"
+    );
 }
 
 pub(crate) async fn create_bucket_key(

@@ -66,9 +66,14 @@ pub async fn handler(
     let bucket_id = Metadata::get_bucket_id(&mut *db_conn, &db_metadata_id)
         .await
         .map_err(ReportUploadError::MarkCurrentFailed)?;
-    Metadata::mark_current(&mut *db_conn, &bucket_id, &db_metadata_id, Some(request.data_size))
-        .await
-        .map_err(ReportUploadError::MarkCurrentFailed)?;
+    Metadata::mark_current(
+        &mut *db_conn,
+        &bucket_id,
+        &db_metadata_id,
+        Some(request.data_size),
+    )
+    .await
+    .map_err(ReportUploadError::MarkCurrentFailed)?;
 
     Ok((StatusCode::NO_CONTENT, ()).into_response())
 }

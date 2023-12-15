@@ -23,7 +23,10 @@ pub async fn handler(
     for cid in cid_list.into_iter() {
         match cid.to_string_of_base(NORMALIZED_CID_BASE) {
             Ok(n_cid) => normalized_cid_list.push(n_cid),
-            Err(err) => tracing::warn!(storage_provider_id, "storage provider reported invalid CID: {err}"),
+            Err(err) => tracing::warn!(
+                storage_provider_id,
+                "storage provider reported invalid CID: {err}"
+            ),
         }
     }
 
@@ -40,7 +43,11 @@ pub async fn handler(
     }
 
     block_id_query.push(");");
-    let block_ids: Vec<String> = block_id_query.build_query_scalar().persistent(false).fetch_all(&mut *conn).await?;
+    let block_ids: Vec<String> = block_id_query
+        .build_query_scalar()
+        .persistent(false)
+        .fetch_all(&mut *conn)
+        .await?;
 
     // Mark only the associations from that particular storage provider from our collected
     // database blocks IDs as pruned
@@ -65,7 +72,10 @@ pub async fn handler(
 
     conn.commit().await?;
 
-    tracing::debug!(pruned_blocks = prune_result.rows_affected(), "blocks pruned from storage provider");
+    tracing::debug!(
+        pruned_blocks = prune_result.rows_affected(),
+        "blocks pruned from storage provider"
+    );
 
     Ok((StatusCode::NO_CONTENT, ()).into_response())
 }

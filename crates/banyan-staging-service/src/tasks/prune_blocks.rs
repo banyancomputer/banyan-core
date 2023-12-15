@@ -61,11 +61,15 @@ impl TaskLike for PruneBlocksTask {
         }
 
         block_id_query.push(");");
-        let block_ids: Vec<String> = block_id_query.build_query_scalar().persistent(false).fetch_all(&mut *conn).await?;
+        let block_ids: Vec<String> = block_id_query
+            .build_query_scalar()
+            .persistent(false)
+            .fetch_all(&mut *conn)
+            .await?;
 
         let mut prune_builder = sqlx::QueryBuilder::new(
             r#"UPDATE uploads_blocks SET pruned_at = CURRENT_TIMESTAMP
-                   WHERE pruned_at IS NULL AND block_id IN ("#
+                   WHERE pruned_at IS NULL AND block_id IN ("#,
         );
 
         let mut block_id_iterator = block_ids.iter().peekable();
@@ -82,7 +86,10 @@ impl TaskLike for PruneBlocksTask {
 
         report_pruned_blocks(&ctx, &self.prune_blocks).await?;
 
-        tracing::info!(pruned_blocks = prune_result.rows_affected(), "blocked pruned");
+        tracing::info!(
+            pruned_blocks = prune_result.rows_affected(),
+            "blocked pruned"
+        );
 
         Ok(())
     }
@@ -105,9 +112,7 @@ async fn report_pruned_blocks(
         .build()
         .unwrap();
 
-    let report_endpoint = platform_hostname
-        .join("/hooks/storage/prune")
-        .unwrap();
+    let report_endpoint = platform_hostname.join("/hooks/storage/prune").unwrap();
 
     let mut claims = Claims::create(Duration::from_secs(60))
         .with_audiences(HashSet::from_strings(&[platform_name]))

@@ -1,5 +1,5 @@
-use std::time::Duration;
 use std::collections::{HashMap, HashSet};
+use std::time::Duration;
 
 use banyan_task::TaskLikeExt;
 use sqlx::QueryBuilder;
@@ -139,7 +139,9 @@ impl Bucket {
             }
 
             query_builder.push(");");
-            let query = query_builder.build_query_as::<MinimalBlockLocation>().persistent(false);
+            let query = query_builder
+                .build_query_as::<MinimalBlockLocation>()
+                .persistent(false);
 
             let block_locations = query.fetch_all(&mut *conn).await?;
             expired_associations.extend(block_locations);
@@ -161,13 +163,13 @@ impl Bucket {
         for expired_chunk in expired_associations.chunks(DATABASE_CHUNK_LIMIT) {
             let mut expire_builder = sqlx::QueryBuilder::new(
                 r#"UPDATE block_locations SET expired_at = DATETIME('now')
-                       WHERE (block_id, metadata_id, storage_host_id) IN (VALUES "#
+                       WHERE (block_id, metadata_id, storage_host_id) IN (VALUES "#,
             );
 
             let mut prune_candidate_builder = sqlx::QueryBuilder::new(
                 r#"SELECT storage_host_id,block_id FROM
                        block_locations WHERE (block_id, storage_host_id)
-                           IN (VALUES "#
+                           IN (VALUES "#,
             );
 
             expire_builder.push_tuples(expired_chunk, |mut b, location| {
@@ -183,7 +185,8 @@ impl Bucket {
             });
 
             expire_builder.push(");");
-            prune_candidate_builder.push(") GROUP BY (block_id, storage_host_id) HAVING COUNT(*) > 1;");
+            prune_candidate_builder
+                .push(") GROUP BY (block_id, storage_host_id) HAVING COUNT(*) > 1;");
 
             let expire_query = expire_builder.build().persistent(false);
             let expire_query_result = expire_query.execute(&mut *conn).await?;
@@ -335,9 +338,8 @@ mod tests {
     use time::OffsetDateTime;
 
     use super::*;
-
-    use crate::database::test_helpers::*;
     use crate::database::models::MetadataState;
+    use crate::database::test_helpers::*;
 
     async fn is_bucket_key_approved(
         conn: &mut DatabaseConnection,
@@ -372,7 +374,9 @@ mod tests {
             .await
             .expect("appoval success");
 
-        assert!(!is_bucket_key_approved(&mut conn, &bucket_id, "001122").await.unwrap());
+        assert!(!is_bucket_key_approved(&mut conn, &bucket_id, "001122")
+            .await
+            .unwrap());
     }
 
     #[tokio::test]
@@ -390,8 +394,12 @@ mod tests {
             .await
             .expect("appoval success");
 
-        assert!(!is_bucket_key_approved(&mut conn, &bucket_id, "001122").await.unwrap());
-        assert!(is_bucket_key_approved(&mut conn, &bucket_id, "003355").await.unwrap());
+        assert!(!is_bucket_key_approved(&mut conn, &bucket_id, "001122")
+            .await
+            .unwrap());
+        assert!(is_bucket_key_approved(&mut conn, &bucket_id, "003355")
+            .await
+            .unwrap());
     }
 
     #[tokio::test]
@@ -411,9 +419,15 @@ mod tests {
             .await
             .expect("appoval success");
 
-        assert!(is_bucket_key_approved(&mut conn, &bucket_id, "001122").await.unwrap());
-        assert!(!is_bucket_key_approved(&mut conn, &bucket_id, "003355").await.unwrap());
-        assert!(is_bucket_key_approved(&mut conn, &bucket_id, "abcdef").await.unwrap());
+        assert!(is_bucket_key_approved(&mut conn, &bucket_id, "001122")
+            .await
+            .unwrap());
+        assert!(!is_bucket_key_approved(&mut conn, &bucket_id, "003355")
+            .await
+            .unwrap());
+        assert!(is_bucket_key_approved(&mut conn, &bucket_id, "abcdef")
+            .await
+            .unwrap());
     }
 
     #[tokio::test]
@@ -425,7 +439,9 @@ mod tests {
         let bucket_id = sample_bucket(&mut conn, &user_id).await;
 
         // No metadata instances have yet been uploaded, no change should be in progress
-        assert!(!Bucket::is_change_in_progress(&mut conn, &bucket_id).await.unwrap());
+        assert!(!Bucket::is_change_in_progress(&mut conn, &bucket_id)
+            .await
+            .unwrap());
     }
 
     #[tokio::test]
@@ -437,17 +453,37 @@ mod tests {
         let bucket_id = sample_bucket(&mut conn, &user_id).await;
 
         let base_time = OffsetDateTime::now_utc();
-        create_metadata(&mut conn, &bucket_id, "meta-cid", "root-cid", MetadataState::Current, Some(base_time)).await;
+        create_metadata(
+            &mut conn,
+            &bucket_id,
+            "meta-cid",
+            "root-cid",
+            MetadataState::Current,
+            Some(base_time),
+        )
+        .await;
 
         // All the metadata is current, no change should be in progress
-        assert!(!Bucket::is_change_in_progress(&mut conn, &bucket_id).await.unwrap());
+        assert!(!Bucket::is_change_in_progress(&mut conn, &bucket_id)
+            .await
+            .unwrap());
 
         let older_time = base_time - Duration::from_secs(20);
-        create_metadata(&mut conn, &bucket_id, "old-meta-cid", "old-root-cid", MetadataState::Current, Some(older_time)).await;
+        create_metadata(
+            &mut conn,
+            &bucket_id,
+            "old-meta-cid",
+            "old-root-cid",
+            MetadataState::Current,
+            Some(older_time),
+        )
+        .await;
 
         // The pending metadata was created at "before" the current metadata so shouldn't cause the
         // bucket to be considered actively being changed
-        assert!(!Bucket::is_change_in_progress(&mut conn, &bucket_id).await.unwrap());
+        assert!(!Bucket::is_change_in_progress(&mut conn, &bucket_id)
+            .await
+            .unwrap());
     }
 
     #[tokio::test]
@@ -459,11 +495,21 @@ mod tests {
         let bucket_id = sample_bucket(&mut conn, &user_id).await;
 
         let base_time = OffsetDateTime::now_utc();
-        create_metadata(&mut conn, &bucket_id, "meta-cid", "root-cid", MetadataState::Pending, Some(base_time)).await;
+        create_metadata(
+            &mut conn,
+            &bucket_id,
+            "meta-cid",
+            "root-cid",
+            MetadataState::Pending,
+            Some(base_time),
+        )
+        .await;
 
         // A just created (within our window) pending metadata should keep the bucket locked as its
         // being changed
-        assert!(Bucket::is_change_in_progress(&mut conn, &bucket_id).await.unwrap());
+        assert!(Bucket::is_change_in_progress(&mut conn, &bucket_id)
+            .await
+            .unwrap());
     }
 
     #[tokio::test]
@@ -475,18 +521,38 @@ mod tests {
         let bucket_id = sample_bucket(&mut conn, &user_id).await;
 
         let base_time = time_outside_lock_window();
-        create_metadata(&mut conn, &bucket_id, "meta-cid", "root-cid", MetadataState::Pending, Some(base_time)).await;
+        create_metadata(
+            &mut conn,
+            &bucket_id,
+            "meta-cid",
+            "root-cid",
+            MetadataState::Pending,
+            Some(base_time),
+        )
+        .await;
 
         // A just created (within our window) pending metadata should keep the bucket locked as its
         // being changed
-        assert!(!Bucket::is_change_in_progress(&mut conn, &bucket_id).await.unwrap());
+        assert!(!Bucket::is_change_in_progress(&mut conn, &bucket_id)
+            .await
+            .unwrap());
 
         // There is a different code path when a 'current' metadata exists, we want to make sure
         // this is still _before_ the pending metadata
         let older_time = base_time - Duration::from_secs(10);
-        create_metadata(&mut conn, &bucket_id, "og-meta-cid", "og-root-cid", MetadataState::Current, Some(older_time)).await;
+        create_metadata(
+            &mut conn,
+            &bucket_id,
+            "og-meta-cid",
+            "og-root-cid",
+            MetadataState::Current,
+            Some(older_time),
+        )
+        .await;
 
-        assert!(!Bucket::is_change_in_progress(&mut conn, &bucket_id).await.unwrap());
+        assert!(!Bucket::is_change_in_progress(&mut conn, &bucket_id)
+            .await
+            .unwrap());
     }
 
     #[tokio::test]
@@ -498,11 +564,21 @@ mod tests {
         let bucket_id = sample_bucket(&mut conn, &user_id).await;
 
         let base_time = OffsetDateTime::now_utc();
-        create_metadata(&mut conn, &bucket_id, "meta-cid", "root-cid", MetadataState::Uploading, Some(base_time)).await;
+        create_metadata(
+            &mut conn,
+            &bucket_id,
+            "meta-cid",
+            "root-cid",
+            MetadataState::Uploading,
+            Some(base_time),
+        )
+        .await;
 
         // A just created (within our window) uploading metadata should keep the bucket locked as
         // its being changed.
-        assert!(Bucket::is_change_in_progress(&mut conn, &bucket_id).await.unwrap());
+        assert!(Bucket::is_change_in_progress(&mut conn, &bucket_id)
+            .await
+            .unwrap());
     }
 
     #[tokio::test]
@@ -514,18 +590,38 @@ mod tests {
         let bucket_id = sample_bucket(&mut conn, &user_id).await;
 
         let base_time = time_outside_lock_window();
-        create_metadata(&mut conn, &bucket_id, "meta-cid", "root-cid", MetadataState::Uploading, Some(base_time)).await;
+        create_metadata(
+            &mut conn,
+            &bucket_id,
+            "meta-cid",
+            "root-cid",
+            MetadataState::Uploading,
+            Some(base_time),
+        )
+        .await;
 
         // A just created (within our window) pending metadata should keep the bucket locked as its
         // being changed
-        assert!(!Bucket::is_change_in_progress(&mut conn, &bucket_id).await.unwrap());
+        assert!(!Bucket::is_change_in_progress(&mut conn, &bucket_id)
+            .await
+            .unwrap());
 
         // There is a different code path when a 'current' metadata exists, we want to make sure
         // this is still _before_ the uploading metadata
         let older_time = base_time - Duration::from_secs(10);
-        create_metadata(&mut conn, &bucket_id, "og-meta-cid", "og-root-cid", MetadataState::Current, Some(older_time)).await;
+        create_metadata(
+            &mut conn,
+            &bucket_id,
+            "og-meta-cid",
+            "og-root-cid",
+            MetadataState::Current,
+            Some(older_time),
+        )
+        .await;
 
-        assert!(!Bucket::is_change_in_progress(&mut conn, &bucket_id).await.unwrap());
+        assert!(!Bucket::is_change_in_progress(&mut conn, &bucket_id)
+            .await
+            .unwrap());
     }
 
     #[tokio::test]
@@ -536,7 +632,10 @@ mod tests {
         let user_id = sample_user(&mut conn, "user@domain.tld").await;
         let bucket_id = sample_bucket(&mut conn, &user_id).await;
 
-        assert!(Bucket::current_version(&mut conn, &bucket_id).await.expect("query success").is_none());
+        assert!(Bucket::current_version(&mut conn, &bucket_id)
+            .await
+            .expect("query success")
+            .is_none());
     }
 
     #[tokio::test]
@@ -549,16 +648,45 @@ mod tests {
 
         // An older pending should have no effect on the current metadata
         let oldest_time = OffsetDateTime::now_utc() - Duration::from_secs(300);
-        create_metadata(&mut conn, &bucket_id, "old-meta-cid", "old-root-cid", MetadataState::Pending, Some(oldest_time)).await;
+        create_metadata(
+            &mut conn,
+            &bucket_id,
+            "old-meta-cid",
+            "old-root-cid",
+            MetadataState::Pending,
+            Some(oldest_time),
+        )
+        .await;
 
         let base_time = OffsetDateTime::now_utc() - Duration::from_secs(300);
-        let current_metadata_id = create_metadata(&mut conn, &bucket_id, "meta-cid", "root-cid", MetadataState::Current, Some(base_time)).await;
+        let current_metadata_id = create_metadata(
+            &mut conn,
+            &bucket_id,
+            "meta-cid",
+            "root-cid",
+            MetadataState::Current,
+            Some(base_time),
+        )
+        .await;
 
         // An newer pending should have no effect on the current metadata
         let newer_time = OffsetDateTime::now_utc();
-        create_metadata(&mut conn, &bucket_id, "new-meta-cid", "new-root-cid", MetadataState::Pending, Some(newer_time)).await;
+        create_metadata(
+            &mut conn,
+            &bucket_id,
+            "new-meta-cid",
+            "new-root-cid",
+            MetadataState::Pending,
+            Some(newer_time),
+        )
+        .await;
 
-        assert_eq!(Bucket::current_version(&mut conn, &bucket_id).await.expect("query success"), Some(current_metadata_id));
+        assert_eq!(
+            Bucket::current_version(&mut conn, &bucket_id)
+                .await
+                .expect("query success"),
+            Some(current_metadata_id)
+        );
     }
 
     /// This is temporary behavior to restore access to buckets that were affected by the outdated
@@ -573,16 +701,42 @@ mod tests {
         let bucket_id = sample_bucket(&mut conn, &user_id).await;
 
         let base_time = OffsetDateTime::now_utc();
-        let pending_id = create_metadata(&mut conn, &bucket_id, "pm-cid", "pr-cid", MetadataState::Pending, Some(base_time)).await;
+        let pending_id = create_metadata(
+            &mut conn,
+            &bucket_id,
+            "pm-cid",
+            "pr-cid",
+            MetadataState::Pending,
+            Some(base_time),
+        )
+        .await;
 
-        assert_eq!(Bucket::current_version(&mut conn, &bucket_id).await.expect("query success"), Some(pending_id));
+        assert_eq!(
+            Bucket::current_version(&mut conn, &bucket_id)
+                .await
+                .expect("query success"),
+            Some(pending_id)
+        );
 
         // Any current metadata should override the pending one, this creates it in the past as
         // that is a slightly more spicy edge case than a brand new current one
         let older_time = base_time - Duration::from_secs(1800);
-        let current_id = create_metadata(&mut conn, &bucket_id, "c-meta-cid", "c-root-cid", MetadataState::Current, Some(older_time)).await;
+        let current_id = create_metadata(
+            &mut conn,
+            &bucket_id,
+            "c-meta-cid",
+            "c-root-cid",
+            MetadataState::Current,
+            Some(older_time),
+        )
+        .await;
 
-        assert_eq!(Bucket::current_version(&mut conn, &bucket_id).await.expect("query success"), Some(current_id));
+        assert_eq!(
+            Bucket::current_version(&mut conn, &bucket_id)
+                .await
+                .expect("query success"),
+            Some(current_id)
+        );
     }
 
     #[tokio::test]

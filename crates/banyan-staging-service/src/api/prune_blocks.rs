@@ -21,7 +21,9 @@ pub async fn handler(
     for cid in prune_cids.into_iter() {
         match cid.to_string_of_base(NORMALIZED_CID_BASE) {
             Ok(cid_str) => prune_block_list.push(cid_str),
-            Err(err) => tracing::warn!("failed to normalize CID from platform prune request: {err}"),
+            Err(err) => {
+                tracing::warn!("failed to normalize CID from platform prune request: {err}")
+            }
         }
     }
 
