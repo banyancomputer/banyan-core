@@ -79,6 +79,8 @@ connect-to-storage-provider-database:
 # object storage administration
 # =========================================================================== #
 
+# for local development and production, we support minio as an object storage service
+
 # name of the minio container
 minio_container_name = banyan-minio
 # name of the bucket used for staging
@@ -90,9 +92,9 @@ minio_volume_mt_dir_name = data
 # where the minio volume is mounted on the host 
 minio_volume_path = ${HOME}/$(minio_container_name)/$(minio_volume_mt_dir_name)
 
-# these are the paths to the buckets on the minio volume
-minio_staging_bucket_mt_path = /$(minio_volume_mt_path)/$(minio_staging_bucket_name)
-minio_storage_provider_bucket_mt_path = /$(minio_volume_mt_path)/$(minio_storage_provider_bucket_name)
+# these are the paths to the buckets on the minio volume for our services
+minio_staging_bucket_mt_path = /$(minio_volume_mt_dir_name)/$(minio_staging_bucket_name)
+minio_storage_provider_bucket_mt_path = /$(minio_volume_mt_dir_name)/$(minio_storage_provider_bucket_name)
 
 # credentials for the minio API available at localhost:9000
 # these can also be used as aws credentials for the s3 API at localhost:9090
@@ -143,7 +145,7 @@ stop-minio-container:
 
 # create the minio container if it does not exist
 insure-minio-container-exists:
-	@if [ ! "$(docker ps -a | grep ${minio_container_name})" ]; then \
+	@if [ -z "$(docker ps -a -q -f name=${minio_container_name})" ]; then \
 		echo "Creating minio container..."; \
 		$(MAKE) create-minio-container; \
 	fi
