@@ -43,7 +43,7 @@ impl Metadata {
         bucket_id: &str,
         metadata_id: &str,
     ) -> Result<(), sqlx::Error> {
-        sqlx::query!(
+        let current_result = sqlx::query!(
             "UPDATE metadata SET state = 'current'
                  WHERE bucket_id = $1
                      AND id = $2
@@ -53,6 +53,19 @@ impl Metadata {
         )
         .execute(&mut *conn)
         .await?;
+
+        match current_result.rows_affected() {
+            // Either the provided ID didn't exist, or it wasn't in a compatible state. Either way
+            // indicate that the expected target couldn't be found.
+            0 => return Err(sqlx::Error::RowNotFound),
+            // This is the "good case", we want there to be exactly one change
+            1 => (),
+            // Any other number is also an error, but there shouldn't be any way to get here since
+            // the ID is specifically included and that is a unique column. If this ever occurs
+            // there is likely dramatic database damage or at the very least we can't rely on
+            // uniqueness assumptions and _should_ crash.
+            _ => unreachable!("query restricted by unique ID"),
+        }
 
         let result = sqlx::query!(
             r#"UPDATE metadata SET state = 'outdated'
@@ -112,7 +125,7 @@ mod tests {
     use crate::database::test_helpers::*;
 
     #[tokio::test]
-    async fn test_expected_marking_current() {
+    async fn test_expected_getting_marked_current() {
         let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
@@ -120,14 +133,30 @@ mod tests {
         let bucket_id = sample_bucket(&mut conn, &user_id).await;
 
         let pending_metadata_id = pending_metadata(&mut conn, &bucket_id, 1).await;
+        Metadata::mark_current(&mut conn, &bucket_id, &pending_metadata_id).await.expect("marking current");
+        assert_metadata_in_state(&mut conn, &pending_metadata_id, MetadataState::Current).await;
 
-        Metadata::mark_current(&mut conn, &bucket_id, &metadata_id).await.expect("marking current");
-        assert_metadata_in_state(&mut conn, &pending_metadata_id, MetadataState::Current);
+        let uploading_metadata_id = sample_metadata(&mut conn, &bucket_id, 1, MetadataState::Uploading).await;
+        Metadata::mark_current(&mut conn, &bucket_id, &uploading_metadata_id).await.expect("marking current");
+        assert_metadata_in_state(&mut conn, &uploading_metadata_id, MetadataState::Current).await;
+        assert_metadata_in_state(&mut conn, &pending_metadata_id, MetadataState::Outdated).await;
+
+        // The metadata is already outdated, it shouldn't be capable of becoming the current
+        // metadata.
+        let result = Metadata::mark_current(&mut conn, &bucket_id, &pending_metadata_id).await;
+        assert!(result.is_err());
+        assert_metadata_in_state(&mut conn, &pending_metadata_id, MetadataState::Outdated).await;
     }
 
-    // marking current for a pending metadata
-    // marking current for an uploading metadata
-    // marking current with multiple existing current metadata
-    // not marking current for other metadata
-    // error on not marking metadata current
+    #[tokio::test]
+    async fn test_missing_metadata_fails() {
+        let db = setup_database().await;
+        let mut conn = db.begin().await.expect("connection");
+
+        let user_id = sample_user(&mut conn, "user@domain.tld").await;
+        let bucket_id = sample_bucket(&mut conn, &user_id).await;
+
+        let result = Metadata::mark_current(&mut conn, &bucket_id, "fake-id").await;
+        assert!(result.is_err());
+    }
 }
