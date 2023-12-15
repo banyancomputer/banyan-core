@@ -1,6 +1,9 @@
 import React, { ReactNode, createContext, useContext, useEffect, useState } from 'react';
 import { TombWasm, WasmBucket, WasmMount, WasmSnapshot } from 'tomb-wasm-experimental';
 import { Mutex } from 'async-mutex';
+import { useNavigate } from 'react-router-dom';
+
+import { TermsAndConditionsModal } from '@components/common/Modal/TermsAndConditionsModal';
 
 import { useModal } from '@/app/contexts/modals';
 import { useKeystore } from './keystore';
@@ -11,7 +14,8 @@ import {
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 import { useSession } from './session';
 import { prettyFingerprintApiKeyPem, sortByType } from '@app/utils';
-import { useNavigate } from 'react-router-dom';
+import { TermsAndColditionsClient } from '@/api/termsAndConditions';
+import { UserClient } from '@/api/user';
 
 interface TombInterface {
 	tomb: TombWasm | null;
@@ -29,18 +33,19 @@ interface TombInterface {
 	getExpandedFolderFiles: (path: string[], folder: BrowserObject, bucket: Bucket) => Promise<void>;
 	takeColdSnapshot: (bucket: Bucket) => Promise<void>;
 	getBucketShapshots: (id: string) => Promise<BucketSnapshot[]>;
-	createBucket: (name: string, storageClass: string, bucketType: string) => Promise<void>;
+	createBucketAndMount: (name: string, storageClass: string, bucketType: string) => Promise<void>;
+	renameBucket: (bucket: Bucket, newName: string) => void;
 	deleteBucket: (id: string) => void;
 	createDirectory: (bucket: Bucket, path: string[], name: string) => Promise<void>;
 	download: (bucket: Bucket, path: string[], name: string) => Promise<void>;
 	getFile: (bucket: Bucket, path: string[], name: string) => Promise<ArrayBuffer>;
-	shareFile: (bucket: Bucket, file: BrowserObject) => Promise<string>;
+	shareFile: (bucket: Bucket, path: string[]) => Promise<string>;
 	makeCopy: (bucket: Bucket, path: string[], name: string) => void;
 	moveTo: (bucket: Bucket, from: string[], to: string[]) => Promise<void>;
 	uploadFile: (nucket: Bucket, path: string[], name: string, file: any, folder?: BrowserObject) => Promise<void>;
 	purgeSnapshot: (id: string) => void;
 	deleteFile: (bucket: Bucket, path: string[], name: string) => void;
-	completeDeviceKeyRegistration: (fingerprint: string) => Promise<void>;
+	approveDeviceApiKey: (pem: string) => Promise<void>;
 	approveBucketAccess: (bucket: Bucket, bucket_key_id: string) => Promise<void>;
 	removeBucketAccess: (id: string) => Promise<void>;
 	restore: (bucket: Bucket, snapshot: WasmSnapshot) => Promise<void>;
@@ -54,12 +59,12 @@ const TombContext = createContext<TombInterface>({} as TombInterface);
 export const TombProvider = ({ children }: { children: ReactNode }) => {
 	const { userData } = useSession();
 	const navigate = useNavigate();
-	const { openEscrowModal } = useModal();
+	const { openEscrowModal, openModal } = useModal();
 	const { isLoading, keystoreInitialized, getEncryptionKey, getApiKey, escrowedKeyMaterial } = useKeystore();
 	const [tomb, setTomb] = useState<TombWasm | null>(null);
 	const [buckets, setBuckets] = useState<TombBucket[]>([]);
-	const [trash, setTrash] = useState<TombBucket| null>(null);
-
+	const [trash, setTrash] = useState<TombBucket | null>(null);
+	const [areTermsAccepted, setAreTermsAccepted] = useState(false);
 	const [selectedBucket, setSelectedBucket] = useState<Bucket | null>(null);
 	const [storageUsage, setStorageUsage] = useState<{ current: number, limit: number }>({ current: 0, limit: 0 });
 	const [areBucketsLoading, setAreBucketsLoading] = useState<boolean>(false);
@@ -175,17 +180,18 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	};
 
 	/** Creates new bucket with recieved parameters of type and storag class. */
-	const createBucket = async (name: string, storageClass: string, bucketType: string) => {
+	const createBucketAndMount = async (name: string, storageClass: string, bucketType: string) => {
 		await tombMutex(tomb, async tomb => {
 			const key = await getEncryptionKey();
-			const wasmBucket = await tomb!.createBucket(name, storageClass, bucketType, key.publicPem);
-			const mount = await tomb!.mount(wasmBucket.id(), key.privatePem);
-			const files = await mount.ls([]);
+			const wasmBucketMount = await tomb!.createBucketAndMount(name, storageClass, bucketType, key.privatePem, key.publicPem);
+			const wasmBucket = wasmBucketMount.bucket;
+			const wasmMount = wasmBucketMount.mount;
+			const files = await wasmMount.ls([]);
 			const snapshots = await tomb!.listBucketSnapshots(wasmBucket.id());
-			const locked = await mount.locked();
-			const isSnapshotValid = await mount.hasSnapshot();
+			const locked = await wasmMount.locked();
+			const isSnapshotValid = await wasmMount.hasSnapshot();
 			const bucket = {
-				mount,
+				mount: wasmMount,
 				id: wasmBucket.id(),
 				name: wasmBucket.name(),
 				storageClass: wasmBucket.storageClass(),
@@ -226,10 +232,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	const restore = async (bucket: Bucket, snapshot: WasmSnapshot) => await tombMutex(bucket.mount, async mount => await mount.restore(snapshot));
 
 	/** Generates public link to share file. */
-	const shareFile = async (bucket: Bucket, file: BrowserObject) =>
-		/** TODO: implement sharing logic when it will be added to tomb. */
-		''
-		;
+	const shareFile = async (bucket: Bucket, path: string[]) => await tombMutex(bucket.mount, async mount => await mount.shareFile(path));
 
 	/** Approves access key for bucket */
 	const approveBucketAccess = async (bucket: Bucket, bucket_key_id: string) => {
@@ -243,7 +246,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	const getBucketShapshots = async (id: string) => await tombMutex(tomb, async tomb => await tomb!.listBucketSnapshots(id));
 
 	/** Approves a new deviceKey */
-	const completeDeviceKeyRegistration = async (fingerprint: string) => await tombMutex(tomb, async tomb => await tomb!.completeDeviceKeyRegistration(fingerprint));
+	const approveDeviceApiKey = async (pem: string) => await tombMutex(tomb, async tomb => await tomb!.approveDeviceApiKey(pem));
 
 	/** Deletes access key for bucket */
 	const removeBucketAccess = async (id: string) => {
@@ -280,6 +283,14 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 			return bucket;
 		}));
 	};
+
+	const renameBucket = async (bucket: Bucket, newName: string) => {
+		await tombMutex(bucket.mount, async mount => {
+			await mount.rename(newName);
+			bucket.name = newName;
+			setBuckets(prev => prev.map(element => element.id === bucket.id ? { ...element, name: newName } : element));
+		});
+	}
 
 	/** Creates directory inside selected bucket */
 	const createDirectory = async (bucket: Bucket, path: string[], name: string) => {
@@ -367,8 +378,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 				const tomb = new TombWasm(
 					apiKey.privatePem,
 					userData.user.id,
-					process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001',
-					process.env.NEXT_PUBLIC_DATA_URL || 'http://127.0.0.1:3002',
+					window.location.origin,
 				);
 				setTomb(await tomb);
 			} catch (error: any) {
@@ -378,10 +388,41 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	}, [userData, keystoreInitialized, isLoading, escrowedKeyMaterial]);
 
 	useEffect(() => {
+		if (!areTermsAccepted) return;
+
 		if (!keystoreInitialized && !isLoading) {
 			openEscrowModal(!!escrowedKeyMaterial);
 		};
-	}, [isLoading, keystoreInitialized]);
+	}, [isLoading, keystoreInitialized, areTermsAccepted]);
+
+	useEffect(() => {
+		const userClient = new UserClient();
+		const termsClient = new TermsAndColditionsClient();
+		(async () => {
+			try {
+				const termsAndConditions = await termsClient.getTermsAndCondition();
+				const userData = await userClient.getCurrentUser();
+
+				if (!userData) return;
+
+				if (!userData.accepted_tos_at || userData.accepted_tos_at <= +termsAndConditions.tos_date) {
+					openModal(
+						<TermsAndConditionsModal
+							setAreTermsAccepted={setAreTermsAccepted}
+							terms={termsAndConditions.tos_content}
+							userData={userData} />
+						, null, true);
+
+					return;
+				}
+
+				setAreTermsAccepted(true);
+			} catch (error: any) {
+				console.log(error);
+			}
+
+		})()
+	}, [userData])
 
 	useEffect(() => {
 		if (tomb) {
@@ -401,9 +442,9 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 			value={{
 				tomb, buckets, storageUsage, trash, areBucketsLoading, selectedBucket, error,
 				getBuckets, getBucketsFiles, getBucketsKeys, selectBucket, getSelectedBucketFiles,
-				takeColdSnapshot, getBucketShapshots, createBucket, deleteBucket,
-				getFile, createDirectory, uploadFile, purgeSnapshot,
-				removeBucketAccess, approveBucketAccess, completeDeviceKeyRegistration, shareFile, download, moveTo,
+				takeColdSnapshot, getBucketShapshots, createBucketAndMount, deleteBucket,
+				getFile, renameBucket, createDirectory, uploadFile, purgeSnapshot,
+				removeBucketAccess, approveBucketAccess, approveDeviceApiKey, shareFile, download, moveTo,
 				restore, deleteFile, makeCopy, getExpandedFolderFiles,
 			}}
 		>

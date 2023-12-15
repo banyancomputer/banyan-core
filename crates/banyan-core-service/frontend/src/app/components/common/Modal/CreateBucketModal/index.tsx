@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { useIntl } from 'react-intl';
 
-import { Select, Selectoption } from '../../Select';
+import { SubmitButton } from '@components/common/SubmitButton';
+
 import { useModal } from '@/app/contexts/modals';
 import { useTomb } from '@/app/contexts/tomb';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
@@ -10,21 +11,12 @@ export const CreateBucketModal = () => {
     const { closeModal } = useModal();
     const { messages } = useIntl();
     const [bucketName, setBucketName] = useState('');
-    const { createBucket } = useTomb();
+    const { createBucketAndMount } = useTomb();
     const [bucketType, setBucketType] = useState('interactive');
     const [storageClass, setStorageClass] = useState('hot');
     const isBucketDataFilled = useMemo(() =>
         !!bucketType && !!(bucketName.length >= 3),
-    [bucketName, bucketName]);
-
-    const bucketTypes = [
-        new Selectoption('Interactive', 'interactive'),
-        new Selectoption('Backup', 'backup'),
-    ];
-
-    const selectBucketType = (option: string) => {
-        setBucketType(option);
-    };
+        [bucketName, bucketName]);
 
     const changeBucketName = (event: React.ChangeEvent<HTMLInputElement>) => {
         const regexp = new RegExp(/^.{0,32}$/);
@@ -35,7 +27,7 @@ export const CreateBucketModal = () => {
 
     const create = async () => {
         try {
-            await createBucket(bucketName, storageClass, bucketType);
+            await createBucketAndMount(bucketName, storageClass, bucketType);
             closeModal();
         } catch (error: any) {
             ToastNotifications.error(`${messages.creationError}`, `${messages.tryAgain}`, create);
@@ -75,13 +67,11 @@ export const CreateBucketModal = () => {
                 >
                     {`${messages.cancel}`}
                 </button>
-                <button
-                    className="btn-primary flex-grow py-3 px-4"
-                    onClick={create}
+                <SubmitButton
+                    text={`${messages.create}`}
+                    action={create}
                     disabled={!isBucketDataFilled}
-                >
-                    {`${messages.create}`}
-                </button>
+                />
             </div>
         </div >
     );

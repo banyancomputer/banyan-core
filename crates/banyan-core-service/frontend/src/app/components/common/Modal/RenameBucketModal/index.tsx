@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useIntl } from 'react-intl';
 
+import { SubmitButton } from '@components/common/SubmitButton';
+
 import { useModal } from '@/app/contexts/modals';
 import { Bucket } from '@/app/types/bucket';
 import { useTomb } from '@/app/contexts/tomb';
@@ -12,13 +14,17 @@ export const RenameBucketModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const { closeModal } = useModal();
     const { messages } = useIntl();
     const [newName, setNewName] = useState('');
-    const { } = useTomb();
+    const { renameBucket } = useTomb();
 
     const rename = async () => {
         try {
-            /** TODO: add rename function after it will be added into tomb-wasm */
+            await renameBucket(bucket, newName);
+            closeModal();
             ToastNotifications.notify(`${messages.drive} "${bucket.name}" ${messages.wasRenamed}`, <Done width="20px" height="20px" />);
-        } catch (error: any) { };
+        } catch (error: any) {
+            closeModal();
+            ToastNotifications.error(`${messages.editError}`, `${messages.tryAgain}`, rename);
+        };
     };
 
     return (
@@ -45,12 +51,11 @@ export const RenameBucketModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                 >
                     {`${messages.cancel}`}
                 </button>
-                <button
-                    className="btn-primary flex-grow py-3 px-4"
-                    onClick={rename}
-                >
-                    {`${messages.save}`}
-                </button>
+                <SubmitButton
+                    text={`${messages.save}`}
+                    action={rename}
+                    disabled={newName.length < 3}
+                />
             </div>
         </div >
     );

@@ -7,6 +7,7 @@ license = "LicenseRef-LICENSE.txt"
 [dependencies]
 banyan-task = { path = "../banyan-task", version = "^0.1" }
 banyan-car-analyzer = { path = "../banyan-car-analyzer", version = "^0.1" }
+banyan-traffic-counter = { path = "../banyan-traffic-counter", version = "^0.1" }
 
 dotenvy = "^0.15"
 futures = "^0.3"
@@ -28,6 +29,7 @@ uuid = { version = "^1", features = ["fast-rng", "serde", "v4"] }
 url = "^2"
 
 axum = { version = "^0.6", features = ["headers", "http2", "macros", "multipart", "tracing"] }
+axum-extra = { version = "^0.8" }
 http = "^0.2"
 hyper = "^0.14"
 multer = { version = "^2", features = ["json", "tokio", "tokio-io"] }

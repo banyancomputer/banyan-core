@@ -11,9 +11,8 @@ use axum::{async_trait, Json, RequestPartsExt};
 use jwt_simple::prelude::*;
 use uuid::Uuid;
 
-use crate::app::{PlatformVerificationKey, ServiceHostname, ServiceName};
-
 use super::{paired_id_validator, MAXIMUM_TOKEN_AGE};
+use crate::app::{PlatformVerificationKey, ServiceHostname, ServiceName};
 
 #[derive(Debug)]
 pub struct StorageGrant {

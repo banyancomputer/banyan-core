@@ -14,9 +14,7 @@ pub use product_invoice::ProductInvoiceEmailTask;
 pub use reaching_storage_limit::ReachingStorageLimitEmailTask;
 #[allow(unused)]
 pub use scheduled_maintenance::ScheduledMaintenanceEmailTask;
-
 use sqlx::SqlitePool;
-
 use uuid::Uuid;
 
 use crate::email::config::EmailConfig;
@@ -32,10 +30,10 @@ pub struct EmailTaskContext {
 #[non_exhaustive]
 #[derive(Debug, thiserror::Error)]
 pub enum EmailTaskError {
-    #[error("the task encountered an email error: {0}")]
+    #[error("email error: {0}")]
     EmailError(#[from] EmailError),
 
-    #[error("the task encountered a sql error: {0}")]
+    #[error("sqlx error: {0}")]
     SqlxError(#[from] sqlx::Error),
 }
 
@@ -201,12 +199,11 @@ pub async fn send_email_message(
 
 #[cfg(test)]
 pub mod tests {
-    use super::*;
-
-    use time::OffsetDateTime;
-
     use banyan_task::tests::default_current_task;
     use banyan_task::{CurrentTask, TaskLike};
+    use time::OffsetDateTime;
+
+    use super::*;
 
     const USER_ID: &str = "00000000-0000-0000-0000-000000000000";
     const USER_EMAIL: &str = "user@user.email";

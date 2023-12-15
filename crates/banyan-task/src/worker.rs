@@ -46,9 +46,9 @@ where
         }
     }
 
+    #[tracing::instrument(level = "error", skip_all, fields(task_name = %task.task_name, task_id = %task.id))]
     pub async fn run(&self, task: Task) -> Result<(), WorkerError> {
         let task_info = CurrentTask::try_from(&task).map_err(WorkerError::CantMakeCurrent)?;
-
         let deserialize_and_run_task_fn = self
             .task_registry
             .get(task.task_name.as_str())
@@ -73,7 +73,6 @@ where
             Ok(tr) => tr,
             Err(err) => {
                 tracing::error!("task panicked: {err}");
-
                 // todo: save panic message into the task.error and save it back to the memory
                 // store somehow...
                 self.store

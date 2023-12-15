@@ -1,3 +1,6 @@
+use std::error::Error;
+
+use axum::body::HttpBody;
 use axum::routing::{get, post};
 use axum::Router;
 
@@ -19,7 +22,12 @@ mod create_fake_user;
 mod who_am_i;
 
 #[cfg(feature = "fake")]
-pub fn router(state: AppState) -> Router<AppState> {
+pub fn router<B>(state: AppState) -> Router<AppState, B>
+where
+    B: HttpBody + Send + 'static,
+    B::Data: Send + 'static,
+    Box<dyn Error + Send + Sync + 'static>: From<B::Error>,
+{
     Router::new()
         .route(
             "/device_api_key",
@@ -41,13 +49,18 @@ pub fn router(state: AppState) -> Router<AppState> {
             "/create_escrowed_device",
             post(create_escrowed_device::handler),
         )
-        .route("/fake_user", axum::routing::post(create_fake_user::handler))
+        .route("/fake_user", post(create_fake_user::handler))
         .route("/who_am_i", get(who_am_i::handler))
         .with_state(state)
 }
 
 #[cfg(not(feature = "fake"))]
-pub fn router(state: AppState) -> Router<AppState> {
+pub fn router<B>(state: AppState) -> Router<AppState, B>
+where
+    B: HttpBody + Send + 'static,
+    B::Data: Send + 'static,
+    Box<dyn Error + Send + Sync + 'static>: From<B::Error>,
+{
     Router::new()
         .route(
             "/device_api_key",

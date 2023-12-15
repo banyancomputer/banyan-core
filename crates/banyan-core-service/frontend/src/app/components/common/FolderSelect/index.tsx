@@ -52,9 +52,10 @@ export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBu
         openModal(<CreateFolderModal
             path={folder}
             bucket={selectedBucket!}
-            onSuccess={() => openModal(<UploadFileModal bucket={selectedBucket} path={folder} />)}
         />
-        , action);
+            ,
+            action
+        );
     };
 
     useEffect(() => {
@@ -85,7 +86,7 @@ export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBu
             <span className="overflow-hidden text-ellipsis">
                 /{folder.join('/')}
             </span>
-            <span className={`${isOptionstVisible? 'rotate-0': 'rotate-180'}`}>
+            <span className={`${isOptionstVisible ? 'rotate-0' : 'rotate-180'}`}>
                 <ChevronUp />
             </span>
             {isOptionstVisible &&

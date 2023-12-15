@@ -430,11 +430,11 @@ fn try_read_varint_u64(buf: &[u8]) -> Result<Option<(u64, u64)>, StreamingCarAna
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     use bytes::BufMut;
     use cid::multihash::{Code, MultihashDigest};
     use cid::Cid;
+
+    use super::*;
 
     fn encode_v2_header(chars: u128, data_offset: u64, data_size: u64, index_offset: u64) -> Bytes {
         let mut buffer = BytesMut::new();

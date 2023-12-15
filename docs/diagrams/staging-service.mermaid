@@ -1,0 +1,78 @@
+classDiagram
+   direction BT
+   class _sqlx_migrations {
+      text description
+      timestamp installed_on
+      boolean success
+      blob checksum
+      bigint execution_time
+      bigint version
+   }
+   class background_tasks {
+      text original_task_id
+      text task_name
+      text queue_name
+      text unique_key
+      text state
+      integer current_attempt
+      integer maximum_attempts
+      blob payload
+      blob error
+      timestamp scheduled_at
+      timestamp scheduled_to_run_at
+      timestamp started_at
+      timestamp finished_at
+      text id
+   }
+   class blocks {
+      varchar(64) cid
+      integer data_length
+      timestamp created_at
+      text id
+   }
+   class clients {
+      text platform_id
+      varchar(64) fingerprint
+      text public_key
+      timestamp created_at
+      text id
+   }
+   class sqlite_master {
+      text type
+      text name
+      text tbl_name
+      int rootpage
+      text sql
+   }
+   class storage_grants {
+      text client_id
+      uuid grant_id
+      int allowed_storage
+      timestamp created_at
+      text id
+   }
+   class uploads {
+      text client_id
+      text metadata_id
+      integer reported_size
+      integer final_size
+      varchar(128) file_path
+      varchar(32) state
+      varchar(32) integrity_hash
+      timestamp started_at
+      timestamp finished_at
+      text id
+   }
+   class uploads_blocks {
+      text upload_id
+      uuid block_id
+      integer byte_offset
+      timestamp associated_at
+      timestamp pruned_at
+   }
+
+   background_tasks "original_task_id" --> "id" background_tasks
+   storage_grants "client_id" --> "id" clients
+   uploads "client_id" --> "id" clients
+   uploads_blocks "block_id" --> "id" blocks
+   uploads_blocks "upload_id" --> "id" uploads

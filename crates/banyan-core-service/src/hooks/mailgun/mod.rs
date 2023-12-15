@@ -4,16 +4,15 @@ mod mailgun_hook_request;
 mod signature;
 mod user_variables;
 
+use axum::extract::State;
+use axum::http::StatusCode;
+use axum::response::{IntoResponse, Response};
+use axum::Json;
 pub(crate) use event_data::EventData;
 pub(crate) use mailgun_event::MailgunEvent;
 pub(crate) use mailgun_hook_request::MailgunHookRequest;
 pub(crate) use signature::Signature;
 pub(crate) use user_variables::UserVariables;
-
-use axum::extract::State;
-use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response};
-use axum::Json;
 
 use crate::app::AppState;
 use crate::database::models::EmailMessageState;

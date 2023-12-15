@@ -1,6 +1,8 @@
 import React from 'react';
 import { useIntl } from 'react-intl';
 
+import { SubmitButton } from '@components/common/SubmitButton';
+
 import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { useModal } from '@/app/contexts/modals';
 import { useTomb } from '@/app/contexts/tomb';
@@ -46,12 +48,10 @@ export const DeleteFileModal: React.FC<{ bucket: Bucket; file: BrowserObject; pa
                 >
                     {`${messages.cancel}`}
                 </button>
-                <button
-                    className="btn-primary flex-grow py-3 px-4"
-                    onClick={removeFile}
-                >
-                    {`${messages.delete}`}
-                </button>
+                <SubmitButton
+                    text={`${messages.delete}`}
+                    action={removeFile}
+                />
             </div>
         </div>
     );

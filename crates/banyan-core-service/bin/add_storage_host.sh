@@ -1,7 +1,7 @@
 #!/bin/bash
 
-export STORAGE_HOST_PUBKEY=$(cat ../banyan-staging-service/data/platform-auth.public)
-export STORAGE_HOST_FINGERPRINT=$(cat ../banyan-staging-service/data/platform-auth.fingerprint)
+export STORAGE_HOST_PUBKEY=$(cat ../banyan-staging-service/data/service-key.public)
+export STORAGE_HOST_FINGERPRINT=$(cat ../banyan-staging-service/data/service-key.fingerprint)
 
 cat << EOSQL | sqlite3 ./data/server.db
 DELETE FROM storage_hosts;

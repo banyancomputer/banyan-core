@@ -8,5 +8,4 @@ pub use config::Config;
 pub use refs::{PlatformName, PlatformVerificationKey, ServiceHostname, ServiceName};
 pub use secrets::Secrets;
 pub use state::State as AppState;
-
 pub use version::Version;

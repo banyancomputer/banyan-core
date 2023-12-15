@@ -37,7 +37,7 @@ export class RoutesConfig {
     public static Buckets = new Route('/', <Buckets />);
     public static Bucket = new Route('/drive/:id', <Bucket />);
     public static Account = new Route('/account', <Account />);
-    public static RegisterDevice = new Route('/register-device/:id', <RegisterDevice />);
+    public static RegisterDevice = new Route('/register-device/:spki', <RegisterDevice />);
     public static Billing = new Route('billing', <Billing />);
     public static ManageKeys = new Route('manage-keys', <ManageKeys />);
     public static Services = new Route('services', <Services />);

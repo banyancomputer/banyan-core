@@ -11,7 +11,7 @@ export interface StateInterface {
 interface ContextState {
 	modalState: StateInterface;
 	setModalState: Dispatch<SetStateAction<StateInterface>>;
-	openModal: (content: ReactNode, onBack?: null | (() => void)) => void;
+	openModal: (content: ReactNode, onBack?: null | (() => void), mandatory?: boolean) => void;
 	openEscrowModal: (escrowed: boolean) => void;
 	closeModal: () => void;
 }

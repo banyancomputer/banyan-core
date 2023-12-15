@@ -2,11 +2,11 @@ use std::time::Duration;
 
 use axum::error_handling::HandleErrorLayer;
 use axum::extract::DefaultBodyLimit;
-use axum::Router;
-use axum::{Server, ServiceExt};
+use axum::{Router, Server, ServiceExt};
+use banyan_traffic_counter::body::{RequestInfo, ResponseInfo};
+use banyan_traffic_counter::layer::TrafficCounterLayer;
 use futures::future::join_all;
 use http::header;
-
 use tokio::task::JoinHandle;
 use tower::ServiceBuilder;
 use tower_http::classify::{ServerErrorsAsFailures, SharedClassifier};
@@ -19,10 +19,9 @@ use tower_http::validate_request::ValidateRequestHeaderLayer;
 use tower_http::{LatencyUnit, ServiceBuilderExt};
 use tracing::Level;
 
-use crate::api;
 use crate::app::{AppState, Config};
-use crate::health_check;
 use crate::tasks::start_background_workers;
+use crate::{api, health_check};
 
 mod error_handlers;
 mod shutdown_blocker;
@@ -35,7 +34,7 @@ const REQUEST_MAX_SIZE: usize = 256 * 1_024;
 
 /// The maximum number of seconds that any individual request can take before it is dropped with an
 /// error.
-const REQUEST_TIMEOUT_SECS: u64 = 15;
+const REQUEST_TIMEOUT: Duration = Duration::from_secs(15);
 
 const SENSITIVE_HEADERS: &[http::HeaderName] = &[
     header::AUTHORIZATION,
@@ -62,6 +61,20 @@ pub async fn run(config: Config) {
     let (shutdown_handle, mut shutdown_rx) = shutdown_blocker::graceful_shutdown_blocker().await;
     // Specify log level for tracing
     let trace_layer = create_trace_layer(config.log_level());
+    let on_response_end = |request_info: &RequestInfo, response_info: &ResponseInfo| {
+        if !response_info.status_code.is_server_error() {
+            tracing::info!(
+                request_bytes = %(request_info.header_bytes +request_info.body_bytes),
+                response_bytes = %(response_info.header_bytes +response_info.body_bytes),
+                status = ?response_info.status_code,
+                method = %request_info.method,
+                uri = %request_info.uri,
+                version = ?request_info.version,
+                request_id = %request_info.request_id.clone().map_or_else(|| "".to_string(), |id| id.to_string()),
+                "finished processing request",
+            );
+        }
+    };
     // Create our middleware stack
     // The order of these layers and configuration extensions was carefully chosen as they will see
     // the requests to responses effectively in the order they're defined.
@@ -74,7 +87,7 @@ pub async fn run(config: Config) {
             SENSITIVE_HEADERS.into(),
         ))
         // Set a timeout for any request that comes in -- this is a hard timeout and will drop the request
-        .timeout(Duration::from_secs(REQUEST_TIMEOUT_SECS))
+        .timeout(REQUEST_TIMEOUT)
         // Pre-empt overloading by responding with a 503 resources are unavailable
         .load_shed()
         // Restrict the number of concurrent in flight requests -- should reflect the number of concurrent requests your service can handle.
@@ -83,6 +96,7 @@ pub async fn run(config: Config) {
         // Propgate that identifier to any downstream services to avoid untrusted injection of this header.
         .set_x_request_id(MakeRequestUuid)
         .propagate_x_request_id()
+        .layer(TrafficCounterLayer::new(on_response_end))
         // Default request size. Individual handlers can opt-out of this limit, see api/upload.rs for an example.
         .layer(DefaultBodyLimit::max(REQUEST_MAX_SIZE))
         // TODO: is this desired?

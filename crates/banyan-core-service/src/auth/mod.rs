@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use axum::body::HttpBody;
 use axum::routing::get;
 use axum::Router;
 use oauth2::basic::BasicClient;
@@ -51,14 +52,17 @@ pub static USER_DATA_COOKIE_NAME: &str = "_user_data";
 /// clock is a bit behind the core platform.
 pub const JWT_ALLOWED_CLOCK_DRIFT: Duration = Duration::from_secs(30);
 
-// Local Key Cookie -- kept for enforcing deletion on client
+/// Local Key Cookie -- kept for enforcing session deletion on browser client
 pub const LOCAL_KEY_COOKIE_NAME: &str = "_local_key";
 
 pub const SESSION_TTL: u64 = 28 * 24 * 60 * 60;
 
 pub const STORAGE_TICKET_DURATION: Duration = Duration::from_secs(15 * 60); // 15 minutes
 
-pub fn router(state: AppState) -> Router<AppState> {
+pub fn router<B>(state: AppState) -> Router<AppState, B>
+where
+    B: HttpBody + Send + 'static,
+{
     Router::new()
         .route("/callback/:provider", get(oauth_callback::handler))
         .route("/login/:provider", get(login::handler))

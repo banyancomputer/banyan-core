@@ -55,3 +55,25 @@ where
         S::enqueue_with_connection(connection, self).await
     }
 }
+
+pub mod tests {
+    use async_trait::async_trait;
+    use serde::{Deserialize, Serialize};
+
+    use super::*;
+
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct TestTask;
+
+    #[async_trait]
+    impl TaskLike for TestTask {
+        const TASK_NAME: &'static str = "test_task";
+
+        type Error = TaskStoreError;
+        type Context = ();
+
+        async fn run(&self, _task: CurrentTask, _ctx: Self::Context) -> Result<(), Self::Error> {
+            Ok(())
+        }
+    }
+}

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useIntl } from 'react-intl';
 
@@ -8,7 +8,6 @@ import { FileCell } from '../../../common/FileCell';
 import { FileRow } from '../FileRow';
 import { DraggingPreview } from '../FileRow/DraggingPreview';
 
-import { useFolderLocation } from '@app/hooks/useFolderLocation';
 import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { getDateLabel } from '@/app/utils/date';
 import { convertFileSize } from '@/app/utils/storage';
@@ -34,15 +33,12 @@ export const FolderRow: React.FC<{
     const { messages } = useIntl();
     const { getExpandedFolderFiles, getSelectedBucketFiles, moveTo, selectBucket } = useTomb();
     const { uploadFiles, setFiles, files } = useFilesUpload();
-    const folderLocation = useFolderLocation();
     const [areFilesDropped, setAreFilesDropped] = useState(false);
     const [isFolderDraggingOver, setIsFolderDragingOver] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
+    const siblingFiles = useMemo(() => folder.files?.filter(file => file.type !== 'dir').map(file => file.name), [folder.files])
 
-    const goToFolder = (event: React.MouseEvent<HTMLTableRowElement, MouseEvent>, bucket: Bucket) => {
-        // @ts-ignore
-        if (event.target.id === 'actionsCell') { return; }
-
+    const goToFolder = (bucket: Bucket) => {
         navigate(`/drive/${bucket.id}?${path.length ? `${path.map(element => stringToBase64(element)).join('/')}/${stringToBase64(folder.name)}` : stringToBase64(folder.name)}`);
     };
 
@@ -85,13 +81,8 @@ export const FolderRow: React.FC<{
             if ([...path, folder.name].join('/') === droppedItem.path.join('/')) return;
 
             await moveTo(bucket, [...droppedItem.path, droppedItem.item.name], [...path, folder.name, droppedItem.item.name]);
+            await getSelectedBucketFiles(path);
             ToastNotifications.notify(`${messages.fileWasMoved}`, <Done width="20px" height="20px" />);
-            if (path.join('/') === folderLocation.join('/')) {
-                await getSelectedBucketFiles(folderLocation);
-                return;
-            };
-            await getExpandedFolderFiles(path, parrentFolder!, bucket);
-            await getExpandedFolderFiles(droppedItem.path, parrentFolder!, bucket);
         }
     };
 
@@ -117,7 +108,7 @@ export const FolderRow: React.FC<{
             onDrag={event => handleDrag(event, folder.name)}
             onDragOver={dragOverHandler}
             onDragLeave={dragLeaveHandler}
-            onDragEnd={() => handleDragEnd(setIsDragging)}
+            onDragEnd={() => handleDragEnd(setIsDragging, getExpandedFolderFiles, getSelectedBucketFiles, path, parrentFolder, bucket)}
             onDrop={handleDrop}
             ref={folderRef}
         >
@@ -133,8 +124,8 @@ export const FolderRow: React.FC<{
                     </thead>
                     <tbody>
                         <tr
-                            className={`cursor-pointer border-b-1 border-b-border-regular text-text-900 font-normal last:border-b-0 hover:bg-bucket-bucketHoverBackground`}
-                            onClick={event => goToFolder(event, bucket)}
+                            className={`cursor-pointer !border-1 border-transparent border-b-border-regular text-text-900 font-normal last:border-b-0 hover:bg-bucket-bucketHoverBackground ${isFolderDraggingOver && `!border-draggingBorder`}`}
+                            onDoubleClick={() => goToFolder(bucket)}
                             draggable
                         >
                             <td
@@ -195,6 +186,7 @@ export const FolderRow: React.FC<{
                                                 tableScroll={tableScroll}
                                                 nestingLevel={nestingLevel + 1}
                                                 parrentFolder={folder}
+                                                siblingFiles={siblingFiles}
                                                 path={[...path, folder.name]}
                                                 key={index}
                                             />

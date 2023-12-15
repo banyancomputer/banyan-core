@@ -5,7 +5,7 @@ use sqlx::{Acquire, SqliteConnection, SqlitePool};
 use time::OffsetDateTime;
 
 use crate::{
-    Task, TaskInstanceBuilder, TaskLike, TaskState, TaskStore, TaskStoreError,
+    Task, TaskInstanceBuilder, TaskLike, TaskState, TaskStore, TaskStoreError, TaskStoreMetrics,
     TASK_EXECUTION_TIMEOUT,
 };
 
@@ -213,6 +213,42 @@ impl TaskStore for SqliteTaskStore {
         Ok(new_task_id)
     }
 
+    async fn metrics(&self) -> Result<TaskStoreMetrics, TaskStoreError> {
+        let mut connection = self.pool.clone().acquire().await?;
+        let mut query_base = metrics_query();
+        let query = query_base.build_query_as::<SqliteTaskStoreMetrics>();
+        let metrics = query.fetch_one(&mut *connection).await?;
+        Ok(metrics.into())
+    }
+
+    async fn task_metrics(
+        &self,
+        task_name: &'static str,
+    ) -> Result<TaskStoreMetrics, TaskStoreError> {
+        let mut connection = self.pool.clone().acquire().await?;
+        let mut query_base = metrics_query();
+        let query = query_base
+            .push(" WHERE task_name =  ")
+            .push_bind(task_name)
+            .build_query_as::<SqliteTaskStoreMetrics>();
+        let metrics = query.fetch_one(&mut *connection).await?;
+        Ok(metrics.into())
+    }
+
+    async fn queue_metrics(
+        &self,
+        queue_name: &'static str,
+    ) -> Result<TaskStoreMetrics, TaskStoreError> {
+        let mut connection = self.pool.clone().acquire().await?;
+        let mut query_base = metrics_query();
+        let query = query_base
+            .push(" WHERE queue_name =  ")
+            .push_bind(queue_name)
+            .build_query_as::<SqliteTaskStoreMetrics>();
+        let metrics = query.fetch_one(&mut *connection).await?;
+        Ok(metrics.into())
+    }
+
     async fn update_state(&self, id: String, new_state: TaskState) -> Result<(), TaskStoreError> {
         let mut connection = self.pool.clone().acquire().await?;
 
@@ -229,5 +265,140 @@ impl TaskStore for SqliteTaskStore {
         .await?;
 
         Ok(())
+    }
+}
+
+fn metrics_query() -> sqlx::query_builder::QueryBuilder<'static, sqlx::Sqlite> {
+    sqlx::query_builder::QueryBuilder::new(
+        r#"SELECT
+               COUNT(*) AS total,
+               COALESCE(SUM(CASE WHEN state = 'new' THEN 1 ELSE 0 END), 0) AS new,
+               COALESCE(SUM(CASE WHEN state = 'in_progress' THEN 1 ELSE 0 END), 0) AS in_progress,
+               COALESCE(SUM(CASE WHEN state = 'panicked' THEN 1 ELSE 0 END), 0) AS panicked,
+               COALESCE(SUM(CASE WHEN state = 'retry' THEN 1 ELSE 0 END), 0) AS retried,
+               COALESCE(SUM(CASE WHEN state = 'cancelled' THEN 1 ELSE 0 END), 0) AS cancelled,
+               COALESCE(SUM(CASE WHEN state = 'error' THEN 1 ELSE 0 END), 0) AS errored,
+               COALESCE(SUM(CASE WHEN state = 'complete' THEN 1 ELSE 0 END), 0) AS completed,
+               COALESCE(SUM(CASE WHEN state = 'timed_out' THEN 1 ELSE 0 END), 0) AS timed_out,
+               COALESCE(SUM(CASE WHEN state = 'dead' THEN 1 ELSE 0 END), 0) AS dead,
+               COALESCE(SUM(CASE WHEN DATETIME(scheduled_to_run_at) <= DATETIME('now') THEN 1 ELSE 0 END), 0) AS scheduled,
+               COALESCE(SUM(CASE WHEN DATETIME(scheduled_to_run_at) > DATETIME('now') THEN 1 ELSE 0 END), 0) AS scheduled_future
+            FROM background_tasks"#,
+    )
+}
+
+#[derive(sqlx::FromRow)]
+struct SqliteTaskStoreMetrics {
+    total: i32,
+    new: i32,
+    in_progress: i32,
+    panicked: i32,
+    retried: i32,
+    cancelled: i32,
+    errored: i32,
+    completed: i32,
+    timed_out: i32,
+    dead: i32,
+    scheduled: i32,
+    scheduled_future: i32,
+}
+
+impl From<SqliteTaskStoreMetrics> for TaskStoreMetrics {
+    fn from(m: SqliteTaskStoreMetrics) -> Self {
+        Self {
+            total: m.total,
+            new: m.new,
+            in_progress: m.in_progress,
+            panicked: m.panicked,
+            retried: m.retried,
+            cancelled: m.cancelled,
+            errored: m.errored,
+            completed: m.completed,
+            timed_out: m.timed_out,
+            dead: m.dead,
+            scheduled: m.scheduled,
+            scheduled_future: m.scheduled_future,
+        }
+    }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use super::*;
+    use crate::tests::{default_task_store_metrics, TestTask};
+    use crate::TaskLikeExt;
+
+    #[tokio::test]
+    async fn empty_metrics() {
+        let task_store = empty_task_store().await;
+        let metrics = task_store.metrics().await.unwrap();
+        assert_eq!(metrics, default_task_store_metrics());
+    }
+
+    #[tokio::test]
+    async fn singleton_metrics() {
+        let task_store = singleton_task_store().await;
+        let metrics = task_store.metrics().await.unwrap();
+        assert_eq!(metrics.total, 1);
+        assert_eq!(metrics.new, 1);
+        assert_eq!(metrics.scheduled, 1);
+        assert_eq!(metrics.scheduled_future, 0);
+    }
+
+    #[tokio::test]
+    async fn empty_queue_metrics() {
+        let task_store = empty_task_store().await;
+        let metrics = task_store.queue_metrics("default").await.unwrap();
+        assert_eq!(metrics, default_task_store_metrics());
+    }
+
+    #[tokio::test]
+    async fn singleton_queue_metrics() {
+        let task_store = singleton_task_store().await;
+        let metrics = task_store
+            .queue_metrics(TestTask::QUEUE_NAME)
+            .await
+            .unwrap();
+        assert_eq!(metrics.total, 1);
+        assert_eq!(metrics.new, 1);
+        assert_eq!(metrics.scheduled, 1);
+        assert_eq!(metrics.scheduled_future, 0);
+    }
+
+    #[tokio::test]
+    async fn empty_task_metrics() {
+        let task_store = empty_task_store().await;
+        let metrics = task_store.task_metrics("default").await.unwrap();
+        assert_eq!(metrics, default_task_store_metrics());
+    }
+
+    #[tokio::test]
+    async fn singleton_task_metrics() {
+        let task_store = singleton_task_store().await;
+        let metrics = task_store.task_metrics(TestTask::TASK_NAME).await.unwrap();
+        assert_eq!(metrics.total, 1);
+        assert_eq!(metrics.new, 1);
+        assert_eq!(metrics.scheduled, 1);
+        assert_eq!(metrics.scheduled_future, 0);
+    }
+
+    async fn singleton_task_store() -> SqliteTaskStore {
+        let task_store = empty_task_store().await;
+        TestTask
+            .enqueue::<SqliteTaskStore>(&mut task_store.pool.clone())
+            .await
+            .expect("enqueue");
+        task_store
+    }
+
+    async fn empty_task_store() -> SqliteTaskStore {
+        let db_conn = SqlitePool::connect("sqlite::memory:")
+            .await
+            .expect("db setup");
+        sqlx::migrate!("./migrations")
+            .run(&db_conn)
+            .await
+            .expect("db setup");
+        SqliteTaskStore::new(db_conn)
     }
 }
