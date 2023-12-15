@@ -10,8 +10,20 @@ out-of-date.
 
 ### 📦 Dependencies
 
-You should have a working Rust toolchain, yarn, docker, and sqlite installed on your
+You should have a working Rust toolchain, yarn, docker engine (or equivalent), and sqlite installed on your
 machine.
+
+### 🐳 Docker (or equivalent)
+
+You must have an up-to-date version of docker installed on your machine to fully run the development environment.
+
+Make sure the following command work:
+
+```sh
+docker --version
+```
+
+If you need to install docker, please refer to the [official documentation](https://docs.docker.com/engine/install/)
 
 ### 💰 Install `sqlx-cli`
 
@@ -30,6 +42,8 @@ system's version. Refer to the crate's manifest
 see additional features.
 
 ### 🔧 Environment Setup
+
+#### Core Service 👑
 
 The core service uses a `.env` file to store environment variables. A sample
 file exists as a starting point. You can copy that sample file into place
@@ -52,6 +66,21 @@ OAuth2 project if we're still in the testing phase of our application. This
 needs to be done by someone with access to the Google Cloud Console ([direct
 deeplink to the relevant
 page](https://console.cloud.google.com/apis/credentials/consent?authuser=3&project=core-services-a465d267)).
+
+#### Staging Service and Storage Provider Service 📦
+
+The staging service and storage provider service use a `.env` file to store an argument called `UPLOAD_STORE_URL`. This argument is used to connect to the MinIo backend that is initialized by the `./bin/reset_env.sh` script (discussed below).
+
+A sample file exists in either crate, with default credentials appropriate for the MinIo backend set up on your development environment. DO NOT USE THE SPECIFIED CREDENTIALS IN PRODUCTION. You can copy that sample file into place by running the following command:
+
+```sh
+cp crates/banyan-staging-service/.env{.sample,}
+cp crates/banyan-storage-provider-service/.env{.sample,}
+```
+
+The specified variable must be available through the environment at runtime, or the service will fail to start.
+
+If you require object storage against a local filesystem for see either `crates/banyan-staging-service/.env.sample` or `crates/banyan-storage-provider-service/.env.sample` for the appropriate configuration to do so.
 
 ### ✨ Automatic Clean Up / First Time Setup
 

@@ -26,11 +26,11 @@ fi
 # Remove any state from previous runs before we do anything else.
 make clean
 
-# Cleanup and run backend storage 
-make rm-minio-volume
-make run-minio
-make create-minio-staging-bucket
-make create-minio-storage-provider-bucket
+# Make sure object storage is up and running.
+source bin/object_storage.sh
+run-minio
+create-minio-staging-bucket
+create-minio-storage-provider-bucket
 
 # Generate the core service public key, copy it to the staging and storage provider services.
 make generate-core-service-key

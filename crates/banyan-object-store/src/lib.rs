@@ -6,9 +6,8 @@ use itertools::Itertools;
 use object_store::aws::AmazonS3;
 pub use object_store::aws::AmazonS3Builder;
 use object_store::local::LocalFileSystem;
-use url::Url;
-
 pub use object_store::Error as ObjectStoreError;
+use url::Url;
 
 #[derive(Debug, Clone)]
 pub enum ObjectStoreConnection {
@@ -172,7 +171,6 @@ pub enum ObjectStoreConnectionError {
     #[error("host not recognized: {0}")]
     HostNotRecognized(String),
 }
-
 
 #[cfg(test)]
 mod test {

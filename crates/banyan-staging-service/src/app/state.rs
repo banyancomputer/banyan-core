@@ -1,13 +1,13 @@
 use std::path::PathBuf;
 
+use banyan_object_store::{
+    ObjectStore, ObjectStoreConnection, ObjectStoreConnectionError, ObjectStoreError,
+};
 use jwt_simple::prelude::*;
 use url::Url;
 
 use crate::app::{Config, Secrets};
 use crate::database::{self, Database, DatabaseSetupError};
-use banyan_object_store::{
-    ObjectStore, ObjectStoreConnection, ObjectStoreConnectionError, ObjectStoreError,
-};
 use crate::utils::{fingerprint_key_pair, fingerprint_public_key, SigningKey, VerificationKey};
 
 #[derive(Clone)]

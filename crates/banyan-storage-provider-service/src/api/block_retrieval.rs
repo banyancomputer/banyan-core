@@ -2,12 +2,12 @@ use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
+use banyan_object_store::{ObjectStore, ObjectStoreError, ObjectStorePath};
 
 use crate::app::AppState;
 use crate::database::models::BlockDetails;
 use crate::database::Database;
 use crate::extractors::BlockReader;
-use banyan_object_store::{ObjectStore, ObjectStorePath, ObjectStoreError};
 
 pub async fn handler(
     State(state): State<AppState>,

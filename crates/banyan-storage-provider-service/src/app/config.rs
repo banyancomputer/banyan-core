@@ -59,7 +59,7 @@ impl Config {
             Some(la) => la,
             None => match std::env::var("LISTEN_ADDR") {
                 Ok(la) if !la.is_empty() => la.parse().map_err(ConfigError::InvalidListenAddr)?,
-                _ => SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), 3002),
+                _ => SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), 3003),
             },
         };
 
@@ -99,7 +99,7 @@ impl Config {
             Some(sn) => sn,
             None => match std::env::var("SERVICE_NAME") {
                 Ok(sn) if !sn.is_empty() => sn,
-                _ => "banyan-staging".into(),
+                _ => "banyan-storage-provider".into(),
             },
         };
 
@@ -107,7 +107,7 @@ impl Config {
             Some(sh) => sh,
             None => match std::env::var("SERVICE_HOSTNAME") {
                 Ok(sh) if !sh.is_empty() => sh,
-                _ => "http://127.0.0.1:3002".to_string(),
+                _ => "http://127.0.0.1:3003".to_string(),
             },
         };
         let service_hostname = Url::parse(&service_hostname_str).unwrap();
@@ -263,7 +263,7 @@ fn print_help() {
     println!("                                          If no option is specified, the service will attempt to load the UPLOAD_STORE_URL");
     println!("                                          environment variable. If not present, the service will fail to start.\n");
     println!("    --service-name SERVICE_NAME           The unique name of the service, as registered with the platform. (default banyan-storage-provider)");
-    println!("    --service-hostname SERVICE_HOSTNAME   The hostname of this service (default http://127.0.0.1:3002)");
+    println!("    --service-hostname SERVICE_HOSTNAME   The hostname of this service (default http://127.0.0.1:3003)");
     println!("    --service-key-path SERVICE_KEY_PATH   Path to the p384 private key used for service token signing and verification");
     println!("                                          (default ./data/service-key.private)\n");
     println!("    --platform-name PLATFORM_NAME         The name of the platform (default banyan-platform)");

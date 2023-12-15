@@ -6,6 +6,7 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::TypedHeader;
 use banyan_car_analyzer::{CarReport, StreamingCarAnalyzer, StreamingCarAnalyzerError};
+use banyan_object_store::{ObjectStore, ObjectStoreError, ObjectStorePath};
 use banyan_task::TaskLikeExt;
 use futures::{TryStream, TryStreamExt};
 use serde::{Deserialize, Serialize};
@@ -16,7 +17,6 @@ use crate::app::AppState;
 use crate::database::{map_sqlx_error, Database, DatabaseError};
 use crate::extractors::AuthenticatedClient;
 use crate::tasks::ReportUploadTask;
-use banyan_object_store::{ObjectStore, ObjectStoreError, ObjectStorePath};
 
 /// Limit on the size of the JSON request that accompanies an upload.
 const UPLOAD_REQUEST_SIZE_LIMIT: u64 = 100 * 1_024;

@@ -1,11 +1,11 @@
-use axum::{async_trait, Json};
-use axum::http::StatusCode;
-use axum::response::{Response, IntoResponse};
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
+use axum::http::StatusCode;
+use axum::response::{IntoResponse, Response};
+use axum::{async_trait, Json};
+use banyan_object_store::{ObjectStore, ObjectStoreError};
 
 use crate::app::AppState;
-use banyan_object_store::{ObjectStore, ObjectStoreError};
 
 #[async_trait]
 impl FromRequestParts<AppState> for ObjectStore {
