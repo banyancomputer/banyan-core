@@ -1,3 +1,4 @@
+mod block_location;
 mod bucket;
 mod bucket_key;
 mod bucket_type;
@@ -13,6 +14,7 @@ mod storage_grant;
 mod storage_host;
 mod user;
 
+pub use block_location::MinimalBlockLocation;
 pub use bucket::Bucket;
 pub use bucket_key::BucketKey;
 pub use bucket_type::BucketType;

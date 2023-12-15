@@ -4,7 +4,7 @@ use banyan_task::TaskLikeExt;
 use sqlx::QueryBuilder;
 use time::OffsetDateTime;
 
-use crate::database::models::{BucketType, StorageClass};
+use crate::database::models::{BucketType, MinimalBlockLocation, StorageClass};
 use crate::database::DatabaseConnection;
 use crate::tasks::{PruneBlock, PruneBlocksTask};
 
@@ -84,29 +84,34 @@ impl Bucket {
     /// active from the client's perspective. Blocks can be associated to multiple buckets so this
     /// needs to be careful to on expire associations specific to a bucket and not others.
     ///
-    /// This expects that the provided bucket ID has already been validated to be owned by a user
-    /// with appropriate write access.
+    /// * This expects that the provided bucket ID has already been validated to be owned by a user
+    ///   with appropriate write access.
+    /// * This expects that all CIDs in the block_list have already been normalized by
+    ///   `crate::utils::normalize_cid`.
+    ///
+    /// Returns the number of rows that were expired.
     #[tracing::instrument(skip(conn, block_list))]
     pub async fn expire_blocks(
         conn: &mut DatabaseConnection,
         bucket_id: &str,
         block_list: impl IntoIterator<Item = &str>,
-    ) -> Result<(), sqlx::Error> {
+    ) -> Result<u64, sqlx::Error> {
         let mut block_iter = block_list.into_iter().peekable();
 
+        // Short circuit if there are no blocks to expire
         if block_iter.peek().is_none() {
-            return Ok(());
+            return Ok(0);
         }
 
-        let mut validated_block_list = Vec::new();
-        let mut total_block_count = 0;
-
+        let mut expired_associations = Vec::new();
         while block_iter.peek().is_some() {
+            // Distinct is needed here as a block may live at multiple storage providers
             let mut query_builder = sqlx::QueryBuilder::new(
-                r#"SELECT b.id FROM blocks AS b
-                    JOIN block_locations AS bl ON bl.block_id = b.id
-                    JOIN metadata AS m ON m.id = bl.metadata_id
-                    WHERE m.bucket_id = "#,
+                r#"SELECT bl.metadata_id AS metadata_id, bl.block_id AS block_id, bl.storage_host_id AS storage_host_id FROM block_locations AS bl
+                       JOIN blocks AS b ON b.id = bl.block_id
+                       JOIN metadata AS m ON m.id = bl.metadata_id
+                       WHERE bl.expired_at IS NULL
+                           AND m.bucket_id = "#,
             );
 
             query_builder.push_bind(bucket_id);
@@ -115,13 +120,14 @@ impl Bucket {
             // Chunking size was chosen a bit arbitrarily, sqlx has a bind limit of 65k so we need to
             // make sure this is always below that. This could be increased but there is also a hit
             // when queries get too large.
+            //
+            // The manual counting here is needed as the `chunks()` functionality on Iterator is
+            // only available in nightly.
             let mut chunk_count = 0;
             while let Some(cid) = block_iter.next() {
                 query_builder.push_bind(cid);
 
-                total_block_count += 1;
                 chunk_count += 1;
-
                 if chunk_count > DATABASE_CHUNK_LIMIT {
                     break;
                 }
@@ -132,25 +138,45 @@ impl Bucket {
             }
 
             query_builder.push(");");
-            let query = query_builder.build().persistent(false);
+            let query = query_builder.build_query_as::<MinimalBlockLocation>().persistent(false);
 
-            let block_ids = query.fetch_all(&mut *conn).await?;
-            validated_block_list.extend(block_ids);
+            let block_locations = query.fetch_all(&mut *conn).await?;
+            expired_associations.extend(block_locations);
         }
 
-        // Some of the blocks either didn't exist, we don't know about them yet, or don't belong to
-        // the user. We still want to expire the blocks that are valid so this is going to just be
-        // a warning to keep an eye on.
-        let validated_count = validated_block_list.len();
-        if validated_count != total_block_count {
-            tracing::warn!(
-                validated_count,
-                total_block_count,
-                "mismatch in expected expired block count"
+        // Another short circuit so we know there will be at least one location getting marked for
+        // expiration in the following query
+        if expired_associations.is_empty() {
+            return Ok(0);
+        }
+
+        let mut total_rows_expired = 0;
+
+        // Note: while we're using the same chunk limit, we have 3x the number of binds in this
+        // query. This is safe since this limit is far below the threshold that will cause issues.
+        for expired_chunk in expired_associations.chunks(DATABASE_CHUNK_LIMIT) {
+            let mut query_builder = sqlx::QueryBuilder::new(
+                r#"UPDATE block_locations SET expired_at = DATETIME('now')
+                       WHERE (block_id, metadata_id, storage_host_id) IN (VALUES "#
             );
+
+            query_builder.push_tuples(expired_chunk, |mut b, location| {
+                b.push_bind(&location.block_id);
+                b.push_bind(&location.metadata_id);
+                b.push_bind(&location.storage_host_id);
+            });
+
+            query_builder.push(");");
+
+            let query = query_builder.build().persistent(false);
+            let query_result = query.execute(&mut *conn).await?;
+
+            total_rows_expired += query_result.rows_affected();
         }
 
-        todo!()
+        // todo: Need to queue a prune block task
+
+        Ok(total_rows_expired)
     }
 
     /// When a new metadata is pushed to this service we mark it as pending until we receive
@@ -493,7 +519,7 @@ mod tests {
         // There is a different code path when a 'current' metadata exists, we want to make sure
         // this is still _before_ the uploading metadata
         let older_time = base_time - Duration::from_secs(10);
-        create_metadata_with_state(&mut conn, &bucket_id, "og-meta-cid", "og-root-cid", MetadataState::Current, base_time).await;
+        create_metadata_with_state(&mut conn, &bucket_id, "og-meta-cid", "og-root-cid", MetadataState::Current, older_time).await;
 
         assert!(!Bucket::is_change_in_progress(&mut conn, &bucket_id).await.unwrap());
     }
