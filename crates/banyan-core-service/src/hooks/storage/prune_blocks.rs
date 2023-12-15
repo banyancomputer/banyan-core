@@ -51,9 +51,9 @@ pub async fn handler(
     prune_builder.push_bind(&storage_provider_id);
     prune_builder.push(" AND block_id IN (");
 
-    let mut block_id_iterator = block_ids.into_iter().peekable();
-    while let Some(cid) = block_id_iterator.next() {
-        prune_builder.push_bind(cid);
+    let mut block_id_iterator = block_ids.iter().peekable();
+    while let Some(bid) = block_id_iterator.next() {
+        prune_builder.push_bind(bid);
 
         if block_id_iterator.peek().is_some() {
             prune_builder.push(", ");
@@ -61,8 +61,8 @@ pub async fn handler(
     }
 
     prune_builder.push(");");
-
     let prune_result = prune_builder.build().execute(&mut *conn).await?;
+
     conn.commit().await?;
 
     tracing::debug!(pruned_blocks = prune_result.rows_affected(), "blocks pruned from storage provider");
