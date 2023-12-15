@@ -1,4 +1,5 @@
 use crate::database::DatabaseConnection;
+use crate::database::models::Bucket;
 
 /// This struct encompasses the minimum amount of data required to create a new metadata row,
 /// omitting data that is populated by the database such as ID and the various timestamps. It
@@ -99,6 +100,18 @@ impl Metadata {
                 "multiple metadata versions expired at once"
             );
         }
+
+        // Once a metadata has been marked as current we need to see if there was any bending
+        // blocks that are ready to be expired.
+        let expired_block_ids = sqlx::query_scalar!(
+            "SELECT block_id FROM pending_expirations WHERE metadata_id = $1;",
+            metadata_id,
+        )
+        .fetch_all(&mut *conn)
+        .await?;
+
+        let expired_block_iter = expired_block_ids.iter().map(String::as_str);
+        Bucket::expire_blocks(&mut *conn, &bucket_id, expired_block_iter).await?;
 
         Ok(())
     }

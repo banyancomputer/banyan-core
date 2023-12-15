@@ -8,6 +8,7 @@ mod escrowed_device;
 mod metadata;
 mod metadata_state;
 mod partial_metadata_with_snapshot;
+mod pending_expiration;
 mod snapshot;
 mod storage_class;
 mod storage_grant;
@@ -24,6 +25,7 @@ pub use email_message_state::EmailMessageState;
 pub use escrowed_device::EscrowedDevice;
 pub use metadata::{Metadata, NewMetadata};
 pub use metadata_state::MetadataState;
+pub use pending_expiration::PendingExpiration;
 pub use partial_metadata_with_snapshot::PartialMetadataWithSnapshot;
 pub use snapshot::Snapshot;
 pub use storage_class::StorageClass;
@@ -37,7 +39,7 @@ pub use user::User;
 /// an explicit wrapping type that we can then extract the desired value from.
 ///
 /// note(sstelfox): I consider this a bug in sqlx but the maintainers didn't want to accept it as
-/// such recommending this workaround.
+/// such recommending this workaround. See launchbadge/sqlx#2814.
 #[derive(sqlx::FromRow)]
 pub struct ExplicitBigInt {
     big_int: i64,

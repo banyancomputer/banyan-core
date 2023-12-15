@@ -1,10 +1,10 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id FROM blocks WHERE cid = $1;",
+  "query": "SELECT block_id FROM pending_expirations WHERE metadata_id = $1;",
   "describe": {
     "columns": [
       {
-        "name": "id",
+        "name": "block_id",
         "ordinal": 0,
         "type_info": "Text"
       }
@@ -16,5 +16,5 @@
       false
     ]
   },
-  "hash": "829c13580e35566cbbd842c1c5553f09214140fac2e6997e988f6f1bbfbd3c23"
+  "hash": "c13ccfca801090c9e069f2e7916b5e5dbc512fce3d661c824bf35ea2cd5f6f87"
 }
