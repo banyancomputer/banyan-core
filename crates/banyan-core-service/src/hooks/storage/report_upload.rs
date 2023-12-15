@@ -25,13 +25,13 @@ pub async fn handler(
     let mut db_conn = database.acquire().await?;
 
     redeem_storage_grant(
-        &mut *db_conn,
+        &mut db_conn,
         &storage_provider.id,
         &request.storage_authorization_id,
     )
     .await?;
     associate_upload(
-        &mut *db_conn,
+        &mut db_conn,
         &storage_provider.id,
         &db_metadata_id,
         &request.storage_authorization_id,
@@ -63,11 +63,11 @@ pub async fn handler(
         .map_err(ReportUploadError::UnableToRecordBlock)?;
     }
 
-    let bucket_id = Metadata::get_bucket_id(&mut *db_conn, &db_metadata_id)
+    let bucket_id = Metadata::get_bucket_id(&mut db_conn, &db_metadata_id)
         .await
         .map_err(ReportUploadError::MarkCurrentFailed)?;
     Metadata::mark_current(
-        &mut *db_conn,
+        &mut db_conn,
         &bucket_id,
         &db_metadata_id,
         Some(request.data_size),

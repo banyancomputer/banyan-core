@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::auth::{JWT_ALLOWED_CLOCK_DRIFT, STORAGE_TICKET_DURATION};
 
-const TICKET_ISSUER: &'static str = "banyan-platform";
+const TICKET_ISSUER: &str = "banyan-platform";
 
 /// This struct represents the additional required claims that needs to be included in a signed JWT
 /// to authorize clients to store data at remote storage hosts. The structure of these additional

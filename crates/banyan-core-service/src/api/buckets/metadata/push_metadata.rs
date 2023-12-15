@@ -32,7 +32,7 @@ const ACCOUNT_STORAGE_QUOTA: i64 = 10 * 1_024 * 1_024 * 1_024;
 const CAR_DATA_SIZE_LIMIT: u64 = 128 * 1_024 * 1_024;
 
 /// The "official" mime type registered for CAR files, we specifically only accept version 2
-const CAR_MIME_TYPE: &'static str = "application/vnd.ipfs.car; version=2";
+const CAR_MIME_TYPE: &str = "application/vnd.ipfs.car; version=2";
 
 const ONE_HUNDRED_MIB: i64 = 100 * 1024 * 1024;
 
@@ -176,7 +176,7 @@ pub async fn handler(
     let mut conn = database.begin().await?;
     Metadata::upload_complete(&mut conn, &metadata_id, &hash, size as i64).await?;
 
-    let consumed_storage = User::consumed_storage(&mut *conn, &user_id).await?;
+    let consumed_storage = User::consumed_storage(&mut conn, &user_id).await?;
     if consumed_storage > ACCOUNT_STORAGE_QUOTA {
         tracing::warn!(consumed_storage, "account reached storage limit");
         let err_msg = serde_json::json!({"msg": "account reached available storage threshold"});
@@ -213,7 +213,7 @@ pub async fn handler(
             user_id: &user_id,
             authorized_amount: new_authorized_capacity,
         }
-        .save(&mut *conn)
+        .save(&mut conn)
         .await?;
 
         let mut ticket_builder = StorageTicketBuilder::new(user.ticket_subject());
@@ -355,132 +355,6 @@ fn validate_field(
 
     true
 }
-
-//#[derive(sqlx::FromRow)]
-//struct UniqueBlockLocation {
-//    block_id: String,
-//    normalized_cid: String,
-//    metadata_id: String,
-//    storage_host_id: String,
-//}
-
-//async fn expire_deleted_blocks(
-//    database: &Database,
-//    bucket_id: &str,
-//    deleted_block_cids: &BTreeSet<String>,
-//) -> Result<(), PushMetadataError> {
-//    let mut prune_blocks_tasks_map: HashMap<Uuid, Vec<PruneBlock>> = HashMap::new();
-//
-//    // Check if block set is empty
-//    if deleted_block_cids.is_empty() {
-//        return Ok(());
-//    }
-//
-//    // Build a query to identify the blocks that need to get expired
-//    let mut builder = sqlx::QueryBuilder::new(
-//        r#"SELECT blocks.id AS block_id, blocks.cid AS normalized_cid, m.id AS metadata_id, sh.id AS storage_host_id
-//            FROM block_locations AS bl
-//            JOIN blocks ON blocks.id = bl.block_id
-//            JOIN storage_hosts AS sh ON sh.id = bl.storage_host_id
-//            JOIN metadata AS m ON m.id = bl.metadata_id
-//            JOIN buckets AS b ON b.id = m.bucket_id
-//            WHERE b.user_id ="#,
-//    );
-//    builder.push_bind(user_id);
-//    builder.push(" AND b.id = ");
-//    builder.push_bind(bucket_id);
-//    builder.push(" AND blocks.cid IN (");
-//    for (i, cid) in deleted_block_cids.iter().enumerate() {
-//        let normalized_cid = Cid::from_str(cid)
-//            .map_err(PushMetadataError::InvalidCid)?
-//            .to_string_of_base(Base::Base64Url)
-//            .map_err(PushMetadataError::InvalidCid)?;
-//
-//        if i > 0 {
-//            builder.push(", ");
-//        }
-//
-//        builder.push_bind(normalized_cid);
-//    }
-//    builder.push(")");
-//
-//    // Execute the query
-//    let query = builder.build_query_as::<UniqueBlockLocation>();
-//    let unique_block_locations = query
-//        .fetch_all(database)
-//        .await
-//        .map_err(PushMetadataError::UnableToExpireBlocks)?;
-//
-//    // If no blocks were found, we can stop here.
-//    if unique_block_locations.is_empty() {
-//        return Ok(());
-//    }
-//
-//    // Collect all the unique blocks into a single set
-//    let mut unique_blocks: BTreeSet<(String, String)> = BTreeSet::new();
-//    // Collect all the unique blocks into a map of prune blocks tasks for different storage hosts
-//    for unique_block_location in unique_block_locations {
-//        let unique_block = (
-//            unique_block_location.block_id.clone(),
-//            unique_block_location.metadata_id.clone(),
-//        );
-//        unique_blocks.insert(unique_block);
-//        let prune_block = PruneBlock {
-//            normalized_cid: unique_block_location.normalized_cid.clone(),
-//            metadata_id: Uuid::parse_str(&unique_block_location.metadata_id)
-//                .map_err(PushMetadataError::DatabaseUuidCorrupted)?,
-//        };
-//        let storage_host_id = Uuid::parse_str(&unique_block_location.storage_host_id)
-//            .map_err(PushMetadataError::DatabaseUuidCorrupted)?;
-//        prune_blocks_tasks_map
-//            .entry(storage_host_id)
-//            .or_default()
-//            .push(prune_block.clone());
-//    }
-//
-//    // Update the unique blocks that need to get expired
-//    let mut builder = sqlx::query_builder::QueryBuilder::new(
-//        r#"UPDATE block_locations
-//        SET expired_at = CURRENT_TIMESTAMP
-//        WHERE (block_id, metadata_id) IN ("#,
-//    );
-//    for (i, (block_id, metadata_id)) in unique_blocks.iter().enumerate() {
-//        if i > 0 {
-//            builder.push(", ");
-//        }
-//        builder.push("(");
-//        builder.push_bind(block_id);
-//        builder.push(", ");
-//        builder.push_bind(metadata_id);
-//        builder.push(")");
-//    }
-//    builder.push(")");
-//
-//    // Begin a transaction for updating block and task state
-//    let mut transaction = database
-//        .begin()
-//        .await
-//        .map_err(PushMetadataError::UnableToExpireBlocks)?;
-//
-//    // Execute the query to update blocks
-//    let query = builder.build();
-//    query
-//        .execute(&mut *transaction)
-//        .await
-//        .map_err(PushMetadataError::UnableToExpireBlocks)?;
-//
-//    // Create background tasks for our storage hosts to notify them to prune blocks
-//    for (storage_host_id, prune_blocks) in prune_blocks_tasks_map {
-//    }
-//
-//    // Commit the txn
-//    transaction
-//        .commit()
-//        .await
-//        .map_err(PushMetadataError::UnableToExpireBlocks)?;
-//
-//    Ok(())
-//}
 
 #[derive(Debug, thiserror::Error)]
 pub enum PersistanceError {
