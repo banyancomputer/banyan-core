@@ -287,53 +287,8 @@ mod tests {
 
     use super::*;
 
-    use crate::database::test_helpers;
+    use crate::database::test_helpers::*;
     use crate::database::models::MetadataState;
-
-    async fn create_bucket_key(
-        conn: &mut DatabaseConnection,
-        bucket_id: &str,
-        public_key: &str,
-        fingerprint: &str,
-        approved: bool,
-    ) -> String {
-        sqlx::query_scalar!(
-            r#"INSERT INTO bucket_keys (bucket_id, pem, fingerprint, approved)
-                   VALUES ($1, $2, $3, $4)
-                   RETURNING id;"#,
-            bucket_id,
-            public_key,
-            fingerprint,
-            approved,
-        )
-        .fetch_one(&mut *conn)
-        .await
-        .expect("successful creation")
-    }
-
-    async fn create_metadata_with_state(
-        conn: &mut DatabaseConnection,
-        bucket_id: &str,
-        metadata_cid: &str,
-        root_cid: &str,
-        state: MetadataState,
-        created_at: OffsetDateTime,
-    ) -> String {
-        sqlx::query_scalar!(
-            r#"INSERT INTO metadata (bucket_id, metadata_cid, root_cid, expected_data_size, state,
-                       created_at, updated_at)
-                   VALUES ($1, $2, $3, 0, $4, $5, $5)
-                   RETURNING id;"#,
-            bucket_id,
-            metadata_cid,
-            root_cid,
-            state,
-            created_at,
-        )
-        .fetch_one(&mut *conn)
-        .await
-        .expect("save metadata")
-    }
 
     async fn is_bucket_key_approved(
         conn: &mut DatabaseConnection,
@@ -356,11 +311,11 @@ mod tests {
 
     #[tokio::test]
     async fn test_associated_key_empty_approval() {
-        let db = test_helpers::setup_database().await;
+        let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
-        let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
-        let bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
+        let user_id = sample_user(&mut conn, "user@domain.tld").await;
+        let bucket_id = sample_bucket(&mut conn, &user_id).await;
 
         create_bucket_key(&mut conn, &bucket_id, "<pubkey>", "001122", false).await;
 
@@ -373,11 +328,11 @@ mod tests {
 
     #[tokio::test]
     async fn test_associated_key_single_approval() {
-        let db = test_helpers::setup_database().await;
+        let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
-        let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
-        let bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
+        let user_id = sample_user(&mut conn, "user@domain.tld").await;
+        let bucket_id = sample_bucket(&mut conn, &user_id).await;
 
         create_bucket_key(&mut conn, &bucket_id, "<pubkey>", "001122", false).await;
         create_bucket_key(&mut conn, &bucket_id, "<pubkey>", "003355", false).await;
@@ -392,11 +347,11 @@ mod tests {
 
     #[tokio::test]
     async fn test_associated_key_multiple_approval() {
-        let db = test_helpers::setup_database().await;
+        let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
-        let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
-        let bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
+        let user_id = sample_user(&mut conn, "user@domain.tld").await;
+        let bucket_id = sample_bucket(&mut conn, &user_id).await;
 
         create_bucket_key(&mut conn, &bucket_id, "<pubkey>", "001122", false).await;
         create_bucket_key(&mut conn, &bucket_id, "<pubkey>", "003355", false).await;
@@ -414,11 +369,11 @@ mod tests {
 
     #[tokio::test]
     async fn test_is_no_metadata_not_in_progress() {
-        let db = test_helpers::setup_database().await;
+        let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
-        let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
-        let bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
+        let user_id = sample_user(&mut conn, "user@domain.tld").await;
+        let bucket_id = sample_bucket(&mut conn, &user_id).await;
 
         // No metadata instances have yet been uploaded, no change should be in progress
         assert!(!Bucket::is_change_in_progress(&mut conn, &bucket_id).await.unwrap());
@@ -426,20 +381,20 @@ mod tests {
 
     #[tokio::test]
     async fn test_is_current_not_in_progress() {
-        let db = test_helpers::setup_database().await;
+        let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
-        let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
-        let bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
+        let user_id = sample_user(&mut conn, "user@domain.tld").await;
+        let bucket_id = sample_bucket(&mut conn, &user_id).await;
 
         let base_time = OffsetDateTime::now_utc();
-        create_metadata_with_state(&mut conn, &bucket_id, "meta-cid", "root-cid", MetadataState::Current, base_time).await;
+        create_metadata(&mut conn, &bucket_id, "meta-cid", "root-cid", MetadataState::Current, Some(base_time)).await;
 
         // All the metadata is current, no change should be in progress
         assert!(!Bucket::is_change_in_progress(&mut conn, &bucket_id).await.unwrap());
 
         let older_time = base_time - Duration::from_secs(20);
-        create_metadata_with_state(&mut conn, &bucket_id, "old-meta-cid", "old-root-cid", MetadataState::Current, older_time).await;
+        create_metadata(&mut conn, &bucket_id, "old-meta-cid", "old-root-cid", MetadataState::Current, Some(older_time)).await;
 
         // The pending metadata was created at "before" the current metadata so shouldn't cause the
         // bucket to be considered actively being changed
@@ -448,14 +403,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_pending_is_in_progress() {
-        let db = test_helpers::setup_database().await;
+        let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
-        let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
-        let bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
+        let user_id = sample_user(&mut conn, "user@domain.tld").await;
+        let bucket_id = sample_bucket(&mut conn, &user_id).await;
 
         let base_time = OffsetDateTime::now_utc();
-        create_metadata_with_state(&mut conn, &bucket_id, "meta-cid", "root-cid", MetadataState::Pending, base_time).await;
+        create_metadata(&mut conn, &bucket_id, "meta-cid", "root-cid", MetadataState::Pending, Some(base_time)).await;
 
         // A just created (within our window) pending metadata should keep the bucket locked as its
         // being changed
@@ -464,14 +419,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_old_pending_not_in_progress() {
-        let db = test_helpers::setup_database().await;
+        let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
-        let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
-        let bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
+        let user_id = sample_user(&mut conn, "user@domain.tld").await;
+        let bucket_id = sample_bucket(&mut conn, &user_id).await;
 
         let base_time = time_outside_lock_window();
-        create_metadata_with_state(&mut conn, &bucket_id, "meta-cid", "root-cid", MetadataState::Pending, base_time).await;
+        create_metadata(&mut conn, &bucket_id, "meta-cid", "root-cid", MetadataState::Pending, Some(base_time)).await;
 
         // A just created (within our window) pending metadata should keep the bucket locked as its
         // being changed
@@ -480,21 +435,21 @@ mod tests {
         // There is a different code path when a 'current' metadata exists, we want to make sure
         // this is still _before_ the pending metadata
         let older_time = base_time - Duration::from_secs(10);
-        create_metadata_with_state(&mut conn, &bucket_id, "og-meta-cid", "og-root-cid", MetadataState::Current, older_time).await;
+        create_metadata(&mut conn, &bucket_id, "og-meta-cid", "og-root-cid", MetadataState::Current, Some(older_time)).await;
 
         assert!(!Bucket::is_change_in_progress(&mut conn, &bucket_id).await.unwrap());
     }
 
     #[tokio::test]
     async fn test_uploading_is_in_progress() {
-        let db = test_helpers::setup_database().await;
+        let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
-        let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
-        let bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
+        let user_id = sample_user(&mut conn, "user@domain.tld").await;
+        let bucket_id = sample_bucket(&mut conn, &user_id).await;
 
         let base_time = OffsetDateTime::now_utc();
-        create_metadata_with_state(&mut conn, &bucket_id, "meta-cid", "root-cid", MetadataState::Uploading, base_time).await;
+        create_metadata(&mut conn, &bucket_id, "meta-cid", "root-cid", MetadataState::Uploading, Some(base_time)).await;
 
         // A just created (within our window) uploading metadata should keep the bucket locked as
         // its being changed.
@@ -503,14 +458,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_old_uploading_not_in_progress() {
-        let db = test_helpers::setup_database().await;
+        let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
-        let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
-        let bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
+        let user_id = sample_user(&mut conn, "user@domain.tld").await;
+        let bucket_id = sample_bucket(&mut conn, &user_id).await;
 
         let base_time = time_outside_lock_window();
-        create_metadata_with_state(&mut conn, &bucket_id, "meta-cid", "root-cid", MetadataState::Uploading, base_time).await;
+        create_metadata(&mut conn, &bucket_id, "meta-cid", "root-cid", MetadataState::Uploading, Some(base_time)).await;
 
         // A just created (within our window) pending metadata should keep the bucket locked as its
         // being changed
@@ -519,40 +474,40 @@ mod tests {
         // There is a different code path when a 'current' metadata exists, we want to make sure
         // this is still _before_ the uploading metadata
         let older_time = base_time - Duration::from_secs(10);
-        create_metadata_with_state(&mut conn, &bucket_id, "og-meta-cid", "og-root-cid", MetadataState::Current, older_time).await;
+        create_metadata(&mut conn, &bucket_id, "og-meta-cid", "og-root-cid", MetadataState::Current, Some(older_time)).await;
 
         assert!(!Bucket::is_change_in_progress(&mut conn, &bucket_id).await.unwrap());
     }
 
     #[tokio::test]
     async fn test_no_current_metadata_retrieval() {
-        let db = test_helpers::setup_database().await;
+        let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
-        let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
-        let bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
+        let user_id = sample_user(&mut conn, "user@domain.tld").await;
+        let bucket_id = sample_bucket(&mut conn, &user_id).await;
 
         assert!(Bucket::current_version(&mut conn, &bucket_id).await.expect("query success").is_none());
     }
 
     #[tokio::test]
     async fn test_correct_current_metadata_retrieval() {
-        let db = test_helpers::setup_database().await;
+        let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
-        let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
-        let bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
+        let user_id = sample_user(&mut conn, "user@domain.tld").await;
+        let bucket_id = sample_bucket(&mut conn, &user_id).await;
 
         // An older pending should have no effect on the current metadata
         let oldest_time = OffsetDateTime::now_utc() - Duration::from_secs(300);
-        create_metadata_with_state(&mut conn, &bucket_id, "old-meta-cid", "old-root-cid", MetadataState::Pending, oldest_time).await;
+        create_metadata(&mut conn, &bucket_id, "old-meta-cid", "old-root-cid", MetadataState::Pending, Some(oldest_time)).await;
 
         let base_time = OffsetDateTime::now_utc() - Duration::from_secs(300);
-        let current_metadata_id = create_metadata_with_state(&mut conn, &bucket_id, "meta-cid", "root-cid", MetadataState::Current, base_time).await;
+        let current_metadata_id = create_metadata(&mut conn, &bucket_id, "meta-cid", "root-cid", MetadataState::Current, Some(base_time)).await;
 
         // An newer pending should have no effect on the current metadata
         let newer_time = OffsetDateTime::now_utc();
-        create_metadata_with_state(&mut conn, &bucket_id, "new-meta-cid", "new-root-cid", MetadataState::Pending, newer_time).await;
+        create_metadata(&mut conn, &bucket_id, "new-meta-cid", "new-root-cid", MetadataState::Pending, Some(newer_time)).await;
 
         assert_eq!(Bucket::current_version(&mut conn, &bucket_id).await.expect("query success"), Some(current_metadata_id));
     }
@@ -562,39 +517,39 @@ mod tests {
     /// that there is no existing current metadata so will do no harm under normal circumstances.
     #[tokio::test]
     async fn test_pending_metadata_fallback_retrieval() {
-        let db = test_helpers::setup_database().await;
+        let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
-        let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
-        let bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
+        let user_id = sample_user(&mut conn, "user@domain.tld").await;
+        let bucket_id = sample_bucket(&mut conn, &user_id).await;
 
         let base_time = OffsetDateTime::now_utc();
-        let pending_id = create_metadata_with_state(&mut conn, &bucket_id, "p-meta-cid", "p-root-cid", MetadataState::Pending, base_time).await;
+        let pending_id = create_metadata(&mut conn, &bucket_id, "pm-cid", "pr-cid", MetadataState::Pending, Some(base_time)).await;
 
         assert_eq!(Bucket::current_version(&mut conn, &bucket_id).await.expect("query success"), Some(pending_id));
 
         // Any current metadata should override the pending one, this creates it in the past as
         // that is a slightly more spicy edge case than a brand new current one
         let older_time = base_time - Duration::from_secs(1800);
-        let current_id = create_metadata_with_state(&mut conn, &bucket_id, "c-meta-cid", "c-root-cid", MetadataState::Current, older_time).await;
+        let current_id = create_metadata(&mut conn, &bucket_id, "c-meta-cid", "c-root-cid", MetadataState::Current, Some(older_time)).await;
 
         assert_eq!(Bucket::current_version(&mut conn, &bucket_id).await.expect("query success"), Some(current_id));
     }
 
     #[tokio::test]
     async fn test_owner_id_checking() {
-        let db = test_helpers::setup_database().await;
+        let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
-        let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
-        let bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
+        let user_id = sample_user(&mut conn, "user@domain.tld").await;
+        let bucket_id = sample_bucket(&mut conn, &user_id).await;
 
         let owned_by_owner = Bucket::is_owned_by_user_id(&mut conn, &bucket_id, &user_id)
             .await
             .expect("query success");
         assert!(owned_by_owner);
 
-        let other_user_id = test_helpers::sample_user(&mut conn, "other_user@not_domain.com").await;
+        let other_user_id = sample_user(&mut conn, "other_user@not_domain.com").await;
 
         let owned_by_other = Bucket::is_owned_by_user_id(&mut conn, &bucket_id, &other_user_id)
             .await
@@ -613,11 +568,11 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_expire_blocks_noop() {
-        let db = test_helpers::setup_database().await;
+        let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
-        let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
-        let _bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
+        let user_id = sample_user(&mut conn, "user@domain.tld").await;
+        let _bucket_id = sample_bucket(&mut conn, &user_id).await;
 
         todo!()
     }
@@ -627,11 +582,11 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_expire_blocks_expected() {
-        let db = test_helpers::setup_database().await;
+        let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
-        let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
-        let _bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
+        let user_id = sample_user(&mut conn, "user@domain.tld").await;
+        let _bucket_id = sample_bucket(&mut conn, &user_id).await;
 
         todo!()
     }
@@ -641,11 +596,11 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_expire_blocks_unknown() {
-        let db = test_helpers::setup_database().await;
+        let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
-        let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
-        let _bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
+        let user_id = sample_user(&mut conn, "user@domain.tld").await;
+        let _bucket_id = sample_bucket(&mut conn, &user_id).await;
 
         todo!()
     }
@@ -655,11 +610,11 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_expire_blocks_normalize_cids() {
-        let db = test_helpers::setup_database().await;
+        let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
-        let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
-        let _bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
+        let user_id = sample_user(&mut conn, "user@domain.tld").await;
+        let _bucket_id = sample_bucket(&mut conn, &user_id).await;
 
         todo!()
     }
@@ -668,11 +623,11 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_expire_blocks_multiple_storage_hosts() {
-        let db = test_helpers::setup_database().await;
+        let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
-        let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
-        let _bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
+        let user_id = sample_user(&mut conn, "user@domain.tld").await;
+        let _bucket_id = sample_bucket(&mut conn, &user_id).await;
 
         todo!()
     }
@@ -681,11 +636,11 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_expire_blocks_safe_inter_bucket() {
-        let db = test_helpers::setup_database().await;
+        let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
-        let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
-        let _bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
+        let user_id = sample_user(&mut conn, "user@domain.tld").await;
+        let _bucket_id = sample_bucket(&mut conn, &user_id).await;
 
         todo!()
     }
@@ -695,11 +650,11 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_expire_blocks_queues_prune_task() {
-        let db = test_helpers::setup_database().await;
+        let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
-        let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
-        let _bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
+        let user_id = sample_user(&mut conn, "user@domain.tld").await;
+        let _bucket_id = sample_bucket(&mut conn, &user_id).await;
 
         todo!()
     }

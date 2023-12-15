@@ -103,3 +103,27 @@ impl Metadata {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use crate::database::test_helpers::*;
+
+    #[tokio::test]
+    async fn test_expected_marking_current() {
+        let db = setup_database().await;
+        let mut conn = db.begin().await.expect("connection");
+
+        let user_id = sample_user(&mut conn, "user@domain.tld").await;
+        let _bucket_id = sample_bucket(&mut conn, &user_id).await;
+
+        todo!()
+    }
+
+    // marking current for a pending metadata
+    // marking current for an uploading metadata
+    // marking current with multiple existing current metadata
+    // not marking current for other metadata
+    // error on not marking metadata current
+}

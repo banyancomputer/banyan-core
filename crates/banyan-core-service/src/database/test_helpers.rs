@@ -1,13 +1,35 @@
 use sqlx::sqlite::SqlitePoolOptions;
+use time::OffsetDateTime;
 
 use crate::database::models::{BucketType, MetadataState, StorageClass};
 use crate::database::{Database, DatabaseConnection};
+
+pub(crate) async fn create_bucket_key(
+    conn: &mut DatabaseConnection,
+    bucket_id: &str,
+    public_key: &str,
+    fingerprint: &str,
+    approved: bool,
+) -> String {
+    sqlx::query_scalar!(
+        r#"INSERT INTO bucket_keys (bucket_id, pem, fingerprint, approved)
+                VALUES ($1, $2, $3, $4)
+                RETURNING id;"#,
+        bucket_id,
+        public_key,
+        fingerprint,
+        approved,
+    )
+    .fetch_one(&mut *conn)
+    .await
+    .expect("bucket key creation")
+}
 
 pub(crate) async fn create_hot_bucket(
     conn: &mut DatabaseConnection,
     user_id: &str,
     name: &str,
-) -> Result<String, sqlx::Error> {
+) -> String {
     sqlx::query_scalar!(
         r#"INSERT INTO
                 buckets (user_id, name, type, storage_class)
@@ -20,35 +42,54 @@ pub(crate) async fn create_hot_bucket(
     )
     .fetch_one(conn)
     .await
+    .expect("hot bucket creation")
 }
 
 pub(crate) async fn create_metadata(
     conn: &mut DatabaseConnection,
     bucket_id: &str,
-    root_cid: &str,
     metadata_cid: &str,
+    root_cid: &str,
     state: MetadataState,
-) -> Result<String, sqlx::Error> {
-    sqlx::query_scalar!(
-        r#"INSERT INTO
-                metadata (bucket_id, root_cid, metadata_cid, expected_data_size, state)
-                VALUES ($1, $2, $3, $4, $5)
-                RETURNING id;"#,
-        bucket_id,
-        root_cid,
-        metadata_cid,
-        12_123_100,
-        state,
-    )
-    .fetch_one(conn)
-    .await
+    timestamp: Option<OffsetDateTime>,
+) -> String {
+    if let Some(ts) = timestamp {
+        sqlx::query_scalar!(
+            r#"INSERT INTO
+                    metadata (bucket_id, root_cid, metadata_cid, expected_data_size, state, created_at, updated_at)
+                    VALUES ($1, $2, $3, 0, $4, $5, $5)
+                    RETURNING id;"#,
+            bucket_id,
+            root_cid,
+            metadata_cid,
+            state,
+            ts,
+        )
+        .fetch_one(conn)
+        .await
+        .expect("metadata creation")
+    } else {
+        sqlx::query_scalar!(
+            r#"INSERT INTO
+                    metadata (bucket_id, root_cid, metadata_cid, expected_data_size, state)
+                    VALUES ($1, $2, $3, 0, $4)
+                    RETURNING id;"#,
+            bucket_id,
+            root_cid,
+            metadata_cid,
+            state,
+        )
+        .fetch_one(conn)
+        .await
+        .expect("metadata creation")
+    }
 }
 
 pub(crate) async fn create_user(
     conn: &mut DatabaseConnection,
     email: &str,
     display_name: &str,
-) -> Result<String, sqlx::Error> {
+) -> String {
     sqlx::query_scalar!(
         r#"INSERT INTO
                 users (email, verified_email, display_name)
@@ -59,6 +100,7 @@ pub(crate) async fn create_user(
     )
     .fetch_one(conn)
     .await
+    .expect("user creation")
 }
 
 pub(crate) async fn current_metadata(
@@ -78,9 +120,7 @@ pub(crate) async fn pending_metadata(
 }
 
 pub(crate) async fn sample_bucket(conn: &mut DatabaseConnection, user_id: &str) -> String {
-    create_hot_bucket(conn, user_id, "Habernero")
-        .await
-        .expect("bucket creation")
+    create_hot_bucket(conn, user_id, "Habernero").await
 }
 
 pub(crate) async fn sample_metadata(
@@ -92,15 +132,11 @@ pub(crate) async fn sample_metadata(
     let root_cid = format!("root-cid-{}", counter);
     let metadata_cid = format!("metadata-cid-{}", counter);
 
-    create_metadata(conn, bucket_id, &root_cid, &metadata_cid, state)
-        .await
-        .expect("current metadata creation")
+    create_metadata(conn, bucket_id, &metadata_cid, &root_cid, state, None).await
 }
 
 pub(crate) async fn sample_user(conn: &mut DatabaseConnection, email: &str) -> String {
-    create_user(conn, email, "Generic Tester")
-        .await
-        .expect("user creation")
+    create_user(conn, email, "Generic Tester").await
 }
 
 pub(crate) async fn setup_database() -> Database {
