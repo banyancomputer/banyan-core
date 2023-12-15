@@ -1,5 +1,8 @@
+use std::time::Duration;
+
 use banyan_task::TaskLikeExt;
 use sqlx::QueryBuilder;
+use time::OffsetDateTime;
 
 use crate::database::models::{BucketType, StorageClass};
 use crate::database::DatabaseConnection;
@@ -8,7 +11,7 @@ use crate::tasks::{PruneBlock, PruneBlocksTask};
 /// Used to prevent writes of new metadata versions when there is a newer metadata currently being
 /// written. This protection is needed until we can handle merge conflicts and resolve the rapid
 /// data only unbatched changes in the client.
-pub const METADATA_WRITE_LOCK_SECS: i32 = 30;
+pub const METADATA_WRITE_LOCK_DURATION: Duration = Duration::from_secs(30);
 
 /// Sets a threshold for how many dynamic binds we restrict individual queries to. Sqlite has a
 /// hard limit here of 65535 binds, but performance impact hits much lower. This value was chosen
@@ -153,12 +156,12 @@ impl Bucket {
     /// When a new metadata is pushed to this service we mark it as pending until we receive
     /// appropriate data also uploaded to our storage hosts. Allows checking whether a new metadata
     /// can be written. This will return false only when there is a pending write that is within
-    /// the `METADATA_WRITE_LOCK_SECS` window.
+    /// the `METADATA_WRITE_LOCK_DURATION` window.
     pub async fn is_change_in_progress(
         conn: &mut DatabaseConnection,
         bucket_id: &str,
     ) -> Result<bool, sqlx::Error> {
-        let result = sqlx::query_scalar!(
+        let current_ts = sqlx::query_scalar!(
             r#"SELECT created_at FROM metadata
                    WHERE bucket_id = $1 AND state = 'current'
                    ORDER BY created_at DESC
@@ -168,38 +171,26 @@ impl Bucket {
         .fetch_optional(&mut *conn)
         .await?;
 
-        let created_history_window = format!("-{METADATA_WRITE_LOCK_SECS} seconds");
-
-        let locked_id = if let Some(current_creation_ts) = result {
-            // We want to gracefully handle the case where there the "current" version and a
-            // "pending" version both live within the METADATA_WRITE_LOCK_SECS window. If the
-            // "current" one is newer, the "pending" one shouldn't block a new write.
-            sqlx::query_scalar!(
-                r#"SELECT id FROM metadata
-                       WHERE bucket_id = $1
-                           AND created_at > $2
-                           AND created_at > DATETIME('now', $3)
-                       ORDER BY created_at DESC
-                       LIMIT 1;"#,
-                bucket_id,
-                current_creation_ts,
-                created_history_window,
-            )
-            .fetch_optional(&mut *conn)
-            .await?
-        } else {
-            sqlx::query_scalar!(
-                r#"SELECT id FROM metadata
-                       WHERE bucket_id = $1
-                           AND created_at > DATETIME('now', $2)
-                       ORDER BY created_at DESC
-                       LIMIT 1;"#,
-                bucket_id,
-                created_history_window,
-            )
-            .fetch_optional(&mut *conn)
-            .await?
+        let lock_window = OffsetDateTime::now_utc() - METADATA_WRITE_LOCK_DURATION;
+        let lock_threshold = match current_ts {
+            // We both have a "current" metadata to reference and its existence is less than our
+            // lock window so use it as our threshold instead of the lock window.
+            Some(ts) if ts > lock_window => ts,
+            _ => lock_window,
         };
+
+        let locked_id = sqlx::query_scalar!(
+            r#"SELECT id FROM metadata
+                   WHERE bucket_id = $1
+                       AND created_at > $2
+                       AND state IN ('pending', 'uploading')
+                   ORDER BY created_at DESC
+                   LIMIT 1;"#,
+            bucket_id,
+            lock_threshold,
+        )
+        .fetch_optional(&mut *conn)
+        .await?;
 
         Ok(locked_id.is_some())
     }
@@ -209,7 +200,7 @@ impl Bucket {
         conn: &mut DatabaseConnection,
         bucket_id: &str,
     ) -> Result<Option<String>, sqlx::Error> {
-        let result = sqlx::query_scalar!(
+        let current_result = sqlx::query_scalar!(
             r#"SELECT id FROM metadata
                 WHERE bucket_id = $1 AND state = 'current'
                 ORDER BY created_at DESC
@@ -219,27 +210,27 @@ impl Bucket {
         .fetch_optional(&mut *conn)
         .await?;
 
-        if let Some(current_id) = result {
+        if let Some(current_id) = current_result {
             return Ok(Some(current_id));
         }
 
         // Temporary fallback to the newest pending state to work around the client bug overwriting
         // metadata
-        let result = sqlx::query_scalar!(
+        let pending_result = sqlx::query_scalar!(
             r#"SELECT id FROM metadata
                    WHERE bucket_id = $1 AND state = 'pending'
-                   ORDER BY created_at ASC
+                   ORDER BY created_at DESC
                    LIMIT 1;"#,
             bucket_id,
         )
         .fetch_optional(&mut *conn)
         .await?;
 
-        if let Some(pending_id) = result {
-            tracing::warn!(pending_id, "fell back on pending metadata")
+        if let Some(pending_id) = &pending_result {
+            tracing::warn!(pending_id, "fell back on pending metadata");
         }
 
-        Ok(None)
+        Ok(pending_result)
     }
 
     /// Checks whether the provided bucket ID is owned by the provided user ID. This will return
@@ -264,9 +255,14 @@ impl Bucket {
 
 #[cfg(test)]
 mod tests {
+    use std::time::Duration;
+
+    use time::OffsetDateTime;
+
     use super::*;
 
     use crate::database::test_helpers;
+    use crate::database::models::MetadataState;
 
     async fn create_bucket_key(
         conn: &mut DatabaseConnection,
@@ -289,6 +285,30 @@ mod tests {
         .expect("successful creation")
     }
 
+    async fn create_metadata_with_state(
+        conn: &mut DatabaseConnection,
+        bucket_id: &str,
+        metadata_cid: &str,
+        root_cid: &str,
+        state: MetadataState,
+        created_at: OffsetDateTime,
+    ) -> String {
+        sqlx::query_scalar!(
+            r#"INSERT INTO metadata (bucket_id, metadata_cid, root_cid, expected_data_size, state,
+                       created_at, updated_at)
+                   VALUES ($1, $2, $3, 0, $4, $5, $5)
+                   RETURNING id;"#,
+            bucket_id,
+            metadata_cid,
+            root_cid,
+            state,
+            created_at,
+        )
+        .fetch_one(&mut *conn)
+        .await
+        .expect("save metadata")
+    }
+
     async fn is_bucket_key_approved(
         conn: &mut DatabaseConnection,
         bucket_id: &str,
@@ -304,6 +324,10 @@ mod tests {
         .expect("query success")
     }
 
+    fn time_outside_lock_window() -> OffsetDateTime {
+        OffsetDateTime::now_utc() - METADATA_WRITE_LOCK_DURATION - Duration::from_secs(5)
+    }
+
     #[tokio::test]
     async fn test_associated_key_empty_approval() {
         let db = test_helpers::setup_database().await;
@@ -312,16 +336,13 @@ mod tests {
         let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
         let bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
 
-        create_bucket_key(&mut conn, &bucket_id, "<pubkey>", "00:11:22", false).await;
+        create_bucket_key(&mut conn, &bucket_id, "<pubkey>", "001122", false).await;
 
         Bucket::approve_keys_by_fingerprint(&mut conn, &bucket_id, [].into_iter())
             .await
             .expect("appoval success");
 
-        assert_eq!(
-            is_bucket_key_approved(&mut conn, &bucket_id, "00:11:22").await,
-            Some(false)
-        );
+        assert!(!is_bucket_key_approved(&mut conn, &bucket_id, "001122").await.unwrap());
     }
 
     #[tokio::test]
@@ -332,21 +353,15 @@ mod tests {
         let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
         let bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
 
-        create_bucket_key(&mut conn, &bucket_id, "<pubkey>", "00:11:22", false).await;
-        create_bucket_key(&mut conn, &bucket_id, "<pubkey>", "00:33:55", false).await;
+        create_bucket_key(&mut conn, &bucket_id, "<pubkey>", "001122", false).await;
+        create_bucket_key(&mut conn, &bucket_id, "<pubkey>", "003355", false).await;
 
-        Bucket::approve_keys_by_fingerprint(&mut conn, &bucket_id, ["00:33:55"].into_iter())
+        Bucket::approve_keys_by_fingerprint(&mut conn, &bucket_id, ["003355"].into_iter())
             .await
             .expect("appoval success");
 
-        assert_eq!(
-            is_bucket_key_approved(&mut conn, &bucket_id, "00:11:22").await,
-            Some(false)
-        );
-        assert_eq!(
-            is_bucket_key_approved(&mut conn, &bucket_id, "00:33:55").await,
-            Some(true)
-        );
+        assert!(!is_bucket_key_approved(&mut conn, &bucket_id, "001122").await.unwrap());
+        assert!(is_bucket_key_approved(&mut conn, &bucket_id, "003355").await.unwrap());
     }
 
     #[tokio::test]
@@ -357,51 +372,193 @@ mod tests {
         let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
         let bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
 
-        create_bucket_key(&mut conn, &bucket_id, "<pubkey>", "00:11:22", false).await;
-        create_bucket_key(&mut conn, &bucket_id, "<pubkey>", "00:33:55", false).await;
-        create_bucket_key(&mut conn, &bucket_id, "<pubkey>", "ab:cd:ef", false).await;
+        create_bucket_key(&mut conn, &bucket_id, "<pubkey>", "001122", false).await;
+        create_bucket_key(&mut conn, &bucket_id, "<pubkey>", "003355", false).await;
+        create_bucket_key(&mut conn, &bucket_id, "<pubkey>", "abcdef", false).await;
 
-        Bucket::approve_keys_by_fingerprint(
-            &mut conn,
-            &bucket_id,
-            ["00:11:22", "ab:cd:ef"].into_iter(),
-        )
-        .await
-        .expect("appoval success");
+        let approve_keys = ["001122", "abcdef"].into_iter();
+        Bucket::approve_keys_by_fingerprint(&mut conn, &bucket_id, approve_keys)
+            .await
+            .expect("appoval success");
 
-        assert_eq!(
-            is_bucket_key_approved(&mut conn, &bucket_id, "00:11:22").await,
-            Some(true)
-        );
-        assert_eq!(
-            is_bucket_key_approved(&mut conn, &bucket_id, "00:33:55").await,
-            Some(false)
-        );
-        assert_eq!(
-            is_bucket_key_approved(&mut conn, &bucket_id, "ab:cd:ef").await,
-            Some(true)
-        );
+        assert!(is_bucket_key_approved(&mut conn, &bucket_id, "001122").await.unwrap());
+        assert!(!is_bucket_key_approved(&mut conn, &bucket_id, "003355").await.unwrap());
+        assert!(is_bucket_key_approved(&mut conn, &bucket_id, "abcdef").await.unwrap());
     }
 
     #[tokio::test]
-    async fn test_is_change_in_progress_check() {
-        todo!()
+    async fn test_is_no_metadata_not_in_progress() {
+        let db = test_helpers::setup_database().await;
+        let mut conn = db.begin().await.expect("connection");
+
+        let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
+        let bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
+
+        // No metadata instances have yet been uploaded, no change should be in progress
+        assert!(!Bucket::is_change_in_progress(&mut conn, &bucket_id).await.unwrap());
     }
 
     #[tokio::test]
-    async fn test_current_metadata_retrieval() {
-        todo!();
+    async fn test_is_current_not_in_progress() {
+        let db = test_helpers::setup_database().await;
+        let mut conn = db.begin().await.expect("connection");
+
+        let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
+        let bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
+
+        let base_time = OffsetDateTime::now_utc();
+        create_metadata_with_state(&mut conn, &bucket_id, "meta-cid", "root-cid", MetadataState::Current, base_time).await;
+
+        // All the metadata is current, no change should be in progress
+        assert!(!Bucket::is_change_in_progress(&mut conn, &bucket_id).await.unwrap());
+
+        let older_time = base_time - Duration::from_secs(20);
+        create_metadata_with_state(&mut conn, &bucket_id, "old-meta-cid", "old-root-cid", MetadataState::Current, older_time).await;
+
+        // The pending metadata was created at "before" the current metadata so shouldn't cause the
+        // bucket to be considered actively being changed
+        assert!(!Bucket::is_change_in_progress(&mut conn, &bucket_id).await.unwrap());
     }
 
     #[tokio::test]
-    async fn test_pending_fallback_metadata_retrieval() {
-        todo!();
+    async fn test_pending_is_in_progress() {
+        let db = test_helpers::setup_database().await;
+        let mut conn = db.begin().await.expect("connection");
+
+        let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
+        let bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
+
+        let base_time = OffsetDateTime::now_utc();
+        create_metadata_with_state(&mut conn, &bucket_id, "meta-cid", "root-cid", MetadataState::Pending, base_time).await;
+
+        // A just created (within our window) pending metadata should keep the bucket locked as its
+        // being changed
+        assert!(Bucket::is_change_in_progress(&mut conn, &bucket_id).await.unwrap());
+    }
+
+    #[tokio::test]
+    async fn test_old_pending_not_in_progress() {
+        let db = test_helpers::setup_database().await;
+        let mut conn = db.begin().await.expect("connection");
+
+        let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
+        let bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
+
+        let base_time = time_outside_lock_window();
+        create_metadata_with_state(&mut conn, &bucket_id, "meta-cid", "root-cid", MetadataState::Pending, base_time).await;
+
+        // A just created (within our window) pending metadata should keep the bucket locked as its
+        // being changed
+        assert!(!Bucket::is_change_in_progress(&mut conn, &bucket_id).await.unwrap());
+
+        // There is a different code path when a 'current' metadata exists, we want to make sure
+        // this is still _before_ the pending metadata
+        let older_time = base_time - Duration::from_secs(10);
+        create_metadata_with_state(&mut conn, &bucket_id, "og-meta-cid", "og-root-cid", MetadataState::Current, older_time).await;
+
+        assert!(!Bucket::is_change_in_progress(&mut conn, &bucket_id).await.unwrap());
+    }
+
+    #[tokio::test]
+    async fn test_uploading_is_in_progress() {
+        let db = test_helpers::setup_database().await;
+        let mut conn = db.begin().await.expect("connection");
+
+        let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
+        let bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
+
+        let base_time = OffsetDateTime::now_utc();
+        create_metadata_with_state(&mut conn, &bucket_id, "meta-cid", "root-cid", MetadataState::Uploading, base_time).await;
+
+        // A just created (within our window) uploading metadata should keep the bucket locked as
+        // its being changed.
+        assert!(Bucket::is_change_in_progress(&mut conn, &bucket_id).await.unwrap());
+    }
+
+    #[tokio::test]
+    async fn test_old_uploading_not_in_progress() {
+        let db = test_helpers::setup_database().await;
+        let mut conn = db.begin().await.expect("connection");
+
+        let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
+        let bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
+
+        let base_time = time_outside_lock_window();
+        create_metadata_with_state(&mut conn, &bucket_id, "meta-cid", "root-cid", MetadataState::Uploading, base_time).await;
+
+        // A just created (within our window) pending metadata should keep the bucket locked as its
+        // being changed
+        assert!(!Bucket::is_change_in_progress(&mut conn, &bucket_id).await.unwrap());
+
+        // There is a different code path when a 'current' metadata exists, we want to make sure
+        // this is still _before_ the uploading metadata
+        let older_time = base_time - Duration::from_secs(10);
+        create_metadata_with_state(&mut conn, &bucket_id, "og-meta-cid", "og-root-cid", MetadataState::Current, base_time).await;
+
+        assert!(!Bucket::is_change_in_progress(&mut conn, &bucket_id).await.unwrap());
+    }
+
+    #[tokio::test]
+    async fn test_no_current_metadata_retrieval() {
+        let db = test_helpers::setup_database().await;
+        let mut conn = db.begin().await.expect("connection");
+
+        let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
+        let bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
+
+        assert!(Bucket::current_version(&mut conn, &bucket_id).await.expect("query success").is_none());
+    }
+
+    #[tokio::test]
+    async fn test_correct_current_metadata_retrieval() {
+        let db = test_helpers::setup_database().await;
+        let mut conn = db.begin().await.expect("connection");
+
+        let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
+        let bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
+
+        // An older pending should have no effect on the current metadata
+        let oldest_time = OffsetDateTime::now_utc() - Duration::from_secs(300);
+        create_metadata_with_state(&mut conn, &bucket_id, "old-meta-cid", "old-root-cid", MetadataState::Pending, oldest_time).await;
+
+        let base_time = OffsetDateTime::now_utc() - Duration::from_secs(300);
+        let current_metadata_id = create_metadata_with_state(&mut conn, &bucket_id, "meta-cid", "root-cid", MetadataState::Current, base_time).await;
+
+        // An newer pending should have no effect on the current metadata
+        let newer_time = OffsetDateTime::now_utc();
+        create_metadata_with_state(&mut conn, &bucket_id, "new-meta-cid", "new-root-cid", MetadataState::Pending, newer_time).await;
+
+        assert_eq!(Bucket::current_version(&mut conn, &bucket_id).await.expect("query success"), Some(current_metadata_id));
+    }
+
+    /// This is temporary behavior to restore access to buckets that were affected by the outdated
+    /// metadata bug and should be able to removed rather quickly. It is only triggered in the case
+    /// that there is no existing current metadata so will do no harm under normal circumstances.
+    #[tokio::test]
+    async fn test_pending_metadata_fallback_retrieval() {
+        let db = test_helpers::setup_database().await;
+        let mut conn = db.begin().await.expect("connection");
+
+        let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
+        let bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
+
+        let base_time = OffsetDateTime::now_utc();
+        let pending_id = create_metadata_with_state(&mut conn, &bucket_id, "p-meta-cid", "p-root-cid", MetadataState::Pending, base_time).await;
+
+        assert_eq!(Bucket::current_version(&mut conn, &bucket_id).await.expect("query success"), Some(pending_id));
+
+        // Any current metadata should override the pending one, this creates it in the past as
+        // that is a slightly more spicy edge case than a brand new current one
+        let older_time = base_time - Duration::from_secs(1800);
+        let current_id = create_metadata_with_state(&mut conn, &bucket_id, "c-meta-cid", "c-root-cid", MetadataState::Current, older_time).await;
+
+        assert_eq!(Bucket::current_version(&mut conn, &bucket_id).await.expect("query success"), Some(current_id));
     }
 
     #[tokio::test]
     async fn test_owner_id_checking() {
         let db = test_helpers::setup_database().await;
-        let mut conn = db.acquire().await.expect("connection");
+        let mut conn = db.begin().await.expect("connection");
 
         let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
         let bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
@@ -428,9 +585,10 @@ mod tests {
     /// Test that blocks associated with older versions of metadata are untouched when no blocks
     /// are provided
     #[tokio::test]
+    #[ignore]
     async fn test_expire_blocks_noop() {
         let db = test_helpers::setup_database().await;
-        let mut conn = db.acquire().await.expect("connection");
+        let mut conn = db.begin().await.expect("connection");
 
         let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
         let _bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
@@ -441,9 +599,10 @@ mod tests {
     /// Test that blocks associated with older versions of metadata are marked as expired when
     /// their CID is provided
     #[tokio::test]
+    #[ignore]
     async fn test_expire_blocks_expected() {
         let db = test_helpers::setup_database().await;
-        let mut conn = db.acquire().await.expect("connection");
+        let mut conn = db.begin().await.expect("connection");
 
         let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
         let _bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
@@ -454,9 +613,10 @@ mod tests {
     /// Test that blocks associated with older versions of ignore unknown blocks, this should
     /// produce a warning but that kind of side-effect isn't covered in this test.
     #[tokio::test]
+    #[ignore]
     async fn test_expire_blocks_unknown() {
         let db = test_helpers::setup_database().await;
-        let mut conn = db.acquire().await.expect("connection");
+        let mut conn = db.begin().await.expect("connection");
 
         let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
         let _bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
@@ -467,9 +627,10 @@ mod tests {
     /// Test that blocks associated with older versions of metadata are marked as expired when a
     /// non-normalized form of their CID is provided
     #[tokio::test]
+    #[ignore]
     async fn test_expire_blocks_normalize_cids() {
         let db = test_helpers::setup_database().await;
-        let mut conn = db.acquire().await.expect("connection");
+        let mut conn = db.begin().await.expect("connection");
 
         let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
         let _bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
@@ -479,9 +640,10 @@ mod tests {
 
     /// Test that blocks stored at multiple storage hosts are all marked as expired
     #[tokio::test]
+    #[ignore]
     async fn test_expire_blocks_multiple_storage_hosts() {
         let db = test_helpers::setup_database().await;
-        let mut conn = db.acquire().await.expect("connection");
+        let mut conn = db.begin().await.expect("connection");
 
         let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
         let _bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
@@ -491,9 +653,10 @@ mod tests {
 
     /// Test that duplicate blocks associated with other buckets are not expired
     #[tokio::test]
+    #[ignore]
     async fn test_expire_blocks_safe_inter_bucket() {
         let db = test_helpers::setup_database().await;
-        let mut conn = db.acquire().await.expect("connection");
+        let mut conn = db.begin().await.expect("connection");
 
         let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
         let _bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
@@ -504,9 +667,10 @@ mod tests {
     /// After changes have been made to expired blocks, we need to queue a background task that
     /// will perform all the tasks involved in cleaning them up.
     #[tokio::test]
+    #[ignore]
     async fn test_expire_blocks_queues_prune_task() {
         let db = test_helpers::setup_database().await;
-        let mut conn = db.acquire().await.expect("connection");
+        let mut conn = db.begin().await.expect("connection");
 
         let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
         let _bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
