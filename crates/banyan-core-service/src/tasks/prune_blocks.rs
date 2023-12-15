@@ -7,7 +7,6 @@ use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use url::Url;
-use uuid::Uuid;
 
 use crate::app::AppState;
 
@@ -18,28 +17,25 @@ pub type PruneBlocksTaskContext = AppState;
 pub enum PruneBlocksTaskError {
     #[error("sql error: {0}")]
     Sqlx(#[from] sqlx::Error),
+
     #[error("reqwest error: {0}")]
     Reqwest(#[from] reqwest::Error),
+
     #[error("jwt error: {0}")]
     Jwt(#[from] jwt_simple::Error),
+
     #[error("http error: {0} response from {1}")]
     Http(http::StatusCode, Url),
 }
 
-#[derive(Deserialize, Serialize, Clone)]
-pub struct PruneBlock {
-    pub normalized_cid: String,
-    pub metadata_id: Uuid,
-}
-
 #[derive(Deserialize, Serialize)]
 pub struct PruneBlocksTask {
-    storage_host_id: Uuid,
-    prune_blocks: Vec<PruneBlock>,
+    storage_host_id: String,
+    prune_blocks: Vec<String>,
 }
 
 impl PruneBlocksTask {
-    pub fn new(storage_host_id: Uuid, prune_blocks: Vec<PruneBlock>) -> Self {
+    pub fn new(storage_host_id: String, prune_blocks: Vec<String>) -> Self {
         Self {
             storage_host_id,
             prune_blocks,
@@ -55,36 +51,33 @@ impl TaskLike for PruneBlocksTask {
     type Context = PruneBlocksTaskContext;
 
     async fn run(&self, _task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
-        let mut db_conn = ctx
-            .database()
-            .acquire()
-            .await
-            .map_err(PruneBlocksTaskError::Sqlx)?;
-        let auth_key = ctx.secrets().service_key();
+        let mut db_conn = ctx.database().acquire().await?;
 
         // Determine where to send the prune list
-        let storage_host_id = self.storage_host_id.to_string();
+        let storage_host_id = self.storage_host_id.clone();
         let storage_host_info = sqlx::query_as!(
             StorageHostInfo,
             "SELECT url, name FROM storage_hosts WHERE id = $1;",
-            storage_host_id
+            storage_host_id,
         )
         .fetch_one(&mut *db_conn)
-        .await
-        .map_err(PruneBlocksTaskError::Sqlx)?;
+        .await?;
+
         let storage_host_url = Url::parse(&storage_host_info.url)
             .map_err(|_| PruneBlocksTaskError::Sqlx(sqlx::Error::RowNotFound))?;
         let storage_host_url = storage_host_url
             .join("/api/v1/core/prune")
             .map_err(|_| PruneBlocksTaskError::Sqlx(sqlx::Error::RowNotFound))?;
 
+        let auth_key = ctx.secrets().service_key();
+
         // Construct the client to handle the prune request
         let mut default_headers = HeaderMap::new();
         default_headers.insert("Content-Type", HeaderValue::from_static("application/json"));
         let client = Client::builder()
             .default_headers(default_headers)
-            .build()
-            .map_err(PruneBlocksTaskError::Reqwest)?;
+            .build()?;
+
         let mut claims = Claims::create(Duration::from_secs(60))
             .with_audiences(HashSet::from_strings(&[storage_host_info.name]))
             .with_subject("banyan-core")

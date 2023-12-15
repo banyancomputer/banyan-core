@@ -1,4 +1,5 @@
 use std::time::Duration;
+use std::collections::{HashMap, HashSet};
 
 use banyan_task::TaskLikeExt;
 use sqlx::QueryBuilder;
@@ -6,7 +7,7 @@ use time::OffsetDateTime;
 
 use crate::database::models::{BucketType, MinimalBlockLocation, StorageClass};
 use crate::database::DatabaseConnection;
-use crate::tasks::{PruneBlock, PruneBlocksTask};
+use crate::tasks::PruneBlocksTask;
 
 /// Used to prevent writes of new metadata versions when there is a newer metadata currently being
 /// written. This protection is needed until we can handle merge conflicts and resolve the rapid
@@ -95,12 +96,12 @@ impl Bucket {
         conn: &mut DatabaseConnection,
         bucket_id: &str,
         block_list: impl IntoIterator<Item = &str>,
-    ) -> Result<u64, sqlx::Error> {
+    ) -> Result<(u64, u64), sqlx::Error> {
         let mut block_iter = block_list.into_iter().peekable();
 
         // Short circuit if there are no blocks to expire
         if block_iter.peek().is_none() {
-            return Ok(0);
+            return Ok((0, 0));
         }
 
         let mut expired_associations = Vec::new();
@@ -147,36 +148,78 @@ impl Bucket {
         // Another short circuit so we know there will be at least one location getting marked for
         // expiration in the following query
         if expired_associations.is_empty() {
-            return Ok(0);
+            return Ok((0, 0));
         }
 
         let mut total_rows_expired = 0;
+        let mut total_rows_pruned = 0;
+
+        let mut prune_lists: HashMap<String, HashSet<String>> = HashMap::new();
 
         // Note: while we're using the same chunk limit, we have 3x the number of binds in this
         // query. This is safe since this limit is far below the threshold that will cause issues.
         for expired_chunk in expired_associations.chunks(DATABASE_CHUNK_LIMIT) {
-            let mut query_builder = sqlx::QueryBuilder::new(
+            let mut expire_builder = sqlx::QueryBuilder::new(
                 r#"UPDATE block_locations SET expired_at = DATETIME('now')
                        WHERE (block_id, metadata_id, storage_host_id) IN (VALUES "#
             );
 
-            query_builder.push_tuples(expired_chunk, |mut b, location| {
+            let mut prune_candidate_builder = sqlx::QueryBuilder::new(
+                r#"SELECT storage_host_id,block_id FROM
+                       block_locations WHERE (block_id, storage_host_id)
+                           IN (VALUES "#
+            );
+
+            expire_builder.push_tuples(expired_chunk, |mut b, location| {
                 b.push_bind(&location.block_id);
                 b.push_bind(&location.metadata_id);
                 b.push_bind(&location.storage_host_id);
             });
 
-            query_builder.push(");");
+            prune_candidate_builder.push_tuples(expired_chunk, |mut b, location| {
+                b.push_bind(&location.block_id);
+                b.push_bind(&location.metadata_id);
+                b.push_bind(&location.storage_host_id);
+            });
 
-            let query = query_builder.build().persistent(false);
-            let query_result = query.execute(&mut *conn).await?;
+            expire_builder.push(");");
+            prune_candidate_builder.push(") GROUP BY (block_id, storage_host_id) HAVING COUNT(*) > 1;");
 
-            total_rows_expired += query_result.rows_affected();
+            let expire_query = expire_builder.build().persistent(false);
+            let expire_query_result = expire_query.execute(&mut *conn).await?;
+            total_rows_expired += expire_query_result.rows_affected();
+
+            let prune_candidate_query = prune_candidate_builder
+                .build_query_as::<PruneCandidate>()
+                .persistent(false);
+
+            let prune_candidates = prune_candidate_query.fetch_all(&mut *conn).await?;
+            total_rows_pruned += prune_candidates.len();
+
+            for candidate in prune_candidates.into_iter() {
+                prune_lists
+                    .entry(candidate.storage_host_id)
+                    .or_default()
+                    .insert(candidate.block_id);
+            }
         }
 
-        // todo: Need to queue a prune block task
+        for (storage_host_id, block_set) in prune_lists.into_iter() {
+            let block_list = block_set.into_iter().collect::<Vec<_>>();
 
-        Ok(total_rows_expired)
+            let queue_result = PruneBlocksTask::new(storage_host_id, block_list)
+                .enqueue_with_connection::<banyan_task::SqliteTaskStore>(&mut *conn)
+                .await;
+
+            // A future clean up task can always come back through and catch any blocks not missed.
+            // We want to know if the queueing fails, but its not critical enough to abort the
+            // expiration transaction.
+            if let Err(err) = queue_result {
+                tracing::warn!("failed to queue prune block task: {err}");
+            }
+        }
+
+        Ok((total_rows_expired, total_rows_pruned as u64))
     }
 
     /// When a new metadata is pushed to this service we mark it as pending until we receive
@@ -277,6 +320,12 @@ impl Bucket {
 
         Ok(found_bucket.is_some())
     }
+}
+
+#[derive(sqlx::FromRow)]
+struct PruneCandidate {
+    storage_host_id: String,
+    block_id: String,
 }
 
 #[cfg(test)]

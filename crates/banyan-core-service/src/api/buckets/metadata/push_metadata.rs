@@ -471,14 +471,6 @@ fn validate_field(
 //
 //    // Create background tasks for our storage hosts to notify them to prune blocks
 //    for (storage_host_id, prune_blocks) in prune_blocks_tasks_map {
-//        PruneBlocksTask::new(storage_host_id, prune_blocks)
-//            .enqueue_with_connection::<banyan_task::SqliteTaskStore>(&mut transaction)
-//            .await
-//            .map_err(PushMetadataError::UnableEnqueuePruneBlocksTask)?;
-//
-//        Queue::name("default")
-//            .metrics::<banyan_task::SqliteTaskStore>(&mut transaction)
-//            .await?;
 //    }
 //
 //    // Commit the txn
