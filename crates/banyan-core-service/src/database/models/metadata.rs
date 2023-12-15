@@ -34,6 +34,13 @@ impl NewMetadata<'_> {
 pub struct Metadata;
 
 impl Metadata {
+    /// Retrieve's the bucket ID associated with the provided metadata ID.
+    pub async fn get_bucket_id(conn: &mut DatabaseConnection, metadata_id: &str) -> Result<String, sqlx::Error> {
+        sqlx::query_scalar!("SELECT bucket_id FROM metadata WHERE id = $1;", metadata_id)
+            .fetch_one(&mut *conn)
+            .await
+    }
+
     /// Upgrades a particular metadata version from pending or uploading to the current version.
     /// This method does not allow downgrading and will make no changes if the provided metadata
     /// doesn't match what we're expecting.
@@ -42,14 +49,16 @@ impl Metadata {
         conn: &mut DatabaseConnection,
         bucket_id: &str,
         metadata_id: &str,
+        data_size: Option<i64>,
     ) -> Result<(), sqlx::Error> {
         let current_result = sqlx::query!(
-            "UPDATE metadata SET state = 'current'
+            "UPDATE metadata SET state = 'current', data_size = $3
                  WHERE bucket_id = $1
                      AND id = $2
                      AND state IN ('pending', 'uploading');",
             bucket_id,
             metadata_id,
+            data_size,
         )
         .execute(&mut *conn)
         .await?;
@@ -133,17 +142,17 @@ mod tests {
         let bucket_id = sample_bucket(&mut conn, &user_id).await;
 
         let pending_metadata_id = pending_metadata(&mut conn, &bucket_id, 1).await;
-        Metadata::mark_current(&mut conn, &bucket_id, &pending_metadata_id).await.expect("marking current");
+        Metadata::mark_current(&mut conn, &bucket_id, &pending_metadata_id, None).await.expect("marking current");
         assert_metadata_in_state(&mut conn, &pending_metadata_id, MetadataState::Current).await;
 
         let uploading_metadata_id = sample_metadata(&mut conn, &bucket_id, 1, MetadataState::Uploading).await;
-        Metadata::mark_current(&mut conn, &bucket_id, &uploading_metadata_id).await.expect("marking current");
+        Metadata::mark_current(&mut conn, &bucket_id, &uploading_metadata_id, Some(1000)).await.expect("marking current");
         assert_metadata_in_state(&mut conn, &uploading_metadata_id, MetadataState::Current).await;
         assert_metadata_in_state(&mut conn, &pending_metadata_id, MetadataState::Outdated).await;
 
         // The metadata is already outdated, it shouldn't be capable of becoming the current
         // metadata.
-        let result = Metadata::mark_current(&mut conn, &bucket_id, &pending_metadata_id).await;
+        let result = Metadata::mark_current(&mut conn, &bucket_id, &pending_metadata_id, None).await;
         assert!(result.is_err());
         assert_metadata_in_state(&mut conn, &pending_metadata_id, MetadataState::Outdated).await;
     }
@@ -156,7 +165,7 @@ mod tests {
         let user_id = sample_user(&mut conn, "user@domain.tld").await;
         let bucket_id = sample_bucket(&mut conn, &user_id).await;
 
-        let result = Metadata::mark_current(&mut conn, &bucket_id, "fake-id").await;
+        let result = Metadata::mark_current(&mut conn, &bucket_id, "fake-id", None).await;
         assert!(result.is_err());
     }
 }

@@ -184,7 +184,7 @@ pub async fn handler(
     }
 
     if request_data.expected_data_size == 0 {
-        Metadata::mark_current(&mut conn, &bucket_id, &metadata_id).await?;
+        Metadata::mark_current(&mut conn, &bucket_id, &metadata_id, None).await?;
         let resp_msg = serde_json::json!({"id": metadata_id, "state": "current"});
         return Ok((StatusCode::OK, Json(resp_msg)).into_response());
     }
@@ -217,7 +217,7 @@ pub async fn handler(
         .await?;
 
         let mut ticket_builder = StorageTicketBuilder::new(user.ticket_subject());
-        ticket_builder.add_audience(user.ticket_subject());
+        ticket_builder.add_audience(storage_host.name);
         ticket_builder.add_authorization(
             storage_grant_id,
             storage_host.url.clone(),

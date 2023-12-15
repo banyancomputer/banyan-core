@@ -119,14 +119,6 @@ pub(crate) async fn create_user(
     .expect("user creation")
 }
 
-pub(crate) async fn current_metadata(
-    conn: &mut DatabaseConnection,
-    bucket_id: &str,
-    counter: usize,
-) -> String {
-    sample_metadata(conn, bucket_id, counter, MetadataState::Current).await
-}
-
 pub(crate) async fn pending_metadata(
     conn: &mut DatabaseConnection,
     bucket_id: &str,
