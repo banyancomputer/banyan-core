@@ -7,10 +7,41 @@ pub struct PendingExpiration;
 
 impl PendingExpiration {
     pub async fn record_pending_block_expirations(
-        _conn: &mut DatabaseConnection,
-        _metadata_id: &str,
-        _block_cids: impl IntoIterator<Item = &str>,
+        conn: &mut DatabaseConnection,
+        metadata_id: &str,
+        block_cids: impl IntoIterator<Item = &str>,
     ) -> Result<(), sqlx::Error> {
-        todo!()
+        let mut block_id_builder = sqlx::QueryBuilder::new(
+            r#"SELECT b.id FROM blocks AS b
+                  JOIN block_locations AS bl ON bl.block_id = b.id
+                  WHERE bl.metadata_id = $1
+                      AND b.cid IN ("#,
+        );
+
+        let mut block_cid_iterator = block_cids.into_iter().peekable();
+        while let Some(cid) = block_cid_iterator.next() {
+            block_id_builder.push_bind(cid);
+
+            if block_cid_iterator.peek().is_some() {
+                block_id_builder.push(", ");
+            }
+        }
+
+        block_id_builder.push(");");
+        let block_ids: Vec<String> = block_id_builder.build_query_scalar().persistent(false).fetch_all(&mut *conn).await?;
+
+        let mut pending_association_query = sqlx::QueryBuilder::new(
+            "INSERT INTO pending_expirations (metadata_id, block_id) VALUES (",
+        );
+
+        pending_association_query.push_tuples(block_ids, |mut paq, bid| {
+            paq.push_bind(&metadata_id);
+            paq.push_bind(bid);
+        });
+
+        pending_association_query.push(");");
+        pending_association_query.build().execute(&mut *conn).await?;
+
+        Ok(())
     }
 }
