@@ -20,7 +20,7 @@ clean:
 		crates/banyan-staging-service/data/uploads/*
 	rm -rf crates/banyan-storage-provider-service/data/serv* \
 		crates/banyan-storage-provider-service/data/platform* \
-		crates/banyan-storage-provider-service/data/uploads/* \
+		crates/banyan-storage-provider-service/data/uploads/* 
 
 .PHONY: fmt
 fmt:
@@ -101,13 +101,13 @@ minio_root_user = ROOTUSER
 minio_root_password = INSECURE
 
 .PHONY: run-minio \
-		stop-minio \
-		rm-minio-volume \
-		create-minio-staging-bucket \
-	 	create-minio-storage-provider-bucket \
-	 	create-minio-volume \
-		insure-minio-container-exists \
-		create-minio-container start-minio-container
+	stop-minio \
+	rm-minio-volume \
+	create-minio-staging-bucket \
+	create-minio-storage-provider-bucket \
+	create-minio-volume \
+	insure-minio-container-exists \
+	create-minio-container start-minio-container
 
 # safely start the minio container
 run-minio: start-minio-container

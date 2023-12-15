@@ -551,7 +551,6 @@ dependencies = [
 name = "banyan-object-store"
 version = "0.1.0"
 dependencies = [
- "axum",
  "itertools 0.11.0",
  "object_store",
  "serde_json",
@@ -582,7 +581,6 @@ dependencies = [
  "jwt-simple",
  "mime",
  "multer",
- "object_store",
  "pico-args",
  "regex",
  "reqwest",
@@ -622,7 +620,6 @@ dependencies = [
  "jwt-simple",
  "mime",
  "multer",
- "object_store",
  "pico-args",
  "rand 0.8.5",
  "regex",

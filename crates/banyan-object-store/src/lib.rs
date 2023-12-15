@@ -2,14 +2,13 @@ use std::convert::TryFrom;
 use std::ops::Deref;
 use std::path::PathBuf;
 
-use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response};
-use axum::Json;
 use itertools::Itertools;
 use object_store::aws::AmazonS3;
 pub use object_store::aws::AmazonS3Builder;
 use object_store::local::LocalFileSystem;
 use url::Url;
+
+pub use object_store::Error as ObjectStoreError;
 
 #[derive(Debug, Clone)]
 pub enum ObjectStoreConnection {
@@ -122,6 +121,8 @@ pub enum ObjectStore {
     S3(AmazonS3),
 }
 
+pub type ObjectStorePath = object_store::path::Path;
+
 impl Deref for ObjectStore {
     type Target = dyn object_store::ObjectStore;
 
@@ -172,23 +173,6 @@ pub enum ObjectStoreConnectionError {
     HostNotRecognized(String),
 }
 
-#[derive(Debug, thiserror::Error)]
-pub enum ObjectStoreError {
-    #[error("unable to access upload store: {0}")]
-    ObjectStore(#[from] object_store::Error),
-}
-
-impl IntoResponse for ObjectStoreError {
-    fn into_response(self) -> Response {
-        match self {
-            ObjectStoreError::ObjectStore(err) => {
-                tracing::error!(err = ?err, "configured object store is inaccessible");
-                let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
-            }
-        }
-    }
-}
 
 #[cfg(test)]
 mod test {
