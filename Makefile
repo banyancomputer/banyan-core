@@ -2,14 +2,6 @@
 .PHONY: default
 default: build
 
-.PHONY: fmt
-fmt:
-	cargo +nightly fmt --all
-
-.PHONY: clippy
-clippy:
-	cargo +nightly clippy --all
-
 .PHONY: build
 build:
 	cargo build --workspace
@@ -37,6 +29,10 @@ fmt:
 .PHONY: fmt-check
 fmt-check:
 	cargo +nightly fmt --all -- --check
+
+.PHONY: clippy
+clippy:
+	cargo +nightly clippy --all
 
 # generate authentication keys
 # =========================================================================== #

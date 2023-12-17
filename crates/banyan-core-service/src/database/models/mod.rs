@@ -9,6 +9,7 @@ mod escrowed_device;
 mod metadata_state;
 mod partial_metadata_with_snapshot;
 mod snapshot;
+mod snapshot_state;
 mod storage_class;
 mod user;
 
@@ -24,5 +25,6 @@ pub use escrowed_device::EscrowedDevice;
 pub use metadata_state::MetadataState;
 pub use partial_metadata_with_snapshot::PartialMetadataWithSnapshot;
 pub use snapshot::Snapshot;
+pub use snapshot_state::SnapshotState;
 pub use storage_class::StorageClass;
 pub use user::User;

@@ -3,7 +3,7 @@ mod email;
 mod prune_blocks;
 
 use banyan_task::{QueueConfig, SqliteTaskStore, WorkerPool};
-pub use create_deals::{CreateDealsTask, CreateDealsTaskError};
+pub use create_deals::CreateDealsTask;
 #[allow(unused_imports)]
 pub use email::{
     EmailTaskContext, EmailTaskError, GaReleaseEmailTask, PaymentFailedEmailTask,

@@ -5,6 +5,7 @@ use http::StatusCode;
 use uuid::Uuid;
 
 use crate::app::AppState;
+use crate::database::models::DealState;
 use crate::extractors::StorageProviderIdentity;
 
 pub async fn handler(
@@ -14,11 +15,15 @@ pub async fn handler(
 ) -> Response {
     let database = state.database();
     let deal_id = deal_id.to_string();
+    let accepted_state = DealState::Accepted.to_string();
+    let active_state = DealState::Active.to_string();
 
     let query_result = sqlx::query!(
-        r#"UPDATE deals SET state = 'accepted', accepted_by=$1, accepted_at=DATETIME('now') WHERE id = $3 AND state == 'active';"#,
+        r#"UPDATE deals SET state =$1, accepted_by=$2, accepted_at=DATETIME('now') WHERE id = $3  AND state == $4;"#,
+        accepted_state,
         storage_provider.id,
         deal_id,
+        active_state
     )
         .execute(&database)
         .await;

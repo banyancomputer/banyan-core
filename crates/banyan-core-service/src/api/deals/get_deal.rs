@@ -6,7 +6,7 @@ use uuid::Uuid;
 
 use crate::api::models::ApiDeal;
 use crate::app::AppState;
-use crate::database::models::Deal;
+use crate::database::models::{Deal, DealState};
 use crate::extractors::StorageProviderIdentity;
 
 pub async fn handler(
@@ -16,11 +16,12 @@ pub async fn handler(
 ) -> Response {
     let database = state.database();
     let deal_id = deal_id.to_string();
-
+    let active = DealState::Active.to_string();
     let query_result = sqlx::query_as!(
         Deal,
-        r#"SELECT * from deals WHERE id = $1 AND (state='active' OR accepted_by=$2);"#,
+        r#"SELECT * from deals WHERE id = $1 AND (state=$2 OR accepted_by=$3);"#,
         deal_id,
+        active,
         storage_provider.id
     )
     .fetch_one(&database)

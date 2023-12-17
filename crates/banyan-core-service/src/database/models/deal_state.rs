@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Deserialize, Serialize, sqlx::Type)]
@@ -20,5 +22,20 @@ impl From<String> for DealState {
             "cancelled" => DealState::Cancelled,
             _ => panic!("invalid bucket type"),
         }
+    }
+}
+impl Display for DealState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                DealState::Active => "active",
+                DealState::Accepted => "accepted",
+                DealState::Sealed => "sealed",
+                DealState::Finalized => "finalized",
+                DealState::Cancelled => "cancelled",
+            }
+        )
     }
 }
