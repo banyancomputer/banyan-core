@@ -1,6 +1,8 @@
 mod bucket;
 mod bucket_key;
 mod bucket_type;
+mod deal;
+mod deal_state;
 mod email_message;
 mod email_message_state;
 mod escrowed_device;
@@ -13,6 +15,8 @@ mod user;
 pub use bucket::Bucket;
 pub use bucket_key::BucketKey;
 pub use bucket_type::BucketType;
+pub use deal::Deal;
+pub use deal_state::DealState;
 #[allow(unused)]
 pub use email_message::EmailMessage;
 pub use email_message_state::EmailMessageState;

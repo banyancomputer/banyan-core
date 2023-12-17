@@ -2,6 +2,14 @@
 .PHONY: default
 default: build
 
+.PHONY: fmt
+fmt:
+	cargo +nightly fmt --all
+
+.PHONY: clippy
+clippy:
+	cargo +nightly clippy --all
+
 .PHONY: build
 build:
 	cargo build --workspace

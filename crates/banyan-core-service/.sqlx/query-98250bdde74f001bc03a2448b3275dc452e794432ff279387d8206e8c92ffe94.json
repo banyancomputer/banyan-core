@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT s.* FROM snapshots AS s\n             JOIN metadata AS m ON s.metadata_id = m.id\n             JOIN buckets AS b ON m.bucket_id = b.id\n             WHERE b.user_id = $1 AND m.bucket_id = $2;",
+  "query": "SELECT * FROM deals where state='active';",
   "describe": {
     "columns": [
       {
@@ -9,19 +9,19 @@
         "type_info": "Text"
       },
       {
-        "name": "metadata_id",
+        "name": "state",
         "ordinal": 1,
         "type_info": "Text"
       },
       {
-        "name": "state",
+        "name": "accepted_by",
         "ordinal": 2,
         "type_info": "Text"
       },
       {
-        "name": "size",
+        "name": "accepted_at",
         "ordinal": 3,
-        "type_info": "Int64"
+        "type_info": "Datetime"
       },
       {
         "name": "created_at",
@@ -29,22 +29,22 @@
         "type_info": "Datetime"
       },
       {
-        "name": "deal_id",
+        "name": "updated_at",
         "ordinal": 5,
-        "type_info": "Text"
+        "type_info": "Datetime"
       }
     ],
     "parameters": {
-      "Right": 2
+      "Right": 0
     },
     "nullable": [
       false,
       false,
-      false,
+      true,
       true,
       false,
-      true
+      false
     ]
   },
-  "hash": "a4e603a1e0c613a1b1c2c5734a73d61102c841ddd9a0b744dcdf076afefe3048"
+  "hash": "98250bdde74f001bc03a2448b3275dc452e794432ff279387d8206e8c92ffe94"
 }
