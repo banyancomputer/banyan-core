@@ -8,7 +8,7 @@ use tower_http::cors::CorsLayer;
 mod blocks;
 mod client_grant;
 mod prune_blocks;
-mod upload;
+pub(crate) mod upload;
 
 use crate::app::AppState;
 

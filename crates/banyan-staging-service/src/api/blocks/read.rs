@@ -95,7 +95,7 @@ pub async fn block_from_normalized_cid(
                 SELECT
                         blocks.id AS id,
                         clients.platform_id AS platform_id,
-                        uploads.block_locations AS block_locations,
+                        uploads.blocks_path AS blocks_path,
                         uploads_blocks.byte_offset AS byte_offset,
                         blocks.data_length AS length
                     FROM blocks
