@@ -1,7 +1,7 @@
-import React, { lazy, useEffect } from 'react';
-import { useLocation, useNavigate, useRoutes } from 'react-router-dom';
+import { lazy } from 'react';
+import { useRoutes } from 'react-router-dom';
 
-const Buckets = lazy(() => import('@app/pages/buckets'));
+const Home = lazy(() => import('@app/pages/home'));
 const Bucket = lazy(() => import('@app/pages/bucket'));
 const Account = lazy(() => import('@app/pages/account'));
 const RegisterDevice = lazy(() => import('@app/pages/registerDevice'));
@@ -34,7 +34,7 @@ class Route {
  * RoutesConfig contains information about all routes and subroutes.
  */
 export class RoutesConfig {
-    public static Buckets = new Route('/', <Buckets />);
+    public static Home = new Route('/', <Home />);
     public static Bucket = new Route('/drive/:id', <Bucket />);
     public static Account = new Route('/account', <Account />);
     public static RegisterDevice = new Route('/register-device/:spki', <RegisterDevice />);
@@ -45,7 +45,7 @@ export class RoutesConfig {
 
     /** Routes is an array of logical router components */
     public static routes: Route[] = [
-        RoutesConfig.Buckets,
+        RoutesConfig.Home,
         RoutesConfig.Bucket,
         RoutesConfig.RegisterDevice,
         RoutesConfig.Account.addChildren([

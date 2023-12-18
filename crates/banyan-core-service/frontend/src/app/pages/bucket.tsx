@@ -33,7 +33,7 @@ const Bucket = () => {
     }, []);
 
     return (
-        <section className="py-9 px-4">
+        <section className="py-9 px-4 flex flex-col max-h-[calc(100vh-132px)]">
             <BucketHeader />
             <Fallback shouldRender={!areBucketsLoading}>
                 {selectedBucket &&
