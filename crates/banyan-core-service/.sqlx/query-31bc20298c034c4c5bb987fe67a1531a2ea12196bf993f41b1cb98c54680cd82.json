@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT d.id, d.state, m.data_size AS size\n            FROM deals AS d\n            JOIN main.snapshots s on d.id = s.deal_id\n            JOIN main.metadata m on m.id = s.metadata_id\n            WHERE d.state=$1;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "state",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "size",
+        "ordinal": 2,
+        "type_info": "Int64"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "31bc20298c034c4c5bb987fe67a1531a2ea12196bf993f41b1cb98c54680cd82"
+}

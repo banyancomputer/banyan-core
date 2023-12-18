@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "INSERT INTO deals (state, accepted_by, accepted_at) VALUES ($1, $2, datetime('now')) RETURNING id;",
+  "query": "INSERT INTO deals (state, accepted_by, accepted_at) VALUES ($1, $2, DATETIME('now')) RETURNING id;",
   "describe": {
     "columns": [
       {
@@ -16,5 +16,5 @@
       false
     ]
   },
-  "hash": "6fde42329e3bd43fe871d14069c19070d9411d99fdc3d59d363fbba34d2f7302"
+  "hash": "80a54510e0d9c2ba74ae38244c31e5d50321fc1abe24c6239b93c534e35ea2d6"
 }

@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO snapshots (metadata_id, state)\n                   VALUES ($1, $2)\n                   RETURNING id;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "22aec933878c11d07246aaeb29b0e9324f70b076c0ea39dcc1b444a43a2cce47"
+}
