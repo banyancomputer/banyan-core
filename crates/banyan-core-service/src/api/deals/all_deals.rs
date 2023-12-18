@@ -57,7 +57,7 @@ mod tests {
         ];
         let mut deal_ids = Vec::new();
         for deal_state in deal_states.into_iter() {
-            let deal_id = test_helpers::create_deal(&db, deal_state, None)
+            let deal_id = test_helpers::create_deal(db, deal_state, None)
                 .await
                 .unwrap();
             deal_ids.push(deal_id);

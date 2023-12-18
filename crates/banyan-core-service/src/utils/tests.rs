@@ -34,5 +34,5 @@ pub async fn deserialize_response<T: for<'de> serde::Deserialize<'de>, E: std::f
 ) -> T {
     let res = res.unwrap();
     let body = hyper::body::to_bytes(res.into_body()).await.unwrap();
-    return serde_json::from_slice(&body).unwrap();
+    serde_json::from_slice(&body).unwrap()
 }
