@@ -31,39 +31,38 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const [tableScroll, setTableScroll] = useState(0);
     const folderLocation = useFolderLocation();
     const [areFilesDropped, setAreFilesDropped] = useState(false);
-    const siblingFiles = useMemo(() => bucketCopy.files?.filter(file => file.type !== 'dir').map(file => file.name), [bucketCopy.files])
+    const siblingFiles = useMemo(() => bucketCopy.files?.filter(file => file.type !== 'dir').map(file => file.name), [bucketCopy.files]);
 
     const sort = (criteria: string) => {
         setSortState(prev => ({ criteria, direction: prev.direction === 'ASC' ? 'DESC' : 'ASC' }));
     };
 
-    const handleDrop = async (event: React.DragEvent<HTMLDivElement>) => {
+    const handleDrop = async(event: React.DragEvent<HTMLDivElement>) => {
         preventDefaultDragAction(event);
 
         if (event?.dataTransfer.files.length) {
             setFiles(Array.from(event.dataTransfer.files).map(file => ({ file, isUploaded: false })));
             setAreFilesDropped(true);
+
             return;
         }
 
         const dragData = event.dataTransfer.getData('browserObject');
         if (dragData) {
-            const droppedItem: { item: BrowserObject, path: string[] } = JSON.parse(dragData);
+            const droppedItem: { item: BrowserObject; path: string[] } = JSON.parse(dragData);
 
-            if (!droppedItem.path.length) return;
+            if (!droppedItem.path.length) { return; }
 
             await moveTo(bucket, [...droppedItem.path, droppedItem.item.name], [droppedItem.item.name]);
             ToastNotifications.notify(`${messages.fileWasMoved}`, <Done width="20px" height="20px" />);
             await getSelectedBucketFiles([]);
-
-            return;
         }
     };
 
     useEffect(() => {
-        if (!files.length || !areFilesDropped) return;
+        if (!files.length || !areFilesDropped) { return; }
 
-        (async () => {
+        (async() => {
             try {
                 ToastNotifications.uploadProgress();
                 await uploadFiles(bucket, folderLocation);
@@ -72,14 +71,14 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                 setAreFilesDropped(false);
                 ToastNotifications.error(`${messages.uploadError}`, `${messages.tryAgain}`, () => { });
             }
-        })()
+        })();
     }, [files, areFilesDropped]);
 
     useEffect(() => {
-        if (!bucket.files) return;
+        if (!bucket.files) { return; }
         setBucketCopy(bucket => ({
             ...bucket,
-            files: [...bucket.files].sort((prev: BrowserObject, next: BrowserObject) => sortFiles(prev, next, sortState.criteria, sortState.direction !== 'ASC')).sort(sortByType)
+            files: [...bucket.files].sort((prev: BrowserObject, next: BrowserObject) => sortFiles(prev, next, sortState.criteria, sortState.direction !== 'ASC')).sort(sortByType),
         }));
     }, [sortState.criteria, sortState.direction, bucket]);
 
@@ -106,7 +105,7 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
             ref={tableRef}
             onDrop={handleDrop}
             onDragOver={preventDefaultDragAction}
-            className={`h-full w-fit overflow-x-auto bg-secondaryBackground border-2 border-border-regular rounded-xl shadow-common`}
+            className="h-full w-fit overflow-x-auto bg-secondaryBackground border-2 border-border-regular rounded-xl shadow-common"
         >
             <div className="px-6 py-5 text-m font-semibold border-b-2 border-border-regular">
                 {`${messages.files}`}

@@ -1,4 +1,4 @@
-import { convertFileSize } from "@app/utils/storage";
+import { convertFileSize } from '@app/utils/storage';
 
 describe(
     'storage',

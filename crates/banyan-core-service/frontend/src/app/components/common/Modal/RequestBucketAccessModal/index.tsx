@@ -10,9 +10,8 @@ export const RequestBucketAccessModal: React.FC<{ bucket: Bucket }> = ({ bucket 
     const { messages } = useIntl();
     const { closeModal } = useModal();
 
-    const requestAccess = async () => {
+    const requestAccess = async() => {
         try {
-
             closeModal();
         } catch (error: any) { }
     };
@@ -39,5 +38,5 @@ export const RequestBucketAccessModal: React.FC<{ bucket: Bucket }> = ({ bucket 
                 />
             </div>
         </div>
-    )
-}
+    );
+};

@@ -1,5 +1,5 @@
-import { RawUser } from "@app/types";
-import { APIClient } from "./http";
+import { RawUser } from '@app/types';
+import { APIClient } from './http';
 
 export class UserClient extends APIClient {
     public async getCurrentUser(): Promise<RawUser> {
@@ -8,6 +8,7 @@ export class UserClient extends APIClient {
         if (!response.ok) {
             await this.handleError(response);
         }
+
         return await response.json();
     }
 };
