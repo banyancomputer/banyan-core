@@ -37,14 +37,14 @@ export class DealsClient extends APIClient {
         }
     };
 
-    public async downloadDeal(id: string): Promise<any> {
-        const response = await this.http.get(`${this.ROOT_PATH}/api/v1/deals/${id}/download`)
+    public async downloadDeal(id: string): Promise<Blob> {
+        const response = await this.http.get(`${this.ROOT_PATH}/api/v1/deals/${id}/download`, undefined, { 'Content-Type': 'application/vnd.ipld.car'})
 
         if (!response.ok) {
             await this.handleError(response);
         }
 
-        return await response.json()
+        return await response.blob();
     };
 
     public async proofDeal(id: string): Promise<void> {
