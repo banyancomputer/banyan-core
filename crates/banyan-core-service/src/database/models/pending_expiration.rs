@@ -66,3 +66,30 @@ impl PendingExpiration {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    #[tokio::test]
+    #[ignore]
+    async fn test_empty_block_associations() {
+        todo!()
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn test_unknown_block_associations() {
+        todo!()
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn test_multiple_storage_host_expiration() {
+        todo!()
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn test_unlisted_blocks_are_unaffected() {
+        todo!()
+    }
+}

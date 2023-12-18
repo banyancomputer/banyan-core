@@ -90,7 +90,12 @@ impl Bucket {
     /// * This expects that all CIDs in the block_list have already been normalized by
     ///   `crate::utils::normalize_cid`.
     ///
-    /// Returns the number of rows that were expired.
+    /// Returns a tuple of the number of rows expired and the number of rows that are ready to be
+    /// pruned. If a block has a single owner and it gets expired, that block is a candidate for
+    /// pruning. If a block has multiple owners, and this association expires all of them or any
+    /// remaining ones, the block will become a candidate for pruning as well. A block is only
+    /// _not_ a candidate for pruning if there are multiple owners and at least one of the
+    /// associations _is not expired_.
     #[tracing::instrument(skip(conn, block_list))]
     pub async fn expire_blocks(
         conn: &mut DatabaseConnection,
@@ -106,7 +111,6 @@ impl Bucket {
 
         let mut expired_associations = Vec::new();
         while block_iter.peek().is_some() {
-            // Distinct is needed here as a block may live at multiple storage providers
             let mut query_builder = sqlx::QueryBuilder::new(
                 r#"SELECT bl.metadata_id AS metadata_id, bl.block_id AS block_id, bl.storage_host_id AS storage_host_id FROM block_locations AS bl
                        JOIN blocks AS b ON b.id = bl.block_id
@@ -765,4 +769,100 @@ mod tests {
                 .expect("query success");
         assert!(!unknown_bucket_owner);
     }
+
+	/// Test that blocks associated with older versions of metadata are untouched when no blocks
+	/// are provided
+	#[tokio::test]
+	#[ignore]
+	async fn test_expire_blocks_noop() {
+		let db = setup_database().await;
+		let mut conn = db.begin().await.expect("connection");
+
+		let user_id = sample_user(&mut conn, "user@domain.tld").await;
+		let _bucket_id = sample_bucket(&mut conn, &user_id).await;
+
+		todo!()
+	}
+
+	/// Test that blocks associated with older versions of metadata are marked as expired when
+	/// their CID is provided
+	#[tokio::test]
+	#[ignore]
+	async fn test_expire_blocks_expected() {
+		let db = setup_database().await;
+		let mut conn = db.begin().await.expect("connection");
+
+		let user_id = sample_user(&mut conn, "user@domain.tld").await;
+		let _bucket_id = sample_bucket(&mut conn, &user_id).await;
+
+		todo!()
+	}
+
+	/// Test that blocks associated with older versions of ignore unknown blocks, this should
+	/// produce a warning but that kind of side-effect isn't covered in this test.
+	#[tokio::test]
+	#[ignore]
+	async fn test_expire_blocks_unknown() {
+		let db = setup_database().await;
+		let mut conn = db.begin().await.expect("connection");
+
+		let user_id = sample_user(&mut conn, "user@domain.tld").await;
+		let _bucket_id = sample_bucket(&mut conn, &user_id).await;
+
+		todo!()
+	}
+
+	/// Test that blocks associated with older versions of metadata are marked as expired when a
+	/// non-normalized form of their CID is provided
+	#[tokio::test]
+	#[ignore]
+	async fn test_expire_blocks_normalize_cids() {
+		let db = setup_database().await;
+		let mut conn = db.begin().await.expect("connection");
+
+		let user_id = sample_user(&mut conn, "user@domain.tld").await;
+		let _bucket_id = sample_bucket(&mut conn, &user_id).await;
+
+		todo!()
+	}
+
+	/// Test that blocks stored at multiple storage hosts are all marked as expired
+	#[tokio::test]
+	#[ignore]
+	async fn test_expire_blocks_multiple_storage_hosts() {
+		let db = setup_database().await;
+		let mut conn = db.begin().await.expect("connection");
+
+		let user_id = sample_user(&mut conn, "user@domain.tld").await;
+		let _bucket_id = sample_bucket(&mut conn, &user_id).await;
+
+		todo!()
+	}
+
+	/// Test that duplicate blocks associated with other buckets are not expired
+	#[tokio::test]
+	#[ignore]
+	async fn test_expire_blocks_safe_inter_bucket() {
+		let db = setup_database().await;
+		let mut conn = db.begin().await.expect("connection");
+
+		let user_id = sample_user(&mut conn, "user@domain.tld").await;
+		let _bucket_id = sample_bucket(&mut conn, &user_id).await;
+
+		todo!()
+	}
+
+	/// After changes have been made to expired blocks, we need to queue a background task that
+	/// will perform all the tasks involved in cleaning them up.
+	#[tokio::test]
+	#[ignore]
+	async fn test_expire_blocks_queues_prune_task() {
+		let db = setup_database().await;
+		let mut conn = db.begin().await.expect("connection");
+
+		let user_id = sample_user(&mut conn, "user@domain.tld").await;
+		let _bucket_id = sample_bucket(&mut conn, &user_id).await;
+
+		todo!()
+	}
 }

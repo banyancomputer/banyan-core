@@ -178,7 +178,9 @@ pub async fn handler(
     Metadata::upload_complete(&mut conn, &metadata_id, &hash, size as i64).await?;
 
     let consumed_storage = User::consumed_storage(&mut conn, &user_id).await?;
-    if consumed_storage > ACCOUNT_STORAGE_QUOTA {
+    let needed_capacity = request_data.expected_data_size;
+
+    if (consumed_storage + needed_capacity) > ACCOUNT_STORAGE_QUOTA {
         tracing::warn!(consumed_storage, "account reached storage limit");
         let err_msg = serde_json::json!({"msg": "account reached available storage threshold"});
         return Ok((StatusCode::PAYLOAD_TOO_LARGE, Json(err_msg)).into_response());
@@ -190,7 +192,6 @@ pub async fn handler(
         return Ok((StatusCode::OK, Json(resp_msg)).into_response());
     }
 
-    let needed_capacity = request_data.expected_data_size;
     let storage_host =
         match SelectedStorageHost::select_for_capacity(&mut conn, needed_capacity).await? {
             Some(sh) => sh,
