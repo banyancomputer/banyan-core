@@ -1,4 +1,3 @@
--- Add up migration script here
 CREATE TABLE deals
 (
     id          TEXT      NOT NULL PRIMARY KEY

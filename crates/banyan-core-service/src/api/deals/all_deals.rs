@@ -9,15 +9,22 @@ use crate::database::models::{Deal, DealState};
 use crate::extractors::StorageProviderIdentity;
 
 pub async fn handler(
-    _storage_provider: StorageProviderIdentity,
+    _: StorageProviderIdentity,
     State(state): State<AppState>,
 ) -> Result<Response, AllDealsError> {
     let database = state.database();
-    let active_deals = DealState::Active.to_string();
-    let query_result = sqlx::query_as!(Deal, "SELECT * FROM deals WHERE state=$1;", active_deals)
-        .fetch_all(&database)
-        .await
-        .map_err(AllDealsError::DatabaseFailure)?;
+    let query_result = sqlx::query_as!(
+        Deal,
+        "SELECT d.id, d.state, m.data_size AS size
+            FROM deals AS d
+            JOIN main.snapshots s on d.id = s.deal_id
+            JOIN main.metadata m on m.id = s.metadata_id
+            WHERE d.state=$1;",
+        DealState::Active
+    )
+    .fetch_all(&database)
+    .await
+    .map_err(AllDealsError::DatabaseFailure)?;
 
     let deals: Vec<_> = query_result.into_iter().map(ApiDeal::from).collect();
 
@@ -44,7 +51,7 @@ mod tests {
     use crate::database::models::DealState;
     use crate::database::{test_helpers, Database};
     use crate::extractors::StorageProviderIdentity;
-    use crate::utils::tests::{deserialize_response, mock_app_state};
+    use crate::utils::tests::{deserialize_result, mock_app_state};
 
     async fn setup_deals(db: &Database) -> Result<Vec<String>, sqlx::Error> {
         let deal_states = vec![
@@ -68,7 +75,7 @@ mod tests {
     #[tokio::test]
     async fn test_insert_and_retrieve_all_deals() {
         let db = test_helpers::setup_database().await;
-        let _deals = setup_deals(&db).await;
+        let created_deals = setup_deals(&db).await.unwrap();
 
         let res = handler(
             StorageProviderIdentity {
@@ -78,8 +85,10 @@ mod tests {
         )
         .await;
 
-        let deals: Vec<ApiDeal> = deserialize_response(res).await;
+        let deals: Vec<ApiDeal> = deserialize_result(res).await;
         assert_eq!(deals.len(), 2);
         assert!(deals.iter().all(|deal| deal.state == DealState::Active));
+        assert!(deals.iter().all(|deal| deal.size == 0));
+        assert!(deals.iter().all(|deal| created_deals.contains(&deal.id)));
     }
 }

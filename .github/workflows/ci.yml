@@ -20,7 +20,7 @@ jobs:
       - name: build
         run: cargo build --workspace --bins --tests --benches
       - name: test
-        run: cargo test --workspace --bins --tests --benches
+        run: make test
 
   lints:
     runs-on: ubuntu-latest
@@ -29,6 +29,6 @@ jobs:
         with:
           fetch-depth: 0
       - name: format
-        run: cargo fmt --all -- --check
+        run: make fmt-check
       - name: lint
-        run: cargo clippy --workspace --all-targets --all-features --tests -- -D warnings
+        run: make clippy

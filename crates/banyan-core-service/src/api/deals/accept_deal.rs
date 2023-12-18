@@ -15,15 +15,13 @@ pub async fn handler(
 ) -> Response {
     let database = state.database();
     let deal_id = deal_id.to_string();
-    let to_accepted_state = DealState::Accepted.to_string();
-    let from_active_state = DealState::Active.to_string();
 
     let query_result = sqlx::query!(
         r#"UPDATE deals SET state =$1, accepted_by=$2, accepted_at=DATETIME('now') WHERE id = $3  AND state == $4;"#,
-        to_accepted_state,
+        DealState::Accepted,
         storage_provider.id,
         deal_id,
-        from_active_state
+        DealState::Active
     )
         .execute(&database)
         .await;

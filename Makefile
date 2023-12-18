@@ -32,11 +32,11 @@ fmt-check:
 
 .PHONY: clippy
 clippy:
-	cargo +nightly clippy --all
+	cargo clippy --workspace --all-targets --all-features --tests -- -D warnings
 
 .PHONY: test
 test:
-	cargo test --all
+	cargo test --all --workspace --bins --tests --benches
 
 # generate authentication keys
 # =========================================================================== #

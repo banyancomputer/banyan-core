@@ -16,12 +16,15 @@ pub async fn handler(
 ) -> Response {
     let database = state.database();
     let deal_id = deal_id.to_string();
-    let active = DealState::Active.to_string();
     let query_result = sqlx::query_as!(
         Deal,
-        r#"SELECT * from deals WHERE id = $1 AND (state=$2 OR accepted_by=$3);"#,
+        r#"SELECT d.id, d.state, m.data_size AS size
+            FROM deals AS d
+            JOIN main.snapshots s on d.id = s.deal_id
+            JOIN main.metadata m on m.id = s.metadata_id
+            WHERE d.id = $1 AND (d.state=$2 OR d.accepted_by=$3);"#,
         deal_id,
-        active,
+        DealState::Active,
         storage_provider.id
     )
     .fetch_one(&database)
@@ -49,10 +52,10 @@ mod tests {
     use super::*;
     use crate::database::models::DealState;
     use crate::database::test_helpers;
-    use crate::utils::tests::mock_app_state;
+    use crate::utils::tests::{deserialize_response, mock_app_state};
 
     #[tokio::test]
-    async fn test_get_deal_active() {
+    async fn test_get_active_deal() {
         let db = test_helpers::setup_database().await;
         let active_deal_id = test_helpers::create_deal(&db, DealState::Active, None)
             .await
@@ -67,11 +70,16 @@ mod tests {
         )
         .await;
 
-        assert_eq!(res.status(), StatusCode::OK);
+        let status = res.status();
+        let deal: ApiDeal = deserialize_response(res).await;
+        assert_eq!(status, StatusCode::OK);
+        assert_eq!(deal.id, active_deal_id);
+        assert_eq!(deal.state, DealState::Active);
+        assert_eq!(deal.size, 0);
     }
 
     #[tokio::test]
-    async fn test_owned_accepted_deals_returned() {
+    async fn test_owned_accepted_deal_is_returned() {
         let db = test_helpers::setup_database().await;
         let host_id = test_helpers::create_storage_hosts(&db, "http://mock.com", "mock_name")
             .await
