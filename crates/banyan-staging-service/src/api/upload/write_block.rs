@@ -12,10 +12,9 @@ use uuid::Uuid;
 
 use super::super::upload::db_helpers::*;
 use crate::app::AppState;
-use crate::database::map_sqlx_error;
 // use crate::database::models::BlockDetails;
 // use crate::database::Database;
-use crate::extractors::{AuthenticatedClient, BlockReader};
+use crate::extractors::AuthenticatedClient;
 use crate::upload_store::UploadStore;
 
 #[axum::debug_handler]

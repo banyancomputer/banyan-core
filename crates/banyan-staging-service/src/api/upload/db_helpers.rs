@@ -1,6 +1,3 @@
-use banyan_car_analyzer::CarReport;
-use sqlx::prelude::FromRow;
-use sqlx::Decode;
 use uuid::Uuid;
 
 use super::error::UploadError;
