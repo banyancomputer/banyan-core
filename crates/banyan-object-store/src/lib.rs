@@ -19,7 +19,7 @@ impl TryFrom<Url> for ObjectStoreConnection {
 
     fn try_from(url: Url) -> Result<Self, Self::Error> {
         match url.scheme() {
-            // file://<path>
+            // file://<absolute_path>
             "file" => {
                 let path = url.to_file_path().map_err(|_| Self::Error::NotFileUrl)?;
                 if !path.is_dir() {

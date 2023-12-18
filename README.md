@@ -76,7 +76,7 @@ will fail to start. This variable specifies a connection to the Object Store
 backend the given service should use at runtime.
 
 A sample file exists in either crate. This file should configure a valid connection
-to a local filesystem Object Store at the path `./data/uploads`. You can copy that 
+to a local filesystem Object Store at the path `./data/uploads` within either crate. You can copy those 
 sample files into place by running the following command: 
 
 ```sh
@@ -86,14 +86,23 @@ cp crates/banyan-storage-provider-service/.env{.sample,}
 You must copy these defaults in place before attempting to run either service or resetting your
 devlopment environment with `./bin/reset_env.sh` (discussed below).
 
-These services also support using an S3 bucket as an Object Store backend. For 
-development purposes this project initializes MinIo backend that is spawned
+These services also support using S3 as an Object Store backend. For 
+development purposes this project initializes a MinIo backend that is spawned
 locally by `./bin/reset_env.sh`.
 
 The `.env.sample` files in either crate should contain example connection strings
 for connecting to this local MinIo instance in your development environment. 
 DO NOT USE THE SPECIFIED CREDENTIALS IN PRODUCTION. If you've run`./bin/reset_env.sh`
 successfully then MinIo should be available at those example endpoints.
+
+You can check the status of the MinIo container by running:
+
+```
+docker ps -a
+```
+
+You should see a container named `banyan-minio` running. If not, make sure docker
+is installed and properly configured in your environment.
 
 ### ✨ Automatic Clean Up / First Time Setup
 
