@@ -32,8 +32,8 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
-          override:
-            false
+          override: true
+          components: rustfmt, clippy
       - name: format
         run: make fmt-check
       - name: lint
