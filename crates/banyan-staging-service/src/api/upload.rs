@@ -7,9 +7,12 @@ use axum::response::{IntoResponse, Response};
 use axum::TypedHeader;
 use banyan_car_analyzer::{CarReport, StreamingCarAnalyzer, StreamingCarAnalyzerError};
 use banyan_task::TaskLikeExt;
+use bytes::Bytes;
 use futures::{TryStream, TryStreamExt};
+use object_store::path::Path;
 use serde::{Deserialize, Serialize};
 use tokio::io::{AsyncWrite, AsyncWriteExt};
+use tracing::{info, warn};
 use uuid::Uuid;
 
 use crate::app::AppState;
@@ -71,7 +74,7 @@ pub async fn handler(
         .map_err(UploadError::InvalidRequestData)?;
     let content_hash = request.content_hash;
 
-    let (upload_id, tmp_file_path) =
+    let (upload_id, block_locations_dir) =
         record_upload_beginning(&db, client.id(), request.metadata_id, reported_body_length)
             .await?;
 
@@ -87,32 +90,23 @@ pub async fn handler(
     // TODO: validate name is car-upload (request_data_field.name())
     // TODO: validate type is "application/vnd.ipld.car; version=2" (request_data_field.content_type())
 
-    let store_path = object_store::path::Path::from(tmp_file_path.as_str());
-    let (multipart_resume_id, mut writer) = match store.put_multipart(&store_path).await {
-        Ok(mp) => mp,
-        Err(err) => {
-            handle_failed_upload(&db, &upload_id).await;
-            return Err(UploadError::StoreUnavailable(err));
-        }
-    };
+    // let store_path = Path::from(tmp_upload_dir.as_str());
+
+    warn!("about to process the stream");
 
     match process_upload_stream(
         &db,
         &upload_id,
+        &store,
+        block_locations_dir,
         reported_body_length as usize,
         car_field,
         content_hash,
-        &mut writer,
     )
     .await
     {
         Ok(cr) => {
-            writer
-                .shutdown()
-                .await
-                .map_err(UploadStreamError::WriteFailed)?;
-
-            handle_successful_upload(&db, &store, &cr, &upload_id, &store_path).await?;
+            handle_successful_upload(&db, &cr, &upload_id).await?;
             ReportUploadTask::new(
                 client.storage_grant_id(),
                 request.metadata_id,
@@ -128,9 +122,6 @@ pub async fn handler(
         Err(err) => {
             // todo: we don't care in the response if this fails, but if it does we will want to
             // clean it up in the future which should be handled by a background task
-            let _ = store
-                .abort_multipart(&store_path, &multipart_resume_id)
-                .await;
             handle_failed_upload(&db, &upload_id).await;
             Err(err.into())
         }
@@ -146,10 +137,8 @@ async fn handle_failed_upload(db: &Database, upload_id: &str) {
 
 async fn handle_successful_upload(
     db: &Database,
-    _store: &UploadStore,
     car_report: &CarReport,
     upload_id: &str,
-    _file_path: &object_store::path::Path,
 ) -> Result<(), UploadError> {
     //let mut path_iter = file_path.parts();
     // discard the uploading/ prefix
@@ -194,16 +183,13 @@ async fn record_upload_beginning(
     metadata_id: Uuid,
     reported_size: u64,
 ) -> Result<(String, String), UploadError> {
-    let mut tmp_upload_path = PathBuf::new();
-
-    tmp_upload_path.push(format!("{metadata_id}.car"));
-
-    let tmp_upload_path = tmp_upload_path.display().to_string();
-
+    let tmp_upload_dir = std::path::Path::new(&format!("{metadata_id}"))
+        .display()
+        .to_string();
     let upload_id = sqlx::query_scalar(
         r#"
                     INSERT INTO
-                        uploads (client_id, metadata_id, reported_size, file_path, state)
+                        uploads (client_id, metadata_id, reported_size, block_locations, state)
                         VALUES ($1, $2, $3, $4, 'started')
                         RETURNING id;
                 "#,
@@ -211,12 +197,12 @@ async fn record_upload_beginning(
     .bind(client_id.to_string())
     .bind(metadata_id.to_string())
     .bind(reported_size as i64)
-    .bind(&tmp_upload_path)
+    .bind(&tmp_upload_dir)
     .fetch_one(db)
     .await
     .map_err(map_sqlx_error)
     .map_err(UploadError::Database)?;
-    Ok((upload_id, tmp_upload_path))
+    Ok((upload_id, tmp_upload_dir))
 }
 
 async fn record_upload_failed(db: &Database, upload_id: &str) -> Result<(), UploadError> {
@@ -234,12 +220,12 @@ async fn record_upload_failed(db: &Database, upload_id: &str) -> Result<(), Uplo
 
 async fn process_upload_stream<S>(
     db: &Database,
-
     upload_id: &str,
+    store: &UploadStore,
+    block_locations_dir: String,
     expected_size: usize,
     mut stream: S,
     content_hash: String,
-    writer: &mut Box<dyn AsyncWrite + Unpin + Send>,
 ) -> Result<CarReport, UploadStreamError>
 where
     S: TryStream<Ok = bytes::Bytes, Error = multer::Error> + Unpin,
@@ -254,13 +240,8 @@ where
     {
         hasher.update(&chunk);
         car_analyzer.add_chunk(&chunk)?;
-        writer
-            .write_all(&chunk)
-            .await
-            .map_err(UploadStreamError::WriteFailed)?;
-
-        while let Some(block_meta) = car_analyzer.next().await? {
-            let cid_string = block_meta
+        while let Some(block) = car_analyzer.next().await? {
+            let cid_string = block
                 .cid()
                 .to_string_of_base(cid::multibase::Base::Base64Url)
                 .expect("parsed cid to unparse");
@@ -273,7 +254,7 @@ where
                         "#,
             )
             .bind(cid_string.clone())
-            .bind(block_meta.length() as i64)
+            .bind(block.length() as i64)
             .execute(db)
             .await
             .map_err(map_sqlx_error)?;
@@ -281,7 +262,7 @@ where
             let block_id: Uuid = {
                 let cid_id: String =
                     sqlx::query_scalar("SELECT id FROM blocks WHERE cid = $1 LIMIT 1;")
-                        .bind(cid_string)
+                        .bind(cid_string.clone())
                         .fetch_one(db)
                         .await
                         .map_err(map_sqlx_error)?;
@@ -300,10 +281,16 @@ where
             )
             .bind(upload_id)
             .bind(block_id.to_string())
-            .bind(block_meta.offset() as i64)
+            .bind(block.offset() as i64)
             .execute(db)
             .await
             .map_err(map_sqlx_error)?;
+
+            let location = Path::from(format!("{block_locations_dir}/{cid_string}.block").as_str());
+            store
+                .put(&location, Bytes::copy_from_slice(&block.data()[..]))
+                .await
+                .map_err(UploadStreamError::WriteFailed)?;
         }
 
         if car_analyzer.seen_bytes() as usize > expected_size && !warning_issued {
@@ -401,7 +388,7 @@ pub enum UploadStreamError {
     ReadFailed(multer::Error),
 
     #[error("failed to write to storage backend")]
-    WriteFailed(std::io::Error),
+    WriteFailed(object_store::Error),
 }
 
 impl IntoResponse for UploadStreamError {

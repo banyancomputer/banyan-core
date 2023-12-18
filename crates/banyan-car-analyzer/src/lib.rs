@@ -13,15 +13,20 @@ const CARV2_PRAGMA: &[u8] = &[
 ];
 
 #[derive(Debug, PartialEq)]
-pub struct BlockMeta {
+pub struct Block {
     cid: Cid,
+    data: Vec<u8>,
     offset: u64,
     length: u64,
 }
 
-impl BlockMeta {
+impl Block {
     pub fn cid(&self) -> &Cid {
         &self.cid
+    }
+
+    pub fn data(&self) -> Vec<u8> {
+        self.data.clone()
     }
 
     pub fn length(&self) -> u64 {
@@ -132,7 +137,7 @@ impl StreamingCarAnalyzer {
         }
     }
 
-    pub async fn next(&mut self) -> Result<Option<BlockMeta>, StreamingCarAnalyzerError> {
+    pub async fn next(&mut self) -> Result<Option<Block>, StreamingCarAnalyzerError> {
         loop {
             match &mut self.state {
                 CarState::Pragma => {
@@ -316,6 +321,7 @@ impl StreamingCarAnalyzer {
                         }
                     };
                     let cid_length = cid.encoded_len() as u64;
+                    // let _ = self.buffer.split_to(cid_length as usize);
                     self.cids.push(cid);
 
                     // This might be the end of all data, we'll check once we reach the block_start
@@ -327,8 +333,13 @@ impl StreamingCarAnalyzer {
                         block_length: None,
                     };
 
-                    return Ok(Some(BlockMeta {
+                    let block_data_length = (blk_len - cid_length) as usize;
+
+                    return Ok(Some(Block {
                         cid,
+                        data: self.buffer
+                            [cid_length as usize..(cid_length as usize + block_data_length)]
+                            .to_vec(),
                         offset: block_start + length_varint_len + cid_length,
                         length: blk_len - cid_length,
                     }));
@@ -591,8 +602,9 @@ mod tests {
         sca.add_chunk(&Bytes::from(block_cid.to_bytes())).unwrap();
         sca.add_chunk(&Bytes::from(block_data.to_vec())).unwrap();
 
-        let next_meta = Some(BlockMeta {
+        let next_meta = Some(Block {
             cid: block_cid,
+            data: block_data.to_vec(),
             offset: 208,
             length: inner_block_size - block_cid.encoded_len() as u64,
         });

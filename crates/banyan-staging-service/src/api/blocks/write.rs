@@ -16,9 +16,18 @@ pub async fn handler(
     State(state): State<AppState>,
     _client: BlockReader,
     _store: UploadStore,
-    Json(_request): Json<BlockWriteRequest>,
+    Json(request): Json<BlockWriteRequest>,
 ) -> Result<Response, BlockWriteError> {
     let mut _db = state.database();
+    let cid = Cid::read_bytes(&request.data[..]).map_err(BlockWriteError::ComputeCid)?;
+    if cid != request.cid {
+        return Err(BlockWriteError::CidMismatch((request.cid, cid)));
+    }
+
+    // Perform some steps to ensure the user is authenticated
+
+    // Go fetch the CID from the file location
+
     Ok((StatusCode::OK, ()).into_response())
 }
 
@@ -29,6 +38,9 @@ pub enum BlockWriteError {
 
     #[error("Data in request mismatched attached CID")]
     CidMismatch((Cid, Cid)),
+
+    #[error("Failed to compute CID")]
+    ComputeCid(cid::Error),
 }
 
 impl IntoResponse for BlockWriteError {
@@ -44,12 +56,18 @@ impl IntoResponse for BlockWriteError {
                 let err_msg = serde_json::json!({ "msg": format!("block / data mismatch") });
                 (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
             }
+            BlockWriteError::ComputeCid(err) => {
+                tracing::warn!("failed to compute CID for some data: {err}");
+                let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
+            }
         }
     }
 }
 
 #[derive(Deserialize)]
 pub struct BlockWriteRequest {
-    cid: Cid,
-    data: Vec<u8>,
+    pub cid: Cid,
+    pub data: Vec<u8>,
+    pub completed: Option<()>,
 }
