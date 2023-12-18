@@ -19,11 +19,11 @@ export const UploadFileProgress = () => {
             <div className="flex flex-col">
                 {files.map(file =>
                     <div
-                        className="flex items-center px-3 py-2 gap-2 text-xs font-normal text-text-800"
+                        className="flex items-center px-3 py-2 gap-2 text-xs font-normal text-bucket-actionsText"
                         key={file.file.name}
                     >
                         <FileIcon fileName={file.file.name} />
-                        <span className="flex-grow text-text-900">{file.file.name}</span>
+                        <span className="flex-grow text-bucket-actionsText">{file.file.name}</span>
                         <span className="w-5 h-5">
                             {file.isUploaded ?
                                 <span className="flex items-center justify-center p-1 bg-gray-800 text-white rounded-full">

@@ -106,7 +106,7 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
             ref={tableRef}
             onDrop={handleDrop}
             onDragOver={preventDefaultDragAction}
-            className="max-h-[calc(100vh-210px)] w-fit overflow-x-auto bg-secondaryBackground border-2 border-border-regular rounded-xl shadow-common"
+            className={`h-full w-fit overflow-x-auto bg-secondaryBackground border-2 border-border-regular rounded-xl shadow-common`}
         >
             <div className="px-6 py-5 text-m font-semibold border-b-2 border-border-regular">
                 {`${messages.files}`}

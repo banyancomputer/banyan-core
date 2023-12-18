@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { unwrapResult } from '@reduxjs/toolkit';
 
 import { ActionsCell } from '@components/common/ActionsCell';
 
@@ -32,7 +33,13 @@ export const Deal: React.FC<ActiveDeal & { dealsRef: React.MutableRefObject<HTML
 
         const download = async () => {
             try {
-                await dispatch(downloadDeal(id));
+                const blob = unwrapResult(await dispatch(downloadDeal(id)));
+                const link = document.createElement('a');
+                const objectURL = URL.createObjectURL(blob);
+                link.download = `${id}.car`;
+                link.href = objectURL;
+                document.body.appendChild(link);
+                link.click();
             } catch (erro: any) { }
         };
 
@@ -60,7 +67,7 @@ export const Deal: React.FC<ActiveDeal & { dealsRef: React.MutableRefObject<HTML
                             <td className='py-4 px-3'>{getDealDateLabel(new Date(accepted_at))}</td>
                             <td className='py-4 px-3 capitalize'>{status}</td>
                             <td className='py-4 px-3 cursor-pointer'>
-                                <ActionsCell actions={<Actions />}/>
+                                <ActionsCell actions={<Actions />} />
                             </td>
                         </tr>
                     </tbody>

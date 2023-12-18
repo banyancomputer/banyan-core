@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { unwrapResult } from '@reduxjs/toolkit';
 
 import { convertFileSize } from '@app/utils/storage';
 import { AvailiableDeal } from '@/entities/deals';
@@ -26,7 +27,13 @@ export const Deal: React.FC<AvailiableDeal> =
 
         const download = async () => {
             try {
-                await dispatch(downloadDeal(id));
+                const blob = unwrapResult(await dispatch(downloadDeal(id)));
+                const link = document.createElement('a');
+                const objectURL = URL.createObjectURL(blob);
+                link.download = `${id}.car`;
+                link.href = objectURL;
+                document.body.appendChild(link);
+                link.click();
             } catch (erro: any) { }
         };
 

@@ -33,7 +33,7 @@ interface TombInterface {
 	getExpandedFolderFiles: (path: string[], folder: BrowserObject, bucket: Bucket) => Promise<void>;
 	takeColdSnapshot: (bucket: Bucket) => Promise<void>;
 	getBucketShapshots: (id: string) => Promise<BucketSnapshot[]>;
-	createBucketAndMount: (name: string, storageClass: string, bucketType: string) => Promise<void>;
+	createBucketAndMount: (name: string, storageClass: string, bucketType: string) => Promise<string>;
 	renameBucket: (bucket: Bucket, newName: string) => void;
 	deleteBucket: (id: string) => void;
 	createDirectory: (bucket: Bucket, path: string[], name: string) => Promise<void>;
@@ -180,30 +180,25 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	};
 
 	/** Creates new bucket with recieved parameters of type and storag class. */
-	const createBucketAndMount = async (name: string, storageClass: string, bucketType: string) => {
-		await tombMutex(tomb, async tomb => {
+	const createBucketAndMount = async (name: string, storageClass: string, bucketType: string): Promise<string> => {
+		return await tombMutex(tomb, async tomb => {
 			const key = await getEncryptionKey();
-			const wasmBucketMount = await tomb!.createBucketAndMount(name, storageClass, bucketType, key.privatePem, key.publicPem);
-			const wasmBucket = wasmBucketMount.bucket;
-			const wasmMount = wasmBucketMount.mount;
-			const files = await wasmMount.ls([]);
-			const snapshots = await tomb!.listBucketSnapshots(wasmBucket.id());
-			const locked = await wasmMount.locked();
-			const isSnapshotValid = await wasmMount.hasSnapshot();
+			const { bucket: wasmBucket, mount: wasmMount } = await tomb!.createBucketAndMount(name, storageClass, bucketType, key.privatePem, key.publicPem);
 			const bucket = {
 				mount: wasmMount,
 				id: wasmBucket.id(),
 				name: wasmBucket.name(),
 				storageClass: wasmBucket.storageClass(),
 				bucketType: wasmBucket.bucketType(),
-				files: files || [],
-				snapshots,
+				files: [],
+				snapshots: [],
 				keys: [],
-				locked,
-				isSnapshotValid
+				locked: false,
+				isSnapshotValid: false
 			};
 
 			setBuckets(prev => [...prev, bucket].sort((a, b) => a.name.localeCompare(b.name)));
+			return bucket.id
 		});
 	};
 
