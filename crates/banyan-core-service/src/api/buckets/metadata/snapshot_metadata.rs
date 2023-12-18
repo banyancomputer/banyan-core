@@ -3,6 +3,7 @@ use std::collections::BTreeSet;
 use axum::extract::{Json, Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
+use banyan_task::TaskLikeExt;
 use cid::multibase::Base;
 use cid::Cid;
 use uuid::Uuid;
@@ -10,6 +11,7 @@ use uuid::Uuid;
 use crate::app::AppState;
 use crate::database::models::SnapshotState;
 use crate::extractors::UserIdentity;
+use crate::tasks::CreateDealsTask;
 
 pub async fn handler(
     user_identity: UserIdentity,
@@ -17,7 +19,7 @@ pub async fn handler(
     Path((bucket_id, metadata_id)): Path<(Uuid, Uuid)>,
     Json(request): Json<BTreeSet<Cid>>,
 ) -> Result<Response, CreateSnapshotError> {
-    let database = state.database();
+    let mut database = state.database();
     let bucket_id = bucket_id.to_string();
     let metadata_id = metadata_id.to_string();
 
@@ -90,6 +92,11 @@ pub async fn handler(
             .map_err(CreateSnapshotError::BlockAssociationFailed)?;
     }
 
+    CreateDealsTask::new(snapshot_id.clone())
+        .enqueue::<banyan_task::SqliteTaskStore>(&mut database)
+        .await
+        .map_err(CreateSnapshotError::UnableToEnqueueTask)?;
+
     let resp_msg = serde_json::json!({ "id": snapshot_id });
     Ok((StatusCode::OK, Json(resp_msg)).into_response())
 }
@@ -110,6 +117,9 @@ pub enum CreateSnapshotError {
 
     #[error("active cid list was in some way invalid: {0}")]
     InvalidInternalCid(cid::Error),
+
+    #[error("could not enqueue task: {0}")]
+    UnableToEnqueueTask(banyan_task::TaskStoreError),
 }
 
 impl IntoResponse for CreateSnapshotError {

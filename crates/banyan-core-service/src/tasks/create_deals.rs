@@ -19,6 +19,11 @@ pub struct CreateDealsTask {
     snapshot_id: String,
 }
 
+impl CreateDealsTask {
+    pub fn new(snapshot_id: String) -> Self {
+        Self { snapshot_id }
+    }
+}
 #[derive(sqlx::FromRow)]
 struct SnapshotData {
     id: String,
