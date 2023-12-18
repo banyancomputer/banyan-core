@@ -20,8 +20,8 @@ where
     let cors_layer = CorsLayer::very_permissive();
 
     Router::new()
-        .route("/blocks/:block_id", get(read::handler))
-        .route("/blocks", post(write::handler))
+        .route("/", post(write::handler))
+        .route("/:block_id", get(read::handler))
         .layer(cors_layer)
         .with_state(state)
 }

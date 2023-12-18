@@ -14,16 +14,18 @@ pub async fn handler(
     client: BlockReader,
     store: UploadStore,
     Path(cid): Path<String>,
-) -> Result<Response, BlockRetrievalError> {
+) -> Result<Response, BlockReadError> {
     let db = state.database();
-    let cid = cid::Cid::try_from(cid).map_err(BlockRetrievalError::InvalidCid)?;
+    let cid = cid::Cid::try_from(cid).map_err(BlockReadError::InvalidCid)?;
     let normalized_cid = cid
         .to_string_of_base(cid::multibase::Base::Base64Url)
         .expect("parsed cid to unparse");
 
+    tracing::warn!("NORMAL CID IN READ: {normalized_cid}");
+
     let block_details = block_from_normalized_cid(&db, &normalized_cid).await?;
     if !client.can_read_block(&block_details) {
-        return Err(BlockRetrievalError::NotBlockOwner);
+        return Err(BlockReadError::NotBlockOwner);
     }
 
     let byte_start = block_details.byte_offset as usize;
@@ -55,7 +57,7 @@ pub async fn handler(
     let data = store
         .get_range(&object_path, byte_range)
         .await
-        .map_err(BlockRetrievalError::RetrievalFailed)?;
+        .map_err(BlockReadError::RetrievalFailed)?;
 
     Ok((StatusCode::OK, headers, data).into_response())
 }
@@ -63,7 +65,7 @@ pub async fn handler(
 pub async fn block_from_normalized_cid(
     database: &Database,
     normalized_cid: &str,
-) -> Result<BlockDetails, BlockRetrievalError> {
+) -> Result<BlockDetails, BlockReadError> {
     let maybe_block_id: Option<BlockDetails> = sqlx::query_as(
         r#"
                 SELECT
@@ -82,15 +84,15 @@ pub async fn block_from_normalized_cid(
     .bind(normalized_cid)
     .fetch_optional(database)
     .await
-    .map_err(BlockRetrievalError::DbFailure)?;
+    .map_err(BlockReadError::DbFailure)?;
     match maybe_block_id {
         Some(id) => Ok(id),
-        None => Err(BlockRetrievalError::UnknownBlock),
+        None => Err(BlockReadError::UnknownBlock),
     }
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum BlockRetrievalError {
+pub enum BlockReadError {
     #[error("internal database error occurred")]
     DbFailure(sqlx::Error),
 
@@ -107,9 +109,9 @@ pub enum BlockRetrievalError {
     UnknownBlock,
 }
 
-impl IntoResponse for BlockRetrievalError {
+impl IntoResponse for BlockReadError {
     fn into_response(self) -> Response {
-        use BlockRetrievalError::*;
+        use BlockReadError::*;
 
         match &self {
             DbFailure(err) => {
