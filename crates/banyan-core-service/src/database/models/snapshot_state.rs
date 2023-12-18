@@ -15,7 +15,7 @@ impl From<String> for SnapshotState {
         match s.as_str() {
             "pending" => SnapshotState::Pending,
             "completed" => SnapshotState::Completed,
-            _ => panic!("invalid bucket type"),
+            _ => panic!("invalid snapshot state"),
         }
     }
 }
