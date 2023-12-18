@@ -2,7 +2,6 @@ use std::convert::TryFrom;
 use std::ops::Deref;
 use std::path::PathBuf;
 
-use itertools::Itertools;
 use object_store::aws::AmazonS3;
 pub use object_store::aws::AmazonS3Builder;
 use object_store::local::LocalFileSystem;
@@ -34,7 +33,7 @@ impl TryFrom<Url> for ObjectStoreConnection {
 
             // s3 over http:
             // supported url format:
-            // -> http://<access_key_id>:<secret_key>@<host>:<port>/<region>/<bucket>/<optional_path>
+            // -> http://<access_key_id>:<secret_key>@<host>:<port>?bucket=<bucket_name>&region=<optional_region_name>
             "http" => {
                 let access_key_id = url.username();
                 let secret_key = url.password().ok_or(Self::Error::MissingS3SecretKey)?;
@@ -44,19 +43,35 @@ impl TryFrom<Url> for ObjectStoreConnection {
                     url.port().ok_or(Self::Error::MissingS3Port)?
                 );
 
-                let mut url_path = url.path().split('/').collect::<Vec<&str>>().into_iter();
-                // Strip off the leading slash
-                url_path.next();
-                // Split off the first path segment as the region
-                let region = url_path.next().ok_or(Self::Error::MissingS3Region)?;
-                // Collect the rest of the path segments as the bucket name
-                let bucket_name = url_path.join("/");
+                let query_pairs = url.query_pairs().into_owned();
+                let mut maybe_region: Option<String> = None;
+                let mut maybe_bucket: Option<String> = None;
+                for qp in query_pairs {
+                    let (key, val) = qp;
+                    match key.as_str() {
+                        "bucket" => maybe_bucket = Some(val),
+                        "region" => maybe_region = Some(val),
+                        _ => {}
+                    }
+                }
+
+                let bucket = match maybe_bucket {
+                    Some(b) => b,
+                    None => return Err(Self::Error::MissingS3Bucket),
+                };
+
+                let region = match maybe_region {
+                    Some(r) => r,
+                    // MinIo ignores the configured region, so "default" is fine here
+                    // for our purposes
+                    None => "default".to_string(),
+                };
 
                 tracing::info!(
                     scheme = ?url.scheme(),
                     endpoint = ?endpoint,
                     region = ?region,
-                    bucket_name = ?bucket_name,
+                    bucket = ?bucket,
                     "using S3 backend"
                 );
 
@@ -65,49 +80,64 @@ impl TryFrom<Url> for ObjectStoreConnection {
                     .with_secret_access_key(secret_key)
                     .with_endpoint(endpoint)
                     .with_region(region)
-                    .with_bucket_name(bucket_name)
+                    .with_bucket_name(bucket)
                     .with_allow_http(true);
 
                 Ok(Self::S3(builder))
             }
 
             // s3 over https:
-            // supported url format:
-            // https://<access_key_id>:<secret_key>@s3.<region>.<host>/<bucket>/<optional_path>
-            // s3://<access_key_id>:<secret_key>@s3.<region>.<host>/<bucket>/<optional_path>
+            // supported url formats:
+            // -> https://<access_key_id>:<secret_key>@<host>?bucket=<bucket>&region=<optional_region>
+            // -> s3://<access_key_id>:<secret_key>@<host>?bucket=<bucket>&region=<optional_region>
             "https" | "s3" => {
                 let access_key_id = url.username();
                 let secret_key = url.password().ok_or(Self::Error::MissingS3SecretKey)?;
-                let host = url.host_str().ok_or(Self::Error::MissingS3Host)?;
+                let endpoint = format!(
+                    "https://{}",
+                    url.host_str().ok_or(Self::Error::MissingS3Host)?,
+                );
 
-                match host.splitn(3, '.').collect_tuple() {
-                    Some(("s3", region, host)) => {
-                        let endpoint = format!("https://{}", host);
-
-                        let mut url_path = url.path().split('/').collect::<Vec<&str>>().into_iter();
-                        // Strip off the leading slash
-                        url_path.next();
-                        // Collect the rest of the path segments as the bucket name
-                        let bucket_name = url_path.join("/");
-
-                        tracing::info!(
-                            scheme = ?url.scheme(),
-                            endpoint = ?endpoint,
-                            region = ?region,
-                            bucket_name = ?bucket_name,
-                            "using secure S3 backend"
-                        );
-
-                        let builder = AmazonS3Builder::new()
-                            .with_access_key_id(access_key_id)
-                            .with_secret_access_key(secret_key)
-                            .with_endpoint(endpoint)
-                            .with_region(region)
-                            .with_bucket_name(bucket_name);
-                        Ok(Self::S3(builder))
+                let query_pairs = url.query_pairs().into_owned();
+                let mut maybe_region: Option<String> = None;
+                let mut maybe_bucket: Option<String> = None;
+                for qp in query_pairs {
+                    let (key, val) = qp;
+                    match key.as_str() {
+                        "bucket" => maybe_bucket = Some(val),
+                        "region" => maybe_region = Some(val),
+                        _ => {}
                     }
-                    _ => Err(Self::Error::HostNotRecognized(host.to_string())),
                 }
+
+                let bucket = match maybe_bucket {
+                    Some(b) => b,
+                    None => return Err(Self::Error::MissingS3Bucket),
+                };
+
+                let region = match maybe_region {
+                    Some(r) => r,
+                    // MinIo ignores the configured region, so "default" is fine here
+                    // for our purposes
+                    None => "default".to_string(),
+                };
+
+                tracing::info!(
+                    scheme = ?url.scheme(),
+                    endpoint = ?endpoint,
+                    region = ?region,
+                    bucket_name = ?bucket,
+                    "using secure S3 backend"
+                );
+
+                let builder = AmazonS3Builder::new()
+                    .with_access_key_id(access_key_id)
+                    .with_secret_access_key(secret_key)
+                    .with_endpoint(endpoint)
+                    .with_region(region)
+                    .with_bucket_name(bucket);
+
+                Ok(Self::S3(builder))
             }
             // unknown scheme
             scheme => Err(Self::Error::UnknownScheme(scheme.to_string())),
@@ -200,7 +230,7 @@ mod test {
     #[test]
     fn test_parse_http_url() {
         let url =
-            Url::parse("http://access_key_id:secret_key@localhost:9000/us-east-1/bucket").unwrap();
+            Url::parse("http://access_key_id:secret_key@localhost:9000?bucket=bucket").unwrap();
         let connection = ObjectStoreConnection::try_from(url).unwrap();
         match connection {
             ObjectStoreConnection::S3(builder) => {
@@ -218,7 +248,7 @@ mod test {
                 );
                 assert_eq!(
                     builder.get_config_value(&AmazonS3ConfigKey::Region),
-                    Some("us-east-1".to_string())
+                    Some("default".to_string())
                 );
                 assert_eq!(
                     builder.get_config_value(&AmazonS3ConfigKey::Bucket),
@@ -230,9 +260,105 @@ mod test {
     }
 
     #[test]
+    fn test_parse_http_url_with_region() {
+        let url =
+            Url::parse("http://access_key_id:secret_key@localhost:9000?bucket=bucket").unwrap();
+        let connection = ObjectStoreConnection::try_from(url).unwrap();
+        match connection {
+            ObjectStoreConnection::S3(builder) => {
+                assert_eq!(
+                    builder.get_config_value(&AmazonS3ConfigKey::AccessKeyId),
+                    Some("access_key_id".to_string())
+                );
+                assert_eq!(
+                    builder.get_config_value(&AmazonS3ConfigKey::SecretAccessKey),
+                    Some("secret_key".to_string())
+                );
+                assert_eq!(
+                    builder.get_config_value(&AmazonS3ConfigKey::Endpoint),
+                    Some("http://localhost:9000".to_string())
+                );
+                assert_eq!(
+                    builder.get_config_value(&AmazonS3ConfigKey::Region),
+                    Some("default".to_string())
+                );
+                assert_eq!(
+                    builder.get_config_value(&AmazonS3ConfigKey::Bucket),
+                    Some("bucket".to_string())
+                );
+            }
+            _ => panic!("expected S3 connection"),
+        }
+    }
+    #[test]
     fn test_parse_http_url_with_path() {
+        let url =
+            Url::parse("http://access_key_id:secret_key@localhost:9000?bucket=bucket/path/to/dir")
+                .unwrap();
+        let connection = ObjectStoreConnection::try_from(url).unwrap();
+        match connection {
+            ObjectStoreConnection::S3(builder) => {
+                assert_eq!(
+                    builder.get_config_value(&AmazonS3ConfigKey::AccessKeyId),
+                    Some("access_key_id".to_string())
+                );
+                assert_eq!(
+                    builder.get_config_value(&AmazonS3ConfigKey::SecretAccessKey),
+                    Some("secret_key".to_string())
+                );
+                assert_eq!(
+                    builder.get_config_value(&AmazonS3ConfigKey::Endpoint),
+                    Some("http://localhost:9000".to_string())
+                );
+                assert_eq!(
+                    builder.get_config_value(&AmazonS3ConfigKey::Region),
+                    Some("default".to_string())
+                );
+                assert_eq!(
+                    builder.get_config_value(&AmazonS3ConfigKey::Bucket),
+                    Some("bucket/path/to/dir".to_string())
+                );
+            }
+            _ => panic!("expected S3 connection"),
+        }
+    }
+
+    #[test]
+    fn test_parse_https_url() {
+        let url =
+            Url::parse("https://access_key_id:secret_key@awesome.host.org?bucket=bucket").unwrap();
+        let connection = ObjectStoreConnection::try_from(url).unwrap();
+        match connection {
+            ObjectStoreConnection::S3(builder) => {
+                assert_eq!(
+                    builder.get_config_value(&AmazonS3ConfigKey::AccessKeyId),
+                    Some("access_key_id".to_string())
+                );
+                assert_eq!(
+                    builder.get_config_value(&AmazonS3ConfigKey::SecretAccessKey),
+                    Some("secret_key".to_string())
+                );
+                assert_eq!(
+                    builder.get_config_value(&AmazonS3ConfigKey::Endpoint),
+                    Some("https://awesome.host.org".to_string())
+                );
+                assert_eq!(
+                    builder.get_config_value(&AmazonS3ConfigKey::Region),
+                    Some("default".to_string())
+                );
+                assert_eq!(
+                    builder.get_config_value(&AmazonS3ConfigKey::Bucket),
+                    Some("bucket".to_string())
+                );
+            }
+            _ => panic!("expected S3 connection"),
+        }
+    }
+
+    #[test]
+    fn test_parse_https_url_with_region() {
         let url = Url::parse(
-            "http://access_key_id:secret_key@localhost:9000/us-east-1/bucket/path/to/dir",
+            "https://access_key_id:secret_key@awesome.host.org?bucket=bucket&region=region",
         )
         .unwrap();
         let connection = ObjectStoreConnection::try_from(url).unwrap();
@@ -248,11 +374,45 @@ mod test {
                 );
                 assert_eq!(
                     builder.get_config_value(&AmazonS3ConfigKey::Endpoint),
-                    Some("http://localhost:9000".to_string())
+                    Some("https://awesome.host.org".to_string())
                 );
                 assert_eq!(
                     builder.get_config_value(&AmazonS3ConfigKey::Region),
-                    Some("us-east-1".to_string())
+                    Some("region".to_string())
+                );
+                assert_eq!(
+                    builder.get_config_value(&AmazonS3ConfigKey::Bucket),
+                    Some("bucket".to_string())
+                );
+            }
+            _ => panic!("expected S3 connection"),
+        }
+    }
+
+    #[test]
+    fn test_parse_https_url_with_path() {
+        let url = Url::parse(
+            "https://access_key_id:secret_key@awesome.host.org?bucket=bucket/path/to/dir",
+        )
+        .unwrap();
+        let connection = ObjectStoreConnection::try_from(url).unwrap();
+        match connection {
+            ObjectStoreConnection::S3(builder) => {
+                assert_eq!(
+                    builder.get_config_value(&AmazonS3ConfigKey::AccessKeyId),
+                    Some("access_key_id".to_string())
+                );
+                assert_eq!(
+                    builder.get_config_value(&AmazonS3ConfigKey::SecretAccessKey),
+                    Some("secret_key".to_string())
+                );
+                assert_eq!(
+                    builder.get_config_value(&AmazonS3ConfigKey::Endpoint),
+                    Some("https://awesome.host.org".to_string())
+                );
+                assert_eq!(
+                    builder.get_config_value(&AmazonS3ConfigKey::Region),
+                    Some("default".to_string())
                 );
                 assert_eq!(
                     builder.get_config_value(&AmazonS3ConfigKey::Bucket),
@@ -264,9 +424,75 @@ mod test {
     }
 
     #[test]
-    fn test_parse_https_url() {
+    fn test_parse_s3_url() {
         let url =
-            Url::parse("https://access_key_id:secret_key@s3.us-east-1.awesome.host.org/bucket")
+            Url::parse("s3://access_key_id:secret_key@awesome.host.org?bucket=bucket").unwrap();
+        let connection = ObjectStoreConnection::try_from(url).unwrap();
+        match connection {
+            ObjectStoreConnection::S3(builder) => {
+                assert_eq!(
+                    builder.get_config_value(&AmazonS3ConfigKey::AccessKeyId),
+                    Some("access_key_id".to_string())
+                );
+                assert_eq!(
+                    builder.get_config_value(&AmazonS3ConfigKey::SecretAccessKey),
+                    Some("secret_key".to_string())
+                );
+                assert_eq!(
+                    builder.get_config_value(&AmazonS3ConfigKey::Endpoint),
+                    Some("https://awesome.host.org".to_string())
+                );
+                assert_eq!(
+                    builder.get_config_value(&AmazonS3ConfigKey::Region),
+                    Some("default".to_string())
+                );
+                assert_eq!(
+                    builder.get_config_value(&AmazonS3ConfigKey::Bucket),
+                    Some("bucket".to_string())
+                );
+            }
+            _ => panic!("expected S3 connection"),
+        }
+    }
+
+    #[test]
+    fn test_parse_s3_url_with_region() {
+        let url = Url::parse(
+            "s3://access_key_id:secret_key@awesome.host.org?bucket=bucket&region=region",
+        )
+        .unwrap();
+        let connection = ObjectStoreConnection::try_from(url).unwrap();
+        match connection {
+            ObjectStoreConnection::S3(builder) => {
+                assert_eq!(
+                    builder.get_config_value(&AmazonS3ConfigKey::AccessKeyId),
+                    Some("access_key_id".to_string())
+                );
+                assert_eq!(
+                    builder.get_config_value(&AmazonS3ConfigKey::SecretAccessKey),
+                    Some("secret_key".to_string())
+                );
+                assert_eq!(
+                    builder.get_config_value(&AmazonS3ConfigKey::Endpoint),
+                    Some("https://awesome.host.org".to_string())
+                );
+                assert_eq!(
+                    builder.get_config_value(&AmazonS3ConfigKey::Region),
+                    Some("region".to_string())
+                );
+                assert_eq!(
+                    builder.get_config_value(&AmazonS3ConfigKey::Bucket),
+                    Some("bucket".to_string())
+                );
+            }
+            _ => panic!("expected S3 connection"),
+        }
+    }
+
+    #[test]
+    fn test_parse_s3_url_with_path() {
+        let url =
+            Url::parse("s3://access_key_id:secret_key@awesome.host.org?bucket=bucket/path/to/dir")
                 .unwrap();
         let connection = ObjectStoreConnection::try_from(url).unwrap();
         match connection {
@@ -285,41 +511,7 @@ mod test {
                 );
                 assert_eq!(
                     builder.get_config_value(&AmazonS3ConfigKey::Region),
-                    Some("us-east-1".to_string())
-                );
-                assert_eq!(
-                    builder.get_config_value(&AmazonS3ConfigKey::Bucket),
-                    Some("bucket".to_string())
-                );
-            }
-            _ => panic!("expected S3 connection"),
-        }
-    }
-
-    #[test]
-    fn test_parse_https_url_with_path() {
-        let url = Url::parse(
-            "https://access_key_id:secret_key@s3.us-east-1.awesome.host.org/bucket/path/to/dir",
-        )
-        .unwrap();
-        let connection = ObjectStoreConnection::try_from(url).unwrap();
-        match connection {
-            ObjectStoreConnection::S3(builder) => {
-                assert_eq!(
-                    builder.get_config_value(&AmazonS3ConfigKey::AccessKeyId),
-                    Some("access_key_id".to_string())
-                );
-                assert_eq!(
-                    builder.get_config_value(&AmazonS3ConfigKey::SecretAccessKey),
-                    Some("secret_key".to_string())
-                );
-                assert_eq!(
-                    builder.get_config_value(&AmazonS3ConfigKey::Endpoint),
-                    Some("https://awesome.host.org".to_string())
-                );
-                assert_eq!(
-                    builder.get_config_value(&AmazonS3ConfigKey::Region),
-                    Some("us-east-1".to_string())
+                    Some("default".to_string())
                 );
                 assert_eq!(
                     builder.get_config_value(&AmazonS3ConfigKey::Bucket),

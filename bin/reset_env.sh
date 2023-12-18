@@ -38,7 +38,7 @@ make generate-core-service-key
 cp -f crates/banyan-core-service/data/service-key.public crates/banyan-staging-service/data/platform-key.public
 cp -f crates/banyan-core-service/data/service-key.public crates/banyan-storage-provider-service/data/platform-key.public
 
-# TODO: reading the .env file through a script running in a make file doesn't seem to expand correctly
+# TODO: reading the .env file through a script running in a make file doesn't seem to expand `$(pwd)` correctly
 #       this is a workaround to avoid that
 cd crates/banyan-staging-service
 source .env
