@@ -69,18 +69,31 @@ page](https://console.cloud.google.com/apis/credentials/consent?authuser=3&proje
 
 #### Staging Service and Storage Provider Service 📦
 
-The staging service and storage provider service use a `.env` file to store an argument called `UPLOAD_STORE_URL`. This argument is used to connect to the MinIo backend that is initialized by the `./bin/reset_env.sh` script (discussed below).
+The staging service and storage provider service use a `.env` file to store 
+an argument called `UPLOAD_STORE_URL`. This argument is used to connect to 
+an Object Store backend. This variable must be present at runtime, or the service 
+will fail to start. This variable specifies a connection to the Object Store
+backend the given service should use at runtime.
 
-A sample file exists in either crate, with default credentials appropriate for the MinIo backend set up on your development environment. DO NOT USE THE SPECIFIED CREDENTIALS IN PRODUCTION. You can copy that sample file into place by running the following command:
+A sample file exists in either crate. This file should configure a valid connection
+to a local filesystem Object Store at the path `./data/uploads`. You can copy that 
+sample files into place by running the following command: 
 
 ```sh
 cp crates/banyan-staging-service/.env{.sample,}
 cp crates/banyan-storage-provider-service/.env{.sample,}
 ```
+You must copy these defaults in place before attempting to run either service or resetting your
+devlopment environment with `./bin/reset_env.sh` (discussed below).
 
-The specified variable must be available through the environment at runtime, or the service will fail to start.
+These services also support using an S3 bucket as an Object Store backend. For 
+development purposes this project initializes MinIo backend that is spawned
+locally by `./bin/reset_env.sh`.
 
-If you require object storage against a local filesystem for see either `crates/banyan-staging-service/.env.sample` or `crates/banyan-storage-provider-service/.env.sample` for the appropriate configuration to do so.
+The `.env.sample` files in either crate should contain example connection strings
+for connecting to this local MinIo instance in your development environment. 
+DO NOT USE THE SPECIFIED CREDENTIALS IN PRODUCTION. If you've run`./bin/reset_env.sh`
+successfully then MinIo should be available at those example endpoints.
 
 ### ✨ Automatic Clean Up / First Time Setup
 

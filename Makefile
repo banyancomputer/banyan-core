@@ -21,8 +21,8 @@ clean:
 	rm -rf crates/banyan-storage-provider-service/data/serv* \
 		crates/banyan-storage-provider-service/data/platform* \
 		crates/banyan-storage-provider-service/data/uploads/* \
-	rm -rf ${minio_staging_bucket_path} \
-		${minio_storage_provider_bucket_path}
+	rm -rf crates/banyan-object-store/data/banyan-staging \
+		crates/banyan-object-store/data/banyan-storage-provider
 
 .PHONY: fmt
 fmt:
@@ -77,21 +77,3 @@ connect-to-staging-database:
 .PHONY: connect-to-storage-provider-database
 connect-to-storage-provider-database:
 	sqlite3 crates/banyan-storage-provider-service/data/server.db
-
-# object storage administration
-# =========================================================================== #
-
-# name of the minio container
-minio_container_name = banyan-minio
-# path to the minio volume on the container
-minio_volume_mt_dir_name = data
-# where the minio volume is mounted on the host 
-minio_volume_path = ${HOME}/$(minio_container_name)/$(minio_volume_mt_dir_name)
-# name of the staging service's minio bucket
-minio_staging_bucket_name = banyan-staging
-# name of the storage provider service's minio bucket
-minio_storage_provider_bucket_name = banyan-storage-provider
-
-# paths to the buckets on the minio container
-minio_staging_bucket_path = $(minio_volume_path)/$(minio_staging_bucket_name)
-minio_storage_provider_bucket_path = $(minio_volume_path)/$(minio_storage_provider_bucket_name)
