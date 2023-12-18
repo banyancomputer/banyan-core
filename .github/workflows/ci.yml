@@ -11,7 +11,16 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: false
   test:
+    needs: setup
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -23,6 +32,7 @@ jobs:
         run: make test
 
   lints:
+    needs: setup
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
