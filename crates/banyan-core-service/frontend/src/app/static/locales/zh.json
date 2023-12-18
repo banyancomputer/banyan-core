@@ -184,6 +184,14 @@
 	"driveHasNoSnapshot": "此驱动器没有快照",
 	"whatIsSnapshot": "什么是快照？",
 	"makeSnapshot": "创建快照",
+	"termsOfService": "服务条款和隐私政策",
+	"decline": "拒绝",
+	"acceptTermsAndService": "我已阅读并接受Banyan的服务条款",
+	"isThisAWorkAccount": "这是工作账户吗？",
+	"organizationName": "组织名称",
+	"enterName": "输入姓名",
+	"thisIsNotWorkingAccount": "这不是工作账户",
+	"done": "完成",
 	"betaBannerWarning": "Banyan Storage 仍处于测试阶段，尚未准备好投入生产。我们建议目前在Banyan上存储的任何内容都使用备份存储方法。如果您需要今天在生产环境中存储数据，请联系tim@banyan.computer。",
 	"syncError": "同步错误；请注销然后重新登录以恢复最新的会话。"
 }

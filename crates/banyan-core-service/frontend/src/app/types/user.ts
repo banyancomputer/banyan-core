@@ -14,4 +14,14 @@ export interface User {
 	locale: string,
 	profileImage: string,
 	acceptedTosAt: number | null,
-}
+};
+
+export interface RawUser {
+	id: string;
+	email: string,
+	verified_email: boolean,
+	display_name: string,
+	locale: string,
+	profile_image: string,
+	accepted_tos_at: number | null,
+};
