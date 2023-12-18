@@ -40,3 +40,75 @@ pub async fn handler(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use axum::extract::Path;
+    use uuid::Uuid;
+
+    use super::*;
+    use crate::database::models::DealState;
+    use crate::database::test_helpers;
+    use crate::utils::tests::mock_app_state;
+
+    #[tokio::test]
+    async fn test_get_deal_active() {
+        let db = test_helpers::setup_database().await;
+        let active_deal_id = test_helpers::create_deal(&db, DealState::Active, None)
+            .await
+            .unwrap();
+
+        let res = handler(
+            StorageProviderIdentity {
+                id: "test_host_id".to_string(),
+            },
+            mock_app_state(db.clone()),
+            Path(Uuid::parse_str(active_deal_id.as_str()).unwrap()),
+        )
+        .await;
+
+        assert_eq!(res.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn test_owned_accepted_deals_returned() {
+        let db = test_helpers::setup_database().await;
+        let host_id = test_helpers::create_storage_hosts(&db, "http://mock.com", "mock_name")
+            .await
+            .unwrap();
+        let accepted_deal_id =
+            test_helpers::create_deal(&db, DealState::Accepted, Some(host_id.clone()))
+                .await
+                .unwrap();
+
+        let res = handler(
+            StorageProviderIdentity {
+                id: host_id.clone(),
+            },
+            mock_app_state(db.clone()),
+            Path(Uuid::parse_str(accepted_deal_id.as_str()).unwrap()),
+        )
+        .await;
+
+        assert_eq!(res.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn test_not_owned_accepted_deals_not_returned() {
+        let db = test_helpers::setup_database().await;
+        let accepted_deal_id = test_helpers::create_deal(&db, DealState::Accepted, None)
+            .await
+            .unwrap();
+
+        let res = handler(
+            StorageProviderIdentity {
+                id: "test_host_id".to_string(),
+            },
+            mock_app_state(db.clone()),
+            Path(Uuid::parse_str(accepted_deal_id.as_str()).unwrap()),
+        )
+        .await;
+
+        assert_eq!(res.status(), StatusCode::NOT_FOUND);
+    }
+}

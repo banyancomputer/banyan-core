@@ -15,12 +15,12 @@ use crate::utils::keys::fingerprint_public_key;
 
 #[derive(Clone)]
 pub struct State {
-    database: Database,
-    event_bus: EventBus,
-    secrets: Secrets,
-    service_name: String,
-    service_verifier: ServiceVerificationKey,
-    upload_directory: PathBuf,
+    pub database: Database,
+    pub event_bus: EventBus,
+    pub secrets: Secrets,
+    pub service_name: String,
+    pub service_verifier: ServiceVerificationKey,
+    pub upload_directory: PathBuf,
 }
 
 impl State {

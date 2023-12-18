@@ -76,7 +76,7 @@ impl TaskLike for CreateDealsTask {
             }
         }
 
-        // clean up old snapshots were associated
+        // clean up old deals associated with snapshots
         sqlx::query!(
             "DELETE FROM deals WHERE id NOT IN (SELECT deal_id FROM snapshots) AND state = $1",
             active_deal_state
@@ -163,8 +163,8 @@ mod tests {
 
     fn bins_are_disjoint_sets(bins: &Vec<Bin>) {
         let mut all_snapshots = HashSet::new();
-        for bin in &bins {
-            let snapshots: HashSet<_> = bin.snapshots.iter().map(|(id, size)| id).collect();
+        for bin in bins {
+            let snapshots: HashSet<_> = bin.snapshots.iter().map(|(id, _)| id).collect();
             assert!(all_snapshots.is_disjoint(&snapshots));
             all_snapshots.extend(snapshots);
         }

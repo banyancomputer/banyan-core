@@ -1,7 +1,56 @@
 use sqlx::sqlite::SqlitePoolOptions;
 
-use crate::database::models::{BucketType, MetadataState, StorageClass};
+use crate::database::models::{BucketType, DealState, MetadataState, StorageClass};
 use crate::database::Database;
+
+pub(crate) async fn create_storage_hosts(
+    database: &Database,
+    host_url: &str,
+    host_name: &str,
+) -> Result<String, sqlx::Error> {
+    let host_url = host_url.to_string();
+    let host_name = host_name.to_string();
+    sqlx::query_scalar!(
+            r#"INSERT INTO storage_hosts (id, name, url, fingerprint, pem, used_storage, available_storage)
+            VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id;"#,
+            host_name,
+            host_url,
+            "fingerprint_1",
+            "pem_1",
+            "hello.com",
+            0,
+            0
+        )
+    .fetch_one(database)
+    .await
+}
+
+pub(crate) async fn create_deal(
+    database: &Database,
+    deal_state: DealState,
+    accepted_by: Option<String>,
+) -> Result<String, sqlx::Error> {
+    let deal_state = deal_state.to_string();
+    match accepted_by {
+        Some(accepted_by) => {
+            sqlx::query_scalar!(
+                r#"INSERT INTO deals (state, accepted_by, accepted_at) VALUES ($1, $2, datetime('now')) RETURNING id;"#,
+                deal_state,
+                accepted_by
+            )
+            .fetch_one(database)
+            .await
+        },
+        None => {
+            sqlx::query_scalar!(
+                r#"INSERT INTO deals (state) VALUES ($1) RETURNING id;"#,
+                deal_state
+            )
+            .fetch_one(database)
+            .await
+        }
+    }
+}
 
 pub(crate) async fn create_hot_bucket(
     database: &Database,

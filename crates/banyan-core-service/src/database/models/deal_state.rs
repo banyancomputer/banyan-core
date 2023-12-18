@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Deserialize, Serialize, sqlx::Type)]
+#[derive(Clone, Debug, Deserialize, Serialize, sqlx::Type, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum DealState {
     Active,

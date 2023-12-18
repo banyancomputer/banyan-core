@@ -34,6 +34,10 @@ fmt-check:
 clippy:
 	cargo +nightly clippy --all
 
+.PHONY: test
+test:
+	cargo test --all
+
 # generate authentication keys
 # =========================================================================== #
 # TODO: these commands generate a key by starting a service, and terminating
