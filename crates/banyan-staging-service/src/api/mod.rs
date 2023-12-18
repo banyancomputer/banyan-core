@@ -1,14 +1,14 @@
 use std::error::Error;
 
 use axum::body::HttpBody;
-use axum::routing::post;
+use axum::routing::{get, post};
 use axum::Router;
 use tower_http::cors::CorsLayer;
 
-mod blocks;
 mod client_grant;
 mod prune_blocks;
-pub(crate) mod upload;
+mod read_block;
+mod upload;
 
 use crate::app::AppState;
 
@@ -22,7 +22,8 @@ where
     let cors_layer = CorsLayer::very_permissive();
 
     Router::new()
-        .nest("/blocks", blocks::router(state.clone()))
+        .route("/blocks", post(upload::write_block::handler))
+        .route("/blocks/:block_id", get(read_block::handler))
         .route("/client_grant", post(client_grant::handler))
         .route("/upload", post(upload::handler))
         .route("/core/prune", post(prune_blocks::handler))

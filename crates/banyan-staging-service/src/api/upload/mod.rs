@@ -20,6 +20,7 @@ use crate::upload_store::{ObjectStore, UploadStore};
 
 pub(crate) mod db_helpers;
 mod error;
+pub(crate) mod write_block;
 use db_helpers::*;
 use error::{UploadError, UploadStreamError};
 

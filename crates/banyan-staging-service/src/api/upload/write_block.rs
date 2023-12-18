@@ -25,7 +25,7 @@ pub async fn handler(
     store: UploadStore,
     Json(request): Json<BlockWriteRequest>,
 ) -> Result<Response, BlockWriteError> {
-    let mut db = state.database();
+    let db = state.database();
     let cid = Cid::read_bytes(&request.data[..]).map_err(BlockWriteError::ComputeCid)?;
     if cid != request.cid {
         return Err(BlockWriteError::MismatchedCid((request.cid, cid)));
