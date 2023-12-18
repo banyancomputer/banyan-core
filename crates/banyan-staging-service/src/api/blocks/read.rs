@@ -53,13 +53,37 @@ pub async fn handler(
     // passing in the byte range using GetOptions to the get_opts method on the ObjectStore trait,
     // however data in the "File" type explicitly ignores this range which is incredibly
     // frustrating...
-    let object_path = object_store::path::Path::from(block_details.block_locations.as_str());
-    let data = store
-        .get_range(&object_path, byte_range)
-        .await
-        .map_err(BlockReadError::RetrievalFailed)?;
 
-    Ok((StatusCode::OK, headers, data).into_response())
+    // If this is one of the deprecated CAR file Uploads
+    if block_details
+        .block_locations
+        .to_lowercase()
+        .ends_with(".car")
+    {
+        let data = store
+            .get_range(
+                &object_store::path::Path::from(block_details.block_locations.as_str()),
+                byte_range,
+            )
+            .await
+            .map_err(BlockReadError::RetrievalFailed)?;
+        Ok((StatusCode::OK, headers, data).into_response())
+    }
+    // If this block exists in its own dedicated file
+    else {
+        let object_path = object_store::path::Path::from(format!(
+            "{}/{}.block",
+            block_details.block_locations, normalized_cid
+        ));
+        let data = store
+            .get(&object_path)
+            .await
+            .map_err(BlockReadError::RetrievalFailed)?
+            .bytes()
+            .await
+            .map_err(BlockReadError::RetrievalFailed)?;
+        Ok((StatusCode::OK, headers, data).into_response())
+    }
 }
 
 pub async fn block_from_normalized_cid(
