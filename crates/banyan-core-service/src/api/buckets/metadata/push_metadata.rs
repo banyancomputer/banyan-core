@@ -143,7 +143,7 @@ pub async fn handler(
         }
     };
 
-    if normalized_cids.len() > 0 {
+    if !normalized_cids.is_empty() {
         let cid_iterator = normalized_cids.iter().map(String::as_str);
         PendingExpiration::record_pending_block_expirations(&mut conn, &bucket_id, cid_iterator)
             .await?;
