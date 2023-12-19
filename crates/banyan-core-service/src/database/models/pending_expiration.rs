@@ -9,9 +9,9 @@ impl PendingExpiration {
     pub async fn record_pending_block_expirations(
         conn: &mut DatabaseConnection,
         metadata_id: &str,
-        block_cids: impl IntoIterator<Item = &str>,
+        block_cids: impl Iterator<Item = &str>,
     ) -> Result<(), sqlx::Error> {
-        let mut block_cid_iterator = block_cids.into_iter().peekable();
+        let mut block_cid_iterator = block_cids.peekable();
         if block_cid_iterator.peek().is_none() {
             return Ok(());
         }
@@ -20,7 +20,7 @@ impl PendingExpiration {
             r#"SELECT b.id FROM blocks AS b
                   JOIN block_locations AS bl ON bl.block_id = b.id
                   WHERE bl.metadata_id = $1
-                      AND b.cid IN ("#,
+                      AND b.cid IN "#,
         );
 
         while let Some(cid) = block_cid_iterator.next() {
@@ -31,7 +31,7 @@ impl PendingExpiration {
             }
         }
 
-        block_id_builder.push(");");
+        block_id_builder.push(";");
         let block_ids: Vec<String> = block_id_builder
             .build_query_scalar()
             .persistent(false)
@@ -65,6 +65,9 @@ impl PendingExpiration {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use crate::database::test_helpers::*;
+
     #[tokio::test]
     #[ignore]
     async fn test_empty_block_associations() {
@@ -78,14 +81,16 @@ mod tests {
     }
 
     #[tokio::test]
-    #[ignore]
-    async fn test_multiple_storage_host_expiration() {
-        todo!()
-    }
+    async fn test_pending_expiration_block_association() {
+        let db = setup_database().await;
+        let mut conn = db.begin().await.expect("connection");
 
-    #[tokio::test]
-    #[ignore]
-    async fn test_unlisted_blocks_are_unaffected() {
+        let user_id = sample_user(&mut conn, "user@domain.tld").await;
+        let bucket_id = sample_bucket(&mut conn, &user_id).await;
+        let storage_host_id = create_storage_host(&mut conn, "SP", "https://[::1]:8001/", 0).await;
+
+        let blk_cids: Vec<_> = normalize_cids(generate_cids(data_generator(0..3))).collect();
+
         todo!()
     }
 }

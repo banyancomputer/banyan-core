@@ -143,9 +143,11 @@ pub async fn handler(
         }
     };
 
-    let cid_iterator = normalized_cids.iter().map(String::as_str);
-    PendingExpiration::record_pending_block_expirations(&mut conn, &bucket_id, cid_iterator)
-        .await?;
+    if normalized_cids.len() > 0 {
+        let cid_iterator = normalized_cids.iter().map(String::as_str);
+        PendingExpiration::record_pending_block_expirations(&mut conn, &bucket_id, cid_iterator)
+            .await?;
+    }
 
     // Checkpoint the upload to the database so we can track failures, and perform any necessary
     // clean up behind the scenes. The upload itself will also dwarf the rest of the time of this
