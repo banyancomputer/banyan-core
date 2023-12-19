@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useIntl } from 'react-intl';
+import { useNavigate } from 'react-router-dom';
 
 import { SubmitButton } from '@components/common/SubmitButton';
 
@@ -9,6 +10,7 @@ import { ToastNotifications } from '@/app/utils/toastNotifications';
 
 export const CreateBucketModal = () => {
     const { closeModal } = useModal();
+    const navigate = useNavigate();
     const { messages } = useIntl();
     const [bucketName, setBucketName] = useState('');
     const { createBucketAndMount } = useTomb();
@@ -27,8 +29,9 @@ export const CreateBucketModal = () => {
 
     const create = async () => {
         try {
-            await createBucketAndMount(bucketName, storageClass, bucketType);
+            const bucketId = await createBucketAndMount(bucketName, storageClass, bucketType);
             closeModal();
+            navigate(`/drive/${bucketId}`);
         } catch (error: any) {
             ToastNotifications.error(`${messages.creationError}`, `${messages.tryAgain}`, create);
         };

@@ -49,7 +49,7 @@ export const FilePreviewProvider: FC<{ children: ReactNode }> = ({ children }) =
     const openFile = async (bucket: Bucket, file: string, files: string[], path: string[]) => {
         if (!file) return;
 
-        setFile({...initialState, name: file});
+        setFile({ ...initialState, name: file });
         setFiles(files);
         setBucket(bucket);
         setPath(path);
@@ -95,10 +95,8 @@ export const FilePreviewProvider: FC<{ children: ReactNode }> = ({ children }) =
         const listener = (event: KeyboardEvent) => {
             const selectedFileIndex = files.indexOf(file.name);
             if (event.code === 'ArrowLeft' && selectedFileIndex) {
-                document.removeEventListener('keydown', listener);
                 openPrevious();
             } else if (event.code === 'ArrowRight' && (selectedFileIndex < files.length - 1)) {
-                document.removeEventListener('keydown', listener);
                 openNext();
             }
         };
@@ -108,7 +106,7 @@ export const FilePreviewProvider: FC<{ children: ReactNode }> = ({ children }) =
         return () => {
             document.removeEventListener('keydown', listener);
         }
-    }, [files, file]);
+    }, [file.name]);
 
     return (
         <FilePreviewContext.Provider value={{ file, files, bucket, openFile, closeFile, openNext, openPrevious }}>

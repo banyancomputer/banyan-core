@@ -57,7 +57,7 @@ const App = () => {
 
 	return (
 		<main
-			className="flex flex-col h-screen font-sans bg-mainBackground text-text-900"
+			className="flex flex-col h-screen max-h-screen font-sans bg-mainBackground text-text-900"
 			onDragOver={preventDefaultDragAction}
 			onDrop={preventDefaultDragAction}
 		>
