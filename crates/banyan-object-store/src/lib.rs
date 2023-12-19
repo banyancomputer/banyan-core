@@ -5,13 +5,14 @@ use std::path::PathBuf;
 use object_store::aws::AmazonS3;
 pub use object_store::aws::AmazonS3Builder;
 use object_store::local::LocalFileSystem;
+use object_store::prefix::PrefixStore;
 pub use object_store::Error as ObjectStoreError;
 use url::Url;
 
 #[derive(Debug, Clone)]
 pub enum ObjectStoreConnection {
     Local(PathBuf),
-    S3(AmazonS3Builder),
+    S3((AmazonS3Builder, Option<ObjectStorePath>)),
 }
 
 impl TryFrom<Url> for ObjectStoreConnection {
@@ -60,6 +61,12 @@ impl TryFrom<Url> for ObjectStoreConnection {
                     None => return Err(Self::Error::MissingS3Bucket),
                 };
 
+                // Attempt to parse a prefix from the bucket name
+                let mut bucket_parts = bucket.splitn(2, '/');
+                let bucket_name = bucket_parts.next().unwrap();
+                let maybe_prefix = bucket_parts.next();
+                let maybe_prefix_path = maybe_prefix.map(ObjectStorePath::from);
+
                 let region = match maybe_region {
                     Some(r) => r,
                     // MinIo ignores the configured region, so "default" is fine here
@@ -71,7 +78,8 @@ impl TryFrom<Url> for ObjectStoreConnection {
                     scheme = ?url.scheme(),
                     endpoint = ?endpoint,
                     region = ?region,
-                    bucket = ?bucket,
+                    bucket = ?bucket_name,
+                    prefix = ?maybe_prefix,
                     "using S3 backend"
                 );
 
@@ -80,10 +88,10 @@ impl TryFrom<Url> for ObjectStoreConnection {
                     .with_secret_access_key(secret_key)
                     .with_endpoint(endpoint)
                     .with_region(region)
-                    .with_bucket_name(bucket)
+                    .with_bucket_name(bucket_name)
                     .with_allow_http(true);
 
-                Ok(Self::S3(builder))
+                Ok(Self::S3((builder, maybe_prefix_path)))
             }
 
             // s3 over https:
@@ -115,6 +123,12 @@ impl TryFrom<Url> for ObjectStoreConnection {
                     None => return Err(Self::Error::MissingS3Bucket),
                 };
 
+                // Attempt to parse a prefix from the bucket name
+                let mut bucket_parts = bucket.splitn(2, '/');
+                let bucket_name = bucket_parts.next().unwrap();
+                let maybe_prefix = bucket_parts.next();
+                let maybe_prefix_path = maybe_prefix.map(ObjectStorePath::from);
+
                 let region = match maybe_region {
                     Some(r) => r,
                     // MinIo ignores the configured region, so "default" is fine here
@@ -126,7 +140,8 @@ impl TryFrom<Url> for ObjectStoreConnection {
                     scheme = ?url.scheme(),
                     endpoint = ?endpoint,
                     region = ?region,
-                    bucket_name = ?bucket,
+                    bucket_name = ?bucket_name,
+                    prefix = ?maybe_prefix,
                     "using secure S3 backend"
                 );
 
@@ -135,9 +150,9 @@ impl TryFrom<Url> for ObjectStoreConnection {
                     .with_secret_access_key(secret_key)
                     .with_endpoint(endpoint)
                     .with_region(region)
-                    .with_bucket_name(bucket);
+                    .with_bucket_name(bucket_name);
 
-                Ok(Self::S3(builder))
+                Ok(Self::S3((builder, maybe_prefix_path)))
             }
             // unknown scheme
             scheme => Err(Self::Error::UnknownScheme(scheme.to_string())),
@@ -146,8 +161,10 @@ impl TryFrom<Url> for ObjectStoreConnection {
 }
 
 pub enum ObjectStore {
+    /// An object store against a local filesystem
     Local(LocalFileSystem),
-    S3(AmazonS3),
+    /// An object store against S3 -- wrapped in a Prefix
+    S3(PrefixStore<AmazonS3>),
 }
 
 pub type ObjectStorePath = object_store::path::Path;
@@ -171,8 +188,13 @@ impl ObjectStore {
                 Ok(Self::Local(store))
             }
             ObjectStoreConnection::S3(builder) => {
+                let (builder, maybe_prefix) = builder;
                 let store = builder.clone().build()?;
-                Ok(Self::S3(store))
+                let prefix_path = match maybe_prefix {
+                    Some(prefix) => prefix.clone(),
+                    None => ObjectStorePath::from(""),
+                };
+                Ok(Self::S3(PrefixStore::new(store, prefix_path)))
             }
         }
     }
@@ -233,7 +255,7 @@ mod test {
             Url::parse("http://access_key_id:secret_key@localhost:9000?bucket=bucket").unwrap();
         let connection = ObjectStoreConnection::try_from(url).unwrap();
         match connection {
-            ObjectStoreConnection::S3(builder) => {
+            ObjectStoreConnection::S3((builder, _)) => {
                 assert_eq!(
                     builder.get_config_value(&AmazonS3ConfigKey::AccessKeyId),
                     Some("access_key_id".to_string())
@@ -265,7 +287,7 @@ mod test {
             Url::parse("http://access_key_id:secret_key@localhost:9000?bucket=bucket").unwrap();
         let connection = ObjectStoreConnection::try_from(url).unwrap();
         match connection {
-            ObjectStoreConnection::S3(builder) => {
+            ObjectStoreConnection::S3((builder, _)) => {
                 assert_eq!(
                     builder.get_config_value(&AmazonS3ConfigKey::AccessKeyId),
                     Some("access_key_id".to_string())
@@ -297,7 +319,7 @@ mod test {
                 .unwrap();
         let connection = ObjectStoreConnection::try_from(url).unwrap();
         match connection {
-            ObjectStoreConnection::S3(builder) => {
+            ObjectStoreConnection::S3((builder, path)) => {
                 assert_eq!(
                     builder.get_config_value(&AmazonS3ConfigKey::AccessKeyId),
                     Some("access_key_id".to_string())
@@ -316,8 +338,9 @@ mod test {
                 );
                 assert_eq!(
                     builder.get_config_value(&AmazonS3ConfigKey::Bucket),
-                    Some("bucket/path/to/dir".to_string())
+                    Some("bucket".to_string())
                 );
+                assert_eq!(path, Some(ObjectStorePath::from("path/to/dir")));
             }
             _ => panic!("expected S3 connection"),
         }
@@ -329,7 +352,7 @@ mod test {
             Url::parse("https://access_key_id:secret_key@awesome.host.org?bucket=bucket").unwrap();
         let connection = ObjectStoreConnection::try_from(url).unwrap();
         match connection {
-            ObjectStoreConnection::S3(builder) => {
+            ObjectStoreConnection::S3((builder, _)) => {
                 assert_eq!(
                     builder.get_config_value(&AmazonS3ConfigKey::AccessKeyId),
                     Some("access_key_id".to_string())
@@ -363,7 +386,7 @@ mod test {
         .unwrap();
         let connection = ObjectStoreConnection::try_from(url).unwrap();
         match connection {
-            ObjectStoreConnection::S3(builder) => {
+            ObjectStoreConnection::S3((builder, _)) => {
                 assert_eq!(
                     builder.get_config_value(&AmazonS3ConfigKey::AccessKeyId),
                     Some("access_key_id".to_string())
@@ -397,7 +420,7 @@ mod test {
         .unwrap();
         let connection = ObjectStoreConnection::try_from(url).unwrap();
         match connection {
-            ObjectStoreConnection::S3(builder) => {
+            ObjectStoreConnection::S3((builder, path)) => {
                 assert_eq!(
                     builder.get_config_value(&AmazonS3ConfigKey::AccessKeyId),
                     Some("access_key_id".to_string())
@@ -416,8 +439,9 @@ mod test {
                 );
                 assert_eq!(
                     builder.get_config_value(&AmazonS3ConfigKey::Bucket),
-                    Some("bucket/path/to/dir".to_string())
+                    Some("bucket".to_string())
                 );
+                assert_eq!(path, Some(ObjectStorePath::from("path/to/dir")));
             }
             _ => panic!("expected S3 connection"),
         }
@@ -429,7 +453,7 @@ mod test {
             Url::parse("s3://access_key_id:secret_key@awesome.host.org?bucket=bucket").unwrap();
         let connection = ObjectStoreConnection::try_from(url).unwrap();
         match connection {
-            ObjectStoreConnection::S3(builder) => {
+            ObjectStoreConnection::S3((builder, _)) => {
                 assert_eq!(
                     builder.get_config_value(&AmazonS3ConfigKey::AccessKeyId),
                     Some("access_key_id".to_string())
@@ -463,7 +487,7 @@ mod test {
         .unwrap();
         let connection = ObjectStoreConnection::try_from(url).unwrap();
         match connection {
-            ObjectStoreConnection::S3(builder) => {
+            ObjectStoreConnection::S3((builder, _)) => {
                 assert_eq!(
                     builder.get_config_value(&AmazonS3ConfigKey::AccessKeyId),
                     Some("access_key_id".to_string())
@@ -496,7 +520,7 @@ mod test {
                 .unwrap();
         let connection = ObjectStoreConnection::try_from(url).unwrap();
         match connection {
-            ObjectStoreConnection::S3(builder) => {
+            ObjectStoreConnection::S3((builder, path)) => {
                 assert_eq!(
                     builder.get_config_value(&AmazonS3ConfigKey::AccessKeyId),
                     Some("access_key_id".to_string())
@@ -515,8 +539,9 @@ mod test {
                 );
                 assert_eq!(
                     builder.get_config_value(&AmazonS3ConfigKey::Bucket),
-                    Some("bucket/path/to/dir".to_string())
+                    Some("bucket".to_string())
                 );
+                assert_eq!(path, Some(ObjectStorePath::from("path/to/dir")));
             }
             _ => panic!("expected S3 connection"),
         }
