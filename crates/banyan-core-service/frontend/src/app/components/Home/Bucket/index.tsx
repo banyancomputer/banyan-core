@@ -48,6 +48,7 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
     };
 
     const openBucket = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+        if (!bucket.mount) return;
         // @ts-ignore
         if (event.target.id === 'bucketContextMenu') { return; }
         navigate(`/drive/${bucket.id}`);
@@ -97,7 +98,7 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
 
     return (
         <div
-            className="px-3 py-6 rounded-xl cursor-pointer transition-all bg-secondaryBackground hover:bg-bucket-bucketHoverBackground"
+            className={`px-3 py-6 rounded-xl cursor-pointer transition-all bg-secondaryBackground hover:bg-bucket-bucketHoverBackground ${!bucket.mount && 'cursor-not-allowed'}`}
             ref={bucketRef}
             onContextMenu={onContextMenu}
             onClick={openBucket}
@@ -105,7 +106,7 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
             onDragOver={preventDefaultDragAction}
         >
             <div
-                className={`absolute ${!isContextMenuVisible && 'invisible'} transition-none z-10`}
+                className={`absolute ${!isContextMenuVisible && 'invisible'} transition-none z-10 cursor-pointer`}
                 ref={bucketActionsRef}
                 style={{ top: `${position.y}px`, left: `${position.x}px` }}
                 id="bucketActions"
