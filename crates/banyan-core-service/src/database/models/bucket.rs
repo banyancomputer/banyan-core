@@ -779,7 +779,11 @@ mod tests {
 		let mut conn = db.begin().await.expect("connection");
 
 		let user_id = sample_user(&mut conn, "user@domain.tld").await;
-		let _bucket_id = sample_bucket(&mut conn, &user_id).await;
+		let bucket_id = sample_bucket(&mut conn, &user_id).await;
+        let _storage_host_id = create_storage_host(&mut conn, "Diskz", "https://localhost:8001/", 1_000_000).await;
+
+        let first_time = OffsetDateTime::now_utc() - Duration::from_secs(45);
+        let _initial_metadata_id = create_metadata(&mut conn, &bucket_id, "mcid-1", "rcid-1", MetadataState::Outdated, Some(first_time)).await;
 
 		todo!()
 	}

@@ -54,10 +54,6 @@ impl PendingExpiration {
         });
 
         pending_association_query.push(";");
-        tracing::info!(
-            "pending association query sql: {}",
-            pending_association_query.sql()
-        );
         pending_association_query
             .build()
             .execute(&mut *conn)

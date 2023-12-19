@@ -4,6 +4,25 @@ use time::OffsetDateTime;
 use crate::database::models::{BucketType, MetadataState, StorageClass};
 use crate::database::{Database, DatabaseConnection};
 
+pub(crate) async fn associate_blocks(
+    conn: &mut DatabaseConnection,
+    metadata_id: &str,
+    storage_host_id: &str,
+    block_ids: impl Iterator<Item = &str>,
+) {
+    for bid in block_ids {
+        sqlx::query!(
+            "INSERT INTO block_locations (metadata_id, storage_host_id, block_id) VALUES ($1, $2, $3);",
+            metadata_id,
+            storage_host_id,
+            bid,
+        )
+        .execute(&mut *conn)
+        .await
+        .expect("blocks to associate");
+    }
+}
+
 pub(crate) async fn assert_metadata_in_state(
     conn: &mut DatabaseConnection,
     metadata_id: &str,
@@ -21,6 +40,24 @@ pub(crate) async fn assert_metadata_in_state(
         db_state, expected_state,
         "metadata was not in expected state"
     );
+}
+
+pub(crate) async fn create_blocks(
+    conn: &mut DatabaseConnection,
+    cid_list: impl Iterator<Item = cid::Cid>,
+) -> Vec<String> {
+    let mut block_ids = Vec::new();
+
+    for cid in cid_list {
+        let bid = sqlx::query_scalar!("INSERT INTO blocks (cid) VALUES ($1) RETURNING id;", cid)
+            .fetch_one(&mut *conn)
+            .await
+            .expect("block creation");
+
+        block_ids.push(bid);
+    }
+
+    block_ids
 }
 
 pub(crate) async fn create_bucket_key(
@@ -102,6 +139,27 @@ pub(crate) async fn create_metadata(
         .await
         .expect("metadata creation")
     }
+}
+
+pub(crate) async fn create_storage_host(
+    conn: &mut DatabaseConnection,
+    name: &str,
+    url: &str,
+    available_storage: i64,
+) -> String {
+    // Note: this is not creating real fingerprints or public keys but only because the tests
+    // haven't needed that level of real data to this point
+    sqlx::query_scalar!(
+        r#"INSERT INTO storage_hosts (name, url, used_storage, available_storage, fingerprint, pem)
+               VALUES ($1, $2, 0, $3, 'not-a-real-fingerprint', 'not-a-real-pubkey')
+               RETURNING id;"#,
+        name,
+        url,
+        available_storage,
+    )
+    .fetch_one(&mut *conn)
+    .await
+    .expect("creation of storage host")
 }
 
 pub(crate) async fn create_user(
