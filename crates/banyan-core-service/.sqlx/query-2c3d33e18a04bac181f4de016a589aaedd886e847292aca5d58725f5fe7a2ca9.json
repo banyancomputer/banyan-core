@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT CAST('candy corn is tast' AS TEXT) as 'timestamp: DatabaseTimestamp';",
+  "describe": {
+    "columns": [
+      {
+        "name": "timestamp: DatabaseTimestamp",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "2c3d33e18a04bac181f4de016a589aaedd886e847292aca5d58725f5fe7a2ca9"
+}

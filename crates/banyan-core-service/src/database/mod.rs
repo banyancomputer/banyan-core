@@ -2,6 +2,7 @@ use sqlx::SqlitePool;
 
 pub mod models;
 pub mod sqlite;
+mod types;
 
 #[cfg(test)]
 pub(crate) mod test_helpers;
