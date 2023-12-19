@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 use sqlx::sqlite::SqlitePoolOptions;
 use time::OffsetDateTime;
 
@@ -44,7 +46,7 @@ pub(crate) async fn assert_metadata_in_state(
 
 pub(crate) async fn create_blocks(
     conn: &mut DatabaseConnection,
-    cid_list: impl Iterator<Item = cid::Cid>,
+    cid_list: impl Iterator<Item = &str>,
 ) -> Vec<String> {
     let mut block_ids = Vec::new();
 
@@ -180,6 +182,26 @@ pub(crate) async fn create_user(
     .expect("user creation")
 }
 
+pub(crate) fn data_generator<'a>(range: Range<usize>) -> impl Iterator<Item = Vec<u8>> + 'a {
+    range.map(|n| n.to_le_bytes().to_vec())
+}
+
+pub(crate) fn generate_cids<'a>(
+    src_data: impl Iterator<Item = Vec<u8>> + 'a,
+) -> impl Iterator<Item = cid::Cid> + 'a {
+    use cid::multihash::MultihashDigest;
+    src_data.map(|d| cid::Cid::new_v1(0x55, cid::multihash::Code::Blake3_256.digest(d.as_slice())))
+}
+
+pub(crate) fn normalize_cids<'a>(
+    src_data: impl Iterator<Item = cid::Cid> + 'a,
+) -> impl Iterator<Item = String> + 'a {
+    src_data.map(|cid| {
+        cid.to_string_of_base(cid::multibase::Base::Base64Url)
+            .expect("valid conversion")
+    })
+}
+
 pub(crate) async fn pending_metadata(
     conn: &mut DatabaseConnection,
     bucket_id: &str,
@@ -190,6 +212,20 @@ pub(crate) async fn pending_metadata(
 
 pub(crate) async fn sample_bucket(conn: &mut DatabaseConnection, user_id: &str) -> String {
     create_hot_bucket(conn, user_id, "Habernero").await
+}
+
+pub(crate) async fn setup_database() -> Database {
+    let pool = SqlitePoolOptions::new()
+        .connect("sqlite::memory:")
+        .await
+        .expect("Failed to connect to the database");
+
+    sqlx::migrate!()
+        .run(&pool)
+        .await
+        .expect("failed to run migrations");
+
+    pool
 }
 
 pub(crate) async fn sample_metadata(
@@ -206,18 +242,4 @@ pub(crate) async fn sample_metadata(
 
 pub(crate) async fn sample_user(conn: &mut DatabaseConnection, email: &str) -> String {
     create_user(conn, email, "Generic Tester").await
-}
-
-pub(crate) async fn setup_database() -> Database {
-    let pool = SqlitePoolOptions::new()
-        .connect("sqlite::memory:")
-        .await
-        .expect("Failed to connect to the database");
-
-    sqlx::migrate!()
-        .run(&pool)
-        .await
-        .expect("failed to run migrations");
-
-    pool
 }

@@ -47,7 +47,7 @@ impl Bucket {
     pub async fn approve_keys_by_fingerprint(
         conn: &mut DatabaseConnection,
         bucket_id: &str,
-        fingerprints: impl IntoIterator<Item = &str>,
+        fingerprints: impl Iterator<Item = &str>,
     ) -> Result<u64, sqlx::Error> {
         let mut builder =
             QueryBuilder::new("UPDATE bucket_keys SET approved = 1 WHERE bucket_id = ");
@@ -55,7 +55,7 @@ impl Bucket {
         builder.push_bind(bucket_id);
         builder.push(" AND fingerprint IN (");
 
-        let mut key_iterator = fingerprints.into_iter().peekable();
+        let mut key_iterator = fingerprints.peekable();
         while let Some(key) = key_iterator.next() {
             builder.push_bind(key);
 
@@ -100,9 +100,9 @@ impl Bucket {
     pub async fn expire_blocks(
         conn: &mut DatabaseConnection,
         bucket_id: &str,
-        block_list: impl IntoIterator<Item = &str>,
+        block_list: impl Iterator<Item = &str>,
     ) -> Result<(u64, u64), sqlx::Error> {
-        let mut block_iter = block_list.into_iter().peekable();
+        let mut block_iter = block_list.peekable();
 
         // Short circuit if there are no blocks to expire
         if block_iter.peek().is_none() {
@@ -167,13 +167,7 @@ impl Bucket {
         for expired_chunk in expired_associations.chunks(DATABASE_CHUNK_LIMIT) {
             let mut expire_builder = sqlx::QueryBuilder::new(
                 r#"UPDATE block_locations SET expired_at = DATETIME('now')
-                       WHERE (block_id, metadata_id, storage_host_id) IN (VALUES "#,
-            );
-
-            let mut prune_candidate_builder = sqlx::QueryBuilder::new(
-                r#"SELECT storage_host_id,block_id FROM
-                       block_locations WHERE (block_id, storage_host_id)
-                           IN (VALUES "#,
+                       WHERE (block_id, metadata_id, storage_host_id) IN "#,
             );
 
             expire_builder.push_tuples(expired_chunk, |mut b, location| {
@@ -182,19 +176,27 @@ impl Bucket {
                 b.push_bind(&location.storage_host_id);
             });
 
-            prune_candidate_builder.push_tuples(expired_chunk, |mut b, location| {
-                b.push_bind(&location.block_id);
-                b.push_bind(&location.metadata_id);
-                b.push_bind(&location.storage_host_id);
-            });
-
-            expire_builder.push(");");
-            prune_candidate_builder
-                .push(") GROUP BY (block_id, storage_host_id) HAVING COUNT(*) > 1;");
+            expire_builder.push(";");
 
             let expire_query = expire_builder.build().persistent(false);
             let expire_query_result = expire_query.execute(&mut *conn).await?;
             total_rows_expired += expire_query_result.rows_affected();
+
+            // note: this query is currently incorrect, and need to be rewritten. I need to find
+            // block, storage host pairs, where all all the associations are marked as expired and
+            // are not already pruned...
+            let mut prune_candidate_builder = sqlx::QueryBuilder::new(
+                r#"SELECT block_id, storage_host_id FROM block_locations
+                       WHERE pruned_at IS NULL AND (block_id, storage_host_id) IN "#,
+            );
+
+            prune_candidate_builder.push_tuples(expired_chunk, |mut b, location| {
+                b.push_bind(&location.block_id);
+                b.push_bind(&location.storage_host_id);
+            });
+
+            prune_candidate_builder
+                .push(" GROUP BY block_id, storage_host_id HAVING COUNT(*) = COUNT(expired_at);");
 
             let prune_candidate_query = prune_candidate_builder
                 .build_query_as::<PruneCandidate>()
@@ -329,7 +331,7 @@ impl Bucket {
     }
 }
 
-#[derive(sqlx::FromRow)]
+#[derive(Debug, sqlx::FromRow)]
 struct PruneCandidate {
     storage_host_id: String,
     block_id: String,
@@ -770,103 +772,148 @@ mod tests {
         assert!(!unknown_bucket_owner);
     }
 
-	/// Test that blocks associated with older versions of metadata are untouched when no blocks
-	/// are provided
-	#[tokio::test]
-	#[ignore]
-	async fn test_expire_blocks_noop() {
-		let db = setup_database().await;
-		let mut conn = db.begin().await.expect("connection");
+    #[tokio::test]
+    async fn test_block_expiration() {
+        let db = setup_database().await;
+        let mut conn = db.begin().await.expect("connection");
 
-		let user_id = sample_user(&mut conn, "user@domain.tld").await;
-		let bucket_id = sample_bucket(&mut conn, &user_id).await;
-        let _storage_host_id = create_storage_host(&mut conn, "Diskz", "https://localhost:8001/", 1_000_000).await;
+        let user_id = sample_user(&mut conn, "user@domain.tld").await;
+        let bucket_id = sample_bucket(&mut conn, &user_id).await;
+        let prim_storage_host_id =
+            create_storage_host(&mut conn, "Diskz", "https://127.0.0.1:8001/", 1_000_000).await;
+        let bak_storage_host_id =
+            create_storage_host(&mut conn, "Bax", "https://127.0.0.1:8002/", 3_000_000).await;
 
         let first_time = OffsetDateTime::now_utc() - Duration::from_secs(45);
-        let _initial_metadata_id = create_metadata(&mut conn, &bucket_id, "mcid-1", "rcid-1", MetadataState::Outdated, Some(first_time)).await;
+        let initial_metadata_id = create_metadata(
+            &mut conn,
+            &bucket_id,
+            "mcid-1",
+            "rcid-1",
+            MetadataState::Outdated,
+            Some(first_time),
+        )
+        .await;
 
-		todo!()
-	}
+        let initial_cids: Vec<_> = normalize_cids(generate_cids(data_generator(0..3))).collect();
+        let initial_blocks =
+            create_blocks(&mut conn, initial_cids.iter().map(String::as_str)).await;
 
-	/// Test that blocks associated with older versions of metadata are marked as expired when
-	/// their CID is provided
-	#[tokio::test]
-	#[ignore]
-	async fn test_expire_blocks_expected() {
-		let db = setup_database().await;
-		let mut conn = db.begin().await.expect("connection");
+        associate_blocks(
+            &mut conn,
+            &initial_metadata_id,
+            &prim_storage_host_id,
+            initial_blocks.iter().map(String::as_str),
+        )
+        .await;
+        associate_blocks(
+            &mut conn,
+            &initial_metadata_id,
+            &bak_storage_host_id,
+            initial_blocks.iter().map(String::as_str),
+        )
+        .await;
 
-		let user_id = sample_user(&mut conn, "user@domain.tld").await;
-		let _bucket_id = sample_bucket(&mut conn, &user_id).await;
+        let current_time = OffsetDateTime::now_utc();
+        let following_metadata_id = create_metadata(
+            &mut conn,
+            &bucket_id,
+            "mcid-2",
+            "rcid-2",
+            MetadataState::Current,
+            Some(current_time),
+        )
+        .await;
 
-		todo!()
-	}
+        let following_cids: Vec<_> = normalize_cids(generate_cids(data_generator(3..6))).collect();
+        let following_blocks =
+            create_blocks(&mut conn, following_cids.iter().map(String::as_str)).await;
 
-	/// Test that blocks associated with older versions of ignore unknown blocks, this should
-	/// produce a warning but that kind of side-effect isn't covered in this test.
-	#[tokio::test]
-	#[ignore]
-	async fn test_expire_blocks_unknown() {
-		let db = setup_database().await;
-		let mut conn = db.begin().await.expect("connection");
+        associate_blocks(
+            &mut conn,
+            &following_metadata_id,
+            &prim_storage_host_id,
+            following_blocks.iter().map(String::as_str),
+        )
+        .await;
+        associate_blocks(
+            &mut conn,
+            &following_metadata_id,
+            &bak_storage_host_id,
+            following_blocks.iter().map(String::as_str),
+        )
+        .await;
 
-		let user_id = sample_user(&mut conn, "user@domain.tld").await;
-		let _bucket_id = sample_bucket(&mut conn, &user_id).await;
+        // Test that blocks associated to metadata are untouched when no blocks are provided
+        let empty_list: Vec<String> = Vec::new();
+        Bucket::expire_blocks(&mut conn, &bucket_id, empty_list.iter().map(String::as_str))
+            .await
+            .expect("expire success");
 
-		todo!()
-	}
+        let expired_block_count = sqlx::query_scalar!(
+            "SELECT COUNT(*) FROM block_locations WHERE expired_at IS NOT NULL;",
+        )
+        .fetch_one(&mut *conn)
+        .await
+        .expect("count success");
 
-	/// Test that blocks associated with older versions of metadata are marked as expired when a
-	/// non-normalized form of their CID is provided
-	#[tokio::test]
-	#[ignore]
-	async fn test_expire_blocks_normalize_cids() {
-		let db = setup_database().await;
-		let mut conn = db.begin().await.expect("connection");
+        assert_eq!(expired_block_count, 0);
 
-		let user_id = sample_user(&mut conn, "user@domain.tld").await;
-		let _bucket_id = sample_bucket(&mut conn, &user_id).await;
+        // Ensure unknown blocks are ignored and don't mess with any existing blocks
+        let fake_blocks = vec!["definitely-not-an-id".to_string()];
+        Bucket::expire_blocks(
+            &mut conn,
+            &bucket_id,
+            fake_blocks.iter().map(String::as_str),
+        )
+        .await
+        .expect("expire success");
 
-		todo!()
-	}
+        let expired_block_count = sqlx::query_scalar!(
+            "SELECT COUNT(*) FROM block_locations WHERE expired_at IS NOT NULL;",
+        )
+        .fetch_one(&mut *conn)
+        .await
+        .expect("count success");
 
-	/// Test that blocks stored at multiple storage hosts are all marked as expired
-	#[tokio::test]
-	#[ignore]
-	async fn test_expire_blocks_multiple_storage_hosts() {
-		let db = setup_database().await;
-		let mut conn = db.begin().await.expect("connection");
+        assert_eq!(expired_block_count, 0);
 
-		let user_id = sample_user(&mut conn, "user@domain.tld").await;
-		let _bucket_id = sample_bucket(&mut conn, &user_id).await;
+        // Associate one of the blocks with a different bucket so it doesn't get pruned, but only
+        // at a single storage host
+        let alt_user_id = sample_user(&mut conn, "alt@domain.tld").await;
+        let alt_bucket_id = sample_bucket(&mut conn, &alt_user_id).await;
+        let alt_metadata_id = create_metadata(
+            &mut conn,
+            &alt_bucket_id,
+            "amcid",
+            "arcid",
+            MetadataState::Current,
+            None,
+        )
+        .await;
 
-		todo!()
-	}
+        let alt_block = vec![initial_blocks[0].as_str()];
+        associate_blocks(
+            &mut conn,
+            &alt_metadata_id,
+            &prim_storage_host_id,
+            alt_block.into_iter(),
+        )
+        .await;
 
-	/// Test that duplicate blocks associated with other buckets are not expired
-	#[tokio::test]
-	#[ignore]
-	async fn test_expire_blocks_safe_inter_bucket() {
-		let db = setup_database().await;
-		let mut conn = db.begin().await.expect("connection");
+        // Test that blocks associated with different versions of metadata are marked as expired when
+        // their CID is provided
+        let expire_blocks = vec![initial_cids[0].as_str(), following_cids[0].as_str()];
+        let (expired, pruned) =
+            Bucket::expire_blocks(&mut conn, &bucket_id, expire_blocks.into_iter())
+                .await
+                .expect("expire success");
 
-		let user_id = sample_user(&mut conn, "user@domain.tld").await;
-		let _bucket_id = sample_bucket(&mut conn, &user_id).await;
+        // Make sure 2x blocks are expired at each of 2x storage hosts
+        assert_eq!(expired, 4);
 
-		todo!()
-	}
-
-	/// After changes have been made to expired blocks, we need to queue a background task that
-	/// will perform all the tasks involved in cleaning them up.
-	#[tokio::test]
-	#[ignore]
-	async fn test_expire_blocks_queues_prune_task() {
-		let db = setup_database().await;
-		let mut conn = db.begin().await.expect("connection");
-
-		let user_id = sample_user(&mut conn, "user@domain.tld").await;
-		let _bucket_id = sample_bucket(&mut conn, &user_id).await;
-
-		todo!()
-	}
+        // Make sure 2x blocks are pruned at one storage host, the other should hold on to one of
+        // the two blocks due to the association to the `alt_metadata_id`
+        assert_eq!(pruned, 3);
+    }
 }
