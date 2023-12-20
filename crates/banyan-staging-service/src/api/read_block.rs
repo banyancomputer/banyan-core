@@ -55,14 +55,10 @@ pub async fn handler(
     // frustrating...
 
     // If this is one of the deprecated CAR file Uploads
-    if block_details
-        .block_locations
-        .to_lowercase()
-        .ends_with(".car")
-    {
+    if block_details.blocks_path.to_lowercase().ends_with(".car") {
         let data = store
             .get_range(
-                &object_store::path::Path::from(block_details.block_locations.as_str()),
+                &object_store::path::Path::from(block_details.blocks_path.as_str()),
                 byte_range,
             )
             .await
@@ -73,7 +69,7 @@ pub async fn handler(
     else {
         let object_path = object_store::path::Path::from(format!(
             "{}/{}.block",
-            block_details.block_locations, normalized_cid
+            block_details.blocks_path, normalized_cid
         ));
         let data = store
             .get(&object_path)

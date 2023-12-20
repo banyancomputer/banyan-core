@@ -1,3 +1,4 @@
+use tracing::info;
 use uuid::Uuid;
 
 use super::error::UploadError;
@@ -13,21 +14,32 @@ pub async fn start_upload(
         .display()
         .to_string();
 
-    let upload = sqlx::query_as(
+    let mut upload = Upload {
+        id: String::new(),
+        client_id: client_id.to_string(),
+        metadata_id: metadata_id.to_string(),
+        reported_size: reported_size as i64,
+        blocks_path,
+        state: String::from("started"),
+    };
+
+    upload.id = sqlx::query_scalar!(
         r#"
         INSERT INTO
             uploads (client_id, metadata_id, reported_size, blocks_path, state)
-            VALUES ($1, $2, $3, $4, 'started');
+            VALUES ($1, $2, $3, $4, 'started')
+            RETURNING id;
         "#,
+        upload.client_id,
+        upload.metadata_id,
+        upload.reported_size,
+        upload.blocks_path
     )
-    .bind(client_id.to_string())
-    .bind(metadata_id.to_string())
-    .bind(reported_size as i64)
-    .bind(&blocks_path)
     .fetch_one(db)
     .await
     .map_err(map_sqlx_error)
     .map_err(UploadError::Database)?;
+
     Ok(upload)
 }
 
@@ -71,12 +83,12 @@ pub async fn complete_upload(
     // the rename is successfuly
     sqlx::query(
         r#"
-                    UPDATE uploads SET
-                            state = 'complete',
-                            final_size = $1,
-                            integrity_hash = $2
-                        WHERE id = $3;
-                "#,
+        UPDATE uploads SET
+                state = 'complete',
+                final_size = $1,
+                integrity_hash = $2
+            WHERE id = $3;
+        "#,
     )
     .bind(total_size)
     .bind(integrity_hash)

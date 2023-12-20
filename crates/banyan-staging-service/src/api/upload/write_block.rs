@@ -10,7 +10,7 @@ use object_store::ObjectStore;
 use serde::Deserialize;
 use uuid::Uuid;
 
-use super::super::upload::db_helpers::*;
+use super::super::upload::utils::*;
 use crate::app::AppState;
 // use crate::database::models::BlockDetails;
 // use crate::database::Database;

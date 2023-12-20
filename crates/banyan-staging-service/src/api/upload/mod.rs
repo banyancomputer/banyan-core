@@ -9,7 +9,7 @@ use bytes::Bytes;
 use futures::{TryStream, TryStreamExt};
 use object_store::path::Path;
 use serde::{Deserialize, Serialize};
-use tracing::warn;
+use tracing::{info, warn};
 use uuid::Uuid;
 
 use crate::app::AppState;
@@ -18,11 +18,11 @@ use crate::extractors::AuthenticatedClient;
 use crate::tasks::ReportUploadTask;
 use crate::upload_store::{ObjectStore, UploadStore};
 
-pub(crate) mod db_helpers;
 mod error;
+pub(crate) mod utils;
 pub(crate) mod write_block;
-use db_helpers::*;
 use error::{UploadError, UploadStreamError};
+use utils::*;
 
 /// Limit on the size of the JSON request that accompanies an upload.
 const UPLOAD_REQUEST_SIZE_LIMIT: u64 = 100 * 1_024;
@@ -41,6 +41,7 @@ pub async fn handler(
     TypedHeader(content_type): TypedHeader<ContentType>,
     body: BodyStream,
 ) -> Result<Response, UploadError> {
+    tracing::info!("starting the upload thingy!");
     let mut db = state.database();
     let reported_body_length = content_len.0;
     if reported_body_length > client.remaining_storage() {
@@ -76,6 +77,8 @@ pub async fn handler(
         .await
         .map_err(UploadError::InvalidRequestData)?;
     let content_hash = request.content_hash;
+
+    info!("starting the upload;");
 
     let upload = start_upload(
         &db,
@@ -128,17 +131,10 @@ pub async fn handler(
         Err(err) => {
             // todo: we don't care in the response if this fails, but if it does we will want to
             // clean it up in the future which should be handled by a background task
-            handle_failed_upload(&db, &upload.id).await;
+            fail_upload(&db, &upload.id).await?;
             Err(err.into())
         }
     }
-}
-
-async fn handle_failed_upload(db: &Database, upload_id: &str) {
-    // attempt to report the upload as failed, but that fails we'll need to handle it in a
-    // future clean-up task. todo: should actually just enqueue and entire clean up process
-    // and report this as failed there...
-    let _ = fail_upload(db, upload_id).await;
 }
 
 async fn process_upload_stream<S>(
@@ -170,10 +166,10 @@ where
 
             sqlx::query(
                 r#"
-                            INSERT OR IGNORE INTO
-                                blocks (cid, data_length)
-                                VALUES ($1, $2);
-                        "#,
+                INSERT OR IGNORE INTO
+                    blocks (cid, data_length)
+                    VALUES ($1, $2);
+                "#,
             )
             .bind(cid_string.clone())
             .bind(block.length() as i64)
@@ -196,10 +192,10 @@ where
             // create uploads_blocks row with the block information
             sqlx::query(
                 r#"
-                                INSERT INTO
-                                    uploads_blocks (upload_id, block_id, byte_offset)
-                                    VALUES ($1, $2, $3);
-                            "#,
+                INSERT INTO
+                    uploads_blocks (upload_id, block_id, byte_offset)
+                    VALUES ($1, $2, $3);
+                "#,
             )
             .bind(upload.id.clone())
             .bind(block_id.to_string())
