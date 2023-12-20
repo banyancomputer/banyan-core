@@ -142,15 +142,6 @@
         }
     </style>
     <script defer>
-        let email;
-
-        function handleEmail (event) {
-            email = event;
-            console.log(email);
-        };
-
-        function continueWithEmail () {}
-
         function login () {
             window.location.href = '/auth/login/google'
         };
@@ -172,23 +163,6 @@
         <div class="text-area">
             <div class="text-area-wrapper ">
                 <h3 class="heading">Welcome to Banyan</h3>
-                <input
-                    class="input"
-                    type="text"
-                    oninput="handleEmail(this.value)"
-                    placeholder="Email address"
-                >
-                <button
-                    class="submit"
-                    onclick="continueWithEmail()"
-                >
-                Continue
-                </button>
-                <div class="separator">
-                    <div></div>
-                    Or
-                    <div></div>
-                </div>
                 <button
                     class="submit-by-google"
                     onclick="login()"
