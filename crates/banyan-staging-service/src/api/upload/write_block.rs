@@ -75,6 +75,8 @@ pub async fn handler(
         .await
         .map_err(BlockWriteError::WriteFailed)?;
 
+    tracing::error!("rqcpmlted: {:?}", request.completed);
+
     // If the client marked this request as being the final one in the upload
     if request.completed.is_some() {
         complete_upload(&db, 0, "", &upload.id).await.unwrap();
@@ -110,6 +112,12 @@ pub async fn handler(
         .fetch_one(&db)
         .await
         .map_err(BlockWriteError::DbFailure)?;
+
+        tracing::warn!(
+            "resporting upload: {:?}, total_size: {}",
+            all_cids,
+            total_size
+        );
 
         ReportUploadTask::new(
             client.storage_grant_id(),
@@ -182,5 +190,5 @@ pub struct BlockWriteRequest {
     pub cid: Cid,
     pub data: Vec<u8>,
     pub metadata_id: Uuid,
-    pub completed: Option<()>,
+    pub completed: Option<bool>,
 }
