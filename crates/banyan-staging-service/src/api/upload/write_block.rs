@@ -12,11 +12,11 @@ use cid::Cid;
 use object_store::path::Path;
 use object_store::ObjectStore;
 use serde::Deserialize;
-use tracing::warn;
 use uuid::Uuid;
 
-use super::db::write_block_to_tables;
-use crate::api::upload::{complete_upload, get_upload, start_upload};
+use crate::api::upload::{
+    complete_upload, get_upload, start_upload, write_block_to_tables, UploadError,
+};
 use crate::app::AppState;
 use crate::extractors::AuthenticatedClient;
 use crate::tasks::ReportUploadTask;
@@ -28,42 +28,35 @@ pub async fn handler(
     client: AuthenticatedClient,
     store: UploadStore,
     Json(request): Json<BlockWriteRequest>,
-) -> Result<Response, BlockWriteError> {
+) -> Result<Response, UploadError> {
     let mut db = state.database();
     let codec = request.cid.codec();
     let hash = Code::Sha2_256.digest(&request.data);
     let computed_cid = Cid::new(cid::Version::V1, codec, hash)
-        .map_err(BlockWriteError::ComputeCid)?
+        .map_err(UploadError::Cid)?
         .to_string_of_base(Base::Base64Url)
-        .map_err(BlockWriteError::ComputeCid)?;
+        .map_err(UploadError::Cid)?;
 
     let normalized_cid = request
         .cid
         .to_string_of_base(Base::Base64Url)
-        .map_err(BlockWriteError::ComputeCid)?;
+        .map_err(UploadError::Cid)?;
 
     if computed_cid != normalized_cid {
-        return Err(BlockWriteError::MismatchedCid((
-            normalized_cid,
-            computed_cid,
-        )));
+        return Err(UploadError::MismatchedCid((normalized_cid, computed_cid)));
     }
 
     // Get or create the Upload object associated with this write request
-    let maybe_upload = get_upload(&db, client.id(), request.metadata_id)
-        .await
-        .map_err(BlockWriteError::DbFailure)?;
+    let maybe_upload = get_upload(&db, client.id(), request.metadata_id).await?;
 
     let upload = match maybe_upload {
         Some(upload) => upload,
-        None => start_upload(&db, &client.id(), &request.metadata_id, 0)
-            .await
-            .map_err(BlockWriteError::DbFailure)?,
+        None => start_upload(&db, &client.id(), &request.metadata_id, 0).await?,
     };
 
     let blocks_path: String = upload.blocks_path;
     if blocks_path.to_lowercase().ends_with(".car") {
-        return Err(BlockWriteError::CarFile);
+        return Err(UploadError::CarFile);
     }
 
     write_block_to_tables(
@@ -73,21 +66,18 @@ pub async fn handler(
         request.data.len() as i64,
         1,
     )
-    .await
-    .map_err(BlockWriteError::DbFailure)?;
+    .await?;
 
     // Actually write the bytes to the expected location
     let location = Path::from(format!("{blocks_path}/{normalized_cid}.block").as_str());
     store
         .put(&location, Bytes::copy_from_slice(request.data.as_slice()))
         .await
-        .map_err(BlockWriteError::WriteFailed)?;
+        .map_err(UploadError::WriteFailed)?;
 
     // If the client marked this request as being the final one in the upload
     if request.completed.is_some() {
-        complete_upload(&db, 0, "", &upload.id)
-            .await
-            .map_err(BlockWriteError::DbFailure)?;
+        complete_upload(&db, 0, "", &upload.id).await?;
 
         let all_cids: Vec<String> = sqlx::query_scalar(
             r#"
@@ -100,8 +90,7 @@ pub async fn handler(
         )
         .bind(&upload.id)
         .fetch_all(&db)
-        .await
-        .map_err(BlockWriteError::DbFailure)?;
+        .await?;
 
         let all_cids = all_cids
             .into_iter()
@@ -119,8 +108,7 @@ pub async fn handler(
         )
         .bind(&upload.id)
         .fetch_one(&db)
-        .await
-        .map_err(BlockWriteError::DbFailure)?;
+        .await?;
 
         ReportUploadTask::new(
             client.storage_grant_id(),
@@ -130,63 +118,10 @@ pub async fn handler(
         )
         .enqueue::<banyan_task::SqliteTaskStore>(&mut db)
         .await
-        .map_err(|_| BlockWriteError::CarFile)?;
+        .map_err(|_| UploadError::CarFile)?;
     }
 
     Ok((StatusCode::NO_CONTENT, ()).into_response())
-}
-
-
-#[derive(Debug, thiserror::Error)]
-pub enum BlockWriteError {
-    #[error("internal database error occurred")]
-    DbFailure(sqlx::Error),
-
-    #[error("Data in request mismatched attached CID")]
-    MismatchedCid((String, String)),
-
-    #[error("Failed to compute CID")]
-    ComputeCid(cid::Error),
-
-    #[error("failed to write to storage backend")]
-    WriteFailed(object_store::Error),
-
-    #[error("cannot write Blocks to CAR files")]
-    CarFile,
-}
-
-impl IntoResponse for BlockWriteError {
-    fn into_response(self) -> Response {
-        match self {
-            BlockWriteError::DbFailure(err) => {
-                warn!("db failure writing block: {err}");
-                let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
-            }
-            BlockWriteError::MismatchedCid((expected, actual)) => {
-                warn!("block write data didn't match expected cid.\nexpected:\t{expected}\nactual:\t{actual}");
-                let err_msg = serde_json::json!({ "msg": format!("block / data mismatch") });
-                (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
-            }
-            BlockWriteError::ComputeCid(err) => {
-                warn!("failed to compute CID for some data: {err}");
-                let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
-            }
-            BlockWriteError::WriteFailed(err) => {
-                warn!("failed to write individual Block to backend store: {err}");
-                let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
-            }
-            BlockWriteError::CarFile => {
-                warn!(
-                    "unable to write new blocks to CAR files. create a new upload on the new API."
-                );
-                let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
-            }
-        }
-    }
 }
 
 #[derive(Deserialize)]

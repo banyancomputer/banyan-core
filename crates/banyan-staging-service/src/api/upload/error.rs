@@ -3,9 +3,7 @@ use axum::Json;
 use banyan_car_analyzer::StreamingCarAnalyzerError;
 use http::StatusCode;
 
-use crate::database::{DatabaseError, map_sqlx_error};
-
-use super::write_block::BlockWriteError;
+use crate::database::{map_sqlx_error, DatabaseError};
 
 #[derive(Debug, thiserror::Error)]
 pub enum UploadError {
@@ -25,7 +23,10 @@ pub enum UploadError {
     InsufficientAuthorizedStorage(u64, u64),
 
     #[error("a CID from our internal reports wasn't convertable: {0}")]
-    InvalidInternalCid(cid::Error),
+    Cid(cid::Error),
+
+    #[error("cannot write blocks to a CAR file directly")]
+    CarFile,
 
     #[error("request's data payload was malformed")]
     InvalidRequestData(multer::Error),
@@ -57,7 +58,7 @@ impl IntoResponse for UploadError {
         use UploadError::*;
 
         match self {
-            Database(_) | FailedToEnqueueTask(_) | InvalidInternalCid(_) | StoreUnavailable(_) => {
+            Database(_) | FailedToEnqueueTask(_) | Cid(_) | StoreUnavailable(_) => {
                 tracing::error!("{self}");
                 let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
@@ -86,7 +87,12 @@ impl IntoResponse for UploadError {
                 tracing::error!("writing car file failed: {err}");
                 let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
-            },
+            }
+            CarFile => {
+                tracing::error!("client asked to write block to car");
+                let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
+            }
             ParseError(err) => err.into_response(),
         }
     }
@@ -108,7 +114,7 @@ pub enum UploadStreamError {
     #[error("unable to record details about the stream in the database")]
     DatabaseFailure(#[from] DatabaseError),
 
-    
+
 }
 
 impl IntoResponse for UploadStreamError {
@@ -127,7 +133,7 @@ impl IntoResponse for UploadStreamError {
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
             }
             ParseError(err) => err.into_response(),
-            
+
         }
     }
 }
