@@ -111,6 +111,54 @@ pub async fn get_upload(
     .await
 }
 
+pub async fn write_block_to_tables(
+    db: &Database,
+    upload_id: &str,
+    normalized_cid: &str,
+    data_length: i64,
+    offset: i64,
+) -> Result<(), sqlx::Error> {
+    let block_id: String = sqlx::query_scalar(
+        r#"
+        INSERT OR IGNORE INTO
+            blocks (cid, data_length)
+            VALUES ($1, $2)
+        RETURNING id;
+        "#,
+    )
+    .bind(normalized_cid)
+    .bind(data_length)
+    .fetch_one(db)
+    .await?;
+
+    // let block_id: Uuid = {
+    //     let cid_id: String =
+    //         sqlx::query_scalar("SELECT id FROM blocks WHERE cid = $1 LIMIT 1;")
+    //             .bind(cid_string.clone())
+    //             .fetch_one(db)
+    //             .await?;
+
+    //     Uuid::parse_str(&cid_id)
+    //         .map_err(|_| UploadStreamError::DatabaseCorruption("cid uuid parsing"))?
+    // };
+
+    // // create uploads_blocks row with the block information
+    sqlx::query(
+        r#"
+        INSERT INTO
+            uploads_blocks (upload_id, block_id, byte_offset)
+            VALUES ($1, $2, $3);
+        "#,
+    )
+    .bind(upload_id)
+    .bind(block_id)
+    .bind(offset)
+    .execute(db)
+    .await?;
+
+    Ok(())
+}
+
 #[derive(sqlx::FromRow, sqlx::Decode)]
 pub struct Upload {
     pub id: String,

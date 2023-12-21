@@ -83,26 +83,45 @@ pub async fn handler(
 }
 
 pub async fn block_from_normalized_cid(
-    database: &Database,
+    db: &Database,
     normalized_cid: &str,
 ) -> Result<BlockDetails, BlockReadError> {
+    // let maybe_block_id: Option<String> = sqlx::query_scalar(
+    //     r#"
+    //     SELECT
+    //             blocks.id as id,
+    //             blocks.data_length as length,
+    //             clients.platform_id AS platform_id,
+    //             uploads.blocks_path AS blocks_path,
+    //     FROM blocks
+    //         JOIN uploads
+    //     WHERE blocks.cid = $1;
+    //     "#
+    // )
+    // .bind(normalized_cid)
+    // .fetch_one(db)
+    // .await
+    // .map_err(BlockReadError::DbFailure)?;
+
+    // let block_id = maybe_block_id.ok_or(BlockReadError::UnknownBlock)?;
+
     let maybe_block_id: Option<BlockDetails> = sqlx::query_as(
         r#"
-                SELECT
-                        blocks.id AS id,
-                        clients.platform_id AS platform_id,
-                        uploads.blocks_path AS blocks_path,
-                        uploads_blocks.byte_offset AS byte_offset,
-                        blocks.data_length AS length
-                    FROM blocks
-                        JOIN uploads_blocks ON blocks.id = uploads_blocks.block_id
-                        JOIN uploads ON uploads_blocks.upload_id = uploads.id
-                        JOIN clients ON uploads.client_id = clients.id
-                    WHERE blocks.cid = $1;
+            SELECT
+                    blocks.id AS id,
+                    clients.platform_id AS platform_id,
+                    uploads.blocks_path AS blocks_path,
+                    uploads_blocks.byte_offset AS byte_offset,
+                    blocks.data_length AS length
+                FROM blocks
+                    JOIN uploads_blocks ON blocks.id = uploads_blocks.block_id
+                    JOIN uploads ON uploads_blocks.upload_id = uploads.id
+                    JOIN clients ON uploads.client_id = clients.id
+                WHERE blocks.cid = $1;
             "#,
     )
     .bind(normalized_cid)
-    .fetch_optional(database)
+    .fetch_optional(db)
     .await
     .map_err(BlockReadError::DbFailure)?;
     match maybe_block_id {

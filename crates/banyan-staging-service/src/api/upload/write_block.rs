@@ -1,7 +1,10 @@
+use std::str::FromStr;
+
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
+use banyan_task::TaskLikeExt;
 use bytes::Bytes;
 use cid::multibase::Base;
 use cid::Cid;
@@ -11,9 +14,11 @@ use serde::Deserialize;
 use tracing::warn;
 use uuid::Uuid;
 
+use super::db::write_block_to_tables;
 use crate::api::upload::{complete_upload, get_upload, start_upload};
 use crate::app::AppState;
 use crate::extractors::AuthenticatedClient;
+use crate::tasks::ReportUploadTask;
 use crate::upload_store::UploadStore;
 
 #[axum::debug_handler]
@@ -23,12 +28,13 @@ pub async fn handler(
     store: UploadStore,
     Json(request): Json<BlockWriteRequest>,
 ) -> Result<Response, BlockWriteError> {
-    let db = state.database();
+    let mut db = state.database();
     // let cid = Cid::read_bytes(&request.data[..]).map_err(BlockWriteError::ComputeCid)?;
     // tracing::info!("yippeeeee: {cid}");
     // if cid != request.cid {
     //     return Err(BlockWriteError::MismatchedCid((request.cid, cid)));
     // }
+
     let normalized_cid = request
         .cid
         .to_string_of_base(Base::Base64Url)
@@ -52,6 +58,16 @@ pub async fn handler(
         return Err(BlockWriteError::CarFile);
     }
 
+    write_block_to_tables(
+        &db,
+        &upload.id,
+        &normalized_cid,
+        request.data.len() as i64,
+        1,
+    )
+    .await
+    .map_err(BlockWriteError::DbFailure)?;
+
     // Actually write the bytes to the expected location
     let location = Path::from(format!("{blocks_path}/{normalized_cid}.block").as_str());
     store
@@ -62,6 +78,48 @@ pub async fn handler(
     // If the client marked this request as being the final one in the upload
     if request.completed.is_some() {
         complete_upload(&db, 0, "", &upload.id).await.unwrap();
+
+        let all_cids: Vec<String> = sqlx::query_scalar(
+            r#"
+            SELECT blocks.cid 
+            FROM blocks
+            JOIN uploads_blocks ON blocks.id = uploads_blocks.block_id
+            JOIN uploads ON uploads_blocks.upload_id = uploads.id
+            WHERE uploads.id = $1;
+            "#,
+        )
+        .bind(&upload.id)
+        .fetch_all(&db)
+        .await
+        .map_err(BlockWriteError::DbFailure)?;
+        let all_cids = all_cids
+            .into_iter()
+            .map(|cid_string| Cid::from_str(&cid_string).unwrap())
+            .collect::<Vec<Cid>>();
+
+        let total_size: i64 = sqlx::query_scalar(
+            r#"
+            SELECT COALESCE(SUM(blocks.data_length), 0)
+            FROM blocks
+            JOIN uploads_blocks ON blocks.id = uploads_blocks.block_id
+            JOIN uploads ON uploads_blocks.upload_id = uploads.id
+            WHERE uploads.id = $1;
+            "#,
+        )
+        .bind(&upload.id)
+        .fetch_one(&db)
+        .await
+        .map_err(BlockWriteError::DbFailure)?;
+
+        ReportUploadTask::new(
+            client.storage_grant_id(),
+            request.metadata_id,
+            &all_cids,
+            total_size as u64,
+        )
+        .enqueue::<banyan_task::SqliteTaskStore>(&mut db)
+        .await
+        .map_err(|_| BlockWriteError::CarFile)?;
     }
 
     Ok((StatusCode::NO_CONTENT, ()).into_response())

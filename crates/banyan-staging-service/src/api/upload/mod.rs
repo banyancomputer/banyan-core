@@ -21,7 +21,7 @@ use crate::upload_store::{ObjectStore, UploadStore};
 pub(crate) mod db;
 mod error;
 pub(crate) mod write_block;
-use db::{complete_upload, fail_upload, get_upload, start_upload, Upload};
+use db::{complete_upload, fail_upload, get_upload, start_upload, write_block_to_tables, Upload};
 use error::{UploadError, UploadStreamError};
 
 /// Limit on the size of the JSON request that accompanies an upload.
@@ -169,45 +169,16 @@ where
                 .to_string_of_base(cid::multibase::Base::Base64Url)
                 .expect("parsed cid to unparse");
 
-            sqlx::query(
-                r#"
-                INSERT OR IGNORE INTO
-                    blocks (cid, data_length)
-                    VALUES ($1, $2);
-                "#,
+            write_block_to_tables(
+                db,
+                &upload.id,
+                &cid_string,
+                block.length() as i64,
+                block.offset() as i64,
             )
-            .bind(cid_string.clone())
-            .bind(block.length() as i64)
-            .execute(db)
             .await
-            .map_err(map_sqlx_error)?;
-
-            let block_id: Uuid = {
-                let cid_id: String =
-                    sqlx::query_scalar("SELECT id FROM blocks WHERE cid = $1 LIMIT 1;")
-                        .bind(cid_string.clone())
-                        .fetch_one(db)
-                        .await
-                        .map_err(map_sqlx_error)?;
-
-                Uuid::parse_str(&cid_id)
-                    .map_err(|_| UploadStreamError::DatabaseCorruption("cid uuid parsing"))?
-            };
-
-            // create uploads_blocks row with the block information
-            sqlx::query(
-                r#"
-                INSERT INTO
-                    uploads_blocks (upload_id, block_id, byte_offset)
-                    VALUES ($1, $2, $3);
-                "#,
-            )
-            .bind(upload.id.clone())
-            .bind(block_id.to_string())
-            .bind(block.offset() as i64)
-            .execute(db)
-            .await
-            .map_err(map_sqlx_error)?;
+            .map_err(map_sqlx_error)
+            .map_err(UploadStreamError::DatabaseFailure)?;
 
             let location =
                 Path::from(format!("{}/{}.block", upload.blocks_path, cid_string).as_str());
