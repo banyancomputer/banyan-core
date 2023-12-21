@@ -25,13 +25,14 @@ pub async fn start_upload(
         r#"
         INSERT INTO
             uploads (client_id, metadata_id, reported_size, blocks_path, state)
-            VALUES ($1, $2, $3, $4, 'started')
+            VALUES ($1, $2, $3, $4, $5)
             RETURNING id;
         "#,
         upload.client_id,
         upload.metadata_id,
         upload.reported_size,
-        upload.blocks_path
+        upload.blocks_path,
+        upload.state
     )
     .fetch_one(db)
     .await?;
@@ -118,6 +119,7 @@ pub async fn write_block_to_tables(
     data_length: i64,
     offset: i64,
 ) -> Result<(), sqlx::Error> {
+    // Insert the block if its missing, get its ID
     let block_id: String = sqlx::query_scalar(
         r#"
         INSERT OR IGNORE INTO
@@ -131,18 +133,7 @@ pub async fn write_block_to_tables(
     .fetch_one(db)
     .await?;
 
-    // let block_id: Uuid = {
-    //     let cid_id: String =
-    //         sqlx::query_scalar("SELECT id FROM blocks WHERE cid = $1 LIMIT 1;")
-    //             .bind(cid_string.clone())
-    //             .fetch_one(db)
-    //             .await?;
-
-    //     Uuid::parse_str(&cid_id)
-    //         .map_err(|_| UploadStreamError::DatabaseCorruption("cid uuid parsing"))?
-    // };
-
-    // // create uploads_blocks row with the block information
+    // Create uploads_blocks row with the block information
     sqlx::query(
         r#"
         INSERT INTO
@@ -154,9 +145,8 @@ pub async fn write_block_to_tables(
     .bind(block_id)
     .bind(offset)
     .execute(db)
-    .await?;
-
-    Ok(())
+    .await
+    .map(|_| ())
 }
 
 #[derive(sqlx::FromRow, sqlx::Decode)]

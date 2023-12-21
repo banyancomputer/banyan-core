@@ -9,7 +9,6 @@ use bytes::Bytes;
 use futures::{TryStream, TryStreamExt};
 use object_store::path::Path;
 use serde::{Deserialize, Serialize};
-use tracing::{info, warn};
 use uuid::Uuid;
 
 use crate::app::AppState;
@@ -41,7 +40,6 @@ pub async fn handler(
     TypedHeader(content_type): TypedHeader<ContentType>,
     body: BodyStream,
 ) -> Result<Response, UploadError> {
-    tracing::info!("starting the upload thingy!");
     let mut db = state.database();
     let reported_body_length = content_len.0;
     if reported_body_length > client.remaining_storage() {
@@ -78,8 +76,6 @@ pub async fn handler(
         .map_err(UploadError::InvalidRequestData)?;
     let content_hash = request.content_hash;
 
-    info!("starting the upload;");
-
     let upload = start_upload(
         &db,
         &client.id(),
@@ -89,8 +85,7 @@ pub async fn handler(
     .await
     .map_err(|err| UploadError::Database(map_sqlx_error(err)))?;
 
-    // todo: should make sure I have a clean up task that watches for failed uploads and handles
-    // them appropriately
+    // todo: should make sure I have a clean up task that watches for failed uploads and handles them appropriately
 
     let car_field = multipart
         .next_field()
@@ -100,10 +95,6 @@ pub async fn handler(
 
     // TODO: validate name is car-upload (request_data_field.name())
     // TODO: validate type is "application/vnd.ipld.car; version=2" (request_data_field.content_type())
-
-    // let store_path = Path::from(tmp_upload_dir.as_str());
-
-    warn!("about to process the stream");
 
     match process_upload_stream(
         &db,

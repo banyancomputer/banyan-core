@@ -7,6 +7,7 @@ use axum::Json;
 use banyan_task::TaskLikeExt;
 use bytes::Bytes;
 use cid::multibase::Base;
+use cid::multihash::{Code, MultihashDigest};
 use cid::Cid;
 use object_store::path::Path;
 use object_store::ObjectStore;
@@ -29,16 +30,24 @@ pub async fn handler(
     Json(request): Json<BlockWriteRequest>,
 ) -> Result<Response, BlockWriteError> {
     let mut db = state.database();
-    // let cid = Cid::read_bytes(&request.data[..]).map_err(BlockWriteError::ComputeCid)?;
-    // tracing::info!("yippeeeee: {cid}");
-    // if cid != request.cid {
-    //     return Err(BlockWriteError::MismatchedCid((request.cid, cid)));
-    // }
+    let codec = request.cid.codec();
+    let hash = Code::Sha2_256.digest(&request.data);
+    let computed_cid = Cid::new(cid::Version::V1, codec, hash)
+        .map_err(BlockWriteError::ComputeCid)?
+        .to_string_of_base(Base::Base64Url)
+        .map_err(BlockWriteError::ComputeCid)?;
 
     let normalized_cid = request
         .cid
         .to_string_of_base(Base::Base64Url)
         .map_err(BlockWriteError::ComputeCid)?;
+
+    if computed_cid != normalized_cid {
+        return Err(BlockWriteError::MismatchedCid((
+            normalized_cid,
+            computed_cid,
+        )));
+    }
 
     // Get or create the Upload object associated with this write request
     let maybe_upload = get_upload(&db, client.id(), request.metadata_id)
@@ -73,8 +82,6 @@ pub async fn handler(
         .put(&location, Bytes::copy_from_slice(request.data.as_slice()))
         .await
         .map_err(BlockWriteError::WriteFailed)?;
-
-    tracing::error!("rqcpmlted: {:?}", request.completed);
 
     // If the client marked this request as being the final one in the upload
     if request.completed.is_some() {
@@ -135,7 +142,7 @@ pub enum BlockWriteError {
     DbFailure(sqlx::Error),
 
     #[error("Data in request mismatched attached CID")]
-    MismatchedCid((Cid, Cid)),
+    MismatchedCid((String, String)),
 
     #[error("Failed to compute CID")]
     ComputeCid(cid::Error),
