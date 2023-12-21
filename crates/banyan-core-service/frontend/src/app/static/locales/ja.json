@@ -193,5 +193,11 @@
 	"thisIsNotWorkingAccount": "これは仕事のアカウントではありません",
 	"done": "完了",
 	"betaBannerWarning": "Banyan Storage はまだベータ版であり、本番環境で使用する準備が整っていません。現時点でBanyanに保存されているものに対しては、バックアップストレージの使用をお勧めします。今日すぐにデータを本番環境で保存する必要がある場合は、tim@banyan.computerに連絡してください。",
-	"syncError": "同期エラー。最新のセッションを復元するためにログアウトしてから再ログインしてください。"
+	"syncError": "同期エラー。最新のセッションを復元するためにログアウトしてから再ログインしてください。",
+	"whatAreYouUsingBanyanFor": "Banyanをどのように使用していますか？",
+	"and": "および",
+	"agreeToTerms": "私はBanyanの",
+	"termsOf": "利用規約",
+	"privacyPolicy": "プライバシーポリシー",
+	"continue": "続ける"
 }

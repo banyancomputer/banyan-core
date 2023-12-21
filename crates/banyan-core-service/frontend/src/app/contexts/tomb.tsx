@@ -4,6 +4,7 @@ import { Mutex } from 'async-mutex';
 import { useNavigate } from 'react-router-dom';
 
 import { TermsAndConditionsModal } from '@components/common/Modal/TermsAndConditionsModal';
+import { TermaAndConditions } from '@components/common/TermsAndConditions';
 
 import { useModal } from '@/app/contexts/modals';
 import { useKeystore } from './keystore';
@@ -400,7 +401,17 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
 				if (!userData) return;
 
-				if (!userData.accepted_tos_at || userData.accepted_tos_at <= +termsAndConditions.tos_date) {
+				if (!userData.accepted_tos_at) {
+					openModal(
+						<TermaAndConditions
+							acceptTerms={setAreTermsAccepted}
+							userData={userData}
+						/>, null, true, '');
+
+					return;
+				};
+
+				if (userData.accepted_tos_at <= +termsAndConditions.tos_date) {
 					openModal(
 						<TermsAndConditionsModal
 							setAreTermsAccepted={setAreTermsAccepted}
@@ -409,7 +420,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 						, null, true);
 
 					return;
-				}
+				};
 
 				setAreTermsAccepted(true);
 			} catch (error: any) {
