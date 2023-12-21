@@ -45,12 +45,11 @@ pub async fn handler(
         .await
         .map_err(BlockWriteError::DbFailure)?;
 
-    let upload = if maybe_upload.is_none() {
-        start_upload(&db, &client.id(), &request.metadata_id, 0)
+    let upload = match maybe_upload {
+        Some(upload) => upload,
+        None => start_upload(&db, &client.id(), &request.metadata_id, 0)
             .await
-            .map_err(BlockWriteError::DbFailure)?
-    } else {
-        maybe_upload.unwrap()
+            .map_err(BlockWriteError::DbFailure)?,
     };
 
     let blocks_path: String = upload.blocks_path;
@@ -79,7 +78,9 @@ pub async fn handler(
 
     // If the client marked this request as being the final one in the upload
     if request.completed.is_some() {
-        complete_upload(&db, 0, "", &upload.id).await.unwrap();
+        complete_upload(&db, 0, "", &upload.id)
+            .await
+            .map_err(BlockWriteError::DbFailure)?;
 
         let all_cids: Vec<String> = sqlx::query_scalar(
             r#"
@@ -94,6 +95,7 @@ pub async fn handler(
         .fetch_all(&db)
         .await
         .map_err(BlockWriteError::DbFailure)?;
+
         let all_cids = all_cids
             .into_iter()
             .map(|cid_string| Cid::from_str(&cid_string).unwrap())
@@ -112,12 +114,6 @@ pub async fn handler(
         .fetch_one(&db)
         .await
         .map_err(BlockWriteError::DbFailure)?;
-
-        tracing::warn!(
-            "resporting upload: {:?}, total_size: {}",
-            all_cids,
-            total_size
-        );
 
         ReportUploadTask::new(
             client.storage_grant_id(),

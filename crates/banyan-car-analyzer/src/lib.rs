@@ -321,7 +321,6 @@ impl StreamingCarAnalyzer {
                         }
                     };
                     let cid_length = cid.encoded_len() as u64;
-                    // let _ = self.buffer.split_to(cid_length as usize);
                     self.cids.push(cid);
 
                     // This might be the end of all data, we'll check once we reach the block_start
