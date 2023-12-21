@@ -103,38 +103,3 @@ impl From<sqlx::Error> for UploadError {
         UploadError::Database(map_sqlx_error(value))
     }
 }
-
-/*
-
-#[derive(Debug, thiserror::Error)]
-pub enum UploadStreamError {
-    #[error("encountered invalid data from the database for {0}")]
-    DatabaseCorruption(&'static str),
-
-    #[error("unable to record details about the stream in the database")]
-    DatabaseFailure(#[from] DatabaseError),
-
-
-}
-
-impl IntoResponse for UploadStreamError {
-    fn into_response(self) -> Response {
-        use UploadStreamError::*;
-
-        match self {
-            DatabaseCorruption(indicator) => {
-                tracing::error!("detected a corrupted reference in the database: {indicator}");
-                let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
-            }
-            DatabaseFailure(err) => {
-                tracing::error!("recording block details in db failed: {err}");
-                let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
-            }
-            ParseError(err) => err.into_response(),
-
-        }
-    }
-}
- */
