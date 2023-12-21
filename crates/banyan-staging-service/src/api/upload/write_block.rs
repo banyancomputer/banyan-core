@@ -136,6 +136,7 @@ pub async fn handler(
     Ok((StatusCode::NO_CONTENT, ()).into_response())
 }
 
+
 #[derive(Debug, thiserror::Error)]
 pub enum BlockWriteError {
     #[error("internal database error occurred")]

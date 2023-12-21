@@ -3,7 +3,9 @@ use axum::Json;
 use banyan_car_analyzer::StreamingCarAnalyzerError;
 use http::StatusCode;
 
-use crate::database::DatabaseError;
+use crate::database::{DatabaseError, map_sqlx_error};
+
+use super::write_block::BlockWriteError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum UploadError {
@@ -37,8 +39,17 @@ pub enum UploadError {
     #[error("unable to open store for properly authorized data upload: {0}")]
     StoreUnavailable(object_store::Error),
 
-    #[error("streaming car upload failed")]
-    StreamingFailed(#[from] UploadStreamError),
+    #[error("uploaded file was not a properly formatted car file")]
+    ParseError(#[from] StreamingCarAnalyzerError),
+
+    #[error("Data in request mismatched attached CID")]
+    MismatchedCid((String, String)),
+
+    #[error("failed to read from client")]
+    ReadFailed(multer::Error),
+
+    #[error("failed to write to storage backend")]
+    WriteFailed(object_store::Error),
 }
 
 impl IntoResponse for UploadError {
@@ -55,6 +66,7 @@ impl IntoResponse for UploadError {
             | DataFieldMissing
             | InvalidRequestData(_)
             | RequestFieldUnavailable(_)
+            | MismatchedCid(_)
             | RequestFieldMissing => {
                 let err_msg = serde_json::json!({ "msg": format!("{self}") });
                 (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
@@ -64,10 +76,29 @@ impl IntoResponse for UploadError {
                 let err_msg = serde_json::json!({ "msg": format!("{self}") });
                 (StatusCode::PAYLOAD_TOO_LARGE, Json(err_msg)).into_response()
             }
-            StreamingFailed(stream_err) => stream_err.into_response(),
+            ReadFailed(_) => {
+                let err_msg = serde_json::json!({
+                    "msg": format!("client stream went away before file upload was complete")
+                });
+                (StatusCode::UNPROCESSABLE_ENTITY, Json(err_msg)).into_response()
+            }
+            WriteFailed(err) => {
+                tracing::error!("writing car file failed: {err}");
+                let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
+            },
+            ParseError(err) => err.into_response(),
         }
     }
 }
+
+impl From<sqlx::Error> for UploadError {
+    fn from(value: sqlx::Error) -> Self {
+        UploadError::Database(map_sqlx_error(value))
+    }
+}
+
+/*
 
 #[derive(Debug, thiserror::Error)]
 pub enum UploadStreamError {
@@ -77,14 +108,7 @@ pub enum UploadStreamError {
     #[error("unable to record details about the stream in the database")]
     DatabaseFailure(#[from] DatabaseError),
 
-    #[error("uploaded file was not a properly formatted car file")]
-    ParseError(#[from] StreamingCarAnalyzerError),
-
-    #[error("failed to read from client")]
-    ReadFailed(multer::Error),
-
-    #[error("failed to write to storage backend")]
-    WriteFailed(object_store::Error),
+    
 }
 
 impl IntoResponse for UploadStreamError {
@@ -103,17 +127,8 @@ impl IntoResponse for UploadStreamError {
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
             }
             ParseError(err) => err.into_response(),
-            ReadFailed(_) => {
-                let err_msg = serde_json::json!({
-                    "msg": format!("client stream went away before file upload was complete")
-                });
-                (StatusCode::UNPROCESSABLE_ENTITY, Json(err_msg)).into_response()
-            }
-            WriteFailed(err) => {
-                tracing::error!("writing car file failed: {err}");
-                let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
-            }
+            
         }
     }
 }
+ */

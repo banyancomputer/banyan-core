@@ -21,7 +21,7 @@ pub(crate) mod db;
 mod error;
 pub(crate) mod write_block;
 use db::{complete_upload, fail_upload, get_upload, start_upload, write_block_to_tables, Upload};
-use error::{UploadError, UploadStreamError};
+use error::UploadError;
 
 /// Limit on the size of the JSON request that accompanies an upload.
 const UPLOAD_REQUEST_SIZE_LIMIT: u64 = 100 * 1_024;
@@ -82,8 +82,7 @@ pub async fn handler(
         &request.metadata_id,
         reported_body_length,
     )
-    .await
-    .map_err(|err| UploadError::Database(map_sqlx_error(err)))?;
+    .await?;
 
     // todo: should make sure I have a clean up task that watches for failed uploads and handles them appropriately
 
@@ -107,9 +106,8 @@ pub async fn handler(
     .await
     {
         Ok(cr) => {
-            complete_upload(&db, cr.total_size() as i64, cr.integrity_hash(), &upload.id)
-                .await
-                .map_err(|err| UploadError::Database(map_sqlx_error(err)))?;
+            complete_upload(&db, cr.total_size() as i64, cr.integrity_hash(), &upload.id).await?;
+
             ReportUploadTask::new(
                 client.storage_grant_id(),
                 request.metadata_id,
@@ -125,9 +123,7 @@ pub async fn handler(
         Err(err) => {
             // todo: we don't care in the response if this fails, but if it does we will want to
             // clean it up in the future which should be handled by a background task
-            fail_upload(&db, &upload.id)
-                .await
-                .map_err(|err| UploadError::Database(map_sqlx_error(err)))?;
+            fail_upload(&db, &upload.id).await?;
             Err(err.into())
         }
     }
@@ -140,7 +136,7 @@ async fn process_upload_stream<S>(
     expected_size: usize,
     mut stream: S,
     content_hash: String,
-) -> Result<CarReport, UploadStreamError>
+) -> Result<CarReport, UploadError>
 where
     S: TryStream<Ok = bytes::Bytes, Error = multer::Error> + Unpin,
 {
@@ -150,7 +146,7 @@ where
     while let Some(chunk) = stream
         .try_next()
         .await
-        .map_err(UploadStreamError::ReadFailed)?
+        .map_err(UploadError::ReadFailed)?
     {
         hasher.update(&chunk);
         car_analyzer.add_chunk(&chunk)?;
@@ -167,16 +163,14 @@ where
                 block.length() as i64,
                 block.offset() as i64,
             )
-            .await
-            .map_err(map_sqlx_error)
-            .map_err(UploadStreamError::DatabaseFailure)?;
+            .await?;
 
             let location =
                 Path::from(format!("{}/{}.block", upload.blocks_path, cid_string).as_str());
             store
                 .put(&location, Bytes::copy_from_slice(&block.data()[..]))
                 .await
-                .map_err(UploadStreamError::WriteFailed)?;
+                .map_err(UploadError::WriteFailed)?;
         }
 
         if car_analyzer.seen_bytes() as usize > expected_size && !warning_issued {
@@ -188,7 +182,7 @@ where
     }
 
     if hasher.finalize().to_string() != content_hash {
-        return Err(UploadStreamError::ParseError(
+        return Err(UploadError::ParseError(
             StreamingCarAnalyzerError::MismatchedHash,
         ));
     }
