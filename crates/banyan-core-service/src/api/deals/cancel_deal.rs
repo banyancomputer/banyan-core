@@ -39,3 +39,59 @@ pub async fn handler(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use axum::extract::Path;
+    use http::StatusCode;
+    use uuid::Uuid;
+
+    use crate::api::deals::cancel_deal::handler;
+    use crate::app::mock_app_state;
+    use crate::database::models::DealState;
+    use crate::database::test_helpers;
+    use crate::extractors::StorageProviderIdentity;
+
+    #[tokio::test]
+    async fn test_cancel_deal() {
+        let db = test_helpers::setup_database().await;
+        let host_id = test_helpers::create_storage_hosts(&db, "http://mock.com", "mock_name")
+            .await
+            .unwrap();
+        let accepted_deal_id =
+            test_helpers::create_deal(&db, DealState::Accepted, None, Some(host_id.clone()))
+                .await
+                .unwrap();
+
+        let res = handler(
+            StorageProviderIdentity { id: host_id },
+            mock_app_state(db.clone()),
+            Path(Uuid::parse_str(accepted_deal_id.as_str()).unwrap()),
+        )
+        .await;
+
+        let status_code = res.status();
+        assert_eq!(status_code, StatusCode::NO_CONTENT);
+    }
+
+    #[tokio::test]
+    async fn test_cancelled_deals_cannot_be_cancelled_again() {
+        let db = test_helpers::setup_database().await;
+        let host_id = test_helpers::create_storage_hosts(&db, "http://mock.com", "mock_name").await;
+        let cancelled_deal_id = test_helpers::create_deal(&db, DealState::Cancelled, None, None)
+            .await
+            .unwrap();
+
+        let res = handler(
+            StorageProviderIdentity {
+                id: host_id.unwrap(),
+            },
+            mock_app_state(db.clone()),
+            Path(Uuid::parse_str(cancelled_deal_id.as_str()).unwrap()),
+        )
+        .await;
+
+        let status_code = res.status();
+        assert_eq!(status_code, StatusCode::NOT_FOUND);
+    }
+}

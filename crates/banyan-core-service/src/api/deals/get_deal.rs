@@ -19,10 +19,11 @@ pub async fn handler(
     let query_result = sqlx::query_as!(
         Deal,
         r#"
-            SELECT d.id, d.state, SUM(ss.size) AS size
+            SELECT d.id, d.state, COALESCE(SUM(ss.size), 0) AS size
             FROM deals d
-            JOIN snapshot_segments ss ON d.id = ss.deal_id
-            WHERE d.id = $1 AND (d.state=$2 OR d.accepted_by=$3);"#,
+                JOIN snapshot_segments ss ON d.id = ss.deal_id
+            WHERE d.id = $1 AND (d.state=$2 OR d.accepted_by=$3)
+            GROUP BY d.id;"#,
         deal_id,
         DealState::Active,
         storage_provider.id
@@ -31,14 +32,11 @@ pub async fn handler(
     .await;
 
     match query_result {
-        Ok(b) => {
-            if b.id.is_none() {
-                let err_msg = serde_json::json!({"msg": "not found"});
-                return (StatusCode::NOT_FOUND, Json(err_msg)).into_response();
-            }
-
-            (StatusCode::OK, Json(ApiDeal::from(b))).into_response()
-        },
+        Ok(b) => (StatusCode::OK, Json(ApiDeal::from(b))).into_response(),
+        Err(sqlx::Error::RowNotFound) => {
+            let err_msg = serde_json::json!({"msg": "not found"});
+            (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
+        }
         Err(err) => {
             tracing::error!("failed to lookup specific bucket for account: {err}");
             let err_msg = serde_json::json!({"msg": "backend service experienced an issue servicing the request"});

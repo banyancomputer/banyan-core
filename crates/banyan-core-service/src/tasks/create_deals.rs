@@ -336,6 +336,32 @@ mod tests {
         }
     }
 
+    #[test]
+    fn test_split_into_single_segment() {
+        let deal_task = CreateDealsTask::new("snapshot_id".to_string());
+        let segments = deal_task.split_into_segments(345);
+        assert_eq!(segments.len(), 1);
+        assert_eq!(segments[0].size, 345);
+    }
+
+    #[test]
+    fn test_split_into_multiple_segments() {
+        let deal_task = CreateDealsTask::new("snapshot_id".to_string());
+        let segments = deal_task.split_into_segments(MAX_SNAPSHOT_SEGMENT_SIZE * 2);
+        assert_eq!(segments.len(), 2);
+        assert!(segments.iter().all(|s| s.size == MAX_SNAPSHOT_SEGMENT_SIZE));
+    }
+
+    #[test]
+    fn test_split_into_multiple_segments_with_left_over() {
+        let deal_task = CreateDealsTask::new("snapshot_id".to_string());
+        let segments = deal_task.split_into_segments(MAX_SNAPSHOT_SEGMENT_SIZE * 2 + 1);
+        assert_eq!(segments.len(), 3);
+        assert_eq!(segments[0].size, MAX_SNAPSHOT_SEGMENT_SIZE);
+        assert_eq!(segments[1].size, MAX_SNAPSHOT_SEGMENT_SIZE);
+        assert_eq!(segments[2].size, 1);
+    }
+
     fn bins_are_disjoint_sets(bins: &Vec<Bin>) {
         let mut all_snapshots = HashSet::new();
         for bin in bins {
@@ -352,11 +378,11 @@ mod tests {
     #[test]
     fn test_typical_case() {
         #[rustfmt::skip]
-        let snapshot_segments = vec![
-            SnapshotSegment::new("s1".to_string(), 10, "d1".to_string()),
-            SnapshotSegment::new("s2".to_string(), 20, "d2".to_string()),
-            SnapshotSegment::new("s3".to_string(), 5, "d3".to_string()),
-        ];
+            let snapshot_segments = vec![
+                SnapshotSegment::new("s1".to_string(), 10, "d1".to_string()),
+                SnapshotSegment::new("s2".to_string(), 20, "d2".to_string()),
+                SnapshotSegment::new("s3".to_string(), 5, "d3".to_string()),
+            ];
 
         let bin_capacity = 32;
         let bins = best_fit_decreasing(snapshot_segments, bin_capacity);
@@ -379,9 +405,9 @@ mod tests {
     #[test]
     fn test_single_large_item() {
         #[rustfmt::skip]
-        let snapshot_segments = vec![
-            SnapshotSegment::new("s1".to_string(), 32, "d1".to_string())
-        ];
+            let snapshot_segments = vec![
+                SnapshotSegment::new("s1".to_string(), 32, "d1".to_string())
+            ];
         let bin_capacity = 32;
 
         let bins = best_fit_decreasing(snapshot_segments, bin_capacity);
@@ -394,9 +420,9 @@ mod tests {
     #[test]
     fn test_item_larger_than_bin_capacity() {
         #[rustfmt::skip]
-        let snapshot_segments = vec![
-            SnapshotSegment::new("s1".to_string(), 40, "d1".to_string())
-        ];
+            let snapshot_segments = vec![
+                SnapshotSegment::new("s1".to_string(), 40, "d1".to_string())
+            ];
         let bin_capacity = 32;
 
         let bins = best_fit_decreasing(snapshot_segments, bin_capacity);
@@ -407,15 +433,15 @@ mod tests {
     #[test]
     fn test_tightly_packed() {
         #[rustfmt::skip]
-        let snapshot_segments = vec![
-            SnapshotSegment::new("s1".to_string(), 2, "d1".to_string()),
-            SnapshotSegment::new("s2".to_string(), 5, "d2".to_string()),
-            SnapshotSegment::new("s3".to_string(), 4, "d3".to_string()),
-            SnapshotSegment::new("s4".to_string(), 7, "d4".to_string()),
-            SnapshotSegment::new("s5".to_string(), 1, "d5".to_string()),
-            SnapshotSegment::new("s6".to_string(), 3, "d6".to_string()),
-            SnapshotSegment::new("s7".to_string(), 8, "d7".to_string()),
-        ];
+            let snapshot_segments = vec![
+                SnapshotSegment::new("s1".to_string(), 2, "d1".to_string()),
+                SnapshotSegment::new("s2".to_string(), 5, "d2".to_string()),
+                SnapshotSegment::new("s3".to_string(), 4, "d3".to_string()),
+                SnapshotSegment::new("s4".to_string(), 7, "d4".to_string()),
+                SnapshotSegment::new("s5".to_string(), 1, "d5".to_string()),
+                SnapshotSegment::new("s6".to_string(), 3, "d6".to_string()),
+                SnapshotSegment::new("s7".to_string(), 8, "d7".to_string()),
+            ];
         let bin_capacity = 10;
 
         let bins = best_fit_decreasing(snapshot_segments, bin_capacity);

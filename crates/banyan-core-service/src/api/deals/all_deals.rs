@@ -17,9 +17,9 @@ pub async fn handler(
         Deal,
         r#"SELECT d.id, d.state, SUM(ss.size) AS size
         FROM deals d
-        JOIN snapshot_segments ss
-        ON d.id = ss.deal_id
-        WHERE d.state = $1;"#,
+            JOIN snapshot_segments ss ON d.id = ss.deal_id
+        WHERE d.state = $1
+        GROUP BY d.id;"#,
         DealState::Active
     )
     .fetch_all(&database)
@@ -90,7 +90,7 @@ mod tests {
         let deals: Vec<ApiDeal> = deserialize_result(res).await;
         assert_eq!(deals.len(), 2);
         assert!(deals.iter().all(|deal| deal.state == DealState::Active));
-        assert!(deals.iter().all(|deal| deal.size == 0));
+        assert!(deals.iter().all(|deal| deal.size == 262144));
         assert!(deals.iter().all(|deal| created_deals.contains(&deal.id)));
     }
 }

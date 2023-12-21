@@ -31,22 +31,6 @@ impl From<String> for DealState {
     }
 }
 
-impl From<Option<String>> for DealState {
-    fn from(s: Option<String>) -> Self {
-        match s {
-            Some(s) => match s.as_str() {
-                "active" => DealState::Active,
-                "accepted" => DealState::Accepted,
-                "sealed" => DealState::Sealed,
-                "finalized" => DealState::Finalized,
-                "cancelled" => DealState::Cancelled,
-                _ => panic!("invalid deal state"),
-            },
-            None => DealState::Active,
-        }
-    }
-}
-
 impl TryFrom<&str> for DealState {
     type Error = DealStateError;
 

@@ -12,9 +12,9 @@ pub struct ApiDeal {
 impl From<Deal> for ApiDeal {
     fn from(value: Deal) -> Self {
         Self {
-            id: value.id.unwrap_or_default(),
+            id: value.id,
             state: value.state,
-            size: value.size.unwrap_or_default(),
+            size: value.size,
         }
     }
 }
