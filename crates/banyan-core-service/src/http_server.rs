@@ -89,7 +89,7 @@ pub async fn graceful_shutdown_blocker() -> (JoinHandle<()>, watch::Receiver<()>
 async fn login_page_handler<B: std::marker::Send + 'static>(
     req: Request<B>,
 ) -> Result<Response<BoxBody>, (StatusCode, String)> {
-    match ServeFile::new("./crates/banyan-core-service/dist/login.html")
+    match ServeFile::new("./dist/login.html")
         .oneshot(req)
         .await
     {
@@ -175,9 +175,9 @@ pub async fn run(config: Config) {
             sensitive_headers,
         ));
 
-    let static_assets = ServeDir::new("./crates/banyan-core-service/dist").not_found_service(
+    let static_assets = ServeDir::new("./dist").not_found_service(
         get_service(ServeFile::new(
-            "./crates/banyan-core-service/dist/index.html",
+            "./dist/index.html",
         ))
         .handle_error(|_| async move {
             (StatusCode::INTERNAL_SERVER_ERROR, "internal server error")
