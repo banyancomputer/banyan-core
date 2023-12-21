@@ -1,15 +1,13 @@
-use tracing::info;
 use uuid::Uuid;
 
-use super::error::UploadError;
-use crate::database::{map_sqlx_error, Database};
+use crate::database::Database;
 
 pub async fn start_upload(
     db: &Database,
     client_id: &Uuid,
     metadata_id: &Uuid,
     reported_size: u64,
-) -> Result<Upload, UploadError> {
+) -> Result<Upload, sqlx::Error> {
     let blocks_path = std::path::Path::new(&format!("{metadata_id}"))
         .display()
         .to_string();
@@ -36,25 +34,22 @@ pub async fn start_upload(
         upload.blocks_path
     )
     .fetch_one(db)
-    .await
-    .map_err(map_sqlx_error)
-    .map_err(UploadError::Database)?;
+    .await?;
 
     Ok(upload)
 }
 
 /// Marks an upload as failed
-pub async fn fail_upload(db: &Database, upload_id: &str) -> Result<(), UploadError> {
-    let _rows_affected: i32 = sqlx::query_scalar(
+pub async fn fail_upload(db: &Database, upload_id: &str) -> Result<(), sqlx::Error> {
+    sqlx::query(
         r#"
         UPDATE uploads SET state = 'failed' WHERE id = $1;
         "#,
     )
     .bind(upload_id)
-    .fetch_one(db)
+    .execute(db)
     .await
-    .map_err(map_sqlx_error)?;
-    Ok(())
+    .map(|_| ())
 }
 
 pub async fn complete_upload(
@@ -62,7 +57,7 @@ pub async fn complete_upload(
     total_size: i64,
     integrity_hash: &str,
     upload_id: &str,
-) -> Result<(), UploadError> {
+) -> Result<(), sqlx::Error> {
     //let mut path_iter = file_path.parts();
     // discard the uploading/ prefix
     //let _ = path_iter.next();
@@ -95,9 +90,7 @@ pub async fn complete_upload(
     .bind(upload_id)
     .execute(db)
     .await
-    .map_err(map_sqlx_error)?;
-
-    Ok(())
+    .map(|_| ())
 }
 
 pub async fn get_upload(
@@ -107,7 +100,7 @@ pub async fn get_upload(
 ) -> Result<Option<Upload>, sqlx::Error> {
     sqlx::query_as(
         r#"
-        SELECT * FROM uploads
+        SELECT id, client_id, metadata_id, reported_size, blocks_path, state FROM uploads
             WHERE client_id = $1
             AND metadata_id = $2;
         "#,

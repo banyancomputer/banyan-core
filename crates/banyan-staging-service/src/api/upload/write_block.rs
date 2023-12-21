@@ -8,6 +8,7 @@ use cid::Cid;
 use object_store::path::Path;
 use object_store::ObjectStore;
 use serde::Deserialize;
+use tracing::warn;
 use uuid::Uuid;
 
 use super::super::upload::utils::*;
@@ -25,23 +26,28 @@ pub async fn handler(
     Json(request): Json<BlockWriteRequest>,
 ) -> Result<Response, BlockWriteError> {
     let db = state.database();
-    let cid = Cid::read_bytes(&request.data[..]).map_err(BlockWriteError::ComputeCid)?;
-    if cid != request.cid {
-        return Err(BlockWriteError::MismatchedCid((request.cid, cid)));
-    }
-    let normalized_cid = cid
+    // let cid = Cid::read_bytes(&request.data[..]).map_err(BlockWriteError::ComputeCid)?;
+    // tracing::info!("yippeeeee: {cid}");
+    // if cid != request.cid {
+    //     return Err(BlockWriteError::MismatchedCid((request.cid, cid)));
+    // }
+    let normalized_cid = request
+        .cid
         .to_string_of_base(Base::Base64Url)
         .map_err(BlockWriteError::ComputeCid)?;
 
     // Get or create the Upload object associated with this write request
-    let upload = get_upload(&db, client.id(), request.metadata_id)
+    let maybe_upload = get_upload(&db, client.id(), request.metadata_id)
         .await
-        .unwrap()
-        .unwrap_or(
-            start_upload(&db, &client.id(), &request.metadata_id, 0)
-                .await
-                .unwrap(),
-        );
+        .map_err(BlockWriteError::DbFailure)?;
+
+    let upload = if maybe_upload.is_none() {
+        start_upload(&db, &client.id(), &request.metadata_id, 0)
+            .await
+            .map_err(BlockWriteError::DbFailure)?
+    } else {
+        maybe_upload.unwrap()
+    };
 
     let blocks_path: String = upload.blocks_path;
     if blocks_path.to_lowercase().ends_with(".car") {
@@ -60,7 +66,7 @@ pub async fn handler(
         complete_upload(&db, 0, "", &upload.id).await.unwrap();
     }
 
-    Ok((StatusCode::OK, ()).into_response())
+    Ok((StatusCode::NO_CONTENT, ()).into_response())
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -85,27 +91,27 @@ impl IntoResponse for BlockWriteError {
     fn into_response(self) -> Response {
         match self {
             BlockWriteError::DbFailure(err) => {
-                tracing::warn!("db failure writing block: {err}");
+                warn!("db failure writing block: {err}");
                 let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
             }
             BlockWriteError::MismatchedCid((expected, actual)) => {
-                tracing::warn!("block write data didn't match expected cid.\nexpected:\t{expected}\nactual:\t{actual}");
+                warn!("block write data didn't match expected cid.\nexpected:\t{expected}\nactual:\t{actual}");
                 let err_msg = serde_json::json!({ "msg": format!("block / data mismatch") });
                 (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
             }
             BlockWriteError::ComputeCid(err) => {
-                tracing::warn!("failed to compute CID for some data: {err}");
+                warn!("failed to compute CID for some data: {err}");
                 let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
             }
             BlockWriteError::WriteFailed(err) => {
-                tracing::warn!("failed to write individual Block to backend store: {err}");
+                warn!("failed to write individual Block to backend store: {err}");
                 let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
             }
             BlockWriteError::CarFile => {
-                tracing::warn!(
+                warn!(
                     "unable to write new blocks to CAR files. create a new upload on the new API."
                 );
                 let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });

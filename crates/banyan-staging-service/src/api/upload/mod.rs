@@ -86,7 +86,8 @@ pub async fn handler(
         &request.metadata_id,
         reported_body_length,
     )
-    .await?;
+    .await
+    .map_err(|err| UploadError::Database(map_sqlx_error(err)))?;
 
     // todo: should make sure I have a clean up task that watches for failed uploads and handles
     // them appropriately
@@ -115,7 +116,9 @@ pub async fn handler(
     .await
     {
         Ok(cr) => {
-            complete_upload(&db, cr.total_size() as i64, cr.integrity_hash(), &upload.id).await?;
+            complete_upload(&db, cr.total_size() as i64, cr.integrity_hash(), &upload.id)
+                .await
+                .map_err(|err| UploadError::Database(map_sqlx_error(err)))?;
             ReportUploadTask::new(
                 client.storage_grant_id(),
                 request.metadata_id,
@@ -131,7 +134,9 @@ pub async fn handler(
         Err(err) => {
             // todo: we don't care in the response if this fails, but if it does we will want to
             // clean it up in the future which should be handled by a background task
-            fail_upload(&db, &upload.id).await?;
+            fail_upload(&db, &upload.id)
+                .await
+                .map_err(|err| UploadError::Database(map_sqlx_error(err)))?;
             Err(err.into())
         }
     }
