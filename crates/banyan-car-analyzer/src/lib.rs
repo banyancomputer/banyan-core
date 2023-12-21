@@ -331,14 +331,10 @@ impl StreamingCarAnalyzer {
                         index_start: *index_start,
                         block_length: None,
                     };
-
-                    let block_data_length = (blk_len - cid_length) as usize;
-
+                    let block_data_range = cid_length as usize..blk_len as usize;
                     return Ok(Some(Block {
                         cid,
-                        data: self.buffer
-                            [cid_length as usize..(cid_length as usize + block_data_length)]
-                            .to_vec(),
+                        data: self.buffer[block_data_range].to_vec(),
                         offset: block_start + length_varint_len + cid_length,
                         length: blk_len - cid_length,
                     }));
