@@ -1,4 +1,4 @@
-use sqlx::sqlite::SqlitePoolOptions;
+use sqlx::sqlite::{SqlitePoolOptions, SqliteQueryResult};
 
 use crate::database::models::{BucketType, DealState, MetadataState, SnapshotState, StorageClass};
 use crate::database::Database;
@@ -28,6 +28,7 @@ pub(crate) async fn create_storage_hosts(
 pub(crate) async fn create_deal(
     database: &Database,
     deal_state: DealState,
+    size: Option<i64>,
     accepted_by: Option<String>,
 ) -> Result<String, sqlx::Error> {
     let user_id = sample_user(database).await;
@@ -66,51 +67,65 @@ pub(crate) async fn create_deal(
 
     let deal_id = deal_id.unwrap();
 
-    create_snapshot(
-        database,
-        metadata_id,
-        SnapshotState::Pending,
-        Some(deal_id.clone()),
-    )
-    .await
-    .unwrap();
-
+    let segment_id = create_snapshot_segment(database, deal_id.to_string(), size.unwrap_or(262144))
+        .await
+        .unwrap();
+    let snapshot_id = create_snapshot(database, metadata_id, SnapshotState::Pending)
+        .await
+        .unwrap();
+    create_snapshot_segment_association(database, snapshot_id, segment_id)
+        .await
+        .unwrap();
     Ok(deal_id)
+}
+
+pub(crate) async fn create_snapshot_segment_association(
+    database: &Database,
+    snapshot_id: String,
+    segment_id: String,
+) -> Result<SqliteQueryResult, sqlx::Error> {
+    sqlx::query!(
+        r#"INSERT INTO snapshot_segment_associations (snapshot_id, segment_id) VALUES ($1, $2);"#,
+        snapshot_id,
+        segment_id,
+    )
+    .execute(database)
+    .await
+}
+
+pub(crate) async fn create_snapshot_segment(
+    database: &Database,
+    deal_id: String,
+    size: i64,
+) -> Result<String, sqlx::Error> {
+    sqlx::query_scalar!(
+        r#"INSERT INTO snapshot_segments (deal_id, size)
+           VALUES ($1, $2)
+           RETURNING id;"#,
+        deal_id,
+        size
+    )
+    .fetch_one(database)
+    .await
 }
 
 pub(crate) async fn create_snapshot(
     database: &Database,
     metadata_id: String,
     snapshot_state: SnapshotState,
-    deal_id: Option<String>,
 ) -> Result<String, sqlx::Error> {
     let snapshot_state = snapshot_state.to_string();
-    match deal_id {
-        Some(deal_id) => {
-            sqlx::query_scalar!(
-                r#"INSERT INTO snapshots (metadata_id, state, deal_id)
-                   VALUES ($1, $2, $3)
-                   RETURNING id;"#,
-                metadata_id,
-                snapshot_state,
-                deal_id
-            )
-            .fetch_one(database)
-            .await
-        }
-        None => {
-            sqlx::query_scalar!(
-                r#"INSERT INTO snapshots (metadata_id, state)
-                   VALUES ($1, $2)
-                   RETURNING id;"#,
-                metadata_id,
-                snapshot_state
-            )
-            .fetch_one(database)
-            .await
-        }
-    }
+    sqlx::query_scalar!(
+        r#"INSERT INTO snapshots (metadata_id, state)
+           VALUES ($1, $2)
+           RETURNING id;"#,
+        metadata_id,
+        snapshot_state
+    )
+    .fetch_one(database)
+    .await
 }
+
 pub(crate) async fn create_hot_bucket(
     database: &Database,
     user_id: &str,

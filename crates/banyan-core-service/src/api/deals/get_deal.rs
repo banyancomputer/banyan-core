@@ -18,10 +18,10 @@ pub async fn handler(
     let deal_id = deal_id.to_string();
     let query_result = sqlx::query_as!(
         Deal,
-        r#"SELECT d.id, d.state, m.data_size AS size
-            FROM deals AS d
-            JOIN main.snapshots s on d.id = s.deal_id
-            JOIN main.metadata m on m.id = s.metadata_id
+        r#"
+            SELECT d.id, d.state, SUM(ss.size) AS size
+            FROM deals d
+            JOIN snapshot_segments ss ON d.id = ss.deal_id
             WHERE d.id = $1 AND (d.state=$2 OR d.accepted_by=$3);"#,
         deal_id,
         DealState::Active,
@@ -31,11 +31,14 @@ pub async fn handler(
     .await;
 
     match query_result {
-        Ok(b) => (StatusCode::OK, Json(ApiDeal::from(b))).into_response(),
-        Err(sqlx::Error::RowNotFound) => {
-            let err_msg = serde_json::json!({"msg": "not found"});
-            (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
-        }
+        Ok(b) => {
+            if b.id.is_none() {
+                let err_msg = serde_json::json!({"msg": "not found"});
+                return (StatusCode::NOT_FOUND, Json(err_msg)).into_response();
+            }
+
+            (StatusCode::OK, Json(ApiDeal::from(b))).into_response()
+        },
         Err(err) => {
             tracing::error!("failed to lookup specific bucket for account: {err}");
             let err_msg = serde_json::json!({"msg": "backend service experienced an issue servicing the request"});
@@ -50,14 +53,15 @@ mod tests {
     use uuid::Uuid;
 
     use super::*;
+    use crate::app::mock_app_state;
     use crate::database::models::DealState;
     use crate::database::test_helpers;
-    use crate::utils::tests::{deserialize_response, mock_app_state};
+    use crate::utils::tests::deserialize_response;
 
     #[tokio::test]
     async fn test_get_active_deal() {
         let db = test_helpers::setup_database().await;
-        let active_deal_id = test_helpers::create_deal(&db, DealState::Active, None)
+        let active_deal_id = test_helpers::create_deal(&db, DealState::Active, None, None)
             .await
             .unwrap();
 
@@ -75,7 +79,8 @@ mod tests {
         assert_eq!(status, StatusCode::OK);
         assert_eq!(deal.id, active_deal_id);
         assert_eq!(deal.state, DealState::Active);
-        assert_eq!(deal.size, 0);
+        // hardcoded in segment creation
+        assert_eq!(deal.size, 262144);
     }
 
     #[tokio::test]
@@ -85,7 +90,7 @@ mod tests {
             .await
             .unwrap();
         let accepted_deal_id =
-            test_helpers::create_deal(&db, DealState::Accepted, Some(host_id.clone()))
+            test_helpers::create_deal(&db, DealState::Accepted, None, Some(host_id.clone()))
                 .await
                 .unwrap();
 
@@ -104,7 +109,7 @@ mod tests {
     #[tokio::test]
     async fn test_not_owned_accepted_deals_not_returned() {
         let db = test_helpers::setup_database().await;
-        let accepted_deal_id = test_helpers::create_deal(&db, DealState::Accepted, None)
+        let accepted_deal_id = test_helpers::create_deal(&db, DealState::Accepted, None, None)
             .await
             .unwrap();
 

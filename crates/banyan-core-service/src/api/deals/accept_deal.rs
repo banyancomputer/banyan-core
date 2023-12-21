@@ -35,10 +35,6 @@ pub async fn handler(
                 (StatusCode::NO_CONTENT, ()).into_response()
             }
         }
-        Err(sqlx::Error::RowNotFound) => {
-            let err_msg = serde_json::json!({"msg": "not found"});
-            (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
-        }
         Err(err) => {
             tracing::error!("failed to update deal: {err}");
             let err_msg = serde_json::json!({"msg": "a backend service issue occurred"});
@@ -54,10 +50,10 @@ mod tests {
     use uuid::Uuid;
 
     use crate::api::deals::accept_deal::handler;
+    use crate::app::mock_app_state;
     use crate::database::models::DealState;
     use crate::database::test_helpers;
     use crate::extractors::StorageProviderIdentity;
-    use crate::utils::tests::mock_app_state;
 
     #[tokio::test]
     async fn test_accept_deal() {
@@ -65,10 +61,10 @@ mod tests {
         let host_id = test_helpers::create_storage_hosts(&db, "http://mock.com", "mock_name")
             .await
             .unwrap();
-        let active_deal_id = test_helpers::create_deal(&db, DealState::Active, None)
+        let active_deal_id = test_helpers::create_deal(&db, DealState::Active, None, None)
             .await
             .unwrap();
-        let _ = test_helpers::create_deal(&db, DealState::Accepted, None)
+        let _ = test_helpers::create_deal(&db, DealState::Accepted, None, None)
             .await
             .unwrap();
 
@@ -87,7 +83,7 @@ mod tests {
     async fn test_accepted_deals_cannot_be_accepted_again() {
         let db = test_helpers::setup_database().await;
         let host_id = test_helpers::create_storage_hosts(&db, "http://mock.com", "mock_name").await;
-        let accepted_deal_id = test_helpers::create_deal(&db, DealState::Accepted, None)
+        let accepted_deal_id = test_helpers::create_deal(&db, DealState::Accepted, None, None)
             .await
             .unwrap();
 

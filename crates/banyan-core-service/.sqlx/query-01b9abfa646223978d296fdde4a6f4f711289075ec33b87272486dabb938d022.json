@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT d.id, d.state, m.data_size AS size\n            FROM deals AS d\n            JOIN main.snapshots s on d.id = s.deal_id\n            JOIN main.metadata m on m.id = s.metadata_id\n            WHERE d.state=$1;",
+  "query": "\n            SELECT d.id, d.state, SUM(ss.size) AS size\n            FROM deals d\n            JOIN snapshot_segments ss ON d.id = ss.deal_id\n            WHERE d.id = $1 AND (d.state=$2 OR d.accepted_by=$3);",
   "describe": {
     "columns": [
       {
@@ -20,13 +20,13 @@
       }
     ],
     "parameters": {
-      "Right": 1
+      "Right": 3
     },
     "nullable": [
-      false,
-      false,
+      true,
+      true,
       true
     ]
   },
-  "hash": "31bc20298c034c4c5bb987fe67a1531a2ea12196bf993f41b1cb98c54680cd82"
+  "hash": "01b9abfa646223978d296fdde4a6f4f711289075ec33b87272486dabb938d022"
 }

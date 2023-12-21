@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                SELECT snapshot_id\n                FROM snapshot_segment_associations\n                WHERE segment_id IN ($1)\n                ",
+  "describe": {
+    "columns": [
+      {
+        "name": "snapshot_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "cee8b6b8e33c20cd787dde7b4d49b75b42f5cbbc62a49fa6ea30b14ad261205b"
+}

@@ -27,11 +27,6 @@
         "name": "created_at",
         "ordinal": 4,
         "type_info": "Datetime"
-      },
-      {
-        "name": "deal_id",
-        "ordinal": 5,
-        "type_info": "Text"
       }
     ],
     "parameters": {
@@ -42,8 +37,7 @@
       false,
       false,
       true,
-      false,
-      true
+      false
     ]
   },
   "hash": "a4e603a1e0c613a1b1c2c5734a73d61102c841ddd9a0b744dcdf076afefe3048"

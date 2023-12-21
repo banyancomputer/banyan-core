@@ -6,10 +6,11 @@ use sqlx::error::BoxDynError;
 use sqlx::sqlite::{SqliteArgumentValue, SqliteTypeInfo, SqliteValueRef};
 use sqlx::{Decode, Encode, Sqlite, Type};
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize, Default)]
 #[serde(rename_all = "snake_case")]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 pub enum DealState {
+    #[default]
     Active,
     Accepted,
     Sealed,
@@ -26,6 +27,22 @@ impl From<String> for DealState {
             "finalized" => DealState::Finalized,
             "cancelled" => DealState::Cancelled,
             _ => panic!("invalid deal state"),
+        }
+    }
+}
+
+impl From<Option<String>> for DealState {
+    fn from(s: Option<String>) -> Self {
+        match s {
+            Some(s) => match s.as_str() {
+                "active" => DealState::Active,
+                "accepted" => DealState::Accepted,
+                "sealed" => DealState::Sealed,
+                "finalized" => DealState::Finalized,
+                "cancelled" => DealState::Cancelled,
+                _ => panic!("invalid deal state"),
+            },
+            None => DealState::Active,
         }
     }
 }

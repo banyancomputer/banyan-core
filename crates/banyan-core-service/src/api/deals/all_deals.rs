@@ -15,11 +15,11 @@ pub async fn handler(
     let database = state.database();
     let query_result = sqlx::query_as!(
         Deal,
-        "SELECT d.id, d.state, m.data_size AS size
-            FROM deals AS d
-            JOIN main.snapshots s on d.id = s.deal_id
-            JOIN main.metadata m on m.id = s.metadata_id
-            WHERE d.state=$1;",
+        r#"SELECT d.id, d.state, SUM(ss.size) AS size
+        FROM deals d
+        JOIN snapshot_segments ss
+        ON d.id = ss.deal_id
+        WHERE d.state = $1;"#,
         DealState::Active
     )
     .fetch_all(&database)
@@ -48,10 +48,11 @@ impl IntoResponse for AllDealsError {
 mod tests {
     use crate::api::deals::all_deals::handler;
     use crate::api::models::ApiDeal;
+    use crate::app::mock_app_state;
     use crate::database::models::DealState;
     use crate::database::{test_helpers, Database};
     use crate::extractors::StorageProviderIdentity;
-    use crate::utils::tests::{deserialize_result, mock_app_state};
+    use crate::utils::tests::deserialize_result;
 
     async fn setup_deals(db: &Database) -> Result<Vec<String>, sqlx::Error> {
         let deal_states = vec![
@@ -64,11 +65,12 @@ mod tests {
         ];
         let mut deal_ids = Vec::new();
         for deal_state in deal_states.into_iter() {
-            let deal_id = test_helpers::create_deal(db, deal_state, None)
+            let deal_id = test_helpers::create_deal(db, deal_state, None, None)
                 .await
                 .unwrap();
             deal_ids.push(deal_id);
         }
+
         Ok(deal_ids)
     }
 

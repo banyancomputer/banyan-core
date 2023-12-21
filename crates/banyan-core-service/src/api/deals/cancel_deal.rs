@@ -32,10 +32,6 @@ pub async fn handler(
                 (StatusCode::NO_CONTENT, ()).into_response()
             }
         }
-        Err(sqlx::Error::RowNotFound) => {
-            let err_msg = serde_json::json!({"msg": "not found"});
-            (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
-        }
         Err(err) => {
             tracing::error!("failed to update deal: {err}");
             let err_msg = serde_json::json!({"msg": "a backend service issue occurred"});
