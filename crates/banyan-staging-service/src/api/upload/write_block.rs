@@ -11,10 +11,8 @@ use serde::Deserialize;
 use tracing::warn;
 use uuid::Uuid;
 
-use super::super::upload::utils::*;
+use crate::api::upload::{complete_upload, get_upload, start_upload};
 use crate::app::AppState;
-// use crate::database::models::BlockDetails;
-// use crate::database::Database;
 use crate::extractors::AuthenticatedClient;
 use crate::upload_store::UploadStore;
 

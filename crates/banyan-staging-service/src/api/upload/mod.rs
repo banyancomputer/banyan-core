@@ -18,11 +18,11 @@ use crate::extractors::AuthenticatedClient;
 use crate::tasks::ReportUploadTask;
 use crate::upload_store::{ObjectStore, UploadStore};
 
+pub(crate) mod db;
 mod error;
-pub(crate) mod utils;
 pub(crate) mod write_block;
+use db::{complete_upload, fail_upload, get_upload, start_upload, Upload};
 use error::{UploadError, UploadStreamError};
-use utils::*;
 
 /// Limit on the size of the JSON request that accompanies an upload.
 const UPLOAD_REQUEST_SIZE_LIMIT: u64 = 100 * 1_024;
