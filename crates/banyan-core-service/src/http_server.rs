@@ -172,7 +172,7 @@ pub async fn run(config: Config) {
             sensitive_headers,
         ));
 
-    let static_assets = ServeDir::new("./dist").not_found_service(
+    let static_assets = ServeDir::new("dist").not_found_service(
         get_service(ServeFile::new("./dist/index.html")).handle_error(|_| async move {
             (StatusCode::INTERNAL_SERVER_ERROR, "internal server error")
         }),
