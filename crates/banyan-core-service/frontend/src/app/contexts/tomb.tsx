@@ -16,6 +16,7 @@ import { useSession } from './session';
 import { prettyFingerprintApiKeyPem, sortByType } from '@app/utils';
 import { TermsAndColditionsClient } from '@/api/termsAndConditions';
 import { UserClient } from '@/api/user';
+import { handleNameDuplication } from '@app/utils/names';
 
 interface TombInterface {
 	tomb: TombWasm | null;
@@ -28,6 +29,7 @@ interface TombInterface {
 	getBuckets: () => Promise<void>;
 	getBucketsFiles: () => Promise<void>;
 	getBucketsKeys: () => Promise<void>;
+	remountBucket: (bucket: Bucket) => Promise<void>;
 	selectBucket: (bucket: Bucket | null) => void;
 	getSelectedBucketFiles: (path: string[]) => void;
 	getExpandedFolderFiles: (path: string[], folder: BrowserObject, bucket: Bucket) => Promise<void>;
@@ -41,7 +43,7 @@ interface TombInterface {
 	getFile: (bucket: Bucket, path: string[], name: string) => Promise<ArrayBuffer>;
 	shareFile: (bucket: Bucket, path: string[]) => Promise<string>;
 	makeCopy: (bucket: Bucket, path: string[], name: string) => void;
-	moveTo: (bucket: Bucket, from: string[], to: string[]) => Promise<void>;
+	moveTo: (bucket: Bucket, from: string[], to: string[], name: string) => Promise<void>;
 	uploadFile: (nucket: Bucket, path: string[], name: string, file: any, folder?: BrowserObject) => Promise<void>;
 	purgeSnapshot: (id: string) => void;
 	deleteFile: (bucket: Bucket, path: string[], name: string) => void;
@@ -51,7 +53,6 @@ interface TombInterface {
 	restore: (bucket: Bucket, snapshot: WasmSnapshot) => Promise<void>;
 };
 
-type TombBucket = Bucket & { mount: WasmMount };
 const mutex = new Mutex();
 
 const TombContext = createContext<TombInterface>({} as TombInterface);
@@ -62,8 +63,8 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	const { openEscrowModal, openModal } = useModal();
 	const { isLoading, keystoreInitialized, getEncryptionKey, getApiKey, escrowedKeyMaterial } = useKeystore();
 	const [tomb, setTomb] = useState<TombWasm | null>(null);
-	const [buckets, setBuckets] = useState<TombBucket[]>([]);
-	const [trash, setTrash] = useState<TombBucket | null>(null);
+	const [buckets, setBuckets] = useState<Bucket[]>([]);
+	const [trash, setTrash] = useState<Bucket | null>(null);
 	const [areTermsAccepted, setAreTermsAccepted] = useState(false);
 	const [selectedBucket, setSelectedBucket] = useState<Bucket | null>(null);
 	const [storageUsage, setStorageUsage] = useState<{ current: number, limit: number }>({ current: 0, limit: 0 });
@@ -91,11 +92,16 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 			const wasm_buckets: WasmBucket[] = await tomb!.listBuckets();
 			const buckets: Bucket[] = [];
 			for (let bucket of wasm_buckets) {
-				const mount = await tomb!.mount(bucket.id(), key.privatePem);
-				const locked = await mount.locked();
-				const isSnapshotValid = await mount.hasSnapshot();
+				let mount;
+				let locked;
+				let isSnapshotValid;
+				try {
+					mount = await tomb!.mount(bucket.id(), key.privatePem);
+					locked = await mount.locked();
+					isSnapshotValid = await mount.hasSnapshot();
+				} catch (error: any) { }
 				buckets.push({
-					mount,
+					mount: mount || null,
 					id: bucket.id(),
 					name: bucket.name(),
 					storageClass: bucket.storageClass(),
@@ -103,8 +109,8 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 					files: [],
 					snapshots: [],
 					keys: [],
-					locked,
-					isSnapshotValid
+					locked: locked || false,
+					isSnapshotValid: isSnapshotValid || false
 				});
 			};
 
@@ -118,7 +124,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 		tombMutex(tomb, async tomb => {
 			const wasm_bukets: Bucket[] = [];
 			for (const bucket of buckets) {
-				const files: BrowserObject[] = await bucket.mount.ls([]) || [];
+				const files: BrowserObject[] = bucket.mount ? await bucket.mount!.ls([]) : [];
 				const snapshots = await tomb!.listBucketSnapshots(bucket.id);
 				wasm_bukets.push({
 					...bucket,
@@ -128,6 +134,16 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 			};
 			setBuckets(wasm_bukets);
 			setAreBucketsLoading(false);
+		});
+	};
+
+	const remountBucket = async (bucket: Bucket) => {
+		tombMutex(tomb, async tomb => {
+			const key = await getEncryptionKey();
+			const mount = await tomb!.mount(bucket.id, key.privatePem);
+			const locked = await mount.locked();
+			const isSnapshotValid = await mount.hasSnapshot();
+			setBuckets(prev => prev.map(element => element.id === bucket.id ? { ...element, mount, locked, isSnapshotValid } : element));
 		});
 	};
 
@@ -158,16 +174,17 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
 	/** Returns selected bucket state according to current folder location. */
 	const getSelectedBucketFiles = async (path: string[]) => {
-		tombMutex(selectedBucket!.mount, async mount => {
+		tombMutex(selectedBucket!.mount!, async mount => {
 			setAreBucketsLoading(true);
 			const files = await mount.ls(path);
 			await setSelectedBucket(bucket => ({ ...bucket!, files: files.sort(sortByType) }));
 			setAreBucketsLoading(false);
 		});
 	};
+
 	/** Returns selected folder files. */
 	const getExpandedFolderFiles = async (path: string[], folder: BrowserObject, bucket: Bucket) => {
-		await tombMutex(selectedBucket!.mount, async mount => {
+		await tombMutex(selectedBucket!.mount!, async mount => {
 			const files = await mount.ls(path);
 			folder.files = files.sort(sortByType);
 			setSelectedBucket(prev => ({ ...prev! }));
@@ -224,14 +241,14 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	};
 
 	/** Retuns array buffer of selected file. */
-	const restore = async (bucket: Bucket, snapshot: WasmSnapshot) => await tombMutex(bucket.mount, async mount => await mount.restore(snapshot));
+	const restore = async (bucket: Bucket, snapshot: WasmSnapshot) => await tombMutex(bucket.mount!, async mount => await mount.restore(snapshot));
 
 	/** Generates public link to share file. */
-	const shareFile = async (bucket: Bucket, path: string[]) => await tombMutex(bucket.mount, async mount => await mount.shareFile(path));
+	const shareFile = async (bucket: Bucket, path: string[]) => await tombMutex(bucket.mount!, async mount => await mount.shareFile(path));
 
 	/** Approves access key for bucket */
 	const approveBucketAccess = async (bucket: Bucket, bucket_key_id: string) => {
-		await tombMutex(bucket.mount, async mount => {
+		await tombMutex(bucket.mount!, async mount => {
 			await mount.shareWith(bucket_key_id);
 		});
 		await getBucketsKeys();
@@ -253,11 +270,13 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 		// await tomb.purgeSnapshot(id);
 	};
 
-
 	/** Renames bucket */
-	const moveTo = async (bucket: Bucket, from: string[], to: string[]) => {
-		await tombMutex(bucket.mount, async mount => {
-			await mount.mv(from, to);
+
+	const moveTo = async (bucket: Bucket, from: string[], to: string[], name: string) => {
+		await tombMutex(bucket.mount!, async mount => {
+			const extstingFiles = (await mount.ls(to)).map(file => file.name);
+			const browserObjectName = handleNameDuplication(name, extstingFiles);
+			await mount.mv(from, [...to, browserObjectName]);
 			const isSnapshotValid = await mount.hasSnapshot();
 			await updateBucketsState('isSnapshotValid', isSnapshotValid, bucket.id);
 		});
@@ -280,16 +299,16 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	};
 
 	const renameBucket = async (bucket: Bucket, newName: string) => {
-		await tombMutex(bucket.mount, async mount => {
+		await tombMutex(bucket.mount!, async mount => {
 			await mount.rename(newName);
 			bucket.name = newName;
 			setBuckets(prev => prev.map(element => element.id === bucket.id ? { ...element, name: newName } : element));
 		});
-	}
+	};
 
 	/** Creates directory inside selected bucket */
 	const createDirectory = async (bucket: Bucket, path: string[], name: string) => {
-		await tombMutex(bucket.mount, async mount => {
+		await tombMutex(bucket.mount!, async mount => {
 			await mount.mkdir([...path, name]);
 			if (path.join('') !== folderLocation.join('')) { return; }
 			const files = await mount.ls(path) || [];
@@ -311,8 +330,10 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	/** Uploads file to selected bucket/directory, updates buckets state */
 	const uploadFile = async (bucket: Bucket, uploadPath: string[], name: string, file: ArrayBuffer, folder?: BrowserObject) => {
 		try {
-			tombMutex(bucket.mount, async mount => {
-				await mount.write([...uploadPath, name], file);
+			tombMutex(bucket.mount!, async mount => {
+				const extstingFiles = (await mount.ls(uploadPath)).map(file => file.name);
+				let fileName = handleNameDuplication(name, extstingFiles);
+				await mount.write([...uploadPath, fileName], file);
 				if (folder) {
 					const files = await mount.ls(uploadPath);
 					folder.files = files.sort(sortByType);
@@ -334,13 +355,11 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
 	/** Creates bucket snapshot */
 	const takeColdSnapshot = async (bucket: Bucket) => {
-		await tombMutex(bucket.mount, async mount => {
-			await mount.snapshot();
-		});
 		await tombMutex(tomb, async tomb => {
+			await bucket.mount!.snapshot();
 			const snapshots = await tomb!.listBucketSnapshots(bucket.id);
 			await updateBucketsState('snapshots', snapshots, bucket.id);
-			const isSnapshotValid = await bucket.mount.hasSnapshot();
+			const isSnapshotValid = await bucket.mount!.hasSnapshot();
 			await updateBucketsState('isSnapshotValid', isSnapshotValid, bucket.id);
 		});
 	};
@@ -355,7 +374,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	};
 
 	const deleteFile = async (bucket: Bucket, path: string[], name: string) => {
-		await tombMutex(bucket.mount, async mount => {
+		await tombMutex(bucket.mount!, async mount => {
 			await mount.rm([...path, name]);
 			const isSnapshotValid = await mount.hasSnapshot();
 			await updateBucketsState('isSnapshotValid', isSnapshotValid, bucket.id);
@@ -373,7 +392,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 				const tomb = new TombWasm(
 					apiKey.privatePem,
 					userData.user.id,
-					window.location.origin,
+					'http://localhost:3001/',
 				);
 				setTomb(await tomb);
 			} catch (error: any) {
@@ -437,7 +456,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 			value={{
 				tomb, buckets, storageUsage, trash, areBucketsLoading, selectedBucket, error,
 				getBuckets, getBucketsFiles, getBucketsKeys, selectBucket, getSelectedBucketFiles,
-				takeColdSnapshot, getBucketShapshots, createBucketAndMount, deleteBucket,
+				takeColdSnapshot, getBucketShapshots, createBucketAndMount, deleteBucket, remountBucket,
 				getFile, renameBucket, createDirectory, uploadFile, purgeSnapshot,
 				removeBucketAccess, approveBucketAccess, approveDeviceApiKey, shareFile, download, moveTo,
 				restore, deleteFile, makeCopy, getExpandedFolderFiles,

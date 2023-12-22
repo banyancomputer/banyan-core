@@ -193,5 +193,6 @@
 	"thisIsNotWorkingAccount": "这不是工作账户",
 	"done": "完成",
 	"betaBannerWarning": "Banyan Storage 仍处于测试阶段，尚未准备好投入生产。我们建议目前在Banyan上存储的任何内容都使用备份存储方法。如果您需要今天在生产环境中存储数据，请联系tim@banyan.computer。",
-	"syncError": "同步错误；请注销然后重新登录以恢复最新的会话。"
+	"syncError": "同步错误；请注销然后重新登录以恢复最新的会话。",
+	"remountDrive": "重新挂载驱动器"
 }
