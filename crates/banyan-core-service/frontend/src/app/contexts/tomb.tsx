@@ -16,6 +16,7 @@ import { useSession } from './session';
 import { prettyFingerprintApiKeyPem, sortByType } from '@app/utils';
 import { TermsAndColditionsClient } from '@/api/termsAndConditions';
 import { UserClient } from '@/api/user';
+import { handleNameDuplication } from '@app/utils/names';
 
 interface TombInterface {
 	tomb: TombWasm | null;
@@ -42,7 +43,7 @@ interface TombInterface {
 	getFile: (bucket: Bucket, path: string[], name: string) => Promise<ArrayBuffer>;
 	shareFile: (bucket: Bucket, path: string[]) => Promise<string>;
 	makeCopy: (bucket: Bucket, path: string[], name: string) => void;
-	moveTo: (bucket: Bucket, from: string[], to: string[]) => Promise<void>;
+	moveTo: (bucket: Bucket, from: string[], to: string[], name: string) => Promise<void>;
 	uploadFile: (nucket: Bucket, path: string[], name: string, file: any, folder?: BrowserObject) => Promise<void>;
 	purgeSnapshot: (id: string) => void;
 	deleteFile: (bucket: Bucket, path: string[], name: string) => void;
@@ -270,9 +271,12 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	};
 
 	/** Renames bucket */
-	const moveTo = async (bucket: Bucket, from: string[], to: string[]) => {
+
+	const moveTo = async (bucket: Bucket, from: string[], to: string[], name: string) => {
 		await tombMutex(bucket.mount!, async mount => {
-			await mount.mv(from, to);
+			const extstingFiles = (await mount.ls(to)).map(file => file.name);
+			const browserObjectName = handleNameDuplication(name, extstingFiles);
+			await mount.mv(from, [...to, browserObjectName]);
 			const isSnapshotValid = await mount.hasSnapshot();
 			await updateBucketsState('isSnapshotValid', isSnapshotValid, bucket.id);
 		});
@@ -327,7 +331,9 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	const uploadFile = async (bucket: Bucket, uploadPath: string[], name: string, file: ArrayBuffer, folder?: BrowserObject) => {
 		try {
 			tombMutex(bucket.mount!, async mount => {
-				await mount.write([...uploadPath, name], file);
+				const extstingFiles = (await mount.ls(uploadPath)).map(file => file.name);
+				let fileName = handleNameDuplication(name, extstingFiles);
+				await mount.write([...uploadPath, fileName], file);
 				if (folder) {
 					const files = await mount.ls(uploadPath);
 					folder.files = files.sort(sortByType);
