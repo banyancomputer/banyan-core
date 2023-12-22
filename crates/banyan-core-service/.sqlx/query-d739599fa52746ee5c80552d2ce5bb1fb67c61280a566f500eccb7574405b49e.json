@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": " INSERT INTO deals (state) VALUES ($1) RETURNING id;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "d739599fa52746ee5c80552d2ce5bb1fb67c61280a566f500eccb7574405b49e"
+}

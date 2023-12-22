@@ -237,7 +237,7 @@ mod tests {
     #[tokio::test]
     async fn test_marking_metadata() {
         let db = test_helpers::setup_database().await;
-        let user_id = test_helpers::sample_user(&db, 1).await;
+        let user_id = test_helpers::sample_user(&db).await;
         let first_bucket_id = test_helpers::create_hot_bucket(&db, &user_id, "apples21")
             .await
             .expect("failed to create new bucket");

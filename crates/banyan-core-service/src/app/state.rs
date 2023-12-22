@@ -159,3 +159,36 @@ fn load_or_create_service_key(private_path: &PathBuf) -> Result<ServiceKey, Stat
 
     Ok(ServiceKey::new(session_key_raw))
 }
+
+#[cfg(test)]
+pub mod test {
+    use std::path::PathBuf;
+    use std::sync::Arc;
+
+    use axum::extract::State;
+    use jwt_simple::algorithms::ES384KeyPair;
+
+    use crate::app::{AppState, ProviderCredential, Secrets, ServiceKey, ServiceVerificationKey};
+    use crate::database::Database;
+    use crate::event_bus::EventBus;
+
+    pub fn mock_app_state(database: Database) -> State<AppState> {
+        let mut provider_creds = std::collections::BTreeMap::new();
+        provider_creds.insert(
+            Arc::from("mock_provider"),
+            ProviderCredential::new("mock_pem", "secret"),
+        );
+        State(AppState {
+            database,
+            event_bus: EventBus::default(),
+            secrets: Secrets::new(
+                provider_creds,
+                None,
+                ServiceKey::new(ES384KeyPair::generate()),
+            ),
+            service_name: "mock_service".to_string(),
+            service_verifier: ServiceVerificationKey::new(ES384KeyPair::generate().public_key()),
+            upload_directory: PathBuf::from("/mock/path"),
+        })
+    }
+}

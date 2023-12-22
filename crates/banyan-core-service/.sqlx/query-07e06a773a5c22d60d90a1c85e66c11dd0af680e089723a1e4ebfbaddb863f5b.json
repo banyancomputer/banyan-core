@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                    INSERT INTO snapshot_segment_associations (snapshot_id, segment_id)\n                    VALUES ($1, $2)\n                    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "07e06a773a5c22d60d90a1c85e66c11dd0af680e089723a1e4ebfbaddb863f5b"
+}
