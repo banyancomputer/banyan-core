@@ -64,6 +64,10 @@ export const Navigation = () => {
 		setDroppedBucket(bucket!);
 	};
 
+	const preventNavigation = (event: React.MouseEvent<HTMLAnchorElement, MouseEvent>, bucket: Bucket) => {
+		!bucket.mount && event.preventDefault();
+	};
+
 	useEffect(() => {
 		if (!files.length || !droppedBucket) return;
 
@@ -126,7 +130,8 @@ export const Navigation = () => {
 										to={`/drive/${bucket.id}`}
 										onDrag={preventDefaultDragAction}
 										onDrop={event => handleDrop(event, bucket)}
-										className="relative flex items-center justify-between gap-2  w-full h-10  cursor-pointer"
+										onClick={event => preventNavigation(event, bucket)}
+										className={`relative flex items-center justify-between gap-2 w-full h-10 cursor-pointer ${!bucket.mount && 'cursor-not-allowed'}`}
 									>
 										<span className="absolute w-4 h-11 bottom-1/2 border-2 border-transparent border-l-navigation-secondary border-b-navigation-secondary">
 										</span>

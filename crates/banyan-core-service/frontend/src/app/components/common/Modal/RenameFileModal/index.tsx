@@ -20,7 +20,7 @@ export const RenameFileModal: React.FC<{ bucket: Bucket; file: BrowserObject; pa
 
     const save = async () => {
         try {
-            await moveTo(bucket, [...path, file.name], [...path, newName]);
+            await moveTo(bucket, [...path, file.name], [...path], newName);
             ToastNotifications.notify(`${messages.fileWasRenamed}`, <Done width="20px" height="20px" />);
             if (path.join('/') === folderLocation.join('/')) {
                 await getSelectedBucketFiles(folderLocation);

@@ -52,7 +52,7 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
 
             if (!droppedItem.path.length) return;
 
-            await moveTo(bucket, [...droppedItem.path, droppedItem.item.name], [droppedItem.item.name]);
+            await moveTo(bucket, [...droppedItem.path, droppedItem.item.name], [], droppedItem.item.name);
             ToastNotifications.notify(`${messages.fileWasMoved}`, <Done width="20px" height="20px" />);
             await getSelectedBucketFiles([]);
 
