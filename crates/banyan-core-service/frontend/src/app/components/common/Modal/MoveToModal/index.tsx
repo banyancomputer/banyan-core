@@ -21,7 +21,7 @@ export const MoveToModal: React.FC<{ file: BrowserObject; bucket: Bucket; path: 
 
     const move = async () => {
         try {
-            await moveTo(bucket, [...path, file.name], [...selectedFolder, file.name]);
+            await moveTo(bucket, [...path, file.name], [...selectedFolder], file.name);
             ToastNotifications.notify(`${messages.fileWasMoved}`, <Done width="20px" height="20px" />);
             if (path.join('/') === folderLocation.join('/')) {
                 await getSelectedBucketFiles(folderLocation);

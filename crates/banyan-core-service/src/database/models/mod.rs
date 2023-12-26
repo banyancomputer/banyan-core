@@ -1,18 +1,24 @@
 mod bucket;
 mod bucket_key;
 mod bucket_type;
+mod deal;
+mod deal_state;
 mod email_message;
 mod email_message_state;
 mod escrowed_device;
 mod metadata_state;
 mod partial_metadata_with_snapshot;
 mod snapshot;
+mod snapshot_segments;
+mod snapshot_state;
 mod storage_class;
 mod user;
 
 pub use bucket::Bucket;
 pub use bucket_key::BucketKey;
 pub use bucket_type::BucketType;
+pub use deal::Deal;
+pub use deal_state::DealState;
 #[allow(unused)]
 pub use email_message::EmailMessage;
 pub use email_message_state::EmailMessageState;
@@ -20,5 +26,7 @@ pub use escrowed_device::EscrowedDevice;
 pub use metadata_state::MetadataState;
 pub use partial_metadata_with_snapshot::PartialMetadataWithSnapshot;
 pub use snapshot::Snapshot;
+pub use snapshot_segments::SnapshotSegment;
+pub use snapshot_state::SnapshotState;
 pub use storage_class::StorageClass;
 pub use user::User;

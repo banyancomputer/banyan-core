@@ -199,5 +199,6 @@
 	"agreeToTerms": "我同意Banyan的",
 	"termsOf": "服务条款",
 	"privacyPolicy": "隐私政策",
-	"continue": "继续"
+	"continue": "继续",
+	"remountDrive": "重新挂载驱动器"
 }

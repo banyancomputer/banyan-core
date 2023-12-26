@@ -199,5 +199,6 @@
 	"agreeToTerms": "Ich stimme den",
 	"termsOf": "Nutzungsbedingungen",
 	"privacyPolicy": "Datenschutzrichtlinien von Banyan zu",
-	"continue": "Fortfahren"
+	"continue": "Fortfahren",
+	"remountDrive": "Laufwerk neu mounten"
 }

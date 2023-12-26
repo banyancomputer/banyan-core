@@ -199,5 +199,6 @@
 	"agreeToTerms": "I agree to Banyan’s",
 	"termsOf":"terms of service",
 	"privacyPolicy": "privacy policy",
-	"continue": "Continue"
+	"continue": "Continue",
+	"remountDrive": "Remount drive"
 }
