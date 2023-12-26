@@ -18,128 +18,133 @@ import { preventDefaultDragAction } from '@app/utils/dragHandlers';
 import { ChevronUp, Home, Info, Logo, Logout, Mail, Plus, Question, Trash } from '@static/images/common';
 
 export const Navigation = () => {
-    const { buckets } = useTomb();
-    const { purgeKeystore } = useKeystore();
-    const { uploadFiles, setFiles, files } = useFilesUpload();
-    const [isBucketsVisible, setIsBucketsVisible] = useState(false);
-    const [areHelpOpionsVisible, setAreHelpOpionsVisible] = useState(false);
-    const { messages } = useIntl();
-    const { openModal } = useModal();
-    const helpRef = useRef<HTMLDivElement | null>(null);
-    const location = useLocation();
-    const [droppedBucket, setDroppedBucket] = useState<null | Bucket>(null);
+	const { buckets } = useTomb();
+	const { purgeKeystore } = useKeystore();
+	const { uploadFiles, setFiles, files } = useFilesUpload();
+	const [isBucketsVisible, setIsBucketsVisible] = useState(false);
+	const [areHelpOpionsVisible, setAreHelpOpionsVisible] = useState(false);
+	const { messages } = useIntl();
+	const { openModal } = useModal();
+	const helpRef = useRef<HTMLDivElement | null>(null);
+	const location = useLocation();
+	const [droppedBucket, setDroppedBucket] = useState<null | Bucket>(null)
 
-    const toggleBucketsVisibility = (event: React.MouseEvent<HTMLDivElement>) => {
-        event.stopPropagation();
-        event.preventDefault();
-        setIsBucketsVisible(prev => !prev);
-    };
+	const toggleBucketsVisibility = (event: React.MouseEvent<HTMLDivElement>) => {
+		event.stopPropagation();
+		event.preventDefault();
+		setIsBucketsVisible(prev => !prev);
+	};
 
-    const toggleHelpOptionsVisibility = (event: any) => {
-        setAreHelpOpionsVisible(prev => !prev);
-    };
+	const toggleHelpOptionsVisibility = (event: any) => {
+		setAreHelpOpionsVisible(prev => !prev);
+	};
 
-    const createBucket = () => {
-        openModal(<CreateBucketModal />);
-    };
+	const createBucket = () => {
+		openModal(<CreateBucketModal />);
+	};
 
-    const logout = async() => {
-        const api = new HttpClient;
-        try {
-            await purgeKeystore();
-            await api.get('/auth/logout');
-            window.location.href = '/login';
-        }
-        catch (err: any) {
-            console.error('An Error occurred trying to logout: ', err.message);
-        }
-    };
+	const logout = async () => {
+		let api = new HttpClient;
+		try {
+			await purgeKeystore();
+			await api.get('/auth/logout');
+			window.location.href = '/login';
+		}
+		catch (err: any) {
+			console.error("An Error occurred trying to logout: ", err.message);
+		}
+	};
 
-    const handleDrop = async(event: React.DragEvent<HTMLAnchorElement>, bucket: Bucket) => {
-        preventDefaultDragAction(event);
+	const handleDrop = async (event: React.DragEvent<HTMLAnchorElement>, bucket: Bucket) => {
+		preventDefaultDragAction(event);
 
-        if (!event?.dataTransfer.files.length) { return; }
+		if (!event?.dataTransfer.files.length) { return; }
 
-        setFiles(Array.from(event.dataTransfer.files).map(file => ({ file, isUploaded: false })));
-        setDroppedBucket(bucket!);
-    };
+		setFiles(Array.from(event.dataTransfer.files).map(file => ({ file, isUploaded: false })));
+		setDroppedBucket(bucket!);
+	};
 
-    useEffect(() => {
-        if (!files.length || !droppedBucket) { return; }
+	const preventNavigation = (event: React.MouseEvent<HTMLAnchorElement, MouseEvent>, bucket: Bucket) => {
+		!bucket.mount && event.preventDefault();
+	};
 
-        (async() => {
-            try {
-                ToastNotifications.uploadProgress();
-                await uploadFiles(droppedBucket, []);
-                setDroppedBucket(null);
-            } catch (error: any) {
-                setDroppedBucket(null);
-                ToastNotifications.error(`${messages.uploadError}`, `${messages.tryAgain}`, () => { });
-            }
-        })();
-    }, [files, droppedBucket]);
+	useEffect(() => {
+		if (!files.length || !droppedBucket) return;
 
-    useEffect(() => {
-        if (isBucketsVisible) { return; }
+		(async () => {
+			try {
+				ToastNotifications.uploadProgress();
+				await uploadFiles(droppedBucket, []);
+				setDroppedBucket(null);
+			} catch (error: any) {
+				setDroppedBucket(null);
+				ToastNotifications.error(`${messages.uploadError}`, `${messages.tryAgain}`, () => { });
+			}
+		})()
+	}, [files, droppedBucket]);
 
-        buckets.length && setIsBucketsVisible(true);
-    }, [buckets]);
+	useEffect(() => {
+		if (isBucketsVisible) { return; }
 
-    useEffect(() => {
-        const listener = popupClickHandler(helpRef.current!, setAreHelpOpionsVisible);
-        document.addEventListener('click', listener);
+		buckets.length && setIsBucketsVisible(true);
+	}, [buckets]);
 
-        return () => {
-            document.removeEventListener('click', listener);
-        };
-    }, [helpRef]);
+	useEffect(() => {
+		const listener = popupClickHandler(helpRef.current!, setAreHelpOpionsVisible);
+		document.addEventListener('click', listener);
 
-    return (
-        <nav className="flex flex-col w-navbar min-w-navbar bg-navigation-primary py-8 px-4 text-navigation-text border-r-2 border-r-navigation-border">
-            <Link to="/" className="mb-7 flex text-xs" >
-                <Logo width="246px" height="56px" />
-            </Link>
-            <div className="flex-grow py-8 border-t-2 border-b-2 border-navigation-separator text-navigation-text">
-                <NavLink
-                    to={'/'}
-                    className={'flex items-center justify-between gap-3 py-2.5 px-3 w-full h-10  cursor-pointer rounded-md bg-navigation-secondary'}
-                >
-                    <Home />
-                    <span className="flex-grow">
-                        {`${messages.myDrives}`}
-                    </span>
-                    <span
-                        onClick={toggleBucketsVisibility}
-                        className={`${!isBucketsVisible && 'rotate-180'} ${!buckets.length && 'hidden'}`}
-                    >
-                        <ChevronUp />
-                    </span>
-                </NavLink>
-                {
-                    isBucketsVisible &&
+		return () => {
+			document.removeEventListener('click', listener);
+		};
+	}, [helpRef]);
+
+	return (
+		<nav className="flex flex-col w-navbar min-w-navbar bg-navigation-primary py-8 px-4 text-navigation-text border-r-2 border-r-navigation-border">
+			<Link to="/" className="mb-7 flex text-xs" >
+				<Logo width="246px" height="56px" />
+			</Link>
+			<div className="flex-grow py-8 border-t-2 border-b-2 border-navigation-separator text-navigation-text">
+				<NavLink
+					to={'/'}
+					className={'flex items-center justify-between gap-3 py-2.5 px-3 w-full h-10  cursor-pointer rounded-md bg-navigation-secondary'}
+				>
+					<Home />
+					<span className="flex-grow">
+						{`${messages.myDrives}`}
+					</span>
+					<span
+						onClick={toggleBucketsVisibility}
+						className={`${!isBucketsVisible && 'rotate-180'} ${!buckets.length && 'hidden'}`}
+					>
+						<ChevronUp />
+					</span>
+				</NavLink>
+				{
+					isBucketsVisible &&
 					<ul className="mt-3 mb-3 flex-col gap-2 px-4 text-xxs">
-					    {
-					        buckets.map(bucket =>
-					            <li key={bucket.id}>
-					                <NavLink
-					                    id={bucket.id}
-					                    to={`/drive/${bucket.id}`}
-					                    onDrag={preventDefaultDragAction}
-					                    onDrop={event => handleDrop(event, bucket)}
-					                    className="relative flex items-center justify-between gap-2  w-full h-10  cursor-pointer"
-					                >
-					                    <span className="absolute w-4 h-11 bottom-1/2 border-2 border-transparent border-l-navigation-secondary border-b-navigation-secondary">
-					                    </span>
-					                    <span
-					                        className={` relative ml-5 py-2 px-2 ${bucket.locked ? 'pr-6' : 'pr-2'} flex-grow whitespace-nowrap rounded-md overflow-ellipsis z-10 ${location.pathname.includes(bucket.id) && 'bg-navigation-secondary'}`}
-					                    >
-					                        {bucket.name}
-					                        {bucket.locked && <LockedTooltip bucket={bucket} />}
-					                    </span>
-					                </NavLink>
-					            </li>
-					        )
-					    }
+						{
+							buckets.map(bucket =>
+								<li key={bucket.id}>
+									<NavLink
+										id={bucket.id}
+										to={`/drive/${bucket.id}`}
+										onDrag={preventDefaultDragAction}
+										onDrop={event => handleDrop(event, bucket)}
+										onClick={event => preventNavigation(event, bucket)}
+										className={`relative flex items-center justify-between gap-2 w-full h-10 cursor-pointer ${!bucket.mount && 'cursor-not-allowed'}`}
+									>
+										<span className="absolute w-4 h-11 bottom-1/2 border-2 border-transparent border-l-navigation-secondary border-b-navigation-secondary">
+										</span>
+										<span
+											className={` relative ml-5 py-2 px-2 ${bucket.locked ? 'pr-6' : 'pr-2'} flex-grow whitespace-nowrap rounded-md overflow-ellipsis z-10 ${location.pathname.includes(bucket.id) && 'bg-navigation-secondary'}`}
+										>
+											{bucket.name}
+											{bucket.locked && <LockedTooltip bucket={bucket} />}
+										</span>
+									</NavLink>
+								</li>
+							)
+						}
 					</ul>
                 }
                 <button
