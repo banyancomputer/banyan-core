@@ -98,7 +98,7 @@ impl Bucket {
     pub async fn expire_blocks(
         conn: &mut DatabaseConnection,
         bucket_id: &str,
-        block_cid_list: &Vec<String>,
+        block_cid_list: &[String],
     ) -> Result<(u64, u64), sqlx::Error> {
         let mut expired_associations = Vec::new();
 

@@ -13,7 +13,7 @@ impl PendingExpiration {
     pub async fn record_pending_block_expirations(
         conn: &mut DatabaseConnection,
         metadata_id: &str,
-        block_cids: &Vec<String>,
+        block_cids: &[String],
     ) -> Result<(), sqlx::Error> {
         let mut block_ids: Vec<String> = Vec::new();
 
@@ -66,7 +66,6 @@ impl PendingExpiration {
 #[cfg(test)]
 mod tests {
     use super::*;
-
     use crate::database::models::MetadataState;
     use crate::database::test_helpers::*;
 
