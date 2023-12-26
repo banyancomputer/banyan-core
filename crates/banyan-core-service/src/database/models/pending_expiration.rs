@@ -6,6 +6,10 @@ use crate::database::{DatabaseConnection, BIND_LIMIT};
 pub struct PendingExpiration;
 
 impl PendingExpiration {
+    /// Takes a list of normalized block CIDs that came in when the provided metadata_id was
+    /// initially uploaded. These are blocks that will no longer be needed when this metadata_id
+    /// becomes the current one. That association is recorded here so in the future we can start
+    /// expiring out the blocks we no longer need at all of the locations they exist.
     pub async fn record_pending_block_expirations(
         conn: &mut DatabaseConnection,
         metadata_id: &str,
