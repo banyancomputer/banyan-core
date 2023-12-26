@@ -1,4 +1,4 @@
-use crate::database::DatabaseConnection;
+use crate::database::{DatabaseConnection, BIND_LIMIT};
 
 /// This table represents blocks that have been marked for expiration by an upload, it does not
 /// represent the blocks contained within a particular metadata. This association is present to
@@ -9,57 +9,51 @@ impl PendingExpiration {
     pub async fn record_pending_block_expirations(
         conn: &mut DatabaseConnection,
         metadata_id: &str,
-        block_cids: impl Iterator<Item = &str>,
+        block_cids: &Vec<String>,
     ) -> Result<(), sqlx::Error> {
-        let mut block_cid_iterator = block_cids.peekable();
-        if block_cid_iterator.peek().is_none() {
-            return Ok(());
-        }
+        let mut block_ids: Vec<String> = Vec::new();
 
-        let mut block_id_builder = sqlx::QueryBuilder::new(
-            r#"SELECT b.id FROM blocks AS b
-                  JOIN block_locations AS bl ON bl.block_id = b.id
-                  WHERE bl.metadata_id = "#,
-        );
-        block_id_builder.push_bind(metadata_id);
-        block_id_builder.push(" AND b.cid IN (");
+        for cid_chunk in block_cids.chunks(BIND_LIMIT) {
+            let mut block_id_builder = sqlx::QueryBuilder::new(
+                r#"SELECT b.id FROM blocks AS b
+                    JOIN block_locations AS bl ON bl.block_id = b.id
+                    WHERE bl.metadata_id = "#,
+            );
+            block_id_builder.push_bind(metadata_id);
+            block_id_builder.push(" AND b.cid IN (");
 
-        while let Some(cid) = block_cid_iterator.next() {
-            block_id_builder.push_bind(cid);
-
-            if block_cid_iterator.peek().is_some() {
-                block_id_builder.push(", ");
+            let mut separated_values = block_id_builder.separated(", ");
+            for cid in cid_chunk {
+                separated_values.push_bind(cid);
             }
+
+            block_id_builder.push(");");
+
+            let queried_ids: Vec<String> = block_id_builder
+                .build_query_scalar()
+                .persistent(false)
+                .fetch_all(&mut *conn)
+                .await?;
+
+            block_ids.extend(queried_ids);
         }
 
-        block_id_builder.push(");");
+        for chunk in block_ids.chunks(BIND_LIMIT / 2) {
+            let mut pending_association_query =
+                sqlx::QueryBuilder::new("INSERT INTO pending_expirations (metadata_id, block_id) ");
 
-        let block_ids: Vec<String> = block_id_builder
-            .build_query_scalar()
-            .persistent(false)
-            .fetch_all(&mut *conn)
-            .await?;
+            pending_association_query.push_values(chunk, |mut paq, bid| {
+                paq.push_bind(metadata_id);
+                paq.push_bind(bid);
+            });
 
-        // We could end up with no blocks if the provided ones couldn't be found
-        if block_ids.is_empty() {
-            tracing::warn!("all blocks filtered out due to being unknown");
-            return Ok(());
+            pending_association_query.push(";");
+            pending_association_query
+                .build()
+                .persistent(false)
+                .execute(&mut *conn)
+                .await?;
         }
-
-        let mut pending_association_query =
-            sqlx::QueryBuilder::new("INSERT INTO pending_expirations (metadata_id, block_id) ");
-
-        pending_association_query.push_values(block_ids, |mut paq, bid| {
-            paq.push_bind(metadata_id);
-            paq.push_bind(bid);
-        });
-
-        pending_association_query.push(";");
-
-        pending_association_query
-            .build()
-            .execute(&mut *conn)
-            .await?;
 
         Ok(())
     }
@@ -96,13 +90,9 @@ mod tests {
         )
         .await;
 
-        PendingExpiration::record_pending_block_expirations(
-            &mut conn,
-            &metadata_id,
-            blk_cids.iter().map(String::as_str),
-        )
-        .await
-        .expect("recording success");
+        PendingExpiration::record_pending_block_expirations(&mut conn, &metadata_id, &blk_cids)
+            .await
+            .expect("recording success");
 
         let mut pending_block_list = sqlx::query_scalar!(
             "SELECT block_id FROM pending_expirations WHERE metadata_id = $1;",

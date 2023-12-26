@@ -111,12 +111,12 @@ pub async fn handler(
         }
     };
 
-    let fingerprints = request_data
-        .included_key_fingerprints
-        .iter()
-        .map(String::as_str);
-
-    Bucket::approve_keys_by_fingerprint(&mut conn, &bucket_id, fingerprints).await?;
+    Bucket::approve_keys_by_fingerprint(
+        &mut conn,
+        &bucket_id,
+        &request_data.included_key_fingerprints,
+    )
+    .await?;
 
     let metadata_id = NewMetadata {
         bucket_id: &bucket_id,
@@ -144,9 +144,12 @@ pub async fn handler(
     };
 
     if !normalized_cids.is_empty() {
-        let cid_iterator = normalized_cids.iter().map(String::as_str);
-        PendingExpiration::record_pending_block_expirations(&mut conn, &bucket_id, cid_iterator)
-            .await?;
+        PendingExpiration::record_pending_block_expirations(
+            &mut conn,
+            &bucket_id,
+            &normalized_cids,
+        )
+        .await?;
     }
 
     // Checkpoint the upload to the database so we can track failures, and perform any necessary

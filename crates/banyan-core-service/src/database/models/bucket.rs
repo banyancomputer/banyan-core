@@ -6,18 +6,13 @@ use sqlx::QueryBuilder;
 use time::OffsetDateTime;
 
 use crate::database::models::{BucketType, MinimalBlockLocation, StorageClass};
-use crate::database::DatabaseConnection;
+use crate::database::{DatabaseConnection, BIND_LIMIT};
 use crate::tasks::PruneBlocksTask;
 
 /// Used to prevent writes of new metadata versions when there is a newer metadata currently being
 /// written. This protection is needed until we can handle merge conflicts and resolve the rapid
 /// data only unbatched changes in the client.
 pub const METADATA_WRITE_LOCK_DURATION: Duration = Duration::from_secs(30);
-
-/// Sets a threshold for how many dynamic binds we restrict individual queries to. Sqlite has a
-/// hard limit here of 65535 binds, but performance impact hits much lower. This value was chosen
-/// somewhat arbitrarily and could likely use tuning in the future.
-pub const DATABASE_CHUNK_LIMIT: usize = 1024;
 
 /// Internal representation of a "Drive", the name is a holdover from a previous design iteration
 /// that referred to these as Buckets. This type is an organization type collecting the contents
@@ -47,31 +42,34 @@ impl Bucket {
     pub async fn approve_keys_by_fingerprint(
         conn: &mut DatabaseConnection,
         bucket_id: &str,
-        fingerprints: impl Iterator<Item = &str>,
+        fingerprints: &Vec<String>,
     ) -> Result<u64, sqlx::Error> {
-        let mut builder =
-            QueryBuilder::new("UPDATE bucket_keys SET approved = 1 WHERE bucket_id = ");
+        let mut changed_rows = 0;
 
-        builder.push_bind(bucket_id);
-        builder.push(" AND fingerprint IN (");
+        let mut offset_start = 0;
+        while offset_start < fingerprints.len() {
+            let offset_end =
+                std::cmp::min(fingerprints.len().saturating_sub(offset_start), BIND_LIMIT);
+            let chunk = &fingerprints[offset_start..offset_end];
 
-        let mut key_iterator = fingerprints.peekable();
-        while let Some(key) = key_iterator.next() {
-            builder.push_bind(key);
+            let mut query =
+                QueryBuilder::new("UPDATE bucket_keys SET approved = 1 WHERE bucket_id = ");
 
-            if key_iterator.peek().is_some() {
-                builder.push(", ");
+            query.push_bind(bucket_id);
+            query.push(" AND fingerprint IN (");
+
+            let mut separated_values = query.separated(", ");
+            for fingerprint in chunk {
+                separated_values.push_bind(fingerprint);
             }
+
+            query.push(");");
+
+            let query_result = query.build().persistent(false).execute(&mut *conn).await?;
+            changed_rows += query_result.rows_affected();
+
+            offset_start = offset_end;
         }
-
-        builder.push(");");
-
-        let query_result = builder
-            .build()
-            .persistent(false)
-            .execute(&mut *conn)
-            .await?;
-        let changed_rows = query_result.rows_affected();
 
         Ok(changed_rows)
     }
@@ -96,21 +94,15 @@ impl Bucket {
     /// remaining ones, the block will become a candidate for pruning as well. A block is only
     /// _not_ a candidate for pruning if there are multiple owners and at least one of the
     /// associations _is not expired_.
-    #[tracing::instrument(skip(conn, block_list))]
+    #[tracing::instrument(skip(conn, block_cid_list))]
     pub async fn expire_blocks(
         conn: &mut DatabaseConnection,
         bucket_id: &str,
-        block_list: impl Iterator<Item = &str>,
+        block_cid_list: &Vec<String>,
     ) -> Result<(u64, u64), sqlx::Error> {
-        let mut block_iter = block_list.peekable();
-
-        // Short circuit if there are no blocks to expire
-        if block_iter.peek().is_none() {
-            return Ok((0, 0));
-        }
-
         let mut expired_associations = Vec::new();
-        while block_iter.peek().is_some() {
+
+        for chunk in block_cid_list.chunks(BIND_LIMIT) {
             let mut query_builder = sqlx::QueryBuilder::new(
                 r#"SELECT bl.metadata_id AS metadata_id, bl.block_id AS block_id, bl.storage_host_id AS storage_host_id FROM block_locations AS bl
                        JOIN blocks AS b ON b.id = bl.block_id
@@ -122,24 +114,9 @@ impl Bucket {
             query_builder.push_bind(bucket_id);
             query_builder.push(" AND b.cid IN (");
 
-            // Chunking size was chosen a bit arbitrarily, sqlx has a bind limit of 65k so we need to
-            // make sure this is always below that. This could be increased but there is also a hit
-            // when queries get too large.
-            //
-            // The manual counting here is needed as the `chunks()` functionality on Iterator is
-            // only available in nightly.
-            let mut chunk_count = 0;
-            while let Some(cid) = block_iter.next() {
-                query_builder.push_bind(cid);
-
-                chunk_count += 1;
-                if chunk_count > DATABASE_CHUNK_LIMIT {
-                    break;
-                }
-
-                if block_iter.peek().is_some() {
-                    query_builder.push(",");
-                }
+            let mut separated_values = query_builder.separated(", ");
+            for block_cid in chunk {
+                separated_values.push_bind(block_cid);
             }
 
             query_builder.push(");");
@@ -151,22 +128,20 @@ impl Bucket {
             expired_associations.extend(block_locations);
         }
 
-        // Another short circuit so we know there will be at least one location getting marked for
+        // A short circuit so we know there will be at least one location getting marked for
         // expiration in the following query
         if expired_associations.is_empty() {
             return Ok((0, 0));
         }
 
         let mut total_rows_expired = 0;
-        let mut total_rows_pruned = 0;
-
         let mut prune_lists: HashMap<String, HashSet<String>> = HashMap::new();
 
         // Note: while we're using the same chunk limit, we have 3x the number of binds in this
         // query. This is safe since this limit is far below the threshold that will cause issues.
-        for expired_chunk in expired_associations.chunks(DATABASE_CHUNK_LIMIT) {
+        for expired_chunk in expired_associations.chunks(BIND_LIMIT / 3) {
             let mut expire_builder = sqlx::QueryBuilder::new(
-                r#"UPDATE block_locations SET expired_at = DATETIME('now')
+                r#"UPDATE block_locations SET expired_at = CURRENT_TIMESTAMP
                        WHERE (block_id, metadata_id, storage_host_id) IN "#,
             );
 
@@ -203,9 +178,7 @@ impl Bucket {
                 .persistent(false);
 
             let prune_candidates = prune_candidate_query.fetch_all(&mut *conn).await?;
-            total_rows_pruned += prune_candidates.len();
-
-            for candidate in prune_candidates.into_iter() {
+            for candidate in prune_candidates {
                 prune_lists
                     .entry(candidate.storage_host_id)
                     .or_default()
@@ -213,8 +186,10 @@ impl Bucket {
             }
         }
 
+        let mut total_rows_pruned = 0;
         for (storage_host_id, block_set) in prune_lists.into_iter() {
             let block_list = block_set.into_iter().collect::<Vec<_>>();
+            total_rows_pruned += block_list.len();
 
             let queue_result = PruneBlocksTask::new(storage_host_id, block_list)
                 .enqueue_with_connection::<banyan_task::SqliteTaskStore>(&mut *conn)
@@ -376,7 +351,7 @@ mod tests {
 
         create_bucket_key(&mut conn, &bucket_id, "<pubkey>", "001122", false).await;
 
-        Bucket::approve_keys_by_fingerprint(&mut conn, &bucket_id, [].into_iter())
+        Bucket::approve_keys_by_fingerprint(&mut conn, &bucket_id, &Vec::new())
             .await
             .expect("appoval success");
 
@@ -396,7 +371,7 @@ mod tests {
         create_bucket_key(&mut conn, &bucket_id, "<pubkey>", "001122", false).await;
         create_bucket_key(&mut conn, &bucket_id, "<pubkey>", "003355", false).await;
 
-        Bucket::approve_keys_by_fingerprint(&mut conn, &bucket_id, ["003355"].into_iter())
+        Bucket::approve_keys_by_fingerprint(&mut conn, &bucket_id, &vec!["003355".to_string()])
             .await
             .expect("appoval success");
 
@@ -420,8 +395,8 @@ mod tests {
         create_bucket_key(&mut conn, &bucket_id, "<pubkey>", "003355", false).await;
         create_bucket_key(&mut conn, &bucket_id, "<pubkey>", "abcdef", false).await;
 
-        let approve_keys = ["001122", "abcdef"].into_iter();
-        Bucket::approve_keys_by_fingerprint(&mut conn, &bucket_id, approve_keys)
+        let approve_keys = vec!["001122".to_string(), "abcdef".to_string()];
+        Bucket::approve_keys_by_fingerprint(&mut conn, &bucket_id, &approve_keys)
             .await
             .expect("appoval success");
 
@@ -846,7 +821,7 @@ mod tests {
 
         // Test that blocks associated to metadata are untouched when no blocks are provided
         let empty_list: Vec<String> = Vec::new();
-        Bucket::expire_blocks(&mut conn, &bucket_id, empty_list.iter().map(String::as_str))
+        Bucket::expire_blocks(&mut conn, &bucket_id, &empty_list)
             .await
             .expect("expire success");
 
@@ -861,13 +836,9 @@ mod tests {
 
         // Ensure unknown blocks are ignored and don't mess with any existing blocks
         let fake_blocks = vec!["definitely-not-an-id".to_string()];
-        Bucket::expire_blocks(
-            &mut conn,
-            &bucket_id,
-            fake_blocks.iter().map(String::as_str),
-        )
-        .await
-        .expect("expire success");
+        Bucket::expire_blocks(&mut conn, &bucket_id, &fake_blocks)
+            .await
+            .expect("expire success");
 
         let expired_block_count = sqlx::query_scalar!(
             "SELECT COUNT(*) FROM block_locations WHERE expired_at IS NOT NULL;",
@@ -903,11 +874,10 @@ mod tests {
 
         // Test that blocks associated with different versions of metadata are marked as expired when
         // their CID is provided
-        let expire_blocks = vec![initial_cids[0].as_str(), following_cids[0].as_str()];
-        let (expired, pruned) =
-            Bucket::expire_blocks(&mut conn, &bucket_id, expire_blocks.into_iter())
-                .await
-                .expect("expire success");
+        let expire_blocks = vec![initial_cids[0].clone(), following_cids[0].clone()];
+        let (expired, pruned) = Bucket::expire_blocks(&mut conn, &bucket_id, &expire_blocks)
+            .await
+            .expect("expire success");
 
         // Make sure 2x blocks are expired at each of 2x storage hosts
         assert_eq!(expired, 4);

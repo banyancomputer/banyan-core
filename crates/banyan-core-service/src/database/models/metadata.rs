@@ -110,8 +110,7 @@ impl Metadata {
         .fetch_all(&mut *conn)
         .await?;
 
-        let expired_block_iter = expired_block_ids.iter().map(String::as_str);
-        Bucket::expire_blocks(&mut *conn, bucket_id, expired_block_iter).await?;
+        Bucket::expire_blocks(&mut *conn, bucket_id, &expired_block_ids).await?;
 
         Ok(())
     }

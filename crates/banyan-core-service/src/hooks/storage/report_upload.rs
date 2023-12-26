@@ -12,7 +12,6 @@ use crate::extractors::StorageProviderIdentity;
 /// When a client finishes uploading their data to either staging or a storage host, the storage
 /// host will make a request to this end point letting us know that we have all the data safely
 /// stored and can mark the associated metadata as ready to be consumed by downstream clients.
-#[axum::debug_handler]
 pub async fn handler(
     storage_provider: StorageProviderIdentity,
     State(state): State<AppState>,
