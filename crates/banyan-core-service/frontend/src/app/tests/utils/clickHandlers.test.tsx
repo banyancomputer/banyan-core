@@ -23,7 +23,7 @@ describe('clickHandlers', () => {
                     <span data-testid="inside"></span>
                 </div>
             }
-        </div>
+        </div>;
     };
 
     test('Click outside of ref should trigger state', () => {
@@ -39,4 +39,4 @@ describe('clickHandlers', () => {
         act(() => userEvent.click(screen.getByTestId('inside')));
         expect(screen.queryByTestId('target')).toBeInTheDocument();
     });
-})
+});

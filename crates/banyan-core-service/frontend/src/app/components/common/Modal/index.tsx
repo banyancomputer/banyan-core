@@ -7,7 +7,7 @@ import { ArrowDown, Close } from '@static/images/common';
 
 export const Modal = () => {
     const modalRef = useRef<HTMLDivElement | null>(null);
-    const { modalState: { content, onBack, mandatory }, closeModal } = useModal();
+    const { modalState: { content, onBack, mandatory, className = 'p-6 rounded-xl' }, closeModal, } = useModal();
 
     const close = (event: React.MouseEvent<HTMLDivElement>) => {
         if (mandatory) { return; }
@@ -24,7 +24,7 @@ export const Modal = () => {
                     onClick={close}
                 >
                     <div
-                        className="relative p-6 bg-modalBackground rounded-xl"
+                        className={`relative bg-modalBackground ${className}`}
                         ref={modalRef}
                     >
                         {onBack &&

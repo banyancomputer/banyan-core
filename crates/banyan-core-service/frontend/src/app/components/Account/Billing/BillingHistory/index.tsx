@@ -75,7 +75,7 @@ export const BillingHistory = () => {
                     className={`text-text-600 ${isVisible ? 'rotate-180' : 'rotate-90'}`}
                     onClick={() => setIsVisible(prev => !prev)}
                 >
-                    <ChevronUp  width="20px" height="20px"/>
+                    <ChevronUp width="20px" height="20px"/>
                 </button>
             </div>
             {isVisible &&

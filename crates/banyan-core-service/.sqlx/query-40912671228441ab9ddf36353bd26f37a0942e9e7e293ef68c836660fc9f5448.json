@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                    INSERT INTO snapshot_segments\n                    (deal_id, size)\n                    VALUES ($1, $2)\n                     RETURNING id;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "40912671228441ab9ddf36353bd26f37a0942e9e7e293ef68c836660fc9f5448"
+}

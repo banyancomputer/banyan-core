@@ -1,4 +1,4 @@
-import { BrowserObject, Bucket } from "@app/types/bucket";
+import { BrowserObject, Bucket } from '@app/types/bucket';
 
 export const preventDefaultDragAction = (event: React.DragEvent<HTMLElement>) => {
     event.preventDefault();
@@ -6,13 +6,13 @@ export const preventDefaultDragAction = (event: React.DragEvent<HTMLElement>) =>
 };
 
 /** Sets drag data, removes default drag preview. */
-export const handleDragStart = async (
+export const handleDragStart = async(
     event: React.DragEvent<HTMLDivElement>,
     item: BrowserObject,
     setIsDragging: React.Dispatch<React.SetStateAction<boolean>>,
     path: string[],
-    ) => {
-    event.stopPropagation()
+) => {
+    event.stopPropagation();
     event.dataTransfer.setData('browserObject', JSON.stringify({ item, path }));
     event.dataTransfer.setDragImage(new Image(), 0, 0);
     setIsDragging(true);
@@ -35,10 +35,10 @@ export const handleDragEnd = async(
     path: string[],
     folder: BrowserObject | undefined,
     bucket: Bucket
-    ) => {
+) => {
     setIsDragging(false);
     folder?
-    await updateFolderState(path, folder, bucket)
-    :
-    await updateBucketState(path);
+        await updateFolderState(path, folder, bucket)
+        :
+        await updateBucketState(path);
 };
