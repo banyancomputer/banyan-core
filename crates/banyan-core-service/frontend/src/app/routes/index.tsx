@@ -59,5 +59,6 @@ export class RoutesConfig {
 
 export const Routes = () => {
     const routes = useRoutes(RoutesConfig.routes);
+
     return routes;
 };

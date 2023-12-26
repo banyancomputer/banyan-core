@@ -1,6 +1,6 @@
 import React, { SVGProps } from 'react';
 
-import { Folder, CommonFileIcon, ImageFileIcon, TextFileIcon, VideoFileIcon, FigmaFileIcon } from '@static/images/common';
+import { CommonFileIcon, FigmaFileIcon, Folder, ImageFileIcon, VideoFileIcon } from '@static/images/common';
 
 export const FileIcon: React.FC<{ fileName: string; className?: string; size?: string }> = ({ fileName, className, size = '40px' }) => {
     const fileTypeMapper: Record<string, React.FC<SVGProps<any>>> = {
@@ -16,7 +16,7 @@ export const FileIcon: React.FC<{ fileName: string; className?: string; size?: s
         'mov': VideoFileIcon,
         'mkv': VideoFileIcon,
         'webm': VideoFileIcon,
-        'fig': FigmaFileIcon
+        'fig': FigmaFileIcon,
     };
 
     const Icon = fileTypeMapper[fileName.split('.')[1]];
