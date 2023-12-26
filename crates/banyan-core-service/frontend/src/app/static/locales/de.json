@@ -194,5 +194,11 @@
 	"done": "Fertig",
 	"betaBannerWarning": "Banyan Storage befindet sich noch im Beta-Stadium und ist noch nicht für die Produktion bereit. Wir empfehlen, für alles, was derzeit auf Banyan gespeichert ist, eine Backup-Speichermethode zu verwenden. Wenn Sie heute Daten in der Produktion speichern müssen, kontaktieren Sie tim@banyan.computer.",
 	"syncError": "Synchronisierungsfehler; bitte melden Sie sich ab und wieder an, um die neueste Sitzung wiederherzustellen.",
+	"whatAreYouUsingBanyanFor": "Wofür verwenden Sie Banyan?",
+	"and": "und",
+	"agreeToTerms": "Ich stimme den",
+	"termsOf": "Nutzungsbedingungen",
+	"privacyPolicy": "Datenschutzrichtlinien von Banyan zu",
+	"continue": "Fortfahren",
 	"remountDrive": "Laufwerk neu mounten"
 }
