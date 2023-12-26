@@ -1,16 +1,16 @@
-import React, { useEffect } from 'react'
+import React, { useEffect } from 'react';
 
-export const SubmitButton: React.FC<{ text: string, action?: () => void, disabled?: boolean, className?: string, type?: "button" | "reset" | "submit" | undefined }> =
+export const SubmitButton: React.FC<{ text: string; action?: () => void; disabled?: boolean; className?: string; type?: 'button' | 'reset' | 'submit' | undefined }> =
     ({
         action = () => { },
         className,
         disabled = false,
         text,
-        type = 'submit'
+        type = 'submit',
     }) => {
         useEffect(() => {
-            const listener = async (event: KeyboardEvent) => {
-                if (event.key !== 'Enter' || disabled) return;
+            const listener = async(event: KeyboardEvent) => {
+                if (event.key !== 'Enter' || disabled) { return; }
                 action();
             };
 
@@ -18,7 +18,7 @@ export const SubmitButton: React.FC<{ text: string, action?: () => void, disable
 
             return () => {
                 window.removeEventListener('keypress', listener);
-            }
+            };
         });
 
         return (
@@ -30,5 +30,5 @@ export const SubmitButton: React.FC<{ text: string, action?: () => void, disable
             >
                 {text}
             </button>
-        )
-    }
+        );
+    };

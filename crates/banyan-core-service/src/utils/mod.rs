@@ -1,5 +1,7 @@
 pub mod car_buffer;
 pub mod keys;
+#[cfg(test)]
+pub mod tests;
 
 use std::error::Error;
 use std::str::FromStr;

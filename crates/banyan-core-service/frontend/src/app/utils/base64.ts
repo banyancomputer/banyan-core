@@ -3,5 +3,5 @@ export function stringToBase64(string: string) {
 };
 
 export function base64ToString(string: string) {
-    return atob(string)
+    return atob(string);
 };

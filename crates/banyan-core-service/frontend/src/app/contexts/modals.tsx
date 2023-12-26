@@ -6,12 +6,13 @@ export interface StateInterface {
 	content: ReactNode | null;
 	onBack: null | (() => void);
 	mandatory: boolean;
+	className?: string
 }
 
 interface ContextState {
 	modalState: StateInterface;
 	setModalState: Dispatch<SetStateAction<StateInterface>>;
-	openModal: (content: ReactNode, onBack?: null | (() => void), mandatory?: boolean) => void;
+	openModal: (content: ReactNode, onBack?: null | (() => void), mandatory?: boolean, className?: string) => void;
 	openEscrowModal: (escrowed: boolean) => void;
 	closeModal: () => void;
 }
@@ -22,16 +23,18 @@ const initialState: StateInterface = {
 	content: null,
 	onBack: null,
 	mandatory: false,
+	className: ''
 };
 
 export const ModalProvider: FC<{ children: ReactNode }> = ({ children }) => {
 	const [modalState, setModalState] = useState(initialState);
 
-	const openModal = (content: ReactNode, onBack: null | (() => void) = null, mandatory: boolean = false) => {
+	const openModal = (content: ReactNode, onBack: null | (() => void) = null, mandatory: boolean = false, className?: string) => {
 		setModalState({
 			content,
 			onBack,
 			mandatory,
+			className
 		});
 	};
 

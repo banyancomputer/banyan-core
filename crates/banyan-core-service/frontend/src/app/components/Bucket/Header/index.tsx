@@ -31,7 +31,7 @@ const BucketHeader = () => {
         }
     };
 
-    const takeSnapshot = async () => {
+    const takeSnapshot = async() => {
         try {
             selectedBucket && openModal(<TakeSnapshotModal bucket={selectedBucket} />);
         } catch (error: any) { }
@@ -44,7 +44,7 @@ const BucketHeader = () => {
 
     useEffect(() => {
         const hasUserDissmissedBanner = getLocalStorageItem('has_dissmissed_snapshot_banner');
-        if (hasUserDissmissedBanner) return;
+        if (hasUserDissmissedBanner) { return; }
 
         if (selectedBucket?.files.length && !selectedBucket.isSnapshotValid) {
             setIsBannerVisible(true);
@@ -92,7 +92,7 @@ const BucketHeader = () => {
                     <button
                         onClick={takeSnapshot}
                         disabled={selectedBucket?.isSnapshotValid}
-                        className='px-4 py-2.5 border-1 border-button-highLight rounded-xl disabled:border-text-900 disabled:opacity-20 disabled:cursor-not-allowed'
+                        className="px-4 py-2.5 border-1 border-button-highLight rounded-xl disabled:border-text-900 disabled:opacity-20 disabled:cursor-not-allowed"
                     >
                         {`${messages.makeSnapshot}`}
                     </button>

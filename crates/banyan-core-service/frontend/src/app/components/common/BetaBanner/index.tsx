@@ -10,5 +10,5 @@ export const BetaBanner = () => {
             <ErrorBannerIcon width="14px" height="14px" />
             {`${messages.betaBannerWarning}`}
         </div>
-    )
+    );
 };
