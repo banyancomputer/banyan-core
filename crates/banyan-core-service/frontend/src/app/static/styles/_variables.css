@@ -4,12 +4,12 @@
     --error-banner: #FFD7B2;
     --error-banner-border: #ED770B;
     --login: #F7F7F7;
-    --navigation-primary: #0F3A4A;
-    --navigation-secondary: #3D5F6B;
-    --navigation-text: #fff;
-    --navigation-separator: #3D5F6B;
-    --navigation-textSecondary: #FFFFFF80;
-    --navigation-border: #0F3A4A;
+    --navigation-primary: #FEFCFA;
+    --navigation-secondary: #F7EBE1;
+    --navigation-text: #232323;
+    --navigation-separator: #E9E9EA;
+    --navigation-textSecondary: #707070;
+    --navigation-border: #E9E9EA;
     --table-cellBackground: #EFF1F5;
     --table-headBackground: #fcfcfd;
     --bucket-icon-background: #E0F4FC;
@@ -27,7 +27,7 @@
     --modal-background: #fff;
     --regular-border: #EFF1F5;
     --darken-border: #D0D5DD;
-    --main-background: #F4F3F3;
+    --main-background: #FFF;
     --secondary-background: #fff;
     --highlight-color: #5299E0;
     --hover-background: #0000000d;

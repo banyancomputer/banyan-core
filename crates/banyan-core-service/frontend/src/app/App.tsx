@@ -78,7 +78,7 @@ const App = () => {
                                                 <Navigation />
                                                 <section className="flex-grow h-screen overflow-y-scroll">
                                                     <Header />
-                                                    <BetaBanner />
+                                                    {/* <BetaBanner /> */}
                                                     <ErrorBanner />
                                                     <Suspense>
                                                         <Routes />

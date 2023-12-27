@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { useIntl } from 'react-intl';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 
-import { Action } from '@components/Bucket/BucketTable/FileActions';
+import { ProfileControls } from './ProfileControls';
+import { HelpControls } from './HelpControls';
 
 import { useSession } from '@app/contexts/session';
 import { popupClickHandler } from '@/app/utils';
@@ -11,57 +11,41 @@ import { HttpClient } from '@/api/http/client';
 import { NotFoundError } from '@/api/http';
 import { UserClient } from '@/api/user';
 
-import { Key, LogoutAlternative, Settings } from '@static/images/common';
+import { Question } from '@static/images/common';
 
 const client = new UserClient();
 
 export const Header = () => {
-    const userControlsRef = useRef<HTMLDivElement | null>(null);
-    const location = useLocation();
+    const profileOptionsRef = useRef<HTMLDivElement | null>(null);
+    const helpOptionsRef = useRef<HTMLDivElement | null>(null);
     const { purgeKeystore } = useKeystore();
-    const { messages } = useIntl();
-    /** TODO: rework session logic. */
+    const location = useLocation();
     const { userData } = useSession();
-    const navigate = useNavigate();
     const [areProfileOptionsVisible, setAreProfileOptionsVisible] = useState(false);
+    const [areHelpOptionsVisible, setAreHelpOptionsVisible] = useState(false);
+
+    const toggleHelpOptionsVisibility = () => {
+        setAreHelpOptionsVisible(prev => !prev);
+    };
 
     const toggleProfileOptionsVisibility = () => {
         setAreProfileOptionsVisible(prev => !prev);
     };
 
-    const logout = async() => {
-        const api = new HttpClient;
-        try {
-            await purgeKeystore();
-            await api.get('/auth/logout');
-            window.location.href = '/login';
-        }
-        catch (err: any) {
-            console.error('An Error occurred trying to logout: ', err.message);
-        }
-    };
-
-    const goTo = (path: string) => function() {
-        navigate(path);
-    };
-
-    const options = [
-        new Action(`${messages.settings}`, <Settings />, goTo('/account/settings')),
-        new Action(`${messages.manageKeys}`, <Key />, goTo('/account/manage-keys')),
-        new Action(`${messages.logout}`, <LogoutAlternative />, logout),
-    ];
-
     useEffect(() => {
-        const listener = popupClickHandler(userControlsRef.current!, setAreProfileOptionsVisible);
-        document.addEventListener('click', listener);
+        const profileOptionsListener = popupClickHandler(profileOptionsRef.current!, setAreProfileOptionsVisible);
+        const helpOptionsListener = popupClickHandler(helpOptionsRef.current!, setAreHelpOptionsVisible);
+        document.addEventListener('click', profileOptionsListener);
+        document.addEventListener('click', helpOptionsListener);
 
         return () => {
-            document.removeEventListener('click', listener);
+            document.removeEventListener('click', profileOptionsListener);
+            document.removeEventListener('click', helpOptionsListener);
         };
-    }, [userControlsRef]);
+    }, [profileOptionsRef, helpOptionsRef]);
 
     useEffect(() => {
-        (async() => {
+        (async () => {
             try {
                 await client.getCurrentUser();
             } catch (error: any) {
@@ -76,13 +60,23 @@ export const Header = () => {
     }, [location]);
 
     return (
-        <header className="flex items-center justify-between p-4 bg-mainBackground">
+        <header className="flex items-center justify-between p-4 bg-mainBackground border-b-1 border-border-regular">
             {/* <SearchInput /> */}
             <div className="flex flex-grow items-center justify-end gap-6">
                 <div
+                    className="relative cursor-pointer"
+                    ref={helpOptionsRef}
+                    onClick={toggleHelpOptionsVisibility}
+                >
+                    <Question width="24px" height="24px" />
+                    {areHelpOptionsVisible &&
+                        <HelpControls />
+                    }
+                </div>
+                <div
                     className="relative w-10 h-10 rounded-full cursor-pointer "
                     onClick={toggleProfileOptionsVisibility}
-                    ref={userControlsRef}
+                    ref={profileOptionsRef}
                 >
                     {userData?.user?.profileImage ?
                         < img
@@ -96,22 +90,7 @@ export const Header = () => {
                         null
                     }
                     {areProfileOptionsVisible &&
-						<div
-						    className="absolute z-10 right-0 top-12 flex flex-col items-stretch shadow-xl rounded-xl text-xs font-semibold overflow-hidden  bg-bucket-actionsBackground text-bucket-actionsText cursor-pointer border-1 border-border-darken"
-						>
-						    {options.map(option =>
-						        <div
-						            key={option.label}
-						            className="flex items-center gap-2 py-2.5 px-3 whitespace-nowrap transition-all hover:bg-hover"
-						            onClick={option.value}
-						        >
-						            <span className="text-button-primary">
-						                {option.icon}
-						            </span>
-						            {option.label}
-						        </div>
-						    )}
-						</div>
+                        <ProfileControls />
                     }
                 </div>
             </div>
