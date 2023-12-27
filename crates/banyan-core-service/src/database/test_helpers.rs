@@ -1,10 +1,90 @@
+use std::ops::Range;
+
 use sqlx::sqlite::{SqlitePoolOptions, SqliteQueryResult};
+use time::OffsetDateTime;
 
 use crate::database::models::{BucketType, DealState, MetadataState, SnapshotState, StorageClass};
-use crate::database::Database;
+use crate::database::{Database, DatabaseConnection};
+
+pub(crate) async fn associate_blocks(
+    conn: &mut DatabaseConnection,
+    metadata_id: &str,
+    storage_host_id: &str,
+    block_ids: impl Iterator<Item = &str>,
+) {
+    for bid in block_ids {
+        sqlx::query!(
+            "INSERT INTO block_locations (metadata_id, storage_host_id, block_id) VALUES ($1, $2, $3);",
+            metadata_id,
+            storage_host_id,
+            bid,
+        )
+        .execute(&mut *conn)
+        .await
+        .expect("blocks to associate");
+    }
+}
+
+pub(crate) async fn assert_metadata_in_state(
+    conn: &mut DatabaseConnection,
+    metadata_id: &str,
+    expected_state: MetadataState,
+) {
+    let db_state = sqlx::query_scalar!(
+        r#"SELECT state as 'state: MetadataState' FROM metadata WHERE id = $1;"#,
+        metadata_id,
+    )
+    .fetch_one(&mut *conn)
+    .await
+    .expect("query success");
+
+    assert_eq!(
+        db_state, expected_state,
+        "metadata was not in expected state"
+    );
+}
+
+pub(crate) async fn create_blocks(
+    conn: &mut DatabaseConnection,
+    cid_list: impl Iterator<Item = &str>,
+) -> Vec<String> {
+    let mut block_ids = Vec::new();
+
+    for cid in cid_list {
+        let bid = sqlx::query_scalar!("INSERT INTO blocks (cid) VALUES ($1) RETURNING id;", cid)
+            .fetch_one(&mut *conn)
+            .await
+            .expect("block creation");
+
+        block_ids.push(bid);
+    }
+
+    block_ids
+}
+
+pub(crate) async fn create_bucket_key(
+    conn: &mut DatabaseConnection,
+    bucket_id: &str,
+    public_key: &str,
+    fingerprint: &str,
+    approved: bool,
+) -> String {
+    sqlx::query_scalar!(
+        r#"INSERT INTO bucket_keys (bucket_id, pem, fingerprint, approved)
+                VALUES ($1, $2, $3, $4)
+                RETURNING id;"#,
+        bucket_id,
+        public_key,
+        fingerprint,
+        approved,
+    )
+    .fetch_one(&mut *conn)
+    .await
+    .expect("bucket key creation")
+}
 
 pub(crate) async fn create_storage_hosts(
-    database: &Database,
+    database: &mut DatabaseConnection,
     host_url: &str,
     host_name: &str,
 ) -> Result<String, sqlx::Error> {
@@ -26,24 +106,23 @@ pub(crate) async fn create_storage_hosts(
 }
 
 pub(crate) async fn create_deal(
-    database: &Database,
+    database: &mut DatabaseConnection,
     deal_state: DealState,
     size: Option<i64>,
     accepted_by: Option<String>,
 ) -> Result<String, sqlx::Error> {
-    let user_id = sample_user(database).await;
-    let bucket_id = create_hot_bucket(database, user_id.as_str(), "test_bucket")
-        .await
-        .unwrap();
+    let user_email = format!("deal_user{}@test.tld", uuid::Uuid::new_v4());
+    let user_id = sample_user(database, &user_email).await;
+    let bucket_id = create_hot_bucket(database, user_id.as_str(), "test_bucket").await;
     let metadata_id = create_metadata(
         database,
         bucket_id.as_str(),
         format!("root-cid-{}", bucket_id).as_str(),
         format!("metadata-cid-{}", bucket_id).as_str(),
         MetadataState::Current,
+        None,
     )
-    .await
-    .unwrap();
+    .await;
 
     let deal_id = match accepted_by {
         Some(accepted_by) => {
@@ -52,7 +131,7 @@ pub(crate) async fn create_deal(
                 deal_state,
                 accepted_by
             )
-                .fetch_one(database)
+                .fetch_one(&mut *database)
                 .await
         }
         None => {
@@ -60,7 +139,7 @@ pub(crate) async fn create_deal(
                 r#"INSERT INTO deals (state) VALUES ($1) RETURNING id;"#,
                 deal_state
             )
-            .fetch_one(database)
+            .fetch_one(&mut *database)
             .await
         }
     };
@@ -76,11 +155,12 @@ pub(crate) async fn create_deal(
     create_snapshot_segment_association(database, snapshot_id, segment_id)
         .await
         .unwrap();
+
     Ok(deal_id)
 }
 
 pub(crate) async fn create_snapshot_segment_association(
-    database: &Database,
+    database: &mut DatabaseConnection,
     snapshot_id: String,
     segment_id: String,
 ) -> Result<SqliteQueryResult, sqlx::Error> {
@@ -94,7 +174,7 @@ pub(crate) async fn create_snapshot_segment_association(
 }
 
 pub(crate) async fn create_snapshot_segment(
-    database: &Database,
+    database: &mut DatabaseConnection,
     deal_id: String,
     size: i64,
 ) -> Result<String, sqlx::Error> {
@@ -110,7 +190,7 @@ pub(crate) async fn create_snapshot_segment(
 }
 
 pub(crate) async fn create_snapshot(
-    database: &Database,
+    database: &mut DatabaseConnection,
     metadata_id: String,
     snapshot_state: SnapshotState,
 ) -> Result<String, sqlx::Error> {
@@ -127,10 +207,10 @@ pub(crate) async fn create_snapshot(
 }
 
 pub(crate) async fn create_hot_bucket(
-    database: &Database,
+    conn: &mut DatabaseConnection,
     user_id: &str,
     name: &str,
-) -> Result<String, sqlx::Error> {
+) -> String {
     sqlx::query_scalar!(
         r#"INSERT INTO
                 buckets (user_id, name, type, storage_class)
@@ -141,37 +221,77 @@ pub(crate) async fn create_hot_bucket(
         BucketType::Interactive,
         StorageClass::Hot,
     )
-    .fetch_one(database)
+    .fetch_one(conn)
     .await
+    .expect("hot bucket creation")
 }
 
 pub(crate) async fn create_metadata(
-    database: &Database,
+    conn: &mut DatabaseConnection,
     bucket_id: &str,
-    root_cid: &str,
     metadata_cid: &str,
+    root_cid: &str,
     state: MetadataState,
-) -> Result<String, sqlx::Error> {
+    timestamp: Option<OffsetDateTime>,
+) -> String {
+    if let Some(ts) = timestamp {
+        sqlx::query_scalar!(
+            r#"INSERT INTO
+                    metadata (bucket_id, root_cid, metadata_cid, expected_data_size, state, created_at, updated_at)
+                    VALUES ($1, $2, $3, 0, $4, $5, $5)
+                    RETURNING id;"#,
+            bucket_id,
+            root_cid,
+            metadata_cid,
+            state,
+            ts,
+        )
+        .fetch_one(conn)
+        .await
+        .expect("metadata creation")
+    } else {
+        sqlx::query_scalar!(
+            r#"INSERT INTO
+                    metadata (bucket_id, root_cid, metadata_cid, expected_data_size, state)
+                    VALUES ($1, $2, $3, 0, $4)
+                    RETURNING id;"#,
+            bucket_id,
+            root_cid,
+            metadata_cid,
+            state,
+        )
+        .fetch_one(conn)
+        .await
+        .expect("metadata creation")
+    }
+}
+
+pub(crate) async fn create_storage_host(
+    conn: &mut DatabaseConnection,
+    name: &str,
+    url: &str,
+    available_storage: i64,
+) -> String {
+    // Note: this is not creating real fingerprints or public keys but only because the tests
+    // haven't needed that level of real data to this point
     sqlx::query_scalar!(
-        r#"INSERT INTO
-                metadata (bucket_id, root_cid, metadata_cid, expected_data_size, state)
-                VALUES ($1, $2, $3, $4, $5)
-                RETURNING id;"#,
-        bucket_id,
-        root_cid,
-        metadata_cid,
-        12_123_100,
-        state,
+        r#"INSERT INTO storage_hosts (name, url, used_storage, available_storage, fingerprint, pem)
+               VALUES ($1, $2, 0, $3, 'not-a-real-fingerprint', 'not-a-real-pubkey')
+               RETURNING id;"#,
+        name,
+        url,
+        available_storage,
     )
-    .fetch_one(database)
+    .fetch_one(&mut *conn)
     .await
+    .expect("creation of storage host")
 }
 
 pub(crate) async fn create_user(
-    database: &Database,
+    conn: &mut DatabaseConnection,
     email: &str,
     display_name: &str,
-) -> Result<String, sqlx::Error> {
+) -> String {
     sqlx::query_scalar!(
         r#"INSERT INTO
                 users (email, verified_email, display_name)
@@ -180,65 +300,41 @@ pub(crate) async fn create_user(
         email,
         display_name,
     )
-    .fetch_one(database)
-    .await
-}
-
-pub(crate) async fn current_metadata(db: &Database, bucket_id: &str, counter: usize) -> String {
-    sample_metadata(db, bucket_id, counter, MetadataState::Current).await
-}
-
-pub(crate) async fn pending_metadata(db: &Database, bucket_id: &str, counter: usize) -> String {
-    sample_metadata(db, bucket_id, counter, MetadataState::Pending).await
-}
-
-pub(crate) async fn sample_bucket(db: &Database) -> String {
-    let user_id = sample_user(db).await;
-
-    create_hot_bucket(db, &user_id, "Habernero")
-        .await
-        .expect("bucket creation")
-}
-
-pub(crate) async fn sample_metadata(
-    db: &Database,
-    bucket_id: &str,
-    counter: usize,
-    state: MetadataState,
-) -> String {
-    let root_cid = format!("root-cid-{}", counter);
-    let metadata_cid = format!("metadata-cid-{}", counter);
-
-    create_metadata(db, bucket_id, &root_cid, &metadata_cid, state)
-        .await
-        .expect("current metadata creation")
-}
-
-pub(crate) async fn assert_metadata_state(
-    db: &Database,
-    metadata_id: &str,
-    expected_state: MetadataState,
-) {
-    let found_state = sqlx::query_scalar!(
-        r#"SELECT state as 'state: MetadataState' FROM metadata WHERE id = $1;"#,
-        metadata_id,
-    )
-    .fetch_one(db)
-    .await
-    .expect("metadata existence");
-
-    assert_eq!(found_state, expected_state);
-}
-
-pub(crate) async fn sample_user(db: &Database) -> String {
-    let uuid = uuid::Uuid::new_v4().to_string();
-    create_user(
-        db,
-        &format!("jessica_{uuid}@sample.users.org"),
-        &format!("Jessica {uuid} Tester"),
-    )
+    .fetch_one(conn)
     .await
     .expect("user creation")
+}
+
+pub(crate) fn data_generator<'a>(range: Range<usize>) -> impl Iterator<Item = Vec<u8>> + 'a {
+    range.map(|n| n.to_le_bytes().to_vec())
+}
+
+pub(crate) fn generate_cids<'a>(
+    src_data: impl Iterator<Item = Vec<u8>> + 'a,
+) -> impl Iterator<Item = cid::Cid> + 'a {
+    use cid::multihash::MultihashDigest;
+    src_data.map(|d| cid::Cid::new_v1(0x55, cid::multihash::Code::Blake3_256.digest(d.as_slice())))
+}
+
+pub(crate) fn normalize_cids<'a>(
+    src_data: impl Iterator<Item = cid::Cid> + 'a,
+) -> impl Iterator<Item = String> + 'a {
+    src_data.map(|cid| {
+        cid.to_string_of_base(cid::multibase::Base::Base64Url)
+            .expect("valid conversion")
+    })
+}
+
+pub(crate) async fn pending_metadata(
+    conn: &mut DatabaseConnection,
+    bucket_id: &str,
+    counter: usize,
+) -> String {
+    sample_metadata(conn, bucket_id, counter, MetadataState::Pending).await
+}
+
+pub(crate) async fn sample_bucket(conn: &mut DatabaseConnection, user_id: &str) -> String {
+    create_hot_bucket(conn, user_id, "Habernero").await
 }
 
 pub(crate) async fn setup_database() -> Database {
@@ -253,4 +349,20 @@ pub(crate) async fn setup_database() -> Database {
         .expect("failed to run migrations");
 
     pool
+}
+
+pub(crate) async fn sample_metadata(
+    conn: &mut DatabaseConnection,
+    bucket_id: &str,
+    counter: usize,
+    state: MetadataState,
+) -> String {
+    let root_cid = format!("root-cid-{}", counter);
+    let metadata_cid = format!("metadata-cid-{}", counter);
+
+    create_metadata(conn, bucket_id, &metadata_cid, &root_cid, state, None).await
+}
+
+pub(crate) async fn sample_user(conn: &mut DatabaseConnection, email: &str) -> String {
+    create_user(conn, email, "Generic Tester").await
 }

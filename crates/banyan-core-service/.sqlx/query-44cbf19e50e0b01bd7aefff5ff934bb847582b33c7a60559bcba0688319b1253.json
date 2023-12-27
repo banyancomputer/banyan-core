@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE metadata SET state = 'current', data_size = $3\n                 WHERE bucket_id = $1\n                     AND id = $2\n                     AND state IN ('pending', 'uploading');",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "44cbf19e50e0b01bd7aefff5ff934bb847582b33c7a60559bcba0688319b1253"
+}

@@ -1,13 +1,11 @@
-use std::collections::HashSet;
-
 use axum::extract::{Json, Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use jwt_simple::prelude::*;
 use uuid::Uuid;
 
-use crate::api::buckets::metadata::STORAGE_TICKET_DURATION;
 use crate::app::AppState;
+use crate::auth::storage_ticket::StorageTicketBuilder;
 use crate::extractors::UserIdentity;
 
 pub async fn handler(
@@ -50,34 +48,18 @@ pub async fn handler(
         return Err(AuthorizationGrantError::NotFound);
     }
 
-    let mut caps = Capabilities {
-        capabilities: serde_json::Map::new(),
-    };
-
-    let mut audiences = HashSet::new();
+    let mut ticket_builder = StorageTicketBuilder::new(user_identity.ticket_subject());
 
     for auth_details in authorized_amounts.into_iter() {
-        let mut host_caps = serde_json::Map::new();
-
-        host_caps.insert(
-            "available_storage".to_string(),
-            auth_details.authorized_amount.into(),
+        ticket_builder.add_audience(auth_details.storage_host_name);
+        ticket_builder.add_authorization(
+            auth_details.storage_grant_id,
+            auth_details.storage_host_url,
+            auth_details.authorized_amount,
         );
-        host_caps.insert("grant_id".to_string(), auth_details.storage_grant_id.into());
-        audiences.insert(auth_details.storage_host_name);
-
-        caps.capabilities
-            .insert(auth_details.storage_host_url, host_caps.into());
     }
 
-    let mut claims = Claims::with_custom_claims(caps, Duration::from_secs(STORAGE_TICKET_DURATION))
-        .with_audiences(audiences)
-        .with_issuer("banyan-platform")
-        .with_subject(format!("{}@{}", user_id, user_identity.key_fingerprint()))
-        .invalid_before(Clock::now_since_epoch() - Duration::from_secs(30));
-
-    claims.create_nonce();
-    claims.issued_at = Some(Clock::now_since_epoch());
+    let claims = ticket_builder.build();
 
     let bearer_token = service_key
         .sign(claims)
@@ -121,10 +103,4 @@ impl IntoResponse for AuthorizationGrantError {
             }
         }
     }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct Capabilities {
-    #[serde(rename = "cap")]
-    capabilities: serde_json::Map<String, serde_json::Value>,
 }

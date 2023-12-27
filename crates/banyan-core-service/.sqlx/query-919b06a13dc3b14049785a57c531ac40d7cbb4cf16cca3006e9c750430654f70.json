@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "INSERT INTO storage_grants (storage_host_id, user_id, authorized_amount)\n            VALUES ($1, $2, $3)\n            RETURNING id;",
+  "query": "INSERT INTO storage_grants (storage_host_id, user_id, authorized_amount)\n                   VALUES ($1, $2, $3)\n                   RETURNING id;",
   "describe": {
     "columns": [
       {
@@ -16,5 +16,5 @@
       false
     ]
   },
-  "hash": "63274f264c4d09a62f137348887d3d19f3d0bac11329d0cea522a5698dfc6207"
+  "hash": "919b06a13dc3b14049785a57c531ac40d7cbb4cf16cca3006e9c750430654f70"
 }

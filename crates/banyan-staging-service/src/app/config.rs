@@ -241,7 +241,7 @@ fn print_help() {
     println!("                                          this is INFO\n");
     println!("    --database-url DATABASE_URL           Configure the url for the sqlite database (default ./data/server.db)");
     println!("    --upload-dir UPLOAD_DIR               Path used to store uploaded client data. (default ./data/uploads)\n");
-    println!("    --service-name SERVICE_NAME           The unique name of the service, as registered with the platform. (default banyan-storage-provider)");
+    println!("    --service-name SERVICE_NAME           The unique name of the service, as registered with the platform. (default banyan-staging)");
     println!("    --service-hostname SERVICE_HOSTNAME   The hostname of this service (default http://127.0.0.1:3002)");
     println!("    --service-key-path SERVICE_KEY_PATH   Path to the p384 private key used for service token signing and verification");
     println!("                                          (default ./data/service-key.private)\n");

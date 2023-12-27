@@ -58,13 +58,15 @@ mod tests {
     #[tokio::test]
     async fn test_accept_deal() {
         let db = test_helpers::setup_database().await;
-        let host_id = test_helpers::create_storage_hosts(&db, "http://mock.com", "mock_name")
+        let mut conn = db.acquire().await.expect("connection");
+
+        let host_id = test_helpers::create_storage_hosts(&mut conn, "http://mock.com", "mock_name")
             .await
             .unwrap();
-        let active_deal_id = test_helpers::create_deal(&db, DealState::Active, None, None)
+        let active_deal_id = test_helpers::create_deal(&mut conn, DealState::Active, None, None)
             .await
             .unwrap();
-        let _ = test_helpers::create_deal(&db, DealState::Accepted, None, None)
+        test_helpers::create_deal(&mut conn, DealState::Accepted, None, None)
             .await
             .unwrap();
 
@@ -82,10 +84,14 @@ mod tests {
     #[tokio::test]
     async fn test_accepted_deals_cannot_be_accepted_again() {
         let db = test_helpers::setup_database().await;
-        let host_id = test_helpers::create_storage_hosts(&db, "http://mock.com", "mock_name").await;
-        let accepted_deal_id = test_helpers::create_deal(&db, DealState::Accepted, None, None)
-            .await
-            .unwrap();
+        let mut conn = db.acquire().await.expect("success");
+
+        let host_id =
+            test_helpers::create_storage_hosts(&mut conn, "http://mock.com", "mock_name").await;
+        let accepted_deal_id =
+            test_helpers::create_deal(&mut conn, DealState::Accepted, None, None)
+                .await
+                .unwrap();
 
         let res = handler(
             StorageProviderIdentity {
