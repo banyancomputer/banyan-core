@@ -200,5 +200,7 @@
 	"termsOf": "利用規約",
 	"privacyPolicy": "プライバシーポリシー",
 	"continue": "続ける",
-	"remountDrive": "ドライブの再マウント"
+	"remountDrive": "ドライブの再マウント",
+	"youAreReadyForStart": "始める準備ができています！",
+	"useDesktop": "Banyanを使用するには、デスクトップをご利用ください"
 }
