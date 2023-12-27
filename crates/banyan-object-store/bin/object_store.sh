@@ -14,10 +14,7 @@ MINIO_STORAGE_PROVIDER_BUCKET_NAME="banyan-storage-provider"
 # Use the crate's local data/ for mounting the volume
 MINIO_VOLUME_MT_DIR="data"
 MINIO_VOLUME_MT_PATH="$(pwd)/${MINIO_VOLUME_MT_DIR}"
-
-# These are the paths to the buckets on the Minio volume for our services
-MINIO_STAGING_BUCKET_MT_PATH="/${MINIO_VOLUME_MT_DIR}/${MINIO_STAGING_BUCKET_NAME}"
-MINIO_STORAGE_PROVIDER_BUCKET_MT_PATH="/${MINIO_VOLUME_MT_DIR}/${MINIO_STORAGE_PROVIDER_BUCKET_NAME}"
+MINIO_VOLUME_CONTAINER_PATH="/${MINIO_VOLUME_MT_DIR}"
 
 # Credentials for the Minio API available at localhost:9000
 # These can also be used as AWS credentials for the S3 API at localhost:9090
@@ -37,12 +34,18 @@ function run-minio {
 
 # Create the Minio bucket for the staging service
 function create-minio-staging-bucket {
-	${CONTAINER_RUNTIME} exec ${MINIO_CONTAINER_NAME} mc mb -p ${MINIO_STAGING_BUCKET_MT_PATH}
+	# Create a directory for the bucket on the host
+	mkdir -p ${MINIO_VOLUME_MT_PATH}/${MINIO_STAGING_BUCKET_NAME}
+	# Create the bucket in the Minio container
+	${CONTAINER_RUNTIME} exec ${MINIO_CONTAINER_NAME} mc mb -p ${MINIO_VOLUME_CONTAINER_PATH}/${MINIO_STAGING_BUCKET_NAME}
 }
 
 # Create the Minio bucket for the storage provider service
 function create-minio-storage-provider-bucket {
-	${CONTAINER_RUNTIME} exec ${MINIO_CONTAINER_NAME} mc mb -p ${MINIO_STORAGE_PROVIDER_BUCKET_MT_PATH}
+	# Create a directory for the bucket on the host
+	mkdir -p ${MINIO_VOLUME_MT_PATH}/${MINIO_STORAGE_PROVIDER_BUCKET_NAME}
+	# Create the bucket in the Minio container
+	${CONTAINER_RUNTIME} exec ${MINIO_CONTAINER_NAME} mc mb -p ${MINIO_VOLUME_CONTAINER_PATH}/${MINIO_STORAGE_PROVIDER_BUCKET_NAME}
 }
 
 # Helpers:
@@ -71,8 +74,8 @@ function create-minio-container {
 		--name ${MINIO_CONTAINER_NAME} \
 		-e "MINIO_ROOT_USER=${MINIO_ROOT_USER}" \
 		-e "MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}" \
-		-v ${MINIO_VOLUME_MT_PATH}:/${MINIO_VOLUME_MT_DIR} \
-		quay.io/minio/minio server /${MINIO_VOLUME_MT_DIR} --console-address ":9090"
+		-v ${MINIO_VOLUME_MT_PATH}:${MINIO_VOLUME_CONTAINER_PATH} \
+		quay.io/minio/minio server ${MINIO_VOLUME_CONTAINER_PATH} --console-address ":9090"
 }
 
-$1 $2
+$1
