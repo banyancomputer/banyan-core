@@ -12,13 +12,15 @@ import { Action } from '@components/Bucket/BucketTable/FileActions';
 import { useModal } from '@/app/contexts/modals';
 import { Bucket } from '@/app/types/bucket';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
+import { useTomb } from '@app/contexts/tomb';
 
-import { Bolt, DeleteHotData, Rename, Trash, Upload, Versions } from '@static/images/common';
+import { Bolt, DeleteHotData, Rename, Retry, Trash, Upload, Versions } from '@static/images/common';
 import { Folder, Lock } from '@static/images/buckets';
 
 export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const { messages } = useIntl();
     const { openModal, closeModal } = useModal();
+    const { buckets, remountBucket } = useTomb();
     const bucketType = `${bucket.bucketType}_${bucket.storageClass}`;
     const folderLocation = useFolderLocation();
 
@@ -84,6 +86,14 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         try {
             /** TODO: implement after will be added into tomb wasm. */
         } catch (error: any) { }
+    };
+
+    const remount = async () => {
+        try {
+            await remountBucket(bucket);
+        } catch (error: any) {
+            console.log(error);
+        }
     }
 
     const uploadAction = new Action(`${messages.upload}`, <Upload width="18px" height="18px" />, upload);
@@ -94,7 +104,7 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const createFolderAction = new Action(`${messages.createNewFolder}`, <Folder width="18px" height="18px" />, createFolder);
     const restoreColdVersionAction = new Action(`${messages.restoreCold}`, <Versions width="18px" height="18px" />, retoreColdVersion);
     const deleteHotDatadAction = new Action(`${messages.deleteHotData}`, <DeleteHotData width="18px" height="18px" />, deleteHotData);
-    const deletedAction = new Action(`${messages.delete}`, <Trash width="18px" height="18px" />, deleteBucket);
+    const deletedAction = buckets.length > 1 ? new Action(`${messages.delete}`, <Trash width="18px" height="18px" />, deleteBucket) : null;
     const purgeAction = new Action(`${messages.purgeColdKeys}`, <Trash width="18px" height="18px" />, purgeColdKeys);
 
     const hotInrecactiveActions = [
@@ -127,38 +137,52 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
 
     return (
         <div className={'w-64 text-xs font-medium bg-bucket-actionsBackground rounded-xl overflow-hidden shadow-md z-10 select-none text-bucket-actionsText'}>
-            {
-                bucket.locked ?
-                    <div
-                        className="w-full flex items-center gap-2 py-2 px-3 transition-colors hover:bg-hover"
-                        onClick={unlock}
-                    >
-                        <span className="text-button-primary">
-                            <Lock width="18px" height="18px" />
-                        </span>
-                        {`${messages.unlock}`}
-                    </div>
-                    :
-                    actions[bucketType].map(action =>
-                        action ?
+            {bucket.mount ?
+                <>
+                    {
+                        bucket.locked ?
                             <div
-                                key={action.label}
                                 className="w-full flex items-center gap-2 py-2 px-3 transition-colors hover:bg-hover"
-                                onClick={action.value}
+                                onClick={unlock}
                             >
                                 <span className="text-button-primary">
-                                    {action.icon}
+                                    <Lock width="18px" height="18px" />
                                 </span>
-                                {action.label}
-                                {action.tooltip ?
-                                    <span className="text-button-primary" title={action.tooltip}>(?)</span>
-                                    :
-                                    null
-                                }
+                                {`${messages.unlock}`}
                             </div>
                             :
-                            null
-                    )
+                            actions[bucketType].map(action =>
+                                action ?
+                                    <div
+                                        key={action.label}
+                                        className="w-full flex items-center gap-2 py-2 px-3 transition-colors hover:bg-hover"
+                                        onClick={action.value}
+                                    >
+                                        <span className="text-button-primary">
+                                            {action.icon}
+                                        </span>
+                                        {action.label}
+                                        {action.tooltip ?
+                                            <span className="text-button-primary" title={action.tooltip}>(?)</span>
+                                            :
+                                            null
+                                        }
+                                    </div>
+                                    :
+                                    null
+                            )
+                    }
+                </>
+                :
+                <div
+                    className="w-full flex items-center gap-2 py-2 px-3 transition-colors hover:bg-hover"
+                    onClick={remount}
+                >
+                    <span className="text-button-primary">
+                        <Retry width="18px" height="18px" />
+                    </span>
+                    {`${messages.unlock}`}
+                </div>
             }
         </div>
     );

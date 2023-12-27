@@ -27,6 +27,11 @@ ignore = [
   # impacted by this vulnerability as the impacted code is converting between
   # local timezones from offsets and we only operate on UTC timestamps.
   "RUSTSEC-2023-0071",
+
+  # This is coming from banyan-cli and isn't directly relevant to how we're
+  # using it, but we also can't update it in banyan-cli. Once that's been
+  # pulled out we should remove this
+  "RUSTSEC-2021-0145",
 ]
 
 [licenses]
@@ -86,10 +91,13 @@ exceptions = [
   ] },
   { name = "banyan-car-analyzer", allow = [
     "LicenseRef-LICENSE.txt",
-  ] }, 
+  ] },
   { name = "banyan-traffic-counter", allow = [
     "LicenseRef-LICENSE.txt",
-  ] }
+  ] },
+  { name = "banyan-object-store", allow = [
+    "LicenseRef-LICENSE.txt",
+  ] }, 
 ]
 
 # Ring doesn't specify the license in their Cargo manifest, we have to

@@ -8,5 +8,7 @@ mod version;
 pub use config::{Config, ConfigError};
 pub use secrets::{MailgunSigningKey, ProviderCredential, Secrets, ServiceKey};
 pub use service_verification_key::ServiceVerificationKey;
+#[cfg(test)]
+pub use state::test::mock_app_state;
 pub use state::State as AppState;
 pub use version::Version;

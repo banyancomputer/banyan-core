@@ -7,7 +7,14 @@ mod types;
 #[cfg(test)]
 pub(crate) mod test_helpers;
 
+/// The number of simultaneous dynamic binds any individual query is allowed to have. Technically
+/// this is 32_768, but we want to ensure there are some query slots available for the non-bulk
+/// parts of any particular query.
+pub const BIND_LIMIT: usize = 32_000;
+
 pub type Database = SqlitePool;
+
+pub type DatabaseConnection = sqlx::SqliteConnection;
 
 pub async fn connect(db_url: &url::Url) -> Result<Database, DatabaseSetupError> {
     // todo: I should figure out a way to delay the actual connection and running of migrations,

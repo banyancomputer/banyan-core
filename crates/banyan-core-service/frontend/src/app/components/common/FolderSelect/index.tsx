@@ -53,14 +53,15 @@ export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBu
             path={folder}
             bucket={selectedBucket!}
         />
-            ,
-            action
+        ,
+        action
         );
     };
 
     useEffect(() => {
-        (async () => {
+        (async() => {
             const bucket = selectedBucket;
+            if (!bucket.mount) return;
             const files = await bucket.mount.ls(folder);
             setFolders(files.filter(file => file.type === 'dir'));
         })();

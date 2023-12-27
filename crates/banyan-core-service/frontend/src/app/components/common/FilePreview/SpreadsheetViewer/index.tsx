@@ -21,14 +21,14 @@ export const SpreadsheetViewer: React.FC<{ data: File }> = ({ data }) => {
                     <thead>
                         <tr className="bg-white">
                             <th className="border-1 border-border-regular bg-white text-text-900"></th>
-                            {spreadSheetData?.data[0]?.map((header: string, index: number) => (
+                            {spreadSheetData?.data[0]?.map((header: string, index: number) =>
                                 <th
                                     key={index}
                                     className="border-1 border-border-regular bg-white text-text-900"
                                 >
                                     {header}
                                 </th>
-                            ))}
+                            )}
                         </tr>
                     </thead>
                     <tbody>
@@ -52,5 +52,5 @@ export const SpreadsheetViewer: React.FC<{ data: File }> = ({ data }) => {
                 </table>
             </div>
         </div>
-    )
+    );
 };

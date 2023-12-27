@@ -24,6 +24,10 @@ impl UserIdentity {
             Either::E2(session) => session.key_fingerprint(),
         }
     }
+
+    pub fn ticket_subject(&self) -> String {
+        format!("{}@{}", self.id(), self.key_fingerprint())
+    }
 }
 
 #[async_trait]

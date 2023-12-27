@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                SELECT snapshot_id, count(block_id) as block_count, m.metadata_size as metadata_size\n                FROM snapshot_block_locations bls\n                        JOIN snapshots s on bls.snapshot_id = s.id\n                        JOIN metadata m on s.metadata_id = m.id\n                WHERE s.id == $1 AND m.state == $2\n                GROUP BY snapshot_id;\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "snapshot_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "block_count",
+        "ordinal": 1,
+        "type_info": "Int64"
+      },
+      {
+        "name": "metadata_size",
+        "ordinal": 2,
+        "type_info": "Int64"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "74ac62a24e39d37df6ba074d7967951f0e194c68ce911e820ddf388943d007c1"
+}

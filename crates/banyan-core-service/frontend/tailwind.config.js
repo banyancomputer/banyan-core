@@ -37,7 +37,7 @@ module.exports = {
 			},
 			colors: {
 				button: {
-					primary: 'var(--highlight-color)',
+					primary: 'var(--button-primary)',
 					highLight: 'var(--button-secondary)',
 					disabled: 'var(--disabled)',
 				},
@@ -68,6 +68,12 @@ module.exports = {
 					bucketClasscold: 'var(--bucket-class-cold)',
 					actionsBackground: 'var(--bucket-actions-background)',
 					actionsText: 'var(--bucket-actions-text)',
+				},
+				termsAndConditions: {
+					header: 'var(--termsAndConditionsHead)',
+					activeAccountTypeBackground: 'var(--activeAccountTypeBackground)',
+					activeAccountType: 'var(--activeAccountType)',
+					highlight: 'var(--termsAndConditionsHighlihgt)'
 				},
 				modalBackground: 'var(--modal-background)',
 				border: {

@@ -35,7 +35,7 @@ export interface BucketSnapshot {
 export interface Bucket {
     id: string;
     name: string;
-    mount: WasmMount;
+    mount: WasmMount | null;
     bucketType: string;
     storageClass: string;
     files: BrowserObject[];

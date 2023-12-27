@@ -9,6 +9,7 @@ import { Navigation } from '@components/common/Navigation';
 import { Header } from '@components/common/Header';
 import { ErrorBanner } from '@components/common/ErrorBanner';
 import { BetaBanner } from '@components/common/BetaBanner';
+import { MobilePlaceholder } from '@components/common/MobilePlaceholder';
 
 import { Routes } from './routes';
 import { KeystoreProvider } from './contexts/keystore';
@@ -26,75 +27,76 @@ import ja from '@static/locales/ja.json';
 import zh from '@static/locales/zh.json';
 
 const TRANSLATES: Record<string, Record<string, string>> = {
-	en,
-	fr,
-	de,
-	ja,
-	zh,
+    en,
+    fr,
+    de,
+    ja,
+    zh,
 };
 
 export const locales = Object.keys(TRANSLATES);
 
 const App = () => {
-	const [locale, setLocale] = useState('en');
+    const [locale, setLocale] = useState('en');
 
-	useEffect(() => {
-		const theme = getLocalStorageItem('theme');
-		theme && document.documentElement.setAttribute('prefers-color-scheme', theme);
+    useEffect(() => {
+        const theme = getLocalStorageItem('theme');
+        theme && document.documentElement.setAttribute('prefers-color-scheme', theme);
 
-		window.addEventListener('storage', () => {
-			const selectedLanguage = getLocalStorageItem('lang');
-			setLocale(selectedLanguage || 'en');
-		});
+        window.addEventListener('storage', () => {
+            const selectedLanguage = getLocalStorageItem('lang');
+            setLocale(selectedLanguage || 'en');
+        });
 
-		const selectedLanguage = getLocalStorageItem('lang');
-		setLocale(selectedLanguage || 'en');
+        const selectedLanguage = getLocalStorageItem('lang');
+        setLocale(selectedLanguage || 'en');
 
-		if (selectedLanguage) { return; }
+        if (selectedLanguage) { return; }
 
-		setLocalStorageItem('lang', navigator.language.includes('-') ? navigator.language.split('-')[0] : navigator.language);
-	}, []);
+        setLocalStorageItem('lang', navigator.language.includes('-') ? navigator.language.split('-')[0] : navigator.language);
+    }, []);
 
-	return (
-		<main
-			className="flex flex-col h-screen max-h-screen font-sans bg-mainBackground text-text-900"
-			onDragOver={preventDefaultDragAction}
-			onDrop={preventDefaultDragAction}
-		>
-			<IntlProvider locale={locale} messages={TRANSLATES[locale]}>
-				<BrowserRouter basename="/" >
-					<ModalProvider>
-						<SessionProvider>
-							<KeystoreProvider>
-								<TombProvider>
-									<FileUploadProvider>
-										<FilePreviewProvider>
-											<Notifications />
-											<Modal />
-											<FilePreview />
-											<Modal />
-											<Notifications />
-											<section className="flex flex-grow">
-												<Navigation />
-												<section className="flex-grow h-screen overflow-y-scroll">
-													<Header />
-													<BetaBanner />
-													<ErrorBanner />
-													<Suspense>
-														<Routes />
-													</Suspense>
-												</section>
-											</section>
-										</FilePreviewProvider>
-									</FileUploadProvider>
-								</TombProvider>
-							</KeystoreProvider>
-						</SessionProvider>
-					</ModalProvider>
-				</BrowserRouter>
-			</IntlProvider>
-		</main>
-	);
+    return (
+        <IntlProvider locale={locale} messages={TRANSLATES[locale]}>
+            <main
+                className="flex flex-col h-screen max-h-screen font-sans bg-mainBackground text-text-900 max-sm:hidden"
+                onDragOver={preventDefaultDragAction}
+                onDrop={preventDefaultDragAction}
+            >
+                <BrowserRouter basename="/" >
+                    <ModalProvider>
+                        <SessionProvider>
+                            <KeystoreProvider>
+                                <TombProvider>
+                                    <FileUploadProvider>
+                                        <FilePreviewProvider>
+                                            <Notifications />
+                                            <Modal />
+                                            <FilePreview />
+                                            <Modal />
+                                            <Notifications />
+                                            <section className="flex flex-grow">
+                                                <Navigation />
+                                                <section className="flex-grow h-screen overflow-y-scroll">
+                                                    <Header />
+                                                    <BetaBanner />
+                                                    <ErrorBanner />
+                                                    <Suspense>
+                                                        <Routes />
+                                                    </Suspense>
+                                                </section>
+                                            </section>
+                                        </FilePreviewProvider>
+                                    </FileUploadProvider>
+                                </TombProvider>
+                            </KeystoreProvider>
+                        </SessionProvider>
+                    </ModalProvider>
+                </BrowserRouter>
+            </main>
+            <MobilePlaceholder />
+        </IntlProvider>
+    );
 };
 
 export default App;
