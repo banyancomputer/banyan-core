@@ -2,17 +2,17 @@ use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
+use banyan_object_store::{ObjectStore, ObjectStoreError, ObjectStorePath};
 
 use crate::app::AppState;
 use crate::database::models::BlockDetails;
 use crate::database::Database;
 use crate::extractors::BlockReader;
-use crate::upload_store::{ObjectStore, UploadStore};
 
 pub async fn handler(
     State(state): State<AppState>,
     client: BlockReader,
-    store: UploadStore,
+    store: ObjectStore,
     Path(cid): Path<String>,
 ) -> Result<Response, BlockRetrievalError> {
     let db = state.database();
@@ -51,7 +51,7 @@ pub async fn handler(
     // passing in the byte range using GetOptions to the get_opts method on the ObjectStore trait,
     // however data in the "File" type explicitly ignores this range which is incredibly
     // frustrating...
-    let object_path = object_store::path::Path::from(block_details.file_path.as_str());
+    let object_path = ObjectStorePath::from(block_details.file_path.as_str());
     let data = store
         .get_range(&object_path, byte_range)
         .await
@@ -101,7 +101,7 @@ pub enum BlockRetrievalError {
     NotBlockOwner,
 
     #[error("unable to pull block that should exist")]
-    RetrievalFailed(object_store::Error),
+    RetrievalFailed(#[from] ObjectStoreError),
 
     #[error("requested block was not in our database")]
     UnknownBlock,

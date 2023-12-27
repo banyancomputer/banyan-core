@@ -17,7 +17,7 @@ pub struct Config {
     /// The URL of the database to use (SQLite)
     database_url: Url,
     /// Where to store uploaded objects
-    upload_directory: PathBuf,
+    upload_store_url: Url,
 
     /// The unique name fo the service, as registered with the platform
     service_name: String,
@@ -82,14 +82,16 @@ impl Config {
         };
         let database_url = Url::parse(&database_str).map_err(ConfigError::InvalidDatabaseUrl)?;
 
-        let upload_dir_str = match cli_args.opt_value_from_str("--upload-dir")? {
-            Some(path) => path,
-            None => match std::env::var("UPLOAD_DIR") {
-                Ok(ud) if !ud.is_empty() => ud,
-                _ => "./data/uploads".to_string(),
+        // Try and parse an upload directory from the CLI and Env
+        let upload_store_url_str = match cli_args.opt_value_from_str("--upload-store-url")? {
+            Some(usus) => usus,
+            None => match std::env::var("UPLOAD_STORE_URL") {
+                Ok(usus) if !usus.is_empty() => usus,
+                _ => return Err(ConfigError::MissingObjectStoreUrl),
             },
         };
-        let upload_directory = PathBuf::from(upload_dir_str);
+        let upload_store_url =
+            Url::parse(&upload_store_url_str).map_err(ConfigError::InvalidObjectStoreUrl)?;
 
         // Service identity configuration
 
@@ -151,7 +153,7 @@ impl Config {
             log_level,
 
             database_url,
-            upload_directory,
+            upload_store_url,
 
             service_name,
             service_hostname,
@@ -175,8 +177,8 @@ impl Config {
         self.database_url.clone()
     }
 
-    pub fn upload_directory(&self) -> PathBuf {
-        self.upload_directory.clone()
+    pub fn upload_store_url(&self) -> Url {
+        self.upload_store_url.clone()
     }
 
     pub fn service_name(&self) -> &str {
@@ -218,6 +220,12 @@ pub enum ConfigError {
     #[error("invalid log level: {0}")]
     InvalidLogLevel(tracing::metadata::ParseLevelError),
 
+    #[error("invalid upload store URI: {0}")]
+    InvalidObjectStoreUrl(url::ParseError),
+
+    #[error("missing upload store uri")]
+    MissingObjectStoreUrl,
+
     #[error("signing key gen failed: {0}")]
     ServiceKeyGenFailed(jwt_simple::Error),
 
@@ -240,8 +248,21 @@ fn print_help() {
     println!("    --log-level LOG_LEVEL                 Specify the log level to use, by default");
     println!("                                          this is INFO\n");
     println!("    --database-url DATABASE_URL           Configure the url for the sqlite database (default ./data/server.db)");
-    println!("    --upload-dir UPLOAD_DIR               Path used to store uploaded client data. (default ./data/uploads)\n");
-    println!("    --service-name SERVICE_NAME           The unique name of the service, as registered with the platform. (default banyan-staging)");
+    println!("    --upload-store-url UPLOAD_STORE_URL   Configure the URL for the upload store. There is no default value for this");
+    println!("                                          option, it must be specified. If the URL is a local path, specify it as:");
+    println!("                                          -> file://<PATH_TO_UPLOAD_DIR>");
+    println!("                                          This must be a path to a directory that exists and is writable.");
+    println!(
+        "                                          If the URL is an S3 bucket, specify it as:"
+    );
+    println!("                                          -> http://<AWS_ACCESS_KEY_ID>:<AWS_SECRET_ACCESS_KEY>@<HOST>:<PORT>/<AWS_REGION>/<BUCKET_NAME>/<OPTIONAL_PREFIX>");
+    println!("                                          for connection over http, or");
+    println!("                                          -> https://<AWS_ACCESS_KEY_ID>:<AWS_SECRET_ACCESS_KEY>@s3.<REGION>.<ENDPOINT>/<BUCKET_NAME>/<OPTIONAL_PREFIX>");
+    println!("                                          for connection over https. The AWS credentials must have permission to");
+    println!("                                          read and write to the bucket.\n");
+    println!("                                          If no option is specified, the service will attempt to load the UPLOAD_STORE_URL");
+    println!("                                          environment variable. If not present, the service will fail to start.\n");
+    println!("    --service-name SERVICE_NAME           The unique name of the service, as registered with the platform. (default banyan-storage-provider)");
     println!("    --service-hostname SERVICE_HOSTNAME   The hostname of this service (default http://127.0.0.1:3002)");
     println!("    --service-key-path SERVICE_KEY_PATH   Path to the p384 private key used for service token signing and verification");
     println!("                                          (default ./data/service-key.private)\n");

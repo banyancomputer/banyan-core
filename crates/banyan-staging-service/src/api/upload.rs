@@ -6,6 +6,7 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::TypedHeader;
 use banyan_car_analyzer::{CarReport, StreamingCarAnalyzer, StreamingCarAnalyzerError};
+use banyan_object_store::{ObjectStore, ObjectStoreError, ObjectStorePath};
 use banyan_task::TaskLikeExt;
 use futures::{TryStream, TryStreamExt};
 use serde::{Deserialize, Serialize};
@@ -16,7 +17,6 @@ use crate::app::AppState;
 use crate::database::{map_sqlx_error, Database, DatabaseError};
 use crate::extractors::AuthenticatedClient;
 use crate::tasks::ReportUploadTask;
-use crate::upload_store::{ObjectStore, UploadStore};
 
 /// Limit on the size of the JSON request that accompanies an upload.
 const UPLOAD_REQUEST_SIZE_LIMIT: u64 = 100 * 1_024;
@@ -30,7 +30,7 @@ pub struct UploadRequest {
 pub async fn handler(
     State(state): State<AppState>,
     client: AuthenticatedClient,
-    store: UploadStore,
+    store: ObjectStore,
     TypedHeader(content_len): TypedHeader<ContentLength>,
     TypedHeader(content_type): TypedHeader<ContentType>,
     body: BodyStream,
@@ -87,7 +87,7 @@ pub async fn handler(
     // TODO: validate name is car-upload (request_data_field.name())
     // TODO: validate type is "application/vnd.ipld.car; version=2" (request_data_field.content_type())
 
-    let store_path = object_store::path::Path::from(tmp_file_path.as_str());
+    let store_path = ObjectStorePath::from(tmp_file_path.as_str());
     let (multipart_resume_id, mut writer) = match store.put_multipart(&store_path).await {
         Ok(mp) => mp,
         Err(err) => {
@@ -146,15 +146,15 @@ async fn handle_failed_upload(db: &Database, upload_id: &str) {
 
 async fn handle_successful_upload(
     db: &Database,
-    _store: &UploadStore,
+    _store: &ObjectStore,
     car_report: &CarReport,
     upload_id: &str,
-    _file_path: &object_store::path::Path,
+    _file_path: &ObjectStorePath,
 ) -> Result<(), UploadError> {
     //let mut path_iter = file_path.parts();
     // discard the uploading/ prefix
     //let _ = path_iter.next();
-    //let mut final_path: object_store::path::Path = path_iter.collect();
+    //let mut final_path: ObjectStorePath = path_iter.collect();
 
     //// todo: validate the local store doesn't use copy to handle this as some of the other stores
     //// do...
@@ -352,7 +352,7 @@ pub enum UploadError {
     RequestFieldMissing,
 
     #[error("unable to open store for properly authorized data upload: {0}")]
-    StoreUnavailable(object_store::Error),
+    StoreUnavailable(#[from] ObjectStoreError),
 
     #[error("streaming car upload failed")]
     StreamingFailed(#[from] UploadStreamError),

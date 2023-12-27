@@ -13,7 +13,6 @@ mod extractors;
 mod health_check;
 mod http_server;
 mod tasks;
-mod upload_store;
 mod utils;
 
 use app::Config;
