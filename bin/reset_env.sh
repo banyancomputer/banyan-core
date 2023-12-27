@@ -26,36 +26,34 @@ fi
 make clean
 
 # Make sure object storage is up and running.
-cd crates/banyan-object-store &&
-	./bin/object_store.sh run-minio &&
-	./bin/object_store.sh create-minio-staging-bucket &&
-	./bin/object_store.sh create-minio-storage-provider-bucket
-cd ../..
+make minio
 
 # Generate the core service public key, copy it to the staging and storage provider services.
 make generate-core-service-key
+
+# Confirm the command correctly created what we need from it
 [ -f "crates/banyan-core-service/data/service-key.public" ] || fail 1 "core didn't generate public key"
+
+# Copy the public key to the other services for verification
 cp -f crates/banyan-core-service/data/service-key.public crates/banyan-staging-service/data/platform-key.public
 cp -f crates/banyan-core-service/data/service-key.public crates/banyan-storage-provider-service/data/platform-key.public
 
-# TODO: reading the .env file through a script running in a make file doesn't seem to expand `$(pwd)` correctly
-#       this is a workaround to avoid that
-cd crates/banyan-staging-service
-source .env
-cd ../..
 # Generate the staging service's public key and its fingerprint. Then, add the staging host to the sqlite database.
+source crates/banyan-staging-service/.env
 make generate-staging-service-key
+
+# Confirm the command correctly created what we need from it
 [ -f "crates/banyan-staging-service/data/service-key.public" ] || fail 2 "staging missing public service key"
 [ -f "crates/banyan-staging-service/data/service-key.fingerprint" ] || fail 3 "staging missing service fingerprint"
-source bin/add_staging_host.sh
 
-cd crates/banyan-storage-provider-service
-source .env
-cd ../..
 # Generate the storage provider service's public key and its fingerprint. Then, add the storage host to the sqlite database.
+source crates/banyan-storage-provider-service/.env
 make generate-storage-provider-service-key
+
+# Confirm the command correctly created what we need from it
 [ -f "crates/banyan-storage-provider-service/data/service-key.public" ] || fail 5 "storage provider missing public service key"
 [ -f "crates/banyan-storage-provider-service/data/service-key.fingerprint" ] || fail 6 "storage provider missing service fingerprint"
-source bin/add_storage_host.sh
+
+./bin/add_storage_host.sh
 
 echo 'environment reset complete'
