@@ -23,6 +23,7 @@ clean:
 		crates/banyan-storage-provider-service/data/uploads/* \
 	rm -rf crates/banyan-object-store/data/banyan-staging \
 		crates/banyan-object-store/data/banyan-storage-provider
+	./crates/banyan-object-store/bin/object_store.sh clean
 
 .PHONY: fmt
 fmt:
@@ -35,6 +36,12 @@ fmt-check:
 .PHONY: clippy
 clippy:
 	cargo clippy --workspace --all-targets --all-features --tests -- -D warnings
+
+.PHONY: minio
+minio:
+	./crates/banyan-object-store/bin/object_store.sh run-minio
+	./crates/banyan-object-store/bin/object_store.sh create-minio-staging-bucket
+	./crates/banyan-object-store/bin/object_store.sh create-minio-storage-provider-bucket
 
 .PHONY: test
 test:
@@ -55,16 +62,22 @@ generate-core-service-key:
 		&& (timeout 3s cargo run || true) \
 	)
 
+crates/banyan-staging-service/data/uploads:
+	mkdir -p crates/banyan-staging-service/data/uploads
+
 .PHONY: generate-staging-service-key
-generate-staging-service-key:
+generate-staging-service-key: crates/banyan-staging-service/data/uploads
 	(                                         \
 		cd crates/banyan-staging-service  \
 		&& cargo build                    \
 		&& (timeout 3s cargo run || true) \
 	)
 
+crates/banyan-storage-provider-service/data/uploads:
+	mkdir -p crates/banyan-storage-provider-service/data/uploads
+
 .PHONY: generate-storage-provider-service-key
-generate-storage-provider-service-key:
+generate-storage-provider-service-key: crates/banyan-storage-provider-service/data/uploads
 	(                                                 \
 		cd crates/banyan-storage-provider-service \
 		&& cargo build                            \
