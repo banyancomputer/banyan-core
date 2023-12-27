@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT CAST('1970-01-01 00:00:00' AS TEXT) as 'timestamp: PrecisionTimestamp';",
+  "describe": {
+    "columns": [
+      {
+        "name": "timestamp: PrecisionTimestamp",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "2f057bd11e8e25239c5230ef46c719544a709389fb6713256aa877a13019b0d9"
+}

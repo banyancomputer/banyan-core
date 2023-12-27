@@ -271,11 +271,11 @@ mod test {
 
     #[test]
     fn test_parse_file_relative_path_url() {
-        let url = Url::parse("file://data").unwrap();
+        let url = Url::parse("file://src").unwrap();
         let connection = ObjectStoreConnection::try_from(url).unwrap();
         match connection {
             ObjectStoreConnection::Local(path) => {
-                assert_eq!(path, PathBuf::from("data"));
+                assert_eq!(path, PathBuf::from("src"));
             }
             _ => panic!("expected local connection"),
         }
@@ -283,11 +283,11 @@ mod test {
 
     #[test]
     fn test_parse_file_relative_dot_path_url() {
-        let url = Url::parse("file://./data").unwrap();
+        let url = Url::parse("file://./src").unwrap();
         let connection = ObjectStoreConnection::try_from(url).unwrap();
         match connection {
             ObjectStoreConnection::Local(path) => {
-                assert_eq!(path, PathBuf::from("./data"));
+                assert_eq!(path, PathBuf::from("./src"));
             }
             _ => panic!("expected local connection"),
         }
