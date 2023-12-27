@@ -22,6 +22,11 @@ MINIO_STORAGE_PROVIDER_BUCKET_MT_PATH="/${MINIO_VOLUME_MT_DIR}/${MINIO_STORAGE_P
 MINIO_ROOT_USER="ROOTUSER"
 MINIO_ROOT_PASSWORD="INSECURE"
 
+CONTAINER_RUNTIME="podman"
+if which docker &>/dev/null; then
+	CONTAINER_RUNTIME="docker"
+fi
+
 # Safely start the Minio container
 function run-minio {
 	start-minio-container
@@ -29,12 +34,12 @@ function run-minio {
 
 # Create the Minio bucket for the staging service
 function create-minio-staging-bucket {
-	docker exec ${MINIO_CONTAINER_NAME} mc mb -p ${MINIO_STAGING_BUCKET_MT_PATH}
+	${CONTAINER_RUNTIME} exec ${MINIO_CONTAINER_NAME} mc mb -p ${MINIO_STAGING_BUCKET_MT_PATH}
 }
 
 # Create the Minio bucket for the storage provider service
 function create-minio-storage-provider-bucket {
-	docker exec ${MINIO_CONTAINER_NAME} mc mb -p ${MINIO_STORAGE_PROVIDER_BUCKET_MT_PATH}
+	${CONTAINER_RUNTIME} exec ${MINIO_CONTAINER_NAME} mc mb -p ${MINIO_STORAGE_PROVIDER_BUCKET_MT_PATH}
 }
 
 # Helpers:
@@ -42,12 +47,12 @@ function create-minio-storage-provider-bucket {
 # Start the Minio container, making sure it exists on the host
 function start-minio-container {
 	insure-minio-container-exists
-	docker start ${MINIO_CONTAINER_NAME}
+	${CONTAINER_RUNTIME} start ${MINIO_CONTAINER_NAME}
 }
 
 # Create the Minio container if it does not exist
 function insure-minio-container-exists {
-	if [ -z "$(docker ps -a -q -f name=${MINIO_CONTAINER_NAME})" ]; then
+	if [ -z "$(${CONTAINER_RUNTIME} ps -a -q -f name=${MINIO_CONTAINER_NAME})" ]; then
 		create-minio-container
 	fi
 }
@@ -56,7 +61,7 @@ function insure-minio-container-exists {
 function create-minio-container {
 	mkdir -p ${MINIO_VOLUME_MT_PATH}
 	# Create the Minio container with the Minio volume mounted
-	docker create \
+	${CONTAINER_RUNTIME} create \
 		-p 9000:9000 \
 		-p 9090:9090 \
 		--user $(id -u):$(id -g) \
