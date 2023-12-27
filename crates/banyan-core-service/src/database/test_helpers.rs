@@ -305,30 +305,6 @@ pub(crate) async fn create_user(
     .expect("user creation")
 }
 
-pub(crate) async fn current_metadata(
-    db: &mut DatabaseConnection,
-    bucket_id: &str,
-    counter: usize,
-) -> String {
-    sample_metadata(db, bucket_id, counter, MetadataState::Current).await
-}
-
-pub(crate) async fn assert_metadata_state(
-    db: &mut DatabaseConnection,
-    metadata_id: &str,
-    expected_state: MetadataState,
-) {
-    let found_state = sqlx::query_scalar!(
-        r#"SELECT state as 'state: MetadataState' FROM metadata WHERE id = $1;"#,
-        metadata_id,
-    )
-    .fetch_one(&mut *db)
-    .await
-    .expect("metadata existence");
-
-    assert_eq!(found_state, expected_state);
-}
-
 pub(crate) fn data_generator<'a>(range: Range<usize>) -> impl Iterator<Item = Vec<u8>> + 'a {
     range.map(|n| n.to_le_bytes().to_vec())
 }

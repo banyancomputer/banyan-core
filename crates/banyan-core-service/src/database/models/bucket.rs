@@ -42,7 +42,7 @@ impl Bucket {
     pub async fn approve_keys_by_fingerprint(
         conn: &mut DatabaseConnection,
         bucket_id: &str,
-        fingerprints: &Vec<String>,
+        fingerprints: &[String],
     ) -> Result<u64, sqlx::Error> {
         let mut changed_rows = 0;
 
@@ -371,7 +371,7 @@ mod tests {
         create_bucket_key(&mut conn, &bucket_id, "<pubkey>", "001122", false).await;
         create_bucket_key(&mut conn, &bucket_id, "<pubkey>", "003355", false).await;
 
-        Bucket::approve_keys_by_fingerprint(&mut conn, &bucket_id, &vec!["003355".to_string()])
+        Bucket::approve_keys_by_fingerprint(&mut conn, &bucket_id, &["003355".to_string()])
             .await
             .expect("appoval success");
 
