@@ -393,7 +393,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 				const tomb = new TombWasm(
 					apiKey.privatePem,
 					userData.user.id,
-					'http://localhost:3001/',
+					window.location.protocol + '//' + window.location.host,
 				);
 				setTomb(await tomb);
 			} catch (error: any) {
