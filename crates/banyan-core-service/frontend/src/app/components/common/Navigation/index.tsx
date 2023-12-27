@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useIntl } from 'react-intl';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 
-import { LockedTooltip } from './LockedTooltip'
+import { LockedTooltip } from './LockedTooltip';
 import { CreateBucketModal } from '../Modal/CreateBucketModal';
 
 import { HttpClient } from '@/api/http/client';
@@ -62,6 +62,10 @@ export const Navigation = () => {
 
 		setFiles(Array.from(event.dataTransfer.files).map(file => ({ file, isUploaded: false })));
 		setDroppedBucket(bucket!);
+	};
+
+	const preventNavigation = (event: React.MouseEvent<HTMLAnchorElement, MouseEvent>, bucket: Bucket) => {
+		!bucket.mount && event.preventDefault();
 	};
 
 	useEffect(() => {
@@ -126,7 +130,8 @@ export const Navigation = () => {
 										to={`/drive/${bucket.id}`}
 										onDrag={preventDefaultDragAction}
 										onDrop={event => handleDrop(event, bucket)}
-										className="relative flex items-center justify-between gap-2  w-full h-10  cursor-pointer"
+										onClick={event => preventNavigation(event, bucket)}
+										className={`relative flex items-center justify-between gap-2 w-full h-10 cursor-pointer ${!bucket.mount && 'cursor-not-allowed'}`}
 									>
 										<span className="absolute w-4 h-11 bottom-1/2 border-2 border-transparent border-l-navigation-secondary border-b-navigation-secondary">
 										</span>
@@ -141,61 +146,61 @@ export const Navigation = () => {
 							)
 						}
 					</ul>
-				}
-				<button
-					onClick={createBucket}
-					className="mt-2 flex items-center gap-3 py-2 px-3 text-navigation-textSecondary"
-				>
-					<Plus />
-					{`${messages.newDrive}`}
-				</button>
-			</div>
-			<div className="flex flex-col gap-2 mt-6 pl-2 pt-3 pr-8 text-navigation-textSecondary text-xs">
-				<span
-					className="relative flex items-center gap-3 py-2.5 cursor-pointer"
-					onClick={toggleHelpOptionsVisibility}
-					ref={helpRef}
-				>
-					<Info />
-					{`${messages.help}`}
-					{areHelpOpionsVisible &&
+                }
+                <button
+                    onClick={createBucket}
+                    className="mt-2 flex items-center gap-3 py-2 px-3 text-navigation-textSecondary"
+                >
+                    <Plus />
+                    {`${messages.newDrive}`}
+                </button>
+            </div>
+            <div className="flex flex-col gap-2 mt-6 pl-2 pt-3 pr-8 text-navigation-textSecondary text-xs">
+                <span
+                    className="relative flex items-center gap-3 py-2.5 cursor-pointer"
+                    onClick={toggleHelpOptionsVisibility}
+                    ref={helpRef}
+                >
+                    <Info />
+                    {`${messages.help}`}
+                    {areHelpOpionsVisible &&
 						<div
-							className="absolute left-0 top-10 w-full flex flex-col items-stretch shadow-xl rounded-xl overflow-hidden text-xs font-semibold overflow-hiddenaa bg-bucket-actionsBackground cursor-pointer text-bucket-actionsText"
+						    className="absolute left-0 top-10 w-full flex flex-col items-stretch shadow-xl rounded-xl overflow-hidden text-xs font-semibold overflow-hiddenaa bg-bucket-actionsBackground cursor-pointer text-bucket-actionsText"
 						>
-							<a
-								className="flex items-center gap-2 py-2.5 px-3 transition-all hover:bg-hover"
-								href="https://banyan8674.zendesk.com/hc/en-us"
-								target="_blank"
-							>
-								<span className="text-button-primary">
-									<Question />
-								</span>
+						    <a
+						        className="flex items-center gap-2 py-2.5 px-3 transition-all hover:bg-hover"
+						        href="https://banyan8674.zendesk.com/hc/en-us"
+						        target="_blank"
+						    >
+						        <span className="text-button-primary">
+						            <Question />
+						        </span>
 								FAQ
-							</a>
-							<a
-								href="mailto:support@banyan8674.zendesk.com"
-								className="flex items-center gap-2 py-2.5 px-3 transition-all hover:bg-hover"
-								target="_blank"
-							>
-								<span className="text-button-primary">
-									<Mail />
-								</span>
-								{`${messages.contactUs}`}
-							</a>
+						    </a>
+						    <a
+						        href="mailto:support@banyan8674.zendesk.com"
+						        className="flex items-center gap-2 py-2.5 px-3 transition-all hover:bg-hover"
+						        target="_blank"
+						    >
+						        <span className="text-button-primary">
+						            <Mail />
+						        </span>
+						        {`${messages.contactUs}`}
+						    </a>
 						</div>
-					}
-				</span>
-				<span
-					className="flex items-center gap-3 py-2.5 cursor-pointer"
-					onClick={logout}
-				>
-					<Logout />
-					<span className="text-navigation-text">
-						{`${messages.logoutAccount}`}
-					</span>
-				</span>
-			</div>
-		</nav>
-	);
+                    }
+                </span>
+                <span
+                    className="flex items-center gap-3 py-2.5 cursor-pointer"
+                    onClick={logout}
+                >
+                    <Logout />
+                    <span className="text-navigation-text">
+                        {`${messages.logoutAccount}`}
+                    </span>
+                </span>
+            </div>
+        </nav>
+    );
 };
 

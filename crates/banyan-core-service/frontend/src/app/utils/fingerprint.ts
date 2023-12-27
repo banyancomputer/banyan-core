@@ -26,5 +26,6 @@ export const prettyFingerprintApiKeyPem = async(
     pem: string
 ): Promise<string> => {
     const publicSpki = publicPemUnwrap(pem);
+
     return await prettyFingerprintApiKeySpki(publicSpki);
 };

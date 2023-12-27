@@ -32,6 +32,14 @@ fmt:
 fmt-check:
 	cargo +nightly fmt --all -- --check
 
+.PHONY: clippy
+clippy:
+	cargo clippy --workspace --all-targets --all-features --tests -- -D warnings
+
+.PHONY: test
+test:
+	cargo test --all --workspace --bins --tests --benches
+
 # generate authentication keys
 # =========================================================================== #
 # TODO: these commands generate a key by starting a service, and terminating

@@ -36,13 +36,13 @@ export const FolderRow: React.FC<{
     const [areFilesDropped, setAreFilesDropped] = useState(false);
     const [isFolderDraggingOver, setIsFolderDragingOver] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
-    const siblingFiles = useMemo(() => folder.files?.filter(file => file.type !== 'dir').map(file => file.name), [folder.files])
+    const siblingFiles = useMemo(() => folder.files?.filter(file => file.type !== 'dir').map(file => file.name), [folder.files]);
 
     const goToFolder = (bucket: Bucket) => {
         navigate(`/drive/${bucket.id}?${path.length ? `${path.map(element => stringToBase64(element)).join('/')}/${stringToBase64(folder.name)}` : stringToBase64(folder.name)}`);
     };
 
-    const expandFolder = async (event: any) => {
+    const expandFolder = async(event: any) => {
         event.stopPropagation();
 
         try {
@@ -65,31 +65,32 @@ export const FolderRow: React.FC<{
         setIsFolderDragingOver(false);
     };
 
-    const handleDrop = async (event: React.DragEvent<HTMLDivElement>) => {
+    const handleDrop = async(event: React.DragEvent<HTMLDivElement>) => {
         preventDefaultDragAction(event);
         setIsFolderDragingOver(false);
 
         if (event?.dataTransfer.files.length) {
             setFiles(Array.from(event.dataTransfer.files).map(file => ({ file, isUploaded: false })));
             setAreFilesDropped(true);
+
             return;
         }
 
         const dragData = event.dataTransfer.getData('browserObject');
         if (dragData) {
-            const droppedItem: { item: BrowserObject, path: string[] } = JSON.parse(dragData);
-            if ([...path, folder.name].join('/') === droppedItem.path.join('/')) return;
+            const droppedItem: { item: BrowserObject; path: string[] } = JSON.parse(dragData);
+            if ([...path, folder.name].join('/') === droppedItem.path.join('/')) { return; }
 
-            await moveTo(bucket, [...droppedItem.path, droppedItem.item.name], [...path, folder.name, droppedItem.item.name]);
+            await moveTo(bucket, [...droppedItem.path, droppedItem.item.name], [...path, folder.name], droppedItem.item.name);
             await getSelectedBucketFiles(path);
             ToastNotifications.notify(`${messages.fileWasMoved}`, <Done width="20px" height="20px" />);
         }
     };
 
     useEffect(() => {
-        if (!files.length || !areFilesDropped) return;
+        if (!files.length || !areFilesDropped) { return; }
 
-        (async () => {
+        (async() => {
             try {
                 ToastNotifications.uploadProgress();
                 await uploadFiles(bucket, [...path, folder.name]);
@@ -98,7 +99,7 @@ export const FolderRow: React.FC<{
                 setAreFilesDropped(false);
                 ToastNotifications.error(`${messages.uploadError}`, `${messages.tryAgain}`, () => { });
             }
-        })()
+        })();
     }, [files, areFilesDropped]);
 
     return (
@@ -112,7 +113,7 @@ export const FolderRow: React.FC<{
             onDrop={handleDrop}
             ref={folderRef}
         >
-            <td colSpan={4} className='p-0'>
+            <td colSpan={4} className="p-0">
                 <table className="w-full table table-fixed">
                     <thead>
                         <tr className=" bg-secondaryBackground font-normal border-none">
@@ -124,7 +125,7 @@ export const FolderRow: React.FC<{
                     </thead>
                     <tbody>
                         <tr
-                            className={`cursor-pointer !border-1 border-transparent border-b-border-regular text-text-900 font-normal last:border-b-0 hover:bg-bucket-bucketHoverBackground ${isFolderDraggingOver && `!border-draggingBorder`}`}
+                            className={`cursor-pointer !border-1 border-transparent border-b-border-regular text-text-900 font-normal last:border-b-0 hover:bg-bucket-bucketHoverBackground ${isFolderDraggingOver && '!border-draggingBorder'}`}
                             onDoubleClick={() => goToFolder(bucket)}
                             draggable
                         >

@@ -2,18 +2,18 @@ import { webcrypto } from 'one-webcrypto';
 import utils from '../utils';
 import { DEFAULT_SALT_LENGTH, DEFAULT_SYMM_ALG } from '../constants';
 import {
-  SymmKey,
-  SymmKeyOpts,
-  SymmWrappingKey,
-  SymmAlg,
-  CipherText,
-  Msg,
-  ExportKeyFormat,
+    CipherText,
+    ExportKeyFormat,
+    Msg,
+    SymmAlg,
+    SymmKey,
+    SymmKeyOpts,
+    SymmWrappingKey,
 } from '../types';
 import {
-  InvalidIvLength,
-  InvalidCipherTextLength,
-  UnsupportedSymmCrypto,
+    InvalidCipherTextLength,
+    InvalidIvLength,
+    UnsupportedSymmCrypto,
 } from '../errors';
 
 /**
@@ -24,29 +24,30 @@ import {
  * @returns The CipherText (which is just an ArrayBuffer) of form [iv, '.', cipherBytes]
  */
 export async function encryptBytes(
-  msg: Msg,
-  key: SymmKey,
-  opts?: Partial<SymmKeyOpts>
+    msg: Msg,
+    key: SymmKey,
+    opts?: Partial<SymmKeyOpts>
 ): Promise<CipherText> {
-  const data = utils.normalizeUtf16ToBuf(msg);
-  const alg = opts?.alg || DEFAULT_SYMM_ALG;
+    const data = utils.normalizeUtf16ToBuf(msg);
+    const alg = opts?.alg || DEFAULT_SYMM_ALG;
 
-  // Note: we only support AES-GCM here
-  // If you want support for more symmetric key algorithms, add implementations here
-  if (alg !== SymmAlg.AES_GCM) {
-    throw UnsupportedSymmCrypto;
-  }
+    // Note: we only support AES-GCM here
+    // If you want support for more symmetric key algorithms, add implementations here
+    if (alg !== SymmAlg.AES_GCM) {
+        throw UnsupportedSymmCrypto;
+    }
 
-  const iv = opts?.iv || utils.randomBuf(DEFAULT_SALT_LENGTH);
-  const cipherBuf = await webcrypto.subtle.encrypt(
-    {
-      name: alg,
-      iv,
-    },
-    key,
-    data
-  );
-  return utils.joinCipherText(iv, cipherBuf);
+    const iv = opts?.iv || utils.randomBuf(DEFAULT_SALT_LENGTH);
+    const cipherBuf = await webcrypto.subtle.encrypt(
+        {
+            name: alg,
+            iv,
+        },
+        key,
+        data
+    );
+
+    return utils.joinCipherText(iv, cipherBuf);
 }
 
 /**
@@ -60,37 +61,38 @@ export async function encryptBytes(
  * throws UnsupportedSymmCrypto
  */
 export async function decryptBytes(
-  msg: Msg,
-  key: SymmKey,
-  opts?: Partial<SymmKeyOpts>
+    msg: Msg,
+    key: SymmKey,
+    opts?: Partial<SymmKeyOpts>
 ): Promise<ArrayBuffer> {
-  const cipherText = utils.normalizeBase64ToBuf(msg);
-  const alg = opts?.alg || DEFAULT_SYMM_ALG;
+    const cipherText = utils.normalizeBase64ToBuf(msg);
+    const alg = opts?.alg || DEFAULT_SYMM_ALG;
 
-  // Note: we only support AES-GCM here
-  // If you want support for more symmetric key algorithms, add implementations here
+    // Note: we only support AES-GCM here
+    // If you want support for more symmetric key algorithms, add implementations here
 
-  if (alg !== SymmAlg.AES_GCM) {
-    throw UnsupportedSymmCrypto;
-  }
+    if (alg !== SymmAlg.AES_GCM) {
+        throw UnsupportedSymmCrypto;
+    }
 
-  const [iv, cipherBytes] = utils.splitCipherText(cipherText);
-  // Check lengths
-  if (iv.byteLength !== 16) {
-    throw InvalidIvLength;
-  } else if (cipherBytes.byteLength === 0) {
-    throw InvalidCipherTextLength;
-  }
+    const [iv, cipherBytes] = utils.splitCipherText(cipherText);
+    // Check lengths
+    if (iv.byteLength !== 16) {
+        throw InvalidIvLength;
+    } else if (cipherBytes.byteLength === 0) {
+        throw InvalidCipherTextLength;
+    }
 
-  const msgBuff = await webcrypto.subtle.decrypt(
-    {
-      name: alg,
-      iv,
-    },
-    key,
-    cipherBytes
-  );
-  return msgBuff;
+    const msgBuff = await webcrypto.subtle.decrypt(
+        {
+            name: alg,
+            iv,
+        },
+        key,
+        cipherBytes
+    );
+
+    return msgBuff;
 }
 
 /*
@@ -104,12 +106,13 @@ export async function decryptBytes(
  * @throws InvalidCipherTextLength
  */
 export async function encrypt(
-  msg: Msg,
-  key: SymmKey,
-  opts?: Partial<SymmKeyOpts>
+    msg: Msg,
+    key: SymmKey,
+    opts?: Partial<SymmKeyOpts>
 ): Promise<string> {
-  const cipherText = await encryptBytes(msg, key, opts);
-  return utils.arrBufToBase64(cipherText);
+    const cipherText = await encryptBytes(msg, key, opts);
+
+    return utils.arrBufToBase64(cipherText);
 }
 
 /**
@@ -123,12 +126,13 @@ export async function encrypt(
  * @throws InvalidCipherTextLength
  */
 export async function decrypt(
-  msg: Msg,
-  key: SymmKey,
-  opts?: Partial<SymmKeyOpts>
+    msg: Msg,
+    key: SymmKey,
+    opts?: Partial<SymmKeyOpts>
 ): Promise<string> {
-  const msgBytes = await decryptBytes(msg, key, opts);
-  return utils.arrBufToStr(msgBytes, 16);
+    const msgBytes = await decryptBytes(msg, key, opts);
+
+    return utils.arrBufToStr(msgBytes, 16);
 }
 
 /**
@@ -139,15 +143,15 @@ export async function decrypt(
  * returns The wrapped key as an ArrayBuffer
  */
 export async function wrapKey(
-  key: CryptoKey,
-  wrappingKey: SymmWrappingKey
+    key: CryptoKey,
+    wrappingKey: SymmWrappingKey
 ): Promise<CipherText> {
-  return await webcrypto.subtle.wrapKey(
-    ExportKeyFormat.RAW,
-    key,
-    wrappingKey,
-    'AES-KW'
-  );
+    return await webcrypto.subtle.wrapKey(
+        ExportKeyFormat.RAW,
+        key,
+        wrappingKey,
+        'AES-KW'
+    );
 }
 
 /**
@@ -160,28 +164,28 @@ export async function wrapKey(
  * returns The unwrapped key as a CryptoKey
  */
 export async function unwrapKey(
-  wrappedKey: CipherText,
-  unwrappingKey: SymmWrappingKey,
-  unwrappedKeyAlgParams: AlgorithmIdentifier,
-  extractable: boolean,
-  keyUsages: KeyUsage[]
+    wrappedKey: CipherText,
+    unwrappingKey: SymmWrappingKey,
+    unwrappedKeyAlgParams: AlgorithmIdentifier,
+    extractable: boolean,
+    keyUsages: KeyUsage[]
 ): Promise<CryptoKey> {
-  return await webcrypto.subtle.unwrapKey(
-    ExportKeyFormat.RAW,
-    wrappedKey,
-    unwrappingKey,
-    'AES-KW',
-    unwrappedKeyAlgParams,
-    extractable,
-    keyUsages
-  );
+    return await webcrypto.subtle.unwrapKey(
+        ExportKeyFormat.RAW,
+        wrappedKey,
+        unwrappingKey,
+        'AES-KW',
+        unwrappedKeyAlgParams,
+        extractable,
+        keyUsages
+    );
 }
 
 export default {
-  encryptBytes,
-  decryptBytes,
-  encrypt,
-  decrypt,
-  wrapKey,
-  unwrapKey,
+    encryptBytes,
+    decryptBytes,
+    encrypt,
+    decrypt,
+    wrapKey,
+    unwrapKey,
 };

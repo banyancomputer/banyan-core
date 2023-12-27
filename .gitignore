@@ -2,3 +2,9 @@ target/
 **/.DS_Store
 **/dist/*
 node_modules
+
+.idea
+.vscode
+
+crates/*/.env
+crates/*/target

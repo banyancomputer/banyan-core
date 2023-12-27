@@ -20,9 +20,9 @@ const Home = () => {
     };
 
     useEffect(() => {
-        if (!tomb) return;
+        if (!tomb) { return; }
 
-        (async () => {
+        (async() => {
             await getBucketsFiles();
         })();
     }, [buckets.length, tomb]);
@@ -43,7 +43,7 @@ const Home = () => {
             </div>
             <Fallback shouldRender={!areBucketsLoading}>
                 {buckets.length ?
-                    <div className='grid grid-cols-3 gap-3'>
+                    <div className="grid grid-cols-3 gap-3">
                         {
                             buckets.map(bucket =>
                                 <Bucket bucket={bucket} key={bucket.id} />

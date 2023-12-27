@@ -17,11 +17,11 @@ export const LockedTooltip: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     };
 
     const requestAccess = () => {
-        openModal(<RequestBucketAccessModal bucket={bucket} />)
+        openModal(<RequestBucketAccessModal bucket={bucket} />);
     };
 
     return (
-        <div className='absolute right-2 top-1/2 -translate-y-1/2 group text-xxs text-bucket-actionsText'>
+        <div className="absolute right-2 top-1/2 -translate-y-1/2 group text-xxs text-bucket-actionsText">
             <Lock />
             <div
                 className="absolute top-3 left-0 hidden flex-col px-3 py-1 border-2 rounded-lg border-border-regular bg-bucket-actionsBackground cursor-default whitespace-nowrap group-hover:flex"
@@ -36,5 +36,5 @@ export const LockedTooltip: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                 </span>
             </div>
         </div>
-    )
-}
+    );
+};
