@@ -13,11 +13,11 @@ use time::{format_description, OffsetDateTime};
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PrecisionTimestamp(#[serde(with = "iso8601")] OffsetDateTime);
 
-// impl PrecisionTimestamp {
-//     pub fn now_utc() -> Self {
-//         Self(OffsetDateTime::now_utc())
-//     }
-// }
+impl PrecisionTimestamp {
+    pub fn now_utc() -> Self {
+        Self(OffsetDateTime::now_utc())
+    }
+}
 
 impl From<OffsetDateTime> for PrecisionTimestamp {
     fn from(val: OffsetDateTime) -> Self {

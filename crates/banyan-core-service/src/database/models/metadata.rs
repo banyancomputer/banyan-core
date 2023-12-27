@@ -1,5 +1,6 @@
 use crate::database::models::Bucket;
 use crate::database::DatabaseConnection;
+use crate::database::types::PrecisionTimestamp;
 
 /// This struct encompasses the minimum amount of data required to create a new metadata row,
 /// omitting data that is populated by the database such as ID and the various timestamps. It
@@ -18,14 +19,17 @@ impl NewMetadata<'_> {
     /// returns the ID of the newly created row. By default this initialized the state of the
     /// metadata row to 'uploading', which is the entry-point into the metadata state machine.
     pub async fn save(&self, conn: &mut DatabaseConnection) -> Result<String, sqlx::Error> {
+        // Note: default timestamp values are not sufficient, so force the value to be set to a precise form
+        let now = PrecisionTimestamp::now_utc();
         sqlx::query_scalar!(
-            r#"INSERT INTO metadata (bucket_id, metadata_cid, root_cid, expected_data_size, state)
-                   VALUES ($1, $2, $3, $4, 'uploading')
+            r#"INSERT INTO metadata (bucket_id, metadata_cid, root_cid, expected_data_size, state, created_at, updated_at)
+                   VALUES ($1, $2, $3, $4, 'uploading', $5, $5)
                    RETURNING id;"#,
             self.bucket_id,
             self.metadata_cid,
             self.root_cid,
             self.expected_data_size,
+            now,
         )
         .fetch_one(&mut *conn)
         .await
@@ -55,14 +59,16 @@ impl Metadata {
         metadata_id: &str,
         data_size: Option<i64>,
     ) -> Result<(), sqlx::Error> {
+        let now = PrecisionTimestamp::now_utc();
         let current_result = sqlx::query!(
-            "UPDATE metadata SET state = 'current', data_size = $3
+            "UPDATE metadata SET state = 'current', data_size = $3, updated_at = $4
                  WHERE bucket_id = $1
                      AND id = $2
                      AND state IN ('pending', 'uploading');",
             bucket_id,
             metadata_id,
             data_size,
+            now,
         )
         .execute(&mut *conn)
         .await?;
@@ -81,12 +87,13 @@ impl Metadata {
         }
 
         let result = sqlx::query!(
-            r#"UPDATE metadata SET state = 'outdated'
+            r#"UPDATE metadata SET state = 'outdated', updated_at = $3
                    WHERE bucket_id = $1
                        AND id != $2
                        AND state = 'current';"#,
             bucket_id,
             metadata_id,
+            now,
         )
         .execute(&mut *conn)
         .await?;
