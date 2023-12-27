@@ -30,7 +30,7 @@ impl TryFrom<Url> for ObjectStoreConnection {
                         let root_directory = url.host_str().ok_or(Self::Error::NotFileUrl)?;
                         let path = url
                             .path()
-                            .strip_prefix("/")
+                            .strip_prefix('/')
                             .map_or("", |p| p.trim_start_matches('/'));
                         PathBuf::from(root_directory).join(path)
                     }
