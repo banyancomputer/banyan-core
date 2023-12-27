@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+set -o errexit
+set -o nounset
+
 # For local development and production, we support Minio as an object storage service
 
 # Name of the Minio container
