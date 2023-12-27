@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT COALESCE(SUM(m.data_size), 0) as big_int FROM metadata m\n                   JOIN storage_hosts_metadatas_storage_grants shmg ON shmg.metadata_id = m.id\n                   JOIN storage_grants sg ON shmg.storage_grant_id = sg.id\n                   WHERE shmg.storage_host_id = $2\n                       AND sg.user_id = $1;\n             ",
+  "describe": {
+    "columns": [
+      {
+        "name": "big_int",
+        "ordinal": 0,
+        "type_info": "Int"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "ee772b8133111468c76e77adc5cb3ff244ce7afc27541d639401abc87ccab6e5"
+}

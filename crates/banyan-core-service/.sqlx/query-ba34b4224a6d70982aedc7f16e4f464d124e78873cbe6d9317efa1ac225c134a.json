@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id FROM blocks WHERE cid = $1;",
+  "query": "INSERT INTO blocks (cid) VALUES ($1) RETURNING id;",
   "describe": {
     "columns": [
       {
@@ -16,5 +16,5 @@
       false
     ]
   },
-  "hash": "829c13580e35566cbbd842c1c5553f09214140fac2e6997e988f6f1bbfbd3c23"
+  "hash": "ba34b4224a6d70982aedc7f16e4f464d124e78873cbe6d9317efa1ac225c134a"
 }

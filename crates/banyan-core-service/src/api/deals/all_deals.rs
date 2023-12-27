@@ -50,11 +50,11 @@ mod tests {
     use crate::api::models::ApiDeal;
     use crate::app::mock_app_state;
     use crate::database::models::DealState;
-    use crate::database::{test_helpers, Database};
+    use crate::database::{test_helpers, DatabaseConnection};
     use crate::extractors::StorageProviderIdentity;
     use crate::utils::tests::deserialize_result;
 
-    async fn setup_deals(db: &Database) -> Result<Vec<String>, sqlx::Error> {
+    async fn setup_deals(db: &mut DatabaseConnection) -> Result<Vec<String>, sqlx::Error> {
         let deal_states = vec![
             DealState::Active,
             DealState::Accepted,
@@ -77,7 +77,9 @@ mod tests {
     #[tokio::test]
     async fn test_insert_and_retrieve_all_deals() {
         let db = test_helpers::setup_database().await;
-        let created_deals = setup_deals(&db).await.unwrap();
+        let mut conn = db.acquire().await.expect("connection");
+
+        let created_deals = setup_deals(&mut conn).await.unwrap();
 
         let res = handler(
             StorageProviderIdentity {

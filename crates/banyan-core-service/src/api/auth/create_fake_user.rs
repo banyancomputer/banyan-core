@@ -13,7 +13,6 @@ pub struct CreateFakeUserRequest {
 }
 
 /// Create a fake account for testing purposes -- bypasses oauth
-#[axum::debug_handler]
 pub async fn handler(
     State(state): State<AppState>,
     Json(request): Json<CreateFakeUserRequest>,

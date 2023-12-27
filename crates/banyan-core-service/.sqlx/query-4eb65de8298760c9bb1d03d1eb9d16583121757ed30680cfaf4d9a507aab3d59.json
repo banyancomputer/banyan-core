@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT\n                    m.id, m.root_cid, m.metadata_cid,\n                    COALESCE(m.data_size, m.expected_data_size) as data_size,\n                    m.state as 'state: MetadataState', m.created_at, m.updated_at, s.id as snapshot_id\n                FROM metadata m\n                    JOIN buckets b ON m.bucket_id = b.id\n                    LEFT JOIN snapshots s ON s.metadata_id = m.id\n                    WHERE m.state = 'current' AND b.user_id = $1 AND b.id = $2;",
+  "query": "SELECT\n                    m.id, m.root_cid, m.metadata_cid,\n                    COALESCE(m.data_size, m.expected_data_size) as data_size,\n                    m.state as 'state: MetadataState', m.created_at, m.updated_at, s.id as snapshot_id\n                FROM metadata m\n                    JOIN buckets b ON m.bucket_id = b.id\n                    LEFT JOIN snapshots s ON s.metadata_id = m.id\n                    WHERE m.id = $1;",
   "describe": {
     "columns": [
       {
@@ -45,7 +45,7 @@
       }
     ],
     "parameters": {
-      "Right": 2
+      "Right": 1
     },
     "nullable": [
       false,
@@ -58,5 +58,5 @@
       true
     ]
   },
-  "hash": "e8b5ddd9adb148e906211e94e6acad98d492bcbc4ae88c5e178fc972e34374f5"
+  "hash": "4eb65de8298760c9bb1d03d1eb9d16583121757ed30680cfaf4d9a507aab3d59"
 }
