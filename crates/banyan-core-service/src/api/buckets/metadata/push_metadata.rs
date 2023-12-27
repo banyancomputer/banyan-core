@@ -32,7 +32,7 @@ const ACCOUNT_STORAGE_QUOTA: i64 = 10 * 1_024 * 1_024 * 1_024;
 const CAR_DATA_SIZE_LIMIT: u64 = 128 * 1_024 * 1_024;
 
 /// The "official" mime type registered for CAR files, we specifically only accept version 2
-const CAR_MIME_TYPE: &str = "application/vnd.ipfs.car; version=2";
+const CAR_MIME_TYPE: &str = "application/vnd.ipld.car; version=2";
 
 const ONE_HUNDRED_MIB: i64 = 100 * 1024 * 1024;
 
