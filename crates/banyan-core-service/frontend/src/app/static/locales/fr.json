@@ -200,5 +200,7 @@
 	"termsOf": "conditions d'utilisation",
 	"privacyPolicy": "politique de confidentialité de Banyan",
 	"continue": "Continuer",
-	"remountDrive": "Remonter le lecteur"
+	"remountDrive": "Remonter le lecteur",
+	"youAreReadyForStart": "Vous êtes prêt à commencer !",
+    "useDesktop": "Pour commencer à utiliser Banyan, veuillez utiliser le bureau"
 }
