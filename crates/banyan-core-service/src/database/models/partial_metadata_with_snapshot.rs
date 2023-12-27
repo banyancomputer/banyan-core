@@ -1,7 +1,7 @@
-use time::OffsetDateTime;
 use uuid::Uuid;
 
 use crate::database::models::MetadataState;
+use crate::database::types::PrecisionTimestamp;
 use crate::database::Database;
 
 #[derive(sqlx::FromRow)]
@@ -14,8 +14,8 @@ pub struct PartialMetadataWithSnapshot {
 
     pub state: MetadataState,
 
-    pub created_at: OffsetDateTime,
-    pub updated_at: OffsetDateTime,
+    pub created_at: PrecisionTimestamp,
+    pub updated_at: PrecisionTimestamp,
 
     pub snapshot_id: Option<String>,
 }

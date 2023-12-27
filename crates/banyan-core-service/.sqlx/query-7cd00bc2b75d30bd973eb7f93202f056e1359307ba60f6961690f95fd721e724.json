@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT CAST('not   a   timestamp' AS TEXT) as 'timestamp: PrecisionTimestamp';",
+  "describe": {
+    "columns": [
+      {
+        "name": "timestamp: PrecisionTimestamp",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "7cd00bc2b75d30bd973eb7f93202f056e1359307ba60f6961690f95fd721e724"
+}

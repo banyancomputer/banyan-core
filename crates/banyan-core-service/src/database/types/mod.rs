@@ -1,3 +1,3 @@
 mod timestamp;
 
-pub use timestamp::{DatabaseTimestamp, DatabaseTimestampError};
+pub use timestamp::{PrecisionTimestamp, PrecisionTimestampError};
