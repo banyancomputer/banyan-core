@@ -70,7 +70,7 @@ function create-minio-container {
 	${CONTAINER_RUNTIME} run \
 		-p 9000:9000 \
 		-p 9090:9090 \
-		--name ${MINIO_CONTAINER_NAME} --rm --replace -d \
+		--name ${MINIO_CONTAINER_NAME} --rm -d \
 		-e "MINIO_ROOT_USER=${MINIO_ROOT_USER}" \
 		-e "MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}" \
 		-v banyan-minio-data:${MINIO_VOLUME_CONTAINER_PATH} \
