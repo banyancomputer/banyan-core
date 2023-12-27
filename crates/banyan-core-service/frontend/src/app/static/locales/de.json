@@ -200,5 +200,7 @@
 	"termsOf": "Nutzungsbedingungen",
 	"privacyPolicy": "Datenschutzrichtlinien von Banyan zu",
 	"continue": "Fortfahren",
-	"remountDrive": "Laufwerk neu mounten"
+	"remountDrive": "Laufwerk neu mounten",
+	"youAreReadyForStart": "Sie sind bereit zu starten!",
+  	"useDesktop": "Um Banyan zu verwenden, verwenden Sie bitte den Desktop"
 }

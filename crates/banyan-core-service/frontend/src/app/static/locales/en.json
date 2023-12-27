@@ -200,5 +200,7 @@
 	"termsOf":"terms of service",
 	"privacyPolicy": "privacy policy",
 	"continue": "Continue",
-	"remountDrive": "Remount drive"
+	"remountDrive": "Remount drive",
+	"youAreReadyForStart": "You’re ready to start!",
+	"useDesktop": "To start using Banyan, please use desktop"
 }
