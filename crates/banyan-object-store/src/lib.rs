@@ -20,9 +20,22 @@ impl TryFrom<Url> for ObjectStoreConnection {
 
     fn try_from(url: Url) -> Result<Self, Self::Error> {
         match url.scheme() {
-            // file://<absolute_path>
+            // file://<path>
             "file" => {
-                let path = url.to_file_path().map_err(|_| Self::Error::NotFileUrl)?;
+                let path = match url.to_file_path() {
+                    // If this is an aboslute path, we're good
+                    Ok(path) => path,
+                    // Othwerwise we need to try to resolve it relative to the current working directory
+                    Err(_) => {
+                        let root_directory = url.host_str().ok_or(Self::Error::NotFileUrl)?;
+                        let path = url
+                            .path()
+                            .strip_prefix("/")
+                            .map_or("", |p| p.trim_start_matches('/'));
+                        PathBuf::from(root_directory).join(path)
+                    }
+                };
+
                 if !path.is_dir() {
                     return Err(Self::Error::NotDirectory(path));
                 }
@@ -231,7 +244,7 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_parse_local_url() {
+    fn test_parse_file_absolute_path_url() {
         let url = Url::parse("file:///tmp").unwrap();
         let connection = ObjectStoreConnection::try_from(url).unwrap();
         match connection {
@@ -243,10 +256,41 @@ mod test {
     }
 
     #[test]
-    fn test_parse_local_url_bad_path() {
+    fn test_parse_file_non_directory_absolute_path_url() {
         let url = Url::parse("file:///tmp/fake.txt").unwrap();
         let connection = ObjectStoreConnection::try_from(url);
         assert!(connection.is_err());
+    }
+
+    #[test]
+    fn test_parse_file_fake_absolute_path_url() {
+        let url = Url::parse("file:///fake").unwrap();
+        let connection = ObjectStoreConnection::try_from(url);
+        assert!(connection.is_err());
+    }
+
+    #[test]
+    fn test_parse_file_relative_path_url() {
+        let url = Url::parse("file://data").unwrap();
+        let connection = ObjectStoreConnection::try_from(url).unwrap();
+        match connection {
+            ObjectStoreConnection::Local(path) => {
+                assert_eq!(path, PathBuf::from("data"));
+            }
+            _ => panic!("expected local connection"),
+        }
+    }
+
+    #[test]
+    fn test_parse_file_relative_dot_path_url() {
+        let url = Url::parse("file://./data").unwrap();
+        let connection = ObjectStoreConnection::try_from(url).unwrap();
+        match connection {
+            ObjectStoreConnection::Local(path) => {
+                assert_eq!(path, PathBuf::from("./data"));
+            }
+            _ => panic!("expected local connection"),
+        }
     }
 
     #[test]

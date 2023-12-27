@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT CAST('1970-01-01 00:00:00.001' AS TEXT) as 'timestamp: DatabaseTimestamp';",
+  "describe": {
+    "columns": [
+      {
+        "name": "timestamp: DatabaseTimestamp",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "02e9ca24aece1ebacaf5338a929e78fd09535dcb7f69842fe746eb83fad8469f"
+}
