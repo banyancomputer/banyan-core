@@ -192,5 +192,7 @@
 	"invoices": "Factures",
     "noPaymentActivity": "Aucune activité de paiement ou de facturation",
     "invoicesWillBeAvailiableHere": "Les factures et reçus émis sur votre compte seront disponibles ici",
-    "upgrade": "Mettre à niveau"
+    "upgrade": "Mettre à niveau",
+	"youAreReadyForStart": "Vous êtes prêt à commencer !",
+    "useDesktop": "Pour commencer à utiliser Banyan, veuillez utiliser le bureau"
 }

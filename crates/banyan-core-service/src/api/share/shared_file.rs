@@ -35,7 +35,6 @@ pub struct SharedFileQuery {
     pub payload: String,
 }
 
-#[axum::debug_handler]
 pub async fn handler(
     State(state): State<AppState>,
     Query(payload): Query<SharedFileQuery>,

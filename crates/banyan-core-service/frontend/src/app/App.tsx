@@ -9,6 +9,7 @@ import { Navigation } from '@components/common/Navigation';
 import { Header } from '@components/common/Header';
 import { ErrorBanner } from '@components/common/ErrorBanner';
 import { BetaBanner } from '@components/common/BetaBanner';
+import { MobilePlaceholder } from '@components/common/MobilePlaceholder';
 
 import { Routes } from './routes';
 import { KeystoreProvider } from './contexts/keystore';
@@ -56,12 +57,12 @@ const App = () => {
     }, []);
 
     return (
-        <main
-            className="flex flex-col h-screen max-h-screen font-sans bg-mainBackground text-text-900"
-            onDragOver={preventDefaultDragAction}
-            onDrop={preventDefaultDragAction}
-        >
-            <IntlProvider locale={locale} messages={TRANSLATES[locale]}>
+        <IntlProvider locale={locale} messages={TRANSLATES[locale]}>
+            <main
+                className="flex flex-col h-screen max-h-screen font-sans bg-mainBackground text-text-900 max-sm:hidden"
+                onDragOver={preventDefaultDragAction}
+                onDrop={preventDefaultDragAction}
+            >
                 <BrowserRouter basename="/" >
                     <ModalProvider>
                         <SessionProvider>
@@ -92,8 +93,9 @@ const App = () => {
                         </SessionProvider>
                     </ModalProvider>
                 </BrowserRouter>
-            </IntlProvider>
-        </main>
+            </main>
+            <MobilePlaceholder />
+        </IntlProvider>
     );
 };
 

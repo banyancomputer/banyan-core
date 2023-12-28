@@ -192,5 +192,7 @@
 	"invoices": "請求書",
 	"noPaymentActivity": "支払いや請求に関するアクティビティはありません",
 	"invoicesWillBeAvailiableHere": "アカウントで行われた請求書や領収書はこちらでご利用いただけます",
-	"upgrade": "アップグレード"
+	"upgrade": "アップグレード",
+	"youAreReadyForStart": "始める準備ができています！",
+	"useDesktop": "Banyanを使用するには、デスクトップをご利用ください"
 }

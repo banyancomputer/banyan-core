@@ -10,8 +10,20 @@ out-of-date.
 
 ### 📦 Dependencies
 
-You should have a working Rust toolchain, yarn, and sqlite installed on your
+You should have a working Rust toolchain, yarn, docker engine (or equivalent), and sqlite installed on your
 machine.
+
+### 🐳 Docker (or equivalent)
+
+You must have an up-to-date version of docker installed on your machine to fully run the development environment.
+
+Make sure the following command work:
+
+```sh
+docker --version
+```
+
+If you need to install docker, please refer to the [official documentation](https://docs.docker.com/engine/install/)
 
 ### 💰 Install `sqlx-cli`
 
@@ -30,6 +42,8 @@ system's version. Refer to the crate's manifest
 see additional features.
 
 ### 🔧 Environment Setup
+
+#### Core Service 👑
 
 The core service uses a `.env` file to store environment variables. A sample
 file exists as a starting point. You can copy that sample file into place
@@ -52,6 +66,43 @@ OAuth2 project if we're still in the testing phase of our application. This
 needs to be done by someone with access to the Google Cloud Console ([direct
 deeplink to the relevant
 page](https://console.cloud.google.com/apis/credentials/consent?authuser=3&project=core-services-a465d267)).
+
+#### Staging Service and Storage Provider Service 📦
+
+The staging service and storage provider service use a `.env` file to store 
+an argument called `UPLOAD_STORE_URL`. This argument is used to connect to 
+an Object Store backend. This variable must be present at runtime, or the service 
+will fail to start. This variable specifies a connection to the Object Store
+backend the given service should use at runtime.
+
+A sample file exists in either crate. This file should configure a valid connection
+to a local filesystem Object Store at the path `./data/uploads` within either crate. You can copy those 
+sample files into place by running the following command: 
+
+```sh
+cp crates/banyan-staging-service/.env{.sample,}
+cp crates/banyan-storage-provider-service/.env{.sample,}
+```
+You must copy these defaults in place before attempting to run either service or resetting your
+devlopment environment with `./bin/reset_env.sh` (discussed below).
+
+These services also support using S3 as an Object Store backend. For 
+development purposes this project initializes a MinIo backend that is spawned
+locally by `./bin/reset_env.sh`.
+
+The `.env.sample` files in either crate should contain example connection strings
+for connecting to this local MinIo instance in your development environment. 
+DO NOT USE THE SPECIFIED CREDENTIALS IN PRODUCTION. If you've run`./bin/reset_env.sh`
+successfully then MinIo should be available at those example endpoints.
+
+You can check the status of the MinIo container by running:
+
+```
+docker ps -a
+```
+
+You should see a container named `banyan-minio` running. If not, make sure docker
+is installed and properly configured in your environment.
 
 ### ✨ Automatic Clean Up / First Time Setup
 

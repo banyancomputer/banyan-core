@@ -192,5 +192,7 @@
 	"invoices": "发票",
 	"noPaymentActivity": "没有支付或账单活动",
 	"invoicesWillBeAvailiableHere": "您帐户上生成的发票和收据将在此处提供",
-	"upgrade": "升级"
+	"upgrade": "升级",
+	"youAreReadyForStart": "您已经准备好开始了！",
+	"useDesktop": "要开始使用Banyan，请使用桌面版"
 }

@@ -1,8 +1,8 @@
 use time::OffsetDateTime;
 use uuid::Uuid;
 
-use crate::database::models::MetadataState;
-use crate::database::Database;
+use crate::database::models::{Bucket, MetadataState};
+use crate::database::{Database, DatabaseConnection};
 
 #[derive(sqlx::FromRow)]
 pub struct PartialMetadataWithSnapshot {
@@ -40,13 +40,12 @@ impl PartialMetadataWithSnapshot {
     }
 
     pub async fn locate_current(
-        database: &Database,
-        user_id: String,
-        bucket_id: Uuid,
+        conn: &mut DatabaseConnection,
+        bucket_id: &str,
     ) -> Result<Option<Self>, sqlx::Error> {
-        let bucket_id = bucket_id.to_string();
+        let current_metadata_id = Bucket::current_version(conn, bucket_id).await?;
 
-        let query_result = sqlx::query_as!(
+        sqlx::query_as!(
             Self,
             r#"SELECT
                     m.id, m.root_cid, m.metadata_cid,
@@ -55,18 +54,11 @@ impl PartialMetadataWithSnapshot {
                 FROM metadata m
                     JOIN buckets b ON m.bucket_id = b.id
                     LEFT JOIN snapshots s ON s.metadata_id = m.id
-                    WHERE m.state = 'current' AND b.user_id = $1 AND b.id = $2;"#,
-            user_id,
-            bucket_id,
+                    WHERE m.id = $1;"#,
+            current_metadata_id,
         )
-        .fetch_one(database)
-        .await;
-
-        match query_result {
-            Ok(pmws) => Ok(Some(pmws)),
-            Err(sqlx::Error::RowNotFound) => Ok(None),
-            Err(err) => Err(err),
-        }
+        .fetch_optional(&mut *conn)
+        .await
     }
 
     pub async fn locate_specific(

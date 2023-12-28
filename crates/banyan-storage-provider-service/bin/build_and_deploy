@@ -14,7 +14,7 @@ ORG="banyan.computer"
 NAMESPACE="platform"
 IMAGE="${SERVICE_NAME}"
 
-if ! git diff-index --quiet HEAD -- || ! git diff-files --quiet; then
+if [ "${DRY_RUN}" != "1" ] && (! git diff-index --quiet HEAD -- || ! git diff-files --quiet); then
 	echo "!!> Branch is dirty, can't build and deploy from this branch"
 	exit 1
 fi

@@ -59,7 +59,9 @@ mod tests {
     #[tokio::test]
     async fn test_get_active_deal() {
         let db = test_helpers::setup_database().await;
-        let active_deal_id = test_helpers::create_deal(&db, DealState::Active, None, None)
+        let mut conn = db.acquire().await.expect("connection");
+
+        let active_deal_id = test_helpers::create_deal(&mut conn, DealState::Active, None, None)
             .await
             .unwrap();
 
@@ -84,11 +86,13 @@ mod tests {
     #[tokio::test]
     async fn test_owned_accepted_deal_is_returned() {
         let db = test_helpers::setup_database().await;
-        let host_id = test_helpers::create_storage_hosts(&db, "http://mock.com", "mock_name")
+        let mut conn = db.acquire().await.expect("connection");
+
+        let host_id = test_helpers::create_storage_hosts(&mut conn, "http://mock.com", "mock_name")
             .await
             .unwrap();
         let accepted_deal_id =
-            test_helpers::create_deal(&db, DealState::Accepted, None, Some(host_id.clone()))
+            test_helpers::create_deal(&mut conn, DealState::Accepted, None, Some(host_id.clone()))
                 .await
                 .unwrap();
 
@@ -107,9 +111,12 @@ mod tests {
     #[tokio::test]
     async fn test_not_owned_accepted_deals_not_returned() {
         let db = test_helpers::setup_database().await;
-        let accepted_deal_id = test_helpers::create_deal(&db, DealState::Accepted, None, None)
-            .await
-            .unwrap();
+        let mut conn = db.acquire().await.expect("connection");
+
+        let accepted_deal_id =
+            test_helpers::create_deal(&mut conn, DealState::Accepted, None, None)
+                .await
+                .unwrap();
 
         let res = handler(
             StorageProviderIdentity {

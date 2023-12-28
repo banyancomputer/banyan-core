@@ -192,5 +192,7 @@
 	"invoices": "Rechnungen",
     "noPaymentActivity": "Keine Zahlungs- oder Abrechnungsaktivität",
     "invoicesWillBeAvailiableHere": "Rechnungen und Quittungen, die auf Ihrem Konto erstellt wurden, sind hier verfügbar",
-    "upgrade": "Upgrade"
+    "upgrade": "Upgrade",
+	"youAreReadyForStart": "Sie sind bereit zu starten!",
+    "useDesktop": "Um Banyan zu verwenden, verwenden Sie bitte den Desktop"
 }

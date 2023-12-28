@@ -192,5 +192,7 @@
 	"invoices": "Invoices",
 	"noPaymentActivity": "No payment or billing activity",
 	"invoicesWillBeAvailiableHere": "Invoices and receipts made on your account will be available here",
-	"upgrade": "Upgrade"
+	"upgrade": "Upgrade",
+	"youAreReadyForStart": "You’re ready to start!",
+	"useDesktop": "To start using Banyan, please use desktop"
 }
