@@ -114,7 +114,7 @@ export const Navigation = () => {
 												}
 											</span>
 											{bucket.name}
-											{bucket.locked && <LockedTooltip bucket={bucket} />}
+											{bucket.locked && <LockedTooltip bucket={bucket} className="right-0" />}
 										</span>
 									</NavLink>
 								</li>

@@ -131,14 +131,14 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
                         <Dots />
                     </span>
                 </div>
-                {!bucket.locked &&
+                {bucket.locked &&
                     <span className="absolute left-2 top-2 z-10 text-text-900"><LockedTooltip bucket={bucket} /></span>
                 }
             </div>
-            <span className="flex justify-between items-center text-ellipsis overflow-hidden whitespace-nowrap">
+            <span className="mb-4 flex justify-between items-center text-ellipsis overflow-hidden whitespace-nowrap">
                 {bucket.name}
             </span>
-            <div className="flex flex-col gap-4 items-start text-xs font-normal">
+            <div className="flex flex-col gap-2 items-start text-xs font-normal">
                 <div className="flex items-center justify-between w-full">
                     <div className={`px-2 rounded-full text-mainBackground ${storageClassNames[bucket.storageClass]} capitalize`}>
                         {`${messages[bucket.storageClass]}`}
