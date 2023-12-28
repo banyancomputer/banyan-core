@@ -21,7 +21,7 @@ const BucketHeader = () => {
     const { selectedBucket } = useTomb();
     const params = useParams();
     const bucketId = params.id;
-    const { openModal } = useModal();
+    const { openModal, closeModal } = useModal();
     const [isBannerVisible, setIsBannerVisible] = useState(false);
 
     const uploadFile = () => {
@@ -45,7 +45,13 @@ const BucketHeader = () => {
     };
 
     const createFolder = () => {
-        openModal(<CreateFolderModal bucket={selectedBucket!} path={folderLocation} />)
+        openModal(
+            <CreateFolderModal
+                bucket={selectedBucket!}
+                path={folderLocation}
+                onSuccess={closeModal}
+            />
+        )
     };
 
     useEffect(() => {
