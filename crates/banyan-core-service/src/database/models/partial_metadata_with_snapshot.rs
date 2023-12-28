@@ -1,6 +1,6 @@
+use time::OffsetDateTime;
 use uuid::Uuid;
 
-use crate::database::types::PrecisionTimestamp;
 use crate::database::models::{Bucket, MetadataState};
 use crate::database::{Database, DatabaseConnection};
 
@@ -14,8 +14,8 @@ pub struct PartialMetadataWithSnapshot {
 
     pub state: MetadataState,
 
-    pub created_at: PrecisionTimestamp,
-    pub updated_at: PrecisionTimestamp,
+    pub created_at: OffsetDateTime,
+    pub updated_at: OffsetDateTime,
 
     pub snapshot_id: Option<String>,
 }

@@ -232,6 +232,9 @@ impl Bucket {
             _ => lock_window,
         };
 
+        // Note: we're not relying on the precision timestamp type here,
+        //  but sqlite should be able to handle the extra precision so long
+        //   as we treat timestamps like text.
         let locked_id = sqlx::query_scalar!(
             r#"SELECT id FROM metadata
                    WHERE bucket_id = $1

@@ -1,4 +1,4 @@
-use crate::database::types::PrecisionTimestamp;
+use time::OffsetDateTime;
 
 #[derive(sqlx::FromRow)]
 pub struct Snapshot {
@@ -6,5 +6,5 @@ pub struct Snapshot {
     pub metadata_id: String,
     pub state: String,
     pub size: Option<i64>,
-    pub created_at: PrecisionTimestamp,
+    pub created_at: OffsetDateTime,
 }

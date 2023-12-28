@@ -234,36 +234,24 @@ pub(crate) async fn create_metadata(
     state: MetadataState,
     timestamp: Option<OffsetDateTime>,
 ) -> String {
-    if let Some(ts) = timestamp {
-        sqlx::query_scalar!(
-            r#"INSERT INTO
-                    metadata (bucket_id, root_cid, metadata_cid, expected_data_size, state, created_at, updated_at)
-                    VALUES ($1, $2, $3, 0, $4, $5, $5)
-                    RETURNING id;"#,
-            bucket_id,
-            root_cid,
-            metadata_cid,
-            state,
-            ts,
-        )
-        .fetch_one(conn)
-        .await
-        .expect("metadata creation")
-    } else {
-        sqlx::query_scalar!(
-            r#"INSERT INTO
-                    metadata (bucket_id, root_cid, metadata_cid, expected_data_size, state)
-                    VALUES ($1, $2, $3, 0, $4)
-                    RETURNING id;"#,
-            bucket_id,
-            root_cid,
-            metadata_cid,
-            state,
-        )
-        .fetch_one(conn)
-        .await
-        .expect("metadata creation")
-    }
+    let now = match timestamp {
+        Some(ts) => ts,
+        None => OffsetDateTime::now_utc(),
+    };
+    sqlx::query_scalar!(
+        r#"INSERT INTO
+                metadata (bucket_id, root_cid, metadata_cid, expected_data_size, state, created_at, updated_at)
+                VALUES ($1, $2, $3, 0, $4, $5, $5)
+                RETURNING id;"#,
+        bucket_id,
+        root_cid,
+        metadata_cid,
+        state,
+        now,
+    )
+    .fetch_one(conn)
+    .await
+    .expect("metadata creation")
 }
 
 pub(crate) async fn create_storage_host(
@@ -365,4 +353,40 @@ pub(crate) async fn sample_metadata(
 
 pub(crate) async fn sample_user(conn: &mut DatabaseConnection, email: &str) -> String {
     create_user(conn, email, "Generic Tester").await
+}
+
+pub(crate) async fn metadata_timestamps(
+    conn: &mut DatabaseConnection,
+    metadata_id: &str,
+) -> (OffsetDateTime, OffsetDateTime) {
+    let rec = sqlx::query!(
+        r#"SELECT 
+            created_at as 'created_at: OffsetDateTime',
+            updated_at as 'updated_at: OffsetDateTime'
+        FROM metadata WHERE id = $1;"#,
+        metadata_id,
+    )
+    .fetch_one(conn)
+    .await
+    .expect("query success");
+
+    (rec.created_at, rec.updated_at)
+}
+
+pub(crate) async fn raw_metadata_timestamps(
+    conn: &mut DatabaseConnection,
+    metadata_id: &str,
+) -> (String, String) {
+    let rec = sqlx::query!(
+        r#"SELECT 
+            created_at as 'created_at: String',
+            updated_at as 'updated_at: String'
+        FROM metadata WHERE id = $1;"#,
+        metadata_id,
+    )
+    .fetch_one(conn)
+    .await
+    .expect("query success");
+
+    (rec.created_at, rec.updated_at)
 }
