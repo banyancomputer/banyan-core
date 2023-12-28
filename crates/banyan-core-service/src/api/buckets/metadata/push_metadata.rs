@@ -32,7 +32,7 @@ const ACCOUNT_STORAGE_QUOTA: i64 = 10 * 1_024 * 1_024 * 1_024;
 const CAR_DATA_SIZE_LIMIT: u64 = 128 * 1_024 * 1_024;
 
 /// The "official" mime type registered for CAR files, we specifically only accept version 2
-const CAR_MIME_TYPE: &str = "application/vnd.ipfs.car; version=2";
+const CAR_MIME_TYPE: &str = "application/vnd.ipld.car; version=2";
 
 const ONE_HUNDRED_MIB: i64 = 100 * 1024 * 1024;
 
@@ -173,7 +173,8 @@ pub async fn handler(
     let file_name = format!("{bucket_id}/{metadata_id}.car");
     let (hash, size) = persist_upload(&store, &file_name, data_field).await?;
 
-    let mut conn = database.begin().await?;
+    // We don't need to be in a tranaction yet, a regular acquire is fine here
+    let mut conn = database.acquire().await?;
     Metadata::upload_complete(&mut conn, &metadata_id, &hash, size as i64).await?;
 
     let consumed_storage = User::consumed_storage(&mut conn, &user_id).await?;
@@ -190,6 +191,9 @@ pub async fn handler(
         let resp_msg = serde_json::json!({"id": metadata_id, "state": "current"});
         return Ok((StatusCode::OK, Json(resp_msg)).into_response());
     }
+
+    // We need to be consistent again, switch back to transaction land
+    let mut conn = database.begin().await?;
 
     let storage_host =
         match SelectedStorageHost::select_for_capacity(&mut conn, needed_capacity).await? {
