@@ -17,8 +17,8 @@
     --bucket-class-hot: #DE6F6F;
     --bucket-class-warm: #716FDE;
     --bucket-class-cold: #5CADBF;
-    --bucket-actions-background: #F4F3F3;
-    --bucket-actions-text: #232323;
+    --bucket-actions-background: #FFF;
+    --bucket-actions-text: #111322;
     --text-900: #111322;
     --text-800: #30374F;
     --text-600: #4A5578;
@@ -62,7 +62,7 @@
     --bucket-class-hot: #DE6F6F;
     --bucket-class-warm: #716FDE;
     --bucket-class-cold: #5CADBF;
-    --bucket-actions-background: #F4F3F3;
+    --bucket-actions-background: #FFF;
     --bucket-actions-text: #232323;
     --text-900: #FFFFFF;
     --text-800: #FFFFFF;

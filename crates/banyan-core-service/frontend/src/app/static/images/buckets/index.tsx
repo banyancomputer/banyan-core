@@ -6,24 +6,8 @@ export const Upload = () => <svg width="47" height="46" viewBox="0 0 47 46" fill
     <rect x="3.5" y="3" width="40" height="40" rx="20" stroke="white" strokeWidth="6" />
 </svg>;
 
-export const BucketIcon = (params: SVGProps<any>) => <svg width="120" height="89" viewBox="0 0 120 89" fill="none" xmlns="http://www.w3.org/2000/svg" {...params}>
-    <path d="M5.26172 8H114.404V65C114.404 78.2548 103.659 89 90.4039 89H29.2617C16.0069 89 5.26172 78.2548 5.26172 65V8Z" fill="url(#paint0_linear_2680_2634)" />
-    <rect x="0.162109" y="3" width="119.342" height="39" rx="10" fill="#41767D" />
-    <rect x="0.162109" width="119.342" height="39" rx="10" fill="#8BA7AC" />
-    <rect x="5.26172" y="2" width="109.142" height="32" rx="7" fill="url(#paint1_linear_2680_2634)" />
-    <rect x="38.9238" y="49" width="43.8609" height="9" rx="4.5" fill="#99CBD5" />
-    <rect x="38.9238" y="49" width="43.8609" height="7" rx="3.5" fill="#29717B" />
-    <defs>
-        <linearGradient id="paint0_linear_2680_2634" x1="59.8328" y1="8" x2="59.8328" y2="89" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#B2EDF5" />
-            <stop offset="0.291667" stopColor="#B3C2C6" />
-            <stop offset="1" stopColor="#346D75" />
-        </linearGradient>
-        <linearGradient id="paint1_linear_2680_2634" x1="59.8328" y1="2" x2="59.8328" y2="34" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#AEC3C6" />
-            <stop offset="1" stopColor="#3A7077" />
-        </linearGradient>
-    </defs>
+export const BucketIcon = (params: SVGProps<any>) => <svg width="122" height="122" viewBox="0 0 122 122" fill="none" xmlns="http://www.w3.org/2000/svg" {...params}>
+<path d="M86.417 81.3332C88.535 81.3332 90.3362 80.613 91.8206 79.1728C93.3049 77.7325 94.0454 75.9109 94.042 73.7082C94.042 71.5901 93.3015 69.7906 91.8206 68.3097C90.3396 66.8287 88.5384 66.0866 86.417 66.0832C84.2142 66.0832 82.3927 66.8253 80.9524 68.3097C79.5121 69.794 78.792 71.5935 78.792 73.7082C78.792 75.9109 79.5121 77.7325 80.9524 79.1728C82.3927 80.613 84.2142 81.3332 86.417 81.3332ZM10.167 45.7498L27.4503 28.4665C28.3823 27.5346 29.4633 26.7941 30.6935 26.2451C31.9237 25.6961 33.2572 25.4199 34.6941 25.4165H87.1795C88.6198 25.4165 89.955 25.6927 91.1852 26.2451C92.4153 26.7975 93.4947 27.5379 94.4232 28.4665L111.834 45.7498H10.167ZM20.3337 96.5832C17.4531 96.5832 15.0385 95.6089 13.0899 93.6603C11.1413 91.7116 10.167 89.2971 10.167 86.4165V55.9165H111.834V86.4165C111.834 89.2971 110.839 91.7116 108.85 93.6603C106.86 95.6089 104.466 96.5832 101.667 96.5832H20.3337Z" fill="#D99C67"/>
 </svg>;
 
 export const Folder = (params: SVGProps<any>) => <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" {...params}>
