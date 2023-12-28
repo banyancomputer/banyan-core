@@ -24,6 +24,7 @@
 	"lastEdited": "上次编辑",
 	"fileSize": "文件大小",
 	"files": "文件",
+  "allFiles": "所有文件",
 	"file": "文件",
 	"deleteDrive": "删除驱动器",
 	"delete": "删除",

@@ -108,7 +108,7 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
             className="h-full w-fit overflow-x-auto bg-secondaryBackground"
         >
             <div className="pb-1 text-m font-medium">
-                {`${messages.files}`}
+                {`${messages.allFiles}`}
             </div>
             <div >
                 <table className="table table-pin-rows w-full text-text-600 rounded-xl table-fixed">

@@ -24,6 +24,7 @@
 	"lastEdited": "Zuletzt bearbeitet",
 	"fileSize": "Dateigröße",
 	"files": "Dateien",
+    "allFiles": "Alle Dateien",
 	"file": "Datei",
 	"deleteDrive": "Laufwerk löschen",
 	"delete": "Löschen",

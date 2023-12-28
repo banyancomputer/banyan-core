@@ -2,7 +2,7 @@ import React, { SVGProps } from 'react';
 
 import { CommonFileIcon, FigmaFileIcon, Folder, ImageFileIcon, VideoFileIcon } from '@static/images/common';
 
-export const FileIcon: React.FC<{ fileName: string; className?: string; size?: string }> = ({ fileName, className, size = '40px' }) => {
+export const FileIcon: React.FC<{ fileName: string; className?: string; size?: string }> = ({ fileName, className, size = '20px' }) => {
     const fileTypeMapper: Record<string, React.FC<SVGProps<any>>> = {
         'txt': CommonFileIcon,
         'pdf': CommonFileIcon,

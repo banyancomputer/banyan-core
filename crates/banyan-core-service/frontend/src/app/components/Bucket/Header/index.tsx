@@ -98,8 +98,8 @@ const BucketHeader = () => {
                 }
             </div>
             {isBannerVisible &&
-                <div className="relative flex items-center justify-center gap-3 px-5 py-4 bg-secondaryBackground rounded-xl">
-                    <span className="p-2.5 rounded-full bg-button-primary">
+                <div className="relative flex items-center justify-center gap-3 px-5 py-4 border-2 border-border-regular rounded-xl">
+                    <span className="p-2.5 rounded-full bg-button-primary text-white">
                         <Copy />
                     </span>
                     <div className="flex-grow flex flex-col text-text-900">
@@ -110,7 +110,7 @@ const BucketHeader = () => {
                     <button
                         onClick={takeSnapshot}
                         disabled={selectedBucket?.isSnapshotValid}
-                        className="px-4 py-2.5 border-1 border-button-highLight rounded-xl disabled:border-text-900 disabled:opacity-20 disabled:cursor-not-allowed"
+                        className="px-4 py-2.5 btn-primary rounded-xl"
                     >
                         {`${messages.makeSnapshot}`}
                     </button>
