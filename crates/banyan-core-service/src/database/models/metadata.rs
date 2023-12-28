@@ -387,15 +387,18 @@ mod tests {
         let (raw_created_at, raw_updated_at) =
             raw_metadata_timestamps(&mut conn, &metadata_id).await;
 
-        // Do simple formatting checks on the raw timestamps
+        // Do simple formatting checks on the raw timestamps using the length of the string
         assert_eq!(raw_created_at.len(), 19);
         assert_eq!(raw_updated_at.len(), 19);
 
         // Split the text at ' ' and assert that each part has the correct length
-        assert_eq!(raw_created_at.split(' ').nth(0).unwrap().len(), 10);
-        assert_eq!(raw_updated_at.split(' ').nth(0).unwrap().len(), 10);
-        assert_eq!(raw_created_at.split(' ').nth(1).unwrap().len(), 8);
-        assert_eq!(raw_updated_at.split(' ').nth(1).unwrap().len(), 8);
+        let mut raw_iterable_created_at = raw_created_at.split(' ');
+        let mut raw_iterable_updated_at = raw_updated_at.split(' ');
+
+        assert_eq!(raw_iterable_created_at.next().unwrap().len(), 10);
+        assert_eq!(raw_iterable_updated_at.next().unwrap().len(), 10);
+        assert_eq!(raw_iterable_created_at.next().unwrap().len(), 8);
+        assert_eq!(raw_iterable_updated_at.next().unwrap().len(), 8);
     }
 
     #[tokio::test]
@@ -435,14 +438,161 @@ mod tests {
         let (raw_created_at, raw_updated_at) =
             raw_metadata_timestamps(&mut conn, &metadata_id).await;
 
-        // Do simple formatting checks on the raw timestamps
+        // Do simple formatting checks on the raw timestamps using the length of the string
         assert_eq!(raw_created_at.len(), 19);
         assert_eq!(raw_updated_at.len(), 19);
 
         // Split the text at ' ' and assert that each part has the correct length
-        assert_eq!(raw_created_at.split(' ').nth(0).unwrap().len(), 10);
-        assert_eq!(raw_updated_at.split(' ').nth(0).unwrap().len(), 10);
-        assert_eq!(raw_created_at.split(' ').nth(1).unwrap().len(), 8);
-        assert_eq!(raw_updated_at.split(' ').nth(1).unwrap().len(), 8);
+        let mut raw_iterable_created_at = raw_created_at.split(' ');
+        let mut raw_iterable_updated_at = raw_updated_at.split(' ');
+
+        assert_eq!(raw_iterable_created_at.next().unwrap().len(), 10);
+        assert_eq!(raw_iterable_updated_at.next().unwrap().len(), 10);
+        assert_eq!(raw_iterable_created_at.next().unwrap().len(), 8);
+        assert_eq!(raw_iterable_updated_at.next().unwrap().len(), 8);
+    }
+
+    #[tokio::test]
+    async fn test_sqlx_and_precise_timestamps_are_orderable() {
+        let db = setup_database().await;
+        let mut conn = db.begin().await.expect("connection");
+
+        // Test case where the sqlite timestamp is before the precise timestamp
+
+        let user_id = sample_user(&mut conn, "user-1@domain.tld").await;
+
+        let bucket_id = sample_bucket(&mut conn, &user_id).await;
+
+        // Create a metadata row with no timestamp values -- this should use the defaults
+        let root_cid = "root-cid";
+        let metadata_cid = "metadata-cid";
+        let state = MetadataState::Current;
+        let first_metadata_id = sqlx::query_scalar!(
+            r#"INSERT INTO
+                    metadata (bucket_id, root_cid, metadata_cid, expected_data_size, state)
+                    VALUES ($1, $2, $3, 0, $4)
+                    RETURNING id;"#,
+            bucket_id,
+            root_cid,
+            metadata_cid,
+            state
+        )
+        .fetch_one(&mut *conn)
+        .await
+        .expect("inserting metadata");
+
+        // Create a second precisely timestamped metadata row a little bit later
+        let timestamp = OffsetDateTime::now_utc() + time::Duration::hours(1);
+        let second_metadata_id = create_metadata(
+            &mut conn,
+            &bucket_id,
+            "root-cid",
+            "metadata-cid",
+            MetadataState::Current,
+            Some(timestamp),
+        )
+        .await;
+
+        // Query all metadata ids in order of creation
+        let metadata_ids = sqlx::query_scalar!("SELECT id FROM metadata ORDER BY created_at ASC;")
+            .fetch_all(&mut *conn)
+            .await
+            .expect("querying metadata ids");
+
+        // Assert that the first metadata id is the first one created
+        assert_eq!(metadata_ids[0], first_metadata_id);
+        assert_eq!(metadata_ids[1], second_metadata_id);
+
+        // Query all metadata ids in reverse order of creation
+        let metadata_ids = sqlx::query_scalar!("SELECT id FROM metadata ORDER BY created_at DESC;")
+            .fetch_all(&mut *conn)
+            .await
+            .expect("querying metadata ids");
+
+        // Assert that the first metadata id is the first one created
+        assert_eq!(metadata_ids[0], second_metadata_id);
+        assert_eq!(metadata_ids[1], first_metadata_id);
+
+        // Get the OffsetDateTime values for the first and second metadata ids
+        let (first_created_at, first_updated_at) =
+            metadata_timestamps(&mut conn, &first_metadata_id).await;
+        let (second_created_at, second_updated_at) =
+            metadata_timestamps(&mut conn, &second_metadata_id).await;
+
+        // Assert that the first metadata id is the first one created
+        assert!(first_created_at < second_created_at);
+        assert!(first_updated_at < second_updated_at);
+
+        // Test case where the sqlite timestamp is after the precise timestamp
+
+        let user_id = sample_user(&mut conn, "user-2@domain.tld").await;
+
+        let bucket_id = sample_bucket(&mut conn, &user_id).await;
+
+        // Create a piece of metadata with a precise timestamp far in the past
+        let timestamp = datetime!(1970-01-01 00:00:00 UTC);
+        let first_metadata_id = create_metadata(
+            &mut conn,
+            &bucket_id,
+            "root-cid",
+            "metadata-cid",
+            MetadataState::Current,
+            Some(timestamp),
+        )
+        .await;
+
+        // Create a second metadata row with no timestamp values -- this should use the defaults
+        let root_cid = "root-cid";
+        let metadata_cid = "metadata-cid";
+        let state = MetadataState::Current;
+        let second_metadata_id = sqlx::query_scalar!(
+            r#"INSERT INTO
+                    metadata (bucket_id, root_cid, metadata_cid, expected_data_size, state)
+                    VALUES ($1, $2, $3, 0, $4)
+                    RETURNING id;"#,
+            bucket_id,
+            root_cid,
+            metadata_cid,
+            state
+        )
+        .fetch_one(&mut *conn)
+        .await
+        .expect("inserting metadata");
+
+        // Query all metadata ids in order of creation
+        let metadata_ids = sqlx::query_scalar!(
+            "SELECT id FROM metadata WHERE bucket_id = $1 ORDER BY created_at ASC;",
+            bucket_id
+        )
+        .fetch_all(&mut *conn)
+        .await
+        .expect("querying metadata ids");
+
+        // Assert that the first metadata id is the first one created
+        assert_eq!(metadata_ids[0], first_metadata_id);
+        assert_eq!(metadata_ids[1], second_metadata_id);
+
+        // Query all metadata ids in reverse order of creation
+        let metadata_ids = sqlx::query_scalar!(
+            "SELECT id FROM metadata WHERE bucket_id = $1 ORDER BY created_at DESC;",
+            bucket_id
+        )
+        .fetch_all(&mut *conn)
+        .await
+        .expect("querying metadata ids");
+
+        // Assert that the first metadata id is the first one created
+        assert_eq!(metadata_ids[0], second_metadata_id);
+        assert_eq!(metadata_ids[1], first_metadata_id);
+
+        // Get the OffsetDateTime values for the first and second metadata ids
+        let (first_created_at, first_updated_at) =
+            metadata_timestamps(&mut conn, &first_metadata_id).await;
+        let (second_created_at, second_updated_at) =
+            metadata_timestamps(&mut conn, &second_metadata_id).await;
+
+        // Assert that the first metadata id is the first one created
+        assert!(first_created_at < second_created_at);
+        assert!(first_updated_at < second_updated_at);
     }
 }
