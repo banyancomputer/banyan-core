@@ -8,7 +8,7 @@ import { Bucket } from '@components/Home/Bucket';
 import { useTomb } from '@/app/contexts/tomb';
 import { useModal } from '@/app/contexts/modals';
 
-import { EmptyIcon, PlusBold, Upload } from '@static/images/common';
+import { PlusBold, Upload } from '@static/images/common';
 import { CreateBucketModal } from '@components/common/Modal/CreateBucketModal';
 
 const Home = () => {
@@ -56,20 +56,13 @@ const Home = () => {
                 </div>
             </div>
             <Fallback shouldRender={!areBucketsLoading}>
-                {buckets.length ?
-                    <div className="grid grid-cols-3 gap-3">
-                        {
-                            buckets.map(bucket =>
-                                <Bucket bucket={bucket} key={bucket.id} />
-                            )
-                        }
-                    </div>
-                    :
-                    <div className="h-full flex flex-col items-center justify-center saturate-0">
-                        <EmptyIcon />
-                        <p className="mt-4">{`${messages.noDrives}`}</p>
-                    </div>
-                }
+                <div className="grid grid-cols-3 gap-3">
+                    {
+                        buckets.map(bucket =>
+                            <Bucket bucket={bucket} key={bucket.id} />
+                        )
+                    }
+                </div>
             </Fallback>
         </section>
     );
