@@ -117,7 +117,7 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
             >
                 <BucketActions bucket={bucket} />
             </div>
-            <div className="relative mb-6 flex justify-center py-24 bg-navigation-secondary rounded-xl z-0">
+            <div className="relative mb-4 flex justify-center py-24 bg-navigation-secondary rounded-xl z-0">
                 <BucketIcon />
                 <div
                     className="absolute right-2 top-2 p-1 cursor-pointer"
@@ -135,7 +135,7 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
                     <span className="absolute left-2 top-2 z-10 text-text-900"><LockedTooltip bucket={bucket} /></span>
                 }
             </div>
-            <span className="mb-4 flex justify-between items-center text-ellipsis overflow-hidden whitespace-nowrap">
+            <span className="mb-4 flex justify-between items-center text-ellipsis overflow-hidden whitespace-nowrap font-semibold">
                 {bucket.name}
             </span>
             <div className="flex flex-col gap-2 items-start text-xs font-normal">

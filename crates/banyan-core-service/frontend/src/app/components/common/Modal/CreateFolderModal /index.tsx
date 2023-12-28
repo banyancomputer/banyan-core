@@ -21,7 +21,7 @@ export const CreateFolderModal: React.FC<{ bucket: Bucket; onSuccess?: () => voi
         setfolderName(event.target.value);
     };
 
-    const create = async() => {
+    const create = async () => {
         try {
             await createDirectory(bucket, path, folderName);
             onSuccess ?
@@ -36,7 +36,7 @@ export const CreateFolderModal: React.FC<{ bucket: Bucket; onSuccess?: () => voi
     return (
         <div className="w-modal flex flex-col gap-5" >
             <div>
-                <h4 className="text-m font-semibold ">{`${messages.createNewFolder}`}</h4>
+                <h4 className="text-m font-semibold ">{`${messages.createFolder}`}</h4>
             </div>
             <div>
                 <label>

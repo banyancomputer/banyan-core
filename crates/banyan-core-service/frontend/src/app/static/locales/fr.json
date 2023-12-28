@@ -94,7 +94,7 @@
 	"downloading": "Téléchargement",
 	"create": "Créer",
 	"createNewDrive": "Créer un nouveau disque",
-	"createNewFolder": "Créer un nouveau dossier",
+	"createFolder": "Créer un nouveau dossier",
 	"folderName": "Nom du dossier",
 	"tryAgain": "Réessayer",
 	"deletionError": "Il y a eu un problème avec la suppression. Veuillez réessayer",

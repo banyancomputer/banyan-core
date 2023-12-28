@@ -15,7 +15,7 @@ import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 import { useTomb } from '@app/contexts/tomb';
 
 import { Bolt, DeleteHotData, Rename, Retry, Trash, Upload, Versions } from '@static/images/common';
-import { Folder, Lock } from '@static/images/buckets';
+import { AddFolderIcon, Lock } from '@static/images/buckets';
 
 export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const { messages } = useIntl();
@@ -101,7 +101,7 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const viewBucketSnapshotsAction = bucket.snapshots.length ? new Action(`${messages.viewColdSnapshots}`, <Versions width="18px" height="18px" />, viewBucketSnapshots) : null;
     const viewBucketVersionsAction = new Action(`${messages.viewDriveVersions}`, <Versions width="18px" height="18px" />, viewBucketVersions);
     const renameAction = new Action(`${messages.rename}`, <Rename width="18px" height="18px" />, rename);
-    const createFolderAction = new Action(`${messages.createNewFolder}`, <Folder width="18px" height="18px" />, createFolder);
+    const createFolderAction = new Action(`${messages.createFolder}`, <AddFolderIcon width="18px" height="18px" />, createFolder);
     const restoreColdVersionAction = new Action(`${messages.restoreCold}`, <Versions width="18px" height="18px" />, retoreColdVersion);
     const deleteHotDatadAction = new Action(`${messages.deleteHotData}`, <DeleteHotData width="18px" height="18px" />, deleteHotData);
     const deletedAction = buckets.length > 1 ? new Action(`${messages.delete}`, <Trash width="18px" height="18px" />, deleteBucket) : null;

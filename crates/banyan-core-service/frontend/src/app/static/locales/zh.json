@@ -94,7 +94,7 @@
 	"downloading": "下载中",
 	"create": "创建",
 	"createNewDrive": "创建新驱动器",
-	"createNewFolder": "创建新文件夹",
+	"createFolder": "创建新文件夹",
 	"folderName": "文件夹名称",
 	"tryAgain": "重试",
 	"deletionError": "删除出现问题，请重试",

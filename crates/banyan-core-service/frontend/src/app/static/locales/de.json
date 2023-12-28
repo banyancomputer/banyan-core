@@ -94,7 +94,7 @@
 	"downloading": "Herunterladen",
 	"create": "Erstellen",
 	"createNewDrive": "Neues Laufwerk erstellen",
-	"createNewFolder": "Neuen Ordner erstellen",
+	"createFolder": "Neuen Ordner erstellen",
 	"folderName": "Ordnername",
 	"tryAgain": "Erneut versuchen",
 	"deletionError": "Es gab ein Problem beim Löschen. Bitte versuchen Sie es erneut",

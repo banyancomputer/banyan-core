@@ -37,7 +37,7 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         setSortState(prev => ({ criteria, direction: prev.direction === 'ASC' ? 'DESC' : 'ASC' }));
     };
 
-    const handleDrop = async(event: React.DragEvent<HTMLDivElement>) => {
+    const handleDrop = async (event: React.DragEvent<HTMLDivElement>) => {
         preventDefaultDragAction(event);
 
         if (event?.dataTransfer.files.length) {
@@ -62,7 +62,7 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     useEffect(() => {
         if (!files.length || !areFilesDropped) { return; }
 
-        (async() => {
+        (async () => {
             try {
                 ToastNotifications.uploadProgress();
                 await uploadFiles(bucket, folderLocation);
@@ -105,16 +105,16 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
             ref={tableRef}
             onDrop={handleDrop}
             onDragOver={preventDefaultDragAction}
-            className="h-full w-fit overflow-x-auto bg-secondaryBackground border-2 border-border-regular rounded-xl shadow-common"
+            className="h-full w-fit overflow-x-auto bg-secondaryBackground"
         >
-            <div className="px-6 py-5 text-m font-semibold border-b-2 border-border-regular">
+            <div className="pb-1 text-m font-medium">
                 {`${messages.files}`}
             </div>
             <div >
                 <table className="table table-pin-rows w-full text-text-600 rounded-xl table-fixed">
                     <thead className="border-b-border-regular text-xxs border-b-2 font-normal text-text-900">
                         <tr className="bg-secondaryBackground font-normal border-none">
-                            <th className="flex items-center gap-3 px-6 py-4 text-left font-medium">
+                            <th className="flex items-center gap-3 pl-0 py-4 text-left font-medium">
                                 <SortCell
                                     criteria="name"
                                     onChange={sort}

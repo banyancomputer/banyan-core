@@ -94,7 +94,7 @@
     "downloading": "ダウンロード中",
 	"create": "作成",
 	"createNewDrive": "新しいドライブを作成",
-	"createNewFolder": "新しいフォルダを作成",
+	"createFolder": "新しいフォルダを作成",
 	"folderName": "フォルダ名",
 	"tryAgain": "もう一度試してください",
 	"deletionError": "削除に関する問題が発生しました。もう一度試してください",
