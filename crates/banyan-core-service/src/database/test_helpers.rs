@@ -234,6 +234,9 @@ pub(crate) async fn create_metadata(
     state: MetadataState,
     timestamp: Option<OffsetDateTime>,
 ) -> String {
+    // Note: be sure to use explicit timestamps to yeild the same precission
+    //  we expect as a result from calls to NewMetadata::save(), Metadata::mark_current(),
+    //   and Metadata::mark_upload_complete()
     let now = match timestamp {
         Some(ts) => ts,
         None => OffsetDateTime::now_utc(),

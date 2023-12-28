@@ -208,13 +208,16 @@ mod tests {
     }
 
     // TODO: it would be ideal if we could test whether our structs implements the
-    //  correct use of timestamps, but that's not tenable since we can't control the
-    //   the timestamp values that they initialize rows with (those are side effects
-    //    of methods like NewMetadata::save(), Metadata::mark_current(),
-    //     Metadata::upload_complete()). These are proximate tests that ensure that, at the
-    //      very least, the timestamps are being set to the correct values by SQLX, and that
-    //       everything is okay so long as we manually set the timestamp values and don't rely
-    //        on the defaults.
+    // correct use of timestamps, but that's not tenable since we can't control the
+    // the timestamp values that they initialize rows with (those are side effects
+    // of methods like NewMetadata::save(), Metadata::mark_current(),
+    // Metadata::upload_complete()). These are proximate tests that ensure that, at the
+    // very least, the timestamps are being set to the correct values by SQLX, and that
+    // everything is okay so long as we manually set the timestamp values and don't rely
+    // on the defaults. Even then, we test whether defaults are sufficient for
+    // timestamps to be deserialized correctly when reading from the database (in other
+    // words though defaults have a different format and no precision, they are still
+    // interpretable as OffsetDateTime).
 
     #[tokio::test]
     async fn test_metadata_timestamps_have_precision() {
@@ -349,9 +352,54 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_default_sqlx_timestamps_have_no_precision() {
-        // Test that the created and updated timestamps have no nanosecond precision
+    async fn test_default_sqlx_timestamps_have_no_precision_and_are_interpretable() {
+        let db = setup_database().await;
+        let mut conn = db.begin().await.expect("connection");
 
+        let user_id = sample_user(&mut conn, "user@domain.tld").await;
+        let bucket_id = sample_bucket(&mut conn, &user_id).await;
+
+        // Create a metadata row with no timestamp values -- this should use the defaults
+        let root_cid = "root-cid";
+        let metadata_cid = "metadata-cid";
+        let state = MetadataState::Current;
+        let metadata_id = sqlx::query_scalar!(
+            r#"INSERT INTO
+                    metadata (bucket_id, root_cid, metadata_cid, expected_data_size, state)
+                    VALUES ($1, $2, $3, 0, $4)
+                    RETURNING id;"#,
+            bucket_id,
+            root_cid,
+            metadata_cid,
+            state
+        )
+        .fetch_one(&mut *conn)
+        .await
+        .expect("inserting metadata");
+
+        // See if we can read these as OffsetDateTime
+        let (created_at, updated_at) = metadata_timestamps(&mut conn, &metadata_id).await;
+
+        // Assert that the timestamps have no nanosecond precision
+        assert_eq!(created_at.nanosecond(), 0);
+        assert_eq!(updated_at.nanosecond(), 0);
+
+        let (raw_created_at, raw_updated_at) =
+            raw_metadata_timestamps(&mut conn, &metadata_id).await;
+
+        // Do simple formatting checks on the raw timestamps
+        assert_eq!(raw_created_at.len(), 19);
+        assert_eq!(raw_updated_at.len(), 19);
+
+        // Split the text at ' ' and assert that each part has the correct length
+        assert_eq!(raw_created_at.split(' ').nth(0).unwrap().len(), 10);
+        assert_eq!(raw_updated_at.split(' ').nth(0).unwrap().len(), 10);
+        assert_eq!(raw_created_at.split(' ').nth(1).unwrap().len(), 8);
+        assert_eq!(raw_updated_at.split(' ').nth(1).unwrap().len(), 8);
+    }
+
+    #[tokio::test]
+    async fn test_datetime_now_sqlx_timestamps_have_no_precision_and_are_interpretable() {
         let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
@@ -368,8 +416,7 @@ mod tests {
         )
         .await;
 
-        // Set the timestamps to the default values -- this will set the timestamps to the current time without
-        //  any precision
+        // Set the timestamps to sqlite values of datetime('now')
         sqlx::query!(
             "UPDATE metadata SET created_at = DATETIME('now'), updated_at = DATETIME('now') WHERE id = $1;",
             metadata_id
