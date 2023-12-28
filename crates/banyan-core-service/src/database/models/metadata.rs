@@ -283,7 +283,7 @@ mod tests {
                 .nth(1)
                 .unwrap()
                 .chars()
-                .nth(0)
+                .next()
                 .unwrap(),
             '0'
         );
@@ -293,7 +293,7 @@ mod tests {
                 .nth(1)
                 .unwrap()
                 .chars()
-                .nth(0)
+                .next()
                 .unwrap(),
             '0'
         );
@@ -335,7 +335,7 @@ mod tests {
                 .nth(1)
                 .unwrap()
                 .split('Z')
-                .nth(0)
+                .next()
                 .unwrap(),
             "999"
         );
@@ -345,7 +345,7 @@ mod tests {
                 .nth(1)
                 .unwrap()
                 .split('Z')
-                .nth(0)
+                .next()
                 .unwrap(),
             "999"
         );
