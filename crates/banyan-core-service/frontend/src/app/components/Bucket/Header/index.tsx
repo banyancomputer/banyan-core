@@ -31,7 +31,7 @@ const BucketHeader = () => {
         }
     };
 
-    const takeSnapshot = async() => {
+    const takeSnapshot = async () => {
         try {
             selectedBucket && openModal(<TakeSnapshotModal bucket={selectedBucket} />);
         } catch (error: any) { }
@@ -59,7 +59,7 @@ const BucketHeader = () => {
         <div className="mb-6">
             <div className="mb-4 flex w-full justify-between items-center">
                 <h2 className="text-xl font-semibold">
-                    <Link to="/">{`${messages.myDrives}`}</Link>
+                    <Link to="/">{`${messages.allDrives}`}</Link>
                     {' > '}
                     <Link to={`/drive/${bucketId}`}>{selectedBucket?.name}</Link>
                     {folderLocation.map((folder, index) =>

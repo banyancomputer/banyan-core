@@ -79,7 +79,7 @@ export const Navigation = () => {
 						}
 					</span>
 					<span className="flex-grow">
-						{`${messages.myDrives}`}
+						{`${messages.allDrives}`}
 					</span>
 					<span
 						onClick={toggleBucketsVisibility}

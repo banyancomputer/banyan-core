@@ -310,3 +310,14 @@ export const Retry = (params: SVGProps<any>) => <svg fill="currentColor" height=
         <path d="m7 16.6099c.55228 0 1-.4477 1-1s-.44772-1-1-1-1 .4477-1 1 .44772 1 1 1z" />
     </g>
 </svg>;
+
+export const CalendarIcon = (params: SVGProps<any>) => <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" {...params}>
+    <g clip-path="url(#clip0_3730_31732)">
+        <path d="M16.6665 2.50016H15.8332V0.833496H14.1665V2.50016H5.83317V0.833496H4.1665V2.50016H3.33317C2.4165 2.50016 1.6665 3.25016 1.6665 4.16683V17.5002C1.6665 18.4168 2.4165 19.1668 3.33317 19.1668H16.6665C17.5832 19.1668 18.3332 18.4168 18.3332 17.5002V4.16683C18.3332 3.25016 17.5832 2.50016 16.6665 2.50016ZM16.6665 17.5002H3.33317V8.3335H16.6665V17.5002ZM16.6665 6.66683H3.33317V4.16683H16.6665V6.66683Z" fill="#878787" />
+    </g>
+    <defs>
+        <clipPath id="clip0_3730_31732">
+            <rect width="20" height="20" fill="white" />
+        </clipPath>
+    </defs>
+</svg>;

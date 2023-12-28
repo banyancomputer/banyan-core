@@ -22,7 +22,7 @@ const Home = () => {
     useEffect(() => {
         if (!tomb) { return; }
 
-        (async() => {
+        (async () => {
             await getBucketsFiles();
         })();
     }, [buckets.length, tomb]);
@@ -31,7 +31,7 @@ const Home = () => {
         <section className="py-9 px-4" id="buckets">
             <div className="mb-4 flex w-full justify-between items-center">
                 <h2 className="text-xl font-semibold">
-                    {`${messages.myDrives}`}
+                    {`${messages.allDrives}`}
                 </h2>
                 <button
                     className="btn-highlighted gap-2 w-40 py-2 px-4"

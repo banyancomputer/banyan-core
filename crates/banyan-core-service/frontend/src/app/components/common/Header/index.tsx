@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
+import { useIntl } from 'react-intl';
 
 import { ProfileControls } from './ProfileControls';
 import { HelpControls } from './HelpControls';
@@ -16,6 +17,7 @@ import { Question } from '@static/images/common';
 const client = new UserClient();
 
 export const Header = () => {
+    const { messages } = useIntl();
     const profileOptionsRef = useRef<HTMLDivElement | null>(null);
     const helpOptionsRef = useRef<HTMLDivElement | null>(null);
     const { purgeKeystore } = useKeystore();
@@ -73,6 +75,7 @@ export const Header = () => {
                         <HelpControls />
                     }
                 </div>
+                <button className="px-4 py-2 text-xs font-semibold rounded-md bg-text-200 text-button-primary">{`${messages.upgrade}`}</button>
                 <div
                     className="relative w-10 h-10 rounded-full cursor-pointer "
                     onClick={toggleProfileOptionsVisibility}

@@ -22,7 +22,7 @@ export const Settings = () => {
     }, []);
 
     return (
-        <div className="flex flex-col gap-5 px-4">
+        <div className="flex flex-col gap-5 px-10">
             <h2 className="text-lg font-semibold">
                 {`${messages.settings}`}
             </h2>
