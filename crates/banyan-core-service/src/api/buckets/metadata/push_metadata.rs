@@ -192,7 +192,8 @@ pub async fn handler(
         return Ok((StatusCode::OK, Json(resp_msg)).into_response());
     }
 
-    // We need to be consistent again, switch back to transaction land
+    // We need to be consistent again, close and switch back to transaction land
+    conn.close().await?;
     let mut conn = database.begin().await?;
 
     let storage_host =
