@@ -15,13 +15,11 @@ import { useTomb } from '@app/contexts/tomb';
 export const FileRow: React.FC<{
     file: BrowserObject;
     bucket: Bucket;
-    tableScroll: number;
-    tableRef: React.MutableRefObject<HTMLDivElement | null>;
     path: string[];
     siblingFiles: string[];
     nestingLevel?: number;
     parrentFolder?: BrowserObject;
-}> = ({ file, bucket, tableScroll, tableRef, nestingLevel = 0.25, path = [], parrentFolder, siblingFiles }) => {
+}> = ({ file, bucket, nestingLevel = 0.25, path = [], parrentFolder, siblingFiles }) => {
     const { openFile } = useFilePreview();
     const [isDragging, setIsDragging] = useState(false);
     const { getExpandedFolderFiles, getSelectedBucketFiles } = useTomb();
@@ -60,8 +58,6 @@ export const FileRow: React.FC<{
                             path={path}
                         />
                     }
-                    offsetTop={tableScroll}
-                    tableRef={tableRef}
                 />
             </td>
         </tr>
