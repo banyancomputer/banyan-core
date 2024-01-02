@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT \n            created_at as 'created_at: String',\n            updated_at as 'updated_at: String'\n        FROM metadata WHERE id = $1;",
+  "describe": {
+    "columns": [
+      {
+        "name": "created_at: String",
+        "ordinal": 0,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "updated_at: String",
+        "ordinal": 1,
+        "type_info": "Datetime"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "a75a1e02ea1c37d69c82130faddef3abaffcd4e32debf1b43401988234168995"
+}
