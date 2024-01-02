@@ -279,11 +279,27 @@ impl Bucket {
         .fetch_optional(&mut *conn)
         .await?;
 
-        if let Some(pending_id) = &pending_result {
+        if let Some(pending_id) = pending_result {
             tracing::warn!(pending_id, "fell back on pending metadata");
+            return Ok(Some(pending_id));
         }
 
-        Ok(pending_result)
+        // Temporary fallback to the newest outdated state to work around the client bug overwriting
+        // metadata if our pending fallback is not present either
+        let outdated_result = sqlx::query_scalar!(
+            r#"SELECT id FROM metadata
+                   WHERE bucket_id = $1 AND state = 'outdated'
+                   ORDER BY created_at DESC
+                   LIMIT 1;"#,
+            bucket_id,
+        )
+        .fetch_optional(&mut *conn)
+        .await?;
+
+        if let Some(outdated_id) = &outdated_result {
+            tracing::warn!(outdated_id, "fell back on outdated metadata");
+        }
+        Ok(outdated_result)
     }
 
     /// Checks whether the provided bucket ID is owned by the provided user ID. This will return
@@ -674,21 +690,41 @@ mod tests {
     /// metadata bug and should be able to removed rather quickly. It is only triggered in the case
     /// that there is no existing current metadata so will do no harm under normal circumstances.
     #[tokio::test]
-    async fn test_pending_metadata_fallback_retrieval() {
+    async fn test_metadata_fallback_retrieval() {
         let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
         let user_id = sample_user(&mut conn, "user@domain.tld").await;
         let bucket_id = sample_bucket(&mut conn, &user_id).await;
 
-        let base_time = OffsetDateTime::now_utc();
+        // First try to get outdated metadata when no other is present
+        let outdated_time = OffsetDateTime::now_utc();
+        let outdated_id = create_metadata(
+            &mut conn,
+            &bucket_id,
+            "om-cid",
+            "or-cid",
+            MetadataState::Outdated,
+            Some(outdated_time),
+        )
+        .await;
+
+        assert_eq!(
+            Bucket::current_version(&mut conn, &bucket_id)
+                .await
+                .expect("query success"),
+            Some(outdated_id)
+        );
+
+        // Try to get our pending metadata over the outdated one
+        let pending_time = outdated_time + Duration::from_secs(1800);
         let pending_id = create_metadata(
             &mut conn,
             &bucket_id,
             "pm-cid",
             "pr-cid",
             MetadataState::Pending,
-            Some(base_time),
+            Some(pending_time),
         )
         .await;
 
@@ -699,9 +735,10 @@ mod tests {
             Some(pending_id)
         );
 
-        // Any current metadata should override the pending one, this creates it in the past as
-        // that is a slightly more spicy edge case than a brand new current one
-        let older_time = base_time - Duration::from_secs(1800);
+        // Any current metadata should override the outdated and pending ones, this
+        // creates it in the past, between our two fallback pieces of metadata.
+        // This a slightly more spicy edge case than a brand new current one
+        let older_time = pending_time - Duration::from_secs(900);
         let current_id = create_metadata(
             &mut conn,
             &bucket_id,
