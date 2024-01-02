@@ -866,7 +866,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_update_is_valid_previous_metadata_cid_is_outdated() {
+    async fn test_update_is_not_valid_previous_metadata_cid_is_outdated() {
         let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
@@ -918,7 +918,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_update_is_valid_previous_metadata_cid_is_uploading() {
+    async fn test_update_is_not_valid_previous_metadata_cid_is_uploading() {
         let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
@@ -999,7 +999,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_update_is_valid_previous_metadata_cid_is_before_current() {
+    async fn test_update_is_not_valid_previous_metadata_cid_is_before_current() {
         let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
