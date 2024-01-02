@@ -143,8 +143,13 @@ pub async fn handler(
         }
     };
 
-    PendingExpiration::record_pending_block_expirations(&mut conn, &bucket_id, &normalized_cids)
-        .await?;
+    PendingExpiration::record_pending_block_expirations(
+        &mut conn,
+        &bucket_id,
+        &metadata_id,
+        &normalized_cids,
+    )
+    .await?;
 
     // Checkpoint the upload to the database so we can track failures, and perform any necessary
     // clean up behind the scenes. The upload itself will also dwarf the rest of the time of this
