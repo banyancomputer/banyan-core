@@ -5,7 +5,9 @@ use banyan_task::TaskLikeExt;
 use sqlx::QueryBuilder;
 use time::OffsetDateTime;
 
-use crate::database::models::{BucketType, MinimalBlockLocation, StorageClass};
+use crate::database::models::{
+    BucketType, MetadataState, MinimalBlockLocation, PartialMetadataWithSnapshot, StorageClass,
+};
 use crate::database::{DatabaseConnection, BIND_LIMIT};
 use crate::tasks::PruneBlocksTask;
 
@@ -302,6 +304,56 @@ impl Bucket {
         Ok(outdated_result)
     }
 
+    /// Check whether the provided `previous_cid` is based within the bucket's history
+    /// following its recent updates, including and following the current metadata version.
+    pub async fn update_is_valid(
+        conn: &mut DatabaseConnection,
+        bucket_id: &str,
+        previous_metadata_cid: &str,
+    ) -> Result<bool, sqlx::Error> {
+        // Get the most recent piece of metadata. If not available return false
+        let current_metadata =
+            match PartialMetadataWithSnapshot::locate_current(conn, bucket_id).await? {
+                Some(cm) => cm,
+                None => return Ok(false),
+            };
+
+        // Query for the versions of all pieces of metadata following the current one.
+        // This is assuming that amount of queried state can reasonably exist in memory
+        // Order by descending timestamps to prioritive more recent metadata in our following
+        // conflict check
+        let current_metadata_timestamp = current_metadata.created_at;
+        let metadata_versions = sqlx::query_as!(
+            MetadataVersion,
+            r#"SELECT metadata_cid, state as 'state: MetadataState' FROM metadata 
+                WHERE bucket_id = $1 AND created_at >= $2
+                ORDER BY created_at DESC"#,
+            bucket_id,
+            current_metadata_timestamp
+        )
+        .fetch_all(&mut *conn)
+        .await?;
+
+        // Iterate over the known history, searching for the specifiec 'previous_metadata_cid'.
+        // If we find a valid way to base the history without conflict return true, otherwise return false
+        // Conflict conditions are as follows:
+        // - No matching metadata_cid is found
+        // - A matching metadata_cid is found, but said metadata is either in `uploading` or `outdated` state
+        for mv in metadata_versions {
+            if mv.metadata_cid != previous_metadata_cid {
+                continue;
+            } else if mv.state == MetadataState::Uploading || mv.state == MetadataState::Outdated {
+                return Ok(false);
+            } else {
+                // We found a piece of metadata with matching cid, and it's in a valid state
+                // return true
+                return Ok(true);
+            };
+        }
+        // If we get here, then we didn't find a non-conflicting base. Return false.
+        Ok(false)
+    }
+
     /// Checks whether the provided bucket ID is owned by the provided user ID. This will return
     /// false when the user IDs don't match, but also if the bucket doesn't exist (and the user
     /// inherently doesn't the unknown ID).
@@ -328,6 +380,15 @@ struct PruneCandidate {
     block_id: String,
 }
 
+/// Necessary versioning information to determine
+/// if a specified `previous_metadata_cid` conflicts with
+/// existing history
+#[derive(Debug, sqlx::FromRow)]
+struct MetadataVersion {
+    metadata_cid: String,
+    state: MetadataState,
+}
+
 #[cfg(test)]
 mod tests {
     use std::time::Duration;
@@ -335,7 +396,6 @@ mod tests {
     use time::OffsetDateTime;
 
     use super::*;
-    use crate::database::models::MetadataState;
     use crate::database::test_helpers::*;
 
     async fn is_bucket_key_approved(
@@ -457,6 +517,7 @@ mod tests {
             "root-cid",
             MetadataState::Current,
             Some(base_time),
+            None,
         )
         .await;
 
@@ -473,6 +534,7 @@ mod tests {
             "old-root-cid",
             MetadataState::Current,
             Some(older_time),
+            None,
         )
         .await;
 
@@ -499,6 +561,7 @@ mod tests {
             "root-cid",
             MetadataState::Pending,
             Some(base_time),
+            None,
         )
         .await;
 
@@ -525,6 +588,7 @@ mod tests {
             "root-cid",
             MetadataState::Pending,
             Some(base_time),
+            None,
         )
         .await;
 
@@ -544,6 +608,7 @@ mod tests {
             "og-root-cid",
             MetadataState::Current,
             Some(older_time),
+            None,
         )
         .await;
 
@@ -568,6 +633,7 @@ mod tests {
             "root-cid",
             MetadataState::Uploading,
             Some(base_time),
+            None,
         )
         .await;
 
@@ -594,6 +660,7 @@ mod tests {
             "root-cid",
             MetadataState::Uploading,
             Some(base_time),
+            None,
         )
         .await;
 
@@ -613,6 +680,7 @@ mod tests {
             "og-root-cid",
             MetadataState::Current,
             Some(older_time),
+            None,
         )
         .await;
 
@@ -652,6 +720,7 @@ mod tests {
             "old-root-cid",
             MetadataState::Pending,
             Some(oldest_time),
+            None,
         )
         .await;
 
@@ -663,6 +732,7 @@ mod tests {
             "root-cid",
             MetadataState::Current,
             Some(base_time),
+            None,
         )
         .await;
 
@@ -675,6 +745,7 @@ mod tests {
             "new-root-cid",
             MetadataState::Pending,
             Some(newer_time),
+            None,
         )
         .await;
 
@@ -706,6 +777,7 @@ mod tests {
             "or-cid",
             MetadataState::Outdated,
             Some(outdated_time),
+            None,
         )
         .await;
 
@@ -725,6 +797,7 @@ mod tests {
             "pr-cid",
             MetadataState::Pending,
             Some(pending_time),
+            None,
         )
         .await;
 
@@ -746,6 +819,7 @@ mod tests {
             "c-root-cid",
             MetadataState::Current,
             Some(older_time),
+            None,
         )
         .await;
 
@@ -754,6 +828,227 @@ mod tests {
                 .await
                 .expect("query success"),
             Some(current_id)
+        );
+    }
+
+    #[tokio::test]
+    async fn test_update_is_valid_previous_metadata_cid_is_current() {
+        let db = setup_database().await;
+        let mut conn = db.begin().await.expect("connection");
+
+        let user_id = sample_user(&mut conn, "user@domain.tld").await;
+        let bucket_id = sample_bucket(&mut conn, &user_id).await;
+
+        let current_metadata_cid = "current-meta-cid";
+        let current_id = create_metadata(
+            &mut conn,
+            &bucket_id,
+            current_metadata_cid,
+            "c-root-cid",
+            MetadataState::Current,
+            None,
+            None,
+        )
+        .await;
+
+        assert_eq!(
+            Bucket::current_version(&mut conn, &bucket_id)
+                .await
+                .expect("query success"),
+            Some(current_id)
+        );
+
+        assert!(
+            Bucket::update_is_valid(&mut conn, &bucket_id, current_metadata_cid)
+                .await
+                .expect("query success")
+        );
+    }
+
+    #[tokio::test]
+    async fn test_update_is_valid_previous_metadata_cid_is_outdated() {
+        let db = setup_database().await;
+        let mut conn = db.begin().await.expect("connection");
+
+        let user_id = sample_user(&mut conn, "user@domain.tld").await;
+        let bucket_id = sample_bucket(&mut conn, &user_id).await;
+
+        // NOTE: we could get by with just a single outdated metadata, based on
+        // the current implementation of Bucket::current_version, but lets
+        // add a current one first to avoid failing tests later as well
+
+        let current_created_at = OffsetDateTime::now_utc();
+        let current_metadata_cid = "current-meta-cid";
+        let current_id = create_metadata(
+            &mut conn,
+            &bucket_id,
+            current_metadata_cid,
+            "c-root-cid",
+            MetadataState::Current,
+            Some(current_created_at),
+            None,
+        )
+        .await;
+
+        let outdated_created_at = current_created_at + Duration::from_secs(1800);
+        let outdated_metadata_cid = "outdated-meta-cid";
+        let _outdated_id = create_metadata(
+            &mut conn,
+            &bucket_id,
+            outdated_metadata_cid,
+            "c-root-cid",
+            MetadataState::Outdated,
+            Some(outdated_created_at),
+            None,
+        )
+        .await;
+
+        assert_eq!(
+            Bucket::current_version(&mut conn, &bucket_id)
+                .await
+                .expect("query success"),
+            Some(current_id)
+        );
+
+        assert!(
+            !Bucket::update_is_valid(&mut conn, &bucket_id, outdated_metadata_cid)
+                .await
+                .expect("query success")
+        );
+    }
+
+    #[tokio::test]
+    async fn test_update_is_valid_previous_metadata_cid_is_uploading() {
+        let db = setup_database().await;
+        let mut conn = db.begin().await.expect("connection");
+
+        let user_id = sample_user(&mut conn, "user@domain.tld").await;
+        let bucket_id = sample_bucket(&mut conn, &user_id).await;
+
+        let uploading_metadata_cid = "uploading-meta-cid";
+        let _uploading_id = create_metadata(
+            &mut conn,
+            &bucket_id,
+            uploading_metadata_cid,
+            "c-root-cid",
+            MetadataState::Uploading,
+            None,
+            None,
+        )
+        .await;
+
+        assert!(
+            !Bucket::update_is_valid(&mut conn, &bucket_id, uploading_metadata_cid)
+                .await
+                .expect("query success")
+        );
+    }
+
+    #[tokio::test]
+    async fn test_update_is_valid_previous_metadata_cid_is_after_current() {
+        let db = setup_database().await;
+        let mut conn = db.begin().await.expect("connection");
+
+        let user_id = sample_user(&mut conn, "user@domain.tld").await;
+        let bucket_id = sample_bucket(&mut conn, &user_id).await;
+
+        // NOTE: we could get by with just a single pending metadata, based on
+        // the current implementation of Bucket::current_version, but lets
+        // add a current one first to avoid failing tests later as well
+
+        let current_created_at = OffsetDateTime::now_utc();
+        let current_metadata_cid = "current-meta-cid";
+        let current_id = create_metadata(
+            &mut conn,
+            &bucket_id,
+            current_metadata_cid,
+            "c-root-cid",
+            MetadataState::Current,
+            Some(current_created_at),
+            None,
+        )
+        .await;
+
+        // NOTE: We could choose any state instead of 'Uploading' or 'Outdated' or 'Current' and get
+        // the same result from the test
+        let pending_created_at = current_created_at + Duration::from_secs(1800);
+        let pending_metadata_cid = "pending-meta-cid";
+        let _pending_id = create_metadata(
+            &mut conn,
+            &bucket_id,
+            pending_metadata_cid,
+            "c-root-cid",
+            MetadataState::Pending,
+            Some(pending_created_at),
+            None,
+        )
+        .await;
+
+        assert_eq!(
+            Bucket::current_version(&mut conn, &bucket_id)
+                .await
+                .expect("query success"),
+            Some(current_id)
+        );
+
+        assert!(
+            Bucket::update_is_valid(&mut conn, &bucket_id, pending_metadata_cid)
+                .await
+                .expect("query success")
+        );
+    }
+
+    #[tokio::test]
+    async fn test_update_is_valid_previous_metadata_cid_is_before_current() {
+        let db = setup_database().await;
+        let mut conn = db.begin().await.expect("connection");
+
+        let user_id = sample_user(&mut conn, "user@domain.tld").await;
+        let bucket_id = sample_bucket(&mut conn, &user_id).await;
+
+        let current_created_at = OffsetDateTime::now_utc();
+        let current_metadata_cid = "current-meta-cid";
+        let current_id = create_metadata(
+            &mut conn,
+            &bucket_id,
+            current_metadata_cid,
+            "c-root-cid",
+            MetadataState::Current,
+            Some(current_created_at),
+            None,
+        )
+        .await;
+
+        // NOTE: We could choose any state instead of 'Uploading' or 'Outdated' or 'Current' and get
+        // the same result from the test
+
+        // Make this piece of metadata precede the current one
+        // This state should never actually occur, but make sure we at least
+        // determine update validity appropriately
+        let pending_created_at = current_created_at - Duration::from_secs(1800);
+        let pending_metadata_cid = "pending-meta-cid";
+        let _pending_id = create_metadata(
+            &mut conn,
+            &bucket_id,
+            pending_metadata_cid,
+            "c-root-cid",
+            MetadataState::Pending,
+            Some(pending_created_at),
+            None,
+        )
+        .await;
+
+        assert_eq!(
+            Bucket::current_version(&mut conn, &bucket_id)
+                .await
+                .expect("query success"),
+            Some(current_id)
+        );
+
+        assert!(
+            !Bucket::update_is_valid(&mut conn, &bucket_id, pending_metadata_cid)
+                .await
+                .expect("query success")
         );
     }
 
@@ -804,6 +1099,7 @@ mod tests {
             "rcid-1",
             MetadataState::Outdated,
             Some(first_time),
+            None,
         )
         .await;
 
@@ -834,6 +1130,7 @@ mod tests {
             "rcid-2",
             MetadataState::Current,
             Some(current_time),
+            None,
         )
         .await;
 
@@ -896,6 +1193,7 @@ mod tests {
             "amcid",
             "arcid",
             MetadataState::Current,
+            None,
             None,
         )
         .await;
