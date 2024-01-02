@@ -129,8 +129,6 @@ export const TrashTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                                     <td className="px-6 py-4">
                                         <ActionsCell
                                             actions={<TrashActions bucket={bucket} file={file} />}
-                                            offsetTop={tableScroll}
-                                            tableRef={tableRef}
                                         />
                                     </td>
                                 </tr>

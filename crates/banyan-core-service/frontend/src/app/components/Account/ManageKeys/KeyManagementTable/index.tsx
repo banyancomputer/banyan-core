@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React from 'react';
 import { useIntl } from 'react-intl';
 
 import { KeyActions } from '@components/Account/ManageKeys/KeyActions';
@@ -7,22 +7,11 @@ import { ActionsCell } from '@/app/components/common/ActionsCell';
 
 export const KeyManagementTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
     const { messages } = useIntl();
-    const tableRef = useRef<HTMLDivElement | null>(null);
-    const [tableScroll, setTableScroll] = useState(0);
-
-    useEffect(() => {
-        /** Weird typescript issue with scrollTop which exist, but not for typescript */
-        // @ts-ignore
-        const listener = (event: Event) => setTableScroll(event.target!.scrollTop || 0);
-        tableRef.current?.addEventListener('scroll', listener);
-
-        return () => tableRef.current?.removeEventListener('scroll', listener);
-    }, [tableRef]);
 
     return (
         <div
-            ref={tableRef}
-            className="max-h-[calc(100vh-320px)] overflow-x-auto border-2 border-border-regular bg-secondaryBackground rounded-xl"
+            className="h-full overflow-x-auto border-2 border-border-regular bg-secondaryBackground rounded-xl"
+            id="table"
         >
             <table className="table table-pin-rows key-management-table w-full text-text-600 rounded-xl">
                 <thead className="border-b-reg text-xxs font-normal text-text-600 border-b-2 border-border-regular">
@@ -58,11 +47,9 @@ export const KeyManagementTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }
                                         <td className="px-6 py-4">{bucketKey.fingerPrint}</td>
                                         <td className="px-6 py-4">{bucketKey.approved ? `${messages.approved}` : `${messages.noAccess}`}</td>
                                         <td className="px-6 py-4">
-                                            {bucket.keys.length > 1 &&
+                                            {bucket.keys.length >= 1 &&
                                                 <ActionsCell
                                                     actions={<KeyActions bucket={bucket} bucketKey={bucketKey} />}
-                                                    offsetTop={tableScroll}
-                                                    tableRef={tableRef}
                                                 />
                                             }
                                         </td>
