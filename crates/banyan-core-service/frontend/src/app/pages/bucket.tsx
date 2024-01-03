@@ -7,6 +7,7 @@ import BucketHeader from '@/app/components/Bucket/Header';
 
 import { useTomb } from '@/app/contexts/tomb';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
+import { EmptyState } from '@components/Bucket/EmptyState';
 
 const Bucket = () => {
     const params = useParams();
@@ -33,11 +34,17 @@ const Bucket = () => {
     }, []);
 
     return (
-        <section className="py-9 px-4 flex flex-col max-h-[calc(100vh-132px)]">
+        <section className="py-9 px-10 flex flex-col flex-grow max-h-[calc(100vh-132px)]">
             <BucketHeader />
             <Fallback shouldRender={!areBucketsLoading}>
                 {selectedBucket &&
-                    <BucketTable bucket={selectedBucket} />
+                    <>
+                        {selectedBucket.files.length ?
+                            <BucketTable bucket={selectedBucket} />
+                            :
+                            <EmptyState bucket={selectedBucket} />
+                        }
+                    </>
                 }
             </Fallback>
         </section>

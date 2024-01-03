@@ -19,7 +19,6 @@ import { useTomb } from '@app/contexts/tomb';
 import { Done, EmptyIcon } from '@static/images/common';
 
 export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
-    const tableRef = useRef<HTMLDivElement | null>(null);
     const params = useParams();
     const bucketId = params.id;
     const { uploadFiles, setFiles, files } = useFilesUpload();
@@ -28,7 +27,6 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const [bucketCopy, setBucketCopy] = useState(bucket);
     const { messages } = useIntl();
     const [sortState, setSortState] = useState<{ criteria: string; direction: 'ASC' | 'DESC' | '' }>({ criteria: 'name', direction: 'DESC' });
-    const [tableScroll, setTableScroll] = useState(0);
     const folderLocation = useFolderLocation();
     const [areFilesDropped, setAreFilesDropped] = useState(false);
     const siblingFiles = useMemo(() => bucketCopy.files?.filter(file => file.type !== 'dir').map(file => file.name), [bucketCopy.files]);
@@ -37,7 +35,7 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         setSortState(prev => ({ criteria, direction: prev.direction === 'ASC' ? 'DESC' : 'ASC' }));
     };
 
-    const handleDrop = async(event: React.DragEvent<HTMLDivElement>) => {
+    const handleDrop = async (event: React.DragEvent<HTMLDivElement>) => {
         preventDefaultDragAction(event);
 
         if (event?.dataTransfer.files.length) {
@@ -62,7 +60,7 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     useEffect(() => {
         if (!files.length || !areFilesDropped) { return; }
 
-        (async() => {
+        (async () => {
             try {
                 ToastNotifications.uploadProgress();
                 await uploadFiles(bucket, folderLocation);
@@ -94,27 +92,21 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         setSortState({ criteria: 'name', direction: 'DESC' });
     }, [bucketId]);
 
-    useEffect(() => {
-        /** Weird typescript issue with scrollTop which exist, but not for typescript */
-        // @ts-ignore
-        tableRef.current?.addEventListener('scroll', event => setTableScroll(event.target.scrollTop));
-    }, [tableRef]);
-
     return (
         <div
-            ref={tableRef}
             onDrop={handleDrop}
             onDragOver={preventDefaultDragAction}
-            className="h-full w-fit overflow-x-auto bg-secondaryBackground border-2 border-border-regular rounded-xl shadow-common"
+            className="h-full w-fit overflow-x-auto bg-secondaryBackground"
+            id="table"
         >
-            <div className="px-6 py-5 text-m font-semibold border-b-2 border-border-regular">
-                {`${messages.files}`}
+            <div className="pb-1 text-m font-medium">
+                {`${messages.allFiles}`}
             </div>
             <div >
                 <table className="table table-pin-rows w-full text-text-600 rounded-xl table-fixed">
                     <thead className="border-b-border-regular text-xxs border-b-2 font-normal text-text-900">
                         <tr className="bg-secondaryBackground font-normal border-none">
-                            <th className="flex items-center gap-3 px-6 py-4 text-left font-medium">
+                            <th className="flex items-center gap-3 pl-0 py-4 text-left font-medium">
                                 <SortCell
                                     criteria="name"
                                     onChange={sort}
@@ -139,11 +131,7 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                                 />
                             </th>
                             <th className="px-6 py-4 text-left font-medium w-20">
-                                <ActionsCell
-                                    actions={<BucketActions bucket={bucket} />}
-                                    offsetTop={tableScroll}
-                                    tableRef={tableRef}
-                                />
+                                <ActionsCell actions={<BucketActions bucket={bucket} />} />
                             </th>
                         </tr>
                     </thead>
@@ -154,8 +142,6 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                                     <FolderRow
                                         bucket={bucket}
                                         folder={file}
-                                        tableRef={tableRef}
-                                        tableScroll={tableScroll}
                                         path={folderLocation}
                                         key={file.name}
                                     />
@@ -163,8 +149,6 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                                     <FileRow
                                         bucket={bucket}
                                         file={file}
-                                        tableRef={tableRef}
-                                        tableScroll={tableScroll}
                                         path={folderLocation}
                                         siblingFiles={siblingFiles}
                                         key={file.name}

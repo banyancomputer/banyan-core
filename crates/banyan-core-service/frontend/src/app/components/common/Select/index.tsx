@@ -47,7 +47,7 @@ export const Select: React.FC<SelectProps> = ({ initialOption, onChange, options
         <div
             ref={selectRef}
             onClick={toggleSelect}
-            className={`relative p-2.5 flex justify-between items-center text-sm font-medium border-1 border-border-darken rounded-lg shadow-sm cursor-pointer select-none ${className}`}
+            className={`relative p-2.5 flex justify-between items-center text-sm font-medium border-1 border-border-darken rounded-md shadow-sm cursor-pointer select-none ${className}`}
         >
             {selectedOption ? options.find(option => option.value === selectedOption)?.label : placeholder}
             <ChevronUp
@@ -56,7 +56,7 @@ export const Select: React.FC<SelectProps> = ({ initialOption, onChange, options
             {isOptionstVisible &&
                 <ul
                     onClick={stopPropagation}
-                    className="absolute left-0 top-12 w-full max-h-48 overflow-y-auto bg-secondaryBackground border-1 border-border-darken rounded-lg shadow-sm z-10"
+                    className="absolute left-0 top-12 w-full max-h-48 overflow-y-auto bg-secondaryBackground border-1 border-border-darken rounded-md shadow-sm z-10"
                 >
                     {initialOption ? initialOption : null}
                     {options.map((option, index) =>

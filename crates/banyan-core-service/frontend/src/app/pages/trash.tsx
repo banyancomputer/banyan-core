@@ -35,7 +35,7 @@ const Trash = () => {
                 {trash?.files.length ?
                     <>
                         {isLabelVisible &&
-                            <div className="relative mb-5 flex items-start gap-3 p-4 border-1 rounded-lg bg-gray-200 border-gray-600">
+                            <div className="relative mb-5 flex items-start gap-3 p-4 border-1 rounded-md bg-gray-200 border-gray-600">
                                 <div><ErrorBannerIcon /></div>
                                 <div className="text-xs">
                                     <h6 className="font-semibold">{`${messages.trashIsFull}`}</h6>

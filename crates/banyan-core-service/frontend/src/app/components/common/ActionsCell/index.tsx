@@ -1,44 +1,57 @@
 import React, { ReactElement, useEffect, useRef, useState } from 'react';
 
-import { Dots } from '@static/images/common';
 import { popupClickHandler } from '@/app/utils';
 
-export const ActionsCell: React.FC<{
-    actions: ReactElement;
-    offsetTop: number;
-    tableRef: React.MutableRefObject<HTMLDivElement | null>;
-}> = ({
-    actions,
-    offsetTop,
-    tableRef,
-}) => {
+import { Dots } from '@static/images/common';
+
+export const ActionsCell: React.FC<{ actions: ReactElement; }> = ({ actions }) => {
     const actionsRef = useRef<HTMLDivElement | null>(null);
     const actionsBodyRef = useRef<HTMLDivElement | null>(null);
     const [isActionsVisible, setIsActionsVisible] = useState(false);
-    const [overflow, setOverflow] = useState(0);
 
     const toggleActionsVisibility = () => {
+        const table = document.getElementById('table');
+        const tableHeight = table!.clientHeight;
+        const scrollTop = table!.scrollTop;
+        const actionsTop = actionsRef.current!.offsetTop;
+        const actionsHeight = actionsBodyRef.current!.scrollHeight;
+
+        const actionsOverflow = tableHeight - (actionsTop + actionsHeight + actionsRef.current!.clientHeight + 50 - scrollTop);
+
+        if (actionsOverflow < 0) {
+            actionsBodyRef.current!.style.top = `${actionsOverflow}px`;
+        };
+
         setIsActionsVisible(prev => !prev);
     };
 
     useEffect(() => {
+        if (!isActionsVisible) return;
+
         const listener = popupClickHandler(actionsRef.current!, setIsActionsVisible);
         document.addEventListener('click', listener);
 
         return () => {
             document.removeEventListener('click', listener);
         };
-    }, [actionsRef]);
+    }, [isActionsVisible]);
 
     useEffect(() => {
-        setIsActionsVisible(false);
-    }, [offsetTop]);
+        if (!isActionsVisible) return;
 
-    useEffect(() => {
-        if (!isActionsVisible) { return; }
-        const rect = actionsBodyRef.current?.getBoundingClientRect();
-        setOverflow(window.innerHeight - (rect?.bottom! - tableRef.current?.scrollTop! + 20));
-    }, [actionsBodyRef, tableRef, isActionsVisible, offsetTop]);
+        const table = document.getElementById('table');
+        if (!table) return;
+
+        const listener = () => {
+            setIsActionsVisible(false);
+        };
+
+        table.addEventListener('scroll', listener);
+
+        return () => {
+            document.removeEventListener('click', listener);
+        };
+    }, [isActionsVisible]);
 
     return (
         <div
@@ -50,23 +63,20 @@ export const ActionsCell: React.FC<{
             <span className="pointer-events-none">
                 <Dots />
             </span>
-            {isActionsVisible &&
-                    <div
-                        className="fixed right-14"
-                        ref={actionsBodyRef}
-                    >
-                        <div
-                            className="relative"
-                            style={{ top: `-${offsetTop - Math.min(overflow, 0)}px` }}
-                            onClick={event => {
-                                event.stopPropagation();
-                                toggleActionsVisibility();
-                            }}
-                        >
-                            {actions}
-                        </div>
-                    </div>
-            }
+            <div
+                className={`right-0 top-5 z-20 transition-none ${isActionsVisible ? 'absolute visible opacity-100' : 'fixed invisible opacity-0'}`}
+            >
+                <div
+                    ref={actionsBodyRef}
+                    className="relative"
+                    onClick={event => {
+                        event.stopPropagation();
+                        toggleActionsVisibility();
+                    }}
+                >
+                    {actions}
+                </div>
+            </div>
         </div>
     );
 };

@@ -8,7 +8,7 @@ import { useModal } from '@app/contexts/modals';
 
 import { Lock } from '@static/images/buckets';
 
-export const LockedTooltip: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
+export const LockedTooltip: React.FC<{ bucket: Bucket, className?: string, size?: string }> = ({ bucket, className, size }) => {
     const { messages } = useIntl();
     const { openModal } = useModal();
     const stopPopagation = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
@@ -21,10 +21,10 @@ export const LockedTooltip: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     };
 
     return (
-        <div className="absolute right-2 top-1/2 -translate-y-1/2 group text-xxs text-bucket-actionsText">
-            <Lock />
+        <div className={`absolute  group text-xxs text-bucket-actionsText ${className}`}>
+            <Lock width={size || '20px'} height={size || '20px'} />
             <div
-                className="absolute top-3 left-0 hidden flex-col px-3 py-1 border-2 rounded-lg border-border-regular bg-bucket-actionsBackground cursor-default whitespace-nowrap group-hover:flex"
+                className="absolute top-5 left-0 hidden flex-col px-3 py-1 border-2 rounded-md border-border-regular bg-bucket-actionsBackground cursor-default whitespace-nowrap group-hover:flex"
                 onClick={stopPopagation}
             >
                 {`${messages.youHaveNoAccess};`}

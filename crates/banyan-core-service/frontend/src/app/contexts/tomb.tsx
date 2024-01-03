@@ -91,6 +91,10 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 		tombMutex(tomb, async tomb => {
 			const key = await getEncryptionKey();
 			const wasm_buckets: WasmBucket[] = await tomb!.listBuckets();
+			if (!wasm_buckets.length) {
+				createBucketAndMount("My Drive", 'hot', 'interactive');
+				return;
+			}
 			const buckets: Bucket[] = [];
 			for (let bucket of wasm_buckets) {
 				let mount;
