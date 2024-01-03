@@ -19,10 +19,7 @@ const ManageKeys = () => {
     }, [buckets.length, tomb]);
 
     return (
-        <div className="flex flex-grow flex-col gap-5 px-10">
-            <h2 className="text-lg font-semibold">
-                {`${messages.manageKeyAccess}`}
-            </h2>
+        <div className="flex flex-grow flex-col gap-5 px-10 py-6">
             <Fallback shouldRender={!areBucketsLoading}>
                 <KeyManagementTable buckets={buckets} />
             </Fallback>
