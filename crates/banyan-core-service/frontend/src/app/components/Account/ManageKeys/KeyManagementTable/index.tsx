@@ -10,7 +10,7 @@ export const KeyManagementTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }
 
     return (
         <div
-            className="h-full overflow-x-auto border-2 border-border-regular bg-secondaryBackground rounded-xl"
+            className="max-h-[calc(100vh-300px)] overflow-x-auto border-2 border-border-regular bg-secondaryBackground rounded-xl"
             id="table"
         >
             <table className="table table-pin-rows key-management-table w-full text-text-600 rounded-xl">
@@ -32,21 +32,14 @@ export const KeyManagementTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }
                 <tbody>
                     {buckets.map(bucket =>
                         <React.Fragment key={bucket.id}>
-                            <tr className="bg-table-cellBackground text-text-900 border-b-2 border-y-border-regular">
-                                <td className="px-6 py-4">{bucket.name}</td>
-                                <td className="px-6 py-4"></td>
-                                <td className="px-6 py-4"></td>
-                                <td className="px-6 py-4"></td>
-                                <td className="px-6 py-4"></td>
-                            </tr>
                             {
                                 bucket?.keys?.map(bucketKey =>
                                     <tr key={bucketKey.id} className="border-b-2 border-y-border-regular">
-                                        <td className="px-6 py-4"></td>
-                                        <td className="px-6 py-4">{bucketKey.id}</td>
-                                        <td className="px-6 py-4">{bucketKey.fingerPrint}</td>
-                                        <td className="px-6 py-4">{bucketKey.approved ? `${messages.approved}` : `${messages.noAccess}`}</td>
-                                        <td className="px-6 py-4">
+                                        <td className="px-3 py-12">{bucket.name}</td>
+                                        <td className="px-3 py-12">{bucketKey.id}</td>
+                                        <td className="px-3 py-12">{bucketKey.fingerPrint}</td>
+                                        <td className="px-3 py-12">{bucketKey.approved ? `${messages.approved}` : `${messages.noAccess}`}</td>
+                                        <td className="px-3 py-12">
                                             {bucket.keys.length >= 1 &&
                                                 <ActionsCell
                                                     actions={<KeyActions bucket={bucket} bucketKey={bucketKey} />}
