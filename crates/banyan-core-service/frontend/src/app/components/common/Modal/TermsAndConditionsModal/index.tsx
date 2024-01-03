@@ -57,7 +57,7 @@ export const TermsAndConditionsModal: React.FC<{
             </h3>
             <div
                 ref={termsRef}
-                className="border-1 rounded-lg border-border-regular overflow-y-scroll"
+                className="border-1 rounded-md border-border-regular overflow-y-scroll"
             >
                 <div
                     id="file-preview"

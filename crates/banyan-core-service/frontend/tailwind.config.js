@@ -95,6 +95,9 @@ module.exports = {
 			fontFamily: {
 				sans: ['Inter'],
 			},
+			borderRadius: {
+				md: "4px"
+			},
 			fontSize: {
 				xxs: ['12px', { lineHeight: '18px' }],
 				xs: ['14px', { lineHeight: '20px' }],

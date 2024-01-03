@@ -79,7 +79,7 @@ export const SearchInput = React.memo(() => {
                         <Close />
                     </span>
                     <div
-                        className="absolute top-11 left-0 w-full max-h-48 flex flex-col items-stretch z-10 bg-secondaryBackground rounded-lg shadow-md overflow-y-scroll"
+                        className="absolute top-11 left-0 w-full max-h-48 flex flex-col items-stretch z-10 bg-secondaryBackground rounded-md shadow-md overflow-y-scroll"
                     >
                         {searchList.filter(element => element.label.toLocaleLowerCase().includes(search.toLocaleLowerCase())).map((element, index) =>
                             <div

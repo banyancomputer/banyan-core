@@ -36,7 +36,7 @@ export const RenameBucketModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                 <label>
                     {`${messages.driveName}`}
                     <input
-                        className="mt-2 input w-full h-11 py-3 px-4 rounded-lg border-border-darken focus:outline-none"
+                        className="mt-2 input w-full h-11 py-3 px-4 rounded-md border-border-darken focus:outline-none"
                         type="text"
                         placeholder={`${messages.enterNewDriveName}`}
                         value={newName}

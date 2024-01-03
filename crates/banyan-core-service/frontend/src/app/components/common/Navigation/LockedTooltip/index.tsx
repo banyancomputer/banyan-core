@@ -24,7 +24,7 @@ export const LockedTooltip: React.FC<{ bucket: Bucket, className?: string, size?
         <div className={`absolute  group text-xxs text-bucket-actionsText ${className}`}>
             <Lock width={size || '20px'} height={size || '20px'} />
             <div
-                className="absolute top-5 left-0 hidden flex-col px-3 py-1 border-2 rounded-lg border-border-regular bg-bucket-actionsBackground cursor-default whitespace-nowrap group-hover:flex"
+                className="absolute top-5 left-0 hidden flex-col px-3 py-1 border-2 rounded-md border-border-regular bg-bucket-actionsBackground cursor-default whitespace-nowrap group-hover:flex"
                 onClick={stopPopagation}
             >
                 {`${messages.youHaveNoAccess};`}
