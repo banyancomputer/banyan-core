@@ -132,8 +132,8 @@ export const FolderRow: React.FC<{
                                 className="flex items-center gap-3 p-4"
                                 style={{ paddingLeft: `${nestingLevel * 60}px` }}
                             >
-                                <DraggingPreview name={folder.name} isDragging={isDragging} />
-                                <FileCell name={folder.name} />
+                                <DraggingPreview name={folder.name} isDragging={isDragging} type="dir" />
+                                <FileCell name={folder.name} type="dir" />
                                 <span
                                     className={`${!folder.files?.length && 'rotate-180'} cursor-pointer p-2`}
                                     onClick={expandFolder}
