@@ -266,3 +266,19 @@ cp -f pkg/* ${BANYAN_CORE_CHECKOUT}/crates/banyan-core-service/frontend/tomb_bui
 
 ### Staging Service
 ![Staging Service Diagram](./docs/images/db-staging-service.png)
+
+## Production Builds
+
+An extra step needs to be taken to setup local production builds for the core service. You will need either docker or podman installed (though only the latter has been tested) then some production build settings need to be provided through environment variables. From the root of the repo:
+
+```
+cp -f crates/banyan-core-service/.env.build.sample crates/banyan-core-service/.env.build.prod
+```
+
+Edit the file supply the project key from OpenReplay in the `.env.build.prod` file as the `TRACKER_PROJECT_KEY` variable. Make sure the `TRACKER_INGEST_POINT` is pointing at the correct OpenReplay instance. From there you can create a local production container using the following command in either any of the service directories:
+
+```
+DRY_RUN=1 ./bin/build_and_deploy
+```
+
+Omit the `DRY_RUN` parameter if you have SSH access to the appropriate server to automatically deploy the build to them.
