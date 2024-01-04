@@ -327,6 +327,11 @@ impl StreamingCarAnalyzer {
                         block_length: None,
                     };
 
+                    let block_data_range = cid_length as usize..blk_len as usize;
+                    if true {
+                    //    self.buffer[block_data_range];
+                    }
+
                     return Ok(Some(BlockMeta {
                         cid,
                         offset: block_start + length_varint_len + cid_length,

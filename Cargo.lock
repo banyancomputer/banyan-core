@@ -581,6 +581,7 @@ dependencies = [
  "jwt-simple",
  "mime",
  "multer",
+ "object_store",
  "pico-args",
  "regex",
  "reqwest",
