@@ -235,6 +235,7 @@ mod tests {
             "metadata-cid",
             MetadataState::Current,
             Some(timestamp),
+            None,
         )
         .await;
 
@@ -263,6 +264,7 @@ mod tests {
             "metadata-cid",
             MetadataState::Current,
             Some(timestamp),
+            None,
         )
         .await;
 
@@ -315,6 +317,7 @@ mod tests {
             "metadata-cid",
             MetadataState::Current,
             Some(timestamp),
+            None,
         )
         .await;
 
@@ -416,6 +419,7 @@ mod tests {
             "metadata-cid",
             MetadataState::Current,
             None,
+            None,
         )
         .await;
 
@@ -490,6 +494,7 @@ mod tests {
             "metadata-cid",
             MetadataState::Current,
             Some(timestamp),
+            None,
         )
         .await;
 
@@ -538,6 +543,7 @@ mod tests {
             "metadata-cid",
             MetadataState::Current,
             Some(timestamp),
+            None,
         )
         .await;
 
