@@ -5,9 +5,7 @@ use banyan_task::TaskLikeExt;
 use sqlx::QueryBuilder;
 use time::OffsetDateTime;
 
-use crate::database::models::{
-    BucketType, MetadataState, MinimalBlockLocation, PartialMetadataWithSnapshot, StorageClass,
-};
+use crate::database::models::{BucketType, MinimalBlockLocation, StorageClass};
 use crate::database::{DatabaseConnection, BIND_LIMIT};
 use crate::tasks::PruneBlocksTask;
 
@@ -312,46 +310,31 @@ impl Bucket {
         previous_metadata_cid: &str,
     ) -> Result<bool, sqlx::Error> {
         // Get the most recent piece of metadata. If not available return false
-        let current_metadata =
-            match PartialMetadataWithSnapshot::locate_current(conn, bucket_id).await? {
-                Some(cm) => cm,
-                None => return Ok(false),
-            };
+        let current_metadata_id = match Self::current_version(conn, bucket_id).await? {
+            Some(cm) => cm,
+            None => return Ok(false),
+        };
 
-        // Query for the versions of all pieces of metadata following the current one.
-        // This is assuming that amount of queried state can reasonably exist in memory
-        // Order by descending timestamps to prioritive more recent metadata in our following
-        // conflict check
-        let current_metadata_timestamp = current_metadata.created_at;
-        let metadata_versions = sqlx::query_as!(
-            MetadataVersion,
-            r#"SELECT metadata_cid, state as 'state: MetadataState' FROM metadata 
-                WHERE bucket_id = $1 AND created_at >= $2
+        // Query for the versions of all pieces of metadata that could serve as a base for the
+        // requested update. This includes all pieces of metadata that:
+        // - follow, or are, the current one
+        // - are in a valid state ('current', 'pending', 'uploading')
+        // - specify the previous_metadata_cid as their metadata_cid
+        // If any such base exists, return true, otherwise return false
+        Ok(sqlx::query_scalar!(
+            r#"SELECT id FROM metadata 
+                WHERE bucket_id = $1
+                 AND metadata_cid = $2
+                 AND state IN ('current', 'pending', 'uploading')
+                 AND created_at >= (SELECT created_at FROM metadata WHERE id = $3 LIMIT 1)
                 ORDER BY created_at DESC"#,
             bucket_id,
-            current_metadata_timestamp
+            previous_metadata_cid,
+            current_metadata_id,
         )
-        .fetch_all(&mut *conn)
-        .await?;
-
-        // Iterate over the known history, searching for the specifiec 'previous_metadata_cid'.
-        // If we find a valid way to base the history without conflict return true, otherwise return false
-        // Conflict conditions are as follows:
-        // - No matching metadata_cid is found
-        // - A matching metadata_cid is found, but said metadata is either in `uploading` or `outdated` state
-        for mv in metadata_versions {
-            if mv.metadata_cid != previous_metadata_cid {
-                continue;
-            } else if mv.state == MetadataState::Uploading || mv.state == MetadataState::Outdated {
-                return Ok(false);
-            } else {
-                // We found a piece of metadata with matching cid, and it's in a valid state
-                // return true
-                return Ok(true);
-            };
-        }
-        // If we get here, then we didn't find a non-conflicting base. Return false.
-        Ok(false)
+        .fetch_optional(&mut *conn)
+        .await?
+        .is_some())
     }
 
     /// Checks whether the provided bucket ID is owned by the provided user ID. This will return
@@ -380,15 +363,6 @@ struct PruneCandidate {
     block_id: String,
 }
 
-/// Necessary versioning information to determine
-/// if a specified `previous_metadata_cid` conflicts with
-/// existing history
-#[derive(Debug, sqlx::FromRow)]
-struct MetadataVersion {
-    metadata_cid: String,
-    state: MetadataState,
-}
-
 #[cfg(test)]
 mod tests {
     use std::time::Duration;
@@ -396,6 +370,7 @@ mod tests {
     use time::OffsetDateTime;
 
     use super::*;
+    use crate::database::models::MetadataState;
     use crate::database::test_helpers::*;
 
     async fn is_bucket_key_approved(
@@ -918,12 +893,35 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_update_is_not_valid_previous_metadata_cid_is_uploading() {
+    async fn test_update_is_valid_previous_metadata_cid_is_uploading() {
         let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
         let user_id = sample_user(&mut conn, "user@domain.tld").await;
         let bucket_id = sample_bucket(&mut conn, &user_id).await;
+
+        // NOTE: in order to pass this test, we need an existing 'current', 'pending', or 'outdated'
+        // metadata, otherwise no row will be returned by Bucket::current_version, and the test
+        // will fail
+
+        let current_metadata_cid = "current-meta-cid";
+        let current_id = create_metadata(
+            &mut conn,
+            &bucket_id,
+            current_metadata_cid,
+            "c-root-cid",
+            MetadataState::Current,
+            None,
+            None,
+        )
+        .await;
+
+        assert_eq!(
+            Bucket::current_version(&mut conn, &bucket_id)
+                .await
+                .expect("query success"),
+            Some(current_id)
+        );
 
         let uploading_metadata_cid = "uploading-meta-cid";
         let _uploading_id = create_metadata(
@@ -938,7 +936,7 @@ mod tests {
         .await;
 
         assert!(
-            !Bucket::update_is_valid(&mut conn, &bucket_id, uploading_metadata_cid)
+            Bucket::update_is_valid(&mut conn, &bucket_id, uploading_metadata_cid)
                 .await
                 .expect("query success")
         );
@@ -952,7 +950,7 @@ mod tests {
         let user_id = sample_user(&mut conn, "user@domain.tld").await;
         let bucket_id = sample_bucket(&mut conn, &user_id).await;
 
-        // NOTE: we could get by with just a single pending metadata, based on
+        // NOTE: we could get by with just a single 'pending' or 'uploading' metadata, based on
         // the current implementation of Bucket::current_version, but lets
         // add a current one first to avoid failing tests later as well
 
@@ -1019,7 +1017,7 @@ mod tests {
         )
         .await;
 
-        // NOTE: We could choose any state instead of 'Uploading' or 'Outdated' or 'Current' and get
+        // NOTE: We could choose any state instead of 'Outdated' or 'Current' or 'Deleted' and get
         // the same result from the test
 
         // Make this piece of metadata precede the current one
