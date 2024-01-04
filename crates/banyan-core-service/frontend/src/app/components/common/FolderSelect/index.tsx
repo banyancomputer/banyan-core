@@ -53,13 +53,13 @@ export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBu
             path={folder}
             bucket={selectedBucket!}
         />
-        ,
-        action
+            ,
+            action
         );
     };
 
     useEffect(() => {
-        (async() => {
+        (async () => {
             const bucket = selectedBucket;
             if (!bucket.mount) return;
             const files = await bucket.mount.ls(folder);
@@ -105,7 +105,7 @@ export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBu
                             :
                             null
                     }
-                    <AddNewOption label={`${messages.createNewFolder}`} action={addNewFolder} />
+                    <AddNewOption label={`${messages.createFolder}`} action={addNewFolder} />
                     {folders.map((folderItem, index) =>
                         <li
                             className="flex justify-between items-center p-2.5 transition-all hover:bg-bucket-bucketHoverBackground cursor-pointer"

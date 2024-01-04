@@ -77,9 +77,9 @@ const App = () => {
                                             <Notifications />
                                             <section className="flex flex-grow">
                                                 <Navigation />
-                                                <section className="flex-grow h-screen overflow-y-scroll">
+                                                <section className="flex-grow flex flex-col h-screen overflow-y-scroll">
                                                     <Header />
-                                                    <BetaBanner />
+                                                    {/* <BetaBanner /> */}
                                                     <ErrorBanner />
                                                     <Suspense>
                                                         <Routes />

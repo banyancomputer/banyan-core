@@ -18,38 +18,38 @@ export const FilePreview = () => {
 
     const getPreviewTag = (data: string, type: string) => {
         switch (type) {
-        case 'audio':
-            return <audio
-                src={data}
-                controls
-                className="rounded-2xl"
-                onClick={event => event.stopPropagation()}
-            />;
-        case 'video':
-            return <video
-                src={data}
-                controls
-                className="max-w-filePreview max-h-full object-contain rounded-2xl"
-                onClick={event => event.stopPropagation()}
-            />;
-        case 'image':
-            return <img
-                src={data}
-                className="max-w-filePreview max-h-full object-contain rounded-2xl"
-                onClick={event => event.stopPropagation()}
-            />;
-        case 'spreadsheet':
-            return <SpreadsheetViewer data={file.blob!} />;
-        case 'document':
-            return <div className="w-filePreview max-w-filePreview h-full" onClick={event => event.stopPropagation()}>
-                <object
-                    data={data}
-                    type={`${mime.getType([...file.name.split('.')].pop() || '')}`}
-                    className="w-full h-full rounded-xl"
-                />
-            </div>;
-        default:
-            return <div className="flex items-center text-white text-lg pointer-events-none">File is not supported for preview</div>;
+            case 'audio':
+                return <audio
+                    src={data}
+                    controls
+                    className="rounded-2xl"
+                    onClick={event => event.stopPropagation()}
+                />;
+            case 'video':
+                return <video
+                    src={data}
+                    controls
+                    className="max-w-filePreview max-h-full object-contain rounded-2xl"
+                    onClick={event => event.stopPropagation()}
+                />;
+            case 'image':
+                return <img
+                    src={data}
+                    className="max-w-filePreview max-h-full object-contain rounded-2xl"
+                    onClick={event => event.stopPropagation()}
+                />;
+            case 'spreadsheet':
+                return <SpreadsheetViewer data={file.blob!} />;
+            case 'document':
+                return <div className="w-filePreview max-w-filePreview h-full" onClick={event => event.stopPropagation()}>
+                    <object
+                        data={data}
+                        type={`${mime.getType([...file.name.split('.')].pop() || '')}`}
+                        className="w-full h-full rounded-xl"
+                    />
+                </div>;
+            default:
+                return <div className="flex items-center text-white text-lg pointer-events-none">File is not supported for preview</div>;
         };
     };
 
@@ -64,7 +64,7 @@ export const FilePreview = () => {
                         <span className="rotate-90">
                             <ArrowDown width="24px" height="24px" />
                         </span>
-                        <FileIcon fileName={file.name} />
+                        <FileIcon fileName={file.name} type="file" />
                         {`${file.name}`}
                     </button>
                     <PreviewArrow

@@ -122,15 +122,14 @@ export const TrashTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                                             checked={selectedFiles.includes(file)}
                                             className="checkbox border-border-darken"
                                         />
-                                        <FileIcon fileName={file.name} className="p-2 bg-gray-200 rounded-full" />{file.name}
+                                        <FileIcon fileName={file.name} type={file.type} className="p-2 bg-gray-200 rounded-full" />
+                                        {file.name}
                                     </td>
                                     <td className="px-6 py-4">{getDateLabel(Date.now())}</td>
                                     <td className="px-6 py-4">{convertFileSize(file.metadata.size)}</td>
                                     <td className="px-6 py-4">
                                         <ActionsCell
                                             actions={<TrashActions bucket={bucket} file={file} />}
-                                            offsetTop={tableScroll}
-                                            tableRef={tableRef}
                                         />
                                     </td>
                                 </tr>

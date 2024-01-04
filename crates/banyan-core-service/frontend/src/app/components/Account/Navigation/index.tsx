@@ -22,24 +22,29 @@ export const AccountNavigation = () => {
     ];
 
     return (
-        <section className="py-5 px-4" id="buckets">
+        <section className="py-5 px-10" id="buckets">
             <div className="mb-4 flex w-full justify-between items-center">
                 <h2 className="text-xl font-semibold">
                     {`${messages.account}`}
                 </h2>
             </div>
-            <ul className="flex justify-between p-1.5 rounded-lg bg-secondaryBackground">
-                {links.map(link =>
-                    <li className="flex-grow" key={link.label}>
-                        <Link
-                            className={`flex justify-center w-full py-3 rounded-lg text-xs transition-all ${pathname == link.path && 'bg-mainBackground'} `}
-                            to={link.path}
-                        >
-                            {link.label}
-                        </Link>
-                    </li>
-                )}
-            </ul>
+            <div className="border-b-1 border-border-regular">
+                <ul className="w-max flex justify-between rounded-md bg-secondaryBackground">
+                    {links.map(link =>
+                        <li className="flex-grow" key={link.label}>
+                            <Link
+                                className={`relative flex justify-center w-full py-2 px-6 rounded-md text-xs transition-all ${pathname == link.path && 'font-semibold'} `}
+                                to={link.path}
+                            >
+                                {link.label}
+                                {pathname == link.path &&
+                                    <span className="absolute bottom-0 left-0 w-full h-[2px] bg-text-900" />
+                                }
+                            </Link>
+                        </li>
+                    )}
+                </ul>
+            </div>
         </section>
     );
 };

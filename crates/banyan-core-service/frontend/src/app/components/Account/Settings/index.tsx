@@ -7,6 +7,7 @@ export const Settings = () => {
     const { messages } = useIntl();
     const [isDarkModaActive, setIsDarkModeActive] = useState(false);
 
+    /** Uncomment when dark theme will be updated. */
     const toggleTheme = () => {
         const currentTheme = document.documentElement.getAttribute('prefers-color-scheme');
         const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
@@ -22,11 +23,11 @@ export const Settings = () => {
     }, []);
 
     return (
-        <div className="flex flex-col gap-5 px-4">
+        <div className="flex flex-col gap-5 px-10">
             <h2 className="text-lg font-semibold">
                 {`${messages.settings}`}
             </h2>
-            <div className="flex justify-between items-center py-5 px-4 border-1 rounded-lg bg-secondaryBackground text-text-800 border-border-regular">
+            {/* <div className="flex justify-between items-center py-5 px-4 border-1 rounded-lg bg-secondaryBackground text-text-800 border-border-regular">
                 <div>
                     <h5 className="font-semibold">{`${messages.theme}`}</h5>
                     <p>{`${messages.selectTheme}`}</p>
@@ -37,7 +38,7 @@ export const Settings = () => {
                     checked={isDarkModaActive}
                     onChange={toggleTheme}
                 />
-            </div>
+            </div> */}
             <div className="flex justify-between items-center py-5 px-4 border-1 rounded-lg bg-secondaryBackground text-text-800 border-border-regular">
                 <div>
                     <h5 className="font-semibold">{`${messages.language}`}</h5>

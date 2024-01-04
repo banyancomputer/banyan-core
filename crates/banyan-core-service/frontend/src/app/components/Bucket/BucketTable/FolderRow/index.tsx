@@ -22,12 +22,10 @@ import { ChevronUp, Done } from '@static/images/common';
 export const FolderRow: React.FC<{
     folder: BrowserObject;
     bucket: Bucket;
-    tableScroll: number;
-    tableRef: React.MutableRefObject<HTMLDivElement | null>;
     path: string[];
     nestingLevel?: number;
     parrentFolder?: BrowserObject;
-}> = ({ folder, bucket, tableRef, tableScroll, nestingLevel = 0.25, path = [], parrentFolder }) => {
+}> = ({ folder, bucket, nestingLevel = 0.25, path = [], parrentFolder }) => {
     const folderRef = useRef<HTMLTableRowElement | null>(null);
     const navigate = useNavigate();
     const { messages } = useIntl();
@@ -37,12 +35,13 @@ export const FolderRow: React.FC<{
     const [isFolderDraggingOver, setIsFolderDragingOver] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const siblingFiles = useMemo(() => folder.files?.filter(file => file.type !== 'dir').map(file => file.name), [folder.files]);
+    const [isActionsVisible, setIsActionsVisible] = useState(false);
 
     const goToFolder = (bucket: Bucket) => {
         navigate(`/drive/${bucket.id}?${path.length ? `${path.map(element => stringToBase64(element)).join('/')}/${stringToBase64(folder.name)}` : stringToBase64(folder.name)}`);
     };
 
-    const expandFolder = async(event: any) => {
+    const expandFolder = async (event: any) => {
         event.stopPropagation();
 
         try {
@@ -65,7 +64,7 @@ export const FolderRow: React.FC<{
         setIsFolderDragingOver(false);
     };
 
-    const handleDrop = async(event: React.DragEvent<HTMLDivElement>) => {
+    const handleDrop = async (event: React.DragEvent<HTMLDivElement>) => {
         preventDefaultDragAction(event);
         setIsFolderDragingOver(false);
 
@@ -90,7 +89,7 @@ export const FolderRow: React.FC<{
     useEffect(() => {
         if (!files.length || !areFilesDropped) { return; }
 
-        (async() => {
+        (async () => {
             try {
                 ToastNotifications.uploadProgress();
                 await uploadFiles(bucket, [...path, folder.name]);
@@ -133,8 +132,8 @@ export const FolderRow: React.FC<{
                                 className="flex items-center gap-3 p-4"
                                 style={{ paddingLeft: `${nestingLevel * 60}px` }}
                             >
-                                <DraggingPreview name={folder.name} isDragging={isDragging} />
-                                <FileCell name={folder.name} />
+                                <DraggingPreview name={folder.name} isDragging={isDragging} type="dir" />
+                                <FileCell name={folder.name} type="dir" />
                                 <span
                                     className={`${!folder.files?.length && 'rotate-180'} cursor-pointer p-2`}
                                     onClick={expandFolder}
@@ -158,8 +157,6 @@ export const FolderRow: React.FC<{
                                                     path={path}
                                                 />
                                             }
-                                            offsetTop={tableScroll}
-                                            tableRef={tableRef}
                                         />
                                 }
                             </td>
@@ -172,8 +169,6 @@ export const FolderRow: React.FC<{
                                             <FolderRow
                                                 bucket={bucket}
                                                 folder={file}
-                                                tableRef={tableRef}
-                                                tableScroll={tableScroll}
                                                 nestingLevel={nestingLevel + 1}
                                                 parrentFolder={folder}
                                                 path={[...path, folder.name]}
@@ -183,8 +178,6 @@ export const FolderRow: React.FC<{
                                             <FileRow
                                                 bucket={bucket}
                                                 file={file}
-                                                tableRef={tableRef}
-                                                tableScroll={tableScroll}
                                                 nestingLevel={nestingLevel + 1}
                                                 parrentFolder={folder}
                                                 siblingFiles={siblingFiles}

@@ -4,7 +4,7 @@ import { DateRange } from 'react-date-range';
 
 import { popupClickHandler } from '@/app/utils';
 
-import { ChevronUp } from '@static/images/common';
+import { CalendarIcon, ChevronUp } from '@static/images/common';
 
 export interface SelectProps {
     from: Date;
@@ -40,10 +40,10 @@ export const DatePicker: React.FC<SelectProps> = ({ onChange, from, to, classNam
         <div
             ref={datePickerRef}
             onClick={toggleSelect}
-            className={`relative p-2.5 flex justify-between items-center gap-2 text-sm font-medium border-1 border-border-darken rounded-lg shadow-sm cursor-pointer select-none text-text-900 ${className}`}
+            className={`relative p-2.5 flex justify-between items-center gap-2 text-sm cursor-pointer select-none text-text-900 ${className}`}
         >
-            {`${from?.toLocaleDateString()} - ${to?.toLocaleDateString()}`}
-            <span className={`${isOptionstVisible? 'rotate-0': 'rotate-180'}`}>
+            <CalendarIcon /> {`${from?.toLocaleDateString()} - ${to?.toLocaleDateString()}`}
+            <span className={`${isOptionstVisible ? 'rotate-0' : 'rotate-180'}`}>
                 <ChevronUp />
             </span>
             {isOptionstVisible &&
