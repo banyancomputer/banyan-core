@@ -111,6 +111,19 @@ pub async fn handler(
         }
     };
 
+    // If the client specifies a previous_cid, attempt to determine if its reachable
+    // within the bucket's history following the most current version
+    if let Some(previous_metadata_cid) = request_data.previous_cid {
+        // If the update is not valid within the bucket's history, reject the request
+        if !Bucket::update_is_valid(&mut conn, &bucket_id, &previous_metadata_cid).await? {
+            tracing::warn!("pushed metadata specified conflicting previous metadata cid");
+            let err_msg = serde_json::json!({"msg": "request specifies a previous_cid in conflict with the current history"});
+            return Ok((StatusCode::CONFLICT, Json(err_msg)).into_response());
+        }
+    } else {
+        tracing::warn!("pushed metadata specified no previous cid");
+    };
+
     Bucket::approve_keys_by_fingerprint(
         &mut conn,
         &bucket_id,
@@ -381,8 +394,11 @@ pub enum PersistanceError {
 
 #[derive(Deserialize)]
 pub struct PushMetadataRequest {
+    // TODO: either let's remove the distinction between root and metadata cids
+    // or rename this to previous_metadata_cid. For now the client as implemented
+    // within the cli / wasm is epxecting this name
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub previous_metadata_cid: Option<String>,
+    pub previous_cid: Option<String>,
 
     pub root_cid: String,
     pub metadata_cid: String,
