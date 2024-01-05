@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE metadata SET state = 'deleted', updated_at = $1 WHERE bucket_id = $2 AND state != 'deleted';",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "7892491f07a3c9979166aa9eeab770acaa3ff70a970817ae0dee9e2bf44d0ae1"
+}

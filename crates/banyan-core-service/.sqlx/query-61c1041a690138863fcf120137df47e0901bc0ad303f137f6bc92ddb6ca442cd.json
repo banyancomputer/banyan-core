@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE buckets SET deleted_at = $1, updated_at = $1 WHERE id = $2;",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "61c1041a690138863fcf120137df47e0901bc0ad303f137f6bc92ddb6ca442cd"
+}

@@ -28,6 +28,9 @@ pub struct Bucket {
     pub name: String,
     pub r#type: BucketType,
     pub storage_class: StorageClass,
+
+    pub updated_at: OffsetDateTime,
+    pub deleted_at: Option<OffsetDateTime>,
 }
 
 impl Bucket {
@@ -339,14 +342,15 @@ impl Bucket {
 
     /// Checks whether the provided bucket ID is owned by the provided user ID. This will return
     /// false when the user IDs don't match, but also if the bucket doesn't exist (and the user
-    /// inherently doesn't the unknown ID).
+    /// inherently doesn't own the unknown ID).
+    /// This will also filter out deleted buckets.
     pub async fn is_owned_by_user_id(
         conn: &mut DatabaseConnection,
         bucket_id: &str,
         user_id: &str,
     ) -> Result<bool, sqlx::Error> {
         let found_bucket = sqlx::query_scalar!(
-            "SELECT id FROM buckets WHERE id = $1 AND user_id = $2;",
+            "SELECT id FROM buckets WHERE id = $1 AND user_id = $2 AND deleted_at IS NOT NULL;",
             bucket_id,
             user_id,
         )

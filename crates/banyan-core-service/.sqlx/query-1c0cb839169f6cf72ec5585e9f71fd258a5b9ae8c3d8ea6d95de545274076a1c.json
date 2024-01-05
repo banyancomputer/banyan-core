@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT m.id FROM metadata as m\n        JOIN snapshots as s ON s.metadata_id = m.id\n        WHERE m.bucket_id = $1\n        ORDER BY m.updated_at DESC;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "1c0cb839169f6cf72ec5585e9f71fd258a5b9ae8c3d8ea6d95de545274076a1c"
+}
