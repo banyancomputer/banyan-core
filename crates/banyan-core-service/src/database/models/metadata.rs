@@ -77,6 +77,10 @@ impl Metadata {
         .execute(&mut *conn)
         .await?;
 
+        // TODO: if a storage host is reporting for a piece of metadata in a bucket that has since
+        // been soft-deleted, then this will return 0 rows affected. The host will then keep
+        // trying to report the upload until it succeeds.
+        // We should probably handle that explicitly here in the query above.
         match current_result.rows_affected() {
             // Either the provided ID didn't exist, or it wasn't in a compatible state. Either way
             // indicate that the expected target couldn't be found.
