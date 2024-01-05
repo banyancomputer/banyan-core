@@ -51,12 +51,18 @@ pub enum UploadError {
 
     #[error("failed to write to storage backend")]
     ObjectStore(banyan_object_store::ObjectStoreError),
+
+    #[error("tried to write to a completed upload")]
+    UploadIsComplete,
 }
 
 impl IntoResponse for UploadError {
     fn into_response(self) -> Response {
         use UploadError::*;
 
+        let default_err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
+        let default_response =
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(default_err_msg)).into_response();
         match self {
             Database(_) | FailedToEnqueueTask(_) | Cid(_) | StoreUnavailable(_) => {
                 tracing::error!("{self}");
@@ -90,8 +96,11 @@ impl IntoResponse for UploadError {
             }
             CarFile => {
                 tracing::error!("client asked to write block to car");
-                let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
+                default_response
+            }
+            UploadIsComplete => {
+                tracing::warn!("client is trying to write more data to a completed upload");
+                default_response
             }
             ParseError(err) => err.into_response(),
         }

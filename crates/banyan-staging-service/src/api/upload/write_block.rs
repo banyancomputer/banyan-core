@@ -53,6 +53,10 @@ pub async fn handler(
         None => start_upload(&db, &client.id(), &request.metadata_id, 0).await?,
     };
 
+    if upload.state == "complete" {
+        return Err(UploadError::UploadIsComplete);
+    }
+
     /*
     let blocks_path: String = upload.blocks_path;
     if blocks_path.to_lowercase().ends_with(".car") {
