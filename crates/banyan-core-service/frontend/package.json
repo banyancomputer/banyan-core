@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@openreplay/tracker": "^11.0.3",
     "async-mutex": "0.4.0",
     "daisyui": "3.5.1",
     "date-fns": "2.30.0",

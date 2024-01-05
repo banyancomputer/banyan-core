@@ -1,4 +1,5 @@
 import { FC, ReactNode, createContext, useContext, useEffect, useState } from 'react';
+import Tracker from '@openreplay/tracker';
 
 import { LocalKey, UserData, getLocalKey, destroyLocalKey, getSessionKey, getUserData } from '@/app/utils/cookies';
 
@@ -14,6 +15,11 @@ export interface SessionState {
 }
 
 export const SessionContext = createContext<SessionState>({} as SessionState);
+
+const tracker = new Tracker({
+	projectKey: process.env.TRACKER_PROJECT_KEY || '',
+	ingestPoint: process.env.TRACKET_INGEST_POINT || '',
+});
 
 export const SessionProvider: FC<{ children: ReactNode }> = ({ children }) => {
 	const [sessionState, setSessionState] = useState({
@@ -41,6 +47,16 @@ export const SessionProvider: FC<{ children: ReactNode }> = ({ children }) => {
 			sessionKey,
 		})
 	}, []);
+
+	useEffect(() => {
+		tracker.start();
+	}, []);
+
+	useEffect(() => {
+		if (!sessionState.userData?.user.id) return;
+
+		tracker.setUserID(sessionState.userData?.user.id);
+	}, [sessionState.userData?.user.id]);
 
 	return (
 		<SessionContext.Provider value={sessionState}>
