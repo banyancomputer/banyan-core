@@ -58,19 +58,12 @@ pub async fn handler(
         return Err(UploadError::UploadIsComplete);
     }
 
-    /*
-    let blocks_path: String = upload.blocks_path;
-    if blocks_path.to_lowercase().ends_with(".car") {
-        return Err(UploadError::CarFile);
-    }
-    */
-
     write_block_to_tables(
         &db,
         &upload.id,
         &normalized_cid,
         request.data.len() as i64,
-        1,
+        None,
     )
     .await?;
 

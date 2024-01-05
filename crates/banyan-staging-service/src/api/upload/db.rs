@@ -111,19 +111,20 @@ pub async fn write_block_to_tables(
     upload_id: &str,
     normalized_cid: &str,
     data_length: i64,
-    offset: i64,
+    car_offset: Option<i64>,
 ) -> Result<(), sqlx::Error> {
     // Insert the block if its missing, get its ID
     let block_id: String = sqlx::query_scalar(
         r#"
         INSERT OR IGNORE INTO
-            blocks (cid, data_length)
-            VALUES ($1, $2)
+            blocks (cid, data_length, car_offset)
+            VALUES ($1, $2, $3)
         RETURNING id;
         "#,
     )
     .bind(normalized_cid)
     .bind(data_length)
+    .bind(car_offset)
     .fetch_one(db)
     .await?;
 
@@ -131,13 +132,12 @@ pub async fn write_block_to_tables(
     sqlx::query(
         r#"
         INSERT INTO
-            uploads_blocks (upload_id, block_id, byte_offset)
-            VALUES ($1, $2, $3);
+            uploads_blocks (upload_id, block_id)
+            VALUES ($1, $2);
         "#,
     )
     .bind(upload_id)
     .bind(block_id)
-    .bind(offset)
     .execute(db)
     .await
     .map(|_| ())

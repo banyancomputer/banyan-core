@@ -167,7 +167,7 @@ where
                 &upload.id,
                 &cid_string,
                 block.length() as i64,
-                block.offset() as i64,
+                Some(block.offset() as i64),
             )
             .await?;
 
