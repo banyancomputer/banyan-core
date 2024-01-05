@@ -390,7 +390,7 @@ impl Bucket {
             "SELECT m.id FROM metadata as m
             JOIN snapshots as s ON s.metadata_id = m.id
             WHERE m.bucket_id = $1 AND m.state != 'deleted'
-            ORDER BY m.updated_at DESC;",
+            ORDER BY m.created_at DESC;",
             bucket_id,
         )
         .fetch_all(&mut *conn)
