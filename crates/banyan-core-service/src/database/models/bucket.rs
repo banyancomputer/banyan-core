@@ -437,35 +437,31 @@ impl Bucket {
         for chunk in metadata_ids_with_snapshots.chunks(BIND_LIMIT) {
             // Build a query to update metadata without a snapshot
             let mut non_shapshot_query_builder =
-                QueryBuilder::new("UPDATE metadata SET state = 'deleted', updated_at = '");
+                QueryBuilder::new("UPDATE metadata SET state = 'deleted', updated_at = ");
             // Build a query to update metadata with a snapshot
             let mut shapshot_query_builder =
-                QueryBuilder::new("UPDATE metadata SET state = 'outdated', updated_at = '");
+                QueryBuilder::new("UPDATE metadata SET state = 'outdated', updated_at = ");
 
-            // TODO: this is super hacky, but push_bind was not working for some reason
+            non_shapshot_query_builder.push_bind(now);
+            non_shapshot_query_builder.push(" WHERE state != 'deleted' AND bucket_id = ");
+            non_shapshot_query_builder.push_bind(bucket_id);
+            non_shapshot_query_builder.push(" AND id NOT IN (");
 
-            // Just take the relevant timestamp, without the offset
-            let now_str = now.to_string().split(" +").collect::<Vec<&str>>()[0].to_string();
-            non_shapshot_query_builder.push(&now_str);
-            non_shapshot_query_builder.push("' WHERE state != 'deleted' AND bucket_id = '");
-            non_shapshot_query_builder.push(bucket_id);
-            non_shapshot_query_builder.push("' AND id NOT IN ('");
-
-            shapshot_query_builder.push(&now_str);
-            shapshot_query_builder.push("' WHERE state != 'deleted' AND bucket_id = '");
-            shapshot_query_builder.push(bucket_id);
-            shapshot_query_builder.push("' AND id IN ('");
+            shapshot_query_builder.push_bind(now);
+            shapshot_query_builder.push(" WHERE state != 'deleted' AND bucket_id = ");
+            shapshot_query_builder.push_bind(bucket_id);
+            shapshot_query_builder.push(" AND id IN (");
 
             // And attach a list of bind params for the metadata_ids to avoid and include depending on the query
-            let mut non_snapshot_separated_values = non_shapshot_query_builder.separated("', '");
-            let mut shapshot_separated_values = shapshot_query_builder.separated("', '");
+            let mut non_snapshot_separated_values = non_shapshot_query_builder.separated(", ");
+            let mut shapshot_separated_values = shapshot_query_builder.separated(", ");
             for metadata_id in chunk {
-                non_snapshot_separated_values.push(metadata_id);
-                shapshot_separated_values.push(metadata_id);
+                non_snapshot_separated_values.push_bind(metadata_id);
+                shapshot_separated_values.push_bind(metadata_id);
             }
 
-            non_shapshot_query_builder.push("');");
-            shapshot_query_builder.push("');");
+            non_shapshot_query_builder.push(");");
+            shapshot_query_builder.push(");");
 
             // Build and execute the queries
             let non_shapshot_query = non_shapshot_query_builder.build().persistent(false);
