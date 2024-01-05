@@ -124,7 +124,7 @@ export const FolderRow: React.FC<{
                     </thead>
                     <tbody>
                         <tr
-                            className={`cursor-pointer !border-1 border-transparent border-b-border-regular text-text-900 font-normal last:border-b-0 hover:bg-bucket-bucketHoverBackground ${isFolderDraggingOver && '!border-draggingBorder'}`}
+                            className={`cursor-pointer text-text-900 font-normal last:border-b-0 hover:bg-bucket-bucketHoverBackground ${folder?.files?.length && '!border-1 border-transparent border-b-border-regular'} ${isFolderDraggingOver && '!border-draggingBorder'}`}
                             onDoubleClick={() => goToFolder(bucket)}
                             draggable
                         >
@@ -134,12 +134,14 @@ export const FolderRow: React.FC<{
                             >
                                 <DraggingPreview name={folder.name} isDragging={isDragging} type="dir" />
                                 <FileCell name={folder.name} type="dir" />
-                                <span
-                                    className={`${!folder.files?.length && 'rotate-180'} cursor-pointer p-2`}
-                                    onClick={expandFolder}
-                                >
-                                    <ChevronUp />
-                                </span>
+                                {!parrentFolder &&
+                                    <span
+                                        className={`${!folder.files?.length && 'rotate-180'} cursor-pointer p-2`}
+                                        onClick={expandFolder}
+                                    >
+                                        <ChevronUp />
+                                    </span>
+                                }
                             </td>
                             <td className="px-6 py-4">{getDateLabel(+folder.metadata.modified)}</td>
                             <td className="px-6 py-4">{convertFileSize(folder.metadata.size)}</td>
