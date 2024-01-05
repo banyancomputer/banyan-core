@@ -2,7 +2,7 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use banyan_object_store::{ObjectStore, ObjectStoreConnection, ObjectStorePath};
-use bytes::{Bytes, BytesMut};
+use bytes::{Buf, Bytes, BytesMut};
 use cid::{multibase::Base, Cid};
 const CAR_HEADER_UPPER_LIMIT: u64 = 16 * 1024 * 1024; // Limit car headers to 16MiB
 
@@ -332,6 +332,7 @@ impl StreamingCarAnalyzer {
                         }
                     };
                     let cid_length = cid.encoded_len() as u64;
+                    self.buffer.advance(cid_length as usize);
                     self.cids.push(cid);
 
                     // This might be the end of all data, we'll check once we reach the block_start
@@ -343,7 +344,6 @@ impl StreamingCarAnalyzer {
                         block_length: None,
                     };
 
-                    let data_range = cid_length as usize..blk_len as usize;
                     let normalized_cid = cid
                         .to_string_of_base(Base::Base64Url)
                         .expect("dont worry about it");
@@ -353,10 +353,10 @@ impl StreamingCarAnalyzer {
                         self.metadata_id, normalized_cid
                     ));
 
-                    self.store
-                        .put(&location, Bytes::copy_from_slice(&self.buffer[data_range]))
-                        .await
-                        .expect("dw");
+                    let block_bytes =
+                        Into::<Bytes>::into(self.buffer.split_to((blk_len - cid_length) as usize));
+
+                    self.store.put(&location, block_bytes).await.expect("dw");
 
                     return Ok(Some(BlockMeta {
                         cid,

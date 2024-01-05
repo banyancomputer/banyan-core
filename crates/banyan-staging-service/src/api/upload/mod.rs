@@ -1,21 +1,17 @@
-use std::path::PathBuf;
-
-use axum::extract::{BodyStream, Json, State};
+use axum::extract::{BodyStream, State};
 use axum::headers::{ContentLength, ContentType};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::TypedHeader;
 use banyan_car_analyzer::{CarReport, StreamingCarAnalyzer, StreamingCarAnalyzerError};
-use banyan_object_store::{ObjectStore, ObjectStoreError, ObjectStorePath};
+use banyan_object_store::ObjectStore;
 use banyan_task::TaskLikeExt;
-use bytes::Bytes;
 use futures::{TryStream, TryStreamExt};
 use serde::{Deserialize, Serialize};
-use tokio::io::{AsyncWrite, AsyncWriteExt};
 use uuid::Uuid;
 
 use crate::app::AppState;
-use crate::database::{map_sqlx_error, Database, DatabaseError};
+use crate::database::Database;
 use crate::extractors::AuthenticatedClient;
 use crate::tasks::ReportUploadTask;
 

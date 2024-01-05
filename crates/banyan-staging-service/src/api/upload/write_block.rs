@@ -20,7 +20,7 @@ use crate::api::upload::{
 use crate::app::AppState;
 use crate::extractors::AuthenticatedClient;
 use crate::tasks::ReportUploadTask;
-use banyan_object_store::{ObjectStore, ObjectStoreError, ObjectStorePath};
+use banyan_object_store::{ObjectStore, ObjectStorePath};
 
 #[axum::debug_handler]
 pub async fn handler(

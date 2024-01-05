@@ -8,10 +8,6 @@ pub async fn start_upload(
     metadata_id: &Uuid,
     reported_size: u64,
 ) -> Result<Upload, sqlx::Error> {
-    let blocks_path = std::path::Path::new(&format!("{metadata_id}"))
-        .display()
-        .to_string();
-
     let mut upload = Upload {
         id: String::new(),
         client_id: client_id.to_string(),
