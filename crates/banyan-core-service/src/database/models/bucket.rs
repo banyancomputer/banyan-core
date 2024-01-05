@@ -386,18 +386,19 @@ impl Bucket {
         // Don't include any metadata that has already been deleted.
         // Order by updated_at so that the most recently snapshotted metadata is first
         // if present
-        let metadata_ids_with_snapshots = sqlx::query_scalar!(
+        let maybe_most_recently_snapshotted_metadata_id = sqlx::query_scalar!(
             "SELECT m.id FROM metadata as m
             JOIN snapshots as s ON s.metadata_id = m.id
             WHERE m.bucket_id = $1 AND m.state != 'deleted'
-            ORDER BY m.created_at DESC;",
+            ORDER BY m.created_at DESC
+            LIMIT 1;",
             bucket_id,
         )
-        .fetch_all(&mut *conn)
+        .fetch_optional(&mut *conn)
         .await?;
 
         // If there are no snapshots associated with the bucket:
-        if metadata_ids_with_snapshots.is_empty() {
+        if maybe_most_recently_snapshotted_metadata_id.is_none() {
             // Just set the bucket as soft deleted
             sqlx::query!(
                 "UPDATE buckets SET deleted_at = $1, updated_at = $1 WHERE id = $2;",
@@ -419,8 +420,11 @@ impl Bucket {
         }
 
         // Otherwise, there must be snapshots for this bucket
-        // Get the id of the most recently snapshotted metadata
-        let most_recently_snapshotted_metadata_id = &metadata_ids_with_snapshots[0];
+
+        // Get the id of the most recently snapshotted metadata, this is gauranteed to be Some(val) since
+        // we checked above that it's not None
+        let most_recently_snapshotted_metadata_id =
+            maybe_most_recently_snapshotted_metadata_id.unwrap();
 
         // we should set the bucket's storage class to 'cold'
         sqlx::query!(
@@ -431,45 +435,35 @@ impl Bucket {
         .execute(&mut *conn)
         .await?;
 
-        // Any metadata that does not have a snapshot associated with it should have its state set to deleted
-        // including the current one, unless the state is already deleted. Any metadata with a snapshot should
-        // be marked as outdated
-        for chunk in metadata_ids_with_snapshots.chunks(BIND_LIMIT) {
-            // Build a query to update metadata without a snapshot
-            let mut non_shapshot_query_builder =
-                QueryBuilder::new("UPDATE metadata SET state = 'deleted', updated_at = ");
-            // Build a query to update metadata with a snapshot
-            let mut shapshot_query_builder =
-                QueryBuilder::new("UPDATE metadata SET state = 'outdated', updated_at = ");
+        // Update all metedata that does not have a snapshot associated with it to be deleted
+        // including the current one, unless the state is already deleted
+        sqlx::query!(
+            r#"UPDATE metadata SET state = 'deleted', updated_at = $1
+            WHERE bucket_id = $2 AND state != 'deleted' AND id NOT IN (
+                SELECT m.id FROM metadata as m
+                JOIN snapshots as s ON s.metadata_id = m.id
+                WHERE m.bucket_id = $2 AND m.state != 'deleted'
+            );"#,
+            now,
+            bucket_id,
+        )
+        .execute(&mut *conn)
+        .await?;
 
-            non_shapshot_query_builder.push_bind(now);
-            non_shapshot_query_builder.push(" WHERE state != 'deleted' AND bucket_id = ");
-            non_shapshot_query_builder.push_bind(bucket_id);
-            non_shapshot_query_builder.push(" AND id NOT IN (");
-
-            shapshot_query_builder.push_bind(now);
-            shapshot_query_builder.push(" WHERE state != 'deleted' AND bucket_id = ");
-            shapshot_query_builder.push_bind(bucket_id);
-            shapshot_query_builder.push(" AND id IN (");
-
-            // And attach a list of bind params for the metadata_ids to avoid and include depending on the query
-            let mut non_snapshot_separated_values = non_shapshot_query_builder.separated(", ");
-            let mut shapshot_separated_values = shapshot_query_builder.separated(", ");
-            for metadata_id in chunk {
-                non_snapshot_separated_values.push_bind(metadata_id);
-                shapshot_separated_values.push_bind(metadata_id);
-            }
-
-            non_shapshot_query_builder.push(");");
-            shapshot_query_builder.push(");");
-
-            // Build and execute the queries
-            let non_shapshot_query = non_shapshot_query_builder.build().persistent(false);
-            let shapshot_query = shapshot_query_builder.build().persistent(false);
-
-            non_shapshot_query.execute(&mut *conn).await?;
-            shapshot_query.execute(&mut *conn).await?;
-        }
+        // Update all metadata that does have a snapshot associated with it to be outdated
+        // including the current one, unless the state is already deleted
+        sqlx::query!(
+            r#"UPDATE metadata SET state = 'outdated', updated_at = $1
+            WHERE bucket_id = $2 AND state != 'deleted' AND id IN (
+                SELECT m.id FROM metadata as m
+                JOIN snapshots as s ON s.metadata_id = m.id
+                WHERE m.bucket_id = $2 AND m.state != 'deleted'
+            );"#,
+            now,
+            bucket_id,
+        )
+        .execute(&mut *conn)
+        .await?;
 
         // The most recent metadata with a snapshot should be marked as current
         // Don't worry about the timestamp here, since we just updated all the metadata

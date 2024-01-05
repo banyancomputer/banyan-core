@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE metadata SET state = 'outdated', updated_at = $1\n            WHERE bucket_id = $2 AND state != 'deleted' AND id IN (\n                SELECT m.id FROM metadata as m\n                JOIN snapshots as s ON s.metadata_id = m.id\n                WHERE m.bucket_id = $2 AND m.state != 'deleted'\n            );",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "0e15d01fc223730729e5d24de1015714dbf8f6ca745fee209f3f7b27283c82e2"
+}
