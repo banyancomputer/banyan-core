@@ -17,7 +17,7 @@ import { useSession } from './session';
 import { prettyFingerprintApiKeyPem, sortByType } from '@app/utils';
 import { TermsAndColditionsClient } from '@/api/termsAndConditions';
 import { UserClient } from '@/api/user';
-import { handleNameDuplication } from '@app/utils/names';
+import { handleNameDuplication } from '@utils/names';
 
 interface TombInterface {
 	tomb: TombWasm | null;

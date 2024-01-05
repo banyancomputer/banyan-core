@@ -3,7 +3,7 @@ import {
     base64ToArrBuf,
     fingerprintEcPublicKey,
     prettyFingerprint,
-} from '@app/utils/crypto/utils';
+} from '@utils/crypto/utils';
 import { publicPemUnwrap } from './pem';
 
 export const prettyFingerprintApiKeySpki = async(

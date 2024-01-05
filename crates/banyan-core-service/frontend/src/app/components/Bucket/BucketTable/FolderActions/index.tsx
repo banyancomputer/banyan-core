@@ -1,12 +1,12 @@
 import React from 'react';
 import { useIntl } from 'react-intl';
 
-import { MoveToModal } from '@/app/components/common/Modal/MoveToModal';
-import { RenameFileModal } from '@/app/components/common/Modal/RenameFileModal';
-import { DeleteFileModal } from '@/app/components/common/Modal/DeleteFileModal';
-import { UploadFileModal } from '@/app/components/common/Modal/UploadFileModal';
-import { Action } from '@components/Bucket/BucketTable/FileActions'
-;
+import { MoveToModal } from '@components/common/Modal/MoveToModal';
+import { RenameFileModal } from '@components/common/Modal/RenameFileModal';
+import { DeleteFileModal } from '@components/common/Modal/DeleteFileModal';
+import { UploadFileModal } from '@components/common/Modal/UploadFileModal';
+import { Action } from '@components/Bucket/BucketTable/FileActions';
+
 import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { useModal } from '@/app/contexts/modals';
 

@@ -12,7 +12,7 @@ import {
   SymmKey,
   PrivateKey,
 } from '../types';
-import { privatePemWrap, publicPemWrap, publicPemUnwrap } from '@app/utils/pem';
+import { privatePemWrap, publicPemWrap, publicPemUnwrap } from '@utils/pem';
 import { checkValidKeyUse } from '../errors';
 
 /**

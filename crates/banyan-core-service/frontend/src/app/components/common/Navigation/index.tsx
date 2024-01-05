@@ -6,9 +6,9 @@ import { LockedTooltip } from './LockedTooltip';
 
 import { useTomb } from '@/app/contexts/tomb';
 import { useFilesUpload } from '@app/contexts/filesUpload';
-import { ToastNotifications } from '@app/utils/toastNotifications';
+import { ToastNotifications } from '@utils/toastNotifications';
 import { Bucket } from '@app/types/bucket';
-import { preventDefaultDragAction } from '@app/utils/dragHandlers';
+import { preventDefaultDragAction } from '@utils/dragHandlers';
 
 import { ActiveDirectory, ChevronUp, Directory, Logo } from '@static/images/common';
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useIntl } from 'react-intl';
-import { StorageUsage } from '@/app/components/common/StorageUsage';
-import { ServicesTable } from '@/app/components/Account/Services/ServicesTable';
+import { StorageUsage } from '@components/common/StorageUsage';
+import { ServicesTable } from '@components/Account/Services/ServicesTable';
 
 export const Services = () => {
     const { messages } = useIntl();

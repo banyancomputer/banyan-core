@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useIntl } from 'react-intl';
-import { LanguageSelect } from '@/app/components/common/LanguageSelect';
+import { LanguageSelect } from '@components/common/LanguageSelect';
 import { getLocalStorageItem, setLocalStorageItem } from '@/app/utils/localStorage';
 
 export const Settings = () => {

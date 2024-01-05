@@ -1,4 +1,4 @@
-import { getDateLabel } from '@app/utils/date';
+import { getDateLabel } from '@utils/date';
 
 describe(
     'date',

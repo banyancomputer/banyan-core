@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 
-import { base64ToString } from '@app/utils/base64';
+import { base64ToString } from '@utils/base64';
 
 /** Returns current folder nesting */
 export const useFolderLocation = () => {

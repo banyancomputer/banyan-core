@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-import { localeToAlpha2CountryCode, localeToLanguage } from '@app/utils/locales';
+import { localeToAlpha2CountryCode, localeToLanguage } from '@utils/locales';
 import { useIntl } from 'react-intl';
 import { locales } from '@app/App';
-import { setLocalStorageItem } from '@app/utils/localStorage';
+import { setLocalStorageItem } from '@utils/localStorage';
 import { popupClickHandler } from '@/app/utils';
 
 import { ChevronUp } from '@static/images/common';
