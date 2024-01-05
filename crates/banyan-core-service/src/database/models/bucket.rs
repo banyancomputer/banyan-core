@@ -368,7 +368,7 @@ impl Bucket {
     /// - Set the bucket as soft deleted (set deleted_at and updated_at to now)
     /// - Set all metadata associated with the bucket as deleted (set state to 'deleted' and updated_at to now)
     /// If a Bucket does have snapshots (tied to non-deleted metadata) associated with it, then:
-    /// - Set the bucket's type to 'backup' and its storage class to 'cold'
+    /// - Set the bucket's storage class to 'cold'
     /// - Set all metadata associated with the bucket that does not have a snapshot as deleted
     ///  (set state to 'deleted' and updated_at to now)
     /// - Set all metadata associated with the bucket that does have a snapshot as outdated
@@ -422,12 +422,14 @@ impl Bucket {
         // Get the id of the most recently snapshotted metadata
         let most_recently_snapshotted_metadata_id = &metadata_ids_with_snapshots[0];
 
-        // we should set the bucket's type to 'backup' and its storage class to 'cold'
+        // we should set the bucket's storage class to 'cold'
         sqlx::query!(
-            "UPDATE buckets SET type = 'backup', storage_class = 'cold', updated_at = $1 WHERE id = $2;", 
+            "UPDATE buckets SET storage_class = 'cold', updated_at = $1 WHERE id = $2;",
             now,
             bucket_id,
-        ).execute(&mut *conn).await?;
+        )
+        .execute(&mut *conn)
+        .await?;
 
         // Any metadata that does not have a snapshot associated with it should have its state set to deleted
         // including the current one, unless the state is already deleted. Any metadata with a snapshot should
@@ -501,7 +503,7 @@ mod tests {
     use time::OffsetDateTime;
 
     use super::*;
-    use crate::database::models::{BucketType, MetadataState, SnapshotState, StorageClass};
+    use crate::database::models::{MetadataState, SnapshotState, StorageClass};
     use crate::database::test_helpers::*;
 
     async fn is_bucket_key_approved(
@@ -1252,8 +1254,7 @@ mod tests {
         // Assert that the relevant timestamps are the same for the bucket and metadata
         assert_eq!(deleted_bucket.deleted_at, Some(deleted_metadata_updated_at));
 
-        // Assert that the bucket type has not changed
-        assert_eq!(deleted_bucket.r#type, BucketType::Interactive);
+        // Assert that the bucket storage class has not changed
         assert_eq!(deleted_bucket.storage_class, StorageClass::Hot);
     }
 
@@ -1337,8 +1338,7 @@ mod tests {
         // not be affected by the bucket soft delete
         assert_ne!(deleted_bucket.deleted_at, Some(deleted_metadata_updated_at));
 
-        // Assert that the bucket type has not changed
-        assert_eq!(deleted_bucket.r#type, BucketType::Interactive);
+        // Assert that the bucket storage class has not changed
         assert_eq!(deleted_bucket.storage_class, StorageClass::Hot);
     }
 
@@ -1509,8 +1509,7 @@ mod tests {
             later_snapshotted_metadata_updated_at
         );
 
-        // Assert that the bucket type is now cold backup
-        assert_eq!(deleted_bucket.r#type, BucketType::Backup);
+        // Assert that the bucket storage class is now cold
         assert_eq!(deleted_bucket.storage_class, StorageClass::Cold);
     }
 

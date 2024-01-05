@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT m.bucket_id, m.id as metadata_id FROM metadata AS m\n               JOIN buckets AS b ON m.bucket_id = b.id\n               WHERE b.user_id = $1 AND b.id = $2 AND m.id = $3 AND m.state != 'deleted';",
+  "query": "SELECT m.bucket_id, m.id as metadata_id FROM metadata AS m\n               JOIN buckets AS b ON m.bucket_id = b.id\n               WHERE b.user_id = $1 AND b.id = $2 AND m.id = $3 AND m.state in ('outdated', 'current', 'pending');",
   "describe": {
     "columns": [
       {
@@ -22,5 +22,5 @@
       false
     ]
   },
-  "hash": "c0933ab0637aff6466dc9aa21b38e7734a09934d2b73b38ccba729efde3aa4fe"
+  "hash": "117650bd7ee8debe87b68db8c92d172041fd486dadac3f28fee138fff0c5a1b2"
 }
