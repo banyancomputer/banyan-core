@@ -33,6 +33,11 @@ if [ "${DRY_RUN}" != "1" ] && (! git diff-index --quiet HEAD -- || ! git diff-fi
 	exit 1
 fi
 
+if [ ! -f .env.build.prod ]; then
+	echo "!!> Production frontend build config is missing"
+	exit 2
+fi
+
 COMMIT_ID="$(git describe --always --dirty --long --tags)"
 # Use the latest commit timestamp as its consistent, and reproducible
 TIMESTAMP="$(git show -s --date=format:'%Y%m%d-%H%M%S' --format=%cd)"
@@ -48,7 +53,16 @@ if which docker &>/dev/null; then
 fi
 
 rm -rf dist/assets/*
-(cd frontend/ && yarn && yarn build)
+
+# Build the front-end, we need to inject some non-sensitive production values in at this point
+(
+	source .env.build.prod
+	export TRACKER_PROJECT_KEY TRACKER_INGEST_POINT
+
+	cd frontend/
+	yarn
+	yarn build
+)
 
 # Create the actual container
 (
@@ -119,8 +133,5 @@ nohup sh -c "\
   systemctl --user daemon-reload
 "
 EOS
-
-rsync -vrh --progress --delete --exclude offline.html --exclude 404.html \
-	./dist/ ${DEPLOY_HOST}:/srv/http/data.banyan.computer/beta/
 
 echo '==> Artifacts staged for deployment'
