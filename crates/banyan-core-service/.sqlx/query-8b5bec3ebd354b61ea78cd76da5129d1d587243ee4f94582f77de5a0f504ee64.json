@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT * FROM buckets WHERE user_id = $1 AND deleted_at IS NOT NULL;",
+  "query": "SELECT * FROM buckets WHERE user_id = $1 AND deleted_at IS NULL;",
   "describe": {
     "columns": [
       {
@@ -52,5 +52,5 @@
       false
     ]
   },
-  "hash": "df8eb2f8eff543370bae9bd0fd356a4d023d8eed83509de5d3cd575d1f7a6d14"
+  "hash": "8b5bec3ebd354b61ea78cd76da5129d1d587243ee4f94582f77de5a0f504ee64"
 }

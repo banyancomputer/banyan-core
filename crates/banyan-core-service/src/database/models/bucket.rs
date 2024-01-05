@@ -350,7 +350,7 @@ impl Bucket {
         user_id: &str,
     ) -> Result<bool, sqlx::Error> {
         let found_bucket = sqlx::query_scalar!(
-            "SELECT id FROM buckets WHERE id = $1 AND user_id = $2 AND deleted_at IS NOT NULL;",
+            "SELECT id FROM buckets WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL;",
             bucket_id,
             user_id,
         )
