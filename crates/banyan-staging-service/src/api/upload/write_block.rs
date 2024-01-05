@@ -53,10 +53,12 @@ pub async fn handler(
         None => start_upload(&db, &client.id(), &request.metadata_id, 0).await?,
     };
 
+    /*
     let blocks_path: String = upload.blocks_path;
     if blocks_path.to_lowercase().ends_with(".car") {
         return Err(UploadError::CarFile);
     }
+    */
 
     write_block_to_tables(
         &db,
@@ -68,7 +70,7 @@ pub async fn handler(
     .await?;
 
     // Actually write the bytes to the expected location
-    let location = Path::from(format!("{blocks_path}/{normalized_cid}.block").as_str());
+    let location = Path::from(format!("{}/{}.block", request.metadata_id, normalized_cid).as_str());
     store
         .put(&location, Bytes::copy_from_slice(request.data.as_slice()))
         .await

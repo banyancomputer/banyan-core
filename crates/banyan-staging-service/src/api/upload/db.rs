@@ -17,21 +17,19 @@ pub async fn start_upload(
         client_id: client_id.to_string(),
         metadata_id: metadata_id.to_string(),
         reported_size: reported_size as i64,
-        blocks_path,
         state: String::from("started"),
     };
 
     upload.id = sqlx::query_scalar!(
         r#"
         INSERT INTO
-            uploads (client_id, metadata_id, reported_size, blocks_path, state)
-            VALUES ($1, $2, $3, $4, $5)
+            uploads (client_id, metadata_id, reported_size, state)
+            VALUES ($1, $2, $3, $4)
             RETURNING id;
         "#,
         upload.client_id,
         upload.metadata_id,
         upload.reported_size,
-        upload.blocks_path,
         upload.state
     )
     .fetch_one(db)
@@ -101,7 +99,7 @@ pub async fn get_upload(
 ) -> Result<Option<Upload>, sqlx::Error> {
     sqlx::query_as(
         r#"
-        SELECT id, client_id, metadata_id, reported_size, blocks_path, state FROM uploads
+        SELECT id, client_id, metadata_id, reported_size, state FROM uploads
             WHERE client_id = $1
             AND metadata_id = $2;
         "#,
@@ -155,6 +153,5 @@ pub struct Upload {
     pub client_id: String,
     pub metadata_id: String,
     pub reported_size: i64,
-    pub blocks_path: String,
     pub state: String,
 }

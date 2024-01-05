@@ -1,9 +1,9 @@
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
+use banyan_object_store::{ObjectStore, ObjectStorePath};
 use bytes::{Bytes, BytesMut};
 use cid::Cid;
-
 const CAR_HEADER_UPPER_LIMIT: u64 = 16 * 1024 * 1024; // Limit car headers to 16MiB
 
 const CAR_FILE_UPPER_LIMIT: u64 = 32 * 1024 * 1024 * 1024; // We limit individual CAR files to 32GiB
@@ -17,6 +17,7 @@ pub struct BlockMeta {
     cid: Cid,
     offset: u64,
     length: u64,
+    data_range: std::ops::Range<usize>,
 }
 
 impl BlockMeta {
@@ -30,6 +31,19 @@ impl BlockMeta {
 
     pub fn offset(&self) -> u64 {
         self.offset
+    }
+
+    pub async fn write(
+        &self,
+        analyzer: &StreamingCarAnalyzer,
+        store: &ObjectStore,
+        location: &ObjectStorePath,
+    ) {
+        let mut new_bytes = analyzer.buffer.clone();
+        let _ = new_bytes.truncate(self.data_range.end.clone());
+        let _ = new_bytes.split_to(self.data_range.start);
+
+        store.put(location, new_bytes.into()).await.expect("asdfsd");
     }
 }
 
@@ -327,15 +341,11 @@ impl StreamingCarAnalyzer {
                         block_length: None,
                     };
 
-                    let block_data_range = cid_length as usize..blk_len as usize;
-                    if true {
-                    //    self.buffer[block_data_range];
-                    }
-
                     return Ok(Some(BlockMeta {
                         cid,
                         offset: block_start + length_varint_len + cid_length,
                         length: blk_len - cid_length,
+                        data_range: cid_length as usize..blk_len as usize,
                     }));
                 }
                 CarState::Indexes { index_start } => {

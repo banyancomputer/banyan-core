@@ -176,7 +176,7 @@ where
             .await?;
 
             let location = ObjectStorePath::from(
-                format!("{}/{}.block", upload.blocks_path, cid_string).as_str(),
+                format!("{}/{}.block", upload.metadata_id, cid_string).as_str(),
             );
 
             /*
