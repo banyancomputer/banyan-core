@@ -9,7 +9,7 @@ import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { getDateLabel } from '@/app/utils/date';
 import { convertFileSize } from '@/app/utils/storage';
 import { useFilePreview } from '@/app/contexts/filesPreview';
-import { handleDrag, handleDragEnd, handleDragStart } from '@app/utils/dragHandlers';
+import { handleDrag, handleDragEnd, handleDragStart } from '@utils/dragHandlers';
 import { useTomb } from '@app/contexts/tomb';
 
 export const FileRow: React.FC<{

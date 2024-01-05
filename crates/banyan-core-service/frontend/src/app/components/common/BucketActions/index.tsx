@@ -1,10 +1,10 @@
 import React from 'react';
 import { useIntl } from 'react-intl';
 
-import { BucketSnapshotsModal } from '@/app/components/common/Modal/BucketSnapshotsModal';
-import { RenameBucketModal } from '@/app/components/common/Modal/RenameBucketModal';
-import { DeleteBucketModal } from '@/app/components/common/Modal/DeleteBucketModal';
-import { TakeSnapshotModal } from '@/app/components/common/Modal/TakeSnapshotModal';
+import { BucketSnapshotsModal } from '@components/common/Modal/BucketSnapshotsModal';
+import { RenameBucketModal } from '@components/common/Modal/RenameBucketModal';
+import { DeleteBucketModal } from '@components/common/Modal/DeleteBucketModal';
+import { TakeSnapshotModal } from '@components/common/Modal/TakeSnapshotModal';
 import { UploadFileModal } from '@components/common/Modal/UploadFileModal';
 import { CreateFolderModal } from '@components/common/Modal/CreateFolderModal ';
 

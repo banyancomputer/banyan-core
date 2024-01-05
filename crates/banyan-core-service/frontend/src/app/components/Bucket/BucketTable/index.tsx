@@ -12,8 +12,8 @@ import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 import { sortByType, sortFiles } from '@app/utils';
 import { useFilesUpload } from '@app/contexts/filesUpload';
-import { ToastNotifications } from '@app/utils/toastNotifications';
-import { preventDefaultDragAction } from '@app/utils/dragHandlers';
+import { ToastNotifications } from '@utils/toastNotifications';
+import { preventDefaultDragAction } from '@utils/dragHandlers';
 import { useTomb } from '@app/contexts/tomb';
 
 import { Done, EmptyIcon } from '@static/images/common';

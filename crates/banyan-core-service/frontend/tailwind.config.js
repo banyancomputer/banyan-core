@@ -89,6 +89,7 @@ module.exports = {
 				},
 				'gray-200': 'var(--text-200)',
 				hover: 'var(--hover-background)',
+				logo: 'var(--logo)',
 				mainBackground: 'var(--main-background)',
 				secondaryBackground: 'var(--secondary-background)',
 			},
