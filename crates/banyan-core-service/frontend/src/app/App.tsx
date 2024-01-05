@@ -5,10 +5,6 @@ import { BrowserRouter } from 'react-router-dom';
 import { Modal } from '@components/common/Modal';
 import { Notifications } from '@components/common/Notifications';
 import { FilePreview } from '@components/common/FilePreview';
-import { Navigation } from '@components/common/Navigation';
-import { Header } from '@components/common/Header';
-import { ErrorBanner } from '@components/common/ErrorBanner';
-import { BetaBanner } from '@components/common/BetaBanner';
 import { MobilePlaceholder } from '@components/common/MobilePlaceholder';
 
 import { Routes } from './routes';
@@ -75,17 +71,9 @@ const App = () => {
                                             <FilePreview />
                                             <Modal />
                                             <Notifications />
-                                            <section className="flex flex-grow">
-                                                <Navigation />
-                                                <section className="flex-grow flex flex-col h-screen overflow-y-scroll">
-                                                    <Header />
-                                                    {/* <BetaBanner /> */}
-                                                    <ErrorBanner />
-                                                    <Suspense>
-                                                        <Routes />
-                                                    </Suspense>
-                                                </section>
-                                            </section>
+                                            <Suspense>
+                                                <Routes />
+                                            </Suspense>
                                         </FilePreviewProvider>
                                     </FileUploadProvider>
                                 </TombProvider>

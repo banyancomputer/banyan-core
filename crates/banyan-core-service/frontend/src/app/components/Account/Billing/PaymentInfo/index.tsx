@@ -1,12 +1,15 @@
-import { CardIcon } from '@static/images/account';
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useIntl } from 'react-intl';
+
+import { CardIcon } from '@static/images/account';
 
 export const PaymentInfo = () => {
     const { messages } = useIntl();
+    const navigate = useNavigate();
 
     const edit = () => {
-        /** TODO: implement when will be ready. */
+        navigate('/add-payment');
     };
 
     return (
@@ -15,7 +18,7 @@ export const PaymentInfo = () => {
                 <div>
                     {`${messages.paymentInfo}`}
                 </div>
-                <div className="text-[14px] cursor-pointer">{`${messages.edit}`}</div>
+                <div className="text-[14px] cursor-pointer" onClick={edit}>{`${messages.edit}`}</div>
             </div>
             <div className="flex flex-col gap-1.5">
                 <div>

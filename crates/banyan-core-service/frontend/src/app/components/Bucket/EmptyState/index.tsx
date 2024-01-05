@@ -6,7 +6,7 @@ import { Bucket } from '@app/types/bucket';
 
 import { Upload } from '@static/images/common';
 import { useFilesUpload } from '@app/contexts/filesUpload';
-import { ToastNotifications } from '@app/utils/toastNotifications';
+import { ToastNotifications } from '@utils/toastNotifications';
 
 export const EmptyState: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const { messages } = useIntl();

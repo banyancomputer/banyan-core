@@ -12,10 +12,10 @@ import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { getDateLabel } from '@/app/utils/date';
 import { convertFileSize } from '@/app/utils/storage';
 import { useTomb } from '@/app/contexts/tomb';
-import { stringToBase64 } from '@app/utils/base64';
+import { stringToBase64 } from '@utils/base64';
 import { useFilesUpload } from '@app/contexts/filesUpload';
-import { ToastNotifications } from '@app/utils/toastNotifications';
-import { handleDrag, handleDragEnd, handleDragStart, preventDefaultDragAction } from '@app/utils/dragHandlers';
+import { ToastNotifications } from '@utils/toastNotifications';
+import { handleDrag, handleDragEnd, handleDragStart, preventDefaultDragAction } from '@utils/dragHandlers';
 
 import { ChevronUp, Done } from '@static/images/common';
 

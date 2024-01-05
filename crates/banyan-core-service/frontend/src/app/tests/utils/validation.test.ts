@@ -1,4 +1,4 @@
-import { validateKeyphrase } from '@app/utils/validation';
+import { validateKeyphrase } from '@utils/validation';
 
 describe(
     'validation',

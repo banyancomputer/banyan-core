@@ -3,14 +3,14 @@ import { Link, useParams } from 'react-router-dom';
 import { useIntl } from 'react-intl';
 
 import { TakeSnapshotModal } from '@components/common/Modal/TakeSnapshotModal';
-import { UploadFileModal } from '@/app/components/common/Modal/UploadFileModal';
+import { UploadFileModal } from '@components/common/Modal/UploadFileModal';
 import { CreateFolderModal } from '@components/common/Modal/CreateFolderModal ';
 
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 import { useModal } from '@/app/contexts/modals';
 import { useTomb } from '@/app/contexts/tomb';
-import { stringToBase64 } from '@app/utils/base64';
-import { getLocalStorageItem, setLocalStorageItem } from '@app/utils/localStorage';
+import { stringToBase64 } from '@utils/base64';
+import { getLocalStorageItem, setLocalStorageItem } from '@utils/localStorage';
 
 import { Close, Copy, Upload } from '@static/images/common';
 import { AddFolderIcon } from '@static/images/buckets';

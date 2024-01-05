@@ -12,11 +12,11 @@ import { HttpClient } from '@/api/http/client';
 import { NotFoundError } from '@/api/http';
 import { UserClient } from '@/api/user';
 
-import { Question } from '@static/images/common';
+import { Logo, Question } from '@static/images/common';
 
 const client = new UserClient();
 
-export const Header = () => {
+export const Header: React.FC<{ logo?: boolean, className?: string }> = ({ logo = false, className = '' }) => {
     const { messages } = useIntl();
     const profileOptionsRef = useRef<HTMLDivElement | null>(null);
     const helpOptionsRef = useRef<HTMLDivElement | null>(null);
@@ -62,7 +62,10 @@ export const Header = () => {
     }, [location]);
 
     return (
-        <header className="flex items-center justify-between p-4 bg-mainBackground border-b-1 border-border-regular">
+        <header className={`flex items-center justify-between p-4 bg-mainBackground border-b-1 border-border-regular ${className}`}>
+            <span className="text-logo">
+                {logo && <Logo />}
+            </span>
             {/* <SearchInput /> */}
             <div className="flex flex-grow items-center justify-end gap-6">
                 <div

@@ -1,7 +1,7 @@
 import { ReactElement } from 'react';
 import { toast } from 'react-toastify';
 
-import { UploadFileProgress } from '@/app/components/common/UploadFileProgress';
+import { UploadFileProgress } from '@components/common/UploadFileProgress';
 
 import { Close } from '@static/images/common';
 
