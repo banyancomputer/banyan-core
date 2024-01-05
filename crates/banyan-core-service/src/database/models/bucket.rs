@@ -1188,11 +1188,11 @@ mod tests {
         let mut conn = db.begin().await.expect("connection");
 
         let user_id = sample_user(&mut conn, "user@domain.tld").await;
-        let bucket_id = sample_bucket(&mut *conn, &user_id).await;
+        let bucket_id = sample_bucket(&mut conn, &user_id).await;
 
         // Create a metadata entry that is not snapshotted
         let metadata_id = create_metadata(
-            &mut *conn,
+            &mut conn,
             &bucket_id,
             "mcid-1",
             "rcid-1",
@@ -1204,19 +1204,19 @@ mod tests {
 
         // Assert that the metadata is current
         assert_eq!(
-            Bucket::current_version(&mut *conn, &bucket_id)
+            Bucket::current_version(&mut conn, &bucket_id)
                 .await
                 .expect("query success"),
             Some(metadata_id.clone())
         );
 
         // Soft delete the bucket
-        Bucket::soft_delete(&mut *conn, &bucket_id)
+        Bucket::soft_delete(&mut conn, &bucket_id)
             .await
             .expect("soft delete success");
 
         // Assert that the metadata is now deleted, and not current
-        assert!(Bucket::current_version(&mut *conn, &bucket_id)
+        assert!(Bucket::current_version(&mut conn, &bucket_id)
             .await
             .expect("query success")
             .is_none());
@@ -1266,14 +1266,14 @@ mod tests {
         let mut conn = db.begin().await.expect("connection");
 
         let user_id = sample_user(&mut conn, "user@domain.tld").await;
-        let bucket_id = sample_bucket(&mut *conn, &user_id).await;
+        let bucket_id = sample_bucket(&mut conn, &user_id).await;
 
         // Create a metadata entry that is snapshotted, but marked as deleted
         // Create it a minute ago to ensure it won't have the same timestamp as the bucket
         // later on
         let now = OffsetDateTime::now_utc() - Duration::from_secs(60);
         let deleted_metadata_id = create_metadata(
-            &mut *conn,
+            &mut conn,
             &bucket_id,
             "mcid-1",
             "rcid-1",
@@ -1285,21 +1285,21 @@ mod tests {
 
         // Note: snapshot state is not relevant for this test
         let _snapshot_id =
-            create_snapshot(&mut *conn, &deleted_metadata_id, SnapshotState::Completed).await;
+            create_snapshot(&mut conn, &deleted_metadata_id, SnapshotState::Completed).await;
 
         // Assert that there is no current metadata
-        assert!(Bucket::current_version(&mut *conn, &bucket_id)
+        assert!(Bucket::current_version(&mut conn, &bucket_id)
             .await
             .expect("query success")
             .is_none());
 
         // Soft delete the bucket
-        Bucket::soft_delete(&mut *conn, &bucket_id)
+        Bucket::soft_delete(&mut conn, &bucket_id)
             .await
             .expect("soft delete success");
 
         // Assert that there is still no current metadata
-        assert!(Bucket::current_version(&mut *conn, &bucket_id)
+        assert!(Bucket::current_version(&mut conn, &bucket_id)
             .await
             .expect("query success")
             .is_none());
@@ -1351,7 +1351,7 @@ mod tests {
         let mut conn = db.begin().await.expect("connection");
 
         let user_id = sample_user(&mut conn, "user@domain.tld").await;
-        let bucket_id = sample_bucket(&mut *conn, &user_id).await;
+        let bucket_id = sample_bucket(&mut conn, &user_id).await;
 
         // NOTE: the state of the snapshotted metadata is not super relevant, so long as it is
         //  not 'deleted'. Other tests ensure that metadata marked as 'deleted' is ignored, even
@@ -1360,7 +1360,7 @@ mod tests {
         // Create an old metadata entry that is snapshotted
         let now = OffsetDateTime::now_utc() - Duration::from_secs(120);
         let snapshotted_metadata_id = create_metadata(
-            &mut *conn,
+            &mut conn,
             &bucket_id,
             "mcid-1",
             "rcid-1",
@@ -1372,7 +1372,7 @@ mod tests {
 
         // Note: snapshot state is not relevant for this test
         let _snapshot_id = create_snapshot(
-            &mut *conn,
+            &mut conn,
             &snapshotted_metadata_id,
             SnapshotState::Completed,
         )
@@ -1382,7 +1382,7 @@ mod tests {
         // Create a slightly less old metadata entry that is also snapshotted
         let now = now + Duration::from_secs(60);
         let later_snapshotted_metadata_id = create_metadata(
-            &mut *conn,
+            &mut conn,
             &bucket_id,
             "mcid-2",
             "rcid-2",
@@ -1394,7 +1394,7 @@ mod tests {
 
         // Note: snapshot state is not relevant for this test
         let _later_snapshot_id = create_snapshot(
-            &mut *conn,
+            &mut conn,
             &later_snapshotted_metadata_id,
             SnapshotState::Completed,
         )
@@ -1403,7 +1403,7 @@ mod tests {
         // Create one more metadata entry that is not snapshotted. Mark it as current.
         let now = now + Duration::from_secs(120);
         let non_snapshotted_metadata_id = create_metadata(
-            &mut *conn,
+            &mut conn,
             &bucket_id,
             "mcid-3",
             "rcid-3",
@@ -1415,20 +1415,20 @@ mod tests {
 
         // Assert that the non-snapshotted metadata is current
         assert_eq!(
-            Bucket::current_version(&mut *conn, &bucket_id)
+            Bucket::current_version(&mut conn, &bucket_id)
                 .await
                 .expect("query success"),
             Some(non_snapshotted_metadata_id.clone())
         );
 
         // Soft delete the bucket
-        Bucket::soft_delete(&mut *conn, &bucket_id)
+        Bucket::soft_delete(&mut conn, &bucket_id)
             .await
             .expect("soft delete success");
 
         // Assert that the current metadata is the later snapshotted metadata
         assert_eq!(
-            Bucket::current_version(&mut *conn, &bucket_id)
+            Bucket::current_version(&mut conn, &bucket_id)
                 .await
                 .expect("query success"),
             Some(later_snapshotted_metadata_id.clone())
