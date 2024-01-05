@@ -1,9 +1,9 @@
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
-use banyan_object_store::{ObjectStore, ObjectStorePath};
+use banyan_object_store::{ObjectStore, ObjectStoreConnection, ObjectStorePath};
 use bytes::{Bytes, BytesMut};
-use cid::Cid;
+use cid::{multibase::Base, Cid};
 const CAR_HEADER_UPPER_LIMIT: u64 = 16 * 1024 * 1024; // Limit car headers to 16MiB
 
 const CAR_FILE_UPPER_LIMIT: u64 = 32 * 1024 * 1024 * 1024; // We limit individual CAR files to 32GiB
@@ -17,7 +17,6 @@ pub struct BlockMeta {
     cid: Cid,
     offset: u64,
     length: u64,
-    data_range: std::ops::Range<usize>,
 }
 
 impl BlockMeta {
@@ -31,19 +30,6 @@ impl BlockMeta {
 
     pub fn offset(&self) -> u64 {
         self.offset
-    }
-
-    pub async fn write(
-        &self,
-        analyzer: &StreamingCarAnalyzer,
-        store: &ObjectStore,
-        location: &ObjectStorePath,
-    ) {
-        let mut new_bytes = analyzer.buffer.clone();
-        let _ = new_bytes.truncate(self.data_range.end.clone());
-        let _ = new_bytes.split_to(self.data_range.start);
-
-        store.put(location, new_bytes.into()).await.expect("asdfsd");
     }
 }
 
@@ -100,11 +86,25 @@ pub struct StreamingCarAnalyzer {
     stream_offset: u64,
     cids: Vec<Cid>,
     hasher: blake3::Hasher,
+    metadata_id: String,
+    store: ObjectStore,
 }
 
+#[cfg(test)]
 impl Default for StreamingCarAnalyzer {
     fn default() -> Self {
-        Self::new()
+        let test_path = std::path::PathBuf::from("./test");
+
+        if test_path.exists() {
+            std::fs::remove_dir_all(&test_path).expect("oh no");
+        }
+
+        std::fs::create_dir_all(&test_path).expect("oh no");
+
+        Self::new(
+            &String::new(),
+            ObjectStore::new(&ObjectStoreConnection::Local(test_path)).expect(""),
+        )
     }
 }
 
@@ -136,13 +136,15 @@ impl StreamingCarAnalyzer {
         Ok(())
     }
 
-    pub fn new() -> Self {
+    pub fn new(metadata_id: &str, store: ObjectStore) -> Self {
         Self {
             buffer: BytesMut::new(),
             state: CarState::Pragma,
             stream_offset: 0,
             cids: Vec::new(),
             hasher: blake3::Hasher::new(),
+            metadata_id: String::from(metadata_id),
+            store,
         }
     }
 
@@ -341,11 +343,25 @@ impl StreamingCarAnalyzer {
                         block_length: None,
                     };
 
+                    let data_range = cid_length as usize..blk_len as usize;
+                    let normalized_cid = cid
+                        .to_string_of_base(Base::Base64Url)
+                        .expect("dont worry about it");
+
+                    let location = ObjectStorePath::from(format!(
+                        "{}/{}.block",
+                        self.metadata_id, normalized_cid
+                    ));
+
+                    self.store
+                        .put(&location, Bytes::copy_from_slice(&self.buffer[data_range]))
+                        .await
+                        .expect("dw");
+
                     return Ok(Some(BlockMeta {
                         cid,
                         offset: block_start + length_varint_len + cid_length,
                         length: blk_len - cid_length,
-                        data_range: cid_length as usize..blk_len as usize,
                     }));
                 }
                 CarState::Indexes { index_start } => {
@@ -504,7 +520,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_streaming_lifecycle() {
-        let mut sca = StreamingCarAnalyzer::new();
+        let mut sca = StreamingCarAnalyzer::default();
         assert_eq!(sca.state, CarState::Pragma);
 
         // No data shouldn't transition

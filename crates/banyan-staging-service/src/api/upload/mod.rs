@@ -113,7 +113,7 @@ pub async fn handler(
     match process_upload_stream(
         &db,
         &upload,
-        &store,
+        store,
         reported_body_length as usize,
         content_hash,
         car_field,
@@ -137,7 +137,7 @@ pub async fn handler(
         Err(err) => {
             // todo: we don't care in the response if this fails, but if it does we will want to
             // clean it up in the future which should be handled by a background task
-            fail_upload(&db, &upload.id).await;
+            let _ = fail_upload(&db, &upload.id).await;
             Err(err.into())
         }
     }
@@ -146,7 +146,7 @@ pub async fn handler(
 async fn process_upload_stream<S>(
     db: &Database,
     upload: &Upload,
-    store: &ObjectStore,
+    store: ObjectStore,
     expected_size: usize,
     content_hash: String,
     mut stream: S,
@@ -154,7 +154,7 @@ async fn process_upload_stream<S>(
 where
     S: TryStream<Ok = bytes::Bytes, Error = multer::Error> + Unpin,
 {
-    let mut car_analyzer = StreamingCarAnalyzer::new();
+    let mut car_analyzer = StreamingCarAnalyzer::new(&upload.metadata_id, store);
     let mut warning_issued = false;
     let mut hasher = blake3::Hasher::new();
     while let Some(chunk) = stream.try_next().await.map_err(UploadError::ReadFailed)? {
@@ -174,10 +174,6 @@ where
                 block.offset() as i64,
             )
             .await?;
-
-            let location = ObjectStorePath::from(
-                format!("{}/{}.block", upload.metadata_id, cid_string).as_str(),
-            );
 
             /*
             store

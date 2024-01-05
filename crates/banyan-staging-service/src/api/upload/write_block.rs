@@ -6,10 +6,11 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 use banyan_task::TaskLikeExt;
 use bytes::Bytes;
-use cid::multibase::Base;
-use cid::multihash::{Code, MultihashDigest};
-use cid::Cid;
-use object_store::path::Path;
+use cid::{
+    multibase::Base,
+    multihash::{Code, MultihashDigest},
+    Cid,
+};
 use serde::Deserialize;
 use uuid::Uuid;
 
@@ -74,7 +75,8 @@ pub async fn handler(
     .await?;
 
     // Actually write the bytes to the expected location
-    let location = Path::from(format!("{}/{}.block", request.metadata_id, normalized_cid).as_str());
+    let location =
+        ObjectStorePath::from(format!("{}/{}.block", request.metadata_id, normalized_cid).as_str());
     store
         .put(&location, Bytes::copy_from_slice(request.data.as_slice()))
         .await
