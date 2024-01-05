@@ -150,7 +150,7 @@ pub(crate) async fn create_deal(
     let segment_id = create_snapshot_segment(database, deal_id.to_string(), size.unwrap_or(262144))
         .await
         .unwrap();
-    let snapshot_id = create_snapshot(database, metadata_id, SnapshotState::Pending)
+    let snapshot_id = create_snapshot(database, &metadata_id, SnapshotState::Pending)
         .await
         .unwrap();
     create_snapshot_segment_association(database, snapshot_id, segment_id)
@@ -192,7 +192,7 @@ pub(crate) async fn create_snapshot_segment(
 
 pub(crate) async fn create_snapshot(
     database: &mut DatabaseConnection,
-    metadata_id: String,
+    metadata_id: &str,
     snapshot_state: SnapshotState,
 ) -> Result<String, sqlx::Error> {
     let snapshot_state = snapshot_state.to_string();

@@ -364,10 +364,10 @@ impl Bucket {
     /// Assumes the bucket is owned by the user, and is not already soft deleted
     /// You can enforce this with `is_owned_by_user_id`
     /// Implements the following logic:
-    /// If a Bucket does not have any snapshots associated with it, then:
+    /// If a Bucket does not have any snapshots (tied to non-deleted metadata) associated with it, then:
     /// - Set the bucket as soft deleted (set deleted_at and updated_at to now)
     /// - Set all metadata associated with the bucket as deleted (set state to 'deleted' and updated_at to now)
-    /// If a Bucket does have snapshots associated with it, then:
+    /// If a Bucket does have snapshots (tied to non-deleted metadata) associated with it, then:
     /// - Set the bucket's type to 'backup' and its storage class to 'cold'
     /// - Set all metadata associated with the bucket that does not have a snapshot as deleted
     ///  (set state to 'deleted' and updated_at to now)
@@ -382,13 +382,14 @@ impl Bucket {
         // Enforce that all updates to occur have the same timestamp
         let now = OffsetDateTime::now_utc();
 
-        // Query for all pieces of metadata that have a snapshot associated with them
+        // Query for all pieces of metadata that have a snapshot associated with them.
+        // Don't include any metadata that has already been deleted.
         // Order by updated_at so that the most recently snapshotted metadata is first
         // if present
         let metadata_ids_with_snapshots = sqlx::query_scalar!(
             "SELECT m.id FROM metadata as m
             JOIN snapshots as s ON s.metadata_id = m.id
-            WHERE m.bucket_id = $1
+            WHERE m.bucket_id = $1 AND m.state != 'deleted'
             ORDER BY m.updated_at DESC;",
             bucket_id,
         )
@@ -433,36 +434,41 @@ impl Bucket {
         // be marked as outdated
         for chunk in metadata_ids_with_snapshots.chunks(BIND_LIMIT) {
             // Build a query to update metadata without a snapshot
-            let mut non_shapshot_query_builder = QueryBuilder::new(
-                "UPDATE metadata SET state = 'deleted', updated_at = $1
-                WHERE state != 'deleted' AND bucket_id = $2 AND id NOT IN (",
-            );
+            let mut non_shapshot_query_builder =
+                QueryBuilder::new("UPDATE metadata SET state = 'deleted', updated_at = '");
             // Build a query to update metadata with a snapshot
-            let mut shapshot_query_builder = QueryBuilder::new(
-                "UPDATE metadata SET state = 'outdated', updated_at = $1
-                WHERE state != 'deleted' AND bucket_id = $2 AND id IN (",
-            );
+            let mut shapshot_query_builder =
+                QueryBuilder::new("UPDATE metadata SET state = 'outdated', updated_at = '");
 
-            // Add bind params for the timestamp and bucket_id
-            non_shapshot_query_builder.push_bind(now);
-            non_shapshot_query_builder.push_bind(bucket_id);
-            shapshot_query_builder.push_bind(now);
-            shapshot_query_builder.push_bind(bucket_id);
+            // TODO: this is super hacky, but push_bind was not working for some reason
+
+            // Just take the relevant timestamp, without the offset
+            let now_str = now.to_string().split(" +").collect::<Vec<&str>>()[0].to_string();
+            non_shapshot_query_builder.push(&now_str);
+            non_shapshot_query_builder.push("' WHERE state != 'deleted' AND bucket_id = '");
+            non_shapshot_query_builder.push(bucket_id);
+            non_shapshot_query_builder.push("' AND id NOT IN ('");
+
+            shapshot_query_builder.push(&now_str);
+            shapshot_query_builder.push("' WHERE state != 'deleted' AND bucket_id = '");
+            shapshot_query_builder.push(bucket_id);
+            shapshot_query_builder.push("' AND id IN ('");
 
             // And attach a list of bind params for the metadata_ids to avoid and include depending on the query
-            let mut non_snapshot_separated_values = non_shapshot_query_builder.separated(", ");
-            let mut shapshot_separated_values = shapshot_query_builder.separated(", ");
+            let mut non_snapshot_separated_values = non_shapshot_query_builder.separated("', '");
+            let mut shapshot_separated_values = shapshot_query_builder.separated("', '");
             for metadata_id in chunk {
                 non_snapshot_separated_values.push(metadata_id);
                 shapshot_separated_values.push(metadata_id);
             }
 
-            non_shapshot_query_builder.push(");");
-            shapshot_query_builder.push(");");
+            non_shapshot_query_builder.push("');");
+            shapshot_query_builder.push("');");
 
             // Build and execute the queries
-            let non_shapshot_query = non_shapshot_query_builder.build();
-            let shapshot_query = shapshot_query_builder.build();
+            let non_shapshot_query = non_shapshot_query_builder.build().persistent(false);
+            let shapshot_query = shapshot_query_builder.build().persistent(false);
+
             non_shapshot_query.execute(&mut *conn).await?;
             shapshot_query.execute(&mut *conn).await?;
         }
@@ -495,7 +501,7 @@ mod tests {
     use time::OffsetDateTime;
 
     use super::*;
-    use crate::database::models::MetadataState;
+    use crate::database::models::{BucketType, MetadataState, SnapshotState, StorageClass};
     use crate::database::test_helpers::*;
 
     async fn is_bucket_key_approved(
@@ -1173,6 +1179,339 @@ mod tests {
                 .await
                 .expect("query success")
         );
+    }
+
+    // Test correctness of soft deletion if there is no snapshots at all
+    #[tokio::test]
+    async fn test_soft_delete_no_snapshots() {
+        let db = setup_database().await;
+        let mut conn = db.begin().await.expect("connection");
+
+        let user_id = sample_user(&mut conn, "user@domain.tld").await;
+        let bucket_id = sample_bucket(&mut *conn, &user_id).await;
+
+        // Create a metadata entry that is not snapshotted
+        let metadata_id = create_metadata(
+            &mut *conn,
+            &bucket_id,
+            "mcid-1",
+            "rcid-1",
+            MetadataState::Current,
+            None,
+            None,
+        )
+        .await;
+
+        // Assert that the metadata is current
+        assert_eq!(
+            Bucket::current_version(&mut *conn, &bucket_id)
+                .await
+                .expect("query success"),
+            Some(metadata_id.clone())
+        );
+
+        // Soft delete the bucket
+        Bucket::soft_delete(&mut *conn, &bucket_id)
+            .await
+            .expect("soft delete success");
+
+        // Assert that the metadata is now deleted, and not current
+        assert!(Bucket::current_version(&mut *conn, &bucket_id)
+            .await
+            .expect("query success")
+            .is_none());
+
+        let deleted_metadata_state = sqlx::query_scalar!(
+            "SELECT state as 'state: MetadataState' FROM metadata WHERE id = $1;",
+            metadata_id,
+        )
+        .fetch_one(&mut *conn)
+        .await
+        .expect("query success");
+
+        assert_eq!(deleted_metadata_state, MetadataState::Deleted);
+
+        // Get the bucket and ensure it's soft deleted
+        let deleted_bucket =
+            sqlx::query_as!(Bucket, "SELECT * FROM buckets WHERE id = $1;", bucket_id,)
+                .fetch_one(&mut *conn)
+                .await
+                .expect("query success");
+        let deleted_metadata_updated_at = sqlx::query_scalar!(
+            "SELECT updated_at as 'updated_at: OffsetDateTime' FROM metadata WHERE id = $1;",
+            metadata_id,
+        )
+        .fetch_one(&mut *conn)
+        .await
+        .expect("query success");
+
+        // Assert that the bucket is soft deleted
+        assert!(deleted_bucket.deleted_at.is_some());
+        assert_eq!(deleted_bucket.deleted_at, Some(deleted_bucket.updated_at));
+
+        // Assert that the relevant timestamps are the same for the bucket and metadata
+        assert_eq!(deleted_bucket.deleted_at, Some(deleted_metadata_updated_at));
+
+        // Assert that the bucket type has not changed
+        assert_eq!(deleted_bucket.r#type, BucketType::Interactive);
+        assert_eq!(deleted_bucket.storage_class, StorageClass::Hot);
+    }
+
+    // Test correctness of soft deletion if there is a single snapshot, but
+    // the respective metadata is marked as 'deleted'. Generally tests wether
+    // 'deleted' metadata are ignored, even if they may or may not have a snapshot.
+    #[tokio::test]
+    async fn test_soft_delete_with_deleted_snapshot() {
+        let db = setup_database().await;
+        let mut conn = db.begin().await.expect("connection");
+
+        let user_id = sample_user(&mut conn, "user@domain.tld").await;
+        let bucket_id = sample_bucket(&mut *conn, &user_id).await;
+
+        // Create a metadata entry that is snapshotted, but marked as deleted
+        // Create it a minute ago to ensure it won't have the same timestamp as the bucket
+        // later on
+        let now = OffsetDateTime::now_utc() - Duration::from_secs(60);
+        let deleted_metadata_id = create_metadata(
+            &mut *conn,
+            &bucket_id,
+            "mcid-1",
+            "rcid-1",
+            MetadataState::Deleted,
+            Some(now),
+            None,
+        )
+        .await;
+
+        // Note: snapshot state is not relevant for this test
+        let _snapshot_id =
+            create_snapshot(&mut *conn, &deleted_metadata_id, SnapshotState::Completed).await;
+
+        // Assert that there is no current metadata
+        assert!(Bucket::current_version(&mut *conn, &bucket_id)
+            .await
+            .expect("query success")
+            .is_none());
+
+        // Soft delete the bucket
+        Bucket::soft_delete(&mut *conn, &bucket_id)
+            .await
+            .expect("soft delete success");
+
+        // Assert that there is still no current metadata
+        assert!(Bucket::current_version(&mut *conn, &bucket_id)
+            .await
+            .expect("query success")
+            .is_none());
+
+        let deleted_metadata_state = sqlx::query_scalar!(
+            "SELECT state as 'state: MetadataState' FROM metadata WHERE id = $1;",
+            deleted_metadata_id,
+        )
+        .fetch_one(&mut *conn)
+        .await
+        .expect("query success");
+
+        assert_eq!(deleted_metadata_state, MetadataState::Deleted);
+
+        // Get the bucket and ensure it's soft deleted
+        let deleted_bucket =
+            sqlx::query_as!(Bucket, "SELECT * FROM buckets WHERE id = $1;", bucket_id,)
+                .fetch_one(&mut *conn)
+                .await
+                .expect("query success");
+        let deleted_metadata_updated_at = sqlx::query_scalar!(
+            "SELECT updated_at as 'updated_at: OffsetDateTime' FROM metadata WHERE id = $1;",
+            deleted_metadata_id,
+        )
+        .fetch_one(&mut *conn)
+        .await
+        .expect("query success");
+
+        // Assert that the bucket is soft deleted with the correct timestamps
+        assert!(deleted_bucket.deleted_at.is_some());
+        assert_eq!(deleted_bucket.deleted_at, Some(deleted_bucket.updated_at));
+
+        // Assert that the timestamps differ between the bucket and metadata
+        // Since the metadata was marked as deleted, it should
+        // not be affected by the bucket soft delete
+        assert_ne!(deleted_bucket.deleted_at, Some(deleted_metadata_updated_at));
+
+        // Assert that the bucket type has not changed
+        assert_eq!(deleted_bucket.r#type, BucketType::Interactive);
+        assert_eq!(deleted_bucket.storage_class, StorageClass::Hot);
+    }
+
+    // Test correctness of soft deletion if there is at least one snapshot. Make sure
+    // that the latest snapshotted metadata is marked as current, and that the bucket
+    // ends up as a cold archive bucket.
+    #[tokio::test]
+    async fn test_soft_delete_with_snapshots() {
+        let db = setup_database().await;
+        let mut conn = db.begin().await.expect("connection");
+
+        let user_id = sample_user(&mut conn, "user@domain.tld").await;
+        let bucket_id = sample_bucket(&mut *conn, &user_id).await;
+
+        // NOTE: the state of the snapshotted metadata is not super relevant, so long as it is
+        //  not 'deleted'. Other tests ensure that metadata marked as 'deleted' is ignored, even
+        //  if it has a snapshot. We'll just use 'outdated' for making the lifecycle check for what
+        //  metadata ends up as current easier after we soft delete the bucket.
+        // Create an old metadata entry that is snapshotted
+        let now = OffsetDateTime::now_utc() - Duration::from_secs(120);
+        let snapshotted_metadata_id = create_metadata(
+            &mut *conn,
+            &bucket_id,
+            "mcid-1",
+            "rcid-1",
+            MetadataState::Outdated,
+            Some(now),
+            None,
+        )
+        .await;
+
+        // Note: snapshot state is not relevant for this test
+        let _snapshot_id = create_snapshot(
+            &mut *conn,
+            &snapshotted_metadata_id,
+            SnapshotState::Completed,
+        )
+        .await;
+
+        // NOTE: See note above, we'll use 'outdated' for this metadata entry as well
+        // Create a slightly less old metadata entry that is also snapshotted
+        let now = now + Duration::from_secs(60);
+        let later_snapshotted_metadata_id = create_metadata(
+            &mut *conn,
+            &bucket_id,
+            "mcid-2",
+            "rcid-2",
+            MetadataState::Outdated,
+            Some(now),
+            None,
+        )
+        .await;
+
+        // Note: snapshot state is not relevant for this test
+        let _later_snapshot_id = create_snapshot(
+            &mut *conn,
+            &later_snapshotted_metadata_id,
+            SnapshotState::Completed,
+        )
+        .await;
+
+        // Create one more metadata entry that is not snapshotted. Mark it as current.
+        let now = now + Duration::from_secs(120);
+        let non_snapshotted_metadata_id = create_metadata(
+            &mut *conn,
+            &bucket_id,
+            "mcid-3",
+            "rcid-3",
+            MetadataState::Current,
+            Some(now),
+            None,
+        )
+        .await;
+
+        // Assert that the non-snapshotted metadata is current
+        assert_eq!(
+            Bucket::current_version(&mut *conn, &bucket_id)
+                .await
+                .expect("query success"),
+            Some(non_snapshotted_metadata_id.clone())
+        );
+
+        // Soft delete the bucket
+        Bucket::soft_delete(&mut *conn, &bucket_id)
+            .await
+            .expect("soft delete success");
+
+        // Assert that the current metadata is the later snapshotted metadata
+        assert_eq!(
+            Bucket::current_version(&mut *conn, &bucket_id)
+                .await
+                .expect("query success"),
+            Some(later_snapshotted_metadata_id.clone())
+        );
+
+        // Query our metadata table for relevant state and timestamp updates
+
+        let non_snapshotted_metadata_state = sqlx::query_scalar!(
+            "SELECT state as 'state: MetadataState' FROM metadata WHERE id = $1;",
+            non_snapshotted_metadata_id,
+        )
+        .fetch_one(&mut *conn)
+        .await
+        .expect("query success");
+        let non_snapshotted_metadata_updated_at = sqlx::query_scalar!(
+            "SELECT updated_at as 'updated_at: OffsetDateTime' FROM metadata WHERE id = $1;",
+            non_snapshotted_metadata_id,
+        )
+        .fetch_one(&mut *conn)
+        .await
+        .expect("query success");
+
+        let snapshotted_metadata_state = sqlx::query_scalar!(
+            "SELECT state as 'state: MetadataState' FROM metadata WHERE id = $1;",
+            snapshotted_metadata_id,
+        )
+        .fetch_one(&mut *conn)
+        .await
+        .expect("query success");
+        let snapshotted_metadata_updated_at = sqlx::query_scalar!(
+            "SELECT updated_at as 'updated_at: OffsetDateTime' FROM metadata WHERE id = $1;",
+            snapshotted_metadata_id,
+        )
+        .fetch_one(&mut *conn)
+        .await
+        .expect("query success");
+
+        let later_snapshotted_metadata_state = sqlx::query_scalar!(
+            "SELECT state as 'state: MetadataState' FROM metadata WHERE id = $1;",
+            later_snapshotted_metadata_id,
+        )
+        .fetch_one(&mut *conn)
+        .await
+        .expect("query success");
+        let later_snapshotted_metadata_updated_at = sqlx::query_scalar!(
+            "SELECT updated_at as 'updated_at: OffsetDateTime' FROM metadata WHERE id = $1;",
+            later_snapshotted_metadata_id,
+        )
+        .fetch_one(&mut *conn)
+        .await
+        .expect("query success");
+
+        // Assert they are what we expect at this point
+        assert_eq!(non_snapshotted_metadata_state, MetadataState::Deleted);
+        assert_eq!(snapshotted_metadata_state, MetadataState::Outdated);
+        assert_eq!(later_snapshotted_metadata_state, MetadataState::Current);
+
+        assert_eq!(
+            non_snapshotted_metadata_updated_at,
+            snapshotted_metadata_updated_at,
+        );
+        assert_eq!(
+            snapshotted_metadata_updated_at,
+            later_snapshotted_metadata_updated_at,
+        );
+
+        // Get the bucket and ensure it's soft deleted
+        let deleted_bucket =
+            sqlx::query_as!(Bucket, "SELECT * FROM buckets WHERE id = $1;", bucket_id,)
+                .fetch_one(&mut *conn)
+                .await
+                .expect("query success");
+
+        // Assert that the bucket is soft deleted with the correct timestamps
+        assert!(deleted_bucket.deleted_at.is_none());
+        assert_eq!(
+            deleted_bucket.updated_at,
+            later_snapshotted_metadata_updated_at
+        );
+
+        // Assert that the bucket type is now cold backup
+        assert_eq!(deleted_bucket.r#type, BucketType::Backup);
+        assert_eq!(deleted_bucket.storage_class, StorageClass::Cold);
     }
 
     #[tokio::test]
