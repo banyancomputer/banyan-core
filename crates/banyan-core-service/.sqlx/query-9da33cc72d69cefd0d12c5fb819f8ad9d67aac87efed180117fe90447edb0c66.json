@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE metadata as m SET state = 'current'\n            WHERE m.bucket_id = $1 AND m.id = $2;",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "9da33cc72d69cefd0d12c5fb819f8ad9d67aac87efed180117fe90447edb0c66"
+}

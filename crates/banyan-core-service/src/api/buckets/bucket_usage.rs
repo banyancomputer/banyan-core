@@ -17,6 +17,7 @@ pub async fn handler(
     let database = state.database();
     let mut conn = database.acquire().await.unwrap();
 
+    // Note: this also enforeces that the bucket does not have `deleted_at` set
     if !Bucket::is_owned_by_user_id(&mut conn, &bucket_id, &user_id).await? {
         let err_msg = serde_json::json!({"msg": "not found"});
         return Ok((StatusCode::NOT_FOUND, Json(err_msg)).into_response());
