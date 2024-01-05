@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT m.id FROM metadata as m\n                JOIN snapshots as s ON s.metadata_id = m.id\n                WHERE m.bucket_id = $1 AND m.state != 'deleted'\n                ORDER BY m.created_at DESC\n                LIMIT 1;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "6c8c8257eae417a139964d14fc581d5ce8b9673e9b6a0b3e64a1fe7473fccee2"
+}
