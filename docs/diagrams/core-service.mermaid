@@ -1,14 +1,5 @@
-
 classDiagram
 direction BT
-class _sqlx_migrations {
-   text description
-   timestamp installed_on
-   boolean success
-   blob checksum
-   bigint execution_time
-   bigint version
-}
 class background_tasks {
    text original_task_id
    text task_name
@@ -50,6 +41,14 @@ class buckets {
    varchar(128) name
    varchar(32) type
    varchar(32) storage_class
+   text id
+}
+class deals {
+   text state
+   text accepted_by
+   timestamp accepted_at
+   timestamp created_at
+   timestamp updated_at
    text id
 }
 class device_api_keys {
@@ -127,6 +126,10 @@ class sessions {
    timestamp expires_at
    text id
 }
+class snapshot_block_locations {
+   text snapshot_id
+   text block_id
+}
 class snapshot_restore_requests {
    text user_id
    text snapshot_id
@@ -134,6 +137,17 @@ class snapshot_restore_requests {
    text state
    timestamp created_at
    timestamp completed_at
+   text id
+}
+class snapshot_segment_associations {
+   text snapshot_id
+   text segment_id
+}
+class snapshot_segments {
+   text deal_id
+   integer size
+   timestamp created_at
+   timestamp updated_at
    text id
 }
 class snapshots {
@@ -198,6 +212,7 @@ block_locations "metadata_id" --> "id" metadata
 block_locations "storage_host_id" --> "id" storage_hosts
 bucket_keys "bucket_id" --> "id" buckets
 buckets "user_id" --> "id" users
+deals "accepted_by" --> "id" storage_hosts
 device_api_keys "user_id" --> "id" users
 email_stats "user_id" --> "id" users
 emails "user_id" --> "id" users
@@ -205,9 +220,14 @@ escrowed_devices "user_id" --> "id" users
 metadata "bucket_id" --> "id" buckets
 oauth_provider_accounts "user_id" --> "id" users
 sessions "user_id" --> "id" users
+snapshot_block_locations "block_id" --> "id" blocks
+snapshot_block_locations "snapshot_id" --> "id" snapshots
 snapshot_restore_requests "snapshot_id" --> "id" snapshots
 snapshot_restore_requests "storage_host_id" --> "id" storage_hosts
 snapshot_restore_requests "user_id" --> "id" users
+snapshot_segment_associations "segment_id" --> "id" snapshot_segments
+snapshot_segment_associations "snapshot_id" --> "id" snapshots
+snapshot_segments "deal_id" --> "id" deals
 snapshots "metadata_id" --> "id" metadata
 snapshots_storage_hosts "snapshot_id" --> "id" snapshots
 snapshots_storage_hosts "storage_host_id" --> "id" storage_hosts

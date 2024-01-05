@@ -121,6 +121,7 @@ pub(crate) async fn create_deal(
         format!("metadata-cid-{}", bucket_id).as_str(),
         MetadataState::Current,
         None,
+        None,
     )
     .await;
 
@@ -233,6 +234,7 @@ pub(crate) async fn create_metadata(
     root_cid: &str,
     state: MetadataState,
     timestamp: Option<OffsetDateTime>,
+    previous_metadata_cid: Option<String>,
 ) -> String {
     // Note: be sure to use explicit timestamps to yeild the same precission
     //  we expect as a result from calls to NewMetadata::save(), Metadata::mark_current(),
@@ -243,14 +245,15 @@ pub(crate) async fn create_metadata(
     };
     sqlx::query_scalar!(
         r#"INSERT INTO
-                metadata (bucket_id, root_cid, metadata_cid, expected_data_size, state, created_at, updated_at)
-                VALUES ($1, $2, $3, 0, $4, $5, $5)
+                metadata (bucket_id, root_cid, metadata_cid, expected_data_size, state, created_at, updated_at, previous_metadata_cid)
+                VALUES ($1, $2, $3, 0, $4, $5, $5, $6)
                 RETURNING id;"#,
         bucket_id,
         root_cid,
         metadata_cid,
         state,
         now,
+        previous_metadata_cid
     )
     .fetch_one(conn)
     .await
@@ -351,7 +354,7 @@ pub(crate) async fn sample_metadata(
     let root_cid = format!("root-cid-{}", counter);
     let metadata_cid = format!("metadata-cid-{}", counter);
 
-    create_metadata(conn, bucket_id, &metadata_cid, &root_cid, state, None).await
+    create_metadata(conn, bucket_id, &metadata_cid, &root_cid, state, None, None).await
 }
 
 pub(crate) async fn sample_user(conn: &mut DatabaseConnection, email: &str) -> String {
