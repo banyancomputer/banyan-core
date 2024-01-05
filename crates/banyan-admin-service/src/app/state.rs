@@ -1,65 +1,49 @@
+use std::collections::BTreeMap;
 use std::path::PathBuf;
+use std::sync::Arc;
 
-use banyan_object_store::{
-    ObjectStore, ObjectStoreConnection, ObjectStoreConnectionError, ObjectStoreError,
-};
 use jwt_simple::prelude::*;
 use url::Url;
 
-use crate::app::{Config, Secrets};
-use crate::database::{self, Database, DatabaseSetupError};
-use crate::utils::{fingerprint_key_pair, fingerprint_public_key, SigningKey, VerificationKey};
+use crate::app::config::Config;
+use crate::app::secrets::{ProviderCredential, Secrets, ServiceKey};
+use crate::app::ServiceVerificationKey;
+use crate::database::{connect, Database, DatabaseSetupError};
+use crate::utils::{fingerprint_key_pair, fingerprint_public_key, VerificationKey};
 
 #[derive(Clone)]
 pub struct State {
-    // Resources
-    /// Access to the database
     database: Database,
-    /// Connection configuration for the upload store
-    upload_store_connection: ObjectStoreConnection,
-
-    // Secrets
-    /// All runtime secrets.rs
     secrets: Secrets,
-
-    // Service identity
-    /// The unique name of the service, as registered with the platform
     service_name: String,
-    /// The hostname of the service
     service_hostname: Url,
-    /// Key used to verify service tokens. See [`Secrets::service_signing_key`] for complimentary key.
-    service_verification_key: VerificationKey,
-
-    // Platform authentication
-    /// The unique name of the platform
+    service_verification_key: ServiceVerificationKey,
     platform_name: String,
-    /// The hostname of the platform
     platform_hostname: Url,
-    /// Key used to verify platform tokens.
     platform_verification_key: VerificationKey,
 }
 
 impl State {
     pub async fn from_config(config: &Config) -> Result<Self, StateSetupError> {
         // Try and parse the upload store connection
-        let upload_store_connection = config.upload_store_url().try_into()?;
         // Do a test setup to make sure the upload store exists and is writable as an early
         // sanity check
-        ObjectStore::new(&upload_store_connection)?;
-
-        let database = database::connect(&config.database_url()).await?;
+        let database = connect(&config.database_url()).await?;
 
         let service_signing_key = load_or_create_service_key(&config.service_key_path())?;
         let service_verification_key = service_signing_key.verifier();
-
         let platform_verification_key =
             load_platform_verification_key(&config.platform_public_key_path())?;
 
-        let secrets = Secrets::new(service_signing_key);
+        let mut credentials = BTreeMap::new();
+        credentials.insert(
+            Arc::from("google"),
+            ProviderCredential::new(config.google_client_id(), config.google_client_secret()),
+        );
+        let secrets = Secrets::new(credentials, service_signing_key);
 
         Ok(Self {
             database,
-            upload_store_connection,
 
             secrets,
 
@@ -77,10 +61,6 @@ impl State {
         self.database.clone()
     }
 
-    pub fn upload_store_connection(&self) -> &ObjectStoreConnection {
-        &self.upload_store_connection
-    }
-
     pub fn secrets(&self) -> Secrets {
         self.secrets.clone()
     }
@@ -89,35 +69,27 @@ impl State {
         &self.service_name
     }
 
+    pub fn platform_name(&self) -> &str {
+        &self.platform_name
+    }
+    pub fn platform_hostname(&self) -> Url {
+        self.platform_hostname.clone()
+    }
+    pub fn platform_verification_key(&self) -> VerificationKey {
+        self.platform_verification_key.clone()
+    }
+
     pub fn service_hostname(&self) -> Url {
         self.service_hostname.clone()
     }
 
-    pub fn service_verification_key(&self) -> VerificationKey {
+    pub fn service_verification_key(&self) -> ServiceVerificationKey {
         self.service_verification_key.clone()
-    }
-
-    pub fn platform_name(&self) -> &str {
-        &self.platform_name
-    }
-
-    pub fn platform_hostname(&self) -> Url {
-        self.platform_hostname.clone()
-    }
-
-    pub fn platform_verification_key(&self) -> VerificationKey {
-        self.platform_verification_key.clone()
     }
 }
 
 #[derive(Debug, thiserror::Error)]
 pub enum StateSetupError {
-    #[error("unable to parse url for upload store: {0}")]
-    ObjectStoreConnection(#[from] ObjectStoreConnectionError),
-
-    #[error("unable to access upload store: {0}")]
-    ObjectStore(#[from] ObjectStoreError),
-
     #[error("failed to setup the database: {0}")]
     DatabaseSetup(#[from] DatabaseSetupError),
 
@@ -137,7 +109,7 @@ pub enum StateSetupError {
     InvalidPlatformKey(jwt_simple::Error),
 }
 
-fn load_or_create_service_key(path: &PathBuf) -> Result<SigningKey, StateSetupError> {
+fn load_or_create_service_key(path: &PathBuf) -> Result<ServiceKey, StateSetupError> {
     // Try to load or otherwise generate a new key
     let service_key_inner = if path.exists() {
         let service_key_bytes = std::fs::read(path).map_err(StateSetupError::ServiceKeyRead)?;
@@ -171,7 +143,7 @@ fn load_or_create_service_key(path: &PathBuf) -> Result<SigningKey, StateSetupEr
         service_key.with_key_id(&fingerprint)
     };
 
-    Ok(SigningKey::new(service_key_inner))
+    Ok(ServiceKey::new(service_key_inner))
 }
 
 fn load_platform_verification_key(path: &PathBuf) -> Result<VerificationKey, StateSetupError> {

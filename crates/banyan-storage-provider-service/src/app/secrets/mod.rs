@@ -1,6 +1,6 @@
 use crate::utils::SigningKey;
 
-/// Application run-time secrets
+/// Application run-time secrets.rs
 #[derive(Clone)]
 pub struct Secrets {
     /// Application signing key

@@ -1,0 +1,5 @@
+Cargo.lock
+.env
+dist/
+data/server.db
+frontend/node_modules/
