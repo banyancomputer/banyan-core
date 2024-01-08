@@ -1,22 +1,26 @@
 use std::time::Duration;
 
+use axum::body::{boxed, BoxBody};
 use axum::error_handling::HandleErrorLayer;
 use axum::extract::DefaultBodyLimit;
 use axum::handler::HandlerWithoutStateExt;
+use axum::response::Response;
+use axum::routing::get;
 use axum::{Router, Server, ServiceExt};
 use futures::future::join_all;
-use http::header;
+use http::{header, Request, StatusCode};
 use tokio::task::JoinHandle;
-use tower::ServiceBuilder;
+use tower::{ServiceBuilder, ServiceExt as OtherServiceExt};
 use tower_http::classify::{ServerErrorsAsFailures, SharedClassifier};
 use tower_http::request_id::MakeRequestUuid;
 use tower_http::sensitive_headers::{
     SetSensitiveRequestHeadersLayer, SetSensitiveResponseHeadersLayer,
 };
-use tower_http::services::ServeDir;
+use tower_http::services::{ServeDir, ServeFile};
 use tower_http::trace::{DefaultMakeSpan, DefaultOnFailure, DefaultOnResponse, TraceLayer};
 use tower_http::validate_request::ValidateRequestHeaderLayer;
 use tower_http::{LatencyUnit, ServiceBuilderExt};
+use tower_http::services::fs::ServeFileSystemResponseBody;
 use tracing::Level;
 
 use crate::app::{AppState, Config};
@@ -98,10 +102,11 @@ pub async fn run(config: Config) {
 
     // TODO: service index.html from dist if not found
     let static_assets =
-        ServeDir::new("dist").not_found_service(error_handlers::not_found_handler.into_service());
+        ServeDir::new("/Users/phristov/code/banyan/banyan-core/crates/banyan-admin-service/dist").not_found_service(error_handlers::not_found_handler.into_service());
     // Create our root router for handling requests
     let root_router = Router::new()
         .nest("/api/v1", api::router(app_state.clone()))
+        .route("/login", get(login_page_handler))
         .nest("/_status", health_check::router(app_state.clone()))
         .with_state(app_state)
         .fallback_service(static_assets);
@@ -124,4 +129,19 @@ pub async fn run(config: Config) {
     let _ = shutdown_handle.await;
 
     let _ = tokio::time::timeout(Duration::from_secs(5), join_all([web_handle])).await;
+}
+
+async fn login_page_handler<B: std::marker::Send + 'static>(
+    req: Request<B>,
+) -> Result<Response<BoxBody>, (StatusCode, String)> {
+    match ServeFile::new("./dist/login.html").oneshot(req).await {
+        Ok(res) => {
+            println!("{}", res.status());
+            Ok(res.map(boxed))
+        },
+        Err(err) => Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Something went wrong serving the login page: {}", err),
+        )),
+    }
 }
