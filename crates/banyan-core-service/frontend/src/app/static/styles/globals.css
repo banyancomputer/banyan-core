@@ -76,6 +76,10 @@ input {
     width: unset !important;
 }
 
+.Toastify__toast {
+    min-height: unset;
+}
+
 .Toastify__toast-icon {
     width: 24px;
     height: 24px;

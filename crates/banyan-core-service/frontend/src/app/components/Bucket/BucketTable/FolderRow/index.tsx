@@ -69,7 +69,7 @@ export const FolderRow: React.FC<{
         setIsFolderDragingOver(false);
 
         if (event?.dataTransfer.files.length) {
-            setFiles(Array.from(event.dataTransfer.files).map(file => ({ file, isUploaded: false })));
+            setFiles(Array.from(event.dataTransfer.files).map(file => ({ file, status: 'pending' })));
             setAreFilesDropped(true);
 
             return;

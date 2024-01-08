@@ -39,7 +39,7 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         preventDefaultDragAction(event);
 
         if (event?.dataTransfer.files.length) {
-            setFiles(Array.from(event.dataTransfer.files).map(file => ({ file, isUploaded: false })));
+            setFiles(Array.from(event.dataTransfer.files).map(file => ({ file, status: 'pending' })));
             setAreFilesDropped(true);
 
             return;
