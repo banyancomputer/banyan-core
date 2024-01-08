@@ -16,7 +16,7 @@ impl MailgunHookRequest {
         self.event_data.event().into()
     }
 
-    pub fn message_id(&self) -> Uuid {
+    pub fn message_id(&self) -> Option<Uuid> {
         self.event_data.message_id()
     }
 

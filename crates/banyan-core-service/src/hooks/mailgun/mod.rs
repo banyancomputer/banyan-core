@@ -34,7 +34,16 @@ pub async fn handler(
         .await
         .map_err(MailgunHookError::QueryFailed)?;
 
-    let email_id = request.message_id().to_string();
+    let email_id = match request.message_id() {
+        Some(mid) => mid.to_string(),
+        None => {
+            // This is most likely the test webhook which we need to do no further work with. Just
+            // in case log that it occurred to prevent silent failures.
+            tracing::warn!("received mailgun test webhook");
+            return Ok((StatusCode::OK, ()).into_response());
+        },
+    };
+
     let email_state = sqlx::query_as!(
         EmailState,
         "SELECT user_id, state as 'state: EmailMessageState' FROM emails WHERE id = $1;",
