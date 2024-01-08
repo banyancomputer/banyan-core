@@ -14,21 +14,20 @@ pub async fn handler(
 ) -> Result<Response, DeleteBucketError> {
     let bucket_id = bucket_id.to_string();
     let user_id = user_identity.id().to_string();
+
     let database = state.database();
     let mut conn = database.begin().await?;
 
-    // Check that the bucket exists and is owned by the user
-    // Note: this also enforces that the bucket does not have `deleted_at` set
+    // Check that the bucket exists, is active, and is owned by the user
     if !Bucket::is_owned_by_user_id(&mut conn, &bucket_id, &user_id).await? {
         let err_msg = serde_json::json!({"msg": "not found"});
         return Ok((StatusCode::NOT_FOUND, Json(err_msg)).into_response());
     }
 
-    // Soft delete the bucket
-    Bucket::soft_delete(&mut conn, &bucket_id).await?;
+    Bucket::delete(&mut conn, &bucket_id).await?;
 
-    // Commit the txn and return
     conn.commit().await?;
+
     Ok((StatusCode::NO_CONTENT, ()).into_response())
 }
 

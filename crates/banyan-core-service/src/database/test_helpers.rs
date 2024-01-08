@@ -151,8 +151,7 @@ pub(crate) async fn create_deal(
         .await
         .unwrap();
     let snapshot_id = create_snapshot(database, &metadata_id, SnapshotState::Pending)
-        .await
-        .unwrap();
+        .await;
     create_snapshot_segment_association(database, snapshot_id, segment_id)
         .await
         .unwrap();
@@ -194,7 +193,7 @@ pub(crate) async fn create_snapshot(
     database: &mut DatabaseConnection,
     metadata_id: &str,
     snapshot_state: SnapshotState,
-) -> Result<String, sqlx::Error> {
+) -> String {
     let snapshot_state = snapshot_state.to_string();
     sqlx::query_scalar!(
         r#"INSERT INTO snapshots (metadata_id, state)
@@ -205,6 +204,7 @@ pub(crate) async fn create_snapshot(
     )
     .fetch_one(database)
     .await
+    .expect("snapshot creation")
 }
 
 pub(crate) async fn create_hot_bucket(
