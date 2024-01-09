@@ -31,6 +31,7 @@ pub async fn handler(
                WHERE b.user_id = $1
                    AND b.id = $2
                    AND m.id = $3
+                   AND m.state != 'deleted'
                    AND s.id IS NULL;"#,
         user_id,
         bucket_id,

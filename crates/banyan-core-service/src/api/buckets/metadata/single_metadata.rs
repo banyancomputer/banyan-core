@@ -14,6 +14,7 @@ pub async fn handler(
     Path((bucket_id, metadata_id)): Path<(Uuid, Uuid)>,
 ) -> Response {
     let user_id = user_identity.id().to_string();
+    // NOTE: this will not return any metadata in the 'deleted' state
     let query_result = PartialMetadataWithSnapshot::locate_specific(
         &state.database(),
         user_id,

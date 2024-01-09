@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT * FROM buckets WHERE user_id = $1;",
+  "query": "SELECT * FROM buckets WHERE user_id = $1 AND id = $2 AND deleted_at IS NULL;",
   "describe": {
     "columns": [
       {
@@ -27,18 +27,30 @@
         "name": "storage_class",
         "ordinal": 4,
         "type_info": "Text"
+      },
+      {
+        "name": "deleted_at",
+        "ordinal": 5,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "updated_at",
+        "ordinal": 6,
+        "type_info": "Datetime"
       }
     ],
     "parameters": {
-      "Right": 1
+      "Right": 2
     },
     "nullable": [
       false,
       false,
       false,
       false,
+      false,
+      true,
       false
     ]
   },
-  "hash": "fdbbccfd92a3e07223943d9cf7a85a179200b35951096b741e454bbc7ddb38e9"
+  "hash": "61dd3b0ecb5ce49043a21a904bdcf558a26fc358a858b2c6a996ddc7e5712f28"
 }

@@ -65,6 +65,10 @@ pub async fn handler(
     let bucket_id = Metadata::get_bucket_id(&mut db_conn, &db_metadata_id)
         .await
         .map_err(ReportUploadError::MarkCurrentFailed)?;
+
+    // TODO: if a storage host is reporting for a piece of metadata in a bucket that has since
+    // been soft-deleted, then this will return an error.
+    // We should handle that invariant more explicitly.
     Metadata::mark_current(
         &mut db_conn,
         &bucket_id,

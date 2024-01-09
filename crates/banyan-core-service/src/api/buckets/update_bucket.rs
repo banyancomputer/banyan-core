@@ -19,7 +19,7 @@ pub async fn handler(
     let name = bucket.name;
 
     let query_result = sqlx::query!(
-        r#"UPDATE buckets SET name = $1 WHERE id = $2 and user_id = $3;"#,
+        r#"UPDATE buckets SET name = $1 WHERE id = $2 and user_id = $3 AND deleted_at IS NULL;"#,
         name,
         bucket_id,
         user_id
