@@ -66,7 +66,6 @@ const App = () => {
                                 <TombProvider>
                                     <FileUploadProvider>
                                         <FilePreviewProvider>
-                                            <Notifications />
                                             <Modal />
                                             <FilePreview />
                                             <Modal />

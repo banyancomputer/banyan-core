@@ -8,7 +8,7 @@ import { Fallback } from '@components/common/Fallback';
 import { useTomb } from '@/app/contexts/tomb';
 import { useModal } from '@/app/contexts/modals';
 
-import { ArrowDown, Close, EmptyIcon, ErrorBannerIcon } from '@static/images/common';
+import { ArrowDown, Close, EmptyIcon } from '@static/images/common';
 
 const Trash = () => {
     const { trash } = useTomb();
@@ -36,7 +36,6 @@ const Trash = () => {
                     <>
                         {isLabelVisible &&
                             <div className="relative mb-5 flex items-start gap-3 p-4 border-1 rounded-md bg-gray-200 border-gray-600">
-                                <div><ErrorBannerIcon /></div>
                                 <div className="text-xs">
                                     <h6 className="font-semibold">{`${messages.trashIsFull}`}</h6>
                                     <p className="mt-1 ">{`${messages.clickToEmptyTrash}`}.</p>
