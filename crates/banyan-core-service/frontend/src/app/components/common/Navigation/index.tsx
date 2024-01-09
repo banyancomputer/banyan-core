@@ -31,7 +31,7 @@ export const Navigation = () => {
 
 		if (!event?.dataTransfer.files.length) { return; }
 
-		setFiles(Array.from(event.dataTransfer.files).map(file => ({ file, isUploaded: false })));
+		setFiles(Array.from(event.dataTransfer.files).map(file => ({ file, status: 'pending' })));
 		setDroppedBucket(bucket!);
 	};
 
