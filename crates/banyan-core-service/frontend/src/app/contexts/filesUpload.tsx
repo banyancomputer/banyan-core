@@ -36,7 +36,7 @@ export const FileUploadProvider: FC<{ children: ReactNode }> = ({ children }) =>
                 file.status = 'uploading';
                 setFiles(prev => [...prev]);
                 await uploadFile(bucket, path, file.file.name, arrayBuffer, folder);
-                file.status = 'failed';
+                file.status = 'success';
                 setFiles(prev => [...prev]);
             } catch (error: any) {
                 file.status = 'failed';
