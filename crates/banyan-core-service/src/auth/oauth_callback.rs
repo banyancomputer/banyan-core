@@ -129,7 +129,7 @@ pub async fn handler(
 
             // Try creating the top level User record
             let new_user_id = sqlx::query_scalar!(
-                r#"INSERT 
+                r#"INSERT
                     INTO users (email, verified_email, display_name, locale, profile_image)
                     VALUES (LOWER($1), $2, $3, $4, $5)
                 RETURNING id;"#,
@@ -146,7 +146,7 @@ pub async fn handler(
             // TODO: rm hardcoded provider
             // Try creating the provider account record
             sqlx::query!(
-                r#"INSERT 
+                r#"INSERT
                     INTO oauth_provider_accounts (user_id, provider, provider_id)
                     VALUES ($1, 'google', $2);"#,
                 new_user_id,

@@ -67,6 +67,7 @@ tracing = "^0.1"
 tracing-appender = "^0.2"
 tracing-futures = { version = "^0.2", default-features = false, features = ["std-future"] }
 tracing-subscriber = { version = "^0.3", default-features = false, features = ["ansi", "env-filter", "fmt", "local-time", "time", "tracing"] }
+async-stripe = { version = "0.26.0", default-features = false, features = ["runtime-tokio-hyper-rustls", "checkout", "billing", "fraud", "orders", "tax-calculation", "events", "webhook-endpoints", "chrono", "webhook-events", "connect"] }
 
 [dev-dependencies]
 hyper = "^0.14"
