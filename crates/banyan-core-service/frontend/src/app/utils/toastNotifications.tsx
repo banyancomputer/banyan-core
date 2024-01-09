@@ -1,7 +1,7 @@
 import { ReactElement } from 'react';
 import { toast } from 'react-toastify';
 
-import { UploadFileProgress } from '@/app/components/common/UploadFileProgress';
+import { UploadFileProgress } from '@components/common/UploadFileProgress';
 
 import { Close } from '@static/images/common';
 
@@ -53,8 +53,9 @@ export class ToastNotifications {
                 icon: false,
                 autoClose: false,
                 closeButton: false,
-                bodyStyle: { padding: '0', margin: '0', height: '100%' },
-                style: { padding: '0', borderRadius: '12px 12px 0 0' },
+                toastId: Date.now(),
+                bodyStyle: { padding: '0', margin: '0', height: '100%', minHeight: 'unset !important' },
+                style: { padding: '0', margin: '0', borderRadius: '4px', minHeight: 'unset !important' },
             });
     };
 

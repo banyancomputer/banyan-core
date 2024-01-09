@@ -1,6 +1,6 @@
 import React, { Dispatch, FC, ReactElement, ReactNode, SetStateAction, createContext, useContext, useState } from 'react';
-import { CreateSecretKeyModal } from '@/app/components/common/Modal/CreateSecretKeyModal';
-import { EnterSecretKeyModal } from '@/app/components/common/Modal/EnterSecretKeyModal';
+import { CreateSecretKeyModal } from '@components/common/Modal/CreateSecretKeyModal';
+import { EnterSecretKeyModal } from '@components/common/Modal/EnterSecretKeyModal';
 
 export interface StateInterface {
 	content: ReactNode | null;

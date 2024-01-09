@@ -1,4 +1,4 @@
-import { base64ToString, stringToBase64 } from '@app/utils/base64';
+import { base64ToString, stringToBase64 } from '@utils/base64';
 
 const decodedValue = 'test string';
 /** Converted through https://www.base64encode.org */

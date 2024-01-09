@@ -6,7 +6,7 @@ import { Bucket } from '@app/types/bucket';
 
 import { Upload } from '@static/images/common';
 import { useFilesUpload } from '@app/contexts/filesUpload';
-import { ToastNotifications } from '@app/utils/toastNotifications';
+import { ToastNotifications } from '@utils/toastNotifications';
 
 export const EmptyState: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const { messages } = useIntl();
@@ -20,13 +20,13 @@ export const EmptyState: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
 
         if (!event.dataTransfer.files) { return; }
 
-        setFiles(Array.from(event.dataTransfer.files).map(file => ({ file, isUploaded: false })));
+        setFiles(Array.from(event.dataTransfer.files).map(file => ({ file, status: 'pending' })));
     };
 
     const handleChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         if (!event.target.files) { return; }
 
-        setFiles(Array.from(event.target.files).map(file => ({ file, isUploaded: false })));
+        setFiles(Array.from(event.target.files).map(file => ({ file, status: 'pending' })));
     };
 
     const handleDrag = async (event: React.DragEvent<HTMLInputElement | HTMLLabelElement>) => {

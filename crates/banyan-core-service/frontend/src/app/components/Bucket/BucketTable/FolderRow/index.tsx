@@ -12,10 +12,10 @@ import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { getDateLabel } from '@/app/utils/date';
 import { convertFileSize } from '@/app/utils/storage';
 import { useTomb } from '@/app/contexts/tomb';
-import { stringToBase64 } from '@app/utils/base64';
+import { stringToBase64 } from '@utils/base64';
 import { useFilesUpload } from '@app/contexts/filesUpload';
-import { ToastNotifications } from '@app/utils/toastNotifications';
-import { handleDrag, handleDragEnd, handleDragStart, preventDefaultDragAction } from '@app/utils/dragHandlers';
+import { ToastNotifications } from '@utils/toastNotifications';
+import { handleDrag, handleDragEnd, handleDragStart, preventDefaultDragAction } from '@utils/dragHandlers';
 
 import { ChevronUp, Done } from '@static/images/common';
 
@@ -69,7 +69,7 @@ export const FolderRow: React.FC<{
         setIsFolderDragingOver(false);
 
         if (event?.dataTransfer.files.length) {
-            setFiles(Array.from(event.dataTransfer.files).map(file => ({ file, isUploaded: false })));
+            setFiles(Array.from(event.dataTransfer.files).map(file => ({ file, status: 'pending' })));
             setAreFilesDropped(true);
 
             return;
@@ -124,7 +124,7 @@ export const FolderRow: React.FC<{
                     </thead>
                     <tbody>
                         <tr
-                            className={`cursor-pointer !border-1 border-transparent border-b-border-regular text-text-900 font-normal last:border-b-0 hover:bg-bucket-bucketHoverBackground ${isFolderDraggingOver && '!border-draggingBorder'}`}
+                            className={`cursor-pointer text-text-900 font-normal last:border-b-0 hover:bg-bucket-bucketHoverBackground ${folder?.files?.length && '!border-1 border-transparent border-b-border-regular'} ${isFolderDraggingOver && '!border-draggingBorder'}`}
                             onDoubleClick={() => goToFolder(bucket)}
                             draggable
                         >
@@ -134,12 +134,14 @@ export const FolderRow: React.FC<{
                             >
                                 <DraggingPreview name={folder.name} isDragging={isDragging} type="dir" />
                                 <FileCell name={folder.name} type="dir" />
-                                <span
-                                    className={`${!folder.files?.length && 'rotate-180'} cursor-pointer p-2`}
-                                    onClick={expandFolder}
-                                >
-                                    <ChevronUp />
-                                </span>
+                                {!parrentFolder &&
+                                    <span
+                                        className={`${!folder.files?.length && 'rotate-180'} cursor-pointer p-2`}
+                                        onClick={expandFolder}
+                                    >
+                                        <ChevronUp />
+                                    </span>
+                                }
                             </td>
                             <td className="px-6 py-4">{getDateLabel(+folder.metadata.modified)}</td>
                             <td className="px-6 py-4">{convertFileSize(folder.metadata.size)}</td>

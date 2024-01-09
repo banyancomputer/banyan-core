@@ -1,8 +1,8 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 
-import ECCKeystore from '@app/utils/crypto/ecc/keystore';
-import { EscrowedKeyMaterial, PrivateKeyMaterial } from '@app/utils/crypto/types';
-import { setUserDataEscrowedKeyMaterial } from '@app/utils/cookies';
+import ECCKeystore from '@utils/crypto/ecc/keystore';
+import { EscrowedKeyMaterial, PrivateKeyMaterial } from '@utils/crypto/types';
+import { setUserDataEscrowedKeyMaterial } from '@utils/cookies';
 import { useSession } from '@/app/contexts/session';
 import { AuthClient } from '@/api/auth';
 

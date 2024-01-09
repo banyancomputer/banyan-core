@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT m.id FROM metadata AS m\n               JOIN buckets AS b ON m.bucket_id = b.id\n               LEFT JOIN snapshots AS s ON s.metadata_id = m.id\n               WHERE b.user_id = $1\n                   AND b.id = $2\n                   AND m.id = $3\n                   AND m.state != 'deleted'\n                   AND s.id IS NULL;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "543b0d7a54d2dc36593b8165eb35373e4958c6b78464f7452d111a2835089a3a"
+}

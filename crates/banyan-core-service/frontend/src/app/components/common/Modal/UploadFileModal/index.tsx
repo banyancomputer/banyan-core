@@ -32,27 +32,27 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null; folder?: Browse
         setSelectedFolder(option);
     };
 
-    const handleChange = async(event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         if (!event.target.files) { return; }
 
-        setFiles(Array.from(event.target.files).map(file => ({ file, isUploaded: false })));
+        setFiles(Array.from(event.target.files).map(file => ({ file, status: 'pending' })));
     };
 
-    const handleDrop = async(event: React.DragEvent<HTMLInputElement | HTMLLabelElement>) => {
+    const handleDrop = async (event: React.DragEvent<HTMLInputElement | HTMLLabelElement>) => {
         event.preventDefault();
         event.stopPropagation();
 
         if (!event.dataTransfer.files) { return; }
 
-        setFiles(Array.from(event.dataTransfer.files).map(file => ({ file, isUploaded: false })));
+        setFiles(Array.from(event.dataTransfer.files).map(file => ({ file, status: 'pending' })));
     };
 
-    const handleDrag = async(event: React.DragEvent<HTMLInputElement | HTMLLabelElement>) => {
+    const handleDrag = async (event: React.DragEvent<HTMLInputElement | HTMLLabelElement>) => {
         event.preventDefault();
         event.stopPropagation();
     };
 
-    const upload = async() => {
+    const upload = async () => {
         if (!files.length) { return; }
         try {
             closeModal();

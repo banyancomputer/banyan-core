@@ -2,14 +2,14 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useIntl } from 'react-intl';
 import { useNavigate } from 'react-router-dom';
 
-import { BucketActions } from '@/app/components/common/BucketActions';
+import { BucketActions } from '@components/common/BucketActions';
 import { LockedTooltip } from '@components/common/Navigation/LockedTooltip';
 
 import { Bucket as IBucket } from '@/app/types/bucket';
 import { popupClickHandler } from '@/app/utils';
 import { useFilesUpload } from '@app/contexts/filesUpload';
-import { ToastNotifications } from '@app/utils/toastNotifications';
-import { preventDefaultDragAction } from '@app/utils/dragHandlers';
+import { ToastNotifications } from '@utils/toastNotifications';
+import { preventDefaultDragAction } from '@utils/dragHandlers';
 
 import { BucketIcon } from '@static/images/buckets';
 import { Dots, Question } from '@static/images/common';
@@ -59,7 +59,7 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
 
         if (!event?.dataTransfer.files.length) { return; }
 
-        setFiles(Array.from(event.dataTransfer.files).map(file => ({ file, isUploaded: false })));
+        setFiles(Array.from(event.dataTransfer.files).map(file => ({ file, status: 'pending' })));
         setAreFilesDropped(true);
     };
 

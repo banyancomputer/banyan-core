@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
 import { useIntl } from 'react-intl';
 
-import { UploadFileModal } from '@/app/components/common/Modal/UploadFileModal';
-import { Fallback } from '@/app/components/common/Fallback';
+import { UploadFileModal } from '@components/common/Modal/UploadFileModal';
+import { Fallback } from '@components/common/Fallback';
 import { Bucket } from '@components/Home/Bucket';
 
 import { useTomb } from '@/app/contexts/tomb';

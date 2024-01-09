@@ -3,17 +3,26 @@
     "target": "esnext",
     "baseUrl": ".",
     "paths": {
-      "@static/*": [
-        "./src/app/static/*"
-      ],
-      "@components/*": [
-        "./src/app/components/*"
+      "@/*": [
+        "./src/*"
       ],
       "@app/*": [
         "./src/app/*"
       ],
-      "@/*": [
-        "./src/*"
+      "@components/*": [
+        "./src/app/components/*"
+      ],
+      "@pages/*": [
+        "./src/app/pages/*"
+      ],
+      "@layouts/*": [
+        "./src/app/layouts/*"
+      ],
+      "@utils/*": [
+        "./src/app/utils/*"
+      ],
+      "@static/*": [
+        "./src/app/static/*"
       ],
     },
     "lib": [

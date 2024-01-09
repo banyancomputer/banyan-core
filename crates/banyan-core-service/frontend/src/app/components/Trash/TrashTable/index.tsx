@@ -3,8 +3,8 @@ import { useIntl } from 'react-intl';
 
 import { ActionsCell } from '@components/common/ActionsCell';
 import { TrashActions } from '../TrashFileActions';
-import { FileIcon } from '@/app/components/common/FileIcon';
-import { SortCell } from '@/app/components/common/SortCell';
+import { FileIcon } from '@components/common/FileIcon';
+import { SortCell } from '@components/common/SortCell';
 
 import { Bucket, BrowserObject } from '@/app/types/bucket';
 import { getDateLabel } from '@/app/utils/date';

@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useIntl } from 'react-intl';
 
-import { TrashTable } from '@/app/components/Trash/TrashTable';
-import { EmptyTrashModal } from '@/app/components/common/Modal/EmptyTrashModal';
-import { Fallback } from '@/app/components/common/Fallback';
+import { TrashTable } from '@components/Trash/TrashTable';
+import { EmptyTrashModal } from '@components/common/Modal/EmptyTrashModal';
+import { Fallback } from '@components/common/Fallback';
 
 import { useTomb } from '@/app/contexts/tomb';
 import { useModal } from '@/app/contexts/modals';

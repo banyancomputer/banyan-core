@@ -1,5 +1,5 @@
 import { BrowserObject, FileMetadata } from "@app/types/bucket";
-import { sortByMetadataField, sortByName, sortByType, sortFiles } from "@app/utils/sort";
+import { sortByMetadataField, sortByName, sortByType, sortFiles } from "@utils/sort";
 
 
 export class MockBrowserObject implements BrowserObject {
