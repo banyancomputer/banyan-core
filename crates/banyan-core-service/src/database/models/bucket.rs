@@ -369,10 +369,7 @@ impl Bucket {
     /// read-only storage class of 'cold'.
     ///
     /// This should be run in a transaction.
-    pub async fn delete(
-        conn: &mut DatabaseConnection,
-        bucket_id: &str,
-    ) -> Result<(), sqlx::Error> {
+    pub async fn delete(conn: &mut DatabaseConnection, bucket_id: &str) -> Result<(), sqlx::Error> {
         let now = OffsetDateTime::now_utc();
 
         // If there is a metadata instance with a completed snapshot associated still active in the
@@ -1404,14 +1401,32 @@ mod tests {
         .await;
 
         // Assert that the non-snapshotted metadata is current
-        assert_metadata_in_state(&mut conn, &non_snapshotted_metadata_id, MetadataState::Current).await;
+        assert_metadata_in_state(
+            &mut conn,
+            &non_snapshotted_metadata_id,
+            MetadataState::Current,
+        )
+        .await;
 
-        Bucket::delete(&mut conn, &bucket_id).await.expect("delete success");
+        Bucket::delete(&mut conn, &bucket_id)
+            .await
+            .expect("delete success");
 
         // Assert that the metadata versions are in the correct states
-        assert_metadata_in_state(&mut conn, &later_snapshotted_metadata_id, MetadataState::Current).await;
-        assert_metadata_in_state(&mut conn, &non_snapshotted_metadata_id, MetadataState::Deleted).await;
-        assert_metadata_in_state(&mut conn, &snapshotted_metadata_id, MetadataState::Outdated).await;
+        assert_metadata_in_state(
+            &mut conn,
+            &later_snapshotted_metadata_id,
+            MetadataState::Current,
+        )
+        .await;
+        assert_metadata_in_state(
+            &mut conn,
+            &non_snapshotted_metadata_id,
+            MetadataState::Deleted,
+        )
+        .await;
+        assert_metadata_in_state(&mut conn, &snapshotted_metadata_id, MetadataState::Outdated)
+            .await;
 
         // Assert that the bucket had the deleted_at field correctly set
         let deleted_field = sqlx::query_scalar!(

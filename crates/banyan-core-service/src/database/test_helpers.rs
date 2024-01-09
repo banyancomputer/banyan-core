@@ -150,8 +150,7 @@ pub(crate) async fn create_deal(
     let segment_id = create_snapshot_segment(database, deal_id.to_string(), size.unwrap_or(262144))
         .await
         .unwrap();
-    let snapshot_id = create_snapshot(database, &metadata_id, SnapshotState::Pending)
-        .await;
+    let snapshot_id = create_snapshot(database, &metadata_id, SnapshotState::Pending).await;
     create_snapshot_segment_association(database, snapshot_id, segment_id)
         .await
         .unwrap();
