@@ -191,8 +191,14 @@ impl From<Box<dyn std::error::Error + Send + Sync + 'static>> for ClientError {
 #[derive(Debug)]
 #[non_exhaustive]
 enum ClientErrorKind {
+    #[allow(dead_code)]
     ApiResponseError(Box<dyn std::error::Error + Send + Sync + 'static>),
+
     AuthUnavailable,
+
+    #[allow(dead_code)]
     HttpClientError(reqwest::Error),
+
+    #[allow(dead_code)]
     ResponseFormatError(reqwest::Error),
 }
