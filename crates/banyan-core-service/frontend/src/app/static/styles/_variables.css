@@ -1,8 +1,9 @@
 :root {
     --button-secondary: #0F3A4A;
     --error: #CB3535;
-    --error-banner: #FFD7B2;
-    --error-banner-border: #ED770B;
+    --error-banner: #FDF0F0;;
+    --beta-banner: #FFD7B2;
+    --beta-banner-border: #ED770B;
     --login: #F7F7F7;
     --navigation-primary: #FEFCFA;
     --navigation-secondary: #F7EBE1;
@@ -46,8 +47,8 @@
 [prefers-color-scheme="dark"]:root {
     --button-secondary: #0F3A4A;
     --error: #CB3535;
-    --error-banner: #FFD7B2;
-    --error-banner-border: #ED770B;
+    --beta-banner: #FFD7B2;
+    --beta-banner-border: #ED770B;
     --login: #F7F7F7;
     --navigation-primary: #FEFCFA;
     --navigation-secondary: #F7EBE1;
