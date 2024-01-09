@@ -28,7 +28,7 @@ pub async fn handler(user_identity: UserIdentity, State(state): State<AppState>)
         INNER JOIN
             buckets b ON b.id = m.bucket_id
         WHERE
-            b.user_id = $1 AND m.state IN ('current', 'outdated', 'pending');"#,
+            b.user_id = $1 AND b.deleted_at IS NULL AND m.state IN ('current', 'outdated', 'pending');"#,
         user_id,
     )
     .fetch_one(&database)

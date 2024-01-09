@@ -36,6 +36,7 @@ pub async fn handler(
                 JOIN storage_grants AS sg ON sg.id = cg.id
                 WHERE b.user_id = $1 
                     AND b.id = $2
+                    AND b.deleted_at IS NULL
                     AND m.state NOT IN ('deleted', 'upload_failed');"#,
         user_id,
         bucket_id,

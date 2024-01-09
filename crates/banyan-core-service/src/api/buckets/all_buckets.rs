@@ -11,10 +11,13 @@ pub async fn handler(user_identity: UserIdentity, State(state): State<AppState>)
     let database = state.database();
 
     let user_id = user_identity.id().to_string();
-    let query_result =
-        sqlx::query_as!(Bucket, "SELECT * FROM buckets WHERE user_id = $1;", user_id,)
-            .fetch_all(&database)
-            .await;
+    let query_result = sqlx::query_as!(
+        Bucket,
+        "SELECT * FROM buckets WHERE user_id = $1 AND deleted_at IS NULL;",
+        user_id,
+    )
+    .fetch_all(&database)
+    .await;
 
     // note: this also includes user_id which wasn't being returned before and may cause
     // compatibility issues

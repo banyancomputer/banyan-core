@@ -26,7 +26,7 @@ pub async fn handler(
         PullBucketData,
         r#"SELECT m.bucket_id, m.id as metadata_id FROM metadata AS m
                JOIN buckets AS b ON m.bucket_id = b.id
-               WHERE b.user_id = $1 AND b.id = $2 AND m.id = $3;"#,
+               WHERE b.user_id = $1 AND b.id = $2 AND m.id = $3 AND m.state in ('outdated', 'current', 'pending');"#,
         user_id,
         db_bucket_id,
         db_metadata_id,

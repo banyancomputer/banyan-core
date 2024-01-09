@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT deleted_at as 'da: OffsetDateTime' FROM buckets WHERE id = $1;",
+  "describe": {
+    "columns": [
+      {
+        "name": "da: OffsetDateTime",
+        "ordinal": 0,
+        "type_info": "Datetime"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "1654c87464d41b0ab1a70f115f0578904e3c613bc662b0b6b8dabd7c2088e2bb"
+}
