@@ -14,7 +14,7 @@ import {
 } from '@/app/types/bucket';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 import { useSession } from './session';
-import { prettyFingerprintApiKeyPem, sortByType } from '@app/utils';
+import { destroyIsUserNew, prettyFingerprintApiKeyPem, sortByType } from '@app/utils';
 import { TermsAndColditionsClient } from '@/api/termsAndConditions';
 import { UserClient } from '@/api/user';
 import { handleNameDuplication } from '@utils/names';
@@ -59,7 +59,7 @@ const mutex = new Mutex();
 const TombContext = createContext<TombInterface>({} as TombInterface);
 
 export const TombProvider = ({ children }: { children: ReactNode }) => {
-	const { userData } = useSession();
+	const { userData, isUserNew } = useSession();
 	const navigate = useNavigate();
 	const { openEscrowModal, openModal } = useModal();
 	const { isLoading, keystoreInitialized, getEncryptionKey, getApiKey, escrowedKeyMaterial } = useKeystore();
@@ -91,8 +91,9 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 		tombMutex(tomb, async tomb => {
 			const key = await getEncryptionKey();
 			const wasm_buckets: WasmBucket[] = await tomb!.listBuckets();
-			if (!wasm_buckets.length) {
+			if (isUserNew) {
 				createBucketAndMount("My Drive", 'hot', 'interactive');
+				destroyIsUserNew();
 				return;
 			}
 			const buckets: Bucket[] = [];
@@ -334,24 +335,24 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
 	/** Uploads file to selected bucket/directory, updates buckets state */
 	const uploadFile = async (bucket: Bucket, uploadPath: string[], name: string, file: ArrayBuffer, folder?: BrowserObject) => {
-			tombMutex(bucket.mount!, async mount => {
-				const extstingFiles = (await mount.ls(uploadPath)).map(file => file.name);
-				let fileName = handleNameDuplication(name, extstingFiles);
-				await mount.write([...uploadPath, fileName], file);
-				if (folder) {
-					const files = await mount.ls(uploadPath);
-					folder.files = files.sort(sortByType);
-					setSelectedBucket(prev => ({ ...prev! }));
+		tombMutex(bucket.mount!, async mount => {
+			const extstingFiles = (await mount.ls(uploadPath)).map(file => file.name);
+			let fileName = handleNameDuplication(name, extstingFiles);
+			await mount.write([...uploadPath, fileName], file);
+			if (folder) {
+				const files = await mount.ls(uploadPath);
+				folder.files = files.sort(sortByType);
+				setSelectedBucket(prev => ({ ...prev! }));
 
-					return;
-				}
-				if (uploadPath.join('') !== folderLocation.join('')) { return; }
-				const files = await mount.ls(uploadPath) || [];
-				await updateBucketsState('files', files.sort(sortByType), bucket.id);
-				const isSnapshotValid = await mount.hasSnapshot();
-				await updateBucketsState('isSnapshotValid', isSnapshotValid, bucket.id);
-			});
-			await getStorageUsageState();
+				return;
+			}
+			if (uploadPath.join('') !== folderLocation.join('')) { return; }
+			const files = await mount.ls(uploadPath) || [];
+			await updateBucketsState('files', files.sort(sortByType), bucket.id);
+			const isSnapshotValid = await mount.hasSnapshot();
+			await updateBucketsState('isSnapshotValid', isSnapshotValid, bucket.id);
+		});
+		await getStorageUsageState();
 	};
 
 	/** Creates bucket snapshot */
