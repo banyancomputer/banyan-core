@@ -2,14 +2,17 @@ use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 
+use banyan_api_client::prelude::{Client, ClientBuilder};
+use jsonwebtoken::EncodingKey;
 use jwt_simple::prelude::*;
 use url::Url;
+use uuid::Uuid;
 
 use crate::app::config::Config;
 use crate::app::secrets::{ProviderCredential, Secrets, ServiceKey};
 use crate::app::ServiceVerificationKey;
 use crate::database::{connect, Database, DatabaseSetupError};
-use crate::utils::{fingerprint_key_pair, fingerprint_public_key, VerificationKey};
+use crate::utils::fingerprint_key_pair;
 
 #[derive(Clone)]
 pub struct State {
@@ -18,9 +21,7 @@ pub struct State {
     service_name: String,
     service_hostname: Url,
     service_verification_key: ServiceVerificationKey,
-    platform_name: String,
-    platform_hostname: Url,
-    platform_verification_key: VerificationKey,
+    client: Client,
 }
 
 impl State {
@@ -32,28 +33,27 @@ impl State {
 
         let service_signing_key = load_or_create_service_key(&config.service_key_path())?;
         let service_verification_key = service_signing_key.verifier();
-        let platform_verification_key =
-            load_platform_verification_key(&config.platform_public_key_path())?;
-
+        let banyan_admin_id = Uuid::parse_str("1538defd-2375-490b-b1eb-54a10b57153b").unwrap();
         let mut credentials = BTreeMap::new();
         credentials.insert(
             Arc::from("google"),
             ProviderCredential::new(config.google_client_id(), config.google_client_secret()),
         );
+        let encoding_key =
+            EncodingKey::from_ec_pem(service_signing_key.to_pem().unwrap().as_bytes()).unwrap();
         let secrets = Secrets::new(credentials, service_signing_key);
+        let mut api_client = ClientBuilder::default().build().expect("client");
+        api_client.set_credentials(banyan_admin_id, banyan_admin_id.to_string(), encoding_key);
 
         Ok(Self {
             database,
+            client: api_client,
 
             secrets,
 
             service_name: config.service_name().to_string(),
             service_hostname: config.service_hostname().clone(),
             service_verification_key,
-
-            platform_name: config.platform_name().to_string(),
-            platform_hostname: config.platform_hostname().clone(),
-            platform_verification_key,
         })
     }
 
@@ -69,22 +69,15 @@ impl State {
         &self.service_name
     }
 
-    pub fn platform_name(&self) -> &str {
-        &self.platform_name
-    }
-    pub fn platform_hostname(&self) -> Url {
-        self.platform_hostname.clone()
-    }
-    pub fn platform_verification_key(&self) -> VerificationKey {
-        self.platform_verification_key.clone()
-    }
-
     pub fn service_hostname(&self) -> Url {
         self.service_hostname.clone()
     }
 
     pub fn service_verification_key(&self) -> ServiceVerificationKey {
         self.service_verification_key.clone()
+    }
+    pub fn client(&self) -> Client {
+        self.client.clone()
     }
 }
 
@@ -144,18 +137,4 @@ fn load_or_create_service_key(path: &PathBuf) -> Result<ServiceKey, StateSetupEr
     };
 
     Ok(ServiceKey::new(service_key_inner))
-}
-
-fn load_platform_verification_key(path: &PathBuf) -> Result<VerificationKey, StateSetupError> {
-    let key_bytes = std::fs::read(path).map_err(StateSetupError::PlatformKeyRead)?;
-    let public_pem = String::from_utf8_lossy(&key_bytes);
-
-    let platform_verification_key_inner =
-        ES384PublicKey::from_pem(&public_pem).map_err(StateSetupError::InvalidPlatformKey)?;
-
-    // TODO: use normalized fingerprint -- blake3
-    let fingerprint = fingerprint_public_key(&platform_verification_key_inner);
-    let platform_verification_key_inner = platform_verification_key_inner.with_key_id(&fingerprint);
-
-    Ok(VerificationKey::new(platform_verification_key_inner))
 }

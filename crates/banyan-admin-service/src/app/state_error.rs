@@ -1,8 +1,8 @@
-use std::fmt::{self, Display, Formatter};
-
-use super::config::ConfigError;
+use std::fmt::Display;
 
 use crate::database::DatabaseSetupError;
+
+use super::config::ConfigError;
 
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]

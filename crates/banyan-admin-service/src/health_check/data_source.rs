@@ -28,21 +28,11 @@ pub trait DataSource {
 pub enum DataSourceError {
     #[error("one or more dependent services aren't available")]
     DependencyFailure,
-
-    #[error("service has received signal indicating it should shutdown")]
-    ShuttingDown,
 }
 
 pub type DynDataSource = Arc<dyn DataSource + Send + Sync>;
 
 pub struct StateDataSource(DynDataSource);
-
-impl StateDataSource {
-    #[cfg(test)]
-    pub fn new(dds: DynDataSource) -> Self {
-        Self(dds)
-    }
-}
 
 impl Deref for StateDataSource {
     type Target = DynDataSource;
@@ -81,32 +71,5 @@ where
         Ok(StateDataSource(Arc::new(DbSource {
             db: Database::from_ref(state),
         })))
-    }
-}
-
-#[cfg(test)]
-pub(crate) mod tests {
-    use banyan_task::tests::default_task_store_metrics;
-
-    use super::*;
-
-    #[derive(Clone)]
-    pub(crate) enum MockReadiness {
-        DependencyFailure,
-        Ready,
-        ShuttingDown,
-    }
-
-    #[async_trait]
-    impl DataSource for MockReadiness {
-        async fn is_ready(&self) -> Result<DataSourceMetrics, DataSourceError> {
-            use MockReadiness::*;
-
-            match self {
-                DependencyFailure => Err(DataSourceError::DependencyFailure),
-                Ready => Ok(DataSourceMetrics::new(default_task_store_metrics())),
-                ShuttingDown => Err(DataSourceError::ShuttingDown),
-            }
-        }
     }
 }

@@ -6,7 +6,6 @@ use tracing::Level;
 use url::Url;
 
 use crate::app::Version;
-use crate::database::Database;
 
 #[derive(Debug)]
 pub struct Config {
@@ -70,7 +69,7 @@ impl Config {
             Some(la) => la,
             None => match std::env::var("LISTEN_ADDR") {
                 Ok(la) if !la.is_empty() => la.parse().map_err(ConfigError::InvalidListenAddr)?,
-                _ => SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), 3003),
+                _ => SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), 3001),
             },
         };
 
@@ -105,7 +104,7 @@ impl Config {
             Some(sh) => sh,
             None => match std::env::var("SERVICE_HOSTNAME") {
                 Ok(sh) if !sh.is_empty() => sh,
-                _ => "http://127.0.0.1:3003".to_string(),
+                _ => "http://127.0.0.1:3001".to_string(),
             },
         };
         let service_hostname = Url::parse(&service_hostname_str).unwrap();
@@ -257,7 +256,7 @@ fn print_help() {
     println!("    --log-level LOG_LEVEL                 Specify the log level to use, by default");
     println!("                                          this is INFO\n");
     println!("    --service-name SERVICE_NAME           The unique name of the service, as registered with the platform. (default banyan-storage-provider)");
-    println!("    --service-hostname SERVICE_HOSTNAME   The hostname of this service (default http://127.0.0.1:3003)");
+    println!("    --service-hostname SERVICE_HOSTNAME   The hostname of this service (default http://127.0.0.1:3001)");
     println!("    --service-key-path SERVICE_KEY_PATH   Path to the p384 private key used for service token signing and verification");
     println!("                                          (default ./data/service-key.private)\n");
     println!("    --platform-name PLATFORM_NAME         The name of the platform (default banyan-platform)");

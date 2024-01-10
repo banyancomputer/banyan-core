@@ -1,20 +1,13 @@
 use serde::{Deserialize, Serialize};
+use time::OffsetDateTime;
 
-use crate::database::models::{Deal, DealState};
+use crate::database::models::DealState;
 
 #[derive(Serialize, Deserialize)]
-pub struct ApiDeal {
+pub struct ApiDeals {
     pub id: String,
     pub state: DealState,
     pub size: i64,
-}
-
-impl From<Deal> for ApiDeal {
-    fn from(value: Deal) -> Self {
-        Self {
-            id: value.id,
-            state: value.state,
-            size: value.size,
-        }
-    }
+    pub accepted_by: Option<String>,
+    pub accepted_at: Option<OffsetDateTime>,
 }

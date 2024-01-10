@@ -11,12 +11,16 @@ use crate::utils::VerificationKey;
 
 // Helper struct for extracting state from requests
 pub struct ServiceName(String);
+
 pub struct ServiceHostname(Url);
+
 #[derive(Clone)]
 pub struct ServiceVerificationKey(VerificationKey);
 
 pub struct PlatformName(String);
+
 pub struct PlatformHostname(Url);
+
 pub struct PlatformVerificationKey(VerificationKey);
 
 impl FromRef<AppState> for Database {
@@ -60,24 +64,6 @@ impl Deref for ServiceVerificationKey {
 
     fn deref(&self) -> &Self::Target {
         &self.0
-    }
-}
-
-impl FromRef<AppState> for PlatformName {
-    fn from_ref(state: &AppState) -> Self {
-        PlatformName(state.platform_name().to_string())
-    }
-}
-
-impl FromRef<AppState> for PlatformHostname {
-    fn from_ref(state: &AppState) -> Self {
-        PlatformHostname(state.platform_hostname().clone())
-    }
-}
-
-impl FromRef<AppState> for PlatformVerificationKey {
-    fn from_ref(state: &AppState) -> Self {
-        PlatformVerificationKey(state.platform_verification_key().clone())
     }
 }
 

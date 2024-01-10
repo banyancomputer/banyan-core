@@ -80,6 +80,9 @@ impl ServiceKey {
     pub fn new(key: ES384KeyPair) -> Self {
         Self(Arc::new(key))
     }
+    pub fn to_pem(&self) -> Result<String, jwt_simple::Error> {
+        self.0.to_pem()
+    }
 }
 
 impl ServiceKey {

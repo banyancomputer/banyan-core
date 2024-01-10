@@ -101,8 +101,9 @@ pub async fn handler(
         return Err(AuthenticationError::UnverifiedEmail);
     }
 
-    // We're back in provider specific land for getting information about the authenticated user,
-    // TODO: allow for providers other than Google here, deprecate hard-coded parameters
+    if !user_info.email.contains("@banyan.computer") {
+        return Err(AuthenticationError::NotAllowed(user_info.email));
+    }
 
     // Attempt to look up the user in the database, if they don't exist, create them
     let user_row = sqlx::query!(

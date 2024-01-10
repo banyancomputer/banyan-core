@@ -1,3 +1,4 @@
+use app::Config;
 use tracing::Level;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
@@ -6,14 +7,13 @@ use tracing_subscriber::{EnvFilter, Layer};
 mod api;
 mod app;
 mod auth;
+mod client;
 mod database;
 mod extractors;
 mod health_check;
 mod http_server;
 mod models;
 mod utils;
-
-use app::Config;
 
 #[tokio::main]
 async fn main() {

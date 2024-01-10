@@ -1,27 +1,26 @@
 use std::error::Error;
-use std::fmt::Display;
 
 use axum::body::HttpBody;
-use axum::response::IntoResponse;
+use axum::routing::get;
 use axum::Router;
-use serde::Serialize;
-use tower_http::cors::CorsLayer;
 
 use crate::app::AppState;
-use crate::auth;
 
-mod deals;
-mod providers;
+mod all_deals;
+mod all_storage_hosts;
+mod create_storage_host;
 
 pub fn router<B>(state: AppState) -> Router<AppState, B>
 where
     B: HttpBody + Send + 'static,
     B::Data: Send + 'static,
+    Box<dyn Error + Send + Sync + 'static>: From<B::Error>,
 {
     Router::new()
-        .nest("/auth/", auth::router(state.clone()))
-        .nest("/providers/", providers::router(state.clone()))
-        .nest("/deals/", deals::router(state.clone()))
-        .layer(CorsLayer::very_permissive())
+        .route("/deals", get(all_deals::handler))
+        .route(
+            "/providers",
+            get(all_storage_hosts::handler).post(create_storage_host::handler),
+        )
         .with_state(state)
 }

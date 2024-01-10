@@ -5,12 +5,12 @@ use http::Method;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::limit::RequestBodyLimitLayer;
 
+use crate::app::AppState;
+
 mod data_source;
 mod liveness;
 mod readiness;
 mod version;
-
-use crate::app::AppState;
 
 /// Healthcheck endpoints generally shouldn't contain anything other than headers which are counted
 /// among these bytes in the limit. Large requests here should always be rejected.

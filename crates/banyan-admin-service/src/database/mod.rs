@@ -9,11 +9,7 @@ pub mod sqlite;
 /// The number of simultaneous dynamic binds any individual query is allowed to have. Technically
 /// this is 32_768, but we want to ensure there are some query slots available for the non-bulk
 /// parts of any particular query.
-pub const BIND_LIMIT: usize = 32_000;
-
 pub type Database = SqlitePool;
-
-pub type DatabaseConnection = sqlx::SqliteConnection;
 
 pub async fn connect(db_url: &url::Url) -> Result<Database, DatabaseSetupError> {
     if db_url.scheme() == "sqlite" {
@@ -62,31 +58,4 @@ pub enum DatabaseSetupError {
 
     #[error("unable to perform initial connection and check of the database: {0}")]
     SetupFailed(sqlx::Error),
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum DatabaseError {
-    #[error("query to database contained invalid syntax")]
-    BadSyntax(sqlx::Error),
-
-    #[error("unable to load data from database, appears to be invalid")]
-    CorruptData(sqlx::Error),
-
-    #[error("encountered corrupt database id")]
-    CorruptId(uuid::Error),
-
-    #[error("unable to communicate with the database")]
-    DatabaseUnavailable(sqlx::Error),
-
-    #[error("an internal database error occurred")]
-    InternalError(sqlx::Error),
-
-    #[error("error occurred while attempting database migration")]
-    MigrationFailed(sqlx::migrate::MigrateError),
-
-    #[error("unable to create record as it would violate a uniqueness constraint")]
-    RecordExists,
-
-    #[error("unable to locate record or associated foreign key")]
-    RecordNotFound,
 }

@@ -34,11 +34,11 @@ pub enum AuthenticationError {
     #[error("failed to lookup user data")]
     UserDataLookupFailed(sqlx::Error),
 
-    #[error("attempted to authenticate against an unknown provider")]
-    UnknownProvider,
-
     #[error("the account used for authentication has not verified its email")]
     UnverifiedEmail,
+
+    #[error("access for user not allowed {0}")]
+    NotAllowed(String),
 }
 
 impl IntoResponse for AuthenticationError {
@@ -51,10 +51,15 @@ impl IntoResponse for AuthenticationError {
                 let msg = serde_json::json!({"msg": "unknown authentication callback"});
                 (StatusCode::BAD_REQUEST, Json(msg)).into_response()
             }
-            AE::ProviderNotConfigured(_) | AE::UnknownProvider => {
+            AE::ProviderNotConfigured(_) => {
                 tracing::warn!("{}", &self);
                 let msg = serde_json::json!({"msg": "unknown provider or provider not configured"});
                 (StatusCode::NOT_FOUND, Json(msg)).into_response()
+            }
+            AE::NotAllowed(_) => {
+                tracing::warn!("{}", &self);
+                let msg = serde_json::json!({"msg": "user not allowed access"});
+                (StatusCode::FORBIDDEN, Json(msg)).into_response()
             }
             _ => {
                 tracing::error!("{}", &self);

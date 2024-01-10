@@ -1,29 +1,9 @@
-use std::error::Error;
 use std::ops::Deref;
-use std::str::FromStr;
 use std::sync::Arc;
 
 use blake3::Hasher;
 use jwt_simple::algorithms::{ES384KeyPair, ES384PublicKey};
 use jwt_simple::prelude::*;
-
-pub const NORMALIZED_CID_BASE: cid::multibase::Base = cid::multibase::Base::Base64Url;
-
-pub fn collect_error_messages(base_error: impl Error) -> Vec<String> {
-    let mut errors = vec![base_error.to_string()];
-    let mut source = base_error.source();
-
-    while let Some(err) = source {
-        errors.push(err.to_string());
-        source = err.source();
-    }
-
-    errors
-}
-
-pub fn normalize_cid(cid: &str) -> Result<String, cid::Error> {
-    cid::Cid::from_str(cid)?.to_string_of_base(NORMALIZED_CID_BASE)
-}
 
 /// Number of bytes present in an unformatted fingerprint.
 pub const FINGERPRINT_SIZE: usize = 20;
@@ -31,12 +11,6 @@ pub const FINGERPRINT_SIZE: usize = 20;
 /// Verification key for verifying singnature of JWTs.
 #[derive(Clone)]
 pub struct VerificationKey(pub Arc<ES384PublicKey>);
-
-impl VerificationKey {
-    pub fn new(key: ES384PublicKey) -> Self {
-        Self(Arc::new(key))
-    }
-}
 
 impl Deref for VerificationKey {
     type Target = Arc<ES384PublicKey>;
