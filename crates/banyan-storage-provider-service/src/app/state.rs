@@ -19,7 +19,7 @@ pub struct State {
     upload_store_connection: ObjectStoreConnection,
 
     // Secrets
-    /// All runtime secrets.rs
+    /// All runtime secrets
     secrets: Secrets,
 
     // Service identity
@@ -53,7 +53,7 @@ impl State {
         let service_verification_key = service_signing_key.verifier();
 
         let platform_verification_key =
-            load_platform_verification_key(&config.platform_public_key_path())?;
+            load_platform_verfication_key(&config.platform_public_key_path())?;
 
         let secrets = Secrets::new(service_signing_key);
 
@@ -174,7 +174,7 @@ fn load_or_create_service_key(path: &PathBuf) -> Result<SigningKey, StateSetupEr
     Ok(SigningKey::new(service_key_inner))
 }
 
-fn load_platform_verification_key(path: &PathBuf) -> Result<VerificationKey, StateSetupError> {
+fn load_platform_verfication_key(path: &PathBuf) -> Result<VerificationKey, StateSetupError> {
     let key_bytes = std::fs::read(path).map_err(StateSetupError::PlatformKeyRead)?;
     let public_pem = String::from_utf8_lossy(&key_bytes);
 
