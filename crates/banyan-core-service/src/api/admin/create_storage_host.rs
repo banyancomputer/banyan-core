@@ -1,36 +1,40 @@
 use axum::extract::{Json, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use futures::stream::StreamExt;
 use jwt_simple::prelude::*;
 
 use crate::api::models::ApiSelectedStorageHostAdmin;
 use crate::app::AppState;
 use crate::extractors::AdminIdentity;
+use crate::utils::keys::fingerprint_public_key;
 
 #[derive(Serialize, Deserialize)]
 pub struct SelectedStorageHostRequest {
     pub name: String,
     pub url: String,
-    pub used_storage: i64,
     pub available_storage: i64,
-    pub fingerprint: String,
-    pub pem: String,
 }
 pub async fn handler(
     _: AdminIdentity,
     State(state): State<AppState>,
     Json(request): Json<SelectedStorageHostRequest>,
 ) -> Result<Response, CreateStorageHostError> {
+    let new_key = ES384KeyPair::generate();
+    let fingerprint = fingerprint_public_key(&new_key.public_key());
+    let pem = match new_key.public_key().to_pem() {
+        Ok(key) => key,
+        Err(_err) => return Err(CreateStorageHostError::CouldNotRecoveryPublicKey),
+    };
+
     let database = state.database();
     let storage_host_id = sqlx::query_scalar!(
         r#"INSERT INTO storage_hosts (name, url, used_storage, available_storage, fingerprint, pem) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id;"#,
         request.name,
         request.url,
-        request.used_storage,
+        0,
         request.available_storage,
-        request.fingerprint,
-        request.pem
+        fingerprint,
+        pem
     )
     .fetch_one(&database)
     .await
@@ -42,10 +46,10 @@ pub async fn handler(
             id: storage_host_id,
             name: request.name,
             url: request.url,
-            used_storage: request.used_storage,
+            used_storage: 0,
             available_storage: request.available_storage,
-            fingerprint: request.fingerprint,
-            pem: request.pem,
+            fingerprint,
+            pem,
         }),
     )
         .into_response())
@@ -56,6 +60,8 @@ pub async fn handler(
 pub enum CreateStorageHostError {
     #[error("failed insertion: {0}")]
     Database(#[from] sqlx::Error),
+    #[error("could not create public key")]
+    CouldNotRecoveryPublicKey,
 }
 impl IntoResponse for CreateStorageHostError {
     fn into_response(self) -> Response {

@@ -30,17 +30,6 @@ impl Deref for ServiceVerificationKey {
 pub struct ServiceName(String);
 pub struct ServiceHostname(Url);
 
-pub struct AdminServiceName(String);
-
-#[derive(Clone)]
-pub struct AdminServiceVerificationKey(Arc<ES384PublicKey>);
-
-impl AdminServiceVerificationKey {
-    pub fn new(key: ES384PublicKey) -> Self {
-        Self(Arc::new(key))
-    }
-}
-
 impl FromRef<State> for Database {
     fn from_ref(state: &State) -> Self {
         state.database()
@@ -75,22 +64,6 @@ impl Deref for ServiceName {
 
 impl Deref for ServiceHostname {
     type Target = Url;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl Deref for AdminServiceName {
-    type Target = String;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl Deref for AdminServiceVerificationKey {
-    type Target = Arc<ES384PublicKey>;
 
     fn deref(&self) -> &Self::Target {
         &self.0

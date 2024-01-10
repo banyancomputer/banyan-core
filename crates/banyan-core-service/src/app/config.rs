@@ -121,7 +121,6 @@ impl Config {
             },
         };
 
-
         Ok(Config {
             listen_addr,
             log_level,

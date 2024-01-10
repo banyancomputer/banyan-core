@@ -43,7 +43,7 @@ CREATE TABLE oauth_provider_accounts (
 
   -- Name of the provider
   provider TEXT NOT NULL,
-  -- Deals ID on the provider
+  -- Account ID on the provider
   provider_id TEXT NOT NULL,
   -- TODO: Is this required? What does it mean?
   -- provider_email TEXT NOT NULL,

@@ -44,10 +44,10 @@ impl AdminIdentity {
 
 #[async_trait]
 impl<S> FromRequestParts<S> for AdminIdentity
-    where
-        Database: FromRef<S>,
-        ServiceVerificationKey: FromRef<S>,
-        S: Send + Sync,
+where
+    Database: FromRef<S>,
+    ServiceVerificationKey: FromRef<S>,
+    S: Send + Sync,
 {
     type Rejection = AdminIdentityError;
 
@@ -107,9 +107,9 @@ impl<S> FromRequestParts<S> for AdminIdentity
             r#"SELECT id, user_id, created_at, expires_at FROM sessions WHERE id = $1;"#,
             db_sid,
         )
-            .fetch_one(&database)
-            .await
-            .map_err(AdminIdentityError::LookupFailed)?;
+        .fetch_one(&database)
+        .await
+        .map_err(AdminIdentityError::LookupFailed)?;
 
         // todo: check session against client IP address and user agent
 
@@ -123,15 +123,12 @@ impl<S> FromRequestParts<S> for AdminIdentity
 
         let session_id =
             Uuid::parse_str(&db_session.id).map_err(AdminIdentityError::CorruptDatabaseId)?;
-        let user_id = Uuid::parse_str(&db_session.user_id)
-            .map_err(AdminIdentityError::CorruptDatabaseId)?;
+        let user_id =
+            Uuid::parse_str(&db_session.user_id).map_err(AdminIdentityError::CorruptDatabaseId)?;
 
         // directly passing uuid fails
         let user_id_str = user_id.to_string();
-        let user = sqlx::query!(
-            r#"SELECT email FROM users WHERE id = $1;"#,
-            user_id_str,
-        )
+        let user = sqlx::query!(r#"SELECT email FROM users WHERE id = $1;"#, user_id_str,)
             .fetch_one(&database)
             .await
             .map_err(AdminIdentityError::LookupFailed)?;
@@ -139,7 +136,7 @@ impl<S> FromRequestParts<S> for AdminIdentity
         if !user.email.contains("@banyan.computer") {
             return Err(AdminIdentityError::NotAdmin(user.email));
         }
-        
+
         let key_fingerprint = fingerprint_public_key(&verification_key);
 
         Ok(AdminIdentity {

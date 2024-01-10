@@ -1,4 +1,3 @@
-use std::convert::Infallible;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -91,7 +90,10 @@ async fn login_page_handler<B: std::marker::Send + 'static>(
     State(state): State<AppState>,
     req: Request<B>,
 ) -> Result<Response<BoxBody>, (StatusCode, String)> {
-    match ServeFile::new(format!("./{}/login.html", state.frontend_folder())).oneshot(req).await {
+    match ServeFile::new(format!("./{}/login.html", state.frontend_folder()))
+        .oneshot(req)
+        .await
+    {
         Ok(res) => Ok(res.map(boxed)),
         Err(err) => Err((
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -174,7 +176,10 @@ pub async fn run(config: Config) {
             sensitive_headers,
         ));
 
-    let static_assets = ServeDir::new(config.frontend_folder()).fallback(ServeFile::new(format!("./{}/index.html",config.frontend_folder())));
+    let static_assets = ServeDir::new(config.frontend_folder()).fallback(ServeFile::new(format!(
+            "./{}/index.html",
+            config.frontend_folder()
+        )));
 
     let root_router = Router::new()
         .nest("/api/v1", api::router(app_state.clone()))

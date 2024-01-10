@@ -1,15 +1,12 @@
 use std::collections::BTreeMap;
-use std::ops::Deref;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use axum::extract::FromRef;
 use jwt_simple::prelude::*;
 use object_store::local::LocalFileSystem;
 
 use crate::app::{
-    Config, MailgunSigningKey, ProviderCredential, Secrets,
-    ServiceKey, ServiceVerificationKey,
+    Config, MailgunSigningKey, ProviderCredential, Secrets, ServiceKey, ServiceVerificationKey,
 };
 use crate::database::{self, Database, DatabaseSetupError};
 use crate::event_bus::EventBus;
@@ -56,7 +53,6 @@ impl State {
         );
         let secrets = Secrets::new(credentials, mailgun_signing_key, service_key);
 
-
         Ok(Self {
             database,
             event_bus,
@@ -64,7 +60,7 @@ impl State {
             service_name: config.service_name().to_string(),
             service_verifier,
             upload_directory: config.upload_directory(),
-            frontend_folder: config.frontend_folder().to_string()
+            frontend_folder: config.frontend_folder().to_string(),
         })
     }
 
@@ -165,10 +161,7 @@ pub mod test {
     use axum::extract::State;
     use jwt_simple::algorithms::ES384KeyPair;
 
-    use crate::app::{
-        AppState, ProviderCredential, Secrets, ServiceKey,
-        ServiceVerificationKey,
-    };
+    use crate::app::{AppState, ProviderCredential, Secrets, ServiceKey, ServiceVerificationKey};
     use crate::database::Database;
     use crate::event_bus::EventBus;
 

@@ -12,12 +12,12 @@ mod user_identity;
 use std::sync::OnceLock;
 use std::time::Duration;
 
+pub use admin_identity::AdminIdentity;
 pub use data_store::DataStore;
 use regex::Regex;
 pub use server_base::ServerBase;
 pub use session_identity::SessionIdentity;
 pub use storage_provider_identity::StorageProviderIdentity;
-pub use admin_identity::AdminIdentity;
 pub use user_identity::UserIdentity;
 
 // Allow 15 minute token windows for now, this is likely to change in the future

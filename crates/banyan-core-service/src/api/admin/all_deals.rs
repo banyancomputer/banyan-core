@@ -3,10 +3,10 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 use http::StatusCode;
 
-use crate::api::models::{ ApiDealsAdmin};
+use crate::api::models::ApiDealsAdmin;
 use crate::app::AppState;
-use crate::database::models::{Deal, DealState};
-use crate::extractors::{AdminIdentity};
+use crate::database::models::Deal;
+use crate::extractors::AdminIdentity;
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct DealQuery {
     pub status: Option<String>,

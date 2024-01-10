@@ -3,7 +3,6 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 use http::StatusCode;
 
-use crate::api::admin::all_deals::AllDealsError;
 use crate::api::models::ApiSelectedStorageHostAdmin;
 use crate::app::AppState;
 use crate::database::models::SelectedStorageHost;
