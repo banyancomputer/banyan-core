@@ -7,10 +7,10 @@ use crate::api::admin::all_deals::AllDealsError;
 use crate::api::models::ApiSelectedStorageHostAdmin;
 use crate::app::AppState;
 use crate::database::models::SelectedStorageHost;
-use crate::extractors::StorageProviderIdentity;
+use crate::extractors::AdminIdentity;
 
 pub async fn handler(
-    _: StorageProviderIdentity,
+    _: AdminIdentity,
     State(state): State<AppState>,
 ) -> Result<Response, AllStorageHostsError> {
     let database = state.database();

@@ -3,7 +3,7 @@ import { APIClient } from './http';
 
 export class AuthClient extends APIClient {
     /**
-    * Initialize (or update) an Account with an Escrowed Device Key Pair and Associated public keys
+    * Initialize (or update) an Deals with an Escrowed Device Key Pair and Associated public keys
     * @param escrowed_device - the escrowed device key material to be associated with the user's account
     */
     public async escrowDevice(request: EscrowedKeyMaterial): Promise<void> {

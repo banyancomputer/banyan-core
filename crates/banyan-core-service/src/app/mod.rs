@@ -6,7 +6,7 @@ mod version;
 
 #[allow(unused)]
 pub use config::{Config, ConfigError};
-pub use refs::{AdminServiceName, AdminServiceVerificationKey, ServiceVerificationKey};
+pub use refs::ServiceVerificationKey;
 pub use secrets::{MailgunSigningKey, ProviderCredential, Secrets, ServiceKey};
 #[cfg(test)]
 pub use state::test::mock_app_state;

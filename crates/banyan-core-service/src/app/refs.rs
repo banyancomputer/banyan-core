@@ -65,18 +65,6 @@ impl FromRef<State> for ServiceVerificationKey {
     }
 }
 
-impl FromRef<State> for AdminServiceName {
-    fn from_ref(state: &State) -> Self {
-        AdminServiceName(state.admin_service_name().to_string())
-    }
-}
-
-impl FromRef<State> for AdminServiceVerificationKey {
-    fn from_ref(state: &State) -> Self {
-        state.admin_service_verification_key().clone()
-    }
-}
-
 impl Deref for ServiceName {
     type Target = String;
 

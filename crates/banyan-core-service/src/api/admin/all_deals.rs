@@ -3,17 +3,17 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 use http::StatusCode;
 
-use crate::api::models::{ApiDeal, ApiDealsAdmin};
+use crate::api::models::{ ApiDealsAdmin};
 use crate::app::AppState;
 use crate::database::models::{Deal, DealState};
-use crate::extractors::{AdminServiceIdentity, StorageProviderIdentity};
+use crate::extractors::{AdminIdentity};
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct DealQuery {
     pub status: Option<String>,
 }
 
 pub async fn handler(
-    _: StorageProviderIdentity,
+    _: AdminIdentity,
     State(state): State<AppState>,
     Query(payload): Query<DealQuery>,
 ) -> Result<Response, AllDealsError> {

@@ -1,3 +1,10 @@
 Cargo.lock
 .env
 .env.build.prod
+
+./dist/**
+!./dist/login.html
+!./dist/placeholder.html
+
+./admin_dist/**
+!./admin_dist/login.html

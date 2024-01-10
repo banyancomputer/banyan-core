@@ -8,7 +8,7 @@ use jwt_simple::prelude::*;
 use object_store::local::LocalFileSystem;
 
 use crate::app::{
-    AdminServiceVerificationKey, Config, MailgunSigningKey, ProviderCredential, Secrets,
+    Config, MailgunSigningKey, ProviderCredential, Secrets,
     ServiceKey, ServiceVerificationKey,
 };
 use crate::database::{self, Database, DatabaseSetupError};
@@ -23,11 +23,7 @@ pub struct State {
     service_name: String,
     service_verifier: ServiceVerificationKey,
     upload_directory: PathBuf,
-
-    /// The unique name of the admin service
-    admin_service_name: String,
-    /// Key used to verify admin service tokens.
-    admin_service_verification_key: AdminServiceVerificationKey,
+    frontend_folder: String,
 }
 
 impl State {
@@ -60,8 +56,6 @@ impl State {
         );
         let secrets = Secrets::new(credentials, mailgun_signing_key, service_key);
 
-        let admin_service_verification_key =
-            load_admin_service_verification_key(&config.admin_service_public_key_path())?;
 
         Ok(Self {
             database,
@@ -70,8 +64,7 @@ impl State {
             service_name: config.service_name().to_string(),
             service_verifier,
             upload_directory: config.upload_directory(),
-            admin_service_name: config.admin_service_name().to_string(),
-            admin_service_verification_key,
+            frontend_folder: config.frontend_folder().to_string()
         })
     }
 
@@ -91,12 +84,8 @@ impl State {
         self.upload_directory.clone()
     }
 
-    pub fn admin_service_name(&self) -> &str {
-        &self.admin_service_name
-    }
-
-    pub fn admin_service_verification_key(&self) -> AdminServiceVerificationKey {
-        self.admin_service_verification_key.clone()
+    pub fn frontend_folder(&self) -> &str {
+        self.frontend_folder.as_str()
     }
 }
 
@@ -167,24 +156,6 @@ fn load_or_create_service_key(private_path: &PathBuf) -> Result<ServiceKey, Stat
 
     Ok(ServiceKey::new(session_key_raw))
 }
-fn load_admin_service_verification_key(
-    path: &PathBuf,
-) -> Result<AdminServiceVerificationKey, StateSetupError> {
-    let key_bytes = std::fs::read(path).map_err(StateSetupError::AdminServiceKeyRead)?;
-    let public_pem = String::from_utf8_lossy(&key_bytes);
-
-    let admin_service_verification_key_inner =
-        ES384PublicKey::from_pem(&public_pem).map_err(StateSetupError::InvalidAdminServiceKey)?;
-
-    // TODO: use normalized fingerprint -- blake3
-    let fingerprint = fingerprint_public_key(&admin_service_verification_key_inner);
-    let admin_service_verification_key_inner =
-        admin_service_verification_key_inner.with_key_id(&fingerprint);
-
-    Ok(AdminServiceVerificationKey::new(
-        admin_service_verification_key_inner,
-    ))
-}
 
 #[cfg(test)]
 pub mod test {
@@ -195,7 +166,7 @@ pub mod test {
     use jwt_simple::algorithms::ES384KeyPair;
 
     use crate::app::{
-        AdminServiceVerificationKey, AppState, ProviderCredential, Secrets, ServiceKey,
+        AppState, ProviderCredential, Secrets, ServiceKey,
         ServiceVerificationKey,
     };
     use crate::database::Database;
@@ -218,11 +189,7 @@ pub mod test {
             service_name: "mock_service".to_string(),
             service_verifier: ServiceVerificationKey::new(ES384KeyPair::generate().public_key()),
             upload_directory: PathBuf::from("/mock/path"),
-
-            admin_service_name: "mock_admin_service".to_string(),
-            admin_service_verification_key: AdminServiceVerificationKey::new(
-                ES384KeyPair::generate().public_key(),
-            ),
+            frontend_folder: "dist".to_string(),
         })
     }
 }

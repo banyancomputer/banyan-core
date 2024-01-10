@@ -4,10 +4,9 @@ use axum::response::{IntoResponse, Response};
 use futures::stream::StreamExt;
 use jwt_simple::prelude::*;
 
-use crate::api::admin::all_storage_hosts::AllStorageHostsError;
 use crate::api::models::ApiSelectedStorageHostAdmin;
 use crate::app::AppState;
-use crate::extractors::AdminServiceIdentity;
+use crate::extractors::AdminIdentity;
 
 #[derive(Serialize, Deserialize)]
 pub struct SelectedStorageHostRequest {
@@ -19,7 +18,7 @@ pub struct SelectedStorageHostRequest {
     pub pem: String,
 }
 pub async fn handler(
-    _: AdminServiceIdentity,
+    _: AdminIdentity,
     State(state): State<AppState>,
     Json(request): Json<SelectedStorageHostRequest>,
 ) -> Result<Response, CreateStorageHostError> {
