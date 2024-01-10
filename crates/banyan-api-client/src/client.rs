@@ -4,12 +4,14 @@ use uuid::Uuid;
 use crate::api_token::ApiToken;
 use crate::requests::ApiRequest;
 
+#[derive(Clone)]
 pub struct Credentials {
     account_id: Uuid,
     fingerprint: String,
     signing_key: EncodingKey,
 }
 
+#[derive(Clone)]
 pub struct Client {
     base_url: reqwest::Url,
     client: reqwest::Client,
