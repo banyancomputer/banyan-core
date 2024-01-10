@@ -9,22 +9,23 @@ const COOKIE_MAX_AGE = 60 * 60 * 24 * 7 * 4 * 3; // 3 months
 const SESSION_KEY_COOKIE_NAME = '_session_id';
 const USER_DATA_COOKIE_NAME = '_user_data';
 const LOCAL_KEY_COOKIE_NAME = '_local_key';
+const IS_USER_NEW_COOKIE_NAME = '_is_new_user';
 
 export interface LocalKey {
 	id: string,
 	key: string
-}
+};
 
 export interface UserData {
 	user: User,
 	escrowedKeyMaterial: EscrowedKeyMaterial | null
-}
+};
 
 export const getSessionKey = (): string | null => {
 
 	const cookies = parseCookies();
 	return cookies[SESSION_KEY_COOKIE_NAME];
-}
+};
 
 export const getLocalKey = (): LocalKey => {
 	const cookies = parseCookies();
@@ -41,11 +42,22 @@ export const getLocalKey = (): LocalKey => {
 	}
 	const [id, key] = cookies[LOCAL_KEY_COOKIE_NAME].split(':');
 	return { id, key };
-}
+};
 
 export const destroyLocalKey = () => {
 	destroyCookie(null, LOCAL_KEY_COOKIE_NAME)
-}
+};
+
+export const getIsUserNew = () => {
+	const cookies = parseCookies();
+	const isUserNew = cookies[IS_USER_NEW_COOKIE_NAME];
+
+	return !!isUserNew || false;
+};
+
+export const destroyIsUserNew = () => {
+	destroyCookie(null, IS_USER_NEW_COOKIE_NAME);
+};
 
 export const getUserData = (): UserData | null => {
 	const cookies = parseCookies();
@@ -75,7 +87,7 @@ export const getUserData = (): UserData | null => {
 	return {
 		user, escrowedKeyMaterial
 	}
-}
+};
 
 export const setUserDataEscrowedKeyMaterial = (escrowedKeyMaterial: EscrowedKeyMaterial) => {
 	const cookies = parseCookies();
@@ -95,4 +107,4 @@ export const setUserDataEscrowedKeyMaterial = (escrowedKeyMaterial: EscrowedKeyM
 		secure: true,
 		path: '/',
 	});
-}
+};
