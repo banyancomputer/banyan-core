@@ -69,7 +69,7 @@ impl Config {
             Some(la) => la,
             None => match std::env::var("LISTEN_ADDR") {
                 Ok(la) if !la.is_empty() => la.parse().map_err(ConfigError::InvalidListenAddr)?,
-                _ => SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), 3001),
+                _ => SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), 3004),
             },
         };
 
@@ -104,7 +104,7 @@ impl Config {
             Some(sh) => sh,
             None => match std::env::var("SERVICE_HOSTNAME") {
                 Ok(sh) if !sh.is_empty() => sh,
-                _ => "http://127.0.0.1:3001".to_string(),
+                _ => "http://127.0.0.1:3004".to_string(),
             },
         };
         let service_hostname = Url::parse(&service_hostname_str).unwrap();
@@ -131,7 +131,7 @@ impl Config {
             Some(ph) => ph,
             None => match std::env::var("PLATFORM_HOSTNAME") {
                 Ok(ph) if !ph.is_empty() => ph,
-                _ => "http://127.0.0.1:3001".to_string(),
+                _ => "http://127.0.0.1:3004".to_string(),
             },
         };
         let platform_hostname = Url::parse(&platform_hostname_str).unwrap();
@@ -252,15 +252,15 @@ fn print_help() {
     println!(
         "    --listen LISTEN_ADDR                  Specify the address to bind to, by default"
     );
-    println!("                                          this is 127.0.0.1:3001");
+    println!("                                          this is 127.0.0.1:3004");
     println!("    --log-level LOG_LEVEL                 Specify the log level to use, by default");
     println!("                                          this is INFO\n");
     println!("    --service-name SERVICE_NAME           The unique name of the service, as registered with the platform. (default banyan-storage-provider)");
-    println!("    --service-hostname SERVICE_HOSTNAME   The hostname of this service (default http://127.0.0.1:3001)");
+    println!("    --service-hostname SERVICE_HOSTNAME   The hostname of this service (default http://127.0.0.1:3004)");
     println!("    --service-key-path SERVICE_KEY_PATH   Path to the p384 private key used for service token signing and verification");
     println!("                                          (default ./data/service-key.private)\n");
     println!("    --platform-name PLATFORM_NAME         The name of the platform (default banyan-platform)");
-    println!("    --platform-hostname PLATFORM_HOSTNAME The base URL of the platform (default http://127.0.0.1:3001)");
+    println!("    --platform-hostname PLATFORM_HOSTNAME The base URL of the platform (default http://127.0.0.1:3004)");
     println!("    --platform-public-key-path PLATFORM_PUBLIC_KEY_PATH");
     println!("                                          Path to the public key used for authenticating requests from the platform");
     println!("                                          (default ./data/platform-key.public)\n");
