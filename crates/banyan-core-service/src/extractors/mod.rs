@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+mod admin_service_identity;
 mod api_identity;
 mod data_store;
 mod server_base;
@@ -11,7 +12,9 @@ mod user_identity;
 use std::sync::OnceLock;
 use std::time::Duration;
 
+pub use admin_service_identity::{AdminServiceIdentity, AdminServiceIdentityError};
 pub use data_store::DataStore;
+use regex::Regex;
 pub use server_base::ServerBase;
 pub use session_identity::SessionIdentity;
 pub use storage_provider_identity::StorageProviderIdentity;
@@ -23,3 +26,13 @@ pub const EXPIRATION_WINDOW: Duration = Duration::from_secs(900);
 static KEY_ID_VALIDATOR: OnceLock<regex::Regex> = OnceLock::new();
 
 const KEY_ID_REGEX: &str = r"^[0-9a-f]{40}$";
+
+const MAXIMUM_TOKEN_AGE: u64 = 900;
+
+static FINGERPRINT_PATTERN: &str = r"^[0-9a-f]{40}$";
+
+static FINGERPRINT_VALIDATOR: OnceLock<Regex> = OnceLock::new();
+
+pub fn fingerprint_validator() -> &'static Regex {
+    FINGERPRINT_VALIDATOR.get_or_init(|| Regex::new(FINGERPRINT_PATTERN).unwrap())
+}

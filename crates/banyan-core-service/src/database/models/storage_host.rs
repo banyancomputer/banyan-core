@@ -8,6 +8,10 @@ pub struct SelectedStorageHost {
     pub id: String,
     pub name: String,
     pub url: String,
+    pub used_storage: i64,
+    pub available_storage: i64,
+    pub fingerprint: String,
+    pub pem: String,
 }
 
 impl SelectedStorageHost {
@@ -20,7 +24,7 @@ impl SelectedStorageHost {
     ) -> Result<Option<Self>, sqlx::Error> {
         sqlx::query_as!(
             Self,
-            r#"SELECT id,name,url FROM storage_hosts
+            r#"SELECT id,name,url,used_storage, available_storage,fingerprint,pem FROM storage_hosts
                    WHERE (available_storage - used_storage) > $1
                    ORDER BY RANDOM()
                    LIMIT 1;"#,

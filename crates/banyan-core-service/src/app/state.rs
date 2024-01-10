@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::ops::Deref;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -7,7 +8,8 @@ use jwt_simple::prelude::*;
 use object_store::local::LocalFileSystem;
 
 use crate::app::{
-    Config, MailgunSigningKey, ProviderCredential, Secrets, ServiceKey, ServiceVerificationKey,
+    AdminServiceVerificationKey, Config, MailgunSigningKey, ProviderCredential, Secrets,
+    ServiceKey, ServiceVerificationKey,
 };
 use crate::database::{self, Database, DatabaseSetupError};
 use crate::event_bus::EventBus;
@@ -21,6 +23,11 @@ pub struct State {
     service_name: String,
     service_verifier: ServiceVerificationKey,
     upload_directory: PathBuf,
+
+    /// The unique name of the admin service
+    admin_service_name: String,
+    /// Key used to verify admin service tokens.
+    admin_service_verification_key: AdminServiceVerificationKey,
 }
 
 impl State {
@@ -53,6 +60,9 @@ impl State {
         );
         let secrets = Secrets::new(credentials, mailgun_signing_key, service_key);
 
+        let admin_service_verification_key =
+            load_admin_service_verification_key(&config.admin_service_public_key_path())?;
+
         Ok(Self {
             database,
             event_bus,
@@ -60,6 +70,8 @@ impl State {
             service_name: config.service_name().to_string(),
             service_verifier,
             upload_directory: config.upload_directory(),
+            admin_service_name: config.admin_service_name().to_string(),
+            admin_service_verification_key,
         })
     }
 
@@ -78,23 +90,13 @@ impl State {
     pub fn upload_directory(&self) -> PathBuf {
         self.upload_directory.clone()
     }
-}
 
-impl FromRef<State> for Database {
-    fn from_ref(state: &State) -> Self {
-        state.database()
+    pub fn admin_service_name(&self) -> &str {
+        &self.admin_service_name
     }
-}
 
-impl FromRef<State> for Secrets {
-    fn from_ref(state: &State) -> Self {
-        state.secrets()
-    }
-}
-
-impl FromRef<State> for ServiceVerificationKey {
-    fn from_ref(state: &State) -> Self {
-        state.service_verifier()
+    pub fn admin_service_verification_key(&self) -> AdminServiceVerificationKey {
+        self.admin_service_verification_key.clone()
     }
 }
 
@@ -120,6 +122,12 @@ pub enum StateSetupError {
 
     #[error("failed to read private service key: {0}")]
     UnreadableServiceKey(std::io::Error),
+
+    #[error("failed to read public admin service key: {0}")]
+    AdminServiceKeyRead(std::io::Error),
+
+    #[error("public admin service key could not be loaded: {0}")]
+    InvalidAdminServiceKey(jwt_simple::Error),
 }
 
 fn load_or_create_service_key(private_path: &PathBuf) -> Result<ServiceKey, StateSetupError> {
@@ -159,6 +167,24 @@ fn load_or_create_service_key(private_path: &PathBuf) -> Result<ServiceKey, Stat
 
     Ok(ServiceKey::new(session_key_raw))
 }
+fn load_admin_service_verification_key(
+    path: &PathBuf,
+) -> Result<AdminServiceVerificationKey, StateSetupError> {
+    let key_bytes = std::fs::read(path).map_err(StateSetupError::AdminServiceKeyRead)?;
+    let public_pem = String::from_utf8_lossy(&key_bytes);
+
+    let admin_service_verification_key_inner =
+        ES384PublicKey::from_pem(&public_pem).map_err(StateSetupError::InvalidAdminServiceKey)?;
+
+    // TODO: use normalized fingerprint -- blake3
+    let fingerprint = fingerprint_public_key(&admin_service_verification_key_inner);
+    let admin_service_verification_key_inner =
+        admin_service_verification_key_inner.with_key_id(&fingerprint);
+
+    Ok(AdminServiceVerificationKey::new(
+        admin_service_verification_key_inner,
+    ))
+}
 
 #[cfg(test)]
 pub mod test {
@@ -168,7 +194,10 @@ pub mod test {
     use axum::extract::State;
     use jwt_simple::algorithms::ES384KeyPair;
 
-    use crate::app::{AppState, ProviderCredential, Secrets, ServiceKey, ServiceVerificationKey};
+    use crate::app::{
+        AdminServiceVerificationKey, AppState, ProviderCredential, Secrets, ServiceKey,
+        ServiceVerificationKey,
+    };
     use crate::database::Database;
     use crate::event_bus::EventBus;
 
@@ -189,6 +218,11 @@ pub mod test {
             service_name: "mock_service".to_string(),
             service_verifier: ServiceVerificationKey::new(ES384KeyPair::generate().public_key()),
             upload_directory: PathBuf::from("/mock/path"),
+
+            admin_service_name: "mock_admin_service".to_string(),
+            admin_service_verification_key: AdminServiceVerificationKey::new(
+                ES384KeyPair::generate().public_key(),
+            ),
         })
     }
 }

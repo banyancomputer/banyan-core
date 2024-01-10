@@ -22,6 +22,9 @@ pub struct Config {
     service_name: String,
     service_key_path: PathBuf,
     upload_directory: PathBuf,
+
+    admin_service_name: String,
+    admin_service_public_key_path: PathBuf,
 }
 
 impl Config {
@@ -111,6 +114,23 @@ impl Config {
             .opt_value_from_str("--log-level")?
             .unwrap_or(Level::INFO);
 
+        let admin_service_name = match cli_args.opt_value_from_str("--admin-service-name")? {
+            Some(pn) => pn,
+            None => match std::env::var("ADMIN_SERVICE_NAME") {
+                Ok(pn) if !pn.is_empty() => pn,
+                _ => "banyan-admin_service".into(),
+            },
+        };
+
+        let admin_service_public_key_path: PathBuf =
+            match cli_args.opt_value_from_str("--admin_service-key-path")? {
+                Some(pk) => pk,
+                None => match std::env::var("ADMIN_SERVICE_KEY_PATH") {
+                    Ok(pk) if !pk.is_empty() => pk.into(),
+                    _ => "./data/admin-service-key.public".into(),
+                },
+            };
+
         Ok(Config {
             listen_addr,
             log_level,
@@ -125,6 +145,8 @@ impl Config {
             service_name,
             service_key_path,
             upload_directory,
+            admin_service_name,
+            admin_service_public_key_path,
         })
     }
 
@@ -158,6 +180,14 @@ impl Config {
 
     pub fn upload_directory(&self) -> PathBuf {
         self.upload_directory.clone()
+    }
+
+    pub fn admin_service_name(&self) -> &str {
+        &self.admin_service_name
+    }
+
+    pub fn admin_service_public_key_path(&self) -> PathBuf {
+        self.admin_service_public_key_path.clone()
     }
 }
 
@@ -199,7 +229,13 @@ fn print_help() {
     println!("  Additional Environment Options:");
     println!("    GOOGLE_OAUTH_CLIENT_ID        The client ID associated with this app for");
     println!("                                  performing authentication using Google services.");
-    println!("    GOOGLE_OAUTH_CLIENT_SECRET    The client secret paired with the client ID.");
+    println!("    GOOGLE_OAUTH_CLIENT_SECRET    The client secret paired with the client ID.\n");
+    println!("    --admin_service-name ADMIN_SERVICE_NAME         The name of the admin_service (default banyan-admin_service)");
+    println!("    --admin_service-public-key-path ADMIN_SERVICE_PUBLIC_KEY_PATH");
+    println!(
+        "           Path to the public key used for authenticating requests from the admin_service"
+    );
+    println!("           (default ./data/admin_service-key.public)\n");
 }
 
 fn print_version() {

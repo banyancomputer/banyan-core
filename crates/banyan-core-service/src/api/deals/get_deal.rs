@@ -18,8 +18,7 @@ pub async fn handler(
     let deal_id = deal_id.to_string();
     let query_result = sqlx::query_as!(
         Deal,
-        r#"
-            SELECT d.id, d.state, COALESCE(SUM(ss.size), 0) AS size
+        r#"SELECT d.id, d.state,  COALESCE(SUM(ss.size), 0) AS size, accepted_by, accepted_at
             FROM deals d
                 JOIN snapshot_segments ss ON d.id = ss.deal_id
             WHERE d.id = $1 AND (d.state=$2 OR d.accepted_by=$3)
