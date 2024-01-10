@@ -1,37 +1,36 @@
-import React from 'react';
-import { useIntl } from 'react-intl';
+import React, { useEffect, useState } from 'react';
 
-import { useModal } from '@/app/contexts/modals';
+import { AdminClient } from '@/api/admin';
+import { NotFoundError } from '@/api/http';
+import { HttpClient } from '@/api/http/client';
+import { StorageProvider } from '@app/types';
+import { ServicesTable } from '@components/common/ServicesTable';
 
-import { PlusBold, Upload } from '@static/images/common';
+const client = new AdminClient();
 
 const Home = () => {
-    const { openModal } = useModal();
-    const { messages } = useIntl();
+    const [providers, setProviders] =useState<StorageProvider[]>([])
+    useEffect(() => {
+        (async () => {
+            try {
+                const providers =await client.getStorageProviders();
+                setProviders(providers)
+            } catch (error: any) {
+                if (error instanceof NotFoundError) {
+                    const api = new HttpClient;
+                    await api.get('/auth/logout');
+                    window.location.href = '/login';
+                }
+            }
+        })();
+    }, [providers]);
+
 
     return (
         <section className="py-9 pt-14 px-4" id="buckets">
-            <div className="mb-4 flex flex-col w-full justify-between gap-4">
-                <h2 className="text-lg font-semibold">
-                    {`${messages.allDrives}`}
-                </h2>
-                <div className="flex items-stretch gap-2">
-                    <button
-                        className="btn-highlighted gap-2 w-[138px] py-2 px-4 text-sm"
-                        onClick={() => ({})}
-                    >
-                        <Upload />
-                        {`${messages.upload}`}
-                    </button>
-                    <button
-                        className="flex items-center gap-2 py-2 px-4 border-1 border-border-regular rounded-md text-text-900 font-semibold"
-                        onClick={() => ({})}
-                    >
-                        <PlusBold width="20px" height="20px" />
-                        {`${messages.newDrive}`}
-                    </button>
-                </div>
-            </div>
+            {/*{*/}
+            {/*}*/}
+            <ServicesTable/>
         </section>
     );
 };

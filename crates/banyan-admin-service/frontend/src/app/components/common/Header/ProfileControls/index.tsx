@@ -1,12 +1,10 @@
 import React from 'react';
-import { useIntl } from 'react-intl';
 import { useNavigate } from 'react-router-dom';
 
 import { HttpClient } from '@/api/http/client';
 
 export const ProfileControls = () => {
     const navigate = useNavigate();
-    const { messages } = useIntl();
 
     const goTo = (path: string) => function () {
         navigate(path);

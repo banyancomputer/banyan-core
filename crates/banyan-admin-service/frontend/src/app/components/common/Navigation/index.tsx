@@ -1,12 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useIntl } from 'react-intl';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 
-import { ActiveDirectory, ChevronUp, Directory, Logo } from '@static/images/common';
+import { ActiveDirectory, ChevronUp, Directory, Logo, DeleteHotData } from '@static/images/common';
 
 export const Navigation = () => {
 	const [isBucketsVisible, setIsBucketsVisible] = useState(false);
-	const { messages } = useIntl();
 	const location = useLocation();
 	const [droppedBucket, setDroppedBucket] = useState<null>(null)
 
@@ -27,15 +25,10 @@ export const Navigation = () => {
 					className={`flex items-center justify-between gap-3 py-2.5 px-3 w-full h-10  cursor-pointer rounded-md ${location.pathname === '/' && 'bg-navigation-secondary'}`}
 				>
 					<span className="text-text-900">
-						{
-							location.pathname === '/' ?
-								<ActiveDirectory />
-								:
-								<Directory />
-						}
+						<Directory />
 					</span>
 					<span className="flex-grow">
-						{`${messages.allDrives}`}
+						Providers
 					</span>
 					<span
 						onClick={toggleBucketsVisibility}
@@ -44,6 +37,24 @@ export const Navigation = () => {
 						<ChevronUp />
 					</span>
 				</NavLink>
+				<NavLink
+					to={'/deals'}
+					className={`flex items-center justify-between gap-3 py-2.5 px-3 w-full h-10  cursor-pointer rounded-md ${location.pathname === '/deals' && 'bg-navigation-secondary'}`}
+				>
+					<span className="text-text-900">
+						<DeleteHotData />
+					</span>
+					<span className="flex-grow">
+						Deals
+					</span>
+					<span
+						onClick={toggleBucketsVisibility}
+						className={`${!isBucketsVisible && 'rotate-180'} ${![].length && 'hidden'}`}
+					>
+						<ChevronUp />
+					</span>
+				</NavLink>
+
 				{
 					isBucketsVisible &&
 					<ul className="flex-col gap-2 px-2 text-xxs">

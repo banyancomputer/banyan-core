@@ -1,5 +1,4 @@
-import { Suspense, useEffect, useState } from 'react';
-import { IntlProvider } from 'react-intl';
+import { Suspense, useEffect } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 
 import { Notifications } from '@components/common/Notifications';
@@ -12,24 +11,8 @@ import { Routes } from './routes';
 import { ModalProvider } from './contexts/modals';
 import { getLocalStorageItem, setLocalStorageItem } from './utils/localStorage';
 import { SessionProvider } from './contexts/session';
-import en from '@static/locales/en.json';
-import fr from '@static/locales/fr.json';
-import de from '@static/locales/de.json';
-import ja from '@static/locales/ja.json';
-import zh from '@static/locales/zh.json';
-
-const TRANSLATES: Record<string, Record<string, string>> = {
-    en,
-    fr,
-    de,
-    ja,
-    zh,
-};
-
-export const locales = Object.keys(TRANSLATES);
 
 const App = () => {
-    const [locale, setLocale] = useState('en');
 
     useEffect(() => {
         const theme = getLocalStorageItem('theme');
@@ -37,45 +20,43 @@ const App = () => {
 
         window.addEventListener('storage', () => {
             const selectedLanguage = getLocalStorageItem('lang');
-            setLocale(selectedLanguage || 'en');
         });
 
         const selectedLanguage = getLocalStorageItem('lang');
-        setLocale(selectedLanguage || 'en');
 
         if (selectedLanguage) { return; }
 
         setLocalStorageItem('lang', navigator.language.includes('-') ? navigator.language.split('-')[0] : navigator.language);
     }, []);
 
-    return (
-        <IntlProvider locale={locale} messages={TRANSLATES[locale]}>
-            <main
-                className="flex flex-col h-screen max-h-screen font-sans bg-mainBackground text-text-900 max-sm:hidden"
-                onDragOver={() => ({})}
-                onDrop={() => ({})}
-            >
-                <BrowserRouter basename="/" >
-                    <ModalProvider>
-                        <SessionProvider>
-                            <Notifications />
-                            <Notifications />
-                            <section className="flex flex-grow">
-                                <Navigation />
-                                <section className="flex-grow flex flex-col h-screen overflow-y-scroll">
-                                    <Header />
-                                    <ErrorBanner />
-                                    <Suspense>
-                                        <Routes />
-                                    </Suspense>
-                                </section>
-                            </section>
-                        </SessionProvider>
-                    </ModalProvider>
-                </BrowserRouter>
-            </main>
-            <MobilePlaceholder />
-        </IntlProvider>
+    return (<>
+          <main
+            className="flex flex-col h-screen max-h-screen font-sans bg-mainBackground text-text-900 max-sm:hidden"
+            onDragOver={() => ({})}
+            onDrop={() => ({})}
+          >
+              <BrowserRouter basename="/">
+                  <ModalProvider>
+                      <SessionProvider>
+                          <Notifications />
+                          <Notifications />
+                          <section className="flex flex-grow">
+                              <Navigation />
+                              <section className="flex-grow flex flex-col h-screen overflow-y-scroll">
+                                  <Header />
+                                  <ErrorBanner />
+                                  <Suspense>
+                                      <Routes />
+                                  </Suspense>
+                              </section>
+                          </section>
+                      </SessionProvider>
+                  </ModalProvider>
+              </BrowserRouter>
+          </main>
+          <MobilePlaceholder />
+      </>
+
     );
 };
 
