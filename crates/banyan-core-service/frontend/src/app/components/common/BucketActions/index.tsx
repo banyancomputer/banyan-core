@@ -20,7 +20,7 @@ import { AddFolderIcon, Lock } from '@static/images/buckets';
 export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const { messages } = useIntl();
     const { openModal, closeModal } = useModal();
-    const { buckets, remountBucket } = useTomb();
+    const { remountBucket } = useTomb();
     const bucketType = `${bucket.bucketType}_${bucket.storageClass}`;
     const folderLocation = useFolderLocation();
 
@@ -104,7 +104,7 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const createFolderAction = new Action(`${messages.createFolder}`, <AddFolderIcon width="18px" height="18px" />, createFolder);
     const restoreColdVersionAction = new Action(`${messages.restoreCold}`, <Versions width="18px" height="18px" />, retoreColdVersion);
     const deleteHotDatadAction = new Action(`${messages.deleteHotData}`, <DeleteHotData width="18px" height="18px" />, deleteHotData);
-    const deletedAction = buckets.length > 1 ? new Action(`${messages.delete}`, <Trash width="18px" height="18px" />, deleteBucket) : null;
+    const deletedAction = new Action(`${messages.delete}`, <Trash width="18px" height="18px" />, deleteBucket);
     const purgeAction = new Action(`${messages.purgeColdKeys}`, <Trash width="18px" height="18px" />, purgeColdKeys);
 
     const hotInrecactiveActions = [
