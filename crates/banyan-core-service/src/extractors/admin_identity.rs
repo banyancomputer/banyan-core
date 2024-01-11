@@ -15,6 +15,16 @@ use crate::auth::{LOGIN_PATH, SESSION_COOKIE_NAME};
 use crate::database::Database;
 use crate::utils::keys::fingerprint_public_key;
 
+const ADMIN_USERS: [&str; 7] = [
+    "sam.stelfox@banyan.computer",
+    "alex@banyan.computer",
+    "vera@banyan.computer",
+    "sam@banyan.computer",
+    "plamen@banyan.computer",
+    "olive@banyan.computer",
+    "vladyslav@boostylabs.com",
+];
+
 /// Extracted identity from a request made with a server-signed JWT
 pub struct AdminIdentity {
     /// The session ID of the session
@@ -133,7 +143,7 @@ where
             .await
             .map_err(AdminIdentityError::LookupFailed)?;
 
-        if !user.email.contains("@banyan.computer") {
+        if !ADMIN_USERS.contains(&user.email.as_str()) {
             return Err(AdminIdentityError::NotAdmin(user.email));
         }
 
