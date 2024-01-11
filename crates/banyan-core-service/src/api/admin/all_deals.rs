@@ -15,7 +15,7 @@ pub struct DealQuery {
 pub async fn handler(
     _: AdminIdentity,
     State(state): State<AppState>,
-    Query(payload): Query<DealQuery>,
+    Query(_payload): Query<DealQuery>,
 ) -> Result<Response, AllDealsError> {
     let database = state.database();
     let query_result = sqlx::query_as!(
