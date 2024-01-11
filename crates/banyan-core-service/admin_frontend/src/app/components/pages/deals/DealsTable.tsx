@@ -7,7 +7,7 @@ interface DealsTableProps {
 
 export const DealsTable: React.FC<DealsTableProps> = ({ deals }) => {
 	return (
-		<div className="max-h-[calc(100vh-290px)] overflow-x-auto border-1 border-border-regular rounded-xl">
+		<div className="overflow-x-auto border-1 border-border-regular rounded-xl">
 			<table className="table table-pin-rows w-full text-text-600 rounded-xl ">
 				<thead className="border-b-table-cellBackground text-xxs font-normal text-text-600">
 					<tr className="border-b-table-cellBackground bg-table-headBackground">

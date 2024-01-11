@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { createMemoryRouter, useNavigate } from 'react-router-dom';
 
 import { SubmitButton } from '@components/common/SubmitButton';
 
@@ -8,48 +8,64 @@ import { ToastNotifications } from '@app/utils/toastNotifications';
 import { AdminClient } from '@/api/admin';
 import { StorageHostRequest } from '@app/types';
 
-export const CreateStorageHost = ({ client }: { client: AdminClient }) => {
+const validUrl = (url: string): boolean => {
+	if (!url) return false;
+
+	try {
+		new URL(url);
+		return true;
+	} catch (e) {
+		return false;
+	}
+};
+
+export const CreateStorageHost = ({
+	client,
+	onCreate,
+}: {
+	client: AdminClient;
+	onCreate: () => Promise<void>;
+}) => {
 	const { closeModal } = useModal();
 	const navigate = useNavigate();
-	const [hostName, setHostName] = useState('');
+	const [name, setName] = useState('');
 	const [url, setUrl] = useState('');
-	const [availableStorage, setAvailableStorage] = useState(0);
-	const isDataValid = useMemo(() => hostName.length >= 3, [hostName, hostName]);
+	const [availableStorage, setAvailableStorage] = useState(549755813888000);
+	const isDataValid = useMemo(
+		() => name.length >= 3 && validUrl(url) && availableStorage > 0,
+		[name, url, availableStorage]
+	);
 
-	const changeHostName = (event: React.ChangeEvent<HTMLInputElement>) => {
+	const changeName = (event: React.ChangeEvent<HTMLInputElement>) => {
 		const regexp = new RegExp(/^.{0,32}$/);
 		if (!regexp.test(event.target.value)) {
 			return;
 		}
 
-		setHostName(event.target.value);
+		setName(event.target.value);
 	};
 
 	const changeUrl = (event: React.ChangeEvent<HTMLInputElement>) => {
-		const regexp = new RegExp(/^.{0,32}$/);
-		if (!regexp.test(event.target.value)) {
-			return;
-		}
-
 		setUrl(event.target.value);
 	};
 	const changeAvailableSpace = (event: React.ChangeEvent<HTMLInputElement>) => {
-		const regexp = new RegExp(/^.{0,32}$/);
-		if (!regexp.test(event.target.value)) {
+		const availableSpace = Number(event.target.value);
+		if (isNaN(availableSpace) || availableSpace < 0) {
 			return;
 		}
 
-		setAvailableStorage(Number(event.target.value));
+		setAvailableStorage(availableSpace);
 	};
 
 	const create = async () => {
 		const storageHost: StorageHostRequest = {
-			name: hostName,
-			url: hostName,
+			name: name,
+			url,
 			available_storage: availableStorage,
 		};
 		try {
-			const newHost = await client.createStorageHost(storageHost);
+			await client.createStorageHost(storageHost);
+			await onCreate();
 			closeModal();
 			navigate(`/`);
 		} catch (error: any) {
@@ -73,8 +89,8 @@ export const CreateStorageHost = ({ client }: { client: AdminClient }) => {
 						className="mt-2 input w-full h-11 py-3 px-4 rounded-md border-1 border-border-darken focus:outline-none"
 						type="text"
 						placeholder={'Host name'}
-						value={hostName}
-						onChange={changeHostName}
+						value={name}
+						onChange={changeName}
 					/>
 				</label>
 			</div>
@@ -95,7 +111,7 @@ export const CreateStorageHost = ({ client }: { client: AdminClient }) => {
 					{}
 					<input
 						className="mt-2 input w-full h-11 py-3 px-4 rounded-md border-1 border-border-darken focus:outline-none"
-						type="text"
+						type="number"
 						placeholder={'Available Space'}
 						value={availableStorage}
 						onChange={changeAvailableSpace}
