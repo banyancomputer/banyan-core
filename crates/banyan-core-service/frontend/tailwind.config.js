@@ -87,12 +87,14 @@ module.exports = {
 					600: 'var(--text-600)',
 					800: 'var(--text-800)',
 					900: 'var(--text-900)',
+					viewInvoiceText: 'var(--view-invoice-text)'
 				},
 				'gray-200': 'var(--text-200)',
 				hover: 'var(--hover-background)',
 				logo: 'var(--logo)',
 				mainBackground: 'var(--main-background)',
 				secondaryBackground: 'var(--secondary-background)',
+				invoiceHeadingBackground: 'var(--invoice-heading-background)'
 			},
 			fontFamily: {
 				sans: ['Inter'],

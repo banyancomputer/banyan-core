@@ -195,5 +195,14 @@
 	"invoicesWillBeAvailiableHere": "Invoices and receipts made on your account will be available here",
 	"upgrade": "Upgrade",
 	"youAreReadyForStart": "You’re ready to start!",
-	"useDesktop": "To start using Banyan, please use desktop"
+	"useDesktop": "To start using Banyan, please use desktop",
+	"date": "Date",
+	"storageUsed": "Storage used",
+	"description": "Description",
+	"details": "Details",
+	"viewInvoice": "View invoice",
+	"invoice": "Invoices",
+	"summary": "Summary",
+	"items": "Items",
+	"payment": "Payment"
 }

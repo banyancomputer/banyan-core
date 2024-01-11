@@ -195,5 +195,14 @@
 	"invoicesWillBeAvailiableHere": "アカウントで行われた請求書や領収書はこちらでご利用いただけます",
 	"upgrade": "アップグレード",
 	"youAreReadyForStart": "始める準備ができています！",
-	"useDesktop": "Banyanを使用するには、デスクトップをご利用ください"
+	"useDesktop": "Banyanを使用するには、デスクトップをご利用ください",
+	"date": "日付",
+	"storageUsed": "使用されたストレージ",
+	"description": "説明",
+	"details": "詳細",
+	"viewInvoice": "請求書を表示",
+	"invoice": "請求書",
+	"summary": "概要",
+	"items": "アイテム",
+	"payment": "支払い"
 }
