@@ -18,6 +18,7 @@ pub struct Config {
     google_client_secret: String,
 
     mailgun_signing_key: Option<String>,
+    stripe_secret: Option<String>,
 
     service_name: String,
     service_key_path: PathBuf,
@@ -80,6 +81,17 @@ impl Config {
         };
         let service_key_path = PathBuf::from(service_key_str);
 
+        let stripe_secret = match cli_args.opt_value_from_str("--stripe-key")? {
+            Some(key) => Some(key),
+            None => match std::env::var("STRIPE_KEY") {
+                Ok(sk) if !sk.is_empty() => Some(sk),
+                _ => {
+                    tracing::warn!("no stripe key present, purchase actions and verifications will fail");
+                    None
+                },
+            },
+        };
+
         let upload_dir_str = match cli_args.opt_value_from_str("--upload-dir")? {
             Some(path) => path,
             None => match std::env::var("UPLOAD_DIR") {
@@ -121,6 +133,7 @@ impl Config {
             google_client_secret,
 
             mailgun_signing_key,
+            stripe_secret,
 
             service_name,
             service_key_path,
@@ -156,6 +169,10 @@ impl Config {
         self.service_key_path.clone()
     }
 
+    pub fn stripe_secret(&self) -> Option<String> {
+        self.stripe_secret.clone()
+    }
+
     pub fn upload_directory(&self) -> PathBuf {
         self.upload_directory.clone()
     }
@@ -177,6 +194,9 @@ pub enum ConfigError {
 
     #[error("a google auth client secret needs to be provided")]
     MissingGoogleClientSecret,
+
+    #[error("a stripe key needs to be provided in production")]
+    MissingStripeKey,
 }
 
 fn print_help() {

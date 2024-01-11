@@ -9,10 +9,12 @@ use http::request::Parts;
 mod mailgun_signing_key;
 mod provider_credential;
 mod service_key;
+mod stripe_secret;
 
 pub use mailgun_signing_key::MailgunSigningKey;
 pub use provider_credential::ProviderCredential;
 pub use service_key::ServiceKey;
+pub use stripe_secret::StripeSecret;
 
 use crate::app::AppState;
 
@@ -21,6 +23,7 @@ pub struct Secrets {
     mailgun_signing_key: Option<MailgunSigningKey>,
     provider_credentials: Arc<BTreeMap<Arc<str>, ProviderCredential>>,
     service_key: ServiceKey,
+    stripe_secret: Option<StripeSecret>,
 }
 
 impl Secrets {
@@ -32,11 +35,13 @@ impl Secrets {
         credentials: BTreeMap<Arc<str>, ProviderCredential>,
         mailgun_signing_key: Option<MailgunSigningKey>,
         service_key: ServiceKey,
+        stripe_secret: Option<StripeSecret>,
     ) -> Self {
         Self {
             mailgun_signing_key,
             provider_credentials: Arc::new(credentials),
             service_key,
+            stripe_secret,
         }
     }
 
@@ -46,6 +51,10 @@ impl Secrets {
 
     pub fn service_key(&self) -> ServiceKey {
         self.service_key.clone()
+    }
+
+    pub fn stripe_secret(&self) -> Option<StripeSecret> {
+        self.stripe_secret.clone()
     }
 }
 

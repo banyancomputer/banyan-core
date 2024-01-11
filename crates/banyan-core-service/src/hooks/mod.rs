@@ -22,7 +22,7 @@ where
 
     Router::new()
         .route("/mailgun", post(mailgun::handler))
-        .route("/stripe", post(stripe::hanlder))
+        .route("/stripe", post(stripe::handler))
         .nest("/storage", storage::router(state.clone()))
         .layer(cors_layer)
         .with_state(state)

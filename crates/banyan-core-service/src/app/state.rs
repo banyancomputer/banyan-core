@@ -7,7 +7,7 @@ use jwt_simple::prelude::*;
 use object_store::local::LocalFileSystem;
 
 use crate::app::{
-    Config, MailgunSigningKey, ProviderCredential, Secrets, ServiceKey, ServiceVerificationKey,
+    Config, MailgunSigningKey, ProviderCredential, Secrets, ServiceKey, ServiceVerificationKey, StripeSecret,
 };
 use crate::database::{self, Database, DatabaseSetupError};
 use crate::event_bus::EventBus;
@@ -45,13 +45,14 @@ impl State {
 
         let service_key = load_or_create_service_key(&config.service_key_path())?;
         let service_verifier = service_key.verifier();
+        let stripe_secret = config.stripe_secret().map(StripeSecret::new);
 
         let mut credentials = BTreeMap::new();
         credentials.insert(
             Arc::from("google"),
             ProviderCredential::new(config.google_client_id(), config.google_client_secret()),
         );
-        let secrets = Secrets::new(credentials, mailgun_signing_key, service_key);
+        let secrets = Secrets::new(credentials, mailgun_signing_key, service_key, stripe_secret);
 
         Ok(Self {
             database,
