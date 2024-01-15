@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use async_trait::async_trait;
 use serde::Serialize;
 
@@ -73,19 +71,9 @@ pub trait TaskStore: Send + Sync + 'static {
 
     async fn retry(&self, id: String) -> Result<Option<String>, TaskStoreError>;
 
-    async fn metrics(&self) -> Result<TaskStoreMetrics, TaskStoreError>;
-
-    async fn queue_metrics(
-        &self,
-        queue_name: &'static str,
-    ) -> Result<TaskStoreMetrics, TaskStoreError>;
-
-    async fn task_metrics(
-        &self,
-        task_name: &'static str,
-    ) -> Result<TaskStoreMetrics, TaskStoreError>;
-
     async fn update_state(&self, id: String, state: TaskState) -> Result<(), TaskStoreError>;
+
+    async fn schedule_next<T: TaskLike>(&self, task: T) -> Result<Option<String>, TaskStoreError>;
 }
 
 #[derive(Debug, thiserror::Error)]

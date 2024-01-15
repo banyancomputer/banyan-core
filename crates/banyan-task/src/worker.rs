@@ -55,9 +55,9 @@ where
             .ok_or_else(|| WorkerError::UnregisteredTaskName(task.task_name))?
             .clone();
 
+        let payload = task.payload.clone();
         let safe_runner = PanicSafeFuture::wrap({
             let context = (self.context_data_fn)();
-            let payload = task.payload.clone();
 
             async move { deserialize_and_run_task_fn(task_info, payload, context).await }
         });
@@ -89,10 +89,19 @@ where
 
         match task_result {
             Ok(_) => {
-                self.store
-                    .update_state(task.id, TaskState::Complete)
-                    .await
-                    .map_err(WorkerError::UpdateTaskStatusFailed)?;
+                match self.store.update_state(task.id, TaskState::Complete).await {
+                    Ok(_) => (),
+                    Err(err) => {
+                        // TODO: during worker tests "error returned from database: (code: 1) no such table: background_tasks"
+                        return Err(WorkerError::UpdateTaskStatusFailed(err));
+                    }
+                };
+
+                let task = serde_json::from_slice(&task.payload.clone())?;
+
+                if let Err(err) = self.store.schedule_next(task).await {
+                    tracing::error!("Failed to schedule next occurrence of task: {err}");
+                }
             }
             Err(err) => {
                 tracing::error!("task failed with error: {err}");
@@ -180,4 +189,86 @@ pub enum WorkerError {
 
     #[error("during execution of a dequeued task, encountered unregistered task '{0}'")]
     UnregisteredTaskName(String),
+
+    #[error("task deserialization failed: {0}")]
+    DeserializationFailed(#[from] serde_json::Error),
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+
+    use futures::FutureExt;
+    use tokio::sync::watch;
+
+    use super::*;
+    use crate::stores::{singleton_task_store, SqliteTaskStore};
+    use crate::task_like::tests::ScheduleTestTask;
+    use crate::tests::TestTask;
+    use crate::TaskLike;
+    const WORKER_NAME: &str = "default";
+    const TEST_CONTEXT: TestContext = TestContext {};
+
+    #[derive(Clone)]
+    struct TestContext {}
+    fn create_task_registry() -> BTreeMap<&'static str, ExecuteTaskFn<TestContext>> {
+        let mut task_registry = BTreeMap::new();
+
+        let test_task_fn: ExecuteTaskFn<TestContext> =
+            Arc::new(|_task, _payload, _context| async { Ok(()) }.boxed());
+
+        let schedule_test_task_fn: ExecuteTaskFn<TestContext> =
+            Arc::new(|_task, _payload, _context| {
+                async {
+                    Err(TaskExecError::ExecutionFailed(
+                        "failed with error".to_string(),
+                    ))
+                }
+                .boxed()
+            });
+
+        task_registry.insert(TestTask::TASK_NAME, test_task_fn);
+        task_registry.insert(ScheduleTestTask::TASK_NAME, schedule_test_task_fn);
+
+        task_registry
+    }
+    fn create_worker(
+        ctx: &'static TestContext,
+        task_store: SqliteTaskStore,
+    ) -> Worker<TestContext, SqliteTaskStore> {
+        let queue_config = QueueConfig::new(WORKER_NAME.clone()).with_worker_count(1);
+        let task_registry = create_task_registry();
+        let worker_queues: BTreeMap<&'static str, QueueConfig> = BTreeMap::new();
+        let context_data_fn = Arc::new(move || ctx.clone());
+        let (inner_shutdown_tx, inner_shutdown_rx) = watch::channel(());
+
+        Worker::new(
+            WORKER_NAME.to_string(),
+            queue_config.clone(),
+            context_data_fn.clone(),
+            task_store.clone(),
+            task_registry.clone(),
+            Some(inner_shutdown_rx.clone()),
+        )
+    }
+
+    async fn retrieve_task(task_name: &str, task_store: &SqliteTaskStore) -> Task {
+        let task = task_store
+            .next(WORKER_NAME, &[task_name])
+            .await
+            .map_err(WorkerError::StoreUnavailable)
+            .expect("could not get task from db")
+            .expect("could not create task instance");
+        task
+    }
+
+    #[ignore]
+    #[tokio::test]
+    async fn test_worker_run_no_tasks() {
+        let task_store = singleton_task_store().await;
+        let worker = create_worker(&TEST_CONTEXT, task_store.clone());
+        let task = retrieve_task(TestTask::TASK_NAME, &task_store).await;
+        let result = worker.run(task).await;
+        assert!(result.is_ok(), "Worker run failed with no tasks");
+    }
 }

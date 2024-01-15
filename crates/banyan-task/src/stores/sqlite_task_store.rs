@@ -4,8 +4,9 @@ use async_trait::async_trait;
 use sqlx::{Acquire, SqliteConnection, SqlitePool};
 use time::OffsetDateTime;
 
+use crate::task_store::TaskStore;
 use crate::{
-    Task, TaskInstanceBuilder, TaskLike, TaskState, TaskStore, TaskStoreError, TaskStoreMetrics,
+    Task, TaskInstanceBuilder, TaskLike, TaskState, TaskStoreError, TaskStoreMetrics,
     TASK_EXECUTION_TIMEOUT,
 };
 
@@ -34,6 +35,70 @@ impl SqliteTaskStore {
     pub fn new(pool: SqlitePool) -> Self {
         Self { pool }
     }
+
+    pub async fn metrics(&self) -> Result<TaskStoreMetrics, TaskStoreError> {
+        let mut connection = self.pool.clone().acquire().await?;
+        let mut query_base = self.metrics_query();
+        let query = query_base.build_query_as::<SqliteTaskStoreMetrics>();
+        let metrics = query.fetch_one(&mut *connection).await?;
+        Ok(metrics.into())
+    }
+
+    fn metrics_query(&self) -> sqlx::query_builder::QueryBuilder<'static, sqlx::Sqlite> {
+        sqlx::query_builder::QueryBuilder::new(
+            r#"SELECT
+               COUNT(*) AS total,
+               COALESCE(SUM(CASE WHEN state = 'new' THEN 1 ELSE 0 END), 0) AS new,
+               COALESCE(SUM(CASE WHEN state = 'in_progress' THEN 1 ELSE 0 END), 0) AS in_progress,
+               COALESCE(SUM(CASE WHEN state = 'panicked' THEN 1 ELSE 0 END), 0) AS panicked,
+               COALESCE(SUM(CASE WHEN state = 'retry' THEN 1 ELSE 0 END), 0) AS retried,
+               COALESCE(SUM(CASE WHEN state = 'cancelled' THEN 1 ELSE 0 END), 0) AS cancelled,
+               COALESCE(SUM(CASE WHEN state = 'error' THEN 1 ELSE 0 END), 0) AS errored,
+               COALESCE(SUM(CASE WHEN state = 'complete' THEN 1 ELSE 0 END), 0) AS completed,
+               COALESCE(SUM(CASE WHEN state = 'timed_out' THEN 1 ELSE 0 END), 0) AS timed_out,
+               COALESCE(SUM(CASE WHEN state = 'dead' THEN 1 ELSE 0 END), 0) AS dead,
+               COALESCE(SUM(CASE WHEN DATETIME(scheduled_to_run_at) <= DATETIME('now') THEN 1 ELSE 0 END), 0) AS scheduled,
+               COALESCE(SUM(CASE WHEN DATETIME(scheduled_to_run_at) > DATETIME('now') THEN 1 ELSE 0 END), 0) AS scheduled_future
+            FROM background_tasks"#,
+        )
+    }
+
+    async fn create(
+        conn: &mut SqliteConnection,
+        task: TaskInstanceBuilder,
+    ) -> Result<Option<String>, TaskStoreError> {
+        if let Some(ukey) = &task.unique_key {
+            // right now if we encounter a unique key that is already present in the DB we simply
+            // don't queue the new instance of that task, the old one will have a bit of priority
+            // due to its age.
+            if SqliteTaskStore::is_key_present(conn, ukey, &task.task_name).await? {
+                return Ok(None);
+            }
+        }
+
+        let background_task_id: String = sqlx::query_scalar!(
+            r#"INSERT INTO background_tasks (
+                           task_name, queue_name, unique_key, payload,
+                           current_attempt, maximum_attempts, state,
+                           original_task_id, scheduled_to_run_at
+                       )
+                       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                       RETURNING id;"#,
+            task.task_name,
+            task.queue_name,
+            task.unique_key,
+            task.payload,
+            task.current_attempt,
+            task.maximum_attempts,
+            task.state,
+            task.original_task_id,
+            task.scheduled_to_run_at,
+        )
+        .fetch_one(&mut *conn)
+        .await?;
+
+        Ok(Some(background_task_id))
+    }
 }
 
 #[async_trait]
@@ -48,10 +113,8 @@ impl TaskStore for SqliteTaskStore {
         let mut connection = pool.acquire().await?;
         let mut transaction = connection.begin().await?;
 
-        let background_task_id = TaskInstanceBuilder::for_task(task)
-            .await?
-            .create(&mut transaction)
-            .await?;
+        let task = TaskInstanceBuilder::for_task(task).await?;
+        let background_task_id = Self::create(&mut transaction, task).await?;
 
         transaction.commit().await?;
 
@@ -62,14 +125,11 @@ impl TaskStore for SqliteTaskStore {
         connection: &mut Self::Connection,
         task: T,
     ) -> Result<Option<String>, TaskStoreError> {
-        let background_task_id = TaskInstanceBuilder::for_task(task)
-            .await?
-            .create(&mut *connection)
-            .await?;
+        let task = TaskInstanceBuilder::for_task(task).await?;
+        let background_task_id = Self::create(&mut *connection, task).await?;
 
         Ok(background_task_id)
     }
-
     async fn next(
         &self,
         queue_name: &str,
@@ -202,51 +262,14 @@ impl TaskStore for SqliteTaskStore {
         let backoff_time_secs = 30u64 * 3u64.saturating_pow(retried_task.current_attempt as u32);
         let next_run_at = OffsetDateTime::now_utc() + Duration::from_secs(backoff_time_secs);
 
-        let new_task_id = TaskInstanceBuilder::from_task_instance(retried_task)
+        let task = TaskInstanceBuilder::from_task_instance(retried_task)
             .await
-            .run_at(next_run_at)
-            .create(&mut transaction)
-            .await?;
+            .run_at(next_run_at);
+        let new_task_id = Self::create(&mut transaction, task).await?;
 
         transaction.commit().await?;
 
         Ok(new_task_id)
-    }
-
-    async fn metrics(&self) -> Result<TaskStoreMetrics, TaskStoreError> {
-        let mut connection = self.pool.clone().acquire().await?;
-        let mut query_base = metrics_query();
-        let query = query_base.build_query_as::<SqliteTaskStoreMetrics>();
-        let metrics = query.fetch_one(&mut *connection).await?;
-        Ok(metrics.into())
-    }
-
-    async fn task_metrics(
-        &self,
-        task_name: &'static str,
-    ) -> Result<TaskStoreMetrics, TaskStoreError> {
-        let mut connection = self.pool.clone().acquire().await?;
-        let mut query_base = metrics_query();
-        let query = query_base
-            .push(" WHERE task_name =  ")
-            .push_bind(task_name)
-            .build_query_as::<SqliteTaskStoreMetrics>();
-        let metrics = query.fetch_one(&mut *connection).await?;
-        Ok(metrics.into())
-    }
-
-    async fn queue_metrics(
-        &self,
-        queue_name: &'static str,
-    ) -> Result<TaskStoreMetrics, TaskStoreError> {
-        let mut connection = self.pool.clone().acquire().await?;
-        let mut query_base = metrics_query();
-        let query = query_base
-            .push(" WHERE queue_name =  ")
-            .push_bind(queue_name)
-            .build_query_as::<SqliteTaskStoreMetrics>();
-        let metrics = query.fetch_one(&mut *connection).await?;
-        Ok(metrics.into())
     }
 
     async fn update_state(&self, id: String, new_state: TaskState) -> Result<(), TaskStoreError> {
@@ -266,27 +289,24 @@ impl TaskStore for SqliteTaskStore {
 
         Ok(())
     }
-}
 
-fn metrics_query() -> sqlx::query_builder::QueryBuilder<'static, sqlx::Sqlite> {
-    sqlx::query_builder::QueryBuilder::new(
-        r#"SELECT
-               COUNT(*) AS total,
-               COALESCE(SUM(CASE WHEN state = 'new' THEN 1 ELSE 0 END), 0) AS new,
-               COALESCE(SUM(CASE WHEN state = 'in_progress' THEN 1 ELSE 0 END), 0) AS in_progress,
-               COALESCE(SUM(CASE WHEN state = 'panicked' THEN 1 ELSE 0 END), 0) AS panicked,
-               COALESCE(SUM(CASE WHEN state = 'retry' THEN 1 ELSE 0 END), 0) AS retried,
-               COALESCE(SUM(CASE WHEN state = 'cancelled' THEN 1 ELSE 0 END), 0) AS cancelled,
-               COALESCE(SUM(CASE WHEN state = 'error' THEN 1 ELSE 0 END), 0) AS errored,
-               COALESCE(SUM(CASE WHEN state = 'complete' THEN 1 ELSE 0 END), 0) AS completed,
-               COALESCE(SUM(CASE WHEN state = 'timed_out' THEN 1 ELSE 0 END), 0) AS timed_out,
-               COALESCE(SUM(CASE WHEN state = 'dead' THEN 1 ELSE 0 END), 0) AS dead,
-               COALESCE(SUM(CASE WHEN DATETIME(scheduled_to_run_at) <= DATETIME('now') THEN 1 ELSE 0 END), 0) AS scheduled,
-               COALESCE(SUM(CASE WHEN DATETIME(scheduled_to_run_at) > DATETIME('now') THEN 1 ELSE 0 END), 0) AS scheduled_future
-            FROM background_tasks"#,
-    )
-}
+    async fn schedule_next<T: TaskLike>(&self, task: T) -> Result<Option<String>, TaskStoreError> {
+        let schedule_time = match task.next_time() {
+            Some(e) => e,
+            None => return Ok(None),
+        };
 
+        let mut connection = self.pool.clone().acquire().await?;
+        let task = TaskInstanceBuilder::for_task(task)
+            .await?
+            .run_at(schedule_time);
+        let task_id = Self::create(&mut connection, task).await?;
+
+        connection.close().await?;
+
+        Ok(task_id)
+    }
+}
 #[derive(sqlx::FromRow)]
 struct SqliteTaskStoreMetrics {
     total: i32,
@@ -325,64 +345,123 @@ impl From<SqliteTaskStoreMetrics> for TaskStoreMetrics {
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use crate::task_like::tests::ScheduleTestTask;
     use crate::tests::{default_task_store_metrics, TestTask};
     use crate::TaskLikeExt;
 
     #[tokio::test]
-    async fn empty_metrics() {
-        let task_store = empty_task_store().await;
-        let metrics = task_store.metrics().await.unwrap();
-        assert_eq!(metrics, default_task_store_metrics());
-    }
-
-    #[tokio::test]
-    async fn singleton_metrics() {
+    async fn normal_task_do_not_reschedule() {
         let task_store = singleton_task_store().await;
-        let metrics = task_store.metrics().await.unwrap();
-        assert_eq!(metrics.total, 1);
-        assert_eq!(metrics.new, 1);
-        assert_eq!(metrics.scheduled, 1);
-        assert_eq!(metrics.scheduled_future, 0);
+        let task = TestTask;
+        let task_id = task_store.schedule_next(task).await.expect("schedule_next");
+        assert_eq!(task_id, None, "Task should not have been rescheduled");
     }
 
     #[tokio::test]
-    async fn empty_queue_metrics() {
-        let task_store = empty_task_store().await;
-        let metrics = task_store.queue_metrics("default").await.unwrap();
-        assert_eq!(metrics, default_task_store_metrics());
-    }
-
-    #[tokio::test]
-    async fn singleton_queue_metrics() {
+    async fn reschedule_tasks_work() {
         let task_store = singleton_task_store().await;
-        let metrics = task_store
-            .queue_metrics(TestTask::QUEUE_NAME)
+        let task = ScheduleTestTask;
+        let task_id = task_store.schedule_next(task).await.expect("schedule_next");
+        assert_ne!(task_id, None, "Task should not have been rescheduled");
+    }
+
+    #[tokio::test]
+    async fn update_state_works() {
+        let task_store = singleton_task_store().await;
+        let task = TestTask;
+        let task_id = task
+            .enqueue::<SqliteTaskStore>(&mut task_store.pool.clone())
             .await
-            .unwrap();
-        assert_eq!(metrics.total, 1);
-        assert_eq!(metrics.new, 1);
-        assert_eq!(metrics.scheduled, 1);
-        assert_eq!(metrics.scheduled_future, 0);
+            .expect("enqueue")
+            .expect("task created");
+        let update_result = task_store
+            .update_state(task_id, TaskState::InProgress)
+            .await;
+
+        assert!(update_result.is_ok(), "Update state failed");
+        let metrics = task_store.metrics().await.unwrap();
+        assert_eq!(metrics.in_progress, 1, "Task state not updated correctly");
     }
 
     #[tokio::test]
-    async fn empty_task_metrics() {
+    async fn error_tasks_are_retried() {
+        let task_store = singleton_task_store().await;
+        let task = TestTask;
+        let task_id = task
+            .enqueue::<SqliteTaskStore>(&mut task_store.pool.clone())
+            .await
+            .expect("enqueue")
+            .expect("task created");
+        let _ = task_store
+            .update_state(task_id.clone(), TaskState::Error)
+            .await;
+        let retry_result = task_store.retry(task_id).await;
+
+        assert!(retry_result.is_ok(), "Retry failed");
+        assert_ne!(retry_result.unwrap(), None, "task should have been retried");
+        let metrics = task_store.metrics().await.unwrap();
+        assert_eq!(metrics.retried, 1, "Task not retried correctly");
+    }
+
+    #[tokio::test]
+    async fn timeout_tasks_are_retried() {
+        let task_store = singleton_task_store().await;
+        let task = TestTask;
+
+        let task_id = task
+            .enqueue::<SqliteTaskStore>(&mut task_store.pool.clone())
+            .await
+            .expect("enqueue")
+            .expect("task created");
+        let _ = task_store
+            .update_state(task_id.clone(), TaskState::TimedOut)
+            .await;
+        let retry_result = task_store.retry(task_id).await;
+
+        assert!(retry_result.is_ok(), "Retry failed");
+        assert_ne!(retry_result.unwrap(), None, "task should have been retried");
+        let metrics = task_store.metrics().await.unwrap();
+        assert_eq!(metrics.retried, 1, "Task not retried correctly");
+    }
+
+    #[tokio::test]
+    async fn non_error_tasks_are_not_retried() {
+        let task_store = singleton_task_store().await;
+        let task = TestTask;
+        let task_id = task
+            .enqueue::<SqliteTaskStore>(&mut task_store.pool.clone())
+            .await
+            .expect("enqueue")
+            .expect("task created");
+        let retry_result = task_store.retry(task_id).await;
+        assert!(retry_result.is_ok(), "Retry failed");
+        assert_eq!(
+            retry_result.unwrap(),
+            None,
+            "task should not have been retried"
+        );
+        let metrics = task_store.metrics().await.unwrap();
+        assert_eq!(metrics.retried, 0, "task should not have been retried");
+    }
+
+    #[tokio::test]
+    async fn empty_store_works() {
         let task_store = empty_task_store().await;
-        let metrics = task_store.task_metrics("default").await.unwrap();
+        let metrics = task_store.metrics().await.unwrap();
         assert_eq!(metrics, default_task_store_metrics());
     }
 
     #[tokio::test]
-    async fn singleton_task_metrics() {
+    async fn schedule_next_works() {
         let task_store = singleton_task_store().await;
-        let metrics = task_store.task_metrics(TestTask::TASK_NAME).await.unwrap();
-        assert_eq!(metrics.total, 1);
-        assert_eq!(metrics.new, 1);
+        let task = ScheduleTestTask;
+        task_store.schedule_next(task).await.expect("schedule_next");
+        let metrics = task_store.metrics().await.unwrap();
+        assert_eq!(metrics.total, 2);
         assert_eq!(metrics.scheduled, 1);
-        assert_eq!(metrics.scheduled_future, 0);
     }
 
-    async fn singleton_task_store() -> SqliteTaskStore {
+    pub async fn singleton_task_store() -> SqliteTaskStore {
         let task_store = empty_task_store().await;
         TestTask
             .enqueue::<SqliteTaskStore>(&mut task_store.pool.clone())
@@ -391,7 +470,7 @@ pub mod tests {
         task_store
     }
 
-    async fn empty_task_store() -> SqliteTaskStore {
+    pub async fn empty_task_store() -> SqliteTaskStore {
         let db_conn = SqlitePool::connect("sqlite::memory:")
             .await
             .expect("db setup");
