@@ -28,7 +28,7 @@ pub async fn connect(db_url: &url::Url) -> Result<Database, DatabaseSetupError> 
     // itself...
 
     if db_url.scheme() == "sqlite" {
-        let mut db = sqlite::connect_sqlite(db_url).await?;
+        let db = sqlite::connect_sqlite(db_url).await?;
 
         let mut conn = db.acquire().await?;
         sqlite::mitrate_sqlite(&mut conn).await?;

@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT *\n            FROM users WHERE id = $1;",
+  "query": "SELECT * FROM users WHERE id = $1;",
   "describe": {
     "columns": [
       {
@@ -42,6 +42,16 @@
         "name": "accepted_tos_at",
         "ordinal": 7,
         "type_info": "Datetime"
+      },
+      {
+        "name": "subscription_id",
+        "ordinal": 8,
+        "type_info": "Text"
+      },
+      {
+        "name": "stripe_customer_id",
+        "ordinal": 9,
+        "type_info": "Text"
       }
     ],
     "parameters": {
@@ -55,8 +65,10 @@
       true,
       true,
       false,
+      true,
+      false,
       true
     ]
   },
-  "hash": "92ddcc5fcaa133ee6e5858f6124035287c2a6bef88e77a0d1c647067420c9382"
+  "hash": "bf275e0f922d853f53005fd8f7040181caf8d5079c92f2d106cf64f818c94f83"
 }

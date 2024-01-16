@@ -14,6 +14,8 @@ pub struct User {
     pub profile_image: Option<String>,
     pub created_at: OffsetDateTime,
     pub accepted_tos_at: Option<OffsetDateTime>,
+    pub subscription_id: String,
+    pub stripe_customer_id: Option<String>,
 }
 
 impl User {

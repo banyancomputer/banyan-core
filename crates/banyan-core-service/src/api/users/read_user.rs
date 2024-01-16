@@ -15,8 +15,7 @@ pub async fn handler(
     let user_id = user_identity.id().to_string();
     let user = sqlx::query_as!(
         User,
-        r#"SELECT *
-            FROM users WHERE id = $1;"#,
+        "SELECT * FROM users WHERE id = $1;",
         user_id,
     )
     .fetch_one(&database)

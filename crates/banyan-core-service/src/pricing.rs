@@ -18,6 +18,20 @@ pub async fn sync_pricing(_conn: &mut DatabaseConnection) -> Result<(), sqlx::Er
     Ok(())
 }
 
+#[derive(Debug, Deserialize)]
+pub struct Allowances {
+    archival: usize,
+    bandwidth: usize,
+    storage: usize,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Limits {
+    archival: Option<usize>,
+    bandwidth: Option<usize>,
+    storage: Option<usize>,
+}
+
 /// A single currently active price tier that should exist in the database. These will be
 /// automatically applied if the settings don't match what is currently in the database.
 #[derive(Debug, Deserialize)]
@@ -42,17 +56,18 @@ pub struct PricingTier {
     /// Whether this pricing tier is visible to users through products and pricing APIs. Old
     /// versions of the pricing tier and custom pricing schemes shouldn't be visible unless a user
     /// is explicitly subscribed to them.
-    user_visible: bool,
+    visible: bool,
 
     /// If there are prices associated with this plan this will hold them.
     price: Option<Price>,
 
     /// The thresholds of different types of metered measurements that are included in the monthly
-    /// price. Going over any of these thresholds starts acruing overage charges.
-    included_allowances: StorageAmount,
+    /// price. Going over any of these thresholds starts acruing overage charges if overages are
+    /// allowed. If overages are not allowed this will also be treated as a hard limit.
+    included_allowances: Allowances,
 
     /// The upper limits of storage allowed by a particular plan.
-    hard_limits: StorageAmount,
+    hard_limits: Limits,
 }
 
 /// The cost associated with a particular [`PricingTier`] if one is set. All values are in
@@ -67,14 +82,4 @@ pub struct Price {
 
     /// The price of each GiB transferred from the network beyond the base bandwidth allowance.
     bandwidth_overage: usize,
-}
-
-/// A collection of various measurement thresholds for each of the metered classes of storage. The
-/// fields are all allowed to be optional as they may not be relevant to a particular plan,
-/// allowance, or limit. All values are in GiB.
-#[derive(Debug, Deserialize)]
-pub struct StorageAmount {
-    archival: Option<usize>,
-    bandwidth: Option<usize>,
-    storage: Option<usize>,
 }

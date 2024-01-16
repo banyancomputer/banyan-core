@@ -5,7 +5,7 @@ use sqlx::sqlite::{
 use sqlx::ConnectOptions;
 use url::Url;
 
-use crate::database::{DatabaseConnection, DatabaseSetupError};
+use crate::database::DatabaseConnection;
 
 static MIGRATOR: Migrator = sqlx::migrate!();
 

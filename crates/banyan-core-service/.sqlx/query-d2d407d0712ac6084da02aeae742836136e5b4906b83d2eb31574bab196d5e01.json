@@ -42,6 +42,16 @@
         "name": "accepted_tos_at",
         "ordinal": 7,
         "type_info": "Datetime"
+      },
+      {
+        "name": "subscription_id",
+        "ordinal": 8,
+        "type_info": "Text"
+      },
+      {
+        "name": "stripe_customer_id",
+        "ordinal": 9,
+        "type_info": "Text"
       }
     ],
     "parameters": {
@@ -53,6 +63,8 @@
       false,
       false,
       true,
+      true,
+      false,
       true,
       false,
       true

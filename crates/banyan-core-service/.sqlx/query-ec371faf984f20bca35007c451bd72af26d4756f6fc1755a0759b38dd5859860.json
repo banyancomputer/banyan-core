@@ -1,0 +1,116 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT * FROM subscriptions\n                   WHERE price_key = $1\n                   ORDER BY created_at DESC\n                   LIMIT 1;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "price_key",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "title",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "stripe_product_id",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "allow_overage",
+        "ordinal": 4,
+        "type_info": "Bool"
+      },
+      {
+        "name": "archival_available",
+        "ordinal": 5,
+        "type_info": "Bool"
+      },
+      {
+        "name": "visible",
+        "ordinal": 6,
+        "type_info": "Bool"
+      },
+      {
+        "name": "base_price",
+        "ordinal": 7,
+        "type_info": "Int64"
+      },
+      {
+        "name": "storage_overage_price",
+        "ordinal": 8,
+        "type_info": "Int64"
+      },
+      {
+        "name": "bandwidth_overage_price",
+        "ordinal": 9,
+        "type_info": "Int64"
+      },
+      {
+        "name": "included_archival",
+        "ordinal": 10,
+        "type_info": "Int64"
+      },
+      {
+        "name": "included_bandwidth",
+        "ordinal": 11,
+        "type_info": "Int64"
+      },
+      {
+        "name": "included_storage",
+        "ordinal": 12,
+        "type_info": "Int64"
+      },
+      {
+        "name": "archival_hard_limit",
+        "ordinal": 13,
+        "type_info": "Int64"
+      },
+      {
+        "name": "bandwidth_hard_limit",
+        "ordinal": 14,
+        "type_info": "Int64"
+      },
+      {
+        "name": "storage_hard_limit",
+        "ordinal": 15,
+        "type_info": "Int64"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 16,
+        "type_info": "Datetime"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "ec371faf984f20bca35007c451bd72af26d4756f6fc1755a0759b38dd5859860"
+}

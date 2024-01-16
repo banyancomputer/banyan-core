@@ -17,7 +17,7 @@ mod snapshot_state;
 mod storage_class;
 mod storage_grant;
 mod storage_host;
-mod subscription_price;
+mod subscription;
 mod user;
 
 pub use block_location::MinimalBlockLocation;

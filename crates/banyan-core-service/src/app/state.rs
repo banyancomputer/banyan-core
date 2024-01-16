@@ -186,6 +186,7 @@ pub mod test {
                 provider_creds,
                 None,
                 ServiceKey::new(ES384KeyPair::generate()),
+                None,
             ),
             service_name: "mock_service".to_string(),
             service_verifier: ServiceVerificationKey::new(ES384KeyPair::generate().public_key()),
