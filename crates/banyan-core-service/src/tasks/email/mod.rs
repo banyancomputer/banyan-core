@@ -203,6 +203,8 @@ pub mod tests {
     use banyan_task::{CurrentTask, TaskLike};
     use time::OffsetDateTime;
 
+    use crate::database::test_helpers::*;
+
     use super::*;
 
     const USER_ID: &str = "00000000-0000-0000-0000-000000000000";
@@ -414,16 +416,11 @@ pub mod tests {
     }
 
     async fn email_task_context() -> EmailTaskContext {
-        let db_conn = SqlitePool::connect("sqlite::memory:")
-            .await
-            .expect("db setup");
-        sqlx::migrate!("./migrations")
-            .run(&db_conn)
-            .await
-            .expect("db setup");
+        let db_conn = setup_database().await;
+
         sqlx::query!(
             r#"INSERT INTO users (id, email, display_name)
-            VALUES ($1, $2, $3)"#,
+            VALUES ($1, $2, $3);"#,
             USER_ID,
             USER_EMAIL,
             "test user"

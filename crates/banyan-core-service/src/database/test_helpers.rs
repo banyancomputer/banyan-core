@@ -286,8 +286,7 @@ pub(crate) async fn create_user(
     display_name: &str,
 ) -> String {
     sqlx::query_scalar!(
-        r#"INSERT INTO
-                users (email, verified_email, display_name)
+        r#"INSERT INTO users (email, verified_email, display_name)
                 VALUES ($1, true, $2)
                 RETURNING id;"#,
         email,
@@ -336,10 +335,15 @@ pub(crate) async fn setup_database() -> Database {
         .await
         .expect("Failed to connect to the database");
 
+    let mut conn = pool.begin().await.expect("db conn");
+
     sqlx::migrate!()
-        .run(&pool)
+        .run(&mut conn)
         .await
         .expect("failed to run migrations");
+    crate::pricing::sync_pricing(&mut conn).await.expect("price sync");
+
+    conn.commit().await.expect("db close");
 
     pool
 }
