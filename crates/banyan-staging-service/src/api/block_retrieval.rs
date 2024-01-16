@@ -51,11 +51,27 @@ pub async fn handler(
     // passing in the byte range using GetOptions to the get_opts method on the ObjectStore trait,
     // however data in the "File" type explicitly ignores this range which is incredibly
     // frustrating...
-    let object_path = ObjectStorePath::from(block_details.file_path.as_str());
-    let data = store
-        .get_range(&object_path, byte_range)
-        .await
-        .map_err(BlockRetrievalError::RetrievalFailed)?;
+    //
+    //
+    let data = if byte_range.end - byte_range.start > 0 {
+        let object_path = ObjectStorePath::from(block_details.metadata_id.as_str());
+        store
+            .get_range(&object_path, byte_range)
+            .await
+            .map_err(BlockRetrievalError::RetrievalFailed)?
+    } else {
+        let object_path = ObjectStorePath::from(format!(
+            "{}/{}",
+            block_details.metadata_id, block_details.id
+        ));
+        store
+            .get(&object_path)
+            .await
+            .map_err(BlockRetrievalError::RetrievalFailed)?
+            .bytes()
+            .await
+            .map_err(BlockRetrievalError::RetrievalFailed)?
+    };
 
     Ok((StatusCode::OK, headers, data).into_response())
 }
@@ -69,7 +85,7 @@ pub async fn block_from_normalized_cid(
                 SELECT
                         blocks.id AS id,
                         clients.platform_id AS platform_id,
-                        uploads.file_path AS file_path,
+                        uploads.metadata_id as metadata_id,
                         uploads_blocks.byte_offset AS byte_offset,
                         blocks.data_length AS length
                     FROM blocks
