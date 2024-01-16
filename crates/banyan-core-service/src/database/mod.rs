@@ -31,7 +31,7 @@ pub async fn connect(db_url: &url::Url) -> Result<Database, DatabaseSetupError> 
         let mut db = sqlite::connect_sqlite(db_url).await?;
 
         let mut conn = db.acquire().await?;
-        sqlite::mitrate_sqlite(&mut db).await?;
+        sqlite::mitrate_sqlite(&mut conn).await?;
         pricing::sync_pricing(&mut conn).await?;
         conn.close().await?;
 
@@ -46,7 +46,7 @@ pub async fn connect(db_url: &url::Url) -> Result<Database, DatabaseSetupError> 
 #[derive(Debug, thiserror::Error)]
 pub enum DatabaseSetupError {
     #[error("error occurred while attempting database migration: {0}")]
-    MigrationFailed(sqlx::migrate::MigrateError),
+    MigrationFailed(#[from] sqlx::migrate::MigrateError),
 
     #[error("unable to perform initial connection and check of the database: {0}")]
     Unavailable(#[from] sqlx::Error),
