@@ -119,3 +119,9 @@ input {
         border-bottom: 1px solid #EFF1F5;
     }
 }
+
+.invoices-table {
+    th {
+        border-bottom: none;
+    }
+}

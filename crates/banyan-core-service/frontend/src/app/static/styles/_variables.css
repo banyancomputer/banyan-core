@@ -42,6 +42,8 @@
     --termsAndConditionsHead: #FBF4EF;
     --button-primary: #0F3A4A;
     --termsAndConditionsHighlihgt: #263724;
+    --view-invoice-text: #008ABD;
+    --invoice-heading-background: #B39F8D1A;
 }
 
 [prefers-color-scheme="dark"]:root {
@@ -87,4 +89,6 @@
     --termsAndConditionsHead: #FBF4EF;
     --button-primary: #0F3A4A;
     --termsAndConditionsHighlihgt: #263724;
+    --view-invoice-text: #008ABD;
+    --invoice-heading-background: #B39F8D1A;
 }

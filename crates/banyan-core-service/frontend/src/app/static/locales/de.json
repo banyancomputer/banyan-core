@@ -195,5 +195,14 @@
     "invoicesWillBeAvailiableHere": "Rechnungen und Quittungen, die auf Ihrem Konto erstellt wurden, sind hier verfügbar",
     "upgrade": "Upgrade",
 	"youAreReadyForStart": "Sie sind bereit zu starten!",
-    "useDesktop": "Um Banyan zu verwenden, verwenden Sie bitte den Desktop"
+    "useDesktop": "Um Banyan zu verwenden, verwenden Sie bitte den Desktop",
+	"date": "Datum",
+	"storageUsed": "Verwendeter Speicher",
+	"description": "Beschreibung",
+	"details": "Details",
+	"viewInvoice": "Rechnung anzeigen",
+	"invoice": "Rechnungen",
+	"summary": "Zusammenfassung",
+	"items": "Artikel",
+	"payment": "Zahlung"
 }
