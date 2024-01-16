@@ -26,10 +26,6 @@ pub async fn handler(
         return Err(BlockRetrievalError::NotBlockOwner);
     }
 
-    let byte_start = block_details.byte_offset as usize;
-    let byte_end = byte_start + (block_details.length as usize);
-    let byte_range = byte_start..byte_end;
-
     let mut headers = axum::http::HeaderMap::new();
 
     headers.insert(
@@ -44,7 +40,7 @@ pub async fn handler(
     );
     headers.insert(
         axum::http::header::CONTENT_LENGTH,
-        byte_range.len().to_string().as_str().parse().unwrap(),
+        block_details.length.to_string().as_str().parse().unwrap(),
     );
 
     // this isn't ideal as we have to load the entire block from memory, object_store does support
@@ -53,7 +49,12 @@ pub async fn handler(
     // frustrating...
     //
     //
-    let data = if byte_range.end - byte_range.start > 0 {
+
+    let data = if let Some(car_offset) = block_details.car_offset {
+        let byte_start = car_offset as usize;
+        let byte_end = byte_start + (block_details.length as usize);
+        let byte_range = byte_start..byte_end;
+
         let object_path = ObjectStorePath::from(block_details.metadata_id.as_str());
         store
             .get_range(&object_path, byte_range)
@@ -84,10 +85,10 @@ pub async fn block_from_normalized_cid(
         r#"
                 SELECT
                         blocks.id AS id,
+                        blocks.data_length AS length,
+                        blocks.car_offset AS car_offset,
                         clients.platform_id AS platform_id,
-                        uploads.metadata_id as metadata_id,
-                        uploads_blocks.byte_offset AS byte_offset,
-                        blocks.data_length AS length
+                        uploads.metadata_id as metadata_id
                     FROM blocks
                         JOIN uploads_blocks ON blocks.id = uploads_blocks.block_id
                         JOIN uploads ON uploads_blocks.upload_id = uploads.id

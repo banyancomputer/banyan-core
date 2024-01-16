@@ -1,9 +1,8 @@
 #[derive(sqlx::FromRow, Debug)]
 pub struct BlockDetails {
     pub id: String,
-    pub platform_id: String,
-
-    pub metadata_id: String,
-    pub byte_offset: i32,
     pub length: i32,
+    pub car_offset: Option<i32>,
+    pub platform_id: String,
+    pub metadata_id: String,
 }
