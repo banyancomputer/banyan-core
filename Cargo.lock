@@ -516,7 +516,7 @@ dependencies = [
  "mime",
  "multer",
  "oauth2",
- "object_store",
+ "object_store 0.6.1",
  "openssl",
  "p384",
  "pem 2.0.1",
@@ -553,7 +553,7 @@ name = "banyan-object-store"
 version = "0.1.0"
 dependencies = [
  "itertools 0.11.0",
- "object_store",
+ "object_store 0.6.1",
  "serde_json",
  "thiserror",
  "tracing",
@@ -582,7 +582,7 @@ dependencies = [
  "jwt-simple",
  "mime",
  "multer",
- "object_store",
+ "object_store 0.6.1",
  "pico-args",
  "regex",
  "reqwest",
@@ -622,6 +622,7 @@ dependencies = [
  "jwt-simple",
  "mime",
  "multer",
+ "object_store 0.9.0",
  "pico-args",
  "rand 0.8.5",
  "regex",
@@ -3017,6 +3018,27 @@ dependencies = [
  "ring 0.16.20",
  "serde",
  "serde_json",
+ "snafu",
+ "tokio",
+ "tracing",
+ "url",
+ "walkdir",
+]
+
+[[package]]
+name = "object_store"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d139f545f64630e2e3688fd9f81c470888ab01edeb72d13b4e86c566f1130000"
+dependencies = [
+ "async-trait",
+ "bytes",
+ "chrono",
+ "futures",
+ "humantime",
+ "itertools 0.12.0",
+ "parking_lot 0.12.1",
+ "percent-encoding",
  "snafu",
  "tokio",
  "tracing",
