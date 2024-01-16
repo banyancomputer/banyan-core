@@ -13,6 +13,7 @@ mod extractors;
 mod health_check;
 mod hooks;
 mod http_server;
+mod pricing;
 mod tasks;
 mod utils;
 
@@ -20,6 +21,8 @@ use app::Config;
 
 #[tokio::main]
 async fn main() {
+    let _ = pricing::current_price_config();
+
     let config = match Config::from_env_and_args() {
         Ok(c) => c,
         Err(err) => {

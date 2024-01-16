@@ -1,3 +1,6 @@
+use time::OffsetDateTime;
+use time::format_description::well_known::Rfc3339;
+
 fn report_build_profile() {
     println!(
         "cargo:rustc-env=BUILD_PROFILE={}",
@@ -32,10 +35,14 @@ fn report_repository_version() {
 
     let long_version = String::from_utf8(git_describe.stdout).unwrap();
     println!("cargo:rustc-env=REPO_VERSION={}", long_version);
+
+    let build_timestamp = OffsetDateTime::now_utc().format(&Rfc3339).unwrap();
+    println!("cargo:rustc-env=BUILD_TIMESTAMP={build_timestamp}");
 }
 
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
+    println!("cargo:rerun-if-changed=dist/pricing.ron");
     println!("cargo:rerun-if-changed=migrations");
 
     report_repository_version();

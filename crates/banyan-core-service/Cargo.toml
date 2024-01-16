@@ -40,6 +40,7 @@ hex = "^0.4"
 pem = "^2"
 phf = { version = "^0.11", features = ["macros"] }
 regex = "^1.9"
+ron = "^0.8"
 serde_json = "^1"
 serde = { version = "^1", features = ["derive"] }
 time = { version = "^0.3", features = ["serde", "parsing", "formatting"] }
@@ -73,6 +74,9 @@ async-stripe = { version = "0.26.0", default-features = false, features = ["runt
 hyper = "^0.14"
 proptest = "^1.4.0"
 proptest-derive = "^0.2.0"
+
+[build-dependencies]
+time = { version = "^0.3", features = ["formatting"] }
 
 [features]
 fake = []
