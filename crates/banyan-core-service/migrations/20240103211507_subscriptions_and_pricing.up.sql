@@ -38,19 +38,9 @@ INSERT INTO subscriptions (
     included_bandwidth, included_storage
   ) VALUES ('starter', 'Starter', false, false, true, 0, 10, 10);
 
--- We need to populate the existing users but can't use subqueries, for now
--- we'll temporarily disable checking foreign key validity to set a static (and
--- invalid) default value that we'll immediately replace.
-PRAGMA foreign_keys=off;
+ALTER TABLE users ADD COLUMN subscription_id TEXT
+    REFERENCES subscriptions(id);
 
-ALTER TABLE users
-  ADD COLUMN subscription_id TEXT NOT NULL
-    REFERENCES subscriptions(id)
-    DEFAULT 'invalid-default-sub-id';
-
-UPDATE users SET subscription_id = (SELECT id FROM subscriptions WHERE price_key = 'starter' LIMIT 1)
-  WHERE subscription_id = 'invalid-default-sub-id';
-
-PRAGMA foreign_keys=on;
+UPDATE users SET subscription_id = (SELECT id FROM subscriptions WHERE price_key = 'starter' LIMIT 1);
 
 ALTER TABLE users ADD COLUMN stripe_customer_id TEXT;
