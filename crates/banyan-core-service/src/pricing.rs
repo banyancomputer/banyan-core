@@ -3,23 +3,41 @@ use std::sync::OnceLock;
 use serde::Deserialize;
 
 use crate::database::DatabaseConnection;
-use crate::database::models::NewSubscription;
+use crate::database::models::{NewSubscription, Subscription};
 
 const CURRENT_PRICING_DATA: &[u8] = include_bytes!("../dist/pricing.ron");
 
 static CURRENT_PRICE_CONFIG: OnceLock<Vec<PricingTier>> = OnceLock::new();
 
-pub fn current_price_config() -> &'static [PricingTier] {
+pub fn distributed_config() -> &'static [PricingTier] {
     CURRENT_PRICE_CONFIG.get_or_init(|| {
         ron::de::from_bytes(CURRENT_PRICING_DATA).unwrap()
     })
 }
 
-pub async fn sync_pricing(_conn: &mut DatabaseConnection) -> Result<(), sqlx::Error> {
-    for pricing_tier in current_price_config() {
-        let _new_sub = NewSubscription::from(pricing_tier);
+pub async fn sync_pricing(conn: &mut DatabaseConnection, price_tiers: &[PricingTier]) -> Result<(), sqlx::Error> {
+    for pricing_tier in price_tiers {
+        let new_sub = NewSubscription::from(pricing_tier);
 
-        todo!()
+        let existing_sub = match Subscription::active_price_key(&mut *conn, new_sub.price_key).await? {
+            Some(sub) => sub,
+            None => {
+                // There isn't any subscription matching the provided key, create one and move on
+                // to the next configured tier
+                new_sub.save(&mut *conn).await?;
+                continue;
+            },
+        };
+
+        if existing_sub == new_sub {
+            // No changes necessary
+            continue;
+        }
+
+        // We don't want to update existing subscriptions in place, users can not be automatically
+        // migrated to changed prices. We create a new row which will handle the additional
+        // required effects when adding a row.
+        new_sub.save(&mut *conn).await?;
     }
 
     Ok(())

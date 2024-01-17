@@ -145,8 +145,24 @@ impl Subscription {
     }
 }
 
+/// This comparison only checks the price related settings of a subscription and does not take into
+/// account database generated values or remote values (local database ID, stripe product ID, and
+/// creation timestamp specifically).
 impl std::cmp::PartialEq<NewSubscription<'_>> for Subscription {
     fn eq(&self, other: &NewSubscription) -> bool {
-        todo!()
+        self.price_key == other.price_key &&
+            self.title == other.title &&
+            self.allow_overage == other.allow_overage &&
+            self.archival_available == other.archival_available &&
+            self.visible == other.visible &&
+            self.base_price == other.base_price &&
+            self.storage_overage_price == other.storage_overage_price &&
+            self.bandwidth_overage_price == other.bandwidth_overage_price &&
+            self.included_archival == other.included_archival &&
+            self.included_bandwidth == other.included_bandwidth &&
+            self.included_storage == other.included_storage &&
+            self.archival_hard_limit == other.archival_hard_limit &&
+            self.bandwidth_hard_limit == other.bandwidth_hard_limit &&
+            self.storage_hard_limit == other.storage_hard_limit
     }
 }

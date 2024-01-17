@@ -330,6 +330,8 @@ pub(crate) async fn sample_bucket(conn: &mut DatabaseConnection, user_id: &str) 
 }
 
 pub(crate) async fn setup_database() -> Database {
+    use crate::pricing;
+
     let pool = SqlitePoolOptions::new()
         .connect("sqlite::memory:")
         .await
@@ -341,7 +343,8 @@ pub(crate) async fn setup_database() -> Database {
         .run(&mut conn)
         .await
         .expect("failed to run migrations");
-    crate::pricing::sync_pricing(&mut conn).await.expect("price sync");
+
+    pricing::sync_pricing(&mut conn, pricing::distributed_config()).await.expect("price sync");
 
     conn.commit().await.expect("db close");
 
