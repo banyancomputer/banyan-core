@@ -19,9 +19,6 @@ pub async fn handler(user_identity: UserIdentity, State(state): State<AppState>)
     .fetch_all(&database)
     .await;
 
-    // note: this also includes user_id which wasn't being returned before and may cause
-    // compatibility issues
-
     match query_result {
         Ok(qr) => {
             let buckets: Vec<_> = qr.into_iter().map(ApiBucket::from).collect();

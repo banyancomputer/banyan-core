@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT * FROM subscriptions\n                   WHERE price_key = $1\n                   ORDER BY created_at DESC\n                   LIMIT 1;",
+  "query": "SELECT * FROM subscriptions\n                   WHERE price_key = $1 AND visible = true\n                   ORDER BY created_at DESC\n                   LIMIT 1;",
   "describe": {
     "columns": [
       {
@@ -24,7 +24,7 @@
         "type_info": "Text"
       },
       {
-        "name": "allow_overage",
+        "name": "allow_overages",
         "ordinal": 4,
         "type_info": "Bool"
       },
@@ -112,5 +112,5 @@
       false
     ]
   },
-  "hash": "ec371faf984f20bca35007c451bd72af26d4756f6fc1755a0759b38dd5859860"
+  "hash": "14211cc35c1c586e70d17441f9f34d5539eea010ab1387ae1cf67224f898cb6e"
 }

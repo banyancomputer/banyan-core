@@ -41,6 +41,8 @@ pub async fn handler(
     let exchange_code = AuthorizationCode::new(params.code);
     let database = state.database();
 
+    let mut conn = database.acquire().await.map_err(AuthenticationError::DatabaseConnectionFailure)?;
+
     let query_secret = csrf_secret.secret();
     let oauth_state_query: (String, Option<String>) = sqlx::query_as(
         r#"SELECT pkce_verifier_secret, next_url
@@ -49,7 +51,7 @@ pub async fn handler(
     )
     .bind(provider.clone())
     .bind(query_secret)
-    .fetch_one(&database)
+    .fetch_one(&mut *conn)
     .await
     .map_err(AuthenticationError::MissingCallbackState)?;
 
@@ -59,7 +61,7 @@ pub async fn handler(
         provider,
         query_secret,
     )
-    .execute(&database)
+    .execute(&mut *conn)
     .await
     .map_err(|_| AuthenticationError::CleanupFailed)?;
 
@@ -108,9 +110,11 @@ pub async fn handler(
         "SELECT id FROM users WHERE email = LOWER($1);",
         user_info.email
     )
-    .fetch_optional(&database)
+    .fetch_optional(&mut *conn)
     .await
     .map_err(AuthenticationError::LookupFailed)?;
+
+    conn.close().await.map_err(AuthenticationError::DatabaseConnectionFailure)?;
 
     let cookie_domain = hostname
         .host_str()
@@ -124,7 +128,7 @@ pub async fn handler(
             let mut transcation = database
                 .begin()
                 .await
-                .map_err(AuthenticationError::CreationFailed)?;
+                .map_err(AuthenticationError::DatabaseConnectionFailure)?;
 
             let subscription_id = Subscription::default_subscription_id(&mut transcation)
                 .await
@@ -159,7 +163,7 @@ pub async fn handler(
             transcation
                 .commit()
                 .await
-                .map_err(AuthenticationError::CreationFailed)?;
+                .map_err(AuthenticationError::DatabaseConnectionFailure)?;
 
             cookie_jar = cookie_jar.add(
                 Cookie::build(NEW_USER_COOKIE_NAME, "yes")
@@ -177,23 +181,15 @@ pub async fn handler(
 
     let expires_at = time::OffsetDateTime::now_utc() + Duration::from_secs(SESSION_TTL);
 
-    // Lookup User Data to attach include in the CookieJar
-    let user = sqlx::query_as!(
-        User,
-        r#"SELECT *
-        FROM users
-        WHERE id = $1;"#,
-        user_id
-    )
-    .fetch_one(&database)
-    .await
-    .map_err(AuthenticationError::UserDataLookupFailed)?;
+    let mut conn = database.acquire().await.map_err(AuthenticationError::DatabaseConnectionFailure)?;
+    let user = User::find_by_id(&mut conn, &user_id)
+        .await
+        .map_err(AuthenticationError::UserDataLookupFailed)?
+        .expect("created user to exist");
 
     let escrowed_device = sqlx::query_as!(
         EscrowedDevice,
-        r#"SELECT *
-        FROM escrowed_devices
-        WHERE user_id = $1;"#,
+        "SELECT * FROM escrowed_devices WHERE user_id = $1;",
         user_id
     )
     .fetch_optional(&database)

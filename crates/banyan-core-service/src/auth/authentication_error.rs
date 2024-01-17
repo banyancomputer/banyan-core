@@ -10,6 +10,9 @@ pub enum AuthenticationError {
     #[error("attempt to create new user after authentication failed: {0}")]
     CreationFailed(sqlx::Error),
 
+    #[error("an error occurred working with the database connection")]
+    DatabaseConnectionFailure(sqlx::Error),
+
     #[error("code exchange for oauth did not validate: {0}")]
     ExchangeCodeFailure(String),
 

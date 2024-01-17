@@ -14,7 +14,7 @@ pub struct User {
     pub profile_image: Option<String>,
     pub created_at: OffsetDateTime,
     pub accepted_tos_at: Option<OffsetDateTime>,
-    pub subscription_id: Option<String>,
+    pub subscription_id: String,
     pub stripe_customer_id: Option<String>,
 }
 
@@ -48,5 +48,17 @@ impl User {
         .await?;
 
         Ok(ex_size.big_int)
+    }
+
+    pub async fn find_by_id(conn: &mut DatabaseConnection, id: &str) -> Result<Option<Self>, sqlx::Error> {
+        sqlx::query_as!(
+            User,
+            r#"SELECT id, email, verified_email, display_name, locale, profile_image, created_at,
+                 accepted_tos_at, subscription_id as 'subscription_id!', stripe_customer_id FROM users
+                 WHERE id = $1;"#,
+            id,
+        )
+        .fetch_optional(&mut *conn)
+        .await
     }
 }

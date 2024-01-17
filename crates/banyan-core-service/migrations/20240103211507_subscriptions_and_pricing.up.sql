@@ -12,7 +12,7 @@ CREATE TABLE subscriptions (
 
   stripe_product_id TEXT,
 
-  allow_overage BOOLEAN NOT NULL,
+  allow_overages BOOLEAN NOT NULL,
   archival_available BOOLEAN NOT NULL,
   visible BOOLEAN NOT NULL,
 
@@ -34,7 +34,7 @@ CREATE TABLE subscriptions (
 -- We need to manually populate our starter plan so we can automatically
 -- associate existing rows to it.
 INSERT INTO subscriptions (
-    price_key, title, allow_overage, archival_available, visible, included_archival,
+    price_key, title, allow_overages, archival_available, visible, included_archival,
     included_bandwidth, included_storage
   ) VALUES ('starter', 'Starter', false, false, true, 0, 10, 10);
 

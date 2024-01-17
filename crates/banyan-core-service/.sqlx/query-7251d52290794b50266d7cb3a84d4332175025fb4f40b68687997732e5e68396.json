@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO subscriptions (price_key, title, allow_overages, archival_available, visible,\n                   base_price, storage_overage_price, bandwidth_overage_price, included_archival,\n                   included_bandwidth, included_storage, archival_hard_limit, bandwidth_hard_limit,\n                   storage_hard_limit, created_at)\n                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\n                   RETURNING id;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 15
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "7251d52290794b50266d7cb3a84d4332175025fb4f40b68687997732e5e68396"
+}

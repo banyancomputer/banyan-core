@@ -7,7 +7,7 @@ pub struct NewSubscription<'a> {
     pub price_key: &'a str,
     pub title: &'a str,
 
-    pub allow_overage: bool,
+    pub allow_overages: bool,
     pub archival_available: bool,
     pub visible: bool,
 
@@ -29,7 +29,7 @@ impl NewSubscription<'_> {
         let now = OffsetDateTime::now_utc();
 
         let new_sub_id: String = sqlx::query_scalar!(
-            r#"INSERT INTO subscriptions (price_key, title, allow_overage, archival_available, visible,
+            r#"INSERT INTO subscriptions (price_key, title, allow_overages, archival_available, visible,
                    base_price, storage_overage_price, bandwidth_overage_price, included_archival,
                    included_bandwidth, included_storage, archival_hard_limit, bandwidth_hard_limit,
                    storage_hard_limit, created_at)
@@ -37,7 +37,7 @@ impl NewSubscription<'_> {
                    RETURNING id;"#,
             self.price_key,
             self.title,
-            self.allow_overage,
+            self.allow_overages,
             self.archival_available,
             self.visible,
             self.base_price,
@@ -83,7 +83,7 @@ impl<'a> From<&'a PricingTier> for NewSubscription<'a> {
             price_key: &pricing_tier.price_key,
             title: &pricing_tier.title,
 
-            allow_overage: pricing_tier.allow_overage,
+            allow_overages: pricing_tier.allow_overages,
             archival_available: pricing_tier.archival_available,
             visible: pricing_tier.visible,
 
@@ -111,7 +111,7 @@ pub struct Subscription {
 
     stripe_product_id: Option<String>,
 
-    allow_overage: bool,
+    allow_overages: bool,
     archival_available: bool,
     visible: bool,
 
@@ -138,7 +138,7 @@ impl Subscription {
         sqlx::query_as!(
             Self,
             r#"SELECT * FROM subscriptions
-                   WHERE price_key = $1
+                   WHERE price_key = $1 AND visible = true
                    ORDER BY created_at DESC
                    LIMIT 1;"#,
             price_key,
@@ -147,6 +147,12 @@ impl Subscription {
         .await
     }
 
+    /// Returns the current subscription ID that should be associated with users by default. There
+    /// are assumptions elsewhere that this subscription does not have a price as that requires
+    /// active user selection and a workflow to go along with it.
+    ///
+    /// This differs from other query logic for this type in that it will always return the most
+    /// recent subscription of the default type even if that version hasn't been marked public.
     pub async fn default_subscription_id(
         conn: &mut DatabaseConnection,
     ) -> Result<String, sqlx::Error> {
@@ -155,6 +161,21 @@ impl Subscription {
             DEFAULT_SUBSCRIPTION_KEY,
         )
         .fetch_one(&mut *conn)
+        .await
+    }
+
+    /// Returns all the subscriptions currently marked as visible with an option to also include a
+    /// specific subscription even if it wouldn't normally be visible. This is used for including a
+    /// user's current subscription even if there is a newer variant of that subscription key.
+    pub async fn public_or_current(conn: &mut DatabaseConnection, current_sub_id: Option<&str>) -> Result<Vec<Self>, sqlx::Error> {
+        sqlx::query_as!(
+            Self,
+            r#"SELECT * FROM subscriptions
+                 WHERE visible = true
+                   OR ($1 IS NOT NULL AND id = $1);"#,
+            current_sub_id,
+        )
+        .fetch_all(&mut *conn)
         .await
     }
 }
@@ -166,7 +187,7 @@ impl std::cmp::PartialEq<NewSubscription<'_>> for Subscription {
     fn eq(&self, other: &NewSubscription) -> bool {
         self.price_key == other.price_key
             && self.title == other.title
-            && self.allow_overage == other.allow_overage
+            && self.allow_overages == other.allow_overages
             && self.archival_available == other.archival_available
             && self.visible == other.visible
             && self.base_price == other.base_price

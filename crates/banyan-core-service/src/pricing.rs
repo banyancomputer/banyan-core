@@ -82,7 +82,7 @@ pub struct PricingTier {
     /// Whether the plan allows exceeding the bandwidth allowance or storage allowance by paying
     /// for additional usage. Used primarily to prevent the starter packages from being
     /// unrestricted.
-    pub allow_overage: bool,
+    pub allow_overages: bool,
 
     /// Whether the plan allows snapshots to be taken.
     pub archival_available: bool,

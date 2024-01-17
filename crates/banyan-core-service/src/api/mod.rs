@@ -10,6 +10,7 @@ mod buckets;
 mod deals;
 pub mod models;
 mod share;
+mod subscriptions;
 mod users;
 
 use crate::app::AppState;
@@ -29,11 +30,12 @@ where
 
     Router::new()
         .nest("/auth", auth::router(state.clone()))
-        .nest("/users", users::router(state.clone()))
         .nest("/blocks", blocks::router(state.clone()))
         .nest("/buckets", buckets::router(state.clone()))
         .nest("/deals", deals::router(state.clone()))
         .nest("/share", share::router(state.clone()))
+        .nest("/subscriptions", subscriptions::router(state.clone()))
+        .nest("/users", users::router(state.clone()))
         .layer(cors_layer)
         .with_state(state)
 }

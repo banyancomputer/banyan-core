@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT *\n        FROM escrowed_devices\n        WHERE user_id = $1;",
+  "query": "SELECT * FROM escrowed_devices WHERE user_id = $1;",
   "describe": {
     "columns": [
       {
@@ -52,5 +52,5 @@
       false
     ]
   },
-  "hash": "064c2a64f6826149452c1085ab639c8b452f22026f9c475e783ecd6e228acc1d"
+  "hash": "e81f0a5472311b74f6d67aa478f7aa9363cb5f9fe23ed8fc337dc46428494447"
 }
