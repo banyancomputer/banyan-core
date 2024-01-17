@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE subscriptions SET visible = false WHERE price_key = ? AND id != ?;",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "7c0bb2f94dd63e336c273b8342d4297bbf235594fe90b8f45f7712bf5a50f5a0"
+}
