@@ -40,7 +40,7 @@ export const DatePicker: React.FC<SelectProps> = ({ onChange, from, to, classNam
         <div
             ref={datePickerRef}
             onClick={toggleSelect}
-            className={`relative p-2.5 flex justify-between items-center gap-2 text-sm cursor-pointer select-none text-text-900 ${className}`}
+            className={`relative p-2.5 flex justify-between items-center gap-2 text-sm cursor-pointer select-none text-text-900 ${className} z-10`}
         >
             <CalendarIcon /> {`${from?.toLocaleDateString()} - ${to?.toLocaleDateString()}`}
             <span className={`${isOptionstVisible ? 'rotate-0' : 'rotate-180'}`}>
@@ -48,7 +48,7 @@ export const DatePicker: React.FC<SelectProps> = ({ onChange, from, to, classNam
             </span>
             {isOptionstVisible &&
                 <div
-                    className="absolute right-0 top-14 border-1 border-border-darken rounded-lg shadow-sm overflow-hidden"
+                    className="absolute right-0 top-14 border-1 bg-mainBackground border-border-darken rounded-lg shadow-sm overflow-hidden"
                     onClick={stopPropagation}
                 >
                     <DateRange

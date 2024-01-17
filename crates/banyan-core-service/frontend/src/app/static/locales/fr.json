@@ -195,5 +195,14 @@
     "invoicesWillBeAvailiableHere": "Les factures et reçus émis sur votre compte seront disponibles ici",
     "upgrade": "Mettre à niveau",
 	"youAreReadyForStart": "Vous êtes prêt à commencer !",
-    "useDesktop": "Pour commencer à utiliser Banyan, veuillez utiliser le bureau"
+    "useDesktop": "Pour commencer à utiliser Banyan, veuillez utiliser le bureau",
+	"date": "Date",
+	"storageUsed": "Stockage utilisé",
+	"description": "Description",
+	"details": "Détails",
+	"viewInvoice": "Voir la facture",
+	"invoice": "Factures",
+	"summary": "Résumé",
+	"items": "Articles",
+	"payment": "Paiement"
 }

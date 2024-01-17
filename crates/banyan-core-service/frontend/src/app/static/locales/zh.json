@@ -195,5 +195,14 @@
 	"invoicesWillBeAvailiableHere": "您帐户上生成的发票和收据将在此处提供",
 	"upgrade": "升级",
 	"youAreReadyForStart": "您已经准备好开始了！",
-	"useDesktop": "要开始使用Banyan，请使用桌面版"
+	"useDesktop": "要开始使用Banyan，请使用桌面版",
+	"date": "日期",
+	"storageUsed": "已使用存储空间",
+	"description": "描述",
+	"details": "详细信息",
+	"viewInvoice": "查看发票",
+	"invoice": "发票",
+	"summary": "摘要",
+	"items": "项目",
+	"payment": "支付"
 }
