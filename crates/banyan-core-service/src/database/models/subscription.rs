@@ -104,30 +104,30 @@ impl<'a> From<&'a PricingTier> for NewSubscription<'a> {
 
 #[derive(sqlx::FromRow)]
 pub struct Subscription {
-    id: String,
+    pub id: String,
 
-    price_key: String,
-    title: String,
+    pub price_key: String,
+    pub title: String,
 
-    stripe_product_id: Option<String>,
+    pub stripe_product_id: Option<String>,
 
-    allow_overages: bool,
-    archival_available: bool,
-    visible: bool,
+    pub allow_overages: bool,
+    pub archival_available: bool,
+    pub visible: bool,
 
-    base_price: Option<i64>,
-    storage_overage_price: Option<i64>,
-    bandwidth_overage_price: Option<i64>,
+    pub base_price: Option<i64>,
+    pub storage_overage_price: Option<i64>,
+    pub bandwidth_overage_price: Option<i64>,
 
-    included_archival: i64,
-    included_bandwidth: i64,
-    included_storage: i64,
+    pub included_archival: i64,
+    pub included_bandwidth: i64,
+    pub included_storage: i64,
 
-    archival_hard_limit: Option<i64>,
-    bandwidth_hard_limit: Option<i64>,
-    storage_hard_limit: Option<i64>,
+    pub archival_hard_limit: Option<i64>,
+    pub bandwidth_hard_limit: Option<i64>,
+    pub storage_hard_limit: Option<i64>,
 
-    created_at: OffsetDateTime,
+    pub created_at: OffsetDateTime,
 }
 
 impl Subscription {
@@ -144,6 +144,21 @@ impl Subscription {
             price_key,
         )
         .fetch_optional(&mut *conn)
+        .await
+    }
+
+    /// Returns all the subscriptions currently marked as visible with an option to also include a
+    /// specific subscription even if it wouldn't normally be visible. This is used for including a
+    /// user's current subscription even if there is a newer variant of that subscription key.
+    pub async fn all_public_or_current(conn: &mut DatabaseConnection, current_sub_id: Option<&str>) -> Result<Vec<Self>, sqlx::Error> {
+        sqlx::query_as!(
+            Self,
+            r#"SELECT * FROM subscriptions
+                 WHERE visible = true
+                   OR ($1 IS NOT NULL AND id = $1);"#,
+            current_sub_id,
+        )
+        .fetch_all(&mut *conn)
         .await
     }
 
@@ -164,18 +179,13 @@ impl Subscription {
         .await
     }
 
-    /// Returns all the subscriptions currently marked as visible with an option to also include a
-    /// specific subscription even if it wouldn't normally be visible. This is used for including a
-    /// user's current subscription even if there is a newer variant of that subscription key.
-    pub async fn public_or_current(conn: &mut DatabaseConnection, current_sub_id: Option<&str>) -> Result<Vec<Self>, sqlx::Error> {
+    pub async fn find_by_id(conn: &mut DatabaseConnection, subscription_id: &str) -> Result<Option<Self>, sqlx::Error> {
         sqlx::query_as!(
             Self,
-            r#"SELECT * FROM subscriptions
-                 WHERE visible = true
-                   OR ($1 IS NOT NULL AND id = $1);"#,
-            current_sub_id,
+            "SELECT * FROM subscriptions WHERE visible = true AND id = $1;",
+            subscription_id,
         )
-        .fetch_all(&mut *conn)
+        .fetch_optional(&mut *conn)
         .await
     }
 }

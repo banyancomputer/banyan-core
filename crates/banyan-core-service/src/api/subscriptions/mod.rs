@@ -17,7 +17,7 @@ where
     bytes::Bytes: From<<B as HttpBody>::Data>,
 {
     Router::new()
-        //.route("/:subscription_id", get(single_subscription::handler))
-        //.route("/", get(all_subscriptions::handler))
+        .route("/:subscription_id", get(single_subscription::handler))
+        .route("/", get(all_subscriptions::handler))
         .with_state(state)
 }
