@@ -344,7 +344,9 @@ pub(crate) async fn setup_database() -> Database {
         .await
         .expect("failed to run migrations");
 
-    pricing::sync_pricing(&mut conn, pricing::distributed_config()).await.expect("price sync");
+    pricing::sync_pricing(&mut conn, pricing::distributed_config())
+        .await
+        .expect("price sync");
 
     conn.commit().await.expect("db close");
 

@@ -203,9 +203,8 @@ pub mod tests {
     use banyan_task::{CurrentTask, TaskLike};
     use time::OffsetDateTime;
 
-    use crate::database::test_helpers::*;
-
     use super::*;
+    use crate::database::test_helpers::*;
 
     const USER_ID: &str = "00000000-0000-0000-0000-000000000000";
     const USER_EMAIL: &str = "user@user.email";

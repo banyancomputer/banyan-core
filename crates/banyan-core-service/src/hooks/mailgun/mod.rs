@@ -41,7 +41,7 @@ pub async fn handler(
             // in case log that it occurred to prevent silent failures.
             tracing::warn!("received mailgun test webhook");
             return Ok((StatusCode::OK, ()).into_response());
-        },
+        }
     };
 
     let email_state = sqlx::query_as!(

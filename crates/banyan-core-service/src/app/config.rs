@@ -86,9 +86,11 @@ impl Config {
             None => match std::env::var("STRIPE_KEY") {
                 Ok(sk) if !sk.is_empty() => Some(sk),
                 _ => {
-                    tracing::warn!("no stripe key present, purchase actions and verifications will fail");
+                    tracing::warn!(
+                        "no stripe key present, purchase actions and verifications will fail"
+                    );
                     None
-                },
+                }
             },
         };
 

@@ -7,7 +7,8 @@ use jwt_simple::prelude::*;
 use object_store::local::LocalFileSystem;
 
 use crate::app::{
-    Config, MailgunSigningKey, ProviderCredential, Secrets, ServiceKey, ServiceVerificationKey, StripeSecret,
+    Config, MailgunSigningKey, ProviderCredential, Secrets, ServiceKey, ServiceVerificationKey,
+    StripeSecret,
 };
 use crate::database::{self, Database, DatabaseSetupError};
 use crate::event_bus::EventBus;

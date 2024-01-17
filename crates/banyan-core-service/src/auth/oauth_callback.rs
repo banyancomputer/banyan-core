@@ -20,7 +20,7 @@ use crate::auth::{
     oauth_client, AuthenticationError, NEW_USER_COOKIE_NAME, SESSION_COOKIE_NAME, SESSION_TTL,
     USER_DATA_COOKIE_NAME,
 };
-use crate::database::models::{EscrowedDevice, User};
+use crate::database::models::{EscrowedDevice, Subscription, User};
 use crate::extractors::ServerBase;
 
 // Data returned in the User Data Cookie
@@ -101,8 +101,7 @@ pub async fn handler(
         return Err(AuthenticationError::UnverifiedEmail);
     }
 
-    // We're back in provider specific land for getting information about the authenticated user,
-    // TODO: allow for providers other than Google here, deprecate hard-coded parameters
+    // We're back in provider specific land for getting information about the authenticated user
 
     // Attempt to look up the user in the database, if they don't exist, create them
     let user_row = sqlx::query!(
@@ -120,31 +119,32 @@ pub async fn handler(
     let cookie_secure = hostname.scheme() == "https";
 
     let user_id = match user_row {
-        Some(u) => Uuid::parse_str(&u.id.to_string()).expect("db ids to be valid"),
+        Some(u) => u.id.to_string(),
         None => {
             let mut transcation = database
                 .begin()
                 .await
                 .map_err(AuthenticationError::CreationFailed)?;
 
-            // Try creating the top level User record
+            let subscription_id = Subscription::default_subscription_id(&mut transcation)
+                .await
+                .map_err(AuthenticationError::CreationFailed)?;
             let new_user_id = sqlx::query_scalar!(
                 r#"INSERT
-                    INTO users (email, verified_email, display_name, locale, profile_image)
-                    VALUES (LOWER($1), $2, $3, $4, $5)
+                    INTO users (email, verified_email, display_name, locale, profile_image, subscription_id)
+                    VALUES (LOWER($1), $2, $3, $4, $5, $6)
                 RETURNING id;"#,
                 user_info.email,
                 user_info.verified_email,
                 user_info.name,
                 user_info.locale,
                 user_info.picture,
+                subscription_id,
             )
             .fetch_one(&mut *transcation)
             .await
             .map_err(AuthenticationError::CreationFailed)?;
 
-            // TODO: rm hardcoded provider
-            // Try creating the provider account record
             sqlx::query!(
                 r#"INSERT
                     INTO oauth_provider_accounts (user_id, provider, provider_id)
@@ -171,12 +171,11 @@ pub async fn handler(
                     .finish(),
             );
 
-            Uuid::parse_str(&new_user_id).expect("db ids to be valid")
+            new_user_id
         }
     };
 
     let expires_at = time::OffsetDateTime::now_utc() + Duration::from_secs(SESSION_TTL);
-    let db_uid = user_id.clone().to_string();
 
     // Lookup User Data to attach include in the CookieJar
     let user = sqlx::query_as!(
@@ -184,7 +183,7 @@ pub async fn handler(
         r#"SELECT *
         FROM users
         WHERE id = $1;"#,
-        db_uid
+        user_id
     )
     .fetch_one(&database)
     .await
@@ -195,7 +194,7 @@ pub async fn handler(
         r#"SELECT *
         FROM escrowed_devices
         WHERE user_id = $1;"#,
-        db_uid
+        user_id
     )
     .fetch_optional(&database)
     .await
@@ -212,7 +211,7 @@ pub async fn handler(
             (user_id, provider, access_token, access_expires_at, refresh_token, expires_at)
             VALUES ($1, $2, $3, $4, $5, $6)
             RETURNING id;",
-        db_uid,
+        user_id,
         provider,
         access_token,
         access_expires_at,

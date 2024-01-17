@@ -23,8 +23,8 @@ pub async fn connect_sqlite(url: &Url) -> Result<SqlitePool, sqlx::Error> {
         .await
 }
 
-pub async fn mitrate_sqlite(conn: &mut DatabaseConnection) -> Result<(), sqlx::migrate::MigrateError> {
-    MIGRATOR
-        .run(conn)
-        .await
+pub async fn mitrate_sqlite(
+    conn: &mut DatabaseConnection,
+) -> Result<(), sqlx::migrate::MigrateError> {
+    MIGRATOR.run(conn).await
 }

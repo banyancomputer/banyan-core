@@ -13,14 +13,10 @@ pub async fn handler(
 ) -> Result<Response, ReadUserError> {
     let database = state.database();
     let user_id = user_identity.id().to_string();
-    let user = sqlx::query_as!(
-        User,
-        "SELECT * FROM users WHERE id = $1;",
-        user_id,
-    )
-    .fetch_one(&database)
-    .await
-    .map_err(ReadUserError::UnableToReadUser)?;
+    let user = sqlx::query_as!(User, "SELECT * FROM users WHERE id = $1;", user_id,)
+        .fetch_one(&database)
+        .await
+        .map_err(ReadUserError::UnableToReadUser)?;
 
     let api_user = ApiUser::from(user);
     Ok((StatusCode::OK, Json(api_user)).into_response())

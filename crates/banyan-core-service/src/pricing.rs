@@ -2,32 +2,36 @@ use std::sync::OnceLock;
 
 use serde::Deserialize;
 
-use crate::database::DatabaseConnection;
 use crate::database::models::{NewSubscription, Subscription};
+use crate::database::DatabaseConnection;
 
 const CURRENT_PRICING_DATA: &[u8] = include_bytes!("../dist/pricing.ron");
 
 static CURRENT_PRICE_CONFIG: OnceLock<Vec<PricingTier>> = OnceLock::new();
 
+pub const DEFAULT_SUBSCRIPTION_KEY: &str = "starter";
+
 pub fn distributed_config() -> &'static [PricingTier] {
-    CURRENT_PRICE_CONFIG.get_or_init(|| {
-        ron::de::from_bytes(CURRENT_PRICING_DATA).unwrap()
-    })
+    CURRENT_PRICE_CONFIG.get_or_init(|| ron::de::from_bytes(CURRENT_PRICING_DATA).unwrap())
 }
 
-pub async fn sync_pricing(conn: &mut DatabaseConnection, price_tiers: &[PricingTier]) -> Result<(), sqlx::Error> {
+pub async fn sync_pricing(
+    conn: &mut DatabaseConnection,
+    price_tiers: &[PricingTier],
+) -> Result<(), sqlx::Error> {
     for pricing_tier in price_tiers {
         let new_sub = NewSubscription::from(pricing_tier);
 
-        let existing_sub = match Subscription::active_price_key(&mut *conn, new_sub.price_key).await? {
-            Some(sub) => sub,
-            None => {
-                // There isn't any subscription matching the provided key, create one and move on
-                // to the next configured tier
-                new_sub.save(&mut *conn).await?;
-                continue;
-            },
-        };
+        let existing_sub =
+            match Subscription::active_price_key(&mut *conn, new_sub.price_key).await? {
+                Some(sub) => sub,
+                None => {
+                    // There isn't any subscription matching the provided key, create one and move on
+                    // to the next configured tier
+                    new_sub.save(&mut *conn).await?;
+                    continue;
+                }
+            };
 
         if existing_sub == new_sub {
             // No changes necessary
@@ -112,4 +116,38 @@ pub struct Price {
 
     /// The price of each GiB transferred from the network beyond the base bandwidth allowance.
     pub bandwidth_overage: i64,
+}
+
+#[cfg(tests)]
+mod tests {
+    use super::*;
+    use crate::database::test_helpers::*;
+
+    #[tokio::test]
+    async fn test_default_key_present_in_pricing_tiers() {
+        let distributed_config = distributed_config();
+        let default_subscription = distributed_config
+            .iter()
+            .find_map(|dc| dc.price_key == DEFAULT_SUBSCRIPTION_KEY);
+        assert!(
+            default_subscription.is_some(),
+            "default subscription to be present"
+        );
+    }
+
+    /// Users MUST actively choose to be subject to a real pricing plan. Our user creation process
+    /// makes the assumption that this is the case and blind associates them with the default
+    /// subscription. This test ensures that if those assumptions change, we go and update the
+    /// appropriate logic in the app that relies on this assumption.
+    #[tokio::test]
+    async fn test_default_free_assumption() {
+        let distributed_config = distributed_config();
+        let default_subscription = distributed_config
+            .iter()
+            .find_map(|dc| dc.price_key == DEFAULT_SUBSCRIPTION_KEY);
+        assert!(
+            default_subscription.price.is_none(),
+            "default subscription to be free"
+        );
+    }
 }

@@ -17,6 +17,6 @@ impl EventData {
     }
 
     pub fn message_id(&self) -> Option<Uuid> {
-        self.user_variables.as_ref().map(|uv| uv.message_id.clone())
+        self.user_variables.as_ref().map(|uv| uv.message_id)
     }
 }

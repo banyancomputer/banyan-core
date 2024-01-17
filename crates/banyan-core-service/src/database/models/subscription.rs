@@ -1,7 +1,7 @@
 use time::OffsetDateTime;
 
 use crate::database::DatabaseConnection;
-use crate::pricing::PricingTier;
+use crate::pricing::{PricingTier, DEFAULT_SUBSCRIPTION_KEY};
 
 pub struct NewSubscription<'a> {
     pub price_key: &'a str,
@@ -131,7 +131,10 @@ pub struct Subscription {
 }
 
 impl Subscription {
-    pub async fn active_price_key(conn: &mut DatabaseConnection, price_key: &str) -> Result<Option<Subscription>, sqlx::Error> {
+    pub async fn active_price_key(
+        conn: &mut DatabaseConnection,
+        price_key: &str,
+    ) -> Result<Option<Subscription>, sqlx::Error> {
         sqlx::query_as!(
             Self,
             r#"SELECT * FROM subscriptions
@@ -143,6 +146,17 @@ impl Subscription {
         .fetch_optional(&mut *conn)
         .await
     }
+
+    pub async fn default_subscription_id(
+        conn: &mut DatabaseConnection,
+    ) -> Result<String, sqlx::Error> {
+        sqlx::query_scalar!(
+            "SELECT id FROM subscriptions WHERE price_key = $1 ORDER BY created_at DESC LIMIT 1;",
+            DEFAULT_SUBSCRIPTION_KEY,
+        )
+        .fetch_one(&mut *conn)
+        .await
+    }
 }
 
 /// This comparison only checks the price related settings of a subscription and does not take into
@@ -150,19 +164,19 @@ impl Subscription {
 /// creation timestamp specifically).
 impl std::cmp::PartialEq<NewSubscription<'_>> for Subscription {
     fn eq(&self, other: &NewSubscription) -> bool {
-        self.price_key == other.price_key &&
-            self.title == other.title &&
-            self.allow_overage == other.allow_overage &&
-            self.archival_available == other.archival_available &&
-            self.visible == other.visible &&
-            self.base_price == other.base_price &&
-            self.storage_overage_price == other.storage_overage_price &&
-            self.bandwidth_overage_price == other.bandwidth_overage_price &&
-            self.included_archival == other.included_archival &&
-            self.included_bandwidth == other.included_bandwidth &&
-            self.included_storage == other.included_storage &&
-            self.archival_hard_limit == other.archival_hard_limit &&
-            self.bandwidth_hard_limit == other.bandwidth_hard_limit &&
-            self.storage_hard_limit == other.storage_hard_limit
+        self.price_key == other.price_key
+            && self.title == other.title
+            && self.allow_overage == other.allow_overage
+            && self.archival_available == other.archival_available
+            && self.visible == other.visible
+            && self.base_price == other.base_price
+            && self.storage_overage_price == other.storage_overage_price
+            && self.bandwidth_overage_price == other.bandwidth_overage_price
+            && self.included_archival == other.included_archival
+            && self.included_bandwidth == other.included_bandwidth
+            && self.included_storage == other.included_storage
+            && self.archival_hard_limit == other.archival_hard_limit
+            && self.bandwidth_hard_limit == other.bandwidth_hard_limit
+            && self.storage_hard_limit == other.storage_hard_limit
     }
 }
