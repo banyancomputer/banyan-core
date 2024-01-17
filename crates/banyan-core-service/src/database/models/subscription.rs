@@ -63,6 +63,16 @@ impl NewSubscription<'_> {
         .execute(&mut *conn)
         .await?;
 
+        // We can delete older subscriptions that never received a stripe product ID (which means
+        // no one subscribed to that plan)
+        sqlx::query!(
+            "DELETE FROM subscriptions WHERE price_key = ? AND id != ? AND stripe_product_id IS NULL;",
+            self.price_key,
+            new_sub_id,
+        )
+        .execute(&mut *conn)
+        .await?;
+
         Ok(new_sub_id)
     }
 }
