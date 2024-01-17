@@ -40,6 +40,7 @@ pub use snapshot_state::SnapshotState;
 pub use storage_class::StorageClass;
 pub use storage_grant::NewStorageGrant;
 pub use storage_host::{SelectedStorageHost, StorageHost, UserStorageReport};
+pub use subscription::{NewSubscription, Subscription};
 pub use user::User;
 
 /// Something about sqlx's type detection fails on complex queries such as the result of COALESCE

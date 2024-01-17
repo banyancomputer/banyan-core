@@ -1,6 +1,7 @@
 use time::OffsetDateTime;
 
 use crate::database::DatabaseConnection;
+use crate::pricing::PricingTier;
 
 pub struct NewSubscription<'a> {
     pub price_key: &'a str,
@@ -66,6 +67,31 @@ impl NewSubscription<'_> {
     }
 }
 
+impl<'a> From<&'a PricingTier> for NewSubscription<'a> {
+    fn from(pricing_tier: &'a PricingTier) -> Self {
+        Self {
+            price_key: &pricing_tier.price_key,
+            title: &pricing_tier.title,
+
+            allow_overage: pricing_tier.allow_overage,
+            archival_available: pricing_tier.archival_available,
+            visible: pricing_tier.visible,
+
+            base_price: pricing_tier.price.as_ref().map(|p| p.base),
+            storage_overage_price: pricing_tier.price.as_ref().map(|p| p.storage_overage),
+            bandwidth_overage_price: pricing_tier.price.as_ref().map(|p| p.bandwidth_overage),
+
+            included_archival: pricing_tier.included_allowances.archival,
+            included_bandwidth: pricing_tier.included_allowances.bandwidth,
+            included_storage: pricing_tier.included_allowances.storage,
+
+            archival_hard_limit: pricing_tier.hard_limits.archival,
+            bandwidth_hard_limit: pricing_tier.hard_limits.bandwidth,
+            storage_hard_limit: pricing_tier.hard_limits.storage,
+        }
+    }
+}
+
 #[derive(sqlx::FromRow)]
 pub struct Subscription {
     id: String,
@@ -106,5 +132,11 @@ impl Subscription {
         )
         .fetch_optional(&mut *conn)
         .await
+    }
+}
+
+impl std::cmp::PartialEq<NewSubscription<'_>> for Subscription {
+    fn eq(&self, other: &NewSubscription) -> bool {
+        todo!()
     }
 }
