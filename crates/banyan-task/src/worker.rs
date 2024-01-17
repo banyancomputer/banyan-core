@@ -97,9 +97,11 @@ where
                     }
                 };
 
-                let task = serde_json::from_slice(&task.payload.clone())?;
-
-                if let Err(err) = self.store.schedule_next(task).await {
+                if let Err(err) = self
+                    .store
+                    .schedule_next(serde_json::from_slice(&task.payload.clone())?)
+                    .await
+                {
                     tracing::error!("Failed to schedule next occurrence of task: {err}");
                 }
             }
@@ -236,11 +238,10 @@ mod tests {
         ctx: &'static TestContext,
         task_store: SqliteTaskStore,
     ) -> Worker<TestContext, SqliteTaskStore> {
-        let queue_config = QueueConfig::new(WORKER_NAME.clone()).with_worker_count(1);
+        let queue_config = QueueConfig::new(WORKER_NAME).with_worker_count(1);
         let task_registry = create_task_registry();
-        let worker_queues: BTreeMap<&'static str, QueueConfig> = BTreeMap::new();
         let context_data_fn = Arc::new(move || ctx.clone());
-        let (inner_shutdown_tx, inner_shutdown_rx) = watch::channel(());
+        let (_, inner_shutdown_rx) = watch::channel(());
 
         Worker::new(
             WORKER_NAME.to_string(),
@@ -253,13 +254,12 @@ mod tests {
     }
 
     async fn retrieve_task(task_name: &str, task_store: &SqliteTaskStore) -> Task {
-        let task = task_store
+        task_store
             .next(WORKER_NAME, &[task_name])
             .await
             .map_err(WorkerError::StoreUnavailable)
             .expect("could not get task from db")
-            .expect("could not create task instance");
-        task
+            .expect("could not create task instance")
     }
 
     #[ignore]

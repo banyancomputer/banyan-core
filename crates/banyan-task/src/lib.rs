@@ -28,6 +28,10 @@ pub mod tests {
     pub use task_store::tests::default_task_store_metrics;
 
     use super::{task_like, task_store};
+    pub use crate::models::current_task;
+    pub use crate::models::current_task::tests::{
+        default_current_task, increment_current_task_attempt_count,
+    };
 }
 
 pub const MAXIMUM_CHECK_DELAY: Duration = Duration::from_millis(250);
