@@ -1,12 +1,13 @@
 import React, { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 
-import { BucketTable } from '@/app/components/Bucket/BucketTable';
-import { Fallback } from '@/app/components/common/Fallback';
-import BucketHeader from '@/app/components/Bucket/Header';
+import { BucketTable } from '@components/Bucket/BucketTable';
+import { Fallback } from '@components/common/Fallback';
+import BucketHeader from '@components/Bucket/Header';
 
 import { useTomb } from '@/app/contexts/tomb';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
+import { EmptyState } from '@components/Bucket/EmptyState';
 
 const Bucket = () => {
     const params = useParams();
@@ -33,11 +34,17 @@ const Bucket = () => {
     }, []);
 
     return (
-        <section className="py-9 px-4 flex flex-col max-h-[calc(100vh-132px)]">
+        <section className="py-9 px-10 flex flex-col flex-grow">
             <BucketHeader />
             <Fallback shouldRender={!areBucketsLoading}>
                 {selectedBucket &&
-                    <BucketTable bucket={selectedBucket} />
+                    <>
+                        {selectedBucket.files.length ?
+                            <BucketTable bucket={selectedBucket} />
+                            :
+                            <EmptyState bucket={selectedBucket} />
+                        }
+                    </>
                 }
             </Fallback>
         </section>

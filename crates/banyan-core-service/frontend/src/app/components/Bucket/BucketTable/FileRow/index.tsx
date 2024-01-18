@@ -9,19 +9,17 @@ import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { getDateLabel } from '@/app/utils/date';
 import { convertFileSize } from '@/app/utils/storage';
 import { useFilePreview } from '@/app/contexts/filesPreview';
-import { handleDrag, handleDragEnd, handleDragStart } from '@app/utils/dragHandlers';
+import { handleDrag, handleDragEnd, handleDragStart } from '@utils/dragHandlers';
 import { useTomb } from '@app/contexts/tomb';
 
 export const FileRow: React.FC<{
     file: BrowserObject;
     bucket: Bucket;
-    tableScroll: number;
-    tableRef: React.MutableRefObject<HTMLDivElement | null>;
     path: string[];
     siblingFiles: string[];
     nestingLevel?: number;
     parrentFolder?: BrowserObject;
-}> = ({ file, bucket, tableScroll, tableRef, nestingLevel = 0.25, path = [], parrentFolder, siblingFiles }) => {
+}> = ({ file, bucket, nestingLevel = 0.25, path = [], parrentFolder, siblingFiles }) => {
     const { openFile } = useFilePreview();
     const [isDragging, setIsDragging] = useState(false);
     const { getExpandedFolderFiles, getSelectedBucketFiles } = useTomb();
@@ -43,9 +41,9 @@ export const FileRow: React.FC<{
                 className="px-6 py-4"
                 style={{ paddingLeft: `${nestingLevel * 60}px` }}
             >
-                <DraggingPreview name={file.name} isDragging={isDragging} />
+                <DraggingPreview name={file.name} isDragging={isDragging} type="file" />
                 <span>
-                    <FileCell name={file.name} />
+                    <FileCell name={file.name} type="file" />
                 </span>
             </td>
             <td className="px-6 py-4">{getDateLabel(+file.metadata.modified)}</td>
@@ -60,8 +58,6 @@ export const FileRow: React.FC<{
                             path={path}
                         />
                     }
-                    offsetTop={tableScroll}
-                    tableRef={tableRef}
                 />
             </td>
         </tr>

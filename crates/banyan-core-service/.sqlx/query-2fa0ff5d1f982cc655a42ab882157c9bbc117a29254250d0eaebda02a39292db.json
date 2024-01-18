@@ -27,6 +27,16 @@
         "name": "storage_class",
         "ordinal": 4,
         "type_info": "Text"
+      },
+      {
+        "name": "deleted_at",
+        "ordinal": 5,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "updated_at",
+        "ordinal": 6,
+        "type_info": "Datetime"
       }
     ],
     "parameters": {
@@ -37,6 +47,8 @@
       false,
       false,
       false,
+      false,
+      true,
       false
     ]
   },

@@ -29,7 +29,7 @@ input {
 }
 
 .btn-primary {
-	@apply flex items-center justify-center font-semibold rounded-lg border-2 border-button-primary bg-button-primary text-white transition-all;
+	@apply flex items-center justify-center font-semibold rounded-md border-2 border-button-primary bg-button-primary text-white transition-all;
 };
 
 .btn-primary:hover {
@@ -42,7 +42,7 @@ input {
 
 /* Button default styles */
 .btn-secondary {
-    @apply flex items-center justify-center font-semibold rounded-lg bg-transparent border-2 border-button-primary text-text-900;
+    @apply flex items-center justify-center font-semibold rounded-md bg-transparent border-2 border-button-primary text-text-900;
 }
 
 .btn-secondary:hover {
@@ -50,7 +50,7 @@ input {
 }
 
 .btn-highlighted {
-    @apply flex items-center justify-center font-semibold rounded-lg border-2 border-button-highLight bg-button-highLight text-white transition-all;
+    @apply flex items-center justify-center font-semibold rounded-md border-2 border-button-highLight bg-button-highLight text-white transition-all;
 };
 
 .btn-highlighted:hover {
@@ -74,6 +74,10 @@ input {
 
 .Toastify__toast-container {
     width: unset !important;
+}
+
+.Toastify__toast {
+    min-height: unset;
 }
 
 .Toastify__toast-icon {
@@ -113,5 +117,11 @@ input {
     th {
         background-color: white;
         border-bottom: 1px solid #EFF1F5;
+    }
+}
+
+.invoices-table {
+    th {
+        border-bottom: none;
     }
 }

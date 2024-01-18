@@ -1,8 +1,8 @@
 import React from 'react';
 import { useIntl } from 'react-intl';
 
-import { ApproveBucketAccessModal } from '@app/components/common/Modal/ApproveBucketAccessModal';
-import { RemoveBucketAccessModal } from '@app/components/common/Modal/RemoveBucketAccessModal';
+import { ApproveBucketAccessModal } from '@components/common/Modal/ApproveBucketAccessModal';
+import { RemoveBucketAccessModal } from '@components/common/Modal/RemoveBucketAccessModal';
 
 import { Bucket, BucketKey } from '@app/types/bucket';
 import { useModal } from '@app/contexts/modals';

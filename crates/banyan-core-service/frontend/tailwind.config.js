@@ -43,7 +43,8 @@ module.exports = {
 				},
 				error: 'var(--error)',
 				errorBanner: 'var(--error-banner)',
-				errorBannerBorder: 'var(--error-banner-border)',
+				betaBanner: 'var(--beta-banner)',
+				betaBannerBorder: 'var(--beta-banner-border)',
 				login: 'var(--login)',
 				dragging: 'var(--dragging)',
 				draggingBorder: 'var(--draggingBorder)',
@@ -86,14 +87,20 @@ module.exports = {
 					600: 'var(--text-600)',
 					800: 'var(--text-800)',
 					900: 'var(--text-900)',
+					viewInvoiceText: 'var(--view-invoice-text)'
 				},
 				'gray-200': 'var(--text-200)',
 				hover: 'var(--hover-background)',
+				logo: 'var(--logo)',
 				mainBackground: 'var(--main-background)',
 				secondaryBackground: 'var(--secondary-background)',
+				invoiceHeadingBackground: 'var(--invoice-heading-background)'
 			},
 			fontFamily: {
 				sans: ['Inter'],
+			},
+			borderRadius: {
+				md: "4px"
 			},
 			fontSize: {
 				xxs: ['12px', { lineHeight: '18px' }],

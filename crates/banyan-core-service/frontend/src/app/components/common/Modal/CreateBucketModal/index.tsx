@@ -18,7 +18,7 @@ export const CreateBucketModal = () => {
     const [storageClass, setStorageClass] = useState('hot');
     const isBucketDataFilled = useMemo(() =>
         !!bucketType && !!(bucketName.length >= 3),
-    [bucketName, bucketName]);
+        [bucketName, bucketName]);
 
     const changeBucketName = (event: React.ChangeEvent<HTMLInputElement>) => {
         const regexp = new RegExp(/^.{0,32}$/);
@@ -27,7 +27,7 @@ export const CreateBucketModal = () => {
         setBucketName(event.target.value);
     };
 
-    const create = async() => {
+    const create = async () => {
         try {
             const bucketId = await createBucketAndMount(bucketName, storageClass, bucketType);
             closeModal();
@@ -46,7 +46,7 @@ export const CreateBucketModal = () => {
                 <label>
                     {`${messages.driveName}`}
                     <input
-                        className="mt-2 input w-full h-11 py-3 px-4 rounded-lg border-1 border-border-darken focus:outline-none"
+                        className="mt-2 input w-full h-11 py-3 px-4 rounded-md border-1 border-border-darken focus:outline-none"
                         type="text"
                         placeholder={`${messages.enterNewDriveName}`}
                         value={bucketName}

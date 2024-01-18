@@ -3,8 +3,8 @@ import { useIntl } from 'react-intl';
 
 import { ActionsCell } from '@components/common/ActionsCell';
 import { TrashActions } from '../TrashFileActions';
-import { FileIcon } from '@/app/components/common/FileIcon';
-import { SortCell } from '@/app/components/common/SortCell';
+import { FileIcon } from '@components/common/FileIcon';
+import { SortCell } from '@components/common/SortCell';
 
 import { Bucket, BrowserObject } from '@/app/types/bucket';
 import { getDateLabel } from '@/app/utils/date';
@@ -122,15 +122,14 @@ export const TrashTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                                             checked={selectedFiles.includes(file)}
                                             className="checkbox border-border-darken"
                                         />
-                                        <FileIcon fileName={file.name} className="p-2 bg-gray-200 rounded-full" />{file.name}
+                                        <FileIcon fileName={file.name} type={file.type} className="p-2 bg-gray-200 rounded-full" />
+                                        {file.name}
                                     </td>
                                     <td className="px-6 py-4">{getDateLabel(Date.now())}</td>
                                     <td className="px-6 py-4">{convertFileSize(file.metadata.size)}</td>
                                     <td className="px-6 py-4">
                                         <ActionsCell
                                             actions={<TrashActions bucket={bucket} file={file} />}
-                                            offsetTop={tableScroll}
-                                            tableRef={tableRef}
                                         />
                                     </td>
                                 </tr>

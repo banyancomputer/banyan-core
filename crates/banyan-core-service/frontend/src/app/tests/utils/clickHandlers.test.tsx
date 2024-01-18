@@ -3,7 +3,7 @@ import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 
-import { popupClickHandler } from '@app/utils/clickHandlers';
+import { popupClickHandler } from '@utils/clickHandlers';
 
 describe('clickHandlers', () => {
     const TestComponent: React.FC = () => {

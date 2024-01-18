@@ -1,13 +1,13 @@
 import React from 'react';
 import { useIntl } from 'react-intl';
-import { StorageUsage } from '@/app/components/common/StorageUsage';
-import { ServicesTable } from '@/app/components/Account/Services/ServicesTable';
+import { StorageUsage } from '@components/common/StorageUsage';
+import { ServicesTable } from '@components/Account/Services/ServicesTable';
 
 export const Services = () => {
     const { messages } = useIntl();
 
     return (
-        <div className="flex flex-col gap-5 px-4">
+        <div className="flex flex-col gap-5 px-10">
             <h2 className="text-lg font-semibold">
                 {`${messages.services}`}
             </h2>

@@ -1,11 +1,13 @@
 import { FC, ReactNode, createContext, useContext, useEffect, useState } from 'react';
+import Tracker from '@openreplay/tracker';
 
-import { LocalKey, UserData, getLocalKey, destroyLocalKey, getSessionKey, getUserData } from '@/app/utils/cookies';
+import { LocalKey, UserData, getLocalKey, destroyLocalKey, getSessionKey, getUserData, getIsUserNew } from '@/app/utils/cookies';
 
 export interface SessionState {
 	localKey: LocalKey;
 	userData: UserData | null;
 	sessionKey: string | null;
+	isUserNew: boolean;
 
 	getLocalKey: () => LocalKey;
 	destroyLocalKey: () => void;
@@ -15,11 +17,23 @@ export interface SessionState {
 
 export const SessionContext = createContext<SessionState>({} as SessionState);
 
+const TRACKER_PROJECT_KEY = process.env.TRACKER_PROJECT_KEY;
+const TRACKET_INGEST_POINT = process.env.TRACKET_INGEST_POINT;
+
+const tracker = TRACKER_PROJECT_KEY && TRACKET_INGEST_POINT ?
+	new Tracker({
+		projectKey: TRACKER_PROJECT_KEY,
+		ingestPoint: TRACKET_INGEST_POINT,
+	})
+	:
+	null;
+
 export const SessionProvider: FC<{ children: ReactNode }> = ({ children }) => {
 	const [sessionState, setSessionState] = useState({
 		localKey: getLocalKey(),
 		userData: null,
 		sessionKey: null,
+		isUserNew: false,
 		getLocalKey: getLocalKey,
 		destroyLocalKey: destroyLocalKey,
 		getSessionKey: getSessionKey,
@@ -29,6 +43,7 @@ export const SessionProvider: FC<{ children: ReactNode }> = ({ children }) => {
 	useEffect(() => {
 		const userData = getUserData();
 		const sessionKey = getSessionKey();
+		const isUserNew = getIsUserNew();
 
 		if (!userData || !sessionKey) {
 			window.location.href = '/login';
@@ -37,10 +52,23 @@ export const SessionProvider: FC<{ children: ReactNode }> = ({ children }) => {
 
 		setSessionState({
 			...sessionState,
-			userData,
+			isUserNew,
 			sessionKey,
+			userData,
 		})
 	}, []);
+
+	useEffect(() => {
+		if (!tracker) return;
+
+		tracker.start();
+	}, []);
+
+	useEffect(() => {
+		if (!sessionState.userData?.user.id || !tracker) return;
+
+		tracker.setUserID(sessionState.userData?.user.id);
+	}, [sessionState.userData?.user.id]);
 
 	return (
 		<SessionContext.Provider value={sessionState}>

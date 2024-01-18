@@ -1,10 +1,10 @@
 import React from 'react';
 import { useIntl } from 'react-intl';
 
-import { BucketSnapshotsModal } from '@/app/components/common/Modal/BucketSnapshotsModal';
-import { RenameBucketModal } from '@/app/components/common/Modal/RenameBucketModal';
-import { DeleteBucketModal } from '@/app/components/common/Modal/DeleteBucketModal';
-import { TakeSnapshotModal } from '@/app/components/common/Modal/TakeSnapshotModal';
+import { BucketSnapshotsModal } from '@components/common/Modal/BucketSnapshotsModal';
+import { RenameBucketModal } from '@components/common/Modal/RenameBucketModal';
+import { DeleteBucketModal } from '@components/common/Modal/DeleteBucketModal';
+import { TakeSnapshotModal } from '@components/common/Modal/TakeSnapshotModal';
 import { UploadFileModal } from '@components/common/Modal/UploadFileModal';
 import { CreateFolderModal } from '@components/common/Modal/CreateFolderModal ';
 
@@ -15,12 +15,12 @@ import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 import { useTomb } from '@app/contexts/tomb';
 
 import { Bolt, DeleteHotData, Rename, Retry, Trash, Upload, Versions } from '@static/images/common';
-import { Folder, Lock } from '@static/images/buckets';
+import { AddFolderIcon, Lock } from '@static/images/buckets';
 
 export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const { messages } = useIntl();
     const { openModal, closeModal } = useModal();
-    const { buckets, remountBucket } = useTomb();
+    const { remountBucket } = useTomb();
     const bucketType = `${bucket.bucketType}_${bucket.storageClass}`;
     const folderLocation = useFolderLocation();
 
@@ -101,10 +101,10 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const viewBucketSnapshotsAction = bucket.snapshots.length ? new Action(`${messages.viewColdSnapshots}`, <Versions width="18px" height="18px" />, viewBucketSnapshots) : null;
     const viewBucketVersionsAction = new Action(`${messages.viewDriveVersions}`, <Versions width="18px" height="18px" />, viewBucketVersions);
     const renameAction = new Action(`${messages.rename}`, <Rename width="18px" height="18px" />, rename);
-    const createFolderAction = new Action(`${messages.createNewFolder}`, <Folder width="18px" height="18px" />, createFolder);
+    const createFolderAction = new Action(`${messages.createFolder}`, <AddFolderIcon width="18px" height="18px" />, createFolder);
     const restoreColdVersionAction = new Action(`${messages.restoreCold}`, <Versions width="18px" height="18px" />, retoreColdVersion);
     const deleteHotDatadAction = new Action(`${messages.deleteHotData}`, <DeleteHotData width="18px" height="18px" />, deleteHotData);
-    const deletedAction = buckets.length > 1 ? new Action(`${messages.delete}`, <Trash width="18px" height="18px" />, deleteBucket) : null;
+    const deletedAction = new Action(`${messages.delete}`, <Trash width="18px" height="18px" />, deleteBucket);
     const purgeAction = new Action(`${messages.purgeColdKeys}`, <Trash width="18px" height="18px" />, purgeColdKeys);
 
     const hotInrecactiveActions = [

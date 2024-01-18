@@ -9,7 +9,7 @@ export const StorageUsage = () => {
     const { messages } = useIntl();
 
     return (
-        <div className="w-full bg-mainBackground rounded-lg p-4">
+        <div className="w-full bg-mainBackground rounded-md p-4">
             <span className="flex justify-between items-center font-semibold">
                 {`${messages.storage}`}
             </span>

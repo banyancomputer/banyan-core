@@ -121,6 +121,7 @@ pub(crate) async fn create_deal(
         format!("metadata-cid-{}", bucket_id).as_str(),
         MetadataState::Current,
         None,
+        None,
     )
     .await;
 
@@ -149,9 +150,7 @@ pub(crate) async fn create_deal(
     let segment_id = create_snapshot_segment(database, deal_id.to_string(), size.unwrap_or(262144))
         .await
         .unwrap();
-    let snapshot_id = create_snapshot(database, metadata_id, SnapshotState::Pending)
-        .await
-        .unwrap();
+    let snapshot_id = create_snapshot(database, &metadata_id, SnapshotState::Pending).await;
     create_snapshot_segment_association(database, snapshot_id, segment_id)
         .await
         .unwrap();
@@ -191,9 +190,9 @@ pub(crate) async fn create_snapshot_segment(
 
 pub(crate) async fn create_snapshot(
     database: &mut DatabaseConnection,
-    metadata_id: String,
+    metadata_id: &str,
     snapshot_state: SnapshotState,
-) -> Result<String, sqlx::Error> {
+) -> String {
     let snapshot_state = snapshot_state.to_string();
     sqlx::query_scalar!(
         r#"INSERT INTO snapshots (metadata_id, state)
@@ -204,6 +203,7 @@ pub(crate) async fn create_snapshot(
     )
     .fetch_one(database)
     .await
+    .expect("snapshot creation")
 }
 
 pub(crate) async fn create_hot_bucket(
@@ -233,6 +233,7 @@ pub(crate) async fn create_metadata(
     root_cid: &str,
     state: MetadataState,
     timestamp: Option<OffsetDateTime>,
+    previous_metadata_cid: Option<String>,
 ) -> String {
     // Note: be sure to use explicit timestamps to yeild the same precission
     //  we expect as a result from calls to NewMetadata::save(), Metadata::mark_current(),
@@ -243,14 +244,15 @@ pub(crate) async fn create_metadata(
     };
     sqlx::query_scalar!(
         r#"INSERT INTO
-                metadata (bucket_id, root_cid, metadata_cid, expected_data_size, state, created_at, updated_at)
-                VALUES ($1, $2, $3, 0, $4, $5, $5)
+                metadata (bucket_id, root_cid, metadata_cid, expected_data_size, state, created_at, updated_at, previous_metadata_cid)
+                VALUES ($1, $2, $3, 0, $4, $5, $5, $6)
                 RETURNING id;"#,
         bucket_id,
         root_cid,
         metadata_cid,
         state,
         now,
+        previous_metadata_cid
     )
     .fetch_one(conn)
     .await
@@ -351,7 +353,7 @@ pub(crate) async fn sample_metadata(
     let root_cid = format!("root-cid-{}", counter);
     let metadata_cid = format!("metadata-cid-{}", counter);
 
-    create_metadata(conn, bucket_id, &metadata_cid, &root_cid, state, None).await
+    create_metadata(conn, bucket_id, &metadata_cid, &root_cid, state, None, None).await
 }
 
 pub(crate) async fn sample_user(conn: &mut DatabaseConnection, email: &str) -> String {

@@ -1,13 +1,12 @@
 import React, { useRef } from 'react';
 
-
 import { useModal } from '@/app/contexts/modals';
 
 import { ArrowDown, Close } from '@static/images/common';
 
 export const Modal = () => {
     const modalRef = useRef<HTMLDivElement | null>(null);
-    const { modalState: { content, onBack, mandatory, className = 'p-6 rounded-xl' }, closeModal, } = useModal();
+    const { modalState: { content, onBack, mandatory, className = 'p-6 rounded-md' }, closeModal, } = useModal();
 
     const close = (event: React.MouseEvent<HTMLDivElement>) => {
         if (mandatory) { return; }

@@ -1,41 +1,87 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useIntl } from 'react-intl';
 
 import { Loader } from '../Loader';
-import { FileIcon } from '../FileIcon';
 
 import { useFilesUpload } from '@/app/contexts/filesUpload';
-import { Done } from '@static/images/common';
+
+import { ChevronUp, Clock, Close, Retry, UploadFailIcon, UploadSuccessIcon } from '@static/images/common';
 
 export const UploadFileProgress = () => {
     const { messages } = useIntl();
-    const { files } = useFilesUpload();
+    const { files, deleteFromUploadList, retryUpload } = useFilesUpload();
+    const [isExpanded, setIsExpanded] = useState(false);
+    const uploadedFilesLength = useMemo(() => files.filter(file => file.status === 'success').length, [files]);
+
+    const toggleVisibility = () => {
+        setIsExpanded(prev => !prev);
+    };
+
+    const ICONS_MAPPER = {
+        pending: <Clock width="20px" height="20px" />,
+        success: <UploadSuccessIcon width="20px" height="20px" />,
+        failed: <UploadFailIcon width="20px" height="20px" />,
+        uploading: <Loader spinnerSize="20px" containerHeight="100%" />
+    };
 
     return (
-        <div className="w-80">
-            <div className="flex justify-between items-center px-3 py-2 bg-button-primary text-white font-normal text-xs">
-                <p>{`${messages.uploading}`}</p>
+        <div
+            className="w-80"
+            onClick={event => event.stopPropagation()}
+        >
+            <div className="flex justify-between items-center p-4 bg-navigation-primary text-text-900 font-semibold text-xs">
+                <div className="flex items-center gap-3">
+                    <p>{`${messages.uploading}`}</p>
+                    {!isExpanded &&
+                        <>
+                            {`${uploadedFilesLength} of ${files.length}`}
+                        </>
+                    }
+                </div>
+                <div
+                    className={`${isExpanded ? '' : 'rotate-180'}`}
+                    onClick={toggleVisibility}
+                >
+                    <ChevronUp />
+                </div>
             </div>
-            <div className="flex flex-col">
-                {files.map(file =>
-                    <div
-                        className="flex items-center px-3 py-2 gap-2 text-xs font-normal text-bucket-actionsText"
-                        key={file.file.name}
-                    >
-                        <FileIcon fileName={file.file.name} />
-                        <span className="flex-grow text-bucket-actionsText">{file.file.name}</span>
-                        <span className="w-5 h-5">
-                            {file.isUploaded ?
-                                <span className="flex items-center justify-center p-1 bg-gray-800 text-white rounded-full">
-                                    <Done width="12px" height="12px" />
+            {isExpanded ?
+                <div className="flex flex-col">
+                    {files.map(file =>
+                        <div
+                            className="flex items-center px-3 py-2 gap-3 text-xs font-normal text-bucket-actionsText"
+                            key={file.file.name}
+                        >
+                            <span className="w-5 h-5 min-w-[20px]">
+                                {ICONS_MAPPER[file.status]}
+                            </span>
+                            <span
+                                className="flex-grow text-bucket-actionsText whitespace-nowrap overflow-hidden text-ellipsis font-semibold"
+                            >
+                                {file.file.name}
+                            </span>
+                            {file.status === 'failed' &&
+                                <span className="flex items-center gap-3">
+                                    <span
+                                        className="cursor-pointer"
+                                        onClick={() => retryUpload(file)}
+                                    >
+                                        <Retry />
+                                    </span>
+                                    <span
+                                        className="text-text-600 cursor-pointer"
+                                        onClick={() => deleteFromUploadList(file)}
+                                    >
+                                        <Close />
+                                    </span>
                                 </span>
-                                :
-                                <Loader spinnerSize="20px" containerHeight="100%" />
                             }
-                        </span>
-                    </div>
-                )}
-            </div>
+                        </div>
+                    )}
+                </div>
+                :
+                null
+            }
         </div>
     );
 };

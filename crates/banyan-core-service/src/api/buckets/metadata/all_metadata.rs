@@ -9,6 +9,7 @@ use crate::extractors::UserIdentity;
 
 pub async fn handler(user_identity: UserIdentity, State(state): State<AppState>) -> Response {
     let user_id = user_identity.id().to_string();
+    // NOTE: this will not return any metadata in the 'deleted' state
     let query_result = PartialMetadataWithSnapshot::all(&state.database(), user_id).await;
 
     match query_result {
