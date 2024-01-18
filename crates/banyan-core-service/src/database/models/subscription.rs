@@ -12,14 +12,13 @@ pub struct NewSubscription<'a> {
     pub visible: bool,
 
     pub base_price: Option<i64>,
+    pub archival_price: Option<i64>,
     pub storage_overage_price: Option<i64>,
     pub bandwidth_overage_price: Option<i64>,
 
-    pub included_archival: i64,
     pub included_bandwidth: i64,
     pub included_storage: i64,
 
-    pub archival_hard_limit: Option<i64>,
     pub bandwidth_hard_limit: Option<i64>,
     pub storage_hard_limit: Option<i64>,
 }
@@ -63,10 +62,13 @@ impl NewSubscription<'_> {
         .execute(&mut *conn)
         .await?;
 
-        // We can delete older subscriptions that never received a stripe product ID (which means
-        // no one subscribed to that plan)
+        // We can delete older subscriptions that never received any stripe product IDs (which
+        // means no one subscribed to that plan)
         sqlx::query!(
-            "DELETE FROM subscriptions WHERE price_key = ? AND id != ? AND stripe_product_id IS NULL;",
+            "DELETE FROM subscriptions WHERE price_key = $1
+               AND id != $2
+               AND stripe_personal_product_id IS NULL
+               AND stripe_business_product_id IS NULL;",
             self.price_key,
             new_sub_id,
         )
@@ -88,14 +90,13 @@ impl<'a> From<&'a PricingTier> for NewSubscription<'a> {
             visible: pricing_tier.visible,
 
             base_price: pricing_tier.price.as_ref().map(|p| p.base),
+            archival_price: pricing_tier.price.as_ref().map(|p.archival),
             storage_overage_price: pricing_tier.price.as_ref().map(|p| p.storage_overage),
             bandwidth_overage_price: pricing_tier.price.as_ref().map(|p| p.bandwidth_overage),
 
-            included_archival: pricing_tier.included_allowances.archival,
             included_bandwidth: pricing_tier.included_allowances.bandwidth,
             included_storage: pricing_tier.included_allowances.storage,
 
-            archival_hard_limit: pricing_tier.hard_limits.archival,
             bandwidth_hard_limit: pricing_tier.hard_limits.bandwidth,
             storage_hard_limit: pricing_tier.hard_limits.storage,
         }
@@ -109,21 +110,18 @@ pub struct Subscription {
     pub price_key: String,
     pub title: String,
 
-    pub stripe_product_id: Option<String>,
-
     pub allow_overages: bool,
     pub archival_available: bool,
     pub visible: bool,
 
     pub base_price: Option<i64>,
+    pub archival_price: Option<i64>,
     pub storage_overage_price: Option<i64>,
     pub bandwidth_overage_price: Option<i64>,
 
-    pub included_archival: i64,
     pub included_bandwidth: i64,
     pub included_storage: i64,
 
-    pub archival_hard_limit: Option<i64>,
     pub bandwidth_hard_limit: Option<i64>,
     pub storage_hard_limit: Option<i64>,
 
@@ -191,7 +189,7 @@ impl Subscription {
 }
 
 /// This comparison only checks the price related settings of a subscription and does not take into
-/// account database generated values or remote values (local database ID, stripe product ID, and
+/// account database generated values or remote values (local database ID, stripe product IDs, and
 /// creation timestamp specifically).
 impl std::cmp::PartialEq<NewSubscription<'_>> for Subscription {
     fn eq(&self, other: &NewSubscription) -> bool {
@@ -201,12 +199,11 @@ impl std::cmp::PartialEq<NewSubscription<'_>> for Subscription {
             && self.archival_available == other.archival_available
             && self.visible == other.visible
             && self.base_price == other.base_price
+            && self.archival_price == other.archival_price
             && self.storage_overage_price == other.storage_overage_price
             && self.bandwidth_overage_price == other.bandwidth_overage_price
-            && self.included_archival == other.included_archival
             && self.included_bandwidth == other.included_bandwidth
             && self.included_storage == other.included_storage
-            && self.archival_hard_limit == other.archival_hard_limit
             && self.bandwidth_hard_limit == other.bandwidth_hard_limit
             && self.storage_hard_limit == other.storage_hard_limit
     }

@@ -5,17 +5,25 @@ use serde::Deserialize;
 use crate::database::models::{NewSubscription, Subscription};
 use crate::database::DatabaseConnection;
 
-const CURRENT_PRICING_DATA: &[u8] = include_bytes!("../dist/pricing.ron");
+const BUILTIN_PRICING_DATA: &[u8] = include_bytes!("../dist/pricing.ron");
 
-static CURRENT_PRICE_CONFIG: OnceLock<Vec<PricingTier>> = OnceLock::new();
+static BUILTIN_PRICING_CONFIG: OnceLock<Vec<PricingTier>> = OnceLock::new();
 
 pub const DEFAULT_SUBSCRIPTION_KEY: &str = "starter";
 
-pub fn distributed_config() -> &'static [PricingTier] {
-    CURRENT_PRICE_CONFIG.get_or_init(|| ron::de::from_bytes(CURRENT_PRICING_DATA).unwrap())
+/// Sourced from https://stripe.com/docs/tax/tax-codes, this is the tax identifier for business use
+/// infrastructure as a service cloud service.
+pub const TAX_CODE_BUSINESS: &str = "txcd_10101000";
+
+/// Sourced from https://stripe.com/docs/tax/tax-codes, this is the tax identifier for personal use
+/// infrastructure as a service cloud service.
+pub const TAX_CODE_PERSONAL: &str = "txcd_10010001";
+
+pub fn builtin_pricing_config() -> &'static [PricingTier] {
+    BUILTIN_PRICING_CONFIG.get_or_init(|| ron::de::from_bytes(BUILTIN_PRICING_DATA).unwrap())
 }
 
-pub async fn sync_pricing(
+pub async fn sync_pricing_config(
     conn: &mut DatabaseConnection,
     price_tiers: &[PricingTier],
 ) -> Result<(), sqlx::Error> {
@@ -52,7 +60,6 @@ pub async fn sync_pricing(
 /// for extra capacity.
 #[derive(Debug, Deserialize)]
 pub struct Allowances {
-    pub archival: i64,
     pub bandwidth: i64,
     pub storage: i64,
 }
@@ -61,7 +68,6 @@ pub struct Allowances {
 /// GiB.
 #[derive(Debug, Deserialize)]
 pub struct Limits {
-    pub archival: Option<i64>,
     pub bandwidth: Option<i64>,
     pub storage: Option<i64>,
 }
@@ -74,7 +80,7 @@ pub struct PricingTier {
     /// but we can't automatically upgrade users to new pricing. Users will be associated with a
     /// specific version of this key upon when they sign up or are migrated explicitly to a
     /// different plan.
-    pub price_key: String,
+    pub base_product_key: String,
 
     /// A user visible string that will be displayed to the user
     pub title: String,
@@ -110,6 +116,10 @@ pub struct PricingTier {
 pub struct Price {
     /// The base monthly price associated with a particular pricing tier.
     pub base: i64,
+
+    /// The price of each GiB stored in archival / cold storage per month. Billed in 6 month
+    /// intervals all at once up front.
+    pub archival: i64,
 
     /// The price of each GiB stored in the network beyond the base bandwidth allowance.
     pub storage_overage: i64,
