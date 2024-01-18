@@ -49,32 +49,39 @@ pub async fn handler(
     // frustrating...
     //
     //
+    // First try with the new version
+    let object_path = ObjectStorePath::from(format!(
+        "{}/{}.bin",
+        block_details.metadata_id, normalized_cid
+    ));
 
-    let data = if let Some(car_offset) = block_details.car_offset {
-        let byte_start = car_offset as usize;
-        let byte_end = byte_start + (block_details.length as usize);
-        let byte_range = byte_start..byte_end;
+    match store.get(&object_path).await {
+        Ok(object) => {
+            let data = object
+                .bytes()
+                .await
+                .map_err(BlockRetrievalError::RetrievalFailed)?;
+            return Ok((StatusCode::OK, headers, data).into_response());
+        }
+        Err(err) => {
+            println!("couldnt find the bin file, trying car");
+            // If there is a chance it's actually in a CAR
+            if let Some(car_offset) = block_details.car_offset {
+                let byte_start = car_offset as usize;
+                let byte_end = byte_start + (block_details.length as usize);
+                let byte_range = byte_start..byte_end;
 
-        let object_path = ObjectStorePath::from(block_details.metadata_id.as_str());
-        store
-            .get_range(&object_path, byte_range)
-            .await
-            .map_err(BlockRetrievalError::RetrievalFailed)?
-    } else {
-        let object_path = ObjectStorePath::from(format!(
-            "{}/{}",
-            block_details.metadata_id, block_details.id
-        ));
-        store
-            .get(&object_path)
-            .await
-            .map_err(BlockRetrievalError::RetrievalFailed)?
-            .bytes()
-            .await
-            .map_err(BlockRetrievalError::RetrievalFailed)?
-    };
-
-    Ok((StatusCode::OK, headers, data).into_response())
+                let object_path = ObjectStorePath::from(block_details.metadata_id.as_str());
+                let data = store
+                    .get_range(&object_path, byte_range)
+                    .await
+                    .map_err(BlockRetrievalError::RetrievalFailed)?;
+                return Ok((StatusCode::OK, headers, data).into_response());
+            } else {
+                return Err(BlockRetrievalError::RetrievalFailed(err));
+            }
+        }
+    }
 }
 
 pub async fn block_from_normalized_cid(

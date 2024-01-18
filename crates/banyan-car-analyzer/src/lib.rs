@@ -365,7 +365,7 @@ impl StreamingCarAnalyzer {
                         .expect("dont worry about it");
 
                     let location = ObjectStorePath::from(format!(
-                        "{}/{}.block",
+                        "{}/{}.bin",
                         self.metadata_id, normalized_cid
                     ));
 

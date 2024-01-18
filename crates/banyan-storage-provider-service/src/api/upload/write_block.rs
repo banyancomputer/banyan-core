@@ -4,13 +4,12 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
+use banyan_object_store::{ObjectStore, ObjectStorePath};
 use banyan_task::TaskLikeExt;
 use bytes::Bytes;
-use cid::{
-    multibase::Base,
-    multihash::{Code, MultihashDigest},
-    Cid,
-};
+use cid::multibase::Base;
+use cid::multihash::{Code, MultihashDigest};
+use cid::Cid;
 use serde::Deserialize;
 use uuid::Uuid;
 
@@ -20,7 +19,6 @@ use crate::api::upload::{
 use crate::app::AppState;
 use crate::extractors::AuthenticatedClient;
 use crate::tasks::ReportUploadTask;
-use banyan_object_store::{ObjectStore, ObjectStorePath};
 
 #[axum::debug_handler]
 pub async fn handler(
@@ -69,7 +67,7 @@ pub async fn handler(
 
     // Actually write the bytes to the expected location
     let location =
-        ObjectStorePath::from(format!("{}/{}.block", request.metadata_id, normalized_cid).as_str());
+        ObjectStorePath::from(format!("{}/{}.bin", request.metadata_id, normalized_cid).as_str());
     store
         .put(&location, Bytes::copy_from_slice(request.data.as_slice()))
         .await
