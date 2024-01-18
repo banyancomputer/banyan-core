@@ -1,10 +1,11 @@
 mod all_subscriptions;
+mod purchase_subscription;
 mod single_subscription;
 
 use std::error::Error;
 
 use axum::body::HttpBody;
-use axum::routing::get;
+use axum::routing::{get, post};
 use axum::Router;
 
 use crate::app::AppState;
@@ -18,6 +19,7 @@ where
 {
     Router::new()
         .route("/:subscription_id", get(single_subscription::handler))
+        .route("/:subscription_id/subscribe", post(purchase_subscription::handler))
         .route("/", get(all_subscriptions::handler))
         .with_state(state)
 }
