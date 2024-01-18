@@ -91,24 +91,6 @@ pub struct StreamingCarAnalyzer {
     store: ObjectStore,
 }
 
-#[cfg(test)]
-impl Default for StreamingCarAnalyzer {
-    fn default() -> Self {
-        let test_path = std::path::PathBuf::from("./test");
-
-        if test_path.exists() {
-            std::fs::remove_dir_all(&test_path).expect("oh no");
-        }
-
-        std::fs::create_dir_all(&test_path).expect("oh no");
-
-        Self::new(
-            &String::new(),
-            ObjectStore::new(&ObjectStoreConnection::Local(test_path)).expect(""),
-        )
-    }
-}
-
 impl StreamingCarAnalyzer {
     pub fn add_chunk(&mut self, bytes: &Bytes) -> Result<(), StreamingCarAnalyzerError> {
         self.exceeds_buffer_limit(bytes.len() as u64)?;
@@ -475,6 +457,24 @@ fn try_read_varint_u64(buf: &[u8]) -> Result<Option<(u64, u64)>, StreamingCarAna
     }
 
     Ok(None)
+}
+
+#[cfg(test)]
+impl Default for StreamingCarAnalyzer {
+    fn default() -> Self {
+        let test_path = std::path::PathBuf::from("./test");
+
+        if test_path.exists() {
+            std::fs::remove_dir_all(&test_path).expect("Remove test path");
+        }
+
+        std::fs::create_dir_all(&test_path).expect("Create test path");
+
+        Self::new(
+            "",
+            ObjectStore::new(&banyan_object_store::ObjectStoreConnection::Local(test_path)).expect(""),
+        )
+    }
 }
 
 #[cfg(test)]
