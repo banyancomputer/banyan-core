@@ -64,7 +64,6 @@ pub async fn handler(
             Ok((StatusCode::OK, headers, data).into_response())
         }
         Err(err) => {
-            println!("couldnt find the bin file, trying car");
             // If there is a chance it's actually in a CAR
             if let Some(car_offset) = block_details.car_offset {
                 let byte_start = car_offset as usize;
