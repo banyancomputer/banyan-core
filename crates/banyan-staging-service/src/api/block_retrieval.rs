@@ -61,7 +61,7 @@ pub async fn handler(
                 .bytes()
                 .await
                 .map_err(BlockRetrievalError::RetrievalFailed)?;
-            return Ok((StatusCode::OK, headers, data).into_response());
+            Ok((StatusCode::OK, headers, data).into_response())
         }
         Err(err) => {
             println!("couldnt find the bin file, trying car");
@@ -76,9 +76,9 @@ pub async fn handler(
                     .get_range(&object_path, byte_range)
                     .await
                     .map_err(BlockRetrievalError::RetrievalFailed)?;
-                return Ok((StatusCode::OK, headers, data).into_response());
+                Ok((StatusCode::OK, headers, data).into_response())
             } else {
-                return Err(BlockRetrievalError::RetrievalFailed(err));
+                Err(BlockRetrievalError::RetrievalFailed(err))
             }
         }
     }

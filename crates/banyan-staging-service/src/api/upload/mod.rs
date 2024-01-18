@@ -117,7 +117,7 @@ pub async fn handler(
     .await
     {
         Ok(cr) => {
-            complete_upload(&db, 0, &cr.integrity_hash(), &upload.id).await?;
+            complete_upload(&db, 0, cr.integrity_hash(), &upload.id).await?;
             ReportUploadTask::new(
                 client.storage_grant_id(),
                 request.metadata_id,
@@ -134,7 +134,7 @@ pub async fn handler(
             // todo: we don't care in the response if this fails, but if it does we will want to
             // clean it up in the future which should be handled by a background task
             let _ = fail_upload(&db, &upload.id).await;
-            Err(err.into())
+            Err(err)
         }
     }
 }

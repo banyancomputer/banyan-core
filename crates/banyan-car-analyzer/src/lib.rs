@@ -1,8 +1,8 @@
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
-use banyan_object_store::{ObjectStore, ObjectStoreConnection, ObjectStorePath};
-use bytes::{Buf, Bytes, BytesMut};
+use banyan_object_store::{ObjectStore, ObjectStorePath};
+use bytes::{Bytes, BytesMut};
 use cid::multibase::Base;
 use cid::Cid;
 const CAR_HEADER_UPPER_LIMIT: u64 = 16 * 1024 * 1024; // Limit car headers to 16MiB
