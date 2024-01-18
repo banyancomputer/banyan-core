@@ -55,7 +55,7 @@ impl TaskInstanceBuilder {
         }
     }
 
-    pub fn reset_attempts(mut self) -> Self{
+    pub fn reset_attempts(mut self) -> Self {
         self.current_attempt = 0;
         self
     }

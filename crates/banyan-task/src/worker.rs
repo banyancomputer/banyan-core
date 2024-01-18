@@ -1,12 +1,15 @@
 #![allow(dead_code)]
 
 use std::collections::BTreeMap;
-use futures::Future;
+
 use time::OffsetDateTime;
 
 use crate::panic_safe_future::PanicSafeFuture;
 use crate::worker_pool::ScheduleFn;
-use crate::{CurrentTask, CurrentTaskError, ExecuteTaskFn, QueueConfig, StateFn, Task, TaskExecError, TaskStore, TaskStoreError, MAXIMUM_CHECK_DELAY, TaskState};
+use crate::{
+    CurrentTask, CurrentTaskError, ExecuteTaskFn, QueueConfig, StateFn, Task, TaskExecError,
+    TaskState, TaskStore, TaskStoreError, MAXIMUM_CHECK_DELAY,
+};
 
 pub struct Worker<Context, S>
 where
@@ -77,15 +80,22 @@ where
                     Ok(_) => {
                         match self.store.completed(task.id.clone()).await {
                             Ok(_) => self.schedule_next_if_necessary(&task).await,
-                            Err(err) => Err(WorkerError::UpdateTaskStatusFailed(err)),
+                            Err(err) => {
+                                // TODO: "error returned from database: (code: 1) no such table: background_tasks"
+                                Err(WorkerError::UpdateTaskStatusFailed(err))
+                            }
                         }
                     }
                     Err(err) => {
                         tracing::error!("task failed with error: {err}");
                         match self
                             .store
-                            .errored(task.id.clone(), TaskExecError::ExecutionFailed(err.to_string()))
-                            .await {
+                            .errored(
+                                task.id.clone(),
+                                TaskExecError::ExecutionFailed(err.to_string()),
+                            )
+                            .await
+                        {
                             // not retried
                             Ok(None) => self.schedule_next_if_necessary(&task).await,
                             // retry failed
@@ -93,7 +103,7 @@ where
                             // retried
                             _ => Ok(()),
                         }
-                    },
+                    }
                 }
             }
             Err(_) => {
@@ -104,19 +114,23 @@ where
                     .update_state(task.id.clone(), TaskState::Panicked)
                     .await
                     .map_err(WorkerError::UpdateTaskStatusFailed)
-            },
+            }
         }
     }
 
     async fn schedule_next_if_necessary(&self, task: &Task) -> Result<(), WorkerError> {
         if let Some(next_schedule) = self.get_next_schedule(task) {
-            return match self.store.schedule_next(task.id.clone(), next_schedule).await {
+            return match self
+                .store
+                .schedule_next(task.id.clone(), next_schedule)
+                .await
+            {
                 Ok(_) => Ok(()),
                 Err(err) => {
                     tracing::error!("Failed to schedule next occurrence of task: {err}");
                     Err(WorkerError::ScheduleFailed(task.id.clone()))
                 }
-            }
+            };
         }
 
         Ok(())
@@ -129,6 +143,7 @@ where
 
         None
     }
+
     pub async fn run_tasks(&mut self) -> Result<(), WorkerError> {
         let relevant_task_names: Vec<&'static str> = self.task_registry.keys().cloned().collect();
 
@@ -224,10 +239,28 @@ mod tests {
     use crate::TaskLike;
     const WORKER_NAME: &str = "default";
     const TEST_CONTEXT: TestContext = TestContext {};
-
+    impl Worker<TestContext, SqliteTaskStore> {
+        async fn next_task(&self, task_name: &str) -> Task {
+            self.store
+                .next(WORKER_NAME, &[task_name])
+                .await
+                .map_err(WorkerError::StoreUnavailable)
+                .expect("could not get task from db")
+                .expect("could not create task instance")
+        }
+        async fn get_task(&self, id: String) -> Option<Task> {
+            match self.store.get_task(id).await {
+                Ok(t) => Some(t),
+                Err(_err) => None,
+            }
+        }
+    }
     #[derive(Clone)]
     struct TestContext {}
-    fn create_registry() -> (BTreeMap<&'static str, ExecuteTaskFn<TestContext>> ,BTreeMap<&'static str, ScheduleFn> ){
+    fn create_registry() -> (
+        BTreeMap<&'static str, ExecuteTaskFn<TestContext>>,
+        BTreeMap<&'static str, ScheduleFn>,
+    ) {
         let mut task_registry = BTreeMap::new();
 
         let test_task_fn: ExecuteTaskFn<TestContext> =
@@ -240,7 +273,7 @@ mod tests {
                         "failed with error".to_string(),
                     ))
                 }
-                    .boxed()
+                .boxed()
             });
 
         task_registry.insert(TestTask::TASK_NAME, test_task_fn);
@@ -248,16 +281,12 @@ mod tests {
 
         let mut schedule_registry = BTreeMap::new();
 
-        let test_task_fn: ScheduleFn =|payload| {
-            None
-        };
-        let schedule_test_task_fn: ScheduleFn = |payload| {
-            Some(OffsetDateTime::now_utc() - Duration::from_secs(60))
-        };
+        let test_task_fn: ScheduleFn = |_payload| None;
+        let schedule_test_task_fn: ScheduleFn =
+            |_payload| Some(OffsetDateTime::now_utc() - Duration::from_secs(60));
 
         schedule_registry.insert(TestTask::TASK_NAME, test_task_fn);
         schedule_registry.insert(ScheduleTestTask::TASK_NAME, schedule_test_task_fn);
-
 
         (task_registry, schedule_registry)
     }
@@ -274,29 +303,41 @@ mod tests {
             WORKER_NAME.to_string(),
             queue_config.clone(),
             context_data_fn.clone(),
-            task_store.clone(),
+            task_store,
             task_registry.clone(),
             schedule_registry.clone(),
             Some(inner_shutdown_rx.clone()),
         )
     }
 
-    async fn retrieve_task(task_name: &str, task_store: &SqliteTaskStore) -> Task {
-        task_store
-            .next(WORKER_NAME, &[task_name])
-            .await
-            .map_err(WorkerError::StoreUnavailable)
-            .expect("could not get task from db")
-            .expect("could not create task instance")
+    #[tokio::test]
+    async fn test_worker_run_unregistered_task() {
+        let (task_store, _task_id) = singleton_task_store().await;
+        let worker = create_worker(&TEST_CONTEXT, task_store);
+        let task_name = "UnregisteredTask";
+        let mut task = worker.next_task(task_name).await;
+        task.task_name = String::from(task_name);
+        let result = worker.run(task).await;
+
+        assert!(
+            result.is_err(),
+            "Worker run should fail with unregistered task"
+        );
+        if let WorkerError::UnregisteredTaskName(err) = result.unwrap_err() {
+            assert_eq!(err, task_name);
+        } else {
+            assert!(false, "wrong error type returned");
+        }
     }
 
+    // currently has issues with accessing the in-memory database
+    #[ignore]
     #[tokio::test]
-    async fn test_worker_run_no_tasks() {
-        // let task_store = singleton_task_store().await;
-        // let worker = create_worker(&TEST_CONTEXT, task_store.clone());
-        // let task = retrieve_task(TestTask::TASK_NAME, &task_store).await;
-        // let result = worker.run(task).await;
-        assert!(true);
-        // assert!(result.is_ok(), "Worker run failed with no tasks");
+    async fn test_worker_run_successful_task() {
+        let (task_store, _task_id) = singleton_task_store().await;
+        let worker = create_worker(&TEST_CONTEXT, task_store);
+        let task = worker.next_task(TestTask::TASK_NAME).await;
+        let result = worker.run(task).await;
+        assert!(result.is_ok(), "Worker run failed with a valid task");
     }
 }

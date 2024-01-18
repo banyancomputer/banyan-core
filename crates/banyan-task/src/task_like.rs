@@ -28,18 +28,6 @@ pub trait TaskLike: Serialize + DeserializeOwned + Sync + Send + 'static {
 }
 
 #[async_trait]
-impl TaskLike for () {
-    const TASK_NAME: &'static str = "empty_task";
-
-    type Error = TaskStoreError;
-    type Context = ();
-
-    async fn run(&self, _task: CurrentTask, _ctx: Self::Context) -> Result<(), Self::Error> {
-        Ok(())
-    }
-}
-
-#[async_trait]
 pub trait TaskLikeExt {
     async fn enqueue<S: TaskStore>(
         self,

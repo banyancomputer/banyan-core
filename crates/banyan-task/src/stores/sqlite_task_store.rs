@@ -6,8 +6,8 @@ use time::OffsetDateTime;
 
 use crate::task_store::TaskStore;
 use crate::{
-    Task, TaskInstanceBuilder, TaskLike, TaskState, TaskStoreError,
-    TaskStoreMetrics, TASK_EXECUTION_TIMEOUT,
+    Task, TaskInstanceBuilder, TaskLike, TaskState, TaskStoreError, TaskStoreMetrics,
+    TASK_EXECUTION_TIMEOUT,
 };
 
 #[derive(Clone)]
@@ -63,7 +63,7 @@ impl SqliteTaskStore {
         )
     }
 
-    async fn get_task(&self, id: String) -> Result<Task, TaskStoreError> {
+    pub async fn get_task(&self, id: String) -> Result<Task, TaskStoreError> {
         let mut connection = self.pool.clone().acquire().await?;
         let task = sqlx::query_as!(Task, r#"SELECT * FROM background_tasks WHERE id = $1"#, id)
             .fetch_one(&mut *connection)
@@ -139,6 +139,7 @@ impl TaskStore for SqliteTaskStore {
 
         Ok(background_task_id)
     }
+
     async fn next(
         &self,
         queue_name: &str,
@@ -364,29 +365,26 @@ impl From<SqliteTaskStoreMetrics> for TaskStoreMetrics {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::task_like::tests::ScheduleTestTask;
     use crate::tests::{default_task_store_metrics, TestTask};
     use crate::TaskLikeExt;
 
-    // #[tokio::test]
-    // async fn normal_task_do_not_reschedule() {
-    //     let (task_store, task_id) = singleton_task_store().await;
-    //     let task = TestTask;
-    //     let task_id = task_store.schedule_next(task_id.expect("task should be created")).await.expect("schedule_next");
-    //     assert_eq!(task_id, None, "Task should not have been rescheduled");
-    // }
-    //
-    // #[tokio::test]
-    // async fn reschedule_tasks_work() {
-    //     let (task_store, task_id) = singleton_task_store().await;
-    //     let task = ScheduleTestTask;
-    //     let task_id = task_store.schedule_next(task_id.expect("task should be created")).await.expect("schedule_next");
-    //     assert_ne!(task_id, None, "Task should not have been rescheduled");
-    // }
+    #[tokio::test]
+    async fn reschedule_tasks_work() {
+        let (task_store, task_id) = singleton_task_store().await;
+        let next_time = OffsetDateTime::now_utc() + Duration::from_secs(60);
+        let task_id = task_store
+            .schedule_next(task_id.expect("task should be created"), next_time)
+            .await
+            .expect("schedule_next");
+        let metrics = task_store.metrics().await.unwrap();
+        assert_ne!(task_id, None, "Task should have been rescheduled");
+        assert_eq!(metrics.total, 2);
+        assert_eq!(metrics.scheduled, 1);
+    }
 
     #[tokio::test]
     async fn update_state_works() {
-        let (task_store, task_id) = singleton_task_store().await;
+        let (task_store, _task_id) = singleton_task_store().await;
         let task = TestTask;
         let task_id = task
             .enqueue::<SqliteTaskStore>(&mut task_store.pool.clone())
@@ -469,16 +467,6 @@ pub mod tests {
         let metrics = task_store.metrics().await.unwrap();
         assert_eq!(metrics, default_task_store_metrics());
     }
-
-    // #[tokio::test]
-    // async fn schedule_next_works() {
-    //     let (task_store, task_id) = singleton_task_store().await;
-    //     let task = ScheduleTestTask;
-    //     task_store.schedule_next(task_id.expect("task should be created")).await.expect("schedule_next");
-    //     let metrics = task_store.metrics().await.unwrap();
-    //     assert_eq!(metrics.total, 2);
-    //     assert_eq!(metrics.scheduled, 1);
-    // }
 
     pub async fn singleton_task_store() -> (SqliteTaskStore, Option<String>) {
         let task_store = empty_task_store().await;
