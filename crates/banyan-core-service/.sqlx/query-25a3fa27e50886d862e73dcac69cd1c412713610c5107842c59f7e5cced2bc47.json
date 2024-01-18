@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE stripe_products SET stripe_product_id = $1 WHERE id = $2;",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "25a3fa27e50886d862e73dcac69cd1c412713610c5107842c59f7e5cced2bc47"
+}

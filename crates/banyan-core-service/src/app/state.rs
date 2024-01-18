@@ -8,7 +8,7 @@ use object_store::local::LocalFileSystem;
 
 use crate::app::{
     Config, MailgunSigningKey, ProviderCredential, Secrets, ServiceKey, ServiceVerificationKey,
-    StripeSecret,
+    StripeHelper, StripeSecret,
 };
 use crate::database::{self, Database, DatabaseSetupError};
 use crate::event_bus::EventBus;
@@ -75,6 +75,10 @@ impl State {
 
     pub fn service_verifier(&self) -> ServiceVerificationKey {
         self.service_verifier.clone()
+    }
+
+    pub fn stripe_helper(&self) -> Option<StripeHelper> {
+        self.secrets.stripe_secret().map(|s| StripeHelper::new(self.database(), s))
     }
 
     pub fn upload_directory(&self) -> PathBuf {

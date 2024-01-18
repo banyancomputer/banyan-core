@@ -3,7 +3,7 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use uuid::Uuid;
 
-use crate::app::AppState;
+use crate::app::{AppState, StripeHelper, StripeHelperError};
 use crate::database::models::Subscription;
 use crate::extractors::UserIdentity;
 
@@ -51,6 +51,22 @@ pub async fn handler(
         return Ok((StatusCode::BAD_REQUEST, Json(err_msg)).into_response());
     }
 
+    let stripe_helper = match state.stripe_helper() {
+        Some(sh) => sh,
+        None => {
+            // The system doesn't have credentials to make stripe based calls, for now I'm going to
+            // make this a server error, but I may make this a "debug mode" to just switch the
+            // subscription for ease of development... We'll see...
+            tracing::warn!("unable to make stripe calls due to missing key");
+            return Err(PurchaseSubscriptionError::NoStripeHelper);
+        }
+    };
+
+    let stripe_checkout_object = stripe_helper
+        .realize_subscription(&user_id, &selected_subscription)
+        .await
+        .map_err(PurchaseSubscriptionError::StripeSetupError)?;
+
     todo!()
 }
 
@@ -59,21 +75,27 @@ pub enum PurchaseSubscriptionError {
     #[error("database query failed: {0}")]
     DatabaseFailure(#[from] sqlx::Error),
 
+    #[error("unable to purchase subscription without a stripe helper")]
+    NoStripeHelper,
+
     #[error("subscription not found")]
     NotFound,
+
+    #[error("failure occurred setting up stripe to purchase subscription: {0}")]
+    StripeSetupError(StripeHelperError),
 }
 
 impl IntoResponse for PurchaseSubscriptionError {
     fn into_response(self) -> Response {
         match self {
-            PurchaseSubscriptionError::DatabaseFailure(_) => {
-                tracing::error!("error from database: {self}");
-                let err_msg = serde_json::json!({"msg": "backend service experienced an issue servicing the request"});
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
-            }
             PurchaseSubscriptionError::NotFound => {
                 let err_msg = serde_json::json!({"msg": "not found"});
                 (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
+            }
+            _ => {
+                tracing::error!("purchase subscription error: {self}");
+                let err_msg = serde_json::json!({"msg": "backend service experienced an issue servicing the request"});
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
             }
         }
     }
