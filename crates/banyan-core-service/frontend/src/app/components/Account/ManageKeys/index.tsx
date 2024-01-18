@@ -1,5 +1,4 @@
 
-import { useIntl } from 'react-intl';
 import { useEffect } from 'react';
 
 import { useTomb } from '@/app/contexts/tomb';
@@ -8,7 +7,6 @@ import { Fallback } from '@components/common/Fallback';
 
 const ManageKeys = () => {
     const { buckets, areBucketsLoading, tomb, getBucketsKeys } = useTomb();
-    const { messages } = useIntl();
 
     useEffect(() => {
         if (!tomb) { return; }
