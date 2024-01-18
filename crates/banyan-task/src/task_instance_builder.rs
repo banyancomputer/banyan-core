@@ -55,6 +55,11 @@ impl TaskInstanceBuilder {
         }
     }
 
+    pub fn reset_attempts(mut self) -> Self{
+        self.current_attempt = 0;
+        self
+    }
+
     pub fn run_at(mut self, time: OffsetDateTime) -> Self {
         self.scheduled_to_run_at = time;
         self

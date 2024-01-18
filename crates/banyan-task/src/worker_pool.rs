@@ -4,6 +4,7 @@ use std::sync::Arc;
 
 use futures::future::join_all;
 use futures::Future;
+use time::OffsetDateTime;
 use tokio::sync::watch;
 use tokio::task::JoinHandle;
 use tokio::time::timeout;
@@ -24,6 +25,8 @@ pub type ExecuteTaskFn<Context> = Arc<
 
 pub type StateFn<Context> = Arc<dyn Fn() -> Context + Send + Sync>;
 
+pub type ScheduleFn = fn(Vec<u8>) -> Option<OffsetDateTime>;
+
 #[derive(Clone)]
 pub struct WorkerPool<Context, S>
 where
@@ -33,6 +36,7 @@ where
     context_data_fn: StateFn<Context>,
     task_store: S,
     task_registry: BTreeMap<&'static str, ExecuteTaskFn<Context>>,
+    schedule_registry: BTreeMap<&'static str, ScheduleFn>,
 
     queue_tasks: BTreeMap<&'static str, Vec<&'static str>>,
     worker_queues: BTreeMap<&'static str, QueueConfig>,
@@ -56,6 +60,7 @@ where
             context_data_fn: Arc::new(context_data_fn),
             task_store,
             task_registry: BTreeMap::new(),
+            schedule_registry: BTreeMap::new(),
 
             queue_tasks: BTreeMap::new(),
             worker_queues: BTreeMap::new(),
@@ -73,6 +78,9 @@ where
 
         self.task_registry
             .insert(TL::TASK_NAME, Arc::new(deserialize_and_run_task::<TL>));
+
+        self.schedule_registry
+            .insert(TL::TASK_NAME, get_next_schedule::<TL>);
 
         self
     }
@@ -106,6 +114,7 @@ where
                     self.context_data_fn.clone(),
                     self.task_store.clone(),
                     self.task_registry.clone(),
+                    self.schedule_registry.clone(),
                     Some(inner_shutdown_rx.clone()),
                 );
 
@@ -187,4 +196,12 @@ where
             Err(err) => Err(TaskExecError::ExecutionFailed(err.to_string())),
         }
     })
+}
+
+fn get_next_schedule<TL>(payload: Vec<u8>) -> Option<OffsetDateTime>
+where
+    TL: TaskLike,
+{
+    let task: TL = serde_json::from_slice(&payload).unwrap();
+    task.next_time()
 }
