@@ -95,17 +95,6 @@ pub async fn handler(
     // TODO: validate name is car-upload (request_data_field.name())
     // TODO: validate type is "application/vnd.ipld.car; version=2" (request_data_field.content_type())
 
-    /*
-    let store_path = ObjectStorePath::from(upload.blocks_path.as_str());
-    let (multipart_resume_id, mut writer) = match store.put_multipart(&store_path).await {
-        Ok(mp) => mp,
-        Err(err) => {
-            fail_upload(&db, &upload_id).await;
-            return Err(UploadError::StoreUnavailable(err));
-        }
-    };
-    */
-
     match process_upload_stream(
         &db,
         &upload,
