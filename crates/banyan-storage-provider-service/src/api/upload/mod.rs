@@ -159,13 +159,6 @@ where
                 Some(block.offset() as i64),
             )
             .await?;
-
-            /*
-            store
-                .put(&location, Bytes::copy_from_slice(&block.data()[..]))
-                .await
-                .map_err(UploadError::ObjectStore)?;
-            */
         }
 
         if car_analyzer.seen_bytes() as usize > expected_size && !warning_issued {
