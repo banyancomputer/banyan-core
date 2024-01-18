@@ -127,5 +127,6 @@ pub struct BlockWriteRequest {
     pub cid: Cid,
     pub data: Vec<u8>,
     pub metadata_id: Uuid,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub completed: Option<bool>,
 }
