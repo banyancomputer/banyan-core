@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT * FROM background_tasks\n                   WHERE id = $1\n                       AND state IN ('error', 'timed_out')\n                       AND current_attempt < maximum_attempts;",
+  "query": "SELECT * FROM background_tasks WHERE id = $1",
   "describe": {
     "columns": [
       {
@@ -94,5 +94,5 @@
       true
     ]
   },
-  "hash": "74efb20187ee2f32577de0d3229e96165a8ed6e94446bf34a54cb85f616c839b"
+  "hash": "2dfe6b040b166a8885486800953cabe6941cd42a465be1e72556be821ad79e1f"
 }
