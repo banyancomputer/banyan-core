@@ -301,7 +301,7 @@ impl TaskStore for SqliteTaskStore {
 
         let task = TaskInstanceBuilder::from_task_instance(task_instance)
             .await
-            .reset_attempts()
+            .reset_task()
             .run_at(next_schedule);
 
         let new_task_id = Self::create(&mut transaction, task).await?;

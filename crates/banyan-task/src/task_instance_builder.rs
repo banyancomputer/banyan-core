@@ -55,8 +55,10 @@ impl TaskInstanceBuilder {
         }
     }
 
-    pub fn reset_attempts(mut self) -> Self {
+    pub fn reset_task(mut self) -> Self {
         self.current_attempt = 0;
+        self.state = TaskState::New;
+        self.original_task_id = None;
         self
     }
 
