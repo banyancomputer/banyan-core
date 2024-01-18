@@ -472,7 +472,10 @@ impl Default for StreamingCarAnalyzer {
 
         Self::new(
             "",
-            ObjectStore::new(&banyan_object_store::ObjectStoreConnection::Local(test_path)).expect(""),
+            ObjectStore::new(&banyan_object_store::ObjectStoreConnection::Local(
+                test_path,
+            ))
+            .expect(""),
         )
     }
 }
