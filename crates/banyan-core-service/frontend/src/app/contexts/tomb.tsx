@@ -1,6 +1,5 @@
 import { ReactNode, createContext, useContext, useEffect, useState } from 'react';
 import { TombWasm, WasmSnapshot } from 'tomb-wasm-experimental';
-import { Mutex } from 'async-mutex';
 import { useNavigate } from 'react-router-dom';
 import { wrap } from 'comlink';
 
@@ -9,7 +8,7 @@ import { TermaAndConditions } from '@components/common/TermsAndConditions';
 
 import { useModal } from '@/app/contexts/modals';
 import { useKeystore } from './keystore';
-import { BrowserObject, Bucket,	BucketSnapshot } from '@/app/types/bucket';
+import { BrowserObject, Bucket, BucketSnapshot } from '@/app/types/bucket';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 import { useSession } from './session';
 import { destroyIsUserNew, getIsUserNew } from '@app/utils';
@@ -52,12 +51,10 @@ interface TombInterface {
 	restore: (bucket: Bucket, snapshot: WasmSnapshot) => Promise<void>;
 };
 
-const mutex = new Mutex();
+const TombContext = createContext<TombInterface>({} as TombInterface);
 
 const worker = new Worker(new URL('../../workers/tomb.worker.ts', import.meta.url));
 const tombWorker = wrap<import('../../workers/tomb.worker.ts').TombWorker>(worker);
-
-const TombContext = createContext<TombInterface>({} as TombInterface);
 
 export const TombProvider = ({ children }: { children: ReactNode }) => {
 	const { userData } = useSession();
@@ -74,19 +71,6 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	const folderLocation = useFolderLocation();
 	const [error, setError] = useState<string>('');
 
-	/** Prevents rust recursion error. */
-	const tombMutex = async <T,>(tomb: T, callback: (tomb: T) => Promise<any>) => {
-		const release = await mutex.acquire();
-		try {
-			return await callback(tomb);
-		} catch (error) {
-			console.error('tombMutex', error);
-			setAreBucketsLoading(false);
-		} finally {
-			release();
-		}
-	};
-
 	/** Returns list of buckets. */
 	const getBuckets = async () => {
 		await tombWorker.getBuckets();
@@ -98,13 +82,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	};
 
 	const remountBucket = async (bucket: Bucket) => {
-		tombMutex(tomb, async tomb => {
-			const key = await getEncryptionKey();
-			const mount = await tomb!.mount(bucket.id, key.privatePem);
-			const locked = await mount.locked();
-			const isSnapshotValid = await mount.hasSnapshot();
-			setBuckets(prev => prev.map(element => element.id === bucket.id ? { ...element, mount, locked, isSnapshotValid } : element));
-		});
+		await tombWorker.remountBucket(bucket.id);
 	};
 
 	/** Pushes keys inside of buckets list. */
@@ -244,7 +222,6 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	// Initialize the tomb client
 	useEffect(() => {
 		if (!userData || !keystoreInitialized) { return; }
-
 		(async () => {
 			try {
 				const apiKey = await getApiKey();

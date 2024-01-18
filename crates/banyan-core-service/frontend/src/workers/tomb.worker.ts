@@ -7,7 +7,7 @@ import {
 	BucketSnapshot,
 } from '../app/types/bucket';
 import { handleNameDuplication } from "@/app/utils/names";
-import { UserData, prettyFingerprintApiKeyPem, sortByType } from "@/app/utils";
+import { prettyFingerprintApiKeyPem, sortByType } from "@/app/utils";
 
 const mutex = new Mutex();
 	/** Prevents rust recursion error. */
@@ -177,8 +177,8 @@ export class TombWorker {
 			const files = await mount.ls(path);
 
 			return files!.filter(browserObject => browserObject.type === 'dir');
-		})
-	}
+		});
+	};
 
 	/** Uploads file to selected bucket/directory, updates buckets state. */
     async uploadFile(bucketId: string, uploadPath: string[], currentLocation: string[], name: string, file: ArrayBuffer, folder?: BrowserObject) {
@@ -217,6 +217,16 @@ export class TombWorker {
 			self.postMessage('buckets');
 
 			return bucket.id
+		});
+	};
+
+	async remountBucket (bucketId: string) {
+		tombMutex(this.state.tomb!, async tomb => {
+			const bucket = this.state.buckets.find(bucket => bucket.id === bucketId)!;
+			const mount = await tomb!.mount(bucket.id, this.state.encryptionKey!.privatePem);
+			const locked = await mount.locked();
+			const isSnapshotValid = await mount.hasSnapshot();
+			this.state.buckets = this.state.buckets.map(element => element.id === bucket.id ? { ...element, mount, locked, isSnapshotValid } : element);
 		});
 	};
 
