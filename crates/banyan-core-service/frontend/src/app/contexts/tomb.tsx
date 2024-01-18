@@ -1,5 +1,5 @@
-import React, { ReactNode, createContext, useContext, useEffect, useState } from 'react';
-import { TombWasm, WasmBucket, WasmMount, WasmSnapshot } from 'tomb-wasm-experimental';
+import { ReactNode, createContext, useContext, useEffect, useState } from 'react';
+import { TombWasm, WasmSnapshot } from 'tomb-wasm-experimental';
 import { Mutex } from 'async-mutex';
 import { useNavigate } from 'react-router-dom';
 import { wrap } from 'comlink';
@@ -9,16 +9,12 @@ import { TermaAndConditions } from '@components/common/TermsAndConditions';
 
 import { useModal } from '@/app/contexts/modals';
 import { useKeystore } from './keystore';
-import {
-	BrowserObject, Bucket, BucketKey,
-	BucketSnapshot,
-} from '@/app/types/bucket';
+import { BrowserObject, Bucket,	BucketSnapshot } from '@/app/types/bucket';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 import { useSession } from './session';
-import { destroyIsUserNew, prettyFingerprintApiKeyPem, sortByType } from '@app/utils';
+import { destroyIsUserNew, getIsUserNew } from '@app/utils';
 import { TermsAndColditionsClient } from '@/api/termsAndConditions';
 import { UserClient } from '@/api/user';
-import { handleNameDuplication } from '@utils/names';
 
 interface TombInterface {
 	tomb: TombWasm | null;
@@ -64,7 +60,7 @@ const tombWorker = wrap<import('../../workers/tomb.worker.ts').TombWorker>(worke
 const TombContext = createContext<TombInterface>({} as TombInterface);
 
 export const TombProvider = ({ children }: { children: ReactNode }) => {
-	const { userData, isUserNew } = useSession();
+	const { userData } = useSession();
 	const navigate = useNavigate();
 	const { openEscrowModal, openModal } = useModal();
 	const { isLoading, keystoreInitialized, getEncryptionKey, getApiKey, escrowedKeyMaterial } = useKeystore();
@@ -309,22 +305,30 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	}, [userData])
 
 	useEffect(() => {
-		if (tomb) {
-			(async () => {
-				try {
-					await getBuckets();
-					await getStorageUsageState();
-				} catch (error: any) {
-					setError(error.message);
-				}
-			})();
-		};
+		if (!tomb) { return };
+		(async () => {
+			try {
+				await getBuckets();
+				const isUserNew = getIsUserNew();
+
+				if (isUserNew) {
+					await createBucketAndMount("My Drive", 'hot', 'interactive');
+					destroyIsUserNew();
+				};
+				await getStorageUsageState();
+			} catch (error: any) {
+				setError(error.message);
+			}
+		})();
 	}, [tomb]);
 
 	useEffect(() => {
 		(async () => {
 			worker.onmessage = async event => {
 				switch (event.data) {
+					case 'tomb':
+						setTomb((await tombWorker.state).tomb);
+						break;
 					case 'buckets':
 						setBuckets((await tombWorker.state).buckets);
 						setAreBucketsLoading((await tombWorker.state).areBucketsLoading);
@@ -337,12 +341,6 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 			};
 		})()
 	}, [])
-
-	useEffect(() => {
-		console.log('selectedBucket', selectedBucket);
-		console.log('buckets', buckets);
-		console.log('areBucketsLoading', areBucketsLoading);
-	}, [selectedBucket, buckets, areBucketsLoading])
 
 	return (
 		<TombContext.Provider

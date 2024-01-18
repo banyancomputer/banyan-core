@@ -136,7 +136,7 @@ export const FolderRow: React.FC<{
                                 <FileCell name={folder.name} type="dir" />
                                 {!parrentFolder &&
                                     <span
-                                        className={`${!folder.files?.length && 'rotate-180'} cursor-pointer p-2`}
+                                        className={`${!folder.files?.length && 'rotate-180'} cursor-pointer p-2 hidden`}
                                         onClick={expandFolder}
                                     >
                                         <ChevronUp />

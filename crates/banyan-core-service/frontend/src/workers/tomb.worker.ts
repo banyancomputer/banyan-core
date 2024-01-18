@@ -50,7 +50,7 @@ export class TombWorker {
         );
 
         this.state.tomb = tomb;
-		await this.getBuckets();
+		self.postMessage('tomb');
     };
 
 		/** Internal function which looking for selected bucket and updates it, or bucket in buckets list if no bucket selected. */
@@ -73,17 +73,18 @@ export class TombWorker {
 
 		/** Returns list of buckets. */
 		async getBuckets(){
-            const wasm_buckets: WasmBucket[] = await this.state.tomb!.listBuckets();
-            const buckets: Bucket[] = [];
-			for (let bucket of wasm_buckets) {
-				let mount;
-				let locked;
-				let isSnapshotValid;
+			tombMutex(this.state.tomb!, async tomb => {
+				const wasm_buckets: WasmBucket[] = await tomb.listBuckets();
+				const buckets: Bucket[] = [];
+				for (let bucket of wasm_buckets) {
+					let mount;
+					let locked;
+					let isSnapshotValid;
 
-				try {
-					mount = await this.state.tomb!.mount(bucket.id(), this.state.encryptionKey!.privatePem);
-					locked = await mount.locked();
-					isSnapshotValid = await mount.hasSnapshot();
+					try {
+						mount = await tomb.mount(bucket.id(), this.state.encryptionKey!.privatePem);
+						locked = await mount.locked();
+						isSnapshotValid = await mount.hasSnapshot();
 				} catch (error: any) { }
 
 				buckets.push({
@@ -101,39 +102,41 @@ export class TombWorker {
 			};
             this.state.buckets = buckets;
 			self.postMessage('buckets');
+		});
     };
 
 	/** Pushes files and snapshots inside of buckets list. */
 	async getBucketsFiles() {
-		try {
-			this.state.areBucketsLoading = true;
-			const wasm_bukets: Bucket[] = [];
-
-			for (const bucket of this.state.buckets) {
-				const files: BrowserObject[] = bucket.mount ? await bucket.mount!.ls([]) : [];
-				const snapshots = await this.state.tomb!.listBucketSnapshots(bucket.id);
-				wasm_bukets.push({
-					...bucket,
-					snapshots,
-					files,
-				});
-			};
-			this.state.buckets = wasm_bukets;
-			this.state.areBucketsLoading = false;
-			self.postMessage('buckets');
-		}catch(error: any) {
-			console.log('error', error);
-		}
+		tombMutex(this.state.tomb!, async tomb => {
+			try {
+				this.state.areBucketsLoading = true;
+				const wasm_bukets: Bucket[] = [];
+				for (const bucket of this.state.buckets) {
+					const files: BrowserObject[] = bucket.mount ? await bucket.mount!.ls([]) : [];
+					const snapshots = await tomb.listBucketSnapshots(bucket.id);
+					wasm_bukets.push({
+						...bucket,
+						snapshots,
+						files,
+					});
+				};
+				this.state.buckets = wasm_bukets;
+				this.state.areBucketsLoading = false;
+				self.postMessage('buckets');
+			}catch(error: any) {
+				console.log('error', error);
+			}
+		});
 	};
 
 	/** Pushes keys inside of buckets list. */
 	async getBucketsKeys() {
-		this.state.areBucketsLoading = true;
-		const wasm_bukets: Bucket[] = [];
+		tombMutex(this.state.tomb!, async tomb => {
+			this.state.areBucketsLoading = true;
+			const wasm_bukets: Bucket[] = [];
 			for (const bucket of this.state.buckets) {
-				const rawKeys = await this.state.tomb!.listBucketKeys(bucket.id);
+				const rawKeys = await tomb.listBucketKeys(bucket.id);
 				const keys: BucketKey[] = [];
-
 				for (let key of rawKeys) {
 					const pem = key.pem();
 					const approved = key.approved();
@@ -143,9 +146,9 @@ export class TombWorker {
 				};
 				wasm_bukets.push({ ...bucket, keys });
 			}
-
-		this.state.areBucketsLoading = false;
-		self.postMessage('buckets');
+			this.state.areBucketsLoading = false;
+			self.postMessage('buckets');
+		});
 	};
 
 	/** Sets selected bucket into state */
@@ -157,39 +160,41 @@ export class TombWorker {
 
 	/** Returns selected bucket state according to current folder location. */
 	async getSelectedBucketFiles (path: string[]) {
-		const files = await this.state.selectedBucket!.mount!.ls(path);
-		this.state.selectedBucket = this.state.selectedBucket ? {...this.state.selectedBucket, files: files.sort(sortByType)}: null;
-		self.postMessage('selectedBucket');
-		return files;
+		tombMutex(this.state.selectedBucket!.mount!, async mount => {
+			const files = await mount.ls(path);
+			this.state.selectedBucket = this.state.selectedBucket ? {...this.state.selectedBucket, files: files.sort(sortByType)}: null;
+			self.postMessage('selectedBucket');
+			return files;
+		});
 	};
 
 	/** Returns selected bucket folders state according to current folder location. */
 	async getSelectedBucketFolders (bucketId: string, path: string[]) {
 		const bucket = this.state.buckets.find(bucket => bucket.id === bucketId)!;
-		const files = await bucket.mount?.ls(path);
 
-		return files!.filter(browserObject => browserObject.type === 'dir');
+		return tombMutex(bucket.mount!, async mount => {
+			const files = await mount.ls(path);
+
+			return files!.filter(browserObject => browserObject.type === 'dir');
+		})
 	}
 
 	/** Uploads file to selected bucket/directory, updates buckets state. */
     async uploadFile(bucketId: string, uploadPath: string[], currentLocation: string[], name: string, file: ArrayBuffer, folder?: BrowserObject) {
         const mount = this.state.buckets.find(bucket => bucket.id === bucketId)!.mount!;
-		const extstingFiles = (await mount.ls(uploadPath)).map(file => file.name);
-		let fileName = handleNameDuplication(name, extstingFiles);
-		await mount.write([...uploadPath, fileName], file);
 
-		// if (folder) {
-		// 	const files = await mount.ls(uploadPath);
-		// 	folder.files = files.sort(sortByType);
-		// 	return;
-		// };
+		tombMutex(mount, async mount => {
+			const extstingFiles = (await mount.ls(uploadPath)).map(file => file.name);
+			let fileName = handleNameDuplication(name, extstingFiles);
+			await mount.write([...uploadPath, fileName], file);
 
-		if (uploadPath.join('') !== currentLocation.join('')) { return; }
-		const files = await mount.ls(uploadPath) || [];
-		await this.updateBucketsState('files', files.sort(sortByType), bucketId);
-		const isSnapshotValid = await mount.hasSnapshot();
-		await this.updateBucketsState('isSnapshotValid', isSnapshotValid, bucketId);
-		self.postMessage('selectedBucket');
+			if (uploadPath.join('') !== currentLocation.join('')) { return; }
+			const files = await mount.ls(uploadPath) || [];
+			await this.updateBucketsState('files', files.sort(sortByType), bucketId);
+			const isSnapshotValid = await mount.hasSnapshot();
+			await this.updateBucketsState('isSnapshotValid', isSnapshotValid, bucketId);
+			self.postMessage('selectedBucket');
+		});
 	};
 
 	/** Creates new bucket with recieved parameters of type and storag class. */
