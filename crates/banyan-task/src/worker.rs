@@ -326,7 +326,7 @@ mod tests {
         if let WorkerError::UnregisteredTaskName(err) = result.unwrap_err() {
             assert_eq!(err, task_name);
         } else {
-            assert!(false, "wrong error type returned");
+            panic!("did not return the correct error type")
         }
     }
 
