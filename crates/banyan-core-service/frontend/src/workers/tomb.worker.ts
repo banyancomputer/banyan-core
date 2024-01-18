@@ -54,7 +54,7 @@ export class TombWorker {
     };
 
 		/** Internal function which looking for selected bucket and updates it, or bucket in buckets list if no bucket selected. */
-		updateBucketsState = (key: 'keys' | 'files' | 'snapshots' | 'isSnapshotValid', elements: BrowserObject[] | BucketSnapshot[] | boolean, id: string,) => {
+		updateBucketsState = (key: 'keys' | 'files' | 'snapshots' | 'isSnapshotValid'| 'name', elements: BrowserObject[] | BucketSnapshot[] | boolean | string, id: string,) => {
 			/** If we are on buckets list screen there is no selected bucket in state. */
 			if (this.state.selectedBucket?.id === id) {
 				this.state.selectedBucket = {...this.state.selectedBucket, [key]: elements};
@@ -187,7 +187,6 @@ export class TombWorker {
 			const extstingFiles = (await mount.ls(uploadPath)).map(file => file.name);
 			let fileName = handleNameDuplication(name, extstingFiles);
 			await mount.write([...uploadPath, fileName], file);
-
 			if (uploadPath.join('') !== currentLocation.join('')) { return; }
 			const files = await mount.ls(uploadPath) || [];
 			await this.updateBucketsState('files', files.sort(sortByType), bucketId);
@@ -252,7 +251,9 @@ export class TombWorker {
 
 	/** Returns list of snapshots for selected bucket */
 	async getBucketShapshots (id: string) {
-		return await tombMutex(this.state.tomb!, async tomb => await tomb!.listBucketSnapshots(id));
+		const rawSnapshots = await tombMutex(this.state.tomb!, async tomb => await tomb!.listBucketSnapshots(id));
+
+		return rawSnapshots.map((snapshot:any) => ({ id: snapshot.id, bucket_id: snapshot.bucketId, snapshot_type: snapshot.snapshotType, version: snapshot.version, size: snapshot.size, createdAt: snapshot.createdAt }));
 	};
 
 	/** Approves a new deviceKey */
@@ -276,7 +277,7 @@ export class TombWorker {
 		const bucket = this.state.buckets.find(bucket => bucket.id === bucketId)!;
 		await tombMutex(bucket.mount!, async mount => {
 			await mount.rename(newName);
-			bucket.name = newName;
+			await this.updateBucketsState('name', newName, bucket.id);
 			this.state.buckets = this.state.buckets.map(element => element.id === bucket.id ? { ...element, name: newName } : element);
 		});
 	};
