@@ -250,11 +250,6 @@ impl StreamingCarAnalyzer {
                     ref mut block_length,
                 } => {
                     let block_start = *block_start;
-
-                    println!(
-                        "stream_offset: {}, block_start: {}",
-                        self.stream_offset, block_start
-                    );
                     // Skip any left over data and padding until we reach our goal
                     if self.stream_offset < block_start {
                         let skippable_bytes = block_start - self.stream_offset; // 171 - 72 = 99
@@ -269,16 +264,7 @@ impl StreamingCarAnalyzer {
                         }
                     }
 
-                    println!(
-                        "stream_offset: {}, block_start: {}",
-                        self.stream_offset, block_start
-                    );
-                    if self.stream_offset > block_start {
-                        println!("oof");
-                    }
-
                     if block_start == *data_end {
-                        println!("finishing blocks area");
                         self.state = CarState::Indexes {
                             index_start: *index_start,
                         };
@@ -328,6 +314,9 @@ impl StreamingCarAnalyzer {
                             ));
                         }
                     };
+                    let normalized_cid = cid.to_string_of_base(Base::Base64Url).map_err(|err| {
+                        StreamingCarAnalyzerError::InvalidBlockCid(self.stream_offset, err)
+                    })?;
                     let cid_length = cid.encoded_len() as u64;
                     self.stream_offset += cid_length;
                     let _ = self.buffer.split_to(cid_length as usize);
@@ -342,10 +331,6 @@ impl StreamingCarAnalyzer {
                         index_start: *index_start,
                         block_length: None,
                     };
-
-                    let normalized_cid = cid
-                        .to_string_of_base(Base::Base64Url)
-                        .expect("dont worry about it");
 
                     let location = ObjectStorePath::from(format!(
                         "{}/{}.bin",
@@ -659,7 +644,8 @@ mod tests {
                 block_length: None
             }
         );
-        // assert_eq!(sca.stream_offset, 172); // we've read the length & CID but haven't advanced the stream
+        // we've read the length, CID, and data, but haven't advanced the stream
+        assert_eq!(sca.stream_offset, 265); 
         // offset yet
 
         sca.add_chunk(&Bytes::from([0u8; 10].as_slice())).unwrap(); // take us into the padding past the data but before the indexes
