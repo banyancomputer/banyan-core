@@ -20,12 +20,12 @@ export interface FolderSelectProps {
 };
 
 export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBucket, onFolderCreation, path }) => {
-    const { buckets, uploadFile, tomb } = useTomb();
+    const { buckets, getSelectedBucketFolders } = useTomb();
     const selectRef = useRef<HTMLDivElement | null>(null);
     const [isOptionstVisible, setIsOptionsVisible] = useState(false);
     const [folder, setFolder] = useState(path);
     const [folders, setFolders] = useState<BrowserObject[]>([]);
-    const { openModal, closeModal } = useModal();
+    const { openModal } = useModal();
     const { messages } = useIntl();
 
     const toggleSelect = () => {
@@ -62,8 +62,9 @@ export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBu
         (async () => {
             const bucket = selectedBucket;
             if (!bucket.mount) return;
-            const files = await bucket.mount.ls(folder);
-            setFolders(files.filter(file => file.type === 'dir'));
+
+            const files = await getSelectedBucketFolders(bucket.id, folder);
+            setFolders(files);
         })();
     }, [folder, buckets]);
 

@@ -5,9 +5,13 @@ import react from "@vitejs/plugin-react";
 import viteCompression from "vite-plugin-compression";
 import wasm from "vite-plugin-wasm";
 import topLevelAwait from "vite-plugin-top-level-await";
+import { comlink } from "vite-plugin-comlink";
 
 const PRODUCTION_PLUGINS = [
 	react(),
+	wasm(),
+	comlink(),
+	topLevelAwait(),
 	viteCompression({
 		algorithm: "brotliCompress",
 		ext: ".br",
@@ -20,13 +24,12 @@ const PRODUCTION_PLUGINS = [
 		minRatio: 0.8,
 		deleteOriginalAssets: true,
 	}),
-	wasm(),
-	topLevelAwait()
 ];
 
 const DEVELOPMENT_PLUGINS = [
 	react(),
 	wasm(),
+	comlink(),
 	topLevelAwait()
 ];
 
@@ -42,6 +45,9 @@ export default ({ mode }) => {
 		root: path.join(__dirname, "/"),
 		server: {
 			port: 3000,
+		},
+		worker: {
+			plugins: [topLevelAwait(), wasm(), comlink()],
 		},
 		build: {
 			minify: isProduction ? "esbuild": false,
