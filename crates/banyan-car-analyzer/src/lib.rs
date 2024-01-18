@@ -341,7 +341,10 @@ impl StreamingCarAnalyzer {
                     self.stream_offset += data_length as u64;
                     let block_bytes = Into::<Bytes>::into(self.buffer.split_to(data_length));
 
-                    self.store.put(&location, block_bytes).await.expect("dw");
+                    self.store
+                        .put(&location, block_bytes)
+                        .await
+                        .map_err(StreamingCarAnalyzerError::ObjectStore)?;
 
                     return Ok(Some(BlockMeta {
                         cid,
@@ -408,6 +411,9 @@ pub enum StreamingCarAnalyzerError {
 
     #[error("a varint in the car file was larger than our acceptable value")]
     ValueToLarge,
+
+    #[error("unable to write to backend storage")]
+    ObjectStore(banyan_object_store::ObjectStoreError),
 }
 
 impl IntoResponse for StreamingCarAnalyzerError {
