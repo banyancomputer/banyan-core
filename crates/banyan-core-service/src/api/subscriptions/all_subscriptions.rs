@@ -11,7 +11,7 @@ pub async fn handler(user: Option<UserIdentity>, State(state): State<AppState>) 
     let database = state.database();
     let mut conn = database.acquire().await?;
 
-    let current_subscription_id = match user {
+    let user_sub_id = match user {
         Some(u) => {
             let user_id = u.id().to_string();
             sqlx::query_scalar!("SELECT subscription_id FROM users WHERE id = $1;", user_id)
@@ -21,12 +21,12 @@ pub async fn handler(user: Option<UserIdentity>, State(state): State<AppState>) 
         None => None,
     };
 
-    let subscriptions = Subscription::all_public_or_current(&mut conn, current_subscription_id.as_ref().map(|c| c.as_str())).await?;
+    let subscriptions = Subscription::all_public_or_current(&mut conn, user_sub_id.as_ref().map(|c| c.as_str())).await?;
     let mut api_subscriptions: Vec<_> = subscriptions.into_iter().map(|s| ApiSubscription::from(s)).collect();
 
-    if let Some(active_id) = current_subscription_id {
+    if let Some(active_id) = user_sub_id {
         for sub in api_subscriptions.iter_mut() {
-            sub.currently_active = Some(sub.id == active_id);
+            sub.set_active_if_match(&active_id);
         }
     }
 

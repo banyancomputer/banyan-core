@@ -1,53 +1,78 @@
 use time::OffsetDateTime;
 
 use crate::database::DatabaseConnection;
-use crate::pricing::{PricingTier, DEFAULT_SUBSCRIPTION_KEY};
+use crate::database::models::TaxClass;
+use crate::pricing::DEFAULT_SUBSCRIPTION_KEY;
 
+#[derive(Clone)]
 pub struct NewSubscription<'a> {
-    pub price_key: &'a str,
+    pub service_key: &'a str,
+    pub tax_class: TaxClass,
     pub title: &'a str,
-
-    pub allow_overages: bool,
-    pub archival_available: bool,
     pub visible: bool,
 
-    pub base_price: Option<i64>,
+    pub plan_base_price: Option<i64>,
+
+    pub archival_available: bool,
     pub archival_price: Option<i64>,
-    pub storage_overage_price: Option<i64>,
-    pub bandwidth_overage_price: Option<i64>,
+    pub archival_hard_limit: Option<i64>,
 
-    pub included_bandwidth: i64,
-    pub included_storage: i64,
+    pub hot_storage_price: Option<i64>,
+    pub hot_storage_hard_limit: Option<i64>,
 
+    pub bandwidth_price: Option<i64>,
     pub bandwidth_hard_limit: Option<i64>,
-    pub storage_hard_limit: Option<i64>,
+
+    pub included_hot_replica_count: i64,
+    pub included_hot_storage: i64,
+    pub included_bandwidth: i64,
 }
 
 impl NewSubscription<'_> {
+    pub async fn immutable_create(&self, conn: &mut DatabaseConnection) -> Result<String, sqlx::Error> {
+        let current = match Subscription::active_service(&mut *conn, self.service_key, self.tax_class).await? {
+            Some(s) => s,
+            None => {
+                // Nothing matched, this is a brand new account subscription type
+                return self.save(&mut *conn).await;
+            }
+        };
+
+        // Compare our built up state against the current one, we only want to create a new version
+        // if we differ in a meaningful way from what is there. If we're the same we can just
+        // return the ID of the existing one.
+        if self == &current {
+            return Ok(current.id);
+        }
+
+        self.save(&mut *conn).await
+    }
+
     pub async fn save(&self, conn: &mut DatabaseConnection) -> Result<String, sqlx::Error> {
         let now = OffsetDateTime::now_utc();
-
-        let new_sub_id: String = sqlx::query_scalar!(
-            r#"INSERT INTO subscriptions (price_key, title, allow_overages, archival_available, visible,
-                   base_price, storage_overage_price, bandwidth_overage_price, included_archival,
-                   included_bandwidth, included_storage, archival_hard_limit, bandwidth_hard_limit,
-                   storage_hard_limit, created_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                   RETURNING id;"#,
-            self.price_key,
+        let new_id: String = sqlx::query_scalar!(
+            r#"INSERT INTO subscriptions (service_key, tax_class, title, visible, plan_base_price,
+                    archival_available, archival_price, archival_hard_limit, hot_storage_price,
+                    hot_storage_hard_limit, bandwidth_price, bandwidth_hard_limit,
+                    included_hot_replica_count, included_hot_storage, included_bandwidth,
+                    created_at
+                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 RETURNING id;"#,
+            self.service_key,
+            self.tax_class,
             self.title,
-            self.allow_overages,
-            self.archival_available,
             self.visible,
-            self.base_price,
-            self.storage_overage_price,
-            self.bandwidth_overage_price,
-            self.included_archival,
-            self.included_bandwidth,
-            self.included_storage,
+            self.plan_base_price,
+            self.archival_available,
+            self.archival_price,
             self.archival_hard_limit,
+            self.hot_storage_price,
+            self.hot_storage_hard_limit,
+            self.bandwidth_price,
             self.bandwidth_hard_limit,
-            self.storage_hard_limit,
+            self.included_hot_replica_count,
+            self.included_hot_storage,
+            self.included_bandwidth,
             now,
         )
         .fetch_one(&mut *conn)
@@ -55,51 +80,37 @@ impl NewSubscription<'_> {
 
         // Hide any other versions of the same price key
         sqlx::query_scalar!(
-            "UPDATE subscriptions SET visible = false WHERE price_key = ? AND id != ?;",
-            self.price_key,
-            new_sub_id,
+            "UPDATE subscriptions SET visible = false WHERE service_key = ? AND id != ?;",
+            self.service_key,
+            new_id,
         )
         .execute(&mut *conn)
         .await?;
 
-        // We can delete older subscriptions that never received any stripe product IDs (which
-        // means no one subscribed to that plan)
-        sqlx::query!(
-            "DELETE FROM subscriptions WHERE price_key = $1
-               AND id != $2
-               AND stripe_personal_product_id IS NULL
-               AND stripe_business_product_id IS NULL;",
-            self.price_key,
-            new_sub_id,
-        )
-        .execute(&mut *conn)
-        .await?;
-
-        Ok(new_sub_id)
+        Ok(new_id)
     }
 }
 
-impl<'a> From<&'a PricingTier> for NewSubscription<'a> {
-    fn from(pricing_tier: &'a PricingTier) -> Self {
-        Self {
-            price_key: &pricing_tier.price_key,
-            title: &pricing_tier.title,
-
-            allow_overages: pricing_tier.allow_overages,
-            archival_available: pricing_tier.archival_available,
-            visible: pricing_tier.visible,
-
-            base_price: pricing_tier.price.as_ref().map(|p| p.base),
-            archival_price: pricing_tier.price.as_ref().map(|p.archival),
-            storage_overage_price: pricing_tier.price.as_ref().map(|p| p.storage_overage),
-            bandwidth_overage_price: pricing_tier.price.as_ref().map(|p| p.bandwidth_overage),
-
-            included_bandwidth: pricing_tier.included_allowances.bandwidth,
-            included_storage: pricing_tier.included_allowances.storage,
-
-            bandwidth_hard_limit: pricing_tier.hard_limits.bandwidth,
-            storage_hard_limit: pricing_tier.hard_limits.storage,
-        }
+/// This comparison only checks the price related settings of a subscription and does not take into
+/// account database generated values or remote values (local database ID, stripe product IDs, and
+/// creation timestamp specifically).
+impl std::cmp::PartialEq<Subscription> for NewSubscription<'_> {
+    fn eq(&self, other: &Subscription) -> bool {
+        self.service_key == other.service_key
+            && self.tax_class == other.tax_class
+            && self.title == other.title
+            && self.visible == other.visible
+            && self.plan_base_price == other.plan_base_price
+            && self.archival_available == other.archival_available
+            && self.archival_price == other.archival_price
+            && self.archival_hard_limit == other.archival_hard_limit
+            && self.hot_storage_price == other.hot_storage_price
+            && self.hot_storage_hard_limit == other.hot_storage_hard_limit
+            && self.bandwidth_price == other.bandwidth_price
+            && self.bandwidth_hard_limit == other.bandwidth_hard_limit
+            && self.included_hot_replica_count == other.included_hot_replica_count
+            && self.included_hot_storage == other.included_hot_storage
+            && self.included_bandwidth == other.included_bandwidth
     }
 }
 
@@ -107,39 +118,52 @@ impl<'a> From<&'a PricingTier> for NewSubscription<'a> {
 pub struct Subscription {
     pub id: String,
 
-    pub price_key: String,
+    pub service_key: String,
+    pub tax_class: TaxClass,
     pub title: String,
-
-    pub allow_overages: bool,
-    pub archival_available: bool,
     pub visible: bool,
 
-    pub base_price: Option<i64>,
+    pub plan_base_price: Option<i64>,
+    pub plan_price_stripe_id: Option<String>,
+
+    pub archival_available: bool,
     pub archival_price: Option<i64>,
-    pub storage_overage_price: Option<i64>,
-    pub bandwidth_overage_price: Option<i64>,
+    pub archival_stripe_price_id: Option<String>,
+    pub archival_hard_limit: Option<i64>,
 
-    pub included_bandwidth: i64,
-    pub included_storage: i64,
+    pub hot_storage_price: Option<i64>,
+    pub hot_storage_stripe_price_id: Option<String>,
+    pub hot_storage_hard_limit: Option<i64>,
 
+    pub bandwidth_price: Option<i64>,
+    pub bandwidth_stripe_price_id: Option<String>,
     pub bandwidth_hard_limit: Option<i64>,
-    pub storage_hard_limit: Option<i64>,
+
+    pub included_hot_replica_count: i64,
+    pub included_hot_storage: i64,
+    pub included_bandwidth: i64,
 
     pub created_at: OffsetDateTime,
 }
 
 impl Subscription {
-    pub async fn active_price_key(
+    pub async fn active_service(
         conn: &mut DatabaseConnection,
-        price_key: &str,
-    ) -> Result<Option<Subscription>, sqlx::Error> {
+        service_key: &str,
+        tax_class: TaxClass,
+    ) -> Result<Option<Self>, sqlx::Error> {
         sqlx::query_as!(
             Self,
-            r#"SELECT * FROM subscriptions
-                   WHERE price_key = $1 AND visible = true
-                   ORDER BY created_at DESC
-                   LIMIT 1;"#,
-            price_key,
+            r#"SELECT id, service_key, tax_class as 'tax_class: TaxClass', title, visible, plan_base_price,
+                   plan_price_stripe_id, archival_available, archival_price, archival_stripe_price_id,
+                   archival_hard_limit, hot_storage_price, hot_storage_stripe_price_id, hot_storage_hard_limit,
+                   bandwidth_price, bandwidth_stripe_price_id, bandwidth_hard_limit, included_hot_replica_count,
+                   included_hot_storage, included_bandwidth, created_at FROM subscriptions
+                 WHERE service_key = $1 AND tax_class = $2 AND visible = true
+                 ORDER BY created_at DESC
+                 LIMIT 1;"#,
+            service_key,
+            tax_class,
         )
         .fetch_optional(&mut *conn)
         .await
@@ -148,13 +172,16 @@ impl Subscription {
     /// Returns all the subscriptions currently marked as visible with an option to also include a
     /// specific subscription even if it wouldn't normally be visible. This is used for including a
     /// user's current subscription even if there is a newer variant of that subscription key.
-    pub async fn all_public_or_current(conn: &mut DatabaseConnection, current_sub_id: Option<&str>) -> Result<Vec<Self>, sqlx::Error> {
+    pub async fn all_public_or_current(conn: &mut DatabaseConnection, current_id: Option<&str>) -> Result<Vec<Self>, sqlx::Error> {
         sqlx::query_as!(
             Self,
-            r#"SELECT * FROM subscriptions
-                 WHERE visible = true
-                   OR ($1 IS NOT NULL AND id = $1);"#,
-            current_sub_id,
+            r#"SELECT id, service_key, tax_class as 'tax_class: TaxClass', title, visible, plan_base_price,
+                   plan_price_stripe_id, archival_available, archival_price, archival_stripe_price_id,
+                   archival_hard_limit, hot_storage_price, hot_storage_stripe_price_id, hot_storage_hard_limit,
+                   bandwidth_price, bandwidth_stripe_price_id, bandwidth_hard_limit, included_hot_replica_count,
+                   included_hot_storage, included_bandwidth, created_at FROM subscriptions
+                 WHERE visible = true OR ($1 IS NOT NULL AND id = $1);"#,
+            current_id,
         )
         .fetch_all(&mut *conn)
         .await
@@ -170,7 +197,7 @@ impl Subscription {
         conn: &mut DatabaseConnection,
     ) -> Result<String, sqlx::Error> {
         sqlx::query_scalar!(
-            "SELECT id FROM subscriptions WHERE price_key = $1 ORDER BY created_at DESC LIMIT 1;",
+            "SELECT id FROM subscriptions WHERE service_key = $1 ORDER BY created_at DESC LIMIT 1;",
             DEFAULT_SUBSCRIPTION_KEY,
         )
         .fetch_one(&mut *conn)
@@ -180,31 +207,15 @@ impl Subscription {
     pub async fn find_by_id(conn: &mut DatabaseConnection, subscription_id: &str) -> Result<Option<Self>, sqlx::Error> {
         sqlx::query_as!(
             Self,
-            "SELECT * FROM subscriptions WHERE visible = true AND id = $1;",
+            r#"SELECT id, service_key, tax_class as 'tax_class: TaxClass', title, visible, plan_base_price,
+                   plan_price_stripe_id, archival_available, archival_price, archival_stripe_price_id,
+                   archival_hard_limit, hot_storage_price, hot_storage_stripe_price_id, hot_storage_hard_limit,
+                   bandwidth_price, bandwidth_stripe_price_id, bandwidth_hard_limit, included_hot_replica_count,
+                   included_hot_storage, included_bandwidth, created_at FROM subscriptions
+                 WHERE visible = true AND id = $1;"#,
             subscription_id,
         )
         .fetch_optional(&mut *conn)
         .await
-    }
-}
-
-/// This comparison only checks the price related settings of a subscription and does not take into
-/// account database generated values or remote values (local database ID, stripe product IDs, and
-/// creation timestamp specifically).
-impl std::cmp::PartialEq<NewSubscription<'_>> for Subscription {
-    fn eq(&self, other: &NewSubscription) -> bool {
-        self.price_key == other.price_key
-            && self.title == other.title
-            && self.allow_overages == other.allow_overages
-            && self.archival_available == other.archival_available
-            && self.visible == other.visible
-            && self.base_price == other.base_price
-            && self.archival_price == other.archival_price
-            && self.storage_overage_price == other.storage_overage_price
-            && self.bandwidth_overage_price == other.bandwidth_overage_price
-            && self.included_bandwidth == other.included_bandwidth
-            && self.included_storage == other.included_storage
-            && self.bandwidth_hard_limit == other.bandwidth_hard_limit
-            && self.storage_hard_limit == other.storage_hard_limit
     }
 }

@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::database::models::User;
 
-// Represents a User in the Database
 #[derive(Deserialize, Serialize)]
 pub struct ApiUser {
     pub id: String,

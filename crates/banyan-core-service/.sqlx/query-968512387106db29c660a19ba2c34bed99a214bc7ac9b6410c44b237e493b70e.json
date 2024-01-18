@@ -1,0 +1,140 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, service_key, tax_class as 'tax_class: TaxClass', title, visible, plan_base_price,\n                   plan_price_stripe_id, archival_available, archival_price, archival_stripe_price_id,\n                   archival_hard_limit, hot_storage_price, hot_storage_stripe_price_id, hot_storage_hard_limit,\n                   bandwidth_price, bandwidth_stripe_price_id, bandwidth_hard_limit, included_hot_replica_count,\n                   included_hot_storage, included_bandwidth, created_at FROM subscriptions\n                 WHERE service_key = $1 AND tax_class = $2 AND visible = true\n                 ORDER BY created_at DESC\n                 LIMIT 1;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "service_key",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "tax_class: TaxClass",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "title",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "visible",
+        "ordinal": 4,
+        "type_info": "Bool"
+      },
+      {
+        "name": "plan_base_price",
+        "ordinal": 5,
+        "type_info": "Int64"
+      },
+      {
+        "name": "plan_price_stripe_id",
+        "ordinal": 6,
+        "type_info": "Text"
+      },
+      {
+        "name": "archival_available",
+        "ordinal": 7,
+        "type_info": "Bool"
+      },
+      {
+        "name": "archival_price",
+        "ordinal": 8,
+        "type_info": "Int64"
+      },
+      {
+        "name": "archival_stripe_price_id",
+        "ordinal": 9,
+        "type_info": "Text"
+      },
+      {
+        "name": "archival_hard_limit",
+        "ordinal": 10,
+        "type_info": "Int64"
+      },
+      {
+        "name": "hot_storage_price",
+        "ordinal": 11,
+        "type_info": "Int64"
+      },
+      {
+        "name": "hot_storage_stripe_price_id",
+        "ordinal": 12,
+        "type_info": "Text"
+      },
+      {
+        "name": "hot_storage_hard_limit",
+        "ordinal": 13,
+        "type_info": "Int64"
+      },
+      {
+        "name": "bandwidth_price",
+        "ordinal": 14,
+        "type_info": "Int64"
+      },
+      {
+        "name": "bandwidth_stripe_price_id",
+        "ordinal": 15,
+        "type_info": "Text"
+      },
+      {
+        "name": "bandwidth_hard_limit",
+        "ordinal": 16,
+        "type_info": "Int64"
+      },
+      {
+        "name": "included_hot_replica_count",
+        "ordinal": 17,
+        "type_info": "Int64"
+      },
+      {
+        "name": "included_hot_storage",
+        "ordinal": 18,
+        "type_info": "Int64"
+      },
+      {
+        "name": "included_bandwidth",
+        "ordinal": 19,
+        "type_info": "Int64"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 20,
+        "type_info": "Datetime"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "968512387106db29c660a19ba2c34bed99a214bc7ac9b6410c44b237e493b70e"
+}

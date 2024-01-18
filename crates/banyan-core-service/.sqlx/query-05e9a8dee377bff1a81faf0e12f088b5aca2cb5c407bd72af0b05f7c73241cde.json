@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, email, verified_email, display_name, locale, profile_image, created_at,\n                 accepted_tos_at, subscription_id as 'subscription_id!', stripe_customer_id FROM users\n                 WHERE id = $1;",
+  "query": "SELECT id, email, verified_email, display_name, locale, profile_image, created_at,\n                    accepted_tos_at, subscription_id as 'subscription_id!', stripe_customer_id\n                    FROM users\n                 WHERE id = $1;",
   "describe": {
     "columns": [
       {
@@ -70,5 +70,5 @@
       true
     ]
   },
-  "hash": "9aa37a5cff8feb00d25d3e4db8a430e0612700d081a5f111d9f7ae30016e94f9"
+  "hash": "05e9a8dee377bff1a81faf0e12f088b5aca2cb5c407bd72af0b05f7c73241cde"
 }

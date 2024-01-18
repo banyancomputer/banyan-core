@@ -2,7 +2,7 @@ use std::sync::OnceLock;
 
 use serde::Deserialize;
 
-use crate::database::models::{NewSubscription, Subscription};
+use crate::database::models::{NewSubscription, TaxClass};
 use crate::database::DatabaseConnection;
 
 const BUILTIN_PRICING_DATA: &[u8] = include_bytes!("../dist/pricing.ron");
@@ -10,6 +10,11 @@ const BUILTIN_PRICING_DATA: &[u8] = include_bytes!("../dist/pricing.ron");
 static BUILTIN_PRICING_CONFIG: OnceLock<Vec<PricingTier>> = OnceLock::new();
 
 pub const DEFAULT_SUBSCRIPTION_KEY: &str = "starter";
+
+/// Need to be able to accurately represent increments of $5.6e-07 in whole decimal numbers for
+/// fractional minute billing. We'll use a global scaling constant for our currency representation
+/// of 10^8.
+pub const PRICE_UNIT_TO_USD_RATE: usize = 100_000_000;
 
 /// Sourced from https://stripe.com/docs/tax/tax-codes, this is the tax identifier for business use
 /// infrastructure as a service cloud service.
@@ -28,28 +33,9 @@ pub async fn sync_pricing_config(
     price_tiers: &[PricingTier],
 ) -> Result<(), sqlx::Error> {
     for pricing_tier in price_tiers {
-        let new_sub = NewSubscription::from(pricing_tier);
-
-        let existing_sub =
-            match Subscription::active_price_key(&mut *conn, new_sub.price_key).await? {
-                Some(sub) => sub,
-                None => {
-                    // There isn't any subscription matching the provided key, create one and move on
-                    // to the next configured tier
-                    new_sub.save(&mut *conn).await?;
-                    continue;
-                }
-            };
-
-        if existing_sub == new_sub {
-            // No changes necessary
-            continue;
+        for subscription in pricing_tier.as_subscriptions() {
+            subscription.immutable_create(&mut *conn).await?;
         }
-
-        // We don't want to update existing subscriptions in place, users can not be automatically
-        // migrated to changed prices. We create a new row which will handle the additional
-        // required effects when adding a row.
-        new_sub.save(&mut *conn).await?;
     }
 
     Ok(())
@@ -61,53 +47,18 @@ pub async fn sync_pricing_config(
 #[derive(Debug, Deserialize)]
 pub struct Allowances {
     pub bandwidth: i64,
+
     pub storage: i64,
+    pub storage_replicas: i64,
 }
 
 /// The absolute maximum amount of each metric that the plan is allowed to consumed. Values are in
 /// GiB.
 #[derive(Debug, Deserialize)]
 pub struct Limits {
+    pub archival: Option<i64>,
     pub bandwidth: Option<i64>,
     pub storage: Option<i64>,
-}
-
-/// A single currently active price tier that should exist in the database. These will be
-/// automatically applied if the settings don't match what is currently in the database.
-#[derive(Debug, Deserialize)]
-pub struct PricingTier {
-    /// A unique string representing a single subscription family that may change price over time,
-    /// but we can't automatically upgrade users to new pricing. Users will be associated with a
-    /// specific version of this key upon when they sign up or are migrated explicitly to a
-    /// different plan.
-    pub base_product_key: String,
-
-    /// A user visible string that will be displayed to the user
-    pub title: String,
-
-    /// Whether the plan allows exceeding the bandwidth allowance or storage allowance by paying
-    /// for additional usage. Used primarily to prevent the starter packages from being
-    /// unrestricted.
-    pub allow_overages: bool,
-
-    /// Whether the plan allows snapshots to be taken.
-    pub archival_available: bool,
-
-    /// Whether this pricing tier is visible to users through products and pricing APIs. Old
-    /// versions of the pricing tier and custom pricing schemes shouldn't be visible unless a user
-    /// is explicitly subscribed to them.
-    pub visible: bool,
-
-    /// If there are prices associated with this plan this will hold them.
-    pub price: Option<Price>,
-
-    /// The thresholds of different types of metered measurements that are included in the monthly
-    /// price. Going over any of these thresholds starts acruing overage charges if overages are
-    /// allowed. If overages are not allowed this will also be treated as a hard limit.
-    pub included_allowances: Allowances,
-
-    /// The upper limits of storage allowed by a particular plan.
-    pub hard_limits: Limits,
 }
 
 /// The cost associated with a particular [`PricingTier`] if one is set. All values are in
@@ -122,10 +73,91 @@ pub struct Price {
     pub archival: i64,
 
     /// The price of each GiB stored in the network beyond the base bandwidth allowance.
-    pub storage_overage: i64,
+    pub storage: i64,
 
     /// The price of each GiB transferred from the network beyond the base bandwidth allowance.
-    pub bandwidth_overage: i64,
+    pub bandwidth: i64,
+}
+
+/// A single currently active price tier that should exist in the database. These will be
+/// automatically applied if the settings don't match what is currently in the database.
+#[derive(Debug, Deserialize)]
+pub struct PricingTier {
+    /// A unique string representing a single subscription family that may change price over time.
+    /// We can't automatically upgrade users to new pricing. Users will be associated with a
+    /// specific version of this key upon when they sign up or are migrated explicitly to a
+    /// different plan.
+    pub service_key: String,
+
+    /// A user visible string that will be displayed to the user
+    pub title: String,
+
+    /// Whether the plan allows exceeding the bandwidth allowance or storage allowance by paying
+    /// for additional usage. Used primarily to prevent the starter packages from being
+    /// unrestricted.
+    pub allow_overages: bool,
+
+    /// Whether the plan allows snapshots to be taken.
+    pub archival_available: bool,
+
+    /// If there are prices associated with this plan this will hold them.
+    pub price: Option<Price>,
+
+    /// The thresholds of different types of metered measurements that are included in the monthly
+    /// price. Going over any of these thresholds starts acruing overage charges if overages are
+    /// allowed. If overages are not allowed this will also be treated as a hard limit.
+    pub included_allowances: Allowances,
+
+    /// The upper limits of storage allowed by a particular plan.
+    pub hard_limits: Limits,
+}
+
+impl<'a> PricingTier {
+    pub fn as_subscriptions(&'a self) -> Vec<NewSubscription<'a>> {
+        let mut subscription = NewSubscription {
+            service_key: &self.service_key,
+            tax_class: TaxClass::NotApplicable,
+            title: &self.title,
+            visible: true,
+
+            plan_base_price: self.price.as_ref().map(|p| p.base),
+
+            archival_available: self.archival_available,
+            archival_price: self.price.as_ref().map(|p| p.archival),
+            archival_hard_limit: self.hard_limits.archival,
+
+            hot_storage_price: self.price.as_ref().map(|p| p.storage),
+            // Our hard limits need to take into account the stock replicas, see the note on the
+            // included_hot_replica_storage field.
+            hot_storage_hard_limit: self.hard_limits.storage.map(|l| l * self.included_allowances.storage_replicas),
+
+            bandwidth_price: self.price.as_ref().map(|p| p.bandwidth),
+            bandwidth_hard_limit: self.hard_limits.bandwidth,
+
+            included_hot_replica_count: self.included_allowances.storage_replicas,
+
+            // Internally we account for each replica as storage on its own. To include some number
+            // of replicas with a certain amount of storage available we need to multiply them
+            // together to find out how much we're actually including when accounting for this.
+            included_hot_storage: self.included_allowances.storage_replicas * self.included_allowances.storage,
+            included_bandwidth: self.included_allowances.bandwidth,
+        };
+
+        // A pricing tier without any price doesn't need tax related information and there will
+        // only be one. Return a Vec with just this one base sub.
+        if self.price.is_none() {
+            return vec![subscription];
+        }
+
+        // For our subs with prices, we need a personal and a business subscription to
+        // differentiate between the two for tax handling.
+
+        subscription.tax_class = TaxClass::Personal;
+        let mut business_subscription = subscription.clone();
+        business_subscription.tax_class = TaxClass::Business;
+
+        vec![subscription, business_subscription]
+    }
 }
 
 #[cfg(tests)]

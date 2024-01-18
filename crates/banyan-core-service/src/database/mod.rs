@@ -32,7 +32,7 @@ pub async fn connect(db_url: &url::Url) -> Result<Database, DatabaseSetupError> 
 
         let mut conn = db.acquire().await?;
         sqlite::mitrate_sqlite(&mut conn).await?;
-        pricing::sync_pricing(&mut conn, pricing::distributed_config()).await?;
+        pricing::sync_pricing_config(&mut conn, pricing::builtin_pricing_config()).await?;
         conn.close().await?;
 
         return Ok(db);

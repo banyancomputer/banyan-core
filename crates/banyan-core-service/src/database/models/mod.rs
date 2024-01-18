@@ -18,6 +18,7 @@ mod storage_class;
 mod storage_grant;
 mod storage_host;
 mod subscription;
+mod tax_class;
 mod user;
 
 pub use block_location::MinimalBlockLocation;
@@ -41,6 +42,7 @@ pub use storage_class::StorageClass;
 pub use storage_grant::NewStorageGrant;
 pub use storage_host::{SelectedStorageHost, StorageHost, UserStorageReport};
 pub use subscription::{NewSubscription, Subscription};
+pub use tax_class::TaxClass;
 pub use user::User;
 
 /// Something about sqlx's type detection fails on complex queries such as the result of COALESCE

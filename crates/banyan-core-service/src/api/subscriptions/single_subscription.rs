@@ -33,7 +33,7 @@ pub async fn handler(
     }
 
     let mut api_sub = ApiSubscription::from(db_sub);
-    api_sub.currently_active = Some(api_sub.id == current_sub_id);
+    api_sub.set_active_if_match(&current_sub_id);
 
     Ok((StatusCode::OK, Json(api_sub)).into_response())
 }

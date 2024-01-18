@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id FROM subscriptions WHERE price_key = $1 ORDER BY created_at DESC LIMIT 1;",
+  "query": "SELECT id FROM subscriptions WHERE service_key = $1 ORDER BY created_at DESC LIMIT 1;",
   "describe": {
     "columns": [
       {
@@ -16,5 +16,5 @@
       false
     ]
   },
-  "hash": "1f4e2a460976ec6784982054cec75911a6444618c7f24abcf6430bd5014e7838"
+  "hash": "e0f7844e4659e8cee2e9fa3d81364caa679dfd0b167e5ad590b465c438632921"
 }
