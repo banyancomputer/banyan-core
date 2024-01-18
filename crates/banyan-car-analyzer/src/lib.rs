@@ -645,7 +645,7 @@ mod tests {
             }
         );
         // we've read the length, CID, and data, but haven't advanced the stream
-        assert_eq!(sca.stream_offset, 265); 
+        assert_eq!(sca.stream_offset, 265);
         // offset yet
 
         sca.add_chunk(&Bytes::from([0u8; 10].as_slice())).unwrap(); // take us into the padding past the data but before the indexes

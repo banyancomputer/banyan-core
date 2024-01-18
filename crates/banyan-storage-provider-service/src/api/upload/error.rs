@@ -37,9 +37,6 @@ pub enum UploadError {
     #[error("we expected a request field but received nothing")]
     RequestFieldMissing,
 
-    #[error("unable to open store for properly authorized data upload: {0}")]
-    StoreUnavailable(object_store::Error),
-
     #[error("uploaded file was not a properly formatted car file")]
     ParseError(#[from] StreamingCarAnalyzerError),
 
@@ -64,7 +61,7 @@ impl IntoResponse for UploadError {
         let default_response =
             (StatusCode::INTERNAL_SERVER_ERROR, Json(default_err_msg)).into_response();
         match self {
-            Database(_) | FailedToEnqueueTask(_) | Cid(_) | StoreUnavailable(_) => {
+            Database(_) | FailedToEnqueueTask(_) | Cid(_) => {
                 tracing::error!("{self}");
                 let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
