@@ -81,7 +81,7 @@ where
                         match self.store.completed(task.id.clone()).await {
                             Ok(_) => self.schedule_next_if_necessary(&task).await,
                             Err(err) => {
-                                // TODO: "error returned from database: (code: 1) no such table: background_tasks"
+                                // TODO: "error returned from tests database: (code: 1) no such table: background_tasks"
                                 Err(WorkerError::UpdateTaskStatusFailed(err))
                             }
                         }
