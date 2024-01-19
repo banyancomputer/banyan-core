@@ -20,6 +20,7 @@ pub struct User {
     pub stripe_customer_id: Option<String>,
 
     pub current_stripe_plan_subscription_id: Option<String>,
+    pub next_payment_due: Option<OffsetDateTime>,
 
     pub pending_subscription_id: Option<String>,
     pub pending_subscription_expiration: Option<OffsetDateTime>,
@@ -45,7 +46,7 @@ impl User {
             User,
             r#"SELECT id, email, verified_email, display_name, locale, profile_image, created_at,
                    accepted_tos_at, active_subscription_id as 'active_subscription_id!',
-                   stripe_customer_id, current_stripe_plan_subscription_id,
+                   stripe_customer_id, current_stripe_plan_subscription_id, next_payment_due,
                    pending_subscription_id, pending_subscription_expiration,
                    pending_stripe_plan_subscription_id FROM users
                  WHERE id = $1;"#,
@@ -94,7 +95,7 @@ impl User {
             User,
             r#"SELECT id, email, verified_email, display_name, locale, profile_image, created_at,
                     accepted_tos_at, active_subscription_id as 'active_subscription_id!',
-                    stripe_customer_id, current_stripe_plan_subscription_id,
+                    stripe_customer_id, current_stripe_plan_subscription_id, next_payment_due,
                     pending_subscription_id, pending_subscription_expiration,
                     pending_stripe_plan_subscription_id FROM users
                  WHERE id = $1;"#,

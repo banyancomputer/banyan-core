@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use time::OffsetDateTime;
 
 use crate::database::models::User;
 
@@ -11,6 +12,9 @@ pub struct ApiUser {
     pub profile_image: Option<String>,
     pub accepted_tos_at: Option<i64>,
     pub subscription_id: String,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub next_payment_due: Option<OffsetDateTime>,
 }
 
 impl From<User> for ApiUser {
@@ -25,6 +29,7 @@ impl From<User> for ApiUser {
             profile_image: user.profile_image,
             accepted_tos_at: user.accepted_tos_at.map(|t| t.unix_timestamp()),
             subscription_id,
+            next_payment_due: user.next_payment_due,
         }
     }
 }

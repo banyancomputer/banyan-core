@@ -65,6 +65,9 @@ pub async fn handler(
         }
     };
 
+    // Note: our subscriptions can be re-used by multiple users, but stripe subscriptions are tied
+    // to a specific customer instance and so always need to be generated (we can reused products
+    // and prices though).
     let stripe_subscription = stripe_helper
         .realize_subscription(&mut current_user, &mut requested_subscription)
         .await
