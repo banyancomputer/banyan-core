@@ -8,7 +8,7 @@ import { ErrorBanner } from '@components/common/ErrorBanner';
 
 import { Routes } from './routes';
 import { ModalProvider } from './contexts/modals';
-import { getLocalStorageItem } from './utils/localStorage';
+import { getLocalStorageItem } from '@/app/utils';
 import { SessionProvider } from './contexts/session';
 import { Modal } from '@components/common/Modal';
 
