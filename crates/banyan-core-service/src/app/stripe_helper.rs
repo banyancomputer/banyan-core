@@ -224,7 +224,12 @@ impl StripeHelper {
             (METADATA_SUBSCRIPTION_KEY.to_string(), subscription.id.clone()),
         ]));
 
-        todo!()
+        let stripe_sub = Subscription::create(&self.client, params).await?;
+
+        let mut conn = self.database.acquire().await?;
+        user.persist_pending_subscription(&mut *conn, &subscription.id, &stripe_sub.id).await?;
+
+        Ok(stripe_sub)
     }
 
     async fn find_price_by_id(
@@ -346,6 +351,7 @@ impl StripeHelper {
     ) -> Result<Option<stripe::Subscription>, StripeHelperError> {
         let plan_product_key = format!("{}-plan", subscription.service_key);
 
+        // todo: move product lookup and creation into price lookup
         let plan_product_id = self
             .find_or_register_product(&plan_product_key, subscription.tax_class)
             .await?;
@@ -353,6 +359,7 @@ impl StripeHelper {
             .plan_price(&plan_product_id, &mut *subscription)
             .await?;
 
+        // todo: move product lookup and creation into price lookup
         let bandwidth_product_id = self
             .find_or_register_product(&BANDWIDTH_PRODUCT_KEY, subscription.tax_class)
             .await?;
@@ -360,6 +367,7 @@ impl StripeHelper {
             .bandwidth_price(&bandwidth_product_id, &mut *subscription)
             .await?;
 
+        // todo: move product lookup and creation into price lookup
         let storage_product_id = self
             .find_or_register_product(&STORAGE_PRODUCT_KEY, subscription.tax_class)
             .await?;
@@ -377,7 +385,7 @@ impl StripeHelper {
             )
             .await?;
 
-        todo!()
+        Ok(Some(stripe_subscription))
     }
 
     async fn storage_price(

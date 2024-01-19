@@ -1,4 +1,5 @@
 use std::sync::OnceLock;
+use std::time::Duration;
 
 use serde::Deserialize;
 
@@ -17,6 +18,12 @@ pub const DEFAULT_SUBSCRIPTION_KEY: &str = "starter";
 pub const PRICE_UNIT_TO_USD_RATE: usize = 100_000_000;
 
 pub const PRICE_UNIT_TO_CENTS_RATE: usize = 1_000_000;
+
+/// Subscriptions are confirmed through webhooks once they're passed to stripe. We immediately
+/// attempt to switch the user over to the new subscription, but don't allow them to change their
+/// subscription again until we get confirmation from stripe or this window of six hours is
+/// exceeded (likely indicating a service issue with Stripe).
+pub const SUBSCRIPTION_CHANGE_EXPIRATION_WINDOW: Duration = Duration::from_secs(6 * 60 * 60);
 
 /// Sourced from https://stripe.com/docs/tax/tax-codes, this is the tax identifier for business use
 /// infrastructure as a service cloud service.

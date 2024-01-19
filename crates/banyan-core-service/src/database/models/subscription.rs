@@ -50,7 +50,37 @@ impl NewSubscription<'_> {
             return Ok(current.id);
         }
 
-        self.save(&mut *conn).await
+        let new_id = self.save(&mut *conn).await?;
+
+        // I need to check each of the stripe price IDs and inherit the previous version if that
+        // portion of the subscriptions hasn't changed. This will also require updating the freshly
+        // created record with these IDs (I don't want to make these attributes part of the
+        // NewSubscription struct as they shouldn't ever be set from the outside).
+        let plan_stripe_id = inheritable_plan_price(&current, &self);
+        let bandwidth_stripe_id = inheritable_bandwidth_price(&current, &self);
+        let hot_storage_stripe_id = inheritable_hot_storage_price(&current, &self);
+
+        match (plan_stripe_id, bandwidth_stripe_id, hot_storage_stripe_id) {
+            // If nothing is inheritable we don't need to make this query
+            (None, None, None) => (),
+            (psi, bsi, hssi) => {
+                sqlx::query!(
+                    r#"UPDATE subscriptions
+                           SET plan_price_stripe_id = $1,
+                               bandwidth_stripe_price_id = $2,
+                               hot_storage_stripe_price_id = $3
+                         WHERE id = $4;"#,
+                    psi,
+                    bsi,
+                    hssi,
+                    new_id,
+                )
+                .execute(&mut *conn)
+                .await?;
+            }
+        }
+
+        Ok(new_id)
     }
 
     pub async fn save(&self, conn: &mut DatabaseConnection) -> Result<String, sqlx::Error> {
@@ -292,4 +322,50 @@ impl Subscription {
 
         Ok(())
     }
+}
+
+fn inheritable_bandwidth_price(existing_sub: &Subscription, new_sub: &NewSubscription) -> Option<String> {
+    if should_inherit_bandwidth_price(existing_sub, new_sub) {
+        existing_sub.bandwidth_stripe_price_id.clone()
+    } else {
+        None
+    }
+}
+
+fn inheritable_plan_price(existing_sub: &Subscription, new_sub: &NewSubscription) -> Option<String> {
+    if should_inherit_plan_price(existing_sub, new_sub) {
+        existing_sub.plan_price_stripe_id.clone()
+    } else {
+        None
+    }
+}
+
+fn inheritable_hot_storage_price(existing_sub: &Subscription, new_sub: &NewSubscription) -> Option<String> {
+    if should_inherit_hot_storage_price(existing_sub, new_sub) {
+        existing_sub.hot_storage_stripe_price_id.clone()
+    } else {
+        None
+    }
+}
+
+fn should_inherit_bandwidth_price(existing_sub: &Subscription, new_sub: &NewSubscription) -> bool {
+    existing_sub.bandwidth_stripe_price_id.is_some()
+        && existing_sub.tax_class == new_sub.tax_class
+        && existing_sub.bandwidth_price == new_sub.bandwidth_price
+        && existing_sub.included_bandwidth == new_sub.included_bandwidth
+}
+
+fn should_inherit_plan_price(existing_sub: &Subscription, new_sub: &NewSubscription) -> bool {
+    existing_sub.plan_price_stripe_id.is_some()
+        && existing_sub.tax_class == new_sub.tax_class
+        && existing_sub.plan_base_price == new_sub.plan_base_price
+}
+
+/// Note: This does not take into account hot replica count as that is effectively rolled into the
+/// hot storage amount when recorded as part of the price.
+fn should_inherit_hot_storage_price(existing_sub: &Subscription, new_sub: &NewSubscription) -> bool {
+    existing_sub.hot_storage_stripe_price_id.is_some()
+        && existing_sub.tax_class == new_sub.tax_class
+        && existing_sub.hot_storage_price == new_sub.hot_storage_price
+        && existing_sub.included_hot_storage == new_sub.included_hot_storage
 }

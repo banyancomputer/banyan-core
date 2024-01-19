@@ -3,6 +3,7 @@ use time::OffsetDateTime;
 
 use crate::database::models::ExplicitBigInt;
 use crate::database::DatabaseConnection;
+use crate::pricing::SUBSCRIPTION_CHANGE_EXPIRATION_WINDOW;
 
 #[derive(Debug, Serialize, sqlx::FromRow)]
 pub struct User {
@@ -21,8 +22,8 @@ pub struct User {
     pub current_stripe_plan_subscription_id: Option<String>,
 
     pub pending_subscription_id: Option<String>,
-    pub pending_stripe_plan_subscription_id: Option<String>,
     pub pending_subscription_expiration: Option<OffsetDateTime>,
+    pub pending_stripe_plan_subscription_id: Option<String>,
 }
 
 impl User {
@@ -43,10 +44,10 @@ impl User {
         sqlx::query_as!(
             User,
             r#"SELECT id, email, verified_email, display_name, locale, profile_image, created_at,
-                    accepted_tos_at, active_subscription_id as 'active_subscription_id!',
-                    stripe_customer_id, current_stripe_plan_subscription_id,
-                    pending_subscription_id, pending_stripe_plan_subscription_id,
-                    pending_subscription_expiration FROM users
+                   accepted_tos_at, active_subscription_id as 'active_subscription_id!',
+                   stripe_customer_id, current_stripe_plan_subscription_id,
+                   pending_subscription_id, pending_subscription_expiration,
+                   pending_stripe_plan_subscription_id FROM users
                  WHERE id = $1;"#,
             id,
         )
@@ -72,11 +73,11 @@ impl User {
         let ex_size = sqlx::query_as!(
             ExplicitBigInt,
             r#"SELECT
-                 COALESCE(SUM(m.metadata_size), 0) +
-                 COALESCE(SUM(COALESCE(m.data_size, m.expected_data_size)), 0) AS big_int
-            FROM metadata m
-            INNER JOIN buckets b ON b.id = m.bucket_id
-            WHERE b.user_id = $1 AND m.state IN ('current', 'outdated', 'pending');"#,
+                   COALESCE(SUM(m.metadata_size), 0) +
+                     COALESCE(SUM(COALESCE(m.data_size, m.expected_data_size)), 0) AS big_int
+                 FROM metadata m
+                 INNER JOIN buckets b ON b.id = m.bucket_id
+                 WHERE b.user_id = $1 AND m.state IN ('current', 'outdated', 'pending');"#,
             user_id,
         )
         .fetch_one(&mut *conn)
@@ -94,8 +95,8 @@ impl User {
             r#"SELECT id, email, verified_email, display_name, locale, profile_image, created_at,
                     accepted_tos_at, active_subscription_id as 'active_subscription_id!',
                     stripe_customer_id, current_stripe_plan_subscription_id,
-                    pending_subscription_id, pending_stripe_plan_subscription_id,
-                    pending_subscription_expiration FROM users
+                    pending_subscription_id, pending_subscription_expiration,
+                    pending_stripe_plan_subscription_id FROM users
                  WHERE id = $1;"#,
             id,
         )
@@ -124,6 +125,35 @@ impl User {
         .await?;
 
         self.stripe_customer_id = Some(customer_stripe_id.to_string());
+
+        Ok(())
+    }
+
+    pub async fn persist_pending_subscription(
+        &mut self,
+        conn: &mut DatabaseConnection,
+        subscription_id: &str,
+        subscription_stripe_id: &str,
+    ) -> Result<(), sqlx::Error> {
+        let expiration = OffsetDateTime::now_utc() + SUBSCRIPTION_CHANGE_EXPIRATION_WINDOW;
+
+        sqlx::query!(
+            "UPDATE users SET
+                 pending_subscription_id = $1,
+                 pending_subscription_expiration = $2,
+                 pending_stripe_plan_subscription_id = $3
+               WHERE id = $4;",
+            subscription_id,
+            expiration,
+            subscription_stripe_id,
+            self.id,
+        )
+        .execute(&mut *conn)
+        .await?;
+
+        self.pending_subscription_id = Some(subscription_id.to_string());
+        self.pending_subscription_expiration = Some(expiration);
+        self.pending_stripe_plan_subscription_id = Some(subscription_stripe_id.to_string());
 
         Ok(())
     }

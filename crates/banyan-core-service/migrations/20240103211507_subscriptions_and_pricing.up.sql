@@ -48,8 +48,8 @@ ALTER TABLE users ADD COLUMN stripe_customer_id TEXT;
 ALTER TABLE users ADD COLUMN current_stripe_plan_subscription_id TEXT;
 
 ALTER TABLE users ADD COLUMN pending_subscription_id TEXT REFERENCES subscriptions(id);
-ALTER TABLE users ADD COLUMN pending_stripe_plan_subscription_id TEXT;
 ALTER TABLE users ADD COLUMN pending_subscription_expiration DATETIME;
+ALTER TABLE users ADD COLUMN pending_stripe_plan_subscription_id TEXT;
 
 UPDATE users SET active_subscription_id = (
     SELECT id FROM subscriptions WHERE service_key = 'starter' LIMIT 1
