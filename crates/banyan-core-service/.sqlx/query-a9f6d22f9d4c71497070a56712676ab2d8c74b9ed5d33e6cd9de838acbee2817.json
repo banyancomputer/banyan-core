@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, service_key, tax_class as 'tax_class: TaxClass', title, visible, plan_base_price,\n                   plan_price_stripe_id, archival_available, archival_price, archival_stripe_price_id,\n                   archival_hard_limit, hot_storage_price, hot_storage_stripe_price_id, hot_storage_hard_limit,\n                   bandwidth_price, bandwidth_stripe_price_id, bandwidth_hard_limit, included_hot_replica_count,\n                   included_hot_storage, included_bandwidth, created_at FROM subscriptions\n                 WHERE visible = true OR ($1 IS NOT NULL AND id = $1);",
+  "query": "SELECT id, service_key, tax_class as 'tax_class: TaxClass', title, visible,\n                   plan_base_price as 'plan_base_price: PriceUnits', plan_price_stripe_id,\n                   archival_available, archival_price as 'archival_price: PriceUnits',\n                   archival_stripe_price_id, archival_hard_limit,\n                   hot_storage_price as 'hot_storage_price: PriceUnits', hot_storage_stripe_price_id,\n                   hot_storage_hard_limit, bandwidth_price as 'bandwidth_price: PriceUnits',\n                   bandwidth_stripe_price_id, bandwidth_hard_limit, included_hot_replica_count,\n                   included_hot_storage, included_bandwidth, created_at FROM subscriptions\n                 WHERE visible = true OR ($1 IS NOT NULL AND id = $1);",
   "describe": {
     "columns": [
       {
@@ -29,7 +29,7 @@
         "type_info": "Bool"
       },
       {
-        "name": "plan_base_price",
+        "name": "plan_base_price: PriceUnits",
         "ordinal": 5,
         "type_info": "Int64"
       },
@@ -44,7 +44,7 @@
         "type_info": "Bool"
       },
       {
-        "name": "archival_price",
+        "name": "archival_price: PriceUnits",
         "ordinal": 8,
         "type_info": "Int64"
       },
@@ -59,7 +59,7 @@
         "type_info": "Int64"
       },
       {
-        "name": "hot_storage_price",
+        "name": "hot_storage_price: PriceUnits",
         "ordinal": 11,
         "type_info": "Int64"
       },
@@ -74,7 +74,7 @@
         "type_info": "Int64"
       },
       {
-        "name": "bandwidth_price",
+        "name": "bandwidth_price: PriceUnits",
         "ordinal": 14,
         "type_info": "Int64"
       },
@@ -136,5 +136,5 @@
       false
     ]
   },
-  "hash": "215c21487a2ef5ff2e02412896f4c19cd83b49b4946f32584127bfeecd363a29"
+  "hash": "a9f6d22f9d4c71497070a56712676ab2d8c74b9ed5d33e6cd9de838acbee2817"
 }

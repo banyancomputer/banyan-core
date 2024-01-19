@@ -78,7 +78,9 @@ impl State {
     }
 
     pub fn stripe_helper(&self) -> Option<StripeHelper> {
-        self.secrets.stripe_secret().map(|s| StripeHelper::new(self.database(), s))
+        self.secrets
+            .stripe_secret()
+            .map(|s| StripeHelper::new(self.database(), s))
     }
 
     pub fn upload_directory(&self) -> PathBuf {

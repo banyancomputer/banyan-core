@@ -2,7 +2,7 @@ use std::sync::OnceLock;
 
 use serde::Deserialize;
 
-use crate::database::models::{NewSubscription, TaxClass};
+use crate::database::models::{NewSubscription, PriceUnits, TaxClass};
 use crate::database::DatabaseConnection;
 
 const BUILTIN_PRICING_DATA: &[u8] = include_bytes!("../dist/pricing.ron");
@@ -15,6 +15,8 @@ pub const DEFAULT_SUBSCRIPTION_KEY: &str = "starter";
 /// fractional minute billing. We'll use a global scaling constant for our currency representation
 /// of 10^8.
 pub const PRICE_UNIT_TO_USD_RATE: usize = 100_000_000;
+
+pub const PRICE_UNIT_TO_CENTS_RATE: usize = 1_000_000;
 
 /// Sourced from https://stripe.com/docs/tax/tax-codes, this is the tax identifier for business use
 /// infrastructure as a service cloud service.
@@ -66,17 +68,17 @@ pub struct Limits {
 #[derive(Debug, Deserialize)]
 pub struct Price {
     /// The base monthly price associated with a particular pricing tier.
-    pub base: i64,
+    pub base: PriceUnits,
 
     /// The price of each GiB stored in archival / cold storage per month. Billed in 6 month
     /// intervals all at once up front.
-    pub archival: i64,
+    pub archival: PriceUnits,
 
     /// The price of each GiB stored in the network beyond the base bandwidth allowance.
-    pub storage: i64,
+    pub storage: PriceUnits,
 
     /// The price of each GiB transferred from the network beyond the base bandwidth allowance.
-    pub bandwidth: i64,
+    pub bandwidth: PriceUnits,
 }
 
 /// A single currently active price tier that should exist in the database. These will be
@@ -129,7 +131,10 @@ impl<'a> PricingTier {
             hot_storage_price: self.price.as_ref().map(|p| p.storage),
             // Our hard limits need to take into account the stock replicas, see the note on the
             // included_hot_replica_storage field.
-            hot_storage_hard_limit: self.hard_limits.storage.map(|l| l * self.included_allowances.storage_replicas),
+            hot_storage_hard_limit: self
+                .hard_limits
+                .storage
+                .map(|l| l * self.included_allowances.storage_replicas),
 
             bandwidth_price: self.price.as_ref().map(|p| p.bandwidth),
             bandwidth_hard_limit: self.hard_limits.bandwidth,
@@ -139,7 +144,8 @@ impl<'a> PricingTier {
             // Internally we account for each replica as storage on its own. To include some number
             // of replicas with a certain amount of storage available we need to multiply them
             // together to find out how much we're actually including when accounting for this.
-            included_hot_storage: self.included_allowances.storage_replicas * self.included_allowances.storage,
+            included_hot_storage: self.included_allowances.storage_replicas
+                * self.included_allowances.storage,
             included_bandwidth: self.included_allowances.bandwidth,
         };
 

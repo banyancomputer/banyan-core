@@ -7,18 +7,15 @@ use crate::app::AppState;
 use crate::database::models::User;
 use crate::extractors::UserIdentity;
 
-pub async fn handler(
-    user_identity: UserIdentity,
-    State(state): State<AppState>,
-) -> Response {
+pub async fn handler(user_identity: UserIdentity, State(state): State<AppState>) -> Response {
     let database = state.database();
     let mut conn = match database.acquire().await {
         Ok(conn) => conn,
         Err(err) => {
             tracing::error!("failed to acquire database connection: {err}");
             let err_msg = serde_json::json!({"msg": "backend service experienced an issue servicing the request"});
-            return (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
-        },
+            return (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response();
+        }
     };
 
     let user_id = user_identity.id().to_string();
@@ -32,7 +29,7 @@ pub async fn handler(
         Err(err) => {
             tracing::error!("failed to lookup user: {err}");
             let err_msg = serde_json::json!({"msg": "backend service experienced an issue servicing the request"});
-            return (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
+            return (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response();
         }
     }
 }

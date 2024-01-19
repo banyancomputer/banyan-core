@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 
 use crate::database::models::{Subscription, TaxClass};
-use crate::pricing::PRICE_UNIT_TO_USD_RATE;
 
 #[derive(Serialize, Deserialize)]
 pub struct ApiSubscription {
@@ -83,10 +82,10 @@ impl From<Subscription> for ApiSubscription {
         };
 
         let pricing = ApiSubscriptionPricing {
-            archival: value.archival_price.map(price_units_to_usd),
-            hot_storage: value.hot_storage_price.map(price_units_to_usd),
-            plan_base: value.plan_base_price.map(price_units_to_usd),
-            bandwidth: value.bandwidth_price.map(price_units_to_usd),
+            archival: value.archival_price.map(|p| p.in_usd()),
+            hot_storage: value.hot_storage_price.map(|p| p.in_usd()),
+            plan_base: value.plan_base_price.map(|p| p.in_usd()),
+            bandwidth: value.bandwidth_price.map(|p| p.in_usd()),
         };
 
         Self {
@@ -101,8 +100,4 @@ impl From<Subscription> for ApiSubscription {
             pricing,
         }
     }
-}
-
-fn price_units_to_usd(units: i64) -> f32 {
-    units as f32 / PRICE_UNIT_TO_USD_RATE as f32
 }

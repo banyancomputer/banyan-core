@@ -19,7 +19,10 @@ where
 {
     Router::new()
         .route("/:subscription_id", get(single_subscription::handler))
-        .route("/:subscription_id/subscribe", post(purchase_subscription::handler))
+        .route(
+            "/:subscription_id/subscribe",
+            post(purchase_subscription::handler),
+        )
         .route("/", get(all_subscriptions::handler))
         .with_state(state)
 }

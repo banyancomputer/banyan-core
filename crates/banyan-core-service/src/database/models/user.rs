@@ -50,7 +50,10 @@ impl User {
         Ok(ex_size.big_int)
     }
 
-    pub async fn find_by_id(conn: &mut DatabaseConnection, id: &str) -> Result<Option<Self>, sqlx::Error> {
+    pub async fn find_by_id(
+        conn: &mut DatabaseConnection,
+        id: &str,
+    ) -> Result<Option<Self>, sqlx::Error> {
         sqlx::query_as!(
             User,
             r#"SELECT id, email, verified_email, display_name, locale, profile_image, created_at,

@@ -23,9 +23,12 @@ pub async fn handler(
     };
 
     let user_id = user_id.id().to_string();
-    let current_sub_id = sqlx::query_scalar!("SELECT subscription_id as 'subscription_id!' FROM users WHERE id = $1;", user_id)
-        .fetch_one(&mut *conn)
-        .await?;
+    let current_sub_id = sqlx::query_scalar!(
+        "SELECT subscription_id as 'subscription_id!' FROM users WHERE id = $1;",
+        user_id
+    )
+    .fetch_one(&mut *conn)
+    .await?;
 
     // If its not visible and not associated with the current user don't acknowledge its existance
     if !db_sub.visible && db_sub.id != current_sub_id {

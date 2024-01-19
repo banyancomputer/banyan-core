@@ -41,7 +41,10 @@ pub async fn handler(
     let exchange_code = AuthorizationCode::new(params.code);
     let database = state.database();
 
-    let mut conn = database.acquire().await.map_err(AuthenticationError::DatabaseConnectionFailure)?;
+    let mut conn = database
+        .acquire()
+        .await
+        .map_err(AuthenticationError::DatabaseConnectionFailure)?;
 
     let query_secret = csrf_secret.secret();
     let oauth_state_query: (String, Option<String>) = sqlx::query_as(
@@ -114,7 +117,9 @@ pub async fn handler(
     .await
     .map_err(AuthenticationError::LookupFailed)?;
 
-    conn.close().await.map_err(AuthenticationError::DatabaseConnectionFailure)?;
+    conn.close()
+        .await
+        .map_err(AuthenticationError::DatabaseConnectionFailure)?;
 
     let cookie_domain = hostname
         .host_str()
@@ -181,7 +186,10 @@ pub async fn handler(
 
     let expires_at = time::OffsetDateTime::now_utc() + Duration::from_secs(SESSION_TTL);
 
-    let mut conn = database.acquire().await.map_err(AuthenticationError::DatabaseConnectionFailure)?;
+    let mut conn = database
+        .acquire()
+        .await
+        .map_err(AuthenticationError::DatabaseConnectionFailure)?;
     let user = User::find_by_id(&mut conn, &user_id)
         .await
         .map_err(AuthenticationError::UserDataLookupFailed)?
