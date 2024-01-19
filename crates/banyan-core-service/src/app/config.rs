@@ -213,13 +213,7 @@ fn print_help() {
     println!("  Additional Environment Options:");
     println!("    GOOGLE_OAUTH_CLIENT_ID        The client ID associated with this app for");
     println!("                                  performing authentication using Google services.");
-    println!("    GOOGLE_OAUTH_CLIENT_SECRET    The client secret paired with the client ID.\n");
-    println!("    --admin_service-name ADMIN_SERVICE_NAME         The name of the admin_service (default banyan-admin_service)");
-    println!("    --admin_service-public-key-path ADMIN_SERVICE_PUBLIC_KEY_PATH");
-    println!(
-        "           Path to the public key used for authenticating requests from the admin_service"
-    );
-    println!("           (default ./data/admin_service-key.public)\n");
+    println!("    GOOGLE_OAUTH_CLIENT_SECRET    The client secret paired with the client ID.");
 }
 
 fn print_version() {
