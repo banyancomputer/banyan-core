@@ -66,4 +66,22 @@ impl User {
         .fetch_optional(&mut *conn)
         .await
     }
+
+    pub async fn persist_customer_stripe_id(
+        &mut self,
+        conn: &mut DatabaseConnection,
+        customer_stripe_id: &str,
+    ) -> Result<(), sqlx::Error> {
+        sqlx::query!(
+            "UPDATE users SET stripe_customer_id = $1 WHERE id = $2;",
+            customer_stripe_id,
+            self.id
+        )
+        .execute(&mut *conn)
+        .await?;
+
+        self.stripe_customer_id = Some(customer_stripe_id.to_string());
+
+        Ok(())
+    }
 }

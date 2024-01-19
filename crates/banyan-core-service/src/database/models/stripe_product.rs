@@ -1,5 +1,5 @@
-use crate::database::DatabaseConnection;
 use crate::database::models::TaxClass;
+use crate::database::DatabaseConnection;
 
 #[derive(sqlx::FromRow)]
 pub struct StripeProduct {

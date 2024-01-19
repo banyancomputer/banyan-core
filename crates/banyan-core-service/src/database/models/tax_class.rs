@@ -19,12 +19,17 @@ pub enum TaxClass {
 impl TaxClass {
     pub fn stripe_id(&self) -> Option<stripe::TaxCodeId> {
         use std::str::FromStr;
+
         use stripe::TaxCodeId;
 
         match self {
-            TaxClass::Personal => Some(TaxCodeId::from_str(&TAX_CODE_PERSONAL).expect("fixed code to be valid")),
+            TaxClass::Personal => {
+                Some(TaxCodeId::from_str(&TAX_CODE_PERSONAL).expect("fixed code to be valid"))
+            }
             TaxClass::NotApplicable => None,
-            TaxClass::Business => Some(TaxCodeId::from_str(&TAX_CODE_BUSINESS).expect("fixed code to be valid")),
+            TaxClass::Business => {
+                Some(TaxCodeId::from_str(&TAX_CODE_BUSINESS).expect("fixed code to be valid"))
+            }
         }
     }
 }
