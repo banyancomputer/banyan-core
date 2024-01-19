@@ -25,7 +25,7 @@ pub struct AdminIdentity {
 
 impl AdminIdentity {
     fn new(identity: SessionIdentity) -> Self {
-        return Self { identity };
+        Self { identity }
     }
 }
 
