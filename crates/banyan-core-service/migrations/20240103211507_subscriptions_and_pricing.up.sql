@@ -59,16 +59,22 @@ CREATE TABLE stripe_products (
   ),
 
   product_key TEXT NOT NULL,
+  tax_class TEXT NOT NULL,
   title TEXT NOT NULL,
 
   stripe_product_id TEXT
 );
 
-INSERT INTO stripe_products (product_key, title)
+INSERT INTO stripe_products (product_key, tax_class, title)
   VALUES
-    ('lite-plan', 'Lite Plan'),
-    ('business-plan', 'Business Plan'),
-    ('bandwidth', 'Bandwidth Usage'),
-    ('storage', 'Hot Storage'),
-    ('archival', 'Archival Storage');
+    ('lite-plan', 'personal', 'Lite Plan'),
+    ('business-plan', 'personal', 'Business Plan'),
+    ('bandwidth', 'personal', 'Bandwidth Usage'),
+    ('storage', 'personal', 'Hot Storage'),
+    ('archival', 'personal', 'Archival Storage'),
+    ('lite-plan', 'business', 'Lite Plan'),
+    ('business-plan', 'business', 'Business Plan'),
+    ('bandwidth', 'business', 'Bandwidth Usage'),
+    ('storage', 'business', 'Hot Storage'),
+    ('archival', 'business', 'Archival Storage');
 

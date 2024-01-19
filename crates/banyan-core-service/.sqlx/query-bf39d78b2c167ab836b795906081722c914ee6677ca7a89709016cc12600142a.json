@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT * FROM stripe_products WHERE product_key = $1;",
+  "query": "SELECT id, product_key, tax_class as 'tax_class: TaxClass', title, stripe_product_id\n                   FROM stripe_products\n                WHERE product_key = $1 AND tax_class = $2;",
   "describe": {
     "columns": [
       {
@@ -14,25 +14,31 @@
         "type_info": "Text"
       },
       {
-        "name": "title",
+        "name": "tax_class: TaxClass",
         "ordinal": 2,
         "type_info": "Text"
       },
       {
-        "name": "stripe_product_id",
+        "name": "title",
         "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "stripe_product_id",
+        "ordinal": 4,
         "type_info": "Text"
       }
     ],
     "parameters": {
-      "Right": 1
+      "Right": 2
     },
     "nullable": [
+      false,
       false,
       false,
       false,
       true
     ]
   },
-  "hash": "201a40fedd4653b21b6f38eba464f152d53ae605b1af426bee3ac2cee69c1a8b"
+  "hash": "bf39d78b2c167ab836b795906081722c914ee6677ca7a89709016cc12600142a"
 }

@@ -1,5 +1,5 @@
 use crate::app::secrets::StripeSecret;
-use crate::database::models::{StripeProduct, Subscription};
+use crate::database::models::{StripeProduct, Subscription, TaxClass};
 use crate::database::Database;
 
 const BANDWIDTH_PRODUCT_KEY: &str = "bandwidth";
@@ -7,6 +7,8 @@ const BANDWIDTH_PRODUCT_KEY: &str = "bandwidth";
 const PRODUCT_DESCRIPTOR_PREFIX: &str = "banyan";
 
 const PRODUCT_METADATA_KEY: &str = "product-key";
+
+const PRODUCT_TAXCLASS_KEY: &str = "tax-class";
 
 const STORAGE_PRODUCT_KEY: &str = "storage";
 
@@ -21,9 +23,10 @@ impl StripeHelper {
     async fn find_or_register_product(
         &self,
         product_key: &str,
+        tax_class: TaxClass,
     ) -> Result<String, StripeHelperError> {
         let mut conn = self.database.begin().await?;
-        let mut stripe_product = StripeProduct::from_product_key(&mut *conn, product_key).await?;
+        let mut stripe_product = StripeProduct::from_product_key(&mut *conn, product_key, tax_class).await?;
 
         // We've already created the product in stripe, return the existing product ID
         if let Some(stripe_product_id) = stripe_product.stripe_product_id {
@@ -31,7 +34,7 @@ impl StripeHelper {
         }
 
         // Check if stripe already knows about this product
-        if let Some(stripe_product_id) = search_products_for_key(&self.client, product_key).await? {
+        if let Some(stripe_product_id) = search_products_for_key(&self.client, product_key, tax_class).await? {
             stripe_product
                 .record_stripe_product_id(&mut *conn, &stripe_product_id)
                 .await?;
@@ -41,7 +44,7 @@ impl StripeHelper {
 
         // It doesn't, we'll need to create a new one
         let new_product_id =
-            register_stripe_product(&self.client, product_key, &stripe_product.title).await?;
+            register_stripe_product(&self.client, product_key, tax_class, &stripe_product.title).await?;
         stripe_product
             .record_stripe_product_id(&mut *conn, &new_product_id)
             .await?;
@@ -54,7 +57,6 @@ impl StripeHelper {
         price_id: &str,
     ) -> Result<Option<stripe::Price>, StripeHelperError> {
         use std::str::FromStr;
-
         use stripe::{Price, PriceId};
 
         let price_id = match PriceId::from_str(&price_id) {
@@ -137,13 +139,13 @@ impl StripeHelper {
     ) -> Result<Option<stripe::Subscription>, StripeHelperError> {
         let plan_product_key = format!("{}-plan", subscription.service_key);
 
-        let plan_product_id = self.find_or_register_product(&plan_product_key).await?;
+        let plan_product_id = self.find_or_register_product(&plan_product_key, subscription.tax_class).await?;
         let _plan_price = self.plan_price(&plan_product_id, &subscription).await?;
 
         let _bandwidth_product_id = self
-            .find_or_register_product(&BANDWIDTH_PRODUCT_KEY)
+            .find_or_register_product(&BANDWIDTH_PRODUCT_KEY, subscription.tax_class)
             .await?;
-        let _storage_product_id = self.find_or_register_product(&STORAGE_PRODUCT_KEY).await?;
+        let _storage_product_id = self.find_or_register_product(&STORAGE_PRODUCT_KEY, subscription.tax_class).await?;
 
         todo!()
     }
@@ -164,18 +166,23 @@ pub enum StripeHelperError {
 async fn register_stripe_product(
     client: &stripe::Client,
     product_key: &str,
+    tax_class: TaxClass,
     title: &str,
 ) -> Result<String, StripeHelperError> {
     use stripe::{CreateProduct, Metadata, Product, ProductType};
 
     let descriptor = format!("{}-{}", PRODUCT_DESCRIPTOR_PREFIX, product_key).to_uppercase();
-    let metadata = Metadata::from([(PRODUCT_METADATA_KEY.to_string(), product_key.to_string())]);
+    let metadata = Metadata::from([
+        (PRODUCT_METADATA_KEY.to_string(), product_key.to_string()),
+        (PRODUCT_TAXCLASS_KEY.to_string(), tax_class.to_string()),
+    ]);
 
     let mut product_details = CreateProduct::new(title);
     product_details.shippable = Some(false);
     product_details.type_ = Some(ProductType::Service);
     product_details.statement_descriptor = Some(&descriptor);
     product_details.metadata = Some(metadata);
+    product_details.tax_code = tax_class.stripe_id();
 
     let new_product = Product::create(&client, product_details).await?;
 
@@ -185,6 +192,7 @@ async fn register_stripe_product(
 async fn search_products_for_key(
     client: &stripe::Client,
     product_key: &str,
+    tax_class: TaxClass,
 ) -> Result<Option<String>, StripeHelperError> {
     use stripe::{ListProducts, Product};
 
@@ -200,10 +208,22 @@ async fn search_products_for_key(
             None => continue,
         };
 
-        if let Some(key) = metadata.get(PRODUCT_METADATA_KEY) {
-            if key == product_key {
-                return Ok(Some(product.id.to_string()));
+        let m_product_key = metadata.get(PRODUCT_METADATA_KEY);
+        let m_tax_class_key = metadata.get(PRODUCT_TAXCLASS_KEY);
+
+        match (m_product_key, m_tax_class_key) {
+            (Some(key), Some(tax_str)) => {
+                let m_tax_class = match TaxClass::try_from(tax_str.as_str()) {
+                    Ok(c) => c,
+                    Err(_) => continue,
+                };
+
+                // confirm both the product key and tax type match
+                if product_key == key && tax_class == m_tax_class {
+                    return Ok(Some(product.id.to_string()));
+                }
             }
+            _ => continue,
         }
     }
 

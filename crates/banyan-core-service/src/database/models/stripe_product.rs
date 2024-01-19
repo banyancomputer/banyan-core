@@ -1,10 +1,12 @@
 use crate::database::DatabaseConnection;
+use crate::database::models::TaxClass;
 
 #[derive(sqlx::FromRow)]
 pub struct StripeProduct {
     pub id: String,
 
     pub product_key: String,
+    pub tax_class: TaxClass,
     pub title: String,
 
     pub stripe_product_id: Option<String>,
@@ -14,11 +16,15 @@ impl StripeProduct {
     pub async fn from_product_key(
         conn: &mut DatabaseConnection,
         product_key: &str,
+        tax_class: TaxClass,
     ) -> Result<Self, sqlx::Error> {
         sqlx::query_as!(
             Self,
-            "SELECT * FROM stripe_products WHERE product_key = $1;",
-            product_key
+            r#"SELECT id, product_key, tax_class as 'tax_class: TaxClass', title, stripe_product_id
+                   FROM stripe_products
+                WHERE product_key = $1 AND tax_class = $2;"#,
+            product_key,
+            tax_class,
         )
         .fetch_one(&mut *conn)
         .await
