@@ -20,34 +20,102 @@ pub struct StripeHelper {
 }
 
 impl StripeHelper {
+    async fn bandwidth_price(
+        &self,
+        plan_product_id: &str,
+        subscription: &mut Subscription,
+    ) -> Result<stripe::Price, StripeHelperError> {
+        use stripe::{
+            CreatePrice, CreatePriceRecurring, CreatePriceRecurringInterval,
+            CreatePriceRecurringAggregateUsage, CreatePriceRecurringUsageType, CreatePriceTiers,
+            Currency, IdOrCreate, Metadata, Price, PriceBillingScheme, PriceTaxBehavior,
+            PriceTiersMode, UpTo, UpToOther,
+        };
+
+        // If we already have a cached price associated with bandwidth pricing, verify its still
+        // valid on Stripe then return it, otherwise we'll create a new one.
+        if let Some(stripe_price_id) = &subscription.bandwidth_stripe_price_id {
+            if let Some(price) = self.find_price_by_id(&stripe_price_id).await? {
+                return Ok(price);
+            }
+        }
+
+        let mut params = CreatePrice::new(Currency::USD);
+
+        params.expand = &["product"];
+        params.product = Some(IdOrCreate::Id(plan_product_id));
+
+        let price = subscription
+            .bandwidth_price
+            .as_ref()
+            .ok_or(StripeHelperError::MissingPrice)?;
+
+        params.billing_scheme = Some(PriceBillingScheme::Tiered);
+        params.tiers_mode = Some(PriceTiersMode::Graduated);
+        params.tiers = Some(vec![
+            CreatePriceTiers {
+                flat_amount: Some(0),
+                up_to: Some(UpTo::Max(subscription.included_bandwidth as u64)),
+                ..Default::default()
+            },
+            CreatePriceTiers {
+                unit_amount_decimal: Some(price.in_fractional_cents()),
+                up_to: Some(UpTo::Other(UpToOther::Inf)),
+                ..Default::default()
+            },
+        ]);
+
+        // Set the nature of our payment (recurring monthly, billed monthly subscription)
+        params.recurring = Some(CreatePriceRecurring {
+            aggregate_usage: Some(CreatePriceRecurringAggregateUsage::Sum),
+            interval: CreatePriceRecurringInterval::Month,
+            interval_count: Some(1),
+            usage_type: Some(CreatePriceRecurringUsageType::Metered),
+            ..Default::default()
+        });
+
+        // Tax related settings need to be set as well
+        params.tax_behavior = Some(PriceTaxBehavior::Exclusive);
+
+        params.metadata = Some(Metadata::from([(
+            SUBSCRIPTION_METADATA_KEY.to_string(),
+            subscription.id.to_string(),
+        )]));
+
+        let price = Price::create(&self.client, params).await?;
+
+        let mut conn = self.database.acquire().await?;
+        subscription.persist_bandwidth_price_stripe_id(&mut conn, price.id.as_str()).await?;
+
+        Ok(price)
+    }
+
     async fn find_or_register_product(
         &self,
         product_key: &str,
         tax_class: TaxClass,
     ) -> Result<String, StripeHelperError> {
         let mut conn = self.database.begin().await?;
-        let mut stripe_product = StripeProduct::from_product_key(&mut *conn, product_key, tax_class).await?;
+        let mut product = StripeProduct::from_product_key(&mut *conn, product_key, tax_class).await?;
 
         // We've already created the product in stripe, return the existing product ID
-        if let Some(stripe_product_id) = stripe_product.stripe_product_id {
+        if let Some(stripe_product_id) = product.stripe_product_id {
             return Ok(stripe_product_id);
         }
 
         // Check if stripe already knows about this product
         if let Some(stripe_product_id) = search_products_for_key(&self.client, product_key, tax_class).await? {
-            stripe_product
-                .record_stripe_product_id(&mut *conn, &stripe_product_id)
+            product.record_stripe_product_id(&mut *conn, &stripe_product_id)
                 .await?;
             conn.commit().await?;
             return Ok(stripe_product_id);
         }
 
         // It doesn't, we'll need to create a new one
-        let new_product_id =
-            register_stripe_product(&self.client, product_key, tax_class, &stripe_product.title).await?;
-        stripe_product
-            .record_stripe_product_id(&mut *conn, &new_product_id)
-            .await?;
+        let new_product = register_stripe_product(&self.client, product_key, tax_class, &product.title).await?;
+        let new_product_id = new_product.id.as_str().to_string();
+
+        product.record_stripe_product_id(&mut *conn, &new_product_id).await?;
 
         Ok(new_product_id)
     }
@@ -83,18 +151,18 @@ impl StripeHelper {
     async fn plan_price(
         &self,
         plan_product_id: &str,
-        subscription: &Subscription,
+        subscription: &mut Subscription,
     ) -> Result<stripe::Price, StripeHelperError> {
         use stripe::{
             CreatePrice, CreatePriceRecurring, CreatePriceRecurringInterval,
             CreatePriceRecurringUsageType, Currency, IdOrCreate, Metadata,
-            PriceBillingScheme, PriceTaxBehavior,
+            Price, PriceBillingScheme, PriceTaxBehavior,
         };
 
         // If we already have a cached price associated with this subscription, verify its still
         // valid on Stripe then return it, otherwise we'll create a new one.
-        if let Some(plan_price_stripe_id) = &subscription.plan_price_stripe_id {
-            if let Some(price) = self.find_price_by_id(&plan_price_stripe_id).await? {
+        if let Some(price_stripe_id) = &subscription.plan_price_stripe_id {
+            if let Some(price) = self.find_price_by_id(&price_stripe_id).await? {
                 return Ok(price);
             }
         }
@@ -129,7 +197,12 @@ impl StripeHelper {
             subscription.id.to_string(),
         )]));
 
-        todo!()
+        let price = Price::create(&self.client, params).await?;
+
+        let mut conn = self.database.acquire().await?;
+        subscription.persist_plan_price_stripe_id(&mut *conn, price.id.as_str()).await?;
+
+        Ok(price)
     }
 
     pub async fn realize_subscription(
@@ -140,11 +213,13 @@ impl StripeHelper {
         let plan_product_key = format!("{}-plan", subscription.service_key);
 
         let plan_product_id = self.find_or_register_product(&plan_product_key, subscription.tax_class).await?;
-        let _plan_price = self.plan_price(&plan_product_id, &subscription).await?;
+        let _plan_price = self.plan_price(&plan_product_id, &mut *subscription).await?;
 
-        let _bandwidth_product_id = self
+        let bandwidth_product_id = self
             .find_or_register_product(&BANDWIDTH_PRODUCT_KEY, subscription.tax_class)
             .await?;
+        let _bandwidth_price = self.bandwidth_price(&bandwidth_product_id, &mut *subscription).await?;
+
         let _storage_product_id = self.find_or_register_product(&STORAGE_PRODUCT_KEY, subscription.tax_class).await?;
 
         todo!()
@@ -168,7 +243,7 @@ async fn register_stripe_product(
     product_key: &str,
     tax_class: TaxClass,
     title: &str,
-) -> Result<String, StripeHelperError> {
+) -> Result<stripe::Product, StripeHelperError> {
     use stripe::{CreateProduct, Metadata, Product, ProductType};
 
     let descriptor = format!("{}-{}", PRODUCT_DESCRIPTOR_PREFIX, product_key).to_uppercase();
@@ -177,16 +252,15 @@ async fn register_stripe_product(
         (PRODUCT_TAXCLASS_KEY.to_string(), tax_class.to_string()),
     ]);
 
-    let mut product_details = CreateProduct::new(title);
-    product_details.shippable = Some(false);
-    product_details.type_ = Some(ProductType::Service);
-    product_details.statement_descriptor = Some(&descriptor);
-    product_details.metadata = Some(metadata);
-    product_details.tax_code = tax_class.stripe_id();
+    let mut params = CreateProduct::new(title);
+    params.shippable = Some(false);
+    params.type_ = Some(ProductType::Service);
+    params.statement_descriptor = Some(&descriptor);
+    params.metadata = Some(metadata);
+    params.tax_code = tax_class.stripe_id();
 
-    let new_product = Product::create(&client, product_details).await?;
-
-    Ok(new_product.id.to_string())
+    let new_product = Product::create(&client, params).await?;
+    Ok(new_product)
 }
 
 async fn search_products_for_key(

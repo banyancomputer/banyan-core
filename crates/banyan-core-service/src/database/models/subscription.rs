@@ -238,4 +238,40 @@ impl Subscription {
         .fetch_optional(&mut *conn)
         .await
     }
+
+    pub async fn persist_bandwidth_price_stripe_id(
+        &mut self,
+        conn: &mut DatabaseConnection,
+        bandwidth_stripe_id: &str,
+    ) -> Result<(), sqlx::Error> {
+        sqlx::query!(
+            "UPDATE subscriptions SET bandwidth_stripe_price_id = $1 WHERE id = $2;",
+            bandwidth_stripe_id,
+            self.id
+        )
+        .execute(&mut *conn)
+        .await?;
+
+        self.bandwidth_stripe_price_id = Some(bandwidth_stripe_id.to_string());
+
+        Ok(())
+    }
+
+    pub async fn persist_plan_price_stripe_id(
+        &mut self,
+        conn: &mut DatabaseConnection,
+        plan_price_stripe_id: &str,
+    ) -> Result<(), sqlx::Error> {
+        sqlx::query!(
+            "UPDATE subscriptions SET plan_price_stripe_id = $1 WHERE id = $2;",
+            plan_price_stripe_id,
+            self.id
+        )
+        .execute(&mut *conn)
+        .await?;
+
+        self.plan_price_stripe_id = Some(plan_price_stripe_id.to_string());
+
+        Ok(())
+    }
 }
