@@ -16,6 +16,7 @@ pub struct User {
     pub accepted_tos_at: Option<OffsetDateTime>,
     pub subscription_id: String,
     pub stripe_customer_id: Option<String>,
+    pub stripe_subscription_id: Option<String>,
 }
 
 impl User {
@@ -57,8 +58,8 @@ impl User {
         sqlx::query_as!(
             User,
             r#"SELECT id, email, verified_email, display_name, locale, profile_image, created_at,
-                    accepted_tos_at, subscription_id as 'subscription_id!', stripe_customer_id
-                    FROM users
+                    accepted_tos_at, subscription_id as 'subscription_id!', stripe_customer_id,
+                    stripe_subscription_id FROM users
                  WHERE id = $1;"#,
             id,
         )

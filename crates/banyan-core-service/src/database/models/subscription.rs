@@ -274,4 +274,22 @@ impl Subscription {
 
         Ok(())
     }
+
+    pub async fn persist_storage_price_stripe_id(
+        &mut self,
+        conn: &mut DatabaseConnection,
+        storage_stripe_id: &str,
+    ) -> Result<(), sqlx::Error> {
+        sqlx::query!(
+            "UPDATE subscriptions SET hot_storage_stripe_price_id = $1 WHERE id = $2;",
+            storage_stripe_id,
+            self.id
+        )
+        .execute(&mut *conn)
+        .await?;
+
+        self.hot_storage_stripe_price_id = Some(storage_stripe_id.to_string());
+
+        Ok(())
+    }
 }

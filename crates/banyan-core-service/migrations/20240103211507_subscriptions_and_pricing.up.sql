@@ -42,8 +42,9 @@ INSERT INTO subscriptions (
     included_hot_storage, included_bandwidth
   ) VALUES ('starter', 'not_applicable', 'Starter Plan', false, 20, 10, 20, 10);
 
-ALTER TABLE users ADD COLUMN stripe_customer_id TEXT;
 ALTER TABLE users ADD COLUMN subscription_id TEXT REFERENCES subscriptions(id);
+ALTER TABLE users ADD COLUMN stripe_customer_id TEXT;
+ALTER TABLE users ADD COLUMN stripe_subscription_id TEXT;
 
 UPDATE users SET subscription_id = (
     SELECT id FROM subscriptions WHERE service_key = 'starter' LIMIT 1

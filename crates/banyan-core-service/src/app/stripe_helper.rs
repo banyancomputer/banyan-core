@@ -22,7 +22,7 @@ pub struct StripeHelper {
 impl StripeHelper {
     async fn bandwidth_price(
         &self,
-        plan_product_id: &str,
+        bandwidth_product_id: &str,
         subscription: &mut Subscription,
     ) -> Result<stripe::Price, StripeHelperError> {
         use stripe::{
@@ -43,7 +43,7 @@ impl StripeHelper {
         let mut params = CreatePrice::new(Currency::USD);
 
         params.expand = &["product"];
-        params.product = Some(IdOrCreate::Id(plan_product_id));
+        params.product = Some(IdOrCreate::Id(bandwidth_product_id));
 
         let price = subscription
             .bandwidth_price
@@ -220,10 +220,82 @@ impl StripeHelper {
             .await?;
         let _bandwidth_price = self.bandwidth_price(&bandwidth_product_id, &mut *subscription).await?;
 
-        let _storage_product_id = self.find_or_register_product(&STORAGE_PRODUCT_KEY, subscription.tax_class).await?;
+        let storage_product_id = self.find_or_register_product(&STORAGE_PRODUCT_KEY, subscription.tax_class).await?;
+        let _storage_price = self.storage_price(&storage_product_id, &mut *subscription).await?;
 
         todo!()
     }
+
+    async fn storage_price(
+        &self,
+        storage_product_id: &str,
+        subscription: &mut Subscription,
+    ) -> Result<stripe::Price, StripeHelperError> {
+        use stripe::{
+            CreatePrice, CreatePriceRecurring, CreatePriceRecurringInterval,
+            CreatePriceRecurringAggregateUsage, CreatePriceRecurringUsageType, CreatePriceTiers,
+            Currency, IdOrCreate, Metadata, Price, PriceBillingScheme, PriceTaxBehavior,
+            PriceTiersMode, UpTo, UpToOther,
+        };
+
+        // If we already have a cached price associated with bandwidth pricing, verify its still
+        // valid on Stripe then return it, otherwise we'll create a new one.
+        if let Some(stripe_price_id) = &subscription.hot_storage_stripe_price_id {
+            if let Some(price) = self.find_price_by_id(&stripe_price_id).await? {
+                return Ok(price);
+            }
+        }
+
+        let mut params = CreatePrice::new(Currency::USD);
+
+        params.expand = &["product"];
+        params.product = Some(IdOrCreate::Id(storage_product_id));
+
+        let price = subscription
+            .hot_storage_price
+            .as_ref()
+            .ok_or(StripeHelperError::MissingPrice)?;
+
+        params.billing_scheme = Some(PriceBillingScheme::Tiered);
+        params.tiers_mode = Some(PriceTiersMode::Graduated);
+        params.tiers = Some(vec![
+            CreatePriceTiers {
+                flat_amount: Some(0),
+                up_to: Some(UpTo::Max(subscription.included_hot_storage as u64)),
+                ..Default::default()
+            },
+            CreatePriceTiers {
+                unit_amount_decimal: Some(price.in_fractional_cents()),
+                up_to: Some(UpTo::Other(UpToOther::Inf)),
+                ..Default::default()
+            },
+        ]);
+
+        // Set the nature of our payment (recurring monthly, billed monthly subscription)
+        params.recurring = Some(CreatePriceRecurring {
+            aggregate_usage: Some(CreatePriceRecurringAggregateUsage::Sum),
+            interval: CreatePriceRecurringInterval::Month,
+            interval_count: Some(1),
+            usage_type: Some(CreatePriceRecurringUsageType::Metered),
+            ..Default::default()
+        });
+
+        // Tax related settings need to be set as well
+        params.tax_behavior = Some(PriceTaxBehavior::Exclusive);
+
+        params.metadata = Some(Metadata::from([(
+            SUBSCRIPTION_METADATA_KEY.to_string(),
+            subscription.id.to_string(),
+        )]));
+
+        let price = Price::create(&self.client, params).await?;
+
+        let mut conn = self.database.acquire().await?;
+        subscription.persist_storage_price_stripe_id(&mut conn, price.id.as_str()).await?;
+
+        Ok(price)
+    }
+
 }
 
 #[derive(Debug, thiserror::Error)]
