@@ -14,6 +14,7 @@ import { useSession } from './session';
 import { destroyIsUserNew, getIsUserNew } from '@app/utils';
 import { TermsAndColditionsClient } from '@/api/termsAndConditions';
 import { UserClient } from '@/api/user';
+import { TombWorker } from '../../workers/tomb.worker';
 
 interface TombInterface {
 	tomb: TombWasm | null;
@@ -54,7 +55,7 @@ interface TombInterface {
 const TombContext = createContext<TombInterface>({} as TombInterface);
 
 const worker = new Worker(new URL('../../workers/tomb.worker.ts', import.meta.url));
-const tombWorker = wrap<import('../../workers/tomb.worker.ts').TombWorker>(worker);
+const tombWorker = wrap<TombWorker>(worker);
 
 export const TombProvider = ({ children }: { children: ReactNode }) => {
 	const { userData } = useSession();
@@ -70,6 +71,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	const [areBucketsLoading, setAreBucketsLoading] = useState<boolean>(false);
 	const folderLocation = useFolderLocation();
 	const [error, setError] = useState<string>('');
+	const [isWorkerReady, setIsWorkerReady] = useState(false);
 
 	/** Returns list of buckets. */
 	const getBuckets = async () => {
@@ -221,7 +223,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
 	// Initialize the tomb client
 	useEffect(() => {
-		if (!userData || !keystoreInitialized) { return; }
+		if (!userData?.user.id || !keystoreInitialized || !isWorkerReady) { return; }
 		(async () => {
 			try {
 				const apiKey = await getApiKey();
@@ -232,7 +234,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 				setError(error.message);
 			}
 		})();
-	}, [userData, keystoreInitialized, isLoading, escrowedKeyMaterial]);
+	}, [userData?.user.id, keystoreInitialized, isLoading, escrowedKeyMaterial, isWorkerReady]);
 
 	useEffect(() => {
 		if (!areTermsAccepted) return;
@@ -313,6 +315,9 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 					case 'selectedBucket':
 						setSelectedBucket((await tombWorker.state).selectedBucket);
 						setAreBucketsLoading((await tombWorker.state).areBucketsLoading);
+						break;
+					case 'configured':
+						setIsWorkerReady(true);
 						break;
 				}
 			};

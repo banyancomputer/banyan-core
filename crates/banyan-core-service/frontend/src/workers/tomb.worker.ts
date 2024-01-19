@@ -1,5 +1,5 @@
 import { expose } from "comlink";
-import { TombWasm, WasmBucket, WasmMount, WasmSnapshot } from 'tomb-wasm-experimental';
+import { TombWasm, WasmBucket, WasmSnapshot } from 'tomb-wasm-experimental';
 import { Mutex } from 'async-mutex';
 
 import {
@@ -348,3 +348,5 @@ export class TombWorker {
 const worker = new TombWorker();
 
 expose(worker);
+
+self.postMessage('configured');
