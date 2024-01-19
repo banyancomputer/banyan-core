@@ -31,9 +31,7 @@ impl StripeHelper {
         }
 
         // Check if stripe already knows about this product
-        if let Some(stripe_product_id) =
-            search_stripe_products_for_key(&self.client, product_key).await?
-        {
+        if let Some(stripe_product_id) = search_products_for_key(&self.client, product_key).await? {
             stripe_product
                 .record_stripe_product_id(&mut *conn, &stripe_product_id)
                 .await?;
@@ -85,7 +83,11 @@ impl StripeHelper {
         plan_product_id: &str,
         subscription: &Subscription,
     ) -> Result<stripe::Price, StripeHelperError> {
-        use stripe::{CreatePrice, CreatePriceRecurring, CreatePriceRecurringInterval, CreatePriceRecurringUsageType, Currency, IdOrCreate, Metadata};
+        use stripe::{
+            CreatePrice, CreatePriceRecurring, CreatePriceRecurringInterval,
+            CreatePriceRecurringUsageType, Currency, IdOrCreate, Metadata,
+            PriceBillingScheme, PriceTaxBehavior,
+        };
 
         // If we already have a cached price associated with this subscription, verify its still
         // valid on Stripe then return it, otherwise we'll create a new one.
@@ -96,21 +98,34 @@ impl StripeHelper {
         }
 
         let mut params = CreatePrice::new(Currency::USD);
+
+        params.expand = &["product"];
         params.product = Some(IdOrCreate::Id(plan_product_id));
 
-        let price = subscription.plan_base_price.as_ref().ok_or(StripeHelperError::MissingPrice)?;
-        params.unit_amount = Some(price.in_cents());
+        let price = subscription
+            .plan_base_price
+            .as_ref()
+            .ok_or(StripeHelperError::MissingPrice)?;
 
-        params.metadata = Some(Metadata::from([(
-            SUBSCRIPTION_METADATA_KEY.to_string(),
-            subscription.id.to_string(),
-        )]));
+        // Assign the base price of the plan to the stripe price, and the billing scheme
+        params.unit_amount = Some(price.in_cents());
+        params.billing_scheme = Some(PriceBillingScheme::PerUnit);
+
+        // Set the nature of our payment (recurring monthly, billed monthly subscription)
         params.recurring = Some(CreatePriceRecurring {
             interval: CreatePriceRecurringInterval::Month,
             interval_count: Some(1),
             usage_type: Some(CreatePriceRecurringUsageType::Licensed),
             ..Default::default()
         });
+
+        // Tax related settings need to be set as well
+        params.tax_behavior = Some(PriceTaxBehavior::Exclusive);
+
+        params.metadata = Some(Metadata::from([(
+            SUBSCRIPTION_METADATA_KEY.to_string(),
+            subscription.id.to_string(),
+        )]));
 
         todo!()
     }
@@ -167,7 +182,7 @@ async fn register_stripe_product(
     Ok(new_product.id.to_string())
 }
 
-async fn search_stripe_products_for_key(
+async fn search_products_for_key(
     client: &stripe::Client,
     product_key: &str,
 ) -> Result<Option<String>, StripeHelperError> {
