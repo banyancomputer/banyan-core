@@ -14,15 +14,17 @@ pub struct ApiUser {
 }
 
 impl From<User> for ApiUser {
-    fn from(val: User) -> Self {
+    fn from(user: User) -> Self {
+        let subscription_id = user.active_subscription_id().to_string();
+
         Self {
-            id: val.id,
-            email: val.email,
-            display_name: val.display_name,
-            locale: val.locale,
-            profile_image: val.profile_image,
-            accepted_tos_at: val.accepted_tos_at.map(|t| t.unix_timestamp()),
-            subscription_id: val.subscription_id,
+            id: user.id,
+            email: user.email,
+            display_name: user.display_name,
+            locale: user.locale,
+            profile_image: user.profile_image,
+            accepted_tos_at: user.accepted_tos_at.map(|t| t.unix_timestamp()),
+            subscription_id,
         }
     }
 }

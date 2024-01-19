@@ -139,10 +139,10 @@ pub async fn handler(
                 .await
                 .map_err(AuthenticationError::CreationFailed)?;
             let new_user_id = sqlx::query_scalar!(
-                r#"INSERT
-                    INTO users (email, verified_email, display_name, locale, profile_image, subscription_id)
-                    VALUES (LOWER($1), $2, $3, $4, $5, $6)
-                RETURNING id;"#,
+                r#"INSERT INTO users (email, verified_email, display_name, locale, profile_image,
+                       active_subscription_id)
+                     VALUES (LOWER($1), $2, $3, $4, $5, $6)
+                     RETURNING id;"#,
                 user_info.email,
                 user_info.verified_email,
                 user_info.name,
@@ -155,9 +155,8 @@ pub async fn handler(
             .map_err(AuthenticationError::CreationFailed)?;
 
             sqlx::query!(
-                r#"INSERT
-                    INTO oauth_provider_accounts (user_id, provider, provider_id)
-                    VALUES ($1, 'google', $2);"#,
+                r#"INSERT INTO oauth_provider_accounts (user_id, provider, provider_id)
+                     VALUES ($1, 'google', $2);"#,
                 new_user_id,
                 user_info.id,
             )

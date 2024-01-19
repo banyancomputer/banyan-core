@@ -5,7 +5,7 @@ use uuid::Uuid;
 
 use crate::api::models::ApiSubscription;
 use crate::app::AppState;
-use crate::database::models::Subscription;
+use crate::database::models::{Subscription, User};
 use crate::extractors::UserIdentity;
 
 pub async fn handler(
@@ -17,26 +17,22 @@ pub async fn handler(
     let mut conn = database.acquire().await?;
 
     let sub_str_id = subscription_id.to_string();
-    let db_sub = match Subscription::find_by_id(&mut conn, &sub_str_id).await? {
+    let subscription = match Subscription::find_by_id(&mut conn, &sub_str_id).await? {
         Some(sub) => sub,
         None => return Err(SingleSubscriptionError::NotFound),
     };
 
     let user_id = user_id.id().to_string();
-    let current_sub_id = sqlx::query_scalar!(
-        "SELECT subscription_id as 'subscription_id!' FROM users WHERE id = $1;",
-        user_id
-    )
-    .fetch_one(&mut *conn)
-    .await?;
+    let current_user = User::by_id(&mut *conn, &user_id).await?;
+    let active_sub_id = current_user.active_subscription_id();
 
     // If its not visible and not associated with the current user don't acknowledge its existance
-    if !db_sub.visible && db_sub.id != current_sub_id {
+    if !subscription.visible && subscription.id != active_sub_id {
         return Err(SingleSubscriptionError::NotFound);
     }
 
-    let mut api_sub = ApiSubscription::from(db_sub);
-    api_sub.set_active_if_match(&current_sub_id);
+    let mut api_sub = ApiSubscription::from(subscription);
+    api_sub.set_active_if_match(&active_sub_id);
 
     Ok((StatusCode::OK, Json(api_sub)).into_response())
 }

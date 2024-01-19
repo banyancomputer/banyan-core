@@ -14,12 +14,46 @@ pub struct User {
     pub profile_image: Option<String>,
     pub created_at: OffsetDateTime,
     pub accepted_tos_at: Option<OffsetDateTime>,
-    pub subscription_id: String,
+
+    pub active_subscription_id: String,
     pub stripe_customer_id: Option<String>,
-    pub stripe_subscription_id: Option<String>,
+
+    pub current_stripe_plan_subscription_id: Option<String>,
+
+    pub pending_subscription_id: Option<String>,
+    pub pending_stripe_plan_subscription_id: Option<String>,
+    pub pending_subscription_expiration: Option<OffsetDateTime>,
 }
 
 impl User {
+    pub fn active_subscription_id(&self) -> String {
+        if let (Some(si), Some(exp)) = (&self.pending_subscription_id, &self.pending_subscription_expiration) {
+            if exp >= &OffsetDateTime::now_utc() {
+                return si.to_string();
+            }
+        }
+
+        self.active_subscription_id.clone()
+    }
+
+    pub async fn by_id(
+        conn: &mut DatabaseConnection,
+        id: &str,
+    ) -> Result<Self, sqlx::Error> {
+        sqlx::query_as!(
+            User,
+            r#"SELECT id, email, verified_email, display_name, locale, profile_image, created_at,
+                    accepted_tos_at, active_subscription_id as 'active_subscription_id!',
+                    stripe_customer_id, current_stripe_plan_subscription_id,
+                    pending_subscription_id, pending_stripe_plan_subscription_id,
+                    pending_subscription_expiration FROM users
+                 WHERE id = $1;"#,
+            id,
+        )
+        .fetch_one(&mut *conn)
+        .await
+    }
+
     /// Retrieves the amount of storage the user is currently known to be consuming or have
     /// reserved at specific storage providers for pending uploads. There are three relevant fields
     /// that need to be considered for this:
@@ -58,13 +92,22 @@ impl User {
         sqlx::query_as!(
             User,
             r#"SELECT id, email, verified_email, display_name, locale, profile_image, created_at,
-                    accepted_tos_at, subscription_id as 'subscription_id!', stripe_customer_id,
-                    stripe_subscription_id FROM users
+                    accepted_tos_at, active_subscription_id as 'active_subscription_id!',
+                    stripe_customer_id, current_stripe_plan_subscription_id,
+                    pending_subscription_id, pending_stripe_plan_subscription_id,
+                    pending_subscription_expiration FROM users
                  WHERE id = $1;"#,
             id,
         )
         .fetch_optional(&mut *conn)
         .await
+    }
+
+    pub fn pending_subscription(&self) -> Option<String> {
+        match (&self.pending_subscription_id, &self.pending_subscription_expiration) {
+            (Some(psi), Some(pse)) if pse >= &OffsetDateTime::now_utc() => Some(psi.to_string()),
+            _ => None
+        }
     }
 
     pub async fn persist_customer_stripe_id(

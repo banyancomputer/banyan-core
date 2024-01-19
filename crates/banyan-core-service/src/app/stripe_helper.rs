@@ -187,6 +187,46 @@ impl StripeHelper {
         }
     }
 
+    async fn find_or_create_subscription(
+        &self,
+        subscription: &mut Subscription,
+        user: &mut User,
+        customer: &stripe::Customer,
+        prices: &[&stripe::Price],
+    ) -> Result<stripe::Subscription, StripeHelperError> {
+        use stripe::{CollectionMethod, CreateSubscription, CreateSubscriptionAutomaticTax, Subscription, Metadata};
+
+        if let Some(sub_id) = &user.current_stripe_plan_subscription_id {
+            if let Some(stripe_sub) = self.find_subscription_by_id(&sub_id).await? {
+                if subscription_matches(&stripe_sub, &customer, &prices) {
+                    return Ok(stripe_sub);
+                }
+            }
+        }
+
+        let mut params = CreateSubscription::new(customer.id.clone());
+
+        params.automatic_tax = Some(CreateSubscriptionAutomaticTax { enabled: true });
+        params.collection_method = Some(CollectionMethod::ChargeAutomatically);
+        params.expand = &["items"];
+
+        let description = format!("Banyan Storage - {}", subscription.title);
+        params.description = Some(&description);
+
+        let items: Vec<_> = prices.iter().map(|p| {
+            stripe::CreateSubscriptionItems { price: Some(p.id.to_string()), ..Default::default() }
+        })
+        .collect();
+        params.items = Some(items);
+
+        params.metadata = Some(Metadata::from([
+            (METADATA_USER_KEY.to_string(), user.id.clone()),
+            (METADATA_SUBSCRIPTION_KEY.to_string(), subscription.id.clone()),
+        ]));
+
+        todo!()
+    }
+
     async fn find_price_by_id(
         &self,
         price_id: &str,
@@ -206,6 +246,30 @@ impl StripeHelper {
 
         match Price::retrieve(&self.client, &price_id, &["product"]).await {
             Ok(price) => Ok(Some(price)),
+            Err(stripe::StripeError::Stripe(req_err)) if req_err.http_status == 404 => Ok(None),
+            Err(err) => Err(StripeHelperError::from(err)),
+        }
+    }
+
+    async fn find_subscription_by_id(
+        &self,
+        subscription_id: &str,
+    ) -> Result<Option<stripe::Subscription>, StripeHelperError> {
+        use std::str::FromStr;
+
+        use stripe::{Subscription, SubscriptionId};
+
+        let subscription_id = match SubscriptionId::from_str(&subscription_id) {
+            Ok(sid) => sid,
+            Err(err) => {
+                tracing::warn!("subscription ID stored in the database was an invalid format: {err}");
+                // If this ever occurs we'll just overwrite the bad ID with a fresh one
+                return Ok(None);
+            }
+        };
+
+        match Subscription::retrieve(&self.client, &subscription_id, &["items"]).await {
+            Ok(sub) => Ok(Some(sub)),
             Err(stripe::StripeError::Stripe(req_err)) if req_err.http_status == 404 => Ok(None),
             Err(err) => Err(StripeHelperError::from(err)),
         }
@@ -277,7 +341,7 @@ impl StripeHelper {
 
     pub async fn realize_subscription(
         &self,
-        user_id: &str,
+        user: &mut User,
         subscription: &mut Subscription,
     ) -> Result<Option<stripe::Subscription>, StripeHelperError> {
         let plan_product_key = format!("{}-plan", subscription.service_key);
@@ -285,32 +349,33 @@ impl StripeHelper {
         let plan_product_id = self
             .find_or_register_product(&plan_product_key, subscription.tax_class)
             .await?;
-        let _plan_price = self
+        let plan_price = self
             .plan_price(&plan_product_id, &mut *subscription)
             .await?;
 
         let bandwidth_product_id = self
             .find_or_register_product(&BANDWIDTH_PRODUCT_KEY, subscription.tax_class)
             .await?;
-        let _bandwidth_price = self
+        let bandwidth_price = self
             .bandwidth_price(&bandwidth_product_id, &mut *subscription)
             .await?;
 
         let storage_product_id = self
             .find_or_register_product(&STORAGE_PRODUCT_KEY, subscription.tax_class)
             .await?;
-        let _storage_price = self
+        let storage_price = self
             .storage_price(&storage_product_id, &mut *subscription)
             .await?;
 
-        let mut conn = self.database.acquire().await?;
-        let mut user = match User::find_by_id(&mut *conn, user_id).await? {
-            Some(user) => user,
-            None => return Err(StripeHelperError::MissingUser),
-        };
-        conn.close().await?;
-
-        let customer = self.find_or_create_customer(&mut user).await?;
+        let customer = self.find_or_create_customer(&mut *user).await?;
+        let stripe_subscription = self
+            .find_or_create_subscription(
+                &mut *subscription,
+                &mut *user,
+                &customer,
+                &[&plan_price, &bandwidth_price, &storage_price],
+            )
+            .await?;
 
         todo!()
     }
@@ -467,4 +532,23 @@ async fn search_products_for_key(
     }
 
     Ok(None)
+}
+
+fn subscription_matches(subscription: &stripe::Subscription, customer: &stripe::Customer, prices: &[&stripe::Price]) -> bool {
+    if subscription.customer.id() != customer.id {
+        return false;
+    }
+
+    if subscription.items.data.len() != prices.len() {
+        return false;
+    }
+
+    for (sub_item, exp_price) in subscription.items.data.iter().zip(prices.iter()) {
+        match &sub_item.price {
+            Some(price) if exp_price.id == price.id => (),
+            _ => return false,
+        }
+    }
+
+    true
 }

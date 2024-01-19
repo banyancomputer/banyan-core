@@ -4,7 +4,7 @@ use axum::response::{IntoResponse, Response};
 
 use crate::api::models::ApiSubscription;
 use crate::app::AppState;
-use crate::database::models::Subscription;
+use crate::database::models::{Subscription, User};
 use crate::extractors::UserIdentity;
 
 pub async fn handler(
@@ -17,9 +17,8 @@ pub async fn handler(
     let user_sub_id = match user {
         Some(u) => {
             let user_id = u.id().to_string();
-            sqlx::query_scalar!("SELECT subscription_id FROM users WHERE id = $1;", user_id)
-                .fetch_one(&mut *conn)
-                .await?
+            let current_user = User::by_id(&mut *conn, &user_id).await?;
+            Some(current_user.active_subscription_id())
         }
         None => None,
     };

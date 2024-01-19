@@ -4,13 +4,13 @@ use axum::response::{IntoResponse, Response};
 use uuid::Uuid;
 
 use crate::app::{AppState, StripeHelperError};
-use crate::database::models::Subscription;
+use crate::database::models::{Subscription, User};
 use crate::extractors::UserIdentity;
 
 pub async fn handler(
     user_id: UserIdentity,
     State(state): State<AppState>,
-    Path(subscription_id): Path<Uuid>,
+    Path(requested_subscription_id): Path<Uuid>,
 ) -> Result<Response, PurchaseSubscriptionError> {
     // API authenticated users are not allowed to go through the stripe purchase flow, give them a
     // nice error indicating as much
@@ -23,38 +23,35 @@ pub async fn handler(
     let database = state.database();
     let mut conn = database.acquire().await?;
 
+    let requested_subscription_id = requested_subscription_id.to_string();
+    let mut requested_subscription = match Subscription::find_by_id(&mut conn, &requested_subscription_id).await? {
+        Some(sub) => sub,
+        None => return Err(PurchaseSubscriptionError::NotFound),
+    };
+
     let user_id = user_id.id().to_string();
-    let current_sub_id = sqlx::query_scalar!(
-        "SELECT subscription_id as 'subscription_id!' FROM users WHERE id = $1;",
-        user_id
-    )
-    .fetch_one(&mut *conn)
-    .await?;
+    let mut current_user = User::by_id(&mut *conn, &user_id).await?;
 
-    let current_sub_id_str = current_sub_id.to_string();
-    let current_subscription =
-        match Subscription::find_by_id(&mut conn, &current_sub_id_str).await? {
-            Some(sub) => sub,
-            None => return Err(PurchaseSubscriptionError::NotFound),
-        };
-
-    let subscription_id = subscription_id.to_string();
-    let mut selected_subscription =
-        match Subscription::find_by_id(&mut conn, &subscription_id).await? {
-            Some(sub) => sub,
-            None => return Err(PurchaseSubscriptionError::NotFound),
-        };
-
-    if current_subscription.id == selected_subscription.id {
-        let err_msg = serde_json::json!({"msg": "plan is already enabled"});
-        return Ok((StatusCode::OK, Json(err_msg)).into_response());
+    if current_user.pending_subscription().is_some() {
+        // The user has already started changing their subscription to another one, and that hasn't
+        // been resolved or expired. Until we've settled the matter we can't start another
+        // transition.
+        //
+        // todo(sstelfox): An improvement here would be to proactively call out to stripe and
+        // asking about the status of the pending order, but for now we can simply trigger an error
+        // if a user wants to rapidly change between subscriptions.
+        return Err(PurchaseSubscriptionError::SubChangeInProgress);
     }
 
-    // For now we don't allow transitioning between subscriptions directly, so a user must be
-    // coming from a new plan.
-    if current_subscription.service_key != "starter" {
-        let err_msg = serde_json::json!({"msg": "can only select plan from the starter (temporary limitation)"});
-        return Ok((StatusCode::BAD_REQUEST, Json(err_msg)).into_response());
+    let current_subscription =
+        match Subscription::find_by_id(&mut conn, &current_user.active_subscription_id).await? {
+            Some(sub) => sub,
+            None => return Err(PurchaseSubscriptionError::NotFound),
+        };
+
+    if current_subscription.id == requested_subscription.id {
+        let err_msg = serde_json::json!({"msg": "plan is already enabled"});
+        return Ok((StatusCode::OK, Json(err_msg)).into_response());
     }
 
     let stripe_helper = match state.stripe_helper() {
@@ -69,7 +66,7 @@ pub async fn handler(
     };
 
     let stripe_subscription = stripe_helper
-        .realize_subscription(&user_id, &mut selected_subscription)
+        .realize_subscription(&mut current_user, &mut requested_subscription)
         .await
         .map_err(PurchaseSubscriptionError::StripeSetupError)?;
 
@@ -89,6 +86,9 @@ pub enum PurchaseSubscriptionError {
 
     #[error("failure occurred setting up stripe to purchase subscription: {0}")]
     StripeSetupError(StripeHelperError),
+
+    #[error("subscription change is already in progress")]
+    SubChangeInProgress,
 }
 
 impl IntoResponse for PurchaseSubscriptionError {
@@ -97,6 +97,10 @@ impl IntoResponse for PurchaseSubscriptionError {
             PurchaseSubscriptionError::NotFound => {
                 let err_msg = serde_json::json!({"msg": "not found"});
                 (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
+            }
+            PurchaseSubscriptionError::SubChangeInProgress => {
+                let err_msg = serde_json::json!({"msg": "subscription change is already in progress"});
+                (StatusCode::CONFLICT, Json(err_msg)).into_response()
             }
             _ => {
                 tracing::error!("purchase subscription error: {self}");
