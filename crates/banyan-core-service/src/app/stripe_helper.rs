@@ -1,12 +1,20 @@
+use std::collections::HashSet;
+
+use time::OffsetDateTime;
+use url::Url;
+
 use crate::app::secrets::StripeSecret;
 use crate::database::models::{StripeProduct, Subscription, TaxClass, User};
 use crate::database::Database;
+use crate::pricing::SUBSCRIPTION_CHANGE_EXPIRATION_WINDOW;
 
 const BANDWIDTH_PRODUCT_KEY: &str = "bandwidth";
 
 const METADATA_PRODUCT_KEY: &str = "product-key";
 
 const METADATA_SUBSCRIPTION_KEY: &str = "subscription-id";
+
+const METADATA_STRIPE_SUBSCRIPTION_KEY: &str = "stripe-subscription-id";
 
 const METADATA_USER_KEY: &str = "user-id";
 
@@ -92,6 +100,93 @@ impl StripeHelper {
             .await?;
 
         Ok(price)
+    }
+
+    pub async fn checkout_subscription(
+        &self,
+        base_url: &Url,
+        user: &User,
+        subscription: &Subscription,
+        stripe_subscription: &stripe::Subscription,
+    ) -> Result<stripe::CheckoutSession, StripeHelperError> {
+        use stripe::{CheckoutSession, CheckoutSessionMode, CreateCheckoutSession, CreateCheckoutSessionAutomaticTax, CreateCheckoutSessionLineItems, Currency, Metadata};
+
+        let customer_id = stripe_subscription.customer.id();
+        let mut params = CreateCheckoutSession::new(customer_id.as_str());
+
+        params.automatic_tax = Some(CreateCheckoutSessionAutomaticTax { enabled: true });
+        params.currency = Some(Currency::USD);
+        params.customer_email = Some(&user.email);
+        params.mode = Some(CheckoutSessionMode::Subscription);
+
+        let expiration = OffsetDateTime::now_utc() + SUBSCRIPTION_CHANGE_EXPIRATION_WINDOW;
+        params.expires_at = Some(expiration.unix_timestamp());
+
+        let stripe_sub_price_ids: HashSet<_> = stripe_subscription.items.data.iter().map(|si| si.id.to_string()).collect();
+        let mut line_items = Vec::new();
+
+        // The plan is not metered and requires us to indicate a quantity, for all of our price we
+        // validate the same IDs are present in the subscription object we're referencing.
+        match &subscription.plan_price_stripe_id {
+            Some(pid) if stripe_sub_price_ids.contains(pid) => {
+                let checkout_item = CreateCheckoutSessionLineItems {
+                    price: Some(pid.to_string()),
+                    quantity: Some(1),
+                    ..Default::default()
+                };
+
+                line_items.push(checkout_item);
+            },
+            _ => return Err(StripeHelperError::MissingPrice),
+        }
+
+        // The other two are metered and need to omit quantity
+        match &subscription.bandwidth_stripe_price_id {
+            Some(pid) if stripe_sub_price_ids.contains(pid) => {
+                let checkout_item = CreateCheckoutSessionLineItems {
+                    price: Some(pid.to_string()),
+                    ..Default::default()
+                };
+
+                line_items.push(checkout_item);
+            },
+            _ => return Err(StripeHelperError::MissingPrice),
+        }
+
+        match &subscription.hot_storage_stripe_price_id {
+            Some(pid) if stripe_sub_price_ids.contains(pid) => {
+                let checkout_item = CreateCheckoutSessionLineItems {
+                    price: Some(pid.to_string()),
+                    ..Default::default()
+                };
+
+                line_items.push(checkout_item);
+            },
+            _ => return Err(StripeHelperError::MissingPrice),
+        }
+
+        params.line_items = Some(line_items);
+
+        // We could hold on to a custom reference to this if we wanted to but for now its a bit
+        // overkill
+        //params.client_reference_id = Some("an-internal-'cart'-id for reconciliation of this session")
+
+        params.metadata = Some(Metadata::from([
+            (METADATA_USER_KEY.to_string(), user.id.clone()),
+            (METADATA_STRIPE_SUBSCRIPTION_KEY.to_string(), stripe_subscription.id.to_string()),
+            (METADATA_SUBSCRIPTION_KEY.to_string(), subscription.id.to_string()),
+        ]));
+
+        let mut cancellation_url = base_url.clone();
+        cancellation_url.set_path("/api/v1/subscriptions/cancel_callback");
+        params.cancel_url = Some(cancellation_url.as_str());
+
+        let mut success_url = base_url.clone();
+        success_url.set_path("/api/v1/subscriptions/success_callback");
+        params.success_url = success_url.as_str();
+
+        let checkout_session = CheckoutSession::create(&self.client, params).await?;
+        Ok(checkout_session)
     }
 
     async fn find_or_register_product(
@@ -348,7 +443,7 @@ impl StripeHelper {
         &self,
         user: &mut User,
         subscription: &mut Subscription,
-    ) -> Result<Option<stripe::Subscription>, StripeHelperError> {
+    ) -> Result<stripe::Subscription, StripeHelperError> {
         let plan_product_key = format!("{}-plan", subscription.service_key);
 
         // todo: move product lookup and creation into price lookup
@@ -385,7 +480,7 @@ impl StripeHelper {
             )
             .await?;
 
-        Ok(Some(stripe_subscription))
+        Ok(stripe_subscription)
     }
 
     async fn storage_price(
@@ -466,7 +561,7 @@ pub enum StripeHelperError {
     #[error("failure while querying the database: {0}")]
     DatabaseFailure(#[from] sqlx::Error),
 
-    #[error("attempted to create price for subscription without an available price")]
+    #[error("attempted to access price without one being available")]
     MissingPrice,
 
     #[error("failed to located user that should have existed")]

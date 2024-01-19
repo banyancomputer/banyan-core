@@ -5,10 +5,11 @@ use uuid::Uuid;
 
 use crate::app::{AppState, StripeHelperError};
 use crate::database::models::{Subscription, User};
-use crate::extractors::UserIdentity;
+use crate::extractors::{ServerBase, UserIdentity};
 
 pub async fn handler(
     user_id: UserIdentity,
+    ServerBase(host_url): ServerBase,
     State(state): State<AppState>,
     Path(requested_subscription_id): Path<Uuid>,
 ) -> Result<Response, PurchaseSubscriptionError> {
@@ -73,7 +74,13 @@ pub async fn handler(
         .await
         .map_err(PurchaseSubscriptionError::StripeSetupError)?;
 
-    todo!()
+    let checkout_session = stripe_helper
+        .checkout_subscription(&host_url, &current_user, &requested_subscription, &stripe_subscription)
+        .await
+        .map_err(PurchaseSubscriptionError::StripeSetupError)?;
+
+    let msg = serde_json::json!({"checkout_url": checkout_session.url});
+    Ok((StatusCode::OK, Json(msg)).into_response())
 }
 
 #[derive(Debug, thiserror::Error)]
