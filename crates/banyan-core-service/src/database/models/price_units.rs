@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::pricing::{PRICE_UNIT_TO_CENTS_RATE, PRICE_UNIT_TO_USD_RATE};
 
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize, sqlx::Type)]
+#[serde(transparent)]
 #[sqlx(transparent)]
 pub struct PriceUnits(i64);
 
