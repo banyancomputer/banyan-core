@@ -17,18 +17,18 @@ pub async fn handler(
     let user_sub_id = match user {
         Some(u) => {
             let user_id = u.id().to_string();
-            let current_user = User::by_id(&mut *conn, &user_id).await?;
+            let current_user = User::by_id(&mut conn, &user_id).await?;
             Some(current_user.active_subscription_id())
         }
         None => None,
     };
 
     let subscriptions =
-        Subscription::all_public_or_current(&mut conn, user_sub_id.as_ref().map(|c| c.as_str()))
+        Subscription::all_public_or_current(&mut conn, user_sub_id.as_deref())
             .await?;
     let mut api_subscriptions: Vec<_> = subscriptions
         .into_iter()
-        .map(|s| ApiSubscription::from(s))
+        .map(ApiSubscription::from)
         .collect();
 
     if let Some(active_id) = user_sub_id {

@@ -24,11 +24,11 @@ impl TaxClass {
 
         match self {
             TaxClass::Personal => {
-                Some(TaxCodeId::from_str(&TAX_CODE_PERSONAL).expect("fixed code to be valid"))
+                Some(TaxCodeId::from_str(TAX_CODE_PERSONAL).expect("fixed code to be valid"))
             }
             TaxClass::NotApplicable => None,
             TaxClass::Business => {
-                Some(TaxCodeId::from_str(&TAX_CODE_BUSINESS).expect("fixed code to be valid"))
+                Some(TaxCodeId::from_str(TAX_CODE_BUSINESS).expect("fixed code to be valid"))
             }
         }
     }

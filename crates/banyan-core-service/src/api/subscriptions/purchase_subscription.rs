@@ -25,13 +25,14 @@ pub async fn handler(
     let mut conn = database.acquire().await?;
 
     let requested_subscription_id = requested_subscription_id.to_string();
-    let mut requested_subscription = match Subscription::find_by_id(&mut conn, &requested_subscription_id).await? {
-        Some(sub) => sub,
-        None => return Err(PurchaseSubscriptionError::NotFound),
-    };
+    let mut requested_subscription =
+        match Subscription::find_by_id(&mut conn, &requested_subscription_id).await? {
+            Some(sub) => sub,
+            None => return Err(PurchaseSubscriptionError::NotFound),
+        };
 
     let user_id = user_id.id().to_string();
-    let mut current_user = User::by_id(&mut *conn, &user_id).await?;
+    let mut current_user = User::by_id(&mut conn, &user_id).await?;
 
     if current_user.pending_subscription().is_some() {
         // The user has already started changing their subscription to another one, and that hasn't
@@ -75,7 +76,12 @@ pub async fn handler(
         .map_err(PurchaseSubscriptionError::StripeSetupError)?;
 
     let checkout_session = stripe_helper
-        .checkout_subscription(&host_url, &current_user, &requested_subscription, &stripe_subscription)
+        .checkout_subscription(
+            &host_url,
+            &current_user,
+            &requested_subscription,
+            &stripe_subscription,
+        )
         .await
         .map_err(PurchaseSubscriptionError::StripeSetupError)?;
 
@@ -109,7 +115,8 @@ impl IntoResponse for PurchaseSubscriptionError {
                 (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
             }
             PurchaseSubscriptionError::SubChangeInProgress => {
-                let err_msg = serde_json::json!({"msg": "subscription change is already in progress"});
+                let err_msg =
+                    serde_json::json!({"msg": "subscription change is already in progress"});
                 (StatusCode::CONFLICT, Json(err_msg)).into_response()
             }
             _ => {

@@ -29,7 +29,7 @@ pub async fn handler(user_identity: UserIdentity, State(state): State<AppState>)
         Err(err) => {
             tracing::error!("failed to lookup user: {err}");
             let err_msg = serde_json::json!({"msg": "backend service experienced an issue servicing the request"});
-            return (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response();
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
         }
     }
 }

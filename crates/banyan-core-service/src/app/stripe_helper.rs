@@ -45,7 +45,7 @@ impl StripeHelper {
         // If we already have a cached price associated with bandwidth pricing, verify its still
         // valid on Stripe then return it, otherwise we'll create a new one.
         if let Some(stripe_price_id) = &subscription.bandwidth_stripe_price_id {
-            if let Some(price) = self.find_price_by_id(&stripe_price_id).await? {
+            if let Some(price) = self.find_price_by_id(stripe_price_id).await? {
                 return Ok(price);
             }
         }
@@ -109,7 +109,10 @@ impl StripeHelper {
         subscription: &Subscription,
         stripe_subscription: &stripe::Subscription,
     ) -> Result<stripe::CheckoutSession, StripeHelperError> {
-        use stripe::{CheckoutSession, CheckoutSessionMode, CreateCheckoutSession, CreateCheckoutSessionAutomaticTax, CreateCheckoutSessionLineItems, Currency, Metadata};
+        use stripe::{
+            CheckoutSession, CheckoutSessionMode, CreateCheckoutSession,
+            CreateCheckoutSessionAutomaticTax, CreateCheckoutSessionLineItems, Currency, Metadata,
+        };
 
         let customer_id = stripe_subscription.customer.id();
         let mut params = CreateCheckoutSession::new(customer_id.as_str());
@@ -122,7 +125,12 @@ impl StripeHelper {
         let expiration = OffsetDateTime::now_utc() + SUBSCRIPTION_CHANGE_EXPIRATION_WINDOW;
         params.expires_at = Some(expiration.unix_timestamp());
 
-        let stripe_sub_price_ids: HashSet<_> = stripe_subscription.items.data.iter().map(|si| si.id.to_string()).collect();
+        let stripe_sub_price_ids: HashSet<_> = stripe_subscription
+            .items
+            .data
+            .iter()
+            .map(|si| si.id.to_string())
+            .collect();
         let mut line_items = Vec::new();
 
         // The plan is not metered and requires us to indicate a quantity, for all of our price we
@@ -136,7 +144,7 @@ impl StripeHelper {
                 };
 
                 line_items.push(checkout_item);
-            },
+            }
             _ => return Err(StripeHelperError::MissingPrice),
         }
 
@@ -149,7 +157,7 @@ impl StripeHelper {
                 };
 
                 line_items.push(checkout_item);
-            },
+            }
             _ => return Err(StripeHelperError::MissingPrice),
         }
 
@@ -161,7 +169,7 @@ impl StripeHelper {
                 };
 
                 line_items.push(checkout_item);
-            },
+            }
             _ => return Err(StripeHelperError::MissingPrice),
         }
 
@@ -173,8 +181,14 @@ impl StripeHelper {
 
         params.metadata = Some(Metadata::from([
             (METADATA_USER_KEY.to_string(), user.id.clone()),
-            (METADATA_STRIPE_SUBSCRIPTION_KEY.to_string(), stripe_subscription.id.to_string()),
-            (METADATA_SUBSCRIPTION_KEY.to_string(), subscription.id.to_string()),
+            (
+                METADATA_STRIPE_SUBSCRIPTION_KEY.to_string(),
+                stripe_subscription.id.to_string(),
+            ),
+            (
+                METADATA_SUBSCRIPTION_KEY.to_string(),
+                subscription.id.to_string(),
+            ),
         ]));
 
         let mut cancellation_url = base_url.clone();
@@ -196,7 +210,7 @@ impl StripeHelper {
     ) -> Result<String, StripeHelperError> {
         let mut conn = self.database.begin().await?;
         let mut product =
-            StripeProduct::from_product_key(&mut *conn, product_key, tax_class).await?;
+            StripeProduct::from_product_key(&mut conn, product_key, tax_class).await?;
 
         // We've already created the product in stripe, return the existing product ID
         if let Some(stripe_product_id) = product.stripe_product_id {
@@ -208,7 +222,7 @@ impl StripeHelper {
             search_products_for_key(&self.client, product_key, tax_class).await?
         {
             product
-                .record_stripe_product_id(&mut *conn, &stripe_product_id)
+                .record_stripe_product_id(&mut conn, &stripe_product_id)
                 .await?;
             conn.commit().await?;
             return Ok(stripe_product_id);
@@ -220,7 +234,7 @@ impl StripeHelper {
         let new_product_id = new_product.id.as_str().to_string();
 
         product
-            .record_stripe_product_id(&mut *conn, &new_product_id)
+            .record_stripe_product_id(&mut conn, &new_product_id)
             .await?;
 
         Ok(new_product_id)
@@ -235,7 +249,7 @@ impl StripeHelper {
         // If we already have a cached customer associated with the user, validate it still exists
         // in Stripe and if it is valid, return it directly, otherwise we'll create a new one.
         if let Some(cust_id) = &user.stripe_customer_id {
-            if let Some(customer) = self.find_customer_by_id(&cust_id).await? {
+            if let Some(customer) = self.find_customer_by_id(cust_id).await? {
                 return Ok(customer);
             }
         }
@@ -252,7 +266,7 @@ impl StripeHelper {
         let customer = Customer::create(&self.client, params).await?;
 
         let mut conn = self.database.acquire().await?;
-        user.persist_customer_stripe_id(&mut *conn, customer.id.as_str())
+        user.persist_customer_stripe_id(&mut conn, customer.id.as_str())
             .await?;
 
         Ok(customer)
@@ -266,7 +280,7 @@ impl StripeHelper {
 
         use stripe::{Customer, CustomerId};
 
-        let customer_id = match CustomerId::from_str(&customer_id) {
+        let customer_id = match CustomerId::from_str(customer_id) {
             Ok(cid) => cid,
             Err(err) => {
                 tracing::warn!("customer ID stored in the database was an invalid format: {err}");
@@ -289,11 +303,14 @@ impl StripeHelper {
         customer: &stripe::Customer,
         prices: &[&stripe::Price],
     ) -> Result<stripe::Subscription, StripeHelperError> {
-        use stripe::{CollectionMethod, CreateSubscription, CreateSubscriptionAutomaticTax, Subscription, Metadata};
+        use stripe::{
+            CollectionMethod, CreateSubscription, CreateSubscriptionAutomaticTax, Metadata,
+            Subscription,
+        };
 
         if let Some(sub_id) = &user.current_stripe_plan_subscription_id {
-            if let Some(stripe_sub) = self.find_subscription_by_id(&sub_id).await? {
-                if subscription_matches(&stripe_sub, &customer, &prices) {
+            if let Some(stripe_sub) = self.find_subscription_by_id(sub_id).await? {
+                if subscription_matches(&stripe_sub, customer, prices) {
                     return Ok(stripe_sub);
                 }
             }
@@ -308,21 +325,28 @@ impl StripeHelper {
         let description = format!("Banyan Storage - {}", subscription.title);
         params.description = Some(&description);
 
-        let items: Vec<_> = prices.iter().map(|p| {
-            stripe::CreateSubscriptionItems { price: Some(p.id.to_string()), ..Default::default() }
-        })
-        .collect();
+        let items: Vec<_> = prices
+            .iter()
+            .map(|p| stripe::CreateSubscriptionItems {
+                price: Some(p.id.to_string()),
+                ..Default::default()
+            })
+            .collect();
         params.items = Some(items);
 
         params.metadata = Some(Metadata::from([
             (METADATA_USER_KEY.to_string(), user.id.clone()),
-            (METADATA_SUBSCRIPTION_KEY.to_string(), subscription.id.clone()),
+            (
+                METADATA_SUBSCRIPTION_KEY.to_string(),
+                subscription.id.clone(),
+            ),
         ]));
 
         let stripe_sub = Subscription::create(&self.client, params).await?;
 
         let mut conn = self.database.acquire().await?;
-        user.persist_pending_subscription(&mut *conn, &subscription.id, &stripe_sub.id).await?;
+        user.persist_pending_subscription(&mut conn, &subscription.id, &stripe_sub.id)
+            .await?;
 
         Ok(stripe_sub)
     }
@@ -335,7 +359,7 @@ impl StripeHelper {
 
         use stripe::{Price, PriceId};
 
-        let price_id = match PriceId::from_str(&price_id) {
+        let price_id = match PriceId::from_str(price_id) {
             Ok(pid) => pid,
             Err(err) => {
                 tracing::warn!("price ID stored in the database was an invalid format: {err}");
@@ -359,10 +383,12 @@ impl StripeHelper {
 
         use stripe::{Subscription, SubscriptionId};
 
-        let subscription_id = match SubscriptionId::from_str(&subscription_id) {
+        let subscription_id = match SubscriptionId::from_str(subscription_id) {
             Ok(sid) => sid,
             Err(err) => {
-                tracing::warn!("subscription ID stored in the database was an invalid format: {err}");
+                tracing::warn!(
+                    "subscription ID stored in the database was an invalid format: {err}"
+                );
                 // If this ever occurs we'll just overwrite the bad ID with a fresh one
                 return Ok(None);
             }
@@ -394,7 +420,7 @@ impl StripeHelper {
         // If we already have a cached price associated with this subscription, verify its still
         // valid on Stripe then return it, otherwise we'll create a new one.
         if let Some(price_stripe_id) = &subscription.plan_price_stripe_id {
-            if let Some(price) = self.find_price_by_id(&price_stripe_id).await? {
+            if let Some(price) = self.find_price_by_id(price_stripe_id).await? {
                 return Ok(price);
             }
         }
@@ -433,7 +459,7 @@ impl StripeHelper {
 
         let mut conn = self.database.acquire().await?;
         subscription
-            .persist_plan_price_stripe_id(&mut *conn, price.id.as_str())
+            .persist_plan_price_stripe_id(&mut conn, price.id.as_str())
             .await?;
 
         Ok(price)
@@ -456,7 +482,7 @@ impl StripeHelper {
 
         // todo: move product lookup and creation into price lookup
         let bandwidth_product_id = self
-            .find_or_register_product(&BANDWIDTH_PRODUCT_KEY, subscription.tax_class)
+            .find_or_register_product(BANDWIDTH_PRODUCT_KEY, subscription.tax_class)
             .await?;
         let bandwidth_price = self
             .bandwidth_price(&bandwidth_product_id, &mut *subscription)
@@ -464,7 +490,7 @@ impl StripeHelper {
 
         // todo: move product lookup and creation into price lookup
         let storage_product_id = self
-            .find_or_register_product(&STORAGE_PRODUCT_KEY, subscription.tax_class)
+            .find_or_register_product(STORAGE_PRODUCT_KEY, subscription.tax_class)
             .await?;
         let storage_price = self
             .storage_price(&storage_product_id, &mut *subscription)
@@ -498,7 +524,7 @@ impl StripeHelper {
         // If we already have a cached price associated with bandwidth pricing, verify its still
         // valid on Stripe then return it, otherwise we'll create a new one.
         if let Some(stripe_price_id) = &subscription.hot_storage_stripe_price_id {
-            if let Some(price) = self.find_price_by_id(&stripe_price_id).await? {
+            if let Some(price) = self.find_price_by_id(stripe_price_id).await? {
                 return Ok(price);
             }
         }
@@ -592,7 +618,7 @@ async fn register_stripe_product(
     params.metadata = Some(metadata);
     params.tax_code = tax_class.stripe_id();
 
-    let new_product = Product::create(&client, params).await?;
+    let new_product = Product::create(client, params).await?;
     Ok(new_product)
 }
 
@@ -608,7 +634,7 @@ async fn search_products_for_key(
         ..Default::default()
     };
 
-    let existing_products = Product::list(&client, &search_params).await?;
+    let existing_products = Product::list(client, &search_params).await?;
     for product in existing_products.data.iter() {
         let metadata = match &product.metadata {
             Some(m) => m,
@@ -637,7 +663,11 @@ async fn search_products_for_key(
     Ok(None)
 }
 
-fn subscription_matches(subscription: &stripe::Subscription, customer: &stripe::Customer, prices: &[&stripe::Price]) -> bool {
+fn subscription_matches(
+    subscription: &stripe::Subscription,
+    customer: &stripe::Customer,
+    prices: &[&stripe::Price],
+) -> bool {
     if subscription.customer.id() != customer.id {
         return false;
     }

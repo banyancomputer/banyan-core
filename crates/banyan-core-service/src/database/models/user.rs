@@ -29,7 +29,10 @@ pub struct User {
 
 impl User {
     pub fn active_subscription_id(&self) -> String {
-        if let (Some(si), Some(exp)) = (&self.pending_subscription_id, &self.pending_subscription_expiration) {
+        if let (Some(si), Some(exp)) = (
+            &self.pending_subscription_id,
+            &self.pending_subscription_expiration,
+        ) {
             if exp >= &OffsetDateTime::now_utc() {
                 return si.to_string();
             }
@@ -38,10 +41,7 @@ impl User {
         self.active_subscription_id.clone()
     }
 
-    pub async fn by_id(
-        conn: &mut DatabaseConnection,
-        id: &str,
-    ) -> Result<Self, sqlx::Error> {
+    pub async fn by_id(conn: &mut DatabaseConnection, id: &str) -> Result<Self, sqlx::Error> {
         sqlx::query_as!(
             User,
             r#"SELECT id, email, verified_email, display_name, locale, profile_image, created_at,
@@ -106,9 +106,12 @@ impl User {
     }
 
     pub fn pending_subscription(&self) -> Option<String> {
-        match (&self.pending_subscription_id, &self.pending_subscription_expiration) {
+        match (
+            &self.pending_subscription_id,
+            &self.pending_subscription_expiration,
+        ) {
             (Some(psi), Some(pse)) if pse >= &OffsetDateTime::now_utc() => Some(psi.to_string()),
-            _ => None
+            _ => None,
         }
     }
 
