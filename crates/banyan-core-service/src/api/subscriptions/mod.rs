@@ -2,6 +2,9 @@ mod all_subscriptions;
 mod purchase_subscription;
 mod single_subscription;
 
+mod cancel_callback;
+mod success_callback;
+
 use std::error::Error;
 
 use axum::body::HttpBody;
@@ -23,6 +26,8 @@ where
             "/:subscription_id/subscribe",
             post(purchase_subscription::handler),
         )
+        .route("/cancel", get(cancel_callback::handler))
+        .route("/success/{:checkout_session_id}", get(success_callback::handler))
         .route("/", get(all_subscriptions::handler))
         .with_state(state)
 }

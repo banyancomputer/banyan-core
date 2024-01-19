@@ -176,7 +176,7 @@ impl StripeHelper {
         params.line_items = Some(line_items);
 
         // We could hold on to a custom reference to this if we wanted to but for now its a bit
-        // overkill
+        // overkill.
         //params.client_reference_id = Some("an-internal-'cart'-id for reconciliation of this session")
 
         params.metadata = Some(Metadata::from([
@@ -192,14 +192,18 @@ impl StripeHelper {
         ]));
 
         let mut cancellation_url = base_url.clone();
-        cancellation_url.set_path("/api/v1/subscriptions/cancel_callback");
+        cancellation_url.set_path("/api/v1/subscriptions/cancel");
         params.cancel_url = Some(cancellation_url.as_str());
 
         let mut success_url = base_url.clone();
-        success_url.set_path("/api/v1/subscriptions/success_callback");
+        success_url.set_path("/api/v1/subscriptions/success/{CHECKOUT_SESSION_ID}");
         params.success_url = success_url.as_str();
 
         let checkout_session = CheckoutSession::create(&self.client, params).await?;
+
+        // We could record the ID here and compare against it in the success callback, but that's
+        // not necessary here.
+
         Ok(checkout_session)
     }
 
