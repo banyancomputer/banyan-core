@@ -1,5 +1,5 @@
 use crate::app::secrets::StripeSecret;
-use crate::database::models::{StripeProduct, Subscription, TaxClass};
+use crate::database::models::{StripeProduct, Subscription, TaxClass, User};
 use crate::database::Database;
 
 const BANDWIDTH_PRODUCT_KEY: &str = "bandwidth";
@@ -120,6 +120,10 @@ impl StripeHelper {
         Ok(new_product_id)
     }
 
+    async fn find_or_create_customer_id(&self, user: &mut User) -> Result<String, StripeHelperError> {
+        todo!()
+    }
+
     async fn find_price_by_id(
         &self,
         price_id: &str,
@@ -223,6 +227,15 @@ impl StripeHelper {
         let storage_product_id = self.find_or_register_product(&STORAGE_PRODUCT_KEY, subscription.tax_class).await?;
         let _storage_price = self.storage_price(&storage_product_id, &mut *subscription).await?;
 
+        let mut conn = self.database.acquire().await?;
+        let mut user = match User::find_by_id(&mut *conn, user_id).await? {
+            Some(user) => user,
+            None => return Err(StripeHelperError::MissingUser),
+        };
+        conn.close().await?;
+
+        let customer_id = self.find_or_create_customer_id(&mut user).await?;
+
         todo!()
     }
 
@@ -305,6 +318,9 @@ pub enum StripeHelperError {
 
     #[error("attempted to create price for subscription without an available price")]
     MissingPrice,
+
+    #[error("failed to located user that should have existed")]
+    MissingUser,
 
     #[error("failure in making a request to the stripe API: {0}")]
     StripeClientError(#[from] stripe::StripeError),
