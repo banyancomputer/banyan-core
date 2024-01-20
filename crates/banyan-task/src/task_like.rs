@@ -1,14 +1,14 @@
 use async_trait::async_trait;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
+use time::OffsetDateTime;
 
-use crate::{CurrentTask, TaskStore, TaskStoreError};
+use crate::task_store::TaskStore;
+use crate::{CurrentTask, TaskStoreError};
 
 #[async_trait]
 pub trait TaskLike: Serialize + DeserializeOwned + Sync + Send + 'static {
-    // todo: rename MAX_ATTEMPTS
-    const MAX_RETRIES: i64 = 3;
-
+    const MAX_ATTEMPTS: i64 = 3;
     const QUEUE_NAME: &'static str = "default";
 
     const TASK_NAME: &'static str;
@@ -18,7 +18,11 @@ pub trait TaskLike: Serialize + DeserializeOwned + Sync + Send + 'static {
 
     async fn run(&self, task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error>;
 
-    async fn unique_key(&self) -> Option<String> {
+    fn unique_key(&self) -> Option<String> {
+        None
+    }
+
+    fn next_time(&self) -> Option<OffsetDateTime> {
         None
     }
 }
@@ -57,6 +61,8 @@ where
 }
 
 pub mod tests {
+    use std::time::Duration;
+
     use async_trait::async_trait;
     use serde::{Deserialize, Serialize};
 
@@ -64,6 +70,8 @@ pub mod tests {
 
     #[derive(Debug, Serialize, Deserialize)]
     pub struct TestTask;
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct ScheduleTestTask;
 
     #[async_trait]
     impl TaskLike for TestTask {
@@ -74,6 +82,22 @@ pub mod tests {
 
         async fn run(&self, _task: CurrentTask, _ctx: Self::Context) -> Result<(), Self::Error> {
             Ok(())
+        }
+    }
+
+    #[async_trait]
+    impl TaskLike for ScheduleTestTask {
+        const TASK_NAME: &'static str = "schedule_task";
+
+        type Error = TaskStoreError;
+        type Context = ();
+
+        async fn run(&self, _task: CurrentTask, _ctx: Self::Context) -> Result<(), Self::Error> {
+            Ok(())
+        }
+
+        fn next_time(&self) -> Option<OffsetDateTime> {
+            Some(OffsetDateTime::now_utc() + Duration::from_secs(60))
         }
     }
 }
