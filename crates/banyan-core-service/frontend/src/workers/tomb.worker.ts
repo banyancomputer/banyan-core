@@ -11,12 +11,17 @@ import { prettyFingerprintApiKeyPem, sortByType } from "@/app/utils";
 
 const mutex = new Mutex();
 	/** Prevents rust recursion error. */
-	const tombMutex = async <T,>(tomb: T, callback: (tomb: T) => Promise<any>) => {
+	const tombMutex = async <T,>(tomb: T, callback: (tomb: T) => Promise<any>, errorCallBack?: () => void) => {
 		const release = await mutex.acquire();
 		try {
 			return await callback(tomb);
 		} catch (error) {
 			console.error('tombMutex', error);
+			if(errorCallBack) {
+				errorCallBack();
+			}else {
+				throw error;
+			}
 		} finally {
 			release();
 		}

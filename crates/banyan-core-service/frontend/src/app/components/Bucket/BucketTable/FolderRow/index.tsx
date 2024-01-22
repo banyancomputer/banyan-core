@@ -79,10 +79,13 @@ export const FolderRow: React.FC<{
         if (dragData) {
             const droppedItem: { item: BrowserObject; path: string[] } = JSON.parse(dragData);
             if ([...path, folder.name].join('/') === droppedItem.path.join('/')) { return; }
-
-            await moveTo(bucket, [...droppedItem.path, droppedItem.item.name], [...path, folder.name], droppedItem.item.name);
-            await getSelectedBucketFiles(path);
-            ToastNotifications.notify(`${messages.fileWasMoved}`, <Done width="20px" height="20px" />);
+            try {
+                await moveTo(bucket, [...droppedItem.path, droppedItem.item.name], [...path, folder.name], droppedItem.item.name);
+                await getSelectedBucketFiles(path);
+                ToastNotifications.notify(`${messages.fileWasMoved}`, <Done width="20px" height="20px" />);
+            } catch (error: any) {
+                console.log(error);
+            }
         }
     };
 
