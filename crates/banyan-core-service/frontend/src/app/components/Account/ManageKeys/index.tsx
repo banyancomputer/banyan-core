@@ -12,7 +12,9 @@ const ManageKeys = () => {
         if (!tomb) { return; }
 
         (async () => {
-            await getBucketsKeys();
+            try {
+                await getBucketsKeys();
+            } catch (error: any) { }
         })();
     }, [buckets.length, tomb]);
 

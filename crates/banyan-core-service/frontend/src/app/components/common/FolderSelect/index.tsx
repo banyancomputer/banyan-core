@@ -63,8 +63,10 @@ export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBu
             const bucket = selectedBucket;
             if (!bucket.mount) return;
 
-            const files = await getSelectedBucketFolders(bucket.id, folder);
-            setFolders(files);
+            try {
+                const files = await getSelectedBucketFolders(bucket.id, folder);
+                setFolders(files);
+            } catch (error: any) { }
         })();
     }, [folder, buckets]);
 
