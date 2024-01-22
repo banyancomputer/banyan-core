@@ -191,8 +191,10 @@ impl StripeHelper {
             ),
         ]));
 
+        // When a user cancel's just send them back to the app, we could trakc and associate these
+        // but we won't get the specific checkout session id
         let mut cancellation_url = base_url.clone();
-        cancellation_url.set_path("/api/v1/subscriptions/cancel");
+        cancellation_url.set_path("/");
         params.cancel_url = Some(cancellation_url.as_str());
 
         let mut success_url = base_url.clone();
@@ -200,9 +202,6 @@ impl StripeHelper {
         params.success_url = success_url.as_str();
 
         let checkout_session = CheckoutSession::create(&self.client, params).await?;
-
-        // We could record the ID here and compare against it in the success callback, but that's
-        // not necessary here.
 
         Ok(checkout_session)
     }

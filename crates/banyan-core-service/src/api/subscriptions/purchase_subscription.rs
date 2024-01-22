@@ -4,7 +4,7 @@ use axum::response::{IntoResponse, Response};
 use uuid::Uuid;
 
 use crate::app::{AppState, StripeHelperError};
-use crate::database::models::{Subscription, User};
+use crate::database::models::{NewStripeCheckoutSession, Subscription, User};
 use crate::extractors::{ServerBase, UserIdentity};
 
 pub async fn handler(
@@ -15,11 +15,13 @@ pub async fn handler(
 ) -> Result<Response, PurchaseSubscriptionError> {
     // API authenticated users are not allowed to go through the stripe purchase flow, give them a
     // nice error indicating as much
-    if let UserIdentity::Api(_) = user_id {
-        let err_msg =
-            serde_json::json!({"msg": "API authentication is unable to complete payment flow"});
-        return Ok((StatusCode::PAYMENT_REQUIRED, Json(err_msg)).into_response());
-    }
+    let session  = match user_id {
+        UserIdentity::Api(_) => {
+            let err_msg = serde_json::json!({"msg": "API authentication is unable to complete payment flow"});
+            return Ok((StatusCode::PAYMENT_REQUIRED, Json(err_msg)).into_response());
+        }
+        UserIdentity::Session(sess) => sess,
+    };
 
     let database = state.database();
     let mut conn = database.acquire().await?;
@@ -31,7 +33,7 @@ pub async fn handler(
             None => return Err(PurchaseSubscriptionError::NotFound),
         };
 
-    let user_id = user_id.id().to_string();
+    let user_id = session.user_id().to_string();
     let mut current_user = User::by_id(&mut conn, &user_id).await?;
 
     if current_user.pending_subscription().is_some() {
@@ -84,6 +86,17 @@ pub async fn handler(
         )
         .await
         .map_err(PurchaseSubscriptionError::StripeSetupError)?;
+
+    let session_id = session.session_id().to_string();
+    let stripe_checkout_session_id = checkout_session.id.to_string();
+
+    NewStripeCheckoutSession {
+        user_id: &user_id,
+        session_id: &session_id,
+        stripe_checkout_session_id: &stripe_checkout_session_id,
+    }
+    .save(&mut *conn)
+    .await?;
 
     let msg = serde_json::json!({"checkout_url": checkout_session.url});
     Ok((StatusCode::OK, Json(msg)).into_response())
