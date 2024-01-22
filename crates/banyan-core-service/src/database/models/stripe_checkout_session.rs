@@ -20,7 +20,7 @@ impl<'a> NewStripeCheckoutSession<'a> {
             self.user_id,
             self.session_id,
             self.stripe_checkout_session_id,
-            StripeCheckoutSessionStatus::Started,
+            StripeCheckoutSessionStatus::Created,
             now,
         )
         .fetch_one(&mut *conn)
@@ -55,33 +55,27 @@ impl StripeCheckoutSession {
         .await
     }
 
-    pub async fn complete(conn: &mut DatabaseConnection, session_id: &str, id: &str) -> Result<(), sqlx::Error> {
-        let checkout_session = match Self::find_by_id(&mut *conn, id).await? {
-            Some(s) => s,
-            None => return Ok(()),
-        };
+    //pub async fn completed(conn: &mut DatabaseConnection, id: &str, amount: Option<i64>) -> Result<(), sqlx::Error> {
+    //    let checkout_session = match Self::find_by_id(&mut *conn, id).await? {
+    //        Some(s) => s,
+    //        None => return Ok(()),
+    //    };
 
-        if checkout_session.status != StripeCheckoutSessionStatus::Started {
-            tracing::warn!("attempted to complete an already completed checkout");
-            return Ok(());
-        }
+    //    if checkout_session.status != StripeCheckoutSessionStatus::Started {
+    //        tracing::warn!("attempted to complete an already completed checkout");
+    //        return Ok(());
+    //    }
 
-        if checkout_session.session_id != session_id {
-            // This could be a different user but shouldn't every happen
-            tracing::warn!("checkout completion came from a different session");
-            return Ok(());
-        }
+    //    let now = OffsetDateTime::now_utc();
+    //    sqlx::query!(
+    //        "UPDATE stripe_checkout_sessions SET status = $1, completed_at = $2 WHERE id = $3;",
+    //        StripeCheckoutSessionStatus::Completed,
+    //        now,
+    //        id,
+    //    )
+    //    .execute(&mut *conn)
+    //    .await?;
 
-        let now = OffsetDateTime::now_utc();
-        sqlx::query!(
-            "UPDATE stripe_checkout_sessions SET status = $1, completed_at = $2 WHERE id = $3;",
-            StripeCheckoutSessionStatus::Completed,
-            now,
-            id,
-        )
-        .execute(&mut *conn)
-        .await?;
-
-        Ok(())
-    }
+    //    Ok(())
+    //}
 }

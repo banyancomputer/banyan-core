@@ -9,15 +9,17 @@ use sqlx::{Decode, Encode, Sqlite, Type};
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum StripeCheckoutSessionStatus {
-    Started,
+    Created,
     Completed,
+    Expired,
 }
 
 impl Display for StripeCheckoutSessionStatus {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            StripeCheckoutSessionStatus::Started => f.write_str("started"),
+            StripeCheckoutSessionStatus::Created => f.write_str("created"),
             StripeCheckoutSessionStatus::Completed => f.write_str("completed"),
+            StripeCheckoutSessionStatus::Expired => f.write_str("expired"),
         }
     }
 }
@@ -28,7 +30,8 @@ impl TryFrom<&str> for StripeCheckoutSessionStatus {
     fn try_from(val: &str) -> Result<Self, StripeCheckoutSessionStatusError> {
         let variant = match val {
             "completed" => StripeCheckoutSessionStatus::Completed,
-            "started" => StripeCheckoutSessionStatus::Started,
+            "created" => StripeCheckoutSessionStatus::Created,
+            "expired" => StripeCheckoutSessionStatus::Expired,
             _ => return Err(StripeCheckoutSessionStatusError::InvalidValue),
         };
 

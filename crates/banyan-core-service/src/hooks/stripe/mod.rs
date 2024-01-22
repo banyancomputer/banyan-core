@@ -52,6 +52,9 @@ pub async fn handler(State(state): State<AppState>, StripeEvent(event): StripeEv
 pub enum StripeWebhookError {
     #[error("database query failures: {0}")]
     DatabaseFailure(#[from] sqlx::Error),
+
+    #[error("unable to locate associated data with webhook")]
+    MissingTarget,
 }
 
 impl IntoResponse for StripeWebhookError {
@@ -60,6 +63,10 @@ impl IntoResponse for StripeWebhookError {
             StripeWebhookError::DatabaseFailure(_) => {
                 let err_msg = serde_json::json!({"msg": "backend service experienced an issue servicing the request"});
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
+            }
+            StripeWebhookError::MissingTarget => {
+                let err_msg = serde_json::json!({"msg": "not found"});
+                (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
             }
         }
     }
