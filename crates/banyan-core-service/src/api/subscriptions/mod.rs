@@ -1,4 +1,5 @@
 mod all_subscriptions;
+mod manage_subscription;
 mod purchase_subscription;
 mod single_subscription;
 
@@ -26,6 +27,7 @@ where
             post(purchase_subscription::handler),
         )
         .route("/success/{:checkout_session_id}", get(success_callback::handler))
+        .route("/manage", get(manage_subscription::handler))
         .route("/", get(all_subscriptions::handler))
         .with_state(state)
 }

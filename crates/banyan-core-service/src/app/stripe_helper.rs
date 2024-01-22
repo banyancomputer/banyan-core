@@ -468,6 +468,26 @@ impl StripeHelper {
         Ok(price)
     }
 
+    pub async fn portal_session(
+        &self,
+        base_url: &Url,
+        customer_id: &str,
+    ) -> Result<stripe::BillingPortalSession, StripeHelperError> {
+        use std::str::FromStr;
+        use stripe::{BillingPortalSession, CreateBillingPortalSession, CustomerId};
+
+        let customer_id = CustomerId::from_str(customer_id)?;
+        let mut params = CreateBillingPortalSession::new(customer_id);
+
+        let mut return_url = base_url.clone();
+        return_url.set_path("/");
+        params.return_url = Some(return_url.as_str());
+
+        let billing_portal_session = BillingPortalSession::create(&self.client, params).await?;
+
+        Ok(billing_portal_session)
+    }
+
     pub async fn realize_subscription(
         &self,
         user: &mut User,
@@ -598,6 +618,9 @@ pub enum StripeHelperError {
 
     #[error("failure in making a request to the stripe API: {0}")]
     StripeClientError(#[from] stripe::StripeError),
+
+    #[error("error building up stripe ID: {0}")]
+    StripeIdError(#[from] stripe::ParseIdError),
 }
 
 async fn register_stripe_product(

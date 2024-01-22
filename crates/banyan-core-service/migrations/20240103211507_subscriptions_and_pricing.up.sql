@@ -103,3 +103,27 @@ CREATE TABLE stripe_checkout_sessions (
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   completed_at TIMESTAMP
 );
+
+CREATE TABLE stripe_invoices (
+  id TEXT NOT NULL PRIMARY KEY DEFAULT (
+    lower(hex(randomblob(4))) || '-' ||
+    lower(hex(randomblob(2))) || '-4' ||
+    substr(lower(hex(randomblob(2))), 2) || '-a' ||
+    substr(lower(hex(randomblob(2))), 2) || '-6' ||
+    substr(lower(hex(randomblob(6))), 2)
+  ),
+
+  user_id TEXT NOT NULL REFERENCES users(id),
+
+  stripe_customer_id TEXT NOT NULL,
+  stripe_invoice_id TEXT NOT NULL,
+
+  amount_due INTEGER,
+  status TEXT NOT NULL,
+  action_required TEXT,
+
+  stripe_payment_intent_id TEXT,
+  stripe_payment_intent_status TEXT,
+
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
