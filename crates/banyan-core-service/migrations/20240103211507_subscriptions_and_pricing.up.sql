@@ -100,5 +100,6 @@ CREATE TABLE stripe_checkout_sessions (
   stripe_checkout_session_id TEXT NOT NULL,
   status TEXT NOT NULL,
 
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  completed_at TIMESTAMP
 );
