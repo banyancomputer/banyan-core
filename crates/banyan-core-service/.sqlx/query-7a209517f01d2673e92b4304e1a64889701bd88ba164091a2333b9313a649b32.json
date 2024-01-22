@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, email, verified_email, display_name, locale, profile_image, created_at,\n                   accepted_tos_at, active_subscription_id as 'active_subscription_id!',\n                   stripe_customer_id, current_stripe_plan_subscription_id, next_payment_due,\n                   pending_subscription_id, pending_subscription_expiration,\n                   pending_stripe_plan_subscription_id FROM users\n                 WHERE id = $1;",
+  "query": "SELECT id, email, verified_email, display_name, locale, profile_image, created_at,\n                    accepted_tos_at, active_subscription_id as 'active_subscription_id!',\n                    stripe_customer_id, current_stripe_plan_subscription_id, subscription_valid_until,\n                    pending_subscription_id, pending_subscription_expiration,\n                    pending_stripe_plan_subscription_id FROM users\n                 WHERE id = $1;",
   "describe": {
     "columns": [
       {
@@ -59,7 +59,7 @@
         "type_info": "Text"
       },
       {
-        "name": "next_payment_due",
+        "name": "subscription_valid_until",
         "ordinal": 11,
         "type_info": "Datetime"
       },
@@ -100,5 +100,5 @@
       true
     ]
   },
-  "hash": "624cdacaf8ef5bfac62f089d2a0b7123f88e5ba4f33c5da15c0e1c85e88c3b1d"
+  "hash": "7a209517f01d2673e92b4304e1a64889701bd88ba164091a2333b9313a649b32"
 }

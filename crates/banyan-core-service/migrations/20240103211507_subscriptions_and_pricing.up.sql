@@ -46,7 +46,7 @@ ALTER TABLE users ADD COLUMN active_subscription_id TEXT REFERENCES subscription
 ALTER TABLE users ADD COLUMN stripe_customer_id TEXT;
 
 ALTER TABLE users ADD COLUMN current_stripe_plan_subscription_id TEXT;
-ALTER TABLE users ADD COLUMN next_payment_due DATETIME;
+ALTER TABLE users ADD COLUMN subscription_valid_until DATETIME;
 
 ALTER TABLE users ADD COLUMN pending_subscription_id TEXT REFERENCES subscriptions(id);
 ALTER TABLE users ADD COLUMN pending_subscription_expiration DATETIME;
@@ -104,7 +104,7 @@ CREATE TABLE stripe_checkout_sessions (
   completed_at TIMESTAMP
 );
 
-CREATE TABLE stripe_invoices (
+CREATE TABLE invoices (
   id TEXT NOT NULL PRIMARY KEY DEFAULT (
     lower(hex(randomblob(4))) || '-' ||
     lower(hex(randomblob(2))) || '-4' ||
@@ -119,8 +119,8 @@ CREATE TABLE stripe_invoices (
   stripe_invoice_id TEXT NOT NULL,
 
   amount_due INTEGER,
+  billing_reason: TEXT NOT NULL,
   status TEXT NOT NULL,
-  action_required TEXT,
 
   stripe_payment_intent_id TEXT,
   stripe_payment_intent_status TEXT,
