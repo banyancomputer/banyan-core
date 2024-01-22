@@ -1,0 +1,68 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, user_id, stripe_customer_id, stripe_invoice_id, amount_due,\n                   status as 'status: InvoiceStatus', stripe_payment_intent_id,\n                   stripe_payment_intent_status as 'stripe_payment_intent_status: StripePaymentIntentStatus',\n                   created_at\n                 FROM invoices\n                 WHERE stripe_payment_intent_id = $1;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "user_id",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "stripe_customer_id",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "stripe_invoice_id",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "amount_due",
+        "ordinal": 4,
+        "type_info": "Int64"
+      },
+      {
+        "name": "status: InvoiceStatus",
+        "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "stripe_payment_intent_id",
+        "ordinal": 6,
+        "type_info": "Text"
+      },
+      {
+        "name": "stripe_payment_intent_status: StripePaymentIntentStatus",
+        "ordinal": 7,
+        "type_info": "Text"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 8,
+        "type_info": "Datetime"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "c012d98fb0c0fcaad680e86c33dbb8b36288062a503fd28bfb1b223813ca6f4d"
+}

@@ -6,6 +6,8 @@ use sqlx::error::BoxDynError;
 use sqlx::sqlite::{SqliteArgumentValue, SqliteTypeInfo, SqliteValueRef};
 use sqlx::{Decode, Encode, Sqlite, Type};
 
+use stripe::generated::core::payment_intent::PaymentIntentStatus as StripeLibPaymentIntentStatus;
+
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum StripePaymentIntentStatus {
@@ -28,6 +30,20 @@ impl Display for StripePaymentIntentStatus {
             StripePaymentIntentStatus::RequiresCapture => f.write_str("requires_capture"),
             StripePaymentIntentStatus::Canceled => f.write_str("canceled"),
             StripePaymentIntentStatus::Succeeded => f.write_str("succeeded"),
+        }
+    }
+}
+
+impl From<StripeLibPaymentIntentStatus> for StripePaymentIntentStatus {
+    fn from(val: StripeLibPaymentIntentStatus) -> Self {
+        match val {
+            StripeLibPaymentIntentStatus::Canceled => StripePaymentIntentStatus::Canceled,
+            StripeLibPaymentIntentStatus::Processing => StripePaymentIntentStatus::Processing,
+            StripeLibPaymentIntentStatus::RequiresAction => StripePaymentIntentStatus::RequiresAction,
+            StripeLibPaymentIntentStatus::RequiresCapture => StripePaymentIntentStatus::RequiresCapture,
+            StripeLibPaymentIntentStatus::RequiresConfirmation => StripePaymentIntentStatus::RequiresConfirmation,
+            StripeLibPaymentIntentStatus::RequiresPaymentMethod => StripePaymentIntentStatus::RequiresPaymentMethod,
+            StripeLibPaymentIntentStatus::Succeeded => StripePaymentIntentStatus::Succeeded,
         }
     }
 }

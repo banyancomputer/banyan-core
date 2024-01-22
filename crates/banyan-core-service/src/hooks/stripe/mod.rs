@@ -14,7 +14,7 @@ use crate::extractors::StripeEvent;
 
 pub async fn handler(State(state): State<AppState>, StripeEvent(event): StripeEvent) -> Result<Response, StripeWebhookError> {
     let database = state.database();
-    let mut conn = database.acquire().await?;
+    let mut conn = database.begin().await?;
 
     match (event.type_, &event.data.object) {
         // We don't need to handle, but don't want to log
@@ -40,11 +40,13 @@ pub async fn handler(State(state): State<AppState>, StripeEvent(event): StripeEv
         (EventType::CustomerSubscriptionResumed, EventObject::Subscription(subscription)) => customer_subscription_events::resumed(&mut *conn, subscription).await?,
         (EventType::CustomerSubscriptionUpdated, EventObject::Subscription(subscription)) => customer_subscription_events::updated(&mut *conn, subscription).await?,
 
-        (EventType::PaymentIntentCreated, EventObject::PaymentIntent(intent)) => payment_intent_events::created(&mut *conn, intent).await?,
-        (EventType::PaymentIntentSucceeded, EventObject::PaymentIntent(intent)) => payment_intent_events::succeeded(&mut *conn, intent).await?,
+        (EventType::PaymentIntentCreated, EventObject::PaymentIntent(intent)) => payment_intent_events::update_status(&mut *conn, intent).await?,
+        (EventType::PaymentIntentSucceeded, EventObject::PaymentIntent(intent)) => payment_intent_events::update_status(&mut *conn, intent).await?,
 
         _ => tracing::warn!("received unknown stripe webhook event: {event:?}"),
     }
+
+    conn.commit().await?;
 
     Ok(StatusCode::NO_CONTENT.into_response())
 }
