@@ -118,7 +118,7 @@ CREATE TABLE invoices (
   stripe_customer_id TEXT NOT NULL,
   stripe_invoice_id TEXT NOT NULL,
 
-  amount_due INTEGER,
+  amount_due INTEGER NOT NULL,
   status TEXT NOT NULL,
 
   stripe_payment_intent_id TEXT NOT NULL,

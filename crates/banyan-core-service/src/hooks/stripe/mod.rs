@@ -22,12 +22,14 @@ pub async fn handler(State(state): State<AppState>, StripeEvent(event): StripeEv
         (EventType::InvoiceUpcoming, EventObject::Invoice(_)) => (),
 
         (EventType::InvoiceCreated, EventObject::Invoice(invoice)) => invoice_events::created(&mut *conn, invoice).await?,
-        (EventType::InvoiceFinalizationFailed, EventObject::Invoice(invoice)) => invoice_events::finalization_failed(&mut *conn, invoice).await?,
-        (EventType::InvoiceFinalized, EventObject::Invoice(invoice)) => invoice_events::finalized(&mut *conn, invoice).await?,
-        (EventType::InvoicePaid, EventObject::Invoice(invoice)) => invoice_events::paid(&mut *conn, invoice).await?,
-        (EventType::InvoicePaymentActionRequired, EventObject::Invoice(invoice)) => invoice_events::payment_action_required(&mut *conn, invoice).await?,
-        (EventType::InvoicePaymentFailed, EventObject::Invoice(invoice)) => invoice_events::payment_failed(&mut *conn, invoice).await?,
-        (EventType::InvoiceUpdated, EventObject::Invoice(invoice)) => invoice_events::updated(&mut *conn, invoice).await?,
+        (EventType::InvoiceFinalizationFailed, EventObject::Invoice(invoice)) => invoice_events::status_update(&mut *conn, invoice).await?,
+        (EventType::InvoiceFinalized, EventObject::Invoice(invoice)) => invoice_events::status_update(&mut *conn, invoice).await?,
+        (EventType::InvoicePaid, EventObject::Invoice(invoice)) => invoice_events::status_update(&mut *conn, invoice).await?,
+        (EventType::InvoicePaymentActionRequired, EventObject::Invoice(invoice)) => invoice_events::status_update(&mut *conn, invoice).await?,
+        (EventType::InvoicePaymentFailed, EventObject::Invoice(invoice)) => invoice_events::status_update(&mut *conn, invoice).await?,
+        // This one should probably be handled as a special case as we can glean some extra data
+        // from it, but its not a high priority
+        (EventType::InvoiceUpdated, EventObject::Invoice(invoice)) => invoice_events::status_update(&mut *conn, invoice).await?,
 
         (EventType::CheckoutSessionCompleted, EventObject::CheckoutSession(sess)) => checkout_session_events::completed(&mut *conn, sess).await?,
         (EventType::CheckoutSessionExpired, EventObject::CheckoutSession(sess)) => checkout_session_events::expired(&mut *conn, sess).await?,

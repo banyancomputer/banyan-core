@@ -36,26 +36,12 @@ pub async fn created(conn: &mut DatabaseConnection, invoice: &stripe::Invoice) -
     Ok(())
 }
 
-pub async fn finalization_failed(conn: &mut DatabaseConnection, session: &stripe::Invoice) -> Result<(), StripeWebhookError> {
-    todo!()
-}
+pub async fn status_update(conn: &mut DatabaseConnection, invoice: &stripe::Invoice) -> Result<(), StripeWebhookError> {
+    let invoice_id = invoice.id.to_string();
+    let new_status = invoice.status.map(InvoiceStatus::from).ok_or(StripeWebhookError::MissingData)?;
 
-pub async fn finalized(conn: &mut DatabaseConnection, session: &stripe::Invoice) -> Result<(), StripeWebhookError> {
-    todo!()
-}
+    let mut invoice = Invoice::from_stripe_invoice_id(&mut *conn, &invoice_id).await?.ok_or(StripeWebhookError::MissingTarget)?;
+    invoice.update_status(&mut *conn, new_status).await?;
 
-pub async fn paid(conn: &mut DatabaseConnection, session: &stripe::Invoice) -> Result<(), StripeWebhookError> {
-    todo!()
-}
-
-pub async fn payment_action_required(conn: &mut DatabaseConnection, session: &stripe::Invoice) -> Result<(), StripeWebhookError> {
-    todo!()
-}
-
-pub async fn payment_failed(conn: &mut DatabaseConnection, session: &stripe::Invoice) -> Result<(), StripeWebhookError> {
-    todo!()
-}
-
-pub async fn updated(conn: &mut DatabaseConnection, session: &stripe::Invoice) -> Result<(), StripeWebhookError> {
-    todo!()
+    Ok(())
 }

@@ -54,3 +54,41 @@ pub struct Invoice {
 
     created_at: OffsetDateTime,
 }
+
+impl Invoice {
+    pub async fn from_stripe_invoice_id(
+        conn: &mut DatabaseConnection,
+        stripe_invoice_id: &str,
+    ) -> Result<Option<Self>, sqlx::Error> {
+        sqlx::query_as!(
+            Self,
+            r#"SELECT id, user_id, stripe_customer_id, stripe_invoice_id, amount_due,
+                   status as 'status: InvoiceStatus', stripe_payment_intent_id,
+                   stripe_payment_intent_status as 'stripe_payment_intent_status: StripePaymentIntentStatus',
+                   created_at
+                 FROM invoices
+                 WHERE stripe_invoice_id = $1;"#,
+            stripe_invoice_id,
+        )
+        .fetch_optional(&mut *conn)
+        .await
+    }
+
+    pub async fn update_status(
+        &mut self,
+        conn: &mut DatabaseConnection,
+        status: InvoiceStatus,
+    ) -> Result<(), sqlx::Error> {
+        sqlx::query!(
+            "UPDATE invoices SET status = $1 WHERE id = $2;",
+            status,
+            self.id,
+        )
+        .execute(&mut *conn)
+        .await?;
+
+        self.status = status;
+
+        Ok(())
+    }
+}
