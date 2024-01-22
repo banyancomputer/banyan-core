@@ -39,20 +39,12 @@ impl<'a> NewInvoice<'a> {
 
 #[derive(sqlx::FromRow)]
 pub struct Invoice {
-    id: String,
+    pub id: String,
 
-    user_id: String,
+    pub amount_due: i64,
+    pub status: InvoiceStatus,
 
-    stripe_customer_id: String,
-    stripe_invoice_id: String,
-
-    amount_due: i64,
-    status: InvoiceStatus,
-
-    stripe_payment_intent_id: String,
-    stripe_payment_intent_status: Option<StripePaymentIntentStatus>,
-
-    created_at: OffsetDateTime,
+    pub created_at: OffsetDateTime,
 }
 
 impl Invoice {
@@ -62,10 +54,7 @@ impl Invoice {
     ) -> Result<Option<Self>, sqlx::Error> {
         sqlx::query_as!(
             Self,
-            r#"SELECT id, user_id, stripe_customer_id, stripe_invoice_id, amount_due,
-                   status as 'status: InvoiceStatus', stripe_payment_intent_id,
-                   stripe_payment_intent_status as 'stripe_payment_intent_status: StripePaymentIntentStatus',
-                   created_at
+            r#"SELECT id, amount_due, status as 'status: InvoiceStatus', created_at
                  FROM invoices
                  WHERE stripe_payment_intent_id = $1;"#,
             stripe_payment_intent_id,
@@ -80,10 +69,7 @@ impl Invoice {
     ) -> Result<Option<Self>, sqlx::Error> {
         sqlx::query_as!(
             Self,
-            r#"SELECT id, user_id, stripe_customer_id, stripe_invoice_id, amount_due,
-                   status as 'status: InvoiceStatus', stripe_payment_intent_id,
-                   stripe_payment_intent_status as 'stripe_payment_intent_status: StripePaymentIntentStatus',
-                   created_at
+            r#"SELECT id, amount_due, status as 'status: InvoiceStatus', created_at
                  FROM invoices
                  WHERE stripe_invoice_id = $1;"#,
             stripe_invoice_id,
@@ -104,8 +90,6 @@ impl Invoice {
         )
         .execute(&mut *conn)
         .await?;
-
-        self.stripe_payment_intent_status = Some(status);
 
         Ok(())
     }

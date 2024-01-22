@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, amount_due, status as 'status: InvoiceStatus', created_at\n                 FROM invoices\n                 WHERE stripe_invoice_id = $1;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "amount_due",
+        "ordinal": 1,
+        "type_info": "Int64"
+      },
+      {
+        "name": "status: InvoiceStatus",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 3,
+        "type_info": "Datetime"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "94c1b219487528ee95122860869ec1be0e45c81520ff45686c93f4876075509f"
+}

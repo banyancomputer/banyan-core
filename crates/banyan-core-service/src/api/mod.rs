@@ -8,6 +8,7 @@ mod auth;
 mod blocks;
 mod buckets;
 mod deals;
+mod invoices;
 pub mod models;
 mod share;
 mod subscriptions;
@@ -33,6 +34,7 @@ where
         .nest("/blocks", blocks::router(state.clone()))
         .nest("/buckets", buckets::router(state.clone()))
         .nest("/deals", deals::router(state.clone()))
+        .nest("/invoices", invoices::router(state.clone()))
         .nest("/share", share::router(state.clone()))
         .nest("/subscriptions", subscriptions::router(state.clone()))
         .nest("/users", users::router(state.clone()))
