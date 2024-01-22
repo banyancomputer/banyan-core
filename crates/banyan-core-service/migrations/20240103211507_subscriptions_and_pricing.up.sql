@@ -119,10 +119,9 @@ CREATE TABLE invoices (
   stripe_invoice_id TEXT NOT NULL,
 
   amount_due INTEGER,
-  billing_reason: TEXT NOT NULL,
   status TEXT NOT NULL,
 
-  stripe_payment_intent_id TEXT,
+  stripe_payment_intent_id TEXT NOT NULL,
   stripe_payment_intent_status TEXT,
 
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP

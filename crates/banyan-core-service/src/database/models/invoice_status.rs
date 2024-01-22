@@ -28,6 +28,20 @@ impl Display for InvoiceStatus {
     }
 }
 
+use stripe::generated::billing::invoice::InvoiceStatus as StripeInvoiceStatus;
+
+impl From<StripeInvoiceStatus> for InvoiceStatus {
+    fn from(val: StripeInvoiceStatus) -> Self {
+        match val {
+            StripeInvoiceStatus::Draft => InvoiceStatus::Draft,
+            StripeInvoiceStatus::Open => InvoiceStatus::Open,
+            StripeInvoiceStatus::Paid => InvoiceStatus::Paid,
+            StripeInvoiceStatus::Uncollectible => InvoiceStatus::Uncollectible,
+            StripeInvoiceStatus::Void => InvoiceStatus::Void,
+        }
+    }
+}
+
 impl TryFrom<&str> for InvoiceStatus {
     type Error = InvoiceStatusError;
 

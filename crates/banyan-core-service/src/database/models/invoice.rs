@@ -1,19 +1,40 @@
 use time::OffsetDateTime;
 
+use crate::database::DatabaseConnection;
 use crate::database::models::{InvoiceStatus, StripePaymentIntentStatus};
 
 pub struct NewInvoice<'a> {
-    user_id: &'a str,
+    pub user_id: &'a str,
 
-    stripe_customer_id: &'a str,
-    stripe_invoice_id: &'a str,
+    pub stripe_customer_id: &'a str,
+    pub stripe_invoice_id: &'a str,
 
-    amount_due: i64,
-    billing_reason: &'a str,
-    status: InvoiceStatus,
+    pub amount_due: i64,
+    pub status: InvoiceStatus,
 
-    stripe_payment_intent_id: Option<&'a str>,
-    stripe_payment_intent_status: Option<&'a StripePaymentIntentStatus>,
+    pub stripe_payment_intent_id: &'a str,
+}
+
+impl<'a> NewInvoice<'a> {
+    pub async fn save(self, conn: &mut DatabaseConnection) -> Result<String, sqlx::Error> {
+        let now = OffsetDateTime::now_utc();
+
+        sqlx::query_scalar!(
+            r#"INSERT INTO invoices (user_id, stripe_customer_id, stripe_invoice_id, amount_due,
+                   status, stripe_payment_intent_id, created_at)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7)
+                 RETURNING id;"#,
+            self.user_id,
+            self.stripe_customer_id,
+            self.stripe_invoice_id,
+            self.amount_due,
+            self.status,
+            self.stripe_payment_intent_id,
+            now,
+        )
+        .fetch_one(&mut *conn)
+        .await
+    }
 }
 
 #[derive(sqlx::FromRow)]
@@ -26,10 +47,9 @@ pub struct Invoice {
     stripe_invoice_id: String,
 
     amount_due: i64,
-    billing_reason: String,
     status: InvoiceStatus,
 
-    stripe_payment_intent_id: Option<String>,
+    stripe_payment_intent_id: String,
     stripe_payment_intent_status: Option<StripePaymentIntentStatus>,
 
     created_at: OffsetDateTime,
