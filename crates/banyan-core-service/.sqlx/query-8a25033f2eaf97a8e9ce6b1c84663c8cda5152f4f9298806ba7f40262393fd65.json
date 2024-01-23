@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT * FROM buckets WHERE id = $1;",
+  "query": "SELECT id, user_id, name, type as 'type: BucketType',\n                   storage_class as 'storage_class: StorageClass', updated_at as 'updated_at!',\n                   deleted_at\n                 FROM buckets\n                 WHERE id = $1;",
   "describe": {
     "columns": [
       {
@@ -19,22 +19,22 @@
         "type_info": "Text"
       },
       {
-        "name": "type",
+        "name": "type: BucketType",
         "ordinal": 3,
         "type_info": "Text"
       },
       {
-        "name": "storage_class",
+        "name": "storage_class: StorageClass",
         "ordinal": 4,
         "type_info": "Text"
       },
       {
-        "name": "deleted_at",
+        "name": "updated_at!",
         "ordinal": 5,
         "type_info": "Datetime"
       },
       {
-        "name": "updated_at",
+        "name": "deleted_at",
         "ordinal": 6,
         "type_info": "Datetime"
       }
@@ -49,8 +49,8 @@
       false,
       false,
       true,
-      false
+      true
     ]
   },
-  "hash": "2fa0ff5d1f982cc655a42ab882157c9bbc117a29254250d0eaebda02a39292db"
+  "hash": "8a25033f2eaf97a8e9ce6b1c84663c8cda5152f4f9298806ba7f40262393fd65"
 }
