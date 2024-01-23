@@ -7,7 +7,9 @@ use crate::app::AppState;
 use crate::database::models::{DealState, MetadataState, SnapshotSegment};
 
 const MAX_SNAPSHOT_SEGMENT_SIZE: i64 = 32 * 1024 * 1024 * 1024; // 32GiB
-const BLOCK_SIZE: i64 = 262144; // 256 KiB
+                                                                //
+pub const BLOCK_SIZE: i64 = 262144; // 256 KiB
+                                    //
 const EMPTY_DEAL: &str = ""; // 256 KiB
 
 #[non_exhaustive]

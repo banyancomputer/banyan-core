@@ -1,6 +1,7 @@
 use axum::extract::{Json, Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
+use time::OffsetDateTime;
 use uuid::Uuid;
 
 use crate::api::models::ApiBucket;
@@ -17,10 +18,13 @@ pub async fn handler(
     let user_id = user_identity.id().to_string();
     let bucket_id = bucket_id.to_string();
     let name = bucket.name;
+    let now = OffsetDateTime::now_utc();
 
     let query_result = sqlx::query!(
-        r#"UPDATE buckets SET name = $1 WHERE id = $2 and user_id = $3 AND deleted_at IS NULL;"#,
+        r#"UPDATE buckets SET name = $1, updated_at = $2
+             WHERE id = $3 AND user_id = $4 AND deleted_at IS NULL;"#,
         name,
+        now,
         bucket_id,
         user_id
     )
@@ -35,10 +39,6 @@ pub async fn handler(
             } else {
                 (StatusCode::NO_CONTENT, ()).into_response()
             }
-        }
-        Err(sqlx::Error::RowNotFound) => {
-            let err_msg = serde_json::json!({"msg": "not found"});
-            (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
         }
         Err(err) => {
             tracing::error!("failed to update bucket: {err}");
