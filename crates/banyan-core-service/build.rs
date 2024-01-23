@@ -41,8 +41,7 @@ fn report_repository_version() {
 }
 
 fn main() {
-    println!("cargo:rerun-if-changed=build.rs");
-    println!("cargo:rerun-if-changed=dist/pricing.ron");
+    println!("cargo:rerun-if-changed=data/pricing.ron");
     println!("cargo:rerun-if-changed=migrations");
 
     report_repository_version();
