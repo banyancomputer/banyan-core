@@ -4,7 +4,7 @@ mod single_invoice;
 use std::error::Error;
 
 use axum::body::HttpBody;
-use axum::routing::{get, post};
+use axum::routing::get;
 use axum::Router;
 
 use crate::app::AppState;
@@ -18,6 +18,6 @@ where
 {
     Router::new()
         .route("/:invoice_id", get(single_invoice::handler))
-        //.route("/", get(all_invoices::handler))
+        .route("/", get(all_invoices::handler))
         .with_state(state)
 }

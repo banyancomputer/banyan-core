@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, amount_due, status as 'status: InvoiceStatus', created_at\n             FROM invoices\n             WHERE user_id = $1\n             ORDER BY created_at DESC;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "amount_due",
+        "ordinal": 1,
+        "type_info": "Int64"
+      },
+      {
+        "name": "status: InvoiceStatus",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 3,
+        "type_info": "Datetime"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "9004dfd5ebc53ca222a97c3fc66995a76d0f66c6ca9ac133226c07ab6ab41dd1"
+}
