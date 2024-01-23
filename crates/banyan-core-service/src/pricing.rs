@@ -176,12 +176,11 @@ impl<'a> PricingTier {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::database::test_helpers::*;
 
     #[tokio::test]
     async fn test_default_key_present_in_pricing_tiers() {
-        let distributed_config = distributed_config();
-        let default_subscription = distributed_config
+        let builtin_pricing_config = builtin_pricing_config();
+        let default_subscription = builtin_pricing_config
             .iter()
             .find_map(|dc| dc.price_key == DEFAULT_SUBSCRIPTION_KEY);
         assert!(
@@ -196,8 +195,8 @@ mod tests {
     /// appropriate logic in the app that relies on this assumption.
     #[tokio::test]
     async fn test_default_free_assumption() {
-        let distributed_config = distributed_config();
-        let default_subscription = distributed_config
+        let builtin_pricing_config = builtin_pricing_config();
+        let default_subscription = builtin_pricing_config
             .iter()
             .find_map(|dc| dc.price_key == DEFAULT_SUBSCRIPTION_KEY);
         assert!(
