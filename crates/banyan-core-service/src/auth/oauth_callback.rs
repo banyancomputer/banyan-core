@@ -41,11 +41,6 @@ pub async fn handler(
     let exchange_code = AuthorizationCode::new(params.code);
     let database = state.database();
 
-    let mut conn = database
-        .acquire()
-        .await
-        .map_err(AuthenticationError::DatabaseConnectionFailure)?;
-
     let query_secret = csrf_secret.secret();
     let oauth_state_query: (String, Option<String>) = sqlx::query_as(
         r#"SELECT pkce_verifier_secret, next_url
@@ -54,7 +49,7 @@ pub async fn handler(
     )
     .bind(provider.clone())
     .bind(query_secret)
-    .fetch_one(&mut *conn)
+    .fetch_one(&database)
     .await
     .map_err(AuthenticationError::MissingCallbackState)?;
 
@@ -64,7 +59,7 @@ pub async fn handler(
         provider,
         query_secret,
     )
-    .execute(&mut *conn)
+    .execute(&database)
     .await
     .map_err(|_| AuthenticationError::CleanupFailed)?;
 
@@ -113,13 +108,9 @@ pub async fn handler(
         "SELECT id FROM users WHERE email = LOWER($1);",
         user_info.email
     )
-    .fetch_optional(&mut *conn)
+    .fetch_optional(&database)
     .await
     .map_err(AuthenticationError::LookupFailed)?;
-
-    conn.close()
-        .await
-        .map_err(AuthenticationError::DatabaseConnectionFailure)?;
 
     let cookie_domain = hostname
         .host_str()
@@ -199,9 +190,11 @@ pub async fn handler(
         "SELECT * FROM escrowed_devices WHERE user_id = $1;",
         user_id
     )
-    .fetch_optional(&database)
+    .fetch_optional(&mut *conn)
     .await
     .map_err(AuthenticationError::UserDataLookupFailed)?;
+
+    conn.close().await.map_err(AuthenticationError::UserDataLookupFailed)?;
 
     let user_data = UserData {
         user: user.into(),
@@ -269,6 +262,9 @@ pub async fn handler(
     Ok((cookie_jar, Redirect::to(&redirect_url)).into_response())
 }
 
+// todo(sstelfox): when I user chooses "cancel" we get a different type back, no code key but
+// instead an "error" key that has values like "access_denied". We should handle this more
+// gracefully.
 #[derive(Deserialize)]
 pub struct CallbackParameters {
     code: String,
