@@ -6,7 +6,7 @@ use serde::Deserialize;
 use crate::database::models::{NewSubscription, PriceUnits, TaxClass};
 use crate::database::DatabaseConnection;
 
-const BUILTIN_PRICING_DATA: &[u8] = include_bytes!("../dist/pricing.ron");
+const BUILTIN_PRICING_DATA: &[u8] = include_bytes!("../data/pricing.ron");
 
 static BUILTIN_PRICING_CONFIG: OnceLock<Vec<PricingTier>> = OnceLock::new();
 
@@ -173,7 +173,7 @@ impl<'a> PricingTier {
     }
 }
 
-#[cfg(tests)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::database::test_helpers::*;
