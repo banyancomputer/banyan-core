@@ -53,6 +53,7 @@ pub async fn handler(
             Some(sub) => sub,
             None => return Err(PurchaseSubscriptionError::NotFound),
         };
+    conn.close().await?;
 
     if current_subscription.id == requested_subscription.id {
         let err_msg = serde_json::json!({"msg": "plan is already enabled"});
@@ -90,6 +91,7 @@ pub async fn handler(
 
     let session_id = session.session_id().to_string();
     let stripe_checkout_session_id = checkout_session.id.to_string();
+    let mut conn = database.acquire().await?;
 
     NewStripeCheckoutSession {
         user_id: &user_id,
@@ -98,6 +100,8 @@ pub async fn handler(
     }
     .save(&mut conn)
     .await?;
+
+    conn.close().await?;
 
     let msg = serde_json::json!({"checkout_url": checkout_session.url});
     Ok((StatusCode::OK, Json(msg)).into_response())
