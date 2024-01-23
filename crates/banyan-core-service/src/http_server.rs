@@ -172,8 +172,7 @@ pub async fn run(config: Config) {
             sensitive_headers,
         ));
 
-    let static_assets = ServeDir::new("dist")
-        .fallback(ServeFile::new("./dist/index.html"));
+    let static_assets = ServeDir::new("dist").fallback(ServeFile::new("./dist/index.html"));
 
     let root_router = Router::new()
         .nest("/api/v1", api::router(app_state.clone()))
