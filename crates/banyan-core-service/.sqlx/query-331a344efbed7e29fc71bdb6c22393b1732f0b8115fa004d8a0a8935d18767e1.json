@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE users SET\n                 pending_subscription_id = $1,\n                 pending_subscription_expiration = $2,\n                 pending_stripe_subscription_id = $3\n               WHERE id = $4;",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "331a344efbed7e29fc71bdb6c22393b1732f0b8115fa004d8a0a8935d18767e1"
+}

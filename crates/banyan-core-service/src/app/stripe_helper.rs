@@ -311,7 +311,7 @@ impl StripeHelper {
             Subscription,
         };
 
-        if let Some(sub_id) = &user.active_stripe_plan_subscription_id {
+        if let Some(sub_id) = &user.active_stripe_subscription_id {
             if let Some(stripe_sub) = self.find_subscription_by_id(sub_id).await? {
                 if subscription_matches(&stripe_sub, customer, prices) {
                     return Ok(stripe_sub);

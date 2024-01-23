@@ -19,8 +19,6 @@ pub struct ApiUser {
 
 impl From<User> for ApiUser {
     fn from(user: User) -> Self {
-        let subscription_id = user.active_subscription_id().to_string();
-
         Self {
             id: user.id,
             email: user.email,
@@ -28,7 +26,7 @@ impl From<User> for ApiUser {
             locale: user.locale,
             profile_image: user.profile_image,
             accepted_tos_at: user.accepted_tos_at.map(|t| t.unix_timestamp()),
-            subscription_id,
+            subscription_id: user.active_subscription_id,
             subscription_valid_until: user.active_subscription_valid_until,
         }
     }

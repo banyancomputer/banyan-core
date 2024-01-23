@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, email, verified_email, display_name, locale, profile_image, created_at,\n                   accepted_tos_at, stripe_customer_id, active_stripe_plan_subscription_id,\n                   active_subscription_id as 'active_subscription_id!',\n                   active_subscription_status as 'active_subscription_status: SubscriptionStatus',\n                   active_subscription_valid_until, pending_stripe_plan_subscription_id,\n                   pending_subscription_id, pending_subscription_expiration FROM users\n                 WHERE id = $1;",
+  "query": "SELECT id, email, verified_email, display_name, locale, profile_image, created_at,\n                   accepted_tos_at, stripe_customer_id, active_stripe_subscription_id,\n                   active_subscription_id as 'active_subscription_id!',\n                   active_subscription_status as 'active_subscription_status: SubscriptionStatus',\n                   active_subscription_valid_until, pending_stripe_subscription_id,\n                   pending_subscription_id, pending_subscription_expiration FROM users\n                 WHERE stripe_customer_id = $1;",
   "describe": {
     "columns": [
       {
@@ -49,7 +49,7 @@
         "type_info": "Text"
       },
       {
-        "name": "active_stripe_plan_subscription_id",
+        "name": "active_stripe_subscription_id",
         "ordinal": 9,
         "type_info": "Text"
       },
@@ -69,7 +69,7 @@
         "type_info": "Datetime"
       },
       {
-        "name": "pending_stripe_plan_subscription_id",
+        "name": "pending_stripe_subscription_id",
         "ordinal": 13,
         "type_info": "Text"
       },
@@ -106,5 +106,5 @@
       true
     ]
   },
-  "hash": "72f73c1da91c42894cbc0eb5631af6cc7cb16bec4fa750196b5475d7b0fc8c86"
+  "hash": "831fa2de2c418a1de5796335b9f03b7dd188ba9f7e39bde11941b8c54ff32909"
 }

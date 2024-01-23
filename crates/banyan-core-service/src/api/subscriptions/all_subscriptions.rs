@@ -18,7 +18,7 @@ pub async fn handler(
         Some(u) => {
             let user_id = u.id().to_string();
             let current_user = User::by_id(&mut conn, &user_id).await?;
-            Some(current_user.active_subscription_id())
+            Some(current_user.active_subscription_id)
         }
         None => None,
     };

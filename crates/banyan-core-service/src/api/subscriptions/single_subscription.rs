@@ -24,15 +24,14 @@ pub async fn handler(
 
     let user_id = user_id.id().to_string();
     let current_user = User::by_id(&mut conn, &user_id).await?;
-    let active_sub_id = current_user.active_subscription_id();
 
     // If its not visible and not associated with the current user don't acknowledge its existance
-    if !subscription.visible && subscription.id != active_sub_id {
+    if !subscription.visible && subscription.id != current_user.active_subscription_id {
         return Err(SingleSubscriptionError::NotFound);
     }
 
     let mut api_sub = ApiSubscription::from(subscription);
-    api_sub.set_active_if_match(&active_sub_id);
+    api_sub.set_active_if_match(&current_user.active_subscription_id);
 
     Ok((StatusCode::OK, Json(api_sub)).into_response())
 }

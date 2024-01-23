@@ -1,0 +1,110 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, email, verified_email, display_name, locale, profile_image, created_at,\n                   accepted_tos_at, stripe_customer_id, active_stripe_subscription_id,\n                   active_subscription_id as 'active_subscription_id!',\n                   active_subscription_status as 'active_subscription_status: SubscriptionStatus',\n                   active_subscription_valid_until, pending_stripe_subscription_id,\n                   pending_subscription_id, pending_subscription_expiration FROM users\n                 WHERE id = $1;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "email",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "verified_email",
+        "ordinal": 2,
+        "type_info": "Bool"
+      },
+      {
+        "name": "display_name",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "locale",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "profile_image",
+        "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 6,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "accepted_tos_at",
+        "ordinal": 7,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "stripe_customer_id",
+        "ordinal": 8,
+        "type_info": "Text"
+      },
+      {
+        "name": "active_stripe_subscription_id",
+        "ordinal": 9,
+        "type_info": "Text"
+      },
+      {
+        "name": "active_subscription_id!",
+        "ordinal": 10,
+        "type_info": "Text"
+      },
+      {
+        "name": "active_subscription_status: SubscriptionStatus",
+        "ordinal": 11,
+        "type_info": "Text"
+      },
+      {
+        "name": "active_subscription_valid_until",
+        "ordinal": 12,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "pending_stripe_subscription_id",
+        "ordinal": 13,
+        "type_info": "Text"
+      },
+      {
+        "name": "pending_subscription_id",
+        "ordinal": 14,
+        "type_info": "Text"
+      },
+      {
+        "name": "pending_subscription_expiration",
+        "ordinal": 15,
+        "type_info": "Datetime"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "6bf88bcf372dda728e74556edd9fa5f20339959c3bde9e052e9d732db26ef517"
+}

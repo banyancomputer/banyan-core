@@ -44,12 +44,12 @@ INSERT INTO subscriptions (
 
 ALTER TABLE users ADD COLUMN stripe_customer_id TEXT;
 
-ALTER TABLE users ADD COLUMN active_stripe_plan_subscription_id TEXT;
+ALTER TABLE users ADD COLUMN active_stripe_subscription_id TEXT;
 ALTER TABLE users ADD COLUMN active_subscription_id TEXT REFERENCES subscriptions(id);
 ALTER TABLE users ADD COLUMN active_subscription_status TEXT NOT NULL DEFAULT 'active';
 ALTER TABLE users ADD COLUMN active_subscription_valid_until DATETIME;
 
-ALTER TABLE users ADD COLUMN pending_stripe_plan_subscription_id TEXT;
+ALTER TABLE users ADD COLUMN pending_stripe_subscription_id TEXT;
 ALTER TABLE users ADD COLUMN pending_subscription_id TEXT REFERENCES subscriptions(id);
 ALTER TABLE users ADD COLUMN pending_subscription_expiration DATETIME;
 
