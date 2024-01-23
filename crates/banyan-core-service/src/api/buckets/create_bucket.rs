@@ -68,7 +68,7 @@ pub async fn handler(
     )
     .fetch_one(&database)
     .await
-    .expect("(temp query, no custom error, just needs refactor)");
+    .map_err(CreateBucketError::BucketKeyCreationFailed)?;
 
     let bucket_key = sqlx::query_as!(
         BucketKey,
@@ -80,7 +80,7 @@ pub async fn handler(
     .map_err(CreateBucketError::AdditionalDetailsUnavailable)?;
 
     let resp = serde_json::json!({
-        "id": bucket.id,
+        "id": bucket-id,
         "name": bucket.name,
         "type": bucket.r#type,
         "storage_class": bucket.storage_class,
