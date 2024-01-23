@@ -194,7 +194,9 @@ pub async fn handler(
     .await
     .map_err(AuthenticationError::UserDataLookupFailed)?;
 
-    conn.close().await.map_err(AuthenticationError::UserDataLookupFailed)?;
+    conn.close()
+        .await
+        .map_err(AuthenticationError::UserDataLookupFailed)?;
 
     let user_data = UserData {
         user: user.into(),
