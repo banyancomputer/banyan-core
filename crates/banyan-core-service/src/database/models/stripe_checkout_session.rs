@@ -57,28 +57,4 @@ impl StripeCheckoutSession {
         .fetch_optional(&mut *conn)
         .await
     }
-
-    //pub async fn completed(conn: &mut DatabaseConnection, id: &str, amount: Option<i64>) -> Result<(), sqlx::Error> {
-    //    let checkout_session = match Self::find_by_id(&mut *conn, id).await? {
-    //        Some(s) => s,
-    //        None => return Ok(()),
-    //    };
-
-    //    if checkout_session.status != StripeCheckoutSessionStatus::Started {
-    //        tracing::warn!("attempted to complete an already completed checkout");
-    //        return Ok(());
-    //    }
-
-    //    let now = OffsetDateTime::now_utc();
-    //    sqlx::query!(
-    //        "UPDATE stripe_checkout_sessions SET status = $1, completed_at = $2 WHERE id = $3;",
-    //        StripeCheckoutSessionStatus::Completed,
-    //        now,
-    //        id,
-    //    )
-    //    .execute(&mut *conn)
-    //    .await?;
-
-    //    Ok(())
-    //}
 }
