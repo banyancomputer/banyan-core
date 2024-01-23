@@ -80,7 +80,7 @@ pub async fn handler(
     .map_err(CreateBucketError::AdditionalDetailsUnavailable)?;
 
     let resp = serde_json::json!({
-        "id": bucket-id,
+        "id": bucket.id,
         "name": bucket.name,
         "type": bucket.r#type,
         "storage_class": bucket.storage_class,
