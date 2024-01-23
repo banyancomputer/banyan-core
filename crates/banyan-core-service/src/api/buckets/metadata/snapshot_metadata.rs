@@ -11,7 +11,7 @@ use uuid::Uuid;
 use crate::app::AppState;
 use crate::database::models::SnapshotState;
 use crate::extractors::UserIdentity;
-use crate::tasks::{BLOCK_SIZE, CreateDealsTask};
+use crate::tasks::{CreateDealsTask, BLOCK_SIZE};
 
 pub async fn handler(
     user_identity: UserIdentity,
