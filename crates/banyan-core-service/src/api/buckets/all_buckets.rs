@@ -4,7 +4,7 @@ use axum::response::{IntoResponse, Response};
 
 use crate::api::models::ApiBucket;
 use crate::app::AppState;
-use crate::database::models::Bucket;
+use crate::database::models::{Bucket, BucketType, StorageClass};
 use crate::extractors::UserIdentity;
 
 pub async fn handler(user_identity: UserIdentity, State(state): State<AppState>) -> Response {
@@ -13,7 +13,11 @@ pub async fn handler(user_identity: UserIdentity, State(state): State<AppState>)
     let user_id = user_identity.id().to_string();
     let query_result = sqlx::query_as!(
         Bucket,
-        "SELECT * FROM buckets WHERE user_id = $1 AND deleted_at IS NULL;",
+        r#"SELECT id, user_id, name, type as 'type: BucketType',
+               storage_class as 'storage_class: StorageClass', updated_at as 'updated_at!',
+               deleted_at
+             FROM buckets
+             WHERE user_id = $1 AND deleted_at IS NULL;"#,
         user_id,
     )
     .fetch_all(&database)
