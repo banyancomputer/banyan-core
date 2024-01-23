@@ -1,7 +1,6 @@
-#![allow(dead_code)]
-
 use async_trait::async_trait;
 use serde::Serialize;
+use time::OffsetDateTime;
 
 use crate::{Task, TaskExecError, TaskLike, TaskState};
 
@@ -31,7 +30,9 @@ pub trait TaskStore: Send + Sync + 'static {
     }
 
     async fn completed(&self, id: String) -> Result<(), TaskStoreError> {
-        self.update_state(id, TaskState::Complete).await
+        self.update_state(id.clone(), TaskState::Complete).await?;
+
+        Ok(())
     }
 
     async fn enqueue<T: TaskLike>(
@@ -73,19 +74,13 @@ pub trait TaskStore: Send + Sync + 'static {
 
     async fn retry(&self, id: String) -> Result<Option<String>, TaskStoreError>;
 
-    async fn metrics(&self) -> Result<TaskStoreMetrics, TaskStoreError>;
-
-    async fn queue_metrics(
-        &self,
-        queue_name: &'static str,
-    ) -> Result<TaskStoreMetrics, TaskStoreError>;
-
-    async fn task_metrics(
-        &self,
-        task_name: &'static str,
-    ) -> Result<TaskStoreMetrics, TaskStoreError>;
-
     async fn update_state(&self, id: String, state: TaskState) -> Result<(), TaskStoreError>;
+
+    async fn schedule_next(
+        &self,
+        id: String,
+        next_schedule: OffsetDateTime,
+    ) -> Result<Option<String>, TaskStoreError>;
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -104,6 +99,9 @@ pub enum TaskStoreError {
 
     #[error("unable to find task with ID {0}")]
     UnknownTask(String),
+
+    #[error("task deserialization failed: {0}")]
+    DeserializationFailed(#[from] serde_json::Error),
 }
 
 impl From<sqlx::Error> for TaskStoreError {

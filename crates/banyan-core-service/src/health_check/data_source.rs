@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use axum::async_trait;
 use axum::extract::{FromRef, FromRequestParts};
-use banyan_task::{SqliteTaskStore, TaskStore, TaskStoreMetrics};
+use banyan_task::{SqliteTaskStore, TaskStoreMetrics};
 use http::request::Parts;
 use serde::Serialize;
 
