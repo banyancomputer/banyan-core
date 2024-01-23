@@ -115,8 +115,9 @@ impl NewSubscription<'_> {
 
         // Hide any other versions of the same price key
         sqlx::query_scalar!(
-            "UPDATE subscriptions SET visible = false WHERE service_key = ? AND id != ?;",
+            "UPDATE subscriptions SET visible = false WHERE service_key = ? AND tax_class = ? AND id != ?;",
             self.service_key,
+            self.tax_class,
             new_id,
         )
         .execute(&mut *conn)
