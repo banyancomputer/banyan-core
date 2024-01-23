@@ -11,7 +11,7 @@ use uuid::Uuid;
 use crate::app::AppState;
 use crate::database::models::SnapshotState;
 use crate::extractors::UserIdentity;
-use crate::tasks::CreateDealsTask;
+use crate::tasks::{BLOCK_SIZE, CreateDealsTask};
 
 pub async fn handler(
     user_identity: UserIdentity,
@@ -42,18 +42,6 @@ pub async fn handler(
     .map_err(CreateSnapshotError::MetadataUnavailable)?
     .ok_or(CreateSnapshotError::NotFound)?;
 
-    let pending_state = SnapshotState::Pending.to_string();
-    let snapshot_id = sqlx::query_scalar!(
-        r#"INSERT INTO snapshots (metadata_id, state)
-               VALUES ($1, $2)
-               RETURNING id;"#,
-        metadata_id,
-        pending_state,
-    )
-    .fetch_one(&database)
-    .await
-    .map_err(CreateSnapshotError::SaveFailed)?;
-
     // Normalize all the CIDs
     let normalized_cids = request
         .into_iter()
@@ -62,6 +50,21 @@ pub async fn handler(
                 .map_err(CreateSnapshotError::InvalidInternalCid)
         })
         .collect::<Result<Vec<_>, _>>()?;
+
+    let size_estimate = normalized_cids.len() as i64 * BLOCK_SIZE;
+
+    let pending_state = SnapshotState::Pending.to_string();
+    let snapshot_id = sqlx::query_scalar!(
+        r#"INSERT INTO snapshots (metadata_id, state, size)
+               VALUES ($1, $2, $3)
+               RETURNING id;"#,
+        metadata_id,
+        pending_state,
+        size_estimate,
+    )
+    .fetch_one(&database)
+    .await
+    .map_err(CreateSnapshotError::SaveFailed)?;
 
     // Create query builder that can serve as the basis for every chunk
     let mut builder = sqlx::QueryBuilder::new(format!(
