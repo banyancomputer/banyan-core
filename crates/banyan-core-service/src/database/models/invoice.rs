@@ -1,7 +1,7 @@
 use time::OffsetDateTime;
 
-use crate::database::DatabaseConnection;
 use crate::database::models::{InvoiceStatus, StripePaymentIntentStatus};
+use crate::database::DatabaseConnection;
 
 pub struct NewInvoice<'a> {
     pub user_id: &'a str,

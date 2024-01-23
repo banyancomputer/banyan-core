@@ -12,7 +12,10 @@ use stripe::{EventObject, EventType};
 use crate::app::AppState;
 use crate::extractors::StripeEvent;
 
-pub async fn handler(State(state): State<AppState>, StripeEvent(event): StripeEvent) -> Result<Response, StripeWebhookError> {
+pub async fn handler(
+    State(state): State<AppState>,
+    StripeEvent(event): StripeEvent,
+) -> Result<Response, StripeWebhookError> {
     let database = state.database();
     let mut conn = database.begin().await?;
 
@@ -21,27 +24,59 @@ pub async fn handler(State(state): State<AppState>, StripeEvent(event): StripeEv
         (EventType::CustomerCreated, EventObject::Customer(_)) => (),
         (EventType::InvoiceUpcoming, EventObject::Invoice(_)) => (),
 
-        (EventType::InvoiceCreated, EventObject::Invoice(invoice)) => invoice_events::created(&mut *conn, invoice).await?,
-        (EventType::InvoiceFinalizationFailed, EventObject::Invoice(invoice)) => invoice_events::status_update(&mut *conn, invoice).await?,
-        (EventType::InvoiceFinalized, EventObject::Invoice(invoice)) => invoice_events::status_update(&mut *conn, invoice).await?,
-        (EventType::InvoicePaid, EventObject::Invoice(invoice)) => invoice_events::status_update(&mut *conn, invoice).await?,
-        (EventType::InvoicePaymentActionRequired, EventObject::Invoice(invoice)) => invoice_events::status_update(&mut *conn, invoice).await?,
-        (EventType::InvoicePaymentFailed, EventObject::Invoice(invoice)) => invoice_events::status_update(&mut *conn, invoice).await?,
+        (EventType::InvoiceCreated, EventObject::Invoice(invoice)) => {
+            invoice_events::created(&mut *conn, invoice).await?
+        }
+        (EventType::InvoiceFinalizationFailed, EventObject::Invoice(invoice)) => {
+            invoice_events::status_update(&mut *conn, invoice).await?
+        }
+        (EventType::InvoiceFinalized, EventObject::Invoice(invoice)) => {
+            invoice_events::status_update(&mut *conn, invoice).await?
+        }
+        (EventType::InvoicePaid, EventObject::Invoice(invoice)) => {
+            invoice_events::status_update(&mut *conn, invoice).await?
+        }
+        (EventType::InvoicePaymentActionRequired, EventObject::Invoice(invoice)) => {
+            invoice_events::status_update(&mut *conn, invoice).await?
+        }
+        (EventType::InvoicePaymentFailed, EventObject::Invoice(invoice)) => {
+            invoice_events::status_update(&mut *conn, invoice).await?
+        }
         // This one should probably be handled as a special case as we can glean some extra data
         // from it, but its not a high priority
-        (EventType::InvoiceUpdated, EventObject::Invoice(invoice)) => invoice_events::status_update(&mut *conn, invoice).await?,
+        (EventType::InvoiceUpdated, EventObject::Invoice(invoice)) => {
+            invoice_events::status_update(&mut *conn, invoice).await?
+        }
 
-        (EventType::CheckoutSessionCompleted, EventObject::CheckoutSession(sess)) => checkout_session_events::completed(&mut *conn, sess).await?,
-        (EventType::CheckoutSessionExpired, EventObject::CheckoutSession(sess)) => checkout_session_events::expired(&mut *conn, sess).await?,
+        (EventType::CheckoutSessionCompleted, EventObject::CheckoutSession(sess)) => {
+            checkout_session_events::completed(&mut *conn, sess).await?
+        }
+        (EventType::CheckoutSessionExpired, EventObject::CheckoutSession(sess)) => {
+            checkout_session_events::expired(&mut *conn, sess).await?
+        }
 
-        (EventType::CustomerSubscriptionCreated, EventObject::Subscription(subscription)) => customer_subscription_events::created(&mut *conn, subscription).await?,
-        (EventType::CustomerSubscriptionDeleted, EventObject::Subscription(subscription)) => customer_subscription_events::deleted(&mut *conn, subscription).await?,
-        (EventType::CustomerSubscriptionPaused, EventObject::Subscription(subscription)) => customer_subscription_events::paused(&mut *conn, subscription).await?,
-        (EventType::CustomerSubscriptionResumed, EventObject::Subscription(subscription)) => customer_subscription_events::resumed(&mut *conn, subscription).await?,
-        (EventType::CustomerSubscriptionUpdated, EventObject::Subscription(subscription)) => customer_subscription_events::updated(&mut *conn, subscription).await?,
+        (EventType::CustomerSubscriptionCreated, EventObject::Subscription(subscription)) => {
+            customer_subscription_events::manage(&mut *conn, subscription).await?
+        }
+        (EventType::CustomerSubscriptionDeleted, EventObject::Subscription(subscription)) => {
+            customer_subscription_events::manage(&mut *conn, subscription).await?
+        }
+        (EventType::CustomerSubscriptionPaused, EventObject::Subscription(subscription)) => {
+            customer_subscription_events::manage(&mut *conn, subscription).await?
+        }
+        (EventType::CustomerSubscriptionResumed, EventObject::Subscription(subscription)) => {
+            customer_subscription_events::manage(&mut *conn, subscription).await?
+        }
+        (EventType::CustomerSubscriptionUpdated, EventObject::Subscription(subscription)) => {
+            customer_subscription_events::manage(&mut *conn, subscription).await?
+        }
 
-        (EventType::PaymentIntentCreated, EventObject::PaymentIntent(intent)) => payment_intent_events::update_status(&mut *conn, intent).await?,
-        (EventType::PaymentIntentSucceeded, EventObject::PaymentIntent(intent)) => payment_intent_events::update_status(&mut *conn, intent).await?,
+        (EventType::PaymentIntentCreated, EventObject::PaymentIntent(intent)) => {
+            payment_intent_events::update_status(&mut *conn, intent).await?
+        }
+        (EventType::PaymentIntentSucceeded, EventObject::PaymentIntent(intent)) => {
+            payment_intent_events::update_status(&mut *conn, intent).await?
+        }
 
         _ => tracing::warn!("received unknown stripe webhook event: {event:?}"),
     }

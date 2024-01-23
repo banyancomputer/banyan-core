@@ -1,7 +1,7 @@
 use serde::Serialize;
 use time::OffsetDateTime;
 
-use crate::database::models::ExplicitBigInt;
+use crate::database::models::{ExplicitBigInt, SubscriptionStatus};
 use crate::database::DatabaseConnection;
 use crate::pricing::SUBSCRIPTION_CHANGE_EXPIRATION_WINDOW;
 
@@ -16,15 +16,16 @@ pub struct User {
     pub created_at: OffsetDateTime,
     pub accepted_tos_at: Option<OffsetDateTime>,
 
-    pub active_subscription_id: String,
     pub stripe_customer_id: Option<String>,
 
-    pub current_stripe_plan_subscription_id: Option<String>,
-    pub subscription_valid_until: Option<OffsetDateTime>,
+    pub active_stripe_plan_subscription_id: Option<String>,
+    pub active_subscription_id: String,
+    pub active_subscription_status: SubscriptionStatus,
+    pub active_subscription_valid_until: Option<OffsetDateTime>,
 
+    pub pending_stripe_plan_subscription_id: Option<String>,
     pub pending_subscription_id: Option<String>,
     pub pending_subscription_expiration: Option<OffsetDateTime>,
-    pub pending_stripe_plan_subscription_id: Option<String>,
 }
 
 impl User {
@@ -45,10 +46,11 @@ impl User {
         sqlx::query_as!(
             User,
             r#"SELECT id, email, verified_email, display_name, locale, profile_image, created_at,
-                   accepted_tos_at, active_subscription_id as 'active_subscription_id!',
-                   stripe_customer_id, current_stripe_plan_subscription_id, subscription_valid_until,
-                   pending_subscription_id, pending_subscription_expiration,
-                   pending_stripe_plan_subscription_id FROM users
+                   accepted_tos_at, stripe_customer_id, active_stripe_plan_subscription_id,
+                   active_subscription_id as 'active_subscription_id!',
+                   active_subscription_status as 'active_subscription_status: SubscriptionStatus',
+                   active_subscription_valid_until, pending_stripe_plan_subscription_id,
+                   pending_subscription_id, pending_subscription_expiration FROM users
                  WHERE id = $1;"#,
             id,
         )
@@ -94,10 +96,11 @@ impl User {
         sqlx::query_as!(
             User,
             r#"SELECT id, email, verified_email, display_name, locale, profile_image, created_at,
-                    accepted_tos_at, active_subscription_id as 'active_subscription_id!',
-                    stripe_customer_id, current_stripe_plan_subscription_id, subscription_valid_until,
-                    pending_subscription_id, pending_subscription_expiration,
-                    pending_stripe_plan_subscription_id FROM users
+                   accepted_tos_at, stripe_customer_id, active_stripe_plan_subscription_id,
+                   active_subscription_id as 'active_subscription_id!',
+                   active_subscription_status as 'active_subscription_status: SubscriptionStatus',
+                   active_subscription_valid_until, pending_stripe_plan_subscription_id,
+                   pending_subscription_id, pending_subscription_expiration FROM users
                  WHERE id = $1;"#,
             id,
         )

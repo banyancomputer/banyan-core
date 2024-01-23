@@ -15,9 +15,10 @@ pub async fn handler(
 ) -> Result<Response, PurchaseSubscriptionError> {
     // API authenticated users are not allowed to go through the stripe purchase flow, give them a
     // nice error indicating as much
-    let session  = match user_id {
+    let session = match user_id {
         UserIdentity::Api(_) => {
-            let err_msg = serde_json::json!({"msg": "API authentication is unable to complete payment flow"});
+            let err_msg =
+                serde_json::json!({"msg": "API authentication is unable to complete payment flow"});
             return Ok((StatusCode::PAYMENT_REQUIRED, Json(err_msg)).into_response());
         }
         UserIdentity::Session(sess) => sess,

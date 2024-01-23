@@ -27,7 +27,9 @@ pub async fn handler(
         None => return Err(ManageSubscriptionError::NotFound),
     };
 
-    let billing_session = stripe_helper.portal_session(&host_url, &stripe_customer_id).await?;
+    let billing_session = stripe_helper
+        .portal_session(&host_url, &stripe_customer_id)
+        .await?;
 
     let msg = serde_json::json!({"portal_url": billing_session.url});
     Ok((StatusCode::OK, Json(msg)).into_response())
@@ -52,7 +54,8 @@ impl IntoResponse for ManageSubscriptionError {
     fn into_response(self) -> Response {
         match self {
             ManageSubscriptionError::NotFound => {
-                let err_msg = serde_json::json!({"msg": "account isn't associated with a payment plan"});
+                let err_msg =
+                    serde_json::json!({"msg": "account isn't associated with a payment plan"});
                 (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
             }
             _ => {

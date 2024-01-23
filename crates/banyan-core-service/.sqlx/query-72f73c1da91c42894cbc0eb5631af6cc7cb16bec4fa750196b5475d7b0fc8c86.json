@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, email, verified_email, display_name, locale, profile_image, created_at,\n                    accepted_tos_at, active_subscription_id as 'active_subscription_id!',\n                    stripe_customer_id, current_stripe_plan_subscription_id, subscription_valid_until,\n                    pending_subscription_id, pending_subscription_expiration,\n                    pending_stripe_plan_subscription_id FROM users\n                 WHERE id = $1;",
+  "query": "SELECT id, email, verified_email, display_name, locale, profile_image, created_at,\n                   accepted_tos_at, stripe_customer_id, active_stripe_plan_subscription_id,\n                   active_subscription_id as 'active_subscription_id!',\n                   active_subscription_status as 'active_subscription_status: SubscriptionStatus',\n                   active_subscription_valid_until, pending_stripe_plan_subscription_id,\n                   pending_subscription_id, pending_subscription_expiration FROM users\n                 WHERE id = $1;",
   "describe": {
     "columns": [
       {
@@ -44,39 +44,44 @@
         "type_info": "Datetime"
       },
       {
-        "name": "active_subscription_id!",
+        "name": "stripe_customer_id",
         "ordinal": 8,
         "type_info": "Text"
       },
       {
-        "name": "stripe_customer_id",
+        "name": "active_stripe_plan_subscription_id",
         "ordinal": 9,
         "type_info": "Text"
       },
       {
-        "name": "current_stripe_plan_subscription_id",
+        "name": "active_subscription_id!",
         "ordinal": 10,
         "type_info": "Text"
       },
       {
-        "name": "subscription_valid_until",
+        "name": "active_subscription_status: SubscriptionStatus",
         "ordinal": 11,
-        "type_info": "Datetime"
-      },
-      {
-        "name": "pending_subscription_id",
-        "ordinal": 12,
         "type_info": "Text"
       },
       {
-        "name": "pending_subscription_expiration",
-        "ordinal": 13,
+        "name": "active_subscription_valid_until",
+        "ordinal": 12,
         "type_info": "Datetime"
       },
       {
         "name": "pending_stripe_plan_subscription_id",
+        "ordinal": 13,
+        "type_info": "Text"
+      },
+      {
+        "name": "pending_subscription_id",
         "ordinal": 14,
         "type_info": "Text"
+      },
+      {
+        "name": "pending_subscription_expiration",
+        "ordinal": 15,
+        "type_info": "Datetime"
       }
     ],
     "parameters": {
@@ -94,11 +99,12 @@
       true,
       true,
       true,
+      false,
       true,
       true,
       true,
       true
     ]
   },
-  "hash": "7a209517f01d2673e92b4304e1a64889701bd88ba164091a2333b9313a649b32"
+  "hash": "72f73c1da91c42894cbc0eb5631af6cc7cb16bec4fa750196b5475d7b0fc8c86"
 }

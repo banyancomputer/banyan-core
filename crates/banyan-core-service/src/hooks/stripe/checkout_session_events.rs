@@ -1,11 +1,13 @@
 use time::OffsetDateTime;
 
-use crate::database::DatabaseConnection;
 use crate::database::models::{StripeCheckoutSession, StripeCheckoutSessionStatus};
-
+use crate::database::DatabaseConnection;
 use crate::hooks::stripe::StripeWebhookError;
 
-pub async fn completed(conn: &mut DatabaseConnection, session: &stripe::CheckoutSession) -> Result<(), StripeWebhookError> {
+pub async fn completed(
+    conn: &mut DatabaseConnection,
+    session: &stripe::CheckoutSession,
+) -> Result<(), StripeWebhookError> {
     let session_str = session.id.to_string();
     let session = match StripeCheckoutSession::find_by_id(&mut *conn, &session_str).await? {
         Some(sess) => sess,
@@ -26,7 +28,10 @@ pub async fn completed(conn: &mut DatabaseConnection, session: &stripe::Checkout
     Ok(())
 }
 
-pub async fn expired(conn: &mut DatabaseConnection, session: &stripe::CheckoutSession) -> Result<(), StripeWebhookError> {
+pub async fn expired(
+    conn: &mut DatabaseConnection,
+    session: &stripe::CheckoutSession,
+) -> Result<(), StripeWebhookError> {
     let session_str = session.id.to_string();
     let session = match StripeCheckoutSession::find_by_id(&mut *conn, &session_str).await? {
         Some(sess) => sess,

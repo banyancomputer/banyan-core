@@ -1,7 +1,7 @@
 use time::OffsetDateTime;
 
-use crate::database::DatabaseConnection;
 use crate::database::models::StripeCheckoutSessionStatus;
+use crate::database::DatabaseConnection;
 
 pub struct NewStripeCheckoutSession<'a> {
     pub user_id: &'a str,
@@ -43,7 +43,10 @@ pub struct StripeCheckoutSession {
 }
 
 impl StripeCheckoutSession {
-    pub async fn find_by_id(conn: &mut DatabaseConnection, id: &str) -> Result<Option<StripeCheckoutSession>, sqlx::Error> {
+    pub async fn find_by_id(
+        conn: &mut DatabaseConnection,
+        id: &str,
+    ) -> Result<Option<StripeCheckoutSession>, sqlx::Error> {
         sqlx::query_as!(
             StripeCheckoutSession,
             r#"SELECT id, user_id, session_id, stripe_checkout_session_id, status as 'status: StripeCheckoutSessionStatus',

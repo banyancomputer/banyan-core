@@ -24,8 +24,7 @@ pub async fn handler(
     };
 
     let subscriptions =
-        Subscription::all_public_or_current(&mut conn, user_sub_id.as_deref())
-            .await?;
+        Subscription::all_public_or_current(&mut conn, user_sub_id.as_deref()).await?;
     let mut api_subscriptions: Vec<_> = subscriptions
         .into_iter()
         .map(ApiSubscription::from)

@@ -5,7 +5,6 @@ use sqlx::encode::IsNull;
 use sqlx::error::BoxDynError;
 use sqlx::sqlite::{SqliteArgumentValue, SqliteTypeInfo, SqliteValueRef};
 use sqlx::{Decode, Encode, Sqlite, Type};
-
 use stripe::generated::core::payment_intent::PaymentIntentStatus as StripeLibPaymentIntentStatus;
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
@@ -23,7 +22,9 @@ pub enum StripePaymentIntentStatus {
 impl Display for StripePaymentIntentStatus {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            StripePaymentIntentStatus::RequiresPaymentMethod => f.write_str("requires_payment_method"),
+            StripePaymentIntentStatus::RequiresPaymentMethod => {
+                f.write_str("requires_payment_method")
+            }
             StripePaymentIntentStatus::RequiresConfirmation => f.write_str("requires_confirmation"),
             StripePaymentIntentStatus::RequiresAction => f.write_str("requires_action"),
             StripePaymentIntentStatus::Processing => f.write_str("processing"),
@@ -39,10 +40,18 @@ impl From<StripeLibPaymentIntentStatus> for StripePaymentIntentStatus {
         match val {
             StripeLibPaymentIntentStatus::Canceled => StripePaymentIntentStatus::Canceled,
             StripeLibPaymentIntentStatus::Processing => StripePaymentIntentStatus::Processing,
-            StripeLibPaymentIntentStatus::RequiresAction => StripePaymentIntentStatus::RequiresAction,
-            StripeLibPaymentIntentStatus::RequiresCapture => StripePaymentIntentStatus::RequiresCapture,
-            StripeLibPaymentIntentStatus::RequiresConfirmation => StripePaymentIntentStatus::RequiresConfirmation,
-            StripeLibPaymentIntentStatus::RequiresPaymentMethod => StripePaymentIntentStatus::RequiresPaymentMethod,
+            StripeLibPaymentIntentStatus::RequiresAction => {
+                StripePaymentIntentStatus::RequiresAction
+            }
+            StripeLibPaymentIntentStatus::RequiresCapture => {
+                StripePaymentIntentStatus::RequiresCapture
+            }
+            StripeLibPaymentIntentStatus::RequiresConfirmation => {
+                StripePaymentIntentStatus::RequiresConfirmation
+            }
+            StripeLibPaymentIntentStatus::RequiresPaymentMethod => {
+                StripePaymentIntentStatus::RequiresPaymentMethod
+            }
             StripeLibPaymentIntentStatus::Succeeded => StripePaymentIntentStatus::Succeeded,
         }
     }
