@@ -28,7 +28,7 @@ pub async fn handler(
     };
 
     let billing_session = stripe_helper
-        .portal_session(&host_url, &stripe_customer_id)
+        .portal_session(&host_url, stripe_customer_id)
         .await?;
 
     let msg = serde_json::json!({"portal_url": billing_session.url});

@@ -1,7 +1,7 @@
 use time::OffsetDateTime;
 
-use crate::database::DatabaseConnection;
 use crate::database::models::{SubscriptionStatus, User};
+use crate::database::DatabaseConnection;
 use crate::hooks::stripe::StripeWebhookError;
 
 pub async fn manage(

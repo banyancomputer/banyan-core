@@ -96,7 +96,7 @@ pub async fn handler(
         session_id: &session_id,
         stripe_checkout_session_id: &stripe_checkout_session_id,
     }
-    .save(&mut *conn)
+    .save(&mut conn)
     .await?;
 
     let msg = serde_json::json!({"checkout_url": checkout_session.url});
