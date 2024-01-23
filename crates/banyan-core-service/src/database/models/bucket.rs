@@ -1228,11 +1228,19 @@ mod tests {
         assert_eq!(deleted_metadata_state, MetadataState::Deleted);
 
         // Get the bucket and ensure it's soft deleted
-        let deleted_bucket =
-            sqlx::query_as!(Bucket, "SELECT * FROM buckets WHERE id = $1;", bucket_id,)
-                .fetch_one(&mut *conn)
-                .await
-                .expect("query success");
+        let deleted_bucket = sqlx::query_as!(
+            Bucket,
+            r#"SELECT id, user_id, name, type as 'type: BucketType',
+                   storage_class as 'storage_class: StorageClass', updated_at as 'updated_at!',
+                   deleted_at
+                 FROM buckets
+                 WHERE id = $1;"#,
+            bucket_id,
+        )
+        .fetch_one(&mut *conn)
+        .await
+        .expect("query success");
+
         let deleted_metadata_updated_at = sqlx::query_scalar!(
             "SELECT updated_at as 'updated_at: OffsetDateTime' FROM metadata WHERE id = $1;",
             metadata_id,
@@ -1310,11 +1318,19 @@ mod tests {
         assert_eq!(deleted_metadata_state, MetadataState::Deleted);
 
         // Get the bucket and ensure it's soft deleted
-        let deleted_bucket =
-            sqlx::query_as!(Bucket, "SELECT * FROM buckets WHERE id = $1;", bucket_id,)
-                .fetch_one(&mut *conn)
-                .await
-                .expect("query success");
+        let deleted_bucket = sqlx::query_as!(
+            Bucket,
+            r#"SELECT id, user_id, name, type as 'type: BucketType',
+                    storage_class as 'storage_class: StorageClass', updated_at as 'updated_at!',
+                    deleted_at
+                    FROM buckets
+                    WHERE id = $1;"#,
+            bucket_id,
+        )
+        .fetch_one(&mut *conn)
+        .await
+        .expect("query success");
+
         let deleted_metadata_updated_at = sqlx::query_scalar!(
             "SELECT updated_at as 'updated_at: OffsetDateTime' FROM metadata WHERE id = $1;",
             deleted_metadata_id,
