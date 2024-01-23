@@ -182,7 +182,7 @@ mod tests {
         let builtin_pricing_config = builtin_pricing_config();
         let default_subscription = builtin_pricing_config
             .iter()
-            .find_map(|dc| dc.service_key == DEFAULT_SUBSCRIPTION_KEY);
+            .find(|dc| dc.service_key == DEFAULT_SUBSCRIPTION_KEY);
         assert!(
             default_subscription.is_some(),
             "default subscription to be present"
@@ -198,7 +198,9 @@ mod tests {
         let builtin_pricing_config = builtin_pricing_config();
         let default_subscription = builtin_pricing_config
             .iter()
-            .find_map(|dc| dc.service_key == DEFAULT_SUBSCRIPTION_KEY);
+            .find(|dc| dc.service_key == DEFAULT_SUBSCRIPTION_KEY)
+            .expect("to be present");
+
         assert!(
             default_subscription.price.is_none(),
             "default subscription to be free"
