@@ -6,7 +6,7 @@ use axum::error_handling::HandleErrorLayer;
 use axum::extract::DefaultBodyLimit;
 use axum::http::{Request, StatusCode};
 use axum::response::{IntoResponse, Response};
-use axum::routing::{get, get_service};
+use axum::routing::get;
 use axum::{Json, Router, Server, ServiceExt};
 use banyan_traffic_counter::body::{RequestInfo, ResponseInfo};
 use banyan_traffic_counter::layer::TrafficCounterLayer;
@@ -172,11 +172,8 @@ pub async fn run(config: Config) {
             sensitive_headers,
         ));
 
-    let static_assets = ServeDir::new("dist").not_found_service(
-        get_service(ServeFile::new("./dist/index.html")).handle_error(|_| async move {
-            (StatusCode::INTERNAL_SERVER_ERROR, "internal server error")
-        }),
-    );
+    let static_assets = ServeDir::new("dist")
+        .fallback(ServeFile::new("./dist/index.html"));
 
     let root_router = Router::new()
         .nest("/api/v1", api::router(app_state.clone()))

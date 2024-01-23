@@ -19,6 +19,7 @@ pub async fn handler(
     let mut conn = state.database().acquire().await?;
 
     if !Bucket::is_owned_by_user_id(&mut conn, &bucket_id, &user_id).await? {
+        tracing::info!("bucket wasn't 'owned'");
         let err_msg = serde_json::json!({"msg": "not found"});
         return Ok((StatusCode::NOT_FOUND, Json(err_msg)).into_response());
     }
