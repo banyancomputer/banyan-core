@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "INSERT INTO snapshots (metadata_id, state)\n               VALUES ($1, $2)\n               RETURNING id;",
+  "query": "INSERT INTO snapshots (metadata_id, state, size)\n               VALUES ($1, $2, $3)\n               RETURNING id;",
   "describe": {
     "columns": [
       {
@@ -10,11 +10,11 @@
       }
     ],
     "parameters": {
-      "Right": 2
+      "Right": 3
     },
     "nullable": [
       false
     ]
   },
-  "hash": "9e4d2303cc39666f1a09774041d41609c03f274ed8183353d2e8a72b9b7b8253"
+  "hash": "b0ddec4a66379c986405b4c30276b391bde42a05b5c401e58310d5cdb9bfcd32"
 }
