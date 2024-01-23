@@ -37,7 +37,12 @@ export const FolderRow: React.FC<{
     const siblingFiles = useMemo(() => folder.files?.filter(file => file.type !== 'dir').map(file => file.name), [folder.files]);
     const [isActionsVisible, setIsActionsVisible] = useState(false);
 
-    const goToFolder = (bucket: Bucket) => {
+    const goToFolder = (event: React.MouseEvent<HTMLTableRowElement, MouseEvent>, bucket: Bucket) => {
+        //@ts-ignore
+        if (event.target.id === 'actionsCell') {
+            return;
+        };
+
         navigate(`/drive/${bucket.id}?${path.length ? `${path.map(element => stringToBase64(element)).join('/')}/${stringToBase64(folder.name)}` : stringToBase64(folder.name)}`);
     };
 
@@ -125,7 +130,7 @@ export const FolderRow: React.FC<{
                     <tbody>
                         <tr
                             className={`cursor-pointer text-text-900 font-normal last:border-b-0 hover:bg-bucket-bucketHoverBackground ${folder?.files?.length && '!border-1 border-transparent border-b-border-regular'} ${isFolderDraggingOver && '!border-draggingBorder'}`}
-                            onDoubleClick={() => goToFolder(bucket)}
+                            onClick={event => goToFolder(event, bucket)}
                             draggable
                         >
                             <td
