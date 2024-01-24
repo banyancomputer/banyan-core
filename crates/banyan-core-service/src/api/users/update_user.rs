@@ -1,15 +1,15 @@
 use axum::extract::{Json, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
+use serde::Deserialize;
 
-use crate::api::models::ApiUser;
 use crate::app::AppState;
 use crate::extractors::UserIdentity;
 
 pub async fn handler(
     user_identity: UserIdentity,
     State(state): State<AppState>,
-    Json(user): Json<ApiUser>,
+    Json(user): Json<UpdateApiUserRequest>,
 ) -> Result<Response, UpdateUserError> {
     let database = state.database();
     let user_id = user_identity.id().to_string();
@@ -26,6 +26,11 @@ pub async fn handler(
     .map_err(UpdateUserError::UnableToUpdateUser)?;
 
     Ok((StatusCode::NO_CONTENT, ()).into_response())
+}
+
+#[derive(Deserialize)]
+pub struct UpdateApiUserRequest {
+    accepted_tos_at: i64,
 }
 
 #[derive(Debug, thiserror::Error)]
