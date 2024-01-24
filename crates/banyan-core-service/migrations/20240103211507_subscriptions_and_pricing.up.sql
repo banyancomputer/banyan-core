@@ -45,7 +45,7 @@ INSERT INTO subscriptions (
 ALTER TABLE users ADD COLUMN stripe_customer_id TEXT;
 
 ALTER TABLE users ADD COLUMN stripe_subscription_id TEXT;
-ALTER TABLE users ADD COLUMN subscription_id TEXT REFERENCES subscriptions(id);
+ALTER TABLE users ADD COLUMN subscription_id TEXT REFERENCES subscriptions(id) ON DELETE RESTRICT;
 ALTER TABLE users ADD COLUMN subscription_status TEXT NOT NULL DEFAULT 'active';
 ALTER TABLE users ADD COLUMN subscription_valid_until DATETIME;
 
@@ -96,11 +96,19 @@ CREATE TABLE invoices (
   stripe_customer_id TEXT NOT NULL,
   stripe_invoice_id TEXT NOT NULL,
 
-  amount_due INTEGER NOT NULL,
+  billing_start TIMESTAMP NOT NULL,
+  billing_end TIMESTAMP NOT NULL,
+
+  subscription_id TEXT NOT NULL
+    REFERENCES subscriptions(id)
+    ON DELETE RESTRICT,
+
+  total_amount INTEGER NOT NULL,
   status TEXT NOT NULL,
 
   stripe_payment_intent_id TEXT NOT NULL,
   stripe_payment_intent_status TEXT,
 
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

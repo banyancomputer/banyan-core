@@ -13,7 +13,7 @@ pub struct ApiUser {
     pub accepted_tos_at: Option<i64>,
     pub subscription_id: String,
 
-    #[serde(skip_serializing_if = "Option::is_none", with = "time::serde::rfc3339")]
+    #[serde(skip_serializing_if = "Option::is_none", with = "time::serde::rfc3339::option")]
     pub subscription_valid_until: Option<OffsetDateTime>,
 }
 

@@ -2,7 +2,7 @@ mod config;
 mod secrets;
 mod service_verification_key;
 mod state;
-mod stripe_helper;
+pub mod stripe_helper;
 mod version;
 
 #[allow(unused)]

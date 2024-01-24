@@ -9,7 +9,12 @@ pub struct NewInvoice<'a> {
     pub stripe_customer_id: &'a str,
     pub stripe_invoice_id: &'a str,
 
-    pub amount_due: PriceUnits,
+    pub billing_start: &'a OffsetDateTime,
+    pub billing_end: &'a OffsetDateTime,
+
+    pub subscription_id: &'a str,
+
+    pub total_amount: PriceUnits,
     pub status: InvoiceStatus,
 
     pub stripe_payment_intent_id: &'a str,
@@ -20,14 +25,18 @@ impl<'a> NewInvoice<'a> {
         let now = OffsetDateTime::now_utc();
 
         sqlx::query_scalar!(
-            r#"INSERT INTO invoices (user_id, stripe_customer_id, stripe_invoice_id, amount_due,
-                   status, stripe_payment_intent_id, created_at)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7)
+            r#"INSERT INTO invoices (user_id, stripe_customer_id, stripe_invoice_id, billing_start,
+                   billing_end, subscription_id, total_amount, status, stripe_payment_intent_id,
+                   created_at, updated_at)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $10)
                  RETURNING id;"#,
             self.user_id,
             self.stripe_customer_id,
             self.stripe_invoice_id,
-            self.amount_due,
+            self.billing_start,
+            self.billing_end,
+            self.subscription_id,
+            self.total_amount,
             self.status,
             self.stripe_payment_intent_id,
             now,
@@ -41,10 +50,16 @@ impl<'a> NewInvoice<'a> {
 pub struct Invoice {
     pub id: String,
 
-    pub amount_due: PriceUnits,
+    pub billing_start: OffsetDateTime,
+    pub billing_end: OffsetDateTime,
+
+    pub subscription_id: String,
+
+    pub total_amount: PriceUnits,
     pub status: InvoiceStatus,
 
     pub created_at: OffsetDateTime,
+    pub updated_at: OffsetDateTime,
 }
 
 impl Invoice {
@@ -54,7 +69,9 @@ impl Invoice {
     ) -> Result<Option<Self>, sqlx::Error> {
         sqlx::query_as!(
             Self,
-            r#"SELECT id, amount_due as 'amount_due: PriceUnits', status as 'status: InvoiceStatus', created_at
+            r#"SELECT id, billing_start, billing_end, subscription_id,
+                   total_amount as 'total_amount: PriceUnits', status as 'status: InvoiceStatus',
+                   created_at, updated_at
                  FROM invoices
                  WHERE stripe_payment_intent_id = $1;"#,
             stripe_payment_intent_id,
@@ -69,7 +86,9 @@ impl Invoice {
     ) -> Result<Option<Self>, sqlx::Error> {
         sqlx::query_as!(
             Self,
-            r#"SELECT id, amount_due as 'amount_due: PriceUnits', status as 'status: InvoiceStatus', created_at
+            r#"SELECT id, billing_start, billing_end, subscription_id,
+                   total_amount as 'total_amount: PriceUnits', status as 'status: InvoiceStatus',
+                   created_at, updated_at
                  FROM invoices
                  WHERE stripe_invoice_id = $1;"#,
             stripe_invoice_id,

@@ -6,19 +6,19 @@ use crate::database::models::{StripeProduct, Subscription, TaxClass, User};
 use crate::database::Database;
 use crate::pricing::SUBSCRIPTION_CHANGE_EXPIRATION_WINDOW;
 
-const BANDWIDTH_PRODUCT_KEY: &str = "bandwidth";
+pub const BANDWIDTH_PRODUCT_KEY: &str = "bandwidth";
 
-const METADATA_PRODUCT_KEY: &str = "product-key";
+pub const METADATA_PRODUCT_KEY: &str = "product-key";
 
-const METADATA_SUBSCRIPTION_KEY: &str = "subscription-id";
+pub const METADATA_SUBSCRIPTION_KEY: &str = "subscription-id";
 
-const METADATA_USER_KEY: &str = "user-id";
+pub const METADATA_USER_KEY: &str = "user-id";
 
-const PRODUCT_DESCRIPTOR_PREFIX: &str = "banyan";
+pub const PRODUCT_DESCRIPTOR_PREFIX: &str = "banyan";
 
-const PRODUCT_TAXCLASS_KEY: &str = "tax-class";
+pub const PRODUCT_TAXCLASS_KEY: &str = "tax-class";
 
-const STORAGE_PRODUCT_KEY: &str = "storage";
+pub const STORAGE_PRODUCT_KEY: &str = "storage";
 
 pub struct StripeHelper {
     database: Database,

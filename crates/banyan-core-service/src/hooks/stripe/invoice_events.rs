@@ -2,50 +2,50 @@ use crate::database::models::{Invoice, InvoiceStatus, NewInvoice, PriceUnits};
 use crate::database::DatabaseConnection;
 use crate::hooks::stripe::StripeWebhookError;
 
-pub async fn created(
-    conn: &mut DatabaseConnection,
+pub async fn creation_handler(
+    _conn: &mut DatabaseConnection,
     invoice: &stripe::Invoice,
 ) -> Result<(), StripeWebhookError> {
     let customer = invoice
         .customer
         .clone()
         .ok_or(StripeWebhookError::MissingData)?;
-    let customer_id = customer.id().to_string();
+    let _customer_id = customer.id().to_string();
 
-    let user_id = sqlx::query_scalar!(
-        "SELECT id FROM users WHERE stripe_customer_id = $1;",
-        customer_id,
-    )
-    .fetch_optional(&mut *conn)
-    .await?
-    .ok_or(StripeWebhookError::MissingTarget)?;
+    //let user_id = sqlx::query_scalar!(
+    //    "SELECT id FROM users WHERE stripe_customer_id = $1;",
+    //    customer_id,
+    //)
+    //.fetch_optional(&mut *conn)
+    //.await?
+    //.ok_or(StripeWebhookError::MissingTarget)?;
 
-    let invoice_id = invoice.id.to_string();
-    let invoice_amt =
-        PriceUnits::from_cents(invoice.amount_due.ok_or(StripeWebhookError::MissingData)?);
-    let invoice_status = invoice
-        .status
-        .map(InvoiceStatus::from)
-        .ok_or(StripeWebhookError::MissingData)?;
+    //let invoice_id = invoice.id.to_string();
+    //let invoice_amt =
+    //    PriceUnits::from_cents(invoice.amount_due.ok_or(StripeWebhookError::MissingData)?);
+    //let invoice_status = invoice
+    //    .status
+    //    .map(InvoiceStatus::from)
+    //    .ok_or(StripeWebhookError::MissingData)?;
 
-    NewInvoice {
-        user_id: &user_id,
+    //NewInvoice {
+    //    user_id: &user_id,
 
-        stripe_customer_id: &customer_id,
-        stripe_invoice_id: &invoice_id,
+    //    stripe_customer_id: &customer_id,
+    //    stripe_invoice_id: &invoice_id,
 
-        amount_due: invoice_amt,
-        status: invoice_status,
+    //    amount_due: invoice_amt,
+    //    status: invoice_status,
 
-        stripe_payment_intent_id: &invoice_id,
-    }
-    .save(&mut *conn)
-    .await?;
+    //    stripe_payment_intent_id: &invoice_id,
+    //}
+    //.save(&mut *conn)
+    //.await?;
 
-    Ok(())
+    todo!()
 }
 
-pub async fn status_update(
+pub async fn update_handler(
     conn: &mut DatabaseConnection,
     invoice: &stripe::Invoice,
 ) -> Result<(), StripeWebhookError> {
@@ -60,5 +60,5 @@ pub async fn status_update(
         .ok_or(StripeWebhookError::MissingTarget)?;
     invoice.update_status(&mut *conn, new_status).await?;
 
-    Ok(())
+    todo!()
 }

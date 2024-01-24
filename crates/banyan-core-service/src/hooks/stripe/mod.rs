@@ -1,7 +1,7 @@
-mod checkout_session_events;
-mod customer_subscription_events;
 mod invoice_events;
-mod payment_intent_events;
+mod session_events;
+//mod payment_intent_events;
+mod subscription_events;
 
 use axum::extract::State;
 use axum::http::StatusCode;
@@ -16,85 +16,87 @@ pub async fn handler(
     State(state): State<AppState>,
     StripeEvent(event): StripeEvent,
 ) -> Result<Response, StripeWebhookError> {
+    use {EventObject as EO, EventType as ET};
+
     let database = state.database();
     let mut conn = database.begin().await?;
 
     tracing::info!("stripe_event:{event:?}");
-    // Order is:
-    //
-    // * charge.succeeded
-    // * customer.subscription.created
-    // * customer.subscription.updated
-    // * payment_intent.succeeded
-    // * payment_intent.created
-    // * invoice.created
-    // * invoice.finalized
-    // * invoice.updated
-    // * invoice.paid
-    // * invoice.payment_succeeded
-    // * checkout.session.completed
-
-    use {EventObject as EO, EventType as ET};
 
     match (event.type_, &event.data.object) {
+        (ET::ChargeSucceeded, EO::Charge(_)) => (),
+
+        (ET::CustomerSubscriptionCreated, EO::Subscription(sub)) => subscription_events::handler(&mut conn, sub).await?,
+        (ET::CustomerSubscriptionUpdated, EO::Subscription(sub)) => subscription_events::handler(&mut conn, sub).await?,
+
+        (ET::PaymentIntentSucceeded, EO::PaymentIntent(_)) => (),
+        (ET::PaymentIntentCreated, EO::PaymentIntent(_)) => (),
+
+        (ET::InvoiceCreated, EO::Invoice(inv)) => invoice_events::creation_handler(&mut conn, inv).await?,
+        (ET::InvoiceFinalized, EO::Invoice(inv)) => invoice_events::update_handler(&mut conn, inv).await?,
+        (ET::InvoiceUpdated, EO::Invoice(inv)) => invoice_events::update_handler(&mut conn, inv).await?,
+        (ET::InvoicePaid, EO::Invoice(inv)) => invoice_events::update_handler(&mut conn, inv).await?,
+        (ET::InvoicePaymentSucceeded, EO::Invoice(inv)) => invoice_events::update_handler(&mut conn, inv).await?,
+
+        (ET::CheckoutSessionCompleted, EO::CheckoutSession(sess)) => session_events::handler(&mut conn, sess).await?,
+
         // We don't need to handle, but don't want to log
-        (ET::CustomerCreated, EO::Customer(_)) => (),
-        (ET::InvoiceUpcoming, EO::Invoice(_)) => (),
+        //(ET::CustomerCreated, EO::Customer(_)) => (),
+        //(ET::InvoiceUpcoming, EO::Invoice(_)) => (),
 
-        (EType::InvoiceCreated, EO::Invoice(invoice)) => {
-            invoice_events::created(&mut conn, invoice).await?
-        }
-        (EType::InvoiceFinalizationFailed, EO::Invoice(invoice)) => {
-            invoice_events::status_update(&mut conn, invoice).await?
-        }
-        (EType::InvoiceFinalized, EO::Invoice(invoice)) => {
-            invoice_events::status_update(&mut conn, invoice).await?
-        }
-        (EType::InvoicePaid, EO::Invoice(invoice)) => {
-            invoice_events::status_update(&mut conn, invoice).await?
-        }
-        (EType::InvoicePaymentActionRequired, EO::Invoice(invoice)) => {
-            invoice_events::status_update(&mut conn, invoice).await?
-        }
-        (EType::InvoicePaymentFailed, EO::Invoice(invoice)) => {
-            invoice_events::status_update(&mut conn, invoice).await?
-        }
-        // This one should probably be handled as a special case as we can glean some extra data
-        // from it, but its not a high priority
-        (EType::InvoiceUpdated, EO::Invoice(invoice)) => {
-            invoice_events::status_update(&mut conn, invoice).await?
-        }
+        //(EType::InvoiceCreated, EO::Invoice(invoice)) => {
+        //    invoice_events::created(&mut conn, invoice).await?
+        //}
+        //(EType::InvoiceFinalizationFailed, EO::Invoice(invoice)) => {
+        //    invoice_events::status_update(&mut conn, invoice).await?
+        //}
+        //(EType::InvoiceFinalized, EO::Invoice(invoice)) => {
+        //    invoice_events::status_update(&mut conn, invoice).await?
+        //}
+        //(EType::InvoicePaid, EO::Invoice(invoice)) => {
+        //    invoice_events::status_update(&mut conn, invoice).await?
+        //}
+        //(EType::InvoicePaymentActionRequired, EO::Invoice(invoice)) => {
+        //    invoice_events::status_update(&mut conn, invoice).await?
+        //}
+        //(EType::InvoicePaymentFailed, EO::Invoice(invoice)) => {
+        //    invoice_events::status_update(&mut conn, invoice).await?
+        //}
+        //// This one should probably be handled as a special case as we can glean some extra data
+        //// from it, but its not a high priority
+        //(EType::InvoiceUpdated, EO::Invoice(invoice)) => {
+        //    invoice_events::status_update(&mut conn, invoice).await?
+        //}
 
-        (EType::CheckoutSessionCompleted, EO::CheckoutSession(sess)) => {
-            checkout_session_events::completed(&mut conn, sess).await?
-        }
-        (EType::CheckoutSessionExpired, EO::CheckoutSession(sess)) => {
-            checkout_session_events::expired(&mut conn, sess).await?
-        }
+        //(EType::CheckoutSessionCompleted, EO::CheckoutSession(sess)) => {
+        //    checkout_session_events::completed(&mut conn, sess).await?
+        //}
+        //(EType::CheckoutSessionExpired, EO::CheckoutSession(sess)) => {
+        //    checkout_session_events::expired(&mut conn, sess).await?
+        //}
 
-        (EType::CustomerSubscriptionCreated, EO::Subscription(subscription)) => {
-            customer_subscription_events::manage(&mut conn, subscription).await?
-        }
-        (EType::CustomerSubscriptionDeleted, EO::Subscription(subscription)) => {
-            customer_subscription_events::manage(&mut conn, subscription).await?
-        }
-        (EType::CustomerSubscriptionPaused, EO::Subscription(subscription)) => {
-            customer_subscription_events::manage(&mut conn, subscription).await?
-        }
-        (EType::CustomerSubscriptionResumed, EO::Subscription(subscription)) => {
-            customer_subscription_events::manage(&mut conn, subscription).await?
-        }
-        (EType::CustomerSubscriptionUpdated, EO::Subscription(subscription)) => {
-            customer_subscription_events::manage(&mut conn, subscription).await?
-        }
+        //(EType::CustomerSubscriptionCreated, EO::Subscription(subscription)) => {
+        //    customer_subscription_events::manage(&mut conn, subscription).await?
+        //}
+        //(EType::CustomerSubscriptionDeleted, EO::Subscription(subscription)) => {
+        //    customer_subscription_events::manage(&mut conn, subscription).await?
+        //}
+        //(EType::CustomerSubscriptionPaused, EO::Subscription(subscription)) => {
+        //    customer_subscription_events::manage(&mut conn, subscription).await?
+        //}
+        //(EType::CustomerSubscriptionResumed, EO::Subscription(subscription)) => {
+        //    customer_subscription_events::manage(&mut conn, subscription).await?
+        //}
+        //(EType::CustomerSubscriptionUpdated, EO::Subscription(subscription)) => {
+        //    customer_subscription_events::manage(&mut conn, subscription).await?
+        //}
 
-        (EType::PaymentIntentCreated, EO::PaymentIntent(intent)) => {
-            payment_intent_events::update_status(&mut conn, intent).await?
-        }
-        (EType::PaymentIntentSucceeded, EO::PaymentIntent(intent)) => {
-            payment_intent_events::update_status(&mut conn, intent).await?
-        }
-
+        //(EType::PaymentIntentCreated, EO::PaymentIntent(intent)) => {
+        //    payment_intent_events::update_status(&mut conn, intent).await?
+        //}
+        //(EType::PaymentIntentSucceeded, EO::PaymentIntent(intent)) => {
+        //    payment_intent_events::update_status(&mut conn, intent).await?
+        //}
         _ => tracing::warn!("received unknown stripe webhook event: {event:?}"),
     }
 

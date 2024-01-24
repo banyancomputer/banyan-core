@@ -1,0 +1,62 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, billing_start, billing_end, subscription_id,\n                   total_amount as 'total_amount: PriceUnits', status as 'status: InvoiceStatus',\n                   created_at, updated_at\n                 FROM invoices\n                 WHERE stripe_payment_intent_id = $1;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "billing_start",
+        "ordinal": 1,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "billing_end",
+        "ordinal": 2,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "subscription_id",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "total_amount: PriceUnits",
+        "ordinal": 4,
+        "type_info": "Int64"
+      },
+      {
+        "name": "status: InvoiceStatus",
+        "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 6,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "updated_at",
+        "ordinal": 7,
+        "type_info": "Datetime"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "9d9a68646d776200aa781cf3ef6b277b3be6cab403083cd54b4c0c3980a81aa8"
+}
