@@ -19,8 +19,6 @@ export const Invoices = () => {
         setDateRange({ from: startDate, to: endDate });
     };
 
-    console.log('invoices', invoices);
-
     useEffect(() => {
         dispatch(getInvoices());
     }, [dateRange]);
