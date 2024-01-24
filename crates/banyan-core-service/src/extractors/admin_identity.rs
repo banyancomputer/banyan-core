@@ -3,7 +3,6 @@ use axum::extract::{FromRef, FromRequestParts};
 use http::request::Parts;
 use uuid::Uuid;
 
-use crate::app::ServiceVerificationKey;
 use crate::database::Database;
 use crate::extractors::session_identity::SessionIdentityError;
 use crate::extractors::SessionIdentity;
@@ -50,7 +49,7 @@ impl AdminIdentity {
 impl<S> FromRequestParts<S> for AdminIdentity
 where
     Database: FromRef<S>,
-    ServiceVerificationKey: FromRef<S>,
+    SessionIdentity: FromRequestParts<S, Rejection = SessionIdentityError>,
     S: Send + Sync,
 {
     type Rejection = SessionIdentityError;

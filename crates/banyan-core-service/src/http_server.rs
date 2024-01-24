@@ -177,9 +177,9 @@ pub async fn run(config: Config) {
         ));
 
     let static_assets = ServeDir::new(config.frontend_folder()).fallback(ServeFile::new(format!(
-            "./{}/index.html",
-            config.frontend_folder()
-        )));
+        "./{}/index.html",
+        config.frontend_folder()
+    )));
 
     let root_router = Router::new()
         .nest("/api/v1", api::router(app_state.clone()))
