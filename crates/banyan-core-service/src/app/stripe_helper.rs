@@ -114,10 +114,10 @@ impl StripeHelper {
             CreateCheckoutSessionAutomaticTax, CreateCheckoutSessionLineItems, Currency, Metadata,
         };
 
-        let customer_id = stripe_subscription.customer.id();
-        let mut params = CreateCheckoutSession::new(customer_id.as_str());
+        let mut params = CreateCheckoutSession::new();
 
-        params.automatic_tax = Some(CreateCheckoutSessionAutomaticTax { enabled: true });
+        params.customer = Some(stripe_subscription.customer.id());
+        //params.automatic_tax = Some(CreateCheckoutSessionAutomaticTax { enabled: true });
         params.currency = Some(Currency::USD);
         params.customer_email = Some(&user.email);
         params.mode = Some(CheckoutSessionMode::Subscription);
@@ -199,7 +199,7 @@ impl StripeHelper {
 
         let mut success_url = base_url.clone();
         success_url.set_path("/api/v1/subscriptions/success/{CHECKOUT_SESSION_ID}");
-        params.success_url = success_url.as_str();
+        params.success_url = Some(success_url.as_str());
 
         let checkout_session = CheckoutSession::create(&self.client, params).await?;
 
@@ -321,7 +321,7 @@ impl StripeHelper {
 
         let mut params = CreateSubscription::new(customer.id.clone());
 
-        params.automatic_tax = Some(CreateSubscriptionAutomaticTax { enabled: true });
+        //params.automatic_tax = Some(CreateSubscriptionAutomaticTax { enabled: true });
         params.collection_method = Some(CollectionMethod::ChargeAutomatically);
         params.expand = &["items"];
 
@@ -451,7 +451,7 @@ impl StripeHelper {
         });
 
         // Tax related settings need to be set as well
-        params.tax_behavior = Some(PriceTaxBehavior::Exclusive);
+        //params.tax_behavior = Some(PriceTaxBehavior::Exclusive);
 
         params.metadata = Some(Metadata::from([(
             METADATA_SUBSCRIPTION_KEY.to_string(),
@@ -588,7 +588,7 @@ impl StripeHelper {
         });
 
         // Tax related settings need to be set as well
-        params.tax_behavior = Some(PriceTaxBehavior::Exclusive);
+        //params.tax_behavior = Some(PriceTaxBehavior::Exclusive);
 
         params.metadata = Some(Metadata::from([(
             METADATA_SUBSCRIPTION_KEY.to_string(),
