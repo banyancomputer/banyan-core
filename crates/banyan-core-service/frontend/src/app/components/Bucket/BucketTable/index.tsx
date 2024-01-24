@@ -96,7 +96,7 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         <div
             onDrop={handleDrop}
             onDragOver={preventDefaultDragAction}
-            className={`w-fit overflow-x-auto bg-secondaryBackground ${error? 'max-h-[calc(100vh-440px)]' : 'max-h-[calc(100vh-388px)]'}`}
+            className={`w-fit h-full overflow-x-auto bg-secondaryBackground ${error? 'max-h-[calc(100vh-440px)]' : 'max-h-[calc(100vh-388px)]'}`}
             id="table"
         >
             <div className="pb-1 text-m font-medium">

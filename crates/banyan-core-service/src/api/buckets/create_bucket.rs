@@ -3,6 +3,7 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use jwt_simple::prelude::*;
 use serde::Deserialize;
+use time::OffsetDateTime;
 use validify::{Validate, Validify};
 
 use crate::app::AppState;
@@ -24,15 +25,18 @@ pub async fn handler(
 
     let database = state.database();
 
+    let now = OffsetDateTime::now_utc();
+
     let user_id = user_identity.id().to_string();
     let bucket_id = sqlx::query_scalar!(
-        r#"INSERT INTO buckets (user_id, name, type, storage_class)
-               VALUES ($1, $2, $3, $4)
+        r#"INSERT INTO buckets (user_id, name, type, storage_class, updated_at)
+               VALUES ($1, $2, $3, $4, $5)
                RETURNING id;"#,
         user_id,
         request.name,
         request.bucket_type,
         request.storage_class,
+        now,
     )
     .fetch_one(&database)
     .await
@@ -53,10 +57,18 @@ pub async fn handler(
     .await
     .map_err(CreateBucketError::BucketKeyCreationFailed)?;
 
-    let bucket = sqlx::query_as!(Bucket, "SELECT * FROM buckets WHERE id = $1;", bucket_id)
-        .fetch_one(&database)
-        .await
-        .expect("(temp query, no custom error, just needs refactor)");
+    let bucket = sqlx::query_as!(
+        Bucket,
+        "SELECT id, user_id, name, type as 'type: BucketType',
+             storage_class as 'storage_class: StorageClass', updated_at as 'updated_at!',
+             deleted_at
+           FROM buckets
+           WHERE id = $1;",
+        bucket_id,
+    )
+    .fetch_one(&database)
+    .await
+    .map_err(CreateBucketError::BucketKeyCreationFailed)?;
 
     let bucket_key = sqlx::query_as!(
         BucketKey,
