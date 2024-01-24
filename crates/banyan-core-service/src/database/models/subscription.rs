@@ -37,22 +37,17 @@ impl NewSubscription<'_> {
             match Subscription::active_service(&mut *conn, self.service_key, self.tax_class).await?
             {
                 Some(s) => s,
-                None => {
-                    tracing::info!("found no matching subscription for {}/{}, creating new one", self.service_key, self.tax_class);
-                    // Nothing matched, this is a brand new account subscription type
-                    return self.save(&mut *conn).await;
-                }
+                // Nothing matched, this is a brand new account subscription type
+                None => return self.save(&mut *conn).await,
             };
 
         // Compare our built up state against the current one, we only want to create a new version
         // if we differ in a meaningful way from what is there. If we're the same we can just
         // return the ID of the existing one.
         if self == &current {
-            tracing::info!("subscription unchanged, not re-creating");
             return Ok(current.id);
         }
 
-        tracing::info!("detected change in subscription for {}/{}, creating new one", self.service_key, self.tax_class);
         let new_id = self.save(&mut *conn).await?;
 
         // I need to check each of the stripe price IDs and inherit the previous version if that
@@ -135,8 +130,6 @@ impl NewSubscription<'_> {
 /// creation timestamp specifically).
 impl std::cmp::PartialEq<Subscription> for NewSubscription<'_> {
     fn eq(&self, other: &Subscription) -> bool {
-        tracing::info!("comparing existing subscription:\n({self:?})\nto new subscription:\n({other:?})");
-
         self.service_key == other.service_key
             && self.tax_class == other.tax_class
             && self.title == other.title

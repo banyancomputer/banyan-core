@@ -40,7 +40,7 @@ CREATE TABLE subscriptions (
 INSERT INTO subscriptions (
     service_key, tax_class, title, visible, hot_storage_hard_limit, bandwidth_hard_limit,
     included_hot_storage, included_bandwidth
-  ) VALUES ('starter', 'not_applicable', 'Starter Plan', false, 20, 10, 20, 10);
+  ) VALUES ('starter', 'not_applicable', 'Starter Plan', true, 20, 10, 20, 10);
 
 ALTER TABLE users ADD COLUMN stripe_customer_id TEXT;
 
