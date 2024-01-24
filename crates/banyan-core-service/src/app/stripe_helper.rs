@@ -115,7 +115,6 @@ impl StripeHelper {
         params.customer = Some(customer.id);
         params.automatic_tax = Some(CreateCheckoutSessionAutomaticTax { enabled: true });
         params.currency = Some(Currency::USD);
-        params.customer_email = Some(&user.email);
         params.mode = Some(CheckoutSessionMode::Subscription);
 
         let expiration = OffsetDateTime::now_utc() + SUBSCRIPTION_CHANGE_EXPIRATION_WINDOW;
@@ -399,7 +398,6 @@ impl StripeHelper {
             .await?;
         line_items.push(CreateCheckoutSessionLineItems {
             price: Some(bandwidth_price.id.to_string()),
-            quantity: Some(0),
             ..Default::default()
         });
 
@@ -411,7 +409,6 @@ impl StripeHelper {
             .await?;
         line_items.push(CreateCheckoutSessionLineItems {
             price: Some(storage_price.id.to_string()),
-            quantity: Some(0),
             ..Default::default()
         });
 
