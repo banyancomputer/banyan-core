@@ -27,7 +27,7 @@ where
         )
         .route("/cancel", get(checkout_redirect))
         .route("/manage", get(manage_subscription::handler))
-        .route("/success", get(checkout_redirect))
+        .route("/success/:checkout_session_id", get(checkout_redirect))
         .route("/", get(all_subscriptions::handler))
         .with_state(state)
 }
