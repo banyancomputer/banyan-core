@@ -173,6 +173,7 @@ impl StripeHelper {
         &self,
         product_key: &str,
         tax_class: TaxClass,
+        label: Option<&str>,
     ) -> Result<String, StripeHelperError> {
         let mut conn = self.database.begin().await?;
         let mut product =
@@ -196,7 +197,7 @@ impl StripeHelper {
 
         // It doesn't, we'll need to create a new one
         let new_product =
-            register_stripe_product(&self.client, product_key, tax_class, &product.title).await?;
+            register_stripe_product(&self.client, product_key, tax_class, &product.title, label).await?;
         let new_product_id = new_product.id.as_str().to_string();
 
         product
@@ -381,7 +382,7 @@ impl StripeHelper {
         let mut line_items = Vec::new();
 
         let plan_product_id = self
-            .find_or_register_product(&plan_product_key, subscription.tax_class)
+            .find_or_register_product(&plan_product_key, subscription.tax_class, None)
             .await?;
         let plan_price = self
             .plan_price(&plan_product_id, &mut *subscription)
@@ -393,7 +394,7 @@ impl StripeHelper {
         });
 
         let bandwidth_product_id = self
-            .find_or_register_product(BANDWIDTH_PRODUCT_KEY, subscription.tax_class)
+            .find_or_register_product(BANDWIDTH_PRODUCT_KEY, subscription.tax_class, Some("GiB/month"))
             .await?;
         let bandwidth_price = self
             .bandwidth_price(&bandwidth_product_id, &mut *subscription)
@@ -404,7 +405,7 @@ impl StripeHelper {
         });
 
         let storage_product_id = self
-            .find_or_register_product(STORAGE_PRODUCT_KEY, subscription.tax_class)
+            .find_or_register_product(STORAGE_PRODUCT_KEY, subscription.tax_class, Some("GiB/month"))
             .await?;
         let storage_price = self
             .storage_price(&storage_product_id, &mut *subscription)
@@ -513,6 +514,7 @@ async fn register_stripe_product(
     product_key: &str,
     tax_class: TaxClass,
     title: &str,
+    label: Option<&str>,
 ) -> Result<stripe::Product, StripeHelperError> {
     use stripe::{CreateProduct, Metadata, Product, ProductType};
 
@@ -528,6 +530,7 @@ async fn register_stripe_product(
     params.statement_descriptor = Some(&descriptor);
     params.metadata = Some(metadata);
     params.tax_code = tax_class.stripe_id();
+    params.unit_label = label;
 
     let new_product = Product::create(client, params).await?;
     Ok(new_product)
