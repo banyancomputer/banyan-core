@@ -7,6 +7,7 @@ use std::error::Error;
 
 use axum::body::HttpBody;
 use axum::routing::{get, post};
+use axum::response::{IntoResponse, Redirect, Response};
 use axum::Router;
 
 use crate::app::AppState;
@@ -22,9 +23,15 @@ where
         .route("/:subscription_id", get(single_subscription::handler))
         .route(
             "/:subscription_id/subscribe",
-            post(purchase_subscription::handler),
+            post(purchase_subscription::handler).get(purchase_subscription::handler),
         )
+        .route("/cancel", get(checkout_redirect))
         .route("/manage", get(manage_subscription::handler))
+        .route("/success", get(checkout_redirect))
         .route("/", get(all_subscriptions::handler))
         .with_state(state)
+}
+
+pub async fn checkout_redirect() -> Response {
+    Redirect::to("/").into_response()
 }

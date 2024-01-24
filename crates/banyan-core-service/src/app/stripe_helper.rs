@@ -106,13 +106,14 @@ impl StripeHelper {
     ) -> Result<stripe::CheckoutSession, StripeHelperError> {
         use stripe::{
             CheckoutSession, CheckoutSessionMode, CreateCheckoutSession,
-            CreateCheckoutSessionAutomaticTax, CreateCheckoutSessionSubscriptionData, Currency, Metadata,
+            CreateCheckoutSessionSubscriptionData, Currency, Metadata,
         };
 
         let customer = self.find_or_create_customer(&mut *user).await?;
         let mut params = CreateCheckoutSession::new();
 
         params.customer = Some(customer.id);
+        // When we develop a tax obligation
         //params.automatic_tax = Some(CreateCheckoutSessionAutomaticTax { enabled: true });
         params.currency = Some(Currency::USD);
         params.mode = Some(CheckoutSessionMode::Subscription);
@@ -155,11 +156,12 @@ impl StripeHelper {
         // When a user cancel's just send them back to the app, we could trakc and associate these
         // but we won't get the specific checkout session id
         let mut cancellation_url = base_url.clone();
-        cancellation_url.set_path("/api/v1/subscriptions/cancel/{CHECKOUT_SESSION_ID}");
+        cancellation_url.set_path("/api/v1/subscriptions/cancel");
         params.cancel_url = Some(cancellation_url.as_str());
 
-        let mut success_url = base_url.clone();
-        success_url.set_path("/api/v1/subscriptions/success/{CHECKOUT_SESSION_ID}");
+        let mut success_base = base_url.clone();
+        success_base.set_path("/api/v1/subscriptions/success");
+        let success_url = format!("{success_base}/{{CHECKOUT_SESSION_ID}}");
         params.success_url = Some(success_url.as_str());
 
         let checkout_session = CheckoutSession::create(&self.client, params).await?;
