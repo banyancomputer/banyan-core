@@ -1,0 +1,50 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, user_id, session_id, stripe_checkout_session_id, status as 'status: StripeCheckoutSessionStatus',\n                   created_at FROM stripe_checkout_sessions\n                 WHERE stripe_checkout_session_id = $1;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "user_id",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "session_id",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "stripe_checkout_session_id",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "status: StripeCheckoutSessionStatus",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 5,
+        "type_info": "Datetime"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "1051239d0c106ac98cb091b9d09e3f99a98bf4f7b9046fb48f4cff8721fb606e"
+}

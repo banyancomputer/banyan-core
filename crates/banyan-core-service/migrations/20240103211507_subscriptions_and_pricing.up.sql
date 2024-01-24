@@ -63,7 +63,9 @@ CREATE TABLE stripe_checkout_sessions (
   ),
 
   user_id TEXT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+  session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE RESTRICT,
   stripe_checkout_session_id TEXT NOT NULL,
+
   status TEXT NOT NULL,
 
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
