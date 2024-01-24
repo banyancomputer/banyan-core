@@ -61,20 +61,20 @@ export const CreateSecretKeyModal = () => {
             <Input
                 type="password"
                 label={`${messages.secretKey}`}
-                placeholder={`${messages.enterPassphrase}`}
+                placeholder={`${messages.enterSecretKey}`}
                 error={errors.keyphrase?.message}
                 register={register('keyphrase', {
-                    required: `${messages.enterPassphrase}`,
+                    required: `${messages.enterSecretKey}`,
                     validate: validateKeyphrase(`${messages.keyRequirements}`),
                 })}
             />
             <Input
                 type="password"
                 label={`${messages.confirmSecretKey}`}
-                placeholder={`${messages.enterPassphrase}`}
+                placeholder={`${messages.confirmSecretKey}`}
                 error={errors.keyphraseConfirmation?.message}
                 register={register('keyphraseConfirmation', {
-                    required: `${messages.enterPassphrase}`,
+                    required: `${messages.confirmSecretKey}`,
                     validate: (keyphraseConfirmation) => {
                         const { keyphrase } = getValues();
                         if (keyphrase !== keyphraseConfirmation) {

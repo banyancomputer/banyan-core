@@ -26,7 +26,7 @@ export const EnterSecretKeyModal = () => {
     });
     const { keyphrase } = watch();
 
-    const confirm = async() => {
+    const confirm = async () => {
         try {
             await initializeKeystore(keyphrase);
             closeModal();
@@ -47,16 +47,16 @@ export const EnterSecretKeyModal = () => {
             <div>
                 <h4 className="text-m font-semibold">{`${messages.inputSecretKey}`}</h4>
                 <p className="mt-2 text-text-600">
-                    {`${messages.enterSecretKey}`}
+                    {`${messages.enterSecretKeyIntoTextField}`}
                 </p>
             </div>
             <Input
                 type="password"
                 label={`${messages.secretKey}`}
-                placeholder={`${messages.enterPassphrase}`}
+                placeholder={`${messages.enterSecretKey}`}
                 error={errors.keyphrase?.message}
                 register={register('keyphrase', {
-                    required: `${messages.enterPassphrase}`,
+                    required: `${messages.enterSecretKey}`,
                     validate: validateKeyphrase(`${messages.keyRequirements}`),
                 })}
             />

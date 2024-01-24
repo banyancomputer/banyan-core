@@ -62,7 +62,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	const { userData, isUserNew } = useSession();
 	const navigate = useNavigate();
 	const { openEscrowModal, openModal } = useModal();
-	const { isLoading, keystoreInitialized, getEncryptionKey, getApiKey, escrowedKeyMaterial } = useKeystore();
+	const { isLoading, keystoreInitialized, getEncryptionKey, getApiKey, escrowedKeyMaterial, isLoggingOut } = useKeystore();
 	const [tomb, setTomb] = useState<TombWasm | null>(null);
 	const [buckets, setBuckets] = useState<Bucket[]>([]);
 	const [trash, setTrash] = useState<Bucket | null>(null);
@@ -406,10 +406,10 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	useEffect(() => {
 		if (!areTermsAccepted) return;
 
-		if (!keystoreInitialized && !isLoading) {
+		if (!keystoreInitialized && !isLoading && !isLoggingOut) {
 			openEscrowModal(!!escrowedKeyMaterial);
 		};
-	}, [isLoading, keystoreInitialized, areTermsAccepted]);
+	}, [isLoading, keystoreInitialized, areTermsAccepted, isLoggingOut]);
 
 	useEffect(() => {
 		const userClient = new UserClient();

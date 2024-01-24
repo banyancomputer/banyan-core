@@ -22,6 +22,7 @@ export const KeystoreContext = createContext<{
 	purgeKeystore: () => Promise<void>;
 	isLoading: boolean,
 	escrowedKeyMaterial: EscrowedKeyMaterial | null;
+	isLoggingOut: boolean;
 }>({
 	keystoreInitialized: false,
 	getEncryptionKey: async () => {
@@ -33,7 +34,8 @@ export const KeystoreContext = createContext<{
 	initializeKeystore: async (_passkey: string) => { },
 	purgeKeystore: async () => { },
 	isLoading: false,
-	escrowedKeyMaterial: null
+	escrowedKeyMaterial: null,
+	isLoggingOut: false
 });
 
 export const KeystoreProvider = ({ children }: any) => {
@@ -42,6 +44,7 @@ export const KeystoreProvider = ({ children }: any) => {
 	// External State
 	const [keystoreInitialized, setKeystoreInitialized] = useState<boolean>(false);
 	const [isLoading, setIsLoading] = useState<boolean>(true);
+	const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
 
 	// Internal State
 	const api = new AuthClient();
@@ -176,6 +179,7 @@ export const KeystoreProvider = ({ children }: any) => {
 	// Purge the keystore from storage
 	const purgeKeystore = async (): Promise<void> => {
 		setIsLoading(true);
+		setIsLoggingOut(true);
 		if (keystore) {
 			await keystore.clear();
 		}
@@ -235,6 +239,7 @@ export const KeystoreProvider = ({ children }: any) => {
 		<KeystoreContext.Provider
 			value={{
 				keystoreInitialized,
+				isLoggingOut,
 				getEncryptionKey,
 				getApiKey,
 				initializeKeystore,
