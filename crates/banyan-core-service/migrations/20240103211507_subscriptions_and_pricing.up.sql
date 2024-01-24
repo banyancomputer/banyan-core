@@ -44,16 +44,12 @@ INSERT INTO subscriptions (
 
 ALTER TABLE users ADD COLUMN stripe_customer_id TEXT;
 
-ALTER TABLE users ADD COLUMN active_stripe_subscription_id TEXT;
-ALTER TABLE users ADD COLUMN active_subscription_id TEXT REFERENCES subscriptions(id);
-ALTER TABLE users ADD COLUMN active_subscription_status TEXT NOT NULL DEFAULT 'active';
-ALTER TABLE users ADD COLUMN active_subscription_valid_until DATETIME;
+ALTER TABLE users ADD COLUMN stripe_subscription_id TEXT;
+ALTER TABLE users ADD COLUMN subscription_id TEXT REFERENCES subscriptions(id);
+ALTER TABLE users ADD COLUMN subscription_status TEXT NOT NULL DEFAULT 'active';
+ALTER TABLE users ADD COLUMN subscription_valid_until DATETIME;
 
-ALTER TABLE users ADD COLUMN pending_stripe_subscription_id TEXT;
-ALTER TABLE users ADD COLUMN pending_subscription_id TEXT REFERENCES subscriptions(id);
-ALTER TABLE users ADD COLUMN pending_subscription_expiration DATETIME;
-
-UPDATE users SET active_subscription_id = (
+UPDATE users SET subscription_id = (
     SELECT id FROM subscriptions WHERE service_key = 'starter' LIMIT 1
   );
 
@@ -85,25 +81,6 @@ INSERT INTO stripe_products (product_key, tax_class, title)
     ('bandwidth', 'business', 'Bandwidth Usage'),
     ('storage', 'business', 'Hot Storage'),
     ('archival', 'business', 'Archival Storage');
-
-CREATE TABLE stripe_checkout_sessions (
-  id TEXT NOT NULL PRIMARY KEY DEFAULT (
-    lower(hex(randomblob(4))) || '-' ||
-    lower(hex(randomblob(2))) || '-4' ||
-    substr(lower(hex(randomblob(2))), 2) || '-a' ||
-    substr(lower(hex(randomblob(2))), 2) || '-6' ||
-    substr(lower(hex(randomblob(6))), 2)
-  ),
-
-  user_id TEXT NOT NULL REFERENCES users(id),
-  session_id TEXT NOT NULL REFERENCES sessions(id),
-
-  stripe_checkout_session_id TEXT NOT NULL,
-  status TEXT NOT NULL,
-
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  completed_at TIMESTAMP
-);
 
 CREATE TABLE invoices (
   id TEXT NOT NULL PRIMARY KEY DEFAULT (

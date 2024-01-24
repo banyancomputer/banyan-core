@@ -3,7 +3,6 @@ use time::OffsetDateTime;
 
 use crate::database::models::{ExplicitBigInt, SubscriptionStatus};
 use crate::database::DatabaseConnection;
-use crate::pricing::SUBSCRIPTION_CHANGE_EXPIRATION_WINDOW;
 
 #[derive(Debug, Serialize, sqlx::FromRow)]
 pub struct User {
@@ -18,14 +17,10 @@ pub struct User {
 
     pub stripe_customer_id: Option<String>,
 
-    pub active_stripe_subscription_id: Option<String>,
-    pub active_subscription_id: String,
-    pub active_subscription_status: SubscriptionStatus,
-    pub active_subscription_valid_until: Option<OffsetDateTime>,
-
-    pub pending_stripe_subscription_id: Option<String>,
-    pub pending_subscription_id: Option<String>,
-    pub pending_subscription_expiration: Option<OffsetDateTime>,
+    pub stripe_subscription_id: Option<String>,
+    pub subscription_id: String,
+    pub subscription_status: SubscriptionStatus,
+    pub subscription_valid_until: Option<OffsetDateTime>,
 }
 
 impl User {
@@ -33,11 +28,10 @@ impl User {
         sqlx::query_as!(
             User,
             r#"SELECT id, email, verified_email, display_name, locale, profile_image, created_at,
-                   accepted_tos_at, stripe_customer_id, active_stripe_subscription_id,
-                   active_subscription_id as 'active_subscription_id!',
-                   active_subscription_status as 'active_subscription_status: SubscriptionStatus',
-                   active_subscription_valid_until, pending_stripe_subscription_id,
-                   pending_subscription_id, pending_subscription_expiration FROM users
+                   accepted_tos_at, stripe_customer_id, stripe_subscription_id,
+                   subscription_id as 'subscription_id!',
+                   subscription_status as 'subscription_status: SubscriptionStatus',
+                   subscription_valid_until FROM users
                  WHERE id = $1;"#,
             id,
         )
@@ -83,11 +77,10 @@ impl User {
         sqlx::query_as!(
             User,
             r#"SELECT id, email, verified_email, display_name, locale, profile_image, created_at,
-                   accepted_tos_at, stripe_customer_id, active_stripe_subscription_id,
-                   active_subscription_id as 'active_subscription_id!',
-                   active_subscription_status as 'active_subscription_status: SubscriptionStatus',
-                   active_subscription_valid_until, pending_stripe_subscription_id,
-                   pending_subscription_id, pending_subscription_expiration FROM users
+                   accepted_tos_at, stripe_customer_id, stripe_subscription_id,
+                   subscription_id as 'subscription_id!',
+                   subscription_status as 'subscription_status: SubscriptionStatus',
+                   subscription_valid_until FROM users
                  WHERE id = $1;"#,
             id,
         )
@@ -102,26 +95,15 @@ impl User {
         sqlx::query_as!(
             User,
             r#"SELECT id, email, verified_email, display_name, locale, profile_image, created_at,
-                   accepted_tos_at, stripe_customer_id, active_stripe_subscription_id,
-                   active_subscription_id as 'active_subscription_id!',
-                   active_subscription_status as 'active_subscription_status: SubscriptionStatus',
-                   active_subscription_valid_until, pending_stripe_subscription_id,
-                   pending_subscription_id, pending_subscription_expiration FROM users
+                   accepted_tos_at, stripe_customer_id, stripe_subscription_id,
+                   subscription_id as 'subscription_id!',
+                   subscription_status as 'subscription_status: SubscriptionStatus',
+                   subscription_valid_until FROM users
                  WHERE stripe_customer_id = $1;"#,
             stripe_customer_id,
         )
         .fetch_optional(&mut *conn)
         .await
-    }
-
-    pub fn pending_subscription(&self) -> Option<String> {
-        match (
-            &self.pending_subscription_id,
-            &self.pending_subscription_expiration,
-        ) {
-            (Some(psi), Some(pse)) if pse >= &OffsetDateTime::now_utc() => Some(psi.to_string()),
-            _ => None,
-        }
     }
 
     pub async fn persist_customer_stripe_id(
@@ -138,35 +120,6 @@ impl User {
         .await?;
 
         self.stripe_customer_id = Some(customer_stripe_id.to_string());
-
-        Ok(())
-    }
-
-    pub async fn persist_pending_subscription(
-        &mut self,
-        conn: &mut DatabaseConnection,
-        subscription_id: &str,
-        stripe_subscription_id: &str,
-    ) -> Result<(), sqlx::Error> {
-        let expiration = OffsetDateTime::now_utc() + SUBSCRIPTION_CHANGE_EXPIRATION_WINDOW;
-
-        sqlx::query!(
-            "UPDATE users SET
-                 pending_subscription_id = $1,
-                 pending_subscription_expiration = $2,
-                 pending_stripe_subscription_id = $3
-               WHERE id = $4;",
-            subscription_id,
-            expiration,
-            stripe_subscription_id,
-            self.id,
-        )
-        .execute(&mut *conn)
-        .await?;
-
-        self.pending_stripe_subscription_id = Some(stripe_subscription_id.to_string());
-        self.pending_subscription_id = Some(subscription_id.to_string());
-        self.pending_subscription_expiration = Some(expiration);
 
         Ok(())
     }

@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, amount_due, status as 'status: InvoiceStatus', created_at\n             FROM invoices\n             WHERE user_id = $1\n             ORDER BY created_at DESC;",
+  "query": "SELECT id, amount_due as 'amount_due: PriceUnits', status as 'status: InvoiceStatus', created_at\n             FROM invoices\n             WHERE user_id = $1\n             ORDER BY created_at DESC;",
   "describe": {
     "columns": [
       {
@@ -9,7 +9,7 @@
         "type_info": "Text"
       },
       {
-        "name": "amount_due",
+        "name": "amount_due: PriceUnits",
         "ordinal": 1,
         "type_info": "Int64"
       },
@@ -34,5 +34,5 @@
       false
     ]
   },
-  "hash": "9004dfd5ebc53ca222a97c3fc66995a76d0f66c6ca9ac133226c07ab6ab41dd1"
+  "hash": "63413a03c5d858bff8dd2ed571b03a739b71f462e7996ee0ac13dd83f7a7a2e7"
 }

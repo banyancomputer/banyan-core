@@ -1,6 +1,6 @@
 use time::OffsetDateTime;
 
-use crate::database::models::{InvoiceStatus, StripePaymentIntentStatus};
+use crate::database::models::{InvoiceStatus, PriceUnits, StripePaymentIntentStatus};
 use crate::database::DatabaseConnection;
 
 pub struct NewInvoice<'a> {
@@ -9,7 +9,7 @@ pub struct NewInvoice<'a> {
     pub stripe_customer_id: &'a str,
     pub stripe_invoice_id: &'a str,
 
-    pub amount_due: i64,
+    pub amount_due: PriceUnits,
     pub status: InvoiceStatus,
 
     pub stripe_payment_intent_id: &'a str,
@@ -41,7 +41,7 @@ impl<'a> NewInvoice<'a> {
 pub struct Invoice {
     pub id: String,
 
-    pub amount_due: i64,
+    pub amount_due: PriceUnits,
     pub status: InvoiceStatus,
 
     pub created_at: OffsetDateTime,
@@ -54,7 +54,7 @@ impl Invoice {
     ) -> Result<Option<Self>, sqlx::Error> {
         sqlx::query_as!(
             Self,
-            r#"SELECT id, amount_due, status as 'status: InvoiceStatus', created_at
+            r#"SELECT id, amount_due as 'amount_due: PriceUnits', status as 'status: InvoiceStatus', created_at
                  FROM invoices
                  WHERE stripe_payment_intent_id = $1;"#,
             stripe_payment_intent_id,
@@ -69,7 +69,7 @@ impl Invoice {
     ) -> Result<Option<Self>, sqlx::Error> {
         sqlx::query_as!(
             Self,
-            r#"SELECT id, amount_due, status as 'status: InvoiceStatus', created_at
+            r#"SELECT id, amount_due as 'amount_due: PriceUnits', status as 'status: InvoiceStatus', created_at
                  FROM invoices
                  WHERE stripe_invoice_id = $1;"#,
             stripe_invoice_id,

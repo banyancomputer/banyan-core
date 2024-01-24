@@ -23,7 +23,7 @@ impl Display for InvoiceStatus {
             InvoiceStatus::Open => f.write_str("open"),
             InvoiceStatus::Paid => f.write_str("paid"),
             InvoiceStatus::Uncollectible => f.write_str("uncollectible"),
-            InvoiceStatus::Void => f.write_str("voice"),
+            InvoiceStatus::Void => f.write_str("void"),
         }
     }
 }
@@ -51,7 +51,7 @@ impl TryFrom<&str> for InvoiceStatus {
             "open" => InvoiceStatus::Open,
             "paid" => InvoiceStatus::Paid,
             "uncollectible" => InvoiceStatus::Uncollectible,
-            "voice" => InvoiceStatus::Void,
+            "void" => InvoiceStatus::Void,
             _ => return Err(InvoiceStatusError::InvalidValue),
         };
 

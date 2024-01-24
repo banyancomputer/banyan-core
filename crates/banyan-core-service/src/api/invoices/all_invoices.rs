@@ -4,7 +4,7 @@ use axum::response::{IntoResponse, Response};
 
 use crate::api::models::ApiInvoice;
 use crate::app::AppState;
-use crate::database::models::{Invoice, InvoiceStatus};
+use crate::database::models::{Invoice, InvoiceStatus, PriceUnits};
 use crate::extractors::UserIdentity;
 
 pub async fn handler(
@@ -17,7 +17,7 @@ pub async fn handler(
     let user_id = user_id.id().to_string();
     let invoices = sqlx::query_as!(
         Invoice,
-        r#"SELECT id, amount_due, status as 'status: InvoiceStatus', created_at
+        r#"SELECT id, amount_due as 'amount_due: PriceUnits', status as 'status: InvoiceStatus', created_at
              FROM invoices
              WHERE user_id = $1
              ORDER BY created_at DESC;"#,

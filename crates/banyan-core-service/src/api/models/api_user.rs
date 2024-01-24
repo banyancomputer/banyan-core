@@ -26,8 +26,8 @@ impl From<User> for ApiUser {
             locale: user.locale,
             profile_image: user.profile_image,
             accepted_tos_at: user.accepted_tos_at.map(|t| t.unix_timestamp()),
-            subscription_id: user.active_subscription_id,
-            subscription_valid_until: user.active_subscription_valid_until,
+            subscription_id: user.subscription_id,
+            subscription_valid_until: user.subscription_valid_until,
         }
     }
 }

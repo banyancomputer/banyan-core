@@ -4,7 +4,7 @@ use axum::response::{IntoResponse, Response};
 use uuid::Uuid;
 
 use crate::app::{AppState, StripeHelperError};
-use crate::database::models::{NewStripeCheckoutSession, Subscription, User};
+use crate::database::models::{Subscription, User};
 use crate::extractors::{ServerBase, UserIdentity};
 
 pub async fn handler(
@@ -37,19 +37,8 @@ pub async fn handler(
     let user_id = session.user_id().to_string();
     let mut current_user = User::by_id(&mut conn, &user_id).await?;
 
-    if current_user.pending_subscription().is_some() {
-        // The user has already started changing their subscription to another one, and that hasn't
-        // been resolved or expired. Until we've settled the matter we can't start another
-        // transition.
-        //
-        // todo(sstelfox): An improvement here would be to proactively call out to stripe and
-        // asking about the status of the pending order, but for now we can simply trigger an error
-        // if a user wants to rapidly change between subscriptions.
-        return Err(PurchaseSubscriptionError::SubChangeInProgress);
-    }
-
     let current_subscription =
-        match Subscription::find_by_id(&mut conn, &current_user.active_subscription_id).await? {
+        match Subscription::find_by_id(&mut conn, &current_user.subscription_id).await? {
             Some(sub) => sub,
             None => return Err(PurchaseSubscriptionError::NotFound),
         };
@@ -80,20 +69,6 @@ pub async fn handler(
         .await
         .map_err(PurchaseSubscriptionError::StripeSetupError)?;
 
-    let session_id = session.session_id().to_string();
-    let stripe_checkout_session_id = checkout_session.id.to_string();
-    let mut conn = database.acquire().await?;
-
-    NewStripeCheckoutSession {
-        user_id: &user_id,
-        session_id: &session_id,
-        stripe_checkout_session_id: &stripe_checkout_session_id,
-    }
-    .save(&mut conn)
-    .await?;
-
-    conn.close().await?;
-
     let msg = serde_json::json!({"checkout_url": checkout_session.url});
     Ok((StatusCode::OK, Json(msg)).into_response())
 }
@@ -111,9 +86,6 @@ pub enum PurchaseSubscriptionError {
 
     #[error("failure occurred setting up stripe to purchase subscription: {0}")]
     StripeSetupError(StripeHelperError),
-
-    #[error("subscription change is already in progress")]
-    SubChangeInProgress,
 }
 
 impl IntoResponse for PurchaseSubscriptionError {
@@ -122,11 +94,6 @@ impl IntoResponse for PurchaseSubscriptionError {
             PurchaseSubscriptionError::NotFound => {
                 let err_msg = serde_json::json!({"msg": "not found"});
                 (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
-            }
-            PurchaseSubscriptionError::SubChangeInProgress => {
-                let err_msg =
-                    serde_json::json!({"msg": "subscription change is already in progress"});
-                (StatusCode::CONFLICT, Json(err_msg)).into_response()
             }
             _ => {
                 tracing::error!("purchase subscription error: {self}");

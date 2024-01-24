@@ -5,7 +5,7 @@ use uuid::Uuid;
 
 use crate::api::models::ApiInvoice;
 use crate::app::AppState;
-use crate::database::models::{Invoice, InvoiceStatus};
+use crate::database::models::{Invoice, InvoiceStatus, PriceUnits};
 use crate::extractors::UserIdentity;
 
 pub async fn handler(
@@ -21,7 +21,7 @@ pub async fn handler(
     let invoice_id_str = invoice_id.to_string();
     let invoice = sqlx::query_as!(
         Invoice,
-        r#"SELECT id, amount_due, status as 'status: InvoiceStatus', created_at
+        r#"SELECT id, amount_due as 'amount_due: PriceUnits', status as 'status: InvoiceStatus', created_at
              FROM invoices
              WHERE id = $1 AND user_id = $2;"#,
         invoice_id_str,

@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, amount_due, status as 'status: InvoiceStatus', created_at\n                 FROM invoices\n                 WHERE stripe_payment_intent_id = $1;",
+  "query": "SELECT id, amount_due as 'amount_due: PriceUnits', status as 'status: InvoiceStatus', created_at\n                 FROM invoices\n                 WHERE stripe_invoice_id = $1;",
   "describe": {
     "columns": [
       {
@@ -9,7 +9,7 @@
         "type_info": "Text"
       },
       {
-        "name": "amount_due",
+        "name": "amount_due: PriceUnits",
         "ordinal": 1,
         "type_info": "Int64"
       },
@@ -34,5 +34,5 @@
       false
     ]
   },
-  "hash": "242d66b2b4e4cc99a16aedc71a061e60765117367c4a97c1861b5ef181ad545f"
+  "hash": "e016dc14f5d97dbd382ad69e80794d6e6ba33c9a5a4d726631097b852e670bbf"
 }

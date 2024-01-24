@@ -8,6 +8,10 @@ use crate::pricing::{PRICE_UNIT_TO_CENTS_RATE, PRICE_UNIT_TO_USD_RATE};
 pub struct PriceUnits(i64);
 
 impl PriceUnits {
+    pub fn from_cents(val: i64) -> Self {
+        Self(val * PRICE_UNIT_TO_CENTS_RATE as i64)
+    }
+
     pub fn new(val: i64) -> Self {
         Self(val)
     }
