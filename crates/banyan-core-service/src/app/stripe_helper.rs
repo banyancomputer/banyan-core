@@ -113,7 +113,7 @@ impl StripeHelper {
         let mut params = CreateCheckoutSession::new();
 
         params.customer = Some(customer.id);
-        params.automatic_tax = Some(CreateCheckoutSessionAutomaticTax { enabled: true });
+        //params.automatic_tax = Some(CreateCheckoutSessionAutomaticTax { enabled: true });
         params.currency = Some(Currency::USD);
         params.mode = Some(CheckoutSessionMode::Subscription);
 
