@@ -65,9 +65,10 @@ export const SessionProvider: FC<{ children: ReactNode }> = ({ children }) => {
 	}, []);
 
 	useEffect(() => {
-		if (!sessionState.userData?.user.id || !tracker) return;
+		const userData = getUserData();
+		if (!userData?.user?.id || !tracker) return;
 
-		tracker.setUserID(sessionState.userData?.user.id);
+		tracker.setUserID(userData?.user.id);
 	}, [sessionState.userData?.user.id]);
 
 	return (
