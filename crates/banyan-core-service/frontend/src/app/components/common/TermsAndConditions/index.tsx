@@ -5,14 +5,14 @@ import { AccountType } from './AccountType';
 
 import { useModal } from '@app/contexts/modals';
 import { TermsAndColditionsClient } from '@/api/termsAndConditions';
-import { RawUser } from '@app/types';
+import { User } from '@/entities/user';
 
 import folders from "@static/images/termsAndConditions/folders.png";
 import { Done, Logo } from '@static/images/common';
 
 const termsClient = new TermsAndColditionsClient();
 
-export const TermaAndConditions: React.FC<{ userData: RawUser, acceptTerms: React.Dispatch<React.SetStateAction<boolean>> }> = ({ userData, acceptTerms }) => {
+export const TermaAndConditions: React.FC<{ userData: User, acceptTerms: React.Dispatch<React.SetStateAction<boolean>> }> = ({ userData, acceptTerms }) => {
     const [accountType, setAccountType] = useState('');
     const [areTermsAccepted, setAreTermsAccepted] = useState(false);
     const { closeModal } = useModal();

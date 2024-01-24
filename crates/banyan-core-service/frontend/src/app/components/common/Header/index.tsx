@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useIntl } from 'react-intl';
 
 import { ProfileControls } from './ProfileControls';
@@ -10,13 +10,15 @@ import { popupClickHandler } from '@/app/utils';
 import { useKeystore } from '@/app/contexts/keystore';
 import { HttpClient } from '@/api/http/client';
 import { NotFoundError } from '@/api/http';
-import { UserClient } from '@/api/user';
+import { useAppDispatch } from '@/app/store';
+import { unwrapResult } from '@reduxjs/toolkit';
+import { getUserInfo } from '@/app/store/user/actions';
+import { RoutesConfig } from '@/app/routes';
 
 import { Logo, Question } from '@static/images/common';
 
-const client = new UserClient();
-
 export const Header: React.FC<{ logo?: boolean, className?: string }> = ({ logo = false, className = '' }) => {
+    const dispatch = useAppDispatch();
     const { messages } = useIntl();
     const profileOptionsRef = useRef<HTMLDivElement | null>(null);
     const helpOptionsRef = useRef<HTMLDivElement | null>(null);
@@ -49,7 +51,7 @@ export const Header: React.FC<{ logo?: boolean, className?: string }> = ({ logo 
     useEffect(() => {
         (async () => {
             try {
-                await client.getCurrentUser();
+                unwrapResult(await dispatch(getUserInfo()));
             } catch (error: any) {
                 if (error instanceof NotFoundError) {
                     const api = new HttpClient;
@@ -78,7 +80,12 @@ export const Header: React.FC<{ logo?: boolean, className?: string }> = ({ logo 
                         <HelpControls />
                     }
                 </div>
-                <button className="px-4 py-2 text-xs font-semibold rounded-md bg-text-200 text-button-primary">{`${messages.upgrade}`}</button>
+                <Link
+                    to={RoutesConfig.Billing.fullPath}
+                    className="px-4 py-2 text-xs font-semibold rounded-md bg-text-200 text-button-primary cursor-pointer"
+                >
+                    {`${messages.upgrade}`}
+                </Link>
                 <div
                     className="relative w-10 h-10 rounded-full cursor-pointer "
                     onClick={toggleProfileOptionsVisibility}

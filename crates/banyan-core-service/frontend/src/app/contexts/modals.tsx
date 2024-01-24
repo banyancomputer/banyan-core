@@ -15,7 +15,7 @@ interface ContextState {
 	openModal: (content: ReactNode, onBack?: null | (() => void), mandatory?: boolean, className?: string) => void;
 	openEscrowModal: (escrowed: boolean) => void;
 	closeModal: () => void;
-}
+};
 
 export const ModalContext = createContext<ContextState>({} as ContextState);
 

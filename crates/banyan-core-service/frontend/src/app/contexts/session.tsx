@@ -50,12 +50,12 @@ export const SessionProvider: FC<{ children: ReactNode }> = ({ children }) => {
 			return;
 		}
 
-		setSessionState({
-			...sessionState,
+		setSessionState(prev => ({
+			...prev,
 			isUserNew,
 			sessionKey,
 			userData,
-		})
+		}));
 	}, []);
 
 	useEffect(() => {
@@ -68,7 +68,7 @@ export const SessionProvider: FC<{ children: ReactNode }> = ({ children }) => {
 		if (!sessionState.userData?.user.id || !tracker) return;
 
 		tracker.setUserID(sessionState.userData?.user.id);
-	}, [sessionState.userData?.user.id]);
+	}, [sessionState.userData]);
 
 	return (
 		<SessionContext.Provider value={sessionState}>
