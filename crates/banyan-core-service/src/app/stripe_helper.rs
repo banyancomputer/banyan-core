@@ -1,9 +1,7 @@
-use std::collections::HashSet;
-
 use time::OffsetDateTime;
 use url::Url;
 
-use crate::app::secrets::StripeSecret;
+use crate::app::secrets::StripeSecrets;
 use crate::database::models::{StripeProduct, Subscription, TaxClass, User};
 use crate::database::Database;
 use crate::pricing::SUBSCRIPTION_CHANGE_EXPIRATION_WINDOW;
@@ -13,8 +11,6 @@ const BANDWIDTH_PRODUCT_KEY: &str = "bandwidth";
 const METADATA_PRODUCT_KEY: &str = "product-key";
 
 const METADATA_SUBSCRIPTION_KEY: &str = "subscription-id";
-
-const METADATA_STRIPE_SUBSCRIPTION_KEY: &str = "stripe-subscription-id";
 
 const METADATA_USER_KEY: &str = "user-id";
 
@@ -102,22 +98,22 @@ impl StripeHelper {
         Ok(price)
     }
 
-    pub async fn checkout_subscription(
+    pub async fn checkout(
         &self,
         base_url: &Url,
-        user: &User,
-        subscription: &Subscription,
-        stripe_subscription: &stripe::Subscription,
+        user: &mut User,
+        subscription: &mut Subscription,
     ) -> Result<stripe::CheckoutSession, StripeHelperError> {
         use stripe::{
             CheckoutSession, CheckoutSessionMode, CreateCheckoutSession,
-            CreateCheckoutSessionAutomaticTax, CreateCheckoutSessionLineItems, Currency, Metadata,
+            CreateCheckoutSessionAutomaticTax, CreateCheckoutSessionSubscriptionData, Currency, Metadata,
         };
 
+        let customer = self.find_or_create_customer(&mut *user).await?;
         let mut params = CreateCheckoutSession::new();
 
-        params.customer = Some(stripe_subscription.customer.id());
-        //params.automatic_tax = Some(CreateCheckoutSessionAutomaticTax { enabled: true });
+        params.customer = Some(customer.id);
+        params.automatic_tax = Some(CreateCheckoutSessionAutomaticTax { enabled: true });
         params.currency = Some(Currency::USD);
         params.customer_email = Some(&user.email);
         params.mode = Some(CheckoutSessionMode::Subscription);
@@ -125,76 +121,42 @@ impl StripeHelper {
         let expiration = OffsetDateTime::now_utc() + SUBSCRIPTION_CHANGE_EXPIRATION_WINDOW;
         params.expires_at = Some(expiration.unix_timestamp());
 
-        let stripe_sub_price_ids: HashSet<_> = stripe_subscription
-            .items
-            .data
-            .iter()
-            .map(|si| si.id.to_string())
-            .collect();
-        let mut line_items = Vec::new();
-
-        // The plan is not metered and requires us to indicate a quantity, for all of our price we
-        // validate the same IDs are present in the subscription object we're referencing.
-        match &subscription.plan_price_stripe_id {
-            Some(pid) if stripe_sub_price_ids.contains(pid) => {
-                let checkout_item = CreateCheckoutSessionLineItems {
-                    price: Some(pid.to_string()),
-                    quantity: Some(1),
-                    ..Default::default()
-                };
-
-                line_items.push(checkout_item);
-            }
-            _ => return Err(StripeHelperError::MissingPrice),
-        }
-
-        // The other two are metered and need to omit quantity
-        match &subscription.bandwidth_stripe_price_id {
-            Some(pid) if stripe_sub_price_ids.contains(pid) => {
-                let checkout_item = CreateCheckoutSessionLineItems {
-                    price: Some(pid.to_string()),
-                    ..Default::default()
-                };
-
-                line_items.push(checkout_item);
-            }
-            _ => return Err(StripeHelperError::MissingPrice),
-        }
-
-        match &subscription.hot_storage_stripe_price_id {
-            Some(pid) if stripe_sub_price_ids.contains(pid) => {
-                let checkout_item = CreateCheckoutSessionLineItems {
-                    price: Some(pid.to_string()),
-                    ..Default::default()
-                };
-
-                line_items.push(checkout_item);
-            }
-            _ => return Err(StripeHelperError::MissingPrice),
-        }
-
+        let line_items = self.subscription_items(&mut *subscription).await?;
         params.line_items = Some(line_items);
 
-        // We could hold on to a custom reference to this if we wanted to but for now its a bit
-        // overkill.
-        //params.client_reference_id = Some("an-internal-'cart'-id for reconciliation of this session")
-
-        params.metadata = Some(Metadata::from([
-            (METADATA_USER_KEY.to_string(), user.id.clone()),
-            (
-                METADATA_STRIPE_SUBSCRIPTION_KEY.to_string(),
-                stripe_subscription.id.to_string(),
-            ),
+        let metadata = Metadata::from([
             (
                 METADATA_SUBSCRIPTION_KEY.to_string(),
-                subscription.id.to_string(),
+                subscription.id.clone(),
+            ),
+            (
+                METADATA_USER_KEY.to_string(),
+                user.id.to_string(),
+            ),
+        ]);
+
+        params.metadata = Some(metadata.clone());
+        params.subscription_data = Some(CreateCheckoutSessionSubscriptionData {
+            description: Some(format!("Banyan Storage - {}", subscription.title)),
+            metadata: Some(metadata),
+            ..Default::default()
+        });
+
+        params.metadata = Some(Metadata::from([
+            (
+                METADATA_SUBSCRIPTION_KEY.to_string(),
+                subscription.id.clone(),
+            ),
+            (
+                METADATA_USER_KEY.to_string(),
+                user.id.to_string(),
             ),
         ]));
 
         // When a user cancel's just send them back to the app, we could trakc and associate these
         // but we won't get the specific checkout session id
         let mut cancellation_url = base_url.clone();
-        cancellation_url.set_path("/");
+        cancellation_url.set_path("/api/v1/subscriptions/cancel/{CHECKOUT_SESSION_ID}");
         params.cancel_url = Some(cancellation_url.as_str());
 
         let mut success_url = base_url.clone();
@@ -299,61 +261,6 @@ impl StripeHelper {
         }
     }
 
-    async fn find_or_create_subscription(
-        &self,
-        subscription: &mut Subscription,
-        user: &mut User,
-        customer: &stripe::Customer,
-        prices: &[&stripe::Price],
-    ) -> Result<stripe::Subscription, StripeHelperError> {
-        use stripe::{
-            CollectionMethod, CreateSubscription, CreateSubscriptionAutomaticTax, Metadata,
-            Subscription,
-        };
-
-        if let Some(sub_id) = &user.active_stripe_subscription_id {
-            if let Some(stripe_sub) = self.find_subscription_by_id(sub_id).await? {
-                if subscription_matches(&stripe_sub, customer, prices) {
-                    return Ok(stripe_sub);
-                }
-            }
-        }
-
-        let mut params = CreateSubscription::new(customer.id.clone());
-
-        //params.automatic_tax = Some(CreateSubscriptionAutomaticTax { enabled: true });
-        params.collection_method = Some(CollectionMethod::ChargeAutomatically);
-        params.expand = &["items"];
-
-        let description = format!("Banyan Storage - {}", subscription.title);
-        params.description = Some(&description);
-
-        let items: Vec<_> = prices
-            .iter()
-            .map(|p| stripe::CreateSubscriptionItems {
-                price: Some(p.id.to_string()),
-                ..Default::default()
-            })
-            .collect();
-        params.items = Some(items);
-
-        params.metadata = Some(Metadata::from([
-            (METADATA_USER_KEY.to_string(), user.id.clone()),
-            (
-                METADATA_SUBSCRIPTION_KEY.to_string(),
-                subscription.id.clone(),
-            ),
-        ]));
-
-        let stripe_sub = Subscription::create(&self.client, params).await?;
-
-        let mut conn = self.database.acquire().await?;
-        user.persist_pending_subscription(&mut conn, &subscription.id, &stripe_sub.id)
-            .await?;
-
-        Ok(stripe_sub)
-    }
-
     async fn find_price_by_id(
         &self,
         price_id: &str,
@@ -378,34 +285,8 @@ impl StripeHelper {
         }
     }
 
-    async fn find_subscription_by_id(
-        &self,
-        subscription_id: &str,
-    ) -> Result<Option<stripe::Subscription>, StripeHelperError> {
-        use std::str::FromStr;
-
-        use stripe::{Subscription, SubscriptionId};
-
-        let subscription_id = match SubscriptionId::from_str(subscription_id) {
-            Ok(sid) => sid,
-            Err(err) => {
-                tracing::warn!(
-                    "subscription ID stored in the database was an invalid format: {err}"
-                );
-                // If this ever occurs we'll just overwrite the bad ID with a fresh one
-                return Ok(None);
-            }
-        };
-
-        match Subscription::retrieve(&self.client, &subscription_id, &["items"]).await {
-            Ok(sub) => Ok(Some(sub)),
-            Err(stripe::StripeError::Stripe(req_err)) if req_err.http_status == 404 => Ok(None),
-            Err(err) => Err(StripeHelperError::from(err)),
-        }
-    }
-
-    pub fn new(database: Database, stripe_secret: StripeSecret) -> Self {
-        let client = stripe::Client::new(stripe_secret.key());
+    pub fn new(database: Database, stripe_secret: StripeSecrets) -> Self {
+        let client = stripe::Client::new(stripe_secret.secret());
         Self { database, client }
     }
 
@@ -451,7 +332,7 @@ impl StripeHelper {
         });
 
         // Tax related settings need to be set as well
-        //params.tax_behavior = Some(PriceTaxBehavior::Exclusive);
+        params.tax_behavior = Some(PriceTaxBehavior::Exclusive);
 
         params.metadata = Some(Metadata::from([(
             METADATA_SUBSCRIPTION_KEY.to_string(),
@@ -489,48 +370,52 @@ impl StripeHelper {
         Ok(billing_portal_session)
     }
 
-    pub async fn realize_subscription(
+    pub async fn subscription_items(
         &self,
-        user: &mut User,
         subscription: &mut Subscription,
-    ) -> Result<stripe::Subscription, StripeHelperError> {
-        let plan_product_key = format!("{}-plan", subscription.service_key);
+    ) -> Result<Vec<stripe::CreateCheckoutSessionLineItems>, StripeHelperError> {
+        use stripe::CreateCheckoutSessionLineItems;
 
-        // todo: move product lookup and creation into price lookup
+        let plan_product_key = format!("{}-plan", subscription.service_key);
+        let mut line_items = Vec::new();
+
         let plan_product_id = self
             .find_or_register_product(&plan_product_key, subscription.tax_class)
             .await?;
         let plan_price = self
             .plan_price(&plan_product_id, &mut *subscription)
             .await?;
+        line_items.push(CreateCheckoutSessionLineItems {
+            price: Some(plan_price.id.to_string()),
+            quantity: Some(1),
+            ..Default::default()
+        });
 
-        // todo: move product lookup and creation into price lookup
         let bandwidth_product_id = self
             .find_or_register_product(BANDWIDTH_PRODUCT_KEY, subscription.tax_class)
             .await?;
         let bandwidth_price = self
             .bandwidth_price(&bandwidth_product_id, &mut *subscription)
             .await?;
+        line_items.push(CreateCheckoutSessionLineItems {
+            price: Some(bandwidth_price.id.to_string()),
+            quantity: Some(0),
+            ..Default::default()
+        });
 
-        // todo: move product lookup and creation into price lookup
         let storage_product_id = self
             .find_or_register_product(STORAGE_PRODUCT_KEY, subscription.tax_class)
             .await?;
         let storage_price = self
             .storage_price(&storage_product_id, &mut *subscription)
             .await?;
+        line_items.push(CreateCheckoutSessionLineItems {
+            price: Some(storage_price.id.to_string()),
+            quantity: Some(0),
+            ..Default::default()
+        });
 
-        let customer = self.find_or_create_customer(&mut *user).await?;
-        let stripe_subscription = self
-            .find_or_create_subscription(
-                &mut *subscription,
-                &mut *user,
-                &customer,
-                &[&plan_price, &bandwidth_price, &storage_price],
-            )
-            .await?;
-
-        Ok(stripe_subscription)
+        Ok(line_items)
     }
 
     async fn storage_price(
@@ -588,7 +473,7 @@ impl StripeHelper {
         });
 
         // Tax related settings need to be set as well
-        //params.tax_behavior = Some(PriceTaxBehavior::Exclusive);
+        params.tax_behavior = Some(PriceTaxBehavior::Exclusive);
 
         params.metadata = Some(Metadata::from([(
             METADATA_SUBSCRIPTION_KEY.to_string(),
@@ -688,27 +573,4 @@ async fn search_products_for_key(
     }
 
     Ok(None)
-}
-
-fn subscription_matches(
-    subscription: &stripe::Subscription,
-    customer: &stripe::Customer,
-    prices: &[&stripe::Price],
-) -> bool {
-    if subscription.customer.id() != customer.id {
-        return false;
-    }
-
-    if subscription.items.data.len() != prices.len() {
-        return false;
-    }
-
-    for (sub_item, exp_price) in subscription.items.data.iter().zip(prices.iter()) {
-        match &sub_item.price {
-            Some(price) if exp_price.id == price.id => (),
-            _ => return false,
-        }
-    }
-
-    true
 }

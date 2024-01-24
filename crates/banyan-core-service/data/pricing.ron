@@ -18,8 +18,8 @@
     // Hard limits aren't needed as overages aren't allowed turning the
     // allowances into hard limits.
     hard_limits: Limits(
-      bandwidth: None,
-      storage: None,
+      bandwidth: Some(10),
+      storage: Some(20),
     ),
   ),
 

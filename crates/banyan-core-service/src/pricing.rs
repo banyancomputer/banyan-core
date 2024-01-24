@@ -136,12 +136,7 @@ impl<'a> PricingTier {
             archival_hard_limit: self.hard_limits.archival,
 
             hot_storage_price: self.price.as_ref().map(|p| p.storage),
-            // Our hard limits need to take into account the stock replicas, see the note on the
-            // included_hot_replica_storage field.
-            hot_storage_hard_limit: self
-                .hard_limits
-                .storage
-                .map(|l| l * self.included_allowances.storage_replicas),
+            hot_storage_hard_limit: self.hard_limits.storage,
 
             bandwidth_price: self.price.as_ref().map(|p| p.bandwidth),
             bandwidth_hard_limit: self.hard_limits.bandwidth,
@@ -164,12 +159,15 @@ impl<'a> PricingTier {
 
         // For our subs with prices, we need a personal and a business subscription to
         // differentiate between the two for tax handling.
+        if self.price.is_some() {
+            subscription.tax_class = TaxClass::Personal;
+            let mut business_subscription = subscription.clone();
+            business_subscription.tax_class = TaxClass::Business;
 
-        subscription.tax_class = TaxClass::Personal;
-        let mut business_subscription = subscription.clone();
-        business_subscription.tax_class = TaxClass::Business;
-
-        vec![subscription, business_subscription]
+            vec![subscription, business_subscription]
+        } else {
+            vec![subscription]
+        }
     }
 }
 

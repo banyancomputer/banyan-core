@@ -7,7 +7,7 @@ mod version;
 
 #[allow(unused)]
 pub use config::{Config, ConfigError};
-pub use secrets::{MailgunSigningKey, ProviderCredential, Secrets, ServiceKey, StripeSecret};
+pub use secrets::{MailgunSigningKey, ProviderCredential, Secrets, ServiceKey, StripeSecrets};
 pub use service_verification_key::ServiceVerificationKey;
 #[cfg(test)]
 pub use state::test::mock_app_state;

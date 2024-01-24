@@ -18,7 +18,9 @@ pub struct Config {
     google_client_secret: String,
 
     mailgun_signing_key: Option<String>,
+
     stripe_secret: Option<String>,
+    stripe_webhook_key: Option<String>,
 
     service_name: String,
     service_key_path: PathBuf,
@@ -81,9 +83,22 @@ impl Config {
         };
         let service_key_path = PathBuf::from(service_key_str);
 
-        let stripe_secret = match cli_args.opt_value_from_str("--stripe-key")? {
+        let stripe_secret = match cli_args.opt_value_from_str("--stripe-secret")? {
             Some(key) => Some(key),
-            None => match std::env::var("STRIPE_KEY") {
+            None => match std::env::var("STRIPE_SECRET") {
+                Ok(sk) if !sk.is_empty() => Some(sk),
+                _ => {
+                    tracing::warn!(
+                        "no stripe key present, purchase actions and verifications will fail"
+                    );
+                    None
+                }
+            },
+        };
+
+        let stripe_webhook_key = match cli_args.opt_value_from_str("--stripe-webhook-key")? {
+            Some(key) => Some(key),
+            None => match std::env::var("STRIPE_WEBHOOK_KEY") {
                 Ok(sk) if !sk.is_empty() => Some(sk),
                 _ => {
                     tracing::warn!(
@@ -135,7 +150,9 @@ impl Config {
             google_client_secret,
 
             mailgun_signing_key,
+
             stripe_secret,
+            stripe_webhook_key,
 
             service_name,
             service_key_path,
@@ -173,6 +190,10 @@ impl Config {
 
     pub fn stripe_secret(&self) -> Option<String> {
         self.stripe_secret.clone()
+    }
+
+    pub fn stripe_webhook_key(&self) -> Option<String> {
+        self.stripe_webhook_key.clone()
     }
 
     pub fn upload_directory(&self) -> PathBuf {

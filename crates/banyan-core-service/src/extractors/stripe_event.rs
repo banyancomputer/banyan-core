@@ -49,8 +49,8 @@ where
         };
 
         let secrets = Secrets::from_ref(state);
-        let stripe_key = match secrets.stripe_secret() {
-            Some(key) => key,
+        let stripe_secrets = match secrets.stripe_secrets() {
+            Some(s) => s,
             None => {
                 let err_msg =
                     serde_json::json!({"msg": "server is not setup to process stripe events"});
@@ -58,7 +58,7 @@ where
             }
         };
 
-        let event = match Webhook::construct_event(&request, signature, stripe_key.key()) {
+        let event = match Webhook::construct_event(&request, signature, stripe_secrets.webhook_key()) {
             Ok(e) => e,
             Err(err) => {
                 tracing::error!("failed to construct stripe webhook: {err}");
