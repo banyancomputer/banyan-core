@@ -53,6 +53,22 @@ UPDATE users SET subscription_id = (
     SELECT id FROM subscriptions WHERE service_key = 'starter' LIMIT 1
   );
 
+CREATE TABLE stripe_checkout_sessions (
+  id TEXT NOT NULL PRIMARY KEY DEFAULT (
+    lower(hex(randomblob(4))) || '-' ||
+    lower(hex(randomblob(2))) || '-4' ||
+    substr(lower(hex(randomblob(2))), 2) || '-a' ||
+    substr(lower(hex(randomblob(2))), 2) || '-6' ||
+    substr(lower(hex(randomblob(6))), 2)
+  ),
+
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+  stripe_checkout_session_id TEXT NOT NULL,
+  status TEXT NOT NULL,
+
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE stripe_products (
   id TEXT NOT NULL PRIMARY KEY DEFAULT (
     lower(hex(randomblob(4))) || '-' ||

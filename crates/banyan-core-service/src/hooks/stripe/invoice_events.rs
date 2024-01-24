@@ -12,6 +12,8 @@ pub async fn creation_handler(
         .ok_or(StripeWebhookError::MissingData)?;
     let _customer_id = customer.id().to_string();
 
+    tracing::info!("new invoice creation event: {invoice:?}");
+
     //let user_id = sqlx::query_scalar!(
     //    "SELECT id FROM users WHERE stripe_customer_id = $1;",
     //    customer_id,
@@ -20,9 +22,8 @@ pub async fn creation_handler(
     //.await?
     //.ok_or(StripeWebhookError::MissingTarget)?;
 
-    //let invoice_id = invoice.id.to_string();
-    //let invoice_amt =
-    //    PriceUnits::from_cents(invoice.amount_due.ok_or(StripeWebhookError::MissingData)?);
+    let stripe_invoice_id = invoice.id.to_string();
+    let total_amount = invoice.amount_due.map(PriceUnits::from_cents).ok_or(StripeWebhookError::MissingData)?;
     //let invoice_status = invoice
     //    .status
     //    .map(InvoiceStatus::from)
@@ -32,9 +33,14 @@ pub async fn creation_handler(
     //    user_id: &user_id,
 
     //    stripe_customer_id: &customer_id,
-    //    stripe_invoice_id: &invoice_id,
+    //    stripe_invoice_id: &stripe_invoice_id,
 
-    //    amount_due: invoice_amt,
+    //    billing_start: &billing_start,
+    //    billing_end: &billing_end,
+
+    //    subscription_id: &subscription_id,
+
+    //    total_amount: invoice_amt,
     //    status: invoice_status,
 
     //    stripe_payment_intent_id: &invoice_id,
@@ -42,7 +48,7 @@ pub async fn creation_handler(
     //.save(&mut *conn)
     //.await?;
 
-    todo!()
+    Ok(())
 }
 
 pub async fn update_handler(
