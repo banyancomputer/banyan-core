@@ -8,6 +8,8 @@ pub struct ApiInvoice {
     id: String,
     amount_due: i64,
     status: InvoiceStatus,
+
+    #[serde(with = "time::serde::rfc3339")]
     created_at: OffsetDateTime,
 }
 

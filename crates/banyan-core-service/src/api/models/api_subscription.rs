@@ -17,9 +17,6 @@ pub struct ApiSubscription {
 
     #[serde(skip_serializing_if = "ApiSubscriptionPricing::is_none")]
     pricing: ApiSubscriptionPricing,
-
-    #[serde(with = "time::serde::rfc3339")]
-    test_time: time::OffsetDateTime,
 }
 
 impl ApiSubscription {
@@ -101,8 +98,6 @@ impl From<Subscription> for ApiSubscription {
 
             features,
             pricing,
-
-            test_time: time::OffsetDateTime::now_utc(),
         }
     }
 }

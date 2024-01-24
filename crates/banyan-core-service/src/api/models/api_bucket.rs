@@ -12,6 +12,7 @@ pub struct ApiBucket {
     pub r#type: BucketType,
     pub storage_class: StorageClass,
 
+    #[serde(with = "time::serde::rfc3339")]
     pub updated_at: OffsetDateTime,
 }
 
