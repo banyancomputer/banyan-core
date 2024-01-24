@@ -21,7 +21,8 @@ pub async fn created(
     .ok_or(StripeWebhookError::MissingTarget)?;
 
     let invoice_id = invoice.id.to_string();
-    let invoice_amt = PriceUnits::from_cents(invoice.amount_due.ok_or(StripeWebhookError::MissingData)?);
+    let invoice_amt =
+        PriceUnits::from_cents(invoice.amount_due.ok_or(StripeWebhookError::MissingData)?);
     let invoice_status = invoice
         .status
         .map(InvoiceStatus::from)

@@ -56,7 +56,12 @@ impl State {
             Arc::from("google"),
             ProviderCredential::new(config.google_client_id(), config.google_client_secret()),
         );
-        let secrets = Secrets::new(credentials, mailgun_signing_key, service_key, stripe_secrets);
+        let secrets = Secrets::new(
+            credentials,
+            mailgun_signing_key,
+            service_key,
+            stripe_secrets,
+        );
 
         Ok(Self {
             database,

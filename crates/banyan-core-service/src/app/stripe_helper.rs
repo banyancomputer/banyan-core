@@ -129,10 +129,7 @@ impl StripeHelper {
                 METADATA_SUBSCRIPTION_KEY.to_string(),
                 subscription.id.clone(),
             ),
-            (
-                METADATA_USER_KEY.to_string(),
-                user.id.to_string(),
-            ),
+            (METADATA_USER_KEY.to_string(), user.id.to_string()),
         ]);
 
         params.metadata = Some(metadata.clone());
@@ -147,10 +144,7 @@ impl StripeHelper {
                 METADATA_SUBSCRIPTION_KEY.to_string(),
                 subscription.id.clone(),
             ),
-            (
-                METADATA_USER_KEY.to_string(),
-                user.id.to_string(),
-            ),
+            (METADATA_USER_KEY.to_string(), user.id.to_string()),
         ]));
 
         // When a user cancel's just send them back to the app, we could trakc and associate these
@@ -197,7 +191,8 @@ impl StripeHelper {
 
         // It doesn't, we'll need to create a new one
         let new_product =
-            register_stripe_product(&self.client, product_key, tax_class, &product.title, label).await?;
+            register_stripe_product(&self.client, product_key, tax_class, &product.title, label)
+                .await?;
         let new_product_id = new_product.id.as_str().to_string();
 
         product
@@ -394,7 +389,11 @@ impl StripeHelper {
         });
 
         let bandwidth_product_id = self
-            .find_or_register_product(BANDWIDTH_PRODUCT_KEY, subscription.tax_class, Some("GiB/month"))
+            .find_or_register_product(
+                BANDWIDTH_PRODUCT_KEY,
+                subscription.tax_class,
+                Some("GiB/month"),
+            )
             .await?;
         let bandwidth_price = self
             .bandwidth_price(&bandwidth_product_id, &mut *subscription)
@@ -405,7 +404,11 @@ impl StripeHelper {
         });
 
         let storage_product_id = self
-            .find_or_register_product(STORAGE_PRODUCT_KEY, subscription.tax_class, Some("GiB/month"))
+            .find_or_register_product(
+                STORAGE_PRODUCT_KEY,
+                subscription.tax_class,
+                Some("GiB/month"),
+            )
             .await?;
         let storage_price = self
             .storage_price(&storage_product_id, &mut *subscription)

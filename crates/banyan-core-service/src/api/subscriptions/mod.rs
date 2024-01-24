@@ -6,8 +6,8 @@ mod single_subscription;
 use std::error::Error;
 
 use axum::body::HttpBody;
-use axum::routing::{get, post};
 use axum::response::{IntoResponse, Redirect, Response};
+use axum::routing::{get, post};
 use axum::Router;
 
 use crate::app::AppState;

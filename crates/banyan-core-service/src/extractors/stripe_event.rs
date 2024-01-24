@@ -58,7 +58,11 @@ where
             }
         };
 
-        let event = match Webhook::construct_event(&request, signature, stripe_secrets.webhook_key()) {
+        let event = match Webhook::construct_event(
+            &request,
+            signature,
+            stripe_secrets.webhook_key(),
+        ) {
             Ok(e) => e,
             Err(err) => {
                 tracing::error!("failed to construct stripe webhook: {err}");

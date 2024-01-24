@@ -61,11 +61,7 @@ pub async fn handler(
     };
 
     let checkout_session = stripe_helper
-        .checkout(
-            &host_url,
-            &mut current_user,
-            &mut requested_subscription,
-        )
+        .checkout(&host_url, &mut current_user, &mut requested_subscription)
         .await
         .map_err(PurchaseSubscriptionError::StripeSetupError)?;
 
