@@ -1,6 +1,7 @@
 use std::error::Error;
 
 use axum::body::HttpBody;
+use axum::response::{IntoResponse, Response};
 use axum::Router;
 use tower_http::cors::CorsLayer;
 
@@ -40,4 +41,10 @@ where
         .nest("/users", users::router(state.clone()))
         .layer(cors_layer)
         .with_state(state)
+        .fallback(api_not_found_handler)
+}
+
+pub async fn api_not_found_handler() -> Response {
+    let err_msg = serde_json::json!({"msg": "not found"});
+    (http::StatusCode::NOT_FOUND, axum::Json(err_msg)).into_response()
 }

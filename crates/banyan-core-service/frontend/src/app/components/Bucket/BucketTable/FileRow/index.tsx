@@ -24,14 +24,19 @@ export const FileRow: React.FC<{
     const [isDragging, setIsDragging] = useState(false);
     const { getExpandedFolderFiles, getSelectedBucketFiles } = useTomb();
 
-    const previewFile = (bucket: Bucket, file: BrowserObject) => {
+    const previewFile = (event: React.MouseEvent<HTMLTableRowElement, MouseEvent>, bucket: Bucket, file: BrowserObject) => {
+        //@ts-ignore
+        if (event.target.id === 'actionsCell') {
+            return;
+        };
+
         openFile(bucket, file.name, siblingFiles, path);
     };
 
     return (
         <tr
             className="cursor-pointer border-b-1 border-b-border-regular text-text-900 font-normal transition-all last:border-b-0 hover:bg-bucket-bucketHoverBackground"
-            onDoubleClick={() => previewFile(bucket, file)}
+            onClick={event => previewFile(event, bucket, file)}
             onDrag={event => handleDrag(event, file.name)}
             onDragStart={event => handleDragStart(event, file, setIsDragging, path)}
             onDragEnd={() => handleDragEnd(setIsDragging, getExpandedFolderFiles, getSelectedBucketFiles, path, parrentFolder, bucket)}
