@@ -78,11 +78,12 @@ export const getUserData = (): UserData | null => {
 	let user = {
 		id: userDataJson.user.id,
 		email: userDataJson.user.email,
-		verifiedEmail: userDataJson.user.verified_email,
 		displayName: userDataJson.user.display_name,
 		locale: userDataJson.user.locale,
 		profileImage: userDataJson.user.profile_image,
-		acceptedTosAt: userDataJson.user.accepted_tos_at
+		acceptedTosAt: userDataJson.user.accepted_tos_at,
+		accountTaxClass: userDataJson.user.accountTaxClass,
+		subscriptionId: userDataJson.user.subscriptionId
 	} as User;
 
 	return {

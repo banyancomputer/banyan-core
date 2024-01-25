@@ -19,7 +19,7 @@ where
     Router::new()
         .route(
             "/current",
-            get(current_user::handler).put(update_user::handler),
+            get(current_user::handler).patch(update_user::handler),
         )
         .route("/escrowed_device", get(current_escrowed_device::handler))
         .with_state(state)

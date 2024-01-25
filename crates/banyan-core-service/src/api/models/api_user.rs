@@ -11,6 +11,8 @@ pub struct ApiUser {
     pub locale: Option<String>,
     pub profile_image: Option<String>,
     pub accepted_tos_at: Option<i64>,
+
+    pub account_tax_class: String,
     pub subscription_id: String,
 
     #[serde(
@@ -30,6 +32,7 @@ impl From<User> for ApiUser {
             profile_image: user.profile_image,
             accepted_tos_at: user.accepted_tos_at.map(|t| t.unix_timestamp()),
             subscription_id: user.subscription_id,
+            account_tax_class: user.account_tax_class.to_string(),
             subscription_valid_until: user.subscription_valid_until,
         }
     }

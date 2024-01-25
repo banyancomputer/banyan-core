@@ -13,7 +13,7 @@ export const InvoicesTable: React.FC<{ invoices: Invoice[] }> = ({ invoices }) =
     const { messages } = useIntl();
     const dispatch = useAppDispatch();
     const { selectedInvoice, subscriptions } = useAppSelector(state => state.billing);
-    const selectedSubscription = selectedInvoice ? subscriptions.find(subscription => subscription.pricing?.plan_base === selectedInvoice.amount_due / 100) : null;
+    const selectedSubscription = selectedInvoice ? subscriptions.find(subscription => subscription.pricing?.plan_base === selectedInvoice.total_amount / 100) : null;
 
     const viewInvoice = (invoice: Invoice) => {
         dispatch(selectInvoice(invoice));
@@ -40,7 +40,7 @@ export const InvoicesTable: React.FC<{ invoices: Invoice[] }> = ({ invoices }) =
                                 {invoice.status}
                             </td>
                             <td className="px-3 py-4 text-text-800 font-semibold text-sm">
-                                ${(invoice.amount_due / 100).toFixed(2)}
+                                ${(invoice.total_amount / 100).toFixed(2)}
                             </td>
                             <td className="px-3 py-4 text-text-600 text-xs" onClick={() => viewInvoice(invoice)}>
                                 <div className="flex items-center justify-start font-semibold text-xs text-text-viewInvoiceText cursor-pointer">

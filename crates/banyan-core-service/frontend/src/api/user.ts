@@ -14,12 +14,12 @@ export class UserClient extends APIClient {
         return {
             id: rawUser.id,
             email: rawUser.email,
-            verifiedEmail: rawUser.verified_email,
             displayName: rawUser.display_name,
             locale: rawUser.locale,
             profileImage: rawUser.profile_image,
             acceptedTosAt: rawUser.accepted_tos_at,
-            subscriptionId: rawUser.subscription_id
+			      accountTaxClass: rawUser.account_tax_class,
+            subscriptionId: rawUser.subscription_id,
         }
     };
 };

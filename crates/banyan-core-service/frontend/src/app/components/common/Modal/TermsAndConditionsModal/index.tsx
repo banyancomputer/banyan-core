@@ -20,7 +20,7 @@ export const TermsAndConditionsModal: React.FC<{
         const accepted_tos_at = Math.trunc(Date.now() / 1000);
 
         try {
-            await termsClient.confirmTermsAndConditions(userData, accepted_tos_at);
+            await termsClient.confirmTermsAndConditions(userData, accepted_tos_at, userData.accountTaxClass);
             setAreTermsAccepted(true);
             closeModal();
         } catch (error: any) { }

@@ -1,8 +1,11 @@
 export interface Invoice {
     id: string;
-    created_at: string;
-    amount_due: number;
+    billing_start: string;
+    billing_end: string;
+    subscription_id: string,
+    total_amount: number;
     status:  string;
+    created_at: string;
 };
 
 export interface Subscription {

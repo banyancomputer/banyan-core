@@ -7,7 +7,10 @@ use crate::database::models::{Invoice, InvoiceStatus};
 pub struct ApiInvoice {
     id: String,
 
+    #[serde(with = "time::serde::rfc3339")]
     billing_start: OffsetDateTime,
+
+    #[serde(with = "time::serde::rfc3339")]
     billing_end: OffsetDateTime,
 
     subscription_id: String,

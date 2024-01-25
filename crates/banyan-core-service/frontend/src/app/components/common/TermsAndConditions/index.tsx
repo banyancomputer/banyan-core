@@ -23,7 +23,7 @@ export const TermaAndConditions: React.FC<{ userData: User, acceptTerms: React.D
         const accepted_tos_at = Math.trunc(Date.now() / 1000);
 
         try {
-            await termsClient.confirmTermsAndConditions(userData, accepted_tos_at);
+            await termsClient.confirmTermsAndConditions(userData, accepted_tos_at, accountType);
             acceptTerms(true);
             closeModal();
         } catch (error: any) { }
@@ -43,9 +43,9 @@ export const TermaAndConditions: React.FC<{ userData: User, acceptTerms: React.D
                         <div className="mt-6 mb-8 flex items-center gap-3">
                             <AccountType
                                 action={setAccountType}
-                                isActive={accountType === 'work'}
+                                isActive={accountType === 'business'}
                                 text={'For work'}
-                                value='work'
+                                value='business'
                             />
                             <AccountType
                                 action={setAccountType}

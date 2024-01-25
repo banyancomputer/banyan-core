@@ -14,7 +14,7 @@ export const InvoiceDetails: React.FC<{ invoice: Invoice }> = ({ invoice }) => {
   const dispatch = useAppDispatch();
   const { displayName } = useAppSelector(state => state.user)
   const { subscriptions } = useAppSelector(state => state.billing);
-  const selectedSubscription = subscriptions.find(subscription => subscription.pricing?.plan_base === invoice.amount_due / 100);
+  const selectedSubscription = subscriptions.find(subscription => subscription.pricing?.plan_base === invoice.total_amount / 100);
 
   const getHotStorageAmount = () => {
     if (!selectedSubscription?.features?.included_hot_storage || !selectedSubscription?.features?.included_hot_replica_count) {

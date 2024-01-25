@@ -47,7 +47,7 @@
     hard_limits: Limits(
       archival: Some(150),
       bandwidth: None,
-      storage: Some(3_000),
+      storage: Some(3_072),
     ),
   ),
 
@@ -66,16 +66,15 @@
     )),
 
     included_allowances: Allowances(
-      bandwidth: 3_000,
-
-      storage: 3_000,
+      bandwidth: 3_072,
+      storage: 3_072,
       storage_replicas: 2,
     ),
 
     hard_limits: Limits(
-      archival: Some(3_000),
+      archival: Some(3_072),
       bandwidth: None,
-      storage: Some(50_000),
+      storage: Some(51_200),
     ),
   ),
 ]
