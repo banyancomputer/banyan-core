@@ -17,6 +17,7 @@ use crate::tasks::ReportUploadTask;
 
 mod db;
 mod error;
+mod new;
 pub(crate) mod write_block;
 
 use db::{complete_upload, fail_upload, get_upload, start_upload, write_block_to_tables, Upload};

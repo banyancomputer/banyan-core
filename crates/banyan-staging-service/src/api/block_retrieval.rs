@@ -49,11 +49,6 @@ pub async fn handler(
     // frustrating...
     //
     //
-    // First try with the new version
-    let object_path = ObjectStorePath::from(format!(
-        "{}/{}.bin",
-        block_details.metadata_id, normalized_cid
-    ));
 
     // check if car_offset is null
     //
@@ -61,31 +56,36 @@ pub async fn handler(
     //
     // if not null, use old path format and get CAR
 
-    match store.get(&object_path).await {
-        Ok(object) => {
-            let data = object
-                .bytes()
-                .await
-                .map_err(BlockRetrievalError::RetrievalFailed)?;
-            Ok((StatusCode::OK, headers, data).into_response())
-        }
-        Err(err) => {
-            // If there is a chance it's actually in a CAR
-            if let Some(car_offset) = block_details.car_offset {
-                let byte_start = car_offset as usize;
-                let byte_end = byte_start + (block_details.length as usize);
-                let byte_range = byte_start..byte_end;
+    // If the car_offset is valid, expect to find a CAR file in the object store
+    if let Some(car_offset) = block_details.car_offset {
+        let byte_start = car_offset as usize;
+        let byte_end = byte_start + (block_details.length as usize);
+        let byte_range = byte_start..byte_end;
+        // In the case of CAR files, the base path is already a complete reference to file location
+        let object_path = ObjectStorePath::from(block_details.base_path);
+        let data = store
+            .get_range(&object_path, byte_range)
+            .await
+            .map_err(BlockRetrievalError::RetrievalFailed)?;
+        Ok((StatusCode::OK, headers, data).into_response())
+    }
+    // If the car_offset is null (no CAR file in the object store)
+    else {
+        // First try with the new version
+        let object_path = ObjectStorePath::from(format!(
+            "{}/{}.bin",
+            block_details.base_path, normalized_cid
+        ));
 
-                let object_path = ObjectStorePath::from(block_details.metadata_id.as_str());
-                let data = store
-                    .get_range(&object_path, byte_range)
-                    .await
-                    .map_err(BlockRetrievalError::RetrievalFailed)?;
-                Ok((StatusCode::OK, headers, data).into_response())
-            } else {
-                Err(BlockRetrievalError::RetrievalFailed(err))
-            }
-        }
+        // Get the data from the expected block location
+        let data = store
+            .get(&object_path)
+            .await
+            .map_err(BlockRetrievalError::RetrievalFailed)?
+            .bytes()
+            .await
+            .map_err(BlockRetrievalError::RetrievalFailed)?;
+        Ok((StatusCode::OK, headers, data).into_response())
     }
 }
 
@@ -98,9 +98,10 @@ pub async fn block_from_normalized_cid(
                 SELECT
                         blocks.id AS id,
                         blocks.data_length AS length,
-                        blocks.car_offset AS car_offset,
-                        clients.platform_id AS platform_id,
-                        uploads.metadata_id as metadata_id
+                        uploads_blocks.car_offset AS car_offset,
+                        uploads.base_path AS base_path,
+                        clients.platform_id AS platform_id
+    }
                     FROM blocks
                         JOIN uploads_blocks ON blocks.id = uploads_blocks.block_id
                         JOIN uploads ON uploads_blocks.upload_id = uploads.id
