@@ -72,7 +72,7 @@ export const InvoiceDetails: React.FC<{ invoice: Invoice }> = ({ invoice }) => {
         <div className="py-2 px-4 flex flex-col gap-4">
           <div className="flex justify-between">
             <span className="font-medium">{`${messages.totalCost}`}</span>
-            <span className="font-normal">${selectedSubscription?.pricing?.plan_base}</span>
+            <span className="font-normal">${selectedSubscription?.pricing?.plan_base.toFixed(2)}</span>
           </div>
         </div>
       </div>

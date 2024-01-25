@@ -40,7 +40,7 @@ export const InvoicesTable: React.FC<{ invoices: Invoice[] }> = ({ invoices }) =
                                 {invoice.status}
                             </td>
                             <td className="px-3 py-4 text-text-800 font-semibold text-sm">
-                                ${invoice.amount_due / 100}
+                                ${(invoice.amount_due / 100).toFixed(2)}
                             </td>
                             <td className="px-3 py-4 text-text-600 text-xs" onClick={() => viewInvoice(invoice)}>
                                 <div className="flex items-center justify-start font-semibold text-xs text-text-viewInvoiceText cursor-pointer">
