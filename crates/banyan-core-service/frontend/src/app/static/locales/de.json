@@ -204,5 +204,6 @@
 	"invoice": "Rechnungen",
 	"summary": "Zusammenfassung",
 	"items": "Artikel",
-	"payment": "Zahlung"
+	"payment": "Zahlung",
+	"manageSubscriptions": "Abonnements verwalten"
 }

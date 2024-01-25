@@ -2,10 +2,11 @@ import React, { useEffect } from 'react';
 import { useIntl } from 'react-intl';
 
 import { useAppDispatch, useAppSelector } from '@/app/store';
-import { getSubscriptions } from '@/app/store/billing/actions';
+import { getSubscriptions, manageSubscriptions } from '@/app/store/billing/actions';
 import { useModal } from '@/app/contexts/modals';
 import { SubscriptionPlanModal } from '@/app/components/common/Modal/SubscriptionPlanModal';
 import { convertSubscriptionsSizes } from '@/app/utils/storage';
+import { unwrapResult } from '@reduxjs/toolkit';
 
 export const NextBillingDate = () => {
     const dispatch = useAppDispatch();
@@ -23,6 +24,13 @@ export const NextBillingDate = () => {
 
     const upgragePlan = () => {
         openModal(<SubscriptionPlanModal />);
+    };
+
+    const manage = async () => {
+        try {
+            const { portal_url } = unwrapResult(await dispatch(manageSubscriptions()));
+            window.location.href = portal_url;
+        } catch (error: any) { }
     };
 
     useEffect(() => {
@@ -54,6 +62,14 @@ export const NextBillingDate = () => {
             >
                 {`${selectedSubscription?.service_key === 'starter' ? `${messages.upgrade} ${messages.account}` : messages.upgradePlan}`}
             </button>
+            {selectedSubscription?.service_key !== 'starter' &&
+                <button
+                    onClick={manage}
+                    className="w-max px-4 py-2 text-xs font-semibold rounded-md bg-text-200 text-button-primary"
+                >
+                    {`${messages.manageSubscriptions}`}
+                </button>
+            }
         </div>
     )
 }

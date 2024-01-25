@@ -204,5 +204,6 @@
 	"invoice": "Invoice",
 	"summary": "Summary",
 	"items": "Items",
-	"payment": "Payment"
+	"payment": "Payment",
+	"manageSubscriptions": "Manage Subscriptions"
 }
