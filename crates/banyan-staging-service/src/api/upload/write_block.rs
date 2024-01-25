@@ -14,7 +14,7 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::api::upload::{
-    complete_upload, get_upload, start_upload, write_block_to_tables, UploadError,
+    complete_upload, get_upload, report_upload, start_upload, write_block_to_tables, UploadError,
 };
 use crate::app::AppState;
 use crate::extractors::AuthenticatedClient;
@@ -70,46 +70,13 @@ pub async fn handler(
     if request.completed.is_some() {
         complete_upload(&db, 0, "", &upload.id).await?;
 
-        let all_cids: Vec<String> = sqlx::query_scalar(
-            r#"
-            SELECT blocks.cid 
-            FROM blocks
-            JOIN uploads_blocks ON blocks.id = uploads_blocks.block_id
-            JOIN uploads ON uploads_blocks.upload_id = uploads.id
-            WHERE uploads.id = $1;
-            "#,
-        )
-        .bind(&upload.id)
-        .fetch_all(&db)
-        .await?;
-
-        let all_cids = all_cids
-            .into_iter()
-            .map(|cid_string| Cid::from_str(&cid_string).unwrap())
-            .collect::<Vec<Cid>>();
-
-        let total_size: i64 = sqlx::query_scalar(
-            r#"
-            SELECT COALESCE(SUM(blocks.data_length), 0)
-            FROM blocks
-            JOIN uploads_blocks ON blocks.id = uploads_blocks.block_id
-            JOIN uploads ON uploads_blocks.upload_id = uploads.id
-            WHERE uploads.id = $1;
-            "#,
-        )
-        .bind(&upload.id)
-        .fetch_one(&db)
-        .await?;
-
-        ReportUploadTask::new(
+        report_upload(
+            &db,
             client.storage_grant_id(),
             request.metadata_id,
-            &all_cids,
-            total_size as u64,
+            &upload.id,
         )
-        .enqueue::<banyan_task::SqliteTaskStore>(&mut db)
-        .await
-        .map_err(|_| UploadError::CarFile)?;
+        .await?;
     }
 
     Ok((StatusCode::NO_CONTENT, ()).into_response())

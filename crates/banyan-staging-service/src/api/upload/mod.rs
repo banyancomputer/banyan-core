@@ -14,20 +14,23 @@ use crate::app::AppState;
 use crate::database::Database;
 use crate::extractors::AuthenticatedClient;
 use crate::tasks::ReportUploadTask;
-
+pub(crate) mod block;
 mod db;
 mod error;
-mod new;
+pub(crate) mod new;
 pub(crate) mod write_block;
 
-use db::{complete_upload, fail_upload, get_upload, start_upload, write_block_to_tables, Upload};
+use db::{
+    complete_upload, fail_upload, get_upload, report_upload, start_upload, write_block_to_tables,
+    Upload,
+};
 use error::UploadError;
 
 /// Limit on the size of the JSON request that accompanies an upload.
 const UPLOAD_REQUEST_SIZE_LIMIT: u64 = 100 * 1_024;
 
 #[derive(Deserialize, Serialize)]
-pub struct UploadRequest {
+pub struct CarUploadRequest {
     metadata_id: Uuid,
     content_hash: String,
 }
@@ -70,7 +73,7 @@ pub async fn handler(
     // TODO: validate name is request-data (request_data_field.name())
     // TODO: validate type is application/json (request_data_field.content_type())
 
-    let request: UploadRequest = request_field
+    let request: CarUploadRequest = request_field
         .json()
         .await
         .map_err(UploadError::InvalidRequestData)?;

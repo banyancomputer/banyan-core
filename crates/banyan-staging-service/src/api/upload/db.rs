@@ -1,6 +1,10 @@
+use std::str::FromStr;
+
+use banyan_task::TaskLikeExt;
+use cid::Cid;
 use uuid::Uuid;
 
-use crate::database::Database;
+use crate::{database::Database, tasks::ReportUploadTask};
 
 pub async fn start_upload(
     db: &Database,
@@ -86,6 +90,51 @@ pub async fn complete_upload(
     .execute(db)
     .await
     .map(|_| ())
+}
+
+pub async fn report_upload(
+    db: &Database,
+    storage_grant_id: Uuid,
+    metadata_id: Uuid,
+    upload_id: &str,
+) -> Result<(), sqlx::Error> {
+    let all_cids: Vec<String> = sqlx::query_scalar(
+        r#"
+            SELECT blocks.cid 
+            FROM blocks
+            JOIN uploads_blocks ON blocks.id = uploads_blocks.block_id
+            JOIN uploads ON uploads_blocks.upload_id = uploads.id
+            WHERE uploads.id = $1;
+            "#,
+    )
+    .bind(upload_id)
+    .fetch_all(db)
+    .await?;
+
+    let all_cids = all_cids
+        .into_iter()
+        .map(|cid_string| Cid::from_str(&cid_string).unwrap())
+        .collect::<Vec<Cid>>();
+
+    let total_size: i64 = sqlx::query_scalar(
+        r#"
+            SELECT COALESCE(SUM(blocks.data_length), 0)
+            FROM blocks
+            JOIN uploads_blocks ON blocks.id = uploads_blocks.block_id
+            JOIN uploads ON uploads_blocks.upload_id = uploads.id
+            WHERE uploads.id = $1;
+            "#,
+    )
+    .bind(upload_id)
+    .fetch_one(db)
+    .await?;
+
+    ReportUploadTask::new(storage_grant_id, metadata_id, &all_cids, total_size as u64)
+        .enqueue::<banyan_task::SqliteTaskStore>(db.borrow_mut())
+        .await
+        .unwrap();
+
+    Ok(())
 }
 
 pub async fn get_upload(

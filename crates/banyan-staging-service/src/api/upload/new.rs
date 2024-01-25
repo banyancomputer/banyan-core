@@ -1,49 +1,33 @@
-use axum::extract::{BodyStream, State};
-use axum::headers::{ContentLength, ContentType};
-use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response};
-use axum::{Json, TypedHeader};
-use banyan_car_analyzer::{CarReport, StreamingCarAnalyzer, StreamingCarAnalyzerError};
-use banyan_object_store::ObjectStore;
-use banyan_task::TaskLikeExt;
-use futures::{TryStream, TryStreamExt};
+use axum::{
+    extract::State,
+    headers::ContentLength,
+    response::{IntoResponse, Response},
+    Json, TypedHeader,
+};
+use http::StatusCode;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use super::db::{
-    complete_upload, fail_upload, get_upload, start_upload, write_block_to_tables, Upload,
+use crate::{app::AppState, extractors::AuthenticatedClient};
+
+use super::{
+    db::{start_upload, Upload},
+    error::UploadError,
 };
-use super::error::UploadError;
-use crate::app::AppState;
-use crate::database::Database;
-use crate::extractors::AuthenticatedClient;
-use crate::tasks::ReportUploadTask;
 
-#[derive(Deserialize, Serialize)]
-pub struct BlockUploadRequest {
-    metadata_id: Uuid,
-    content_hash: String,
-
-    // Optional additional details about the nature of the upload
-    #[serde(flatten)]
-    details: BlockUploadDetails,
-}
-
+// Requests need only the associated metadata id
 #[derive(Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum BlockUploadDetails {
-    Ongoing { completed: bool, upload_id: String },
-    OneOff,
+pub struct NewUploadRequest {
+    metadata_id: Uuid,
 }
 
 pub async fn handler(
     State(state): State<AppState>,
     client: AuthenticatedClient,
-    store: ObjectStore,
     TypedHeader(content_len): TypedHeader<ContentLength>,
-    Json(request): Json<BlockUploadRequest>,
+    Json(request): Json<NewUploadRequest>,
 ) -> Result<Response, UploadError> {
-    let mut db = state.database();
+    let db = state.database();
     let reported_body_length = content_len.0;
     if reported_body_length > client.remaining_storage() {
         return Err(UploadError::InsufficientAuthorizedStorage(
@@ -51,36 +35,17 @@ pub async fn handler(
             client.remaining_storage(),
         ));
     }
-    match request.details {
-        BlockUploadDetails::OneOff => {
-            // Create a new upload for the one off
-            let upload = start_upload(
-                &db,
-                &client.id(),
-                &request.metadata_id,
-                reported_body_length,
-            )
-            .await?;
 
-            // TODO Handle data
+    // Start the upload with these specifications
+    let upload = start_upload(
+        &db,
+        &client.id(),
+        &request.metadata_id,
+        reported_body_length,
+    )
+    .await?;
 
-            // Complete the upload
-            complete_upload(
-                &db,
-                reported_body_length as i64,
-                &request.content_hash,
-                &upload.id,
-            )
-            .await?;
-        }
-        BlockUploadDetails::Ongoing {
-            completed,
-            upload_id,
-        } => {
-            // Assume that the upload has already been created via the `new` endpoint
-            let upload = get_upload(&db, client.id(), request.metadata_id).await?;
-        }
-    }
-    let msg = serde_json::json!({"status": "ok"});
+    // Respond with the upload id
+    let msg = serde_json::json!({"upload_id": upload.id});
     Ok((StatusCode::OK, Json(msg)).into_response())
 }

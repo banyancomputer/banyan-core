@@ -23,9 +23,10 @@ where
 
     Router::new()
         .route("/blocks/:block_id", get(block_retrieval::handler))
-        .route("/blocks", post(upload::write_block::handler))
         .route("/client_grant", post(client_grant::handler))
         .route("/upload", post(upload::handler))
+        .route("/upload/new", post(upload::new::handler))
+        .route("/upload/block", post(upload::block::handler))
         .route("/core/prune", post(prune_blocks::handler))
         .layer(cors_layer)
         .with_state(state)

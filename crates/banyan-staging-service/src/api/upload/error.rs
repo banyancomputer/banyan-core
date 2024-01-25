@@ -19,6 +19,9 @@ pub enum UploadError {
     #[error("failed to enqueue a task: {0}")]
     FailedToEnqueueTask(#[from] banyan_task::TaskStoreError),
 
+    #[error("unauthorized write, metadata and upload ids are not congruent")]
+    IdMismatch,
+
     #[error("account is not authorized to store {0} bytes, {1} bytes are still authorized")]
     InsufficientAuthorizedStorage(u64, u64),
 
@@ -67,6 +70,7 @@ impl IntoResponse for UploadError {
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
             }
             DataFieldUnavailable(_)
+            | IdMismatch
             | DataFieldMissing
             | InvalidRequestData(_)
             | RequestFieldUnavailable(_)
