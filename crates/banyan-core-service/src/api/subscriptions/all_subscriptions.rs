@@ -4,7 +4,7 @@ use axum::response::{IntoResponse, Response};
 
 use crate::api::models::ApiSubscription;
 use crate::app::AppState;
-use crate::database::models::{Subscription, User};
+use crate::database::models::{Subscription, TaxClass, User};
 use crate::extractors::UserIdentity;
 
 pub async fn handler(
@@ -14,25 +14,37 @@ pub async fn handler(
     let database = state.database();
     let mut conn = database.acquire().await?;
 
-    let user_sub_id = match user {
+    let current_user = match user {
         Some(u) => {
             let user_id = u.id().to_string();
             let current_user = User::by_id(&mut conn, &user_id).await?;
-            Some(current_user.subscription_id)
+            Some(current_user)
         }
         None => None,
     };
 
-    let subscriptions =
-        Subscription::all_public_or_current(&mut conn, user_sub_id.as_deref()).await?;
+    let mut subscriptions =
+        Subscription::all_public_or_current(&mut conn, current_user.as_ref().map(|u| u.subscription_id.as_str())).await?;
+
+    if let Some(user) = &current_user {
+        // If we know the tax class the subscription will be part of from the user's configuration,
+        // we can pre-filter the subscriptions to match
+        match user.account_tax_class {
+            TaxClass::Business | TaxClass::Personal => {
+                subscriptions = subscriptions.into_iter().filter(|s| s.tax_class == user.account_tax_class).collect();
+            },
+            _ => (),
+        }
+    }
+
     let mut api_subscriptions: Vec<_> = subscriptions
         .into_iter()
         .map(ApiSubscription::from)
         .collect();
 
-    if let Some(active_id) = user_sub_id {
+    if let Some(user) = current_user {
         for sub in api_subscriptions.iter_mut() {
-            sub.set_active_if_match(&active_id);
+            sub.set_active_if_match(&user.subscription_id);
         }
     }
 
