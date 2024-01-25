@@ -17,7 +17,7 @@ pub async fn handler(
     let mut conn = database.begin().await?;
 
     let user_id = user_identity.id().to_string();
-    let user: User = User::find_by_id(&mut *conn, &user_id)
+    let user: User = User::find_by_id(&mut conn, &user_id)
         .await?
         .ok_or(UpdateUserError::NotFound)?;
 

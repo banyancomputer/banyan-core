@@ -23,16 +23,19 @@ pub async fn handler(
         None => None,
     };
 
-    let mut subscriptions =
-        Subscription::all_public_or_current(&mut conn, current_user.as_ref().map(|u| u.subscription_id.as_str())).await?;
+    let mut subscriptions = Subscription::all_public_or_current(
+        &mut conn,
+        current_user.as_ref().map(|u| u.subscription_id.as_str()),
+    )
+    .await?;
 
     if let Some(user) = &current_user {
         // If we know the tax class the subscription will be part of from the user's configuration,
         // we can pre-filter the subscriptions to match
         match user.account_tax_class {
             TaxClass::Business | TaxClass::Personal => {
-                subscriptions = subscriptions.into_iter().filter(|s| s.tax_class == user.account_tax_class).collect();
-            },
+                subscriptions.retain(|s| s.tax_class == user.account_tax_class);
+            }
             _ => (),
         }
     }

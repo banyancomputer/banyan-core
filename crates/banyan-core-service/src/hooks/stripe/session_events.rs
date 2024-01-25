@@ -20,7 +20,7 @@ pub async fn handler(
         .ok_or(StripeWebhookError::missing_data("session/meta/db_user_id"))?;
 
     let mut checkout_session =
-        StripeCheckoutSession::find_by_stripe_id(&mut *conn, &m_user_id, &stripe_session_str)
+        StripeCheckoutSession::find_by_stripe_id(&mut *conn, m_user_id, &stripe_session_str)
             .await?
             .ok_or(StripeWebhookError::missing_target("db_checkout_session"))?;
     checkout_session.complete(&mut *conn).await?;
@@ -29,10 +29,13 @@ pub async fn handler(
         .await?
         .ok_or(StripeWebhookError::missing_target("db_user"))?;
 
-    let m_subscription_id = stripe_metadata
-        .get(METADATA_SUBSCRIPTION_KEY)
-        .ok_or(StripeWebhookError::missing_data("session/meta/db_subscription_id"))?;
-    let subscription = Subscription::find_by_id(&mut *conn, &m_subscription_id)
+    let m_subscription_id =
+        stripe_metadata
+            .get(METADATA_SUBSCRIPTION_KEY)
+            .ok_or(StripeWebhookError::missing_data(
+                "session/meta/db_subscription_id",
+            ))?;
+    let subscription = Subscription::find_by_id(&mut *conn, m_subscription_id)
         .await?
         .ok_or(StripeWebhookError::missing_target("db_subscription"))?;
 

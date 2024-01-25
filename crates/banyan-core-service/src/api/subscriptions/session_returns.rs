@@ -25,14 +25,14 @@ pub async fn success_redirect(
     let user_id = user_id.id().to_string();
 
     let mut checkout_session =
-        match StripeCheckoutSession::find_by_stripe_id(&mut *conn, &user_id, &checkout_session_id)
+        match StripeCheckoutSession::find_by_stripe_id(&mut conn, &user_id, &checkout_session_id)
             .await
         {
             Ok(Some(cs)) => cs,
             _ => return redirect,
         };
 
-    let _ = checkout_session.complete(&mut *conn).await;
+    let _ = checkout_session.complete(&mut conn).await;
 
     redirect
 }

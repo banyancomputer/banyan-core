@@ -4,10 +4,10 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 use serde::Serialize;
 
-use crate::GIBIBYTE;
 use crate::app::AppState;
-use crate::database::models::{User, Subscription};
+use crate::database::models::{Subscription, User};
 use crate::extractors::UserIdentity;
+use crate::GIBIBYTE;
 
 pub async fn handler(
     user_id: UserIdentity,
@@ -17,11 +17,11 @@ pub async fn handler(
     let mut conn = database.acquire().await?;
 
     let user_id = user_id.id().to_string();
-    let user = User::find_by_id(&mut *conn, &user_id)
+    let user = User::find_by_id(&mut conn, &user_id)
         .await?
         .ok_or(UsageLimitError::NotFound)?;
 
-    let subscription = Subscription::find_by_id(&mut *conn, &user.subscription_id)
+    let subscription = Subscription::find_by_id(&mut conn, &user.subscription_id)
         .await?
         .ok_or(UsageLimitError::NotFound)?;
 

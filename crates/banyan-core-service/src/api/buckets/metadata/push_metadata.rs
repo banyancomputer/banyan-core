@@ -14,7 +14,6 @@ use serde::Deserialize;
 use tokio::io::{AsyncWrite, AsyncWriteExt};
 use uuid::Uuid;
 
-use crate::GIBIBYTE;
 use crate::app::AppState;
 use crate::auth::storage_ticket::StorageTicketBuilder;
 use crate::database::models::{
@@ -22,8 +21,8 @@ use crate::database::models::{
     SelectedStorageHost, StorageHost, Subscription, User, UserStorageReport,
 };
 use crate::extractors::{DataStore, UserIdentity};
-use crate::utils;
 use crate::utils::car_buffer::CarBuffer;
+use crate::{utils, GIBIBYTE};
 
 /// Size limit of the pure metadata CAR file that is being uploaded (128MiB)
 const CAR_DATA_SIZE_LIMIT: u64 = 128 * 1_024 * 1_024;
@@ -194,7 +193,7 @@ pub async fn handler(
 
     let needed_capacity = request_data.expected_data_size;
     let user = User::by_id(&mut conn, &user_id).await?;
-    let subscription = Subscription::by_id(&mut *conn, &user.subscription_id).await?;
+    let subscription = Subscription::by_id(&mut conn, &user.subscription_id).await?;
 
     if let Some(hard_limit) = subscription.hot_storage_hard_limit {
         let hard_limit_bytes = hard_limit * GIBIBYTE;
