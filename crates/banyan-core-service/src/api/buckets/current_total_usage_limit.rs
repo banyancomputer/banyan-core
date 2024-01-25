@@ -1,11 +1,68 @@
+use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
+use serde::Serialize;
 
+use crate::app::AppState;
+use crate::database::models::{User, Subscription};
 use crate::extractors::UserIdentity;
 
-pub async fn handler(_user_identity: UserIdentity) -> Response {
-    let size: u64 = 50 * 1024 * 1024 * 1024;
-    let resp = serde_json::json!({"size": size });
-    (StatusCode::OK, Json(resp)).into_response()
+const GIBIBYTE: i64 = 1 * 1024 * 1024 * 1024;
+
+pub async fn handler(
+    user_id: UserIdentity,
+    State(state): State<AppState>,
+) -> Result<Response, UsageLimitError> {
+    let database = state.database();
+    let mut conn = database.acquire().await?;
+
+    let user_id = user_id.id().to_string();
+    let user = User::find_by_id(&mut *conn, &user_id)
+        .await?
+        .ok_or(UsageLimitError::NotFound)?;
+
+    let subscription = Subscription::find_by_id(&mut *conn, &user.subscription_id)
+        .await?
+        .ok_or(UsageLimitError::NotFound)?;
+
+    let resp = UsageLimitResponse {
+        soft_hot_storage_limit: subscription.included_hot_storage * GIBIBYTE,
+        hard_hot_storage_limit: subscription.hot_storage_hard_limit.map(|l| l * GIBIBYTE),
+    };
+
+    Ok((StatusCode::OK, Json(resp)).into_response())
+}
+
+#[derive(Serialize)]
+struct UsageLimitResponse {
+    soft_hot_storage_limit: i64,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    hard_hot_storage_limit: Option<i64>,
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum UsageLimitError {
+    #[error("a database failure occurred: {0}")]
+    DatabaseFailure(#[from] sqlx::Error),
+
+    #[error("associated data couldn't be found")]
+    NotFound,
+}
+
+impl IntoResponse for UsageLimitError {
+    fn into_response(self) -> Response {
+        match self {
+            UsageLimitError::NotFound => {
+                let err_msg = serde_json::json!({"msg": "not found"});
+                (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
+            }
+            _ => {
+                tracing::error!("usage lookup error: {self}");
+                let err_msg = serde_json::json!({"msg": "backend service experienced an issue servicing the request"});
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
+            }
+        }
+    }
 }
