@@ -56,14 +56,7 @@ pub async fn handler(
         return Err(UploadError::UploadIsComplete);
     }
 
-    write_block_to_tables(
-        &db,
-        &upload.id,
-        &normalized_cid,
-        request.data.len() as i64,
-        None,
-    )
-    .await?;
+    write_block_to_tables(&db, &upload.id, &normalized_cid, request.data.len() as i64).await?;
 
     // Actually write the bytes to the expected location
     let location =
@@ -126,6 +119,7 @@ pub async fn handler(
 pub struct BlockWriteRequest {
     pub cid: Cid,
     pub data: Vec<u8>,
+    // upload_id which is fed to the client after a preliminary request?
     pub metadata_id: Uuid,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub completed: Option<bool>,

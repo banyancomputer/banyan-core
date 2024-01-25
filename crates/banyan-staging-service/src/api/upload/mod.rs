@@ -151,14 +151,7 @@ where
                 .to_string_of_base(cid::multibase::Base::Base64Url)
                 .expect("parsed cid to unparse");
 
-            write_block_to_tables(
-                db,
-                &upload.id,
-                &cid_string,
-                block.length() as i64,
-                Some(block.offset() as i64),
-            )
-            .await?;
+            write_block_to_tables(db, &upload.id, &cid_string, block.length() as i64).await?;
         }
 
         if car_analyzer.seen_bytes() as usize > expected_size && !warning_issued {

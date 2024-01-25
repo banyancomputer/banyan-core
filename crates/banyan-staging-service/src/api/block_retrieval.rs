@@ -55,6 +55,12 @@ pub async fn handler(
         block_details.metadata_id, normalized_cid
     ));
 
+    // check if car_offset is null
+    //
+    // if null, use new path format
+    //
+    // if not null, use old path format and get CAR
+
     match store.get(&object_path).await {
         Ok(object) => {
             let data = object
