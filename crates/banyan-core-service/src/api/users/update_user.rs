@@ -38,7 +38,7 @@ pub async fn handler(
     };
 
     sqlx::query!(
-        r#"UPDATE users SET accepted_tos_at = $1 AND account_tax_class = $2 WHERE id = $3 AND (accepted_tos_at != $1 OR account_tax_class != $2);"#,
+        "UPDATE users SET accepted_tos_at = $1, account_tax_class = $2 WHERE id = $3;",
         accepted_tos_at,
         account_tax_class,
         user_id,
@@ -51,7 +51,7 @@ pub async fn handler(
     Ok((StatusCode::NO_CONTENT, ()).into_response())
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct UpdateApiUserRequest {
     accepted_tos_at: Option<i64>,
 
