@@ -89,13 +89,13 @@ pub enum StripeWebhookError {
 impl IntoResponse for StripeWebhookError {
     fn into_response(self) -> Response {
         match &self {
-            StripeWebhookError::MissingTarget => {
-                let err_msg = serde_json::json!({"msg": "not found"});
-                (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
-            }
             StripeWebhookError::MissingData => {
                 let err_msg = serde_json::json!({"msg": "missing expected data"});
                 (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
+            }
+            StripeWebhookError::MissingTarget => {
+                let err_msg = serde_json::json!({"msg": "not found"});
+                (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
             }
             _ => {
                 tracing::error!("a stripe webhook error occurred: {self}");
