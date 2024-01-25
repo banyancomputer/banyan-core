@@ -1,4 +1,5 @@
-import { EscrowedKeyMaterial, User } from '@/app/types';
+import { EscrowedKeyMaterial } from '@/app/types';
+import { User } from '@/entities/user';
 import { parseCookies, setCookie, destroyCookie } from 'nookies';
 
 /* Cookie State Management. This should probably be within a context but watching for cookie changes proved difficult */

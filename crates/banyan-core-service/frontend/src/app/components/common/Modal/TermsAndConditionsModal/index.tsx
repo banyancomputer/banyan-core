@@ -4,12 +4,12 @@ import { useIntl } from 'react-intl';
 
 import { useModal } from '@app/contexts/modals';
 import { TermsAndColditionsClient } from '@/api/termsAndConditions';
-import { RawUser } from '@app/types';
+import { User } from '@/entities/user';
 
 const termsClient = new TermsAndColditionsClient();
 
 export const TermsAndConditionsModal: React.FC<{
-    terms: string, userData: RawUser, setAreTermsAccepted: React.Dispatch<React.SetStateAction<boolean>>
+    terms: string, userData: User, setAreTermsAccepted: React.Dispatch<React.SetStateAction<boolean>>
 }> = ({ terms, userData, setAreTermsAccepted }) => {
     const { messages } = useIntl();
     const { closeModal } = useModal();
