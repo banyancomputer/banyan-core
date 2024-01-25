@@ -2,7 +2,6 @@ use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use axum::extract::FromRef;
 use jwt_simple::prelude::*;
 use object_store::local::LocalFileSystem;
 
@@ -22,6 +21,7 @@ pub struct State {
     service_name: String,
     service_verifier: ServiceVerificationKey,
     upload_directory: PathBuf,
+    frontend_folder: String,
 }
 
 impl State {
@@ -70,6 +70,7 @@ impl State {
             service_name: config.service_name().to_string(),
             service_verifier,
             upload_directory: config.upload_directory(),
+            frontend_folder: config.frontend_folder().to_string(),
         })
     }
 
@@ -94,23 +95,9 @@ impl State {
     pub fn upload_directory(&self) -> PathBuf {
         self.upload_directory.clone()
     }
-}
 
-impl FromRef<State> for Database {
-    fn from_ref(state: &State) -> Self {
-        state.database()
-    }
-}
-
-impl FromRef<State> for Secrets {
-    fn from_ref(state: &State) -> Self {
-        state.secrets()
-    }
-}
-
-impl FromRef<State> for ServiceVerificationKey {
-    fn from_ref(state: &State) -> Self {
-        state.service_verifier()
+    pub fn frontend_folder(&self) -> &str {
+        self.frontend_folder.as_str()
     }
 }
 
@@ -136,6 +123,12 @@ pub enum StateSetupError {
 
     #[error("failed to read private service key: {0}")]
     UnreadableServiceKey(std::io::Error),
+
+    #[error("failed to read public admin service key: {0}")]
+    AdminServiceKeyRead(std::io::Error),
+
+    #[error("public admin service key could not be loaded: {0}")]
+    InvalidAdminServiceKey(jwt_simple::Error),
 }
 
 fn load_or_create_service_key(private_path: &PathBuf) -> Result<ServiceKey, StateSetupError> {
@@ -206,6 +199,7 @@ pub mod test {
             service_name: "mock_service".to_string(),
             service_verifier: ServiceVerificationKey::new(ES384KeyPair::generate().public_key()),
             upload_directory: PathBuf::from("/mock/path"),
+            frontend_folder: "dist".to_string(),
         })
     }
 }

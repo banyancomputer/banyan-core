@@ -1,0 +1,44 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT d.id, d.state, SUM(ss.size) AS size, accepted_by, accepted_at\n        FROM deals d\n            JOIN snapshot_segments ss ON d.id = ss.deal_id\n        GROUP BY d.id;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "state",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "size",
+        "ordinal": 2,
+        "type_info": "Int64"
+      },
+      {
+        "name": "accepted_by",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "accepted_at",
+        "ordinal": 4,
+        "type_info": "Datetime"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "1cc6dd0d6cd6bc5f688e4e98ebfd3731fdd8abba1e2979ae225c228675315680"
+}

@@ -1,0 +1,5 @@
+@import "react-date-range/dist/styles";
+@import "react-date-range/dist/theme/default";
+@import "react-toastify/dist/ReactToastify.min.css";
+@import "./app/static/styles/_variables.css";
+@import "./app/static/styles/globals.css";

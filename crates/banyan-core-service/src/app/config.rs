@@ -25,6 +25,8 @@ pub struct Config {
     service_name: String,
     service_key_path: PathBuf,
     upload_directory: PathBuf,
+
+    frontend_folder: String,
 }
 
 impl Config {
@@ -140,6 +142,14 @@ impl Config {
             .opt_value_from_str("--log-level")?
             .unwrap_or(Level::INFO);
 
+        let frontend_folder = match cli_args.opt_value_from_str("--frontend-folder")? {
+            Some(path) => path,
+            None => match std::env::var("FRONTEND_FOLDER") {
+                Ok(sk) if !sk.is_empty() => sk,
+                _ => "dist".to_string(),
+            },
+        };
+
         Ok(Config {
             listen_addr,
             log_level,
@@ -157,6 +167,7 @@ impl Config {
             service_name,
             service_key_path,
             upload_directory,
+            frontend_folder,
         })
     }
 
@@ -198,6 +209,9 @@ impl Config {
 
     pub fn upload_directory(&self) -> PathBuf {
         self.upload_directory.clone()
+    }
+    pub fn frontend_folder(&self) -> &str {
+        self.frontend_folder.as_str()
     }
 }
 

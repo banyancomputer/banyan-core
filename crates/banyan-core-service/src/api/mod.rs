@@ -5,6 +5,7 @@ use axum::response::{IntoResponse, Response};
 use axum::Router;
 use tower_http::cors::CorsLayer;
 
+mod admin;
 mod auth;
 mod blocks;
 mod buckets;
@@ -31,6 +32,7 @@ where
     let cors_layer = CorsLayer::very_permissive();
 
     Router::new()
+        .nest("/admin", admin::router(state.clone()))
         .nest("/auth", auth::router(state.clone()))
         .nest("/blocks", blocks::router(state.clone()))
         .nest("/buckets", buckets::router(state.clone()))
