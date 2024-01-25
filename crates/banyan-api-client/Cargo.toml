@@ -5,7 +5,7 @@ edition = "2021"
 license = "LicenseRef-LICENSE.txt"
 
 [dependencies]
-jsonwebtoken = "8.3.0"
+jsonwebtoken = "^9"
 openssl = "^0.10"
 pem = "^2"
 rand = "^0.8"

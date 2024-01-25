@@ -21,6 +21,8 @@ use crate::utils::keys::fingerprint_public_key;
 pub struct SessionIdentity {
     /// The session ID of the session
     session_id: Uuid,
+    /// The email of the user who owns the session
+    email: String,
     /// The user id of the user who owns the session
     user_id: Uuid,
     /// The hex formatted fingerprint of the API key used to sign the JWT
@@ -41,6 +43,10 @@ impl SessionIdentity {
 
     pub fn key_fingerprint(&self) -> &str {
         &self.key_fingerprint
+    }
+
+    pub fn email(&self) -> &str {
+        &self.email
     }
 }
 
@@ -106,7 +112,10 @@ where
         let db_sid = session_id.to_string();
         let db_session = sqlx::query_as!(
             DatabaseSession,
-            r#"SELECT id, user_id, created_at, expires_at FROM sessions WHERE id = $1;"#,
+            r#"SELECT ss.id, ss.user_id, us.email, ss.created_at, ss.expires_at
+                FROM sessions AS ss
+                 JOIN users as us on us.id = ss.user_id
+                WHERE ss.id =  $1;"#,
             db_sid,
         )
         .fetch_one(&database)
@@ -128,6 +137,7 @@ where
         Ok(SessionIdentity {
             session_id,
             user_id,
+            email: db_session.email,
             key_fingerprint,
 
             created_at: db_session.created_at,
@@ -140,6 +150,7 @@ where
 struct DatabaseSession {
     id: String,
     user_id: String,
+    email: String,
 
     created_at: OffsetDateTime,
     expires_at: OffsetDateTime,
@@ -167,6 +178,9 @@ pub enum SessionIdentityError {
 
     #[error("session was expired")]
     SessionExpired,
+
+    #[error("not admin")]
+    NotAdmin(String),
 }
 
 impl IntoResponse for SessionIdentityError {
@@ -179,6 +193,9 @@ impl IntoResponse for SessionIdentityError {
         match self {
             SIE::NoSession(_orig_uri) => {
                 tracing::debug!("request had no session when trying to access protected path");
+            }
+            SIE::NotAdmin(user) => {
+                tracing::warn!("user not an admin {user}");
             }
             err => tracing::warn!("session validation error: {err}"),
         }
