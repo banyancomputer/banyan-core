@@ -30,19 +30,26 @@ pub async fn creation_handler(
 
     let period_start = stripe_invoice.period_start.ok_or(StripeWebhookError::missing_data("invoice_create/period_start"))?;
     let billing_start = OffsetDateTime::from_unix_timestamp(period_start).map_err(|_| StripeWebhookError::invalid_data("invoice_create/billing_start"))?;
+
     let period_end = stripe_invoice.period_end.ok_or(StripeWebhookError::missing_data("invoice_create/period_end"))?;
     let billing_end = OffsetDateTime::from_unix_timestamp(period_end).map_err(|_| StripeWebhookError::invalid_data("invoice_create/billing_end"))?;
 
-    let stripe_metadata = stripe_invoice
+    let stripe_sub_det = stripe_invoice
+        .subscription_details
+        .as_ref()
+        .ok_or(StripeWebhookError::missing_data("invoice_create/sub_det"))?;
+
+    let stripe_sub_metadata = stripe_sub_det
         .metadata
         .as_ref()
-        .ok_or(StripeWebhookError::missing_data("invoice_create/meta"))?;
-    let m_user_id = stripe_metadata
+        .ok_or(StripeWebhookError::missing_data("invoice_create/sub_det/meta"))?;
+
+    let m_user_id = stripe_sub_metadata
         .get(METADATA_USER_KEY)
-        .ok_or(StripeWebhookError::missing_data("invoice_create/meta/db_user_id"))?;
-    let m_subscription_id = stripe_metadata
+        .ok_or(StripeWebhookError::missing_data("invoice_create/sub_det/meta/db_user_id"))?;
+    let m_subscription_id = stripe_sub_metadata
         .get(METADATA_SUBSCRIPTION_KEY)
-        .ok_or(StripeWebhookError::missing_data("invoice_create/meta/db_subscription_id"))?;
+        .ok_or(StripeWebhookError::missing_data("invoice_create/sub_det/meta/db_subscription_id"))?;
 
     NewInvoice {
         user_id: &m_user_id,
