@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE users SET accepted_tos_at = $1 AND account_tax_class = $2 WHERE id = $3 AND (accepted_tos_at != $1 OR account_tax_class != $2);",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "8e1b91bca0f97a4831560fc957e2c38f76f4df6bad7841f8e1d15b46d956a04d"
+}

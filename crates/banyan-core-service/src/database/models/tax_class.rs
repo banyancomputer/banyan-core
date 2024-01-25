@@ -14,6 +14,7 @@ pub enum TaxClass {
     Business,
     NotApplicable,
     Personal,
+    Unspecified,
 }
 
 impl TaxClass {
@@ -26,7 +27,7 @@ impl TaxClass {
             TaxClass::Personal => {
                 Some(TaxCodeId::from_str(TAX_CODE_PERSONAL).expect("fixed code to be valid"))
             }
-            TaxClass::NotApplicable => None,
+            TaxClass::NotApplicable | TaxClass::Unspecified => None,
             TaxClass::Business => {
                 Some(TaxCodeId::from_str(TAX_CODE_BUSINESS).expect("fixed code to be valid"))
             }
@@ -40,6 +41,7 @@ impl Display for TaxClass {
             TaxClass::Business => f.write_str("business"),
             TaxClass::NotApplicable => f.write_str("not_applicable"),
             TaxClass::Personal => f.write_str("personal"),
+            TaxClass::Unspecified => f.write_str("unspecified"),
         }
     }
 }
@@ -52,6 +54,7 @@ impl TryFrom<&str> for TaxClass {
             "business" => TaxClass::Business,
             "not_applicable" => TaxClass::NotApplicable,
             "personal" => TaxClass::Personal,
+            "unspecified" => TaxClass::Unspecified,
             _ => return Err(TaxClassError::InvalidValue),
         };
 

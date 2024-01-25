@@ -42,6 +42,7 @@ INSERT INTO subscriptions (
     included_hot_storage, included_bandwidth
   ) VALUES ('starter', 'not_applicable', 'Starter Plan', true, 20, 10, 20, 10);
 
+ALTER TABLE users ADD COLUMN account_tax_class TEXT NOT NULL DEFAULT 'unspecified';
 ALTER TABLE users ADD COLUMN stripe_customer_id TEXT;
 
 ALTER TABLE users ADD COLUMN stripe_subscription_id TEXT;

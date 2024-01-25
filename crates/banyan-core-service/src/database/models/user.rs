@@ -1,7 +1,7 @@
 use serde::Serialize;
 use time::OffsetDateTime;
 
-use crate::database::models::{ExplicitBigInt, SubscriptionStatus};
+use crate::database::models::{ExplicitBigInt, SubscriptionStatus, TaxClass};
 use crate::database::DatabaseConnection;
 
 #[derive(Debug, Serialize, sqlx::FromRow)]
@@ -15,6 +15,7 @@ pub struct User {
     pub created_at: OffsetDateTime,
     pub accepted_tos_at: Option<OffsetDateTime>,
 
+    pub account_tax_class: TaxClass,
     pub stripe_customer_id: Option<String>,
 
     pub stripe_subscription_id: Option<String>,
@@ -28,8 +29,8 @@ impl User {
         sqlx::query_as!(
             User,
             r#"SELECT id, email, verified_email, display_name, locale, profile_image, created_at,
-                   accepted_tos_at, stripe_customer_id, stripe_subscription_id,
-                   subscription_id as 'subscription_id!',
+                   accepted_tos_at, account_tax_class as 'account_tax_class: TaxClass',
+                   stripe_customer_id, stripe_subscription_id, subscription_id as 'subscription_id!',
                    subscription_status as 'subscription_status: SubscriptionStatus',
                    subscription_valid_until FROM users
                  WHERE id = $1;"#,
@@ -77,8 +78,8 @@ impl User {
         sqlx::query_as!(
             User,
             r#"SELECT id, email, verified_email, display_name, locale, profile_image, created_at,
-                   accepted_tos_at, stripe_customer_id, stripe_subscription_id,
-                   subscription_id as 'subscription_id!',
+                   accepted_tos_at, account_tax_class as 'account_tax_class: TaxClass',
+                   stripe_customer_id, stripe_subscription_id, subscription_id as 'subscription_id!',
                    subscription_status as 'subscription_status: SubscriptionStatus',
                    subscription_valid_until FROM users
                  WHERE id = $1;"#,
@@ -95,8 +96,8 @@ impl User {
         sqlx::query_as!(
             User,
             r#"SELECT id, email, verified_email, display_name, locale, profile_image, created_at,
-                   accepted_tos_at, stripe_customer_id, stripe_subscription_id,
-                   subscription_id as 'subscription_id!',
+                   accepted_tos_at, account_tax_class as 'account_tax_class: TaxClass',
+                   stripe_customer_id, stripe_subscription_id, subscription_id as 'subscription_id!',
                    subscription_status as 'subscription_status: SubscriptionStatus',
                    subscription_valid_until FROM users
                  WHERE stripe_customer_id = $1;"#,

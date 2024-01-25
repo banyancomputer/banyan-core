@@ -21,8 +21,6 @@ pub async fn handler(
     let database = state.database();
     let mut conn = database.begin().await?;
 
-    tracing::info!("stripe_event:{event:?}");
-
     match (event.type_, &event.data.object) {
         (ET::ChargeSucceeded, EO::Charge(_)) => (),
 
