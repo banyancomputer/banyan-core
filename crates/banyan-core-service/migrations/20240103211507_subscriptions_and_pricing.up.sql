@@ -126,7 +126,6 @@ CREATE TABLE invoices (
   status TEXT NOT NULL,
 
   stripe_payment_intent_id TEXT NOT NULL,
-  stripe_payment_intent_status TEXT,
 
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP

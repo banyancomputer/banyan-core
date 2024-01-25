@@ -12,8 +12,6 @@ pub async fn handler(
     let _metadata = session.metadata.as_ref().ok_or(StripeWebhookError::MissingData)?;
 
     // we should receive an invoice with a payment_status of Paid
-
-
     // get subscription.id for stripe_subscription_id
 
     Ok(())

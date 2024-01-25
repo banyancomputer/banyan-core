@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, user_id, session_id, stripe_checkout_session_id, status as 'status: StripeCheckoutSessionStatus',\n                   created_at FROM stripe_checkout_sessions\n                 WHERE stripe_checkout_session_id = $1;",
+  "query": "SELECT id, user_id, session_id, stripe_checkout_session_id, status as 'status: StripeCheckoutSessionStatus',\n                   created_at FROM stripe_checkout_sessions\n                 WHERE user_id = $1 AND stripe_checkout_session_id = $2;",
   "describe": {
     "columns": [
       {
@@ -35,7 +35,7 @@
       }
     ],
     "parameters": {
-      "Right": 1
+      "Right": 2
     },
     "nullable": [
       false,
@@ -46,5 +46,5 @@
       false
     ]
   },
-  "hash": "1051239d0c106ac98cb091b9d09e3f99a98bf4f7b9046fb48f4cff8721fb606e"
+  "hash": "c39ce2224b02d8910a4bc2b881961ee39993b781ee251b1ffcdb0b55d4e0e9a6"
 }

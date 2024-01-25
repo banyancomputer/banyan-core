@@ -1,6 +1,6 @@
 use time::OffsetDateTime;
 
-use crate::database::models::{InvoiceStatus, PriceUnits, StripePaymentIntentStatus};
+use crate::database::models::{InvoiceStatus, PriceUnits};
 use crate::database::DatabaseConnection;
 
 pub struct NewInvoice<'a> {
@@ -63,23 +63,6 @@ pub struct Invoice {
 }
 
 impl Invoice {
-    pub async fn from_payment_intent_id(
-        conn: &mut DatabaseConnection,
-        stripe_payment_intent_id: &str,
-    ) -> Result<Option<Self>, sqlx::Error> {
-        sqlx::query_as!(
-            Self,
-            r#"SELECT id, billing_start, billing_end, subscription_id,
-                   total_amount as 'total_amount: PriceUnits', status as 'status: InvoiceStatus',
-                   created_at, updated_at
-                 FROM invoices
-                 WHERE stripe_payment_intent_id = $1;"#,
-            stripe_payment_intent_id,
-        )
-        .fetch_optional(&mut *conn)
-        .await
-    }
-
     pub async fn from_stripe_invoice_id(
         conn: &mut DatabaseConnection,
         stripe_invoice_id: &str,
@@ -95,22 +78,6 @@ impl Invoice {
         )
         .fetch_optional(&mut *conn)
         .await
-    }
-
-    pub async fn update_intent_status(
-        &mut self,
-        conn: &mut DatabaseConnection,
-        status: StripePaymentIntentStatus,
-    ) -> Result<(), sqlx::Error> {
-        sqlx::query!(
-            "UPDATE invoices SET stripe_payment_intent_status = $1 WHERE id = $2;",
-            status,
-            self.id,
-        )
-        .execute(&mut *conn)
-        .await?;
-
-        Ok(())
     }
 
     pub async fn update_status(

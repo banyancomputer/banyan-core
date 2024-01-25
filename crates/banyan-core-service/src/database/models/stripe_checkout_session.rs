@@ -66,7 +66,8 @@ impl StripeCheckoutSession {
             StripeCheckoutSession,
             r#"SELECT id, user_id, session_id, stripe_checkout_session_id, status as 'status: StripeCheckoutSessionStatus',
                    created_at FROM stripe_checkout_sessions
-                 WHERE stripe_checkout_session_id = $1;"#,
+                 WHERE user_id = $1 AND stripe_checkout_session_id = $2;"#,
+            user_id,
             id,
         )
         .fetch_optional(&mut *conn)

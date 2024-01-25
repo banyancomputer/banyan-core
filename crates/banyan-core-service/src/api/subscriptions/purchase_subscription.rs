@@ -4,7 +4,7 @@ use axum::response::{IntoResponse, Response};
 use uuid::Uuid;
 
 use crate::app::{AppState, StripeHelperError};
-use crate::database::models::{Subscription, User};
+use crate::database::models::{NewStripeCheckoutSession, Subscription, User};
 use crate::extractors::{ServerBase, UserIdentity};
 
 pub async fn handler(
@@ -64,6 +64,17 @@ pub async fn handler(
         .checkout(&host_url, &mut current_user, &mut requested_subscription)
         .await
         .map_err(PurchaseSubscriptionError::StripeSetupError)?;
+
+    let mut conn = database.acquire().await?;
+    let session_id = session.session_id().to_string();
+
+    NewStripeCheckoutSession {
+        user_id: &user_id,
+        session_id: &session_id,
+        stripe_checkout_session_id: &checkout_session.id,
+    }
+    .save(&mut *conn)
+    .await?;
 
     let msg = serde_json::json!({"checkout_url": checkout_session.url});
     Ok((StatusCode::OK, Json(msg)).into_response())
