@@ -27,7 +27,7 @@ pub async fn handler(
         (ET::PaymentMethodAttached, EO::PaymentMethod(_)) => (),
 
         // We track the status of the subscription invoices not individual payments
-        (ET::ChargeSucceeded, EO::Charge(_)) => (),
+        (ET::ChargeSucceeded, EO::Charge(_)) => (), // this one fails to decode, expect errors
         (ET::PaymentIntentSucceeded, EO::PaymentIntent(_)) => (),
         (ET::PaymentIntentCreated, EO::PaymentIntent(_)) => (),
 
