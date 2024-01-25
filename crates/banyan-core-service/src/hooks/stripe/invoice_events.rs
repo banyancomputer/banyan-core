@@ -1,56 +1,64 @@
+use time::OffsetDateTime;
+
+use crate::app::stripe_helper::{METADATA_SUBSCRIPTION_KEY, METADATA_USER_KEY};
 use crate::database::models::{Invoice, InvoiceStatus, NewInvoice, PriceUnits};
 use crate::database::DatabaseConnection;
 use crate::hooks::stripe::StripeWebhookError;
 
 pub async fn creation_handler(
-    _conn: &mut DatabaseConnection,
-    invoice: &stripe::Invoice,
+    conn: &mut DatabaseConnection,
+    stripe_invoice: &stripe::Invoice,
 ) -> Result<(), StripeWebhookError> {
-    let customer = invoice
+    let stripe_invoice_id = stripe_invoice.id.to_string();
+    let stripe_customer_id = stripe_invoice
         .customer
-        .clone()
-        .ok_or(StripeWebhookError::MissingData)?;
-    let _customer_id = customer.id().to_string();
+        .as_ref()
+        .ok_or(StripeWebhookError::MissingData)?
+        .id()
+        .to_string();
 
-    tracing::info!("new invoice creation event: {invoice:?}");
-
-    //let user_id = sqlx::query_scalar!(
-    //    "SELECT id FROM users WHERE stripe_customer_id = $1;",
-    //    customer_id,
-    //)
-    //.fetch_optional(&mut *conn)
-    //.await?
-    //.ok_or(StripeWebhookError::MissingTarget)?;
-
-    let _stripe_invoice_id = invoice.id.to_string();
-    let _total_amount = invoice
+    let total_amount = stripe_invoice
         .amount_due
         .map(PriceUnits::from_cents)
         .ok_or(StripeWebhookError::MissingData)?;
 
-    //let invoice_status = invoice
-    //    .status
-    //    .map(InvoiceStatus::from)
-    //    .ok_or(StripeWebhookError::MissingData)?;
+    let invoice_status = stripe_invoice
+        .status
+        .map(InvoiceStatus::from)
+        .ok_or(StripeWebhookError::MissingData)?;
 
-    //NewInvoice {
-    //    user_id: &user_id,
+    let period_start = stripe_invoice.period_start.ok_or(StripeWebhookError::MissingData)?;
+    let billing_start = OffsetDateTime::from_unix_timestamp(period_start).map_err(|_| StripeWebhookError::InvalidData)?;
+    let period_end = stripe_invoice.period_end.ok_or(StripeWebhookError::MissingData)?;
+    let billing_end = OffsetDateTime::from_unix_timestamp(period_end).map_err(|_| StripeWebhookError::InvalidData)?;
 
-    //    stripe_customer_id: &customer_id,
-    //    stripe_invoice_id: &stripe_invoice_id,
+    let stripe_metadata = stripe_invoice
+        .metadata
+        .as_ref()
+        .ok_or(StripeWebhookError::MissingData)?;
+    let m_user_id = stripe_metadata
+        .get(METADATA_USER_KEY)
+        .ok_or(StripeWebhookError::MissingData)?;
+    let m_subscription_id = stripe_metadata
+        .get(METADATA_SUBSCRIPTION_KEY)
+        .ok_or(StripeWebhookError::MissingData)?;
 
-    //    billing_start: &billing_start,
-    //    billing_end: &billing_end,
+    NewInvoice {
+        user_id: &m_user_id,
 
-    //    subscription_id: &subscription_id,
+        stripe_invoice_id: &stripe_invoice_id,
+        stripe_customer_id: &stripe_customer_id,
 
-    //    total_amount: invoice_amt,
-    //    status: invoice_status,
+        billing_start: &billing_start,
+        billing_end: &billing_end,
 
-    //    stripe_payment_intent_id: &invoice_id,
-    //}
-    //.save(&mut *conn)
-    //.await?;
+        subscription_id: &m_subscription_id,
+
+        total_amount,
+        status: invoice_status,
+    }
+    .save(&mut *conn)
+    .await?;
 
     Ok(())
 }

@@ -55,7 +55,9 @@ pub async fn handler(
         (ET::InvoiceCreated, EO::Invoice(inv)) => {
             invoice_events::creation_handler(&mut conn, inv).await?
         }
-        (ET::InvoiceUpcoming, EO::Invoice(_)) => (),
+        (ET::InvoiceUpcoming, EO::Invoice(inv)) => {
+            invoice_events::creation_handler(&mut conn, inv).await?
+        }
 
         (ET::InvoiceFinalizationFailed, EO::Invoice(inv)) => {
             invoice_events::update_handler(&mut conn, inv).await?
@@ -101,6 +103,9 @@ pub enum StripeWebhookError {
     #[error("database query failures: {0}")]
     DatabaseFailure(#[from] sqlx::Error),
 
+    #[error("stripe webhook payload was contained invalid data")]
+    InvalidData,
+
     #[error("stripe webhook payload was missing required data")]
     MissingData,
 
@@ -111,7 +116,7 @@ pub enum StripeWebhookError {
 impl IntoResponse for StripeWebhookError {
     fn into_response(self) -> Response {
         match &self {
-            StripeWebhookError::MissingData => {
+            StripeWebhookError::MissingData | StripeWebhookError::InvalidData => {
                 let err_msg = serde_json::json!({"msg": "missing expected data"});
                 (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
             }

@@ -16,8 +16,6 @@ pub struct NewInvoice<'a> {
 
     pub total_amount: PriceUnits,
     pub status: InvoiceStatus,
-
-    pub stripe_payment_intent_id: &'a str,
 }
 
 impl<'a> NewInvoice<'a> {
@@ -26,9 +24,8 @@ impl<'a> NewInvoice<'a> {
 
         sqlx::query_scalar!(
             r#"INSERT INTO invoices (user_id, stripe_customer_id, stripe_invoice_id, billing_start,
-                   billing_end, subscription_id, total_amount, status, stripe_payment_intent_id,
-                   created_at, updated_at)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $10)
+                   billing_end, subscription_id, total_amount, status, created_at, updated_at)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $9)
                  RETURNING id;"#,
             self.user_id,
             self.stripe_customer_id,
@@ -38,7 +35,6 @@ impl<'a> NewInvoice<'a> {
             self.subscription_id,
             self.total_amount,
             self.status,
-            self.stripe_payment_intent_id,
             now,
         )
         .fetch_one(&mut *conn)
