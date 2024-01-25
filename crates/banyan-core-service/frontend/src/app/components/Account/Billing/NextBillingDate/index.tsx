@@ -5,6 +5,7 @@ import { useAppDispatch, useAppSelector } from '@/app/store';
 import { getSubscriptions } from '@/app/store/billing/actions';
 import { useModal } from '@/app/contexts/modals';
 import { SubscriptionPlanModal } from '@/app/components/common/Modal/SubscriptionPlanModal';
+import { convertSubscriptionsSizes } from '@/app/utils/storage';
 
 export const NextBillingDate = () => {
     const dispatch = useAppDispatch();
@@ -33,7 +34,7 @@ export const NextBillingDate = () => {
             <h3 className="text-text-800 text-[18px] font-semibold">Next Billing Date</h3>
             <div className="flex justify-between items-center">
                 <div>{`${messages.onDemandStorage}`}</div>
-                <div className="text-text-800">{getHotStorageAmount() || 0} TB</div>
+                <div className="text-text-800">{convertSubscriptionsSizes(getHotStorageAmount() || 0)}</div>
             </div>
             {/* <div className="flex justify-between items-center">
                 <div className="text-text-800">{`${messages.archivalStorage}`}</div>
@@ -41,7 +42,7 @@ export const NextBillingDate = () => {
             </div> */}
             <div className="flex justify-between items-center">
                 <div>{`${messages.dataEgress}`}</div>
-                <div className="text-text-800">{selectedSubscription?.features?.included_bandwidth} TB</div>
+                <div className="text-text-800">{convertSubscriptionsSizes(selectedSubscription?.features?.included_bandwidth || 0)}</div>
             </div>
             <div className="flex justify-between items-center">
                 <div>{`${messages.totalCost}`}</div>
