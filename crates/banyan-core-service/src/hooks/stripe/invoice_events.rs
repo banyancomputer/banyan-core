@@ -23,7 +23,10 @@ pub async fn creation_handler(
     //.ok_or(StripeWebhookError::MissingTarget)?;
 
     let _stripe_invoice_id = invoice.id.to_string();
-    let _total_amount = invoice.amount_due.map(PriceUnits::from_cents).ok_or(StripeWebhookError::MissingData)?;
+    let _total_amount = invoice
+        .amount_due
+        .map(PriceUnits::from_cents)
+        .ok_or(StripeWebhookError::MissingData)?;
 
     //let invoice_status = invoice
     //    .status

@@ -11,17 +11,19 @@ pub async fn handler(
 ) -> Result<(), StripeWebhookError> {
     let _stripe_customer_id = stripe_subscription.customer.id().to_string();
 
-    let meta_user_id = stripe_subscription.metadata
+    let meta_user_id = stripe_subscription
+        .metadata
         .get(METADATA_USER_KEY)
         .ok_or(StripeWebhookError::MissingData)?;
-    let _user = User::find_by_id(&mut *conn, &meta_user_id)
+    let _user = User::find_by_id(&mut *conn, meta_user_id)
         .await?
         .ok_or(StripeWebhookError::MissingTarget)?;
 
-    let meta_subscription_id = stripe_subscription.metadata
+    let meta_subscription_id = stripe_subscription
+        .metadata
         .get(METADATA_SUBSCRIPTION_KEY)
         .ok_or(StripeWebhookError::MissingData)?;
-    let _subscription = Subscription::find_by_id(&mut *conn, &meta_subscription_id)
+    let _subscription = Subscription::find_by_id(&mut *conn, meta_subscription_id)
         .await?
         .ok_or(StripeWebhookError::MissingTarget)?;
 

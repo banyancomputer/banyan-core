@@ -5,7 +5,7 @@ use serde::Deserialize;
 use time::OffsetDateTime;
 
 use crate::app::AppState;
-use crate::database::models::{User, TaxClass};
+use crate::database::models::{TaxClass, User};
 use crate::extractors::UserIdentity;
 
 pub async fn handler(
@@ -17,13 +17,18 @@ pub async fn handler(
     let mut conn = database.begin().await?;
 
     let user_id = user_identity.id().to_string();
-    let user: User = User::find_by_id(&mut *conn, &user_id).await?.ok_or(UpdateUserError::NotFound)?;
+    let user: User = User::find_by_id(&mut *conn, &user_id)
+        .await?
+        .ok_or(UpdateUserError::NotFound)?;
 
     // If these aren't provided use our existing values for the user
-    let account_tax_class = update_request.account_tax_class.unwrap_or(user.account_tax_class);
+    let account_tax_class = update_request
+        .account_tax_class
+        .unwrap_or(user.account_tax_class);
     let accepted_tos_at = match update_request.accepted_tos_at {
         Some(tos) => {
-            let tos = OffsetDateTime::from_unix_timestamp(tos).map_err(|_| UpdateUserError::InvalidTimestamp)?;
+            let tos = OffsetDateTime::from_unix_timestamp(tos)
+                .map_err(|_| UpdateUserError::InvalidTimestamp)?;
 
             // Going backwards on this value is an error
             if let Some(existing_tos) = user.accepted_tos_at {
@@ -63,7 +68,9 @@ pub enum UpdateUserError {
     #[error("database query failed: {0}")]
     DatabaseFailure(#[from] sqlx::Error),
 
-    #[error("acceptance of terms of service can not be reverted and must be a valid unix timestamp")]
+    #[error(
+        "acceptance of terms of service can not be reverted and must be a valid unix timestamp"
+    )]
     InvalidTimestamp,
 
     #[error("user does not exist")]
