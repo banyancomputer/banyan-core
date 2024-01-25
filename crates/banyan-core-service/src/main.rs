@@ -17,6 +17,8 @@ mod pricing;
 mod tasks;
 mod utils;
 
+pub const GIBIBYTE: i64 = 1 * 1024 * 1024 * 1024;
+
 use app::Config;
 
 #[tokio::main]

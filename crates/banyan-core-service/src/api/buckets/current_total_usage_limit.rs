@@ -4,11 +4,10 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 use serde::Serialize;
 
+use crate::GIBIBYTE;
 use crate::app::AppState;
 use crate::database::models::{User, Subscription};
 use crate::extractors::UserIdentity;
-
-const GIBIBYTE: i64 = 1 * 1024 * 1024 * 1024;
 
 pub async fn handler(
     user_id: UserIdentity,

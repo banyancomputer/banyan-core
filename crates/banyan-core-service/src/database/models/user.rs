@@ -52,8 +52,8 @@ impl User {
     /// better accounting on older metadata versions that no longer have all their associated
     /// blocks.
     pub async fn consumed_storage(
+        &self,
         conn: &mut DatabaseConnection,
-        user_id: &str,
     ) -> Result<i64, sqlx::Error> {
         let ex_size = sqlx::query_as!(
             ExplicitBigInt,
@@ -63,7 +63,7 @@ impl User {
                  FROM metadata m
                  INNER JOIN buckets b ON b.id = m.bucket_id
                  WHERE b.user_id = $1 AND m.state IN ('current', 'outdated', 'pending');"#,
-            user_id,
+            self.id,
         )
         .fetch_one(&mut *conn)
         .await?;
