@@ -24,7 +24,7 @@
 	"lastEdited": "上次编辑",
 	"fileSize": "文件大小",
 	"files": "文件",
-  "allFiles": "所有文件",
+  	"allFiles": "所有文件",
 	"file": "文件",
 	"deleteDrive": "删除驱动器",
 	"delete": "删除",
@@ -204,5 +204,6 @@
 	"invoice": "发票",
 	"summary": "摘要",
 	"items": "项目",
-	"payment": "支付"
+	"payment": "支付",
+	"manageSubscriptions": "管理订阅"
 }

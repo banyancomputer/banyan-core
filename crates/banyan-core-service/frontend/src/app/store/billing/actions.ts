@@ -27,3 +27,8 @@ export const subscribe = createAsyncThunk(
     'subscribe',
     async (id: string) => client.subscribe(id)
 );
+
+export const manageSubscriptions = createAsyncThunk(
+    'manageSubscriptions',
+    async () => client.manage()
+);

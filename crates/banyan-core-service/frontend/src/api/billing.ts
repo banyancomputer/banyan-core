@@ -51,4 +51,14 @@ export class BillingClient extends APIClient {
 
         return await response.json();
     };
+
+    public async manage(): Promise<{portal_url: string}> {
+        const response = await this.http.get(`${this.ROOT_PATH}/api/v1/subscriptions/manage`);
+
+        if (!response.ok) {
+            await this.handleError(response);
+        }
+
+        return await response.json();
+    };
 }
