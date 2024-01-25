@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, billing_start, billing_end, subscription_id,\n               total_amount as 'total_amount: PriceUnits', status as 'status: InvoiceStatus',\n               created_at, updated_at\n             FROM invoices\n             WHERE user_id = $1\n             ORDER BY created_at DESC;",
+  "query": "SELECT id, user_id, billing_start, billing_end, subscription_id,\n               total_amount as 'total_amount: PriceUnits', status as 'status: InvoiceStatus',\n               created_at, updated_at\n             FROM invoices\n             WHERE user_id = $1\n             ORDER BY created_at DESC;",
   "describe": {
     "columns": [
       {
@@ -9,38 +9,43 @@
         "type_info": "Text"
       },
       {
-        "name": "billing_start",
+        "name": "user_id",
         "ordinal": 1,
-        "type_info": "Datetime"
+        "type_info": "Text"
       },
       {
-        "name": "billing_end",
+        "name": "billing_start",
         "ordinal": 2,
         "type_info": "Datetime"
       },
       {
-        "name": "subscription_id",
+        "name": "billing_end",
         "ordinal": 3,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "subscription_id",
+        "ordinal": 4,
         "type_info": "Text"
       },
       {
         "name": "total_amount: PriceUnits",
-        "ordinal": 4,
+        "ordinal": 5,
         "type_info": "Int64"
       },
       {
         "name": "status: InvoiceStatus",
-        "ordinal": 5,
+        "ordinal": 6,
         "type_info": "Text"
       },
       {
         "name": "created_at",
-        "ordinal": 6,
+        "ordinal": 7,
         "type_info": "Datetime"
       },
       {
         "name": "updated_at",
-        "ordinal": 7,
+        "ordinal": 8,
         "type_info": "Datetime"
       }
     ],
@@ -55,8 +60,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "0c8176a0170c9cf27e7b33e9b9ff0749b9ffdbfa86a0fcd7d8a710fe785059ce"
+  "hash": "cfd4341ec5d98b52e2237ef68f3197debd27468838f8a98b9d58250db17437d2"
 }

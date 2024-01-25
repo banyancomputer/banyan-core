@@ -103,24 +103,40 @@ pub enum StripeWebhookError {
     #[error("database query failures: {0}")]
     DatabaseFailure(#[from] sqlx::Error),
 
-    #[error("stripe webhook payload was contained invalid data")]
-    InvalidData,
+    #[error("stripe webhook payload was contained invalid data: {0}")]
+    InvalidData(String),
 
-    #[error("stripe webhook payload was missing required data")]
-    MissingData,
+    #[error("stripe webhook payload was missing required data: {0}")]
+    MissingData(String),
 
-    #[error("unable to locate associated data with webhook")]
-    MissingTarget,
+    #[error("unable to locate associated data with webhook: {0}")]
+    MissingTarget(String),
+}
+
+impl StripeWebhookError {
+    pub fn invalid_data(val: &str) -> Self {
+        StripeWebhookError::InvalidData(val.to_string())
+    }
+
+    pub fn missing_data(val: &str) -> Self {
+        StripeWebhookError::MissingData(val.to_string())
+    }
+
+    pub fn missing_target(val: &str) -> Self {
+        StripeWebhookError::MissingTarget(val.to_string())
+    }
 }
 
 impl IntoResponse for StripeWebhookError {
     fn into_response(self) -> Response {
         match &self {
-            StripeWebhookError::MissingData | StripeWebhookError::InvalidData => {
+            StripeWebhookError::MissingData(_) | StripeWebhookError::InvalidData(_) => {
+                tracing::error!("{self}");
                 let err_msg = serde_json::json!({"msg": "missing expected data"});
                 (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
             }
-            StripeWebhookError::MissingTarget => {
+            StripeWebhookError::MissingTarget(_) => {
+                tracing::error!("{self}");
                 let err_msg = serde_json::json!({"msg": "not found"});
                 (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
             }

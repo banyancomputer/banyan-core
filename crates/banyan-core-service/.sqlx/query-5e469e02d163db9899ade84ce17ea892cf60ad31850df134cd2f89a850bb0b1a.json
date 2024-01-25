@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, billing_start, billing_end, subscription_id,\n               total_amount as 'total_amount: PriceUnits', status as 'status: InvoiceStatus',\n               created_at, updated_at\n             FROM invoices\n             WHERE id = $1 AND user_id = $2;",
+  "query": "SELECT id, user_id, billing_start, billing_end, subscription_id,\n                   total_amount as 'total_amount: PriceUnits', status as 'status: InvoiceStatus',\n                   created_at, updated_at\n                 FROM invoices\n                 WHERE stripe_invoice_id = $1;",
   "describe": {
     "columns": [
       {
@@ -9,45 +9,51 @@
         "type_info": "Text"
       },
       {
-        "name": "billing_start",
+        "name": "user_id",
         "ordinal": 1,
-        "type_info": "Datetime"
+        "type_info": "Text"
       },
       {
-        "name": "billing_end",
+        "name": "billing_start",
         "ordinal": 2,
         "type_info": "Datetime"
       },
       {
-        "name": "subscription_id",
+        "name": "billing_end",
         "ordinal": 3,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "subscription_id",
+        "ordinal": 4,
         "type_info": "Text"
       },
       {
         "name": "total_amount: PriceUnits",
-        "ordinal": 4,
+        "ordinal": 5,
         "type_info": "Int64"
       },
       {
         "name": "status: InvoiceStatus",
-        "ordinal": 5,
+        "ordinal": 6,
         "type_info": "Text"
       },
       {
         "name": "created_at",
-        "ordinal": 6,
+        "ordinal": 7,
         "type_info": "Datetime"
       },
       {
         "name": "updated_at",
-        "ordinal": 7,
+        "ordinal": 8,
         "type_info": "Datetime"
       }
     ],
     "parameters": {
-      "Right": 2
+      "Right": 1
     },
     "nullable": [
+      false,
       false,
       false,
       false,
@@ -58,5 +64,5 @@
       false
     ]
   },
-  "hash": "7e7106d23efaabcb75194c4ffd06967ca368b787a44a6f5ffb69c7807a003215"
+  "hash": "5e469e02d163db9899ade84ce17ea892cf60ad31850df134cd2f89a850bb0b1a"
 }

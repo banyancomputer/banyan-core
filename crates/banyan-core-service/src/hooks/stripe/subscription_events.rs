@@ -14,23 +14,23 @@ pub async fn handler(
     let meta_user_id = stripe_subscription
         .metadata
         .get(METADATA_USER_KEY)
-        .ok_or(StripeWebhookError::MissingData)?;
+        .ok_or(StripeWebhookError::missing_data("subscription/meta/db_user_id"))?;
     let _user = User::find_by_id(&mut *conn, meta_user_id)
         .await?
-        .ok_or(StripeWebhookError::MissingTarget)?;
+        .ok_or(StripeWebhookError::missing_target("db_user"))?;
 
     let meta_subscription_id = stripe_subscription
         .metadata
         .get(METADATA_SUBSCRIPTION_KEY)
-        .ok_or(StripeWebhookError::MissingData)?;
+        .ok_or(StripeWebhookError::missing_data("subscription/meta/db_subscription_id"))?;
     let _subscription = Subscription::find_by_id(&mut *conn, meta_subscription_id)
         .await?
-        .ok_or(StripeWebhookError::MissingTarget)?;
+        .ok_or(StripeWebhookError::missing_target("db_subscription"))?;
 
     let _stripe_subscription_id = stripe_subscription.id.to_string();
     let _new_subscription_status = SubscriptionStatus::from(stripe_subscription.status);
     let _valid_until = OffsetDateTime::from_unix_timestamp(stripe_subscription.current_period_end)
-        .map_err(|_| StripeWebhookError::MissingData)?;
+        .map_err(|_| StripeWebhookError::invalid_data("subscription/valid_until"))?;
 
     //sqlx::query!(
     //    r#"UPDATE users

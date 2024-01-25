@@ -45,6 +45,7 @@ impl<'a> NewInvoice<'a> {
 #[derive(sqlx::FromRow)]
 pub struct Invoice {
     pub id: String,
+    pub user_id: String,
 
     pub billing_start: OffsetDateTime,
     pub billing_end: OffsetDateTime,
@@ -65,7 +66,7 @@ impl Invoice {
     ) -> Result<Option<Self>, sqlx::Error> {
         sqlx::query_as!(
             Self,
-            r#"SELECT id, billing_start, billing_end, subscription_id,
+            r#"SELECT id, user_id, billing_start, billing_end, subscription_id,
                    total_amount as 'total_amount: PriceUnits', status as 'status: InvoiceStatus',
                    created_at, updated_at
                  FROM invoices

@@ -14,43 +14,43 @@ pub async fn handler(
     let stripe_metadata = stripe_session
         .metadata
         .as_ref()
-        .ok_or(StripeWebhookError::MissingData)?;
+        .ok_or(StripeWebhookError::missing_data("session/meta"))?;
     let m_user_id = stripe_metadata
         .get(METADATA_USER_KEY)
-        .ok_or(StripeWebhookError::MissingData)?;
+        .ok_or(StripeWebhookError::missing_data("session/meta/db_user_id"))?;
 
     let mut checkout_session =
         StripeCheckoutSession::find_by_stripe_id(&mut *conn, &m_user_id, &stripe_session_str)
             .await?
-            .ok_or(StripeWebhookError::MissingTarget)?;
+            .ok_or(StripeWebhookError::missing_target("db_checkout_session"))?;
     checkout_session.complete(&mut *conn).await?;
 
     let user = User::find_by_id(&mut *conn, &checkout_session.user_id)
         .await?
-        .ok_or(StripeWebhookError::MissingTarget)?;
+        .ok_or(StripeWebhookError::missing_target("db_user"))?;
 
     let m_subscription_id = stripe_metadata
         .get(METADATA_SUBSCRIPTION_KEY)
-        .ok_or(StripeWebhookError::MissingData)?;
+        .ok_or(StripeWebhookError::missing_data("session/meta/db_subscription_id"))?;
     let subscription = Subscription::find_by_id(&mut *conn, &m_subscription_id)
         .await?
-        .ok_or(StripeWebhookError::MissingTarget)?;
+        .ok_or(StripeWebhookError::missing_target("db_subscription"))?;
 
     let stripe_subscription_id = stripe_session
         .subscription
         .as_ref()
-        .ok_or(StripeWebhookError::MissingData)?
+        .ok_or(StripeWebhookError::missing_data("session/subscription/id"))?
         .id()
         .to_string();
 
     let stripe_invoice_id = stripe_session
         .invoice
         .as_ref()
-        .ok_or(StripeWebhookError::MissingData)?
+        .ok_or(StripeWebhookError::missing_data("session/invoice/id"))?
         .id();
     let invoice = Invoice::from_stripe_invoice_id(&mut *conn, &stripe_invoice_id)
         .await?
-        .ok_or(StripeWebhookError::MissingTarget)?;
+        .ok_or(StripeWebhookError::missing_target("db/invoice"))?;
 
     sqlx::query!(
         r#"UPDATE users

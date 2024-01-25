@@ -17,7 +17,7 @@ pub async fn handler(
     let user_id = user_id.id().to_string();
     let invoices = sqlx::query_as!(
         Invoice,
-        r#"SELECT id, billing_start, billing_end, subscription_id,
+        r#"SELECT id, user_id, billing_start, billing_end, subscription_id,
                total_amount as 'total_amount: PriceUnits', status as 'status: InvoiceStatus',
                created_at, updated_at
              FROM invoices
