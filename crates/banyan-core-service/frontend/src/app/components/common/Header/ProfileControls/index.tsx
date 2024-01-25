@@ -3,18 +3,22 @@ import { useIntl } from 'react-intl';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { Action } from '@components/Bucket/BucketTable/FileActions';
+import { SubscriptionPlanModal } from '../../Modal/SubscriptionPlanModal';
+
 import { HttpClient } from '@/api/http/client';
 import { useKeystore } from '@app/contexts/keystore';
-
-import { LogoutAlternative, Settings } from '@static/images/common';
 import { useAppDispatch, useAppSelector } from '@/app/store';
 import { getSubscriptions } from '@/app/store/billing/actions';
 import { RoutesConfig } from '@/app/routes';
+import { useModal } from '@/app/contexts/modals';
+
+import { LogoutAlternative, Settings } from '@static/images/common';
 
 export const ProfileControls = () => {
     const navigate = useNavigate();
     const { messages } = useIntl();
     const { purgeKeystore } = useKeystore();
+    const { openModal } = useModal();
     const { displayName, email, profileImage } = useAppSelector(state => state.user);
     const { subscriptions } = useAppSelector(state => state.billing);
     const dispatch = useAppDispatch();
@@ -34,6 +38,10 @@ export const ProfileControls = () => {
         catch (err: any) {
             console.error('An Error occurred trying to logout: ', err.message);
         };
+    };
+
+    const upgragePlan = () => {
+        openModal(<SubscriptionPlanModal />);
     };
 
     const options = [
@@ -67,6 +75,7 @@ export const ProfileControls = () => {
                         {subscriptions.find(subscription => subscription.currently_active)?.title}
                     </span>
                     <Link
+                        onClick={upgragePlan}
                         to={RoutesConfig.Billing.fullPath}
                         className="font-semibold underline cursor-pointer"
                     >

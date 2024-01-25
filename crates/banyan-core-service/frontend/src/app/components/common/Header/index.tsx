@@ -4,6 +4,7 @@ import { useIntl } from 'react-intl';
 
 import { ProfileControls } from './ProfileControls';
 import { HelpControls } from './HelpControls';
+import { SubscriptionPlanModal } from '../Modal/SubscriptionPlanModal';
 
 import { useSession } from '@app/contexts/session';
 import { popupClickHandler } from '@/app/utils';
@@ -14,6 +15,7 @@ import { useAppDispatch } from '@/app/store';
 import { unwrapResult } from '@reduxjs/toolkit';
 import { getUserInfo } from '@/app/store/user/actions';
 import { RoutesConfig } from '@/app/routes';
+import { useModal } from '@/app/contexts/modals';
 
 import { Logo, Question } from '@static/images/common';
 
@@ -24,6 +26,8 @@ export const Header: React.FC<{ logo?: boolean, className?: string }> = ({ logo 
     const helpOptionsRef = useRef<HTMLDivElement | null>(null);
     const { purgeKeystore } = useKeystore();
     const location = useLocation();
+    const { openModal } = useModal();
+
     const { userData } = useSession();
     const [areProfileOptionsVisible, setAreProfileOptionsVisible] = useState(false);
     const [areHelpOptionsVisible, setAreHelpOptionsVisible] = useState(false);
@@ -34,6 +38,10 @@ export const Header: React.FC<{ logo?: boolean, className?: string }> = ({ logo 
 
     const toggleProfileOptionsVisibility = () => {
         setAreProfileOptionsVisible(prev => !prev);
+    };
+
+    const upgragePlan = () => {
+        openModal(<SubscriptionPlanModal />);
     };
 
     useEffect(() => {
@@ -81,6 +89,7 @@ export const Header: React.FC<{ logo?: boolean, className?: string }> = ({ logo 
                     }
                 </div>
                 <Link
+                    onClick={upgragePlan}
                     to={RoutesConfig.Billing.fullPath}
                     className="px-4 py-2 text-xs font-semibold rounded-md bg-text-200 text-button-primary cursor-pointer"
                 >
