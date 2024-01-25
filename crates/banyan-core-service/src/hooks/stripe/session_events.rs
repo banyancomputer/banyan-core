@@ -1,5 +1,7 @@
 use crate::app::stripe_helper::{METADATA_SUBSCRIPTION_KEY, METADATA_USER_KEY};
-use crate::database::models::{StripeCheckoutSession, Subscription, User};
+use crate::database::models::{
+    Invoice, StripeCheckoutSession, Subscription, SubscriptionStatus, User,
+};
 use crate::database::DatabaseConnection;
 use crate::hooks::stripe::StripeWebhookError;
 
@@ -23,29 +25,48 @@ pub async fn handler(
             .ok_or(StripeWebhookError::MissingTarget)?;
     checkout_session.complete(&mut *conn).await?;
 
+    let user = User::find_by_id(&mut *conn, &checkout_session.user_id)
+        .await?
+        .ok_or(StripeWebhookError::MissingTarget)?;
+
     let m_subscription_id = stripe_metadata
         .get(METADATA_SUBSCRIPTION_KEY)
         .ok_or(StripeWebhookError::MissingData)?;
+    let subscription = Subscription::find_by_id(&mut *conn, &m_subscription_id)
+        .await?
+        .ok_or(StripeWebhookError::MissingTarget)?;
 
-    let _stripe_subscription = stripe_session
+    let stripe_subscription_id = stripe_session
         .subscription
         .as_ref()
-        .ok_or(StripeWebhookError::MissingData)?;
-    let _stripe_invoice = stripe_session
+        .ok_or(StripeWebhookError::MissingData)?
+        .id()
+        .to_string();
+
+    let stripe_invoice_id = stripe_session
         .invoice
         .as_ref()
-        .ok_or(StripeWebhookError::MissingData)?;
-
-    let _user = User::find_by_id(&mut *conn, &checkout_session.user_id)
-        .await?
-        .ok_or(StripeWebhookError::MissingTarget)?;
-    let _subscription = Subscription::find_by_id(&mut *conn, &m_subscription_id)
+        .ok_or(StripeWebhookError::MissingData)?
+        .id();
+    let invoice = Invoice::from_stripe_invoice_id(&mut *conn, &stripe_invoice_id)
         .await?
         .ok_or(StripeWebhookError::MissingTarget)?;
 
-    // confirm invoice has a payment_status of Paid
-    // find or create then update invoice
-    // assign subscription, stripe subscription, and valid_until on the user
+    sqlx::query!(
+        r#"UPDATE users
+             SET stripe_subscription_id = $1,
+                 subscription_id = $2,
+                 subscription_status = $3,
+                 subscription_valid_until = $4
+             WHERE id = $5;"#,
+        stripe_subscription_id,
+        subscription.id,
+        SubscriptionStatus::Active,
+        invoice.billing_end,
+        user.id,
+    )
+    .execute(&mut *conn)
+    .await?;
 
     Ok(())
 }
