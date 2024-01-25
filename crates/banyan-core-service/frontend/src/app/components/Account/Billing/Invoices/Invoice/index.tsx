@@ -4,9 +4,10 @@ import { useIntl } from 'react-intl';
 import { Invoice } from '@/entities/billing';
 import { getDateLabel } from '@/app/utils/date';
 import { useAppDispatch, useAppSelector } from '@/app/store';
+import { convertSubscriptionsSizes } from '@/app/utils/storage';
+import { selectInvoice } from '@/app/store/billing/slice';
 
 import { Close } from '@/app/static/images/common';
-import { selectInvoice } from '@/app/store/billing/slice';
 
 export const InvoiceDetails: React.FC<{ invoice: Invoice }> = ({ invoice }) => {
   const { messages } = useIntl();
@@ -61,11 +62,11 @@ export const InvoiceDetails: React.FC<{ invoice: Invoice }> = ({ invoice }) => {
         <div className="py-2 px-4 flex flex-col gap-4">
           <div className="flex items-center justify-between w-full">
             <span className="font-medium">{`${messages.onDemandStorage}`}</span>
-            <span className="font-normal">{getHotStorageAmount()} TB</span>
+            <span className="font-normal">{convertSubscriptionsSizes(getHotStorageAmount())}</span>
           </div>
           <div className="flex items-center justify-between w-full">
             <span className="font-medium">{`${messages.dataEgress}`}</span>
-            <span className="font-normal">{selectedSubscription?.features.included_bandwidth} TB</span>
+            <span className="font-normal">{convertSubscriptionsSizes(selectedSubscription?.features.included_bandwidth || 0)}</span>
           </div>
         </div>
         <div className="px-4 py-2.5 bg-invoiceHeadingBackground text-text-600 font-medium">{`${messages.payment}`}</div>
