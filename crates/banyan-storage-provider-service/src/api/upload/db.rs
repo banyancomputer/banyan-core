@@ -1,4 +1,3 @@
-use std::borrow::BorrowMut;
 use std::str::FromStr;
 
 use banyan_task::TaskLikeExt;
@@ -18,7 +17,7 @@ pub async fn start_upload(
         id: String::new(),
         client_id: client_id.to_string(),
         metadata_id: metadata_id.to_string(),
-        base_path: format!("{metadata_id}"),
+        base_path: metadata_id.to_string(),
         reported_size: reported_size as i64,
         state: String::from("started"),
     };
@@ -187,6 +186,7 @@ pub async fn write_block_to_tables(
     .await?;
 
     // Create uploads_blocks row with the block information
+    // We omit car_offset because that's only for deprecated infra
     sqlx::query(
         r#"
         INSERT INTO
