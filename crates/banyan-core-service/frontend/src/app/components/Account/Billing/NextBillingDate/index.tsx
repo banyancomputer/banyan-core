@@ -54,7 +54,7 @@ export const NextBillingDate = () => {
             </div>
             <div className="flex justify-between items-center">
                 <div>{`${messages.totalCost}`}</div>
-                <div className="text-[20px] font-semibold text-text-900">${selectedSubscription?.pricing?.plan_base || 0}</div>
+                <div className="text-[20px] font-semibold text-text-900">${selectedSubscription?.pricing?.plan_base.toFixed(2) || 0}</div>
             </div>
             {selectedSubscription?.service_key === 'starter' ?
                 <button
