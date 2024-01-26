@@ -396,6 +396,16 @@ impl Bucket {
         // Check if this has an active snapshot associated with it and do some extra bookeeping for
         // the different paths.
         if let Some(new_current_id) = recent_snapshot_metadata_id {
+            // We can't fully delete the bucket since there are snapshots, mark it as cold and
+            // updated.
+            sqlx::query!(
+                "UPDATE buckets SET storage_class = 'cold', updated_at = $1 WHERE id = $2;",
+                now,
+                bucket_id,
+            )
+            .execute(&mut *conn)
+            .await?;
+
             // We can immediately mark it current if it isn't already and any existing current metadata
             // as outdated. We can't use [`Metadata::mark_current`] as that doesn't allow outdated
             // metadata to become current and we don't want to allow the normal intermediate steps to
@@ -446,17 +456,15 @@ impl Bucket {
             )
             .execute(&mut *conn)
             .await?;
-
-            // We can't fully delete the bucket since there are snapshots, mark it as cold and
-            // updated.
+        } else {
             sqlx::query!(
-                "UPDATE buckets SET storage_class = 'cold', updated_at = $1 WHERE id = $2;",
+                "UPDATE buckets SET deleted_at = $1, updated_at = $1 WHERE id = $2 AND deleted_at IS NULL;",
                 now,
                 bucket_id,
             )
             .execute(&mut *conn)
             .await?;
-        } else {
+
             // There aren't any relevant snapshots, delete all the bucket metadata and mark the
             // bucket as deleted.
             sqlx::query!(
@@ -465,14 +473,6 @@ impl Bucket {
                            updated_at = $1
                        WHERE bucket_id = $2
                            AND state IN ('current', 'outdated');"#,
-                now,
-                bucket_id,
-            )
-            .execute(&mut *conn)
-            .await?;
-
-            sqlx::query!(
-                "UPDATE buckets SET deleted_at = $1, updated_at = $1 WHERE id = $2 AND deleted_at IS NULL;",
                 now,
                 bucket_id,
             )
