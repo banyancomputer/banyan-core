@@ -15,8 +15,7 @@ pub async fn handler(
     let user_id = user_identity.id().to_string();
     let escrowed_device = sqlx::query_as!(
         EscrowedDevice,
-        r#"SELECT *
-            FROM escrowed_devices WHERE user_id = $1;"#,
+        "SELECT * FROM escrowed_devices WHERE user_id = $1;",
         user_id,
     )
     .fetch_one(&database)
