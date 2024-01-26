@@ -260,7 +260,7 @@ pub async fn handler(
     );
 
     //let redirect_url = next_url.unwrap_or("/".to_string());
-    Ok((cookie_jar, Redirect::to("/").into_response())
+    Ok((cookie_jar, Redirect::to("/")).into_response())
 }
 
 // todo(sstelfox): when I user chooses "cancel" we get a different type back, no code key but
