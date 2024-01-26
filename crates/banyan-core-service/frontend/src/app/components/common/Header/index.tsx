@@ -10,8 +10,12 @@ import { useSession } from '@app/contexts/session';
 import { popupClickHandler } from '@/app/utils';
 import { useKeystore } from '@/app/contexts/keystore';
 import { HttpClient } from '@/api/http/client';
+<<<<<<< Updated upstream
 import { NotFoundError } from '@/api/http';
 import { useAppDispatch, useAppSelector } from '@/app/store';
+=======
+import { useAppDispatch } from '@/app/store';
+>>>>>>> Stashed changes
 import { unwrapResult } from '@reduxjs/toolkit';
 import { getUserInfo } from '@/app/store/user/actions';
 import { RoutesConfig } from '@/app/routes';
@@ -62,7 +66,7 @@ export const Header: React.FC<{ logo?: boolean, className?: string }> = ({ logo 
             try {
                 unwrapResult(await dispatch(getUserInfo()));
             } catch (error: any) {
-                if (error instanceof NotFoundError) {
+                if (error.message === 'Unauthorized') {
                     const api = new HttpClient;
                     await purgeKeystore();
                     await api.get('/auth/logout');
