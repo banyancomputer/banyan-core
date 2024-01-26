@@ -38,14 +38,14 @@ where
     ApiIdentity: FromRequestParts<S, Rejection = ApiIdentityError>,
     S: Send + Sync,
 {
-    type Rejection = SessionIdentityError;
+    type Rejection = ApiIdentityError;
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        if let Ok(api) = FromRequestParts::from_request_parts(parts, state).await {
-            return Ok(UserIdentity::Api(api));
+        if let Ok(session) = SessionIdentity::from_request_parts(parts, state).await {
+            return Ok(UserIdentity::Session(session));
         }
 
-        let session = SessionIdentity::from_request_parts(parts, state).await?;
-        Ok(UserIdentity::Session(session))
+        let api = ApiIdentity::from_request_parts(parts, state).await?;
+        Ok(UserIdentity::Api(api))
     }
 }
