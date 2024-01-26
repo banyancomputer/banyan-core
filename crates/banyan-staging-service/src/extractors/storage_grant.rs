@@ -153,7 +153,7 @@ pub enum StorageGrantError {
     #[error("grant ID was not a valid format")]
     InvalidGrant,
 
-    #[error("no bearer authorization header found in request")]
+    #[error("no bearer authorization header found in request: {0}")]
     MissingHeader(TypedHeaderRejection),
 
     #[error("token didn't include a nonce")]
@@ -165,7 +165,7 @@ pub enum StorageGrantError {
     #[error("storage token was missing a subject")]
     SubjectMissing,
 
-    #[error("storage token grant failed validation")]
+    #[error("storage token grant failed validation: {0}")]
     ValidationFailed(jwt_simple::Error),
 
     #[error("storage token grant was not intended for this server")]
