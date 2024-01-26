@@ -56,19 +56,19 @@ export const Invoices = () => {
                         <Check />
                         <h4 className="mt-6 text-base text-text-900 font-medium">{`${messages.noPaymentActivity}`}</h4>
                         <p className="text-sm text-text-600">{`${messages.invoicesWillBeAvailiableHere}`}.</p>
-                        {selectedSubscription?.service_key ?
-                            <button
-                                onClick={manage}
-                                className="w-max px-4 py-2 text-xs font-semibold rounded-md bg-text-200 text-button-primary"
-                            >
-                                {`${messages.manageSubscriptions}`}
-                            </button>
-                            :
+                        {selectedSubscription?.service_key === 'starter' ?
                             <button
                                 className="px-4 py-2 text-xs font-semibold rounded-md bg-text-200 text-button-primary"
                                 onClick={upgragePlan}
                             >
                                 {`${messages.upgrade} ${messages.account}`}
+                            </button>
+                            :
+                            <button
+                                onClick={manage}
+                                className="w-max px-4 py-2 text-xs font-semibold rounded-md bg-text-200 text-button-primary"
+                            >
+                                {`${messages.manageSubscriptions}`}
                             </button>
                         }
                     </div>

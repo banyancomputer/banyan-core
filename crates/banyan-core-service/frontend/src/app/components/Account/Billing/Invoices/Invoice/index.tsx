@@ -13,15 +13,15 @@ export const InvoiceDetails: React.FC<{ invoice: Invoice }> = ({ invoice }) => {
   const { messages } = useIntl();
   const dispatch = useAppDispatch();
   const { displayName } = useAppSelector(state => state.user)
-  const { subscriptions } = useAppSelector(state => state.billing);
-  const selectedSubscription = subscriptions.find(subscription => subscription.pricing?.plan_base === invoice.total_amount / 100);
+  const { subscriptions, selectedSubscription } = useAppSelector(state => state.billing);
+  const subscription = subscriptions.find(subscription => subscription.pricing?.plan_base === invoice.total_amount / 100) || selectedSubscription;
 
   const getHotStorageAmount = () => {
-    if (!selectedSubscription?.features?.included_hot_storage || !selectedSubscription?.features?.included_hot_replica_count) {
-      return 10;
+    if (!subscription?.features?.included_hot_storage || !subscription?.features?.included_hot_replica_count) {
+      return 0;
     };
 
-    return selectedSubscription!.features.included_hot_storage / selectedSubscription!.features.included_hot_replica_count;
+    return subscription!.features.included_hot_storage / subscription!.features.included_hot_replica_count;
   };
 
   const close = () => {
@@ -55,7 +55,7 @@ export const InvoiceDetails: React.FC<{ invoice: Invoice }> = ({ invoice }) => {
           </div>
           <div className="flex items-center justify-between w-full">
             <span className="font-medium">Subscribed Plan</span>
-            <span className="font-normal">{selectedSubscription?.title}</span>
+            <span className="font-normal">{subscription?.title}</span>
           </div>
         </div>
         <div className="px-4 py-2.5 bg-invoiceHeadingBackground text-text-600 font-medium">{`${messages.items}`}</div>
@@ -66,14 +66,14 @@ export const InvoiceDetails: React.FC<{ invoice: Invoice }> = ({ invoice }) => {
           </div>
           <div className="flex items-center justify-between w-full">
             <span className="font-medium">{`${messages.dataEgress}`}</span>
-            <span className="font-normal">{convertSubscriptionsSizes(selectedSubscription?.features.included_bandwidth || 10)}</span>
+            <span className="font-normal">{convertSubscriptionsSizes(subscription!.features.included_bandwidth)}</span>
           </div>
         </div>
         <div className="px-4 py-2.5 bg-invoiceHeadingBackground text-text-600 font-medium">{`${messages.payment}`}</div>
         <div className="py-2 px-4 flex flex-col gap-4">
           <div className="flex justify-between">
             <span className="font-medium">{`${messages.totalCost}`}</span>
-            <span className="font-normal">${selectedSubscription?.pricing?.plan_base.toFixed(2) || 0}</span>
+            <span className="font-normal">${subscription?.pricing?.plan_base.toFixed(2)}</span>
           </div>
         </div>
       </div>

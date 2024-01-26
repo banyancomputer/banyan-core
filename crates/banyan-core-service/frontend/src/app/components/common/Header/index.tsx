@@ -10,16 +10,12 @@ import { useSession } from '@app/contexts/session';
 import { popupClickHandler } from '@/app/utils';
 import { useKeystore } from '@/app/contexts/keystore';
 import { HttpClient } from '@/api/http/client';
-<<<<<<< Updated upstream
-import { NotFoundError } from '@/api/http';
 import { useAppDispatch, useAppSelector } from '@/app/store';
-=======
-import { useAppDispatch } from '@/app/store';
->>>>>>> Stashed changes
 import { unwrapResult } from '@reduxjs/toolkit';
 import { getUserInfo } from '@/app/store/user/actions';
 import { RoutesConfig } from '@/app/routes';
 import { useModal } from '@/app/contexts/modals';
+import { getSubscriptionById } from '@/app/store/billing/actions';
 
 import { Logo, Question } from '@static/images/common';
 
@@ -64,7 +60,8 @@ export const Header: React.FC<{ logo?: boolean, className?: string }> = ({ logo 
     useEffect(() => {
         (async () => {
             try {
-                unwrapResult(await dispatch(getUserInfo()));
+                const userInfo = unwrapResult(await dispatch(getUserInfo()));
+                dispatch(getSubscriptionById(userInfo.subscriptionId));
             } catch (error: any) {
                 if (error.message === 'Unauthorized') {
                     const api = new HttpClient;

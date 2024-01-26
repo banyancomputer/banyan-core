@@ -71,9 +71,9 @@ export const ProfileControls = () => {
                 </div>
                 <div className="w-full flex gap-2">
                     <span className="text-text-900">
-                        {selectedSubscription?.title || 'Starter Plan'}
+                        {selectedSubscription?.title}
                     </span>
-                    {!selectedSubscription &&
+                    {selectedSubscription?.service_key === 'starter' &&
                         <Link
                             onClick={upgragePlan}
                             to={RoutesConfig.Billing.fullPath}

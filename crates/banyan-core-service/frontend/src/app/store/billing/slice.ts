@@ -32,12 +32,7 @@ const billingSlice = createSlice({
             state.selectedInvoice = action.payload;
         });
         builder.addCase(getSubscriptions.fulfilled, (state, action) => {
-            const selectedSubscription = action.payload.find(subscription => subscription.currently_active);
             state.subscriptions = action.payload;
-
-            if(selectedSubscription) {
-                state.selectedSubscription = selectedSubscription;
-            };
         });
         builder.addCase(getSubscriptionById.fulfilled, (state, action) => {
             state.selectedSubscription = action.payload;
