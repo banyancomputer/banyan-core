@@ -90,7 +90,7 @@ export const Header: React.FC<{ logo?: boolean, className?: string }> = ({ logo 
                         <HelpControls />
                     }
                 </div>
-                {!selectedSubscription &&
+                {selectedSubscription?.service_key === 'starter' &&
                     <Link
                         onClick={upgragePlan}
                         to={RoutesConfig.Billing.fullPath}

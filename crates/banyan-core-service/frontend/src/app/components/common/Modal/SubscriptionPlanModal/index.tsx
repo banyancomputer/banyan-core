@@ -31,10 +31,6 @@ export const SubscriptionPlanModal = () => {
         dispatch(getSubscriptions());
     }, []);
 
-    useEffect(() => {
-        setSelectedPlanId(selectedSubscription?.id || '');
-    }, [selectedSubscription])
-
     return (
         <div className="w-modal flex flex-col gap-8">
             <h4 className="text-m font-semibold ">{`${messages.upgradePlan}`}</h4>
