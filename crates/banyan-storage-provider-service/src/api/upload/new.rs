@@ -1,19 +1,15 @@
-use axum::{
-    extract::State,
-    headers::ContentLength,
-    response::{IntoResponse, Response},
-    Json, TypedHeader,
-};
+use axum::extract::State;
+use axum::headers::ContentLength;
+use axum::response::{IntoResponse, Response};
+use axum::{Json, TypedHeader};
 use http::StatusCode;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::{app::AppState, extractors::AuthenticatedClient};
-
-use super::{
-    db::{start_upload, Upload},
-    error::UploadError,
-};
+use super::db::{start_upload, Upload};
+use super::error::UploadError;
+use crate::app::AppState;
+use crate::extractors::AuthenticatedClient;
 
 // Requests need only the associated metadata id
 #[derive(Serialize, Deserialize)]

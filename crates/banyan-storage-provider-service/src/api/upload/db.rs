@@ -1,10 +1,12 @@
-use std::{borrow::BorrowMut, str::FromStr};
+use std::borrow::BorrowMut;
+use std::str::FromStr;
 
 use banyan_task::TaskLikeExt;
 use cid::Cid;
 use uuid::Uuid;
 
-use crate::{database::Database, tasks::ReportUploadTask};
+use crate::database::Database;
+use crate::tasks::ReportUploadTask;
 
 pub async fn start_upload(
     db: &Database,
@@ -16,24 +18,32 @@ pub async fn start_upload(
         id: String::new(),
         client_id: client_id.to_string(),
         metadata_id: metadata_id.to_string(),
+        base_path: format!("{metadata_id}"),
         reported_size: reported_size as i64,
         state: String::from("started"),
     };
 
-    upload.id = sqlx::query_scalar!(
+    tracing::info!("base_path: {}", upload.base_path);
+
+    upload.id = sqlx::query_scalar(
         r#"
         INSERT INTO
-            uploads (client_id, metadata_id, reported_size, state)
-            VALUES ($1, $2, $3, $4)
+            uploads (client_id, metadata_id, reported_size, base_path, state)
+            VALUES ($1, $2, $3, $4, $5)
             RETURNING id;
         "#,
-        upload.client_id,
-        upload.metadata_id,
-        upload.reported_size,
-        upload.state
     )
+    .bind(&upload.client_id)
+    .bind(&upload.metadata_id)
+    .bind(&upload.reported_size)
+    .bind(&upload.base_path)
+    .bind(&upload.state)
     .fetch_one(db)
-    .await?;
+    .await
+    .map_err(|err| {
+        tracing::error!("errrrrr: {err}");
+    })
+    .unwrap();
 
     Ok(upload)
 }
@@ -57,20 +67,20 @@ pub async fn complete_upload(
     integrity_hash: &str,
     upload_id: &str,
 ) -> Result<(), sqlx::Error> {
-    //let mut path_iter = file_path.parts();
+    //let mut path_iter = base_path.parts();
     // discard the uploading/ prefix
     //let _ = path_iter.next();
     //let mut final_path: object_store::path::Path = path_iter.collect();
 
     //// todo: validate the local store doesn't use copy to handle this as some of the other stores
     //// do...
-    //if let Err(err) = store.rename_if_not_exists(file_path, &final_path).await {
+    //if let Err(err) = store.rename_if_not_exists(base_path, &final_path).await {
     //    // this is a weird error, its successfully written to our file store so we have it and can
     //    // serve it we just want to make sure we don't update the path in the DB and clean it up
     //    // later
     //    tracing::error!("unable to rename upload, leaving it in place: {err}");
     //    // todo: background a task to handle correcting this issue when it occurs
-    //    final_path = file_path.clone();
+    //    final_path = base_path.clone();
     //}
 
     // todo: should definitely do a db transaction before the attempted rename, committing only if
@@ -196,6 +206,7 @@ pub struct Upload {
     pub id: String,
     pub client_id: String,
     pub metadata_id: String,
+    pub base_path: String,
     pub reported_size: i64,
     pub state: String,
 }

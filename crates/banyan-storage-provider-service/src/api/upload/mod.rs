@@ -78,6 +78,8 @@ pub async fn handler(
         .map_err(UploadError::InvalidRequestData)?;
     let content_hash = request.content_hash;
 
+    tracing::warn!("about to start the upload");
+
     let upload = start_upload(
         &db,
         &client.id(),
@@ -86,6 +88,7 @@ pub async fn handler(
     )
     .await?;
 
+    tracing::warn!("finished starting upload");
     // todo: should make sure I have a clean up task that watches for failed uploads and handles
     // them appropriately
 
@@ -109,6 +112,7 @@ pub async fn handler(
     .await
     {
         Ok(cr) => {
+            tracing::warn!("about to complete!");
             complete_upload(&db, 0, cr.integrity_hash(), &upload.id).await?;
             ReportUploadTask::new(
                 client.storage_grant_id(),
@@ -142,7 +146,7 @@ async fn process_upload_stream<S>(
 where
     S: TryStream<Ok = bytes::Bytes, Error = multer::Error> + Unpin,
 {
-    let mut car_analyzer = StreamingCarAnalyzer::new(&upload.metadata_id, store);
+    let mut car_analyzer = StreamingCarAnalyzer::new(&upload.base_path, store);
     let mut warning_issued = false;
     let mut hasher = blake3::Hasher::new();
     while let Some(chunk) = stream.try_next().await.map_err(UploadError::ReadFailed)? {
