@@ -70,10 +70,15 @@ where
         };
 
         let verification_key = PlatformVerificationKey::from_ref(state);
-
-        let claims = verification_key
-            .verify_token::<TokenAuthorizations>(raw_token, Some(verification_options))
-            .map_err(Self::Rejection::ValidationFailed)?;
+        let claims = match verification_key
+            .verify_token::<TokenAuthorizations>(raw_token, Some(verification_options.clone()))
+        {
+            Ok(c) => c,
+            Err(err) => {
+                tracing::info!("!!!\n{verification_options:?}\n###\n{raw_token}\n!!!");
+                return Err(Self::Rejection::ValidationFailed(err));
+            }
+        };
 
         // annoyingly jwt-simple doesn't use the correct encoding for this... we can support both
         // though and maybe we can fix upstream so it follows the spec
@@ -183,13 +188,11 @@ impl IntoResponse for StorageGrantError {
                 (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
             }
             MissingHeader(err) => {
-                // todo: add sources as data event tag
                 tracing::error!("{self}: {err}");
                 let err_msg = serde_json::json!({ "msg": "storage grant was not accepted" });
                 (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
             }
             ValidationFailed(err) => {
-                // todo: add sources as data event tag
                 tracing::error!("{self}: {err}");
                 let err_msg = serde_json::json!({ "msg": "storage grant was not accepted" });
                 (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
