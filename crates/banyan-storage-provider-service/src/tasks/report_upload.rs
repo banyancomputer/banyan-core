@@ -33,7 +33,7 @@ pub enum ReportUploadTaskError {
 #[derive(Deserialize, Serialize)]
 pub struct ReportUploadTask {
     storage_authorization_id: Uuid,
-    metadata_id: Uuid,
+    metadata_id: String,
     cids: Vec<Cid>,
     data_size: u64,
 }
@@ -41,13 +41,13 @@ pub struct ReportUploadTask {
 impl ReportUploadTask {
     pub fn new(
         storage_authorization_id: Uuid,
-        metadata_id: Uuid,
+        metadata_id: &str,
         cids: &[Cid],
         data_size: u64,
     ) -> Self {
         Self {
             storage_authorization_id,
-            metadata_id,
+            metadata_id: String::from(metadata_id),
             cids: cids.to_vec(),
             data_size,
         }
@@ -74,7 +74,6 @@ impl TaskLike for ReportUploadTask {
         let platform_name = ctx.platform_name();
         let platform_hostname = ctx.platform_hostname();
 
-        let metadata_id = self.metadata_id.to_string();
         let storage_authorization_id = self.storage_authorization_id.to_string();
         let data_size = self.data_size;
         let normalized_cids = self
@@ -95,7 +94,7 @@ impl TaskLike for ReportUploadTask {
             .unwrap();
 
         let report_endpoint = platform_hostname
-            .join(&format!("/hooks/storage/report/{}", metadata_id))
+            .join(&format!("/hooks/storage/report/{}", self.metadata_id))
             .unwrap();
 
         let mut claims = Claims::create(Duration::from_secs(60))

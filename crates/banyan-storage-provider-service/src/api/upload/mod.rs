@@ -78,8 +78,6 @@ pub async fn handler(
         .map_err(UploadError::InvalidRequestData)?;
     let content_hash = request.content_hash;
 
-    tracing::warn!("about to start the upload");
-
     let upload = start_upload(
         &db,
         &client.id(),
@@ -88,7 +86,6 @@ pub async fn handler(
     )
     .await?;
 
-    tracing::warn!("finished starting upload");
     // todo: should make sure I have a clean up task that watches for failed uploads and handles
     // them appropriately
 
@@ -112,11 +109,10 @@ pub async fn handler(
     .await
     {
         Ok(cr) => {
-            tracing::warn!("about to complete!");
             complete_upload(&db, 0, cr.integrity_hash(), &upload.id).await?;
             ReportUploadTask::new(
                 client.storage_grant_id(),
-                request.metadata_id,
+                &request.metadata_id.to_string(),
                 cr.cids(),
                 cr.total_size(),
             )

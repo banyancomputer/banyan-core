@@ -16,19 +16,14 @@ use uuid::Uuid;
 
 use super::db::{
     complete_upload, fail_upload, get_upload, report_upload, start_upload, write_block_to_tables,
-    Upload,
 };
 use super::error::UploadError;
 use crate::app::AppState;
-use crate::database::Database;
 use crate::extractors::AuthenticatedClient;
-use crate::tasks::ReportUploadTask;
 
 #[derive(Deserialize, Serialize)]
 pub struct BlockUploadRequest {
-    metadata_id: Uuid,
     cid: Cid,
-
     // Optional additional details about the nature of the upload
     #[serde(flatten)]
     details: BlockUploadDetails,
@@ -49,6 +44,7 @@ pub async fn handler(
     TypedHeader(content_type): TypedHeader<ContentType>,
     body: BodyStream,
 ) -> Result<Response, UploadError> {
+    tracing::warn!("wowwww we're in the fucking handler baby");
     let mut db = state.database();
     let reported_body_length = content_len.0;
     if reported_body_length > client.remaining_storage() {
@@ -60,8 +56,7 @@ pub async fn handler(
 
     let mime_ct = mime::Mime::from(content_type);
     let boundary = multer::parse_boundary(mime_ct).unwrap();
-    let constraints = multer::Constraints::new();
-    //.allowed_fields(vec!["request-data", "car-upload"])
+    let constraints = multer::Constraints::new().allowed_fields(vec!["request-data", "block"]);
 
     let mut multipart = multer::Multipart::with_constraints(body, boundary, constraints);
 
@@ -79,6 +74,7 @@ pub async fn handler(
     let (upload, completed) = match request.details {
         // This request is the start and end of this block upload
         BlockUploadDetails::OneOff => {
+            /*
             let upload = start_upload(
                 &db,
                 &client.id(),
@@ -87,6 +83,11 @@ pub async fn handler(
             )
             .await?;
             (upload, true)
+            */
+            // TODO there isn't currently a way to start uploads without having an
+            // associated metadata_id. If future OneOff requests are to exist outside
+            // of the context of our pipelines, this needs to change.
+            return Err(UploadError::NotSupported);
         }
         // We're in the middle of a multi-request block writing sequence
         BlockUploadDetails::Ongoing {
@@ -94,9 +95,7 @@ pub async fn handler(
             upload_id,
         } => {
             // Assume that the upload has already been created via the `new` endpoint
-            let upload = get_upload(&db, client.id(), request.metadata_id)
-                .await?
-                .unwrap();
+            let upload = get_upload(&db, client.id(), &upload_id).await?.unwrap();
             if upload.id != upload_id {
                 return Err(UploadError::IdMismatch);
             }
@@ -138,7 +137,7 @@ pub async fn handler(
 
         // Write the bytes to the expected location
         let location = ObjectStorePath::from(
-            format!("{}/{}.block", request.metadata_id, normalized_cid).as_str(),
+            format!("{}/{}.block", upload.base_path, normalized_cid).as_str(),
         );
         store
             .put(&location, block)
@@ -152,7 +151,7 @@ pub async fn handler(
         report_upload(
             &mut db,
             client.storage_grant_id(),
-            request.metadata_id,
+            &upload.metadata_id,
             &upload.id,
         )
         .await?;

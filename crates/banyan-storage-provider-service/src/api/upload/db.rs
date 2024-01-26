@@ -103,9 +103,8 @@ pub async fn complete_upload(
 
 pub async fn report_upload(
     db: &mut Database,
-    //pool: &mut S::Pool,
     storage_grant_id: Uuid,
-    metadata_id: Uuid,
+    metadata_id: &str,
     upload_id: &str,
 ) -> Result<(), sqlx::Error> {
     let all_cids: Vec<String> = sqlx::query_scalar(
@@ -150,17 +149,17 @@ pub async fn report_upload(
 pub async fn get_upload(
     db: &Database,
     client_id: Uuid,
-    metadata_id: Uuid,
+    upload_id: &str,
 ) -> Result<Option<Upload>, sqlx::Error> {
     sqlx::query_as(
         r#"
         SELECT id, client_id, metadata_id, reported_size, state FROM uploads
             WHERE client_id = $1
-            AND metadata_id = $2;
+            AND id = $2;
         "#,
     )
     .bind(client_id.to_string())
-    .bind(metadata_id.to_string())
+    .bind(upload_id)
     .fetch_optional(db)
     .await
 }
