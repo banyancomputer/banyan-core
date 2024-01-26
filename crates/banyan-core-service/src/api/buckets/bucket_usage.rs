@@ -15,7 +15,7 @@ pub async fn handler(
     let bucket_id = bucket_id.to_string();
     let user_id = user_identity.id().to_string();
     let database = state.database();
-    let mut conn = database.acquire().await.unwrap();
+    let mut conn = database.acquire().await?;
 
     // Note: this also enforeces that the bucket does not have `deleted_at` set
     if !Bucket::is_owned_by_user_id(&mut conn, &bucket_id, &user_id).await? {

@@ -1,27 +1,28 @@
 use axum::async_trait;
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
-use axum_extra::either::Either;
 use uuid::Uuid;
 
 use crate::extractors::api_identity::{ApiIdentity, ApiIdentityError};
 use crate::extractors::session_identity::{SessionIdentity, SessionIdentityError};
 
-/// Enum encompassing Authentication Strategies for API requests
-pub struct UserIdentity(Either<ApiIdentity, SessionIdentity>);
+pub enum UserIdentity {
+    Api(ApiIdentity),
+    Session(SessionIdentity),
+}
 
 impl UserIdentity {
     pub fn id(&self) -> Uuid {
-        match &self.0 {
-            Either::E1(api) => api.user_id(),
-            Either::E2(session) => session.user_id(),
+        match &self {
+            UserIdentity::Api(api) => api.user_id(),
+            UserIdentity::Session(session) => session.user_id(),
         }
     }
 
     pub fn key_fingerprint(&self) -> &str {
-        match &self.0 {
-            Either::E1(api) => api.key_fingerprint(),
-            Either::E2(session) => session.key_fingerprint(),
+        match &self {
+            UserIdentity::Api(api) => api.key_fingerprint(),
+            UserIdentity::Session(session) => session.key_fingerprint(),
         }
     }
 
@@ -37,11 +38,14 @@ where
     ApiIdentity: FromRequestParts<S, Rejection = ApiIdentityError>,
     S: Send + Sync,
 {
-    type Rejection = SessionIdentityError;
+    type Rejection = ApiIdentityError;
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        let either: Either<ApiIdentity, SessionIdentity> =
-            Either::from_request_parts(parts, state).await?;
-        Ok(UserIdentity(either))
+        if let Ok(session) = SessionIdentity::from_request_parts(parts, state).await {
+            return Ok(UserIdentity::Session(session));
+        }
+
+        let api = ApiIdentity::from_request_parts(parts, state).await?;
+        Ok(UserIdentity::Api(api))
     }
 }

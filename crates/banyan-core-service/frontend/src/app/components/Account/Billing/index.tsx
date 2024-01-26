@@ -1,6 +1,5 @@
 
 import { NextBillingDate } from './NextBillingDate';
-import { PaymentInfo } from './PaymentInfo';
 import { Invoices } from './Invoices';
 
 export const Billing = () => {
@@ -8,7 +7,6 @@ export const Billing = () => {
         <div className="flex flex-col gap-10 px-10 py-5">
             <div className='flex items-stretch gap-2'>
                 <NextBillingDate />
-                <PaymentInfo />
             </div>
             <Invoices />
         </div>

@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use axum::extract::rejection::TypedHeaderRejection;
 use axum::extract::{FromRef, FromRequestParts, TypedHeader};
 use axum::headers::authorization::Bearer;

@@ -107,7 +107,6 @@ impl SmtpConnection {
             .to_string();
         // Port 25 is the default port for SMTP
         let port = url.port().unwrap_or(25);
-        println!("username: {}", username);
         Ok(Self {
             host,
             port,

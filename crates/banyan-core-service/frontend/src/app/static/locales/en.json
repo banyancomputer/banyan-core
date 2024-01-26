@@ -186,9 +186,9 @@
 	"billingAddress": "Billing Address",
 	"cardNumber": "Card Number",
 	"expiryDate": "Expiry Date",
-	"onDemandStorage": "On Demand Storage",
+	"onDemandStorage": "Included On Demand Storage",
 	"archivalStorage": "Archival Storage",
-	"dataEgress": "Data egress",
+	"dataEgress": "Included Egress Bandwidth",
 	"totalCost": "Total cost",
 	"invoices": "Invoices",
 	"noPaymentActivity": "No payment or billing activity",
@@ -201,8 +201,9 @@
 	"description": "Description",
 	"details": "Details",
 	"viewInvoice": "View invoice",
-	"invoice": "Invoices",
+	"invoice": "Invoice",
 	"summary": "Summary",
 	"items": "Items",
-	"payment": "Payment"
+	"payment": "Payment",
+	"manageSubscriptions": "Manage Subscriptions"
 }

@@ -19,6 +19,9 @@ pub struct Config {
 
     mailgun_signing_key: Option<String>,
 
+    stripe_secret: Option<String>,
+    stripe_webhook_key: Option<String>,
+
     service_name: String,
     service_key_path: PathBuf,
     upload_directory: PathBuf,
@@ -82,6 +85,32 @@ impl Config {
         };
         let service_key_path = PathBuf::from(service_key_str);
 
+        let stripe_secret = match cli_args.opt_value_from_str("--stripe-secret")? {
+            Some(key) => Some(key),
+            None => match std::env::var("STRIPE_SECRET") {
+                Ok(sk) if !sk.is_empty() => Some(sk),
+                _ => {
+                    tracing::warn!(
+                        "no stripe key present, purchase actions and verifications will fail"
+                    );
+                    None
+                }
+            },
+        };
+
+        let stripe_webhook_key = match cli_args.opt_value_from_str("--stripe-webhook-key")? {
+            Some(key) => Some(key),
+            None => match std::env::var("STRIPE_WEBHOOK_KEY") {
+                Ok(sk) if !sk.is_empty() => Some(sk),
+                _ => {
+                    tracing::warn!(
+                        "no stripe key present, purchase actions and verifications will fail"
+                    );
+                    None
+                }
+            },
+        };
+
         let upload_dir_str = match cli_args.opt_value_from_str("--upload-dir")? {
             Some(path) => path,
             None => match std::env::var("UPLOAD_DIR") {
@@ -132,6 +161,9 @@ impl Config {
 
             mailgun_signing_key,
 
+            stripe_secret,
+            stripe_webhook_key,
+
             service_name,
             service_key_path,
             upload_directory,
@@ -167,6 +199,14 @@ impl Config {
         self.service_key_path.clone()
     }
 
+    pub fn stripe_secret(&self) -> Option<String> {
+        self.stripe_secret.clone()
+    }
+
+    pub fn stripe_webhook_key(&self) -> Option<String> {
+        self.stripe_webhook_key.clone()
+    }
+
     pub fn upload_directory(&self) -> PathBuf {
         self.upload_directory.clone()
     }
@@ -191,6 +231,9 @@ pub enum ConfigError {
 
     #[error("a google auth client secret needs to be provided")]
     MissingGoogleClientSecret,
+
+    #[error("a stripe key needs to be provided in production")]
+    MissingStripeKey,
 }
 
 fn print_help() {

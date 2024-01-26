@@ -1,6 +1,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { IntlProvider } from 'react-intl';
 import { BrowserRouter } from 'react-router-dom';
+import { Provider } from 'react-redux';
 
 import { Modal } from '@components/common/Modal';
 import { Notifications } from '@components/common/Notifications';
@@ -21,6 +22,8 @@ import fr from '@static/locales/fr.json';
 import de from '@static/locales/de.json';
 import ja from '@static/locales/ja.json';
 import zh from '@static/locales/zh.json';
+
+import { store } from '@app/store';
 
 const TRANSLATES: Record<string, Record<string, string>> = {
     en,
@@ -53,36 +56,38 @@ const App = () => {
     }, []);
 
     return (
-        <IntlProvider locale={locale} messages={TRANSLATES[locale]}>
-            <main
-                className="flex flex-col h-screen max-h-screen font-sans bg-mainBackground text-text-900 max-sm:hidden"
-                onDragOver={preventDefaultDragAction}
-                onDrop={preventDefaultDragAction}
-            >
-                <BrowserRouter basename="/" >
-                    <ModalProvider>
-                        <SessionProvider>
-                            <KeystoreProvider>
-                                <TombProvider>
-                                    <FileUploadProvider>
-                                        <FilePreviewProvider>
-                                            <Modal />
-                                            <FilePreview />
-                                            <Modal />
-                                            <Notifications />
-                                            <Suspense>
-                                                <Routes />
-                                            </Suspense>
-                                        </FilePreviewProvider>
-                                    </FileUploadProvider>
-                                </TombProvider>
-                            </KeystoreProvider>
-                        </SessionProvider>
-                    </ModalProvider>
-                </BrowserRouter>
-            </main>
-            <MobilePlaceholder />
-        </IntlProvider>
+        <Provider store={store}>
+            <IntlProvider locale={locale} messages={TRANSLATES[locale]}>
+                <main
+                    className="flex flex-col h-screen max-h-screen font-sans bg-mainBackground text-text-900 max-sm:hidden"
+                    onDragOver={preventDefaultDragAction}
+                    onDrop={preventDefaultDragAction}
+                >
+                    <BrowserRouter basename="/" >
+                        <ModalProvider>
+                            <SessionProvider>
+                                <KeystoreProvider>
+                                    <TombProvider>
+                                        <FileUploadProvider>
+                                            <FilePreviewProvider>
+                                                <Modal />
+                                                <FilePreview />
+                                                <Modal />
+                                                <Notifications />
+                                                <Suspense>
+                                                    <Routes />
+                                                </Suspense>
+                                            </FilePreviewProvider>
+                                        </FileUploadProvider>
+                                    </TombProvider>
+                                </KeystoreProvider>
+                            </SessionProvider>
+                        </ModalProvider>
+                    </BrowserRouter>
+                </main>
+                <MobilePlaceholder />
+            </IntlProvider>
+        </Provider>
     );
 };
 
