@@ -36,19 +36,18 @@ pub async fn handler(
         (ET::PlanCreated, EO::Plan(_)) => (),
         (ET::PriceCreated, EO::Price(_)) => (),
 
-        // We may not need to handle these as our invoice status is much more accurate about
-        // _which_ subscription we should consider active if there are multiple (such as
-        // transitioning between subscriptions).
-        (ET::CustomerSubscriptionCreated, EO::Subscription(sub)) => {
-            subscription_events::handler(&mut conn, sub).await?
-        }
-        (ET::CustomerSubscriptionUpdated, EO::Subscription(sub)) => {
-            subscription_events::handler(&mut conn, sub).await?
+        // We don't need to handle these yet, we're not allowing switching of plans through stripe,
+        // and creation gets handled during the checkout confirmation
+        (ET::CustomerSubscriptionCreated, EO::Subscription(_)) => (),
+        (ET::CustomerSubscriptionUpdated, EO::Subscription(_)) => (),
+
+        // Deletion events comes in at the end of a subscription cycle after a user has already
+        // canceled, this is where we transition back to different subscription if desired.
+        (ET::CustomerSubscriptionDeleted, EO::Subscription(sub)) => {
+            subscription_events::deleted(&mut conn, sub).await?
         }
 
-        // We don't support pausing and resuming our subscription, and the deletion/cancel workflow
-        // is handled by our invoice synchronization
-        (ET::CustomerSubscriptionDeleted, EO::Subscription(_)) => (),
+        // We don't support pausing and resuming our subscriptions
         (ET::CustomerSubscriptionPaused, EO::Subscription(_)) => (),
         (ET::CustomerSubscriptionResumed, EO::Subscription(_)) => (),
 

@@ -29,6 +29,9 @@ pub async fn handler(
         .await?
         .ok_or(StripeWebhookError::missing_target("db_user"))?;
 
+    // todo(sstelfox): We need to handle the case where we a user is currently on a subscription,
+    // and are migrating to a new subscription.
+
     let m_subscription_id =
         stripe_metadata
             .get(METADATA_SUBSCRIPTION_KEY)
