@@ -11,7 +11,7 @@ import { popupClickHandler } from '@/app/utils';
 import { useKeystore } from '@/app/contexts/keystore';
 import { HttpClient } from '@/api/http/client';
 import { NotFoundError } from '@/api/http';
-import { useAppDispatch } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@/app/store';
 import { unwrapResult } from '@reduxjs/toolkit';
 import { getUserInfo } from '@/app/store/user/actions';
 import { RoutesConfig } from '@/app/routes';
@@ -22,6 +22,7 @@ import { Logo, Question } from '@static/images/common';
 export const Header: React.FC<{ logo?: boolean, className?: string }> = ({ logo = false, className = '' }) => {
     const dispatch = useAppDispatch();
     const { messages } = useIntl();
+    const { selectedSubscription } = useAppSelector(state => state.billing);
     const profileOptionsRef = useRef<HTMLDivElement | null>(null);
     const helpOptionsRef = useRef<HTMLDivElement | null>(null);
     const { purgeKeystore } = useKeystore();
@@ -88,20 +89,22 @@ export const Header: React.FC<{ logo?: boolean, className?: string }> = ({ logo 
                         <HelpControls />
                     }
                 </div>
-                <Link
-                    onClick={upgragePlan}
-                    to={RoutesConfig.Billing.fullPath}
-                    className="px-4 py-2 text-xs font-semibold rounded-md bg-text-200 text-button-primary cursor-pointer"
-                >
-                    {`${messages.upgrade}`}
-                </Link>
+                {!selectedSubscription &&
+                    <Link
+                        onClick={upgragePlan}
+                        to={RoutesConfig.Billing.fullPath}
+                        className="px-4 py-2 text-xs font-semibold rounded-md bg-text-200 text-button-primary cursor-pointer"
+                    >
+                        {`${messages.upgrade}`}
+                    </Link>
+                }
                 <div
                     className="relative w-10 h-10 rounded-full cursor-pointer "
                     onClick={toggleProfileOptionsVisibility}
                     ref={profileOptionsRef}
                 >
                     {userData?.user?.profileImage ?
-                        < img
+                        <img
                             className="rounded-full"
                             src={userData?.user.profileImage}
                             width={40}

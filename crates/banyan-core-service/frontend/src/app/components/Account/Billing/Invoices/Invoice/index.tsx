@@ -18,7 +18,7 @@ export const InvoiceDetails: React.FC<{ invoice: Invoice }> = ({ invoice }) => {
 
   const getHotStorageAmount = () => {
     if (!selectedSubscription?.features?.included_hot_storage || !selectedSubscription?.features?.included_hot_replica_count) {
-      return 0;
+      return 10;
     };
 
     return selectedSubscription!.features.included_hot_storage / selectedSubscription!.features.included_hot_replica_count;
@@ -66,14 +66,14 @@ export const InvoiceDetails: React.FC<{ invoice: Invoice }> = ({ invoice }) => {
           </div>
           <div className="flex items-center justify-between w-full">
             <span className="font-medium">{`${messages.dataEgress}`}</span>
-            <span className="font-normal">{convertSubscriptionsSizes(selectedSubscription?.features.included_bandwidth || 0)}</span>
+            <span className="font-normal">{convertSubscriptionsSizes(selectedSubscription?.features.included_bandwidth || 10)}</span>
           </div>
         </div>
         <div className="px-4 py-2.5 bg-invoiceHeadingBackground text-text-600 font-medium">{`${messages.payment}`}</div>
         <div className="py-2 px-4 flex flex-col gap-4">
           <div className="flex justify-between">
             <span className="font-medium">{`${messages.totalCost}`}</span>
-            <span className="font-normal">${selectedSubscription?.pricing?.plan_base.toFixed(2)}</span>
+            <span className="font-normal">${selectedSubscription?.pricing?.plan_base.toFixed(2) || 0}</span>
           </div>
         </div>
       </div>

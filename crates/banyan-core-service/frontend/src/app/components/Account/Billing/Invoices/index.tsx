@@ -1,19 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { useIntl } from 'react-intl';
+import { unwrapResult } from '@reduxjs/toolkit';
 
 import { DatePicker } from '@components/common/DatePicker';
 import { InvoicesTable } from './InvoicesTable';
 import { SubscriptionPlanModal } from '@/app/components/common/Modal/SubscriptionPlanModal';
 
 import { useAppDispatch, useAppSelector } from '@/app/store';
-import { getInvoices } from '@/app/store/billing/actions';
+import { getInvoices, manageSubscriptions } from '@/app/store/billing/actions';
 import { useModal } from '@/app/contexts/modals';
 
 import { Check } from '@static/images/account';
 
 export const Invoices = () => {
     const dispatch = useAppDispatch();
-    const { invoices } = useAppSelector(state => state.billing);
+    const { invoices, selectedSubscription } = useAppSelector(state => state.billing);
     const { messages } = useIntl();
     const { openModal } = useModal();
     const [dateRange, setDateRange] = useState({ from: new Date(), to: new Date() });
@@ -24,6 +25,13 @@ export const Invoices = () => {
 
     const upgragePlan = () => {
         openModal(<SubscriptionPlanModal />);
+    };
+
+    const manage = async () => {
+        try {
+            const { portal_url } = unwrapResult(await dispatch(manageSubscriptions()));
+            window.location.href = portal_url;
+        } catch (error: any) { }
     };
 
     useEffect(() => {
@@ -43,17 +51,28 @@ export const Invoices = () => {
             {invoices.length ?
                 <InvoicesTable invoices={invoices} />
                 :
-                <div className="pt-6 flex flex-col gap-4 items-center">
-                    <Check />
-                    <h4 className="mt-6 text-base text-text-900 font-medium">{`${messages.noPaymentActivity}`}</h4>
-                    <p className="text-sm text-text-600">{`${messages.invoicesWillBeAvailiableHere}`}.</p>
-                    <button
-                        className="px-4 py-2 text-xs font-semibold rounded-md bg-text-200 text-button-primary"
-                        onClick={upgragePlan}
-                    >
-                        {`${messages.upgrade} ${messages.account}`}
-                    </button>
-                </div>
+                <>
+                    <div className="pt-6 flex flex-col gap-4 items-center">
+                        <Check />
+                        <h4 className="mt-6 text-base text-text-900 font-medium">{`${messages.noPaymentActivity}`}</h4>
+                        <p className="text-sm text-text-600">{`${messages.invoicesWillBeAvailiableHere}`}.</p>
+                        {selectedSubscription?.service_key ?
+                            <button
+                                onClick={manage}
+                                className="w-max px-4 py-2 text-xs font-semibold rounded-md bg-text-200 text-button-primary"
+                            >
+                                {`${messages.manageSubscriptions}`}
+                            </button>
+                            :
+                            <button
+                                className="px-4 py-2 text-xs font-semibold rounded-md bg-text-200 text-button-primary"
+                                onClick={upgragePlan}
+                            >
+                                {`${messages.upgrade} ${messages.account}`}
+                            </button>
+                        }
+                    </div>
+                </>
             }
         </div>
     )

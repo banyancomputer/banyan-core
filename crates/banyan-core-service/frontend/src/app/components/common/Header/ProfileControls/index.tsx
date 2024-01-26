@@ -20,7 +20,7 @@ export const ProfileControls = () => {
     const { purgeKeystore } = useKeystore();
     const { openModal } = useModal();
     const { displayName, email, profileImage } = useAppSelector(state => state.user);
-    const { subscriptions } = useAppSelector(state => state.billing);
+    const { selectedSubscription } = useAppSelector(state => state.billing);
     const dispatch = useAppDispatch();
 
 
@@ -69,18 +69,19 @@ export const ProfileControls = () => {
                     <span className="font-medium">{displayName}</span>
                     <span className="font-normal">{email}</span>
                 </div>
-
                 <div className="w-full flex gap-2">
                     <span className="text-text-900">
-                        {subscriptions.find(subscription => subscription.currently_active)?.title}
+                        {selectedSubscription?.title || 'Starter Plan'}
                     </span>
-                    <Link
-                        onClick={upgragePlan}
-                        to={RoutesConfig.Billing.fullPath}
-                        className="font-semibold underline cursor-pointer"
-                    >
-                        {`${messages.upgrade}`}
-                    </Link>
+                    {!selectedSubscription &&
+                        <Link
+                            onClick={upgragePlan}
+                            to={RoutesConfig.Billing.fullPath}
+                            className="font-semibold underline cursor-pointer"
+                        >
+                            {`${messages.upgrade}`}
+                        </Link>
+                    }
                 </div>
             </div>
             <div className="flex flex-col items-stretch">

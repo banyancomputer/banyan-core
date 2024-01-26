@@ -42,7 +42,7 @@ export const NextBillingDate = () => {
             <h3 className="text-text-800 text-[18px] font-semibold">Next Billing Date</h3>
             <div className="flex justify-between items-center">
                 <div>{`${messages.onDemandStorage}`}</div>
-                <div className="text-text-800">{convertSubscriptionsSizes(getHotStorageAmount() || 0)}</div>
+                <div className="text-text-800">{convertSubscriptionsSizes(getHotStorageAmount() || 10)}</div>
             </div>
             {/* <div className="flex justify-between items-center">
                 <div className="text-text-800">{`${messages.archivalStorage}`}</div>
@@ -50,24 +50,25 @@ export const NextBillingDate = () => {
             </div> */}
             <div className="flex justify-between items-center">
                 <div>{`${messages.dataEgress}`}</div>
-                <div className="text-text-800">{convertSubscriptionsSizes(selectedSubscription?.features?.included_bandwidth || 0)}</div>
+                <div className="text-text-800">{convertSubscriptionsSizes(selectedSubscription?.features?.included_bandwidth || 10)}</div>
             </div>
             <div className="flex justify-between items-center">
                 <div>{`${messages.totalCost}`}</div>
                 <div className="text-[20px] font-semibold text-text-900">${selectedSubscription?.pricing?.plan_base || 0}</div>
             </div>
-            <button
-                onClick={upgragePlan}
-                className="w-max px-4 py-2 text-xs font-semibold rounded-md bg-text-200 text-button-primary"
-            >
-                {`${selectedSubscription?.service_key === 'starter' ? `${messages.upgrade} ${messages.account}` : messages.upgradePlan}`}
-            </button>
-            {selectedSubscription?.service_key !== 'starter' &&
+            {selectedSubscription?.service_key ?
                 <button
                     onClick={manage}
                     className="w-max px-4 py-2 text-xs font-semibold rounded-md bg-text-200 text-button-primary"
                 >
                     {`${messages.manageSubscriptions}`}
+                </button>
+                :
+                <button
+                    onClick={upgragePlan}
+                    className="w-max px-4 py-2 text-xs font-semibold rounded-md bg-text-200 text-button-primary"
+                >
+                    {`${messages.upgrade} ${messages.account}`}
                 </button>
             }
         </div>
