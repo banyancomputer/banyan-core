@@ -34,7 +34,9 @@ pub async fn handler(
         // we can pre-filter the subscriptions to match
         match user.account_tax_class {
             TaxClass::Business | TaxClass::Personal => {
-                subscriptions.retain(|s| s.tax_class == user.account_tax_class);
+                subscriptions.retain(|s| {
+                    s.tax_class == TaxClass::NotApplicable || s.tax_class == user.account_tax_class
+                });
             }
             _ => (),
         }
