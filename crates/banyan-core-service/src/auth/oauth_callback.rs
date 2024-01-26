@@ -63,7 +63,7 @@ pub async fn handler(
     .await
     .map_err(|_| AuthenticationError::CleanupFailed)?;
 
-    let (pkce_verifier_secret, next_url) = oauth_state_query;
+    let (pkce_verifier_secret, _next_url) = oauth_state_query;
     let pkce_code_verifier = PkceCodeVerifier::new(pkce_verifier_secret);
 
     let oauth_client = oauth_client(&provider, hostname.clone(), state.secrets())?;
@@ -259,8 +259,8 @@ pub async fn handler(
             .finish(),
     );
 
-    let redirect_url = next_url.unwrap_or("/".to_string());
-    Ok((cookie_jar, Redirect::to(&redirect_url)).into_response())
+    //let redirect_url = next_url.unwrap_or("/".to_string());
+    Ok((cookie_jar, Redirect::to("/").into_response())
 }
 
 // todo(sstelfox): when I user chooses "cancel" we get a different type back, no code key but
