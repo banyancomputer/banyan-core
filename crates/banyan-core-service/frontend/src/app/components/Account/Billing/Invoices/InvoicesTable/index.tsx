@@ -5,15 +5,13 @@ import { InvoiceDetails } from '../Invoice';
 
 import { Invoice } from '@/entities/billing';
 import { useAppDispatch, useAppSelector } from '@/app/store';
-import { getInvoiceById } from '@/app/store/billing/actions';
 import { getDateLabel } from '@/app/utils/date';
 import { selectInvoice } from '@/app/store/billing/slice';
 
 export const InvoicesTable: React.FC<{ invoices: Invoice[] }> = ({ invoices }) => {
     const { messages } = useIntl();
     const dispatch = useAppDispatch();
-    const { selectedInvoice, subscriptions } = useAppSelector(state => state.billing);
-    const selectedSubscription = selectedInvoice ? subscriptions.find(subscription => subscription.pricing?.plan_base === selectedInvoice.total_amount / 100) : null;
+    const { selectedInvoice } = useAppSelector(state => state.billing);
 
     const viewInvoice = (invoice: Invoice) => {
         dispatch(selectInvoice(invoice));
