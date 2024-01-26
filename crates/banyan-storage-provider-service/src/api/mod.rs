@@ -33,9 +33,10 @@ pub fn router(state: AppState) -> Router<AppState> {
         // TODO: Should we place these behind a new prefix?
         // Client Storage API routes
         .route("/blocks/:block_id", get(block_retrieval::handler))
-        .route("/blocks", post(upload::write_block::handler))
         .route("/client_grant", post(client_grant::handler))
+        .route("/new", post(upload::new::handler))
         .route("/upload", post(upload::handler))
+        .route("/upload/block", post(upload::block::handler))
         .route("/core/prune", post(prune_blocks::handler))
         // Storage provider API routes
         .route("/alerts", get(alerts_handler))

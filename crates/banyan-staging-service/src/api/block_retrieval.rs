@@ -47,14 +47,6 @@ pub async fn handler(
     // passing in the byte range using GetOptions to the get_opts method on the ObjectStore trait,
     // however data in the "File" type explicitly ignores this range which is incredibly
     // frustrating...
-    //
-    //
-
-    // check if car_offset is null
-    //
-    // if null, use new path format
-    //
-    // if not null, use old path format and get CAR
 
     // If the car_offset is valid, expect to find a CAR file in the object store
     if let Some(car_offset) = block_details.car_offset {
