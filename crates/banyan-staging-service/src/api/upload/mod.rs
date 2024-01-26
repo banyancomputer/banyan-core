@@ -18,7 +18,6 @@ pub(crate) mod block;
 mod db;
 mod error;
 pub(crate) mod new;
-pub(crate) mod write_block;
 
 use db::{
     complete_upload, fail_upload, get_upload, report_upload, start_upload, write_block_to_tables,

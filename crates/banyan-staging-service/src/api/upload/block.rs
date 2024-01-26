@@ -150,7 +150,7 @@ pub async fn handler(
     if completed {
         complete_upload(&db, 0, "", &upload.id).await?;
         report_upload(
-            &db,
+            &mut db,
             client.storage_grant_id(),
             request.metadata_id,
             &upload.id,

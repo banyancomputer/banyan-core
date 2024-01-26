@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{borrow::BorrowMut, str::FromStr};
 
 use banyan_task::TaskLikeExt;
 use cid::Cid;
@@ -93,7 +93,8 @@ pub async fn complete_upload(
 }
 
 pub async fn report_upload(
-    db: &Database,
+    db: &mut Database,
+    //pool: &mut S::Pool,
     storage_grant_id: Uuid,
     metadata_id: Uuid,
     upload_id: &str,
@@ -108,7 +109,7 @@ pub async fn report_upload(
             "#,
     )
     .bind(upload_id)
-    .fetch_all(db)
+    .fetch_all(&*db)
     .await?;
 
     let all_cids = all_cids
@@ -126,11 +127,11 @@ pub async fn report_upload(
             "#,
     )
     .bind(upload_id)
-    .fetch_one(db)
+    .fetch_one(&*db)
     .await?;
 
     ReportUploadTask::new(storage_grant_id, metadata_id, &all_cids, total_size as u64)
-        .enqueue::<banyan_task::SqliteTaskStore>(db.borrow_mut())
+        .enqueue::<banyan_task::SqliteTaskStore>(db)
         .await
         .unwrap();
 
