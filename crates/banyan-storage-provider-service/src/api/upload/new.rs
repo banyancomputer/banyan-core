@@ -6,7 +6,7 @@ use http::StatusCode;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use super::db::{start_upload};
+use super::db::start_upload;
 use super::error::UploadError;
 use crate::app::AppState;
 use crate::extractors::AuthenticatedClient;

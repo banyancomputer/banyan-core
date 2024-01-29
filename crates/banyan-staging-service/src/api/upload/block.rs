@@ -4,7 +4,6 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::TypedHeader;
 use banyan_object_store::{ObjectStore, ObjectStorePath};
-
 use bytes::Bytes;
 use cid::multibase::Base;
 use cid::multihash::{Code, MultihashDigest};
