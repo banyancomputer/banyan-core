@@ -47,11 +47,6 @@ pub async fn handler(
     // passing in the byte range using GetOptions to the get_opts method on the ObjectStore trait,
     // however data in the "File" type explicitly ignores this range which is incredibly
     // frustrating...
-    tracing::warn!(
-        "about to do the thing: {:?}; {}",
-        block_details.car_offset,
-        block_details.base_path
-    );
 
     // If the car_offset is valid, expect to find a CAR file in the object store
     if let Some(car_offset) = block_details.car_offset {

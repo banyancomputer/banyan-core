@@ -26,8 +26,6 @@ pub async fn start_upload(
         state: String::from("started"),
     };
 
-    tracing::info!("base_path: {}", upload.base_path);
-
     upload.id = sqlx::query_scalar(
         r#"
         INSERT INTO
@@ -42,11 +40,7 @@ pub async fn start_upload(
     .bind(&upload.base_path)
     .bind(&upload.state)
     .fetch_one(db)
-    .await
-    .map_err(|err| {
-        tracing::error!("errrrrr: {err}");
-    })
-    .unwrap();
+    .await?;
 
     Ok(upload)
 }

@@ -62,8 +62,6 @@ pub enum UploadError {
 impl IntoResponse for UploadError {
     fn into_response(self) -> Response {
         use UploadError::*;
-
-        tracing::info!("upload error: {self}");
         let default_err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
         let default_response =
             (StatusCode::INTERNAL_SERVER_ERROR, Json(default_err_msg)).into_response();
