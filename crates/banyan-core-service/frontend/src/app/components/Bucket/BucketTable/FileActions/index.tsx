@@ -33,7 +33,9 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BrowserObject; parren
             await ToastNotifications.promise(`${messages.downloading}...`, `${messages.fileWasDownloaded}`, <Done width="20px" height="20px" />,
                 download(bucket, path, file.name)
             );
-        } catch (error: any) { }
+        } catch (error: any) {
+            ToastNotifications.error('Failed to download file', `${messages.tryAgain}`, downloadFile);
+        }
     };
 
     const moveTo = () => {
@@ -51,7 +53,9 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BrowserObject; parren
         try {
             await makeCopy(bucket, path, file.name);
             ToastNotifications.notify(`${messages.copyOf} ${file.name} ${messages.wasCreated}`, <LinkIcon width="20px" height="20px" />);
-        } catch (error: any) { }
+        } catch (error: any) {
+            ToastNotifications.error('Error while copying file', `${messages.tryAgain}`, copy);
+        };
     };
 
     const rename = async () => {
@@ -90,7 +94,9 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BrowserObject; parren
             openModal(
                 <ShareFileModal link={link} />
             );
-        } catch (error: any) { }
+        } catch (error: any) {
+            ToastNotifications.error('Error while sharing file', `${messages.tryAgain}`, share);
+        }
     };
 
     const downloadAction = useMemo(() => new Action(`${messages.download}`, <Download width="18px" height="18px" />, downloadFile), []);

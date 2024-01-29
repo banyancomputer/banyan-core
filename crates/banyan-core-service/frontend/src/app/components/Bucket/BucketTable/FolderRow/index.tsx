@@ -56,7 +56,9 @@ export const FolderRow: React.FC<{
             } else {
                 await getExpandedFolderFiles([...path, folder.name], folder, bucket);
             };
-        } catch (error: any) { };
+        } catch (error: any) {
+            ToastNotifications.error('Failed to load files', `${messages.tryAgain}`, () => expandFolder(event));
+        };
     };
 
     const dragOverHandler = (event: React.DragEvent<HTMLDivElement>) => {
@@ -82,12 +84,16 @@ export const FolderRow: React.FC<{
 
         const dragData = event.dataTransfer.getData('browserObject');
         if (dragData) {
-            const droppedItem: { item: BrowserObject; path: string[] } = JSON.parse(dragData);
-            if ([...path, folder.name].join('/') === droppedItem.path.join('/')) { return; }
+            try {
+                const droppedItem: { item: BrowserObject; path: string[] } = JSON.parse(dragData);
+                if ([...path, folder.name].join('/') === droppedItem.path.join('/')) { return; }
 
-            await moveTo(bucket, [...droppedItem.path, droppedItem.item.name], [...path, folder.name], droppedItem.item.name);
-            await getSelectedBucketFiles(path);
-            ToastNotifications.notify(`${messages.fileWasMoved}`, <Done width="20px" height="20px" />);
+                await moveTo(bucket, [...droppedItem.path, droppedItem.item.name], [...path, folder.name], droppedItem.item.name);
+                await getSelectedBucketFiles(path);
+                ToastNotifications.notify(`${messages.fileWasMoved}`, <Done width="20px" height="20px" />);
+            } catch (error: any) {
+                ToastNotifications.error(`${messages.moveToError}`);
+            }
         }
     };
 
