@@ -1,7 +1,8 @@
-use banyan_task::TaskLikeExt;
-use cid::Cid;
 use std::str::FromStr;
 use std::time::Duration;
+
+use banyan_task::TaskLikeExt;
+use cid::Cid;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
