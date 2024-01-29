@@ -2,21 +2,16 @@ use axum::extract::{BodyStream, State};
 use axum::headers::{ContentLength, ContentType};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use axum::{Json, TypedHeader};
-use banyan_car_analyzer::{CarReport, StreamingCarAnalyzer, StreamingCarAnalyzerError};
+use axum::TypedHeader;
 use banyan_object_store::{ObjectStore, ObjectStorePath};
-use banyan_task::TaskLikeExt;
+
 use bytes::Bytes;
 use cid::multibase::Base;
 use cid::multihash::{Code, MultihashDigest};
 use cid::Cid;
-use futures::{TryStream, TryStreamExt};
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
-use super::db::{
-    complete_upload, fail_upload, get_upload, report_upload, start_upload, write_block_to_tables,
-};
+use super::db::{complete_upload, get_upload, report_upload, write_block_to_tables};
 use super::error::UploadError;
 use crate::app::AppState;
 use crate::extractors::AuthenticatedClient;

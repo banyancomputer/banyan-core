@@ -34,7 +34,7 @@ pub async fn start_upload(
     )
     .bind(&upload.client_id)
     .bind(&upload.metadata_id)
-    .bind(&upload.reported_size)
+    .bind(upload.reported_size)
     .bind(&upload.base_path)
     .bind(&upload.state)
     .fetch_one(db)
