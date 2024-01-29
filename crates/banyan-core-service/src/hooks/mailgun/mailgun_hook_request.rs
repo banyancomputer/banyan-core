@@ -16,7 +16,7 @@ impl MailgunHookRequest {
         self.event_data.event().into()
     }
 
-    pub fn message_id(&self) -> Uuid {
+    pub fn message_id(&self) -> Option<Uuid> {
         self.event_data.message_id()
     }
 
@@ -51,6 +51,6 @@ mod tests {
     fn deserialize_mailgun_hook_payload() {
         let request: MailgunHookRequest = serde_json::from_str(JSON_DATA).unwrap();
         assert_eq!(request.event_data.event(), MailgunEvent::Opened);
-        assert_eq!(request.event_data.message_id(), Uuid::nil());
+        assert_eq!(request.event_data.message_id(), Some(Uuid::nil()));
     }
 }

@@ -1,0 +1,80 @@
+[
+  PricingTier(
+    service_key: "starter",
+    title: "Starter Plan",
+
+    allow_overages: false,
+    archival_available: false,
+
+    price: None, // "free"
+
+    included_allowances: Allowances(
+      bandwidth: 10,
+
+      storage: 10,
+      storage_replicas: 2,
+    ),
+
+    // Hard limits aren't needed as overages aren't allowed turning the
+    // allowances into hard limits.
+    hard_limits: Limits(
+      bandwidth: Some(10),
+      storage: Some(20),
+    ),
+  ),
+
+  PricingTier(
+    service_key: "lite",
+    title: "Lite Plan",
+
+    allow_overages: true,
+    archival_available: true,
+
+    price: Some(Price(
+      base: 750_000_000,    // $7.50/month
+      archival: 4_000_000,  // $0.04 per GiB/month
+      storage: 5_000_000,   // $0.05/GiB
+      bandwidth: 1_000_000, // $0.01/GiB
+    )),
+
+    included_allowances: Allowances(
+      bandwidth: 150,
+
+      storage: 150,
+      storage_replicas: 2,
+    ),
+
+    hard_limits: Limits(
+      archival: Some(150),
+      bandwidth: None,
+      storage: Some(3_072),
+    ),
+  ),
+
+  PricingTier(
+    service_key: "business",
+    title: "Business Plan",
+
+    allow_overages: true,
+    archival_available: true,
+
+    price: Some(Price(
+      base: 7_500_000_000,  // $75.00 per month
+      archival: 4_000_000,  // $0.04 per GiB/month
+      storage: 2_500_000,   // $0.025 per GiB/month
+      bandwidth: 1_000_000, // $0.01 per GiB/month
+    )),
+
+    included_allowances: Allowances(
+      bandwidth: 3_072,
+      storage: 3_072,
+      storage_replicas: 2,
+    ),
+
+    hard_limits: Limits(
+      archival: Some(3_072),
+      bandwidth: None,
+      storage: Some(51_200),
+    ),
+  ),
+]

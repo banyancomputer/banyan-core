@@ -18,12 +18,12 @@ export interface SessionState {
 export const SessionContext = createContext<SessionState>({} as SessionState);
 
 const TRACKER_PROJECT_KEY = process.env.TRACKER_PROJECT_KEY;
-const TRACKET_INGEST_POINT = process.env.TRACKET_INGEST_POINT;
+const TRACKER_INGEST_POINT = process.env.TRACKER_INGEST_POINT;
 
-const tracker = TRACKER_PROJECT_KEY && TRACKET_INGEST_POINT ?
+const tracker = TRACKER_PROJECT_KEY && TRACKER_INGEST_POINT ?
 	new Tracker({
 		projectKey: TRACKER_PROJECT_KEY,
-		ingestPoint: TRACKET_INGEST_POINT,
+		ingestPoint: TRACKER_INGEST_POINT,
 	})
 	:
 	null;
@@ -50,12 +50,12 @@ export const SessionProvider: FC<{ children: ReactNode }> = ({ children }) => {
 			return;
 		}
 
-		setSessionState({
-			...sessionState,
+		setSessionState(prev => ({
+			...prev,
 			isUserNew,
 			sessionKey,
 			userData,
-		})
+		}));
 	}, []);
 
 	useEffect(() => {
@@ -68,7 +68,7 @@ export const SessionProvider: FC<{ children: ReactNode }> = ({ children }) => {
 		if (!sessionState.userData?.user.id || !tracker) return;
 
 		tracker.setUserID(sessionState.userData?.user.id);
-	}, [sessionState.userData?.user.id]);
+	}, [sessionState.userData]);
 
 	return (
 		<SessionContext.Provider value={sessionState}>

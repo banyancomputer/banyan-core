@@ -421,7 +421,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
 				if (!userData) return;
 
-				if (!userData.accepted_tos_at) {
+				if (!userData.acceptedTosAt) {
 					openModal(
 						<TermaAndConditions
 							acceptTerms={setAreTermsAccepted}
@@ -431,7 +431,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 					return;
 				};
 
-				if (userData.accepted_tos_at <= +termsAndConditions.tos_date) {
+				if (userData.acceptedTosAt <= +termsAndConditions.tos_date) {
 					openModal(
 						<TermsAndConditionsModal
 							setAreTermsAccepted={setAreTermsAccepted}

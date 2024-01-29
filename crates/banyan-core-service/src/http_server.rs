@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use axum::body::{boxed, BoxBody};
 use axum::error_handling::HandleErrorLayer;
-use axum::extract::DefaultBodyLimit;
+use axum::extract::{DefaultBodyLimit, State};
 use axum::http::{Request, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::routing::get;
@@ -87,9 +87,13 @@ pub async fn graceful_shutdown_blocker() -> (JoinHandle<()>, watch::Receiver<()>
 }
 
 async fn login_page_handler<B: std::marker::Send + 'static>(
+    State(state): State<AppState>,
     req: Request<B>,
 ) -> Result<Response<BoxBody>, (StatusCode, String)> {
-    match ServeFile::new("./dist/login.html").oneshot(req).await {
+    match ServeFile::new(format!("./{}/login.html", state.frontend_folder()))
+        .oneshot(req)
+        .await
+    {
         Ok(res) => Ok(res.map(boxed)),
         Err(err) => Err((
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -172,7 +176,10 @@ pub async fn run(config: Config) {
             sensitive_headers,
         ));
 
-    let static_assets = ServeDir::new("dist").fallback(ServeFile::new("./dist/index.html"));
+    let static_assets = ServeDir::new(config.frontend_folder()).fallback(ServeFile::new(format!(
+        "./{}/index.html",
+        config.frontend_folder()
+    )));
 
     let root_router = Router::new()
         .nest("/api/v1", api::router(app_state.clone()))

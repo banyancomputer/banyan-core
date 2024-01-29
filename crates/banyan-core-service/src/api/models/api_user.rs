@@ -1,29 +1,39 @@
 use serde::{Deserialize, Serialize};
+use time::OffsetDateTime;
 
 use crate::database::models::User;
 
-// Represents a User in the Database
 #[derive(Deserialize, Serialize)]
 pub struct ApiUser {
     pub id: String,
     pub email: String,
-    pub verified_email: bool,
     pub display_name: String,
     pub locale: Option<String>,
     pub profile_image: Option<String>,
     pub accepted_tos_at: Option<i64>,
+
+    pub account_tax_class: String,
+    pub subscription_id: String,
+
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        with = "time::serde::rfc3339::option"
+    )]
+    pub subscription_valid_until: Option<OffsetDateTime>,
 }
 
 impl From<User> for ApiUser {
-    fn from(val: User) -> Self {
+    fn from(user: User) -> Self {
         Self {
-            id: val.id,
-            email: val.email,
-            verified_email: val.verified_email,
-            display_name: val.display_name,
-            locale: val.locale,
-            profile_image: val.profile_image,
-            accepted_tos_at: val.accepted_tos_at.map(|t| t.unix_timestamp()),
+            id: user.id,
+            email: user.email,
+            display_name: user.display_name,
+            locale: user.locale,
+            profile_image: user.profile_image,
+            accepted_tos_at: user.accepted_tos_at.map(|t| t.unix_timestamp()),
+            subscription_id: user.subscription_id,
+            account_tax_class: user.account_tax_class.to_string(),
+            subscription_valid_until: user.subscription_valid_until,
         }
     }
 }

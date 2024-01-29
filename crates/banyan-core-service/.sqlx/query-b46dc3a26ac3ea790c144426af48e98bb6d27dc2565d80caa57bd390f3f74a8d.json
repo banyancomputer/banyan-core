@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE users\n             SET subscription_id = $1,\n                 subscription_status = $2,\n                 subscription_valid_until = NULL\n             WHERE id = $3;",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "b46dc3a26ac3ea790c144426af48e98bb6d27dc2565d80caa57bd390f3f74a8d"
+}

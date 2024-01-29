@@ -204,5 +204,6 @@
 	"invoice": "請求書",
 	"summary": "概要",
 	"items": "アイテム",
-	"payment": "支払い"
+	"payment": "支払い",
+	"manageSubscriptions": "サブスクリプションの管理"
 }

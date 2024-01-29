@@ -10,28 +10,31 @@ pub enum AuthenticationError {
     #[error("attempt to create new user after authentication failed: {0}")]
     CreationFailed(sqlx::Error),
 
+    #[error("an error occurred working with the database connection: {0}")]
+    DatabaseConnectionFailure(sqlx::Error),
+
     #[error("code exchange for oauth did not validate: {0}")]
     ExchangeCodeFailure(String),
 
     #[error("a database error occurred while attempting to locate a user: {0}")]
     LookupFailed(sqlx::Error),
 
-    #[error("received callback from oauth but we didn't have a matching session")]
+    #[error("received callback from oauth but we didn't have a matching session: {0}")]
     MissingCallbackState(sqlx::Error),
 
-    #[error("unable to retrieve authenticated user details")]
+    #[error("unable to retrieve authenticated user details: {0}")]
     ProfileUnavailable(reqwest::Error),
 
     #[error("no credentials available for provider '{0}'")]
     ProviderNotConfigured(String),
 
-    #[error("failed to save session in the database")]
+    #[error("failed to save session in the database: {0}")]
     SessionSaveFailed(sqlx::Error),
 
     #[error("failed to spawn blocking task for handle oauth code exchange: {0}")]
     SpawnFailure(tokio::task::JoinError),
 
-    #[error("failed to lookup user data")]
+    #[error("failed to lookup user data: {0}")]
     UserDataLookupFailed(sqlx::Error),
 
     #[error("attempted to authenticate against an unknown provider")]

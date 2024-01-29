@@ -6,6 +6,8 @@ pub mod sqlite;
 #[cfg(test)]
 pub(crate) mod test_helpers;
 
+use crate::pricing;
+
 /// The number of simultaneous dynamic binds any individual query is allowed to have. Technically
 /// this is 32_768, but we want to ensure there are some query slots available for the non-bulk
 /// parts of any particular query.
@@ -27,7 +29,12 @@ pub async fn connect(db_url: &url::Url) -> Result<Database, DatabaseSetupError> 
 
     if db_url.scheme() == "sqlite" {
         let db = sqlite::connect_sqlite(db_url).await?;
-        sqlite::mitrate_sqlite(&db).await?;
+
+        let mut conn = db.acquire().await?;
+        sqlite::mitrate_sqlite(&mut conn).await?;
+        pricing::sync_pricing_config(&mut conn, pricing::builtin_pricing_config()).await?;
+        conn.close().await?;
+
         return Ok(db);
     }
 
@@ -39,10 +46,10 @@ pub async fn connect(db_url: &url::Url) -> Result<Database, DatabaseSetupError> 
 #[derive(Debug, thiserror::Error)]
 pub enum DatabaseSetupError {
     #[error("error occurred while attempting database migration: {0}")]
-    MigrationFailed(sqlx::migrate::MigrateError),
+    MigrationFailed(#[from] sqlx::migrate::MigrateError),
 
     #[error("unable to perform initial connection and check of the database: {0}")]
-    Unavailable(sqlx::Error),
+    Unavailable(#[from] sqlx::Error),
 
     #[error("requested database type was not recognized: {0}")]
     UnknownDbType(String),

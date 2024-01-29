@@ -1,48 +1,78 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useIntl } from 'react-intl';
+import { unwrapResult } from '@reduxjs/toolkit';
 
 import { DatePicker } from '@components/common/DatePicker';
 import { InvoicesTable } from './InvoicesTable';
+import { SubscriptionPlanModal } from '@/app/components/common/Modal/SubscriptionPlanModal';
+
+import { useAppDispatch, useAppSelector } from '@/app/store';
+import { getInvoices, manageSubscriptions } from '@/app/store/billing/actions';
+import { useModal } from '@/app/contexts/modals';
 
 import { Check } from '@static/images/account';
 
-/** TODO: rework when api will be ready. */
-export class Invoice {
-    public date: string = 'Dec 05 , 2023';
-    public storageUsed: number = 10000000;
-    public description: string = 'On Demand storage';
-    public price: string = '$120';
-}
-
 export const Invoices = () => {
+    const dispatch = useAppDispatch();
+    const { invoices, selectedSubscription } = useAppSelector(state => state.billing);
     const { messages } = useIntl();
-    /** TODO: rework when api will be ready. */
-    const [billingHistory, setBillingHistory] = useState<Array<any>>([]);
+    const { openModal } = useModal();
     const [dateRange, setDateRange] = useState({ from: new Date(), to: new Date() });
 
     const changeDateRange = (startDate: Date, endDate: Date) => {
         setDateRange({ from: startDate, to: endDate });
     };
 
+    const upgragePlan = () => {
+        openModal(<SubscriptionPlanModal />);
+    };
+
+    const manage = async () => {
+        try {
+            const { portal_url } = unwrapResult(await dispatch(manageSubscriptions()));
+            window.location.href = portal_url;
+        } catch (error: any) { }
+    };
+
+    useEffect(() => {
+        dispatch(getInvoices());
+    }, [dateRange]);
+
     return (
         <div className="flex flex-col">
             <div className="mb-4 flex items-center justify-between">
                 <h3 className="text-base font-semibold">{`${messages.invoices}`}</h3>
-                <DatePicker
+                {/* <DatePicker
                     from={dateRange.from}
                     to={dateRange.to}
                     onChange={changeDateRange}
-                />
+                /> */}
             </div>
-            {billingHistory.length ?
-                <InvoicesTable billingHistory={billingHistory} />
+            {invoices.length ?
+                <InvoicesTable invoices={invoices} />
                 :
-                <div className="pt-6 flex flex-col gap-4 items-center">
-                    <Check />
-                    <h4 className="mt-6 text-base text-text-900 font-medium">{`${messages.noPaymentActivity}`}</h4>
-                    <p className="text-sm text-text-600">{`${messages.invoicesWillBeAvailiableHere}`}.</p>
-                    <button className="px-4 py-2 text-xs font-semibold rounded-md bg-text-200 text-button-primary">{`${messages.upgrade} ${messages.account}`}</button>
-                </div>
+                <>
+                    <div className="pt-6 flex flex-col gap-4 items-center">
+                        <Check />
+                        <h4 className="mt-6 text-base text-text-900 font-medium">{`${messages.noPaymentActivity}`}</h4>
+                        <p className="text-sm text-text-600">{`${messages.invoicesWillBeAvailiableHere}`}.</p>
+                        {selectedSubscription?.service_key === 'starter' ?
+                            <button
+                                className="px-4 py-2 text-xs font-semibold rounded-md bg-text-200 text-button-primary"
+                                onClick={upgragePlan}
+                            >
+                                {`${messages.upgrade} ${messages.account}`}
+                            </button>
+                            :
+                            <button
+                                onClick={manage}
+                                className="w-max px-4 py-2 text-xs font-semibold rounded-md bg-text-200 text-button-primary"
+                            >
+                                {`${messages.manageSubscriptions}`}
+                            </button>
+                        }
+                    </div>
+                </>
             }
         </div>
     )

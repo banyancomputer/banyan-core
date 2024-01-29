@@ -18,15 +18,11 @@ use crate::app::AppState;
 use crate::auth::storage_ticket::StorageTicketBuilder;
 use crate::database::models::{
     Bucket, Metadata, MetadataState, NewMetadata, NewStorageGrant, PendingExpiration,
-    SelectedStorageHost, StorageHost, User, UserStorageReport,
+    SelectedStorageHost, StorageHost, Subscription, User, UserStorageReport,
 };
 use crate::extractors::{DataStore, UserIdentity};
-use crate::utils;
 use crate::utils::car_buffer::CarBuffer;
-
-/// The default quota we assume each storage host / staging service to provide (10 GiB limit until
-/// payment is in place).
-const ACCOUNT_STORAGE_QUOTA: i64 = 10 * 1_024 * 1_024 * 1_024;
+use crate::{utils, GIBIBYTE};
 
 /// Size limit of the pure metadata CAR file that is being uploaded (128MiB)
 const CAR_DATA_SIZE_LIMIT: u64 = 128 * 1_024 * 1_024;
@@ -40,7 +36,7 @@ const ONE_HUNDRED_MIB: i64 = 100 * 1024 * 1024;
 const REQUEST_DATA_SIZE_LIMIT: u64 = 128 * 1_024;
 
 pub async fn handler(
-    user: UserIdentity,
+    user_identity: UserIdentity,
     State(state): State<AppState>,
     store: DataStore,
     Path(bucket_id): Path<Uuid>,
@@ -50,12 +46,12 @@ pub async fn handler(
     let span = tracing::info_span!(
         "push_metadata_handler",
         bucket.id = %bucket_id,
-        user.id = %user.id(),
+        user.id = %user_identity.id(),
     );
     let _guard = span.enter();
 
     let bucket_id = bucket_id.to_string();
-    let user_id = user.id().to_string();
+    let user_id = user_identity.id().to_string();
 
     let database = state.database();
     let mut conn = database.begin().await?;
@@ -195,13 +191,20 @@ pub async fn handler(
     let mut conn = database.acquire().await?;
     Metadata::upload_complete(&mut conn, &metadata_id, &hash, size as i64).await?;
 
-    let consumed_storage = User::consumed_storage(&mut conn, &user_id).await?;
     let needed_capacity = request_data.expected_data_size;
+    let user = User::by_id(&mut conn, &user_id).await?;
+    let subscription = Subscription::by_id(&mut conn, &user.subscription_id).await?;
 
-    if (consumed_storage + needed_capacity) > ACCOUNT_STORAGE_QUOTA {
-        tracing::warn!(consumed_storage, "account reached storage limit");
-        let err_msg = serde_json::json!({"msg": "account reached available storage threshold"});
-        return Ok((StatusCode::PAYLOAD_TOO_LARGE, Json(err_msg)).into_response());
+    if let Some(hard_limit) = subscription.hot_storage_hard_limit {
+        let hard_limit_bytes = hard_limit * GIBIBYTE;
+
+        let consumed_storage = user.consumed_storage(&mut conn).await?;
+
+        if (consumed_storage + needed_capacity) > hard_limit_bytes {
+            tracing::warn!(consumed_storage, "account reached storage limit");
+            let err_msg = serde_json::json!({"msg": "account reached available storage threshold"});
+            return Ok((StatusCode::PAYLOAD_TOO_LARGE, Json(err_msg)).into_response());
+        }
     }
 
     if request_data.expected_data_size == 0 {
@@ -240,7 +243,7 @@ pub async fn handler(
         .save(&mut conn)
         .await?;
 
-        let mut ticket_builder = StorageTicketBuilder::new(user.ticket_subject());
+        let mut ticket_builder = StorageTicketBuilder::new(user_identity.ticket_subject());
         ticket_builder.add_audience(storage_host.name);
         ticket_builder.add_authorization(
             storage_grant_id,

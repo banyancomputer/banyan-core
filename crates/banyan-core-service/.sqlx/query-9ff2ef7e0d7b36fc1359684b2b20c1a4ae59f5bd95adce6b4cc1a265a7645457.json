@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE stripe_checkout_sessions SET status = $1 WHERE id = $2 AND status = $3;",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "9ff2ef7e0d7b36fc1359684b2b20c1a4ae59f5bd95adce6b4cc1a265a7645457"
+}

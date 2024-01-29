@@ -20,7 +20,7 @@ use crate::auth::{
     oauth_client, AuthenticationError, NEW_USER_COOKIE_NAME, SESSION_COOKIE_NAME, SESSION_TTL,
     USER_DATA_COOKIE_NAME,
 };
-use crate::database::models::{EscrowedDevice, User};
+use crate::database::models::{EscrowedDevice, Subscription, User};
 use crate::extractors::ServerBase;
 
 // Data returned in the User Data Cookie
@@ -101,8 +101,7 @@ pub async fn handler(
         return Err(AuthenticationError::UnverifiedEmail);
     }
 
-    // We're back in provider specific land for getting information about the authenticated user,
-    // TODO: allow for providers other than Google here, deprecate hard-coded parameters
+    // We're back in provider specific land for getting information about the authenticated user
 
     // Attempt to look up the user in the database, if they don't exist, create them
     let user_row = sqlx::query!(
@@ -120,35 +119,34 @@ pub async fn handler(
     let cookie_secure = hostname.scheme() == "https";
 
     let user_id = match user_row {
-        Some(u) => Uuid::parse_str(&u.id.to_string()).expect("db ids to be valid"),
+        Some(u) => u.id.to_string(),
         None => {
             let mut transcation = database
                 .begin()
                 .await
-                .map_err(AuthenticationError::CreationFailed)?;
+                .map_err(AuthenticationError::DatabaseConnectionFailure)?;
 
-            // Try creating the top level User record
+            let subscription_id = Subscription::default_subscription_id(&mut transcation)
+                .await
+                .map_err(AuthenticationError::CreationFailed)?;
             let new_user_id = sqlx::query_scalar!(
-                r#"INSERT 
-                    INTO users (email, verified_email, display_name, locale, profile_image)
-                    VALUES (LOWER($1), $2, $3, $4, $5)
-                RETURNING id;"#,
+                r#"INSERT INTO users (email, verified_email, display_name, locale, profile_image, subscription_id)
+                     VALUES (LOWER($1), $2, $3, $4, $5, $6)
+                     RETURNING id;"#,
                 user_info.email,
                 user_info.verified_email,
                 user_info.name,
                 user_info.locale,
                 user_info.picture,
+                subscription_id,
             )
             .fetch_one(&mut *transcation)
             .await
             .map_err(AuthenticationError::CreationFailed)?;
 
-            // TODO: rm hardcoded provider
-            // Try creating the provider account record
             sqlx::query!(
-                r#"INSERT 
-                    INTO oauth_provider_accounts (user_id, provider, provider_id)
-                    VALUES ($1, 'google', $2);"#,
+                r#"INSERT INTO oauth_provider_accounts (user_id, provider, provider_id)
+                     VALUES ($1, 'google', $2);"#,
                 new_user_id,
                 user_info.id,
             )
@@ -159,7 +157,7 @@ pub async fn handler(
             transcation
                 .commit()
                 .await
-                .map_err(AuthenticationError::CreationFailed)?;
+                .map_err(AuthenticationError::DatabaseConnectionFailure)?;
 
             cookie_jar = cookie_jar.add(
                 Cookie::build(NEW_USER_COOKIE_NAME, "yes")
@@ -171,35 +169,33 @@ pub async fn handler(
                     .finish(),
             );
 
-            Uuid::parse_str(&new_user_id).expect("db ids to be valid")
+            new_user_id
         }
     };
 
     let expires_at = time::OffsetDateTime::now_utc() + Duration::from_secs(SESSION_TTL);
-    let db_uid = user_id.clone().to_string();
 
-    // Lookup User Data to attach include in the CookieJar
-    let user = sqlx::query_as!(
-        User,
-        r#"SELECT *
-        FROM users
-        WHERE id = $1;"#,
-        db_uid
-    )
-    .fetch_one(&database)
-    .await
-    .map_err(AuthenticationError::UserDataLookupFailed)?;
+    let mut conn = database
+        .acquire()
+        .await
+        .map_err(AuthenticationError::DatabaseConnectionFailure)?;
+    let user = User::find_by_id(&mut conn, &user_id)
+        .await
+        .map_err(AuthenticationError::UserDataLookupFailed)?
+        .expect("created user to exist");
 
     let escrowed_device = sqlx::query_as!(
         EscrowedDevice,
-        r#"SELECT *
-        FROM escrowed_devices
-        WHERE user_id = $1;"#,
-        db_uid
+        "SELECT * FROM escrowed_devices WHERE user_id = $1;",
+        user_id
     )
-    .fetch_optional(&database)
+    .fetch_optional(&mut *conn)
     .await
     .map_err(AuthenticationError::UserDataLookupFailed)?;
+
+    conn.close()
+        .await
+        .map_err(AuthenticationError::UserDataLookupFailed)?;
 
     let user_data = UserData {
         user: user.into(),
@@ -212,7 +208,7 @@ pub async fn handler(
             (user_id, provider, access_token, access_expires_at, refresh_token, expires_at)
             VALUES ($1, $2, $3, $4, $5, $6)
             RETURNING id;",
-        db_uid,
+        user_id,
         provider,
         access_token,
         access_expires_at,
@@ -267,6 +263,9 @@ pub async fn handler(
     Ok((cookie_jar, Redirect::to(&redirect_url)).into_response())
 }
 
+// todo(sstelfox): when I user chooses "cancel" we get a different type back, no code key but
+// instead an "error" key that has values like "access_denied". We should handle this more
+// gracefully.
 #[derive(Deserialize)]
 pub struct CallbackParameters {
     code: String,

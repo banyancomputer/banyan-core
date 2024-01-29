@@ -5,14 +5,14 @@ import { AccountType } from './AccountType';
 
 import { useModal } from '@app/contexts/modals';
 import { TermsAndColditionsClient } from '@/api/termsAndConditions';
-import { RawUser } from '@app/types';
+import { User } from '@/entities/user';
 
 import folders from "@static/images/termsAndConditions/folders.png";
 import { Done, Logo } from '@static/images/common';
 
 const termsClient = new TermsAndColditionsClient();
 
-export const TermaAndConditions: React.FC<{ userData: RawUser, acceptTerms: React.Dispatch<React.SetStateAction<boolean>> }> = ({ userData, acceptTerms }) => {
+export const TermaAndConditions: React.FC<{ userData: User, acceptTerms: React.Dispatch<React.SetStateAction<boolean>> }> = ({ userData, acceptTerms }) => {
     const [accountType, setAccountType] = useState('');
     const [areTermsAccepted, setAreTermsAccepted] = useState(false);
     const { closeModal } = useModal();
@@ -23,7 +23,7 @@ export const TermaAndConditions: React.FC<{ userData: RawUser, acceptTerms: Reac
         const accepted_tos_at = Math.trunc(Date.now() / 1000);
 
         try {
-            await termsClient.confirmTermsAndConditions(userData, accepted_tos_at);
+            await termsClient.confirmTermsAndConditions(userData, accepted_tos_at, accountType);
             acceptTerms(true);
             closeModal();
         } catch (error: any) { }
@@ -43,9 +43,9 @@ export const TermaAndConditions: React.FC<{ userData: RawUser, acceptTerms: Reac
                         <div className="mt-6 mb-8 flex items-center gap-3">
                             <AccountType
                                 action={setAccountType}
-                                isActive={accountType === 'work'}
+                                isActive={accountType === 'business'}
                                 text={'For work'}
-                                value='work'
+                                value='business'
                             />
                             <AccountType
                                 action={setAccountType}

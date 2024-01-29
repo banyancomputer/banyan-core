@@ -15,7 +15,7 @@ pub async fn handler(
     let database = state.database();
     let query_result = sqlx::query_as!(
         Deal,
-        r#"SELECT d.id, d.state, SUM(ss.size) AS size
+        r#"SELECT d.id, d.state, SUM(ss.size) AS size, accepted_by, accepted_at
         FROM deals d
             JOIN snapshot_segments ss ON d.id = ss.deal_id
         WHERE d.state = $1

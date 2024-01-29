@@ -8,7 +8,7 @@ pub(crate) struct EventData {
     event: MailgunEvent,
 
     #[serde(rename = "user-variables")]
-    user_variables: UserVariables,
+    user_variables: Option<UserVariables>,
 }
 
 impl EventData {
@@ -16,7 +16,7 @@ impl EventData {
         self.event.clone()
     }
 
-    pub fn message_id(&self) -> Uuid {
-        self.user_variables.message_id
+    pub fn message_id(&self) -> Option<Uuid> {
+        self.user_variables.as_ref().map(|uv| uv.message_id)
     }
 }
