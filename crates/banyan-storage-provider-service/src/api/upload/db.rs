@@ -105,11 +105,29 @@ pub async fn complete_upload(
     .map(|_| ())
 }
 
+pub async fn upload_size(db: &Database, upload_id: &str) -> Result<i64, sqlx::Error> {
+    let total_size: i64 = sqlx::query_scalar(
+        r#"
+            SELECT COALESCE(SUM(blocks.data_length), 0)
+            FROM blocks
+            JOIN uploads_blocks ON blocks.id = uploads_blocks.block_id
+            JOIN uploads ON uploads_blocks.upload_id = uploads.id
+            WHERE uploads.id = $1;
+            "#,
+    )
+    .bind(upload_id)
+    .fetch_one(db)
+    .await?;
+
+    Ok(total_size)
+}
+
 pub async fn report_upload(
     db: &mut Database,
     storage_grant_id: Uuid,
     metadata_id: &str,
     upload_id: &str,
+    total_size: i64,
 ) -> Result<(), sqlx::Error> {
     let all_cids: Vec<String> = sqlx::query_scalar(
         r#"
@@ -128,19 +146,6 @@ pub async fn report_upload(
         .into_iter()
         .map(|cid_string| Cid::from_str(&cid_string).unwrap())
         .collect::<Vec<Cid>>();
-
-    let total_size: i64 = sqlx::query_scalar(
-        r#"
-            SELECT COALESCE(SUM(blocks.data_length), 0)
-            FROM blocks
-            JOIN uploads_blocks ON blocks.id = uploads_blocks.block_id
-            JOIN uploads ON uploads_blocks.upload_id = uploads.id
-            WHERE uploads.id = $1;
-            "#,
-    )
-    .bind(upload_id)
-    .fetch_one(&*db)
-    .await?;
 
     ReportUploadTask::new(storage_grant_id, metadata_id, &all_cids, total_size as u64)
         .enqueue::<banyan_task::SqliteTaskStore>(db)

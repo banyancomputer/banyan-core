@@ -10,7 +10,7 @@ use cid::multihash::{Code, MultihashDigest};
 use cid::Cid;
 use serde::{Deserialize, Serialize};
 
-use super::db::{complete_upload, get_upload, report_upload, write_block_to_tables};
+use super::db::{complete_upload, get_upload, report_upload, upload_size, write_block_to_tables};
 use super::error::UploadError;
 use crate::app::AppState;
 use crate::extractors::AuthenticatedClient;
@@ -140,12 +140,14 @@ pub async fn handler(
 
     // If we've just finished off the upload, complete and report it
     if completed {
-        complete_upload(&db, 0, "", &upload.id).await?;
+        let total_size = upload_size(&db, &upload.id).await?;
+        complete_upload(&db, total_size, "", &upload.id).await?;
         report_upload(
             &mut db,
             client.storage_grant_id(),
             &upload.metadata_id,
             &upload.id,
+            total_size,
         )
         .await?;
     }
