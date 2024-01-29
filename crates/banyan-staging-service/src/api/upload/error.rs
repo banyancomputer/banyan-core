@@ -54,17 +54,21 @@ pub enum UploadError {
 
     #[error("tried to write to a completed upload")]
     UploadIsComplete,
+
+    #[error("not yet supported")]
+    NotSupported,
 }
 
 impl IntoResponse for UploadError {
     fn into_response(self) -> Response {
         use UploadError::*;
 
+        tracing::info!("upload error: {self}");
         let default_err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
         let default_response =
             (StatusCode::INTERNAL_SERVER_ERROR, Json(default_err_msg)).into_response();
         match self {
-            Database(_) | FailedToEnqueueTask(_) | Cid(_) => {
+            Database(_) | FailedToEnqueueTask(_) | Cid(_) | NotSupported => {
                 tracing::error!("{self}");
                 let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
