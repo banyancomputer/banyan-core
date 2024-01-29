@@ -1,4 +1,5 @@
 mod prune_blocks;
+mod redistribute_data;
 mod report_upload;
 
 use banyan_task::{QueueConfig, SqliteTaskStore, WorkerPool};
