@@ -1,11 +1,14 @@
-use std::str::FromStr;
-
 use banyan_task::TaskLikeExt;
 use cid::Cid;
+use std::str::FromStr;
+use std::time::Duration;
+use time::OffsetDateTime;
 use uuid::Uuid;
 
 use crate::database::Database;
 use crate::tasks::ReportUploadTask;
+
+pub const UPLOAD_SESSION_DURATION: Duration = Duration::from_secs(60 * 60 * 6);
 
 pub async fn start_upload(
     db: &Database,
@@ -155,11 +158,13 @@ pub async fn get_upload(
         r#"
         SELECT id, client_id, metadata_id, reported_size, state FROM uploads
             WHERE client_id = $1
-            AND id = $2;
+            AND id = $2
+            AND created_at >= $3;
         "#,
     )
     .bind(client_id.to_string())
     .bind(upload_id)
+    .bind(OffsetDateTime::now_utc() - UPLOAD_SESSION_DURATION)
     .fetch_optional(db)
     .await
 }

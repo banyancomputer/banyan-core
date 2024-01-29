@@ -38,7 +38,6 @@ pub async fn handler(
     TypedHeader(content_type): TypedHeader<ContentType>,
     body: BodyStream,
 ) -> Result<Response, UploadError> {
-    tracing::warn!("wowwww we're in the fucking handler baby");
     let mut db = state.database();
     let reported_body_length = content_len.0;
     if reported_body_length > client.remaining_storage() {
