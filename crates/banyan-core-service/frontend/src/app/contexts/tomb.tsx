@@ -278,7 +278,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	/** Renames bucket */
 
 	const moveTo = async (bucket: Bucket, from: string[], to: string[], name: string) => {
-		return await await tombMutex(bucket.mount!, async mount => {
+		return await tombMutex(bucket.mount!, async mount => {
 			const extstingFiles = (await mount.ls(to)).map(file => file.name);
 			const browserObjectName = handleNameDuplication(name, extstingFiles);
 			await mount.mv(from, [...to, browserObjectName]);
