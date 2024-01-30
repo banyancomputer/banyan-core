@@ -5,11 +5,11 @@ use jwt_simple::prelude::ES384PublicKey;
 
 use crate::api::models::ApiEscrowedKeyMaterial;
 use crate::app::AppState;
-use crate::extractors::UserIdentity;
+use crate::extractors::SessionIdentity;
 use crate::utils::keys::fingerprint_public_key;
 
 pub async fn handler(
-    user_identity: UserIdentity,
+    session_id: SessionIdentity,
     State(state): State<AppState>,
     Json(request): Json<ApiEscrowedKeyMaterial>,
 ) -> Result<Response, CreateEscrowedDeviceError> {
@@ -23,7 +23,7 @@ pub async fn handler(
         .map_err(CreateEscrowedDeviceError::InvalidPublicKey)?;
     let device_api_key_fingerprint = fingerprint_public_key(&public_device_api_key);
 
-    let user_id = user_identity.id().to_string();
+    let user_id = session_id.user_id().to_string();
     let encrypted_private_key_material = request.encrypted_private_key_material;
     let pass_key_salt = request.pass_key_salt;
 
