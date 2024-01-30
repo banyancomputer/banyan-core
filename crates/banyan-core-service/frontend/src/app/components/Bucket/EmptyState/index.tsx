@@ -20,7 +20,7 @@ export const EmptyState: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
 
         if (!event.dataTransfer.files) { return; }
 
-        setFiles(Array.from(event.dataTransfer.files).map(file => ({ file, status: 'pending' })));
+        setFiles(Array.from(event.dataTransfer.files).slice(0, 1).map(file => ({ file, status: 'pending' })));
     };
 
     const handleChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -52,7 +52,7 @@ export const EmptyState: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         >
             <input
                 type="file"
-                multiple={true}
+                multiple={false}
                 className="hidden"
                 onChange={handleChange}
             />

@@ -42,13 +42,13 @@ pub async fn handler(
     let database = state.database();
 
     let query_secret = csrf_secret.secret();
-    let oauth_state_query: (String, Option<String>) = sqlx::query_as(
-        r#"SELECT pkce_verifier_secret, next_url
+    let pkce_verifier_secret: String = sqlx::query_scalar!(
+        r#"SELECT pkce_verifier_secret
             FROM oauth_state
             WHERE provider = $1 AND csrf_secret = $2;"#,
+        provider,
+        query_secret,
     )
-    .bind(provider.clone())
-    .bind(query_secret)
     .fetch_one(&database)
     .await
     .map_err(AuthenticationError::MissingCallbackState)?;
@@ -63,7 +63,6 @@ pub async fn handler(
     .await
     .map_err(|_| AuthenticationError::CleanupFailed)?;
 
-    let (pkce_verifier_secret, next_url) = oauth_state_query;
     let pkce_code_verifier = PkceCodeVerifier::new(pkce_verifier_secret);
 
     let oauth_client = oauth_client(&provider, hostname.clone(), state.secrets())?;
@@ -259,8 +258,7 @@ pub async fn handler(
             .finish(),
     );
 
-    let redirect_url = next_url.unwrap_or("/".to_string());
-    Ok((cookie_jar, Redirect::to(&redirect_url)).into_response())
+    Ok((cookie_jar, Redirect::to("/")).into_response())
 }
 
 // todo(sstelfox): when I user chooses "cancel" we get a different type back, no code key but

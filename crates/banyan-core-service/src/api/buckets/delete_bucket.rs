@@ -18,7 +18,6 @@ pub async fn handler(
     let database = state.database();
     let mut conn = database.begin().await?;
 
-    // Check that the bucket exists, is active, and is owned by the user
     if !Bucket::is_owned_by_user_id(&mut conn, &bucket_id, &user_id).await? {
         let err_msg = serde_json::json!({"msg": "not found"});
         return Ok((StatusCode::NOT_FOUND, Json(err_msg)).into_response());

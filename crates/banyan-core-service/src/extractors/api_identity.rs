@@ -57,6 +57,10 @@ impl ApiIdentity {
     pub fn key_fingerprint(&self) -> &str {
         &self.key_fingerprint
     }
+
+    pub fn ticket_subject(&self) -> String {
+        format!("{}@{}", self.user_id(), self.key_fingerprint())
+    }
 }
 
 #[async_trait]

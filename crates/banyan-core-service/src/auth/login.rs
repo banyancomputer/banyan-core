@@ -1,9 +1,8 @@
-use axum::extract::{Path, Query, State};
+use axum::extract::{Path, State};
 use axum::response::{IntoResponse, Redirect, Response};
 use axum::Json;
 use http::StatusCode;
 use oauth2::{CsrfToken, PkceCodeChallenge, Scope};
-use serde::Deserialize;
 
 use crate::app::AppState;
 use crate::auth::{oauth_client, PROVIDER_CONFIGS};
@@ -14,10 +13,9 @@ pub async fn handler(
     State(state): State<AppState>,
     ServerBase(hostname): ServerBase,
     Path(provider): Path<String>,
-    Query(params): Query<LoginParams>,
 ) -> Response {
     if session.is_some() {
-        return Redirect::to(&params.next_url.unwrap_or("/".to_string())).into_response();
+        return Redirect::to("/").into_response();
     }
 
     let provider_config = match PROVIDER_CONFIGS.get(&provider) {
@@ -52,12 +50,11 @@ pub async fn handler(
     let pkce_verifier_secret = pkce_code_verifier.secret();
 
     let query = sqlx::query!(
-        r#"INSERT INTO oauth_state (provider, csrf_secret, pkce_verifier_secret, next_url)
-                   VALUES ($1, $2, $3, $4);"#,
+        r#"INSERT INTO oauth_state (provider, csrf_secret, pkce_verifier_secret)
+                   VALUES ($1, $2, $3);"#,
         provider,
         csrf_secret,
         pkce_verifier_secret,
-        params.next_url,
     );
 
     if let Err(err) = query.execute(&state.database()).await {
@@ -67,9 +64,4 @@ pub async fn handler(
     };
 
     Redirect::to(authorize_url.as_str()).into_response()
-}
-
-#[derive(Deserialize)]
-pub struct LoginParams {
-    next_url: Option<String>,
 }

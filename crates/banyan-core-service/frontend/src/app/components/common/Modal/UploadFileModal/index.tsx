@@ -44,7 +44,7 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null; folder?: Browse
 
         if (!event.dataTransfer.files) { return; }
 
-        setFiles(Array.from(event.dataTransfer.files).map(file => ({ file, status: 'pending' })));
+        setFiles(Array.from(event.dataTransfer.files).slice(0, 1).map(file => ({ file, status: 'pending' })));
     };
 
     const handleDrag = async (event: React.DragEvent<HTMLInputElement | HTMLLabelElement>) => {
@@ -125,7 +125,7 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null; folder?: Browse
                 }
                 <input
                     type="file"
-                    multiple={true}
+                    multiple={false}
                     className="hidden"
                     onChange={handleChange}
                 />

@@ -6,10 +6,10 @@ use uuid::Uuid;
 
 use crate::app::AppState;
 use crate::auth::storage_ticket::StorageTicketBuilder;
-use crate::extractors::UserIdentity;
+use crate::extractors::ApiIdentity;
 
 pub async fn handler(
-    user_identity: UserIdentity,
+    api_id: ApiIdentity,
     State(state): State<AppState>,
     Path(bucket_id): Path<Uuid>,
 ) -> Result<Response, AuthorizationGrantError> {
@@ -18,7 +18,7 @@ pub async fn handler(
 
     let bucket_id = bucket_id.to_string();
 
-    let user_id = user_identity.id().to_string();
+    let user_id = api_id.user_id().to_string();
     let authorized_amounts = sqlx::query_as!(
         AuthorizedAmounts,
         r#"WITH current_grants AS (
@@ -49,7 +49,7 @@ pub async fn handler(
         return Err(AuthorizationGrantError::NotFound);
     }
 
-    let mut ticket_builder = StorageTicketBuilder::new(user_identity.ticket_subject());
+    let mut ticket_builder = StorageTicketBuilder::new(api_id.ticket_subject());
 
     for auth_details in authorized_amounts.into_iter() {
         ticket_builder.add_audience(auth_details.storage_host_name);
