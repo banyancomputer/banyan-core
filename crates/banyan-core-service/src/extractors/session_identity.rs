@@ -15,7 +15,6 @@ use uuid::Uuid;
 use crate::app::ServiceVerificationKey;
 use crate::auth::{LOGIN_PATH, SESSION_COOKIE_NAME};
 use crate::database::Database;
-use crate::utils::keys::fingerprint_public_key;
 
 /// Extracted identity from a request made with a server-signed JWT
 pub struct SessionIdentity {
@@ -25,8 +24,6 @@ pub struct SessionIdentity {
     email: String,
     /// The user id of the user who owns the session
     user_id: Uuid,
-    /// The hex formatted fingerprint of the API key used to sign the JWT
-    key_fingerprint: String,
 
     created_at: OffsetDateTime,
     expires_at: OffsetDateTime,
@@ -39,10 +36,6 @@ impl SessionIdentity {
 
     pub fn user_id(&self) -> Uuid {
         self.user_id
-    }
-
-    pub fn key_fingerprint(&self) -> &str {
-        &self.key_fingerprint
     }
 
     pub fn email(&self) -> &str {
@@ -132,13 +125,11 @@ where
             Uuid::parse_str(&db_session.id).map_err(SessionIdentityError::CorruptDatabaseId)?;
         let user_id = Uuid::parse_str(&db_session.user_id)
             .map_err(SessionIdentityError::CorruptDatabaseId)?;
-        let key_fingerprint = fingerprint_public_key(&verification_key);
 
         Ok(SessionIdentity {
             session_id,
             user_id,
             email: db_session.email,
-            key_fingerprint,
 
             created_at: db_session.created_at,
             expires_at: db_session.expires_at,
