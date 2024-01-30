@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useIntl } from 'react-intl';
+import { useNavigate } from 'react-router-dom';
 
 import { SubmitButton } from '@components/common/SubmitButton';
 import { UploadFileModal } from '@components/common/Modal/UploadFileModal';
@@ -8,12 +9,14 @@ import { useModal } from '@/app/contexts/modals';
 import { useTomb } from '@/app/contexts/tomb';
 import { Bucket } from '@/app/types/bucket';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
+import { stringToBase64 } from '@/app/utils/base64';
 
-export const CreateFolderModal: React.FC<{ bucket: Bucket; onSuccess?: () => void; path: string[] }> = ({ bucket, onSuccess = () => { }, path }) => {
+export const CreateFolderModal: React.FC<{ bucket: Bucket; onSuccess?: () => void; path: string[], redirect?: boolean }> = ({ bucket, onSuccess = () => { }, path, redirect = false }) => {
     const { closeModal, openModal } = useModal();
     const { messages } = useIntl();
     const [folderName, setfolderName] = useState('');
     const { createDirectory } = useTomb();
+    const navigate = useNavigate();
 
     const changeName = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.value.length >= 32) { return; }
@@ -24,6 +27,7 @@ export const CreateFolderModal: React.FC<{ bucket: Bucket; onSuccess?: () => voi
     const create = async () => {
         try {
             await createDirectory(bucket, path, folderName);
+            redirect && navigate(`/drive/${bucket.id}${path.length ? '?' : ''}${path.map(path => stringToBase64(path)).join('/')}${path.length ? '/' : '?'}${stringToBase64(folderName)}`);
             onSuccess ?
                 onSuccess()
                 :
