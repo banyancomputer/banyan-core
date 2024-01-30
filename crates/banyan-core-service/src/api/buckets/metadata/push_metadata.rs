@@ -20,7 +20,7 @@ use crate::database::models::{
     Bucket, Metadata, MetadataState, NewMetadata, NewStorageGrant, PendingExpiration,
     SelectedStorageHost, StorageHost, Subscription, User, UserStorageReport,
 };
-use crate::extractors::{DataStore, UserIdentity};
+use crate::extractors::{ApiIdentity, DataStore};
 use crate::utils::car_buffer::CarBuffer;
 use crate::{utils, GIBIBYTE};
 
@@ -36,7 +36,7 @@ const ONE_HUNDRED_MIB: i64 = 100 * 1024 * 1024;
 const REQUEST_DATA_SIZE_LIMIT: u64 = 128 * 1_024;
 
 pub async fn handler(
-    user_identity: UserIdentity,
+    api_id: ApiIdentity,
     State(state): State<AppState>,
     store: DataStore,
     Path(bucket_id): Path<Uuid>,
@@ -46,12 +46,12 @@ pub async fn handler(
     let span = tracing::info_span!(
         "push_metadata_handler",
         bucket.id = %bucket_id,
-        user.id = %user_identity.id(),
+        user.id = %api_id.user_id(),
     );
     let _guard = span.enter();
 
     let bucket_id = bucket_id.to_string();
-    let user_id = user_identity.id().to_string();
+    let user_id = api_id.user_id().to_string();
 
     let database = state.database();
     let mut conn = database.begin().await?;
@@ -243,7 +243,7 @@ pub async fn handler(
         .save(&mut conn)
         .await?;
 
-        let mut ticket_builder = StorageTicketBuilder::new(user_identity.ticket_subject());
+        let mut ticket_builder = StorageTicketBuilder::new(api_id.ticket_subject());
         ticket_builder.add_audience(storage_host.name);
         ticket_builder.add_authorization(
             storage_grant_id,

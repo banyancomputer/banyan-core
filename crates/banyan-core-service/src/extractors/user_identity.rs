@@ -18,17 +18,6 @@ impl UserIdentity {
             UserIdentity::Session(session) => session.user_id(),
         }
     }
-
-    pub fn key_fingerprint(&self) -> &str {
-        match &self {
-            UserIdentity::Api(api) => api.key_fingerprint(),
-            UserIdentity::Session(session) => session.key_fingerprint(),
-        }
-    }
-
-    pub fn ticket_subject(&self) -> String {
-        format!("{}@{}", self.id(), self.key_fingerprint())
-    }
 }
 
 #[async_trait]
