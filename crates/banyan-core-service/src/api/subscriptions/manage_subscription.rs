@@ -4,10 +4,10 @@ use axum::response::{IntoResponse, Response};
 
 use crate::app::{AppState, StripeHelperError};
 use crate::database::models::User;
-use crate::extractors::{ServerBase, UserIdentity};
+use crate::extractors::{ServerBase, SessionIdentity};
 
 pub async fn handler(
-    user_id: UserIdentity,
+    session_id: SessionIdentity,
     ServerBase(host_url): ServerBase,
     State(state): State<AppState>,
 ) -> Result<Response, ManageSubscriptionError> {
@@ -19,7 +19,7 @@ pub async fn handler(
         None => return Err(ManageSubscriptionError::NoStripeHelper),
     };
 
-    let user_id = user_id.id().to_string();
+    let user_id = session_id.user_id().to_string();
     let current_user = User::by_id(&mut conn, &user_id).await?;
 
     let stripe_customer_id = match &current_user.stripe_customer_id {
