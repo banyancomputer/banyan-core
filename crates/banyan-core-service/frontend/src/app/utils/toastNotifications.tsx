@@ -63,16 +63,18 @@ export class ToastNotifications {
         toast.dismiss();
     };
 
-    static error(message: string, buttonMessage: string, callback: () => void) {
+    static error(message: string, buttonMessage?: string, callback?: () => void) {
         toast.error(
             <div className="w-full flex flex-col items-start justify-between gap-2 text-xs">
                 {message}
-                <button
-                    className="text-text-600"
-                    onClick={callback}
-                >
-                    {buttonMessage}
-                </button>
+                {buttonMessage &&
+                    <button
+                        className="text-text-600"
+                        onClick={callback}
+                    >
+                        {buttonMessage}
+                    </button>
+                }
             </div>,
             {
                 icon: <span className="bg-mainBackground p-2 rounded-full">

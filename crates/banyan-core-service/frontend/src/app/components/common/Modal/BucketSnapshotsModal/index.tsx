@@ -8,6 +8,7 @@ import { BucketSnapshot } from '@/app/types/bucket';
 import { useModal } from '@/app/contexts/modals';
 import { getDateLabel, getTime } from '@/app/utils/date';
 import { convertFileSize } from '@/app/utils/storage';
+import { ToastNotifications } from '@/app/utils/toastNotifications';
 
 import { CommonFileIcon } from '@static/images/common';
 
@@ -20,14 +21,17 @@ export const BucketSnapshotsModal: React.FC<{ bucketId: string }> = ({ bucketId 
     useEffect(() => {
         if (!tomb) { return; }
 
-        (async () => {
+        const getSnapshots = async () => {
             try {
                 const snapshots = await getBucketShapshots(bucketId);
                 setSnapshots(snapshots);
             } catch (error: any) {
+                ToastNotifications.error('Error while getting snapshots', `${messages.tryAgain}`, getSnapshots);
                 console.log(error);
             }
-        })();
+        };
+
+        getSnapshots();
     }, [tomb]);
 
     return (

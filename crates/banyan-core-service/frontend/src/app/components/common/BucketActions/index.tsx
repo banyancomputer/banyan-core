@@ -13,6 +13,7 @@ import { useModal } from '@/app/contexts/modals';
 import { Bucket } from '@/app/types/bucket';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 import { useTomb } from '@app/contexts/tomb';
+import { ToastNotifications } from '@/app/utils/toastNotifications';
 
 import { Bolt, DeleteHotData, Rename, Retry, Trash, Upload, Versions } from '@static/images/common';
 import { AddFolderIcon, Lock } from '@static/images/buckets';
@@ -92,7 +93,7 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         try {
             await remountBucket(bucket);
         } catch (error: any) {
-            console.log(error);
+            ToastNotifications.error('Error on bucket remount', 'Try again', remount);
         }
     }
 

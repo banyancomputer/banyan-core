@@ -2,9 +2,11 @@
 import { useIntl } from 'react-intl';
 import { useEffect } from 'react';
 
-import { useTomb } from '@/app/contexts/tomb';
 import { KeyManagementTable } from '@components/Account/ManageKeys/KeyManagementTable';
 import { Fallback } from '@components/common/Fallback';
+
+import { useTomb } from '@/app/contexts/tomb';
+import { ToastNotifications } from '@/app/utils/toastNotifications';
 
 const ManageKeys = () => {
     const { buckets, areBucketsLoading, tomb, getBucketsKeys } = useTomb();
@@ -13,9 +15,15 @@ const ManageKeys = () => {
     useEffect(() => {
         if (!tomb) { return; }
 
-        (async () => {
-            await getBucketsKeys();
-        })();
+        const getKeys = async () => {
+            try {
+                await getBucketsKeys();
+            } catch (error: any) {
+                ToastNotifications.error('Failed to upload files', 'Try again', getKeys)
+            }
+        };
+
+        getKeys();
     }, [buckets.length, tomb]);
 
     return (

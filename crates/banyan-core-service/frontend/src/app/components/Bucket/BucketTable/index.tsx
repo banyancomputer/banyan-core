@@ -47,13 +47,18 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
 
         const dragData = event.dataTransfer.getData('browserObject');
         if (dragData) {
-            const droppedItem: { item: BrowserObject; path: string[] } = JSON.parse(dragData);
+            try {
 
-            if (!droppedItem.path.length) { return; }
+                const droppedItem: { item: BrowserObject; path: string[] } = JSON.parse(dragData);
 
-            await moveTo(bucket, [...droppedItem.path, droppedItem.item.name], [], droppedItem.item.name);
-            ToastNotifications.notify(`${messages.fileWasMoved}`, <Done width="20px" height="20px" />);
-            await getSelectedBucketFiles([]);
+                if (!droppedItem.path.length) { return; }
+
+                await moveTo(bucket, [...droppedItem.path, droppedItem.item.name], [], droppedItem.item.name);
+                ToastNotifications.notify(`${messages.fileWasMoved}`, <Done width="20px" height="20px" />);
+                await getSelectedBucketFiles([]);
+            } catch (error: any) {
+                ToastNotifications.error(`${messages.moveToError}`, `${messages.tryAgain}`, () => handleDrop(event));
+            };
         }
     };
 

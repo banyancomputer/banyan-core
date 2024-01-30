@@ -78,9 +78,8 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 		const release = await mutex.acquire();
 		try {
 			return await callback(tomb);
-		} catch (error) {
-			console.error('tombMutex', error);
-			setAreBucketsLoading(false);
+		} catch (error: any) {
+			throw new Error(error);
 		} finally {
 			release();
 		}
@@ -88,7 +87,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
 	/** Returns list of buckets. */
 	const getBuckets = async () => {
-		tombMutex(tomb, async tomb => {
+		return await tombMutex(tomb, async tomb => {
 			const key = await getEncryptionKey();
 			const wasm_buckets: WasmBucket[] = await tomb!.listBuckets();
 			if (isUserNew) {
@@ -127,7 +126,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	/** Pushes files and snapshots inside of buckets list. */
 	const getBucketsFiles = async () => {
 		setAreBucketsLoading(true);
-		tombMutex(tomb, async tomb => {
+		return await tombMutex(tomb, async tomb => {
 			const wasm_bukets: Bucket[] = [];
 			for (const bucket of buckets) {
 				const files: BrowserObject[] = bucket.mount ? await bucket.mount!.ls([]) : [];
@@ -144,7 +143,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	};
 
 	const remountBucket = async (bucket: Bucket) => {
-		tombMutex(tomb, async tomb => {
+		return await tombMutex(tomb, async tomb => {
 			const key = await getEncryptionKey();
 			const mount = await tomb!.mount(bucket.id, key.privatePem);
 			const locked = await mount.locked();
@@ -156,7 +155,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	/** Pushes keys inside of buckets list. */
 	const getBucketsKeys = async () => {
 		setAreBucketsLoading(true);
-		tombMutex(tomb, async tomb => {
+		return await tombMutex(tomb, async tomb => {
 			const wasm_bukets: Bucket[] = [];
 			for (const bucket of buckets) {
 				const rawKeys = await tomb!.listBucketKeys(bucket.id);
@@ -180,7 +179,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
 	/** Returns selected bucket state according to current folder location. */
 	const getSelectedBucketFiles = async (path: string[]) => {
-		tombMutex(selectedBucket!.mount!, async mount => {
+		return await tombMutex(selectedBucket!.mount!, async mount => {
 			setAreBucketsLoading(true);
 			const files = await mount.ls(path);
 			await setSelectedBucket(bucket => ({ ...bucket!, files: files.sort(sortByType) }));
@@ -190,7 +189,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
 	/** Returns selected folder files. */
 	const getExpandedFolderFiles = async (path: string[], folder: BrowserObject, bucket: Bucket) => {
-		await tombMutex(selectedBucket!.mount!, async mount => {
+		return await tombMutex(selectedBucket!.mount!, async mount => {
 			const files = await mount.ls(path);
 			folder.files = files.sort(sortByType);
 			setSelectedBucket(prev => ({ ...prev! }));
@@ -279,7 +278,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	/** Renames bucket */
 
 	const moveTo = async (bucket: Bucket, from: string[], to: string[], name: string) => {
-		await tombMutex(bucket.mount!, async mount => {
+		return await await tombMutex(bucket.mount!, async mount => {
 			const extstingFiles = (await mount.ls(to)).map(file => file.name);
 			const browserObjectName = handleNameDuplication(name, extstingFiles);
 			await mount.mv(from, [...to, browserObjectName]);
@@ -305,7 +304,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	};
 
 	const renameBucket = async (bucket: Bucket, newName: string) => {
-		await tombMutex(bucket.mount!, async mount => {
+		return await tombMutex(bucket.mount!, async mount => {
 			await mount.rename(newName);
 			bucket.name = newName;
 			setBuckets(prev => prev.map(element => element.id === bucket.id ? { ...element, name: newName } : element));
@@ -314,7 +313,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
 	/** Creates directory inside selected bucket */
 	const createDirectory = async (bucket: Bucket, path: string[], name: string) => {
-		await tombMutex(bucket.mount!, async mount => {
+		return await tombMutex(bucket.mount!, async mount => {
 			await mount.mkdir([...path, name]);
 			if (path.join('') !== folderLocation.join('')) { return; }
 			const files = await mount.ls(path) || [];
@@ -326,7 +325,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
 	const getStorageUsageState = async () => {
 		/** Returns used storage amount in bytes */
-		await tombMutex(tomb, async tomb => {
+		return await tombMutex(tomb, async tomb => {
 			const current = await tomb!.getUsage();
 			const limit = await tomb!.getUsageLimit();
 			setStorageUsage({ current: Number(current), limit: Number(limit) });
@@ -335,7 +334,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
 	/** Uploads file to selected bucket/directory, updates buckets state */
 	const uploadFile = async (bucket: Bucket, uploadPath: string[], name: string, file: ArrayBuffer, folder?: BrowserObject) => {
-		tombMutex(bucket.mount!, async mount => {
+		return await tombMutex(bucket.mount!, async mount => {
 			const extstingFiles = (await mount.ls(uploadPath)).map(file => file.name);
 			let fileName = handleNameDuplication(name, extstingFiles);
 			await mount.write([...uploadPath, fileName], file);
@@ -357,7 +356,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
 	/** Creates bucket snapshot */
 	const takeColdSnapshot = async (bucket: Bucket) => {
-		await tombMutex(tomb, async tomb => {
+		return await tombMutex(tomb, async tomb => {
 			await bucket.mount!.snapshot();
 			const snapshots = await tomb!.listBucketSnapshots(bucket.id);
 			await updateBucketsState('snapshots', snapshots, bucket.id);
@@ -376,7 +375,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	};
 
 	const deleteFile = async (bucket: Bucket, path: string[], name: string) => {
-		await tombMutex(bucket.mount!, async mount => {
+		return await tombMutex(bucket.mount!, async mount => {
 			await mount.rm([...path, name]);
 			const isSnapshotValid = await mount.hasSnapshot();
 			await updateBucketsState('isSnapshotValid', isSnapshotValid, bucket.id);
