@@ -3,14 +3,14 @@ use axum::response::{IntoResponse, Redirect, Response};
 
 use crate::app::AppState;
 use crate::database::models::StripeCheckoutSession;
-use crate::extractors::UserIdentity;
+use crate::extractors::SessionIdentity;
 
 pub async fn cancel_redirect() -> Response {
     Redirect::to("/").into_response()
 }
 
 pub async fn success_redirect(
-    user_id: UserIdentity,
+    session_id: SessionIdentity,
     State(state): State<AppState>,
     Path(checkout_session_id): Path<String>,
 ) -> Response {
@@ -22,7 +22,7 @@ pub async fn success_redirect(
         Err(_) => return redirect,
     };
 
-    let user_id = user_id.id().to_string();
+    let user_id = session_id.user_id().to_string();
 
     let mut checkout_session =
         match StripeCheckoutSession::find_by_stripe_id(&mut conn, &user_id, &checkout_session_id)
