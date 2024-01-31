@@ -173,6 +173,7 @@ impl TryFrom<Url> for ObjectStoreConnection {
     }
 }
 
+#[derive(Debug)]
 pub enum ObjectStore {
     /// An object store against a local filesystem
     Local(LocalFileSystem),

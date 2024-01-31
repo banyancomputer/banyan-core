@@ -6,6 +6,9 @@ use axum::Router;
 
 use crate::app::AppState;
 
+#[cfg(feature = "fake")]
+mod create_fake_user;
+
 mod create_device_api_key;
 mod create_escrowed_device;
 mod delete_device_api_key;
@@ -26,6 +29,7 @@ where
     Box<dyn Error + Send + Sync + 'static>: From<B::Error>,
 {
     Router::new()
+        .route("/fake_user", post(create_fake_user::handler))
         .route(
             "/device_api_key",
             get(read_all_device_api_keys::handler).post(create_device_api_key::handler),

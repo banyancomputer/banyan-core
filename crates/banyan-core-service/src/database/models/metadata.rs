@@ -242,7 +242,6 @@ mod tests {
                 .is_err()
         );
 
-        //Metadata::delete_outdated(&mut conn, &bucket_id).await?;
         Ok(())
     }
 

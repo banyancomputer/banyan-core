@@ -185,15 +185,22 @@ pub async fn handler(
     }
 
     let file_name = format!("{bucket_id}/{metadata_id}.car");
+    tracing::warn!("heres the store, fyi: {:?}", store);
     let (hash, size) = persist_upload(&store, &file_name, data_field).await?;
 
     // We don't need to be in a tranaction yet, a regular acquire is fine here
     let mut conn = database.acquire().await?;
     Metadata::upload_complete(&mut conn, &metadata_id, &hash, size as i64).await?;
 
+    tracing::info!("completed the upload >>>>><<<<");
+
     let needed_capacity = request_data.expected_data_size;
     let user = User::by_id(&mut conn, &user_id).await?;
+
+    /*
     let subscription = Subscription::by_id(&mut conn, &user.subscription_id).await?;
+
+    tracing::info!("got the user and subscription");
 
     if let Some(hard_limit) = subscription.hot_storage_hard_limit {
         let hard_limit_bytes = hard_limit * GIBIBYTE;
@@ -207,12 +214,16 @@ pub async fn handler(
         }
     }
 
+    */
+    tracing::info!("got the consumed_storage");
+
     if request_data.expected_data_size == 0 {
         Metadata::mark_current(&mut conn, &bucket_id, &metadata_id, None).await?;
         let resp_msg = serde_json::json!({"id": metadata_id, "state": "current"});
         return Ok((StatusCode::OK, Json(resp_msg)).into_response());
     }
 
+    tracing::info!("marked as current");
     // We need to be consistent again, close and switch back to transaction land
     conn.close().await?;
     let mut conn = database.begin().await?;
@@ -231,6 +242,7 @@ pub async fn handler(
         };
     let user_report = StorageHost::user_report(&mut conn, &storage_host.id, &user_id).await?;
 
+    tracing::info!("selected storage host and user report");
     let mut storage_authorization: Option<String> = None;
     if user_report.authorization_available() < needed_capacity {
         let new_authorized_capacity = rounded_storage_authorization(&user_report, needed_capacity);
@@ -274,7 +286,6 @@ pub async fn handler(
         "storage_host": storage_host.url,
         "storage_authorization": storage_authorization,
     });
-
     Ok((StatusCode::OK, Json(response)).into_response())
 }
 

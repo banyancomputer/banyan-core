@@ -80,11 +80,13 @@ pub async fn handler(
     .await
     .map_err(ReportUploadError::MarkCurrentFailed)?;
 
+    /*
     // Now that the state has changed, delete any CAR files associated with this
     Metadata::delete_outdated(&mut db_conn, &bucket_id, &store)
         .await
         .map_err(ReportUploadError::DeleteOutdatedFailed)?;
 
+        */
     Ok((StatusCode::NO_CONTENT, ()).into_response())
 }
 
