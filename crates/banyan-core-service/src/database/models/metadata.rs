@@ -216,7 +216,7 @@ mod tests {
     use time::macros::datetime;
 
     use super::*;
-    use crate::database::models::MetadataState as MS;
+    use crate::database::models::{MetadataState as MS, SnapshotState};
     use crate::database::test_helpers::*;
 
     #[tokio::test]
@@ -282,6 +282,11 @@ mod tests {
             ids.push(metadata_id);
         }
 
+        // Create a snapshot on one of the metadata, which will be exempt from deletion
+        // even though it is one of the oldest metadata rows
+        let snapshot_metadata_id = &ids[2];
+        let _ = create_snapshot(&mut conn, &snapshot_metadata_id, SnapshotState::Pending).await;
+
         // Delete outdated CAR files and mark as deleted
         assert!(Metadata::delete_outdated(&mut conn, &bucket_id, &store)
             .await
@@ -291,7 +296,7 @@ mod tests {
         for (index, id) in ids.iter().enumerate() {
             let expected_state = if index == ids.len() - 1 {
                 MS::Current
-            } else if index >= ids.len() - 6 {
+            } else if index >= ids.len() - 6 || id == snapshot_metadata_id {
                 MS::Outdated
             } else {
                 MS::Deleted
