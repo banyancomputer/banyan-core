@@ -356,6 +356,8 @@ pub(crate) async fn sample_metadata(
     create_metadata(conn, bucket_id, &metadata_cid, &root_cid, state, None, None).await
 }
 
+pub(crate) async fn sample_upload() {}
+
 pub(crate) async fn sample_user(conn: &mut DatabaseConnection, email: &str) -> String {
     create_user(conn, email, "Generic Tester").await
 }
