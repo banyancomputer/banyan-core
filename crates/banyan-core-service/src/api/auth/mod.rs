@@ -16,9 +16,6 @@ mod end_regwait;
 pub(crate) mod registration_event;
 mod start_regwait;
 
-#[cfg(feature = "fake")]
-mod create_fake_user;
-
 mod who_am_i;
 
 #[cfg(feature = "fake")]
@@ -49,7 +46,6 @@ where
             "/create_escrowed_device",
             post(create_escrowed_device::handler),
         )
-        .route("/fake_user", post(create_fake_user::handler))
         .route("/who_am_i", get(who_am_i::handler))
         .with_state(state)
 }

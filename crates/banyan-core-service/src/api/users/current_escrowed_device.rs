@@ -5,18 +5,17 @@ use http::StatusCode;
 use crate::api::models::ApiEscrowedKeyMaterial;
 use crate::app::AppState;
 use crate::database::models::EscrowedDevice;
-use crate::extractors::UserIdentity;
+use crate::extractors::SessionIdentity;
 
 pub async fn handler(
-    user_identity: UserIdentity,
+    session_id: SessionIdentity,
     State(state): State<AppState>,
 ) -> Result<Response, ReadEscrowedDeviceError> {
     let database = state.database();
-    let user_id = user_identity.id().to_string();
+    let user_id = session_id.user_id().to_string();
     let escrowed_device = sqlx::query_as!(
         EscrowedDevice,
-        r#"SELECT *
-            FROM escrowed_devices WHERE user_id = $1;"#,
+        "SELECT * FROM escrowed_devices WHERE user_id = $1;",
         user_id,
     )
     .fetch_one(&database)

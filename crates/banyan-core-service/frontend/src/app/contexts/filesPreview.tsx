@@ -3,6 +3,8 @@ import mime from 'mime';
 
 import { useTomb } from './tomb';
 import { Bucket } from '@/app/types/bucket';
+import { ToastNotifications } from '../utils/toastNotifications';
+import { useIntl } from 'react-intl';
 
 interface FileState {
     name: string;
@@ -45,6 +47,7 @@ export const FilePreviewProvider: FC<{ children: ReactNode }> = ({ children }) =
     const [bucket, setBucket] = useState<Bucket | null>(null);
     const [path, setPath] = useState<string[]>([]);
     const { getFile } = useTomb();
+    const { messages } = useIntl();
 
     const openFile = async (bucket: Bucket, file: string, files: string[], path: string[]) => {
         if (!file) return;
@@ -72,6 +75,7 @@ export const FilePreviewProvider: FC<{ children: ReactNode }> = ({ children }) =
             const data = URL.createObjectURL(blob);
             setFile(prev => ({ data, name: file, blob, fileType: prev.fileType, isLoading: false }));
         } catch (error: any) {
+            ToastNotifications.error('Failed to load file', `${messages.tryAgain}`, () => openFile(bucket, file, files, path));
             setFile(initialState);
         }
     };

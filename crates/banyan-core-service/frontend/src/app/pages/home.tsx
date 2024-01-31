@@ -4,12 +4,13 @@ import { useIntl } from 'react-intl';
 import { UploadFileModal } from '@components/common/Modal/UploadFileModal';
 import { Fallback } from '@components/common/Fallback';
 import { Bucket } from '@components/Home/Bucket';
+import { CreateBucketModal } from '@components/common/Modal/CreateBucketModal';
 
 import { useTomb } from '@/app/contexts/tomb';
 import { useModal } from '@/app/contexts/modals';
+import { ToastNotifications } from '../utils/toastNotifications';
 
 import { PlusBold, Upload } from '@static/images/common';
-import { CreateBucketModal } from '@components/common/Modal/CreateBucketModal';
 
 const Home = () => {
     const { openModal } = useModal();
@@ -27,9 +28,15 @@ const Home = () => {
     useEffect(() => {
         if (!tomb) { return; }
 
-        (async () => {
-            await getBucketsFiles();
-        })();
+        const getFiles = async () => {
+            try {
+                await getBucketsFiles();
+            } catch (error: any) {
+                ToastNotifications.error('Error on files loading', 'Try again', getFiles)
+            };
+        };
+
+        getFiles();
     }, [buckets.length, tomb]);
 
     return (

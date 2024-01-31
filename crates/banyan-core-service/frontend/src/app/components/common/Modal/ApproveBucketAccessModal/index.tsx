@@ -6,6 +6,7 @@ import { SubmitButton } from '@components/common/SubmitButton';
 import { useModal } from '@/app/contexts/modals';
 import { useTomb } from '@/app/contexts/tomb';
 import { Bucket, BucketKey } from '@/app/types/bucket';
+import { ToastNotifications } from '@/app/utils/toastNotifications';
 
 export const ApproveBucketAccessModal: React.FC<{ bucket: Bucket; bucketKey: BucketKey }> = ({ bucket, bucketKey }) => {
     const { messages } = useIntl();
@@ -16,7 +17,9 @@ export const ApproveBucketAccessModal: React.FC<{ bucket: Bucket; bucketKey: Buc
         try {
             await approveBucketAccess(bucket, bucketKey.id);
             closeModal();
-        } catch (error: any) { }
+        } catch (error: any) {
+            ToastNotifications.error('Something went wrong', `${messages.tryAgain}`, approveAccess);
+        }
     };
 
     return (
