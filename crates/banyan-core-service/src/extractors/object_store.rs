@@ -1,5 +1,3 @@
-use std::ops::Deref;
-
 use axum::async_trait;
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
@@ -7,19 +5,6 @@ use axum::http::StatusCode;
 use banyan_object_store::{ObjectStore, ObjectStoreConnection};
 
 use crate::app::AppState;
-/*
-#[derive(Debug)]
-pub struct DataStore(LocalFileSystem);
-
-impl Deref for DataStore {
-    type Target = LocalFileSystem;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-*/
 
 #[async_trait]
 impl FromRequestParts<AppState> for ObjectStore {

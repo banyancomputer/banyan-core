@@ -2,7 +2,7 @@
 
 mod admin_identity;
 mod api_identity;
-mod data_store;
+mod object_store;
 mod server_base;
 mod service_key;
 mod session_identity;
