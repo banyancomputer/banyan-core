@@ -45,8 +45,10 @@ export const FileUploadProvider: FC<{ children: ReactNode }> = ({ children }) =>
             }
         };
         if (files.every(file => file.status === 'success')) {
-            ToastNotifications.close();
-            setFiles([]);
+            setTimeout(() => {
+                ToastNotifications.close();
+                setFiles([]);
+            }, 3000);
         }
     };
 

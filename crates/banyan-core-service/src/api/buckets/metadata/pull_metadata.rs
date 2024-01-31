@@ -8,10 +8,10 @@ use http::{HeaderMap, HeaderValue};
 use uuid::Uuid;
 
 use crate::app::AppState;
-use crate::extractors::UserIdentity;
+use crate::extractors::ApiIdentity;
 
 pub async fn handler(
-    user_identity: UserIdentity,
+    api_id: ApiIdentity,
     store: ObjectStore,
     Path((bucket_id, metadata_id)): Path<(Uuid, Uuid)>,
     State(state): State<AppState>,
@@ -21,7 +21,7 @@ pub async fn handler(
     let db_bucket_id = bucket_id.to_string();
     let db_metadata_id = metadata_id.to_string();
 
-    let user_id = user_identity.id().to_string();
+    let user_id = api_id.user_id().to_string();
     let authorized_bucket_data = sqlx::query_as!(
         PullBucketData,
         r#"SELECT m.bucket_id, m.id as metadata_id FROM metadata AS m

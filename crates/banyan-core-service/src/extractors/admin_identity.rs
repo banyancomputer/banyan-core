@@ -29,19 +29,16 @@ impl AdminIdentity {
 }
 
 impl AdminIdentity {
+    pub fn email(&self) -> &str {
+        self.identity.email()
+    }
+
     pub fn session_id(&self) -> Uuid {
         self.identity.session_id()
     }
 
     pub fn user_id(&self) -> Uuid {
         self.identity.user_id()
-    }
-
-    pub fn key_fingerprint(&self) -> &str {
-        self.identity.key_fingerprint()
-    }
-    pub fn email(&self) -> &str {
-        self.identity.email()
     }
 }
 

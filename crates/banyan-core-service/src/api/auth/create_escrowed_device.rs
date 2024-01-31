@@ -5,11 +5,11 @@ use jwt_simple::prelude::ES384PublicKey;
 
 use crate::api::models::ApiEscrowedKeyMaterial;
 use crate::app::AppState;
-use crate::extractors::UserIdentity;
+use crate::extractors::SessionIdentity;
 use crate::utils::keys::fingerprint_public_key;
 
 pub async fn handler(
-    user_identity: UserIdentity,
+    session_id: SessionIdentity,
     State(state): State<AppState>,
     Json(request): Json<ApiEscrowedKeyMaterial>,
 ) -> Result<Response, CreateEscrowedDeviceError> {
@@ -22,29 +22,25 @@ pub async fn handler(
     let _public_encryption_key = ES384PublicKey::from_pem(&encryption_public_key_pem)
         .map_err(CreateEscrowedDeviceError::InvalidPublicKey)?;
     let device_api_key_fingerprint = fingerprint_public_key(&public_device_api_key);
-    // TODO: Validate the salt here too
 
-    let database = state.database();
-    let user_id = user_identity.id().to_string();
+    let user_id = session_id.user_id().to_string();
     let encrypted_private_key_material = request.encrypted_private_key_material;
     let pass_key_salt = request.pass_key_salt;
 
-    // Check if the user has an escrow device already
-    if sqlx::query!(
-        r#"SELECT id 
-        FROM escrowed_devices 
-        WHERE user_id = $1"#,
+    let database = state.database();
+    let mut conn = database.begin().await?;
+
+    let existing_device_key = sqlx::query_scalar!(
+        "SELECT id FROM escrowed_devices WHERE user_id = $1",
         user_id,
     )
-    .fetch_optional(&database)
-    .await?
-    .is_some()
-    {
+    .fetch_optional(&mut *conn)
+    .await?;
+
+    if existing_device_key.is_some() {
         return Err(CreateEscrowedDeviceError::EscrowedDeviceAlreadyExists);
     };
 
-    // Create the Escrowed Device
-    let mut transaction = database.begin().await?;
     sqlx::query!(
         r#"INSERT INTO escrowed_devices (user_id, api_public_key_pem, encryption_public_key_pem, encrypted_private_key_material, pass_key_salt)
             VALUES ($1, $2, $3, $4, $5);"#,
@@ -54,47 +50,23 @@ pub async fn handler(
         encrypted_private_key_material,
         pass_key_salt
     )
-    .execute(&mut *transaction)
-    .await
-    .map_err(|err| {
-        match err.as_database_error() {
-            Some(db_err) => {
-                if db_err.is_unique_violation() {
-                    CreateEscrowedDeviceError::EscrowedDeviceAlreadyExists
-                } else {
-                    err.into()
-                }
-            }
-            None => err.into()
-        }
-    })?;
+    .execute(&mut *conn)
+    .await?;
 
     sqlx::query!(
-        r#"INSERT INTO device_api_keys (user_id, fingerprint, pem)
-            VALUES ($1, $2, $3);"#,
+        "INSERT INTO device_api_keys (user_id, fingerprint, pem) VALUES ($1, $2, $3);",
         user_id,
         device_api_key_fingerprint,
         api_public_key_pem,
     )
-    .execute(&mut *transaction)
-    .await
-    .map_err(|err| match err.as_database_error() {
-        Some(db_err) => {
-            if db_err.is_unique_violation() {
-                CreateEscrowedDeviceError::FingerprintAlreadyExists
-            } else {
-                err.into()
-            }
-        }
-        None => err.into(),
-    })?;
-    transaction.commit().await?;
+    .execute(&mut *conn)
+    .await?;
 
-    // No Response OK
+    conn.commit().await?;
+
     Ok((StatusCode::OK, ()).into_response())
 }
 
-#[non_exhaustive]
 #[derive(Debug, thiserror::Error)]
 pub enum CreateEscrowedDeviceError {
     #[error("escrow device already exists for user")]
@@ -103,10 +75,7 @@ pub enum CreateEscrowedDeviceError {
     #[error("failed to create escrow device: {0}")]
     FailedToCreateEscrowedDevice(sqlx::Error),
 
-    #[error("another device api key exists with the same fingerprint")]
-    FingerprintAlreadyExists,
-
-    #[error("provided public key was not a valid EC P384 pem")]
+    #[error("provided public key was not a valid EC P384 pem: {0}")]
     InvalidPublicKey(jwt_simple::Error),
 }
 
@@ -120,17 +89,13 @@ impl IntoResponse for CreateEscrowedDeviceError {
     fn into_response(self) -> Response {
         use CreateEscrowedDeviceError as CEDE;
         match &self {
-            CEDE::InvalidPublicKey(_) => {
-                let err_msg = serde_json::json!({"msg": "provided public key was not valid"});
-                (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
-            }
             CEDE::EscrowedDeviceAlreadyExists => {
                 let err_msg = serde_json::json!({"msg": "escrow device already exists for user"});
                 (StatusCode::CONFLICT, Json(err_msg)).into_response()
             }
-            CEDE::FingerprintAlreadyExists => {
-                let err_msg = serde_json::json!({"msg": "another device api key exists with the same fingerprint"});
-                (StatusCode::CONFLICT, Json(err_msg)).into_response()
+            CEDE::InvalidPublicKey(_) => {
+                let err_msg = serde_json::json!({"msg": "provided public key was not valid"});
+                (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
             }
             _ => {
                 tracing::error!("{self}");

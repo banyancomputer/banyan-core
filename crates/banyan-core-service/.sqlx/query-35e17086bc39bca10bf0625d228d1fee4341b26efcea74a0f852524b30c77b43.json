@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT pkce_verifier_secret\n            FROM oauth_state\n            WHERE provider = $1 AND csrf_secret = $2;",
+  "describe": {
+    "columns": [
+      {
+        "name": "pkce_verifier_secret",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "35e17086bc39bca10bf0625d228d1fee4341b26efcea74a0f852524b30c77b43"
+}

@@ -10,7 +10,7 @@ import { ChevronUp, Clock, Close, Retry, UploadFailIcon, UploadSuccessIcon } fro
 export const UploadFileProgress = () => {
     const { messages } = useIntl();
     const { files, deleteFromUploadList, retryUpload } = useFilesUpload();
-    const [isExpanded, setIsExpanded] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(true);
     const uploadedFilesLength = useMemo(() => files.filter(file => file.status === 'success').length, [files]);
 
     const toggleVisibility = () => {

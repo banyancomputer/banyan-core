@@ -14,7 +14,7 @@ use std::sync::OnceLock;
 use std::time::Duration;
 
 pub use admin_identity::AdminIdentity;
-// pub use data_store::DataStore;
+pub use api_identity::ApiIdentity;
 pub use server_base::ServerBase;
 pub use session_identity::SessionIdentity;
 pub use storage_provider_identity::StorageProviderIdentity;
