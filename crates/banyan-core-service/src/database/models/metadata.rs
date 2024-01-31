@@ -140,11 +140,13 @@ impl Metadata {
             r#"
                 SELECT id FROM metadata
                     WHERE state = 'outdated'
+                    AND bucket_id = $1
                     AND id NOT IN (SELECT metadata_id FROM snapshots)
                     ORDER BY updated_at DESC
                     LIMIT -1 OFFSET 5;
             "#,
         )
+        .bind(bucket_id)
         .fetch_all(&mut *conn)
         .await?;
 
