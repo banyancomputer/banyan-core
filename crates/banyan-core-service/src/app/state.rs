@@ -5,7 +5,6 @@ use std::sync::Arc;
 use banyan_object_store::{ObjectStore, ObjectStoreConnection, ObjectStoreError};
 use jwt_simple::prelude::*;
 
-//se object_store::local::LocalFileSystem;
 use crate::app::{
     Config, MailgunSigningKey, ProviderCredential, Secrets, ServiceKey, ServiceVerificationKey,
     StripeHelper, StripeSecrets,
