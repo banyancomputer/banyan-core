@@ -126,6 +126,35 @@ impl Metadata {
         Ok(())
     }
 
+    pub async fn delete_outdated(
+        conn: &mut DatabaseConnection,
+        bucket_id: &str,
+    ) -> Result<(), sqlx::Error> {
+        let now = OffsetDateTime::now_utc();
+
+        // First, query the database to see which metadata need to be deleted
+        // Ideally, we'd do this all in a single UPDATE, but our sqlite does not allow ORDER or
+        // LIMIT in its UPDATE statements.
+        let deletion_ids: Vec<String> = sqlx::query_scalar(
+            r#"
+            UPDATE metadata SET state = 'deleted', updated_at = $1,
+            WHERE id IN
+                (
+                    SELECT id FROM metadata
+                        WHERE state = 'outdated'
+                        AND id NOT IN (SELECT metadata_id FROM snapshots)
+                        ORDER BY updated_at DESC
+                        LIMIT -1 OFFSET 5
+                )
+            RETURNING id;"#,
+        )
+        .bind(now)
+        .fetch_all(&mut *conn)
+        .await?;
+
+        Ok(())
+    }
+
     /// Marks a metadata upload as complete. This is only for the metadata, the actual filesystem
     /// content will still need to be uploaded to a storage provider directly which will check in
     /// before making this new version the current one.
@@ -198,6 +227,7 @@ mod tests {
                 .is_err()
         );
 
+        Metadata::delete_outdated(&mut conn, &bucket_id).await?;
         Ok(())
     }
 

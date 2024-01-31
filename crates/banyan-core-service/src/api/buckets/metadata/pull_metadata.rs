@@ -2,17 +2,17 @@ use axum::body::StreamBody;
 use axum::extract::{Json, Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
+use banyan_object_store::{ObjectStore, ObjectStoreError, ObjectStorePath};
 use http::header::{CONTENT_DISPOSITION, CONTENT_TYPE};
 use http::{HeaderMap, HeaderValue};
-use object_store::ObjectStore;
 use uuid::Uuid;
 
 use crate::app::AppState;
-use crate::extractors::{DataStore, UserIdentity};
+use crate::extractors::UserIdentity;
 
 pub async fn handler(
     user_identity: UserIdentity,
-    store: DataStore,
+    store: ObjectStore,
     Path((bucket_id, metadata_id)): Path<(Uuid, Uuid)>,
     State(state): State<AppState>,
 ) -> Result<Response, PullMetadataError> {
@@ -40,7 +40,7 @@ pub async fn handler(
         "{}/{}.car",
         authorized_bucket_data.bucket_id, authorized_bucket_data.metadata_id,
     );
-    let file_path = object_store::path::Path::from(file_name.as_str());
+    let file_path = ObjectStorePath::from(file_name.as_str());
 
     let file_reader = store
         .get(&file_path)
@@ -72,7 +72,7 @@ struct PullBucketData {
 #[derive(Debug, thiserror::Error)]
 pub enum PullMetadataError {
     #[error("unable to get a handle on metadata file: {0}")]
-    FileUnavailable(object_store::Error),
+    FileUnavailable(ObjectStoreError),
 
     #[error("the database reported an issue when attempting to locate metadata: {0}")]
     MetadataUnavailable(sqlx::Error),
