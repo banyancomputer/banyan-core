@@ -162,7 +162,6 @@ impl Metadata {
             let car_path = ObjectStorePath::from(format!("{}/{}.car", bucket_id, metadata_id));
             if store.delete(&car_path).await.is_ok() {
                 successful_deletion_ids.push(metadata_id.clone());
-                println!("pushing {metadata_id}");
                 separated.push_bind(metadata_id);
             }
         }
@@ -286,7 +285,7 @@ mod tests {
         // Create a snapshot on one of the metadata, which will be exempt from deletion
         // even though it is one of the oldest metadata rows
         let snapshot_metadata_id = &ids[2];
-        let _ = create_snapshot(&mut conn, &snapshot_metadata_id, SnapshotState::Pending).await;
+        let _ = create_snapshot(&mut conn, snapshot_metadata_id, SnapshotState::Pending).await;
 
         // Delete outdated CAR files and mark as deleted
         assert!(Metadata::delete_outdated(&mut conn, &bucket_id, &store)
@@ -302,7 +301,7 @@ mod tests {
             } else {
                 MS::Deleted
             };
-            assert_metadata_in_state(&mut conn, &id, expected_state.clone()).await;
+            assert_metadata_in_state(&mut conn, id, expected_state.clone()).await;
             assert_eq!(
                 expected_state == MS::Deleted,
                 store
