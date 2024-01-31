@@ -162,41 +162,47 @@ mod tests {
     use time::macros::datetime;
 
     use super::*;
-    use crate::database::models::MetadataState;
+    use crate::database::models::MetadataState as MS;
     use crate::database::test_helpers::*;
 
     #[tokio::test]
-    async fn test_expected_getting_marked_current() {
+    async fn expected_getting_marked_current() -> Result<(), sqlx::Error> {
         let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
         let user_id = sample_user(&mut conn, "user@domain.tld").await;
         let bucket_id = sample_bucket(&mut conn, &user_id).await;
 
-        let pending_metadata_id = pending_metadata(&mut conn, &bucket_id, 1).await;
-        Metadata::mark_current(&mut conn, &bucket_id, &pending_metadata_id, None)
-            .await
-            .expect("marking current");
-        assert_metadata_in_state(&mut conn, &pending_metadata_id, MetadataState::Current).await;
+        let failed_id = sample_metadata(&mut conn, &bucket_id, 1, MS::UploadFailed).await;
+        let deleted_id = sample_metadata(&mut conn, &bucket_id, 2, MS::Deleted).await;
+        let pending_id = sample_metadata(&mut conn, &bucket_id, 3, MS::Pending).await;
+        let uploading_id = sample_metadata(&mut conn, &bucket_id, 4, MS::Uploading).await;
+        let current_id = sample_metadata(&mut conn, &bucket_id, 5, MS::Current).await;
+        let metadata_id = sample_metadata(&mut conn, &bucket_id, 6, MS::Pending).await;
 
-        let uploading_metadata_id =
-            sample_metadata(&mut conn, &bucket_id, 1, MetadataState::Uploading).await;
-        Metadata::mark_current(&mut conn, &bucket_id, &uploading_metadata_id, Some(1000))
-            .await
-            .expect("marking current");
-        assert_metadata_in_state(&mut conn, &uploading_metadata_id, MetadataState::Current).await;
-        assert_metadata_in_state(&mut conn, &pending_metadata_id, MetadataState::Outdated).await;
+        // Only the most recent of these metadata are to me marked current
+        Metadata::mark_current(&mut conn, &bucket_id, &metadata_id, None).await?;
+        assert_metadata_in_state(&mut conn, &metadata_id, MS::Current).await;
+        // Assert that only the formerly current id was marked as outdated
+        assert_metadata_in_state(&mut conn, &failed_id, MS::UploadFailed).await;
+        assert_metadata_in_state(&mut conn, &deleted_id, MS::Deleted).await;
+        assert_metadata_in_state(&mut conn, &pending_id, MS::Pending).await;
+        assert_metadata_in_state(&mut conn, &uploading_id, MS::Uploading).await;
+        assert_metadata_in_state(&mut conn, &current_id, MS::Outdated).await;
 
         // The metadata is already outdated, it shouldn't be capable of becoming the current
         // metadata.
-        let result =
-            Metadata::mark_current(&mut conn, &bucket_id, &pending_metadata_id, None).await;
-        assert!(result.is_err());
-        assert_metadata_in_state(&mut conn, &pending_metadata_id, MetadataState::Outdated).await;
+        assert!(
+            Metadata::mark_current(&mut conn, &bucket_id, &current_id, None)
+                .await
+                .is_err()
+        );
+
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_missing_metadata_fails() {
+    async fn missing_metadata_fails() {
         let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
@@ -220,7 +226,7 @@ mod tests {
     // interpretable as OffsetDateTime).
 
     #[tokio::test]
-    async fn test_metadata_timestamps_have_precision() {
+    async fn metadata_timestamps_have_precision() {
         let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
@@ -233,7 +239,7 @@ mod tests {
             &bucket_id,
             "root-cid",
             "metadata-cid",
-            MetadataState::Current,
+            MS::Current,
             Some(timestamp),
             None,
         )
@@ -249,7 +255,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_metadata_timestamps_have_no_hour_truncation() {
+    async fn metadata_timestamps_have_no_hour_truncation() {
         let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
@@ -262,7 +268,7 @@ mod tests {
             &bucket_id,
             "root-cid",
             "metadata-cid",
-            MetadataState::Current,
+            MS::Current,
             Some(timestamp),
             None,
         )
@@ -302,7 +308,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_metadata_timestamps_have_subsecond_truncation() {
+    async fn metadata_timestamps_have_subsecond_truncation() {
         let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
@@ -315,7 +321,7 @@ mod tests {
             &bucket_id,
             "root-cid",
             "metadata-cid",
-            MetadataState::Current,
+            MS::Current,
             Some(timestamp),
             None,
         )
@@ -355,7 +361,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_default_sqlx_timestamps_have_no_precision_and_are_interpretable() {
+    async fn default_sqlx_timestamps_have_no_precision_and_are_interpretable() {
         let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
@@ -365,7 +371,7 @@ mod tests {
         // Create a metadata row with no timestamp values -- this should use the defaults
         let root_cid = "root-cid";
         let metadata_cid = "metadata-cid";
-        let state = MetadataState::Current;
+        let state = MS::Current;
         let metadata_id = sqlx::query_scalar!(
             r#"INSERT INTO
                     metadata (bucket_id, root_cid, metadata_cid, expected_data_size, state)
@@ -405,7 +411,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_datetime_now_sqlx_timestamps_have_no_precision_and_are_interpretable() {
+    async fn datetime_now_sqlx_timestamps_have_no_precision_and_are_interpretable() {
         let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
@@ -417,7 +423,7 @@ mod tests {
             &bucket_id,
             "root-cid",
             "metadata-cid",
-            MetadataState::Current,
+            MS::Current,
             None,
             None,
         )
@@ -457,7 +463,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_sqlx_and_precise_timestamps_are_orderable() {
+    async fn sqlx_and_precise_timestamps_are_orderable() {
         let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
@@ -470,7 +476,7 @@ mod tests {
         // Create a metadata row with no timestamp values -- this should use the defaults
         let root_cid = "root-cid";
         let metadata_cid = "metadata-cid";
-        let state = MetadataState::Current;
+        let state = MS::Current;
         let first_metadata_id = sqlx::query_scalar!(
             r#"INSERT INTO
                     metadata (bucket_id, root_cid, metadata_cid, expected_data_size, state)
@@ -492,7 +498,7 @@ mod tests {
             &bucket_id,
             "root-cid",
             "metadata-cid",
-            MetadataState::Current,
+            MS::Current,
             Some(timestamp),
             None,
         )
@@ -541,7 +547,7 @@ mod tests {
             &bucket_id,
             "root-cid",
             "metadata-cid",
-            MetadataState::Current,
+            MS::Current,
             Some(timestamp),
             None,
         )
@@ -550,7 +556,7 @@ mod tests {
         // Create a second metadata row with no timestamp values -- this should use the defaults
         let root_cid = "root-cid";
         let metadata_cid = "metadata-cid";
-        let state = MetadataState::Current;
+        let state = MS::Current;
         let second_metadata_id = sqlx::query_scalar!(
             r#"INSERT INTO
                     metadata (bucket_id, root_cid, metadata_cid, expected_data_size, state)
