@@ -1,6 +1,7 @@
 use axum::extract::{Json, Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
+use banyan_object_store::ObjectStore;
 use serde::Deserialize;
 use uuid::Uuid;
 
@@ -15,6 +16,7 @@ use crate::extractors::StorageProviderIdentity;
 pub async fn handler(
     storage_provider: StorageProviderIdentity,
     State(state): State<AppState>,
+    store: ObjectStore,
     Path(metadata_id): Path<Uuid>,
     Json(request): Json<ReportUploadRequest>,
 ) -> Result<Response, ReportUploadError> {
@@ -78,7 +80,8 @@ pub async fn handler(
     .await
     .map_err(ReportUploadError::MarkCurrentFailed)?;
 
-    Metadata::delete_outdated(&mut db_conn, &bucket_id)
+    // Now that the state has changed, delete any CAR files associated with this
+    Metadata::delete_outdated(&mut db_conn, &bucket_id, &store)
         .await
         .map_err(ReportUploadError::DeleteOutdatedFailed)?;
 

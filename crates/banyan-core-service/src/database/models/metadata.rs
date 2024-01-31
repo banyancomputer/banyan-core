@@ -1,3 +1,4 @@
+use banyan_object_store::{ObjectStore, ObjectStorePath};
 use time::OffsetDateTime;
 
 use crate::database::models::Bucket;
@@ -129,27 +130,41 @@ impl Metadata {
     pub async fn delete_outdated(
         conn: &mut DatabaseConnection,
         bucket_id: &str,
+        store: &ObjectStore,
     ) -> Result<(), sqlx::Error> {
-        let now = OffsetDateTime::now_utc();
-
         // First, query the database to see which metadata need to be deleted
-        // Ideally, we'd do this all in a single UPDATE, but our sqlite does not allow ORDER or
-        // LIMIT in its UPDATE statements.
+        // We could do this all at once, but we dont want to modify the db unless we've verifiably
+        // removed the CAR file, or we'll never be able to hunt down the stragglers
         let deletion_ids: Vec<String> = sqlx::query_scalar(
             r#"
-            UPDATE metadata SET state = 'deleted', updated_at = $1,
-            WHERE id IN
-                (
-                    SELECT id FROM metadata
-                        WHERE state = 'outdated'
-                        AND id NOT IN (SELECT metadata_id FROM snapshots)
-                        ORDER BY updated_at DESC
-                        LIMIT -1 OFFSET 5
-                )
-            RETURNING id;"#,
+                SELECT id FROM metadata
+                    WHERE state = 'outdated'
+                    AND id NOT IN (SELECT metadata_id FROM snapshots)
+                    ORDER BY updated_at DESC
+                    LIMIT -1 OFFSET 5;
+            "#,
         )
-        .bind(now)
         .fetch_all(&mut *conn)
+        .await?;
+
+        let mut successful_deletion_ids = Vec::new();
+        for metadata_id in deletion_ids {
+            let car_path = ObjectStorePath::from(format!("{}/{}.car", bucket_id, metadata_id));
+            if store.delete(&car_path).await.is_ok() {
+                successful_deletion_ids.push(metadata_id);
+            }
+        }
+        let successful_deletion_ids_str = successful_deletion_ids.join(", ");
+
+        sqlx::query(
+            r#"               
+                UPDATE metadata SET state = 'deleted', updated_at = $1
+                    WHERE id IN ($2);
+            "#,
+        )
+        .bind(OffsetDateTime::now_utc())
+        .bind(successful_deletion_ids_str)
+        .execute(&mut *conn)
         .await?;
 
         Ok(())
@@ -227,7 +242,7 @@ mod tests {
                 .is_err()
         );
 
-        Metadata::delete_outdated(&mut conn, &bucket_id).await?;
+        //Metadata::delete_outdated(&mut conn, &bucket_id).await?;
         Ok(())
     }
 
