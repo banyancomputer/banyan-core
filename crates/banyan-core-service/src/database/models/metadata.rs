@@ -210,9 +210,10 @@ impl Metadata {
 
 #[cfg(test)]
 mod tests {
+    use std::path::Path;
+
     use banyan_object_store::ObjectStoreConnection;
     use bytes::Bytes;
-    use std::path::Path;
     use time::macros::datetime;
 
     use super::*;
