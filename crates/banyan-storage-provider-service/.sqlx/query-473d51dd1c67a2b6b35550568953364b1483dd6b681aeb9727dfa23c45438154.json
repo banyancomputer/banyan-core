@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        INSERT INTO\n            uploads_blocks (upload_id, block_id)\n            VALUES ($1, $2);\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "473d51dd1c67a2b6b35550568953364b1483dd6b681aeb9727dfa23c45438154"
+}

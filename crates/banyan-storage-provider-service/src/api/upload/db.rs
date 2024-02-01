@@ -26,19 +26,19 @@ pub async fn start_upload(
         state: String::from("started"),
     };
 
-    upload.id = sqlx::query_scalar(
+    upload.id = sqlx::query_scalar!(
         r#"
         INSERT INTO
             uploads (client_id, metadata_id, reported_size, base_path, state)
             VALUES ($1, $2, $3, $4, $5)
             RETURNING id;
         "#,
+        upload.client_id,
+        upload.metadata_id,
+        upload.reported_size,
+        upload.base_path,
+        upload.state,
     )
-    .bind(&upload.client_id)
-    .bind(&upload.metadata_id)
-    .bind(upload.reported_size)
-    .bind(&upload.base_path)
-    .bind(&upload.state)
     .fetch_one(db)
     .await?;
 
@@ -47,12 +47,12 @@ pub async fn start_upload(
 
 /// Marks an upload as failed
 pub async fn fail_upload(db: &Database, upload_id: &str) -> Result<(), sqlx::Error> {
-    sqlx::query(
+    sqlx::query!(
         r#"
         UPDATE uploads SET state = 'failed' WHERE id = $1;
         "#,
+        upload_id
     )
-    .bind(upload_id)
     .execute(db)
     .await
     .map(|_| ())
@@ -82,7 +82,7 @@ pub async fn complete_upload(
 
     // todo: should definitely do a db transaction before the attempted rename, committing only if
     // the rename is successfuly
-    sqlx::query(
+    sqlx::query!(
         r#"
         UPDATE uploads SET
                 state = 'complete',
@@ -90,17 +90,17 @@ pub async fn complete_upload(
                 integrity_hash = $2
             WHERE id = $3;
         "#,
+        total_size,
+        integrity_hash,
+        upload_id,
     )
-    .bind(total_size)
-    .bind(integrity_hash)
-    .bind(upload_id)
     .execute(db)
     .await
     .map(|_| ())
 }
 
 pub async fn upload_size(db: &Database, upload_id: &str) -> Result<i64, sqlx::Error> {
-    let total_size: i64 = sqlx::query_scalar(
+    let total_size: i32 = sqlx::query_scalar!(
         r#"
             SELECT COALESCE(SUM(blocks.data_length), 0)
             FROM blocks
@@ -108,12 +108,12 @@ pub async fn upload_size(db: &Database, upload_id: &str) -> Result<i64, sqlx::Er
             JOIN uploads ON uploads_blocks.upload_id = uploads.id
             WHERE uploads.id = $1;
             "#,
+        upload_id
     )
-    .bind(upload_id)
     .fetch_one(db)
     .await?;
 
-    Ok(total_size)
+    Ok(total_size as i64)
 }
 
 pub async fn report_upload(
@@ -123,16 +123,16 @@ pub async fn report_upload(
     upload_id: &str,
     total_size: i64,
 ) -> Result<(), sqlx::Error> {
-    let all_cids: Vec<String> = sqlx::query_scalar(
+    let all_cids: Vec<String> = sqlx::query_scalar!(
         r#"
             SELECT blocks.cid 
             FROM blocks
             JOIN uploads_blocks ON blocks.id = uploads_blocks.block_id
             JOIN uploads ON uploads_blocks.upload_id = uploads.id
             WHERE uploads.id = $1;
-            "#,
+        "#,
+        upload_id
     )
-    .bind(upload_id)
     .fetch_all(&*db)
     .await?;
 
@@ -154,17 +154,21 @@ pub async fn get_upload(
     client_id: Uuid,
     upload_id: &str,
 ) -> Result<Option<Upload>, sqlx::Error> {
-    sqlx::query_as(
+    let client_id = client_id.to_string();
+    let now = OffsetDateTime::now_utc() - UPLOAD_SESSION_DURATION;
+
+    sqlx::query_as!(
+        Upload,
         r#"
-        SELECT id, client_id, metadata_id, reported_size, state FROM uploads
+        SELECT id, client_id, metadata_id, base_path, reported_size, state FROM uploads
             WHERE client_id = $1
             AND id = $2
             AND created_at >= $3;
         "#,
+        client_id,
+        upload_id,
+        now
     )
-    .bind(client_id.to_string())
-    .bind(upload_id)
-    .bind(OffsetDateTime::now_utc() - UPLOAD_SESSION_DURATION)
     .fetch_optional(db)
     .await
 }
@@ -176,30 +180,30 @@ pub async fn write_block_to_tables(
     data_length: i64,
 ) -> Result<(), sqlx::Error> {
     // Insert the block if its missing, get its ID
-    let block_id: String = sqlx::query_scalar(
+    let block_id: String = sqlx::query_scalar!(
         r#"
         INSERT OR IGNORE INTO
             blocks (cid, data_length)
             VALUES ($1, $2)
         RETURNING id;
         "#,
+        normalized_cid,
+        data_length,
     )
-    .bind(normalized_cid)
-    .bind(data_length)
     .fetch_one(db)
     .await?;
 
     // Create uploads_blocks row with the block information
     // We omit car_offset because that's only for deprecated infra
-    sqlx::query(
+    sqlx::query!(
         r#"
         INSERT INTO
             uploads_blocks (upload_id, block_id)
             VALUES ($1, $2);
         "#,
+        upload_id,
+        block_id,
     )
-    .bind(upload_id)
-    .bind(block_id)
     .execute(db)
     .await
     .map(|_| ())

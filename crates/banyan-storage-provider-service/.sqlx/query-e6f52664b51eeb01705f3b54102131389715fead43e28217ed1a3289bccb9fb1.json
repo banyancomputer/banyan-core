@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            SELECT COALESCE(SUM(blocks.data_length), 0)\n            FROM blocks\n            JOIN uploads_blocks ON blocks.id = uploads_blocks.block_id\n            JOIN uploads ON uploads_blocks.upload_id = uploads.id\n            WHERE uploads.id = $1;\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "COALESCE(SUM(blocks.data_length), 0)",
+        "ordinal": 0,
+        "type_info": "Int"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "e6f52664b51eeb01705f3b54102131389715fead43e28217ed1a3289bccb9fb1"
+}
