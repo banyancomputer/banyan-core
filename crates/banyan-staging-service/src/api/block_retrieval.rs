@@ -85,7 +85,8 @@ pub async fn block_from_normalized_cid(
     database: &Database,
     normalized_cid: &str,
 ) -> Result<BlockDetails, BlockRetrievalError> {
-    let maybe_block_id: Option<BlockDetails> = sqlx::query_as(
+    let maybe_block_id: Option<BlockDetails> = sqlx::query_as!(
+        BlockDetails,
         r#"
         SELECT
             blocks.id AS id,
@@ -99,11 +100,12 @@ pub async fn block_from_normalized_cid(
             JOIN clients ON uploads.client_id = clients.id
             WHERE blocks.cid = $1;
         "#,
+        normalized_cid,
     )
-    .bind(normalized_cid)
     .fetch_optional(database)
     .await
     .map_err(BlockRetrievalError::DbFailure)?;
+
     match maybe_block_id {
         Some(id) => Ok(id),
         None => Err(BlockRetrievalError::UnknownBlock),
