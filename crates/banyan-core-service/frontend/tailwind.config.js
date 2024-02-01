@@ -38,8 +38,10 @@ module.exports = {
 			colors: {
 				button: {
 					primary: 'var(--button-primary)',
+					primaryText: 'var(--button-primary-text)',
 					highLight: 'var(--button-secondary)',
 					disabled: 'var(--disabled)',
+					contactSales: 'var(--contact-sales-button)'
 				},
 				error: 'var(--error)',
 				errorBanner: 'var(--error-banner)',

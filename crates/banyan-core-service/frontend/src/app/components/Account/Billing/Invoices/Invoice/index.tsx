@@ -6,6 +6,7 @@ import { getDateLabel } from '@/app/utils/date';
 import { useAppDispatch, useAppSelector } from '@/app/store';
 import { convertSubscriptionsSizes } from '@/app/utils/storage';
 import { selectInvoice } from '@/app/store/billing/slice';
+import { getHotStorageAmount } from '@/app/utils/subscritions';
 
 import { Close } from '@/app/static/images/common';
 
@@ -15,14 +16,6 @@ export const InvoiceDetails: React.FC<{ invoice: Invoice }> = ({ invoice }) => {
   const { displayName } = useAppSelector(state => state.user)
   const { subscriptions, selectedSubscription } = useAppSelector(state => state.billing);
   const subscription = subscriptions.find(subscription => subscription.pricing?.plan_base === invoice.total_amount / 100) || selectedSubscription;
-
-  const getHotStorageAmount = () => {
-    if (!subscription?.features?.included_hot_storage || !subscription?.features?.included_hot_replica_count) {
-      return 0;
-    };
-
-    return subscription!.features.included_hot_storage / subscription!.features.included_hot_replica_count;
-  };
 
   const close = () => {
     dispatch(selectInvoice(null));
@@ -62,7 +55,7 @@ export const InvoiceDetails: React.FC<{ invoice: Invoice }> = ({ invoice }) => {
         <div className="py-2 px-4 flex flex-col gap-4">
           <div className="flex items-center justify-between w-full">
             <span className="font-medium">{`${messages.onDemandStorage}`}</span>
-            <span className="font-normal">{convertSubscriptionsSizes(getHotStorageAmount())}</span>
+            <span className="font-normal">{convertSubscriptionsSizes(getHotStorageAmount(subscription))}</span>
           </div>
           <div className="flex items-center justify-between w-full">
             <span className="font-medium">{`${messages.dataEgress}`}</span>

@@ -1,12 +1,14 @@
 import React, { useEffect } from 'react';
 import { useIntl } from 'react-intl';
+import { unwrapResult } from '@reduxjs/toolkit';
+
+import { SubscriptionPlanModal } from '@/app/components/common/Modal/SubscriptionPlanModal';
 
 import { useAppDispatch, useAppSelector } from '@/app/store';
 import { getSubscriptions, manageSubscriptions } from '@/app/store/billing/actions';
 import { useModal } from '@/app/contexts/modals';
-import { SubscriptionPlanModal } from '@/app/components/common/Modal/SubscriptionPlanModal';
 import { convertSubscriptionsSizes } from '@/app/utils/storage';
-import { unwrapResult } from '@reduxjs/toolkit';
+import { getHotStorageAmount } from '@/app/utils/subscritions';
 
 export const NextBillingDate = () => {
     const dispatch = useAppDispatch();
@@ -14,13 +16,6 @@ export const NextBillingDate = () => {
     const { messages } = useIntl();
     const { openModal } = useModal();
 
-    const getHotStorageAmount = () => {
-        if (!selectedSubscription?.features?.included_hot_storage || !selectedSubscription?.features?.included_hot_replica_count) {
-            return 0;
-        };
-
-        return selectedSubscription!.features.included_hot_storage / selectedSubscription!.features.included_hot_replica_count;
-    };
 
     const upgragePlan = () => {
         openModal(<SubscriptionPlanModal />);
@@ -42,7 +37,7 @@ export const NextBillingDate = () => {
             <h3 className="text-text-800 text-[18px] font-semibold">Next Billing Date</h3>
             <div className="flex justify-between items-center">
                 <div>{`${messages.onDemandStorage}`}</div>
-                <div className="text-text-800">{convertSubscriptionsSizes(getHotStorageAmount())}</div>
+                <div className="text-text-800">{convertSubscriptionsSizes(getHotStorageAmount(selectedSubscription))}</div>
             </div>
             {/* <div className="flex justify-between items-center">
                 <div className="text-text-800">{`${messages.archivalStorage}`}</div>
