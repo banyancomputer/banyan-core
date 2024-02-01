@@ -33,6 +33,7 @@ export const SubscriptionPlanModal = () => {
                     <div className="px-4 py-2 border-1 border-border-regular">{`${messages.hotStorage}`}</div>
                     <div className="px-4 py-2 border-1 border-border-regular">{`${messages.hotReplications}`}</div>
                     <div className="px-4 py-2 border-1 border-border-regular">{`${messages.freeEgress}`}</div>
+                    <div className="px-4 py-2 border-1 border-border-regular">{`${messages.archivalSnapshots}`}</div>
                 </div>
                 {subscriptions.map(subscription =>
                     <div className="flex flex-col transition-all hover:bg-hover">
@@ -54,9 +55,26 @@ export const SubscriptionPlanModal = () => {
                                 {subscription.currently_active ? `${messages.currentPlan}` : `${messages.upgradeTo} ${subscription.title}`}
                             </button>
                         </div>
-                        <div className="px-4 py-2 border-1 border-border-regular">{convertSubscriptionsSizes(getHotStorageAmount(subscription))}</div>
-                        <div className="px-4 py-2 border-1 border-border-regular">{subscription.features.included_hot_replica_count}</div>
-                        <div className="px-4 py-2 border-1 border-border-regular">{convertSubscriptionsSizes(subscription?.features?.included_bandwidth!)}</div>
+                        <div className="flex items-center justify-between px-4 py-2 border-1 border-border-regular">
+                            {convertSubscriptionsSizes(getHotStorageAmount(subscription))}
+                            {subscription.service_key !== 'starter' &&
+                                <div><span className="font-semibold">{`$${subscription.pricing?.hot_storage}`}</span>/GB/mo.</div>
+                            }
+                        </div>
+                        <div className="flex items-center justify-between px-4 py-2 border-1 border-border-regular">
+                            {subscription.features.included_hot_replica_count}
+                        </div>
+                        <div className="flex items-center justify-between px-4 py-2 border-1 border-border-regular">
+                            {convertSubscriptionsSizes(subscription?.features?.included_bandwidth!)}
+                            {subscription.service_key !== 'starter' &&
+                                <div><span className="font-semibold">{`$${subscription.pricing?.bandwidth}`}</span>/GB/mo.</div>
+                            }
+                        </div>
+                        <div className="h-[42px] flex items-center justify-end px-4 py-2 border-1 border-border-regular">
+                            {subscription.service_key !== 'starter' &&
+                                <div><span className="font-semibold">{`$${subscription.pricing?.archival}`}</span>/GB/mo.</div>
+                            }
+                        </div>
                     </div>
                 )}
             </div>
