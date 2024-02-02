@@ -1,0 +1,44 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        SELECT\n            blocks.id AS id,\n                blocks.data_length AS length,\n                uploads_blocks.car_offset AS car_offset,\n                uploads.base_path AS base_path,\n                clients.platform_id AS platform_id\n        FROM blocks\n            JOIN uploads_blocks ON blocks.id = uploads_blocks.block_id\n            JOIN uploads ON uploads_blocks.upload_id = uploads.id\n            JOIN clients ON uploads.client_id = clients.id\n            WHERE blocks.cid = $1;\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "length",
+        "ordinal": 1,
+        "type_info": "Int64"
+      },
+      {
+        "name": "car_offset",
+        "ordinal": 2,
+        "type_info": "Int64"
+      },
+      {
+        "name": "base_path",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "platform_id",
+        "ordinal": 4,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "8dfa94c63a9a2dda9e3fa3e21482bee9ee97712667d85c65f407eab43fef32fd"
+}
