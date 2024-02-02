@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        INSERT OR IGNORE INTO\n            blocks (cid, data_length)\n            VALUES ($1, $2)\n        RETURNING id;\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "8b3d6cdbcfc4680e26f14327c87d088fcea7cb57f274987387b200dea01a1748"
+}

@@ -173,6 +173,7 @@ impl TryFrom<Url> for ObjectStoreConnection {
     }
 }
 
+#[derive(Debug)]
 pub enum ObjectStore {
     /// An object store against a local filesystem
     Local(LocalFileSystem),
@@ -181,7 +182,6 @@ pub enum ObjectStore {
 }
 
 pub type ObjectStorePath = object_store::path::Path;
-
 impl Deref for ObjectStore {
     type Target = dyn object_store::ObjectStore;
 

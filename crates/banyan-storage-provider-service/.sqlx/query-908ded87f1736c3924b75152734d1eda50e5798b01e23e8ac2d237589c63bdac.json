@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        UPDATE uploads SET\n                state = 'complete',\n                final_size = $1,\n                integrity_hash = $2\n            WHERE id = $3;\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "908ded87f1736c3924b75152734d1eda50e5798b01e23e8ac2d237589c63bdac"
+}
