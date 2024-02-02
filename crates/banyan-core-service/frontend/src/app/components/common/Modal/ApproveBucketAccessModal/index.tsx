@@ -1,7 +1,8 @@
 import React from 'react';
 import { useIntl } from 'react-intl';
 
-import { SubmitButton } from '@components/common/SubmitButton';
+import { PrimaryButton } from '@components/common/PrimaryButton';
+import { SecondaryButton } from '@components/common/SecondaryButton';
 
 import { useModal } from '@/app/contexts/modals';
 import { useTomb } from '@/app/contexts/tomb';
@@ -31,13 +32,12 @@ export const ApproveBucketAccessModal: React.FC<{ bucket: Bucket; bucketKey: Buc
                 </p>
             </div>
             <div className="mt-3 flex items-center gap-3 text-xs" >
-                <button
-                    className="btn-secondary w-1/2 py-3 px-4"
-                    onClick={closeModal}
-                >
-                    {`${messages.cancel}`}
-                </button>
-                <SubmitButton
+                <SecondaryButton
+                    className="w-1/2"
+                    action={closeModal}
+                    text={`${messages.cancel}`}
+                />
+                <PrimaryButton
                     text={`${messages.approveAccess}`}
                     action={approveAccess}
                     className="w-1/2"

@@ -1,11 +1,12 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useIntl } from 'react-intl';
 
 import { Select } from '@components/common/Select';
 import { AddNewOption } from '@components/common/Select/AddNewOption';
 import { CreateBucketModal } from '@components/common/Modal/CreateBucketModal';
 import { FolderSelect } from '@components/common/FolderSelect';
-import { SubmitButton } from '@components/common/SubmitButton';
+import { PrimaryButton } from '@components/common/PrimaryButton';
+import { SecondaryButton } from '@components/common/SecondaryButton';
 
 import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { useModal } from '@/app/contexts/modals';
@@ -23,6 +24,7 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null; folder?: Browse
     const [selectedBucket, setSelectedBucket] = useState<Bucket | null>(bucket || null);
     const [selectedFolder, setSelectedFolder] = useState<string[]>(path);
     const isUploadDataFilled = useMemo(() => Boolean(selectedBucket && files.length), [selectedBucket, files]);
+    const [previewFiles, setPreviewFiles] = useState<File[]>([]);
 
     const selectBucket = (bucket: Bucket) => {
         setSelectedBucket(bucket);
@@ -36,6 +38,7 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null; folder?: Browse
         if (!event.target.files) { return; }
 
         setFiles(Array.from(event.target.files).map(file => ({ file, status: 'pending' })));
+        setPreviewFiles(Array.from(event.target.files));
     };
 
     const handleDrop = async (event: React.DragEvent<HTMLInputElement | HTMLLabelElement>) => {
@@ -45,6 +48,7 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null; folder?: Browse
         if (!event.dataTransfer.files) { return; }
 
         setFiles(Array.from(event.dataTransfer.files).slice(0, 1).map(file => ({ file, status: 'pending' })));
+        setPreviewFiles(Array.from(event.dataTransfer.files).slice(0, 1));
     };
 
     const handleDrag = async (event: React.DragEvent<HTMLInputElement | HTMLLabelElement>) => {
@@ -66,6 +70,12 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null; folder?: Browse
     const addNewBucket = () => {
         openModal(<CreateBucketModal />, () => openModal(<UploadFileModal bucket={selectedBucket} path={path} />));
     };
+
+    useEffect(() => {
+        return () => {
+            setPreviewFiles([]);
+        };
+    }, []);
 
     return (
         <div className="w-modal flex flex-col gap-4">
@@ -103,14 +113,14 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null; folder?: Browse
                 onDrop={handleDrop}
                 onDragOver={handleDrag}
             >
-                {files.length ?
+                {previewFiles.length ?
                     <React.Fragment >
-                        {files.map(file =>
+                        {previewFiles.map(file =>
                             <span
                                 className="w-full overflow-hidden text-ellipsis whitespace-nowrap"
-                                key={file.file.name}
+                                key={file.name}
                             >
-                                {file.file.name}
+                                {file.name}
                             </span>
                         )}
                     </React.Fragment>
@@ -131,13 +141,11 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null; folder?: Browse
                 />
             </label>
             <div className="flex items-center gap-3 text-xs" >
-                <button
-                    className="btn-secondary flex-grow py-3 px-4"
-                    onClick={closeModal}
-                >
-                    {`${messages.cancel}`}
-                </button>
-                <SubmitButton
+                <SecondaryButton
+                    action={closeModal}
+                    text={`${messages.cancel}`}
+                />
+                <PrimaryButton
                     action={upload}
                     text={`${messages.upload}`}
                     disabled={!isUploadDataFilled}

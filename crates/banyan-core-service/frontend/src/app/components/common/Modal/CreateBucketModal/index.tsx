@@ -2,7 +2,8 @@ import React, { useMemo, useState } from 'react';
 import { useIntl } from 'react-intl';
 import { useNavigate } from 'react-router-dom';
 
-import { SubmitButton } from '@components/common/SubmitButton';
+import { PrimaryButton } from '@components/common/PrimaryButton';
+import { SecondaryButton } from '@components/common/SecondaryButton';
 
 import { useModal } from '@/app/contexts/modals';
 import { useTomb } from '@/app/contexts/tomb';
@@ -64,13 +65,11 @@ export const CreateBucketModal = () => {
                 />
             </div> */}
             <div className="flex items-center gap-3 text-xs" >
-                <button
-                    className="btn-secondary flex-grow py-3 px-4"
-                    onClick={closeModal}
-                >
-                    {`${messages.cancel}`}
-                </button>
-                <SubmitButton
+                <SecondaryButton
+                    action={closeModal}
+                    text={`${messages.cancel}`}
+                />
+                <PrimaryButton
                     text={`${messages.create}`}
                     action={create}
                     disabled={!isBucketDataFilled}

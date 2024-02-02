@@ -18,11 +18,12 @@ import { destroyIsUserNew, prettyFingerprintApiKeyPem, sortByType } from '@app/u
 import { TermsAndColditionsClient } from '@/api/termsAndConditions';
 import { UserClient } from '@/api/user';
 import { handleNameDuplication } from '@utils/names';
+import { StorageUsageClient } from '@/api/storageUsage';
 
 interface TombInterface {
 	tomb: TombWasm | null;
 	buckets: Bucket[];
-	storageUsage: { current: number, limit: number };
+	storageUsage: { usage: number, softLimit: number, hardLimit: number };
 	trash: Bucket | null;
 	areBucketsLoading: boolean;
 	selectedBucket: Bucket | null;
@@ -53,6 +54,7 @@ interface TombInterface {
 	removeBucketAccess: (id: string) => Promise<void>;
 	restore: (bucket: Bucket, snapshot: WasmSnapshot) => Promise<void>;
 };
+const storageUsageClient = new StorageUsageClient();
 
 const mutex = new Mutex();
 
@@ -68,7 +70,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	const [trash, setTrash] = useState<Bucket | null>(null);
 	const [areTermsAccepted, setAreTermsAccepted] = useState(false);
 	const [selectedBucket, setSelectedBucket] = useState<Bucket | null>(null);
-	const [storageUsage, setStorageUsage] = useState<{ current: number, limit: number }>({ current: 0, limit: 0 });
+	const [storageUsage, setStorageUsage] = useState<{ usage: number, softLimit: number, hardLimit: number }>({ usage: 0, softLimit: 0, hardLimit: 0 });
 	const [areBucketsLoading, setAreBucketsLoading] = useState<boolean>(false);
 	const folderLocation = useFolderLocation();
 	const [error, setError] = useState<string>('');
@@ -324,11 +326,12 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	};
 
 	const getStorageUsageState = async () => {
-		/** Returns used storage amount in bytes */
-		return await tombMutex(tomb, async tomb => {
-			const current = await tomb!.getUsage();
-			const limit = await tomb!.getUsageLimit();
-			setStorageUsage({ current: Number(current), limit: Number(limit) });
+		const usage = await storageUsageClient.getStorageUsage();
+		const limit = await storageUsageClient.getStorageLimits();
+		setStorageUsage({
+			usage: usage.size,
+			softLimit: limit.soft_hot_storage_limit,
+			hardLimit: limit.hard_hot_storage_limit
 		});
 	};
 
@@ -350,8 +353,8 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 			await updateBucketsState('files', files.sort(sortByType), bucket.id);
 			const isSnapshotValid = await mount.hasSnapshot();
 			await updateBucketsState('isSnapshotValid', isSnapshotValid, bucket.id);
+			await getStorageUsageState();
 		});
-		await getStorageUsageState();
 	};
 
 	/** Creates bucket snapshot */

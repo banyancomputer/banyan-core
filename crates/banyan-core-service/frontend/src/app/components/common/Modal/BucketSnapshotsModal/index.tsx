@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useIntl } from 'react-intl';
 
-import { SubmitButton } from '@components/common/SubmitButton';
+import { PrimaryButton } from '@components/common/PrimaryButton';
 
 import { useTomb } from '@/app/contexts/tomb';
 import { BucketSnapshot } from '@/app/types/bucket';
@@ -61,7 +61,7 @@ export const BucketSnapshotsModal: React.FC<{ bucketId: string }> = ({ bucketId 
                     </div>
                 )}
             </div>
-            <SubmitButton
+            <PrimaryButton
                 text={`${messages.close}`}
                 action={closeModal}
                 className="w-full py-2 text-xxs"

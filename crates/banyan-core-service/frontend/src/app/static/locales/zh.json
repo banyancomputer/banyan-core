@@ -205,5 +205,17 @@
 	"summary": "摘要",
 	"items": "项目",
 	"payment": "支付",
-	"manageSubscriptions": "管理订阅"
+	"manageSubscriptions": "管理订阅",
+	"choosePlan": "选择适合您的计划",
+	"plansDescription": "以合理的价格获得您应得的存储、安全和隐私",
+	"currentPlan": "当前计划",
+	"needCustomPlan": "需要更多定制的计划吗",
+	"contactSales": "联系销售",
+	"upgradeTo": "升级到",
+	"litePlanDescription": "免费，但功能有限。",
+	"hotStorage": "热存储",
+	"hotReplications": "热复制",
+	"freeEgress": "免费出口",
+	"outOfStorage": "您的存储空间已用尽",
+	"outOfStorageDescription": "升级您的账户以上传和同步文件。"
 }
