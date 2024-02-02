@@ -6,17 +6,17 @@ use serde::Serialize;
 
 use crate::app::AppState;
 use crate::database::models::{Subscription, User};
-use crate::extractors::ApiIdentity;
+use crate::extractors::UserIdentity;
 use crate::GIBIBYTE;
 
 pub async fn handler(
-    api_id: ApiIdentity,
+    user_id: UserIdentity,
     State(state): State<AppState>,
 ) -> Result<Response, UsageLimitError> {
     let database = state.database();
     let mut conn = database.acquire().await?;
 
-    let user_id = api_id.user_id().to_string();
+    let user_id = user_id.id().to_string();
     let user = User::find_by_id(&mut conn, &user_id)
         .await?
         .ok_or(UsageLimitError::NotFound)?;
