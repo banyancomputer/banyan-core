@@ -205,5 +205,15 @@
 	"summary": "Summary",
 	"items": "Items",
 	"payment": "Payment",
-	"manageSubscriptions": "Manage Subscriptions"
+	"manageSubscriptions": "Manage Subscriptions",
+	"choosePlan": "Choose a plan that’s right for you",
+	"plansDescription": "Get the storage, security, and privacy you deserve, for an affordable price",
+	"currentPlan": "Current plan",
+	"needCustomPlan": "Need more customized plan",
+	"contactSales": "Contact sales",
+	"upgradeTo": "Upgrade to",
+	"litePlanDescription": "Free, but with limited features.",
+	"hotStorage": "Hot Storage",
+	"hotReplications": "Hot Replications",
+	"freeEgress": "Free egress"
 }

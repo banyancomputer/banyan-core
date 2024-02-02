@@ -450,6 +450,7 @@ name = "banyan-car-analyzer"
 version = "0.1.0"
 dependencies = [
  "axum",
+ "banyan-object-store",
  "blake3",
  "bytes",
  "cid 0.10.1",
@@ -625,6 +626,7 @@ dependencies = [
  "serde_json",
  "sqlx",
  "thiserror",
+ "time",
  "tokio",
  "tower",
  "tower-http",
