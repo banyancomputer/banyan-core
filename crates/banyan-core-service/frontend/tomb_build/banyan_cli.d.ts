@@ -403,6 +403,12 @@ export class WasmMount {
 */
   mkdir(path_segments: Array<any>): Promise<void>;
 /**
+* Refreshes the bucket to ensure its up to date against what the server is aware of
+* @param {string} encryption_key_pem
+* @returns {Promise<void>}
+*/
+  remount(encryption_key_pem: string): Promise<void>;
+/**
 * Write a file
 * # Arguments
 * * `path_segments` - The path to write to (as an Array)
