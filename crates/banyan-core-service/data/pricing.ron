@@ -32,7 +32,7 @@
 
     price: Some(Price(
       base: 750_000_000,    // $7.50/month
-      archival: 4_000_000,  // $0.04 per GiB/month
+      archival: 400_000,    // $0.004 per GiB/month
       storage: 5_000_000,   // $0.05/GiB
       bandwidth: 1_000_000, // $0.01/GiB
     )),
@@ -60,7 +60,7 @@
 
     price: Some(Price(
       base: 7_500_000_000,  // $75.00 per month
-      archival: 4_000_000,  // $0.04 per GiB/month
+      archival: 400_000,    // $0.004 per GiB/month
       storage: 2_500_000,   // $0.025 per GiB/month
       bandwidth: 1_000_000, // $0.01 per GiB/month
     )),
