@@ -36,6 +36,7 @@ hyper = "^0.14"
 multer = { version = "^2", features = ["json", "tokio", "tokio-io"] }
 reqwest = { version = "^0.11", default-features = false, features = ["json", "rustls-tls-native-roots"] }
 sqlx = { version = "^0.7", default-features = false, features = ["macros", "migrate", "runtime-tokio", "tls-rustls", "uuid"] }
+time = { version = "^0.3", features = ["formatting", "serde"] }
 tower = { version = "^0.4", features = ["timeout", "load-shed", "limit", "util"] }
 tower-http = { version = "^0.4", features = ["auth", "cors", "limit", "fs", "propagate-header", "request-id", "sensitive-headers", "set-header", "util", "trace", "validate-request"] }
 
