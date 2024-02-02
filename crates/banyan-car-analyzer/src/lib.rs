@@ -1,9 +1,10 @@
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
+use banyan_object_store::{ObjectStore, ObjectStorePath};
 use bytes::{Bytes, BytesMut};
+use cid::multibase::Base;
 use cid::Cid;
-
 const CAR_HEADER_UPPER_LIMIT: u64 = 16 * 1024 * 1024; // Limit car headers to 16MiB
 
 const CAR_FILE_UPPER_LIMIT: u64 = 32 * 1024 * 1024 * 1024; // We limit individual CAR files to 32GiB
@@ -86,12 +87,8 @@ pub struct StreamingCarAnalyzer {
     stream_offset: u64,
     cids: Vec<Cid>,
     hasher: blake3::Hasher,
-}
-
-impl Default for StreamingCarAnalyzer {
-    fn default() -> Self {
-        Self::new()
-    }
+    metadata_id: String,
+    store: ObjectStore,
 }
 
 impl StreamingCarAnalyzer {
@@ -122,13 +119,15 @@ impl StreamingCarAnalyzer {
         Ok(())
     }
 
-    pub fn new() -> Self {
+    pub fn new(metadata_id: &str, store: ObjectStore) -> Self {
         Self {
             buffer: BytesMut::new(),
             state: CarState::Pragma,
             stream_offset: 0,
             cids: Vec::new(),
             hasher: blake3::Hasher::new(),
+            metadata_id: String::from(metadata_id),
+            store,
         }
     }
 
@@ -251,7 +250,6 @@ impl StreamingCarAnalyzer {
                     ref mut block_length,
                 } => {
                     let block_start = *block_start;
-
                     // Skip any left over data and padding until we reach our goal
                     if self.stream_offset < block_start {
                         let skippable_bytes = block_start - self.stream_offset; // 171 - 72 = 99
@@ -276,6 +274,7 @@ impl StreamingCarAnalyzer {
 
                     let blk_len = match block_length {
                         Some(bl) => *bl,
+                        // Read the varint and consume the bytes from the buffer and stream_offset
                         None => match try_read_varint_u64(&self.buffer[..])? {
                             Some((length, bytes_read)) => {
                                 *block_length = Some(length);
@@ -315,7 +314,13 @@ impl StreamingCarAnalyzer {
                             ));
                         }
                     };
+                    let normalized_cid = cid.to_string_of_base(Base::Base64Url).map_err(|err| {
+                        StreamingCarAnalyzerError::InvalidBlockCid(self.stream_offset, err)
+                    })?;
                     let cid_length = cid.encoded_len() as u64;
+                    self.stream_offset += cid_length;
+                    let _ = self.buffer.split_to(cid_length as usize);
+
                     self.cids.push(cid);
 
                     // This might be the end of all data, we'll check once we reach the block_start
@@ -326,6 +331,20 @@ impl StreamingCarAnalyzer {
                         index_start: *index_start,
                         block_length: None,
                     };
+
+                    let location = ObjectStorePath::from(format!(
+                        "{}/{}.bin",
+                        self.metadata_id, normalized_cid
+                    ));
+
+                    let data_length = (blk_len - cid_length) as usize;
+                    self.stream_offset += data_length as u64;
+                    let block_bytes = Into::<Bytes>::into(self.buffer.split_to(data_length));
+
+                    self.store
+                        .put(&location, block_bytes)
+                        .await
+                        .map_err(StreamingCarAnalyzerError::ObjectStore)?;
 
                     return Ok(Some(BlockMeta {
                         cid,
@@ -392,6 +411,9 @@ pub enum StreamingCarAnalyzerError {
 
     #[error("a varint in the car file was larger than our acceptable value")]
     ValueToLarge,
+
+    #[error("unable to write to backend storage")]
+    ObjectStore(banyan_object_store::ObjectStoreError),
 }
 
 impl IntoResponse for StreamingCarAnalyzerError {
@@ -426,6 +448,27 @@ fn try_read_varint_u64(buf: &[u8]) -> Result<Option<(u64, u64)>, StreamingCarAna
     }
 
     Ok(None)
+}
+
+#[cfg(test)]
+impl Default for StreamingCarAnalyzer {
+    fn default() -> Self {
+        let test_path = std::path::PathBuf::from("./test");
+
+        if test_path.exists() {
+            std::fs::remove_dir_all(&test_path).expect("Remove test path");
+        }
+
+        std::fs::create_dir_all(&test_path).expect("Create test path");
+
+        Self::new(
+            "",
+            ObjectStore::new(&banyan_object_store::ObjectStoreConnection::Local(
+                test_path,
+            ))
+            .expect(""),
+        )
+    }
 }
 
 #[cfg(test)]
@@ -489,7 +532,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_streaming_lifecycle() {
-        let mut sca = StreamingCarAnalyzer::new();
+        let mut sca = StreamingCarAnalyzer::default();
         assert_eq!(sca.state, CarState::Pragma);
 
         // No data shouldn't transition
@@ -607,8 +650,9 @@ mod tests {
                 block_length: None
             }
         );
-        assert_eq!(sca.stream_offset, 172); // we've read the length & CID but haven't advanced the stream
-                                            // offset yet
+        // we've read the length, CID, and data, but haven't advanced the stream
+        assert_eq!(sca.stream_offset, 265);
+        // offset yet
 
         sca.add_chunk(&Bytes::from([0u8; 10].as_slice())).unwrap(); // take us into the padding past the data but before the indexes
         assert!(sca.next().await.expect("still valid").is_none()); // we're at the end of the data, this should transition to indexes
