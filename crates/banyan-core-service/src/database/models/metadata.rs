@@ -1,4 +1,3 @@
-use banyan_object_store::{ObjectStore, ObjectStorePath};
 use time::OffsetDateTime;
 
 use crate::database::models::Bucket;
@@ -131,46 +130,33 @@ impl Metadata {
     pub async fn delete_outdated(
         conn: &mut DatabaseConnection,
         bucket_id: &str,
-        store: &ObjectStore,
     ) -> Result<(), sqlx::Error> {
-        // First, query the database to see which metadata need to be deleted
-        // We could do this all at once, but we dont want to modify the db unless we've verifiably
-        // removed the CAR file, or we'll never be able to hunt down the stragglers
-        let deletion_ids: Vec<String> = sqlx::query_scalar(
+        let now = OffsetDateTime::now_utc();
+
+        // Delete all the the metadata rows which are
+        // 1. outdated
+        // 2. not one of the five most recent metadata rows associated with the snapshot
+        // 3. without an associated snapshot
+        // 3. in the list of IDs we already found
+        let deletion_result = sqlx::query!(
             r#"
-                SELECT id FROM metadata
-                    WHERE state = 'outdated'
-                    AND bucket_id = $1
-                    AND id NOT IN (SELECT metadata_id FROM snapshots)
+                UPDATE metadata SET state = 'deleted', updated_at = $1
+                WHERE state = 'outdated'
+                AND bucket_id = $2
+                AND id NOT IN (
+                    SELECT id FROM metadata
+                    WHERE bucket_id = $2
                     ORDER BY updated_at DESC
-                    LIMIT -1 OFFSET 5;
+                    LIMIT -1 OFFSET 5
+                )
+                AND id NOT IN (SELECT metadata_id FROM snapshots);
             "#,
+            now,
+            bucket_id
         )
-        .bind(bucket_id)
-        .fetch_all(&mut *conn)
+        .execute(&mut *conn)
         .await?;
 
-        // Start building the query that will actually end up marking the metadata as deleted as
-        // well as change their updated_at timestamps
-        let mut deletion_query =
-            sqlx::QueryBuilder::new("UPDATE metadata SET state = 'deleted', updated_at = ");
-        deletion_query.push_bind(OffsetDateTime::now_utc());
-        deletion_query.push(" WHERE id IN (");
-        let mut separated = deletion_query.separated(", ");
-
-        // Attempt to delete the CAR files associated with these metadata
-        let mut successful_deletion_ids = Vec::new();
-        for metadata_id in deletion_ids {
-            let car_path = ObjectStorePath::from(format!("{}/{}.car", bucket_id, metadata_id));
-            if store.delete(&car_path).await.is_ok() {
-                successful_deletion_ids.push(metadata_id.clone());
-                separated.push_bind(metadata_id);
-            }
-        }
-        separated.push_unseparated(");");
-
-        // Actually mark the metdata rows as deleted now
-        let deletion_result = deletion_query.build().execute(&mut *conn).await?;
         tracing::info!(
             "{} metadata have been marked as deleted and have had their CAR files removed",
             deletion_result.rows_affected()
@@ -211,10 +197,6 @@ impl Metadata {
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
-
-    use banyan_object_store::ObjectStoreConnection;
-    use bytes::Bytes;
     use time::macros::datetime;
 
     use super::*;
@@ -266,18 +248,10 @@ mod tests {
         let bucket_id = sample_bucket(&mut conn, &user_id).await;
 
         // First, create a bunch of metadata with CAR files, each replacing the previous
-        let store: ObjectStore = ObjectStore::new(&ObjectStoreConnection::Local(
-            Path::new("./data/uploads").to_path_buf(),
-        ))
-        .expect("cant initialize objectstore in testing");
-
-        let sample_car_data = Bytes::from_static(b"hello there real data!");
         let metadata_count = 15;
         let mut ids = Vec::new();
         for i in 0..=metadata_count {
             let metadata_id = sample_metadata(&mut conn, &bucket_id, i + 1, MS::Pending).await;
-            let path = ObjectStorePath::from(format!("{}/{}.car", bucket_id, metadata_id));
-            assert!(store.put(&path, sample_car_data.clone()).await.is_ok());
             Metadata::mark_current(&mut conn, &bucket_id, &metadata_id, None).await?;
             assert_metadata_in_state(&mut conn, &metadata_id, MS::Current).await;
 
@@ -290,7 +264,7 @@ mod tests {
         let _ = create_snapshot(&mut conn, snapshot_metadata_id, SnapshotState::Pending).await;
 
         // Delete outdated CAR files and mark as deleted
-        assert!(Metadata::delete_outdated(&mut conn, &bucket_id, &store)
+        assert!(Metadata::delete_outdated(&mut conn, &bucket_id)
             .await
             .is_ok());
 
@@ -304,13 +278,6 @@ mod tests {
                 MS::Deleted
             };
             assert_metadata_in_state(&mut conn, id, expected_state.clone()).await;
-            assert_eq!(
-                expected_state == MS::Deleted,
-                store
-                    .get(&ObjectStorePath::from(format!("{}/{}.car", bucket_id, id)))
-                    .await
-                    .is_err()
-            );
         }
 
         Ok(())
