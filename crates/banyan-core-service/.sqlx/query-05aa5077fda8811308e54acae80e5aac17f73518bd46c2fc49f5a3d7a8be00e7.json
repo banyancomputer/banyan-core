@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                SELECT id FROM metadata\n                WHERE bucket_id = $1\n                AND state = 'outdated'\n                ORDER BY updated_at DESC\n                LIMIT 5;\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "05aa5077fda8811308e54acae80e5aac17f73518bd46c2fc49f5a3d7a8be00e7"
+}

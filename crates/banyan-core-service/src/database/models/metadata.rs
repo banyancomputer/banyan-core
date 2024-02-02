@@ -132,12 +132,11 @@ impl Metadata {
         bucket_id: &str,
     ) -> Result<(), sqlx::Error> {
         let now = OffsetDateTime::now_utc();
-
-        // Delete all the the metadata rows which are
-        // 1. outdated
-        // 2. not one of the five most recent metadata rows associated with the snapshot
-        // 3. without an associated snapshot
-        // 3. in the list of IDs we already found
+        // Mark all the the metadata rows 'deleted' and update their timestamps
+        // Only do this if the rows:
+        // 1. are outdated
+        // 2. are not one of the five most recent 'outdated' metadata rows
+        // 3. have no associated snapshot
         let deletion_result = sqlx::query!(
             r#"
                 UPDATE metadata SET state = 'deleted', updated_at = $1
@@ -146,13 +145,14 @@ impl Metadata {
                 AND id NOT IN (
                     SELECT id FROM metadata
                     WHERE bucket_id = $2
+                    AND state = 'outdated'
                     ORDER BY updated_at DESC
-                    LIMIT -1 OFFSET 5
+                    LIMIT 5
                 )
                 AND id NOT IN (SELECT metadata_id FROM snapshots);
             "#,
             now,
-            bucket_id
+            bucket_id,
         )
         .execute(&mut *conn)
         .await?;
@@ -247,15 +247,22 @@ mod tests {
         let user_id = sample_user(&mut conn, "user@domain.tld").await;
         let bucket_id = sample_bucket(&mut conn, &user_id).await;
 
-        // First, create a bunch of metadata with CAR files, each replacing the previous
-        let metadata_count = 15;
+        // Accumulate a list of the metadata IDs that we're working with
         let mut ids = Vec::new();
-        for i in 0..=metadata_count {
+        for mut i in 0..=15 {
+            // Create a pending metadata
             let metadata_id = sample_metadata(&mut conn, &bucket_id, i + 1, MS::Pending).await;
+            // Mark it as current, verify its state
             Metadata::mark_current(&mut conn, &bucket_id, &metadata_id, None).await?;
             assert_metadata_in_state(&mut conn, &metadata_id, MS::Current).await;
-
             ids.push(metadata_id);
+
+            // Use this to double check to ensure that not all the olds are being marked deleted,
+            // and that the new ones are being protected based on state, not just recency
+            if i == 12 || i == 5 {
+                i += 1;
+                ids.push(sample_metadata(&mut conn, &bucket_id, i + 1, MS::UploadFailed).await);
+            }
         }
 
         // Create a snapshot on one of the metadata, which will be exempt from deletion
@@ -268,16 +275,19 @@ mod tests {
             .await
             .is_ok());
 
-        // Ensure each metadata has the correct state and car properties
+        // Ensure each metadata has the correct state
         for (index, id) in ids.iter().enumerate() {
             let expected_state = if index == ids.len() - 1 {
                 MS::Current
-            } else if index >= ids.len() - 6 || id == snapshot_metadata_id {
+            } else if index == 14 || index == 6 {
+                MS::UploadFailed
+            } else if index >= ids.len() - 7 || id == snapshot_metadata_id {
                 MS::Outdated
             } else {
                 MS::Deleted
             };
-            assert_metadata_in_state(&mut conn, id, expected_state.clone()).await;
+            println!("asserting i {index}\tid {id}\tstate {:?}", expected_state);
+            assert_metadata_in_state(&mut conn, id, expected_state).await;
         }
 
         Ok(())
