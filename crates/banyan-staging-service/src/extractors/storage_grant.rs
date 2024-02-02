@@ -59,6 +59,7 @@ where
             .map_err(Self::Rejection::MissingHeader)?;
 
         let raw_token = bearer.token();
+
         let verification_options = VerificationOptions {
             accept_future: false,
             allowed_audiences: Some(HashSet::from_strings(&[
@@ -70,10 +71,18 @@ where
         };
 
         let verification_key = PlatformVerificationKey::from_ref(state);
-
-        let claims = verification_key
+        let claims_res = verification_key
             .verify_token::<TokenAuthorizations>(raw_token, Some(verification_options))
-            .map_err(Self::Rejection::ValidationFailed)?;
+            .map_err(Self::Rejection::ValidationFailed);
+
+        if let Err(err) = &claims_res {
+            let unvalidated_header =
+                Token::decode_metadata(raw_token).map_err(|_| Self::Rejection::InvalidGrant)?;
+            let key_id = unvalidated_header.key_id();
+            tracing::error!(key_id = ?key_id, "failed to validate storage grant bearer token: {err}");
+        }
+
+        let claims = claims_res?;
 
         // annoyingly jwt-simple doesn't use the correct encoding for this... we can support both
         // though and maybe we can fix upstream so it follows the spec
