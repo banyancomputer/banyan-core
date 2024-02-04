@@ -51,6 +51,21 @@ impl Metadata {
             .await
     }
 
+    pub async fn get_user_id(
+        conn: &mut DatabaseConnection,
+        metadata_id: &str,
+    ) -> Result<String, sqlx::Error> {
+        sqlx::query_scalar!(
+            "SELECT b.user_id
+                FROM metadata m
+                JOIN main.buckets b on m.bucket_id = b.id
+            WHERE m.id = $1;",
+            metadata_id
+        )
+        .fetch_one(&mut *conn)
+        .await
+    }
+
     /// Upgrades a particular metadata version from pending or uploading to the current version.
     /// This method does not allow downgrading and will make no changes if the provided metadata
     /// doesn't match what we're expecting.
@@ -154,6 +169,23 @@ impl Metadata {
         .await?;
 
         Ok(())
+    }
+
+    pub async fn storage_host_owns_metadata(
+        conn: &mut DatabaseConnection,
+        metadata_id: &str,
+        storage_host_id: &str,
+    ) -> Result<bool, sqlx::Error> {
+        let count = sqlx::query_scalar!(
+            r#"SELECT COUNT(*) FROM storage_hosts_metadatas_storage_grants 
+                WHERE metadata_id = $1 AND storage_host_id = $2;"#,
+            metadata_id,
+            storage_host_id
+        )
+        .fetch_one(&mut *conn)
+        .await?;
+
+        Ok(count >= 1)
     }
 }
 

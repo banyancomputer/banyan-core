@@ -71,7 +71,10 @@ mod tests {
             .unwrap();
 
         let res = handler(
-            StorageProviderIdentity { id: host_id },
+            StorageProviderIdentity {
+                id: host_id,
+                name: String::from("mock_name"),
+            },
             mock_app_state(db.clone()),
             Path(Uuid::parse_str(active_deal_id.as_str()).unwrap()),
         )
@@ -96,6 +99,7 @@ mod tests {
         let res = handler(
             StorageProviderIdentity {
                 id: host_id.unwrap(),
+                name: String::from("mock_name"),
             },
             mock_app_state(db.clone()),
             Path(Uuid::parse_str(accepted_deal_id.as_str()).unwrap()),

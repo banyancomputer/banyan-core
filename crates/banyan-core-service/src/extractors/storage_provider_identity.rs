@@ -36,6 +36,7 @@ pub struct StorageHostToken {
 
 pub struct StorageProviderIdentity {
     pub id: String,
+    pub name: String,
 }
 
 #[async_trait]
@@ -123,6 +124,7 @@ where
 
         Ok(StorageProviderIdentity {
             id: storage_host.id,
+            name: storage_host.name,
         })
     }
 }

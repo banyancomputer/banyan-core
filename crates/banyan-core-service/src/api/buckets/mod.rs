@@ -5,6 +5,7 @@ mod snapshots;
 mod all_buckets;
 mod create_bucket;
 mod delete_bucket;
+mod move_metadata;
 mod single_bucket;
 mod update_bucket;
 
@@ -30,6 +31,7 @@ where
     bytes::Bytes: From<<B as HttpBody>::Data>,
 {
     Router::new()
+        .route("/metadata/:metadata_id/move", post(move_metadata::handler))
         .route(
             "/:bucket_id",
             get(single_bucket::handler)

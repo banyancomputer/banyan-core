@@ -161,7 +161,7 @@ impl Bucket {
             total_rows_expired += expire_query_result.rows_affected();
 
             // note: this query is currently incorrect, and need to be rewritten. I need to find
-            // block, storage host pairs, where all all the associations are marked as expired and
+            // block, storage host pairs, where all the associations are marked as expired and
             // are not already pruned...
             let mut prune_candidate_builder = sqlx::QueryBuilder::new(
                 r#"SELECT block_id, storage_host_id FROM block_locations

@@ -21,17 +21,36 @@ impl SelectedStorageHost {
     pub async fn select_for_capacity(
         conn: &mut DatabaseConnection,
         required_bytes: i64,
+        exclude_hosts: Option<&str>,
     ) -> Result<Option<Self>, sqlx::Error> {
-        sqlx::query_as!(
-            Self,
-            r#"SELECT id,name,url,used_storage, available_storage,fingerprint,pem FROM storage_hosts
-                   WHERE (available_storage - used_storage) > $1
-                   ORDER BY RANDOM()
-                   LIMIT 1;"#,
-            required_bytes,
-        )
-        .fetch_optional(&mut *conn)
-        .await
+        match exclude_hosts {
+            Some(exclude_host) => {
+                sqlx::query_as!(
+                    Self,
+                    r#"SELECT id,name,url,used_storage, available_storage,fingerprint,pem FROM storage_hosts
+                       WHERE (available_storage - used_storage) > $1
+                       AND id != $2
+                       ORDER BY RANDOM()
+                       LIMIT 1;"#,
+                    required_bytes,
+                    exclude_host
+                )
+                    .fetch_optional(&mut *conn)
+                    .await
+            },
+            None => {
+                sqlx::query_as!(
+                    Self,
+                    r#"SELECT id,name,url,used_storage, available_storage,fingerprint,pem FROM storage_hosts
+                       WHERE (available_storage - used_storage) > $1
+                       ORDER BY RANDOM()
+                       LIMIT 1;"#,
+                    required_bytes
+                )
+                    .fetch_optional(&mut *conn)
+                    .await
+            },
+        }
     }
 }
 
@@ -105,5 +124,60 @@ impl UserStorageReport {
 
     pub fn current_consumption(&self) -> i64 {
         self.current_consumption
+    }
+}
+#[cfg(test)]
+mod tests {
+    use openssl::aes::unwrap_key;
+
+    use crate::database::models::SelectedStorageHost;
+    use crate::database::test_helpers::{
+        create_storage_host, sample_bucket, sample_user, setup_database,
+    };
+
+    #[tokio::test]
+    async fn test_select_storage_host_picks_correctly_based_on_storage() {
+        let db = setup_database().await;
+        let mut conn = db.begin().await.expect("connection");
+
+        let prim_storage_host_id =
+            create_storage_host(&mut conn, "Diskz", "https://127.0.0.1:8001/", 20).await;
+        let bak_storage_host_id =
+            create_storage_host(&mut conn, "Bax", "https://127.0.0.1:8002/", 10).await;
+
+        let storage_host = SelectedStorageHost::select_for_capacity(&mut conn, 15, None)
+            .await
+            .unwrap();
+        assert!(storage_host.is_some());
+        assert_eq!(storage_host.unwrap().name, "Diskz");
+    }
+    #[tokio::test]
+    async fn test_select_storage_host_works() {
+        let db = setup_database().await;
+        let mut conn = db.begin().await.expect("connection");
+
+        let bak_storage_host_id =
+            create_storage_host(&mut conn, "Bax", "https://127.0.0.1:8002/", 10).await;
+
+        let storage_host = SelectedStorageHost::select_for_capacity(&mut conn, 5, None)
+            .await
+            .unwrap();
+        assert!(storage_host.is_some());
+        assert_eq!(storage_host.unwrap().name, "Bax");
+    }
+
+    #[tokio::test]
+    async fn test_select_storage_host_excludes_correctly() {
+        let db = setup_database().await;
+        let mut conn = db.begin().await.expect("connection");
+
+        let bak_storage_host_id =
+            create_storage_host(&mut conn, "Bax", "https://127.0.0.1:8002/", 10).await;
+
+        let storage_host =
+            SelectedStorageHost::select_for_capacity(&mut conn, 5, Some(&bak_storage_host_id))
+                .await
+                .unwrap();
+        assert!(storage_host.is_none());
     }
 }

@@ -49,7 +49,7 @@ pub use snapshot::Snapshot;
 pub use snapshot_segments::SnapshotSegment;
 pub use snapshot_state::SnapshotState;
 pub use storage_class::StorageClass;
-pub use storage_grant::NewStorageGrant;
+pub use storage_grant::{AuthorizedAmounts, NewStorageGrant};
 pub use storage_host::{SelectedStorageHost, StorageHost, UserStorageReport};
 pub use stripe_checkout_session::{NewStripeCheckoutSession, StripeCheckoutSession};
 pub use stripe_checkout_session_status::StripeCheckoutSessionStatus;

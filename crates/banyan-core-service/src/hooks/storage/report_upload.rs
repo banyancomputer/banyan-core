@@ -48,6 +48,9 @@ pub async fn handler(
             .await
             .map_err(ReportUploadError::UnableToRecordBlock)?;
 
+        // TODO: Handle the case where a block has had it's location moved
+        // i.e find the old storage host, mark it as pruned, insert the new storage host.
+
         // Completeley insert the block location into the database, treating it like we've definitely never seen it before
         sqlx::query!(
             r#"INSERT INTO block_locations

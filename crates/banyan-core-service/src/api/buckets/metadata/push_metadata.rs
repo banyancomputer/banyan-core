@@ -218,7 +218,7 @@ pub async fn handler(
     let mut conn = database.begin().await?;
 
     let storage_host =
-        match SelectedStorageHost::select_for_capacity(&mut conn, needed_capacity).await? {
+        match SelectedStorageHost::select_for_capacity(&mut conn, needed_capacity, None).await? {
             Some(sh) => sh,
             None => {
                 tracing::warn!(
@@ -322,7 +322,7 @@ async fn persist_upload<'a>(
     Ok((hash, size))
 }
 
-fn rounded_storage_authorization(report: &UserStorageReport, additional_capacity: i64) -> i64 {
+pub fn rounded_storage_authorization(report: &UserStorageReport, additional_capacity: i64) -> i64 {
     let new_required_amount = report.current_consumption() + additional_capacity;
     // Integer division always rounds down, we want to round up to the nearest 100MiB
     ((new_required_amount / ONE_HUNDRED_MIB) + 1) * ONE_HUNDRED_MIB
@@ -399,7 +399,7 @@ pub enum PersistanceError {
 pub struct PushMetadataRequest {
     // TODO: either let's remove the distinction between root and metadata cids
     // or rename this to previous_metadata_cid. For now the client as implemented
-    // within the cli / wasm is epxecting this name
+    // within the cli / wasm is expecting this name
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub previous_cid: Option<String>,
 
