@@ -1,5 +1,4 @@
 use std::collections::HashSet;
-use futures::task::Spawn;
 
 use http::{HeaderMap, HeaderValue};
 use jwt_simple::algorithms::ECDSAP384KeyPairLike;
@@ -7,9 +6,10 @@ use jwt_simple::claims::Claims;
 use jwt_simple::prelude::*;
 use reqwest::{Client, Response};
 use serde::Serialize;
+use tracing::error_span;
 use url::Url;
-use crate::clients::models::ApiStorageHostAdmin;
 
+use crate::clients::models::ApiStorageHostAdmin;
 use crate::utils::SigningKey;
 
 pub struct CoreServiceClient {
@@ -23,6 +23,19 @@ pub struct ReportUpload {
     data_size: u64,
     normalized_cids: Vec<String>,
     storage_authorization_id: String,
+}
+
+#[derive(Serialize)]
+pub struct MoveMetadataRequest {
+    pub needed_capacity: i64,
+    // block IDs stored on the old host, to be deleted and then moved to a new host
+    pub previous_cids: Vec<String>,
+}
+
+#[derive(Deserialize)]
+pub struct MoveMetadataResponse {
+    pub storage_host: String,
+    pub storage_authorization: String,
 }
 
 impl CoreServiceClient {
@@ -54,7 +67,7 @@ impl CoreServiceClient {
             platform_hostname,
         }
     }
-    pub async fn get_storage_providers(&self) -> Result<ApiStorageHostAdmin, reqwest::Error> {
+    pub async fn get_storage_providers(&self) -> Result<Vec<ApiStorageHostAdmin>, reqwest::Error> {
         let storage_hosts_endpoint = self.platform_hostname.join("/admin/providers").unwrap();
 
         self.client
@@ -62,7 +75,7 @@ impl CoreServiceClient {
             .bearer_auth(&self.bearer_token)
             .send()
             .await?
-            .json::<ApiStorageHostAdmin>()
+            .json::<Vec<ApiStorageHostAdmin>>()
             .await
     }
 
@@ -90,5 +103,26 @@ impl CoreServiceClient {
             .bearer_auth(&self.bearer_token)
             .send()
             .await
+    }
+
+    pub async fn initiate_metadata_move(
+        &self,
+        metadata_id: &String,
+        request: MoveMetadataRequest,
+    ) -> Result<MoveMetadataResponse, reqwest::Error> {
+        let token_endpoint = self
+            .platform_hostname
+            .join(format!("/api/v1/bucket/metadata/{}/move", metadata_id).as_str())
+            .unwrap();
+        let response = self
+            .client
+            .post(token_endpoint)
+            .header("Content-Type", "application/json")
+            .json(&request)
+            .bearer_auth(&self.bearer_token)
+            .send()
+            .await?;
+
+        response.json::<MoveMetadataResponse>().await
     }
 }

@@ -1,6 +1,6 @@
-mod keys;
-
 pub use keys::{fingerprint_key_pair, fingerprint_public_key, SigningKey, VerificationKey};
+
+mod keys;
 
 /// This is the CID representation that is standardized internally. We should be able to receive
 /// CIDs in various compatible formats and always normalize to this variant before comparing or

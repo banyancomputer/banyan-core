@@ -1,13 +1,15 @@
 use async_trait::async_trait;
-use cid::multibase::Base;
-use banyan_task::{CurrentTask, TaskLike};
+use banyan_task::{CurrentTask, TaskLike, TaskLikeExt, TaskStoreError};
+use itertools::Itertools;
 use jwt_simple::prelude::*;
 use serde::{Deserialize, Serialize};
+use time::OffsetDateTime;
 use url::Url;
 
 use crate::app::AppState;
-use crate::clients::core_service::CoreServiceClient;
-use crate::tasks::report_upload::ReportUploadTaskError;
+use crate::clients::core_service::{CoreServiceClient, MoveMetadataRequest};
+use crate::database::models::{Blocks, Uploads};
+use crate::tasks::upload_blocks::UploadBlocksTask;
 
 pub type ReportUploadTaskContext = AppState;
 
@@ -18,21 +20,23 @@ pub enum RedistributeDataTaskError {
     DatabaseError(#[from] sqlx::Error),
     #[error("reqwest error: {0}")]
     ReqwestError(#[from] reqwest::Error),
+    #[error("scheduling task error: {0}")]
+    SchedulingTaskError(#[from] TaskStoreError),
     #[error("http error: {0} response from {1}")]
     HttpError(http::StatusCode, Url),
 }
 
 #[derive(Deserialize, Serialize)]
-pub struct RedistributeData {}
+pub struct RedistributeDataTask {}
 
-impl RedistributeData {
+impl RedistributeDataTask {
     pub fn new() -> Self {
         Self {}
     }
 }
 
 #[async_trait]
-impl TaskLike for RedistributeData {
+impl TaskLike for RedistributeDataTask {
     const TASK_NAME: &'static str = "redistribute_data_task";
 
     type Error = RedistributeDataTaskError;
@@ -43,6 +47,7 @@ impl TaskLike for RedistributeData {
         let service_name = ctx.service_name();
         let platform_name = ctx.platform_name();
         let platform_hostname = ctx.platform_hostname();
+        let mut database = ctx.database();
 
         let client = CoreServiceClient::new(
             service_signing_key,
@@ -51,10 +56,79 @@ impl TaskLike for RedistributeData {
             platform_hostname,
         );
 
-        let response = client
-            .get_storage_providers()
+        let uploads_for_redistribution: Vec<Uploads> = Uploads::non_pruned_uploads(&database)
             .await
-            .map_err(ReportUploadTaskError::ReqwestError)?;
+            .map_err(RedistributeDataTaskError::DatabaseError)?;
 
+        let mut undistributed_blocks: HashSet<String> = uploads_for_redistribution
+            .iter()
+            .map(|upload| upload.id.clone())
+            .collect();
+
+        for upload in uploads_for_redistribution.iter() {
+            let upload_id = upload.id.clone();
+            let task_exists = sqlx::query!(
+                "SELECT * FROM background_tasks WHERE task_name = $1 AND unique_key = $2",
+                UploadBlocksTask::TASK_NAME,
+                upload_id
+            )
+            .fetch_optional(&database)
+            .await
+            .map_err(RedistributeDataTaskError::DatabaseError)?;
+
+            if task_exists.is_some() {
+                undistributed_blocks.remove(&upload_id);
+                continue;
+            }
+
+            let blocks_for_pruning = Blocks::blocks_for_upload(&database, &upload_id).await?;
+
+            let needed_capacity = upload.final_size.unwrap_or(upload.reported_size);
+
+            let previous_cids: Vec<String> = blocks_for_pruning
+                .iter()
+                .map(|block| block.cid.clone())
+                .collect();
+
+            let metadata_move_response = client
+                .initiate_metadata_move(
+                    &upload.metadata_id,
+                    MoveMetadataRequest {
+                        needed_capacity,
+                        previous_cids,
+                    },
+                )
+                .await?;
+
+            let task_result = UploadBlocksTask {
+                upload_id: upload_id.clone(),
+                storage_host: metadata_move_response.storage_host.clone(),
+                storage_authorization: metadata_move_response.storage_authorization.clone(),
+            }
+            .enqueue::<banyan_task::SqliteTaskStore>(&mut database)
+            .await;
+            if let Err(e) = task_result {
+                tracing::error!(
+                    "could not schedule: {:?} for upload {:?} to storage host {:?}",
+                    UploadBlocksTask::TASK_NAME,
+                    upload_id.clone(),
+                    metadata_move_response.storage_host.clone()
+                );
+                continue;
+            }
+            undistributed_blocks.remove(&upload_id);
+        }
+
+        if !undistributed_blocks.is_empty() {
+            tracing::warn!(
+                "Not all upload blocks have been distributed. Remaining: {:?}",
+                undistributed_blocks
+            );
+        }
+        Ok(())
+    }
+
+    fn next_time(&self) -> Option<OffsetDateTime> {
+        Some(OffsetDateTime::now_utc() + time::Duration::days(1))
     }
 }

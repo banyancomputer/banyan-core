@@ -16,11 +16,12 @@ itertools = "^0.11"
 pico-args = "^0.5"
 thiserror = "^1"
 tokio = { version = "^1", features = ["macros", "net", "rt", "rt-multi-thread", "signal", "sync", "time"] }
+time = { version = "^0.3", features = ["serde", "parsing", "formatting"] }
 
 async-trait = "^0.1"
 blake3 = "^1"
 bytes = "^1"
-cid = { version = "^0.10", features = ["serde-codec"] }
+cid = { version = "^0.10", featus = ["serde-codec"] }
 jwt-simple = "^0.11"
 mime = "^0.3"
 regex = { version = "^1", default-features = false, features = ["std"] }
@@ -34,7 +35,7 @@ axum-extra = { version = "^0.8" }
 http = "^0.2"
 hyper = "^0.14"
 multer = { version = "^2", features = ["json", "tokio", "tokio-io"] }
-reqwest = { version = "^0.11", default-features = false, features = ["json", "rustls-tls-native-roots"] }
+reqwest = { version = "^0.11", default-features = false, features = ["json", "multipart", "rustls-tls-native-roots"] }
 sqlx = { version = "^0.7", default-features = false, features = ["macros", "migrate", "runtime-tokio", "tls-rustls", "uuid"] }
 time = { version = "^0.3", features = ["formatting", "serde"] }
 tower = { version = "^0.4", features = ["timeout", "load-shed", "limit", "util"] }

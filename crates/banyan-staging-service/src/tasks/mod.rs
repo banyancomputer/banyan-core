@@ -1,7 +1,3 @@
-mod prune_blocks;
-mod redistribute_data;
-mod report_upload;
-
 use banyan_task::{QueueConfig, SqliteTaskStore, WorkerPool};
 pub use prune_blocks::PruneBlocksTask;
 pub use report_upload::ReportUploadTask;
@@ -9,6 +5,15 @@ use tokio::sync::watch;
 use tokio::task::JoinHandle;
 
 use crate::app::AppState;
+use crate::tasks::complete_upload_blocks::CompleteUploadBlocksTask;
+use crate::tasks::redistribute_data::RedistributeDataTask;
+use crate::tasks::upload_blocks::UploadBlocksTask;
+
+mod complete_upload_blocks;
+mod prune_blocks;
+mod redistribute_data;
+mod report_upload;
+mod upload_blocks;
 
 pub async fn start_background_workers(
     state: AppState,
@@ -19,6 +24,9 @@ pub async fn start_background_workers(
     WorkerPool::new(task_store.clone(), move || state.clone())
         .configure_queue(QueueConfig::new("default").with_worker_count(5))
         .register_task_type::<ReportUploadTask>()
+        .register_task_type::<RedistributeDataTask>()
+        .register_task_type::<UploadBlocksTask>()
+        .register_task_type::<CompleteUploadBlocksTask>()
         .register_task_type::<PruneBlocksTask>()
         .start(async move {
             let _ = shutdown_rx.changed().await;

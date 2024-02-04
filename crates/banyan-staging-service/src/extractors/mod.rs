@@ -1,6 +1,10 @@
 use std::sync::OnceLock;
 
+pub use authenticated_client::AuthenticatedClient;
+pub use block_reader::BlockReader;
+pub use platform_identity::PlatformIdentity;
 use regex::Regex;
+pub use storage_grant::StorageGrant;
 
 pub mod authenticated_client;
 mod block_reader;
@@ -29,8 +33,3 @@ pub fn fingerprint_validator() -> &'static Regex {
 pub fn paired_id_validator() -> &'static Regex {
     PAIRED_ID_VALIDATOR.get_or_init(|| Regex::new(PAIRED_ID_PATTERN).unwrap())
 }
-
-pub use authenticated_client::AuthenticatedClient;
-pub use block_reader::BlockReader;
-pub use platform_identity::PlatformIdentity;
-pub use storage_grant::StorageGrant;

@@ -1,6 +1,7 @@
 // TODO: dead code cleanup
 #![allow(dead_code)]
 
+use app::Config;
 use tracing::Level;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
@@ -15,8 +16,6 @@ mod health_check;
 mod http_server;
 mod tasks;
 mod utils;
-
-use app::Config;
 
 #[tokio::main]
 async fn main() {

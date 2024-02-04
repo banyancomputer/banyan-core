@@ -1,2 +1,3 @@
 pub mod core_service;
-mod models;
+pub mod models;
+pub mod storage_provider_client;
