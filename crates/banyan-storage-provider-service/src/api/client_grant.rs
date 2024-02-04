@@ -2,11 +2,13 @@ use axum::extract::{Json, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use serde::{Deserialize, Serialize};
+use sqlx::sqlx_macros::expand_query;
 use uuid::Uuid;
 
 use crate::app::AppState;
+use crate::database::models::StorageGrants;
 use crate::database::{map_sqlx_error, BareId, Database, DatabaseError, DbResult};
-use crate::extractors::StorageGrant;
+use crate::extractors::{storage_grant, StorageGrant};
 
 #[derive(Deserialize, Serialize)]
 pub struct GrantRequest {
@@ -21,6 +23,9 @@ pub async fn handler(
     let database = state.database();
     let grant_user_id = ensure_grant_user(&database, &grant, request).await?;
     create_storage_grant(grant_user_id, &database, &grant).await?;
+    // if !existing_grant_has_enough_space(&database, &grant, grant_user_id).await?{
+    //     create_storage_grant(grant_user_id, &database, &grant).await?;
+    // }
     Ok((StatusCode::NO_CONTENT, ()).into_response())
 }
 
@@ -64,6 +69,34 @@ async fn existing_grant_user(
         .map_err(GrantError::Database)?;
 
     Ok(user_id.map(|b| Uuid::parse_str(b.id.as_str()).unwrap()))
+}
+
+async fn existing_grant_has_enough_space(
+    database: &Database,
+    grant: &StorageGrant,
+    grant_user_id: Uuid,
+) -> Result<bool, GrantError> {
+    match retrieve_existing_grant(&database, &grant_user_id, &grant.grant_id()).await? {
+        Some(existing_grant) => Ok(existing_grant.allowed_storage >= grant.authorized_data_size()),
+        None => Ok(false),
+    }
+}
+
+async fn retrieve_existing_grant(
+    database: &Database,
+    client_id: &Uuid,
+    grant_id: &Uuid,
+) -> Result<Option<StorageGrants>, GrantError> {
+    let storage_grant: Option<StorageGrants> =
+        sqlx::query_as("SELECT * FROM storage_grants WHERE client_id = $1 AND grant_id = $2")
+            .bind(client_id.to_string())
+            .bind(grant_id.to_string())
+            .fetch_optional(database)
+            .await
+            .map_err(map_sqlx_error)
+            .map_err(GrantError::Database)?;
+
+    Ok(storage_grant)
 }
 
 async fn create_storage_grant(

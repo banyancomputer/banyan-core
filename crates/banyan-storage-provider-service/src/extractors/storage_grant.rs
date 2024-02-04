@@ -21,11 +21,11 @@ pub struct StorageGrant {
 
     client_fingerprint: String,
 
-    authorized_data_size: usize,
+    authorized_data_size: i64,
 }
 
 impl StorageGrant {
-    pub fn authorized_data_size(&self) -> usize {
+    pub fn authorized_data_size(&self) -> i64 {
         self.authorized_data_size
     }
 
@@ -214,6 +214,6 @@ struct TokenAuthorizations {
 
 #[derive(Deserialize, Serialize, Debug)]
 struct Usage {
-    available_storage: usize,
+    available_storage: i64,
     grant_id: String,
 }
