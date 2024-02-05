@@ -320,7 +320,7 @@ impl StreamingCarAnalyzer {
                     // offset
                     self.state = CarState::BlockData {
                         data_start: self.stream_offset + varint_len + cid_length,
-                        data_length: blk_len,
+                        data_length: blk_len - varint_len,
                         cid,
 
                         data_end: *data_end,
@@ -353,8 +353,17 @@ impl StreamingCarAnalyzer {
                         }
                     }
 
-                    // todo: make sure the block is all here, return the data in the returned block
-                    let data = Vec::new();
+                    // Wait until we have the entire before continuing
+                    if self.buffer.len() < data_length as usize {
+                        println!(
+                            "insufficient data available {} vs {}",
+                            self.buffer.len(),
+                            data_length
+                        );
+                        return Ok(None);
+                    }
+
+                    let data = self.buffer.split_to(data_length as usize).to_vec();
 
                     // This might be the end of all data, we'll check once we reach the block_start
                     // offset
@@ -600,11 +609,10 @@ mod tests {
         assert!(sca.next().await.expect("still valid").is_none());
         assert_eq!(sca.stream_offset, 72);
 
-        let first_block = CarState::Block {
+        let first_block = CarState::BlockMeta {
             block_start: 171,
             data_end: 71 + data_length,
             index_start: 71 + data_length + 20,
-            block_length: None,
         };
         assert_eq!(sca.state, first_block);
         assert_eq!(sca.buffer.len(), 0);
@@ -629,20 +637,19 @@ mod tests {
         sca.add_chunk(&Bytes::from(block_cid.to_bytes())).unwrap();
         sca.add_chunk(&Bytes::from(block_data.to_vec())).unwrap();
 
-        let next_meta = Some(BlockMeta {
+        let next_meta = Some(Block {
             cid: block_cid,
             offset: 208,
             length: inner_block_size - block_cid.encoded_len() as u64,
+            data: block_data.to_vec(),
         });
-        println!("{next_meta:?}");
         assert_eq!(sca.next().await.expect("still valid"), next_meta);
         assert_eq!(
             sca.state,
-            CarState::Block {
+            CarState::BlockMeta {
                 block_start: 265,
                 data_end: 265,
                 index_start: 285,
-                block_length: None
             }
         );
         assert_eq!(sca.stream_offset, 172); // we've read the length & CID but haven't advanced the stream
