@@ -320,7 +320,7 @@ impl StreamingCarAnalyzer {
                     // offset
                     self.state = CarState::BlockData {
                         data_start: self.stream_offset + varint_len + cid_length,
-                        data_length: blk_len - varint_len,
+                        data_length: blk_len - cid_length,
                         cid,
 
                         data_end: *data_end,
@@ -341,8 +341,8 @@ impl StreamingCarAnalyzer {
 
                     // Skip any left over data and padding until we reach our goal
                     if self.stream_offset < data_start {
-                        let skippable_bytes = data_start - self.stream_offset; // 171 - 72 = 99
-                        let available_bytes = self.buffer.len() as u64; //
+                        let skippable_bytes = data_start - self.stream_offset;
+                        let available_bytes = self.buffer.len() as u64;
 
                         let skipped_byte_count = available_bytes.min(skippable_bytes);
                         let _ = self.buffer.split_to(skipped_byte_count as usize);
@@ -364,6 +364,7 @@ impl StreamingCarAnalyzer {
                     }
 
                     let data = self.buffer.split_to(data_length as usize).to_vec();
+                    self.stream_offset += data.len() as u64;
 
                     // This might be the end of all data, we'll check once we reach the block_start
                     // offset
@@ -629,9 +630,11 @@ mod tests {
         let block_data = b"some internal blockity block data, this is real I promise";
         // we'll use the RAW codec for our data...
         let block_cid = Cid::new_v1(0x55, Code::Sha3_256.digest(block_data));
+        let cid_length = block_cid.encoded_len();
 
-        let inner_block_size = (block_data.len() + block_cid.encoded_len()) as u64;
+        let inner_block_size = (block_data.len() + cid_length) as u64;
         let length_bytes = encode_varint_u64(inner_block_size);
+        let true_data_start = 171 + (length_bytes.len() + cid_length) as u64;
 
         sca.add_chunk(&length_bytes).unwrap();
         sca.add_chunk(&Bytes::from(block_cid.to_bytes())).unwrap();
@@ -639,8 +642,8 @@ mod tests {
 
         let next_meta = Some(Block {
             cid: block_cid,
-            offset: 208,
-            length: inner_block_size - block_cid.encoded_len() as u64,
+            offset: true_data_start,
+            length: block_data.len() as u64,
             data: block_data.to_vec(),
         });
         assert_eq!(sca.next().await.expect("still valid"), next_meta);
@@ -652,8 +655,7 @@ mod tests {
                 index_start: 285,
             }
         );
-        assert_eq!(sca.stream_offset, 172); // we've read the length & CID but haven't advanced the stream
-                                            // offset yet
+        assert_eq!(sca.stream_offset, 265);
 
         sca.add_chunk(&Bytes::from([0u8; 10].as_slice())).unwrap(); // take us into the padding past the data but before the indexes
         assert!(sca.next().await.expect("still valid").is_none()); // we're at the end of the data, this should transition to indexes
