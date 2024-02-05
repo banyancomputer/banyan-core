@@ -26,6 +26,10 @@ impl Block {
         &self.cid
     }
 
+    pub fn data(&self) -> &[u8] {
+        self.data.as_slice()
+    }
+
     pub fn length(&self) -> u64 {
         self.length
     }
@@ -54,8 +58,8 @@ enum CarState {
         index_start: u64,
     },
     BlockData {
-        block_start: u64,
-        block_length: u64,
+        block_data_start: u64,
+        block_data_length: u64,
         block_cid: Cid,
 
         data_end: u64,
@@ -278,34 +282,16 @@ impl StreamingCarAnalyzer {
                         continue;
                     }
 
-                    // We need the block length, and the CID we need to wait until its present then
-                    // advance to the next state.
+                    // Read the block length but don't advance our stream offset or consume the
+                    // buffer until we know we also have a valid CID.
+                    let (block_length, varint_length) = match try_read_varint_u64(&self.buffer[..])?
+                    {
+                        Some(varint) => varint,
+                        None => return Ok(None),
+                    };
 
-                    //let blk_len = match block_length {
-                    //    Some(bl) => *bl,
-                    //    // Read the varint and consume the bytes from the buffer and stream_offset
-                    //    None => match try_read_varint_u64(&self.buffer[..])? {
-                    //        Some((length, bytes_read)) => {
-                    //            *block_length = Some(length);
-
-                    //            self.stream_offset += bytes_read;
-                    //            let _ = self.buffer.split_to(bytes_read as usize);
-
-                    //            length
-                    //        }
-                    //        None => return Ok(None),
-                    //    },
-                    //};
-
-                    // todo:
-                    let varint_length = 0;
-                    let block_length = 0;
-
-                    // We would need to pass this through our state if we want to do streaming
-                    // parsing on the block contents, but since we don't we can use the current
-                    // stream offset as a proxy for "just after the block length" we can avoid
-                    // storing it in state.
-                    //let length_varint_len = self.stream_offset - block_start;
+                    let block_cid = Cid::default();
+                    let cid_length = 0;
 
                     // 64-bytes is the longest reasonable CID we're going to care about it. We're
                     // going to wait until we have that much then try and decode the CID from
@@ -331,47 +317,70 @@ impl StreamingCarAnalyzer {
                     //    StreamingCarAnalyzerError::InvalidBlockCid(self.stream_offset, err)
                     //})?;
                     //let cid_length = cid.encoded_len() as u64;
-                    //self.stream_offset += cid_length;
-                    //let _ = self.buffer.split_to(cid_length as usize);
 
-                    //self.cids.push(cid);
-
-                    // This might be the end of all data, we'll check once we reach the block_start
-                    // offset
                     self.state = CarState::BlockData {
-                        block_start: block_start + varint_length + block_length,
-                        block_length,
-                        block_cid: Cid::default(),
+                        block_data_start: block_start + varint_length + cid_length,
+                        block_data_length: block_length - cid_length,
+                        block_cid,
 
                         data_end: *data_end,
                         index_start: *index_start,
                     };
-
-                    //// todo(sstelfox:fix this)
-                    //let data_length = (blk_len - cid_length) as usize;
-                    //self.stream_offset += data_length as u64;
-                    //let block_bytes = Into::<Bytes>::into(self.buffer.split_to(data_length));
                 }
                 CarState::BlockData {
-                    block_start,
-                    block_length,
+                    block_data_start,
+                    block_data_length,
                     block_cid,
 
                     data_end,
                     index_start,
                 } => {
+                    let block_data_start = *block_data_start;
+                    let block_data_length = *block_data_length;
+                    let block_cid = *block_cid;
+
+                    // Skip any left over data and padding until we reach our goal
+                    if self.stream_offset < block_data_start {
+                        let skippable_bytes = block_data_start - self.stream_offset; // 171 - 72 = 99
+                        let available_bytes = self.buffer.len() as u64; //
+
+                        let skipped_byte_count = available_bytes.min(skippable_bytes);
+                        let _ = self.buffer.split_to(skipped_byte_count as usize);
+                        self.stream_offset += skipped_byte_count;
+
+                        if self.stream_offset != block_data_start {
+                            return Ok(None);
+                        }
+                    }
+
+                    // Check if we have the complete block present, if not return early waiting for
+                    // more data
+                    if self.buffer.len() < block_data_length as usize {
+                        return Ok(None);
+                    }
+
+                    let block_data = self.buffer.split_to(block_data_length as usize);
+
+                    self.cids.push(block_cid);
+
+                    // This might be the end of all data, we'll check once we reach the block_start
+                    // offset
+
                     // Advance to the next block
                     self.state = CarState::BlockMeta {
-                        block_start: *block_start + *block_length,
+                        block_start: block_data_start + block_data_length,
                         data_end: *data_end,
                         index_start: *index_start,
                     };
 
-                    //return Ok(Some(Block {
-                    //    cid,
-                    //    offset: block_start + length_varint_len + cid_length,
-                    //    length: blk_len - cid_length,
-                    //}));
+                    let block = Block {
+                        cid: block_cid,
+                        offset: block_data_start,
+                        length: block_data_length,
+                        data: block_data.to_vec(),
+                    };
+
+                    return Ok(Some(block));
                 }
                 CarState::Indexes { index_start } => {
                     // we don't actually care about the indexes right now so I'm going to use this
