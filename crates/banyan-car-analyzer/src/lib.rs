@@ -25,8 +25,8 @@ impl Block {
         &self.cid
     }
 
-    pub fn data(&self) -> &[u8] {
-        self.data.as_slice()
+    pub fn into_data(self) -> Vec<u8> {
+        self.data
     }
 
     pub fn length(&self) -> u64 {
