@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE uploads_blocks SET pruned_at = $1 WHERE block_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "65157afc9ce4121bc67e987cfc91def30ef87091a7c829a0f4db1bcef192d720"
+}

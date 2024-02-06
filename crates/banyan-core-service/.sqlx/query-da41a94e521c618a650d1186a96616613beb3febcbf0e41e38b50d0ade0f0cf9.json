@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT b.user_id\n                FROM metadata m\n                JOIN main.buckets b on m.bucket_id = b.id\n            WHERE m.id = $1;",
+  "describe": {
+    "columns": [
+      {
+        "name": "user_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "da41a94e521c618a650d1186a96616613beb3febcbf0e41e38b50d0ade0f0cf9"
+}
