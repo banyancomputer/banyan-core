@@ -68,5 +68,5 @@ pub use user::User;
 /// such recommending this workaround. See launchbadge/sqlx#2814.
 #[derive(sqlx::FromRow)]
 pub struct ExplicitBigInt {
-    big_int: i64,
+    pub big_int: i64,
 }

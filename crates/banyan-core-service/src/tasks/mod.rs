@@ -1,6 +1,7 @@
 mod create_deals;
 mod email;
 mod prune_blocks;
+mod used_storage;
 
 use banyan_task::{QueueConfig, SqliteTaskStore, WorkerPool};
 pub use create_deals::{CreateDealsTask, BLOCK_SIZE};
