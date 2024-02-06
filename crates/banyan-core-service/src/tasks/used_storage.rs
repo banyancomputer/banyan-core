@@ -58,7 +58,7 @@ impl TaskLike for UsedStorageTask {
         // `authorized_amount` columns for most recently redeemed (limit one per user.).
 
         let storage_host_id = self.storage_host_id.clone();
-        let data_size = sqlx::query_as!(
+        let total_data_size = sqlx::query_as!(
             ExplicitBigInt,
             r#"
                 SELECT COALESCE(SUM(m.data_size), 0) as big_int
