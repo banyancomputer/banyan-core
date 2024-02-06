@@ -56,7 +56,7 @@ impl TaskLike for RedistributeDataTask {
             .await
             .map_err(RedistributeDataTaskError::DatabaseError)?;
 
-        let mut undistributed_blocks: HashSet<String> = uploads_for_redistribution
+        let mut undistributed_uploads: HashSet<String> = uploads_for_redistribution
             .iter()
             .map(|upload| upload.id.clone())
             .collect();
@@ -75,7 +75,7 @@ impl TaskLike for RedistributeDataTask {
             .map_err(RedistributeDataTaskError::DatabaseError)?;
 
             if task_exists.is_some() {
-                undistributed_blocks.remove(&upload_id);
+                undistributed_uploads.remove(&upload_id);
                 continue;
             }
 
@@ -131,13 +131,13 @@ impl TaskLike for RedistributeDataTask {
                 );
                 continue;
             }
-            undistributed_blocks.remove(&upload_id);
+            undistributed_uploads.remove(&upload_id);
         }
 
-        if !undistributed_blocks.is_empty() {
+        if !undistributed_uploads.is_empty() {
             tracing::warn!(
-                "Not all upload blocks have been distributed. Remaining: {:?}",
-                undistributed_blocks
+                "Not all uploads have been distributed. Remaining: {:?}",
+                undistributed_uploads
             );
         }
         Ok(())
