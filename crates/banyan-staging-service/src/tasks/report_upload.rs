@@ -30,7 +30,7 @@ pub enum ReportUploadTaskError {
 #[derive(Deserialize, Serialize)]
 pub struct ReportUploadTask {
     storage_authorization_id: Uuid,
-    metadata_id: Uuid,
+    metadata_id: String,
     cids: Vec<Cid>,
     data_size: u64,
 }
@@ -38,13 +38,13 @@ pub struct ReportUploadTask {
 impl ReportUploadTask {
     pub fn new(
         storage_authorization_id: Uuid,
-        metadata_id: Uuid,
+        metadata_id: &String,
         cids: &[Cid],
         data_size: u64,
     ) -> Self {
         Self {
             storage_authorization_id,
-            metadata_id,
+            metadata_id: metadata_id.to_string(),
             cids: cids.to_vec(),
             data_size,
         }

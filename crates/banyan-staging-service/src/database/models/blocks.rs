@@ -20,7 +20,7 @@ impl Blocks {
             Self,
             "SELECT b.* FROM uploads AS u
                 JOIN uploads_blocks AS ub ON ub.upload_id = u.id
-                JOIN main.blocks b on b.id = ub.block_id
+                JOIN blocks b on b.id = ub.block_id
             WHERE pruned_at IS NULL AND u.id = $1;",
             upload_id
         )

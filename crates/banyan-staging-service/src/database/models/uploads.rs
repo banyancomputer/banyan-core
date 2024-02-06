@@ -9,11 +9,12 @@ pub struct Uploads {
     pub metadata_id: String,
     pub reported_size: i64,
     pub final_size: Option<i64>,
-    pub file_path: String,
+    pub base_path: String,
     pub state: String,
     pub integrity_hash: Option<String>,
     pub started_at: OffsetDateTime,
     pub finished_at: Option<OffsetDateTime>,
+    pub created_at: OffsetDateTime,
 }
 
 impl Uploads {
@@ -27,5 +28,11 @@ impl Uploads {
         )
         .fetch_all(database)
         .await
+    }
+
+    pub async fn get_by_id(database: &Database, id: &str) -> Result<Option<Self>, sqlx::Error> {
+        sqlx::query_as!(Uploads, "SELECT * FROM uploads WHERE id = $1;", id)
+            .fetch_optional(database)
+            .await
     }
 }

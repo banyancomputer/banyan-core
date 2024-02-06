@@ -1,12 +1,12 @@
 use banyan_task::{QueueConfig, SqliteTaskStore, WorkerPool};
 pub use prune_blocks::PruneBlocksTask;
-pub use report_upload::ReportUploadTask;
 use tokio::sync::watch;
 use tokio::task::JoinHandle;
 
 use crate::app::AppState;
 use crate::tasks::complete_upload_blocks::CompleteUploadBlocksTask;
 use crate::tasks::redistribute_data::RedistributeDataTask;
+pub use crate::tasks::report_upload::ReportUploadTask;
 use crate::tasks::upload_blocks::UploadBlocksTask;
 
 mod complete_upload_blocks;

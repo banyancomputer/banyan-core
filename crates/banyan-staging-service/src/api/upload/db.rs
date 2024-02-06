@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use std::str::FromStr;
 use std::time::Duration;
 
@@ -6,6 +7,7 @@ use cid::Cid;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
+use crate::api::upload::error::UploadError;
 use crate::database::Database;
 use crate::tasks::ReportUploadTask;
 
@@ -26,21 +28,7 @@ pub async fn start_upload(
         state: String::from("started"),
     };
 
-    upload.id = sqlx::query_scalar!(
-        r#"
-        INSERT INTO
-            uploads (client_id, metadata_id, reported_size, base_path, state)
-            VALUES ($1, $2, $3, $4, $5)
-            RETURNING id;
-        "#,
-        upload.client_id,
-        upload.metadata_id,
-        upload.reported_size,
-        upload.base_path,
-        upload.state,
-    )
-    .fetch_one(db)
-    .await?;
+    upload.save(&db).await?;
 
     Ok(upload)
 }
@@ -119,10 +107,11 @@ pub async fn upload_size(db: &Database, upload_id: &str) -> Result<i64, sqlx::Er
 pub async fn report_upload(
     db: &mut Database,
     storage_grant_id: Uuid,
-    metadata_id: &str,
-    upload_id: &str,
+    metadata_id: &String,
+    upload_id: &String,
     total_size: i64,
 ) -> Result<(), sqlx::Error> {
+    let upload_id = upload_id.to_string();
     let all_cids: Vec<String> = sqlx::query_scalar!(
         r#"
             SELECT blocks.cid 
@@ -217,4 +206,25 @@ pub struct Upload {
     pub base_path: String,
     pub reported_size: i64,
     pub state: String,
+}
+impl Upload {
+    pub async fn save(&self, db: &Database) -> Result<String, sqlx::Error> {
+        println!(
+            "INSERTING INTO uploads metadata_id {:?} client_id {:?} ",
+            self.metadata_id, self.client_id
+        );
+        sqlx::query_scalar!(
+            r#"INSERT INTO uploads (client_id, metadata_id, reported_size, base_path, state)
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING id;
+        "#,
+            self.client_id,
+            self.metadata_id,
+            self.reported_size,
+            self.base_path,
+            self.state,
+        )
+        .fetch_one(db)
+        .await
+    }
 }

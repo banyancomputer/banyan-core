@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use http::{HeaderMap, HeaderValue};
 use jwt_simple::algorithms::ECDSAP384KeyPairLike;
@@ -6,7 +6,6 @@ use jwt_simple::claims::Claims;
 use jwt_simple::prelude::*;
 use reqwest::{Client, Response};
 use serde::Serialize;
-use tracing::error_span;
 use url::Url;
 
 use crate::clients::models::ApiStorageHostAdmin;
@@ -37,6 +36,7 @@ pub struct MoveMetadataResponse {
     pub storage_host: String,
     pub storage_authorization: String,
 }
+pub type LocationRequest = Vec<String>;
 
 impl CoreServiceClient {
     pub fn new(
@@ -124,5 +124,26 @@ impl CoreServiceClient {
             .await?;
 
         response.json::<MoveMetadataResponse>().await
+    }
+
+    pub async fn locate_blocks(
+        &self,
+        metadata_id: &String,
+        request: LocationRequest,
+    ) -> Result<HashMap<String, Vec<String>>, reqwest::Error> {
+        let locate_endpoint = self
+            .platform_hostname
+            .join(format!("/api/v1/bucket/metadata/{}/locate", metadata_id).as_str())
+            .unwrap();
+
+        let response = self
+            .client
+            .post(locate_endpoint)
+            .json(&request)
+            .bearer_auth(&self.bearer_token)
+            .send()
+            .await?;
+
+        response.json::<HashMap<String, Vec<String>>>().await
     }
 }

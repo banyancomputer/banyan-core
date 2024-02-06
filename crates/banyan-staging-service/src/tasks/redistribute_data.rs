@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use banyan_object_store::{ObjectStore, ObjectStoreError};
 use banyan_task::{CurrentTask, TaskLike, TaskLikeExt, TaskStoreError};
 use itertools::Itertools;
 use jwt_simple::prelude::*;
@@ -8,6 +9,7 @@ use url::Url;
 
 use crate::app::AppState;
 use crate::clients::core_service::{CoreServiceClient, MoveMetadataRequest};
+use crate::clients::storage_provider::StorageProviderClient;
 use crate::database::models::{Blocks, Uploads};
 use crate::tasks::upload_blocks::UploadBlocksTask;
 
@@ -20,6 +22,8 @@ pub enum RedistributeDataTaskError {
     DatabaseError(#[from] sqlx::Error),
     #[error("reqwest error: {0}")]
     ReqwestError(#[from] reqwest::Error),
+    #[error("object store error: {0}")]
+    ObjectStoreError(#[from] ObjectStoreError),
     #[error("scheduling task error: {0}")]
     SchedulingTaskError(#[from] TaskStoreError),
     #[error("http error: {0} response from {1}")]
@@ -43,17 +47,14 @@ impl TaskLike for RedistributeDataTask {
     type Context = ReportUploadTaskContext;
 
     async fn run(&self, _task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
-        let service_signing_key = ctx.secrets().service_signing_key();
-        let service_name = ctx.service_name();
-        let platform_name = ctx.platform_name();
-        let platform_hostname = ctx.platform_hostname();
         let mut database = ctx.database();
 
-        let client = CoreServiceClient::new(
-            service_signing_key,
-            service_name,
-            platform_name,
-            platform_hostname,
+        let store = ObjectStore::new(ctx.upload_store_connection())?;
+        let core_client = CoreServiceClient::new(
+            ctx.secrets().service_signing_key(),
+            ctx.service_name(),
+            ctx.platform_name(),
+            ctx.platform_hostname(),
         );
 
         let uploads_for_redistribution: Vec<Uploads> = Uploads::non_pruned_uploads(&database)
@@ -81,7 +82,14 @@ impl TaskLike for RedistributeDataTask {
                 continue;
             }
 
-            let blocks_for_pruning = Blocks::blocks_for_upload(&database, &upload_id).await?;
+            // TODO: what's going to happen if the user deletes the file while we redistribute?
+            let blocks_for_pruning = match Blocks::blocks_for_upload(&database, &upload_id).await {
+                Ok(blocks) => blocks,
+                Err(e) => {
+                    tracing::error!("Error getting blocks for upload: {:?}", e);
+                    continue;
+                }
+            };
 
             let needed_capacity = upload.final_size.unwrap_or(upload.reported_size);
 
@@ -90,7 +98,7 @@ impl TaskLike for RedistributeDataTask {
                 .map(|block| block.cid.clone())
                 .collect();
 
-            let metadata_move_response = client
+            let metadata_move_response = match core_client
                 .initiate_metadata_move(
                     &upload.metadata_id,
                     MoveMetadataRequest {
@@ -98,15 +106,38 @@ impl TaskLike for RedistributeDataTask {
                         previous_cids,
                     },
                 )
-                .await?;
+                .await
+            {
+                Ok(response) => response,
+                Err(e) => {
+                    tracing::error!("Error initiating metadata move: {:?}", e);
+                    continue;
+                }
+            };
+
+            let new_upload_response = match StorageProviderClient::new(
+                &metadata_move_response.storage_host,
+                &metadata_move_response.storage_authorization,
+            )
+            .new_upload(&upload.metadata_id)
+            .await
+            {
+                Ok(response) => response,
+                Err(e) => {
+                    tracing::error!("Error creating new upload: {:?}", e);
+                    continue;
+                }
+            };
 
             let task_result = UploadBlocksTask {
-                upload_id: upload_id.clone(),
+                current_upload_id: upload_id.clone(),
+                new_upload_id: new_upload_response.upload_id.clone(),
                 storage_host: metadata_move_response.storage_host.clone(),
                 storage_authorization: metadata_move_response.storage_authorization.clone(),
             }
             .enqueue::<banyan_task::SqliteTaskStore>(&mut database)
             .await;
+
             if let Err(e) = task_result {
                 tracing::error!(
                     "could not schedule: {:?} for upload {:?} to storage host {:?}",

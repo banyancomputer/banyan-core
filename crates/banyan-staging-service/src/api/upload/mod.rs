@@ -13,7 +13,7 @@ use uuid::Uuid;
 use crate::app::AppState;
 use crate::database::Database;
 use crate::extractors::AuthenticatedClient;
-use crate::tasks::ReportUploadTask;
+
 pub(crate) mod block;
 mod db;
 mod error;
@@ -21,6 +21,8 @@ pub(crate) mod new;
 
 use db::{complete_upload, fail_upload, start_upload, write_block_to_tables, Upload};
 use error::UploadError;
+
+use crate::tasks::ReportUploadTask;
 
 /// Limit on the size of the JSON request that accompanies an upload.
 const UPLOAD_REQUEST_SIZE_LIMIT: u64 = 100 * 1_024;

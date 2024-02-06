@@ -6,3 +6,4 @@ mod uploads_blocks;
 pub use block_details::BlockDetails;
 pub use blocks::Blocks;
 pub use uploads::Uploads;
+pub use uploads_blocks::UploadsBlocks;
