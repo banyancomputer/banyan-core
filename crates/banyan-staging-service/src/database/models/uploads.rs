@@ -21,10 +21,10 @@ impl Uploads {
     pub async fn non_pruned_uploads(database: &Database) -> Result<Vec<Self>, sqlx::Error> {
         sqlx::query_as!(
             Uploads,
-            "SELECT u.*
-                FROM uploads AS u
+            "SELECT DISTINCT u.*
+             FROM uploads AS u
                  JOIN uploads_blocks AS ub ON ub.upload_id = u.id
-                where pruned_at IS NULL;"
+             WHERE pruned_at IS NULL;"
         )
         .fetch_all(database)
         .await

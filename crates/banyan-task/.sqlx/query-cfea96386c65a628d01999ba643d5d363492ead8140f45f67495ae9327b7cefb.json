@@ -1,0 +1,98 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT * FROM background_tasks WHERE state IN ($1) AND task_name = $2",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "original_task_id",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "task_name",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "queue_name",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "unique_key",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "state",
+        "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "current_attempt",
+        "ordinal": 6,
+        "type_info": "Int64"
+      },
+      {
+        "name": "maximum_attempts",
+        "ordinal": 7,
+        "type_info": "Int64"
+      },
+      {
+        "name": "payload",
+        "ordinal": 8,
+        "type_info": "Blob"
+      },
+      {
+        "name": "error",
+        "ordinal": 9,
+        "type_info": "Blob"
+      },
+      {
+        "name": "scheduled_at",
+        "ordinal": 10,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "scheduled_to_run_at",
+        "ordinal": 11,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "started_at",
+        "ordinal": 12,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "finished_at",
+        "ordinal": 13,
+        "type_info": "Datetime"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      true,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "cfea96386c65a628d01999ba643d5d363492ead8140f45f67495ae9327b7cefb"
+}

@@ -125,7 +125,14 @@ where
                 .schedule_next(task.id.clone(), next_schedule)
                 .await
             {
-                Ok(_) => Ok(()),
+                Ok(_) => {
+                    tracing::info!(
+                        "scheduled next occurrence of {task_name} for {next_schedule}",
+                        task_name = task.task_name,
+                        next_schedule = next_schedule
+                    );
+                    Ok(())
+                }
                 Err(err) => {
                     tracing::error!("Failed to schedule next occurrence of task: {err}");
                     Err(WorkerError::ScheduleFailed(task.id.clone()))
@@ -167,8 +174,10 @@ where
                 .map_err(WorkerError::StoreUnavailable)?;
 
             if let Some(task) = next_task {
-                tracing::info!(id = ?task.id, "starting execution of task");
+                let id = task.id.clone();
+                tracing::info!(id = ?id, "starting execution of task");
                 self.run(task).await?;
+                tracing::info!(id = ?id, "finished execution of task");
                 continue;
             }
 

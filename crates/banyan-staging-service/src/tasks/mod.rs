@@ -1,4 +1,4 @@
-use banyan_task::{QueueConfig, SqliteTaskStore, TaskLikeExt, WorkerPool};
+use banyan_task::{QueueConfig, SqliteTaskStore, TaskLikeExt, TaskState, WorkerPool};
 pub use prune_blocks::PruneBlocksTask;
 use tokio::sync::watch;
 use tokio::task::JoinHandle;
@@ -7,12 +7,14 @@ use crate::app::AppState;
 use crate::tasks::complete_upload_blocks::CompleteUploadBlocksTask;
 use crate::tasks::redistribute_data::RedistributeDataTask;
 pub use crate::tasks::report_upload::ReportUploadTask;
+use crate::tasks::setup_upload_blocks::SetupUploadBlocksTask;
 use crate::tasks::upload_blocks::UploadBlocksTask;
 
 mod complete_upload_blocks;
 mod prune_blocks;
 mod redistribute_data;
 mod report_upload;
+mod setup_upload_blocks;
 mod upload_blocks;
 
 pub async fn start_background_workers(
@@ -20,20 +22,25 @@ pub async fn start_background_workers(
     mut shutdown_rx: watch::Receiver<()>,
 ) -> Result<JoinHandle<()>, &'static str> {
     let task_store = SqliteTaskStore::new(state.database());
-
     // bootstrap scheduled tasks
-    RedistributeDataTask::new()
-        .enqueue::<SqliteTaskStore>(&mut state.database())
-        .await
-        .unwrap();
+    let task_in_progress = task_store
+        .task_in_state::<RedistributeDataTask>(vec![TaskState::New, TaskState::Retry])
+        .await;
+    if task_in_progress.unwrap().is_none() {
+        RedistributeDataTask::new()
+            .enqueue::<SqliteTaskStore>(&mut state.database())
+            .await
+            .unwrap();
+    }
 
     WorkerPool::new(task_store.clone(), move || state.clone())
         .configure_queue(QueueConfig::new("default").with_worker_count(5))
         .register_task_type::<ReportUploadTask>()
+        .register_task_type::<PruneBlocksTask>()
+        .register_task_type::<SetupUploadBlocksTask>()
         .register_task_type::<RedistributeDataTask>()
         .register_task_type::<UploadBlocksTask>()
         .register_task_type::<CompleteUploadBlocksTask>()
-        .register_task_type::<PruneBlocksTask>()
         .start(async move {
             let _ = shutdown_rx.changed().await;
         })

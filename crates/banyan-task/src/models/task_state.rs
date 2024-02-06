@@ -28,3 +28,19 @@ impl From<String> for TaskState {
         }
     }
 }
+
+impl From<TaskState> for String {
+    fn from(value: TaskState) -> Self {
+        match value {
+            TaskState::New => "new".to_string(),
+            TaskState::InProgress => "in_progress".to_string(),
+            TaskState::Panicked => "panicked".to_string(),
+            TaskState::Retry => "retry".to_string(),
+            TaskState::Cancelled => "cancelled".to_string(),
+            TaskState::Error => "error".to_string(),
+            TaskState::Complete => "complete".to_string(),
+            TaskState::TimedOut => "timed_out".to_string(),
+            TaskState::Dead => "dead".to_string(),
+        }
+    }
+}

@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT u.*\n                FROM uploads AS u\n                 JOIN uploads_blocks AS ub ON ub.upload_id = u.id\n                where pruned_at IS NULL;",
+  "query": "SELECT DISTINCT u.*\n             FROM uploads AS u\n                 JOIN uploads_blocks AS ub ON ub.upload_id = u.id\n             WHERE pruned_at IS NULL;",
   "describe": {
     "columns": [
       {
@@ -76,5 +76,5 @@
       false
     ]
   },
-  "hash": "8e7faf1a8251fb283943fc2dd711c4dffa5a1aab7b2c9b78fe8af9423c3520cb"
+  "hash": "915c6fc01ec5106bcb235990297dca561e9995ac706a24159d927898e0274370"
 }
