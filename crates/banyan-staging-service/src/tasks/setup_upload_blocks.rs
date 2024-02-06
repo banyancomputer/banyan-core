@@ -60,10 +60,6 @@ impl TaskLike for SetupUploadBlocksTask {
         Ok(())
     }
 
-    fn next_time(&self) -> Option<OffsetDateTime> {
-        Some(OffsetDateTime::now_utc() + time::Duration::days(1))
-    }
-
     fn unique_key(&self) -> Option<String> {
         Some(self.upload_id.clone())
     }
