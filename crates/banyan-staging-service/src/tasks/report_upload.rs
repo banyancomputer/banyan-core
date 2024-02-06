@@ -37,7 +37,7 @@ pub struct ReportUploadTask {
 impl ReportUploadTask {
     pub fn new(
         storage_authorization_id: Uuid,
-        metadata_id: &String,
+        metadata_id: &str,
         cids: &[Cid],
         data_size: u64,
     ) -> Self {
@@ -92,7 +92,7 @@ impl TaskLike for ReportUploadTask {
             .await?;
 
         if response.status().is_success() {
-            return Ok(());
+            Ok(())
         } else {
             Err(ReportUploadTaskError::HttpError(response.status()))
         }

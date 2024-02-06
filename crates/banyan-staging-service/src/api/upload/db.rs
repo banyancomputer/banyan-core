@@ -106,8 +106,8 @@ pub async fn upload_size(db: &Database, upload_id: &str) -> Result<i64, sqlx::Er
 pub async fn report_upload(
     db: &mut Database,
     storage_grant_id: Uuid,
-    metadata_id: &String,
-    upload_id: &String,
+    metadata_id: &str,
+    upload_id: &str,
     total_size: i64,
 ) -> Result<(), sqlx::Error> {
     let upload_id = upload_id.to_string();

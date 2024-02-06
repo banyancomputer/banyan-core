@@ -74,9 +74,6 @@ pub async fn handler(
     .await?;
 
     // TODO: YES/NO on the below?
-    // Checkpoint the upload to the database so we can track failures, and perform any necessary
-    // clean up behind the scenes. The upload itself will also dwarf the rest of the time of this
-    // request, limiting the time in those transactions is a good idea.
     // conn.commit().await?;
 
     let needed_capacity = request.needed_capacity;

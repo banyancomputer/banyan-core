@@ -6,10 +6,10 @@ use http::StatusCode;
 use crate::api::models::ApiSelectedStorageHostAdmin;
 use crate::app::AppState;
 use crate::database::models::SelectedStorageHost;
-use crate::extractors::StorageOrAdminIdentity;
+use crate::extractors::AdminIdentity;
 
 pub async fn handler(
-    _: StorageOrAdminIdentity,
+    _: AdminIdentity,
     State(state): State<AppState>,
 ) -> Result<Response, AllStorageHostsError> {
     let database = state.database();
