@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use super::db::{complete_upload, get_upload, report_upload, upload_size, write_block_to_tables};
 use super::error::UploadError;
 use crate::app::AppState;
-use crate::extractors::AuthenticatedClient;
+use crate::extractors::StorageOrClient;
 
 #[derive(Deserialize, Serialize)]
 pub struct BlockUploadRequest {
@@ -32,7 +32,7 @@ pub enum BlockUploadDetails {
 
 pub async fn handler(
     State(state): State<AppState>,
-    client: AuthenticatedClient,
+    client: StorageOrClient,
     store: ObjectStore,
     TypedHeader(content_len): TypedHeader<ContentLength>,
     TypedHeader(content_type): TypedHeader<ContentType>,

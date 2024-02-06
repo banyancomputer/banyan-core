@@ -21,7 +21,7 @@ time = { version = "^0.3", features = ["serde", "parsing", "formatting"] }
 async-trait = "^0.1"
 blake3 = "^1"
 bytes = "^1"
-cid = { version = "^0.10", featus = ["serde-codec"] }
+cid = "^0.10"
 jwt-simple = "^0.11"
 mime = "^0.3"
 regex = { version = "^1", default-features = false, features = ["std"] }

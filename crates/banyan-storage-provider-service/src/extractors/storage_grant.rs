@@ -138,7 +138,7 @@ where
 
             client_fingerprint,
 
-            authorized_data_size: usage.available_storage,
+            authorized_data_size: usage.available_storage as i64,
         };
 
         Ok(grant)
@@ -170,6 +170,18 @@ pub enum StorageGrantError {
 
     #[error("storage token grant was not intended for this server")]
     WrongTarget,
+
+    #[error("client not found")]
+    ClientNotFound,
+
+    #[error("invalid uuid")]
+    InvalidUuid,
+
+    #[error("could not build authenticated client")]
+    CouldNotBuildAuthenticatedClient,
+
+    #[error("sql error: {0}")]
+    DatabaseError(#[from] sqlx::Error),
 }
 
 impl IntoResponse for StorageGrantError {
@@ -177,12 +189,25 @@ impl IntoResponse for StorageGrantError {
         use StorageGrantError::*;
 
         match &self {
-            InsufficientNonce | InvalidGrant | NonceMissing | SubjectInvalid | SubjectMissing => {
+            CouldNotBuildAuthenticatedClient
+            | InvalidUuid
+            | ClientNotFound
+            | InsufficientNonce
+            | InvalidGrant
+            | NonceMissing
+            | SubjectInvalid
+            | SubjectMissing => {
                 tracing::error!("{self}");
                 let err_msg = serde_json::json!({ "msg": "storage grant was not accepted" });
                 (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
             }
             MissingHeader(err) => {
+                // todo: add sources as data event tag
+                tracing::error!("{self}: {err}");
+                let err_msg = serde_json::json!({ "msg": "storage grant was not accepted" });
+                (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
+            }
+            DatabaseError(err) => {
                 // todo: add sources as data event tag
                 tracing::error!("{self}: {err}");
                 let err_msg = serde_json::json!({ "msg": "storage grant was not accepted" });

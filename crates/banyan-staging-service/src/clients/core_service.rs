@@ -67,16 +67,26 @@ impl CoreServiceClient {
             platform_hostname,
         }
     }
-    pub async fn get_storage_providers(&self) -> Result<Vec<ApiStorageHostAdmin>, reqwest::Error> {
+    pub async fn get_storage_providers(
+        &self,
+    ) -> Result<Vec<ApiStorageHostAdmin>, CoreServiceError> {
         let storage_hosts_endpoint = self.platform_hostname.join("/admin/providers").unwrap();
 
-        self.client
+        let response = self
+            .client
             .get(storage_hosts_endpoint.clone())
             .bearer_auth(&self.bearer_token)
             .send()
-            .await?
-            .json::<Vec<ApiStorageHostAdmin>>()
-            .await
+            .await?;
+
+        if response.status().is_success() {
+            return match response.json::<Vec<ApiStorageHostAdmin>>().await {
+                Ok(response) => Ok(response),
+                Err(e) => Err(e.into()),
+            };
+        }
+
+        Err(CoreServiceError::BadRequest(response.text().await?))
     }
 
     pub async fn report_upload(
@@ -85,7 +95,7 @@ impl CoreServiceClient {
         data_size: u64,
         normalized_cids: Vec<String>,
         storage_authorization_id: String,
-    ) -> Result<Response, reqwest::Error> {
+    ) -> Result<Response, CoreServiceError> {
         let report_upload = ReportUpload {
             data_size,
             storage_authorization_id,
@@ -103,37 +113,44 @@ impl CoreServiceClient {
             .bearer_auth(&self.bearer_token)
             .send()
             .await
+            .map_err(CoreServiceError::RequestError)
     }
 
     pub async fn initiate_metadata_move(
         &self,
         metadata_id: &String,
         request: MoveMetadataRequest,
-    ) -> Result<MoveMetadataResponse, reqwest::Error> {
+    ) -> Result<MoveMetadataResponse, CoreServiceError> {
         let token_endpoint = self
             .platform_hostname
-            .join(format!("/api/v1/bucket/metadata/{}/move", metadata_id).as_str())
+            .join(format!("/api/v1/buckets/metadata/{}/move", metadata_id).as_str())
             .unwrap();
         let response = self
             .client
             .post(token_endpoint)
-            .header("Content-Type", "application/json")
             .json(&request)
             .bearer_auth(&self.bearer_token)
             .send()
             .await?;
 
-        response.json::<MoveMetadataResponse>().await
+        if response.status().is_success() {
+            return match response.json::<MoveMetadataResponse>().await {
+                Ok(response) => Ok(response),
+                Err(e) => Err(e.into()),
+            };
+        }
+
+        Err(CoreServiceError::BadRequest(response.text().await?))
     }
 
     pub async fn locate_blocks(
         &self,
         metadata_id: &String,
         request: LocationRequest,
-    ) -> Result<HashMap<String, Vec<String>>, reqwest::Error> {
+    ) -> Result<HashMap<String, Vec<String>>, CoreServiceError> {
         let locate_endpoint = self
             .platform_hostname
-            .join(format!("/api/v1/bucket/metadata/{}/locate", metadata_id).as_str())
+            .join(format!("/api/v1/buckets/metadata/{}/locate", metadata_id).as_str())
             .unwrap();
 
         let response = self
@@ -144,6 +161,21 @@ impl CoreServiceClient {
             .send()
             .await?;
 
-        response.json::<HashMap<String, Vec<String>>>().await
+        if response.status().is_success() {
+            return match response.json::<HashMap<String, Vec<String>>>().await {
+                Ok(response) => Ok(response),
+                Err(e) => Err(e.into()),
+            };
+        }
+
+        Err(CoreServiceError::BadRequest(response.text().await?))
     }
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum CoreServiceError {
+    #[error("failure during request: {0}")]
+    RequestError(#[from] reqwest::Error),
+    #[error("bad request: {0}")]
+    BadRequest(String),
 }

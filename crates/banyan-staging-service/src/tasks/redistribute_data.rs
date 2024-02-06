@@ -1,7 +1,5 @@
 use async_trait::async_trait;
-use banyan_object_store::{ObjectStore, ObjectStoreError};
 use banyan_task::{CurrentTask, TaskLike, TaskLikeExt, TaskStoreError};
-use itertools::Itertools;
 use jwt_simple::prelude::*;
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
@@ -10,7 +8,7 @@ use url::Url;
 use crate::app::AppState;
 use crate::clients::core_service::{CoreServiceClient, MoveMetadataRequest};
 use crate::clients::storage_provider::StorageProviderClient;
-use crate::database::models::{Blocks, Uploads};
+use crate::database::models::{Blocks, Clients, Uploads};
 use crate::tasks::upload_blocks::UploadBlocksTask;
 
 pub type ReportUploadTaskContext = AppState;
@@ -22,8 +20,6 @@ pub enum RedistributeDataTaskError {
     DatabaseError(#[from] sqlx::Error),
     #[error("reqwest error: {0}")]
     ReqwestError(#[from] reqwest::Error),
-    #[error("object store error: {0}")]
-    ObjectStoreError(#[from] ObjectStoreError),
     #[error("scheduling task error: {0}")]
     SchedulingTaskError(#[from] TaskStoreError),
     #[error("http error: {0} response from {1}")]
@@ -49,7 +45,6 @@ impl TaskLike for RedistributeDataTask {
     async fn run(&self, _task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
         let mut database = ctx.database();
 
-        let store = ObjectStore::new(ctx.upload_store_connection())?;
         let core_client = CoreServiceClient::new(
             ctx.secrets().service_signing_key(),
             ctx.service_name(),
@@ -97,7 +92,6 @@ impl TaskLike for RedistributeDataTask {
                 .iter()
                 .map(|block| block.cid.clone())
                 .collect();
-
             let metadata_move_response = match core_client
                 .initiate_metadata_move(
                     &upload.metadata_id,
@@ -115,13 +109,28 @@ impl TaskLike for RedistributeDataTask {
                 }
             };
 
-            let new_upload_response = match StorageProviderClient::new(
+            let storage_client = StorageProviderClient::new(
                 &metadata_move_response.storage_host,
                 &metadata_move_response.storage_authorization,
-            )
-            .new_upload(&upload.metadata_id)
-            .await
-            {
+            );
+
+            let client = match Clients::find_by_upload_id(&database, &upload_id).await {
+                Ok(client) => client,
+                Err(e) => {
+                    tracing::error!("clients not found in database: {:?}", e);
+                    continue;
+                }
+            };
+
+            let _ = match storage_client.client_grant(&client.public_key).await {
+                Ok(response) => response,
+                Err(e) => {
+                    tracing::error!("Error getting client grant: {:?}", e);
+                    continue;
+                }
+            };
+
+            let new_upload_response = match storage_client.new_upload(&upload.metadata_id).await {
                 Ok(response) => response,
                 Err(e) => {
                     tracing::error!("Error creating new upload: {:?}", e);
@@ -138,7 +147,7 @@ impl TaskLike for RedistributeDataTask {
             .enqueue::<banyan_task::SqliteTaskStore>(&mut database)
             .await;
 
-            if let Err(e) = task_result {
+            if let Err(_) = task_result {
                 tracing::error!(
                     "could not schedule: {:?} for upload {:?} to storage host {:?}",
                     UploadBlocksTask::TASK_NAME,

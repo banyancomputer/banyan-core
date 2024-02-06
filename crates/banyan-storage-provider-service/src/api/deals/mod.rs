@@ -1,4 +1,3 @@
-use std::fmt::Display;
 use std::time::Duration;
 
 use axum::extract::Path;

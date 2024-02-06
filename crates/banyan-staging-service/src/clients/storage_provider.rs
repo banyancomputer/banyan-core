@@ -53,6 +53,19 @@ impl StorageProviderClient {
         }
     }
 
+    pub async fn client_grant(&self, public_key: &str) -> Result<Response, reqwest::Error> {
+        let full_url = Url::parse(&self.service_hostname)
+            .unwrap()
+            .join(&"/api/v1/client_grant".to_string())
+            .unwrap();
+
+        self.client
+            .post(full_url)
+            .bearer_auth(&self.service_authorization)
+            .body(serde_json::json!({ "public_key": public_key }).to_string())
+            .send()
+            .await
+    }
     pub async fn new_upload(&self, metadata_id: &str) -> Result<NewUploadResponse, reqwest::Error> {
         let full_url = Url::parse(&self.service_hostname)
             .unwrap()

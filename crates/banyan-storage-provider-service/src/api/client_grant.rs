@@ -2,13 +2,12 @@ use axum::extract::{Json, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use serde::{Deserialize, Serialize};
-use sqlx::sqlx_macros::expand_query;
 use uuid::Uuid;
 
 use crate::app::AppState;
 use crate::database::models::StorageGrants;
 use crate::database::{map_sqlx_error, BareId, Database, DatabaseError, DbResult};
-use crate::extractors::{storage_grant, StorageGrant};
+use crate::extractors::StorageGrant;
 
 #[derive(Deserialize, Serialize)]
 pub struct GrantRequest {
@@ -22,10 +21,9 @@ pub async fn handler(
 ) -> Result<Response, GrantError> {
     let database = state.database();
     let grant_user_id = ensure_grant_user(&database, &grant, request).await?;
-    create_storage_grant(grant_user_id, &database, &grant).await?;
-    // if !existing_grant_has_enough_space(&database, &grant, grant_user_id).await?{
-    //     create_storage_grant(grant_user_id, &database, &grant).await?;
-    // }
+    if !existing_grant_has_enough_space(&database, &grant, grant_user_id).await? {
+        create_storage_grant(grant_user_id, &database, &grant).await?;
+    }
     Ok((StatusCode::NO_CONTENT, ()).into_response())
 }
 

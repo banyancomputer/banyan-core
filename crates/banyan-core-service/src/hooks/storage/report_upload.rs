@@ -123,6 +123,11 @@ async fn associate_upload(
     metadata_id: &str,
     authorization_id: &str,
 ) -> Result<(), ReportUploadError> {
+    // TODO: Remove this println
+    println!(
+        "provider_id: {} metadata_id: {} authorization_id: {}",
+        provider_id, metadata_id, authorization_id
+    );
     sqlx::query!(
         r#"INSERT INTO storage_hosts_metadatas_storage_grants
                (storage_host_id, metadata_id, storage_grant_id)

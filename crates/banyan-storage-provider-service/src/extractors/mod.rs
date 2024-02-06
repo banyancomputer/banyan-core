@@ -6,6 +6,7 @@ pub mod authenticated_client;
 mod block_reader;
 pub mod platform_identity;
 pub mod storage_grant;
+mod storage_or_client;
 pub mod upload_store;
 
 /// Defines the maximum length of time we consider any individual token valid in seconds. If the
@@ -34,3 +35,4 @@ pub use authenticated_client::AuthenticatedClient;
 pub use block_reader::BlockReader;
 pub use platform_identity::PlatformIdentity;
 pub use storage_grant::StorageGrant;
+pub use storage_or_client::StorageOrClient;

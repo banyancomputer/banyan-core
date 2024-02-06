@@ -1,4 +1,3 @@
-use std::path::PathBuf;
 use std::str::FromStr;
 use std::time::Duration;
 
@@ -7,7 +6,6 @@ use cid::Cid;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
-use crate::api::upload::error::UploadError;
 use crate::database::Database;
 use crate::tasks::ReportUploadTask;
 
@@ -28,7 +26,8 @@ pub async fn start_upload(
         state: String::from("started"),
     };
 
-    upload.save(&db).await?;
+    let id = upload.save(&db).await?;
+    upload.id = id;
 
     Ok(upload)
 }

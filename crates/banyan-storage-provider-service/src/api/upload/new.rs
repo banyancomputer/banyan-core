@@ -9,7 +9,7 @@ use uuid::Uuid;
 use super::db::start_upload;
 use super::error::UploadError;
 use crate::app::AppState;
-use crate::extractors::AuthenticatedClient;
+use crate::extractors::StorageOrClient;
 
 // Requests need only the associated metadata id
 #[derive(Serialize, Deserialize)]
@@ -19,7 +19,7 @@ pub struct NewUploadRequest {
 
 pub async fn handler(
     State(state): State<AppState>,
-    client: AuthenticatedClient,
+    client: StorageOrClient,
     TypedHeader(content_len): TypedHeader<ContentLength>,
     Json(request): Json<NewUploadRequest>,
 ) -> Result<Response, UploadError> {

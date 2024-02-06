@@ -1,4 +1,4 @@
-use banyan_task::{QueueConfig, SqliteTaskStore, WorkerPool};
+use banyan_task::{QueueConfig, SqliteTaskStore, TaskLikeExt, WorkerPool};
 pub use prune_blocks::PruneBlocksTask;
 use tokio::sync::watch;
 use tokio::task::JoinHandle;
@@ -20,6 +20,12 @@ pub async fn start_background_workers(
     mut shutdown_rx: watch::Receiver<()>,
 ) -> Result<JoinHandle<()>, &'static str> {
     let task_store = SqliteTaskStore::new(state.database());
+
+    // bootstrap scheduled tasks
+    RedistributeDataTask::new()
+        .enqueue::<SqliteTaskStore>(&mut state.database())
+        .await
+        .unwrap();
 
     WorkerPool::new(task_store.clone(), move || state.clone())
         .configure_queue(QueueConfig::new("default").with_worker_count(5))

@@ -11,7 +11,63 @@ use uuid::Uuid;
 
 use super::{fingerprint_validator, MAXIMUM_TOKEN_AGE};
 use crate::app::PlatformName;
+use crate::database::models::Client;
 use crate::database::Database;
+
+#[derive(Default)]
+pub struct AuthenticatedClientBuilder {
+    id: Option<Uuid>,
+    platform_id: Option<Uuid>,
+    fingerprint: Option<String>,
+    authorized_storage: Option<u64>,
+    consumed_storage: Option<u64>,
+    storage_grant_id: Option<Uuid>,
+}
+
+impl AuthenticatedClientBuilder {
+    pub fn id(mut self, id: Uuid) -> Self {
+        self.id = Some(id);
+        self
+    }
+
+    pub fn platform_id(mut self, platform_id: Uuid) -> Self {
+        self.platform_id = Some(platform_id);
+        self
+    }
+
+    pub fn fingerprint(mut self, fingerprint: String) -> Self {
+        self.fingerprint = Some(fingerprint);
+        self
+    }
+
+    pub fn authorized_storage(mut self, authorized_storage: u64) -> Self {
+        self.authorized_storage = Some(authorized_storage);
+        self
+    }
+
+    pub fn consumed_storage(mut self, consumed_storage: u64) -> Self {
+        self.consumed_storage = Some(consumed_storage);
+        self
+    }
+
+    pub fn storage_grant_id(mut self, storage_grant_id: Uuid) -> Self {
+        self.storage_grant_id = Some(storage_grant_id);
+        self
+    }
+
+    pub fn build(self) -> Result<AuthenticatedClient, &'static str> {
+        Ok(AuthenticatedClient {
+            id: self.id.ok_or("id is missing")?,
+            platform_id: self.platform_id.ok_or("platform_id is missing")?,
+            fingerprint: self.fingerprint.ok_or("fingerprint is missing")?,
+            authorized_storage: self
+                .authorized_storage
+                .ok_or("authorized_storage is missing")? as u64,
+            consumed_storage: self.consumed_storage.ok_or("consumed_storage is missing")? as u64,
+            storage_grant_id: self.storage_grant_id.ok_or("storage_grant_id is missing")?,
+        })
+    }
+}
 
 pub struct AuthenticatedClient {
     id: Uuid,
@@ -58,6 +114,9 @@ impl AuthenticatedClient {
                 0
             }
         }
+    }
+    pub fn builder() -> AuthenticatedClientBuilder {
+        AuthenticatedClientBuilder::default()
     }
 }
 
@@ -118,7 +177,9 @@ where
         }
 
         let authorized_storage = current_authorized_storage(&database, &client_id.id).await?;
-        let consumed_storage = current_consumed_storage(&database, &client_id.id).await?;
+        let consumed_storage = current_consumed_storage(&database, &client_id.id)
+            .await
+            .map_err(AuthenticatedClientError::DbFailure)?;
 
         let internal_id = match Uuid::parse_str(&client_id.id) {
             Ok(ii) => ii,
@@ -172,17 +233,13 @@ pub async fn current_authorized_storage(
     auth_stor.ok_or(AuthenticatedClientError::MissingGrant)
 }
 
-pub async fn current_consumed_storage(
-    db: &Database,
-    client_id: &str,
-) -> Result<u64, AuthenticatedClientError> {
+pub async fn current_consumed_storage(db: &Database, client_id: &str) -> Result<u64, sqlx::Error> {
     let maybe_consumed_storage: Option<i64> = sqlx::query_scalar(
                 "SELECT SUM(COALESCE(final_size, reported_size)) AS consumed_storage FROM uploads WHERE client_id = $1;",
             )
             .bind(client_id)
             .fetch_optional(db)
-            .await
-            .map_err(AuthenticatedClientError::DbFailure)?;
+            .await?;
 
     Ok(maybe_consumed_storage.unwrap_or(0) as u64)
 }
@@ -190,16 +247,13 @@ pub async fn current_consumed_storage(
 pub async fn id_from_fingerprint(
     db: &Database,
     fingerprint: &str,
-) -> Result<RemoteId, AuthenticatedClientError> {
-    let maybe_remote_id: Option<RemoteId> =
-        sqlx::query_as("SELECT id, platform_id, public_key FROM clients WHERE fingerprint = $1;")
-            .bind(fingerprint)
-            .fetch_optional(db)
-            .await
-            .map_err(AuthenticatedClientError::DbFailure)?;
+) -> Result<Client, AuthenticatedClientError> {
+    let maybe_remote_id: Option<Client> = Client::find_by_fingerprint(db, fingerprint)
+        .await
+        .map_err(AuthenticatedClientError::DbFailure)?;
 
     match maybe_remote_id {
-        Some(id) => Ok(id),
+        Some(client) => Ok(client),
         None => Err(AuthenticatedClientError::UnknownFingerprint),
     }
 }
@@ -279,13 +333,6 @@ pub struct AuthorizedStorage {
 
 #[derive(FromRow)]
 pub struct ClientKey {
-    public_key: String,
-}
-
-#[derive(FromRow)]
-pub struct RemoteId {
-    id: String,
-    platform_id: String,
     public_key: String,
 }
 

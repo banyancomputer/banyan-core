@@ -1,6 +1,5 @@
 use time::OffsetDateTime;
 
-use crate::database::models::Uploads;
 use crate::database::Database;
 
 #[derive(Debug, sqlx::FromRow)]

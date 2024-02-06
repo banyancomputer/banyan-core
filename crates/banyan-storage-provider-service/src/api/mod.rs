@@ -1,11 +1,5 @@
-use std::fmt::Display;
-
-use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::Router;
-use rand::Rng;
-use serde::Serialize;
-use time::ext::NumericalDuration;
 use tower_http::cors::CorsLayer;
 
 mod alerts;

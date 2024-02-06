@@ -2,13 +2,12 @@ use async_trait::async_trait;
 use banyan_task::{CurrentTask, TaskLike};
 use cid::multibase::Base;
 use cid::Cid;
-use jwt_simple::prelude::*;
 use serde::{Deserialize, Serialize};
 use tracing::error;
 use uuid::Uuid;
 
 use crate::app::AppState;
-use crate::clients::core_service::CoreServiceClient;
+use crate::clients::core_service::{CoreServiceClient, CoreServiceError};
 
 pub type ReportUploadTaskContext = AppState;
 
@@ -19,8 +18,8 @@ pub enum ReportUploadTaskError {
     InvalidInternalCid(#[from] cid::Error),
     #[error("sql error: {0}")]
     DatabaseError(#[from] sqlx::Error),
-    #[error("reqwest error: {0}")]
-    ReqwestError(#[from] reqwest::Error),
+    #[error("core service error: {0}")]
+    CoreServiceError(#[from] CoreServiceError),
     #[error("jwt error: {0}")]
     JwtError(#[from] jwt_simple::Error),
     #[error("http error: {0} response for report upload")]
@@ -90,8 +89,7 @@ impl TaskLike for ReportUploadTask {
                 normalized_cids,
                 storage_authorization_id,
             )
-            .await
-            .map_err(ReportUploadTaskError::ReqwestError)?;
+            .await?;
 
         if response.status().is_success() {
             return Ok(());

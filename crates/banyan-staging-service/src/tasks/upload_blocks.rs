@@ -1,7 +1,6 @@
 use async_trait::async_trait;
 use banyan_object_store::{ObjectStore, ObjectStoreError, ObjectStorePath};
 use banyan_task::{CurrentTask, TaskLike, TaskLikeExt, TaskStoreError};
-use jwt_simple::prelude::*;
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
 use url::Url;
@@ -49,7 +48,7 @@ impl TaskLike for UploadBlocksTask {
     type Error = UploadBlocksTaskError;
     type Context = UploadBlocksTaskContext;
 
-    async fn run(&self, task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
+    async fn run(&self, _task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
         let mut database = ctx.database();
         let client = StorageProviderClient::new(
             self.storage_host.as_str(),
@@ -80,11 +79,11 @@ impl TaskLike for UploadBlocksTask {
             let content = store
                 .get(&location)
                 .await
-                .map_err(|e| UploadBlocksTaskError::FileLoadError(location.to_string()))?;
+                .map_err(|_| UploadBlocksTaskError::FileLoadError(location.to_string()))?;
             let content = content
                 .bytes()
                 .await
-                .map_err(|e| UploadBlocksTaskError::ByteConversionError(block.cid.clone()))?;
+                .map_err(|_| UploadBlocksTaskError::ByteConversionError(block.cid.clone()))?;
             let block_cid =
                 cid::Cid::try_from(block.cid).map_err(UploadBlocksTaskError::InvalidCid)?;
 

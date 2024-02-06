@@ -5,7 +5,7 @@ use jwt_simple::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::app::AppState;
-use crate::clients::core_service::CoreServiceClient;
+use crate::clients::core_service::{CoreServiceClient, CoreServiceError};
 use crate::database::models::{Blocks, UploadsBlocks};
 
 pub type CompleteUploadBlocksTaskContext = AppState;
@@ -18,7 +18,7 @@ pub enum CompleteUploadBlocksTaskError {
     #[error("object store error: {0}")]
     ObjectStoreError(#[from] ObjectStoreError),
     #[error("reqwest error: {0}")]
-    ReqwestError(#[from] reqwest::Error),
+    ReqwestError(#[from] CoreServiceError),
     #[error("not all blocks uploaded to remote storage: {0}/{1}")]
     NotAllBlocksUploaded(usize, usize),
 }
