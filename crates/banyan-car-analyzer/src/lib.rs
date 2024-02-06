@@ -1,10 +1,9 @@
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
-use banyan_object_store::{ObjectStore, ObjectStorePath};
 use bytes::{Bytes, BytesMut};
-use cid::multibase::Base;
 use cid::Cid;
+
 const CAR_HEADER_UPPER_LIMIT: u64 = 16 * 1024 * 1024; // Limit car headers to 16MiB
 
 const CAR_FILE_UPPER_LIMIT: u64 = 32 * 1024 * 1024 * 1024; // We limit individual CAR files to 32GiB
@@ -14,15 +13,20 @@ const CARV2_PRAGMA: &[u8] = &[
 ];
 
 #[derive(Debug, PartialEq)]
-pub struct BlockMeta {
+pub struct Block {
     cid: Cid,
     offset: u64,
     length: u64,
+    data: Vec<u8>,
 }
 
-impl BlockMeta {
+impl Block {
     pub fn cid(&self) -> &Cid {
         &self.cid
+    }
+
+    pub fn into_data(self) -> Vec<u8> {
+        self.data
     }
 
     pub fn length(&self) -> u64 {
@@ -46,13 +50,20 @@ enum CarState {
 
         header_length: Option<u64>,
     },
-    Block {
+    BlockMeta {
         // advances to each block until we reach data_end
         block_start: u64,
         data_end: u64,
         index_start: u64,
+    },
+    BlockData {
+        // advances to each block until we reach data_end
+        data_start: u64,
+        data_length: u64,
+        cid: Cid,
 
-        block_length: Option<u64>,
+        data_end: u64,
+        index_start: u64,
     },
     Indexes {
         index_start: u64,
@@ -87,8 +98,12 @@ pub struct StreamingCarAnalyzer {
     stream_offset: u64,
     cids: Vec<Cid>,
     hasher: blake3::Hasher,
-    metadata_id: String,
-    store: ObjectStore,
+}
+
+impl Default for StreamingCarAnalyzer {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl StreamingCarAnalyzer {
@@ -119,19 +134,17 @@ impl StreamingCarAnalyzer {
         Ok(())
     }
 
-    pub fn new(metadata_id: &str, store: ObjectStore) -> Self {
+    pub fn new() -> Self {
         Self {
             buffer: BytesMut::new(),
             state: CarState::Pragma,
             stream_offset: 0,
             cids: Vec::new(),
             hasher: blake3::Hasher::new(),
-            metadata_id: String::from(metadata_id),
-            store,
         }
     }
 
-    pub async fn next(&mut self) -> Result<Option<BlockMeta>, StreamingCarAnalyzerError> {
+    pub async fn next(&mut self) -> Result<Option<Block>, StreamingCarAnalyzerError> {
         loop {
             match &mut self.state {
                 CarState::Pragma => {
@@ -235,21 +248,19 @@ impl StreamingCarAnalyzer {
                     // todo: parse out expected roots and record them... can skip for now
 
                     // into the blocks!
-                    self.state = CarState::Block {
+                    self.state = CarState::BlockMeta {
                         block_start: self.stream_offset + hdr_len,
                         data_end: *data_end,
                         index_start: *index_start,
-
-                        block_length: None,
                     };
                 }
-                CarState::Block {
+                CarState::BlockMeta {
                     block_start,
                     data_end,
                     index_start,
-                    ref mut block_length,
                 } => {
                     let block_start = *block_start;
+
                     // Skip any left over data and padding until we reach our goal
                     if self.stream_offset < block_start {
                         let skippable_bytes = block_start - self.stream_offset; // 171 - 72 = 99
@@ -272,27 +283,14 @@ impl StreamingCarAnalyzer {
                         continue;
                     }
 
-                    let blk_len = match block_length {
-                        Some(bl) => *bl,
-                        // Read the varint and consume the bytes from the buffer and stream_offset
-                        None => match try_read_varint_u64(&self.buffer[..])? {
-                            Some((length, bytes_read)) => {
-                                *block_length = Some(length);
+                    // We very carefully don't advance the stream offset for the rest of this
+                    // variant, the BlockData state will do that for us once we get the minimum
+                    // meta data from the record.
 
-                                self.stream_offset += bytes_read;
-                                let _ = self.buffer.split_to(bytes_read as usize);
-
-                                length
-                            }
-                            None => return Ok(None),
-                        },
+                    let (blk_len, varint_len) = match try_read_varint_u64(&self.buffer[..])? {
+                        Some(varint) => varint,
+                        None => return Ok(None),
                     };
-
-                    // We would need to pass this through our state if we want to do streaming
-                    // parsing on the block contents, but since we don't we can use the current
-                    // stream offset as a proxy for "just after the block length" we can avoid
-                    // storing it in state.
-                    let length_varint_len = self.stream_offset - block_start;
 
                     // 64-bytes is the longest reasonable CID we're going to care about it. We're
                     // going to wait until we have that much then try and decode the CID from
@@ -300,11 +298,12 @@ impl StreamingCarAnalyzer {
                     // less than 64-bytes we'll just wait for the entire block. The CID has to be
                     // included and we'll decode it from there just as neatly.
                     let minimum_cid_blocks = blk_len.min(64) as usize;
-                    if self.buffer.len() < minimum_cid_blocks {
+                    let cid_buffer = &self.buffer[(varint_len as usize)..];
+                    if cid_buffer.len() < minimum_cid_blocks {
                         return Ok(None);
                     }
 
-                    let cid = match Cid::read_bytes(&self.buffer[..minimum_cid_blocks]) {
+                    let cid = match Cid::read_bytes(&cid_buffer[..minimum_cid_blocks]) {
                         Ok(cid) => cid,
                         Err(err) => {
                             tracing::error!("uploaded car file contained an invalid CID: {err}");
@@ -314,42 +313,72 @@ impl StreamingCarAnalyzer {
                             ));
                         }
                     };
-                    let normalized_cid = cid.to_string_of_base(Base::Base64Url).map_err(|err| {
-                        StreamingCarAnalyzerError::InvalidBlockCid(self.stream_offset, err)
-                    })?;
                     let cid_length = cid.encoded_len() as u64;
-                    self.stream_offset += cid_length;
-                    let _ = self.buffer.split_to(cid_length as usize);
-
                     self.cids.push(cid);
 
                     // This might be the end of all data, we'll check once we reach the block_start
                     // offset
-                    self.state = CarState::Block {
-                        block_start: block_start + length_varint_len + blk_len,
+                    self.state = CarState::BlockData {
+                        data_start: self.stream_offset + varint_len + cid_length,
+                        data_length: blk_len - cid_length,
+                        cid,
+
                         data_end: *data_end,
                         index_start: *index_start,
-                        block_length: None,
+                    };
+                }
+                CarState::BlockData {
+                    data_start,
+                    data_length,
+                    cid,
+
+                    data_end,
+                    index_start,
+                } => {
+                    let data_start = *data_start;
+                    let data_length = *data_length;
+                    let cid = *cid;
+
+                    // Skip any left over data and padding until we reach our goal
+                    if self.stream_offset < data_start {
+                        let skippable_bytes = data_start - self.stream_offset;
+                        let available_bytes = self.buffer.len() as u64;
+
+                        let skipped_byte_count = available_bytes.min(skippable_bytes);
+                        let _ = self.buffer.split_to(skipped_byte_count as usize);
+                        self.stream_offset += skipped_byte_count;
+
+                        if self.stream_offset != data_start {
+                            return Ok(None);
+                        }
+                    }
+
+                    // Wait until we have the entire before continuing
+                    if self.buffer.len() < data_length as usize {
+                        println!(
+                            "insufficient data available {} vs {}",
+                            self.buffer.len(),
+                            data_length
+                        );
+                        return Ok(None);
+                    }
+
+                    let data = self.buffer.split_to(data_length as usize).to_vec();
+                    self.stream_offset += data.len() as u64;
+
+                    // This might be the end of all data, we'll check once we reach the block_start
+                    // offset
+                    self.state = CarState::BlockMeta {
+                        block_start: data_start + data_length,
+                        data_end: *data_end,
+                        index_start: *index_start,
                     };
 
-                    let location = ObjectStorePath::from(format!(
-                        "{}/{}.bin",
-                        self.metadata_id, normalized_cid
-                    ));
-
-                    let data_length = (blk_len - cid_length) as usize;
-                    self.stream_offset += data_length as u64;
-                    let block_bytes = Into::<Bytes>::into(self.buffer.split_to(data_length));
-
-                    self.store
-                        .put(&location, block_bytes)
-                        .await
-                        .map_err(StreamingCarAnalyzerError::ObjectStore)?;
-
-                    return Ok(Some(BlockMeta {
+                    return Ok(Some(Block {
                         cid,
-                        offset: block_start + length_varint_len + cid_length,
-                        length: blk_len - cid_length,
+                        offset: data_start,
+                        length: data_length,
+                        data,
                     }));
                 }
                 CarState::Indexes { index_start } => {
@@ -411,9 +440,6 @@ pub enum StreamingCarAnalyzerError {
 
     #[error("a varint in the car file was larger than our acceptable value")]
     ValueToLarge,
-
-    #[error("unable to write to backend storage")]
-    ObjectStore(banyan_object_store::ObjectStoreError),
 }
 
 impl IntoResponse for StreamingCarAnalyzerError {
@@ -448,27 +474,6 @@ fn try_read_varint_u64(buf: &[u8]) -> Result<Option<(u64, u64)>, StreamingCarAna
     }
 
     Ok(None)
-}
-
-#[cfg(test)]
-impl Default for StreamingCarAnalyzer {
-    fn default() -> Self {
-        let test_path = std::path::PathBuf::from("./test");
-
-        if test_path.exists() {
-            std::fs::remove_dir_all(&test_path).expect("Remove test path");
-        }
-
-        std::fs::create_dir_all(&test_path).expect("Create test path");
-
-        Self::new(
-            "",
-            ObjectStore::new(&banyan_object_store::ObjectStoreConnection::Local(
-                test_path,
-            ))
-            .expect(""),
-        )
-    }
 }
 
 #[cfg(test)]
@@ -532,7 +537,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_streaming_lifecycle() {
-        let mut sca = StreamingCarAnalyzer::default();
+        let mut sca = StreamingCarAnalyzer::new();
         assert_eq!(sca.state, CarState::Pragma);
 
         // No data shouldn't transition
@@ -605,11 +610,10 @@ mod tests {
         assert!(sca.next().await.expect("still valid").is_none());
         assert_eq!(sca.stream_offset, 72);
 
-        let first_block = CarState::Block {
+        let first_block = CarState::BlockMeta {
             block_start: 171,
             data_end: 71 + data_length,
             index_start: 71 + data_length + 20,
-            block_length: None,
         };
         assert_eq!(sca.state, first_block);
         assert_eq!(sca.buffer.len(), 0);
@@ -626,33 +630,32 @@ mod tests {
         let block_data = b"some internal blockity block data, this is real I promise";
         // we'll use the RAW codec for our data...
         let block_cid = Cid::new_v1(0x55, Code::Sha3_256.digest(block_data));
+        let cid_length = block_cid.encoded_len();
 
-        let inner_block_size = (block_data.len() + block_cid.encoded_len()) as u64;
+        let inner_block_size = (block_data.len() + cid_length) as u64;
         let length_bytes = encode_varint_u64(inner_block_size);
+        let true_data_start = 171 + (length_bytes.len() + cid_length) as u64;
 
         sca.add_chunk(&length_bytes).unwrap();
         sca.add_chunk(&Bytes::from(block_cid.to_bytes())).unwrap();
         sca.add_chunk(&Bytes::from(block_data.to_vec())).unwrap();
 
-        let next_meta = Some(BlockMeta {
+        let next_meta = Some(Block {
             cid: block_cid,
-            offset: 208,
-            length: inner_block_size - block_cid.encoded_len() as u64,
+            offset: true_data_start,
+            length: block_data.len() as u64,
+            data: block_data.to_vec(),
         });
-        println!("{next_meta:?}");
         assert_eq!(sca.next().await.expect("still valid"), next_meta);
         assert_eq!(
             sca.state,
-            CarState::Block {
+            CarState::BlockMeta {
                 block_start: 265,
                 data_end: 265,
                 index_start: 285,
-                block_length: None
             }
         );
-        // we've read the length, CID, and data, but haven't advanced the stream
         assert_eq!(sca.stream_offset, 265);
-        // offset yet
 
         sca.add_chunk(&Bytes::from([0u8; 10].as_slice())).unwrap(); // take us into the padding past the data but before the indexes
         assert!(sca.next().await.expect("still valid").is_none()); // we're at the end of the data, this should transition to indexes
