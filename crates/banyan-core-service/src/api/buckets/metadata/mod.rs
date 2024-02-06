@@ -11,6 +11,7 @@ use std::error::Error;
 use axum::body::HttpBody;
 use axum::routing::{get, post};
 use axum::Router;
+pub use push_metadata::rounded_storage_authorization;
 
 use crate::app::AppState;
 

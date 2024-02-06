@@ -18,7 +18,7 @@ mod authorization_grants;
 use std::error::Error;
 
 use axum::body::HttpBody;
-use axum::routing::get;
+use axum::routing::{get, post};
 use axum::Router;
 
 use crate::app::AppState;
