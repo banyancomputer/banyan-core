@@ -89,7 +89,7 @@ impl TaskLike for UsedStorageTask {
                     AND sh.id = $1
 	                AND sg.redeemed_at <> NULL
 	                ORDER BY sg.redeemed_at
-                )
+                );
             "#,
             storage_host_id,
         )
