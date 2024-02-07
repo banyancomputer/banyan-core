@@ -13,6 +13,7 @@ pub use email::{
 pub use prune_blocks::PruneBlocksTask;
 use tokio::sync::watch;
 use tokio::task::JoinHandle;
+pub use used_storage::UsedStorageTask;
 
 use crate::app::AppState;
 
@@ -25,6 +26,7 @@ pub async fn start_background_workers(
     WorkerPool::new(task_store.clone(), move || state.clone())
         .configure_queue(QueueConfig::new("default").with_worker_count(5))
         .register_task_type::<PruneBlocksTask>()
+        .register_task_type::<UsedStorageTask>()
         .register_task_type::<CreateDealsTask>()
         .start(async move {
             let _ = shutdown_rx.changed().await;

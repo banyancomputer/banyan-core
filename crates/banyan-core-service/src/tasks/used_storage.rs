@@ -1,15 +1,7 @@
-use std::collections::HashSet;
-
-use crate::database::models::ExplicitBigInt;
+use crate::app::AppState;
 use async_trait::async_trait;
 use banyan_task::{CurrentTask, TaskLike};
-use jwt_simple::prelude::*;
-use reqwest::header::{HeaderMap, HeaderValue};
-use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use url::Url;
-
-use crate::app::AppState;
 
 pub type UsedStorageTaskContext = AppState;
 
@@ -24,9 +16,6 @@ pub enum UsedStorageTaskError {
 
     #[error("jwt error: {0}")]
     Jwt(#[from] jwt_simple::Error),
-
-    #[error("http error: {0} response from {1}")]
-    Http(http::StatusCode, Url),
 }
 
 #[derive(Deserialize, Serialize)]
