@@ -149,7 +149,12 @@ impl Metadata {
                     ORDER BY updated_at DESC
                     LIMIT 5
                 )
-                AND id NOT IN (SELECT metadata_id FROM snapshots);
+                AND id NOT IN (
+                    SELECT s.metadata_id FROM snapshots s
+                    JOIN metadata AS m ON s.metadata_id = m.id
+                    JOIN buckets AS b ON b.id = m.bucket_id 
+                    WHERE bucket_id = $2 
+                );
             "#,
             now,
             bucket_id,
