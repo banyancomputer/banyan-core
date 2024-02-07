@@ -49,50 +49,58 @@ impl TaskLike for UsedStorageTask {
 
     async fn run(&self, _task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
         let mut db_conn = ctx.database().acquire().await?;
-
-        // We need the `authorized_amount` field in the `storage_grants` table
-        // We need the `reserved_storage` field in the `storage_hosts` table
-        //
-        // We need to sum the metadata entries `data_size` columns associated with the storage
-        // host. Ignore state. Calculate the `reserved_storage` amount by summing all the
-        // `authorized_amount` columns for most recently redeemed (limit one per user.).
-
         let storage_host_id = self.storage_host_id.clone();
-        let total_data_size = sqlx::query_as!(
-            ExplicitBigInt,
+
+        // Update used_storage by summing the metadata entries over data_size
+        sqlx::query!(
             r#"
-                SELECT COALESCE(SUM(m.data_size), 0) as big_int
-                FROM storage_hosts_metadatas_storage_grants shms
-                INNER JOIN metadata AS m ON m.id = shms.metadata_id 
-                WHERE shms.storage_host_id = $1;
+                UPDATE storage_hosts
+                SET used_storage = (
+                    SELECT COALESCE(SUM(m.data_size), 0) as big_int
+                    FROM storage_hosts_metadatas_storage_grants shms
+                    INNER JOIN metadata AS m ON m.id = shms.metadata_id 
+                    WHERE shms.storage_host_id = $1
+                )
+                WHERE id = $1;
             "#,
             storage_host_id,
         )
-        .fetch_one(&mut *db_conn)
+        .execute(&mut *db_conn)
         .await?;
 
+        tracing::info!(
+            "storage_host.id: {} | used_storage updated",
+            storage_host_id
+        );
+
+        // Update reserved_storage
+        sqlx::query!(
+            r#"
+                UPDATE storage_hosts
+                SET reserved_storage = (
+	                SELECT SUM(sg.authorized_amount)
+	                FROM storage_hosts sh
+	                INNER JOIN (
+                        SELECT user_id, storage_host_id, MAX(redeemed_at) as redeemed_at, authorized_amount 
+                        FROM storage_grants
+                        GROUP BY user_id
+	                ) AS sg 
+	                WHERE sg.storage_host_id = sh.id 
+                    AND sh.id = $1
+	                AND sg.redeemed_at <> NULL
+	                ORDER BY sg.redeemed_at
+                )
+            "#,
+            storage_host_id,
+        )
+        .execute(&mut *db_conn)
+        .await?;
+
+        tracing::info!(
+            "storage_host.id: {} | reserved_storage updated",
+            storage_host_id
+        );
+
         Ok(())
-
-        /*
-        // Send the request and handle the response
-        let response = request
-            .send()
-            .await
-            .map_err(UsedStorageTaskError::Reqwest)?;
-        if response.status().is_success() {
-            Ok(())
-        } else {
-            Err(UsedStorageTaskError::Http(
-                response.status(),
-                storage_host_url,
-            ))
-        }
-        */
     }
-}
-
-#[derive(sqlx::FromRow)]
-struct StorageHostInfo {
-    pub url: String,
-    pub name: String,
 }

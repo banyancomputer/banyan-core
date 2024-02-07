@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                UPDATE storage_hosts\n                SET reserved_storage = (\n\t                SELECT SUM(sg.authorized_amount)\n\t                FROM storage_hosts sh\n\t                INNER JOIN (\n                        SELECT user_id, storage_host_id, MAX(redeemed_at) as redeemed_at, authorized_amount \n                        FROM storage_grants\n                        GROUP BY user_id\n\t                ) AS sg \n\t                WHERE sg.storage_host_id = sh.id \n                    AND sh.id = $1\n\t                AND sg.redeemed_at <> NULL\n\t                ORDER BY sg.redeemed_at\n                )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "8108d3eeab3a22e53a3b3e7a49bf5fb6854a815508e44f10ffc25cf5fb09a491"
+}
