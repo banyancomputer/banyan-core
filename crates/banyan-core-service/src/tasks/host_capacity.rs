@@ -93,3 +93,77 @@ impl TaskLike for HostCapacityTask {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use banyan_task::tests::default_current_task;
+    use banyan_task::{CurrentTask, TaskLike};
+    use time::OffsetDateTime;
+    use uuid::Uuid;
+
+    use super::*;
+    use crate::database::models::MetadataState;
+    use crate::database::test_helpers::*;
+
+    const USER_ID: &str = "00000000-0000-0000-0000-000000000000";
+    const USER_EMAIL: &str = "user@user.email";
+    // const STORAGE_HOST_ID: &str = "00000000-0000-1234-0000-000000000000";
+    const STORAGE_HOST_URL: &str = "http://127.0.0.1:3009";
+
+    /// Return a base context and a test account id
+    pub async fn test_setup() -> ((), Uuid, CurrentTask) {
+        (
+            host_capacity_context().await.unwrap(),
+            Uuid::parse_str(USER_ID).expect("account id parse"),
+            default_current_task(),
+        )
+    }
+
+    #[tokio::test]
+    /// ScheduledMaintenanceEmailTask should succeed in a valid context
+    async fn success() {
+        let (ctx, storage_host_id, current_task) = test_setup().await;
+        let task = HostCapacityTask::new(storage_host_id.to_string());
+        let result = task.run(current_task, ctx).await;
+        assert!(result.is_ok());
+    }
+
+    async fn host_capacity_context() -> Result<(), sqlx::Error> {
+        let db = setup_database().await;
+        let mut conn = db.begin().await.expect("connection");
+
+        // Register storage host
+        let storage_host_id = create_storage_hosts(&mut conn, "host_url", "host_name").await?;
+        // Create users
+        let dog_user_id = create_user(&mut conn, "dog@com.example", "dog").await;
+        let cat_user_id = create_user(&mut conn, "cat@com.example", "cat").await;
+        // Create buckets
+        let dog_bucket_id = create_hot_bucket(&mut conn, &dog_user_id, "dog files").await;
+        let cat_bucket_id = create_hot_bucket(&mut conn, &cat_user_id, "cat files").await;
+
+        // Create two metadatas per bucket
+        let dog_metadata_id_1 = create_metadata(
+            &mut conn,
+            &dog_bucket_id,
+            "metadata_cid",
+            "root_cid",
+            MetadataState::Outdated,
+            None,
+            None,
+        )
+        .await;
+        let dog_metadata_id_2 = create_metadata(
+            &mut conn,
+            &dog_bucket_id,
+            "metadata_cid",
+            "root_cid",
+            MetadataState::Current,
+            None,
+            None,
+        )
+        .await;
+
+        Ok(())
+        //        Ok(HostCapacityTaskContext::new(conn, storage_host_id))
+    }
+}
