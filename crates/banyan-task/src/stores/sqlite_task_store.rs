@@ -249,6 +249,11 @@ impl TaskStore for SqliteTaskStore {
                 if state_update_res.is_err() {
                     break;
                 }
+
+                println!("retrying task: {}", id);
+                if self.retry(id).await.is_err() {
+                    break;
+                }
             }
         }
 

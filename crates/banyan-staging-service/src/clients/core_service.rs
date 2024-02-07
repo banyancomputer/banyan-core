@@ -29,10 +29,13 @@ pub struct MoveMetadataRequest {
     pub needed_capacity: i64,
     // block IDs stored on the old host, to be deleted and then moved to a new host
     pub previous_cids: Vec<String>,
+    // the key fingerprint with which the user registered.
+    pub fingerprint: String,
 }
 
 #[derive(Deserialize)]
 pub struct MoveMetadataResponse {
+    pub new_metadata_id: String,
     pub storage_host: String,
     pub storage_authorization: String,
 }
@@ -123,7 +126,7 @@ impl CoreServiceClient {
     ) -> Result<MoveMetadataResponse, CoreServiceError> {
         let token_endpoint = self
             .platform_hostname
-            .join(format!("/api/v1/buckets/metadata/{}/move", metadata_id).as_str())
+            .join(&format!("/api/v1/buckets/metadata/{}/move", metadata_id))
             .unwrap();
         let response = self
             .client
@@ -145,12 +148,11 @@ impl CoreServiceClient {
 
     pub async fn locate_blocks(
         &self,
-        metadata_id: &String,
         request: LocationRequest,
     ) -> Result<HashMap<String, Vec<String>>, CoreServiceError> {
         let locate_endpoint = self
             .platform_hostname
-            .join(format!("/api/v1/buckets/metadata/{}/locate", metadata_id).as_str())
+            .join(&"/api/v1/blocks/provider_locate")
             .unwrap();
 
         let response = self

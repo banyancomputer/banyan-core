@@ -60,7 +60,7 @@ impl AuthorizedAmounts {
                         AND b.id = $2
                         AND b.deleted_at IS NULL
                         AND m.state NOT IN ('deleted', 'upload_failed');"#,
-                        // Are we not looking ^ just for 'current' metadata
+                        // TODO: Are we not looking ^ just for 'current' metadata
             user_id,
             bucket_id,
         )

@@ -7,7 +7,7 @@ use url::Url;
 
 use crate::app::AppState;
 use crate::clients::core_service::{CoreServiceClient, MoveMetadataRequest};
-use crate::database::models::{Blocks, Uploads};
+use crate::database::models::{Blocks, Clients, Uploads};
 use crate::tasks::setup_upload_blocks::SetupUploadBlocksTask;
 use crate::tasks::upload_blocks::UploadBlocksTask;
 
@@ -91,17 +91,21 @@ impl TaskLike for RedistributeDataTask {
             let needed_capacity = upload
                 .final_size
                 .unwrap_or(upload.reported_size)
+                // sometimes final size is 0
+                // is this a potential DOS vector?
                 .max(upload.reported_size);
             let previous_cids: Vec<String> = blocks_for_pruning
                 .iter()
                 .map(|block| block.cid.clone())
                 .collect();
+            let client = Clients::find_by_upload_id(&database, &upload.id).await?;
             let metadata_move_response = match core_client
                 .initiate_metadata_move(
                     &upload.metadata_id,
                     MoveMetadataRequest {
                         needed_capacity,
                         previous_cids,
+                        fingerprint: client.fingerprint.clone(),
                     },
                 )
                 .await
@@ -114,7 +118,7 @@ impl TaskLike for RedistributeDataTask {
             };
 
             let task_result = SetupUploadBlocksTask {
-                metadata_id: upload.metadata_id.clone(),
+                metadata_id: metadata_move_response.new_metadata_id.clone(),
                 upload_id: upload.id.clone(),
                 storage_host: metadata_move_response.storage_host.clone(),
                 storage_authorization: metadata_move_response.storage_authorization.clone(),

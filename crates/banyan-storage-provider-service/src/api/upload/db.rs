@@ -155,19 +155,21 @@ pub async fn get_upload(
     upload_id: &str,
 ) -> Result<Option<Upload>, sqlx::Error> {
     let client_id = client_id.to_string();
-    let now = OffsetDateTime::now_utc() - UPLOAD_SESSION_DURATION;
-
+    // TODO: having the now clause seems to not return the data for entry in the db
+    // client_id: e31252dd-cbd6-44c9-abfe-64570d5f6181 upload_id: ff8d7578-7ba0-44e2-a566-67cb6f34cbf3 now 2024-02-07 11:16:51
+    // vs receiving request
+    // client_id: e31252dd-cbd6-44c9-abfe-64570d5f6181 upload_id ff8d7578-7ba0-44e2-a566-67cb6f34cbf3 now 2024-02-07 5:28:35.243276 +00:00:0
+    // TODO: also why have the time limit in the first place?
+    let _now = OffsetDateTime::now_utc() - UPLOAD_SESSION_DURATION;
     sqlx::query_as!(
         Upload,
         r#"
         SELECT id, client_id, metadata_id, base_path, reported_size, state FROM uploads
             WHERE client_id = $1
-            AND id = $2
-            AND created_at >= $3;
+            AND id = $2;
         "#,
         client_id,
         upload_id,
-        now
     )
     .fetch_optional(db)
     .await

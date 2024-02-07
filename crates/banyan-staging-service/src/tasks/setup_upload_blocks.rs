@@ -1,11 +1,10 @@
 use async_trait::async_trait;
 use banyan_task::{CurrentTask, TaskLike, TaskLikeExt, TaskStoreError};
 use serde::{Deserialize, Serialize};
-use time::OffsetDateTime;
 use url::Url;
 
 use crate::app::AppState;
-use crate::clients::storage_provider::StorageProviderClient;
+use crate::clients::storage_provider::{StorageProviderClient, StorageProviderError};
 use crate::database::models::Clients;
 use crate::tasks::upload_blocks::UploadBlocksTask;
 
@@ -20,6 +19,8 @@ pub enum SetupUploadBlocksTaskError {
     ReqwestError(#[from] reqwest::Error),
     #[error("scheduling task error: {0}")]
     SchedulingTaskError(#[from] TaskStoreError),
+    #[error("storage provider error: {0}")]
+    StorageProviderError(#[from] StorageProviderError),
     #[error("http error: {0} response from {1}")]
     HttpError(http::StatusCode, Url),
 }
@@ -45,6 +46,7 @@ impl TaskLike for SetupUploadBlocksTask {
             StorageProviderClient::new(&self.storage_host, &self.storage_authorization);
 
         let client = Clients::find_by_upload_id(&database, &self.upload_id).await?;
+        // in order for the upload to get accepted
         let _ = storage_client.client_grant(&client.public_key).await?;
         let new_upload_response = storage_client.new_upload(&self.metadata_id).await?;
 

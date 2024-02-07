@@ -65,7 +65,7 @@ pub async fn handler(
         .map_err(ReportUploadError::UnableToRecordBlock)?;
     }
 
-    let bucket_id = Metadata::get_bucket_id(&mut db_conn, &db_metadata_id)
+    let metadata = Metadata::get_by_id(&mut db_conn, &db_metadata_id)
         .await
         .map_err(ReportUploadError::MarkCurrentFailed)?;
 
@@ -74,7 +74,7 @@ pub async fn handler(
     // We should handle that invariant more explicitly.
     Metadata::mark_current(
         &mut db_conn,
-        &bucket_id,
+        &metadata.bucket_id,
         &db_metadata_id,
         Some(request.data_size),
     )

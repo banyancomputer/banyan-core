@@ -16,7 +16,7 @@ impl Clients {
         let client = sqlx::query_as!(
             Clients,
             "SELECT c.* FROM clients AS c
-                INNER JOIN uploads u on c.id = u.client_id
+              JOIN uploads u on c.id = u.client_id
             WHERE u.id = $1;",
             upload_id
         )

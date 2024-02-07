@@ -23,6 +23,7 @@ pub async fn start_background_workers(
 ) -> Result<JoinHandle<()>, &'static str> {
     let task_store = SqliteTaskStore::new(state.database());
     // bootstrap scheduled tasks
+    // TODO: seems to not be finding the existing redistribution data tasks
     let task_in_progress = task_store
         .task_in_state::<RedistributeDataTask>(vec![TaskState::New, TaskState::Retry])
         .await;

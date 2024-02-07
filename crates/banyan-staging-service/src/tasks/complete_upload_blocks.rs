@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::app::AppState;
 use crate::clients::core_service::{CoreServiceClient, CoreServiceError};
-use crate::database::models::{Blocks, UploadsBlocks};
+use crate::database::models::{Blocks, Uploads, UploadsBlocks};
 
 pub type CompleteUploadBlocksTaskContext = AppState;
 
@@ -25,7 +25,7 @@ pub enum CompleteUploadBlocksTaskError {
 
 #[derive(Deserialize, Serialize)]
 pub struct CompleteUploadBlocksTask {
-    upload_id: String,
+    pub upload_id: String,
 }
 
 impl CompleteUploadBlocksTask {
@@ -54,39 +54,44 @@ impl TaskLike for CompleteUploadBlocksTask {
 
         // TODO: what's going to happen if the user deletes the file while we redistribute?
         let blocks_for_upload = Blocks::blocks_for_upload(&conn, &self.upload_id).await?;
-
-        let block_ids: Vec<String> = blocks_for_upload
+        let block_cids: Vec<String> = blocks_for_upload
             .iter()
             .map(|block| block.cid.clone())
             .collect();
 
-        let locate_blocks_response = core_client
-            .locate_blocks(&self.upload_id, block_ids.clone())
-            .await?;
+        let locate_blocks_response = core_client.locate_blocks(block_cids.clone()).await?;
 
         let self_hostname = ctx.service_hostname().to_string();
         let blocks_not_associated_with_us: HashSet<String> = locate_blocks_response
             .iter()
-            .filter_map(|(block_id, hosts)| {
-                if hosts.iter().all(|host| host != &self_hostname) {
-                    Some(block_id.clone())
-                } else {
-                    None
+            .filter_map(|(host, block_cids)| {
+                if !host.contains(&self_hostname) {
+                    return Some(block_cids.clone());
                 }
+                return None;
             })
+            .flatten()
             .collect();
 
-        if blocks_not_associated_with_us.len() < block_ids.len() {
+        if blocks_not_associated_with_us.len() < block_cids.len() {
             return Err(CompleteUploadBlocksTaskError::NotAllBlocksUploaded(
                 blocks_not_associated_with_us.len(),
-                block_ids.len(),
+                block_cids.len(),
             ));
         }
-        for block_id in block_ids.iter() {
+        let metadata_id = match Uploads::get_by_id(&conn, &self.upload_id).await? {
+            Some(upload) => upload.metadata_id,
+            None => {
+                return Err(CompleteUploadBlocksTaskError::DatabaseError(
+                    sqlx::Error::RowNotFound,
+                ))
+            }
+        };
+        for block_id in block_cids.iter() {
             UploadsBlocks::mark_as_pruned(&conn, &block_id).await?;
             let location = banyan_object_store::ObjectStorePath::from(format!(
                 "{}/{}.bin",
-                self.upload_id, block_id
+                metadata_id, block_id
             ));
             store.delete(&location).await?;
         }

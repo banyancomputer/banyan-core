@@ -5,6 +5,7 @@ use axum::routing::post;
 use axum::Router;
 
 mod locate;
+mod provider_locate;
 
 use crate::app::AppState;
 
@@ -16,5 +17,6 @@ where
 {
     Router::new()
         .route("/locate", post(locate::handler))
+        .route("/provider_locate", post(provider_locate::handler))
         .with_state(state)
 }

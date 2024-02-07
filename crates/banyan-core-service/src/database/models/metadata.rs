@@ -19,7 +19,7 @@ impl NewMetadata<'_> {
     /// Persists a new row in the metadata table with the associated data. When successful this
     /// returns the ID of the newly created row. By default this initialized the state of the
     /// metadata row to 'uploading', which is the entry-point into the metadata state machine.
-    pub async fn save(&self, conn: &mut DatabaseConnection) -> Result<String, sqlx::Error> {
+    pub async fn save(&mut self, conn: &mut DatabaseConnection) -> Result<String, sqlx::Error> {
         // Note: default timestamp values are not sufficient, so force the value to be set to a precise form
         // by including the timestamp in the query.
         let now = OffsetDateTime::now_utc();
@@ -38,17 +38,35 @@ impl NewMetadata<'_> {
     }
 }
 
-pub struct Metadata;
+#[derive(sqlx::FromRow)]
+pub struct Metadata {
+    pub id: String,
+    pub bucket_id: String,
+    pub metadata_cid: String,
+    pub root_cid: String,
+    pub expected_data_size: i64,
+    pub data_size: Option<i64>,
+    pub metadata_hash: Option<String>,
+    pub metadata_size: Option<i64>,
+    pub state: String,
+    pub previous_metadata_cid: Option<String>,
+    pub created_at: OffsetDateTime,
+    pub updated_at: OffsetDateTime,
+}
 
 impl Metadata {
     /// Retrieve's the bucket ID associated with the provided metadata ID.
-    pub async fn get_bucket_id(
+    pub async fn get_by_id(
         conn: &mut DatabaseConnection,
         metadata_id: &str,
-    ) -> Result<String, sqlx::Error> {
-        sqlx::query_scalar!("SELECT bucket_id FROM metadata WHERE id = $1;", metadata_id)
-            .fetch_one(&mut *conn)
-            .await
+    ) -> Result<Self, sqlx::Error> {
+        sqlx::query_as!(
+            Metadata,
+            "SELECT * FROM metadata WHERE id = $1;",
+            metadata_id
+        )
+        .fetch_one(&mut *conn)
+        .await
     }
 
     pub async fn get_user_id(

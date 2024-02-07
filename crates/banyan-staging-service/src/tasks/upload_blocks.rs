@@ -6,7 +6,9 @@ use serde::{Deserialize, Serialize};
 use url::Url;
 
 use crate::app::AppState;
-use crate::clients::storage_provider::{BlockUploadDetails, StorageProviderClient};
+use crate::clients::storage_provider::{
+    BlockUploadDetails, StorageProviderClient, StorageProviderError,
+};
 use crate::database::models::{Blocks, Uploads};
 use crate::tasks::complete_upload_blocks::CompleteUploadBlocksTask;
 
@@ -31,6 +33,8 @@ pub enum UploadBlocksTaskError {
     ByteConversionError(String),
     #[error("scheduling task error: {0}")]
     SchedulingTaskError(#[from] TaskStoreError),
+    #[error("storage provider error: {0}")]
+    StorageProviderError(#[from] StorageProviderError),
 }
 
 #[derive(Deserialize, Serialize)]

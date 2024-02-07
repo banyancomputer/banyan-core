@@ -9,9 +9,10 @@ use uuid::Uuid;
 use crate::api::buckets::metadata::rounded_storage_authorization;
 use crate::app::AppState;
 use crate::auth::storage_ticket::StorageTicketBuilder;
+use crate::auth::HOUR_DURATION;
 use crate::database::models::{
-    AuthorizedAmounts, Bucket, Metadata, NewStorageGrant, PendingExpiration, SelectedStorageHost,
-    StorageHost,
+    AuthorizedAmounts, Bucket, Metadata, NewMetadata, NewStorageGrant, PendingExpiration,
+    SelectedStorageHost, StorageHost,
 };
 use crate::database::DatabaseConnection;
 use crate::extractors::StorageProviderIdentity;
@@ -21,30 +22,36 @@ pub async fn handler(
     // TODO: in reality it should be staging service only
     storage_provider: StorageProviderIdentity,
     State(state): State<AppState>,
-    Path(metadata_id): Path<Uuid>,
+    Path(old_metadata_id): Path<Uuid>,
     Json(request): Json<MoveMetadataRequest>,
 ) -> Result<Response, MoveMetadataError> {
     let span = tracing::info_span!(
         "move_metadata",
         storage_provider = %storage_provider.id,
-        metadata_id = %metadata_id,
+        metadata_id = %old_metadata_id,
     );
     let _guard = span.enter();
 
-    let metadata_id = metadata_id.to_string();
+    if storage_provider.name != "banyan-staging" {
+        return Err(MoveMetadataError::Unauthorized);
+    }
+
+    let old_metadata_id = old_metadata_id.to_string();
     let database = state.database();
     let mut conn = database.begin().await?;
 
     // check that the calling storage host does indeed store the specific upload
-    if !Metadata::storage_host_owns_metadata(&mut conn, &metadata_id, &storage_provider.id).await? {
+    if !Metadata::storage_host_owns_metadata(&mut conn, &old_metadata_id, &storage_provider.id)
+        .await?
+    {
         tracing::warn!("attempted to move files by storage host that does own metadata");
         let err_msg = serde_json::json!({"msg": "metadata not found"});
         return Ok((StatusCode::NOT_FOUND, Json(err_msg)).into_response());
     }
 
-    let bucket_id = Metadata::get_bucket_id(&mut conn, &metadata_id).await?;
+    let metadata = Metadata::get_by_id(&mut conn, &old_metadata_id).await?;
     // user is making changes. try moving the bucket contents later
-    if Bucket::is_change_in_progress(&mut conn, &bucket_id).await? {
+    if Bucket::is_change_in_progress(&mut conn, &metadata.bucket_id).await? {
         tracing::warn!("attempted to move files from bucket while other write was in progress");
         let err_msg = serde_json::json!({"msg": "waiting for other upload to complete"});
         return Ok((StatusCode::CONFLICT, Json(err_msg)).into_response());
@@ -64,11 +71,22 @@ pub async fn handler(
         }
     };
 
+    let new_metadata_id = NewMetadata {
+        bucket_id: &metadata.bucket_id,
+
+        metadata_cid: &metadata.metadata_cid,
+
+        root_cid: &metadata.root_cid,
+        expected_data_size: metadata.expected_data_size,
+    }
+    .save(&mut conn)
+    .await?;
+
     // pull all the normalized_cids from the old upload using the metadata_id and expire them
     PendingExpiration::record_pending_block_expirations(
         &mut conn,
-        &bucket_id,
-        &metadata_id,
+        &metadata.bucket_id,
+        &old_metadata_id,
         &normalized_cids,
     )
     .await?;
@@ -77,7 +95,6 @@ pub async fn handler(
     // conn.commit().await?;
 
     let needed_capacity = request.needed_capacity;
-
     let new_storage_host = match SelectedStorageHost::select_for_capacity(
         &mut conn,
         needed_capacity,
@@ -96,22 +113,25 @@ pub async fn handler(
         }
     };
 
+    let user_id = Metadata::get_user_id(&mut conn, &old_metadata_id).await?;
     let storage_grant_id = ensure_grant_space(
         &mut conn,
         &new_storage_host,
-        &bucket_id,
+        &metadata.bucket_id,
         needed_capacity,
-        &metadata_id,
+        &user_id,
     )
     .await?;
 
-    let mut ticket_builder = StorageTicketBuilder::new(new_storage_host.name.clone());
-    ticket_builder.add_audience(storage_provider.name.to_string());
+    let mut ticket_builder =
+        StorageTicketBuilder::new(format!("{}@{}", user_id, request.fingerprint));
+    ticket_builder.add_audience(new_storage_host.name.to_string());
     ticket_builder.add_authorization(
         storage_grant_id,
         new_storage_host.url.clone(),
         needed_capacity,
     );
+    ticket_builder.with_duration(HOUR_DURATION);
 
     let claim = ticket_builder.build();
 
@@ -127,6 +147,7 @@ pub async fn handler(
     conn.commit().await?;
 
     let response = serde_json::json!({
+        "new_metadata_id": new_metadata_id,
         "storage_host": new_storage_host.url,
         "storage_authorization": storage_authorization,
     });
@@ -136,6 +157,9 @@ pub async fn handler(
 
 #[derive(Debug, thiserror::Error)]
 pub enum MoveMetadataError {
+    #[error("not authorized to move metadata")]
+    Unauthorized,
+
     #[error("failed to run query: {0}")]
     QueryFailure(#[from] sqlx::Error),
 
@@ -156,6 +180,8 @@ pub struct MoveMetadataRequest {
     needed_capacity: i64,
     // block IDs stored on the old host, to be deleted and then moved to a new host
     previous_cids: Vec<String>,
+    // the key fingerprint with which the user registered.
+    fingerprint: String,
 }
 
 pub async fn ensure_grant_space(
@@ -163,13 +189,14 @@ pub async fn ensure_grant_space(
     new_storage_host: &SelectedStorageHost,
     bucket_id: &str,
     required_space: i64,
-    metadata_id: &str,
+    user_id: &str,
 ) -> Result<String, sqlx::Error> {
-    let user_id = Metadata::get_user_id(conn, metadata_id).await?;
     let user_report = StorageHost::user_report(conn, &new_storage_host.id, &user_id).await?;
+    // TODO: authorized amounts for storage provider, otherwise the space doesn't get allocated for the new storage host
     let authorized_amounts = AuthorizedAmounts::lookup(conn, &user_id, &bucket_id).await?;
     let existing_grant = authorized_amounts
         .into_iter()
+        .filter(|auth_details| auth_details.storage_host_name == new_storage_host.name)
         .filter(|auth_details| auth_details.authorized_amount >= required_space)
         .next();
 

@@ -58,6 +58,7 @@ pub const LOCAL_KEY_COOKIE_NAME: &str = "_local_key";
 pub const SESSION_TTL: u64 = 28 * 24 * 60 * 60;
 
 pub const STORAGE_TICKET_DURATION: Duration = Duration::from_secs(15 * 60); // 15 minutes
+pub const HOUR_DURATION: Duration = Duration::from_secs(1 * 60 * 60);
 
 pub fn router<B>(state: AppState) -> Router<AppState, B>
 where

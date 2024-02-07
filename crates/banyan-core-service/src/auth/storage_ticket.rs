@@ -1,4 +1,5 @@
 use std::collections::{HashMap, HashSet};
+use std::time::Duration;
 
 use jwt_simple::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -28,6 +29,7 @@ pub struct StorageTicketBuilder {
     capabilities: HashMap<String, StorageCapabilities>,
     audience: HashSet<String>,
     subject: String,
+    duration: Option<Duration>,
 }
 
 impl StorageTicketBuilder {
@@ -48,14 +50,21 @@ impl StorageTicketBuilder {
         self.capabilities.insert(storage_host_url, caps);
     }
 
+    pub fn with_duration(&mut self, duration: Duration) {
+        self.duration = Some(duration);
+    }
+
     pub fn build(self) -> JWTClaims<StorageTicket> {
         let ticket = StorageTicket::with_capabilities(self.capabilities);
 
-        let mut claims = Claims::with_custom_claims(ticket, STORAGE_TICKET_DURATION.into())
-            .with_audiences(self.audience)
-            .with_issuer(TICKET_ISSUER)
-            .with_subject(self.subject)
-            .invalid_before(Clock::now_since_epoch() - JWT_ALLOWED_CLOCK_DRIFT.into());
+        let mut claims = Claims::with_custom_claims(
+            ticket,
+            self.duration.unwrap_or(STORAGE_TICKET_DURATION).into(),
+        )
+        .with_audiences(self.audience)
+        .with_issuer(TICKET_ISSUER)
+        .with_subject(self.subject)
+        .invalid_before(Clock::now_since_epoch() - JWT_ALLOWED_CLOCK_DRIFT.into());
 
         claims.create_nonce();
         claims.issued_at = Some(Clock::now_since_epoch());
@@ -83,6 +92,7 @@ impl StorageTicketBuilder {
             subject,
             audience: HashSet::default(),
             capabilities: HashMap::default(),
+            duration: None,
         }
     }
 }

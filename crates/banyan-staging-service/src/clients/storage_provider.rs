@@ -53,11 +53,11 @@ impl StorageProviderClient {
         }
     }
 
-    pub async fn client_grant(&self, public_key: &str) -> Result<Response, reqwest::Error> {
+    pub async fn client_grant(&self, public_key: &str) -> Result<Response, StorageProviderError> {
         let full_url = Url::parse(&self.service_hostname)
-            .unwrap()
+            .map_err(|_| StorageProviderError::UrlParseError)?
             .join(&"/api/v1/client_grant".to_string())
-            .unwrap();
+            .map_err(|_| StorageProviderError::UrlJoinError)?;
 
         self.client
             .post(full_url)
@@ -65,21 +65,34 @@ impl StorageProviderClient {
             .body(serde_json::json!({ "public_key": public_key }).to_string())
             .send()
             .await
+            .map_err(StorageProviderError::RequestError)
     }
-    pub async fn new_upload(&self, metadata_id: &str) -> Result<NewUploadResponse, reqwest::Error> {
+    pub async fn new_upload(
+        &self,
+        metadata_id: &str,
+    ) -> Result<NewUploadResponse, StorageProviderError> {
         let full_url = Url::parse(&self.service_hostname)
-            .unwrap()
+            .map_err(|_| StorageProviderError::UrlParseError)?
             .join(&"/api/v1/upload/new".to_string())
-            .unwrap();
+            .map_err(|_| StorageProviderError::UrlJoinError)?;
 
-        self.client
+        let response = self
+            .client
             .post(full_url)
             .bearer_auth(&self.service_authorization)
             .body(serde_json::json!({ "metadata_id": metadata_id }).to_string())
             .send()
-            .await?
-            .json::<NewUploadResponse>()
             .await
+            .map_err(StorageProviderError::RequestError)?;
+
+        if response.status().is_success() {
+            return match response.json::<NewUploadResponse>().await {
+                Ok(response) => Ok(response),
+                Err(_) => Err(StorageProviderError::ResponseParseError),
+            };
+        }
+
+        Err(StorageProviderError::BadRequest(response.text().await?))
     }
 
     pub async fn upload_block(
@@ -87,22 +100,22 @@ impl StorageProviderClient {
         block: Vec<u8>,
         cid: Cid,
         details: BlockUploadDetails,
-    ) -> Result<Response, reqwest::Error> {
+    ) -> Result<Response, StorageProviderError> {
         let full_url = Url::parse(&self.service_hostname)
-            .unwrap()
+            .map_err(|_| StorageProviderError::UrlParseError)?
             .join(&"/api/v1/upload/block".to_string())
-            .unwrap();
+            .map_err(|_| StorageProviderError::UrlJoinError)?;
 
         let block_upload_request = BlockUploadRequest { cid, details };
         let request_json = serde_json::to_string(&block_upload_request).unwrap();
 
         let request_part = Part::bytes(request_json.as_bytes().to_vec())
             .mime_str("application/json")
-            .unwrap();
+            .map_err(|_| StorageProviderError::MimeStrError)?;
 
         let block_part = Part::stream(block)
             .mime_str("application/octet-stream")
-            .unwrap();
+            .map_err(|_| StorageProviderError::MimeStrError)?;
 
         let multipart_form = Form::new()
             .part("request-data", request_part)
@@ -115,5 +128,22 @@ impl StorageProviderClient {
             .multipart(multipart_form)
             .send()
             .await
+            .map_err(StorageProviderError::RequestError)
     }
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum StorageProviderError {
+    #[error("failure during request: {0}")]
+    RequestError(#[from] reqwest::Error),
+    #[error("bad request: {0}")]
+    BadRequest(String),
+    #[error("url parse error")]
+    UrlParseError,
+    #[error("url join error")]
+    UrlJoinError,
+    #[error("mime str error")]
+    MimeStrError,
+    #[error("response parse error")]
+    ResponseParseError,
 }
