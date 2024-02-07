@@ -1,7 +1,7 @@
 mod create_deals;
 mod email;
+mod host_capacity;
 mod prune_blocks;
-mod used_storage;
 
 use banyan_task::{QueueConfig, SqliteTaskStore, WorkerPool};
 pub use create_deals::{CreateDealsTask, BLOCK_SIZE};
@@ -10,10 +10,10 @@ pub use email::{
     EmailTaskContext, EmailTaskError, GaReleaseEmailTask, PaymentFailedEmailTask,
     ProductInvoiceEmailTask, ReachingStorageLimitEmailTask, ScheduledMaintenanceEmailTask,
 };
+pub use host_capacity::HostCapacityTask;
 pub use prune_blocks::PruneBlocksTask;
 use tokio::sync::watch;
 use tokio::task::JoinHandle;
-pub use used_storage::UsedStorageTask;
 
 use crate::app::AppState;
 
@@ -26,7 +26,7 @@ pub async fn start_background_workers(
     WorkerPool::new(task_store.clone(), move || state.clone())
         .configure_queue(QueueConfig::new("default").with_worker_count(5))
         .register_task_type::<PruneBlocksTask>()
-        .register_task_type::<UsedStorageTask>()
+        .register_task_type::<HostCapacityTask>()
         .register_task_type::<CreateDealsTask>()
         .start(async move {
             let _ = shutdown_rx.changed().await;

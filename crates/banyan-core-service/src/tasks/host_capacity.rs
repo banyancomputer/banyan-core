@@ -3,11 +3,11 @@ use async_trait::async_trait;
 use banyan_task::{CurrentTask, TaskLike};
 use serde::{Deserialize, Serialize};
 
-pub type UsedStorageTaskContext = AppState;
+pub type HostCapacityTaskContext = AppState;
 
 #[non_exhaustive]
 #[derive(Debug, thiserror::Error)]
-pub enum UsedStorageTaskError {
+pub enum HostCapacityTaskError {
     #[error("sql error: {0}")]
     Sqlx(#[from] sqlx::Error),
 
@@ -19,22 +19,22 @@ pub enum UsedStorageTaskError {
 }
 
 #[derive(Deserialize, Serialize)]
-pub struct UsedStorageTask {
+pub struct HostCapacityTask {
     storage_host_id: String,
 }
 
-impl UsedStorageTask {
+impl HostCapacityTask {
     pub fn new(storage_host_id: String) -> Self {
         Self { storage_host_id }
     }
 }
 
 #[async_trait]
-impl TaskLike for UsedStorageTask {
+impl TaskLike for HostCapacityTask {
     const TASK_NAME: &'static str = "used_storage_task";
 
-    type Error = UsedStorageTaskError;
-    type Context = UsedStorageTaskContext;
+    type Error = HostCapacityTaskError;
+    type Context = HostCapacityTaskContext;
 
     async fn run(&self, _task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
         let mut db_conn = ctx.database().acquire().await?;
