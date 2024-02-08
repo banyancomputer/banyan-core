@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                UPDATE storage_hosts\n                SET reserved_storage = \n                COALESCE(\n\t                (\n                        SELECT SUM(sg.authorized_amount)\n\t                    FROM storage_hosts sh\n\t                    INNER JOIN (\n                            SELECT a.user_id, a.storage_host_id, a.redeemed_at, a.authorized_amount \n                            FROM storage_grants a\n                            WHERE a.redeemed_at IN (\n                                SELECT b.redeemed_at\n                                FROM storage_grants b\n                                WHERE a.user_id = b.user_id\n                                AND b.redeemed_at IS NOT NULL\n                                ORDER BY redeemed_at ASC\n                                LIMIT 1\n                            ) \n                            GROUP BY user_id\n\t                    ) AS sg \n\t                    WHERE sg.storage_host_id = sh.id \n                        AND sh.id = $1\n                    ), \n                0);\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "c9cdcf08ec2c114d65bc3063001b26f3c9aad392e5b5c245c684c9ae29ec2ab0"
+}

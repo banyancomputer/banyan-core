@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                SELECT a.user_id, a.storage_host_id, a.redeemed_at, a.authorized_amount \n                FROM storage_grants a\n                WHERE a.redeemed_at IN (\n                    SELECT b.redeemed_at\n                    FROM storage_grants b\n                    WHERE a.user_id = b.user_id\n                    AND b.redeemed_at IS NOT NULL\n                    ORDER BY redeemed_at ASC\n                    LIMIT 1\n                ) \n                GROUP BY user_id;\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "user_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "storage_host_id",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "redeemed_at",
+        "ordinal": 2,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "authorized_amount",
+        "ordinal": 3,
+        "type_info": "Int64"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "989630293b5d81e23121eaf23b82c7f1f85ce96b069b43e99ac9440c1bf28789"
+}

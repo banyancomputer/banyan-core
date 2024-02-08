@@ -2,6 +2,7 @@ use async_trait::async_trait;
 use banyan_task::{CurrentTask, TaskLike};
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
+use time::OffsetDateTime;
 
 use crate::database::Database;
 
@@ -78,6 +79,35 @@ impl TaskLike for HostCapacityTask {
             storage_host_id
         );
 
+        #[derive(Debug, sqlx::FromRow)]
+        struct StorageGrant {
+            user_id: String,
+            storage_host_id: String,
+            redeemed_at: Option<OffsetDateTime>,
+            authorized_amount: i64,
+        }
+
+        let qualifying_grants = sqlx::query_as!(
+            StorageGrant,
+            r#"
+                SELECT a.user_id, a.storage_host_id, a.redeemed_at, a.authorized_amount 
+                FROM storage_grants a
+                WHERE a.redeemed_at IN (
+                    SELECT b.redeemed_at
+                    FROM storage_grants b
+                    WHERE a.user_id = b.user_id
+                    AND b.redeemed_at IS NOT NULL
+                    ORDER BY redeemed_at ASC
+                    LIMIT 1
+                ) 
+                GROUP BY user_id;
+            "#
+        )
+        .fetch_all(&mut *db_conn)
+        .await?;
+
+        println!("qualifying grants: {:?}", qualifying_grants);
+
         // Update reserved_storage
         sqlx::query!(
             r#"
@@ -88,14 +118,20 @@ impl TaskLike for HostCapacityTask {
                         SELECT SUM(sg.authorized_amount)
 	                    FROM storage_hosts sh
 	                    INNER JOIN (
-                            SELECT user_id, storage_host_id, MAX(redeemed_at) as redeemed_at, authorized_amount 
-                            FROM storage_grants
+                            SELECT a.user_id, a.storage_host_id, a.redeemed_at, a.authorized_amount 
+                            FROM storage_grants a
+                            WHERE a.redeemed_at IN (
+                                SELECT b.redeemed_at
+                                FROM storage_grants b
+                                WHERE a.user_id = b.user_id
+                                AND b.redeemed_at IS NOT NULL
+                                ORDER BY redeemed_at ASC
+                                LIMIT 1
+                            ) 
                             GROUP BY user_id
 	                    ) AS sg 
 	                    WHERE sg.storage_host_id = sh.id 
                         AND sh.id = $1
-	                    AND sg.redeemed_at <> NULL
-	                    ORDER BY sg.redeemed_at
                     ), 
                 0);
             "#,
