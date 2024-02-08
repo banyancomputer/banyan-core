@@ -3,10 +3,9 @@ use std::ops::Range;
 use sqlx::sqlite::{SqlitePoolOptions, SqliteQueryResult};
 use time::OffsetDateTime;
 
+use super::models::NewStorageGrant;
 use crate::database::models::{BucketType, DealState, MetadataState, SnapshotState, StorageClass};
 use crate::database::{Database, DatabaseConnection};
-
-use super::models::NewStorageGrant;
 
 pub(crate) async fn associate_blocks(
     conn: &mut DatabaseConnection,

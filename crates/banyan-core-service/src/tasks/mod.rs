@@ -10,6 +10,7 @@ pub use email::{
     EmailTaskContext, EmailTaskError, GaReleaseEmailTask, PaymentFailedEmailTask,
     ProductInvoiceEmailTask, ReachingStorageLimitEmailTask, ScheduledMaintenanceEmailTask,
 };
+pub use host_capacity::HostCapacityTask;
 pub use prune_blocks::PruneBlocksTask;
 use tokio::sync::watch;
 use tokio::task::JoinHandle;

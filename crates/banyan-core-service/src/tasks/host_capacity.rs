@@ -1,10 +1,7 @@
-use std::fmt::Display;
-
 use async_trait::async_trait;
 use banyan_task::{CurrentTask, TaskLike};
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
-use time::OffsetDateTime;
 
 #[derive(Clone)]
 pub struct HostCapacityTaskContext {
@@ -80,6 +77,8 @@ impl TaskLike for HostCapacityTask {
         );
 
         // Update reserved_storage
+        // Ensure that we are only summing authorized amounts on one storage grant per user, taking
+        // care to sort those grants by redemption time and ensure the redemption time is not null
         sqlx::query!(
             r#"
                 UPDATE storage_hosts
@@ -129,7 +128,6 @@ mod tests {
 
     use banyan_task::tests::default_current_task;
     use banyan_task::{CurrentTask, TaskLike};
-    use uuid::Uuid;
 
     use super::*;
     use crate::database::models::{Metadata, MetadataState};
@@ -181,12 +179,11 @@ mod tests {
     #[tokio::test]
     async fn success() {
         let (ctx, current_task) = test_setup().await;
-        let task = HostCapacityTask::new(String::from(STORAGE_HOST_1));
-        let result = task.run(current_task, ctx.clone()).await;
-        println!("result: {:?}", result);
-        assert!(result.is_ok());
-
-        let (used_storage, reserved_storage) = get_stats(ctx, STORAGE_HOST_1).await;
+        assert!(HostCapacityTask::new(String::from(STORAGE_HOST_1))
+            .run(current_task, ctx.clone())
+            .await
+            .is_ok());
+        let (used_storage, reserved_storage) = get_stats(ctx.clone(), STORAGE_HOST_1).await;
         println!("used: {}, reserved: {}", used_storage, reserved_storage);
 
         // The first cat upload is never marked current
@@ -196,6 +193,15 @@ mod tests {
         // grants, but only one per user. Additionally, the 'fake grant' authorized storage is not
         // factored into this result because it was uploaded to a different storage provider.
         assert_eq!(reserved_storage, DOG_UPLOAD_2 + CAT_UPLOAD_2);
+
+        // Do the same for the other storage host and assert it is empty
+        assert!(HostCapacityTask::new(String::from(STORAGE_HOST_2))
+            .run(default_current_task(), ctx.clone())
+            .await
+            .is_ok());
+        let (used_storage, reserved_storage) = get_stats(ctx.clone(), STORAGE_HOST_2).await;
+        assert_eq!(used_storage, 0);
+        assert_eq!(reserved_storage, 0);
     }
 
     async fn host_capacity_context() -> HostCapacityTaskContext {
