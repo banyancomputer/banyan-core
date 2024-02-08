@@ -134,7 +134,6 @@ async fn associate_upload(
 
     Ok(())
 }
-
 async fn redeem_storage_grant(
     conn: &mut DatabaseConnection,
     provider_id: &str,

@@ -73,31 +73,10 @@ impl TaskLike for HostCapacityTask {
         .execute(&mut *db_conn)
         .await?;
 
-        tracing::info!(
+        println!(
             "storage_host.id: {} | used_storage updated",
             storage_host_id
         );
-
-        let new_reserved_storage = sqlx::query_scalar!(
-            r#"
-            SELECT SUM(sg.authorized_amount)
-            FROM storage_hosts sh
-	            INNER JOIN (
-                    SELECT user_id, storage_host_id, MAX(redeemed_at) as redeemed_at, authorized_amount 
-                    FROM storage_grants
-                    GROUP BY user_id
-	            ) AS sg 
-	            WHERE sg.storage_host_id = sh.id 
-                AND sh.id = $1
-	            AND sg.redeemed_at <> NULL
-	            ORDER BY sg.redeemed_at;
-            "#,
-            storage_host_id
-        )
-        .fetch_one(&mut *db_conn)
-        .await?;
-
-        println!("new_reserved: {:?}", new_reserved_storage);
 
         // Update reserved_storage
         sqlx::query!(
@@ -145,7 +124,7 @@ mod tests {
     use uuid::Uuid;
 
     use super::*;
-    use crate::database::models::MetadataState;
+    use crate::database::models::{Metadata, MetadataState, NewStorageGrant};
     use crate::database::test_helpers::*;
 
     pub async fn get_stats(ctx: HostCapacityTaskContext, storage_host_id: &str) -> (i64, i64) {
@@ -215,13 +194,13 @@ mod tests {
         let dog_bucket_id = create_hot_bucket(&mut conn, &dog_user_id, "dog files").await;
         let cat_bucket_id = create_hot_bucket(&mut conn, &cat_user_id, "cat files").await;
 
-        // Create two metadatas per bucket
+        // Create metadatas
         let dog_metadata_id_1 = create_metadata(
             &mut conn,
             &dog_bucket_id,
             "dm1",
             "dr1",
-            MetadataState::Outdated,
+            MetadataState::Pending,
             None,
             None,
         )
@@ -231,7 +210,7 @@ mod tests {
             &dog_bucket_id,
             "dm2",
             "dm2",
-            MetadataState::Current,
+            MetadataState::Pending,
             None,
             None,
         )
@@ -241,7 +220,7 @@ mod tests {
             &cat_bucket_id,
             "cm1",
             "cr1",
-            MetadataState::Outdated,
+            MetadataState::Pending,
             None,
             None,
         )
@@ -250,12 +229,62 @@ mod tests {
             &mut conn,
             &cat_bucket_id,
             "cm2",
-            "cm2",
-            MetadataState::Current,
+            "cr2",
+            MetadataState::Pending,
             None,
             None,
         )
         .await;
+
+        // Create storage grants for uploading
+        let dog_storage_grant_id_1 =
+            create_storage_grant(&mut conn, &storage_host_id, &dog_user_id, 1000).await;
+        let dog_storage_grant_id_2 =
+            create_storage_grant(&mut conn, &storage_host_id, &dog_user_id, 2000).await;
+        let cat_storage_grant_id_1 =
+            create_storage_grant(&mut conn, &storage_host_id, &cat_user_id, 1000).await;
+        let cat_storage_grant_id_2 =
+            create_storage_grant(&mut conn, &storage_host_id, &cat_user_id, 2000).await;
+
+        // Redeem both dog grants
+        redeem_storage_grant(&mut conn, &storage_host_id, &dog_storage_grant_id_1).await;
+        associate_upload(
+            &mut conn,
+            &storage_host_id,
+            &dog_metadata_id_1,
+            &dog_storage_grant_id_1,
+        )
+        .await;
+        redeem_storage_grant(&mut conn, &storage_host_id, &dog_storage_grant_id_2).await;
+        associate_upload(
+            &mut conn,
+            &storage_host_id,
+            &dog_metadata_id_2,
+            &dog_storage_grant_id_2,
+        )
+        .await;
+        // Redeem only the most recent cat grant
+        redeem_storage_grant(&mut conn, &storage_host_id, &cat_storage_grant_id_2).await;
+        associate_upload(
+            &mut conn,
+            &storage_host_id,
+            &cat_metadata_id_2,
+            &cat_storage_grant_id_2,
+        )
+        .await;
+
+        Metadata::mark_current(&mut conn, &dog_bucket_id, &dog_metadata_id_1, Some(1000))
+            .await
+            .expect("mark current");
+        Metadata::mark_current(&mut conn, &dog_bucket_id, &dog_metadata_id_2, Some(2000))
+            .await
+            .expect("mark current");
+        Metadata::mark_current(&mut conn, &cat_bucket_id, &cat_metadata_id_1, Some(1000))
+            .await
+            .expect("mark current");
+        Metadata::mark_current(&mut conn, &cat_bucket_id, &cat_metadata_id_2, Some(2000))
+            .await
+            .expect("mark current");
 
         conn.commit().await.expect("failed to commit transaction");
 
