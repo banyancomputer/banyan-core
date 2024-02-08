@@ -1,9 +1,25 @@
-use crate::app::AppState;
 use async_trait::async_trait;
 use banyan_task::{CurrentTask, TaskLike};
 use serde::{Deserialize, Serialize};
+use sqlx::SqlitePool;
 
-pub type HostCapacityTaskContext = AppState;
+use crate::database::Database;
+
+#[derive(Clone)]
+pub struct HostCapacityTaskContext {
+    db_pool: SqlitePool,
+}
+
+#[allow(dead_code)]
+impl HostCapacityTaskContext {
+    pub fn db_pool(&self) -> &SqlitePool {
+        &self.db_pool
+    }
+
+    pub fn new(db_pool: SqlitePool) -> Self {
+        Self { db_pool }
+    }
+}
 
 #[non_exhaustive]
 #[derive(Debug, thiserror::Error)]
@@ -37,7 +53,7 @@ impl TaskLike for HostCapacityTask {
     type Context = HostCapacityTaskContext;
 
     async fn run(&self, _task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
-        let mut db_conn = ctx.database().acquire().await?;
+        let mut db_conn = ctx.db_pool().acquire().await.unwrap();
         let storage_host_id = self.storage_host_id.clone();
 
         // Update used_storage by summing the metadata entries over data_size
@@ -92,29 +108,32 @@ impl TaskLike for HostCapacityTask {
 
         Ok(())
     }
+
+    fn unique_key(&self) -> Option<String> {
+        Some(self.storage_host_id.clone())
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use banyan_task::tests::default_current_task;
     use banyan_task::{CurrentTask, TaskLike};
-    use time::OffsetDateTime;
     use uuid::Uuid;
 
     use super::*;
     use crate::database::models::MetadataState;
     use crate::database::test_helpers::*;
 
-    const USER_ID: &str = "00000000-0000-0000-0000-000000000000";
+    const STORAGE_HOST_ID: &str = "00000000-0000-0000-0000-000000000000";
     const USER_EMAIL: &str = "user@user.email";
     // const STORAGE_HOST_ID: &str = "00000000-0000-1234-0000-000000000000";
     const STORAGE_HOST_URL: &str = "http://127.0.0.1:3009";
 
     /// Return a base context and a test account id
-    pub async fn test_setup() -> ((), Uuid, CurrentTask) {
+    pub async fn test_setup() -> (HostCapacityTaskContext, Uuid, CurrentTask) {
         (
-            host_capacity_context().await.unwrap(),
-            Uuid::parse_str(USER_ID).expect("account id parse"),
+            host_capacity_context().await,
+            Uuid::parse_str(STORAGE_HOST_ID).expect("account id parse"),
             default_current_task(),
         )
     }
@@ -128,12 +147,14 @@ mod tests {
         assert!(result.is_ok());
     }
 
-    async fn host_capacity_context() -> Result<(), sqlx::Error> {
+    async fn host_capacity_context() -> HostCapacityTaskContext {
         let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
         // Register storage host
-        let storage_host_id = create_storage_hosts(&mut conn, "host_url", "host_name").await?;
+        let storage_host_id = create_storage_hosts(&mut conn, "host_url", "host_name")
+            .await
+            .expect("create storage host");
         // Create users
         let dog_user_id = create_user(&mut conn, "dog@com.example", "dog").await;
         let cat_user_id = create_user(&mut conn, "cat@com.example", "cat").await;
@@ -145,8 +166,8 @@ mod tests {
         let dog_metadata_id_1 = create_metadata(
             &mut conn,
             &dog_bucket_id,
-            "metadata_cid",
-            "root_cid",
+            "dm1",
+            "dr1",
             MetadataState::Outdated,
             None,
             None,
@@ -155,15 +176,34 @@ mod tests {
         let dog_metadata_id_2 = create_metadata(
             &mut conn,
             &dog_bucket_id,
-            "metadata_cid",
-            "root_cid",
+            "dm2",
+            "dm2",
+            MetadataState::Current,
+            None,
+            None,
+        )
+        .await;
+        let cat_metadata_id_1 = create_metadata(
+            &mut conn,
+            &cat_bucket_id,
+            "cm1",
+            "cr1",
+            MetadataState::Outdated,
+            None,
+            None,
+        )
+        .await;
+        let cat_metadata_id_2 = create_metadata(
+            &mut conn,
+            &cat_bucket_id,
+            "cm2",
+            "cm2",
             MetadataState::Current,
             None,
             None,
         )
         .await;
 
-        Ok(())
-        //        Ok(HostCapacityTaskContext::new(conn, storage_host_id))
+        HostCapacityTaskContext::new(db)
     }
 }
