@@ -79,48 +79,6 @@ impl TaskLike for HostCapacityTask {
             storage_host_id
         );
 
-        #[derive(Debug, sqlx::FromRow)]
-        struct StorageGrant {
-            user_id: String,
-            storage_host_id: String,
-            redeemed_at: Option<OffsetDateTime>,
-            authorized_amount: i64,
-        }
-
-        impl Display for StorageGrant {
-            fn fmt(&self, fmt: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
-                fmt.write_fmt(format_args!(
-                    "shid: {}\tuser_id: {}\tamount: {}\tredeemed_at: {:?}\t",
-                    self.storage_host_id, self.user_id, self.authorized_amount, self.redeemed_at
-                ))
-            }
-        }
-
-        let qualifying_grants = sqlx::query_as!(
-            StorageGrant,
-            r#"
-                SELECT a.user_id, a.storage_host_id, a.redeemed_at, a.authorized_amount 
-                FROM storage_grants a
-                WHERE a.redeemed_at IN (
-                    SELECT MAX(b.redeemed_at)
-                    FROM storage_grants b
-                    WHERE a.user_id = b.user_id
-                )
-                GROUP BY a.id;
-            "#
-        )
-        .fetch_all(&mut *db_conn)
-        .await?;
-
-        println!(
-            "qualifying grants:\n{}",
-            qualifying_grants
-                .iter()
-                .map(|grant| grant.to_string())
-                .collect::<Vec<String>>()
-                .join("\n")
-        );
-
         // Update reserved_storage
         sqlx::query!(
             r#"
@@ -143,7 +101,8 @@ impl TaskLike for HostCapacityTask {
 	                    WHERE sg.storage_host_id = sh.id 
                         AND sh.id = $1
                     ), 
-                0);
+                0)
+                WHERE id = $1;
             "#,
             storage_host_id,
         )
@@ -176,6 +135,8 @@ mod tests {
     use crate::database::models::{Metadata, MetadataState};
     use crate::database::test_helpers::*;
 
+    const STORAGE_HOST_1: &str = "00000000-0000-1234-0000-000000000000";
+    const STORAGE_HOST_2: &str = "00000000-0000-5678-0000-000000000000";
     const DOG_UPLOAD_1: i64 = 500;
     const DOG_UPLOAD_2: i64 = 1000;
     const CAT_UPLOAD_1: i64 = 750;
@@ -212,42 +173,43 @@ mod tests {
     }
 
     /// Return a base context and a test account id
-    pub async fn test_setup() -> (HostCapacityTaskContext, Uuid, CurrentTask) {
-        let (ctx, storage_host_id) = host_capacity_context().await;
-        (ctx, storage_host_id, default_current_task())
+    pub async fn test_setup() -> (HostCapacityTaskContext, CurrentTask) {
+        let ctx = host_capacity_context().await;
+        (ctx, default_current_task())
     }
 
     #[tokio::test]
     async fn success() {
-        let (ctx, storage_host_id, current_task) = test_setup().await;
-        let task = HostCapacityTask::new(storage_host_id.to_string());
+        let (ctx, current_task) = test_setup().await;
+        let task = HostCapacityTask::new(String::from(STORAGE_HOST_1));
         let result = task.run(current_task, ctx.clone()).await;
         println!("result: {:?}", result);
         assert!(result.is_ok());
 
-        let (used_storage, reserved_storage) = get_stats(ctx, &storage_host_id.to_string()).await;
+        let (used_storage, reserved_storage) = get_stats(ctx, STORAGE_HOST_1).await;
         println!("used: {}, reserved: {}", used_storage, reserved_storage);
 
         // The first cat upload is never marked current
         // So the `data_size` never updates
         assert_eq!(used_storage, DOG_UPLOAD_1 + DOG_UPLOAD_2 + CAT_UPLOAD_2);
         // The reserved storage should represent the sum of authorized_amount for redeemed storage
-        // grants, but only one per user.
+        // grants, but only one per user. Additionally, the 'fake grant' authorized storage is not
+        // factored into this result because it was uploaded to a different storage provider.
         assert_eq!(reserved_storage, DOG_UPLOAD_2 + CAT_UPLOAD_2);
     }
 
-    async fn host_capacity_context() -> (HostCapacityTaskContext, Uuid) {
+    async fn host_capacity_context() -> HostCapacityTaskContext {
         let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
         // Register storage host
-        let storage_host_id = create_storage_hosts(
-            &mut conn,
-            "host_url",
-            "00000000-0000-1234-0000-000000000000",
-        )
-        .await
-        .expect("create storage host");
+        create_storage_hosts(&mut conn, "url1", STORAGE_HOST_1)
+            .await
+            .expect("create storage host");
+        create_storage_hosts(&mut conn, "url2", STORAGE_HOST_2)
+            .await
+            .expect("create storage host");
+
         // Create users
         let dog_user_id = create_user(&mut conn, "dog@com.example", "dog").await;
         let cat_user_id = create_user(&mut conn, "cat@com.example", "cat").await;
@@ -299,45 +261,55 @@ mod tests {
 
         // Create storage grants for uploading
         let dog_storage_grant_id_1 =
-            create_storage_grant(&mut conn, &storage_host_id, &dog_user_id, DOG_UPLOAD_1).await;
+            create_storage_grant(&mut conn, STORAGE_HOST_1, &dog_user_id, DOG_UPLOAD_1).await;
         let dog_storage_grant_id_2 =
-            create_storage_grant(&mut conn, &storage_host_id, &dog_user_id, DOG_UPLOAD_2).await;
+            create_storage_grant(&mut conn, STORAGE_HOST_1, &dog_user_id, DOG_UPLOAD_2).await;
         let cat_storage_grant_id_1 =
-            create_storage_grant(&mut conn, &storage_host_id, &cat_user_id, CAT_UPLOAD_1).await;
+            create_storage_grant(&mut conn, STORAGE_HOST_1, &cat_user_id, CAT_UPLOAD_1).await;
+        let cat_fake_grant =
+            create_storage_grant(&mut conn, STORAGE_HOST_2, &cat_user_id, CAT_UPLOAD_1).await;
         let cat_storage_grant_id_2 =
-            create_storage_grant(&mut conn, &storage_host_id, &cat_user_id, CAT_UPLOAD_2).await;
+            create_storage_grant(&mut conn, STORAGE_HOST_1, &cat_user_id, CAT_UPLOAD_2).await;
 
         // Redeem both dog grants
-        redeem_storage_grant(&mut conn, &storage_host_id, &dog_storage_grant_id_1).await;
+        redeem_storage_grant(&mut conn, STORAGE_HOST_1, &dog_storage_grant_id_1).await;
         associate_upload(
             &mut conn,
-            &storage_host_id,
+            STORAGE_HOST_1,
             &dog_metadata_id_1,
             &dog_storage_grant_id_1,
         )
         .await;
         thread::sleep(Duration::from_millis(1000));
-        redeem_storage_grant(&mut conn, &storage_host_id, &dog_storage_grant_id_2).await;
+        redeem_storage_grant(&mut conn, STORAGE_HOST_1, &dog_storage_grant_id_2).await;
         associate_upload(
             &mut conn,
-            &storage_host_id,
+            STORAGE_HOST_1,
             &dog_metadata_id_2,
             &dog_storage_grant_id_2,
         )
         .await;
-        // Redeem only the most recent cat grant
+        // Redeem the fake and most recent cat grant
         associate_upload(
             &mut conn,
-            &storage_host_id,
+            STORAGE_HOST_1,
             &cat_metadata_id_1,
             &cat_storage_grant_id_1,
         )
         .await;
-        thread::sleep(Duration::from_millis(1000));
-        redeem_storage_grant(&mut conn, &storage_host_id, &cat_storage_grant_id_2).await;
+        redeem_storage_grant(&mut conn, STORAGE_HOST_2, &cat_fake_grant).await;
         associate_upload(
             &mut conn,
-            &storage_host_id,
+            STORAGE_HOST_2,
+            &cat_metadata_id_1,
+            &cat_fake_grant,
+        )
+        .await;
+        thread::sleep(Duration::from_millis(1000));
+        redeem_storage_grant(&mut conn, STORAGE_HOST_1, &cat_storage_grant_id_2).await;
+        associate_upload(
+            &mut conn,
+            STORAGE_HOST_1,
             &cat_metadata_id_2,
             &cat_storage_grant_id_2,
         )
@@ -370,10 +342,7 @@ mod tests {
 
         conn.commit().await.expect("failed to commit transaction");
 
-        println!("shid: {}", storage_host_id);
-        (
-            HostCapacityTaskContext::new(db),
-            Uuid::parse_str(&storage_host_id).expect("uuid parse"),
-        )
+        println!("shid: {}", STORAGE_HOST_1);
+        HostCapacityTaskContext::new(db)
     }
 }
