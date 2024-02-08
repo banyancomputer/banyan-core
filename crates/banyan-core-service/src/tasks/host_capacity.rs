@@ -78,23 +78,47 @@ impl TaskLike for HostCapacityTask {
             storage_host_id
         );
 
+        let new_reserved_storage = sqlx::query_scalar!(
+            r#"
+            SELECT SUM(sg.authorized_amount)
+            FROM storage_hosts sh
+	            INNER JOIN (
+                    SELECT user_id, storage_host_id, MAX(redeemed_at) as redeemed_at, authorized_amount 
+                    FROM storage_grants
+                    GROUP BY user_id
+	            ) AS sg 
+	            WHERE sg.storage_host_id = sh.id 
+                AND sh.id = $1
+	            AND sg.redeemed_at <> NULL
+	            ORDER BY sg.redeemed_at;
+            "#,
+            storage_host_id
+        )
+        .fetch_one(&mut *db_conn)
+        .await?;
+
+        println!("new_reserved: {:?}", new_reserved_storage);
+
         // Update reserved_storage
         sqlx::query!(
             r#"
                 UPDATE storage_hosts
-                SET reserved_storage = (
-	                SELECT SUM(sg.authorized_amount)
-	                FROM storage_hosts sh
-	                INNER JOIN (
-                        SELECT user_id, storage_host_id, MAX(redeemed_at) as redeemed_at, authorized_amount 
-                        FROM storage_grants
-                        GROUP BY user_id
-	                ) AS sg 
-	                WHERE sg.storage_host_id = sh.id 
-                    AND sh.id = $1
-	                AND sg.redeemed_at <> NULL
-	                ORDER BY sg.redeemed_at
-                );
+                SET reserved_storage = 
+                COALESCE(
+	                (
+                        SELECT SUM(sg.authorized_amount)
+	                    FROM storage_hosts sh
+	                    INNER JOIN (
+                            SELECT user_id, storage_host_id, MAX(redeemed_at) as redeemed_at, authorized_amount 
+                            FROM storage_grants
+                            GROUP BY user_id
+	                    ) AS sg 
+	                    WHERE sg.storage_host_id = sh.id 
+                        AND sh.id = $1
+	                    AND sg.redeemed_at <> NULL
+	                    ORDER BY sg.redeemed_at
+                    ), 
+                0);
             "#,
             storage_host_id,
         )
@@ -124,37 +148,66 @@ mod tests {
     use crate::database::models::MetadataState;
     use crate::database::test_helpers::*;
 
-    const STORAGE_HOST_ID: &str = "00000000-0000-0000-0000-000000000000";
-    const USER_EMAIL: &str = "user@user.email";
-    // const STORAGE_HOST_ID: &str = "00000000-0000-1234-0000-000000000000";
-    const STORAGE_HOST_URL: &str = "http://127.0.0.1:3009";
+    pub async fn get_stats(ctx: HostCapacityTaskContext, storage_host_id: &str) -> (i64, i64) {
+        let mut db_conn = ctx.db_pool().acquire().await.unwrap();
+
+        let used_storage = sqlx::query_scalar!(
+            r#"
+                SELECT used_storage
+                FROM storage_hosts
+                WHERE id = $1;
+            "#,
+            storage_host_id
+        )
+        .fetch_one(&mut *db_conn)
+        .await
+        .expect("get used_storage");
+
+        let reserved_storage = sqlx::query_scalar!(
+            r#"
+                SELECT reserved_storage
+                FROM storage_hosts
+                WHERE id = $1;
+            "#,
+            storage_host_id
+        )
+        .fetch_one(&mut *db_conn)
+        .await
+        .expect("get used_storage");
+
+        (used_storage, reserved_storage)
+    }
 
     /// Return a base context and a test account id
     pub async fn test_setup() -> (HostCapacityTaskContext, Uuid, CurrentTask) {
-        (
-            host_capacity_context().await,
-            Uuid::parse_str(STORAGE_HOST_ID).expect("account id parse"),
-            default_current_task(),
-        )
+        let (ctx, storage_host_id) = host_capacity_context().await;
+        (ctx, storage_host_id, default_current_task())
     }
 
     #[tokio::test]
-    /// ScheduledMaintenanceEmailTask should succeed in a valid context
     async fn success() {
         let (ctx, storage_host_id, current_task) = test_setup().await;
         let task = HostCapacityTask::new(storage_host_id.to_string());
-        let result = task.run(current_task, ctx).await;
+        let result = task.run(current_task, ctx.clone()).await;
+        println!("result: {:?}", result);
         assert!(result.is_ok());
+
+        let (used_storage, reserved_storage) = get_stats(ctx, &storage_host_id.to_string()).await;
+        println!("used: {}, reserved: {}", used_storage, reserved_storage);
     }
 
-    async fn host_capacity_context() -> HostCapacityTaskContext {
+    async fn host_capacity_context() -> (HostCapacityTaskContext, Uuid) {
         let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
         // Register storage host
-        let storage_host_id = create_storage_hosts(&mut conn, "host_url", "host_name")
-            .await
-            .expect("create storage host");
+        let storage_host_id = create_storage_hosts(
+            &mut conn,
+            "host_url",
+            "00000000-0000-1234-0000-000000000000",
+        )
+        .await
+        .expect("create storage host");
         // Create users
         let dog_user_id = create_user(&mut conn, "dog@com.example", "dog").await;
         let cat_user_id = create_user(&mut conn, "cat@com.example", "cat").await;
@@ -204,6 +257,12 @@ mod tests {
         )
         .await;
 
-        HostCapacityTaskContext::new(db)
+        conn.commit().await.expect("failed to commit transaction");
+
+        println!("shid: {}", storage_host_id);
+        (
+            HostCapacityTaskContext::new(db),
+            Uuid::parse_str(&storage_host_id).expect("uuid parse"),
+        )
     }
 }
