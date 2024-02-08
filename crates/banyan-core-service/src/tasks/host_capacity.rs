@@ -124,8 +124,13 @@ mod tests {
     use uuid::Uuid;
 
     use super::*;
-    use crate::database::models::{Metadata, MetadataState, NewStorageGrant};
+    use crate::database::models::{Metadata, MetadataState};
     use crate::database::test_helpers::*;
+
+    const DOG_UPLOAD_1: i64 = 500;
+    const DOG_UPLOAD_2: i64 = 1000;
+    const CAT_UPLOAD_1: i64 = 750;
+    const CAT_UPLOAD_2: i64 = 1275;
 
     pub async fn get_stats(ctx: HostCapacityTaskContext, storage_host_id: &str) -> (i64, i64) {
         let mut db_conn = ctx.db_pool().acquire().await.unwrap();
@@ -173,6 +178,13 @@ mod tests {
 
         let (used_storage, reserved_storage) = get_stats(ctx, &storage_host_id.to_string()).await;
         println!("used: {}, reserved: {}", used_storage, reserved_storage);
+
+        // The first cat upload is never marked current
+        // So the `data_size` never updates
+        assert_eq!(used_storage, DOG_UPLOAD_1 + DOG_UPLOAD_2 + CAT_UPLOAD_2);
+        // The reserved storage should represent the sum of authorized_amount for redeemed storage
+        // grants, but only one per user.
+        assert_eq!(reserved_storage, DOG_UPLOAD_2 + CAT_UPLOAD_2);
     }
 
     async fn host_capacity_context() -> (HostCapacityTaskContext, Uuid) {
@@ -238,13 +250,13 @@ mod tests {
 
         // Create storage grants for uploading
         let dog_storage_grant_id_1 =
-            create_storage_grant(&mut conn, &storage_host_id, &dog_user_id, 1000).await;
+            create_storage_grant(&mut conn, &storage_host_id, &dog_user_id, DOG_UPLOAD_1).await;
         let dog_storage_grant_id_2 =
-            create_storage_grant(&mut conn, &storage_host_id, &dog_user_id, 2000).await;
+            create_storage_grant(&mut conn, &storage_host_id, &dog_user_id, DOG_UPLOAD_2).await;
         let cat_storage_grant_id_1 =
-            create_storage_grant(&mut conn, &storage_host_id, &cat_user_id, 1000).await;
+            create_storage_grant(&mut conn, &storage_host_id, &cat_user_id, CAT_UPLOAD_1).await;
         let cat_storage_grant_id_2 =
-            create_storage_grant(&mut conn, &storage_host_id, &cat_user_id, 2000).await;
+            create_storage_grant(&mut conn, &storage_host_id, &cat_user_id, CAT_UPLOAD_2).await;
 
         // Redeem both dog grants
         redeem_storage_grant(&mut conn, &storage_host_id, &dog_storage_grant_id_1).await;
@@ -264,6 +276,13 @@ mod tests {
         )
         .await;
         // Redeem only the most recent cat grant
+        associate_upload(
+            &mut conn,
+            &storage_host_id,
+            &cat_metadata_id_1,
+            &cat_storage_grant_id_1,
+        )
+        .await;
         redeem_storage_grant(&mut conn, &storage_host_id, &cat_storage_grant_id_2).await;
         associate_upload(
             &mut conn,
@@ -273,18 +292,30 @@ mod tests {
         )
         .await;
 
-        Metadata::mark_current(&mut conn, &dog_bucket_id, &dog_metadata_id_1, Some(1000))
-            .await
-            .expect("mark current");
-        Metadata::mark_current(&mut conn, &dog_bucket_id, &dog_metadata_id_2, Some(2000))
-            .await
-            .expect("mark current");
-        Metadata::mark_current(&mut conn, &cat_bucket_id, &cat_metadata_id_1, Some(1000))
-            .await
-            .expect("mark current");
-        Metadata::mark_current(&mut conn, &cat_bucket_id, &cat_metadata_id_2, Some(2000))
-            .await
-            .expect("mark current");
+        Metadata::mark_current(
+            &mut conn,
+            &dog_bucket_id,
+            &dog_metadata_id_1,
+            Some(DOG_UPLOAD_1),
+        )
+        .await
+        .expect("mark current");
+        Metadata::mark_current(
+            &mut conn,
+            &dog_bucket_id,
+            &dog_metadata_id_2,
+            Some(DOG_UPLOAD_2),
+        )
+        .await
+        .expect("mark current");
+        Metadata::mark_current(
+            &mut conn,
+            &cat_bucket_id,
+            &cat_metadata_id_2,
+            Some(CAT_UPLOAD_2),
+        )
+        .await
+        .expect("mark current");
 
         conn.commit().await.expect("failed to commit transaction");
 
