@@ -71,11 +71,6 @@ impl TaskLike for HostCapacityTask {
         .execute(&mut *db_conn)
         .await?;
 
-        println!(
-            "storage_host.id: {} | used_storage updated",
-            storage_host_id
-        );
-
         // Update reserved_storage
         // Ensure that we are only summing authorized amounts on one storage grant per user, taking
         // care to sort those grants by redemption time and ensure the redemption time is not null
@@ -107,11 +102,6 @@ impl TaskLike for HostCapacityTask {
         )
         .execute(&mut *db_conn)
         .await?;
-
-        tracing::info!(
-            "storage_host.id: {} | reserved_storage updated",
-            storage_host_id
-        );
 
         Ok(())
     }
