@@ -1,10 +1,10 @@
+use std::fmt::Display;
+
 use async_trait::async_trait;
 use banyan_task::{CurrentTask, TaskLike};
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use time::OffsetDateTime;
-
-use crate::database::Database;
 
 #[derive(Clone)]
 pub struct HostCapacityTaskContext {
@@ -87,26 +87,39 @@ impl TaskLike for HostCapacityTask {
             authorized_amount: i64,
         }
 
+        impl Display for StorageGrant {
+            fn fmt(&self, fmt: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+                fmt.write_fmt(format_args!(
+                    "shid: {}\tuser_id: {}\tamount: {}\tredeemed_at: {:?}\t",
+                    self.storage_host_id, self.user_id, self.authorized_amount, self.redeemed_at
+                ))
+            }
+        }
+
         let qualifying_grants = sqlx::query_as!(
             StorageGrant,
             r#"
                 SELECT a.user_id, a.storage_host_id, a.redeemed_at, a.authorized_amount 
                 FROM storage_grants a
                 WHERE a.redeemed_at IN (
-                    SELECT b.redeemed_at
+                    SELECT MAX(b.redeemed_at)
                     FROM storage_grants b
                     WHERE a.user_id = b.user_id
-                    AND b.redeemed_at IS NOT NULL
-                    ORDER BY redeemed_at ASC
-                    LIMIT 1
-                ) 
-                GROUP BY user_id;
+                )
+                GROUP BY a.id;
             "#
         )
         .fetch_all(&mut *db_conn)
         .await?;
 
-        println!("qualifying grants: {:?}", qualifying_grants);
+        println!(
+            "qualifying grants:\n{}",
+            qualifying_grants
+                .iter()
+                .map(|grant| grant.to_string())
+                .collect::<Vec<String>>()
+                .join("\n")
+        );
 
         // Update reserved_storage
         sqlx::query!(
@@ -121,14 +134,11 @@ impl TaskLike for HostCapacityTask {
                             SELECT a.user_id, a.storage_host_id, a.redeemed_at, a.authorized_amount 
                             FROM storage_grants a
                             WHERE a.redeemed_at IN (
-                                SELECT b.redeemed_at
+                                SELECT MAX(b.redeemed_at)
                                 FROM storage_grants b
                                 WHERE a.user_id = b.user_id
-                                AND b.redeemed_at IS NOT NULL
-                                ORDER BY redeemed_at ASC
-                                LIMIT 1
-                            ) 
-                            GROUP BY user_id
+                            )
+                            GROUP BY a.id
 	                    ) AS sg 
 	                    WHERE sg.storage_host_id = sh.id 
                         AND sh.id = $1
@@ -155,6 +165,9 @@ impl TaskLike for HostCapacityTask {
 
 #[cfg(test)]
 mod tests {
+    use std::thread;
+    use std::time::Duration;
+
     use banyan_task::tests::default_current_task;
     use banyan_task::{CurrentTask, TaskLike};
     use uuid::Uuid;
@@ -303,6 +316,7 @@ mod tests {
             &dog_storage_grant_id_1,
         )
         .await;
+        thread::sleep(Duration::from_millis(1000));
         redeem_storage_grant(&mut conn, &storage_host_id, &dog_storage_grant_id_2).await;
         associate_upload(
             &mut conn,
@@ -319,6 +333,7 @@ mod tests {
             &cat_storage_grant_id_1,
         )
         .await;
+        thread::sleep(Duration::from_millis(1000));
         redeem_storage_grant(&mut conn, &storage_host_id, &cat_storage_grant_id_2).await;
         associate_upload(
             &mut conn,

@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n                SELECT a.user_id, a.storage_host_id, a.redeemed_at, a.authorized_amount \n                FROM storage_grants a\n                WHERE a.redeemed_at IN (\n                    SELECT b.redeemed_at\n                    FROM storage_grants b\n                    WHERE a.user_id = b.user_id\n                    AND b.redeemed_at IS NOT NULL\n                    ORDER BY redeemed_at ASC\n                    LIMIT 1\n                ) \n                GROUP BY user_id;\n            ",
+  "query": "\n                SELECT a.user_id, a.storage_host_id, a.redeemed_at, a.authorized_amount \n                FROM storage_grants a\n                WHERE a.redeemed_at IN (\n                    SELECT MAX(b.redeemed_at)\n                    FROM storage_grants b\n                    WHERE a.user_id = b.user_id\n                )\n                GROUP BY a.id;\n            ",
   "describe": {
     "columns": [
       {
@@ -34,5 +34,5 @@
       false
     ]
   },
-  "hash": "989630293b5d81e23121eaf23b82c7f1f85ce96b069b43e99ac9440c1bf28789"
+  "hash": "f21c6ec453c93fc9a3692752ea7f9e476876a6d06aa888e6a312027404b587d8"
 }
