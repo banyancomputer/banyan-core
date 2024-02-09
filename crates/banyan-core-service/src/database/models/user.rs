@@ -171,7 +171,7 @@ impl User {
                 .region_preference
                 .clone()
                 .ok_or(sqlx::Error::RowNotFound)?
-                .split(",")
+                .split(',')
                 .filter(|existing| existing != &region)
                 .collect::<Vec<&str>>()
                 .join(",");
@@ -203,35 +203,34 @@ impl User {
 
 #[cfg(test)]
 mod test {
-    use crate::database::{models::User, test_helpers::*};
+    use crate::database::models::User;
+    use crate::database::test_helpers::*;
 
     #[tokio::test]
     async fn region_preference_modification() {
         let db = setup_database().await;
         let mut conn = db.acquire().await.expect("connection");
 
-        let user_id = create_user(&mut *conn, "example@email.com", "Greg").await;
+        let user_id = create_user(&mut conn, "example@email.com", "Greg").await;
 
         // Grab the freshly made user
-        let mut user = User::by_id(&mut *conn, &user_id)
-            .await
-            .expect("user lookup");
+        let mut user = User::by_id(&mut conn, &user_id).await.expect("user lookup");
         // The user should initially have no preferences
         assert!(user.region_preference.is_none());
 
         // Add and assert the presence of North America
-        user.add_region_preference(&mut *conn, "North America")
+        user.add_region_preference(&mut conn, "North America")
             .await
             .expect("add preference");
         // Ensure that duplicates do not get added
         assert!(user
-            .add_region_preference(&mut *conn, "North America")
+            .add_region_preference(&mut conn, "North America")
             .await
             .is_err());
         assert_eq!(user.region_preference, Some(String::from("North America")));
 
         // Add and Assert the presence of Antarctica
-        user.add_region_preference(&mut *conn, "Antarctica")
+        user.add_region_preference(&mut conn, "Antarctica")
             .await
             .expect("add preference");
         assert_eq!(
@@ -240,7 +239,7 @@ mod test {
         );
 
         // Add and Assert the presence of Europe
-        user.add_region_preference(&mut *conn, "Europe")
+        user.add_region_preference(&mut conn, "Europe")
             .await
             .expect("add preference");
         assert_eq!(
@@ -249,7 +248,7 @@ mod test {
         );
 
         // Remove and Assert the presence of Europe
-        user.remove_region_preference(&mut *conn, "Europe")
+        user.remove_region_preference(&mut conn, "Europe")
             .await
             .expect("remove preference");
         assert_eq!(
@@ -258,13 +257,13 @@ mod test {
         );
 
         // Remove and Assert the presence of North America
-        user.remove_region_preference(&mut *conn, "North America")
+        user.remove_region_preference(&mut conn, "North America")
             .await
             .expect("remove preference");
         assert_eq!(user.region_preference, Some(String::from("Antarctica")));
 
         // Remove and Assert the presence of Antarctica
-        user.remove_region_preference(&mut *conn, "Antarctica")
+        user.remove_region_preference(&mut conn, "Antarctica")
             .await
             .expect("remove preference");
         assert_eq!(user.region_preference, None);
