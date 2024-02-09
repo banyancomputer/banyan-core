@@ -15,7 +15,7 @@ pub async fn handler(
     let database = state.database();
     let query_result = sqlx::query_as!(
         SelectedStorageHost,
-        r#"SELECT id,name,url,used_storage, available_storage,fingerprint,pem FROM storage_hosts;"#,
+        r#"SELECT id, name, url, used_storage, reserved_storage, available_storage, fingerprint, pem FROM storage_hosts;"#,
     )
     .fetch_all(&database)
     .await

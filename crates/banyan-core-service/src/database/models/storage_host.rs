@@ -9,6 +9,7 @@ pub struct SelectedStorageHost {
     pub name: String,
     pub url: String,
     pub used_storage: i64,
+    pub reserved_storage: i64,
     pub available_storage: i64,
     pub fingerprint: String,
     pub pem: String,
@@ -20,18 +21,45 @@ impl SelectedStorageHost {
     /// any storage host over any other.
     pub async fn select_for_capacity(
         conn: &mut DatabaseConnection,
+        continent: Option<String>,
         required_bytes: i64,
     ) -> Result<Option<Self>, sqlx::Error> {
-        sqlx::query_as!(
-            Self,
-            r#"SELECT id,name,url,used_storage, available_storage,fingerprint,pem FROM storage_hosts
-                   WHERE (available_storage - used_storage) > $1
-                   ORDER BY RANDOM()
-                   LIMIT 1;"#,
-            required_bytes,
-        )
-        .fetch_optional(&mut *conn)
-        .await
+        // We construct different queries based on whether the user has a continent preference.
+        match continent {
+            Some(continent) => {
+                sqlx::query_as!(
+                    Self,
+                    r#"
+                        SELECT id, name, url, used_storage, reserved_storage, available_storage, fingerprint, pem
+                        FROM storage_hosts
+                        WHERE (available_storage - reserved_storage) > $1
+                        AND continent = $2 
+                        ORDER BY RANDOM() 
+                        LIMIT 1;
+                    "#,
+                    required_bytes,
+                    continent,
+                )
+                .fetch_optional(&mut *conn)
+                .await
+            }
+            None => {
+                sqlx::query_as!(
+                    Self,
+                    r#"
+                        SELECT id, name, url, used_storage, reserved_storage, available_storage, fingerprint, pem
+                        FROM storage_hosts
+                        WHERE (available_storage - reserved_storage) > $1
+                        ORDER BY RANDOM() 
+                        LIMIT 1;
+                    "#,
+                    required_bytes,
+                )
+                .fetch_optional(&mut *conn)
+                .await
+
+            }
+        }
     }
 }
 
