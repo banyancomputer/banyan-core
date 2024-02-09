@@ -135,16 +135,65 @@ impl User {
     }
 
     pub async fn add_region_preference(
+        &mut self,
         conn: &mut DatabaseConnection,
         region: &str,
     ) -> Result<(), sqlx::Error> {
+        let region_preference = sqlx::query_scalar!(
+            r#"
+                UPDATE users 
+                SET region_preference = region_preference || ',' || $1
+                WHERE id = $2 
+                AND region_preference NOT LIKE '%$1%'
+                RETURNING region_preference;
+            "#,
+            region,
+            self.id,
+        )
+        .fetch_one(&mut *conn)
+        .await?;
+
+        self.region_preference = region_preference;
+
         Ok(())
     }
 
     pub async fn remove_region_preference(
+        &mut self,
         conn: &mut DatabaseConnection,
         region: &str,
     ) -> Result<(), sqlx::Error> {
+        let existing_preference: String = sqlx::query_scalar!(
+            r#"
+                SELECT region_preference 
+                FROM users 
+                WHERE id = $1
+                AND region_preference IS NOT NULL;
+            "#,
+            self.id,
+        )
+        .fetch_one(&mut *conn)
+        .await?
+        .ok_or(sqlx::Error::RowNotFound)?;
+
+        let new_preference = existing_preference.replace(&format!(",{}", region), "");
+        println!("existing_preference: {}", existing_preference);
+        println!("new_preference: {}", new_preference);
+
+        sqlx::query!(
+            r#"
+                UPDATE users
+                SET region_preference = $1
+                WHERE id = $2;
+            "#,
+            new_preference,
+            self.id,
+        )
+        .execute(&mut *conn)
+        .await?;
+
+        self.region_preference = Some(new_preference);
+
         Ok(())
     }
 }

@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                UPDATE users \n                SET region_preference = region_preference || ',' || $1\n                WHERE id = $2 \n                AND region_preference NOT LIKE '%$1%'\n                RETURNING region_preference;\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "region_preference",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "469d01189409f268fb555881076809568cd3b47c8bbf0805bc3851e590513116"
+}
