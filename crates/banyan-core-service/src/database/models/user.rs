@@ -155,8 +155,6 @@ impl User {
         .fetch_one(&mut *conn)
         .await?;
 
-        println!("the region pref was updated to be {:?}", region_preference);
-
         self.region_preference = region_preference;
 
         Ok(())
@@ -167,21 +165,12 @@ impl User {
         conn: &mut DatabaseConnection,
         region: &str,
     ) -> Result<(), sqlx::Error> {
-        let existing_preference: String = sqlx::query_scalar!(
-            r#"
-                SELECT region_preference 
-                FROM users 
-                WHERE id = $1
-                AND region_preference IS NOT NULL;
-            "#,
-            self.id,
-        )
-        .fetch_one(&mut *conn)
-        .await?
-        .ok_or(sqlx::Error::RowNotFound)?;
-
+        // Create the new string using the existing string
         let new_preference = {
-            let new_preference = existing_preference
+            let new_preference = self
+                .region_preference
+                .clone()
+                .ok_or(sqlx::Error::RowNotFound)?
                 .split(",")
                 .filter(|existing| existing != &region)
                 .collect::<Vec<&str>>()
@@ -193,9 +182,7 @@ impl User {
             }
         };
 
-        println!("existing_preference: {}", existing_preference);
-        println!("new_preference: {:?}", new_preference);
-
+        // Update
         sqlx::query!(
             r#"
                 UPDATE users
