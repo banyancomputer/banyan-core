@@ -11,6 +11,7 @@ pub struct User {
     pub verified_email: bool,
     pub display_name: String,
     pub locale: Option<String>,
+    pub region_preference: Option<String>,
     pub profile_image: Option<String>,
     pub created_at: OffsetDateTime,
     pub accepted_tos_at: Option<OffsetDateTime>,
@@ -28,12 +29,15 @@ impl User {
     pub async fn by_id(conn: &mut DatabaseConnection, id: &str) -> Result<Self, sqlx::Error> {
         sqlx::query_as!(
             User,
-            r#"SELECT id, email, verified_email, display_name, locale, profile_image, created_at,
-                   accepted_tos_at, account_tax_class as 'account_tax_class: TaxClass',
-                   stripe_customer_id, stripe_subscription_id, subscription_id as 'subscription_id!',
-                   subscription_status as 'subscription_status: SubscriptionStatus',
-                   subscription_valid_until FROM users
-                 WHERE id = $1;"#,
+            r#"
+                SELECT id, email, verified_email, display_name, locale, region_preference, profile_image, 
+                       created_at, accepted_tos_at, account_tax_class as 'account_tax_class: TaxClass',
+                       stripe_customer_id, stripe_subscription_id, subscription_id as 'subscription_id!',
+                       subscription_status as 'subscription_status: SubscriptionStatus',
+                       subscription_valid_until
+                FROM users
+                WHERE id = $1;
+            "#,
             id,
         )
         .fetch_one(&mut *conn)
@@ -77,12 +81,15 @@ impl User {
     ) -> Result<Option<Self>, sqlx::Error> {
         sqlx::query_as!(
             User,
-            r#"SELECT id, email, verified_email, display_name, locale, profile_image, created_at,
-                   accepted_tos_at, account_tax_class as 'account_tax_class: TaxClass',
-                   stripe_customer_id, stripe_subscription_id, subscription_id as 'subscription_id!',
-                   subscription_status as 'subscription_status: SubscriptionStatus',
-                   subscription_valid_until FROM users
-                 WHERE id = $1;"#,
+            r#"
+                SELECT id, email, verified_email, display_name, locale, region_preference, profile_image, created_at,
+                       accepted_tos_at, account_tax_class as 'account_tax_class: TaxClass',
+                       stripe_customer_id, stripe_subscription_id, subscription_id as 'subscription_id!',
+                       subscription_status as 'subscription_status: SubscriptionStatus',
+                       subscription_valid_until 
+                FROM users
+                WHERE id = $1;
+            "#,
             id,
         )
         .fetch_optional(&mut *conn)
@@ -95,12 +102,14 @@ impl User {
     ) -> Result<Option<Self>, sqlx::Error> {
         sqlx::query_as!(
             User,
-            r#"SELECT id, email, verified_email, display_name, locale, profile_image, created_at,
-                   accepted_tos_at, account_tax_class as 'account_tax_class: TaxClass',
-                   stripe_customer_id, stripe_subscription_id, subscription_id as 'subscription_id!',
-                   subscription_status as 'subscription_status: SubscriptionStatus',
-                   subscription_valid_until FROM users
-                 WHERE stripe_customer_id = $1;"#,
+            r#"
+                SELECT id, email, verified_email, display_name, locale, region_preference, profile_image, created_at,
+                       accepted_tos_at, account_tax_class as 'account_tax_class: TaxClass',
+                       stripe_customer_id, stripe_subscription_id, subscription_id as 'subscription_id!',
+                       subscription_status as 'subscription_status: SubscriptionStatus',
+                       subscription_valid_until
+                FROM users
+                WHERE stripe_customer_id = $1;"#,
             stripe_customer_id,
         )
         .fetch_optional(&mut *conn)
@@ -122,6 +131,20 @@ impl User {
 
         self.stripe_customer_id = Some(customer_stripe_id.to_string());
 
+        Ok(())
+    }
+
+    pub async fn add_region_preference(
+        conn: &mut DatabaseConnection,
+        region: &str,
+    ) -> Result<(), sqlx::Error> {
+        Ok(())
+    }
+
+    pub async fn remove_region_preference(
+        conn: &mut DatabaseConnection,
+        region: &str,
+    ) -> Result<(), sqlx::Error> {
         Ok(())
     }
 }

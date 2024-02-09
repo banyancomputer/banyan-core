@@ -17,8 +17,8 @@ pub struct SelectedStorageHost {
 
 impl SelectedStorageHost {
     /// Find the database ID of a storage host that has the requested capacity currently available.
-    /// Will return None if no storage host has the requested capacity available. Does not prefer
-    /// any storage host over any other.
+    /// Will return None if there is no storage host with the requested capacity and region
+    /// available, but does not exert preference among hosts that meet these criteria.
     pub async fn select_for_capacity(
         conn: &mut DatabaseConnection,
         region: Option<String>,
