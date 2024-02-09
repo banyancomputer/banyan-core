@@ -13,7 +13,7 @@ pub struct SelectedStorageHostRequest {
     pub name: String,
     pub url: String,
     pub available_storage: i64,
-    pub continent: String,
+    pub region: String,
 }
 
 pub async fn handler(
@@ -30,12 +30,12 @@ pub async fn handler(
 
     let database = state.database();
     let storage_host_id = sqlx::query_scalar!(
-        r#"INSERT INTO storage_hosts (name, url, used_storage, available_storage, continent, fingerprint, pem) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id;"#,
+        r#"INSERT INTO storage_hosts (name, url, used_storage, available_storage, region, fingerprint, pem) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id;"#,
         request.name,
         request.url,
         0,
         request.available_storage,
-        request.continent,
+        request.region,
         fingerprint,
         pem
     )

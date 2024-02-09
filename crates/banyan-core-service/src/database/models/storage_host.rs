@@ -21,24 +21,24 @@ impl SelectedStorageHost {
     /// any storage host over any other.
     pub async fn select_for_capacity(
         conn: &mut DatabaseConnection,
-        continent: Option<String>,
+        region: Option<String>,
         required_bytes: i64,
     ) -> Result<Option<Self>, sqlx::Error> {
-        // We construct different queries based on whether the user has a continent preference.
-        match continent {
-            Some(continent) => {
+        // We construct different queries based on whether the user has a region preference.
+        match region {
+            Some(region) => {
                 sqlx::query_as!(
                     Self,
                     r#"
                         SELECT id, name, url, used_storage, reserved_storage, available_storage, fingerprint, pem
                         FROM storage_hosts
                         WHERE (available_storage - reserved_storage) > $1
-                        AND continent = $2 
+                        AND region = $2 
                         ORDER BY RANDOM() 
                         LIMIT 1;
                     "#,
                     required_bytes,
-                    continent,
+                    region,
                 )
                 .fetch_optional(&mut *conn)
                 .await

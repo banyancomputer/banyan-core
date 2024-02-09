@@ -91,7 +91,7 @@ pub(crate) async fn create_storage_hosts(
     let host_url = host_url.to_string();
     let host_name = host_name.to_string();
     sqlx::query_scalar!(
-            r#"INSERT INTO storage_hosts (id, name, url, fingerprint, pem, continent, used_storage, available_storage)
+            r#"INSERT INTO storage_hosts (id, name, url, fingerprint, pem, region, used_storage, available_storage)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id;"#,
             host_name,
             host_url,
@@ -269,7 +269,7 @@ pub(crate) async fn create_storage_host(
     // Note: this is not creating real fingerprints or public keys but only because the tests
     // haven't needed that level of real data to this point
     sqlx::query_scalar!(
-        r#"INSERT INTO storage_hosts (name, url, used_storage, available_storage, continent, fingerprint, pem)
+        r#"INSERT INTO storage_hosts (name, url, used_storage, available_storage, region, fingerprint, pem)
                VALUES ($1, $2, 0, $3, 'North America', 'not-a-real-fingerprint', 'not-a-real-pubkey')
                RETURNING id;"#,
         name,
