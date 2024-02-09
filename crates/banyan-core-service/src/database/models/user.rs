@@ -139,15 +139,18 @@ impl User {
         conn: &mut DatabaseConnection,
         region: &str,
     ) -> Result<(), sqlx::Error> {
+        let not_like = format!("%{}%", region);
         let region_preference = sqlx::query_scalar!(
             r#"
                 UPDATE users 
                 SET region_preference = IFNULL(region_preference || ',', '') || $1
                 WHERE id = $2 
+                AND IFNULL(region_preference, '') NOT LIKE $3 
                 RETURNING region_preference;
             "#,
             region,
             self.id,
+            not_like,
         )
         .fetch_one(&mut *conn)
         .await?;
@@ -233,6 +236,11 @@ mod test {
         user.add_region_preference(&mut *conn, "North America")
             .await
             .expect("add preference");
+        // Ensure that duplicates do not get added
+        assert!(user
+            .add_region_preference(&mut *conn, "North America")
+            .await
+            .is_err());
         assert_eq!(user.region_preference, Some(String::from("North America")));
 
         // Add and Assert the presence of Antarctica
