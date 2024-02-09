@@ -80,6 +80,9 @@ pub async fn handler(
     .await
     .map_err(ReportUploadError::MarkCurrentFailed)?;
 
+    // Close the connection to prevent locking
+    db_conn.close().await?;
+
     // Now, let's re-evaluate the capacity of that storage host
     HostCapacityTask::new(storage_provider.id)
         .enqueue::<banyan_task::SqliteTaskStore>(&mut database)
