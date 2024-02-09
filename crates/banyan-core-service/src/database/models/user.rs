@@ -142,7 +142,7 @@ impl User {
         let region_preference = sqlx::query_scalar!(
             r#"
                 UPDATE users 
-                SET region_preference = region_preference || ',' || $1
+                SET region_preference = IFNULL(region_preference || ',', '') || $1
                 WHERE id = $2 
                 RETURNING region_preference;
             "#,
@@ -151,6 +151,8 @@ impl User {
         )
         .fetch_one(&mut *conn)
         .await?;
+
+        println!("the region pref was updated to be {:?}", region_preference);
 
         self.region_preference = region_preference;
 
@@ -175,9 +177,21 @@ impl User {
         .await?
         .ok_or(sqlx::Error::RowNotFound)?;
 
-        let new_preference = existing_preference.replace(&format!(",{}", region), "");
+        let new_preference = {
+            let new_preference = existing_preference
+                .split(",")
+                .filter(|existing| existing != &region)
+                .collect::<Vec<&str>>()
+                .join(",");
+            if new_preference.is_empty() {
+                None
+            } else {
+                Some(new_preference)
+            }
+        };
+
         println!("existing_preference: {}", existing_preference);
-        println!("new_preference: {}", new_preference);
+        println!("new_preference: {:?}", new_preference);
 
         sqlx::query!(
             r#"
@@ -191,7 +205,7 @@ impl User {
         .execute(&mut *conn)
         .await?;
 
-        self.region_preference = Some(new_preference);
+        self.region_preference = new_preference;
 
         Ok(())
     }

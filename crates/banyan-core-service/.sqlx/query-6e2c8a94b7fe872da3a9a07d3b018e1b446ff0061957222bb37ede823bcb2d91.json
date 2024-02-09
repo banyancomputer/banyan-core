@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                UPDATE users \n                SET region_preference = IFNULL(region_preference || ',', '') || $1\n                WHERE id = $2 \n                RETURNING region_preference;\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "region_preference",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "6e2c8a94b7fe872da3a9a07d3b018e1b446ff0061957222bb37ede823bcb2d91"
+}
