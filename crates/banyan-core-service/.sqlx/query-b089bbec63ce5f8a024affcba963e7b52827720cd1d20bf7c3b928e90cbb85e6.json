@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n                        SELECT id, name, url, used_storage, reserved_storage, available_storage, fingerprint, pem\n                        FROM storage_hosts\n                        WHERE (available_storage - reserved_storage) > $1\n                        AND region = $2 \n                        ORDER BY RANDOM() \n                        LIMIT 1;\n                    ",
+  "query": "\n                SELECT id, name, url, used_storage, reserved_storage, available_storage, fingerprint, pem\n                FROM storage_hosts\n                WHERE (available_storage - reserved_storage) > $1\n                AND ($2 IS NULL OR region = $2) \n                ORDER BY RANDOM() \n                LIMIT 1;\n            ",
   "describe": {
     "columns": [
       {
@@ -58,5 +58,5 @@
       false
     ]
   },
-  "hash": "3b7198609282941bccf993a4c6b62cacdfb9e7c8ee5a8c24e42a279e1b8469e9"
+  "hash": "b089bbec63ce5f8a024affcba963e7b52827720cd1d20bf7c3b928e90cbb85e6"
 }

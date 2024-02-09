@@ -24,42 +24,23 @@ impl SelectedStorageHost {
         region: Option<String>,
         required_bytes: i64,
     ) -> Result<Option<Self>, sqlx::Error> {
-        // We construct different queries based on whether the user has a region preference.
-        match region {
-            Some(region) => {
-                sqlx::query_as!(
-                    Self,
-                    r#"
-                        SELECT id, name, url, used_storage, reserved_storage, available_storage, fingerprint, pem
-                        FROM storage_hosts
-                        WHERE (available_storage - reserved_storage) > $1
-                        AND region = $2 
-                        ORDER BY RANDOM() 
-                        LIMIT 1;
-                    "#,
-                    required_bytes,
-                    region,
-                )
-                .fetch_optional(&mut *conn)
-                .await
-            }
-            None => {
-                sqlx::query_as!(
-                    Self,
-                    r#"
-                        SELECT id, name, url, used_storage, reserved_storage, available_storage, fingerprint, pem
-                        FROM storage_hosts
-                        WHERE (available_storage - reserved_storage) > $1
-                        ORDER BY RANDOM() 
-                        LIMIT 1;
-                    "#,
-                    required_bytes,
-                )
-                .fetch_optional(&mut *conn)
-                .await
-
-            }
-        }
+        // Select a storage host with enough free space, ensuring it is also within the region if
+        // one is specified.
+        sqlx::query_as!(
+            Self,
+            r#"
+                SELECT id, name, url, used_storage, reserved_storage, available_storage, fingerprint, pem
+                FROM storage_hosts
+                WHERE (available_storage - reserved_storage) > $1
+                AND ($2 IS NULL OR region = $2) 
+                ORDER BY RANDOM() 
+                LIMIT 1;
+            "#,
+            required_bytes,
+            region,
+        )
+        .fetch_optional(&mut *conn)
+        .await
     }
 }
 
