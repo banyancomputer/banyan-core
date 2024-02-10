@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+use std::sync::{Arc, Mutex};
 use std::task::{Context, Poll};
 
 use http::{Request, Response};
@@ -24,6 +26,20 @@ impl<S, OnResponseEnd> TrafficCounter<S, OnResponseEnd> {
     }
 }
 
+// example session type
+#[derive(Clone, Debug)]
+pub struct Session {
+    pub user_id: Arc<Mutex<Option<String>>>,
+}
+
+impl Default for Session {
+    fn default() -> Self {
+        Self {
+            user_id: Arc::new(Mutex::new(None)),
+        }
+    }
+}
+
 impl<ReqBody, ResBody, OnResponseEndT, S> Service<Request<ReqBody>>
     for TrafficCounter<S, OnResponseEndT>
 where
@@ -34,6 +50,7 @@ where
     type Response = Response<ResponseCounter<ResBody, OnResponseEndT>>;
     type Error = S::Error;
     type Future = ResponseFuture<S::Future, OnResponseEndT>;
+    // type Future = ResponseFuture<S::Future, OnResponseEndT, ReqBody>;
 
     #[inline]
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
@@ -42,12 +59,16 @@ where
 
     fn call(&mut self, req: Request<ReqBody>) -> Self::Future {
         let (tx_bytes_received, rx_bytes_received) = oneshot::channel::<usize>();
-        let req = req.map(|body| RequestCounter::new(body, tx_bytes_received));
+        let mut req = req.map(|body| RequestCounter::new(body, tx_bytes_received));
         let request_info = (&req).into();
+        let session = Session::default();
+        req.extensions_mut().insert(session.clone());
+
         let inner = self.inner.call(req);
         ResponseFuture {
             inner,
             request_info,
+            session,
             rx_bytes_received,
             on_response_end: Some(self.on_response_end.clone()),
         }

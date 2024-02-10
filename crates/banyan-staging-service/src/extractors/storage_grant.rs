@@ -8,6 +8,7 @@ use axum::http::request::Parts;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::{async_trait, Json, RequestPartsExt};
+use banyan_traffic_counter::service::Session;
 use jwt_simple::prelude::*;
 use uuid::Uuid;
 
@@ -140,6 +141,11 @@ where
 
         let grant_id =
             Uuid::parse_str(&usage.grant_id).map_err(|_| StorageGrantError::InvalidGrant)?;
+
+        if let Some(session) = parts.extensions.get::<Session>() {
+            let mut user_id = session.user_id.lock().unwrap();
+            *user_id = Some(client_fingerprint.clone());
+        }
 
         let grant = StorageGrant {
             platform_id,

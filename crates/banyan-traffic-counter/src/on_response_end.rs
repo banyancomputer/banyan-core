@@ -18,14 +18,8 @@ where
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct DefaultOnResponseEnd {}
-
-impl Default for DefaultOnResponseEnd {
-    fn default() -> Self {
-        Self {}
-    }
-}
 
 impl DefaultOnResponseEnd {
     pub fn new() -> Self {

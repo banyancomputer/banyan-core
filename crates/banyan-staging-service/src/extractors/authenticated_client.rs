@@ -4,14 +4,14 @@ use axum::headers::Authorization;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::{async_trait, Json, RequestPartsExt};
-use banyan_traffic_counter::body::BANYAN_USER_ID_HEADER;
+use banyan_traffic_counter::service::Session;
 use http::request::Parts;
 use jwt_simple::prelude::*;
 use sqlx::FromRow;
 use uuid::Uuid;
 
 use super::{fingerprint_validator, MAXIMUM_TOKEN_AGE};
-use crate::app::{AppState, PlatformName};
+use crate::app::PlatformName;
 use crate::database::Database;
 
 pub struct AuthenticatedClient {
@@ -141,10 +141,10 @@ where
             Err(err) => return Err(Self::Rejection::CorruptPlatformId(err)),
         };
 
-        // TODO: maybe remove
-        // if let Some(headers) = parts.headers_mut() {
-        //     headers.insert(BANYAN_USER_ID_HEADER, key_id.clone());
-        // }
+        if let Some(session) = parts.extensions.get::<Session>() {
+            let mut user_id = session.user_id.lock().unwrap();
+            *user_id = Some(key_id.clone());
+        }
 
         Ok(AuthenticatedClient {
             id: internal_id,

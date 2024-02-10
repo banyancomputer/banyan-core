@@ -152,7 +152,7 @@ pub async fn run(config: Config) {
                 method = %request_info.method,
                 uri = %request_info.uri,
                 version = ?request_info.version,
-                request_id = %request_info.request_id.clone().map_or_else(|| "".to_string(), |id| id.to_string()),
+                // request_id = %request_info.request_id.clone().map_or_else(|| "".to_string(), |id| id.to_string()),
                 "finished processing request",
             );
         }

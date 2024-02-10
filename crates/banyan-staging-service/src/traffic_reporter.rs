@@ -1,6 +1,6 @@
-use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
-use std::time::{Duration, Instant};
+use std::sync::{Arc, RwLock};
+use std::time::Duration;
 
 use banyan_traffic_counter::body::{RequestInfo, ResponseInfo};
 use banyan_traffic_counter::on_response_end::OnResponseEnd;
@@ -9,29 +9,27 @@ use jwt_simple::algorithms::ECDSAP384KeyPairLike;
 use jwt_simple::claims::Claims;
 use jwt_simple::prelude::*;
 use reqwest::Client;
+use tokio::time::interval;
 use url::Url;
 
 use crate::app::AppState;
 use crate::utils::SigningKey;
 
+const ONE_HOUR_DURATION: Duration = Duration::from_secs(60 * 60);
+
 #[derive(Clone)]
 pub struct TrafficReporter {
     app: AppState,
-
-    last_flush: Instant,
-    user_traffic: RefCell<HashMap<String, (usize, usize)>>,
+    user_traffic: Arc<RwLock<HashMap<String, (usize, usize)>>>,
 }
 
 impl<B> OnResponseEnd<B> for TrafficReporter {
     fn on_response_end(&self, req_info: &RequestInfo, res_info: &ResponseInfo) {
-        let user_id = match req_info.user_id.clone() {
-            Some(id) => id,
-            None => {
-                tracing::error!("No user_id found in request, skipping traffic reporting");
-                return;
-            }
+        let user_id = res_info.session.user_id.lock().unwrap();
+        let user_id = match &*user_id {
+            Some(key_id) => key_id,
+            None => return,
         };
-
         let ingress = req_info.header_bytes + req_info.body_bytes;
         let egress = res_info.header_bytes + res_info.body_bytes;
         self.log_traffic(user_id, ingress, egress);
@@ -39,56 +37,75 @@ impl<B> OnResponseEnd<B> for TrafficReporter {
 }
 impl TrafficReporter {
     pub fn new(app: AppState) -> Self {
-        Self {
+        let reporter = Self {
             app,
-            last_flush: Instant::now(),
-            user_traffic: RefCell::new(HashMap::new()),
-        }
+            user_traffic: Arc::new(RwLock::new(HashMap::new())),
+        };
+        reporter.start_metrics_flush_task();
+        reporter
     }
 
     fn platform_hostname(&self) -> Url {
         self.app.platform_hostname()
     }
     fn service_name(&self) -> &str {
-        &self.app.service_name()
+        self.app.service_name()
     }
     fn platform_name(&self) -> &str {
-        &self.app.platform_name()
+        self.app.platform_name()
     }
     fn service_signing_key(&self) -> SigningKey {
         self.app.secrets().service_signing_key()
     }
 
-    fn log_traffic(&self, user_id: String, ingress: usize, egress: usize) {
-        let mut user_traffic = self.user_traffic.borrow_mut();
-        let (current_ingress, current_egress) =
-            user_traffic.get(&user_id).unwrap_or(&(0, 0)).clone();
+    fn log_traffic(&self, user_id: &String, ingress: usize, egress: usize) {
+        let mut user_traffic = self.user_traffic.write().unwrap();
+        let (current_ingress, current_egress) = *user_traffic.get(user_id).unwrap_or(&(0, 0));
         user_traffic.insert(
-            user_id,
+            user_id.clone(),
             (current_ingress + ingress, current_egress + egress),
         );
     }
 
-    async fn flush_traffic_metrics(&mut self, user_id: String) {
-        let now = Instant::now();
-        let duration = now.duration_since(self.last_flush);
-        if duration.as_secs() >= 60 * 60 {
-            let (ingress, egress) = self
-                .user_traffic
-                .borrow()
-                .get(&user_id)
-                .unwrap_or(&(0, 0))
-                .clone();
+    fn start_metrics_flush_task(&self) {
+        let reporter = self.clone();
+        tokio::spawn(async move {
+            let mut interval = interval(ONE_HOUR_DURATION);
+            loop {
+                interval.tick().await;
+                let users = reporter
+                    .user_traffic
+                    .read()
+                    .unwrap()
+                    .keys()
+                    .cloned()
+                    .collect::<Vec<_>>();
+                for user_id in users {
+                    if let Err(e) = reporter.flush_traffic_metrics(user_id).await {
+                        tracing::error!("Failed to flush traffic metrics: {}", e);
+                    }
+                }
+            }
+        });
+    }
 
-            match self.report_user_traffic(&user_id, ingress, egress).await {
-                Ok(_) => {
-                    self.user_traffic.borrow_mut().remove(&user_id);
-                    self.last_flush = now;
-                }
-                Err(e) => {
-                    tracing::error!("Failed to report user traffic: {}", e);
-                }
-            };
+    async fn flush_traffic_metrics(&self, user_id: String) -> Result<(), ReportTrafficError> {
+        let (ingress, egress) = *self
+            .user_traffic
+            .read()
+            .unwrap()
+            .get(&user_id)
+            .unwrap_or(&(0, 0));
+
+        match self.report_user_traffic(&user_id, ingress, egress).await {
+            Ok(_) => {
+                self.user_traffic.write().unwrap().remove(&user_id);
+                Ok(())
+            }
+            Err(e) => {
+                tracing::error!("Failed to report user traffic: {}", e);
+                Err(e)
+            }
         }
     }
 

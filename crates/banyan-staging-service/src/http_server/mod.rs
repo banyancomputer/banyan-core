@@ -3,7 +3,6 @@ use std::time::Duration;
 use axum::error_handling::HandleErrorLayer;
 use axum::extract::DefaultBodyLimit;
 use axum::{Router, Server, ServiceExt};
-use banyan_traffic_counter::body::{RequestInfo, ResponseInfo};
 use banyan_traffic_counter::layer::TrafficCounterLayer;
 use futures::future::join_all;
 use http::header;

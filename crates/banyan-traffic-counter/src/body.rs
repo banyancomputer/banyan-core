@@ -1,5 +1,4 @@
 use std::error::Error;
-use std::fmt;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
@@ -11,9 +10,7 @@ use pin_project_lite::pin_project;
 use tokio::sync::oneshot;
 
 use crate::on_response_end::OnResponseEnd;
-
-// can be a UUID or any other correlating identifier
-pub const BANYAN_USER_ID_HEADER: &str = "x-banyan-user-id";
+use crate::service::Session;
 
 pin_project! {
     #[derive(Debug)]
@@ -57,6 +54,7 @@ where
         request_info: RequestInfo,
         status_code: StatusCode,
         on_response_end: OnResponseEndT,
+        session: Session,
     ) -> Self {
         let response_header_bytes = headers
             .iter()
@@ -66,6 +64,7 @@ where
         Self {
             request_info,
             response_info: ResponseInfo {
+                session,
                 body_bytes: 0,
                 header_bytes: response_header_bytes,
                 status_code,
@@ -208,8 +207,7 @@ where
 
 #[derive(Debug, Clone, Default)]
 pub struct RequestInfo {
-    // can be a UUID or any other correlating identifier
-    pub user_id: Option<String>,
+    pub request_id: Option<String>,
     pub method: Method,
     pub uri: Uri,
     pub version: Version,
@@ -222,13 +220,14 @@ pub struct ResponseInfo {
     pub body_bytes: usize,
     pub header_bytes: usize,
     pub status_code: StatusCode,
+    pub session: Session,
 }
 
 impl<T> From<&Request<T>> for RequestInfo {
     fn from(req: &Request<T>) -> Self {
-        let user_id = req
+        let request_id = req
             .headers()
-            .get(HeaderName::from_static(BANYAN_USER_ID_HEADER))
+            .get(HeaderName::from_static("x-request-id"))
             .and_then(|v| v.to_str().ok())
             .filter(|s| !s.is_empty())
             .map(|s| s.to_string());
@@ -239,7 +238,7 @@ impl<T> From<&Request<T>> for RequestInfo {
             .sum();
 
         RequestInfo {
-            user_id,
+            request_id,
             method: req.method().clone(),
             uri: req.uri().clone(),
             version: req.version(),
@@ -317,6 +316,7 @@ mod tests {
                 assert_eq!(req_info.body_bytes + req_info.header_bytes, 0);
                 assert_eq!(res_info.body_bytes + res_info.header_bytes, 15);
             },
+            Session::default()
         );
 
         poll_to_completion(body_counter, None).await;
@@ -337,6 +337,7 @@ mod tests {
                 assert_eq!(req_info.body_bytes + req_info.header_bytes, 0);
                 assert_eq!(res_info.body_bytes + res_info.header_bytes, 0);
             },
+            Session::default()
         );
         poll_to_completion(body_counter, None).await;
     }
