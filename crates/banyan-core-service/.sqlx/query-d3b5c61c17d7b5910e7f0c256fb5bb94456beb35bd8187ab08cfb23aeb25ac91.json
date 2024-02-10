@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO metrics_traffic (user_id, ingress, egress)\n           VALUES ($1, $2, $3)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "d3b5c61c17d7b5910e7f0c256fb5bb94456beb35bd8187ab08cfb23aeb25ac91"
+}
