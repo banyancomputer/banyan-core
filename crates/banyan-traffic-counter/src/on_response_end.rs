@@ -4,11 +4,6 @@ pub trait OnResponseEnd<B> {
     fn on_response_end(&self, req_info: &RequestInfo, res_info: &ResponseInfo);
 }
 
-impl<B> OnResponseEnd<B> for () {
-    #[inline]
-    fn on_response_end(&self, _: &RequestInfo, _: &ResponseInfo) {}
-}
-
 impl<B, F> OnResponseEnd<B> for F
 where
     F: Fn(&RequestInfo, &ResponseInfo),
@@ -18,14 +13,7 @@ where
     }
 }
 
-#[derive(Clone, Debug, Default)]
 pub struct DefaultOnResponseEnd {}
-
-impl DefaultOnResponseEnd {
-    pub fn new() -> Self {
-        Self::default()
-    }
-}
 
 impl<B> OnResponseEnd<B> for DefaultOnResponseEnd {
     fn on_response_end(&self, _: &RequestInfo, _: &ResponseInfo) {}

@@ -26,7 +26,6 @@ impl<S, OnResponseEnd> TrafficCounter<S, OnResponseEnd> {
     }
 }
 
-// example session type
 #[derive(Clone, Debug)]
 pub struct Session {
     pub user_id: Arc<Mutex<Option<String>>>,
@@ -50,7 +49,6 @@ where
     type Response = Response<ResponseCounter<ResBody, OnResponseEndT>>;
     type Error = S::Error;
     type Future = ResponseFuture<S::Future, OnResponseEndT>;
-    // type Future = ResponseFuture<S::Future, OnResponseEndT, ReqBody>;
 
     #[inline]
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
