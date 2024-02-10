@@ -316,7 +316,7 @@ mod tests {
                 assert_eq!(req_info.body_bytes + req_info.header_bytes, 0);
                 assert_eq!(res_info.body_bytes + res_info.header_bytes, 15);
             },
-            Session::default()
+            Session::default(),
         );
 
         poll_to_completion(body_counter, None).await;
@@ -337,7 +337,7 @@ mod tests {
                 assert_eq!(req_info.body_bytes + req_info.header_bytes, 0);
                 assert_eq!(res_info.body_bytes + res_info.header_bytes, 0);
             },
-            Session::default()
+            Session::default(),
         );
         poll_to_completion(body_counter, None).await;
     }
