@@ -1,4 +1,5 @@
 use std::error::Error;
+use std::fmt;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
@@ -8,6 +9,11 @@ use http::{HeaderMap, HeaderName, Method, Request, StatusCode, Uri, Version};
 use http_body::{Body, SizeHint};
 use pin_project_lite::pin_project;
 use tokio::sync::oneshot;
+
+use crate::on_response_end::OnResponseEnd;
+
+// can be a UUID or any other correlating identifier
+pub const BANYAN_USER_ID_HEADER: &str = "x-banyan-user-id";
 
 pin_project! {
     #[derive(Debug)]
@@ -29,26 +35,28 @@ impl<B> RequestCounter<B> {
     }
 }
 
-pub type FnOnResponseEnd = fn(req_info: &RequestInfo, res_info: &ResponseInfo) -> ();
-
 pin_project! {
     #[derive(Debug)]
-    pub struct ResponseCounter<B> {
+    pub struct ResponseCounter<B, OnResponseEnd> {
         response_info: ResponseInfo,
         request_info: RequestInfo ,
-        on_response_end: FnOnResponseEnd,
+        on_response_end: OnResponseEnd,
         #[pin]
         inner: B,
     }
 }
 
-impl<B> ResponseCounter<B> {
+impl<B, OnResponseEndT> ResponseCounter<B, OnResponseEndT>
+where
+    B: Body,
+    OnResponseEndT: OnResponseEnd<B>,
+{
     pub fn new(
         inner: B,
         headers: &HeaderMap,
         request_info: RequestInfo,
         status_code: StatusCode,
-        on_response_end: FnOnResponseEnd,
+        on_response_end: OnResponseEndT,
     ) -> Self {
         let response_header_bytes = headers
             .iter()
@@ -129,10 +137,11 @@ where
     }
 }
 
-impl<B> Body for ResponseCounter<B>
+impl<B, OnResponseEndT> Body for ResponseCounter<B, OnResponseEndT>
 where
     B: Body,
     B::Error: Into<Box<dyn Error + Send + Sync>>,
+    OnResponseEndT: OnResponseEnd<B::Data>,
 {
     type Data = B::Data;
     type Error = Box<dyn Error + Send + Sync>;
@@ -152,7 +161,8 @@ where
             // Not called when response is HttpBody
             // Called when the response is StreamBody
             None => {
-                (this.on_response_end)(this.request_info, this.response_info);
+                this.on_response_end
+                    .on_response_end(this.request_info, this.response_info);
                 None
             }
         };
@@ -185,7 +195,8 @@ where
     fn is_end_stream(&self) -> bool {
         let end_stream = self.inner.is_end_stream();
         if end_stream {
-            (self.on_response_end)(&self.request_info, &self.response_info);
+            self.on_response_end
+                .on_response_end(&self.request_info, &self.response_info);
         }
         end_stream
     }
@@ -197,7 +208,8 @@ where
 
 #[derive(Debug, Clone, Default)]
 pub struct RequestInfo {
-    pub request_id: Option<String>,
+    // can be a UUID or any other correlating identifier
+    pub user_id: Option<String>,
     pub method: Method,
     pub uri: Uri,
     pub version: Version,
@@ -214,9 +226,9 @@ pub struct ResponseInfo {
 
 impl<T> From<&Request<T>> for RequestInfo {
     fn from(req: &Request<T>) -> Self {
-        let request_id = req
+        let user_id = req
             .headers()
-            .get(HeaderName::from_static("x-request-id"))
+            .get(HeaderName::from_static(BANYAN_USER_ID_HEADER))
             .and_then(|v| v.to_str().ok())
             .filter(|s| !s.is_empty())
             .map(|s| s.to_string());
@@ -227,7 +239,7 @@ impl<T> From<&Request<T>> for RequestInfo {
             .sum();
 
         RequestInfo {
-            request_id,
+            user_id,
             method: req.method().clone(),
             uri: req.uri().clone(),
             version: req.version(),

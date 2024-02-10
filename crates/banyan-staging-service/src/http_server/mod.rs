@@ -21,6 +21,7 @@ use tracing::Level;
 
 use crate::app::{AppState, Config};
 use crate::tasks::start_background_workers;
+use crate::traffic_reporter::TrafficReporter;
 use crate::{api, health_check};
 
 mod error_handlers;
@@ -57,24 +58,17 @@ fn create_trace_layer(log_level: Level) -> TraceLayer<SharedClassifier<ServerErr
 
 /// Run the App over HTTP
 pub async fn run(config: Config) {
+    // Create a new instance of our application state
+    let app_state = AppState::from_config(&config)
+        .await
+        .expect("app state to be created");
+
     // Initialize a blocker that will allow us to gracefully shutdown
     let (shutdown_handle, mut shutdown_rx) = shutdown_blocker::graceful_shutdown_blocker().await;
+
     // Specify log level for tracing
     let trace_layer = create_trace_layer(config.log_level());
-    let on_response_end = |request_info: &RequestInfo, response_info: &ResponseInfo| {
-        if !response_info.status_code.is_server_error() {
-            tracing::info!(
-                request_bytes = %(request_info.header_bytes +request_info.body_bytes),
-                response_bytes = %(response_info.header_bytes +response_info.body_bytes),
-                status = ?response_info.status_code,
-                method = %request_info.method,
-                uri = %request_info.uri,
-                version = ?request_info.version,
-                request_id = %request_info.request_id.clone().map_or_else(|| "".to_string(), |id| id.to_string()),
-                "finished processing request",
-            );
-        }
-    };
+
     // Create our middleware stack
     // The order of these layers and configuration extensions was carefully chosen as they will see
     // the requests to responses effectively in the order they're defined.
@@ -96,7 +90,9 @@ pub async fn run(config: Config) {
         // Propgate that identifier to any downstream services to avoid untrusted injection of this header.
         .set_x_request_id(MakeRequestUuid)
         .propagate_x_request_id()
-        .layer(TrafficCounterLayer::new(on_response_end))
+        .layer(TrafficCounterLayer::new(TrafficReporter::new(
+            app_state.clone(),
+        )))
         // Default request size. Individual handlers can opt-out of this limit, see api/upload.rs for an example.
         .layer(DefaultBodyLimit::max(REQUEST_MAX_SIZE))
         // TODO: is this desired?
@@ -106,10 +102,7 @@ pub async fn run(config: Config) {
         .layer(SetSensitiveResponseHeadersLayer::from_shared(
             SENSITIVE_HEADERS.into(),
         ));
-    // Create a new instance of our application state
-    let app_state = AppState::from_config(&config)
-        .await
-        .expect("app state to be created");
+
     // TODO: service index.html from dist if not found
     // Start background workers
     let worker_handle = start_background_workers(app_state.clone(), shutdown_rx.clone())
