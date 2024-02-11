@@ -30,13 +30,11 @@ export const TermaAndConditions: React.FC<{ userData: User, acceptTerms: React.D
     }
 
     return (
-        <section className="w-screen h-screen flex flex-col">
-            <div className="px-16 py-8 bg-termsAndConditions-header">
-                <Logo />
-            </div>
-            <div className="flex-grow flex items-stretch">
-                <div className="w-1/2 pt-24 flex flex-col items-center bg-white">
-                    <div className="flex flex-col">
+        <section className="w-screen h-screen flex-grow flex items-stretch">
+            <div className="w-1/2 pt-5 pl-14 flex flex-col bg-white">
+                <div>
+                    <Logo />
+                    <div className="mt-20 flex flex-col">
                         <h4 className="text-[32px] font-semibold">
                             {`${messages.whatAreYouUsingBanyanFor}`}
                         </h4>
@@ -91,13 +89,13 @@ export const TermaAndConditions: React.FC<{ userData: User, acceptTerms: React.D
                         </button>
                     </div>
                 </div>
-                <div className="w-1/2 flex justify-center items-center bg-termsAndConditions-highlight">
-                    <img
-                        src={folders}
-                        alt="Folders icon"
-                        className="w-[372px]"
-                    />
-                </div>
+            </div>
+            <div className="w-1/2 flex justify-center items-center bg-termsAndConditions-highlight">
+                <img
+                    src={folders}
+                    alt="Folders icon"
+                    className="w-[372px]"
+                />
             </div>
         </section>
     )

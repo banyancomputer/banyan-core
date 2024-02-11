@@ -9,7 +9,7 @@ export const MobilePlaceholder = () => {
     return (
         <section className="hidden w-screen h-screen flex-col items-stretch text-[#57221E] max-sm:flex">
             <div className="flex justify-center items-center px-16 py-8 bg-termsAndConditions-header">
-                <Logo width="195px" height="40px" />
+                <Logo />
             </div>
             <div className="flex-grow flex flex-col items-center justify-center bg-white">
                 <Folders />

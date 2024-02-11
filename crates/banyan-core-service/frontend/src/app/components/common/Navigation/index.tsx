@@ -62,11 +62,11 @@ export const Navigation = () => {
 	}, [buckets]);
 
 	return (
-		<nav className="flex flex-col w-navbar min-w-navbar bg-navigation-primary py-6 pt-12 px-4 text-navigation-text border-r-2 border-r-navigation-border text-xs">
-			<Link to="/" className="mb-5 flex" >
-				<Logo width="155px" height="32px" />
+		<nav className="flex flex-col w-navbar min-w-navbar bg-navigation-primary py-6 pt-6 px-4 text-navigation-text border-r-2 border-r-navigation-border text-xs">
+			<Link to="/" className="mb-2 flex" >
+				<Logo />
 			</Link>
-			<div className="flex-grow py-6 border-t-2 border-navigation-separator text-navigation-text">
+			<div className="flex-grow py-6 text-navigation-text">
 				<NavLink
 					to={'/'}
 					className={`flex items-center justify-between gap-3 py-2.5 px-3 w-full h-10  cursor-pointer rounded-md ${location.pathname === '/' && 'bg-navigation-secondary'}`}
