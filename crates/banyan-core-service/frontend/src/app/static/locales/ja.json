@@ -205,5 +205,17 @@
 	"summary": "概要",
 	"items": "アイテム",
 	"payment": "支払い",
-	"manageSubscriptions": "サブスクリプションの管理"
+	"manageSubscriptions": "サブスクリプションの管理",
+	"choosePlan": "あなたにぴったりのプランを選択してください",
+	"plansDescription": "手頃な価格であなたにふさわしいストレージ、セキュリティ、プライバシーを得る",
+	"currentPlan": "現在のプラン",
+	"needCustomPlan": "よりカスタマイズされたプランが必要ですか",
+	"contactSales": "営業へのお問い合わせ",
+	"upgradeTo": "アップグレード",
+	"litePlanDescription": "無料ですが、機能が制限されています。",
+	"hotStorage": "ホットストレージ",
+	"hotReplications": "ホットレプリケーション",
+	"freeEgress": "無料エグレス",
+	"outOfStorage": "ストレージが不足しています",
+	"outOfStorageDescription": "アカウントをアップグレードしてファイルのアップロードと同期を行います。"
 }

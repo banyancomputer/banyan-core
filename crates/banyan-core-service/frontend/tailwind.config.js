@@ -39,7 +39,8 @@ module.exports = {
 				button: {
 					primary: 'var(--button-primary)',
 					primaryText: 'var(--button-primary-text)',
-					highLight: 'var(--button-secondary)',
+					secondary: 'var(--button-secondary)',
+					secondaryText: 'var(--button-secondary-text)',
 					disabled: 'var(--disabled)',
 					contactSales: 'var(--contact-sales-button)'
 				},
@@ -57,6 +58,7 @@ module.exports = {
 					textSecondary: 'var(--navigation-textSecondary)',
 					border: 'var(--navigation-border)',
 					separator: 'var(--navigation-separator)',
+					storageUsageBackground: 'var(--storage-usage-background)'
 				},
 				table: {
 					cellBackground: 'var(--table-cellBackground)',

@@ -42,19 +42,19 @@ input {
 
 /* Button default styles */
 .btn-secondary {
-    @apply flex items-center justify-center font-semibold rounded-md bg-transparent border-2 border-button-primary text-text-900;
+    @apply flex items-center justify-center font-semibold border-button-secondary bg-button-secondary rounded-md text-button-secondaryText transition-all;
 }
 
 .btn-secondary:hover {
-    @apply bg-transparent border-button-primary;
+    @apply border-button-secondary bg-button-secondary brightness-90;
 }
 
 .btn-highlighted {
-    @apply flex items-center justify-center font-semibold rounded-md border-2 border-button-highLight bg-button-highLight text-white transition-all;
+    @apply flex items-center justify-center font-semibold rounded-md border-2 border-button-primary bg-button-primary text-white transition-all;
 };
 
 .btn-highlighted:hover {
-    @apply bg-button-highLight border-button-highLight shadow-lg;
+    @apply bg-button-primary border-button-primary shadow-lg;
 }
 
 .input {

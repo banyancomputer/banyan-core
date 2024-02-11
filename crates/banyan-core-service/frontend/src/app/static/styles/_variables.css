@@ -1,5 +1,4 @@
 :root {
-    --button-secondary: #0F3A4A;
     --error: #CB3535;
     --error-banner: #FDF0F0;;
     --beta-banner: #FFD7B2;
@@ -42,14 +41,16 @@
     --termsAndConditionsHead: #FBF4EF;
     --button-primary: #274D5C;
     --button-primary-text: #fff;
+    --button-secondary: #E7ECED;
+    --button-secondary-text: #0F3A4A;
     --termsAndConditionsHighlihgt: #263724;
     --view-invoice-text: #008ABD;
     --invoice-heading-background: #B39F8D1A;
     --contact-sales-button: #0066DE;
+    --storage-usage-background: #DCEBF9;
 }
 
 [prefers-color-scheme="dark"]:root {
-    --button-secondary: #0F3A4A;
     --error: #CB3535;
     --beta-banner: #FFD7B2;
     --beta-banner-border: #ED770B;
@@ -91,8 +92,11 @@
     --termsAndConditionsHead: #FBF4EF;
     --button-primary: #274D5C;
     --button-primary-text: #fff;
+    --button-secondary: #E7ECED;
+    --button-secondary-text: #0F3A4A;
     --termsAndConditionsHighlihgt: #263724;
     --view-invoice-text: #008ABD;
     --invoice-heading-background: #B39F8D1A;
     --contact-sales-button: #0066DE;
+    --storage-usage-background: #DCEBF9;
 }
