@@ -6,7 +6,7 @@ import { ArrowDown, Close } from '@static/images/common';
 
 export const Modal = () => {
     const modalRef = useRef<HTMLDivElement | null>(null);
-    const { modalState: { content, onBack, mandatory, className = 'p-6 rounded-md' }, closeModal, } = useModal();
+    const { modalState: { content, onBack, mandatory, closeButton = true, className = 'p-6 rounded-md' }, closeModal, } = useModal();
 
     const close = (event: React.MouseEvent<HTMLDivElement>) => {
         if (mandatory) { return; }
@@ -19,7 +19,7 @@ export const Modal = () => {
         <>
             {content &&
                 <div
-                    className="absolute w-screen h-screen bg flex items-center justify-center z-20 bg-slate-800 bg-opacity-80 backdrop-blur-sm text-text-900"
+                    className="absolute w-screen h-screen bg flex items-center justify-center z-max bg-[#0A0B0C99] text-text-900"
                     onClick={close}
                 >
                     <div
@@ -31,7 +31,7 @@ export const Modal = () => {
                                 <ArrowDown width="24px" height="24px" />
                             </button>
                         }
-                        {!mandatory &&
+                        {!mandatory || closeButton &&
                             <button
                                 className="absolute right-6 top-6"
                                 onClick={closeModal}

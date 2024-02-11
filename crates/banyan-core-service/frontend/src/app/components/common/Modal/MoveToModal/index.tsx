@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useIntl } from 'react-intl';
 
-import { SubmitButton } from '@components/common/SubmitButton';
+import { PrimaryButton } from '@components/common/PrimaryButton';
 import { FolderSelect } from '@components/common/FolderSelect';
+import { SecondaryButton } from '@components/common/SecondaryButton';
 
 import { useModal } from '@/app/contexts/modals';
 import { BrowserObject, Bucket } from '@/app/types/bucket';
@@ -58,13 +59,11 @@ export const MoveToModal: React.FC<{ file: BrowserObject; bucket: Bucket; path: 
                 />
             </div>
             <div className="mt-3 flex items-center gap-3 text-xs" >
-                <button
-                    className="btn-secondary flex-grow py-3 px-4"
-                    onClick={closeModal}
-                >
-                    {`${messages.cancel}`}
-                </button>
-                <SubmitButton
+                <SecondaryButton
+                    action={closeModal}
+                    text={`${messages.cancel}`}
+                />
+                <PrimaryButton
                     text={`${messages.moveTo}`}
                     action={move}
                     disabled={path.join('/') === selectedFolder.join('/')}

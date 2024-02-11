@@ -205,5 +205,17 @@
 	"summary": "Zusammenfassung",
 	"items": "Artikel",
 	"payment": "Zahlung",
-	"manageSubscriptions": "Abonnements verwalten"
+	"manageSubscriptions": "Abonnements verwalten",
+	"choosePlan": "Wählen Sie einen Plan, der zu Ihnen passt",
+	"plansDescription": "Erhalten Sie den Speicher, die Sicherheit und die Privatsphäre, die Sie verdienen, zu einem erschwinglichen Preis",
+	"currentPlan": "Aktueller Plan",
+	"needCustomPlan": "Benötigen Sie einen individuellen Plan?",
+	"contactSales": "Vertrieb kontaktieren",
+	"upgradeTo": "Upgrade auf",
+	"litePlanDescription": "Kostenlos, aber mit eingeschränkten Funktionen.",
+	"hotStorage": "Hot Storage",
+	"hotReplications": "Hot-Replikationen",
+	"freeEgress": "Kostenloser Egress",
+	"outOfStorage": "Sie haben keinen Speicher mehr",
+	"outOfStorageDescription": "Aktualisieren Sie Ihr Konto, um Dateien hochzuladen und zu synchronisieren."
 }

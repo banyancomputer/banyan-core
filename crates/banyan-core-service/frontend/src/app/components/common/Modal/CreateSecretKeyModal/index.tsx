@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useIntl } from 'react-intl';
 import { useForm } from 'react-hook-form';
 
-import { SubmitButton } from '@components/common/SubmitButton';
+import { PrimaryButton } from '@components/common/PrimaryButton';
 import { Input } from '@components/common/Input';
 
 import { useKeystore } from '@/app/contexts/keystore';
@@ -85,7 +85,7 @@ export const CreateSecretKeyModal = () => {
                     },
                 })}
             />
-            <SubmitButton
+            <PrimaryButton
                 text={`${messages.confirm}`}
                 disabled={!isDataCorrect}
                 className="py-2.5"

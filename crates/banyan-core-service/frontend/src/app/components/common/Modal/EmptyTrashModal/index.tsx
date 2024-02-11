@@ -1,9 +1,12 @@
 import { useIntl } from 'react-intl';
 
+import { SecondaryButton } from '@components/common/SecondaryButton';
+import { PrimaryButton } from '@components/common/PrimaryButton';
+
 import { useModal } from '@/app/contexts/modals';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
+
 import { Trash } from '@static/images/common';
-import { SubmitButton } from '@components/common/SubmitButton';
 
 export const EmptyTrashModal = () => {
     const { closeModal } = useModal();
@@ -23,13 +26,11 @@ export const EmptyTrashModal = () => {
                 </p>
             </div>
             <div className="mt-3 flex items-center gap-3 text-xs" >
-                <button
-                    className="btn-secondary flex-grow py-3 px-4"
-                    onClick={closeModal}
-                >
-                    {`${messages.cancel}`}
-                </button>
-                <SubmitButton
+                <SecondaryButton
+                    action={closeModal}
+                    text={`${messages.cancel}`}
+                />
+                <PrimaryButton
                     text={`${messages.delete}`}
                     action={clearTrash}
                 />

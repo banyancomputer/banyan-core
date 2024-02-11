@@ -4,6 +4,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useTomb } from './tomb';
 import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
+import { useModal } from './modals';
+import { HardStorageLimit } from '../components/common/Modal/HardStorageLimit';
 
 export interface UploadingFile { file: File; status: "pending" | "uploading" | "success" | "failed" };
 interface FilesUploadState {
@@ -20,8 +22,9 @@ interface FilesUploadState {
 export const FilesUploadContext = createContext<FilesUploadState>({} as FilesUploadState);
 
 export const FileUploadProvider: FC<{ children: ReactNode }> = ({ children }) => {
-    const { uploadFile } = useTomb();
+    const { storageUsage, uploadFile } = useTomb();
     const [files, setFiles] = useState<UploadingFile[]>([]);
+    const { openModal } = useModal();
     const [selectedBucket, setSelectedBucket] = useState<Bucket | null>(null);
     const [selectedPath, setSelectedPath] = useState<string[]>([]);
     const [selectedFolder, setSelectedFolder] = useState<BrowserObject | null>(null);
@@ -39,6 +42,11 @@ export const FileUploadProvider: FC<{ children: ReactNode }> = ({ children }) =>
 
         for (const file of files) {
             try {
+                if (file.file.size > storageUsage.hardLimit - storageUsage.usage) {
+                    setFiles(prev => prev.map(file => file.status === 'pending' ? { ...file, status: 'failed' } : file));
+                    openModal(<HardStorageLimit />, null, false, 'p-0', false);
+                    return;
+                };
                 const arrayBuffer = await file.file.arrayBuffer();
                 file.status = 'uploading';
                 setFiles(prev => [...prev]);
@@ -56,10 +64,11 @@ export const FileUploadProvider: FC<{ children: ReactNode }> = ({ children }) =>
                 ToastNotifications.close();
                 setFiles([]);
             }, 3000);
-        }
+        };
     };
 
     const retryUpload = async (file: UploadingFile) => {
+        if (file.file.size > storageUsage.hardLimit - storageUsage.usage) { return };
         try {
             const arrayBuffer = await file.file.arrayBuffer();
             file.status = 'uploading';
@@ -70,7 +79,7 @@ export const FileUploadProvider: FC<{ children: ReactNode }> = ({ children }) =>
         } catch (error: any) {
             file.status = 'failed';
             setFiles(prev => [...prev]);
-        }
+        };
     };
 
     const deleteFromUploadList = (file: UploadingFile) => {

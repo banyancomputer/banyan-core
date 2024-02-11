@@ -47,7 +47,7 @@ const Home = () => {
                 </h2>
                 <div className="flex items-stretch gap-2">
                     <button
-                        className="btn-highlighted gap-2 w-[138px] py-2 px-4 text-sm"
+                        className="btn-primary gap-2 w-[138px] py-2 px-4 text-sm"
                         onClick={uploadFile}
                     >
                         <Upload />

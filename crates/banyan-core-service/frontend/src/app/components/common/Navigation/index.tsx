@@ -11,6 +11,7 @@ import { Bucket } from '@app/types/bucket';
 import { preventDefaultDragAction } from '@utils/dragHandlers';
 
 import { ActiveDirectory, ChevronUp, Directory, Logo } from '@static/images/common';
+import { StorageUsage } from '../StorageUsage';
 
 export const Navigation = () => {
 	const { buckets } = useTomb();
@@ -123,6 +124,7 @@ export const Navigation = () => {
 					</ul>
 				}
 			</div>
+			<StorageUsage />
 		</nav>
 	);
 };
