@@ -25,7 +25,6 @@ pin_project! {
     }
 }
 
-// impl<F, ResBody, ReqBody, E, OnResponseEndT> Future for ResponseFuture<F, OnResponseEndT, ReqBody>
 impl<F, ResBody, E, OnResponseEndT> Future for ResponseFuture<F, OnResponseEndT>
 where
     F: Future<Output = Result<Response<ResBody>, E>>,

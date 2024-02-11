@@ -312,7 +312,7 @@ mod tests {
             &headers,
             request_info,
             status_code,
-            |req_info, res_info| {
+            |req_info: &RequestInfo, res_info: &ResponseInfo| {
                 assert_eq!(req_info.body_bytes + req_info.header_bytes, 0);
                 assert_eq!(res_info.body_bytes + res_info.header_bytes, 15);
             },
@@ -333,7 +333,7 @@ mod tests {
             &headers,
             request_info,
             status_code,
-            |req_info, res_info| {
+            |req_info: &RequestInfo, res_info: &ResponseInfo| {
                 assert_eq!(req_info.body_bytes + req_info.header_bytes, 0);
                 assert_eq!(res_info.body_bytes + res_info.header_bytes, 0);
             },

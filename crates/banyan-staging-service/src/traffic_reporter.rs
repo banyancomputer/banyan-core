@@ -125,7 +125,7 @@ impl TrafficReporter {
 
         let traffic_endpoint = self
             .platform_hostname()
-            .join("/api/metrics/traffic")
+            .join("/api/v1/metrics/traffic")
             .unwrap();
 
         let meter_traffic_request = MeterTrafficRequest {
