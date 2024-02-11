@@ -63,7 +63,7 @@ const Home = () => {
                 </div>
             </div>
             <Fallback shouldRender={!areBucketsLoading}>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-3 gap-3 xl:grid-cols-4 ">
                     {
                         buckets.map(bucket =>
                             <Bucket bucket={bucket} key={bucket.id} />
