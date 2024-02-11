@@ -12,14 +12,30 @@ thiserror = "^1"
 blake3 = "^1"
 bytes = "^1"
 cid = { version = "^0.10", features = ["serde-codec"] }
-axum = { version = "^0.6", features = ["headers", "http2", "macros", "multipart", "tracing"] }
+axum = { version = "^0.6", features = [
+  "headers",
+  "http2",
+  "macros",
+  "multipart",
+  "tracing",
+] }
 serde_json = "^1"
 
-banyan-object-store = { path = "../banyan-object-store", version = "^0.1" }
-tracing = { version = "^0.1", features = ["max_level_debug", "release_max_level_info"] }
+tracing = { version = "^0.1", features = [
+  "max_level_debug",
+  "release_max_level_info",
+] }
 tracing-appender = "^0.2"
-tracing-futures = { version = "^0.2", default-features = false, features = ["std-future"] }
-tracing-subscriber = { version = "^0.3", default-features = false, features = ["env-filter", "fmt", "local-time", "time", "tracing"] }
+tracing-futures = { version = "^0.2", default-features = false, features = [
+  "std-future",
+] }
+tracing-subscriber = { version = "^0.3", default-features = false, features = [
+  "env-filter",
+  "fmt",
+  "local-time",
+  "time",
+  "tracing",
+] }
 
 [dev-dependencies]
 tokio = { version = "^1", features = ["macros"] }

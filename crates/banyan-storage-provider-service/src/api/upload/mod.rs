@@ -4,7 +4,7 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::TypedHeader;
 use banyan_car_analyzer::{CarReport, StreamingCarAnalyzer, StreamingCarAnalyzerError};
-use banyan_object_store::ObjectStore;
+use banyan_object_store::{ObjectStore, ObjectStorePath};
 use banyan_task::TaskLikeExt;
 use futures::{TryStream, TryStreamExt};
 use serde::{Deserialize, Serialize};
@@ -139,7 +139,7 @@ async fn process_upload_stream<S>(
 where
     S: TryStream<Ok = bytes::Bytes, Error = multer::Error> + Unpin,
 {
-    let mut car_analyzer = StreamingCarAnalyzer::new(&upload.base_path, store);
+    let mut car_analyzer = StreamingCarAnalyzer::new();
     let mut warning_issued = false;
     let mut hasher = blake3::Hasher::new();
     while let Some(chunk) = stream.try_next().await.map_err(UploadError::ReadFailed)? {
@@ -151,7 +151,16 @@ where
                 .to_string_of_base(cid::multibase::Base::Base64Url)
                 .expect("parsed cid to unparse");
 
-            write_block_to_tables(db, &upload.id, &cid_string, block.length() as i64).await?;
+            let file_path = format!("{}/{}.bin", upload.base_path, cid_string);
+            let obj_path = ObjectStorePath::from(file_path);
+            let length = block.length() as i64;
+
+            store
+                .put(&obj_path, bytes::Bytes::from(block.into_data()))
+                .await
+                .map_err(UploadError::ObjectStore)?;
+
+            write_block_to_tables(db, &upload.id, &cid_string, length).await?;
         }
 
         if car_analyzer.seen_bytes() as usize > expected_size && !warning_issued {
