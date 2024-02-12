@@ -18,14 +18,12 @@ pub async fn handler(
     let database = state.database();
     let mut conn = database.begin().await?;
 
-    /*
     if !Notification::is_owned_by_user_id(&mut conn, &notification_id, &user_id).await? {
         let err_msg = serde_json::json!({"msg": "not found"});
         return Ok((StatusCode::NOT_FOUND, Json(err_msg)).into_response());
     }
 
     Notification::delete(&mut conn, &notification_id).await?;
-    */
 
     conn.commit().await?;
 
