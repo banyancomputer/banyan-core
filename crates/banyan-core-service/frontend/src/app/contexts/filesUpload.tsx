@@ -1,4 +1,5 @@
 import React, { FC, ReactNode, createContext, useContext, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import { useTomb } from './tomb';
 import { BrowserObject, Bucket } from '@/app/types/bucket';
@@ -27,11 +28,17 @@ export const FileUploadProvider: FC<{ children: ReactNode }> = ({ children }) =>
     const [selectedBucket, setSelectedBucket] = useState<Bucket | null>(null);
     const [selectedPath, setSelectedPath] = useState<string[]>([]);
     const [selectedFolder, setSelectedFolder] = useState<BrowserObject | null>(null);
+    const location = useLocation();
+    const navigate = useNavigate();
 
     const uploadFiles = async (bucket: Bucket, path: string[], folder?: BrowserObject) => {
         setSelectedBucket(bucket);
         setSelectedPath(path);
         setSelectedFolder(folder || null);
+
+        if (!location.pathname.includes('drive')) {
+            navigate(`/drive/${bucket.id}`);
+        };
 
         for (const file of files) {
             try {
