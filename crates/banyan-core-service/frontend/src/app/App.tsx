@@ -72,7 +72,6 @@ const App = () => {
                                             <FilePreviewProvider>
                                                 <Modal />
                                                 <FilePreview />
-                                                <Modal />
                                                 <Notifications />
                                                 <Suspense>
                                                     <Routes />
