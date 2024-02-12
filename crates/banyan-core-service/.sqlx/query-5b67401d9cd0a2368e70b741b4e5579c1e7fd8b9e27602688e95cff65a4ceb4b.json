@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n            SELECT * \n            FROM notifications\n            WHERE user_id = $1;\n        ",
+  "query": "\n            SELECT id, user_id, dismissable, message, message_key, severity as 'severity: NotificationSeverity', created_at \n            FROM notifications\n            WHERE user_id = $1;\n        ",
   "describe": {
     "columns": [
       {
@@ -29,7 +29,7 @@
         "type_info": "Text"
       },
       {
-        "name": "severity",
+        "name": "severity: NotificationSeverity",
         "ordinal": 5,
         "type_info": "Text"
       },
@@ -52,5 +52,5 @@
       false
     ]
   },
-  "hash": "67c1593e01121ea1ef8f8e58fbf8f4c8ed29b136f8f42177dff4d82ba961bb99"
+  "hash": "5b67401d9cd0a2368e70b741b4e5579c1e7fd8b9e27602688e95cff65a4ceb4b"
 }

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::database::models::Notification;
+use crate::database::models::{Notification, NotificationSeverity};
 
 #[derive(Deserialize, Serialize)]
 pub struct ApiNotification {
@@ -9,7 +9,7 @@ pub struct ApiNotification {
     pub dismissable: bool,
     pub message: String,
     pub message_key: String,
-    pub severity: String,
+    pub severity: NotificationSeverity,
     pub created_at: i64,
 }
 

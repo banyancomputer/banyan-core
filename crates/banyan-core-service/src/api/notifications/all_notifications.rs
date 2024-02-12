@@ -1,10 +1,10 @@
-use axum::extract::{Json, Path, State};
+use axum::extract::{Json, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
 use crate::api::models::ApiNotification;
 use crate::app::AppState;
-use crate::database::models::Notification;
+use crate::database::models::{Notification, NotificationSeverity};
 use crate::extractors::UserIdentity;
 
 pub async fn handler(
@@ -17,7 +17,7 @@ pub async fn handler(
     let query_result = sqlx::query_as!(
         Notification,
         r#"
-            SELECT * 
+            SELECT id, user_id, dismissable, message, message_key, severity as 'severity: NotificationSeverity', created_at 
             FROM notifications
             WHERE user_id = $1;
         "#,

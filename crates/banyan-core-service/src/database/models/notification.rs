@@ -1,7 +1,7 @@
 use serde::Serialize;
 use time::OffsetDateTime;
 
-use crate::database::DatabaseConnection;
+use crate::database::{models::NotificationSeverity, DatabaseConnection};
 
 #[derive(Debug, Serialize, sqlx::FromRow)]
 pub struct Notification {
@@ -10,7 +10,7 @@ pub struct Notification {
     pub dismissable: bool,
     pub message: String,
     pub message_key: String,
-    pub severity: String,
+    pub severity: NotificationSeverity,
     pub created_at: OffsetDateTime,
 }
 
