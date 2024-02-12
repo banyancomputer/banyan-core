@@ -1,6 +1,8 @@
 import { useIntl } from 'react-intl';
 import { useParams } from 'react-router-dom';
 
+import { SecondaryButton } from '@components/common/SecondaryButton';
+
 import { useTomb } from '@/app/contexts/tomb';
 import { publicPemWrap } from '@app/utils';
 
@@ -36,9 +38,13 @@ const RegisterDevice = () => {
 						</p>
 					</div>
 					<div className="mt-3 flex items-center gap-3 text-xs" >
+						<SecondaryButton
+							className="w-1/2"
+							action={() => window.location.href = '/'}
+							text={`${messages.cancel}`}
+						/>
 						<button
 							className="btn-secondary w-1/2 py-3 px-4"
-							onClick={() => window.location.href = '/'}
 						>
 							{`${messages.cancel}`}
 						</button>

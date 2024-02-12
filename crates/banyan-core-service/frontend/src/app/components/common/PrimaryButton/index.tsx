@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 
-export const SubmitButton: React.FC<{ text: string; action?: () => void; disabled?: boolean; className?: string; type?: 'button' | 'reset' | 'submit' | undefined }> =
+export const PrimaryButton: React.FC<{ text: string; action?: () => void; disabled?: boolean; className?: string; type?: 'button' | 'reset' | 'submit' | undefined }> =
     ({
         action = () => { },
         className,
@@ -19,7 +19,7 @@ export const SubmitButton: React.FC<{ text: string; action?: () => void; disable
             return () => {
                 window.removeEventListener('keypress', listener);
             };
-        });
+        }, []);
 
         return (
             <button

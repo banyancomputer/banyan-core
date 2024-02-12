@@ -6,13 +6,14 @@ export interface StateInterface {
 	content: ReactNode | null;
 	onBack: null | (() => void);
 	mandatory: boolean;
+	closeButton: boolean;
 	className?: string
 }
 
 interface ContextState {
 	modalState: StateInterface;
 	setModalState: Dispatch<SetStateAction<StateInterface>>;
-	openModal: (content: ReactNode, onBack?: null | (() => void), mandatory?: boolean, className?: string) => void;
+	openModal: (content: ReactNode, onBack?: null | (() => void), mandatory?: boolean, className?: string, closeButton?: boolean,) => void;
 	openEscrowModal: (escrowed: boolean) => void;
 	closeModal: () => void;
 };
@@ -23,17 +24,19 @@ const initialState: StateInterface = {
 	content: null,
 	onBack: null,
 	mandatory: false,
+	closeButton: true,
 	className: ''
 };
 
 export const ModalProvider: FC<{ children: ReactNode }> = ({ children }) => {
 	const [modalState, setModalState] = useState(initialState);
 
-	const openModal = (content: ReactNode, onBack: null | (() => void) = null, mandatory: boolean = false, className?: string) => {
+	const openModal = (content: ReactNode, onBack: null | (() => void) = null, mandatory: boolean = false, className?: string, closeButton: boolean = true) => {
 		setModalState({
 			content,
 			onBack,
 			mandatory,
+			closeButton,
 			className
 		});
 	};
@@ -43,6 +46,7 @@ export const ModalProvider: FC<{ children: ReactNode }> = ({ children }) => {
 			content: escrowed ? <EnterSecretKeyModal /> : <CreateSecretKeyModal />,
 			onBack: null,
 			mandatory: true,
+			closeButton: false
 		});
 	};
 
