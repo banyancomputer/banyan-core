@@ -165,12 +165,28 @@ impl User {
         conn: &mut DatabaseConnection,
         region: &str,
     ) -> Result<(), sqlx::Error> {
+        // Retrieve the existing preference, falling back on the object
+        let existing_preference: String = sqlx::query_scalar!(
+            r#"
+                SELECT region_preference 
+                FROM users 
+                WHERE id = $1
+                AND region_preference IS NOT NULL;
+            "#,
+            self.id,
+        )
+        .fetch_one(&mut *conn)
+        .await?
+        .unwrap_or(
+            self.region_preference
+                .clone()
+                .ok_or(sqlx::Error::RowNotFound)?,
+        );
+
         // Create the new string using the existing string
         let new_preference = {
-            let new_preference = self
-                .region_preference
-                .clone()
-                .ok_or(sqlx::Error::RowNotFound)?
+            // Filter out any occurrences of the region to remove
+            let new_preference = existing_preference
                 .split(',')
                 .filter(|existing| existing != &region)
                 .collect::<Vec<&str>>()
