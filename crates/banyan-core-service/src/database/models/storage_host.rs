@@ -26,7 +26,7 @@ impl SelectedStorageHost {
     ) -> Result<Option<Self>, sqlx::Error> {
         // Select a storage host with enough free space, ensuring it is also within the region if
         // one is specified.
-        sqlx::query_as!(
+        let region_specific_host: Option<Self> = sqlx::query_as!(
             Self,
             r#"
                 SELECT id, name, url, used_storage, reserved_storage, available_storage, fingerprint, pem
@@ -40,7 +40,25 @@ impl SelectedStorageHost {
             region,
         )
         .fetch_optional(&mut *conn)
-        .await
+        .await?;
+
+        if region_specific_host.is_some() {
+            Ok(region_specific_host)
+        } else {
+            sqlx::query_as!(
+                Self,
+                r#"
+                    SELECT id, name, url, used_storage, reserved_storage, available_storage, fingerprint, pem
+                    FROM storage_hosts
+                    WHERE (available_storage - reserved_storage) > $1
+                    ORDER BY RANDOM()
+                    LIMIT 1;
+                "#,
+                required_bytes, 
+            )
+            .fetch_optional(&mut *conn)
+            .await
+        }
     }
 }
 
