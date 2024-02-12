@@ -88,7 +88,7 @@ const BucketHeader = () => {
                 {selectedBucket?.bucketType !== 'backup' &&
                     <div className="flex items-stretch gap-2">
                         <button
-                            className="btn-highlighted bg-button-highLight gap-2 w-40 py-2 px-4 bg-"
+                            className="btn-primary gap-2 w-40 py-2 px-4 bg-"
                             onClick={uploadFile}
                         >
                             <Upload />

@@ -126,6 +126,49 @@ impl Metadata {
         Ok(())
     }
 
+    /// Assesses the metadata associated with a given bucket to delete no longer valuable CAR files
+    pub async fn delete_outdated(
+        conn: &mut DatabaseConnection,
+        bucket_id: &str,
+    ) -> Result<(), sqlx::Error> {
+        let now = OffsetDateTime::now_utc();
+        // Mark all the the metadata rows 'deleted' and update their timestamps
+        // Only do this if the rows:
+        // 1. are outdated
+        // 2. are not one of the five most recent 'outdated' metadata rows
+        // 3. have no associated snapshot
+        let deletion_result = sqlx::query!(
+            r#"
+                UPDATE metadata SET state = 'deleted', updated_at = $1
+                WHERE state = 'outdated'
+                AND bucket_id = $2
+                AND id NOT IN (
+                    SELECT id FROM metadata
+                    WHERE bucket_id = $2
+                    AND state = 'outdated'
+                    ORDER BY updated_at DESC
+                    LIMIT 5
+                )
+                AND id NOT IN (
+                    SELECT s.metadata_id FROM snapshots s
+                    JOIN metadata AS m ON s.metadata_id = m.id
+                    JOIN buckets AS b ON b.id = m.bucket_id 
+                    WHERE bucket_id = $2 
+                );
+            "#,
+            now,
+            bucket_id,
+        )
+        .execute(&mut *conn)
+        .await?;
+
+        tracing::info!(
+            "{} metadata have been marked as deleted and have had their CAR files removed",
+            deletion_result.rows_affected()
+        );
+        Ok(())
+    }
+
     /// Marks a metadata upload as complete. This is only for the metadata, the actual filesystem
     /// content will still need to be uploaded to a storage provider directly which will check in
     /// before making this new version the current one.
@@ -162,41 +205,101 @@ mod tests {
     use time::macros::datetime;
 
     use super::*;
-    use crate::database::models::MetadataState;
+    use crate::database::models::{MetadataState as MS, SnapshotState};
     use crate::database::test_helpers::*;
 
     #[tokio::test]
-    async fn test_expected_getting_marked_current() {
+    async fn mark_current() -> Result<(), sqlx::Error> {
         let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
         let user_id = sample_user(&mut conn, "user@domain.tld").await;
         let bucket_id = sample_bucket(&mut conn, &user_id).await;
 
-        let pending_metadata_id = pending_metadata(&mut conn, &bucket_id, 1).await;
-        Metadata::mark_current(&mut conn, &bucket_id, &pending_metadata_id, None)
-            .await
-            .expect("marking current");
-        assert_metadata_in_state(&mut conn, &pending_metadata_id, MetadataState::Current).await;
+        let failed_id = sample_metadata(&mut conn, &bucket_id, 1, MS::UploadFailed).await;
+        let deleted_id = sample_metadata(&mut conn, &bucket_id, 2, MS::Deleted).await;
+        let pending_id = sample_metadata(&mut conn, &bucket_id, 3, MS::Pending).await;
+        let uploading_id = sample_metadata(&mut conn, &bucket_id, 4, MS::Uploading).await;
+        let current_id = sample_metadata(&mut conn, &bucket_id, 5, MS::Current).await;
+        let metadata_id = sample_metadata(&mut conn, &bucket_id, 6, MS::Pending).await;
 
-        let uploading_metadata_id =
-            sample_metadata(&mut conn, &bucket_id, 1, MetadataState::Uploading).await;
-        Metadata::mark_current(&mut conn, &bucket_id, &uploading_metadata_id, Some(1000))
-            .await
-            .expect("marking current");
-        assert_metadata_in_state(&mut conn, &uploading_metadata_id, MetadataState::Current).await;
-        assert_metadata_in_state(&mut conn, &pending_metadata_id, MetadataState::Outdated).await;
+        // Only the most recent of these metadata are to me marked current
+        Metadata::mark_current(&mut conn, &bucket_id, &metadata_id, None).await?;
+        assert_metadata_in_state(&mut conn, &metadata_id, MS::Current).await;
+        // Assert that only the formerly current id was marked as outdated
+        assert_metadata_in_state(&mut conn, &failed_id, MS::UploadFailed).await;
+        assert_metadata_in_state(&mut conn, &deleted_id, MS::Deleted).await;
+        assert_metadata_in_state(&mut conn, &pending_id, MS::Pending).await;
+        assert_metadata_in_state(&mut conn, &uploading_id, MS::Uploading).await;
+        assert_metadata_in_state(&mut conn, &current_id, MS::Outdated).await;
 
         // The metadata is already outdated, it shouldn't be capable of becoming the current
         // metadata.
-        let result =
-            Metadata::mark_current(&mut conn, &bucket_id, &pending_metadata_id, None).await;
-        assert!(result.is_err());
-        assert_metadata_in_state(&mut conn, &pending_metadata_id, MetadataState::Outdated).await;
+        assert!(
+            Metadata::mark_current(&mut conn, &bucket_id, &current_id, None)
+                .await
+                .is_err()
+        );
+
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_missing_metadata_fails() {
+    async fn delete_outdated() -> Result<(), sqlx::Error> {
+        let db = setup_database().await;
+        let mut conn = db.begin().await.expect("connection");
+
+        let user_id = sample_user(&mut conn, "user@domain.tld").await;
+        let bucket_id = sample_bucket(&mut conn, &user_id).await;
+
+        // Accumulate a list of the metadata IDs that we're working with
+        let mut ids = Vec::new();
+        for mut i in 0..=15 {
+            // Create a pending metadata
+            let metadata_id = sample_metadata(&mut conn, &bucket_id, i + 1, MS::Pending).await;
+            // Mark it as current, verify its state
+            Metadata::mark_current(&mut conn, &bucket_id, &metadata_id, None).await?;
+            assert_metadata_in_state(&mut conn, &metadata_id, MS::Current).await;
+            ids.push(metadata_id);
+
+            // Use this to double check to ensure that not all the olds are being marked deleted,
+            // and that the new ones are being protected based on state, not just recency
+            if i == 12 || i == 5 {
+                i += 1;
+                ids.push(sample_metadata(&mut conn, &bucket_id, i + 1, MS::UploadFailed).await);
+            }
+        }
+
+        // Create a snapshot on one of the metadata, which will be exempt from deletion
+        // even though it is one of the oldest metadata rows
+        let snapshot_metadata_id = &ids[2];
+        let _ = create_snapshot(&mut conn, snapshot_metadata_id, SnapshotState::Pending).await;
+
+        // Delete outdated CAR files and mark as deleted
+        assert!(Metadata::delete_outdated(&mut conn, &bucket_id)
+            .await
+            .is_ok());
+
+        // Ensure each metadata has the correct state
+        for (index, id) in ids.iter().enumerate() {
+            let expected_state = if index == ids.len() - 1 {
+                MS::Current
+            } else if index == 14 || index == 6 {
+                MS::UploadFailed
+            } else if index >= ids.len() - 7 || id == snapshot_metadata_id {
+                MS::Outdated
+            } else {
+                MS::Deleted
+            };
+            println!("asserting i {index}\tid {id}\tstate {:?}", expected_state);
+            assert_metadata_in_state(&mut conn, id, expected_state).await;
+        }
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn missing_metadata_fails() {
         let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
@@ -220,7 +323,7 @@ mod tests {
     // interpretable as OffsetDateTime).
 
     #[tokio::test]
-    async fn test_metadata_timestamps_have_precision() {
+    async fn metadata_timestamps_have_precision() {
         let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
@@ -233,7 +336,7 @@ mod tests {
             &bucket_id,
             "root-cid",
             "metadata-cid",
-            MetadataState::Current,
+            MS::Current,
             Some(timestamp),
             None,
         )
@@ -249,7 +352,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_metadata_timestamps_have_no_hour_truncation() {
+    async fn metadata_timestamps_have_no_hour_truncation() {
         let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
@@ -262,7 +365,7 @@ mod tests {
             &bucket_id,
             "root-cid",
             "metadata-cid",
-            MetadataState::Current,
+            MS::Current,
             Some(timestamp),
             None,
         )
@@ -302,7 +405,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_metadata_timestamps_have_subsecond_truncation() {
+    async fn metadata_timestamps_have_subsecond_truncation() {
         let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
@@ -315,7 +418,7 @@ mod tests {
             &bucket_id,
             "root-cid",
             "metadata-cid",
-            MetadataState::Current,
+            MS::Current,
             Some(timestamp),
             None,
         )
@@ -355,7 +458,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_default_sqlx_timestamps_have_no_precision_and_are_interpretable() {
+    async fn default_sqlx_timestamps_have_no_precision_and_are_interpretable() {
         let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
@@ -365,7 +468,7 @@ mod tests {
         // Create a metadata row with no timestamp values -- this should use the defaults
         let root_cid = "root-cid";
         let metadata_cid = "metadata-cid";
-        let state = MetadataState::Current;
+        let state = MS::Current;
         let metadata_id = sqlx::query_scalar!(
             r#"INSERT INTO
                     metadata (bucket_id, root_cid, metadata_cid, expected_data_size, state)
@@ -405,7 +508,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_datetime_now_sqlx_timestamps_have_no_precision_and_are_interpretable() {
+    async fn datetime_now_sqlx_timestamps_have_no_precision_and_are_interpretable() {
         let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
@@ -417,7 +520,7 @@ mod tests {
             &bucket_id,
             "root-cid",
             "metadata-cid",
-            MetadataState::Current,
+            MS::Current,
             None,
             None,
         )
@@ -457,7 +560,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_sqlx_and_precise_timestamps_are_orderable() {
+    async fn sqlx_and_precise_timestamps_are_orderable() {
         let db = setup_database().await;
         let mut conn = db.begin().await.expect("connection");
 
@@ -470,7 +573,7 @@ mod tests {
         // Create a metadata row with no timestamp values -- this should use the defaults
         let root_cid = "root-cid";
         let metadata_cid = "metadata-cid";
-        let state = MetadataState::Current;
+        let state = MS::Current;
         let first_metadata_id = sqlx::query_scalar!(
             r#"INSERT INTO
                     metadata (bucket_id, root_cid, metadata_cid, expected_data_size, state)
@@ -492,7 +595,7 @@ mod tests {
             &bucket_id,
             "root-cid",
             "metadata-cid",
-            MetadataState::Current,
+            MS::Current,
             Some(timestamp),
             None,
         )
@@ -541,7 +644,7 @@ mod tests {
             &bucket_id,
             "root-cid",
             "metadata-cid",
-            MetadataState::Current,
+            MS::Current,
             Some(timestamp),
             None,
         )
@@ -550,7 +653,7 @@ mod tests {
         // Create a second metadata row with no timestamp values -- this should use the defaults
         let root_cid = "root-cid";
         let metadata_cid = "metadata-cid";
-        let state = MetadataState::Current;
+        let state = MS::Current;
         let second_metadata_id = sqlx::query_scalar!(
             r#"INSERT INTO
                     metadata (bucket_id, root_cid, metadata_cid, expected_data_size, state)

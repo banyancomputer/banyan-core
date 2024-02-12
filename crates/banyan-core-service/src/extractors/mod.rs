@@ -2,7 +2,7 @@
 
 mod admin_identity;
 mod api_identity;
-mod data_store;
+mod object_store;
 mod server_base;
 mod service_key;
 mod session_identity;
@@ -15,7 +15,6 @@ use std::time::Duration;
 
 pub use admin_identity::AdminIdentity;
 pub use api_identity::ApiIdentity;
-pub use data_store::DataStore;
 pub use server_base::ServerBase;
 pub use session_identity::SessionIdentity;
 pub use storage_provider_identity::StorageProviderIdentity;

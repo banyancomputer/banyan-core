@@ -318,14 +318,6 @@ pub(crate) fn normalize_cids<'a>(
     })
 }
 
-pub(crate) async fn pending_metadata(
-    conn: &mut DatabaseConnection,
-    bucket_id: &str,
-    counter: usize,
-) -> String {
-    sample_metadata(conn, bucket_id, counter, MetadataState::Pending).await
-}
-
 pub(crate) async fn sample_bucket(conn: &mut DatabaseConnection, user_id: &str) -> String {
     create_hot_bucket(conn, user_id, "Habernero").await
 }
@@ -362,7 +354,6 @@ pub(crate) async fn sample_metadata(
 ) -> String {
     let root_cid = format!("root-cid-{}", counter);
     let metadata_cid = format!("metadata-cid-{}", counter);
-
     create_metadata(conn, bucket_id, &metadata_cid, &root_cid, state, None, None).await
 }
 
