@@ -1,7 +1,8 @@
 use serde::Serialize;
 use time::OffsetDateTime;
 
-use crate::database::{models::NotificationSeverity, DatabaseConnection};
+use crate::database::models::NotificationSeverity;
+use crate::database::DatabaseConnection;
 
 #[derive(Debug, Serialize, sqlx::FromRow)]
 pub struct Notification {
