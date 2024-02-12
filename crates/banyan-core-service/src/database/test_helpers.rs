@@ -3,6 +3,7 @@ use std::ops::Range;
 use sqlx::sqlite::{SqlitePoolOptions, SqliteQueryResult};
 use time::OffsetDateTime;
 
+use super::models::NewStorageGrant;
 use crate::database::models::{BucketType, DealState, MetadataState, SnapshotState, StorageClass};
 use crate::database::{Database, DatabaseConnection};
 
@@ -258,6 +259,62 @@ pub(crate) async fn create_metadata(
     .fetch_one(conn)
     .await
     .expect("metadata creation")
+}
+
+pub(crate) async fn create_storage_grant(
+    conn: &mut DatabaseConnection,
+    storage_host_id: &str,
+    user_id: &str,
+    authorized_amount: i64,
+) -> String {
+    NewStorageGrant {
+        storage_host_id,
+        user_id,
+        authorized_amount,
+    }
+    .save(conn)
+    .await
+    .expect("storage grant creation")
+}
+
+pub(crate) async fn redeem_storage_grant(
+    conn: &mut DatabaseConnection,
+    storage_host_id: &str,
+    storage_grant_id: &str,
+) {
+    sqlx::query!(
+        r#"
+            UPDATE storage_grants
+            SET redeemed_at = CURRENT_TIMESTAMP
+            WHERE storage_host_id = $1
+            AND id = $2
+            AND redeemed_at IS NULL;
+        "#,
+        storage_host_id,
+        storage_grant_id
+    )
+    .execute(conn)
+    .await
+    .expect("storage grant redemption");
+}
+
+pub(crate) async fn associate_upload(
+    conn: &mut DatabaseConnection,
+    storage_host_id: &str,
+    metadata_id: &str,
+    storage_grant_id: &str,
+) {
+    sqlx::query!(
+        r#"INSERT INTO storage_hosts_metadatas_storage_grants
+               (storage_host_id, metadata_id, storage_grant_id)
+               VALUES ($1, $2, $3);"#,
+        storage_host_id,
+        metadata_id,
+        storage_grant_id,
+    )
+    .execute(&mut *conn)
+    .await
+    .expect("associate upload");
 }
 
 pub(crate) async fn create_storage_host(

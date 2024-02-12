@@ -1,6 +1,7 @@
 use axum::extract::{Json, Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
+use banyan_task::TaskLikeExt;
 use serde::Deserialize;
 use uuid::Uuid;
 
@@ -8,6 +9,7 @@ use crate::app::AppState;
 use crate::database::models::Metadata;
 use crate::database::DatabaseConnection;
 use crate::extractors::StorageProviderIdentity;
+use crate::tasks::HostCapacityTask;
 
 /// When a client finishes uploading their data to either staging or a storage host, the storage
 /// host will make a request to this end point letting us know that we have all the data safely
@@ -20,7 +22,7 @@ pub async fn handler(
 ) -> Result<Response, ReportUploadError> {
     let db_metadata_id = metadata_id.to_string();
 
-    let database = state.database();
+    let mut database = state.database();
     let mut db_conn = database.acquire().await?;
 
     redeem_storage_grant(
@@ -78,11 +80,19 @@ pub async fn handler(
     .await
     .map_err(ReportUploadError::MarkCurrentFailed)?;
 
-    // Now that the state has changed, delete any CAR files associated with
-    // states that are too old and not snapshotted
+    // Now that the state has changed, mark old unsnapshotted metadatas as being deleted
     Metadata::delete_outdated(&mut db_conn, &bucket_id)
         .await
         .map_err(ReportUploadError::DeleteOutdatedFailed)?;
+
+    // Close the connection to prevent locking
+    db_conn.close().await?;
+
+    // Now, let's re-evaluate the capacity of that storage host
+    HostCapacityTask::new(storage_provider.id)
+        .enqueue::<banyan_task::SqliteTaskStore>(&mut database)
+        .await
+        .map_err(ReportUploadError::UnableToEnqueueTask)?;
 
     Ok((StatusCode::NO_CONTENT, ()).into_response())
 }
@@ -113,6 +123,9 @@ pub enum ReportUploadError {
 
     #[error("error occurred while recording a blocks present: {0}")]
     UnableToRecordBlock(sqlx::Error),
+
+    #[error("could not enqueue task: {0}")]
+    UnableToEnqueueTask(banyan_task::TaskStoreError),
 }
 
 impl IntoResponse for ReportUploadError {
@@ -143,7 +156,6 @@ async fn associate_upload(
 
     Ok(())
 }
-
 async fn redeem_storage_grant(
     conn: &mut DatabaseConnection,
     provider_id: &str,
