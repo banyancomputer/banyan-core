@@ -11,6 +11,7 @@ pub struct SelectedStorageHost {
     pub used_storage: i64,
     pub reserved_storage: i64,
     pub available_storage: i64,
+    pub region: Option<String>,
     pub fingerprint: String,
     pub pem: String,
 }
@@ -29,7 +30,7 @@ impl SelectedStorageHost {
         let region_specific_host: Option<Self> = sqlx::query_as!(
             Self,
             r#"
-                SELECT id, name, url, used_storage, reserved_storage, available_storage, fingerprint, pem
+                SELECT *
                 FROM storage_hosts
                 WHERE (available_storage - reserved_storage) > $1
                 AND ($2 IS NULL OR region = $2) 
@@ -48,13 +49,13 @@ impl SelectedStorageHost {
             sqlx::query_as!(
                 Self,
                 r#"
-                    SELECT id, name, url, used_storage, reserved_storage, available_storage, fingerprint, pem
+                    SELECT *
                     FROM storage_hosts
                     WHERE (available_storage - reserved_storage) > $1
                     ORDER BY RANDOM()
                     LIMIT 1;
                 "#,
-                required_bytes, 
+                required_bytes,
             )
             .fetch_optional(&mut *conn)
             .await
