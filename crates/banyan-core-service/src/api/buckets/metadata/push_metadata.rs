@@ -6,10 +6,10 @@ use axum::headers::ContentType;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::{Json, TypedHeader};
+use banyan_object_store::{ObjectStore, ObjectStoreError, ObjectStorePath};
 use futures::{TryStream, TryStreamExt};
 use jwt_simple::prelude::*;
 use mime::Mime;
-use object_store::ObjectStore;
 use serde::Deserialize;
 use tokio::io::{AsyncWrite, AsyncWriteExt};
 use uuid::Uuid;
@@ -20,7 +20,7 @@ use crate::database::models::{
     Bucket, Metadata, MetadataState, NewMetadata, NewStorageGrant, PendingExpiration,
     SelectedStorageHost, StorageHost, Subscription, User, UserStorageReport,
 };
-use crate::extractors::{ApiIdentity, DataStore};
+use crate::extractors::ApiIdentity;
 use crate::utils::car_buffer::CarBuffer;
 use crate::{utils, GIBIBYTE};
 
@@ -38,7 +38,7 @@ const REQUEST_DATA_SIZE_LIMIT: u64 = 128 * 1_024;
 pub async fn handler(
     api_id: ApiIdentity,
     State(state): State<AppState>,
-    store: DataStore,
+    store: ObjectStore,
     Path(bucket_id): Path<Uuid>,
     TypedHeader(content_type): TypedHeader<ContentType>,
     body: BodyStream,
@@ -274,7 +274,6 @@ pub async fn handler(
         "storage_host": storage_host.url,
         "storage_authorization": storage_authorization,
     });
-
     Ok((StatusCode::OK, Json(response)).into_response())
 }
 
@@ -299,11 +298,11 @@ impl IntoResponse for PushMetadataError {
 }
 
 async fn persist_upload<'a>(
-    store: &DataStore,
+    store: &ObjectStore,
     path: &str,
     body: multer::Field<'a>,
 ) -> Result<(String, usize), PersistanceError> {
-    let file_path = object_store::path::Path::from(path);
+    let file_path = ObjectStorePath::from(path);
     let (upload_id, mut writer) = store.put_multipart(&file_path).await?;
 
     let (hash, size) = match stream_upload_to_storage(body, &mut writer).await {
@@ -389,7 +388,7 @@ pub enum PersistanceError {
     Io(#[from] std::io::Error),
 
     #[error("upload library encountered setup error: {0}")]
-    StoreError(#[from] object_store::Error),
+    StoreError(#[from] ObjectStoreError),
 
     #[error("failure in client stream: {0}")]
     StreamFailure(String),

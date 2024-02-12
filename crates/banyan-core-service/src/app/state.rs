@@ -2,8 +2,8 @@ use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 
+use banyan_object_store::{ObjectStore, ObjectStoreConnection, ObjectStoreError};
 use jwt_simple::prelude::*;
-use object_store::local::LocalFileSystem;
 
 use crate::app::{
     Config, MailgunSigningKey, ProviderCredential, Secrets, ServiceKey, ServiceVerificationKey,
@@ -36,7 +36,7 @@ impl State {
     pub async fn from_config(config: &Config) -> Result<Self, StateSetupError> {
         // Do a test setup to make sure the upload directory exists and is writable as an early
         // sanity check
-        LocalFileSystem::new_with_prefix(config.upload_directory())
+        ObjectStore::new(&ObjectStoreConnection::Local(config.upload_directory()))
             .map_err(StateSetupError::InaccessibleUploadDirectory)?;
 
         let database = database::connect(&config.database_url()).await?;
@@ -104,7 +104,7 @@ impl State {
 #[derive(Debug, thiserror::Error)]
 pub enum StateSetupError {
     #[error("unable to access configured upload directory: {0}")]
-    InaccessibleUploadDirectory(object_store::Error),
+    InaccessibleUploadDirectory(ObjectStoreError),
 
     #[error("private service key could not be loaded: {0}")]
     InvalidServiceKey(jwt_simple::Error),
