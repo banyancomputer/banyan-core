@@ -16,17 +16,15 @@ pub struct Notification {
 }
 
 impl Notification {
-    /// Checks whether the provided notification ID is owned by the provided user ID. This will return
-    /// false when the user IDs don't match, if the notification doesn't exist (the user inherently
-    /// doesn't own an unknown ID), or if the notification has already been deleted.
-    pub async fn is_owned_by_user_id(
+    pub async fn get(
         conn: &mut DatabaseConnection,
         notification_id: &str,
         user_id: &str,
-    ) -> Result<bool, sqlx::Error> {
-        let found_notification = sqlx::query_scalar!(
+    ) -> Result<Option<Self>, sqlx::Error> {
+        sqlx::query_as!(
+            Self,
             r#"
-                SELECT id 
+                SELECT id, user_id, dismissable, message, message_key, severity as 'severity: NotificationSeverity', created_at 
                 FROM notifications 
                 WHERE id = $1 
                 AND user_id = $2;
@@ -35,9 +33,7 @@ impl Notification {
             user_id,
         )
         .fetch_optional(&mut *conn)
-        .await?;
-
-        Ok(found_notification.is_some())
+        .await
     }
 
     pub async fn delete(
@@ -47,7 +43,8 @@ impl Notification {
         sqlx::query!(
             r#"
                 DELETE FROM notifications
-                WHERE id = $1;
+                WHERE id = $1
+                AND dismissable = true;
             "#,
             notification_id,
         )

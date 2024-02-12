@@ -18,11 +18,17 @@ pub async fn handler(
     let database = state.database();
     let mut conn = database.begin().await?;
 
-    if !Notification::is_owned_by_user_id(&mut conn, &notification_id, &user_id).await? {
-        let err_msg = serde_json::json!({"msg": "not found"});
-        return Ok((StatusCode::NOT_FOUND, Json(err_msg)).into_response());
+    // Grab the notification, error if it doesn't belong to the user
+    let notification = Notification::get(&mut conn, &notification_id, &user_id)
+        .await?
+        .ok_or(DeleteNotificationError::NotOwned)?;
+
+    // If the user is not allowed to remove this notification
+    if !notification.dismissable {
+        return Err(DeleteNotificationError::NotDismissable);
     }
 
+    // Delete the notification
     Notification::delete(&mut conn, &notification_id).await?;
 
     conn.commit().await?;
@@ -32,14 +38,31 @@ pub async fn handler(
 
 #[derive(Debug, thiserror::Error)]
 pub enum DeleteNotificationError {
+    #[error("you do not own this notification")]
+    NotOwned,
     #[error("failed to run query: {0}")]
     QueryFailure(#[from] sqlx::Error),
+    #[error("failed to delete notification because it is not dismissiable")]
+    NotDismissable,
 }
 
 impl IntoResponse for DeleteNotificationError {
     fn into_response(self) -> Response {
         tracing::error!("failed to delete notification: {self}");
-        let err_msg = serde_json::json!({"msg": "a backend service issue encountered an error"});
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
+        match &self {
+            DeleteNotificationError::NotOwned => {
+                let err_msg = serde_json::json!({"msg": "not found"});
+                (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
+            }
+            DeleteNotificationError::NotDismissable => {
+                let err_msg = serde_json::json!({"msg": "missing expected data"});
+                (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
+            }
+            _ => {
+                let err_msg =
+                    serde_json::json!({"msg": "a backend service issue encountered an error"});
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
+            }
+        }
     }
 }
