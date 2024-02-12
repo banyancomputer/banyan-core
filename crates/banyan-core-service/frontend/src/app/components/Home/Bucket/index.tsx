@@ -98,7 +98,7 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
 
     return (
         <div
-            className={`rounded-xl cursor-pointer transition-all bg-secondaryBackground ${!bucket.mount && 'cursor-not-allowed'}`}
+            className={`rounded-xl cursor-pointer transition-all bg-secondaryBackground border-1 border-border-regular ${!bucket.mount && 'cursor-not-allowed'}`}
             ref={bucketRef}
             onContextMenu={onContextMenu}
             onClick={openBucket}
@@ -117,7 +117,7 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
             >
                 <BucketActions bucket={bucket} />
             </div>
-            <div className="relative mb-4 flex justify-center py-24 bg-navigation-secondary rounded-xl z-0">
+            <div className="relative mb-4 flex justify-center py-24 bg-navigation-secondary rounded-t-xl z-0">
                 <BucketIcon />
                 <div
                     className="absolute right-2 top-2 p-1 cursor-pointer"
@@ -135,22 +135,24 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
                     <span className="absolute left-2 top-2 z-10 text-text-900"><LockedTooltip bucket={bucket} /></span>
                 }
             </div>
-            <span className="mb-4 flex justify-between items-center text-ellipsis overflow-hidden whitespace-nowrap font-semibold">
-                {bucket.name}
-            </span>
-            <div className="flex flex-col gap-2 items-start text-xs font-normal">
-                <div className="flex items-center justify-between w-full">
-                    <div className={`px-2 rounded-full text-mainBackground ${storageClassNames[bucket.storageClass]} capitalize`}>
-                        {`${messages[bucket.storageClass]}`}
+            <div className="px-2 pb-2">
+                <span className="mb-4 flex justify-between items-center text-ellipsis overflow-hidden whitespace-nowrap font-semibold">
+                    {bucket.name}
+                </span>
+                <div className="flex flex-col gap-2 items-start text-xs font-normal">
+                    <div className="flex items-center justify-between w-full">
+                        <div className={`px-2 rounded-full text-mainBackground ${storageClassNames[bucket.storageClass]} capitalize`}>
+                            {`${messages[bucket.storageClass]}`}
+                        </div>
+                        <div className="text-text-400" title={`${messages[`${bucket.storageClass}Tooltip`]}`}>
+                            <Question width="24px" height="24px" />
+                        </div>
                     </div>
-                    <div className="text-text-400" title={`${messages[`${bucket.storageClass}Tooltip`]}`}>
-                        <Question width="24px" height="24px" />
+                    <div className="capitalize">{bucket.bucketType}</div>
+                    {bucket.snapshots.length ? <div>{bucket.snapshots.length} {`${messages.coldSnapshots}`}</div> : null}
+                    <div className="flex justify-between items-center">
+                        <div>{bucket.files.length} {`${messages.files}`}</div>
                     </div>
-                </div>
-                <div className="capitalize">{bucket.bucketType}</div>
-                {bucket.snapshots.length ? <div>{bucket.snapshots.length} {`${messages.coldSnapshots}`}</div> : null}
-                <div className="flex justify-between items-center">
-                    <div>{bucket.files.length} {`${messages.files}`}</div>
                 </div>
             </div>
         </div>
