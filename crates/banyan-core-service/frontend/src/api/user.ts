@@ -18,8 +18,8 @@ export class UserClient extends APIClient {
             locale: rawUser.locale,
             profileImage: rawUser.profile_image,
             acceptedTosAt: rawUser.accepted_tos_at,
-			      accountTaxClass: rawUser.account_tax_class,
+			accountTaxClass: rawUser.account_tax_class,
             subscriptionId: rawUser.subscription_id,
-        }
+        };
     };
 };

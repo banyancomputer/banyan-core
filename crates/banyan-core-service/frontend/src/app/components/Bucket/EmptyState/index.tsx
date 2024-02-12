@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useIntl } from 'react-intl';
 
 import { useFolderLocation } from '@app/hooks/useFolderLocation';
@@ -11,6 +11,7 @@ import { ToastNotifications } from '@utils/toastNotifications';
 export const EmptyState: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const { messages } = useIntl();
     const { setFiles, uploadFiles, files } = useFilesUpload();
+    const [previewFiles, setPreviewFiles] = useState<File[]>([]);
 
     const folderLocation = useFolderLocation();
 
@@ -21,12 +22,14 @@ export const EmptyState: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         if (!event.dataTransfer.files) { return; }
 
         setFiles(Array.from(event.dataTransfer.files).slice(0, 1).map(file => ({ file, status: 'pending' })));
+        setPreviewFiles(Array.from(event.dataTransfer.files).slice(0, 1));
     };
 
     const handleChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         if (!event.target.files) { return; }
 
         setFiles(Array.from(event.target.files).map(file => ({ file, status: 'pending' })));
+        setPreviewFiles(Array.from(event.target.files));
     };
 
     const handleDrag = async (event: React.DragEvent<HTMLInputElement | HTMLLabelElement>) => {
@@ -38,11 +41,20 @@ export const EmptyState: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         if (!files.length) { return; }
         try {
             ToastNotifications.uploadProgress();
+            setTimeout(() => {
+                setPreviewFiles([]);
+            }, 100);
             await uploadFiles(bucket!, folderLocation);
         } catch (error: any) {
             ToastNotifications.error(`${messages.uploadError}`, `${messages.tryAgain}`, upload);
         };
     };
+
+    useEffect(() => {
+        return () => {
+            setPreviewFiles([]);
+        };
+    }, []);
 
     return (
         <label
@@ -59,7 +71,7 @@ export const EmptyState: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
             <div
                 className="flex flex-col items-center text-[#A99996]"
             >
-                {!files.length ?
+                {!previewFiles.length ?
                     <>
                         <Upload width="63" height="63px" />
                         <div className="mt-14 flex flex-col items-center">
@@ -70,12 +82,12 @@ export const EmptyState: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                     </>
                     :
                     <>
-                        {files.map(file =>
+                        {previewFiles.map(file =>
                             <span
                                 className="overflow-hidden text-ellipsis whitespace-nowrap text-text-900"
-                                key={file.file.name}
+                                key={file.name}
                             >
-                                {file.file.name}
+                                {file.name}
                             </span>
                         )}
                         <button

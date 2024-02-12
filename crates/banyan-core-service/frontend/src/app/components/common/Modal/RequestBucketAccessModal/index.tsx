@@ -1,7 +1,8 @@
 import React from 'react';
 import { useIntl } from 'react-intl';
 
-import { SubmitButton } from '@components/common/SubmitButton';
+import { PrimaryButton } from '@components/common/PrimaryButton';
+import { SecondaryButton } from '@components/common/SecondaryButton';
 
 import { useModal } from '@app/contexts/modals';
 import { Bucket } from '@app/types/bucket';
@@ -10,7 +11,7 @@ export const RequestBucketAccessModal: React.FC<{ bucket: Bucket }> = ({ bucket 
     const { messages } = useIntl();
     const { closeModal } = useModal();
 
-    const requestAccess = async() => {
+    const requestAccess = async () => {
         try {
             closeModal();
         } catch (error: any) { }
@@ -25,13 +26,11 @@ export const RequestBucketAccessModal: React.FC<{ bucket: Bucket }> = ({ bucket 
                 </p>
             </div>
             <div className="mt-3 flex items-center gap-3 text-xs" >
-                <button
-                    className="btn-secondary w-1/2 py-3 px-4"
-                    onClick={closeModal}
-                >
-                    {`${messages.cancel}`}
-                </button>
-                <SubmitButton
+                <SecondaryButton
+                    action={closeModal}
+                    text={`${messages.cancel}`}
+                />
+                <PrimaryButton
                     text={`${messages.requestAccess}`}
                     action={requestAccess}
                     className="w-1/2"

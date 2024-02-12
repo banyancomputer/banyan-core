@@ -1,24 +1,49 @@
 import React from 'react';
 import { useIntl } from 'react-intl';
+import { Link } from 'react-router-dom';
+
+import { SubscriptionPlanModal } from '../Modal/SubscriptionPlanModal';
 
 import { convertFileSize } from '@/app/utils/storage';
 import { useTomb } from '@/app/contexts/tomb';
+import { useAppSelector } from '@/app/store';
+import { RoutesConfig } from '@/app/routes';
+import { useModal } from '@/app/contexts/modals';
 
 export const StorageUsage = () => {
     const { storageUsage } = useTomb();
+    const { openModal } = useModal();
     const { messages } = useIntl();
+    const { selectedSubscription } = useAppSelector(state => state.billing);
+
+    const upgragePlan = () => {
+        openModal(<SubscriptionPlanModal />);
+    };
 
     return (
-        <div className="w-full bg-mainBackground rounded-md p-4">
+        <div className="w-full flex flex-col gap-2 px-4 py-5 bg-navigation-storageUsageBackground rounded-md ">
             <span className="flex justify-between items-center font-semibold">
                 {`${messages.storage}`}
             </span>
-            <span className="text-xs font-normal">{` ${messages.youHaveUsed} `}
-                <span className="uppercase">{convertFileSize(storageUsage.current)}</span>
-                {` ${messages.outOf} `}
-                <span className="uppercase">{convertFileSize(storageUsage.limit)}</span>.
+            <progress className="progress w-full" value={storageUsage.usage} max={storageUsage.softLimit / (selectedSubscription?.features.included_hot_replica_count || 2)}></progress>
+            <span className="text-xs font-medium">
+                {` ${messages.used} `}
+                <span className="uppercase">
+                    {convertFileSize(storageUsage.usage)}</span>
+                {` ${messages.of} `}
+                <span className="uppercase">{convertFileSize(storageUsage.softLimit / selectedSubscription?.features.included_hot_replica_count!)}</span>.
             </span>
-            <progress className="progress w-full" value={storageUsage.current} max={storageUsage.limit}></progress>
+            {!selectedSubscription?.pricing &&
+                <div className="flex justify-end">
+                    <Link
+                        onClick={upgragePlan}
+                        to={RoutesConfig.Billing.fullPath}
+                        className="mr-2 mt-2 text-xs font-semibold text-button-primary cursor-pointer"
+                    >
+                        {`${messages.upgradePlan}`}
+                    </Link>
+                </div>
+            }
         </div>
     );
 };

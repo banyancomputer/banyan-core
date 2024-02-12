@@ -8,7 +8,6 @@ const Home = lazy(() => import('@pages/home'));
 const Bucket = lazy(() => import('@pages/bucket'));
 const Account = lazy(() => import('@pages/account'));
 const RegisterDevice = lazy(() => import('@pages/registerDevice'));
-const AddPayment = lazy(() => import('@pages/addPayment'));
 
 /** Components */
 const Billing = lazy(() => import('@components/Account/Billing'));
@@ -48,7 +47,6 @@ export class RoutesConfig {
     public static Bucket = new Route('/drive/:id', <Bucket />);
     public static Account = new Route('/account', <Account />);
     public static RegisterDevice = new Route('/register-device/:spki', <RegisterDevice />);
-    public static AddPayment = new Route('/add-payment', <AddPayment />, null);
 
     public static Billing = new Route('billing', <Billing />, null);
     public static ManageKeys = new Route('manage-keys', <ManageKeys />, null);
@@ -60,7 +58,6 @@ export class RoutesConfig {
         RoutesConfig.Home,
         RoutesConfig.Bucket,
         RoutesConfig.RegisterDevice,
-        RoutesConfig.AddPayment,
         RoutesConfig.Account.addChildren([
             RoutesConfig.Billing,
             RoutesConfig.ManageKeys,

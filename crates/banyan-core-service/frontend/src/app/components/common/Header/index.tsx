@@ -17,9 +17,9 @@ import { RoutesConfig } from '@/app/routes';
 import { useModal } from '@/app/contexts/modals';
 import { getSubscriptionById } from '@/app/store/billing/actions';
 
-import { Logo, Question } from '@static/images/common';
+import { Question } from '@static/images/common';
 
-export const Header: React.FC<{ logo?: boolean, className?: string }> = ({ logo = false, className = '' }) => {
+export const Header: React.FC<{ className?: string }> = ({ className = '' }) => {
     const dispatch = useAppDispatch();
     const { messages } = useIntl();
     const { selectedSubscription } = useAppSelector(state => state.billing);
@@ -75,9 +75,6 @@ export const Header: React.FC<{ logo?: boolean, className?: string }> = ({ logo 
 
     return (
         <header className={`flex items-center justify-between p-4 bg-mainBackground border-b-1 border-border-regular ${className}`}>
-            <span className="text-logo">
-                {logo && <Logo />}
-            </span>
             {/* <SearchInput /> */}
             <div className="flex flex-grow items-center justify-end gap-6">
                 <div

@@ -205,5 +205,17 @@
 	"summary": "Résumé",
 	"items": "Articles",
 	"payment": "Paiement",
-	"manageSubscriptions": "Gérer les abonnements"
+	"manageSubscriptions": "Gérer les abonnements",
+	"choosePlan": "Choisissez un plan qui vous convient",
+	"plansDescription": "Obtenez le stockage, la sécurité et la confidentialité que vous méritez, à un prix abordable",
+	"currentPlan": "Plan actuel",
+	"needCustomPlan": "Besoin d'un plan plus personnalisé",
+	"contactSales": "Contacter les ventes",
+	"upgradeTo": "Passer à",
+	"litePlanDescription": "Gratuit, mais avec des fonctionnalités limitées.",
+	"hotStorage": "Stockage à chaud",
+	"hotReplications": "Réplications à chaud",
+	"freeEgress": "Egress gratuit",
+	"outOfStorage": "Vous êtes à court de stockage",
+	"outOfStorageDescription": "Mettez à niveau votre compte pour télécharger et synchroniser des fichiers."
 }

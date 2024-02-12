@@ -80,6 +80,11 @@ pub async fn handler(
     .await
     .map_err(ReportUploadError::MarkCurrentFailed)?;
 
+    // Now that the state has changed, mark old unsnapshotted metadatas as being deleted
+    Metadata::delete_outdated(&mut db_conn, &bucket_id)
+        .await
+        .map_err(ReportUploadError::DeleteOutdatedFailed)?;
+
     // Close the connection to prevent locking
     db_conn.close().await?;
 
@@ -106,6 +111,9 @@ pub enum ReportUploadError {
 
     #[error("failed to mark the completed upload as current: {0}")]
     MarkCurrentFailed(sqlx::Error),
+
+    #[error("failed to delete the metadatas no longer needed: {0}")]
+    DeleteOutdatedFailed(sqlx::Error),
 
     #[error("failed to associate finalized uploaded with storage host")]
     NoUploadAssociation(sqlx::Error),

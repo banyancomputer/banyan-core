@@ -14,8 +14,8 @@
 	"search": "Search",
 	"trash": "Trash",
 	"storage": "Storage",
-	"youHaveUsed": "You’ve used",
-	"outOf": "out of",
+	"used": "Used",
+	"of": "of",
 	"decentralizedStorage": "Decentralized Storage",
 	"driveName": "Drive name",
 	"name": "Name",
@@ -215,5 +215,7 @@
 	"litePlanDescription": "Free, but with limited features.",
 	"hotStorage": "Hot Storage",
 	"hotReplications": "Hot Replications",
-	"freeEgress": "Free egress"
+	"freeEgress": "Free egress",
+	"outOfStorage": "You’re out of storage",
+	"outOfStorageDescription": "Upgrade your account to upload and sync files."
 }

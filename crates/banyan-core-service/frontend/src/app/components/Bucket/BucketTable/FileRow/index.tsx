@@ -19,7 +19,7 @@ export const FileRow: React.FC<{
     siblingFiles: string[];
     nestingLevel?: number;
     parrentFolder?: BrowserObject;
-}> = ({ file, bucket, nestingLevel = 0.25, path = [], parrentFolder, siblingFiles }) => {
+}> = ({ file, bucket, nestingLevel = 0, path = [], parrentFolder, siblingFiles }) => {
     const { openFile } = useFilePreview();
     const [isDragging, setIsDragging] = useState(false);
     const { getExpandedFolderFiles, getSelectedBucketFiles } = useTomb();
@@ -43,17 +43,17 @@ export const FileRow: React.FC<{
             draggable
         >
             <td
-                className="px-6 py-4"
-                style={{ paddingLeft: `${nestingLevel * 60}px` }}
+                className="px-0 py-2"
+                style={{ paddingLeft: `${nestingLevel * 40}px` }}
             >
                 <DraggingPreview name={file.name} isDragging={isDragging} type="file" />
                 <span>
                     <FileCell name={file.name} type="file" />
                 </span>
             </td>
-            <td className="px-6 py-4">{getDateLabel(+file.metadata.modified)}</td>
-            <td className="px-6 py-4">{convertFileSize(file.metadata.size)}</td>
-            <td className="px-6 py-4">
+            <td className="px-6 py-2">{getDateLabel(+file.metadata.modified)}</td>
+            <td className="px-6 py-2">{convertFileSize(file.metadata.size)}</td>
+            <td className="px-6 py-2">
                 <ActionsCell
                     actions={
                         <FileActions
