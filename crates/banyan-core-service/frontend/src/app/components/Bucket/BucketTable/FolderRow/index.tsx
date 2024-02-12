@@ -25,7 +25,7 @@ export const FolderRow: React.FC<{
     path: string[];
     nestingLevel?: number;
     parrentFolder?: BrowserObject;
-}> = ({ folder, bucket, nestingLevel = 0.25, path = [], parrentFolder }) => {
+}> = ({ folder, bucket, nestingLevel = 0, path = [], parrentFolder }) => {
     const folderRef = useRef<HTMLTableRowElement | null>(null);
     const navigate = useNavigate();
     const { messages } = useIntl();
@@ -140,8 +140,8 @@ export const FolderRow: React.FC<{
                             draggable
                         >
                             <td
-                                className="flex items-center gap-3 p-4"
-                                style={{ paddingLeft: `${nestingLevel * 60}px` }}
+                                className="flex items-center gap-3 py-2"
+                                style={{ paddingLeft: `${nestingLevel * 40}px` }}
                             >
                                 <DraggingPreview name={folder.name} isDragging={isDragging} type="dir" />
                                 <FileCell name={folder.name} type="dir" />
@@ -154,9 +154,9 @@ export const FolderRow: React.FC<{
                                     </span>
                                 }
                             </td>
-                            <td className="px-6 py-4">{getDateLabel(+folder.metadata.modified)}</td>
-                            <td className="px-6 py-4">{convertFileSize(folder.metadata.size)}</td>
-                            <td className="px-6 py-4">
+                            <td className="px-6 py-2">{getDateLabel(+folder.metadata.modified)}</td>
+                            <td className="px-6 py-2">{convertFileSize(folder.metadata.size)}</td>
+                            <td className="px-6 py-2">
                                 {
                                     bucket.bucketType === 'backup' ?
                                         null

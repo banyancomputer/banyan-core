@@ -428,7 +428,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 						<TermaAndConditions
 							acceptTerms={setAreTermsAccepted}
 							userData={userData}
-						/>, null, true, '');
+						/>, null, true, '', false);
 
 					return;
 				};
@@ -439,7 +439,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 							setAreTermsAccepted={setAreTermsAccepted}
 							terms={termsAndConditions.tos_content}
 							userData={userData} />
-						, null, true);
+						, null, true, '', false);
 
 					return;
 				};
