@@ -61,7 +61,7 @@ impl TaskLike for ReportHealthTask {
 
         let request = client
             .post(report_endpoint.clone())
-            .json(&ReportHealth::new())
+            .json(&ReportHealth::new().serde())
             .bearer_auth(bearer_token);
 
         let response = request
