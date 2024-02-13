@@ -63,10 +63,39 @@ impl SqliteTaskStore {
         )
     }
 
+    pub async fn task_in_state<T: TaskLike>(
+        &self,
+        states: Vec<TaskState>,
+    ) -> Result<Option<Task>, TaskStoreError> {
+        let mut query_builder =
+            sqlx::QueryBuilder::new("SELECT * FROM background_tasks WHERE task_name =");
+
+        query_builder.push_bind(T::TASK_NAME);
+        query_builder.push(" AND state IN (");
+
+        let mut separated_values = query_builder.separated(", ");
+        for state in states {
+            separated_values.push_bind(state);
+        }
+        query_builder.push(");");
+
+        let query = query_builder
+            .build_query_as::<Task>()
+            .persistent(false)
+            .fetch_optional(&self.pool)
+            .await;
+
+        match query {
+            Ok(Some(res)) => Ok(Some(res)),
+            Ok(None) => Ok(None),
+            Err(err) => Err(TaskStoreError::DatabaseError(err)),
+        }
+    }
+
     pub async fn get_task(&self, id: String) -> Result<Task, TaskStoreError> {
-        let mut connection = self.pool.clone().acquire().await?;
+        let connection = self.pool.clone();
         let task = sqlx::query_as!(Task, r#"SELECT * FROM background_tasks WHERE id = $1"#, id)
-            .fetch_one(&mut *connection)
+            .fetch_one(&connection)
             .await?;
 
         Ok(task)
@@ -295,8 +324,6 @@ impl TaskStore for SqliteTaskStore {
         task_id: String,
         next_schedule: OffsetDateTime,
     ) -> Result<Option<String>, TaskStoreError> {
-        let mut connection = self.pool.clone().acquire().await?;
-        let mut transaction = connection.begin().await?;
         let task_instance = self.get_task(task_id).await?;
 
         let task = TaskInstanceBuilder::from_task_instance(task_instance)
@@ -304,9 +331,9 @@ impl TaskStore for SqliteTaskStore {
             .reset_task()
             .run_at(next_schedule);
 
+        let mut transaction = self.pool.clone().acquire().await?;
         let new_task_id = Self::create(&mut transaction, task).await?;
-        transaction.commit().await?;
-        return Ok(new_task_id);
+        Ok(new_task_id)
     }
 
     async fn update_state(&self, id: String, new_state: TaskState) -> Result<(), TaskStoreError> {

@@ -9,25 +9,29 @@ use pin_project_lite::pin_project;
 use tokio::sync::oneshot;
 use tokio::sync::oneshot::error::TryRecvError;
 
-use crate::body::{FnOnResponseEnd, RequestInfo, ResponseCounter};
+use crate::body::{RequestInfo, ResponseCounter};
+use crate::on_response_end::OnResponseEnd;
+use crate::service::TrafficCounterHandle;
 
 pin_project! {
     #[derive(Debug)]
-    pub struct ResponseFuture<F> {
+    pub struct ResponseFuture<F, OnResponseEnd> {
         #[pin]
         pub(crate) inner: F,
-        pub rx_bytes_received: oneshot::Receiver<usize>,
-        pub request_info: RequestInfo,
-        pub on_response_end: FnOnResponseEnd
+        pub(crate) rx_bytes_received: oneshot::Receiver<usize>,
+        pub(crate) request_info: RequestInfo,
+        pub(crate) on_response_end: Option<OnResponseEnd>,
+        pub(crate) traffic_counter_handle: TrafficCounterHandle,
     }
 }
 
-impl<F, B, E> Future for ResponseFuture<F>
+impl<F, ResBody, E, OnResponseEndT> Future for ResponseFuture<F, OnResponseEndT>
 where
-    F: Future<Output = Result<Response<B>, E>>,
-    B: Body,
+    F: Future<Output = Result<Response<ResBody>, E>>,
+    ResBody: Body,
+    OnResponseEndT: OnResponseEnd<ResBody>,
 {
-    type Output = Result<Response<ResponseCounter<B>>, E>;
+    type Output = Result<Response<ResponseCounter<ResBody, OnResponseEndT>>, E>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let this = self.project();
@@ -42,8 +46,10 @@ where
             // that's expected when there are no request bytes
             Err(TryRecvError::Closed) => 0,
         };
+
         this.request_info.body_bytes = request_body_bytes;
         let request_info = std::mem::take(this.request_info);
+        let traffic_counter_handle = std::mem::take(this.traffic_counter_handle);
 
         match result {
             Ok(res) => {
@@ -53,7 +59,9 @@ where
                     &parts.headers,
                     request_info,
                     parts.status,
-                    *this.on_response_end,
+                    // that's alright. there will always be Some(_) here
+                    this.on_response_end.take().unwrap(),
+                    traffic_counter_handle,
                 );
                 let res = Response::from_parts(parts, body);
                 Poll::Ready(Ok(res))
