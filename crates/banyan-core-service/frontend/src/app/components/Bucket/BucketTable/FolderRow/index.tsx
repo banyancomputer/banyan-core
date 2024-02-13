@@ -34,8 +34,7 @@ export const FolderRow: React.FC<{
     const [areFilesDropped, setAreFilesDropped] = useState(false);
     const [isFolderDraggingOver, setIsFolderDragingOver] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
-    const siblingFiles = useMemo(() => folder.files?.filter(file => file.type !== 'dir').map(file => file.name), [folder.files]);
-    const [isActionsVisible, setIsActionsVisible] = useState(false);
+    const siblingFiles = useMemo(() => folder.files?.filter(file => file.type !== 'dir'), [folder.files]);
 
     const goToFolder = (event: React.MouseEvent<HTMLTableRowElement, MouseEvent>, bucket: Bucket) => {
         //@ts-ignore
