@@ -8,12 +8,6 @@ pub struct HostCapacityTaskContext {
     db_pool: SqlitePool,
 }
 
-#[derive(Clone)]
-pub struct StorageHosts {
-    storage_host_id_1: String,
-    storage_host_id_2: String,
-}
-
 #[allow(dead_code)]
 impl HostCapacityTaskContext {
     pub fn db_pool(&self) -> &SqlitePool {
@@ -135,6 +129,12 @@ mod tests {
     const DOG_UPLOAD_2: i64 = 1000;
     const CAT_UPLOAD_1: i64 = 750;
     const CAT_UPLOAD_2: i64 = 1275;
+
+    #[derive(Clone)]
+    pub struct StorageHosts {
+        storage_host_id_1: String,
+        storage_host_id_2: String,
+    }
 
     pub async fn get_stats(ctx: HostCapacityTaskContext, storage_host_id: &str) -> (i64, i64) {
         let mut db_conn = ctx.db_pool().acquire().await.unwrap();
