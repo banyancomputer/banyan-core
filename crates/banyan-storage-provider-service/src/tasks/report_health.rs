@@ -5,6 +5,7 @@ use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
+use time::{Duration, OffsetDateTime};
 use url::Url;
 
 use crate::app::{AppState, Version};
@@ -81,5 +82,12 @@ impl TaskLike for ReportHealthTask {
                 report_endpoint,
             ))
         }
+    }
+
+    // Schedule every 5 minutes
+    fn next_time(&self) -> Option<OffsetDateTime> {
+        let mut time = OffsetDateTime::now_utc();
+        time.checked_add(Duration::minutes(5));
+        Some(time)
     }
 }
