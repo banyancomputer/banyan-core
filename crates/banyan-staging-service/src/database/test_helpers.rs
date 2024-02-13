@@ -11,8 +11,8 @@ pub(crate) async fn create_client(
     public_key: &str,
 ) -> String {
     sqlx::query_scalar!(
-        r#"INSERT INTO clients (platform_id, fingerprint, public_key, created_at)
-                VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+        r#"INSERT INTO clients (platform_id, fingerprint, public_key)
+                VALUES ($1, $2, $3)
                 RETURNING id;"#,
         platform_id,
         fingerprint,
