@@ -4,8 +4,7 @@ use jwt_simple::prelude::*;
 use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
-use time::{Duration, OffsetDateTime};
+use time::OffsetDateTime;
 use url::Url;
 
 use crate::app::{AppState, Version};
@@ -16,13 +15,13 @@ pub type ReportHealthTaskContext = AppState;
 #[derive(Debug, thiserror::Error)]
 pub enum ReportHealthTaskError {
     #[error("sql error: {0}")]
-    DatabaseError(#[from] sqlx::Error),
+    Database(#[from] sqlx::Error),
     #[error("reqwest error: {0}")]
-    ReqwestError(#[from] reqwest::Error),
+    Reqwest(#[from] reqwest::Error),
     #[error("jwt error: {0}")]
-    JwtError(#[from] jwt_simple::Error),
+    Jwt(#[from] jwt_simple::Error),
     #[error("http error: {0} response from {1}")]
-    HttpError(http::StatusCode, Url),
+    Http(http::StatusCode, Url),
 }
 
 #[derive(Deserialize, Serialize)]
@@ -72,12 +71,12 @@ impl TaskLike for ReportHealthTask {
         let response = request
             .send()
             .await
-            .map_err(ReportHealthTaskError::ReqwestError)?;
+            .map_err(ReportHealthTaskError::Reqwest)?;
 
         if response.status().is_success() {
             Ok(())
         } else {
-            Err(ReportHealthTaskError::HttpError(
+            Err(ReportHealthTaskError::Http(
                 response.status(),
                 report_endpoint,
             ))
@@ -86,8 +85,10 @@ impl TaskLike for ReportHealthTask {
 
     // Schedule every 5 minutes
     fn next_time(&self) -> Option<OffsetDateTime> {
-        let mut time = OffsetDateTime::now_utc();
-        time.checked_add(Duration::minutes(5));
-        Some(time)
+        Some(
+            OffsetDateTime::now_utc()
+                .checked_add(time::Duration::minutes(5))
+                .unwrap(),
+        )
     }
 }
