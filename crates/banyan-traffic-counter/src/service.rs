@@ -25,15 +25,9 @@ impl<S, OnResponseEnd> TrafficCounter<S, OnResponseEnd> {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct TrafficCounterHandle {
     pub user_id: Option<String>,
-}
-
-impl Default for TrafficCounterHandle {
-    fn default() -> Self {
-        Self { user_id: None }
-    }
 }
 
 impl<ReqBody, ResBody, OnResponseEndT, S> Service<Request<ReqBody>>
