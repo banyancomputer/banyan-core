@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n        INSERT OR IGNORE INTO\n            blocks (cid, data_length)\n            VALUES ($1, $2)\n        RETURNING id;\n        ",
+  "query": "INSERT OR IGNORE INTO blocks (cid, data_length) VALUES ($1, $2) RETURNING id;",
   "describe": {
     "columns": [
       {
@@ -16,5 +16,5 @@
       false
     ]
   },
-  "hash": "8b3d6cdbcfc4680e26f14327c87d088fcea7cb57f274987387b200dea01a1748"
+  "hash": "73a641aa7460f901e45bfc4a4d04bb43774573c9c86e06c3cdd0638796918465"
 }

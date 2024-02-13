@@ -179,19 +179,22 @@ pub async fn write_block_to_tables(
     normalized_cid: &str,
     data_length: i64,
 ) -> Result<(), sqlx::Error> {
-    // Insert the block if its missing, get its ID
-    let block_id: String = sqlx::query_scalar!(
-        r#"
-        INSERT OR IGNORE INTO
-            blocks (cid, data_length)
-            VALUES ($1, $2)
-        RETURNING id;
-        "#,
+    let maybe_block_id: Option<String> = sqlx::query_scalar!(
+        "INSERT OR IGNORE INTO blocks (cid, data_length) VALUES ($1, $2) RETURNING id;",
         normalized_cid,
         data_length,
     )
-    .fetch_one(db)
+    .fetch_optional(db)
     .await?;
+
+    let block_id = match maybe_block_id {
+        Some(block_id) => block_id,
+        None => {
+            sqlx::query_scalar!("SELECT id FROM blocks WHERE cid = $1;", normalized_cid,)
+                .fetch_one(db)
+                .await?
+        }
+    };
 
     // Create uploads_blocks row with the block information
     // We omit car_offset because that's only for deprecated infra
@@ -205,8 +208,9 @@ pub async fn write_block_to_tables(
         block_id,
     )
     .execute(db)
-    .await
-    .map(|_| ())
+    .await?;
+
+    Ok(())
 }
 
 #[derive(sqlx::FromRow, sqlx::Decode)]
