@@ -96,12 +96,10 @@ impl TaskLike for ReportBandwidthMetricsTask {
 }
 
 fn round_to_previous_hour(start_time: OffsetDateTime) -> Result<OffsetDateTime, ComponentRange> {
-    let rounded_time = start_time
+    start_time
         .replace_minute(0)
         .and_then(|t| t.replace_second(0))
-        .and_then(|t| t.replace_nanosecond(0));
-
-    rounded_time
+        .and_then(|t| t.replace_nanosecond(0))
 }
 
 fn round_to_next_hour(start_time: OffsetDateTime) -> Result<OffsetDateTime, ComponentRange> {
