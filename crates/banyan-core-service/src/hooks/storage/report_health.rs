@@ -10,7 +10,7 @@ pub async fn handler(
     State(state): State<AppState>,
     storage_provider_id: StorageProviderIdentity,
     Json(version): Json<Version>,
-) -> Result<Response, HealthCheckHookError> {
+) -> Result<Response, ReportHealthHookError> {
     let database = state.database();
     let mut conn = database.begin().await?;
 
@@ -36,12 +36,12 @@ pub async fn handler(
 
 #[non_exhaustive]
 #[derive(Debug, thiserror::Error)]
-pub enum HealthCheckHookError {
+pub enum ReportHealthHookError {
     #[error("sql error: {0}")]
     SqlxError(#[from] sqlx::Error),
 }
 
-impl IntoResponse for HealthCheckHookError {
+impl IntoResponse for ReportHealthHookError {
     fn into_response(self) -> Response {
         tracing::error!("{self}");
         let err_msg = serde_json::json!({"msg": "backend service experienced an issue servicing the request"});
