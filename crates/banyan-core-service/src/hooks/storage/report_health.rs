@@ -3,19 +3,19 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 
-use crate::app::{AppState, Version};
+use crate::app::{AppState, SerdeVersion};
 use crate::extractors::StorageProviderIdentity;
 
 pub async fn handler(
+    storage_provider: StorageProviderIdentity,
     State(state): State<AppState>,
-    storage_provider_id: StorageProviderIdentity,
-    Json(version): Json<Version>,
+    Json(version): Json<SerdeVersion>,
 ) -> Result<Response, ReportHealthHookError> {
     let database = state.database();
     let mut conn = database.begin().await?;
 
     let current_version = version.version;
-    let storage_provider_id = storage_provider_id.id;
+    let storage_provider_id = storage_provider.id;
 
     sqlx::query!(
         r#"

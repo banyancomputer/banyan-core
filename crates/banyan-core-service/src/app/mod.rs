@@ -13,4 +13,4 @@ pub use secrets::{MailgunSigningKey, ProviderCredential, Secrets, ServiceKey, St
 pub use state::test::mock_app_state;
 pub use state::State as AppState;
 pub use stripe_helper::{StripeHelper, StripeHelperError};
-pub use version::Version;
+pub use version::{SerdeVersion, Version};

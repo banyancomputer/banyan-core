@@ -14,12 +14,8 @@ pub type ReportHealthTaskContext = AppState;
 #[non_exhaustive]
 #[derive(Debug, thiserror::Error)]
 pub enum ReportHealthTaskError {
-    #[error("sql error: {0}")]
-    Database(#[from] sqlx::Error),
     #[error("reqwest error: {0}")]
     Reqwest(#[from] reqwest::Error),
-    #[error("jwt error: {0}")]
-    Jwt(#[from] jwt_simple::Error),
     #[error("http error: {0} response from {1}")]
     Http(http::StatusCode, Url),
 }
