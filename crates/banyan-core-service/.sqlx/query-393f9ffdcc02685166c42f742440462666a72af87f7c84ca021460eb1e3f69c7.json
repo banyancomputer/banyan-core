@@ -1,10 +1,10 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT user_id FROM device_api_keys WHERE fingerprint = $1",
+  "query": "SELECT id FROM storage_hosts WHERE name = $1",
   "describe": {
     "columns": [
       {
-        "name": "user_id",
+        "name": "id",
         "ordinal": 0,
         "type_info": "Text"
       }
@@ -16,5 +16,5 @@
       false
     ]
   },
-  "hash": "69dc5c6daba460c6e0c141050e617049c6c2270153d9517f119ee9ce5afd3023"
+  "hash": "393f9ffdcc02685166c42f742440462666a72af87f7c84ca021460eb1e3f69c7"
 }

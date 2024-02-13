@@ -11,7 +11,7 @@ use tokio::sync::oneshot::error::TryRecvError;
 
 use crate::body::{RequestInfo, ResponseCounter};
 use crate::on_response_end::OnResponseEnd;
-use crate::service::Session;
+use crate::service::TrafficCounterHandle;
 
 pin_project! {
     #[derive(Debug)]
@@ -21,7 +21,7 @@ pin_project! {
         pub(crate) rx_bytes_received: oneshot::Receiver<usize>,
         pub(crate) request_info: RequestInfo,
         pub(crate) on_response_end: Option<OnResponseEnd>,
-        pub(crate) session: Session,
+        pub(crate) traffic_counter_handle: TrafficCounterHandle,
     }
 }
 
@@ -49,7 +49,7 @@ where
 
         this.request_info.body_bytes = request_body_bytes;
         let request_info = std::mem::take(this.request_info);
-        let session = std::mem::take(this.session);
+        let traffic_counter_handle = std::mem::take(this.traffic_counter_handle);
 
         match result {
             Ok(res) => {
@@ -61,7 +61,7 @@ where
                     parts.status,
                     // that's alright. there will always be Some(_) here
                     this.on_response_end.take().unwrap(),
-                    session,
+                    traffic_counter_handle,
                 );
                 let res = Response::from_parts(parts, body);
                 Poll::Ready(Ok(res))

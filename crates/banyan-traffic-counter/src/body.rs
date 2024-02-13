@@ -10,7 +10,7 @@ use pin_project_lite::pin_project;
 use tokio::sync::oneshot;
 
 use crate::on_response_end::OnResponseEnd;
-use crate::service::Session;
+use crate::service::TrafficCounterHandle;
 
 pin_project! {
     #[derive(Debug)]
@@ -54,7 +54,7 @@ where
         request_info: RequestInfo,
         status_code: StatusCode,
         on_response_end: OnResponseEndT,
-        session: Session,
+        traffic_counter_handle: TrafficCounterHandle,
     ) -> Self {
         let response_header_bytes = headers
             .iter()
@@ -64,7 +64,7 @@ where
         Self {
             request_info,
             response_info: ResponseInfo {
-                session,
+                traffic_counter_handle,
                 body_bytes: 0,
                 header_bytes: response_header_bytes,
                 status_code,
@@ -215,12 +215,13 @@ pub struct RequestInfo {
     pub body_bytes: usize,
 }
 
-#[derive(Debug, Clone)]
+// #[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct ResponseInfo {
     pub body_bytes: usize,
     pub header_bytes: usize,
     pub status_code: StatusCode,
-    pub session: Session,
+    pub traffic_counter_handle: TrafficCounterHandle,
 }
 
 impl<T> From<&Request<T>> for RequestInfo {
@@ -316,7 +317,7 @@ mod tests {
                 assert_eq!(req_info.body_bytes + req_info.header_bytes, 0);
                 assert_eq!(res_info.body_bytes + res_info.header_bytes, 15);
             },
-            Session::default(),
+            TrafficCounterHandle::default(),
         );
 
         poll_to_completion(body_counter, None).await;
@@ -337,7 +338,7 @@ mod tests {
                 assert_eq!(req_info.body_bytes + req_info.header_bytes, 0);
                 assert_eq!(res_info.body_bytes + res_info.header_bytes, 0);
             },
-            Session::default(),
+            TrafficCounterHandle::default(),
         );
         poll_to_completion(body_counter, None).await;
     }

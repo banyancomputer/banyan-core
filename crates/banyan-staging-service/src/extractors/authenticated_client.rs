@@ -4,7 +4,7 @@ use axum::headers::Authorization;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::{async_trait, Json, RequestPartsExt};
-use banyan_traffic_counter::service::Session;
+use banyan_traffic_counter::service::TrafficCounterHandle;
 use http::request::Parts;
 use jwt_simple::prelude::*;
 use sqlx::FromRow;
@@ -141,9 +141,12 @@ where
             Err(err) => return Err(Self::Rejection::CorruptPlatformId(err)),
         };
 
-        if let Some(session) = parts.extensions.get::<Session>() {
-            let mut user_id = session.user_id.lock().unwrap();
-            *user_id = Some(key_id.clone());
+        if let Some(handle) = parts.extensions.get::<TrafficCounterHandle>() {
+            if let Ok(mut user_id) = handle.user_id.lock() {
+                *user_id = Some(platform_id.to_string());
+            } else {
+                tracing::error!("could not acquire guard. thread was poisoned");
+            }
         }
 
         Ok(AuthenticatedClient {

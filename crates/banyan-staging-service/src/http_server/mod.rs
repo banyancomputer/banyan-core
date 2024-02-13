@@ -90,7 +90,7 @@ pub async fn run(config: Config) {
         .set_x_request_id(MakeRequestUuid)
         .propagate_x_request_id()
         .layer(TrafficCounterLayer::new(TrafficReporter::new(
-            app_state.clone(),
+            app_state.database(),
         )))
         // Default request size. Individual handlers can opt-out of this limit, see api/upload.rs for an example.
         .layer(DefaultBodyLimit::max(REQUEST_MAX_SIZE))

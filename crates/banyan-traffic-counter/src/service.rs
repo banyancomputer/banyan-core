@@ -27,11 +27,11 @@ impl<S, OnResponseEnd> TrafficCounter<S, OnResponseEnd> {
 }
 
 #[derive(Clone, Debug)]
-pub struct Session {
+pub struct TrafficCounterHandle {
     pub user_id: Arc<Mutex<Option<String>>>,
 }
 
-impl Default for Session {
+impl Default for TrafficCounterHandle {
     fn default() -> Self {
         Self {
             user_id: Arc::new(Mutex::new(None)),
@@ -59,14 +59,14 @@ where
         let (tx_bytes_received, rx_bytes_received) = oneshot::channel::<usize>();
         let mut req = req.map(|body| RequestCounter::new(body, tx_bytes_received));
         let request_info = (&req).into();
-        let session = Session::default();
-        req.extensions_mut().insert(session.clone());
+        let traffic_counter_handle = TrafficCounterHandle::default();
+        req.extensions_mut().insert(traffic_counter_handle.clone());
 
         let inner = self.inner.call(req);
         ResponseFuture {
             inner,
             request_info,
-            session,
+            traffic_counter_handle,
             rx_bytes_received,
             on_response_end: Some(self.on_response_end.clone()),
         }

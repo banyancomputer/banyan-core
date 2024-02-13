@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO clients (platform_id, fingerprint, public_key, created_at)\n                VALUES ($1, $2, $3, CURRENT_TIMESTAMP)\n                RETURNING id;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "2e75c0329170769b03a13384a322da7e4535cd97ec24c48482822a1e51a4d085"
+}
