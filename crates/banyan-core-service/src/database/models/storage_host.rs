@@ -22,7 +22,7 @@ impl SelectedStorageHost {
     /// available, but does not exert preference among hosts that meet these criteria.
     pub async fn select_for_capacity(
         conn: &mut DatabaseConnection,
-        region: Option<String>,
+        region_preference: Option<String>,
         required_bytes: i64,
     ) -> Result<Option<Self>, sqlx::Error> {
         // Select a storage host with enough free space, ensuring it is also within the region if
@@ -33,12 +33,12 @@ impl SelectedStorageHost {
                 SELECT *
                 FROM storage_hosts
                 WHERE (available_storage - reserved_storage) > $1
-                AND ($2 IS NULL OR region = $2) 
+                AND ($2 IS NULL OR $2 LIKE ('%' || region || '%')) 
                 ORDER BY RANDOM() 
                 LIMIT 1;
             "#,
             required_bytes,
-            region,
+            region_preference,
         )
         .fetch_optional(&mut *conn)
         .await?;
