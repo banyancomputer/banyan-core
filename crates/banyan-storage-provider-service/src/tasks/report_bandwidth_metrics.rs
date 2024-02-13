@@ -57,7 +57,6 @@ impl TaskLike for ReportBandwidthMetricsTask {
             ctx.platform_name(),
             ctx.platform_hostname(),
         );
-        println!("reporting users_metrics {:?}", users_metrics);
 
         for metrics in users_metrics.into_iter() {
             let meter_traffic_request = MeterTrafficRequest {

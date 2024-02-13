@@ -29,7 +29,7 @@ pub(crate) async fn create_bandwidth_metric(
     ingress: i64,
     egress: i64,
     created_at: OffsetDateTime,
-) -> () {
+) {
     BandwidthMetrics {
         user_id: user_id.to_string(),
         ingress,

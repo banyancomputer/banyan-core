@@ -199,12 +199,8 @@ mod tests {
         let mut conn = db.begin().await.expect("connection");
 
         // Register storage host
-        create_storage_hosts(&mut conn, "url1", STORAGE_HOST_1)
-            .await
-            .expect("create storage host");
-        create_storage_hosts(&mut conn, "url2", STORAGE_HOST_2)
-            .await
-            .expect("create storage host");
+        create_storage_hosts(&mut conn, "url1", STORAGE_HOST_1).await;
+        create_storage_hosts(&mut conn, "url2", STORAGE_HOST_2).await;
 
         // Create users
         let dog_user_id = create_user(&mut conn, "dog@com.example", "dog").await;

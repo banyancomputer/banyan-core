@@ -22,20 +22,12 @@ impl<B> OnResponseEnd<B> for TrafficReporter {
         let ingress = (req_info.header_bytes + req_info.body_bytes) as i64;
         let egress = (res_info.header_bytes + res_info.body_bytes) as i64;
         let tx = self.tx.clone();
-
-        let user_id = match res_info.traffic_counter_handle.user_id.lock() {
-            Ok(user_id_guard) => match *user_id_guard {
-                Some(ref user_id) => user_id.clone(),
-                None => return,
-            },
-            Err(err) => {
-                tracing::error!("could not acquire lock for user metrics report {}", err);
-                return;
-            }
+        let user_id = match &res_info.traffic_counter_handle.user_id {
+            Some(user_id) => user_id.clone(),
+            None => return,
         };
-
         if let Err(SendError(err)) = tx.send(BandwidthMetrics {
-            user_id: user_id.to_string(),
+            user_id: user_id.clone(),
             ingress,
             egress,
         }) {
