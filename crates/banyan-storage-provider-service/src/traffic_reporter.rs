@@ -55,7 +55,8 @@ impl TrafficReporter {
             while let Some(user_metrics) = rx.recv().await {
                 if let Err(e) = user_metrics
                     .save(&reporter.database, OffsetDateTime::now_utc())
-                    .await {
+                    .await
+                {
                     tracing::error!(
                         "failed to save metrics for user: {} err: {}",
                         user_metrics.user_id.as_str(),
