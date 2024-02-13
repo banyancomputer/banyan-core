@@ -1,3 +1,4 @@
+mod health_check;
 mod prune_blocks;
 mod report_upload;
 
@@ -22,6 +23,7 @@ where
     Router::new()
         .route("/report/:metadata_id", post(report_upload::handler))
         .route("/prune", post(prune_blocks::handler))
+        .route("/health_check", post(health_check::handler))
         .layer(cors_layer)
         .with_state(state)
 }
