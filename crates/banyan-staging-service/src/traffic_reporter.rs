@@ -30,6 +30,7 @@ impl<B> OnResponseEnd<B> for TrafficReporter {
             user_id: user_id.clone(),
             ingress,
             egress,
+            created_at: OffsetDateTime::now_utc(),
         }) {
             tracing::error!(
                 "could not send metrics to db for user {} err {:?}",
@@ -51,10 +52,7 @@ impl TrafficReporter {
         let reporter = self.clone();
         tokio::spawn(async move {
             while let Some(user_metrics) = rx.recv().await {
-                if let Err(e) = user_metrics
-                    .save(&reporter.database, OffsetDateTime::now_utc())
-                    .await
-                {
+                if let Err(e) = user_metrics.save(&reporter.database).await {
                     tracing::error!(
                         "failed to save metrics for user: {} err: {}",
                         user_metrics.user_id.as_str(),

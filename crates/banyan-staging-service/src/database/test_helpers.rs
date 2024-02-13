@@ -34,8 +34,9 @@ pub(crate) async fn create_bandwidth_metric(
         user_id: user_id.to_string(),
         ingress,
         egress,
+        created_at,
     }
-    .save(conn, created_at)
+    .save(conn)
     .await
     .unwrap()
 }

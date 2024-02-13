@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT user_id, SUM(ingress) as ingress, SUM(egress) as egress FROM bandwidth_metrics\n        WHERE created_at <= $1 GROUP BY user_id;",
+  "query": "SELECT *  FROM bandwidth_metrics WHERE created_at <= $1",
   "describe": {
     "columns": [
       {
@@ -17,6 +17,11 @@
         "name": "egress",
         "ordinal": 2,
         "type_info": "Int64"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 3,
+        "type_info": "Datetime"
       }
     ],
     "parameters": {
@@ -25,8 +30,9 @@
     "nullable": [
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "fd8ca5b9997e3c4fb239e7472ae54eea3eab14e093c1234b00c877e101827862"
+  "hash": "5cbec0fabbbfb048c4249cc1a963a4bce7cba5df5639e75d40a8d228bdc5afdd"
 }
