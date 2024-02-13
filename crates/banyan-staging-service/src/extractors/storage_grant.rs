@@ -143,7 +143,11 @@ where
             Uuid::parse_str(&usage.grant_id).map_err(|_| StorageGrantError::InvalidGrant)?;
 
         if let Some(handle) = parts.extensions.get_mut::<TrafficCounterHandle>() {
-            handle.user_id = Some(platform_id.to_string());
+            if let Ok(mut user_id) = handle.user_id.lock() {
+                *user_id = Some(platform_id.to_string());
+            } else {
+                tracing::error!("could not acquire guard. thread was poisoned");
+            }
         }
 
         let grant = StorageGrant {

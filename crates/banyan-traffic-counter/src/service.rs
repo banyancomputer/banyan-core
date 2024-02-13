@@ -1,4 +1,5 @@
 use std::fmt::Debug;
+use std::sync::{Arc, Mutex};
 use std::task::{Context, Poll};
 
 use http::{Request, Response};
@@ -27,7 +28,7 @@ impl<S, OnResponseEnd> TrafficCounter<S, OnResponseEnd> {
 
 #[derive(Clone, Debug, Default)]
 pub struct TrafficCounterHandle {
-    pub user_id: Option<String>,
+    pub user_id: Arc<Mutex<Option<String>>>,
 }
 
 impl<ReqBody, ResBody, OnResponseEndT, S> Service<Request<ReqBody>>

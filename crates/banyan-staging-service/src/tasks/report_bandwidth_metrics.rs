@@ -66,13 +66,8 @@ impl TaskLike for ReportBandwidthMetricsTask {
                 user_id: metrics.user_id.as_str(),
                 ingress: metrics.ingress,
                 egress: metrics.egress,
-                slot: slot_end.unix_timestamp(),
-                storage_host_name: ctx.service_name(),
+                slot: metrics.created_at.unix_timestamp(),
             };
-            println!(
-                "reporting meter_traffic_request {:?}",
-                meter_traffic_request
-            );
             if let Err(err) = client.report_user_bandwidth(meter_traffic_request).await {
                 tracing::error!(
                     "could not report metrics for user {} err {}",

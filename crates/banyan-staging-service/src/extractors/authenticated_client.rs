@@ -141,8 +141,12 @@ where
             Err(err) => return Err(Self::Rejection::CorruptPlatformId(err)),
         };
 
-        if let Some(handle) = parts.extensions.get_mut::<TrafficCounterHandle>() {
-            handle.user_id = Some(platform_id.to_string());
+        if let Some(handle) = parts.extensions.get::<TrafficCounterHandle>() {
+            if let Ok(mut user_id) = handle.user_id.lock() {
+                *user_id = Some(platform_id.to_string());
+            } else {
+                tracing::error!("could not acquire guard. thread was poisoned");
+            }
         }
 
         Ok(AuthenticatedClient {

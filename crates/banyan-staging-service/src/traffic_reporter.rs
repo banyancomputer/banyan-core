@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use banyan_traffic_counter::body::{RequestInfo, ResponseInfo};
 use banyan_traffic_counter::on_response_end::OnResponseEnd;
 use time::OffsetDateTime;
@@ -8,8 +6,6 @@ use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 
 use crate::database::models::BandwidthMetrics;
 use crate::database::Database;
-
-const ONE_HOUR_DURATION: Duration = Duration::from_secs(60 * 60);
 
 #[derive(Clone)]
 pub struct TrafficReporter {
@@ -22,12 +18,20 @@ impl<B> OnResponseEnd<B> for TrafficReporter {
         let ingress = (req_info.header_bytes + req_info.body_bytes) as i64;
         let egress = (res_info.header_bytes + res_info.body_bytes) as i64;
         let tx = self.tx.clone();
-        let user_id = match &res_info.traffic_counter_handle.user_id {
-            Some(user_id) => user_id.clone(),
-            None => return,
+
+        let user_id = match res_info.traffic_counter_handle.user_id.lock() {
+            Ok(user_id_guard) => match *user_id_guard {
+                Some(ref user_id) => user_id.clone(),
+                None => return,
+            },
+            Err(err) => {
+                tracing::error!("could not acquire lock for user metrics report {}", err);
+                return;
+            }
         };
+
         if let Err(SendError(err)) = tx.send(BandwidthMetrics {
-            user_id: user_id.clone(),
+            user_id: user_id.to_string(),
             ingress,
             egress,
             created_at: OffsetDateTime::now_utc(),
@@ -49,10 +53,10 @@ impl TrafficReporter {
     }
 
     fn start_metrics_flush_task(&self, mut rx: UnboundedReceiver<BandwidthMetrics>) {
-        let reporter = self.clone();
+        let database = self.database.clone();
         tokio::spawn(async move {
             while let Some(user_metrics) = rx.recv().await {
-                if let Err(e) = user_metrics.save(&reporter.database).await {
+                if let Err(e) = user_metrics.save(&database).await {
                     tracing::error!(
                         "failed to save metrics for user: {} err: {}",
                         user_metrics.user_id.as_str(),

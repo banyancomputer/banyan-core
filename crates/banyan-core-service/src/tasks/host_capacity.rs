@@ -1,23 +1,8 @@
 use async_trait::async_trait;
 use banyan_task::{CurrentTask, TaskLike};
 use serde::{Deserialize, Serialize};
-use sqlx::SqlitePool;
 
-#[derive(Clone)]
-pub struct HostCapacityTaskContext {
-    db_pool: SqlitePool,
-}
-
-#[allow(dead_code)]
-impl HostCapacityTaskContext {
-    pub fn db_pool(&self) -> &SqlitePool {
-        &self.db_pool
-    }
-
-    pub fn new(db_pool: SqlitePool) -> Self {
-        Self { db_pool }
-    }
-}
+use crate::app::AppState;
 
 #[non_exhaustive]
 #[derive(Debug, thiserror::Error)]
@@ -48,10 +33,10 @@ impl TaskLike for HostCapacityTask {
     const TASK_NAME: &'static str = "used_storage_task";
 
     type Error = HostCapacityTaskError;
-    type Context = HostCapacityTaskContext;
+    type Context = AppState;
 
     async fn run(&self, _task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
-        let mut db_conn = ctx.db_pool().acquire().await.unwrap();
+        let mut db_conn = ctx.database().acquire().await.unwrap();
         let storage_host_id = self.storage_host_id.clone();
 
         // Update used_storage by summing the metadata entries over data_size
@@ -120,6 +105,7 @@ mod tests {
     use banyan_task::{CurrentTask, TaskLike};
 
     use super::*;
+    use crate::app::mock_app_state;
     use crate::database::models::{Metadata, MetadataState};
     use crate::database::test_helpers::*;
 
@@ -136,8 +122,8 @@ mod tests {
         storage_host_id_2: String,
     }
 
-    pub async fn get_stats(ctx: HostCapacityTaskContext, storage_host_id: &str) -> (i64, i64) {
-        let mut db_conn = ctx.db_pool().acquire().await.unwrap();
+    pub async fn get_stats(ctx: AppState, storage_host_id: &str) -> (i64, i64) {
+        let mut db_conn = ctx.database().acquire().await.unwrap();
 
         let used_storage = sqlx::query_scalar!(
             r#"
@@ -167,7 +153,7 @@ mod tests {
     }
 
     /// Return a base context and a test account id
-    pub async fn test_setup() -> (HostCapacityTaskContext, CurrentTask, StorageHosts) {
+    pub async fn test_setup() -> (AppState, CurrentTask, StorageHosts) {
         let (ctx, storage_hosts) = host_capacity_context().await;
         (ctx, default_current_task(), storage_hosts)
     }
@@ -206,8 +192,9 @@ mod tests {
         assert_eq!(reserved_storage, 0);
     }
 
-    async fn host_capacity_context() -> (HostCapacityTaskContext, StorageHosts) {
+    async fn host_capacity_context() -> (AppState, StorageHosts) {
         let db = setup_database().await;
+        let state = mock_app_state(db.clone());
         let mut conn = db.begin().await.expect("connection");
 
         // Register storage host
@@ -372,7 +359,7 @@ mod tests {
         conn.commit().await.expect("failed to commit transaction");
 
         (
-            HostCapacityTaskContext::new(db),
+            state.0,
             StorageHosts {
                 storage_host_id_1: storage_host_1,
                 storage_host_id_2: storage_host_2,
