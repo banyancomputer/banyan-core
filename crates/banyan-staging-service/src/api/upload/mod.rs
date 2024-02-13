@@ -107,6 +107,7 @@ pub async fn handler(
     {
         Ok(cr) => {
             complete_upload(&db, 0, cr.integrity_hash(), &upload.id).await?;
+
             ReportUploadTask::new(
                 client.storage_grant_id(),
                 &request.metadata_id.to_string(),
