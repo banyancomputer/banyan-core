@@ -32,7 +32,7 @@ impl<B> OnResponseEnd<B> for TrafficReporter {
             egress,
         }) {
             tracing::error!(
-                "could not send metrics for db for user {} err {:?}",
+                "could not send metrics to db for user {} err {:?}",
                 user_id,
                 err
             );
@@ -55,7 +55,11 @@ impl TrafficReporter {
                     .save(&reporter.database, OffsetDateTime::now_utc())
                     .await
                 {
-                    tracing::error!("Failed to save user id: {}", e);
+                    tracing::error!(
+                        "failed to save metrics for user: {} err: {}",
+                        user_metrics.user_id.as_str(),
+                        e
+                    );
                 }
             }
         });

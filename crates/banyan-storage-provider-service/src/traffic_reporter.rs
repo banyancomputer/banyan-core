@@ -34,7 +34,7 @@ impl<B> OnResponseEnd<B> for TrafficReporter {
             egress,
         }) {
             tracing::error!(
-                "could not send metrics for db for user {} err {:?}",
+                "could not send metrics to db for user {} err {:?}",
                 user_id,
                 err
             );
@@ -55,9 +55,12 @@ impl TrafficReporter {
             while let Some(user_metrics) = rx.recv().await {
                 if let Err(e) = user_metrics
                     .save(&reporter.database, OffsetDateTime::now_utc())
-                    .await
-                {
-                    tracing::error!("Failed to save user id: {}", e);
+                    .await {
+                    tracing::error!(
+                        "failed to save metrics for user: {} err: {}",
+                        user_metrics.user_id.as_str(),
+                        e
+                    );
                 }
             }
         });
