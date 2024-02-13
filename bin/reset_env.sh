@@ -46,6 +46,8 @@ make generate-staging-service-key
 [ -f "crates/banyan-staging-service/data/service-key.public" ] || fail 2 "staging missing public service key"
 [ -f "crates/banyan-staging-service/data/service-key.fingerprint" ] || fail 3 "staging missing service fingerprint"
 
+./bin/add_staging_host.sh
+
 # Generate the storage provider service's public key and its fingerprint. Then, add the storage host to the sqlite database.
 source crates/banyan-storage-provider-service/.env
 make generate-storage-provider-service-key
