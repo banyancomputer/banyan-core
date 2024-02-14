@@ -4,6 +4,7 @@ use axum::error_handling::HandleErrorLayer;
 use axum::extract::DefaultBodyLimit;
 use axum::handler::HandlerWithoutStateExt;
 use axum::{Router, Server, ServiceExt};
+use banyan_traffic_counter::layer::TrafficCounterLayer;
 use futures::future::join_all;
 use http::header;
 use tokio::task::JoinHandle;
@@ -21,6 +22,7 @@ use tracing::Level;
 
 use crate::app::{AppState, Config};
 use crate::tasks::start_background_workers;
+use crate::traffic_reporter::TrafficReporter;
 use crate::{api, health_check};
 
 mod error_handlers;
@@ -34,7 +36,7 @@ const REQUEST_MAX_SIZE: usize = 256 * 1_024;
 
 /// The maximum number of seconds that any individual request can take before it is dropped with an
 /// error.
-const REQUEST_TIMEOUT: Duration = std::time::Duration::from_secs(15);
+const REQUEST_TIMEOUT: Duration = Duration::from_secs(15);
 
 const SENSITIVE_HEADERS: &[http::HeaderName] = &[
     header::AUTHORIZATION,
@@ -57,6 +59,11 @@ fn create_trace_layer(log_level: Level) -> TraceLayer<SharedClassifier<ServerErr
 
 /// Run the App over HTTP
 pub async fn run(config: Config) {
+    // Create a new instance of our application state
+    let app_state = AppState::from_config(&config)
+        .await
+        .expect("app state to be created");
+
     // Initialize a blocker that will allow us to gracefully shutdown
     let (shutdown_handle, mut shutdown_rx) = shutdown_blocker::graceful_shutdown_blocker().await;
     // Specify log level for tracing
@@ -82,6 +89,9 @@ pub async fn run(config: Config) {
         // Propgate that identifier to any downstream services to avoid untrusted injection of this header.
         .set_x_request_id(MakeRequestUuid)
         .propagate_x_request_id()
+        .layer(TrafficCounterLayer::new(TrafficReporter::new(
+            app_state.database(),
+        )))
         // Default request size. Individual handlers can opt-out of this limit, see api/upload.rs for an example.
         .layer(DefaultBodyLimit::max(REQUEST_MAX_SIZE))
         // TODO: is this desired?
@@ -91,15 +101,13 @@ pub async fn run(config: Config) {
         .layer(SetSensitiveResponseHeadersLayer::from_shared(
             SENSITIVE_HEADERS.into(),
         ));
-    // Create a new instance of our application state
-    let app_state = AppState::from_config(&config)
-        .await
-        .expect("app state to be created");
+
     // TODO: service index.html from dist if not found
     // Start background workers
     let worker_handle = start_background_workers(app_state.clone(), shutdown_rx.clone())
         .await
         .expect("background workers to start");
+
     // Serve static assets
     let static_assets =
         ServeDir::new("dist").not_found_service(error_handlers::not_found_handler.into_service());

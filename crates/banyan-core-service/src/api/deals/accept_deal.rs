@@ -60,9 +60,8 @@ mod tests {
         let db = test_helpers::setup_database().await;
         let mut conn = db.acquire().await.expect("connection");
 
-        let host_id = test_helpers::create_storage_hosts(&mut conn, "http://mock.com", "mock_name")
-            .await
-            .unwrap();
+        let host_id =
+            test_helpers::create_storage_hosts(&mut conn, "http://mock.com", "mock_name").await;
         let active_deal_id = test_helpers::create_deal(&mut conn, DealState::Active, None, None)
             .await
             .unwrap();
@@ -94,9 +93,7 @@ mod tests {
                 .unwrap();
 
         let res = handler(
-            StorageProviderIdentity {
-                id: host_id.unwrap(),
-            },
+            StorageProviderIdentity { id: host_id },
             mock_app_state(db.clone()),
             Path(Uuid::parse_str(accepted_deal_id.as_str()).unwrap()),
         )

@@ -9,6 +9,9 @@ use http_body::{Body, SizeHint};
 use pin_project_lite::pin_project;
 use tokio::sync::oneshot;
 
+use crate::on_response_end::OnResponseEnd;
+use crate::service::TrafficCounterHandle;
+
 pin_project! {
     #[derive(Debug)]
     pub struct RequestCounter<B> {
@@ -29,26 +32,29 @@ impl<B> RequestCounter<B> {
     }
 }
 
-pub type FnOnResponseEnd = fn(req_info: &RequestInfo, res_info: &ResponseInfo) -> ();
-
 pin_project! {
     #[derive(Debug)]
-    pub struct ResponseCounter<B> {
+    pub struct ResponseCounter<B, OnResponseEnd> {
         response_info: ResponseInfo,
         request_info: RequestInfo ,
-        on_response_end: FnOnResponseEnd,
+        on_response_end: OnResponseEnd,
         #[pin]
         inner: B,
     }
 }
 
-impl<B> ResponseCounter<B> {
+impl<B, OnResponseEndT> ResponseCounter<B, OnResponseEndT>
+where
+    B: Body,
+    OnResponseEndT: OnResponseEnd<B>,
+{
     pub fn new(
         inner: B,
         headers: &HeaderMap,
         request_info: RequestInfo,
         status_code: StatusCode,
-        on_response_end: FnOnResponseEnd,
+        on_response_end: OnResponseEndT,
+        traffic_counter_handle: TrafficCounterHandle,
     ) -> Self {
         let response_header_bytes = headers
             .iter()
@@ -58,6 +64,7 @@ impl<B> ResponseCounter<B> {
         Self {
             request_info,
             response_info: ResponseInfo {
+                traffic_counter_handle,
                 body_bytes: 0,
                 header_bytes: response_header_bytes,
                 status_code,
@@ -129,10 +136,11 @@ where
     }
 }
 
-impl<B> Body for ResponseCounter<B>
+impl<B, OnResponseEndT> Body for ResponseCounter<B, OnResponseEndT>
 where
     B: Body,
     B::Error: Into<Box<dyn Error + Send + Sync>>,
+    OnResponseEndT: OnResponseEnd<B::Data>,
 {
     type Data = B::Data;
     type Error = Box<dyn Error + Send + Sync>;
@@ -152,7 +160,8 @@ where
             // Not called when response is HttpBody
             // Called when the response is StreamBody
             None => {
-                (this.on_response_end)(this.request_info, this.response_info);
+                this.on_response_end
+                    .on_response_end(this.request_info, this.response_info);
                 None
             }
         };
@@ -185,7 +194,8 @@ where
     fn is_end_stream(&self) -> bool {
         let end_stream = self.inner.is_end_stream();
         if end_stream {
-            (self.on_response_end)(&self.request_info, &self.response_info);
+            self.on_response_end
+                .on_response_end(&self.request_info, &self.response_info);
         }
         end_stream
     }
@@ -205,11 +215,13 @@ pub struct RequestInfo {
     pub body_bytes: usize,
 }
 
-#[derive(Debug, Clone)]
+// #[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct ResponseInfo {
     pub body_bytes: usize,
     pub header_bytes: usize,
     pub status_code: StatusCode,
+    pub traffic_counter_handle: TrafficCounterHandle,
 }
 
 impl<T> From<&Request<T>> for RequestInfo {
@@ -301,10 +313,11 @@ mod tests {
             &headers,
             request_info,
             status_code,
-            |req_info, res_info| {
+            |req_info: &RequestInfo, res_info: &ResponseInfo| {
                 assert_eq!(req_info.body_bytes + req_info.header_bytes, 0);
                 assert_eq!(res_info.body_bytes + res_info.header_bytes, 15);
             },
+            TrafficCounterHandle::default(),
         );
 
         poll_to_completion(body_counter, None).await;
@@ -321,10 +334,11 @@ mod tests {
             &headers,
             request_info,
             status_code,
-            |req_info, res_info| {
+            |req_info: &RequestInfo, res_info: &ResponseInfo| {
                 assert_eq!(req_info.body_bytes + req_info.header_bytes, 0);
                 assert_eq!(res_info.body_bytes + res_info.header_bytes, 0);
             },
+            TrafficCounterHandle::default(),
         );
         poll_to_completion(body_counter, None).await;
     }

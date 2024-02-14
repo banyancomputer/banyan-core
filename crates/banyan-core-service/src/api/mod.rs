@@ -11,7 +11,9 @@ mod blocks;
 mod buckets;
 mod deals;
 mod invoices;
+mod metrics;
 pub mod models;
+mod notifications;
 mod share;
 mod subscriptions;
 mod users;
@@ -33,6 +35,7 @@ where
 
     Router::new()
         .nest("/admin", admin::router(state.clone()))
+        .nest("/metrics", metrics::router(state.clone()))
         .nest("/auth", auth::router(state.clone()))
         .nest("/blocks", blocks::router(state.clone()))
         .nest("/buckets", buckets::router(state.clone()))
@@ -41,6 +44,7 @@ where
         .nest("/share", share::router(state.clone()))
         .nest("/subscriptions", subscriptions::router(state.clone()))
         .nest("/users", users::router(state.clone()))
+        .nest("/notifications", notifications::router(state.clone()))
         .layer(cors_layer)
         .with_state(state)
         .fallback(api_not_found_handler)
