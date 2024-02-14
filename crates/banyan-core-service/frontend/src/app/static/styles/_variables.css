@@ -1,8 +1,8 @@
 :root {
     --error: #CB3535;
     --error-banner: #FDF0F0;;
-    --beta-banner: #FFD7B2;
-    --beta-banner-border: #ED770B;
+    --beta-banner: #FCF5EE;
+    --beta-banner-border: #FCF5EE;
     --login: #F7F7F7;
     --navigation-primary: #FEFCFA;
     --navigation-secondary: #F7EBE1;
@@ -52,8 +52,9 @@
 
 [prefers-color-scheme="dark"]:root {
     --error: #CB3535;
-    --beta-banner: #FFD7B2;
-    --beta-banner-border: #ED770B;
+    --error-banner: #FDF0F0;;
+    --beta-banner: #FCF5EE;
+    --beta-banner-border: #FCF5EE;
     --login: #F7F7F7;
     --navigation-primary: #FEFCFA;
     --navigation-secondary: #F7EBE1;
@@ -73,17 +74,17 @@
     --logo: #57221E;
     --text-900: #111322;
     --text-800: #30374F;
-    --text-600: #4A5578;
+    --text-600: #5F5F5F;
     --text-400: #00143140;
     --text-200: #e5e7eb;
     --modal-background: #fff;
-    --regular-border: #EFF1F5;
+    --regular-border: #E6E6E6;
     --darken-border: #D0D5DD;
     --main-background: #FFF;
     --secondary-background: #fff;
     --highlight-color: #5299E0;
     --hover-background: #274d5c0d;
-    --disabled: #cbd5e1;
+    --disabled: #E4E4E4;
     --shadow: 0px 1px 2px 0px rgba(16, 24, 40, 0.06);
     --dragging: #e0f4fc;
     --draggingBorder: #0F3A4A;
