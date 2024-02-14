@@ -5,6 +5,7 @@ import { UploadFileModal } from '@components/common/Modal/UploadFileModal';
 import { Fallback } from '@components/common/Fallback';
 import { Bucket } from '@components/Home/Bucket';
 import { CreateBucketModal } from '@components/common/Modal/CreateBucketModal';
+import { EmptyState } from '@components/Home/EmptyState';
 
 import { useTomb } from '@/app/contexts/tomb';
 import { useModal } from '@/app/contexts/modals';
@@ -23,7 +24,7 @@ const Home = () => {
 
     const createDrive = () => {
         openModal(<CreateBucketModal />);
-    }
+    };
 
     useEffect(() => {
         if (!tomb) { return; }
@@ -32,7 +33,7 @@ const Home = () => {
             try {
                 await getBucketsFiles();
             } catch (error: any) {
-                ToastNotifications.error('Error on files loading', 'Try again', getFiles)
+                ToastNotifications.error('Error on files loading', 'Try again', getFiles);
             };
         };
 
@@ -40,7 +41,7 @@ const Home = () => {
     }, [buckets.length, tomb]);
 
     return (
-        <section className="py-9 pt-14 px-4" id="buckets">
+        <section className="h-[455px] py-9 pt-14 px-4" id="buckets">
             <div className="mb-4 flex flex-col w-full justify-between gap-4">
                 <h2 className="text-lg font-semibold">
                     {`${messages.allDrives}`}
@@ -63,13 +64,17 @@ const Home = () => {
                 </div>
             </div>
             <Fallback shouldRender={!areBucketsLoading}>
-                <div className="grid grid-cols-3 gap-3 xl:grid-cols-4 ">
-                    {
-                        buckets.map(bucket =>
-                            <Bucket bucket={bucket} key={bucket.id} />
-                        )
-                    }
-                </div>
+                {buckets.length ?
+                    <div className="grid grid-cols-3 gap-3 xl:grid-cols-4 ">
+                        {
+                            buckets.map(bucket =>
+                                <Bucket bucket={bucket} key={bucket.id} />
+                            )
+                        }
+                    </div>
+                    :
+                    <EmptyState />
+                }
             </Fallback>
         </section>
     );
