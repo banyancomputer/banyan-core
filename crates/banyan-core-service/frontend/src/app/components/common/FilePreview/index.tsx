@@ -118,7 +118,7 @@ export const FilePreview = () => {
                             </div>
                             <FilePreviewActions
                                 bucket={bucket!}
-                                file={file.rawData!}
+                                file={file.browserObject!}
                                 parrentFolder={parrentFolder!}
                                 path={path}
                             />
@@ -140,7 +140,7 @@ export const FilePreview = () => {
                             :
                             <>
                                 {
-                                    getPreviewTag(file.data, file.fileType)
+                                    getPreviewTag(file.objectUrl, file.fileType)
                                 }
                             </>
                         }
