@@ -3,6 +3,7 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use serde::{Deserialize, Serialize};
+use time::OffsetDateTime;
 
 use crate::app::AppState;
 use crate::extractors::StorageProviderIdentity;
@@ -22,15 +23,17 @@ pub async fn handler(
     let database = state.database();
     let mut conn = database.begin().await?;
 
+    let current_time = OffsetDateTime::now_utc();
     let current_version = report.version;
     let storage_provider_id = storage_provider.id;
 
     sqlx::query!(
         r#"
             UPDATE storage_hosts
-            SET last_seen_at = CURRENT_TIMESTAMP, current_version = $1
-            WHERE id = $2;
+            SET last_seen_at = $1, current_version = $2
+            WHERE id = $3;
         "#,
+        current_time,
         current_version,
         storage_provider_id,
     )
