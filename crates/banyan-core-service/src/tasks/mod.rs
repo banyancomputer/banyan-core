@@ -27,6 +27,7 @@ pub async fn start_background_workers(
         .configure_queue(QueueConfig::new("default").with_worker_count(5))
         .register_task_type::<PruneBlocksTask>()
         .register_task_type::<CreateDealsTask>()
+        .register_task_type::<HostCapacityTask>()
         .start(async move {
             let _ = shutdown_rx.changed().await;
         })

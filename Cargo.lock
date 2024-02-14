@@ -647,6 +647,7 @@ dependencies = [
  "banyan-car-analyzer",
  "banyan-object-store",
  "banyan-task",
+ "banyan-traffic-counter",
  "blake3",
  "bytes",
  "cid 0.10.1",

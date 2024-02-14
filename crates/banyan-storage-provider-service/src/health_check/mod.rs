@@ -1,3 +1,6 @@
+use std::error::Error;
+
+use axum::body::HttpBody;
 use axum::routing::get;
 use axum::Router;
 use http::header::{ACCEPT, ORIGIN};
@@ -16,7 +19,11 @@ use crate::app::AppState;
 /// among these bytes in the limit. Large requests here should always be rejected.
 const HEALTHCHECK_REQUEST_SIZE_LIMIT: usize = 1_024;
 
-pub fn router(state: AppState) -> Router<AppState> {
+pub fn router<B>(state: AppState) -> Router<AppState, B>
+where
+    B: HttpBody + Send + 'static,
+    Box<dyn Error + Send + Sync + 'static>: From<B::Error>,
+{
     let cors_layer = CorsLayer::new()
         .allow_methods(vec![Method::GET])
         .allow_headers(vec![ACCEPT, ORIGIN])

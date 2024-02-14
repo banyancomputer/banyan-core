@@ -2,6 +2,8 @@ use sqlx::{FromRow, SqlitePool};
 
 pub mod models;
 mod sqlite;
+#[cfg(test)]
+pub(crate) mod test_helpers;
 
 #[derive(FromRow)]
 pub struct BareId {
@@ -15,6 +17,7 @@ impl BareId {
 }
 
 pub type Database = SqlitePool;
+pub type DatabaseConnection = sqlx::SqliteConnection;
 
 pub async fn connect(db_url: &url::Url) -> Result<Database, DatabaseSetupError> {
     if db_url.scheme() == "sqlite" {
