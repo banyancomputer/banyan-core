@@ -8,11 +8,13 @@ use tracing_subscriber::{EnvFilter, Layer};
 
 mod api;
 mod app;
+mod clients;
 mod database;
 mod extractors;
 mod health_check;
 mod http_server;
 mod tasks;
+mod traffic_reporter;
 mod utils;
 
 use app::Config;

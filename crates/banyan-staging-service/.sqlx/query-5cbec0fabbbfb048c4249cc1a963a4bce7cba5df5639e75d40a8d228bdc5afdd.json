@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT *  FROM bandwidth_metrics WHERE created_at <= $1",
+  "describe": {
+    "columns": [
+      {
+        "name": "user_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "ingress",
+        "ordinal": 1,
+        "type_info": "Int64"
+      },
+      {
+        "name": "egress",
+        "ordinal": 2,
+        "type_info": "Int64"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 3,
+        "type_info": "Datetime"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "5cbec0fabbbfb048c4249cc1a963a4bce7cba5df5639e75d40a8d228bdc5afdd"
+}

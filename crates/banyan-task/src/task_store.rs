@@ -102,6 +102,9 @@ pub enum TaskStoreError {
 
     #[error("task deserialization failed: {0}")]
     DeserializationFailed(#[from] serde_json::Error),
+
+    #[error("database error: {0}")]
+    DatabaseError(sqlx::Error),
 }
 
 impl From<sqlx::Error> for TaskStoreError {

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO bandwidth_metrics (user_id, ingress, egress, created_at) VALUES ($1, $2, $3, $4);",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "f9745990808a3cd4de32adc91ea4d14478108a8e154462544cda5bed631d3cd8"
+}

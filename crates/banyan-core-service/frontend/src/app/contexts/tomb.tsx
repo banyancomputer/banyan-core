@@ -71,7 +71,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	const [areTermsAccepted, setAreTermsAccepted] = useState(false);
 	const [selectedBucket, setSelectedBucket] = useState<Bucket | null>(null);
 	const [storageUsage, setStorageUsage] = useState<{ usage: number, softLimit: number, hardLimit: number }>({ usage: 0, softLimit: 0, hardLimit: 0 });
-	const [areBucketsLoading, setAreBucketsLoading] = useState<boolean>(false);
+	const [areBucketsLoading, setAreBucketsLoading] = useState<boolean>(true);
 	const folderLocation = useFolderLocation();
 	const [error, setError] = useState<string>('');
 
@@ -127,7 +127,6 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
 	/** Pushes files and snapshots inside of buckets list. */
 	const getBucketsFiles = async () => {
-		setAreBucketsLoading(true);
 		return await tombMutex(tomb, async tomb => {
 			const wasm_bukets: Bucket[] = [];
 			for (const bucket of buckets) {
@@ -140,7 +139,9 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 				});
 			};
 			setBuckets(wasm_bukets);
-			setAreBucketsLoading(false);
+			setTimeout(() => {
+				setAreBucketsLoading(false);
+			}, 300);
 		});
 	};
 

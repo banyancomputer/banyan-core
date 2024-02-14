@@ -1,66 +1,61 @@
 import React, { FC, ReactNode, createContext, useContext, useEffect, useState } from 'react';
 import mime from 'mime';
-
-import { useTomb } from './tomb';
-import { Bucket } from '@/app/types/bucket';
-import { ToastNotifications } from '../utils/toastNotifications';
 import { useIntl } from 'react-intl';
 
-interface FileState {
-    name: string;
-    data: string;
+import { useTomb } from './tomb';
+import { BrowserObject, Bucket } from '@/app/types/bucket';
+import { ToastNotifications } from '../utils/toastNotifications';
+import { SUPPORTED_EXTENSIONS, fileTypes } from "@app/types/filesPreview"
+
+
+interface OpenedFile {
+    objectUrl: string;
     blob: File | null;
     fileType: string,
     isLoading: boolean;
+    name: string;
+    browserObject: BrowserObject | null;
 };
 
-interface FilePreviewState {
-    file: FileState;
-    files: string[];
-    bucket: Bucket | null;
-    openFile: (bucket: Bucket, file: string, files: string[], path: string[]) => void;
-    openNext: () => void;
-    openPrevious: () => void;
-    closeFile: () => void;
-};
-
-const initialState: FileState = {
+const initialOpenedFileState: OpenedFile = {
+    objectUrl: '',
     name: '',
-    data: '',
     blob: null,
     fileType: '',
     isLoading: false,
+    browserObject: null
 };
 
-export const SUPPORTED_AUDIO_EXTENSIONS = ['mp3', 'ogg', 'wav'];
-export const SUPPORTED_DOCUMENT_EXTENSIONS = ['pdf'];
-export const SUPPORTED_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp'];
-export const SUPPORTED_SPREADSHEET_EXTENSIONS = ['csv'];
-export const SUPPORTED_VIDEO_EXTENSIONS = ['mp4', 'webm', 'ogg'];
-export const SUPPORTED_EXTENSIONS = [SUPPORTED_AUDIO_EXTENSIONS, SUPPORTED_DOCUMENT_EXTENSIONS, SUPPORTED_IMAGE_EXTENSIONS, SUPPORTED_SPREADSHEET_EXTENSIONS, SUPPORTED_VIDEO_EXTENSIONS];
-const fileTypes = ['audio', 'document', 'image', 'spreadsheet', 'video'];
+class FilePreviewState {
+    public file: OpenedFile = initialOpenedFileState;
+    public files: BrowserObject[] = [];
+    public bucket: Bucket | null = null;
+    public path: string[] = [];
+    public parrentFolder: BrowserObject | undefined = undefined;
+    openFile: (bucket: Bucket, file: BrowserObject, files: BrowserObject[], path: string[], parrentFolder?: BrowserObject) => void = () => {};
+    openNext: () => void = () => { };
+    openPrevious: () => void = () => { };
+    closeFile: () => void = () => { };
+};
+
+
 export const FilePreviewContext = createContext<FilePreviewState>({} as FilePreviewState);
 
 export const FilePreviewProvider: FC<{ children: ReactNode }> = ({ children }) => {
-    const [file, setFile] = useState(initialState);
-    const [files, setFiles] = useState<string[]>([]);
-    const [bucket, setBucket] = useState<Bucket | null>(null);
-    const [path, setPath] = useState<string[]>([]);
+    const [previewState, setPsreviewState] = useState<FilePreviewState>(new FilePreviewState());
+    const { bucket, file, files, path, parrentFolder } = previewState;
     const { getFile } = useTomb();
     const { messages } = useIntl();
 
-    const openFile = async (bucket: Bucket, file: string, files: string[], path: string[]) => {
+    const openFile = async (bucket: Bucket, file: BrowserObject, files: BrowserObject[], path: string[], parrentFolder?: BrowserObject) => {
         if (!file) return;
 
-        setFile({ ...initialState, name: file });
-        setFiles(files);
-        setBucket(bucket);
-        setPath(path);
+        setPsreviewState(prev => ({...prev, files, file: { ...initialOpenedFileState, name: file.name, browserObject: file }, bucket, path, parrentFolder }));
 
-        const fileExtension = [...file.split('.')].pop() || '';
+        const fileExtension = [...file.name.split('.')].pop() || '';
         const isFileSupported = SUPPORTED_EXTENSIONS.some((element, index) => {
             const result = element.includes(fileExtension);
-            result && setFile(prev => ({ ...prev, fileType: fileTypes[index] }));
+            result && setPsreviewState(prev => ({ ...prev, file: { ...prev.file, browserObject: file, fileType: fileTypes[index] } }));
             return result;
         });
 
@@ -69,35 +64,34 @@ export const FilePreviewProvider: FC<{ children: ReactNode }> = ({ children }) =
         };
 
         try {
-            setFile(prev => ({ ...prev, isLoading: true }));
-            const arrayBuffer = await getFile(bucket, path, file);
-            const blob = new File([arrayBuffer], file, { type: mime.getType(fileExtension) || '' });
-            const data = URL.createObjectURL(blob);
-            setFile(prev => ({ data, name: file, blob, fileType: prev.fileType, isLoading: false }));
+            setPsreviewState(prev => ({ ...prev, file: { ...prev.file, isLoading: true } }));
+            const arrayBuffer = await getFile(bucket, path, file.name);
+            const blob = new File([arrayBuffer], file.name, { type: mime.getType(fileExtension) || '' });
+            const objectUrl = URL.createObjectURL(blob);
+            setPsreviewState(prev => ({ ...prev, file: { ...prev.file, objectUrl, isLoading: false } }));
         } catch (error: any) {
             ToastNotifications.error('Failed to load file', `${messages.tryAgain}`, () => openFile(bucket, file, files, path));
-            setFile(initialState);
+            setPsreviewState(prev => ({ ...prev, file: initialOpenedFileState }));
         }
     };
 
     const openNext = () => {
-        const selectedFileIndex = files.indexOf(file.name);
-        openFile(bucket!, files[selectedFileIndex + 1], files, path);
+        const selectedFileIndex = files.map(file => file.name).indexOf(file.name);
+        openFile(bucket!, files[selectedFileIndex + 1], files, path, parrentFolder);
     };
 
     const openPrevious = () => {
-        const selectedFileIndex = files.indexOf(file.name);
-        openFile(bucket!, files[selectedFileIndex - 1], files, path);
+        const selectedFileIndex = files.map(file => file.name).indexOf(file.name);
+        openFile(bucket!, files[selectedFileIndex - 1], files, path, parrentFolder);
     };
 
     const closeFile = () => {
-        setFile(initialState);
-        setFiles([]);
+        setPsreviewState(new FilePreviewState());
     };
 
     useEffect(() => {
         const listener = (event: KeyboardEvent) => {
-            const selectedFileIndex = files.indexOf(file.name);
+            const selectedFileIndex = files.map(file => file.name).indexOf(file.name);
             if (event.code === 'ArrowLeft' && selectedFileIndex) {
                 openPrevious();
             } else if (event.code === 'ArrowRight' && (selectedFileIndex < files.length - 1)) {
@@ -110,10 +104,10 @@ export const FilePreviewProvider: FC<{ children: ReactNode }> = ({ children }) =
         return () => {
             document.removeEventListener('keydown', listener);
         }
-    }, [file.name]);
+    }, [previewState.file.name]);
 
     return (
-        <FilePreviewContext.Provider value={{ file, files, bucket, openFile, closeFile, openNext, openPrevious }}>
+        <FilePreviewContext.Provider value={{ ...previewState, openFile, openNext, openPrevious, closeFile }}>
             {children}
         </FilePreviewContext.Provider>
     );

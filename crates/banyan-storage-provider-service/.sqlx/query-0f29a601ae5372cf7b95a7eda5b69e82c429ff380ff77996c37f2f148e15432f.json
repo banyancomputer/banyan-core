@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM bandwidth_metrics WHERE created_at <= $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "0f29a601ae5372cf7b95a7eda5b69e82c429ff380ff77996c37f2f148e15432f"
+}
