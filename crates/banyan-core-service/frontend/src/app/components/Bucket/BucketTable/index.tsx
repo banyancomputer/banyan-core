@@ -22,7 +22,7 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const params = useParams();
     const bucketId = params.id;
     const { uploadFiles, setFiles, files } = useFilesUpload();
-    const { error, getSelectedBucketFiles, moveTo } = useTomb();
+    const { getSelectedBucketFiles, moveTo } = useTomb();
     /** Created to prevent sotring logic affect initial buckets array */
     const [bucketCopy, setBucketCopy] = useState(bucket);
     const { messages } = useIntl();
@@ -101,7 +101,7 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         <div
             onDrop={handleDrop}
             onDragOver={preventDefaultDragAction}
-            className={`w-fit h-full overflow-x-auto bg-secondaryBackground ${error ? 'max-h-[calc(100vh-440px)]' : 'max-h-[calc(100vh-388px)]'}`}
+            className={`w-fit h-full overflow-x-auto bg-secondaryBackground max-h-[calc(100vh-388px)]`}
             id="table"
         >
             <div className="pb-1 text-m font-medium">

@@ -16,7 +16,6 @@ export const NextBillingDate = () => {
     const { messages } = useIntl();
     const { openModal } = useModal();
 
-
     const upgragePlan = () => {
         openModal(<SubscriptionPlanModal />);
     };

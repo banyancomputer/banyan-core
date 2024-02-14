@@ -1,5 +1,5 @@
 import React, { ReactNode, createContext, useContext, useEffect, useState } from 'react';
-import { TombWasm, WasmBucket, WasmMount, WasmSnapshot } from 'tomb-wasm-experimental';
+import { TombWasm, WasmBucket, WasmSnapshot } from 'tomb-wasm-experimental';
 import { Mutex } from 'async-mutex';
 import { useNavigate } from 'react-router-dom';
 
@@ -19,6 +19,7 @@ import { TermsAndColditionsClient } from '@/api/termsAndConditions';
 import { UserClient } from '@/api/user';
 import { handleNameDuplication } from '@utils/names';
 import { StorageUsageClient } from '@/api/storageUsage';
+import { BannerError, useError } from './error';
 
 interface TombInterface {
 	tomb: TombWasm | null;
@@ -27,7 +28,6 @@ interface TombInterface {
 	trash: Bucket | null;
 	areBucketsLoading: boolean;
 	selectedBucket: Bucket | null;
-	error: string;
 	getBuckets: () => Promise<void>;
 	getBucketsFiles: () => Promise<void>;
 	getBucketsKeys: () => Promise<void>;
@@ -65,6 +65,8 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	const navigate = useNavigate();
 	const { openEscrowModal, openModal } = useModal();
 	const { isLoading, keystoreInitialized, getEncryptionKey, getApiKey, escrowedKeyMaterial, isLoggingOut } = useKeystore();
+	const { setError } = useError();
+
 	const [tomb, setTomb] = useState<TombWasm | null>(null);
 	const [buckets, setBuckets] = useState<Bucket[]>([]);
 	const [trash, setTrash] = useState<Bucket | null>(null);
@@ -73,7 +75,6 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	const [storageUsage, setStorageUsage] = useState<{ usage: number, softLimit: number, hardLimit: number }>({ usage: 0, softLimit: 0, hardLimit: 0 });
 	const [areBucketsLoading, setAreBucketsLoading] = useState<boolean>(true);
 	const folderLocation = useFolderLocation();
-	const [error, setError] = useState<string>('');
 
 	/** Prevents rust recursion error. */
 	const tombMutex = async <T,>(tomb: T, callback: (tomb: T) => Promise<any>) => {
@@ -401,7 +402,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 				);
 				setTomb(await tomb);
 			} catch (error: any) {
-				setError(error.message);
+				setError(new BannerError(error.message));
 			}
 		})();
 	}, [userData, keystoreInitialized, isLoading, escrowedKeyMaterial]);
@@ -460,8 +461,8 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 					await getBuckets();
 					await getStorageUsageState();
 				} catch (error: any) {
-					setError(error.message);
-				}
+					setError(new BannerError(error.message));
+				};
 			})();
 		};
 	}, [tomb]);
@@ -469,7 +470,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	return (
 		<TombContext.Provider
 			value={{
-				tomb, buckets, storageUsage, trash, areBucketsLoading, selectedBucket, error,
+				tomb, buckets, storageUsage, trash, areBucketsLoading, selectedBucket,
 				getBuckets, getBucketsFiles, getBucketsKeys, selectBucket, getSelectedBucketFiles,
 				takeColdSnapshot, getBucketShapshots, createBucketAndMount, deleteBucket, remountBucket,
 				getFile, renameBucket, createDirectory, uploadFile, purgeSnapshot,
