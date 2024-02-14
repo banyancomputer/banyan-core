@@ -199,9 +199,13 @@ pub async fn handler(
         let hard_limit_bytes = hard_limit * GIBIBYTE;
 
         let consumed_storage = user.consumed_storage(&mut conn).await?;
-
         if (consumed_storage + needed_capacity) > hard_limit_bytes {
-            tracing::warn!(consumed_storage, "account reached storage limit");
+            tracing::warn!(
+                consumed_storage,
+                needed_capacity,
+                hard_limit_bytes,
+                "account reached storage limit"
+            );
             let err_msg = serde_json::json!({"msg": "account reached available storage threshold"});
             return Ok((StatusCode::PAYLOAD_TOO_LARGE, Json(err_msg)).into_response());
         }
