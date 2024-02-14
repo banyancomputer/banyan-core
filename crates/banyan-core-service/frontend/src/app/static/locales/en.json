@@ -217,5 +217,6 @@
 	"hotReplications": "Hot Replications",
 	"freeEgress": "Free egress",
 	"outOfStorage": "You’re out of storage",
-	"outOfStorageDescription": "Upgrade your account to upload and sync files."
+	"outOfStorageDescription": "Upgrade your account to upload and sync files.",
+	"createYourFirstDrive": "Create your first drive to start uploading and sharing"
 }
