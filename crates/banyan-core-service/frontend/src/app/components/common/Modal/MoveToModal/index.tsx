@@ -12,17 +12,20 @@ import { useTomb } from '@/app/contexts/tomb';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 
 import { Done } from '@static/images/common';
+import { useFilePreview } from '@/app/contexts/filesPreview';
 
 export const MoveToModal: React.FC<{ file: BrowserObject; bucket: Bucket; path: string[]; parrentFolder: BrowserObject }> = ({ file, bucket, path, parrentFolder }) => {
     const { messages } = useIntl();
     const { moveTo, getSelectedBucketFiles, getExpandedFolderFiles } = useTomb();
     const { closeModal, openModal } = useModal();
+    const { closeFile } = useFilePreview();
     const [selectedFolder, setSelectedFolder] = useState<string[]>([]);
     const folderLocation = useFolderLocation();
 
     const move = async () => {
         try {
             await moveTo(bucket, [...path, file.name], [...selectedFolder], file.name);
+            closeFile();
             ToastNotifications.notify(`${messages.fileWasMoved}`, <Done width="20px" height="20px" />);
             if (path.join('/') === folderLocation.join('/')) {
                 await getSelectedBucketFiles(folderLocation);

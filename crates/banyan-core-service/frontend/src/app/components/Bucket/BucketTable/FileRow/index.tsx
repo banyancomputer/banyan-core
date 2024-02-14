@@ -16,7 +16,7 @@ export const FileRow: React.FC<{
     file: BrowserObject;
     bucket: Bucket;
     path: string[];
-    siblingFiles: string[];
+    siblingFiles: BrowserObject[];
     nestingLevel?: number;
     parrentFolder?: BrowserObject;
 }> = ({ file, bucket, nestingLevel = 0, path = [], parrentFolder, siblingFiles }) => {
@@ -30,7 +30,7 @@ export const FileRow: React.FC<{
             return;
         };
 
-        openFile(bucket, file.name, siblingFiles, path);
+        openFile(bucket, file, siblingFiles, path, parrentFolder);
     };
 
     return (
