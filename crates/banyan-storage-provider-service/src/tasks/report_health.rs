@@ -22,7 +22,33 @@ pub enum ReportHealthTaskError {
 
 #[derive(Deserialize, Serialize)]
 pub struct ReportHealthTask;
-type ReportHealth = Version;
+
+#[derive(Deserialize, Serialize)]
+struct ReportHealth {
+    pub build_profile: String,
+    pub features: Vec<String>,
+    pub version: String,
+}
+
+impl From<Version> for ReportHealth {
+    fn from(value: Version) -> Self {
+        Self {
+            build_profile: String::from(value.build_profile),
+            features: value
+                .features
+                .iter()
+                .map(|s| String::from(*s))
+                .collect::<Vec<_>>(),
+            version: String::from(value.version),
+        }
+    }
+}
+
+impl ReportHealth {
+    pub fn new() -> Self {
+        Version::new().into()
+    }
+}
 
 #[async_trait]
 impl TaskLike for ReportHealthTask {
@@ -61,7 +87,7 @@ impl TaskLike for ReportHealthTask {
 
         let request = client
             .post(report_endpoint.clone())
-            .json(&ReportHealth::new().serde())
+            .json(&ReportHealth::new())
             .bearer_auth(bearer_token);
 
         let response = request

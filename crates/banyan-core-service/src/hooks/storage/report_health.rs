@@ -2,19 +2,27 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
+use serde::{Deserialize, Serialize};
 
-use crate::app::{AppState, SerdeVersion};
+use crate::app::AppState;
 use crate::extractors::StorageProviderIdentity;
+
+#[derive(Deserialize, Serialize)]
+pub(crate) struct ReportHealth {
+    pub build_profile: String,
+    pub features: Vec<String>,
+    pub version: String,
+}
 
 pub async fn handler(
     storage_provider: StorageProviderIdentity,
     State(state): State<AppState>,
-    Json(version): Json<SerdeVersion>,
+    Json(report): Json<ReportHealth>,
 ) -> Result<Response, ReportHealthHookError> {
     let database = state.database();
     let mut conn = database.begin().await?;
 
-    let current_version = version.version;
+    let current_version = report.version;
     let storage_provider_id = storage_provider.id;
 
     sqlx::query!(
