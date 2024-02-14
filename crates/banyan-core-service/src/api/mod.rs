@@ -11,6 +11,7 @@ mod blocks;
 mod buckets;
 mod deals;
 mod invoices;
+mod metrics;
 pub mod models;
 mod notifications;
 mod share;
@@ -34,6 +35,7 @@ where
 
     Router::new()
         .nest("/admin", admin::router(state.clone()))
+        .nest("/metrics", metrics::router(state.clone()))
         .nest("/auth", auth::router(state.clone()))
         .nest("/blocks", blocks::router(state.clone()))
         .nest("/buckets", buckets::router(state.clone()))

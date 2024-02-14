@@ -1,19 +1,53 @@
 import mime from 'mime';
+import { useIntl } from 'react-intl';
 
 import { Loader } from '@components/common/Loader';
-import { FileIcon } from '@components/common/FileIcon';
-import { SpreadsheetViewer } from './SpreadsheetViewer';
-import { PreviewArrow } from './Arrow';
+import { SpreadsheetViewer } from '@components/common/FilePreview/SpreadsheetViewer';
+import { FilePreviewActions } from '@components/common/FilePreview/Actions';
+import { PreviewArrow } from '@components/common/FilePreview/Arrow';
+import { ShareFileModal } from '@components/common/Modal/ShareFileModal';
 
+import { useModal } from '@/app/contexts/modals';
 import { useFilePreview } from '@/app/contexts/filesPreview';
+import { ToastNotifications } from '@/app/utils/toastNotifications';
+import { useTomb } from '@/app/contexts/tomb';
 
-import { ArrowDown } from '@static/images/common';
+import { Close, Done, DownloadAlternative, Upload } from '@static/images/common';
 
 export const FilePreview = () => {
-    const { file, files, openNext, openPrevious, closeFile } = useFilePreview();
+    const { download, shareFile } = useTomb();
+    const { openModal } = useModal();
+
+    const { messages } = useIntl();
+    const { file, files, bucket, parrentFolder, path, openNext, openPrevious, closeFile } = useFilePreview();
 
     const close = () => {
         closeFile();
+    };
+
+    const downloadFile = async () => {
+        try {
+            await ToastNotifications.promise(`${messages.downloading}...`, `${messages.fileWasDownloaded}`, <Done width="20px" height="20px" />,
+                download(bucket!, path, file.name)
+            );
+        } catch (error: any) {
+            console.log(error);
+
+            ToastNotifications.error('Failed to download file', `${messages.tryAgain}`, downloadFile);
+        }
+    };
+
+
+    const share = async () => {
+        try {
+            const payload = await shareFile(bucket!, [...path, file.name]);
+            const link = `${window.location.origin}/api/v1/share?payload=${payload}`;
+            openModal(
+                <ShareFileModal link={link} />
+            );
+        } catch (error: any) {
+            ToastNotifications.error('Error while sharing file', `${messages.tryAgain}`, share);
+        }
     };
 
     const getPreviewTag = (data: string, type: string) => {
@@ -57,28 +91,48 @@ export const FilePreview = () => {
         <>
             {file.name &&
                 <>
-                    <button
-                        onClick={close}
-                        className="fixed left-12 top-10 flex items-center gap-3 z-40 text-white font-semibold"
-                    >
-                        <span className="rotate-90">
-                            <ArrowDown width="24px" height="24px" />
-                        </span>
-                        <FileIcon fileName={file.name} type="file" />
-                        {`${file.name}`}
-                    </button>
-                    <PreviewArrow
-                        action={openPrevious}
-                        isVisible={!!files.indexOf(file.name)}
-                        className="left-4 -rotate-90"
-                    />
-                    <PreviewArrow
-                        action={openNext}
-                        isVisible={!(files.indexOf(file.name) === files.length - 1)}
-                        className="right-4 rotate-90"
-                    />
+                    <div className="flex justify-between top-0 right-0 w-full  px-10 py-5">
+                        <button
+                            onClick={close}
+                            className="flex items-center gap-3 z-40 text-white font-semibold"
+                        >
+                            <Close width="24px" height="24px" />
+                            {`${file.name}`}
+                        </button>
+                        <div className="flex items-center gap-4">
+                            <PreviewArrow
+                                action={openPrevious}
+                                isVisible={!!files.map(file => file.name).indexOf(file.name)}
+                                className="rotate-90"
+                            />
+                            <PreviewArrow
+                                action={openNext}
+                                isVisible={!(files.map(file => file.name).indexOf(file.name) === files.length - 1)}
+                                className="-rotate-90"
+                            />
+                            <div
+                                className="text-white z-40 cursor-pointer"
+                                onClick={downloadFile}
+                            >
+                                <DownloadAlternative width="24px" height="24px" />
+                            </div>
+                            <FilePreviewActions
+                                bucket={bucket!}
+                                file={file.browserObject!}
+                                parrentFolder={parrentFolder!}
+                                path={path}
+                            />
+                            <div
+                                className="flex items-center gap-2 px-2 py-1 h-10 bg-bucket-actionsBackground text-bucket-actionsText z-40 rounded cursor-pointer"
+                                onClick={share}
+                            >
+                                <Upload width="20px" height="20px" />
+                                {`${messages.shareFile}`}
+                            </div>
+                        </div>
+                    </div>
                     <div
-                        className={`fixed w-screen h-[105vh] flex ${file.fileType === 'document' || file.fileType === 'spreadsheet' ? 'items-start' : 'items-center'} justify-center py-16 pb-20 z-20 bg-slate-800 bg-opacity-80 backdrop-blur-sm overflow-scroll`}
+                        className={`fixed w-screen h-[105vh] flex ${file.fileType === 'document' || file.fileType === 'spreadsheet' ? 'items-start' : 'items-center'} justify-center py-16 pb-20 z-20 bg-[#0d0d0dcc] overflow-scroll`}
                         onClick={close}
                     >
                         {file.isLoading ?
@@ -86,7 +140,7 @@ export const FilePreview = () => {
                             :
                             <>
                                 {
-                                    getPreviewTag(file.data, file.fileType)
+                                    getPreviewTag(file.objectUrl, file.fileType)
                                 }
                             </>
                         }

@@ -9,18 +9,21 @@ import { useModal } from '@/app/contexts/modals';
 import { useTomb } from '@/app/contexts/tomb';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
+import { useFilePreview } from '@/app/contexts/filesPreview';
 
 import { Trash } from '@static/images/common';
 
 export const DeleteFileModal: React.FC<{ bucket: Bucket; file: BrowserObject; path: string[]; parrentFolder: BrowserObject }> = ({ bucket, file, path, parrentFolder }) => {
     const { closeModal } = useModal();
     const { messages } = useIntl();
+    const { closeFile } = useFilePreview();
     const { deleteFile, getSelectedBucketFiles, getExpandedFolderFiles } = useTomb();
     const folderLocation = useFolderLocation();
 
     const removeFile = async () => {
         try {
             await deleteFile(bucket, [...path], file.name);
+            closeFile();
             if (path.join('/') === folderLocation.join('/')) {
                 await getSelectedBucketFiles(folderLocation);
             } else {

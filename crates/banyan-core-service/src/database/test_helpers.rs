@@ -88,23 +88,26 @@ pub(crate) async fn create_storage_hosts(
     database: &mut DatabaseConnection,
     host_url: &str,
     host_name: &str,
-) -> Result<String, sqlx::Error> {
+) -> String {
     let host_url = host_url.to_string();
     let host_name = host_name.to_string();
     sqlx::query_scalar!(
-            r#"INSERT INTO storage_hosts (id, name, url, fingerprint, pem, region, used_storage, available_storage)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id;"#,
-            host_name,
-            host_url,
-            "fingerprint_1",
-            "pem_1",
-            "North America", 
-            "hello.com",
-            0,
-            0
-        )
+        r#"
+            INSERT INTO storage_hosts (id, name, url, fingerprint, pem, region, used_storage, available_storage)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id;
+        "#,
+        host_name,
+        host_url,
+        "fingerprint_1",
+        "pem_1",
+        "North America", 
+        "hello.com",
+        0,
+        0
+    )
     .fetch_one(database)
     .await
+    .expect("storage host creation")
 }
 
 pub(crate) async fn create_deal(

@@ -1,6 +1,8 @@
+use std::error::Error;
 use std::fmt::{self, Display, Formatter};
 use std::time::Duration;
 
+use axum::body::HttpBody;
 use axum::extract::Path;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
@@ -26,7 +28,13 @@ const CURRENCY_MULTIPLIER: usize = 10_000;
 
 const PRICE_PER_TIB: usize = 2 * CURRENCY_MULTIPLIER;
 
-pub fn router(state: AppState) -> Router<AppState> {
+pub fn router<B>(state: AppState) -> Router<AppState, B>
+where
+    B: HttpBody + Send + 'static,
+    B::Data: Send,
+    bytes::Bytes: From<B::Data>,
+    Box<dyn Error + Send + Sync + 'static>: From<B::Error>,
+{
     let cors_layer = CorsLayer::very_permissive();
 
     Router::new()
