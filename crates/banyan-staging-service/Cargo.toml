@@ -34,7 +34,7 @@ axum-extra = { version = "^0.8" }
 http = "^0.2"
 hyper = "^0.14"
 multer = { version = "^2", features = ["json", "tokio", "tokio-io"] }
-reqwest = { version = "^0.11", default-features = false, features = ["json", "rustls-tls-native-roots"] }
+reqwest = { version = "^0.11", default-features = false, features = ["json", "multipart", "rustls-tls-native-roots"] }
 sqlx = { version = "^0.7", default-features = false, features = ["macros", "migrate", "runtime-tokio", "tls-rustls", "uuid"] }
 time = { version = "^0.3", features = ["formatting", "serde"] }
 tower = { version = "^0.4", features = ["timeout", "load-shed", "limit", "util"] }
@@ -44,6 +44,7 @@ tracing = "^0.1"
 tracing-appender = "^0.2"
 tracing-futures = { version = "^0.2", default-features = false, features = ["std-future"] }
 tracing-subscriber = { version = "^0.3", default-features = false, features = ["ansi", "env-filter", "fmt", "local-time", "time", "tracing"] }
+rand = "0.8.5"
 
 [dev-dependencies]
 bytes = "^1.4"

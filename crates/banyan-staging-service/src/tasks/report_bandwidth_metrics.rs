@@ -63,7 +63,7 @@ impl TaskLike for ReportBandwidthMetricsTask {
 
         for metrics in partitioned_metrics {
             let meter_traffic_request = MeterTrafficRequest {
-                user_id: metrics.user_id.as_str(),
+                user_id: &metrics.user_id,
                 ingress: metrics.ingress,
                 egress: metrics.egress,
                 slot: metrics.created_at.unix_timestamp(),
@@ -71,7 +71,7 @@ impl TaskLike for ReportBandwidthMetricsTask {
             if let Err(err) = client.report_user_bandwidth(meter_traffic_request).await {
                 tracing::error!(
                     "could not report metrics for user {} err {}",
-                    metrics.user_id.as_str(),
+                    &metrics.user_id,
                     err
                 );
                 continue;

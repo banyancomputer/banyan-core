@@ -17,8 +17,8 @@ use uuid::Uuid;
 use crate::app::AppState;
 use crate::auth::storage_ticket::StorageTicketBuilder;
 use crate::database::models::{
-    Bucket, Metadata, MetadataState, NewMetadata, NewStorageGrant, PendingExpiration,
-    SelectedStorageHost, StorageHost, Subscription, User, UserStorageReport,
+    Bucket, Metadata, MetadataState, NewMetadata, NewStorageGrant, PendingExpiration, StorageHost,
+    Subscription, User, UserStorageReport,
 };
 use crate::extractors::ApiIdentity;
 use crate::utils::car_buffer::CarBuffer;
@@ -221,7 +221,7 @@ pub async fn handler(
     conn.close().await?;
     let mut conn = database.begin().await?;
 
-    let storage_host = match SelectedStorageHost::select_for_capacity(
+    let storage_host = match StorageHost::select_for_capacity(
         &mut conn,
         user.region_preference,
         needed_capacity,
@@ -238,7 +238,7 @@ pub async fn handler(
             return Ok((StatusCode::INSUFFICIENT_STORAGE, Json(err_msg)).into_response());
         }
     };
-    let user_report = StorageHost::user_report(&mut conn, &storage_host.id, &user_id).await?;
+    let user_report = UserStorageReport::user_report(&mut conn, &storage_host.id, &user_id).await?;
 
     let mut storage_authorization: Option<String> = None;
     if user_report.authorization_available() < needed_capacity {

@@ -1,0 +1,20 @@
+use std::error::Error;
+
+use axum::body::HttpBody;
+use axum::routing::post;
+use axum::Router;
+
+use crate::app::AppState;
+
+mod distribute;
+
+pub fn router<B>(state: AppState) -> Router<AppState, B>
+where
+    B: HttpBody + Send + 'static,
+    B::Data: Send,
+    Box<dyn Error + Send + Sync + 'static>: From<B::Error>,
+{
+    Router::new()
+        .route("/distribute", post(distribute::handler))
+        .with_state(state)
+}

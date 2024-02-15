@@ -1,12 +1,15 @@
+mod check_distribution;
 mod create_deals;
 mod email;
 mod host_capacity;
 mod prune_blocks;
+mod redistribute_staging_data;
 mod report_all_storage_hosts_consumption;
 mod report_all_users_consumption;
 mod report_storage_host_consumption;
 mod report_user_consumption;
 
+use banyan_task::{QueueConfig, SqliteTaskStore, TaskLikeExt, TaskState, WorkerPool};
 use banyan_task::{QueueConfig, SqliteTaskStore, TaskLike, TaskLikeExt, TaskState, WorkerPool};
 pub use create_deals::{CreateDealsTask, BLOCK_SIZE};
 #[allow(unused_imports)]
@@ -22,6 +25,7 @@ use tokio::sync::watch;
 use tokio::task::JoinHandle;
 
 use crate::app::AppState;
+use crate::tasks::redistribute_staging_data::RedistributeStagingDataTask;
 use crate::database::Database;
 use crate::tasks::report_all_storage_hosts_consumption::ReportAllStorageHostsConsumptionTask;
 use crate::tasks::report_all_users_consumption::ReportAllUsersConsumptionTask;
@@ -47,6 +51,7 @@ pub async fn start_background_workers(
         .configure_queue(QueueConfig::new("default").with_worker_count(5))
         .register_task_type::<PruneBlocksTask>()
         .register_task_type::<CreateDealsTask>()
+        .register_task_type::<RedistributeStagingDataTask>()
         .register_task_type::<ReportUserConsumptionTask>()
         .register_task_type::<ReportAllUsersConsumptionTask>()
         .register_task_type::<ReportStorageHostConsumptionTask>()

@@ -1,12 +1,12 @@
 use time::OffsetDateTime;
 
 use crate::database::models::ExplicitBigInt;
-use crate::database::DatabaseConnection;
+use crate::database::{Database, DatabaseConnection};
 
 /// A partial version of a storage host encompassing only the data needed for clients that need to
 /// send data to the storage host.
 #[derive(sqlx::FromRow)]
-pub struct SelectedStorageHost {
+pub struct StorageHost {
     pub id: String,
     pub name: String,
     pub url: String,
@@ -21,7 +21,7 @@ pub struct SelectedStorageHost {
     pub pem: String,
 }
 
-impl SelectedStorageHost {
+impl StorageHost {
     /// Find the database ID of a storage host that has the requested capacity currently available.
     /// Will return None if there is no storage host with the requested capacity and region
     /// available, but does not exert preference among hosts that meet these criteria.
@@ -37,9 +37,9 @@ impl SelectedStorageHost {
             r#"
                 SELECT *
                 FROM storage_hosts
-                WHERE (available_storage - reserved_storage) > $1
-                AND ($2 IS NULL OR $2 LIKE ('%' || region || '%')) 
-                ORDER BY RANDOM() 
+                WHERE (available_storage- reserved_storage) > $1
+                AND ($2 IS NULL OR $2 LIKE ('%' || region || '%'))
+                ORDER BY RANDOM()
                 LIMIT 1;
             "#,
             required_bytes,
@@ -66,11 +66,58 @@ impl SelectedStorageHost {
             .await
         }
     }
+
+    pub async fn select_for_capacity_with_exclusion(
+        database: &Database,
+        required_bytes: i64,
+        exclude_host_id: &str,
+    ) -> Result<Self, sqlx::Error> {
+        sqlx::query_as!(
+            Self,
+            r#"SELECT id,name,url,used_storage,available_storage,fingerprint,pem FROM storage_hosts
+                       WHERE (available_storage - used_storage) > $1
+                       AND id != $2
+                       ORDER BY RANDOM()
+                       LIMIT 1;"#,
+            required_bytes,
+            exclude_host_id
+        )
+        .fetch_one(database)
+        .await
+    }
+
+    pub async fn select_by_name(conn: &Database, host_name: &str) -> Result<Self, sqlx::Error> {
+        sqlx::query_as!(
+            Self,
+            r#"SELECT id,name,url,used_storage,available_storage,fingerprint,pem FROM storage_hosts WHERE name = $1;"#,
+            host_name,
+        )
+            .fetch_one(conn)
+            .await
+    }
+
+    pub async fn get_by_id(conn: &Database, id: &str) -> Result<Self, sqlx::Error> {
+        sqlx::query_as!(
+            Self,
+            "SELECT id,name,url,used_storage,available_storage,fingerprint,pem FROM storage_hosts WHERE id = $1;",
+            id,
+        )
+        .fetch_one(conn)
+        .await
+    }
 }
 
-pub struct StorageHost;
+/// Type representing the amount of data a particular user has stored at an individual storage host
+/// as well as the maximum amount the same user is authorized to store there. The authorized amount
+/// should always be > 0 otherwise that particular storage host will know nothing about the account
+/// and the `user_report` method that generates this will return an error.
+#[derive(Debug)]
+pub struct UserStorageReport {
+    current_consumption: i64,
+    maximum_authorized: Option<i64>,
+}
 
-impl StorageHost {
+impl UserStorageReport {
     /// Retrieves the current known amount of data owned by a particular user that is located at
     /// the requested storage provider as well the reservation capacity the user currently has at
     /// that storage provider if any.
@@ -78,7 +125,7 @@ impl StorageHost {
         conn: &mut DatabaseConnection,
         storage_host_id: &str,
         user_id: &str,
-    ) -> Result<UserStorageReport, sqlx::Error> {
+    ) -> Result<Self, sqlx::Error> {
         let ex_bigint = sqlx::query_as!(
             ExplicitBigInt,
             r#"SELECT COALESCE(SUM(m.data_size), 0) as big_int FROM metadata m
@@ -132,17 +179,6 @@ impl StorageHost {
     }
 }
 
-/// Type representing the amount of data a particular user has stored at an individual storage host
-/// as well as the maximum amount the same user is authorized to store there. The authorized amount
-/// should always be > 0 otherwise that particular storage host will know nothing about the account
-/// and the `user_report` method that generates this will return an error.
-#[derive(Debug)]
-pub struct UserStorageReport {
-    current_consumption: i64,
-    maximum_authorized: Option<i64>,
-}
-
-impl UserStorageReport {
     /// Provides the amount of storage a user has remaining on their authorization at the specific
     /// storage host. If the user has managed to go over their quota or they don't yet have an
     /// authorization at a storage host this will return 0.

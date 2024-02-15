@@ -1,9 +1,11 @@
 use std::collections::{HashMap, HashSet};
+use std::time::Duration;
 
 use jwt_simple::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::auth::{JWT_ALLOWED_CLOCK_DRIFT, STORAGE_TICKET_DURATION};
+use crate::database::models::AuthorizedAmounts;
 
 const TICKET_ISSUER: &str = "banyan-platform";
 
@@ -27,6 +29,7 @@ pub struct StorageTicketBuilder {
     capabilities: HashMap<String, StorageCapabilities>,
     audience: HashSet<String>,
     subject: String,
+    duration: Option<Duration>,
 }
 
 impl StorageTicketBuilder {
@@ -50,16 +53,34 @@ impl StorageTicketBuilder {
     pub fn build(self) -> JWTClaims<StorageTicket> {
         let ticket = StorageTicket::with_capabilities(self.capabilities);
 
-        let mut claims = Claims::with_custom_claims(ticket, STORAGE_TICKET_DURATION.into())
-            .with_audiences(self.audience)
-            .with_issuer(TICKET_ISSUER)
-            .with_subject(self.subject)
-            .invalid_before(Clock::now_since_epoch() - JWT_ALLOWED_CLOCK_DRIFT.into());
+        let mut claims = Claims::with_custom_claims(
+            ticket,
+            self.duration.unwrap_or(STORAGE_TICKET_DURATION).into(),
+        )
+        .with_audiences(self.audience)
+        .with_issuer(TICKET_ISSUER)
+        .with_subject(self.subject)
+        .invalid_before(Clock::now_since_epoch() - JWT_ALLOWED_CLOCK_DRIFT.into());
 
         claims.create_nonce();
         claims.issued_at = Some(Clock::now_since_epoch());
 
         claims
+    }
+    pub fn from_authorized_amounts(
+        subject: String,
+        authorized_amounts: Vec<AuthorizedAmounts>,
+    ) -> Self {
+        let mut builder = Self::new(subject);
+        for auth_details in authorized_amounts.into_iter() {
+            builder.add_audience(auth_details.storage_host_name);
+            builder.add_authorization(
+                auth_details.storage_grant_id,
+                auth_details.storage_host_url,
+                auth_details.authorized_amount,
+            );
+        }
+        builder
     }
 
     pub fn new(subject: String) -> Self {
@@ -67,6 +88,7 @@ impl StorageTicketBuilder {
             subject,
             audience: HashSet::default(),
             capabilities: HashMap::default(),
+            duration: None,
         }
     }
 }

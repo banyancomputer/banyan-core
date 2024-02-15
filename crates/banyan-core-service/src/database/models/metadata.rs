@@ -1,7 +1,7 @@
 use time::OffsetDateTime;
 
 use crate::database::models::Bucket;
-use crate::database::DatabaseConnection;
+use crate::database::{Database, DatabaseConnection};
 
 /// This struct encompasses the minimum amount of data required to create a new metadata row,
 /// omitting data that is populated by the database such as ID and the various timestamps. It
@@ -38,7 +38,20 @@ impl NewMetadata<'_> {
     }
 }
 
-pub struct Metadata;
+pub struct Metadata {
+    pub id: String,
+    pub bucket_id: String,
+    pub root_cid: String,
+    pub metadata_cid: String,
+    pub expected_data_size: i64,
+    pub data_size: Option<i64>,
+    pub metadata_hash: Option<String>,
+    pub metadata_size: Option<i64>,
+    pub state: String,
+    pub created_at: OffsetDateTime,
+    pub updated_at: OffsetDateTime,
+    pub previous_metadata_cid: Option<String>,
+}
 
 impl Metadata {
     /// Retrieve's the bucket ID associated with the provided metadata ID.
@@ -197,6 +210,15 @@ impl Metadata {
         .await?;
 
         Ok(())
+    }
+    pub async fn get_by_id(database: &Database, metadata_cid: &str) -> Result<Self, sqlx::Error> {
+        sqlx::query_as!(
+            Self,
+            "SELECT * FROM metadata WHERE metadata_cid = $1;",
+            metadata_cid
+        )
+        .fetch_one(database)
+        .await
     }
 }
 
