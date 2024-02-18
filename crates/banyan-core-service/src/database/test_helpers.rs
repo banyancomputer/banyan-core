@@ -11,6 +11,23 @@ use crate::database::{Database, DatabaseConnection};
 use crate::extractors::{SessionIdentity, SessionIdentityBuilder};
 use crate::tasks::BLOCK_SIZE;
 
+pub(crate) async fn link_storage_metadata_and_grant(
+    conn: &mut DatabaseConnection,
+    storage_host_id: &str,
+    metadata_id: &str,
+    storage_grant_id: &str,
+) {
+    sqlx::query!(
+            "INSERT INTO storage_hosts_metadatas_storage_grants (storage_host_id, metadata_id, storage_grant_id) VALUES ($1, $2, $3);",
+            storage_host_id,
+            metadata_id,
+            storage_grant_id,
+        )
+            .execute(&mut *conn)
+            .await
+            .expect("storage_host_metadata");
+}
+
 pub(crate) async fn associate_blocks(
     conn: &mut DatabaseConnection,
     metadata_id: &str,
@@ -450,6 +467,29 @@ pub(crate) async fn setup_database() -> Database {
     conn.commit().await.expect("db close");
 
     pool
+}
+pub(crate) async fn sample_blocks(
+    conn: &mut DatabaseConnection,
+    number_of_blocks: usize,
+    metadata_id: &str,
+    storage_host_id: &str,
+    grant_id: &str,
+) -> Vec<String> {
+    let initial_cids: Vec<_> =
+        normalize_cids(generate_cids(data_generator(0..number_of_blocks))).collect();
+    let block_ids = create_blocks(&mut *conn, initial_cids.iter().map(String::as_str)).await;
+
+    associate_blocks(
+        &mut *conn,
+        &metadata_id,
+        &storage_host_id,
+        block_ids.iter().map(String::as_str),
+    )
+    .await;
+
+    link_storage_metadata_and_grant(&mut *conn, &storage_host_id, &metadata_id, &grant_id).await;
+
+    block_ids
 }
 
 pub(crate) async fn get_or_create_session(

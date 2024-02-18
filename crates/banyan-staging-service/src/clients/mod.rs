@@ -4,7 +4,7 @@ mod storage_provider;
 
 pub use core_service::{CoreServiceClient, CoreServiceError};
 pub use models::{
-    BlockUploadDetailsRequest, BlockUploadRequest, MeterTrafficRequest, NewUploadResponse,
-    ReportUploadRequest, StorageProviderAuthResponse,
+    BlockUploadDetailsRequest, ClientsRequest, MeterTrafficRequest, NewClientResponse,
+    NewUploadRequest,
 };
 pub use storage_provider::{StorageProviderClient, StorageProviderError};

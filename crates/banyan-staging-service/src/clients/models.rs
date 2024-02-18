@@ -2,7 +2,14 @@ use cid::Cid;
 use jwt_simple::prelude::Deserialize;
 use serde::Serialize;
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize)]
+pub struct ClientsRequest {
+    pub platform_id: String,
+    pub fingerprint: String,
+    pub public_key: String,
+}
+
+#[derive(Serialize)]
 pub struct MeterTrafficRequest<'a> {
     pub user_id: &'a str,
     pub ingress: i64,
@@ -30,14 +37,25 @@ pub struct NewUploadResponse {
 #[derive(Serialize)]
 pub struct BlockUploadRequest {
     pub cid: Cid,
-    // Optional additional details about the nature of the upload
-    #[serde(flatten)]
     pub details: BlockUploadDetailsRequest,
 }
 
 #[derive(Serialize)]
-#[serde(untagged)]
-pub enum BlockUploadDetailsRequest {
-    Ongoing { completed: bool, upload_id: String },
-    OneOff,
+pub struct BlockUploadDetailsRequest {
+    pub completed: bool,
+    pub upload_id: String,
+    pub grant_id: String,
+}
+
+#[derive(Deserialize)]
+pub struct NewClientResponse {
+    pub id: String,
+}
+
+#[derive(Serialize)]
+pub struct NewUploadRequest {
+    pub metadata_id: String,
+    pub client_id: String,
+    pub grant_size: i64,
+    pub grant_id: String,
 }

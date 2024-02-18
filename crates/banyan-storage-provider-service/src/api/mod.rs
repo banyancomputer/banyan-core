@@ -17,8 +17,10 @@ use time::{Date, OffsetDateTime};
 use tower_http::cors::CorsLayer;
 use uuid::Uuid;
 
+mod admin;
 mod block_retrieval;
 mod client_grant;
+mod models;
 mod prune_blocks;
 mod upload;
 
@@ -43,6 +45,7 @@ where
         .route("/blocks/:block_id", get(block_retrieval::handler))
         .route("/client_grant", post(client_grant::handler))
         .route("/upload", post(upload::handler))
+        .nest("/admin", admin::router(state.clone()))
         .route("/upload/new", post(upload::new::handler))
         .route("/upload/block", post(upload::block::handler))
         .route("/core/prune", post(prune_blocks::handler))

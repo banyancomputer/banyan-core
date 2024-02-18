@@ -1,6 +1,7 @@
+use sqlx::sqlite::SqliteQueryResult;
 use time::OffsetDateTime;
 
-use crate::database::Database;
+use crate::database::{Database, DatabaseConnection};
 
 #[derive(sqlx::FromRow)]
 pub struct Uploads {
@@ -29,5 +30,13 @@ impl Uploads {
         )
         .fetch_one(pool)
         .await
+    }
+    pub async fn delete_by_metadata_id(
+        transaction: &mut DatabaseConnection,
+        metadata_id: &str,
+    ) -> sqlx::Result<SqliteQueryResult, sqlx::Error> {
+        sqlx::query!("DELETE FROM uploads WHERE metadata_id = $1", metadata_id,)
+            .execute(transaction)
+            .await
     }
 }

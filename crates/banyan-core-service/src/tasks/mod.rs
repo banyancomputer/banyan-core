@@ -1,5 +1,6 @@
 mod check_distribution;
 mod create_deals;
+mod delete_staging_data;
 mod email;
 mod host_capacity;
 mod prune_blocks;
@@ -12,6 +13,7 @@ mod report_user_consumption;
 use banyan_task::{QueueConfig, SqliteTaskStore, TaskLikeExt, TaskState, WorkerPool};
 use banyan_task::{QueueConfig, SqliteTaskStore, TaskLike, TaskLikeExt, TaskState, WorkerPool};
 pub use create_deals::{CreateDealsTask, BLOCK_SIZE};
+pub use delete_staging_data::DeleteStagingDataTask;
 #[allow(unused_imports)]
 pub use email::{
     EmailTaskContext, EmailTaskError, GaReleaseEmailTask, PaymentFailedEmailTask,
@@ -19,6 +21,7 @@ pub use email::{
 };
 pub use host_capacity::HostCapacityTask;
 pub use prune_blocks::PruneBlocksTask;
+use redistribute_staging_data::RedistributeStagingDataTask;
 pub use report_storage_host_consumption::ReportStorageHostConsumptionTask;
 pub use report_user_consumption::ReportUserConsumptionTask;
 use tokio::sync::watch;
@@ -56,6 +59,7 @@ pub async fn start_background_workers(
         .register_task_type::<ReportAllUsersConsumptionTask>()
         .register_task_type::<ReportStorageHostConsumptionTask>()
         .register_task_type::<ReportAllStorageHostsConsumptionTask>()
+        .register_task_type::<DeleteStagingDataTask>()
         .register_task_type::<HostCapacityTask>()
         .start(async move {
             let _ = shutdown_rx.changed().await;

@@ -10,8 +10,9 @@ use cid::multihash::{Code, MultihashDigest};
 use cid::Cid;
 use serde::{Deserialize, Serialize};
 
-use super::db::{complete_upload, get_upload, report_upload, upload_size, write_block_to_tables};
+use super::db::{complete_upload, report_upload, upload_size, write_block_to_tables};
 use super::error::UploadError;
+use crate::api::upload::Upload;
 use crate::app::AppState;
 use crate::extractors::AuthenticatedClient;
 
@@ -88,7 +89,7 @@ pub async fn handler(
             upload_id,
         } => {
             // Assume that the upload has already been created via the `new` endpoint
-            let upload = get_upload(&db, client.id(), &upload_id).await?.unwrap();
+            let upload = Upload::get_by_id(&db, &upload_id).await?.unwrap();
             if upload.id != upload_id {
                 return Err(UploadError::IdMismatch);
             }

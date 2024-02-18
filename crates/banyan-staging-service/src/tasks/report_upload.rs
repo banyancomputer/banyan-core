@@ -87,10 +87,10 @@ impl TaskLike for ReportUploadTask {
             )
             .await?;
 
-        if response.status().is_success() {
-            return Ok(());
+        if !response.status().is_success() {
+            return Err(ReportUploadTaskError::HttpError(response.status()));
         }
 
-        Err(ReportUploadTaskError::HttpError(response.status()))
+        Ok(())
     }
 }

@@ -16,6 +16,7 @@ use tokio::task::JoinHandle;
 
 use crate::app::AppState;
 use crate::tasks::report_bandwidth_metrics::ReportBandwidthMetricsTask;
+use crate::tasks::upload_blocks::UploadBlocksTask;
 
 pub async fn start_background_workers(
     state: AppState,
@@ -56,6 +57,7 @@ pub async fn start_background_workers(
         .register_task_type::<ReportHealthTask>()
         .register_task_type::<ReportBandwidthMetricsTask>()
         .register_task_type::<RedistributeDataTask>()
+        .register_task_type::<UploadBlocksTask>()
         .start(async move {
             let _ = shutdown_rx.changed().await;
         })

@@ -5,9 +5,11 @@ use url::Url;
 
 use crate::app::AppState;
 use crate::clients::{
-    CoreServiceClient, CoreServiceError, StorageProviderClient, StorageProviderError,
+    ClientsRequest, CoreServiceClient, CoreServiceError, NewUploadRequest, StorageProviderClient,
+    StorageProviderError,
 };
 use crate::database::models::{Clients, Uploads};
+use crate::extractors::authenticated_client::AuthorizedStorage;
 use crate::tasks::upload_blocks::UploadBlocksTask;
 
 pub type RedistributeDataTaskContext = AppState;
@@ -33,19 +35,10 @@ pub enum RedistributeDataTaskError {
 
 #[derive(Deserialize, Serialize)]
 pub struct RedistributeDataTask {
-    metadata_id: String,
-    new_host_id: String,
-    new_host_url: String,
-}
-
-impl RedistributeDataTask {
-    pub fn new(metadata_id: String, new_host_id: String, new_host_url: String) -> Self {
-        Self {
-            metadata_id,
-            new_host_id,
-            new_host_url,
-        }
-    }
+    pub metadata_id: String,
+    pub grant_id: String,
+    pub new_host_id: String,
+    pub new_host_url: String,
 }
 
 #[async_trait]
@@ -68,13 +61,30 @@ impl TaskLike for RedistributeDataTask {
             StorageProviderClient::new(&self.new_host_url, &provider_credentials.token);
         let upload = Uploads::get_by_metadata_id(&database, &self.metadata_id).await?;
         let client = Clients::find_by_upload_id(&database, &upload.id).await?;
+        let authorized_size =
+            AuthorizedStorage::get_authorized_size_for_core_grant_id(&database, &self.grant_id)
+                .await?;
 
-        storage_client.push_client(client).await?;
-        let new_upload = storage_client.new_upload(&self.metadata_id).await?;
+        let new_client = storage_client
+            .push_client(ClientsRequest {
+                platform_id: client.platform_id,
+                fingerprint: client.fingerprint,
+                public_key: client.public_key,
+            })
+            .await?;
+        let new_upload = storage_client
+            .new_upload(&NewUploadRequest {
+                metadata_id: upload.metadata_id,
+                client_id: new_client.id.clone(),
+                grant_id: self.grant_id.clone(),
+                grant_size: authorized_size,
+            })
+            .await?;
 
         UploadBlocksTask {
             current_upload_id: upload.id.clone(),
             metadata_id: self.metadata_id.clone(),
+            grant_id: self.grant_id.clone(),
             new_upload_id: new_upload.upload_id.clone(),
             storage_host_id: self.new_host_id.clone(),
             storage_host_url: self.new_host_url.clone(),

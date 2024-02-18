@@ -1,11 +1,13 @@
 mod prune_blocks;
 mod report_bandwidth_metrics;
 mod report_health;
+mod report_redistribution;
 mod report_upload;
 
 use banyan_task::{QueueConfig, SqliteTaskStore, TaskLikeExt, TaskState, WorkerPool};
 pub use prune_blocks::PruneBlocksTask;
 pub use report_health::ReportHealthTask;
+pub use report_redistribution::ReportRedistributionTask;
 pub use report_upload::ReportUploadTask;
 use tokio::sync::watch;
 use tokio::task::JoinHandle;
@@ -51,6 +53,7 @@ pub async fn start_background_workers(
         .register_task_type::<PruneBlocksTask>()
         .register_task_type::<ReportHealthTask>()
         .register_task_type::<ReportBandwidthMetricsTask>()
+        .register_task_type::<ReportRedistributionTask>()
         .start(async move {
             let _ = shutdown_rx.changed().await;
         })

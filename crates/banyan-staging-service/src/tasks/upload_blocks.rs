@@ -38,6 +38,7 @@ pub enum UploadBlocksTaskError {
 pub struct UploadBlocksTask {
     pub current_upload_id: String,
     pub metadata_id: String,
+    pub grant_id: String,
     pub new_upload_id: String,
     pub storage_host_url: String,
     pub storage_host_id: String,
@@ -62,14 +63,14 @@ impl TaskLike for UploadBlocksTask {
 
         let client =
             StorageProviderClient::new(&self.storage_host_url, &provider_credentials.token);
-        let store = ObjectStore::new(ctx.upload_store_connection())?;
 
         let mut blocks = Blocks::blocks_for_upload(&database, &self.current_upload_id).await?;
         // handling the case where we failed and want to start from another block
+        // so that in the end only the failing block would be left
         blocks.as_mut_slice().shuffle(&mut rand::thread_rng());
-
-        // TODO: Need to figure our how to handle only failed blocks
         let total_blocks = blocks.len();
+
+        let store = ObjectStore::new(ctx.upload_store_connection())?;
         for (index, block) in blocks.into_iter().enumerate() {
             let location =
                 ObjectStorePath::from(format!("{}/{}.bin", &self.metadata_id, block.cid));
@@ -90,17 +91,14 @@ impl TaskLike for UploadBlocksTask {
                 .upload_block(
                     content.into(),
                     block_cid,
-                    BlockUploadDetailsRequest::Ongoing {
+                    BlockUploadDetailsRequest {
                         completed: is_last_block,
+                        grant_id: self.grant_id.clone(),
                         upload_id: self.new_upload_id.clone(),
                     },
                 )
                 .await?;
         }
-
-        // CompleteUploadBlocksTask::new(self.current_upload_id.clone())
-        //     .enqueue::<banyan_task::SqliteTaskStore>(&mut database)
-        //     .await?;
 
         Ok(())
     }

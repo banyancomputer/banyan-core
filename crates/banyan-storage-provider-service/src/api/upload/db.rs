@@ -3,7 +3,6 @@ use std::time::Duration;
 
 use banyan_task::TaskLikeExt;
 use cid::Cid;
-use time::OffsetDateTime;
 use uuid::Uuid;
 
 use crate::database::Database;
@@ -13,8 +12,8 @@ pub const UPLOAD_SESSION_DURATION: Duration = Duration::from_secs(60 * 60 * 6);
 
 pub async fn start_upload(
     db: &Database,
-    client_id: &Uuid,
-    metadata_id: &Uuid,
+    client_id: &String,
+    metadata_id: &String,
     reported_size: u64,
 ) -> Result<Upload, sqlx::Error> {
     let mut upload = Upload {
@@ -149,30 +148,6 @@ pub async fn report_upload(
     Ok(())
 }
 
-pub async fn get_upload(
-    db: &Database,
-    client_id: Uuid,
-    upload_id: &str,
-) -> Result<Option<Upload>, sqlx::Error> {
-    let client_id = client_id.to_string();
-    let now = OffsetDateTime::now_utc() - UPLOAD_SESSION_DURATION;
-
-    sqlx::query_as!(
-        Upload,
-        r#"
-        SELECT id, client_id, metadata_id, base_path, reported_size, state FROM uploads
-            WHERE client_id = $1
-            AND id = $2
-            AND created_at >= $3;
-        "#,
-        client_id,
-        upload_id,
-        now
-    )
-    .fetch_optional(db)
-    .await
-}
-
 pub async fn write_block_to_tables(
     db: &Database,
     upload_id: &str,
@@ -221,4 +196,20 @@ pub struct Upload {
     pub base_path: String,
     pub reported_size: i64,
     pub state: String,
+}
+
+impl Upload {
+    pub async fn get_by_id(db: &Database, id: &str) -> Result<Option<Upload>, sqlx::Error> {
+        sqlx::query_as!(
+            Upload,
+            r#"
+             SELECT id, client_id, metadata_id, base_path, reported_size, state
+             FROM uploads
+             WHERE id = $1;
+         "#,
+            id
+        )
+        .fetch_optional(db)
+        .await
+    }
 }

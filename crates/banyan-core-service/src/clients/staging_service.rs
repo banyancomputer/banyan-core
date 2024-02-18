@@ -9,7 +9,7 @@ use serde::Serialize;
 use url::Url;
 
 use crate::app::ServiceKey;
-use crate::clients::UploadData;
+use crate::clients::{DeleteBlocksRequest, DistributeDataRequest};
 
 pub struct StagingServiceClient {
     client: Client,
@@ -53,15 +53,42 @@ impl StagingServiceClient {
         }
     }
 
-    pub async fn push_data(&self, request: UploadData) -> Result<(), StagingServiceError> {
-        let locate_endpoint = self
+    pub async fn delete_blocks(
+        &self,
+        request: DeleteBlocksRequest,
+    ) -> Result<(), StagingServiceError> {
+        let endpoint = self
             .staging_service_hostname
-            .join(&"/api/v1/hooks/distribute")
+            .join(&"/api/v1/admin/blocks")
             .unwrap();
 
         let response = self
             .client
-            .post(locate_endpoint)
+            .delete(endpoint)
+            .json(&request)
+            .bearer_auth(&self.bearer_token)
+            .send()
+            .await?;
+
+        if response.status().is_success() {
+            return Ok(());
+        }
+
+        Err(StagingServiceError::BadRequest(response.text().await?))
+    }
+
+    pub async fn distribute_data(
+        &self,
+        request: DistributeDataRequest,
+    ) -> Result<(), StagingServiceError> {
+        let endpoint = self
+            .staging_service_hostname
+            .join(&"/api/v1/admin/distribute")
+            .unwrap();
+
+        let response = self
+            .client
+            .post(endpoint)
             .json(&request)
             .bearer_auth(&self.bearer_token)
             .send()

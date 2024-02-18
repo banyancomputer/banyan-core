@@ -4,8 +4,11 @@ use reqwest::multipart::{Form, Part};
 use reqwest::{Client, Response};
 use url::Url;
 
-use crate::clients::models::{BlockUploadDetailsRequest, BlockUploadRequest, NewUploadResponse};
-use crate::database::models::Clients;
+use crate::clients::models::{
+    BlockUploadDetailsRequest, BlockUploadRequest, ClientsRequest, NewUploadRequest,
+    NewUploadResponse,
+};
+use crate::clients::NewClientResponse;
 
 pub struct StorageProviderClient {
     client: Client,
@@ -27,7 +30,10 @@ impl StorageProviderClient {
         }
     }
 
-    pub async fn push_client(&self, client: Clients) -> Result<(), StorageProviderError> {
+    pub async fn push_client(
+        &self,
+        client: ClientsRequest,
+    ) -> Result<NewClientResponse, StorageProviderError> {
         let full_url = Url::parse(&self.service_hostname)
             .map_err(|_| StorageProviderError::UrlParseError)?
             .join(&"/api/v1/admin/clients".to_string())
@@ -43,28 +49,29 @@ impl StorageProviderClient {
             .map_err(StorageProviderError::RequestError)?;
 
         if response.status().is_success() {
-            return Ok(());
+            return match response.json::<NewClientResponse>().await {
+                Ok(response) => Ok(response),
+                Err(_) => Err(StorageProviderError::ResponseParseError),
+            };
         }
-
         Err(StorageProviderError::BadRequest(response.text().await?))
     }
     pub async fn new_upload(
         &self,
-        metadata_id: &str,
+        request: &NewUploadRequest,
     ) -> Result<NewUploadResponse, StorageProviderError> {
         let full_url = Url::parse(&self.service_hostname)
             .map_err(|_| StorageProviderError::UrlParseError)?
-            .join(&"/api/v1/upload/new".to_string())
+            .join(&"/api/v1/admin/uploads".to_string())
             .map_err(|_| StorageProviderError::UrlJoinError)?;
 
         let response = self
             .client
             .post(full_url)
             .bearer_auth(&self.service_authorization)
-            .body(serde_json::json!({ "metadata_id": metadata_id }).to_string())
+            .json(&request)
             .send()
-            .await
-            .map_err(StorageProviderError::RequestError)?;
+            .await?;
 
         if response.status().is_success() {
             return match response.json::<NewUploadResponse>().await {
@@ -84,7 +91,7 @@ impl StorageProviderClient {
     ) -> Result<Response, StorageProviderError> {
         let full_url = Url::parse(&self.service_hostname)
             .map_err(|_| StorageProviderError::UrlParseError)?
-            .join(&"/api/v1/upload/block".to_string())
+            .join(&"/api/v1/admin/blocks".to_string())
             .map_err(|_| StorageProviderError::UrlJoinError)?;
 
         let block_upload_request = BlockUploadRequest { cid, details };

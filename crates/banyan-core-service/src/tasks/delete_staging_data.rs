@@ -1,0 +1,68 @@
+use async_trait::async_trait;
+use banyan_task::{CurrentTask, TaskLike};
+use serde::{Deserialize, Serialize};
+use time::OffsetDateTime;
+use url::Url;
+
+use crate::app::AppState;
+use crate::auth::STAGING_SERVICE_NAME;
+use crate::clients::{DeleteBlocksRequest, StagingServiceClient, StagingServiceError};
+use crate::database::models::StorageHost;
+
+#[derive(Deserialize, Serialize)]
+pub struct DeleteStagingDataTask {
+    normalized_cids: Vec<String>,
+    metadata_id: String,
+}
+
+impl DeleteStagingDataTask {
+    pub fn new(metadata_id: String, normalized_cids: Vec<String>) -> Self {
+        Self {
+            metadata_id,
+            normalized_cids,
+        }
+    }
+}
+#[async_trait]
+impl TaskLike for DeleteStagingDataTask {
+    const TASK_NAME: &'static str = "delete_staging_data_task";
+
+    type Error = DeleteStagingDataTaskError;
+    type Context = AppState;
+
+    async fn run(&self, _task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
+        let database = ctx.database();
+        let staging_host = StorageHost::select_by_name(&database, STAGING_SERVICE_NAME).await?;
+
+        let staging_client = StagingServiceClient::new(
+            ctx.secrets().service_key(),
+            ctx.service_name(),
+            staging_host.name.as_str(),
+            Url::parse(&staging_host.url)?,
+        );
+
+        staging_client
+            .delete_blocks(DeleteBlocksRequest {
+                normalized_cids: self.normalized_cids.clone(),
+            })
+            .await?;
+
+        Ok(())
+    }
+
+    fn next_time(&self) -> Option<OffsetDateTime> {
+        Some(OffsetDateTime::now_utc() + time::Duration::seconds(5))
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum DeleteStagingDataTaskError {
+    #[error("sql error: {0}")]
+    Sqlx(#[from] sqlx::Error),
+    #[error("staging host url error: {0}")]
+    UrlParseError(#[from] url::ParseError),
+    #[error("jwt error: {0}")]
+    JwtError(#[from] jwt_simple::Error),
+    #[error("staging error: {0}")]
+    StagingServiceError(#[from] StagingServiceError),
+}

@@ -19,8 +19,10 @@ mod db;
 mod error;
 pub(crate) mod new;
 
-use db::{complete_upload, fail_upload, start_upload, write_block_to_tables, Upload};
-use error::UploadError;
+pub use db::{
+    complete_upload, fail_upload, start_upload, upload_size, write_block_to_tables, Upload,
+};
+pub use error::UploadError;
 
 /// Limit on the size of the JSON request that accompanies an upload.
 const UPLOAD_REQUEST_SIZE_LIMIT: u64 = 100 * 1_024;
@@ -77,8 +79,8 @@ pub async fn handler(
 
     let upload = start_upload(
         &db,
-        &client.id(),
-        &request.metadata_id,
+        &client.id().to_string(),
+        &request.metadata_id.to_string(),
         reported_body_length,
     )
     .await?;

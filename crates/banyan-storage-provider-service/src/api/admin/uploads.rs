@@ -1,42 +1,43 @@
 use axum::extract::State;
 use axum::headers::ContentLength;
+use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::{Json, TypedHeader};
-use http::StatusCode;
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
+use jwt_simple::prelude::{Deserialize, Serialize};
 
-use super::db::start_upload;
-use super::error::UploadError;
+use crate::api::upload::{start_upload, UploadError};
 use crate::app::AppState;
-use crate::extractors::AuthenticatedClient;
+use crate::database::models::AuthorizedStorage;
+use crate::extractors::PlatformIdentity;
 
-// Requests need only the associated metadata id
 #[derive(Serialize, Deserialize)]
-pub struct NewUploadRequest {
-    metadata_id: Uuid,
+pub struct UploadRequest {
+    pub(crate) metadata_id: String,
+    pub(crate) client_id: String,
+    pub(crate) grant_id: String,
+    pub(crate) grant_size: i64,
 }
 
 pub async fn handler(
     State(state): State<AppState>,
-    client: AuthenticatedClient,
+    _: PlatformIdentity,
     TypedHeader(content_len): TypedHeader<ContentLength>,
-    Json(request): Json<NewUploadRequest>,
+    Json(request): Json<UploadRequest>,
 ) -> Result<Response, UploadError> {
     let db = state.database();
     let reported_body_length = content_len.0;
-    if reported_body_length > client.remaining_storage() {
-        return Err(UploadError::InsufficientAuthorizedStorage(
-            reported_body_length,
-            client.remaining_storage(),
-        ));
-    }
-
+    AuthorizedStorage::create_if_missing(
+        &db,
+        &request.client_id,
+        &request.grant_id,
+        request.grant_size,
+    )
+    .await?;
     // Start the upload with these specifications
     let upload = start_upload(
         &db,
-        &client.id().to_string(),
-        &request.metadata_id.to_string(),
+        &request.client_id,
+        &request.metadata_id,
         reported_body_length,
     )
     .await?;
