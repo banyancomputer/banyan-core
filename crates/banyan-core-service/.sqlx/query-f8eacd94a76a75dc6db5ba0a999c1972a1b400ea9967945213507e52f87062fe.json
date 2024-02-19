@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT cid FROM blocks WHERE id = $1",
+  "describe": {
+    "columns": [
+      {
+        "name": "cid",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "f8eacd94a76a75dc6db5ba0a999c1972a1b400ea9967945213507e52f87062fe"
+}

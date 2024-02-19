@@ -1,0 +1,56 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id,name,url,used_storage,available_storage,fingerprint,pem FROM storage_hosts\n                   WHERE (available_storage - used_storage) > $1 AND name = 'banyan-staging'\n                   ORDER BY RANDOM()\n                   LIMIT 1;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "name",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "url",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "used_storage",
+        "ordinal": 3,
+        "type_info": "Int64"
+      },
+      {
+        "name": "available_storage",
+        "ordinal": 4,
+        "type_info": "Int64"
+      },
+      {
+        "name": "fingerprint",
+        "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "pem",
+        "ordinal": 6,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "7fa4df62092937e7cd004d768a2a1f9318327f99d28b2ae3a340f15a4f22b94a"
+}

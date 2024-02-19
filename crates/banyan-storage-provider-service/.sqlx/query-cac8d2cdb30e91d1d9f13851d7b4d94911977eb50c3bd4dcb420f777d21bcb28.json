@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, platform_id, fingerprint, public_key FROM clients WHERE fingerprint = $1;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "platform_id",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "fingerprint",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "public_key",
+        "ordinal": 3,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "cac8d2cdb30e91d1d9f13851d7b4d94911977eb50c3bd4dcb420f777d21bcb28"
+}

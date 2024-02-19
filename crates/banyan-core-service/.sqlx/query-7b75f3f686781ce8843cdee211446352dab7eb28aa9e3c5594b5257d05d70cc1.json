@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE storage_grants SET storage_host_id = $1 WHERE id = $2 AND storage_host_id = $3",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "7b75f3f686781ce8843cdee211446352dab7eb28aa9e3c5594b5257d05d70cc1"
+}
