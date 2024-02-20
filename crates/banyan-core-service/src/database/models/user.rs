@@ -75,6 +75,8 @@ impl User {
         Ok(ex_size.big_int)
     }
 
+    // pub async fn maximum_token_capacity()
+
     pub async fn find_by_id(
         conn: &mut DatabaseConnection,
         id: &str,

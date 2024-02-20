@@ -53,6 +53,29 @@ pub async fn handler(
 
     let size_estimate = normalized_cids.len() as i64 * BLOCK_SIZE;
 
+    let remaining_tokens = sqlx::query_scalar!(
+        r#"
+           SELECT (earned_tokens - consumed_tokens)
+           FROM users
+           WHERE id = $1
+        "#,
+        user_id
+    )
+    .fetch_one(&database)
+    .await
+    .map_err(CreateSnapshotError::ArchivalTokenRetrieval)?;
+
+    tracing::info!(
+        "snapshot size_estimate: {}, remaining_tokens: {}",
+        size_estimate,
+        remaining_tokens
+    );
+
+    // Error and exit if the user doesn't have enough token
+    if size_estimate > remaining_tokens {
+        return Err(CreateSnapshotError::InsufficientStorage);
+    }
+
     let pending_state = SnapshotState::Pending.to_string();
     let snapshot_id = sqlx::query_scalar!(
         r#"INSERT INTO snapshots (metadata_id, state, size)
@@ -118,6 +141,12 @@ pub enum CreateSnapshotError {
 
     #[error("associating the snapshot with the block cid failed: {0}")]
     BlockAssociationFailed(sqlx::Error),
+
+    #[error("unable to determine remaining archival tokens: {0}")]
+    ArchivalTokenRetrieval(sqlx::Error),
+
+    #[error("insufficient storage!")]
+    InsufficientStorage,
 
     #[error("active cid list was in some way invalid: {0}")]
     InvalidInternalCid(cid::Error),

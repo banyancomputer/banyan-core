@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n           SELECT (earned_tokens - consumed_tokens)\n           FROM users\n           WHERE id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "(earned_tokens - consumed_tokens)",
+        "ordinal": 0,
+        "type_info": "Int64"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "b148ffc01c6003490c8df720b85a19d879d4efef643638e5a35fa1158bcc3fa6"
+}

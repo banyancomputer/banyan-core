@@ -108,5 +108,7 @@ pub async fn update_handler(
         .ok_or(StripeWebhookError::missing_target("db_invoice"))?;
     invoice.update_status(&mut *conn, new_status).await?;
 
+    // Dole out archival usage tokens to the user
+
     Ok(())
 }
