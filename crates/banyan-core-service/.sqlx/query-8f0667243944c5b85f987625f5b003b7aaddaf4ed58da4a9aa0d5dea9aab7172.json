@@ -1,0 +1,68 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                    SELECT *\n                    FROM storage_hosts\n                    WHERE (available_storage - reserved_storage) > $1\n                    ORDER BY RANDOM()\n                    LIMIT 1;\n                ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "name",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "url",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "used_storage",
+        "ordinal": 3,
+        "type_info": "Int64"
+      },
+      {
+        "name": "available_storage",
+        "ordinal": 4,
+        "type_info": "Int64"
+      },
+      {
+        "name": "fingerprint",
+        "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "pem",
+        "ordinal": 6,
+        "type_info": "Text"
+      },
+      {
+        "name": "reserved_storage",
+        "ordinal": 7,
+        "type_info": "Int64"
+      },
+      {
+        "name": "region",
+        "ordinal": 8,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "8f0667243944c5b85f987625f5b003b7aaddaf4ed58da4a9aa0d5dea9aab7172"
+}
