@@ -1,5 +1,4 @@
 import React, { useEffect } from 'react';
-import { useIntl } from 'react-intl';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { Action } from '@components/Bucket/BucketTable/FileActions';
@@ -16,7 +15,7 @@ import { LogoutAlternative, Settings } from '@static/images/common';
 
 export const ProfileControls = () => {
     const navigate = useNavigate();
-    const { messages } = useIntl();
+    const messages = useAppSelector(state => state.locales.messages.coponents.common.header.profileControls);
     const { purgeKeystore } = useKeystore();
     const { openModal } = useModal();
     const { displayName, email, profileImage } = useAppSelector(state => state.user);
@@ -45,7 +44,7 @@ export const ProfileControls = () => {
     };
 
     const options = [
-        new Action(`${messages.settings}`, <Settings />, goTo('/account/settings')),
+        new Action(`${messages.settings}`, <Settings />, goTo('/account/profile')),
         new Action(`${messages.logout}`, <LogoutAlternative />, logout),
     ];
 

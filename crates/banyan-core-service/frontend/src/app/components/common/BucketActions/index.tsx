@@ -1,5 +1,4 @@
 import React from 'react';
-import { useIntl } from 'react-intl';
 
 import { BucketSnapshotsModal } from '@components/common/Modal/BucketSnapshotsModal';
 import { RenameBucketModal } from '@components/common/Modal/RenameBucketModal';
@@ -14,12 +13,13 @@ import { Bucket } from '@/app/types/bucket';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 import { useTomb } from '@app/contexts/tomb';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
+import { useAppSelector } from '@/app/store';
 
 import { Bolt, DeleteHotData, Rename, Retry, Trash, Upload, Versions } from '@static/images/common';
 import { AddFolderIcon, Lock } from '@static/images/buckets';
 
 export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
-    const { messages } = useIntl();
+    const messages = useAppSelector(state => state.locales.messages.coponents.common.bucketActions);
     const { openModal, closeModal } = useModal();
     const { remountBucket } = useTomb();
     const bucketType = `${bucket.bucketType}_${bucket.storageClass}`;
@@ -98,8 +98,8 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     }
 
     const uploadAction = new Action(`${messages.upload}`, <Upload width="18px" height="18px" />, upload);
-    const createSnapshotAction = bucket.isSnapshotValid || !bucket.files.length ? null : new Action(`${messages.takeColdSnapshot}`, <Bolt width="18px" height="18px" />, takeSnapshot, `${messages.snapshotTooltip}`);
-    const viewBucketSnapshotsAction = bucket.snapshots.length ? new Action(`${messages.viewColdSnapshots}`, <Versions width="18px" height="18px" />, viewBucketSnapshots) : null;
+    const createSnapshotAction = bucket.isSnapshotValid || !bucket.files.length ? null : new Action(`${messages.takeArchivalSnapshot}`, <Bolt width="18px" height="18px" />, takeSnapshot, `${messages.snapshotExplanation}`);
+    const viewBucketSnapshotsAction = bucket.snapshots.length ? new Action(`${messages.viewArchivalSnapshots}`, <Versions width="18px" height="18px" />, viewBucketSnapshots) : null;
     const viewBucketVersionsAction = new Action(`${messages.viewDriveVersions}`, <Versions width="18px" height="18px" />, viewBucketVersions);
     const renameAction = new Action(`${messages.rename}`, <Rename width="18px" height="18px" />, rename);
     const createFolderAction = new Action(`${messages.createFolder}`, <AddFolderIcon width="18px" height="18px" />, createFolder);

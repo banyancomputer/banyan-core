@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useIntl } from 'react-intl';
 
 import { ProfileControls } from './ProfileControls';
 import { HelpControls } from './HelpControls';
@@ -21,7 +20,7 @@ import { Question } from '@static/images/common';
 
 export const Header: React.FC<{ className?: string }> = ({ className = '' }) => {
     const dispatch = useAppDispatch();
-    const { messages } = useIntl();
+    const messages = useAppSelector(state => state.locales.messages.coponents.common.header);
     const { selectedSubscription } = useAppSelector(state => state.billing);
     const profileOptionsRef = useRef<HTMLDivElement | null>(null);
     const helpOptionsRef = useRef<HTMLDivElement | null>(null);

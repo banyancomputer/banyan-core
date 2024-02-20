@@ -1,5 +1,4 @@
 import React, { ReactElement, useMemo } from 'react';
-import { useIntl } from 'react-intl';
 
 import { MoveToModal } from '@components/common/Modal/MoveToModal';
 import { RenameFileModal } from '@components/common/Modal/RenameFileModal';
@@ -10,6 +9,7 @@ import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { useModal } from '@/app/contexts/modals';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { useTomb } from '@/app/contexts/tomb';
+import { useAppSelector } from '@/app/store';
 
 import { Copy, Done, Download, LinkIcon, MoveTo, Rename, Share, Trash } from '@static/images/common';
 
@@ -23,9 +23,9 @@ export class Action {
 }
 
 export const FileActions: React.FC<{ bucket: Bucket; file: BrowserObject; parrentFolder: BrowserObject; path: string[] }> = ({ bucket, file, path, parrentFolder }) => {
-    const { messages } = useIntl();
+    const messages = useAppSelector(state => state.locales.messages.coponents.bucket.bucketTable.fileActions);
     const { download, makeCopy, shareFile } = useTomb();
-    const { openModal, closeModal } = useModal();
+    const { openModal } = useModal();
     const bucketType = `${bucket.bucketType}_${bucket.storageClass}`;
 
     const downloadFile = async () => {
@@ -34,7 +34,7 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BrowserObject; parren
                 download(bucket, path, file.name)
             );
         } catch (error: any) {
-            ToastNotifications.error('Failed to download file', `${messages.tryAgain}`, downloadFile);
+            ToastNotifications.error('Failed to download file', messages.tryAgain, downloadFile);
         }
     };
 
@@ -99,13 +99,13 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BrowserObject; parren
         }
     };
 
-    const downloadAction = useMemo(() => new Action(`${messages.download}`, <Download width="18px" height="18px" />, downloadFile), []);
-    const moveToAction = new Action(`${messages.moveTo}`, <MoveTo width="18px" height="18px" />, moveTo);
-    const makeCopyAction = new Action(`${messages.makeCopy}`, <Copy width="18px" height="18px" />, copy);
-    const vierFileVersionsAction = new Action(`${messages.viewFileVersions}`, <LinkIcon width="18px" height="18px" />, viewFileVersions);
-    const renameAction = new Action(`${messages.rename}`, <Rename width="18px" height="18px" />, rename);
-    const removeAction = new Action(`${messages.remove}`, <Trash width="18px" height="18px" />, remove);
-    const shareAction = new Action(`${messages.shareFile}`, <Share width="18px" height="18px" />, share);
+    const downloadAction = useMemo(() => new Action(messages.download, <Download width="18px" height="18px" />, downloadFile), []);
+    const moveToAction = new Action(messages.moveTo, <MoveTo width="18px" height="18px" />, moveTo);
+    const makeCopyAction = new Action(messages.makeCopy, <Copy width="18px" height="18px" />, copy);
+    const vierFileVersionsAction = new Action(messages.viewFileVersions, <LinkIcon width="18px" height="18px" />, viewFileVersions);
+    const renameAction = new Action(messages.rename, <Rename width="18px" height="18px" />, rename);
+    const removeAction = new Action(messages.remove, <Trash width="18px" height="18px" />, remove);
+    const shareAction = new Action(messages.shareFile, <Share width="18px" height="18px" />, share);
 
     const hotInrecactiveActions = [
         downloadAction, moveToAction, makeCopyAction, renameAction, removeAction, shareAction,

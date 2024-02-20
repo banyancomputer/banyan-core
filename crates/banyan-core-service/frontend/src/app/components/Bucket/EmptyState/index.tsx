@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { useIntl } from 'react-intl';
 
 import { useFolderLocation } from '@app/hooks/useFolderLocation';
 import { Bucket } from '@app/types/bucket';
@@ -7,9 +6,10 @@ import { Bucket } from '@app/types/bucket';
 import { Upload } from '@static/images/common';
 import { useFilesUpload } from '@app/contexts/filesUpload';
 import { ToastNotifications } from '@utils/toastNotifications';
+import { useAppSelector } from '@/app/store';
 
 export const EmptyState: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
-    const { messages } = useIntl();
+    const messages = useAppSelector(state => state.locales.messages.coponents.bucket.emptyState);
     const { setFiles, uploadFiles, files } = useFilesUpload();
     const [previewFiles, setPreviewFiles] = useState<File[]>([]);
 
@@ -46,7 +46,7 @@ export const EmptyState: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
             }, 100);
             await uploadFiles(bucket!, folderLocation);
         } catch (error: any) {
-            ToastNotifications.error(`${messages.uploadError}`, `${messages.tryAgain}`, upload);
+            ToastNotifications.error(messages.uploadError, messages.tryAgain, upload);
         };
     };
 
@@ -76,7 +76,7 @@ export const EmptyState: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                         <Upload width="63" height="63px" />
                         <div className="mt-14 flex flex-col items-center">
                             <p className="text-text-900">
-                                Drag & drop files here to upload,or use the 'Upload' button
+                                {messages.description}
                             </p>
                         </div>
                     </>
@@ -95,7 +95,7 @@ export const EmptyState: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                             onClick={upload}
                         >
                             <Upload />
-                            {`${messages.upload}`}
+                            {messages.buttonText}
                         </button>
                     </>
                 }

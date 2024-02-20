@@ -1,15 +1,15 @@
 import React from 'react';
-import { useIntl } from 'react-intl';
 
 import { RequestBucketAccessModal } from '@components/common/Modal/RequestBucketAccessModal';
 
 import { Bucket } from '@app/types/bucket';
 import { useModal } from '@app/contexts/modals';
+import { useAppSelector } from '@/app/store';
 
 import { Lock } from '@static/images/buckets';
 
 export const LockedTooltip: React.FC<{ bucket: Bucket, className?: string, size?: string }> = ({ bucket, className, size }) => {
-    const { messages } = useIntl();
+    const messages = useAppSelector(state => state.locales.messages.coponents.common.navigation.lockedTooltip);
     const { openModal } = useModal();
     const stopPopagation = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
         event.stopPropagation();

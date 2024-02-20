@@ -1,5 +1,4 @@
 
-import { useIntl } from 'react-intl';
 import { useEffect } from 'react';
 
 import { KeyManagementTable } from '@components/Account/ManageKeys/KeyManagementTable';
@@ -10,7 +9,6 @@ import { ToastNotifications } from '@/app/utils/toastNotifications';
 
 const ManageKeys = () => {
     const { buckets, areBucketsLoading, tomb, getBucketsKeys } = useTomb();
-    const { messages } = useIntl();
 
     useEffect(() => {
         if (!tomb) { return; }

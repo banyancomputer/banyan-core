@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { useIntl } from 'react-intl';
 
 import { PrimaryButton } from '@components/common/PrimaryButton';
 
@@ -9,6 +8,7 @@ import { useModal } from '@/app/contexts/modals';
 import { getDateLabel, getTime } from '@/app/utils/date';
 import { convertFileSize } from '@/app/utils/storage';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
+import { useAppSelector } from '@/app/store';
 
 import { CommonFileIcon } from '@static/images/common';
 
@@ -16,7 +16,7 @@ export const BucketSnapshotsModal: React.FC<{ bucketId: string }> = ({ bucketId 
     const { getBucketShapshots, tomb } = useTomb();
     const { closeModal } = useModal();
     const [snapshots, setSnapshots] = useState<BucketSnapshot[]>([]);
-    const { messages } = useIntl();
+    const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.bucketSnapshots);
 
     useEffect(() => {
         if (!tomb) { return; }
@@ -37,9 +37,9 @@ export const BucketSnapshotsModal: React.FC<{ bucketId: string }> = ({ bucketId 
     return (
         <div className="w-snapshotsModal flex flex-col gap-8" >
             <div>
-                <h4 className="text-m font-semibold ">{`${messages.viewColdSnapshots}`}</h4>
+                <h4 className="text-m font-semibold ">{`${messages.title}`}</h4>
                 <p className="mt-2 text-gray-400">
-                    {`${messages.accessPreviousVersions}`}
+                    {`${messages.subtitle}`}
                 </p>
             </div>
             <div className="flex flex-col gap-3">

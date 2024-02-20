@@ -1,5 +1,4 @@
 import React from 'react';
-import { useIntl } from 'react-intl';
 
 import { PrimaryButton } from '@components/common/PrimaryButton';
 import { SecondaryButton } from '@components/common/SecondaryButton';
@@ -8,13 +7,14 @@ import { Bucket } from '@/app/types/bucket';
 import { useModal } from '@/app/contexts/modals';
 import { useTomb } from '@/app/contexts/tomb';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
+import { useAppSelector } from '@/app/store';
 
 import { Bolt } from '@static/images/common';
 
 export const TakeSnapshotModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
+    const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.takeSnapshot);
     const { closeModal } = useModal();
     const { takeColdSnapshot } = useTomb();
-    const { messages } = useIntl();
 
     const takeSnapshot = async () => {
         try {
@@ -33,9 +33,9 @@ export const TakeSnapshotModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                 <Bolt width="24px" height="24px" />
             </span>
             <div>
-                <h4 className="text-m font-semibold">{`${messages.takeColdSnapshot}`}</h4>
+                <h4 className="text-m font-semibold">{`${messages.title}`}</h4>
                 <p className="mt-2 text-text-600">
-                    {`${messages.doYouWantToTakeSnapshot}`}?
+                    {`${messages.subtitle}`}?
                 </p>
             </div>
             <div className="mt-3 flex items-center gap-3 text-xs" >
@@ -45,7 +45,7 @@ export const TakeSnapshotModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                     text={`${messages.cancel}`}
                 />
                 <PrimaryButton
-                    text={`${messages.takeColdSnapshot}`}
+                    text={`${messages.takeArchivalSnapshot}`}
                     action={takeSnapshot}
                     className="w-1/2"
                 />

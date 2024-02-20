@@ -1,5 +1,4 @@
 import mime from 'mime';
-import { useIntl } from 'react-intl';
 
 import { Loader } from '@components/common/Loader';
 import { SpreadsheetViewer } from '@components/common/FilePreview/SpreadsheetViewer';
@@ -11,14 +10,14 @@ import { useModal } from '@/app/contexts/modals';
 import { useFilePreview } from '@/app/contexts/filesPreview';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { useTomb } from '@/app/contexts/tomb';
+import { useAppSelector } from '@/app/store';
 
 import { Close, Done, DownloadAlternative, Upload } from '@static/images/common';
 
 export const FilePreview = () => {
     const { download, shareFile } = useTomb();
     const { openModal } = useModal();
-
-    const { messages } = useIntl();
+    const messages = useAppSelector(state => state.locales.messages.coponents.common.filePreview);
     const { file, files, bucket, parrentFolder, path, openNext, openPrevious, closeFile } = useFilePreview();
 
     const close = () => {

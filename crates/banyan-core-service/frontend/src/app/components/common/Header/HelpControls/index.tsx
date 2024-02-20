@@ -1,10 +1,12 @@
 import React from 'react';
-import { useIntl } from 'react-intl';
+
+import { useAppSelector } from '@/app/store';
 
 import { Mail, Question } from '@static/images/common'
 
 export const HelpControls = () => {
-    const { messages } = useIntl();
+    const messages = useAppSelector(state => state.locales.messages.coponents.common.header.helpControls);
+
     return (
         <div
             className="absolute right-0 top-10  flex flex-col items-stretch shadow-xl rounded-xl overflow-hidden text-xs font-semibold overflow-hiddenaa bg-bucket-actionsBackground cursor-pointer text-bucket-actionsText"
