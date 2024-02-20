@@ -1,8 +1,4 @@
-use std::collections::HashSet;
-
 use http::{HeaderMap, HeaderValue};
-use jwt_simple::algorithms::ECDSAP384KeyPairLike;
-use jwt_simple::claims::Claims;
 use jwt_simple::prelude::*;
 use reqwest::Client;
 use serde::Serialize;

@@ -88,7 +88,6 @@ mod tests {
     use banyan_task::TaskStore;
 
     use super::*;
-    use crate::api::admin::delete_blocks::BlocksDeleteError;
     use crate::app::mock_app_state;
     use crate::database::{test_helpers, Database};
 
