@@ -193,7 +193,9 @@ pub async fn handler(
 
     let needed_capacity = request_data.expected_data_size;
     let user = User::by_id(&mut conn, &user_id).await?;
-    let subscription = Subscription::by_id(&mut conn, &user.subscription_id).await?;
+    let subscription = Subscription::find_by_id(&mut conn, &user.subscription_id)
+        .await?
+        .ok_or(PushMetadataError::MissingSubscription)?;
 
     if let Some(hard_limit) = subscription.hot_storage_hard_limit {
         let hard_limit_bytes = hard_limit * GIBIBYTE;
@@ -296,6 +298,9 @@ pub enum PushMetadataError {
 
     #[error("failed to persist upload: {0}")]
     PersistanceFailure(#[from] PersistanceError),
+
+    #[error("failed to find associated stripe subscription")]
+    MissingSubscription,
 }
 
 impl IntoResponse for PushMetadataError {
