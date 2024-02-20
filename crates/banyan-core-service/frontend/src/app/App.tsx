@@ -8,22 +8,24 @@ import { Notifications } from '@components/common/Notifications';
 import { FilePreview } from '@components/common/FilePreview';
 import { MobilePlaceholder } from '@components/common/MobilePlaceholder';
 
-import { Routes } from './routes';
-import { KeystoreProvider } from './contexts/keystore';
-import { FilePreviewProvider } from './contexts/filesPreview';
-import { ModalProvider } from './contexts/modals';
-import { FileUploadProvider } from './contexts/filesUpload';
-import { TombProvider } from './contexts/tomb';
-import { getLocalStorageItem, setLocalStorageItem } from './utils/localStorage';
-import { SessionProvider } from './contexts/session';
-import { preventDefaultDragAction } from './utils/dragHandlers';
+import { Routes } from '@app/routes';
+import { KeystoreProvider } from '@app/contexts/keystore';
+import { FilePreviewProvider } from '@app/contexts/filesPreview';
+import { ModalProvider } from '@app/contexts/modals';
+import { FileUploadProvider } from '@app/contexts/filesUpload';
+import { TombProvider } from '@app/contexts/tomb';
+import { getLocalStorageItem, setLocalStorageItem } from '@app/utils/localStorage';
+import { SessionProvider } from '@app/contexts/session';
+import { preventDefaultDragAction } from '@app/utils/dragHandlers';
+import { ErrorProvider } from '@app/contexts/error';
+import { store } from '@app/store';
+
 import en from '@static/locales/en.json';
 import fr from '@static/locales/fr.json';
 import de from '@static/locales/de.json';
 import ja from '@static/locales/ja.json';
 import zh from '@static/locales/zh.json';
 
-import { store } from '@app/store';
 
 const TRANSLATES: Record<string, Record<string, string>> = {
     en,
@@ -57,35 +59,37 @@ const App = () => {
 
     return (
         <Provider store={store}>
-            <IntlProvider locale={locale} messages={TRANSLATES[locale]}>
-                <main
-                    className="flex flex-col h-screen max-h-screen font-sans bg-mainBackground text-text-900 max-sm:hidden"
-                    onDragOver={preventDefaultDragAction}
-                    onDrop={preventDefaultDragAction}
-                >
-                    <BrowserRouter basename="/" >
-                        <ModalProvider>
-                            <SessionProvider>
-                                <KeystoreProvider>
-                                    <TombProvider>
-                                        <FileUploadProvider>
-                                            <FilePreviewProvider>
-                                                <Modal />
-                                                <FilePreview />
-                                                <Notifications />
-                                                <Suspense>
-                                                    <Routes />
-                                                </Suspense>
-                                            </FilePreviewProvider>
-                                        </FileUploadProvider>
-                                    </TombProvider>
-                                </KeystoreProvider>
-                            </SessionProvider>
-                        </ModalProvider>
-                    </BrowserRouter>
-                </main>
-                <MobilePlaceholder />
-            </IntlProvider>
+            <ErrorProvider>
+                <IntlProvider locale={locale} messages={TRANSLATES[locale]}>
+                    <main
+                        className="flex flex-col h-screen max-h-screen font-sans bg-mainBackground text-text-900 max-sm:hidden"
+                        onDragOver={preventDefaultDragAction}
+                        onDrop={preventDefaultDragAction}
+                    >
+                        <BrowserRouter basename="/" >
+                            <ModalProvider>
+                                <SessionProvider>
+                                    <KeystoreProvider>
+                                        <TombProvider>
+                                            <FileUploadProvider>
+                                                <FilePreviewProvider>
+                                                    <Modal />
+                                                    <FilePreview />
+                                                    <Notifications />
+                                                    <Suspense>
+                                                        <Routes />
+                                                    </Suspense>
+                                                </FilePreviewProvider>
+                                            </FileUploadProvider>
+                                        </TombProvider>
+                                    </KeystoreProvider>
+                                </SessionProvider>
+                            </ModalProvider>
+                        </BrowserRouter>
+                    </main>
+                    <MobilePlaceholder />
+                </IntlProvider>
+            </ErrorProvider>
         </Provider>
     );
 };

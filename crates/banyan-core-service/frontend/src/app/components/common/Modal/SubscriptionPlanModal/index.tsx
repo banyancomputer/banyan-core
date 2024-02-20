@@ -3,20 +3,29 @@ import { useIntl } from 'react-intl';
 import { unwrapResult } from '@reduxjs/toolkit';
 
 import { useAppDispatch, useAppSelector } from '@/app/store'
-import { getSubscriptions, subscribe } from '@/app/store/billing/actions';
+import { getSubscriptions, manageSubscriptions, subscribe } from '@/app/store/billing/actions';
 import { convertSubscriptionsSizes } from '@/app/utils/storage';
 import { getHotStorageAmount } from '@/app/utils/subscritions';
 
 export const SubscriptionPlanModal = () => {
     const { messages } = useIntl();
     const dispatch = useAppDispatch()
-    const { subscriptions } = useAppSelector(state => state.billing);
+    const { subscriptions, selectedSubscription } = useAppSelector(state => state.billing);
 
     const updateSubscription = async (id: string) => {
         try {
+            if (selectedSubscription?.service_key !== 'starter') {
+                const { portal_url } = unwrapResult(await dispatch(manageSubscriptions()));
+                window.location.href = portal_url;
+
+                return;
+            };
+
             const redirectUrl = unwrapResult(await dispatch(subscribe(id)));
             window.location.href = redirectUrl.checkout_url;
-        } catch (error: any) { };
+        } catch (error: any) {
+            console.log('updateSubscriptionError', error);
+        };
     };
 
     useEffect(() => {
@@ -49,7 +58,7 @@ export const SubscriptionPlanModal = () => {
                             }
                             <button
                                 className={`mt-11 mb-28 w-full py-3 text-xxs font-semibold leading-4 rounded-lg cursor-pointer ${subscription.service_key === 'starter' ? 'bg-button-disabled text-text-600' : 'bg-button-primary text-button-primaryText'}`}
-                                disabled={subscription.currently_active}
+                                disabled={true}
                                 onClick={() => updateSubscription(subscription.id)}
                             >
                                 {subscription.currently_active ? `${messages.currentPlan}` : `${messages.upgradeTo} ${subscription.title}`}
@@ -84,9 +93,9 @@ export const SubscriptionPlanModal = () => {
                     </div>
                 )}
             </div>
-            <p className="mt-4 mb-3 text-xxs font-semibold text-center">{`${messages.needCustomPlan}`}</p>
+            <p className="mt-4 mb-3 text-xxs font-semibold text-center">{`${messages.needCustomPlan}?`}</p>
             <a
-                href="mailto:sam@banyan.computer"
+                href="mailto:tim@banyan.computer"
                 target="_blank"
                 className="mx-auto font-bold text-xxs text-button-contactSales"
             >

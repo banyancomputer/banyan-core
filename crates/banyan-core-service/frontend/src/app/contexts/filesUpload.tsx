@@ -1,11 +1,14 @@
 import React, { FC, ReactNode, createContext, useContext, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useIntl } from 'react-intl';
 
-import { useTomb } from './tomb';
+import { SubscriptionPlanModal } from '@components/common/Modal/SubscriptionPlanModal';
+
 import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { useModal } from './modals';
-import { HardStorageLimit } from '../components/common/Modal/HardStorageLimit';
+import { useTomb } from './tomb';
+import { BannerError, useError } from './error';
 
 export interface UploadingFile { file: File; status: "pending" | "uploading" | "success" | "failed" };
 interface FilesUploadState {
@@ -30,6 +33,8 @@ export const FileUploadProvider: FC<{ children: ReactNode }> = ({ children }) =>
     const [selectedFolder, setSelectedFolder] = useState<BrowserObject | null>(null);
     const location = useLocation();
     const navigate = useNavigate();
+    const { messages } = useIntl();
+    const { setError } = useError();
 
     const uploadFiles = async (bucket: Bucket, path: string[], folder?: BrowserObject) => {
         setSelectedBucket(bucket);
@@ -42,11 +47,11 @@ export const FileUploadProvider: FC<{ children: ReactNode }> = ({ children }) =>
 
         for (const file of files) {
             try {
-                if (file.file.size > storageUsage.hardLimit - storageUsage.usage) {
+                if (file.file.size > storageUsage.softLimit - storageUsage.usage) {
                     setFiles(prev => prev.map(file => file.status === 'pending' ? { ...file, status: 'failed' } : file));
-                    openModal(<HardStorageLimit />, null, false, 'p-0', false);
-                    return;
+                    setError(new BannerError(`${messages.outOfStorageDescription}`, { callback: () => { openModal(<SubscriptionPlanModal />) }, label: `${messages.seePricingPage}` }));
                 };
+
                 const arrayBuffer = await file.file.arrayBuffer();
                 file.status = 'uploading';
                 setFiles(prev => [...prev]);
@@ -68,7 +73,11 @@ export const FileUploadProvider: FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const retryUpload = async (file: UploadingFile) => {
-        if (file.file.size > storageUsage.hardLimit - storageUsage.usage) { return };
+        if (file.file.size > storageUsage.softLimit - storageUsage.usage) {
+            setFiles(prev => prev.map(file => file.status === 'pending' ? { ...file, status: 'failed' } : file));
+            setError(new BannerError(`${messages.outOfStorageDescription}`, { callback: () => { openModal(<SubscriptionPlanModal />) }, label: `${messages.seePricingPage}` }));
+        };
+
         try {
             const arrayBuffer = await file.file.arrayBuffer();
             file.status = 'uploading';
