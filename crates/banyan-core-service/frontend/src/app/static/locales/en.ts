@@ -133,7 +133,6 @@ export default {
                 files: "Files",
                 uploadError: "There was an issue with upload. Please try again",
                 tryAgain: "Try again",
-
             },
             emptyState: {
                 title: "Create your first drive to start uploading and sharing",
@@ -404,6 +403,14 @@ export default {
             emptyTrash: "Click to empty trash",
             trashIsEmpty: "Trash is empty",
             clickToEmptyTrash: "Click to empty trash",
+        }
+    },
+    contexts: {
+        fileUpload: {
+            softStorageLimit: "You're approaching the limit of your storage plan, upgrade for more space",
+            hardStorageLimit: "Your storage request exceeded storage capacity, please",
+            seePricingPage: "See our pricing page",
+            contactSales: "Contact sales"
         }
     }
 };
