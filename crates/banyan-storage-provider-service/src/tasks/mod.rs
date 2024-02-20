@@ -18,16 +18,31 @@ pub async fn start_background_workers(
     mut shutdown_rx: watch::Receiver<()>,
 ) -> Result<JoinHandle<()>, &'static str> {
     let task_store = SqliteTaskStore::new(state.database());
-    let task_in_progress = task_store
+
+    // Enqueue a report bandwidth task if there is none in progress
+    if task_store
         .task_in_state::<ReportBandwidthMetricsTask>(vec![TaskState::New, TaskState::Retry])
         .await
-        .unwrap();
-
-    if task_in_progress.is_none() {
+        .expect("get report bandwidth metrics task")
+        .is_none()
+    {
         ReportBandwidthMetricsTask::new()
             .enqueue::<SqliteTaskStore>(&mut state.database())
             .await
-            .unwrap();
+            .expect("enqueue report bandwidth metrics task");
+    }
+
+    // Enqueue a report health task if there is none in progress
+    if task_store
+        .task_in_state::<ReportHealthTask>(vec![TaskState::New, TaskState::Retry])
+        .await
+        .expect("get report health task")
+        .is_none()
+    {
+        ReportHealthTask
+            .enqueue::<SqliteTaskStore>(&mut state.database())
+            .await
+            .expect("enqueue report health task");
     }
 
     WorkerPool::new(task_store.clone(), move || state.clone())
