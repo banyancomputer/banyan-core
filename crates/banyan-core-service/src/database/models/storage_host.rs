@@ -9,29 +9,57 @@ pub struct SelectedStorageHost {
     pub name: String,
     pub url: String,
     pub used_storage: i64,
+    pub reserved_storage: i64,
     pub available_storage: i64,
+    pub region: Option<String>,
     pub fingerprint: String,
     pub pem: String,
 }
 
 impl SelectedStorageHost {
     /// Find the database ID of a storage host that has the requested capacity currently available.
-    /// Will return None if no storage host has the requested capacity available. Does not prefer
-    /// any storage host over any other.
+    /// Will return None if there is no storage host with the requested capacity and region
+    /// available, but does not exert preference among hosts that meet these criteria.
     pub async fn select_for_capacity(
         conn: &mut DatabaseConnection,
+        region_preference: Option<String>,
         required_bytes: i64,
     ) -> Result<Option<Self>, sqlx::Error> {
-        sqlx::query_as!(
+        // Select a storage host with enough free space, ensuring it is also within the region if
+        // one is specified.
+        let region_specific_host: Option<Self> = sqlx::query_as!(
             Self,
-            r#"SELECT id,name,url,used_storage, available_storage,fingerprint,pem FROM storage_hosts
-                   WHERE (available_storage - used_storage) > $1
-                   ORDER BY RANDOM()
-                   LIMIT 1;"#,
+            r#"
+                SELECT *
+                FROM storage_hosts
+                WHERE (available_storage - reserved_storage) > $1
+                AND ($2 IS NULL OR $2 LIKE ('%' || region || '%')) 
+                ORDER BY RANDOM() 
+                LIMIT 1;
+            "#,
             required_bytes,
+            region_preference,
         )
         .fetch_optional(&mut *conn)
-        .await
+        .await?;
+
+        if region_specific_host.is_some() {
+            Ok(region_specific_host)
+        } else {
+            sqlx::query_as!(
+                Self,
+                r#"
+                    SELECT *
+                    FROM storage_hosts
+                    WHERE (available_storage - reserved_storage) > $1
+                    ORDER BY RANDOM()
+                    LIMIT 1;
+                "#,
+                required_bytes,
+            )
+            .fetch_optional(&mut *conn)
+            .await
+        }
     }
 }
 
