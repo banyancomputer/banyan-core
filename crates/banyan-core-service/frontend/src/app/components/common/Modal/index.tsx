@@ -31,7 +31,7 @@ export const Modal = () => {
                                 <ArrowDown width="24px" height="24px" />
                             </button>
                         }
-                        {!mandatory || closeButton &&
+                        {(!mandatory || closeButton) &&
                             <button
                                 className="absolute right-6 top-6"
                                 onClick={closeModal}
