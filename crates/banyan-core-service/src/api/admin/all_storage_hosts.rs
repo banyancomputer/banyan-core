@@ -13,13 +13,10 @@ pub async fn handler(
     State(state): State<AppState>,
 ) -> Result<Response, AllStorageHostsError> {
     let database = state.database();
-    let query_result = sqlx::query_as!(
-        SelectedStorageHost,
-        r#"SELECT id,name,url,used_storage, available_storage,fingerprint,pem FROM storage_hosts;"#,
-    )
-    .fetch_all(&database)
-    .await
-    .map_err(AllStorageHostsError::DatabaseFailure)?;
+    let query_result = sqlx::query_as!(SelectedStorageHost, r#"SELECT * FROM storage_hosts;"#,)
+        .fetch_all(&database)
+        .await
+        .map_err(AllStorageHostsError::DatabaseFailure)?;
 
     let hosts: Vec<_> = query_result
         .into_iter()
