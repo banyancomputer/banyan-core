@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id,name,url,used_storage,available_storage,fingerprint,pem FROM storage_hosts WHERE id = $1;",
+  "query": "SELECT * FROM storage_hosts WHERE id = $1;",
   "describe": {
     "columns": [
       {
@@ -37,6 +37,16 @@
         "name": "pem",
         "ordinal": 6,
         "type_info": "Text"
+      },
+      {
+        "name": "reserved_storage",
+        "ordinal": 7,
+        "type_info": "Int64"
+      },
+      {
+        "name": "region",
+        "ordinal": 8,
+        "type_info": "Text"
       }
     ],
     "parameters": {
@@ -49,8 +59,10 @@
       false,
       false,
       false,
-      false
+      false,
+      false,
+      true
     ]
   },
-  "hash": "43fbdc352d80eb7ed9b955657b5830aed95dbbf423b6cbb5e61389c7ddf30492"
+  "hash": "0abf862295c92c16adb81b77315b3635b62ecf0b0ea772424579eede40c56235"
 }

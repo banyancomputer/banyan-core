@@ -74,7 +74,7 @@ impl StorageHost {
     ) -> Result<Self, sqlx::Error> {
         sqlx::query_as!(
             Self,
-            r#"SELECT id,name,url,used_storage,available_storage,fingerprint,pem FROM storage_hosts
+            r#"SELECT * FROM storage_hosts
                        WHERE (available_storage - used_storage) > $1
                        AND id != $2
                        ORDER BY RANDOM()
@@ -89,21 +89,17 @@ impl StorageHost {
     pub async fn select_by_name(conn: &Database, host_name: &str) -> Result<Self, sqlx::Error> {
         sqlx::query_as!(
             Self,
-            r#"SELECT id,name,url,used_storage,available_storage,fingerprint,pem FROM storage_hosts WHERE name = $1;"#,
+            r#"SELECT * FROM storage_hosts WHERE name = $1;"#,
             host_name,
-        )
-            .fetch_one(conn)
-            .await
-    }
-
-    pub async fn get_by_id(conn: &Database, id: &str) -> Result<Self, sqlx::Error> {
-        sqlx::query_as!(
-            Self,
-            "SELECT id,name,url,used_storage,available_storage,fingerprint,pem FROM storage_hosts WHERE id = $1;",
-            id,
         )
         .fetch_one(conn)
         .await
+    }
+
+    pub async fn get_by_id(conn: &Database, id: &str) -> Result<Self, sqlx::Error> {
+        sqlx::query_as!(Self, "SELECT * FROM storage_hosts WHERE id = $1;", id,)
+            .fetch_one(conn)
+            .await
     }
 }
 

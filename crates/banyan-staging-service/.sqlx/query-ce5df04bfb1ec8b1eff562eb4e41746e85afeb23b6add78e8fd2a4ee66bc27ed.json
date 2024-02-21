@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT * FROM storage_hosts;",
+  "query": "SELECT * FROM uploads WHERE metadata_id = $1",
   "describe": {
     "columns": [
       {
@@ -9,78 +9,72 @@
         "type_info": "Text"
       },
       {
-        "name": "name",
+        "name": "client_id",
         "ordinal": 1,
         "type_info": "Text"
       },
       {
-        "name": "url",
+        "name": "metadata_id",
         "ordinal": 2,
         "type_info": "Text"
       },
       {
-        "name": "used_storage",
+        "name": "reported_size",
         "ordinal": 3,
         "type_info": "Int64"
       },
       {
-        "name": "available_storage",
+        "name": "final_size",
         "ordinal": 4,
         "type_info": "Int64"
       },
       {
-        "name": "fingerprint",
+        "name": "base_path",
         "ordinal": 5,
         "type_info": "Text"
       },
       {
-        "name": "pem",
+        "name": "state",
         "ordinal": 6,
         "type_info": "Text"
       },
       {
-        "name": "reserved_storage",
+        "name": "integrity_hash",
         "ordinal": 7,
-        "type_info": "Int64"
-      },
-      {
-        "name": "region",
-        "ordinal": 8,
         "type_info": "Text"
       },
       {
-        "name": "last_seen_at",
+        "name": "started_at",
+        "ordinal": 8,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "finished_at",
         "ordinal": 9,
         "type_info": "Datetime"
       },
       {
-        "name": "current_version",
+        "name": "created_at",
         "ordinal": 10,
-        "type_info": "Text"
-      },
-      {
-        "name": "staging",
-        "ordinal": 11,
-        "type_info": "Bool"
+        "type_info": "Datetime"
       }
     ],
     "parameters": {
-      "Right": 0
+      "Right": 1
     },
     "nullable": [
       false,
       false,
       false,
       false,
-      false,
-      false,
+      true,
       false,
       false,
       true,
+      false,
       true,
-      true,
-      false
+      true
     ]
   },
-  "hash": "8dbad269f485f0e235bdedc24ee428b36353f50a0e7d9fb8fad3bcf0ca590c13"
+  "hash": "ce5df04bfb1ec8b1eff562eb4e41746e85afeb23b6add78e8fd2a4ee66bc27ed"
 }

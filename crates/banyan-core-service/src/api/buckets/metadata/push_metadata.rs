@@ -221,17 +221,20 @@ pub async fn handler(
     conn.close().await?;
     let mut conn = database.begin().await?;
 
-    let storage_host = match StorageHost::select_for_capacity(&mut conn, user.region_preference,needed_capacity ).await? {
-        Some(sh) => sh,
-        None => {
-            tracing::warn!(
-                needed_capacity,
-                "unable to locate host with sufficient capacity"
-            );
-            let err_msg = serde_json::json!({"msg": ""});
-            return Ok((StatusCode::INSUFFICIENT_STORAGE, Json(err_msg)).into_response());
-        }
-    };
+    let storage_host =
+        match StorageHost::select_for_capacity(&mut conn, user.region_preference, needed_capacity)
+            .await?
+        {
+            Some(sh) => sh,
+            None => {
+                tracing::warn!(
+                    needed_capacity,
+                    "unable to locate host with sufficient capacity"
+                );
+                let err_msg = serde_json::json!({"msg": ""});
+                return Ok((StatusCode::INSUFFICIENT_STORAGE, Json(err_msg)).into_response());
+            }
+        };
     let user_report = UserStorageReport::user_report(&mut conn, &storage_host.id, &user_id).await?;
 
     let mut storage_authorization: Option<String> = None;
