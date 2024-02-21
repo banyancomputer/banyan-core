@@ -114,8 +114,8 @@ pub(crate) async fn sample_blocks(
 ) -> Vec<String> {
     let initial_cids: Vec<_> =
         normalize_cids(generate_cids(data_generator(0..number_of_blocks))).collect();
-    let block_ids = create_blocks(&db, initial_cids.iter().map(String::as_str)).await;
-    associate_blocks_to_upload(&db, &upload_id, block_ids.clone()).await;
+    let block_ids = create_blocks(db, initial_cids.iter().map(String::as_str)).await;
+    associate_blocks_to_upload(db, upload_id, block_ids.clone()).await;
 
     block_ids
 }
@@ -124,7 +124,7 @@ pub(crate) async fn save_blocks_to_storage(
     metadata_id: &str,
     block_cids: Vec<String>,
 ) {
-    let store = ObjectStore::new(&store_connection).expect("store creation");
+    let store = ObjectStore::new(store_connection).expect("store creation");
     for cid in block_cids {
         let location = ObjectStorePath::from(format!("{}/{}.bin", &metadata_id, cid));
         store

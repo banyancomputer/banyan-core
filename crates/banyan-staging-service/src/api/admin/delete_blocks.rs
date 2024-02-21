@@ -127,7 +127,7 @@ mod tests {
             mock_app_state(db.clone()),
             Json(DeleteBlocksRequest {
                 normalized_cids: block_ids,
-                metadata_id: metadata_id,
+                metadata_id,
             }),
         )
         .await;
@@ -149,7 +149,7 @@ mod tests {
         let blocks_cids = get_block_cids(&db, block_ids.clone()).await;
         let app_state = mock_app_state(db.clone());
         test_helpers::save_blocks_to_storage(
-            &app_state.upload_store_connection(),
+            app_state.upload_store_connection(),
             &metadata_id,
             blocks_cids.clone(),
         )
@@ -160,7 +160,7 @@ mod tests {
             app_state,
             Json(DeleteBlocksRequest {
                 normalized_cids: blocks_cids,
-                metadata_id: metadata_id,
+                metadata_id,
             }),
         )
         .await;
@@ -185,7 +185,7 @@ mod tests {
             mock_app_state(db.clone()),
             Json(DeleteBlocksRequest {
                 normalized_cids: block_ids,
-                metadata_id: metadata_id,
+                metadata_id,
             }),
         )
         .await;

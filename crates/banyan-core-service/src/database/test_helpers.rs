@@ -481,13 +481,13 @@ pub(crate) async fn sample_blocks(
 
     associate_blocks(
         &mut *conn,
-        &metadata_id,
-        &storage_host_id,
+        metadata_id,
+        storage_host_id,
         block_ids.iter().map(String::as_str),
     )
     .await;
 
-    link_storage_metadata_and_grant(&mut *conn, &storage_host_id, &metadata_id, &grant_id).await;
+    link_storage_metadata_and_grant(&mut *conn, storage_host_id, metadata_id, grant_id).await;
 
     block_ids
 }
