@@ -1,18 +1,16 @@
 import { useState } from 'react';
-import { useIntl } from 'react-intl';
 
-import { TrashTable } from '@components/Trash/TrashTable';
-import { EmptyTrashModal } from '@components/common/Modal/EmptyTrashModal';
 import { Fallback } from '@components/common/Fallback';
 
 import { useTomb } from '@/app/contexts/tomb';
 import { useModal } from '@/app/contexts/modals';
+import { useAppSelector } from '../store';
 
 import { ArrowDown, Close, EmptyIcon } from '@static/images/common';
 
 const Trash = () => {
     const { trash } = useTomb();
-    const { messages } = useIntl();
+    const messages = useAppSelector(state => state.locales.messages.pages.trash);
     const { openModal } = useModal();
     const [isLabelVisible, setIsLabelVisible] = useState(true);
 
@@ -21,7 +19,7 @@ const Trash = () => {
     };
 
     const emptyTrash = () => {
-        openModal(<EmptyTrashModal />);
+        // openModal(<EmptyTrashModal />);
     };
 
     return (
@@ -51,7 +49,7 @@ const Trash = () => {
                                 </div>
                             </div>
                         }
-                        <TrashTable bucket={trash} />
+                        {/* <TrashTable bucket={trash} /> */}
                     </>
                     :
                     <div className="h-full flex flex-col items-center justify-center saturate-0">

@@ -3,11 +3,13 @@ import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 
 import user from '@app/store/user/slice';
 import billing from '@app/store/billing/slice';
+import locales from '@app/store/locales/slice';
 
 export const store = configureStore({
     reducer: {
         user,
-        billing
+        billing,
+        locales
     },
 });
 

@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useIntl } from 'react-intl';
 
 import { PrimaryButton } from '@components/common/PrimaryButton';
 import { FolderSelect } from '@components/common/FolderSelect';
@@ -10,12 +9,13 @@ import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { useTomb } from '@/app/contexts/tomb';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
+import { useFilePreview } from '@/app/contexts/filesPreview';
+import { useAppSelector } from '@/app/store';
 
 import { Done } from '@static/images/common';
-import { useFilePreview } from '@/app/contexts/filesPreview';
 
 export const MoveToModal: React.FC<{ file: BrowserObject; bucket: Bucket; path: string[]; parrentFolder: BrowserObject }> = ({ file, bucket, path, parrentFolder }) => {
-    const { messages } = useIntl();
+    const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.moteTo);
     const { moveTo, getSelectedBucketFiles, getExpandedFolderFiles } = useTomb();
     const { closeModal, openModal } = useModal();
     const { closeFile } = useFilePreview();
@@ -47,9 +47,9 @@ export const MoveToModal: React.FC<{ file: BrowserObject; bucket: Bucket; path: 
     return (
         <div className="w-modal flex flex-col gap-6" >
             <div>
-                <h4 className="text-m font-semibold ">{`${messages.moveTo}`}</h4>
+                <h4 className="text-m font-semibold ">{`${messages.title}`}</h4>
                 <p className="mt-2 text-text-600">
-                    {`${messages.selectWhereToMove}`}
+                    {`${messages.subtitle}`}
                 </p>
             </div>
             <div>

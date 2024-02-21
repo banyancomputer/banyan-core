@@ -1,5 +1,4 @@
 import React from 'react';
-import { useIntl } from 'react-intl';
 import { Link } from 'react-router-dom';
 
 import { SubscriptionPlanModal } from '../Modal/SubscriptionPlanModal';
@@ -13,7 +12,7 @@ import { useModal } from '@/app/contexts/modals';
 export const StorageUsage = () => {
     const { storageUsage } = useTomb();
     const { openModal } = useModal();
-    const { messages } = useIntl();
+    const messages = useAppSelector(state => state.locales.messages.coponents.common.storageUsage);
     const { selectedSubscription } = useAppSelector(state => state.billing);
 
     const upgragePlan = () => {

@@ -1,5 +1,4 @@
 import React from 'react';
-import { useIntl } from 'react-intl';
 
 import { PrimaryButton } from '@components/common/PrimaryButton';
 import { SecondaryButton } from '@components/common/SecondaryButton';
@@ -10,12 +9,13 @@ import { useTomb } from '@/app/contexts/tomb';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 import { useFilePreview } from '@/app/contexts/filesPreview';
+import { useAppSelector } from '@/app/store';
 
 import { Trash } from '@static/images/common';
 
 export const DeleteFileModal: React.FC<{ bucket: Bucket; file: BrowserObject; path: string[]; parrentFolder: BrowserObject }> = ({ bucket, file, path, parrentFolder }) => {
+    const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.deleteFile);
     const { closeModal } = useModal();
-    const { messages } = useIntl();
     const { closeFile } = useFilePreview();
     const { deleteFile, getSelectedBucketFiles, getExpandedFolderFiles } = useTomb();
     const folderLocation = useFolderLocation();
@@ -40,7 +40,7 @@ export const DeleteFileModal: React.FC<{ bucket: Bucket; file: BrowserObject; pa
         <div className="w-modal flex flex-col gap-5">
             <Trash width="24px" height="24px" />
             <div>
-                <h4 className="text-m font-semibold">{`${messages.removeFile}`}</h4>
+                <h4 className="text-m font-semibold">{`${messages.title}`}</h4>
                 <p className="mt-2 text-text-600">
                     {`${messages.wantToMove}`} <b className="text-text-900">{file.name}</b>? <br /> {`${messages.filesWillBeMoved}`}.
                 </p>

@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useIntl } from 'react-intl';
 import { useNavigate } from 'react-router-dom';
 
 import { BucketActions } from '@components/common/BucketActions';
@@ -10,12 +9,13 @@ import { popupClickHandler } from '@/app/utils';
 import { useFilesUpload } from '@app/contexts/filesUpload';
 import { ToastNotifications } from '@utils/toastNotifications';
 import { preventDefaultDragAction } from '@utils/dragHandlers';
+import { useAppSelector } from '@/app/store';
 
 import { BucketIcon } from '@static/images/buckets';
 import { Dots, Question } from '@static/images/common';
 
 export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
-    const { messages } = useIntl();
+    const messages = useAppSelector(state => state.locales.messages.coponents.home.bucket);
     const { uploadFiles, setFiles, files } = useFilesUpload();
     const bucketRef = useRef<HTMLDivElement | null>(null);
     const bucketActionsRef = useRef<HTMLDivElement | null>(null);
@@ -23,6 +23,7 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
     const [isContextMenuVisible, setIsContextMenuVisible] = useState(false);
     const [areFilesDropped, setAreFilesDropped] = useState(false);
     const navigate = useNavigate();
+    type messagesKeys = keyof typeof messages;
 
     const onContextMenu = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
         event.preventDefault();
@@ -142,9 +143,9 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
                 <div className="flex flex-col gap-2 items-start text-xs font-normal">
                     <div className="flex items-center justify-between w-full">
                         <div className={`px-2 rounded-full text-mainBackground ${storageClassNames[bucket.storageClass]} capitalize`}>
-                            {`${messages[bucket.storageClass]}`}
+                            {messages[bucket.storageClass as messagesKeys]}
                         </div>
-                        <div className="text-text-400" title={`${messages[`${bucket.storageClass}Tooltip`]}`}>
+                        <div className="text-text-400" title={messages[`${bucket.storageClass}Tooltip` as messagesKeys]}>
                             <Question width="24px" height="24px" />
                         </div>
                     </div>

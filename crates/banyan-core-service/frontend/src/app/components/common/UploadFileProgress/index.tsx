@@ -1,14 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useIntl } from 'react-intl';
 
 import { Loader } from '../Loader';
 
 import { useFilesUpload } from '@/app/contexts/filesUpload';
+import { useAppSelector } from '@/app/store';
 
 import { ChevronUp, Clock, Close, Retry, UploadFailIcon, UploadSuccessIcon } from '@static/images/common';
 
 export const UploadFileProgress = () => {
-    const { messages } = useIntl();
+    const messages = useAppSelector(state => state.locales.messages.coponents.common.uploadFileProgress);
     const { files, deleteFromUploadList, retryUpload } = useFilesUpload();
     const [isExpanded, setIsExpanded] = useState(true);
     const uploadedFilesLength = useMemo(() => files.filter(file => file.status === 'success').length, [files]);

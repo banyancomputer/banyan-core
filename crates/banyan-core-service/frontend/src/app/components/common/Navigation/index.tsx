@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useIntl } from 'react-intl';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 
 import { LockedTooltip } from './LockedTooltip';
@@ -9,15 +8,16 @@ import { useFilesUpload } from '@app/contexts/filesUpload';
 import { ToastNotifications } from '@utils/toastNotifications';
 import { Bucket } from '@app/types/bucket';
 import { preventDefaultDragAction } from '@utils/dragHandlers';
+import { StorageUsage } from '../StorageUsage';
+import { useAppSelector } from '@/app/store';
 
 import { ActiveDirectory, ChevronUp, Directory, Logo } from '@static/images/common';
-import { StorageUsage } from '../StorageUsage';
 
 export const Navigation = () => {
 	const { buckets } = useTomb();
 	const { uploadFiles, setFiles, files } = useFilesUpload();
 	const [isBucketsVisible, setIsBucketsVisible] = useState(false);
-	const { messages } = useIntl();
+	const messages = useAppSelector(state => state.locales.messages.coponents.common.navigation);
 	const location = useLocation();
 	const [droppedBucket, setDroppedBucket] = useState<null | Bucket>(null)
 

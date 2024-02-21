@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { useIntl } from 'react-intl';
 
 import { TakeSnapshotModal } from '@components/common/Modal/TakeSnapshotModal';
 import { UploadFileModal } from '@components/common/Modal/UploadFileModal';
@@ -11,12 +10,13 @@ import { useModal } from '@/app/contexts/modals';
 import { useTomb } from '@/app/contexts/tomb';
 import { stringToBase64 } from '@utils/base64';
 import { getLocalStorageItem, setLocalStorageItem } from '@utils/localStorage';
+import { useAppSelector } from '@/app/store';
 
 import { Close, Copy, Upload } from '@static/images/common';
 import { AddFolderIcon } from '@static/images/buckets';
 
 const BucketHeader = () => {
-    const { messages } = useIntl();
+    const messages = useAppSelector(state => state.locales.messages.coponents.bucket.header);
     const folderLocation = useFolderLocation();
     const { selectedBucket } = useTomb();
     const params = useParams();
@@ -81,7 +81,7 @@ const BucketHeader = () => {
                     )}
                 </h2>
                 <div className="mb-4 flex items-center gap-2 text-text-400 text-xs">
-                    {`${selectedBucket?.files.length} ${messages.files}`}
+                    {selectedBucket?.files.length} {messages.files}
                     <span className="w-1 h-1 bg-text-400 rounded-full" />
                     0 GB
                 </div>
@@ -92,14 +92,14 @@ const BucketHeader = () => {
                             onClick={uploadFile}
                         >
                             <Upload />
-                            {`${messages.upload}`}
+                            {messages.uploadButton}
                         </button>
                         <button
                             className="flex items-center gap-2 py-2 px-4 border-1 border-border-regular rounded-md text-text-900 font-semibold"
                             onClick={createFolder}
                         >
                             <AddFolderIcon width="20px" height="20px" />
-                            {`${messages.createFolder}`}
+                            {messages.createFolderButton}
                         </button>
                     </div>
                 }
@@ -110,16 +110,16 @@ const BucketHeader = () => {
                         <Copy />
                     </span>
                     <div className="flex-grow flex flex-col text-text-900">
-                        <h6 className="font-semibold">{`${messages.archivalSnapshots}`}</h6>
-                        <p>{`${selectedBucket?.isSnapshotValid ? messages.driveHasSnapshot : messages.driveHasNoSnapshot}`}</p>
-                        <p className="underline cursor-pointer" title={`${messages.snapshotTooltip}`}>{`${messages.whatIsSnapshot}`}</p>
+                        <h6 className="font-semibold">{messages.snapshotBannerTitle}</h6>
+                        <p>{messages.snapshotBannerSubtitle}</p>
+                        <p className="underline cursor-pointer" title={`${messages.snapshotBannerTooltip}`}>{messages.snapshotBannerExplanation}</p>
                     </div>
                     <button
                         onClick={takeSnapshot}
                         disabled={selectedBucket?.isSnapshotValid}
                         className="px-4 py-2.5 btn-primary rounded-xl"
                     >
-                        {`${messages.makeSnapshot}`}
+                        {messages.makeSnapshot}
                     </button>
                     <button onClick={closeBanner}>
                         <Close />
