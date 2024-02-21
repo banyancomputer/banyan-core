@@ -448,24 +448,6 @@ pub(crate) async fn setup_database() -> Database {
     pool
 }
 
-// pub(crate) async fn create_session_provider(
-//     conn: &mut DatabaseConnection,
-// ) -> SEssion {
-//     let oauth_provider = sqlx::query!(
-//         r#"INSERT INTO oauth_provider_accounts (user_id, provider, provider_id)
-//             VALUES ($1, $2, $3)
-//             RETURNING id, user_id, provider, provider_id;"#,
-//         user_id,
-//         "provider_name", // replace with actual provider name
-//         "provider_id", // replace with actual provider id
-//     )
-//         .fetch_one(&mut *conn)
-//         .await
-//         .expect("oauth provider creation");
-//
-//     oauth_provider
-//
-// }
 pub(crate) async fn get_or_create_session(
     conn: &mut DatabaseConnection,
     user_id: &str,
