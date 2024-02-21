@@ -457,7 +457,6 @@ pub(crate) async fn get_or_create_session(
         .await
         .expect("session query");
 
-    // Try to get the session
     let session = sqlx::query!(
         r#"SELECT id, user_id, created_at, expires_at FROM sessions WHERE user_id = $1;"#,
         user_id,
@@ -474,9 +473,8 @@ pub(crate) async fn get_or_create_session(
             created_at: session.created_at,
             expires_at: session.expires_at,
         }
-        .build(), // If there is a session, return it
+        .build(),
         None => {
-            // If there is no session, create a new one
             let new_session = sqlx::query!(
                 r#"INSERT INTO sessions (user_id, provider, access_token, created_at, expires_at)
                     VALUES ($1, 'google.com', 'access_token', DATETIME('now'), DATETIME('now', '+1 day'))
