@@ -135,13 +135,16 @@ impl IntoResponse for CompleteRedistributionError {
 }
 #[cfg(test)]
 mod tests {
+    use axum::extract::Path;
+    use axum::Json;
     use http::StatusCode;
 
-    use super::*;
     use crate::app::mock_app_state;
+    use crate::auth::STAGING_SERVICE_NAME;
     use crate::database::models::MetadataState;
     use crate::database::{test_helpers, Database, DatabaseConnection};
     use crate::extractors::StorageProviderIdentity;
+    use crate::hooks::storage::complete_redistribution::{handler, CompleteRedistributionRequest};
 
     pub async fn select_storage_grants_for_host(
         conn: &Database,

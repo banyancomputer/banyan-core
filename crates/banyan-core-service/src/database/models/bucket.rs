@@ -496,9 +496,10 @@ mod tests {
 
     use time::OffsetDateTime;
 
-    use super::*;
-    use crate::database::models::{MetadataState, SnapshotState, StorageClass};
+    use crate::database::models::bucket::METADATA_WRITE_LOCK_DURATION;
+    use crate::database::models::{Bucket, BucketType, MetadataState, SnapshotState, StorageClass};
     use crate::database::test_helpers::*;
+    use crate::database::DatabaseConnection;
 
     async fn is_bucket_key_approved(
         conn: &mut DatabaseConnection,

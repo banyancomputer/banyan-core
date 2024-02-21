@@ -74,9 +74,10 @@ mod tests {
     use axum::http::StatusCode;
     use time::OffsetDateTime;
 
-    use super::*;
+    use crate::api::metrics::traffic::{handler, MeterTrafficError, MeterTrafficRequest};
     use crate::app::mock_app_state;
     use crate::database::test_helpers::{create_storage_hosts, sample_user, setup_database};
+    use crate::extractors::StorageProviderIdentity;
 
     fn setup_mock_request(user_id: &str) -> MeterTrafficRequest {
         MeterTrafficRequest {

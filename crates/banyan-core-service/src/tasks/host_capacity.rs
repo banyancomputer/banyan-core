@@ -101,7 +101,6 @@ mod tests {
     use std::time::Duration;
 
     use banyan_task::tests::default_current_task;
-    use banyan_task::{CurrentTask, TaskLike};
 
     use super::*;
     use crate::app::mock_app_state;
