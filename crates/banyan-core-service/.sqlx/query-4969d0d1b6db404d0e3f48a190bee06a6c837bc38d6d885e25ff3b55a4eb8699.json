@@ -1,0 +1,44 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, state, 0 as size, accepted_at, accepted_by FROM deals;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "state",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "size",
+        "ordinal": 2,
+        "type_info": "Int"
+      },
+      {
+        "name": "accepted_at",
+        "ordinal": 3,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "accepted_by",
+        "ordinal": 4,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "4969d0d1b6db404d0e3f48a190bee06a6c837bc38d6d885e25ff3b55a4eb8699"
+}
