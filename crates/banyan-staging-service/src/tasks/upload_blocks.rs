@@ -51,7 +51,7 @@ impl TaskLike for UploadBlocksTask {
     type Context = UploadBlocksTaskContext;
 
     async fn run(&self, _task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
-        let mut database = ctx.database();
+        let database = ctx.database();
         let client = CoreServiceClient::new(
             ctx.secrets().service_signing_key(),
             ctx.service_name(),

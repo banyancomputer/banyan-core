@@ -85,6 +85,7 @@ mod tests {
         let res = handler(
             StorageProviderIdentity {
                 id: String::from("1"),
+                name: String::from("mock_name"),
             },
             mock_app_state(db.clone()),
         )

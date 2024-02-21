@@ -1,6 +1,5 @@
 use async_trait::async_trait;
 use banyan_task::{CurrentTask, TaskLike};
-use jwt_simple::prelude::*;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
@@ -46,7 +45,7 @@ impl TaskLike for ReportDistributionCompleteTask {
     type Error = ReportDistributionCompleteTaskError;
     type Context = ReportDistributionCompleteTaskContext;
 
-    async fn run(&self, _task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
+    async fn run(&self, _task: CurrentTask, _ctx: Self::Context) -> Result<(), Self::Error> {
         Ok(())
     }
 }

@@ -1,6 +1,10 @@
 {
   "db_name": "SQLite",
+<<<<<<<< HEAD:crates/banyan-core-service/.sqlx/query-8dbad269f485f0e235bdedc24ee428b36353f50a0e7d9fb8fad3bcf0ca590c13.json
   "query": "SELECT * FROM storage_hosts;",
+========
+  "query": "SELECT id,name,url,used_storage,available_storage,fingerprint,pem FROM storage_hosts WHERE name = $1;",
+>>>>>>>> aafb18fb (Added some queries and cleaned up some parts.):crates/banyan-core-service/.sqlx/query-40402e5af56e5f2c2ecaffe35c00b8584e5953adb6c2bcd2d7fd2a3592199a2a.json
   "describe": {
     "columns": [
       {
@@ -82,5 +86,9 @@
       false
     ]
   },
+<<<<<<<< HEAD:crates/banyan-core-service/.sqlx/query-8dbad269f485f0e235bdedc24ee428b36353f50a0e7d9fb8fad3bcf0ca590c13.json
   "hash": "8dbad269f485f0e235bdedc24ee428b36353f50a0e7d9fb8fad3bcf0ca590c13"
+========
+  "hash": "40402e5af56e5f2c2ecaffe35c00b8584e5953adb6c2bcd2d7fd2a3592199a2a"
+>>>>>>>> aafb18fb (Added some queries and cleaned up some parts.):crates/banyan-core-service/.sqlx/query-40402e5af56e5f2c2ecaffe35c00b8584e5953adb6c2bcd2d7fd2a3592199a2a.json
 }

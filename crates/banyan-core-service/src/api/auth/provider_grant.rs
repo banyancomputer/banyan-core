@@ -2,17 +2,12 @@ use axum::extract::{Json, Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use jwt_simple::algorithms::ECDSAP384KeyPairLike;
-use openssl::provider::Provider;
 use serde::Serialize;
-use tracing_futures::WithSubscriber;
-use uuid::Uuid;
 
-use crate::api::auth::create_device_api_key::CreateDeviceApiKeyError;
 use crate::app::AppState;
 use crate::auth::storage_ticket::StorageTicketBuilder;
-use crate::auth::{STAGING_SERVICE_NAME, STORAGE_TICKET_DURATION};
+use crate::auth::STAGING_SERVICE_NAME;
 use crate::database::models::StorageHost;
-use crate::event_bus::EventBusError;
 use crate::extractors::StorageProviderIdentity;
 
 pub async fn handler(

@@ -21,7 +21,7 @@ impl TaskLike for CheckDistributionCompleteTask {
     type Error = CheckDistributionCompleteTaskError;
     type Context = AppState;
 
-    async fn run(&self, _task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
+    async fn run(&self, _task: CurrentTask, _ctx: Self::Context) -> Result<(), Self::Error> {
         Ok(())
     }
 

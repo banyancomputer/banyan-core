@@ -100,6 +100,7 @@ mod tests {
         let result = handler(
             StorageProviderIdentity {
                 id: storage_host_id.to_string(),
+                name: "test_host".to_string(),
             },
             state.clone(),
             Json(setup_mock_request(user_id).clone()),
@@ -125,6 +126,7 @@ mod tests {
         let result = handler(
             StorageProviderIdentity {
                 id: storage_host_id.to_string(),
+                name: "test_host".to_string(),
             },
             state.clone(),
             Json(request.clone()),
@@ -169,6 +171,7 @@ mod tests {
         let result = handler(
             StorageProviderIdentity {
                 id: storage_host_id_1.to_string(),
+                name: "test_host".to_string(),
             },
             state.clone(),
             Json(request.clone()),

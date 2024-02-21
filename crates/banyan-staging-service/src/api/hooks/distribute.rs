@@ -8,7 +8,6 @@ use serde::{Deserialize, Serialize};
 use crate::api::hooks::distribute::DistributeError::{Database, UnableToEnqueueTask};
 use crate::app::AppState;
 use crate::database::models::Uploads;
-use crate::database::DatabaseError;
 use crate::extractors::{AuthenticatedClient, PlatformIdentity};
 use crate::tasks::RedistributeDataTask;
 

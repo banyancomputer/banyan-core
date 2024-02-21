@@ -1,4 +1,3 @@
-use ecdsa::signature::rand_core::block::BlockRngCore;
 use time::OffsetDateTime;
 
 use crate::database::Database;

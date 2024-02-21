@@ -1,7 +1,6 @@
 use axum::extract::{Json, Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use serde::Serialize;
 use uuid::Uuid;
 
 use crate::app::AppState;

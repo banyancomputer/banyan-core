@@ -1,12 +1,9 @@
 use axum::extract::{Json, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use serde::Serialize;
-use tracing_futures::WithSubscriber;
 
 use crate::app::AppState;
 use crate::database::models::DeviceApiKey;
-use crate::database::Database;
 use crate::extractors::UserIdentity;
 
 pub async fn handler(user_identity: UserIdentity, State(state): State<AppState>) -> Response {
