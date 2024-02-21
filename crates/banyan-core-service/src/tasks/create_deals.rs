@@ -89,6 +89,7 @@ impl CreateDealsTask {
     async fn aggregate_segments(
         transaction: &mut Transaction<'_, Sqlite>,
         pending_snapshot_segments: Vec<SnapshotSegment>,
+        snapshot_id: &str,
     ) -> Result<(), <CreateDealsTask as TaskLike>::Error> {
         let single_segment_snapshots = sqlx::query_as!(
             SnapshotSegment,
@@ -116,53 +117,28 @@ impl CreateDealsTask {
         let bins = best_fit_decreasing(segments_for_packing, MAX_SNAPSHOT_SEGMENT_SIZE);
 
         for bin in bins {
-            let new_deal_id = sqlx::query_scalar!(
-                r#" INSERT INTO deals (state) VALUES ($1) RETURNING id;"#,
-                DealState::Active,
-            )
-            .fetch_one(&mut **transaction)
-            .await
-            .map_err(CreateDealsTaskError::Sqlx)?;
             let segment_ids: Vec<String> = bin
                 .snapshot_segments
                 .iter()
                 .map(|segment| segment.id.to_string())
                 .collect();
+
             let aggregate_segment_size: i64 = bin
                 .snapshot_segments
                 .iter()
                 .map(|segment| segment.size)
                 .sum();
 
-            let segment_ids_str = segment_ids.join(", ");
-            let snapshot_ids: Vec<String> = sqlx::query!(
-                r#"
-                SELECT snapshot_id
-                FROM snapshot_segment_associations
-                WHERE segment_id IN ($1)
-                "#,
-                segment_ids_str
-            )
-            .fetch_all(&mut **transaction)
-            .await
-            .map_err(CreateDealsTaskError::Sqlx)?
-            .into_iter()
-            .map(|row| row.snapshot_id)
-            .collect();
+            let mut snapshot_ids =
+                Self::retrieve_snapshots(transaction, segment_ids.clone()).await?;
+            snapshot_ids.push(snapshot_id.to_string());
+            Self::delete_deals(transaction, segment_ids).await?;
 
-            // this will drop the old segment and, as a consequence, the snapshot_segment_association
-            sqlx::query!(
-                r#"
-                DELETE FROM deals
-                WHERE id IN (
-                    SELECT deal_id
-                    FROM snapshot_segments
-                    WHERE id IN ($1)
-                )
-                "#,
-                segment_ids_str
+            let new_deal_id = sqlx::query_scalar!(
+                r#" INSERT INTO deals (state) VALUES ($1) RETURNING id;"#,
+                DealState::Active,
             )
-            .execute(&mut **transaction)
+            .fetch_one(&mut **transaction)
             .await
             .map_err(CreateDealsTaskError::Sqlx)?;
 
@@ -195,11 +171,65 @@ impl CreateDealsTask {
         }
         Ok(())
     }
+
+    async fn retrieve_snapshots(
+        transaction: &mut Transaction<'_, Sqlite>,
+        segment_ids: Vec<String>,
+    ) -> Result<Vec<String>, <CreateDealsTask as TaskLike>::Error> {
+        let mut snapshots_builder = sqlx::QueryBuilder::new(
+            "SELECT DISTINCT snapshot_id FROM snapshot_segment_associations WHERE segment_id IN (",
+        );
+
+        let mut segment_iterator = segment_ids.iter().peekable();
+        while let Some(segment_id) = segment_iterator.next() {
+            snapshots_builder.push_bind(segment_id);
+
+            if segment_iterator.peek().is_some() {
+                snapshots_builder.push(", ");
+            }
+        }
+        snapshots_builder.push(");");
+
+        let snapshot_ids = snapshots_builder
+            .build_query_scalar()
+            .persistent(false)
+            .fetch_all(&mut **transaction)
+            .await
+            .map_err(CreateDealsTaskError::Sqlx)?;
+        Ok(snapshot_ids)
+    }
+
+    async fn delete_deals(
+        transaction: &mut Transaction<'_, Sqlite>,
+        segment_ids: Vec<String>,
+    ) -> Result<(), <CreateDealsTask as TaskLike>::Error> {
+        // this will drop the old segment and, as a consequence, the snapshot_segment_association
+        let mut deals_builder = sqlx::QueryBuilder::new(
+            "DELETE FROM deals WHERE id IN (SELECT deal_id FROM snapshot_segments WHERE id IN (",
+        );
+        let mut segment_iterator = segment_ids.iter().peekable();
+        while let Some(segment_id) = segment_iterator.next() {
+            deals_builder.push_bind(segment_id);
+
+            if segment_iterator.peek().is_some() {
+                deals_builder.push(", ");
+            }
+        }
+        deals_builder.push(")");
+        deals_builder.push(");");
+
+        deals_builder
+            .build()
+            .execute(&mut **transaction)
+            .await
+            .map_err(CreateDealsTaskError::Sqlx)?;
+        Ok(())
+    }
 }
-#[derive(sqlx::FromRow)]
+#[derive(Debug, sqlx::FromRow)]
 struct SnapshotInfo {
     snapshot_id: String,
-    block_count: Option<i64>,
+    snapshot_size: Option<i64>,
     metadata_size: Option<i64>,
 }
 
@@ -220,7 +250,7 @@ impl TaskLike for CreateDealsTask {
         let snapshot_info = sqlx::query_as!(
             SnapshotInfo,
             r#"
-                SELECT snapshot_id, count(block_id) as block_count, m.metadata_size as metadata_size
+                SELECT snapshot_id, s.size as snapshot_size, m.metadata_size as metadata_size
                 FROM snapshot_block_locations bls
                         JOIN snapshots s on bls.snapshot_id = s.id
                         JOIN metadata m on s.metadata_id = m.id
@@ -234,8 +264,8 @@ impl TaskLike for CreateDealsTask {
         .await
         .map_err(CreateDealsTaskError::Sqlx)?;
 
-        let segment_size = snapshot_info.block_count.unwrap_or(0) * BLOCK_SIZE
-            + snapshot_info.metadata_size.unwrap_or(0);
+        let segment_size =
+            snapshot_info.snapshot_size.unwrap_or(0) + snapshot_info.metadata_size.unwrap_or(0);
         let pending_snapshot_segments = self.split_into_segments(segment_size);
 
         if pending_snapshot_segments.len() > 1 {
@@ -246,7 +276,12 @@ impl TaskLike for CreateDealsTask {
             )
             .await?;
         } else {
-            Self::aggregate_segments(&mut transaction, pending_snapshot_segments).await?;
+            Self::aggregate_segments(
+                &mut transaction,
+                pending_snapshot_segments,
+                &snapshot_info.snapshot_id,
+            )
+            .await?;
         }
 
         transaction.commit().await?;
@@ -322,9 +357,22 @@ fn best_fit_decreasing(snapshot_segments: Vec<SnapshotSegment>, bin_capacity: i6
 mod tests {
     use std::collections::HashSet;
 
+    use banyan_task::tests::default_current_task;
+    use banyan_task::TaskLike;
     use time::OffsetDateTime;
 
-    use super::*;
+    use crate::app::mock_app_state;
+    use crate::database::models::{
+        Deal, DealState, MetadataState, Snapshot, SnapshotSegment, SnapshotState,
+    };
+    use crate::database::test_helpers::{
+        create_blocks, create_deal, create_snapshot, create_snapshot_block_locations,
+        data_generator, generate_cids, normalize_cids, sample_bucket, sample_metadata, sample_user,
+        setup_database,
+    };
+    use crate::database::DatabaseConnection;
+    use crate::tasks::create_deals::{best_fit_decreasing, Bin, MAX_SNAPSHOT_SEGMENT_SIZE};
+    use crate::tasks::{CreateDealsTask, BLOCK_SIZE};
 
     impl SnapshotSegment {
         pub fn new(id: String, size: i64, deal_id: String) -> Self {
@@ -336,6 +384,125 @@ mod tests {
                 updated_at: OffsetDateTime::now_utc(),
             }
         }
+    }
+
+    async fn retrieve_snapshots(conn: &mut DatabaseConnection) -> Vec<Snapshot> {
+        sqlx::query_as!(Snapshot, "SELECT * FROM snapshots;")
+            .fetch_all(&mut *conn)
+            .await
+            .expect("fetch snapshots")
+    }
+
+    async fn retrieve_deals(conn: &mut DatabaseConnection) -> Vec<Deal> {
+        sqlx::query_as!(
+            Deal,
+            "SELECT id, state, 0 as size, accepted_at, accepted_by FROM deals;"
+        )
+        .fetch_all(&mut *conn)
+        .await
+        .expect("fetch snapshot_segments")
+    }
+
+    async fn retrieve_snapshot_segments(conn: &mut DatabaseConnection) -> Vec<SnapshotSegment> {
+        sqlx::query_as!(SnapshotSegment, "SELECT * FROM snapshot_segments;")
+            .fetch_all(&mut *conn)
+            .await
+            .expect("fetch snapshot_segments")
+    }
+
+    async fn count_segment_associations(conn: &mut DatabaseConnection) -> i32 {
+        sqlx::query_scalar!("SELECT COUNT(*) FROM snapshot_segment_associations;")
+            .fetch_one(&mut *conn)
+            .await
+            .expect("fetch snapshot association size")
+    }
+
+    #[tokio::test]
+    async fn test_single_snapshot_deal_works() {
+        let db = setup_database().await;
+        let state = mock_app_state(db.clone());
+        let mut conn = db.acquire().await.expect("connection");
+        let user_id = sample_user(&mut conn, "user1@domain.tld").await;
+        let bucket_id = sample_bucket(&mut conn, &user_id).await;
+        let metadata_id = sample_metadata(&mut conn, &bucket_id, 1, MetadataState::Current).await;
+        let initial_cids: Vec<_> = normalize_cids(generate_cids(data_generator(0..4))).collect();
+        let block_ids = create_blocks(&mut conn, initial_cids.iter().map(String::as_str)).await;
+
+        let snapshot_id = create_snapshot(
+            &mut conn,
+            &metadata_id,
+            SnapshotState::Completed,
+            Some(block_ids.len() as i64 * BLOCK_SIZE),
+        )
+        .await;
+        create_snapshot_block_locations(&mut conn, &snapshot_id, block_ids).await;
+
+        let task = CreateDealsTask::new(snapshot_id);
+        let res = task.run(default_current_task(), state.0).await;
+
+        assert!(res.is_ok());
+        let all_snapshots = retrieve_snapshots(&mut conn).await;
+        let all_snapshot_segments = retrieve_snapshot_segments(&mut conn).await;
+        let all_deals = retrieve_deals(&mut conn).await;
+        let number_of_segment_associations = count_segment_associations(&mut conn).await;
+        assert_eq!(all_deals.len(), 1);
+        assert_eq!(all_snapshots.len(), 1);
+        assert_eq!(all_snapshot_segments.len(), 1);
+        assert_eq!(all_snapshot_segments[0].size, 1048576);
+        assert_eq!(
+            all_snapshots
+                .iter()
+                .map(|s| s.size.unwrap_or(0))
+                .sum::<i64>(),
+            1048576
+        );
+        assert_eq!(number_of_segment_associations, 1);
+    }
+
+    #[tokio::test]
+    async fn test_deal_creation_for_two_different_users() {
+        let db = setup_database().await;
+        let state = mock_app_state(db.clone());
+        let mut conn = db.acquire().await.expect("connection");
+
+        create_deal(&mut conn, DealState::Active, Some(2 * BLOCK_SIZE), None)
+            .await
+            .unwrap();
+
+        let user_id = sample_user(&mut conn, "user1@domain.tld").await;
+        let bucket_id = sample_bucket(&mut conn, &user_id).await;
+        let metadata_id = sample_metadata(&mut conn, &bucket_id, 1, MetadataState::Current).await;
+        let snapshot_id = create_snapshot(
+            &mut conn,
+            &metadata_id,
+            SnapshotState::Completed,
+            Some(BLOCK_SIZE),
+        )
+        .await;
+        let initial_cids: Vec<_> = normalize_cids(generate_cids(data_generator(0..4))).collect();
+        let block_ids = create_blocks(&mut conn, initial_cids.iter().map(String::as_str)).await;
+        create_snapshot_block_locations(&mut conn, &snapshot_id, block_ids).await;
+
+        let task = CreateDealsTask::new(snapshot_id);
+        let res = task.run(default_current_task(), state.0).await;
+
+        assert!(res.is_ok());
+        let all_snapshots = retrieve_snapshots(&mut conn).await;
+        let all_snapshot_segments = retrieve_snapshot_segments(&mut conn).await;
+        let all_deals = retrieve_deals(&mut conn).await;
+        let number_of_segment_associations = count_segment_associations(&mut conn).await;
+        assert_eq!(all_deals.len(), 1);
+        assert_eq!(all_snapshots.len(), 2);
+        assert_eq!(all_snapshot_segments.len(), 1);
+        assert_eq!(all_snapshot_segments[0].size, 1310720);
+        assert_eq!(
+            all_snapshots
+                .iter()
+                .map(|s| s.size.unwrap_or(0))
+                .sum::<i64>(),
+            1310720
+        );
+        assert_eq!(number_of_segment_associations, 2);
     }
 
     #[test]
@@ -380,11 +547,11 @@ mod tests {
     #[test]
     fn test_typical_case() {
         #[rustfmt::skip]
-            let snapshot_segments = vec![
-                SnapshotSegment::new("s1".to_string(), 10, "d1".to_string()),
-                SnapshotSegment::new("s2".to_string(), 20, "d2".to_string()),
-                SnapshotSegment::new("s3".to_string(), 5, "d3".to_string()),
-            ];
+        let snapshot_segments = vec![
+            SnapshotSegment::new("s1".to_string(), 10, "d1".to_string()),
+            SnapshotSegment::new("s2".to_string(), 20, "d2".to_string()),
+            SnapshotSegment::new("s3".to_string(), 5, "d3".to_string()),
+        ];
 
         let bin_capacity = 32;
         let bins = best_fit_decreasing(snapshot_segments, bin_capacity);
@@ -407,9 +574,9 @@ mod tests {
     #[test]
     fn test_single_large_item() {
         #[rustfmt::skip]
-            let snapshot_segments = vec![
-                SnapshotSegment::new("s1".to_string(), 32, "d1".to_string())
-            ];
+        let snapshot_segments = vec![
+            SnapshotSegment::new("s1".to_string(), 32, "d1".to_string())
+        ];
         let bin_capacity = 32;
 
         let bins = best_fit_decreasing(snapshot_segments, bin_capacity);
@@ -422,9 +589,9 @@ mod tests {
     #[test]
     fn test_item_larger_than_bin_capacity() {
         #[rustfmt::skip]
-            let snapshot_segments = vec![
-                SnapshotSegment::new("s1".to_string(), 40, "d1".to_string())
-            ];
+        let snapshot_segments = vec![
+            SnapshotSegment::new("s1".to_string(), 40, "d1".to_string())
+        ];
         let bin_capacity = 32;
 
         let bins = best_fit_decreasing(snapshot_segments, bin_capacity);
@@ -435,15 +602,15 @@ mod tests {
     #[test]
     fn test_tightly_packed() {
         #[rustfmt::skip]
-            let snapshot_segments = vec![
-                SnapshotSegment::new("s1".to_string(), 2, "d1".to_string()),
-                SnapshotSegment::new("s2".to_string(), 5, "d2".to_string()),
-                SnapshotSegment::new("s3".to_string(), 4, "d3".to_string()),
-                SnapshotSegment::new("s4".to_string(), 7, "d4".to_string()),
-                SnapshotSegment::new("s5".to_string(), 1, "d5".to_string()),
-                SnapshotSegment::new("s6".to_string(), 3, "d6".to_string()),
-                SnapshotSegment::new("s7".to_string(), 8, "d7".to_string()),
-            ];
+        let snapshot_segments = vec![
+            SnapshotSegment::new("s1".to_string(), 2, "d1".to_string()),
+            SnapshotSegment::new("s2".to_string(), 5, "d2".to_string()),
+            SnapshotSegment::new("s3".to_string(), 4, "d3".to_string()),
+            SnapshotSegment::new("s4".to_string(), 7, "d4".to_string()),
+            SnapshotSegment::new("s5".to_string(), 1, "d5".to_string()),
+            SnapshotSegment::new("s6".to_string(), 3, "d6".to_string()),
+            SnapshotSegment::new("s7".to_string(), 8, "d7".to_string()),
+        ];
         let bin_capacity = 10;
 
         let bins = best_fit_decreasing(snapshot_segments, bin_capacity);

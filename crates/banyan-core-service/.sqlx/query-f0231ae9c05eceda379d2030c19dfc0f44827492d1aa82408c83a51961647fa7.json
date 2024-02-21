@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO snapshot_block_locations (snapshot_id, block_id) VALUES ($1, $2);",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "f0231ae9c05eceda379d2030c19dfc0f44827492d1aa82408c83a51961647fa7"
+}
