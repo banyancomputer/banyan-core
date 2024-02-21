@@ -41,9 +41,9 @@ pub async fn handler(
         user_id,
         bucket_id,
     )
-        .fetch_all(&database)
-        .await
-        .map_err(AuthorizationGrantError::LookupFailed)?;
+    .fetch_all(&database)
+    .await
+    .map_err(AuthorizationGrantError::LookupFailed)?;
 
     if authorized_amounts.is_empty() {
         return Err(AuthorizationGrantError::NotFound);
