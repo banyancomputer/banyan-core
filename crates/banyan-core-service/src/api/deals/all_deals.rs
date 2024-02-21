@@ -52,6 +52,7 @@ mod tests {
     use crate::database::models::DealState;
     use crate::database::{test_helpers, DatabaseConnection};
     use crate::extractors::StorageProviderIdentity;
+    use crate::tasks::BLOCK_SIZE;
     use crate::utils::tests::deserialize_result;
 
     async fn setup_deals(db: &mut DatabaseConnection) -> Result<Vec<String>, sqlx::Error> {
@@ -92,7 +93,8 @@ mod tests {
         let deals: Vec<ApiDeal> = deserialize_result(res).await;
         assert_eq!(deals.len(), 2);
         assert!(deals.iter().all(|deal| deal.state == DealState::Active));
-        assert!(deals.iter().all(|deal| deal.size == 262144));
+        // because of the number of blocks in create_deal() not because there are two deals
+        assert!(deals.iter().all(|deal| deal.size == 2 * BLOCK_SIZE));
         assert!(deals.iter().all(|deal| created_deals.contains(&deal.id)));
     }
 }
