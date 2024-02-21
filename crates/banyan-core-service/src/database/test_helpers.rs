@@ -1,11 +1,13 @@
 use std::ops::Range;
 
+use rand::Rng;
 use sqlx::sqlite::{SqlitePoolOptions, SqliteQueryResult};
 use time::OffsetDateTime;
 
 use super::models::NewStorageGrant;
 use crate::database::models::{BucketType, DealState, MetadataState, SnapshotState, StorageClass};
 use crate::database::{Database, DatabaseConnection};
+use crate::tasks::BLOCK_SIZE;
 
 pub(crate) async fn associate_blocks(
     conn: &mut DatabaseConnection,
@@ -151,22 +153,40 @@ pub(crate) async fn create_deal(
     };
 
     let deal_id = deal_id.unwrap();
-
-    let segment_id = create_snapshot_segment(database, deal_id.to_string(), size.unwrap_or(262144))
+    let size = size.unwrap_or(BLOCK_SIZE);
+    let random_number = rand::thread_rng().gen_range(10000..10000000);
+    let number_of_blocks = 2;
+    let initial_cids: Vec<_> = normalize_cids(generate_cids(data_generator(
+        random_number..random_number + number_of_blocks,
+    )))
+    .collect();
+    let block_ids = create_blocks(database, initial_cids.iter().map(String::as_str)).await;
+    let segment_id = create_snapshot_segment(
+        database,
+        deal_id.to_string(),
+        number_of_blocks as i64 * size,
+    )
+    .await
+    .unwrap();
+    let snapshot_id = create_snapshot(
+        database,
+        &metadata_id,
+        SnapshotState::Pending,
+        Some(number_of_blocks as i64 * size),
+    )
+    .await;
+    create_snapshot_segment_association(database, &snapshot_id, &segment_id)
         .await
         .unwrap();
-    let snapshot_id = create_snapshot(database, &metadata_id, SnapshotState::Pending).await;
-    create_snapshot_segment_association(database, snapshot_id, segment_id)
-        .await
-        .unwrap();
+    create_snapshot_block_locations(database, &snapshot_id, block_ids).await;
 
     Ok(deal_id)
 }
 
 pub(crate) async fn create_snapshot_segment_association(
     database: &mut DatabaseConnection,
-    snapshot_id: String,
-    segment_id: String,
+    snapshot_id: &str,
+    segment_id: &str,
 ) -> Result<SqliteQueryResult, sqlx::Error> {
     sqlx::query!(
         r#"INSERT INTO snapshot_segment_associations (snapshot_id, segment_id) VALUES ($1, $2);"#,
@@ -175,6 +195,23 @@ pub(crate) async fn create_snapshot_segment_association(
     )
     .execute(database)
     .await
+}
+
+pub(crate) async fn create_snapshot_block_locations(
+    database: &mut DatabaseConnection,
+    snapshot_id: &str,
+    block_ids: Vec<String>,
+) {
+    for block_id in block_ids {
+        sqlx::query!(
+            r#"INSERT INTO snapshot_block_locations (snapshot_id, block_id) VALUES ($1, $2);"#,
+            snapshot_id,
+            block_id,
+        )
+        .execute(&mut *database)
+        .await
+        .expect("snapshot block location creation");
+    }
 }
 
 pub(crate) async fn create_snapshot_segment(
@@ -197,14 +234,17 @@ pub(crate) async fn create_snapshot(
     database: &mut DatabaseConnection,
     metadata_id: &str,
     snapshot_state: SnapshotState,
+    size: Option<i64>,
 ) -> String {
     let snapshot_state = snapshot_state.to_string();
+    let size = size.unwrap_or(BLOCK_SIZE);
     sqlx::query_scalar!(
-        r#"INSERT INTO snapshots (metadata_id, state)
-           VALUES ($1, $2)
+        r#"INSERT INTO snapshots (metadata_id, state, size)
+           VALUES ($1, $2, $3)
            RETURNING id;"#,
         metadata_id,
-        snapshot_state
+        snapshot_state,
+        size,
     )
     .fetch_one(database)
     .await

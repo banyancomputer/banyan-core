@@ -1,6 +1,6 @@
 use time::OffsetDateTime;
 
-#[derive(sqlx::FromRow)]
+#[derive(Debug, sqlx::FromRow)]
 pub struct Snapshot {
     pub id: String,
     pub metadata_id: String,
