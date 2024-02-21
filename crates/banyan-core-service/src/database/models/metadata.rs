@@ -273,7 +273,13 @@ mod tests {
         // Create a snapshot on one of the metadata, which will be exempt from deletion
         // even though it is one of the oldest metadata rows
         let snapshot_metadata_id = &ids[2];
-        let _ = create_snapshot(&mut conn, snapshot_metadata_id, SnapshotState::Pending).await;
+        let _ = create_snapshot(
+            &mut conn,
+            snapshot_metadata_id,
+            SnapshotState::Pending,
+            None,
+        )
+        .await;
 
         // Delete outdated CAR files and mark as deleted
         assert!(Metadata::delete_outdated(&mut conn, &bucket_id)
