@@ -7,7 +7,7 @@ use jwt_simple::prelude::*;
 use reqwest::Client;
 use url::Url;
 
-use crate::clients::MeterTrafficRequest;
+use crate::clients::{MeterTrafficRequest, ReportRedistributionRequest};
 use crate::utils::SigningKey;
 
 pub struct CoreServiceClient {
@@ -58,6 +58,30 @@ impl CoreServiceClient {
             .client
             .post(storage_hosts_endpoint.clone())
             .json(&traffic_metrics)
+            .bearer_auth(&self.bearer_token)
+            .send()
+            .await?;
+
+        if response.status().is_success() {
+            return Ok(());
+        }
+
+        Err(CoreServiceError::BadRequest(response.text().await?))
+    }
+    pub async fn report_distribution_complete(
+        &self,
+        metadata_id: &str,
+        request: ReportRedistributionRequest,
+    ) -> Result<(), CoreServiceError> {
+        let storage_hosts_endpoint = self
+            .platform_hostname
+            .join(&format!("/hooks/storage/redistribution/{}", metadata_id))
+            .unwrap();
+
+        let response = self
+            .client
+            .post(storage_hosts_endpoint.clone())
+            .json(&request)
             .bearer_auth(&self.bearer_token)
             .send()
             .await?;

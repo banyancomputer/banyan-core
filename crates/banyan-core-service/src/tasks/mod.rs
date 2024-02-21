@@ -1,4 +1,3 @@
-mod check_distribution;
 mod create_deals;
 mod delete_staging_data;
 mod email;

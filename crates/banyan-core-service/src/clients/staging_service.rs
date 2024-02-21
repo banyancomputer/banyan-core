@@ -59,7 +59,7 @@ impl StagingServiceClient {
     ) -> Result<(), StagingServiceError> {
         let endpoint = self
             .staging_service_hostname
-            .join(&"/api/v1/admin/blocks")
+            .join("/api/v1/admin/blocks")
             .unwrap();
 
         let response = self
@@ -83,7 +83,7 @@ impl StagingServiceClient {
     ) -> Result<(), StagingServiceError> {
         let endpoint = self
             .staging_service_hostname
-            .join(&"/api/v1/admin/distribute")
+            .join("/api/v1/admin/distribute")
             .unwrap();
 
         let response = self

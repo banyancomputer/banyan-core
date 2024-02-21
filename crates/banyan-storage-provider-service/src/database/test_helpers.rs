@@ -2,7 +2,8 @@ use sqlx::sqlite::SqlitePoolOptions;
 use time::OffsetDateTime;
 
 use crate::database::models::BandwidthMetrics;
-use crate::database::{Database, DatabaseConnection};
+use crate::database::Database;
+
 pub(crate) async fn create_storage_grant(
     conn: &Database,
     client_id: &str,

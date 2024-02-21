@@ -284,7 +284,8 @@ impl AuthorizedStorage {
         .bind(client_id)
         .fetch_optional(db)
         .await?;
-        return Ok(auth_stor);
+
+        Ok(auth_stor)
     }
 
     pub async fn get_authorized_size_for_core_grant_id(

@@ -1,17 +1,12 @@
-use std::collections::HashSet;
-
 use async_trait::async_trait;
 use banyan_task::{CurrentTask, TaskLike};
 use cid::multibase::Base;
 use cid::Cid;
-use jwt_simple::prelude::*;
-use reqwest::header::{HeaderMap, HeaderValue};
-use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use url::Url;
 use uuid::Uuid;
 
 use crate::app::AppState;
+use crate::clients::{CoreServiceClient, CoreServiceError, ReportRedistributionRequest};
 
 pub type ReportRedistributionTaskContext = AppState;
 
@@ -23,11 +18,7 @@ pub enum ReportRedistributionTaskError {
     #[error("sql error: {0}")]
     DatabaseError(#[from] sqlx::Error),
     #[error("reqwest error: {0}")]
-    ReqwestError(#[from] reqwest::Error),
-    #[error("jwt error: {0}")]
-    JwtError(#[from] jwt_simple::Error),
-    #[error("http error: {0} response from {1}")]
-    HttpError(http::StatusCode, Url),
+    CoreServiceError(#[from] CoreServiceError),
 }
 
 #[derive(Deserialize, Serialize)]
@@ -49,13 +40,6 @@ impl ReportRedistributionTask {
     }
 }
 
-#[derive(Serialize)]
-struct ReportRedistributionRequest {
-    data_size: u64,
-    normalized_cids: Vec<String>,
-    grant_id: String,
-}
-
 #[async_trait]
 impl TaskLike for ReportRedistributionTask {
     const TASK_NAME: &'static str = "report_redistribution_task";
@@ -64,11 +48,6 @@ impl TaskLike for ReportRedistributionTask {
     type Context = ReportRedistributionTaskContext;
 
     async fn run(&self, _task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
-        let service_signing_key = ctx.secrets().service_signing_key();
-        let service_name = ctx.service_name();
-        let platform_name = ctx.platform_name();
-        let platform_hostname = ctx.platform_hostname();
-
         let grant_id = self.grant_id.to_string();
         let data_size = self.data_size;
         let normalized_cids = self
@@ -80,54 +59,28 @@ impl TaskLike for ReportRedistributionTask {
             })
             .collect::<Result<Vec<_>, _>>()?;
 
-        let mut default_headers = HeaderMap::new();
-        default_headers.insert("Content-Type", HeaderValue::from_static("application/json"));
+        let client = CoreServiceClient::new(
+            ctx.secrets().service_signing_key(),
+            ctx.service_name(),
+            ctx.platform_name(),
+            ctx.platform_hostname(),
+        );
 
-        let client = Client::builder()
-            .default_headers(default_headers)
-            .build()
-            .unwrap();
+        client
+            .report_distribution_complete(
+                &self.metadata_id,
+                ReportRedistributionRequest {
+                    data_size,
+                    grant_id,
+                    normalized_cids,
+                },
+            )
+            .await?;
 
-        let report_endpoint = platform_hostname
-            .join(&format!(
-                "/hooks/storage/redistribution/{}",
-                self.metadata_id
-            ))
-            .unwrap();
+        Ok(())
+    }
 
-        let mut claims = Claims::create(Duration::from_secs(60))
-            .with_audiences(HashSet::from_strings(&[platform_name]))
-            .with_subject(service_name)
-            .invalid_before(Clock::now_since_epoch() - Duration::from_secs(30));
-
-        claims.create_nonce();
-        claims.issued_at = Some(Clock::now_since_epoch());
-
-        let bearer_token = service_signing_key.sign(claims).unwrap();
-
-        let report_upload = ReportRedistributionRequest {
-            data_size,
-            grant_id,
-            normalized_cids,
-        };
-
-        let request = client
-            .post(report_endpoint.clone())
-            .json(&report_upload)
-            .bearer_auth(bearer_token);
-
-        let response = request
-            .send()
-            .await
-            .map_err(ReportRedistributionTaskError::ReqwestError)?;
-
-        if response.status().is_success() {
-            Ok(())
-        } else {
-            Err(ReportRedistributionTaskError::HttpError(
-                response.status(),
-                report_endpoint,
-            ))
-        }
+    fn unique_key(&self) -> Option<String> {
+        Some(self.metadata_id.clone())
     }
 }

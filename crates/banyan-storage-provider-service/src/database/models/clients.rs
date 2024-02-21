@@ -27,10 +27,10 @@ impl Clients {
         fingerprint: &str,
         public_key: &str,
     ) -> Result<String, sqlx::Error> {
-        let client = Self::find_by_fingerprint(&conn, &fingerprint).await?;
+        let client = Self::find_by_fingerprint(conn, fingerprint).await?;
         let client_id = match client {
             Some(client) => client.id,
-            None => Self::create(&conn, &platform_id, &fingerprint, &public_key).await?,
+            None => Self::create(conn, platform_id, fingerprint, public_key).await?,
         };
 
         Ok(client_id)

@@ -1,7 +1,7 @@
 use axum::extract::State;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
-use banyan_task::{SqliteTaskStore, TaskLike, TaskLikeExt};
+use banyan_task::{SqliteTaskStore, TaskLikeExt};
 use http::StatusCode;
 use serde::{Deserialize, Serialize};
 
@@ -35,21 +35,8 @@ pub async fn handler(
         new_host_id: distribute_data.new_host_id.clone(),
         new_host_url: distribute_data.new_host_url.clone(),
     };
-    let unique_key = match task.unique_key() {
-        Some(unique_key) => unique_key,
-        None => {
-            return Ok((StatusCode::BAD_REQUEST, ()).into_response());
-        }
-    };
-
     let mut transaction = db.begin().await?;
-    if SqliteTaskStore::is_key_present(
-        &mut transaction,
-        unique_key.as_str(),
-        &RedistributeDataTask::TASK_NAME,
-    )
-    .await?
-    {
+    if SqliteTaskStore::is_present(&mut transaction, &task).await? {
         return Ok((StatusCode::OK, ()).into_response());
     }
     task.enqueue_with_connection::<SqliteTaskStore>(&mut transaction)

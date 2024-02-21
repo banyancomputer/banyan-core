@@ -16,7 +16,32 @@ pub struct SqliteTaskStore {
 }
 
 impl SqliteTaskStore {
-    pub async fn is_key_present(
+    pub async fn is_present<T: TaskLike>(
+        conn: &mut SqliteConnection,
+        task: &T,
+    ) -> Result<bool, TaskStoreError> {
+        let unique_key = task.unique_key();
+        if unique_key.is_none() {
+            let res = sqlx::query_scalar!(
+                "SELECT 1 FROM background_tasks WHERE task_name = $1",
+                T::TASK_NAME
+            )
+            .fetch_optional(&mut *conn)
+            .await?;
+            return Ok(res.unwrap_or(0) == 1);
+        }
+        let res = sqlx::query_scalar!(
+            "SELECT 1 FROM background_tasks WHERE task_name = $1 AND unique_key = $2",
+            T::TASK_NAME,
+            unique_key
+        )
+        .fetch_optional(&mut *conn)
+        .await?;
+
+        Ok(res.unwrap_or(0) == 1)
+    }
+
+    async fn is_key_present(
         conn: &mut SqliteConnection,
         key: &str,
         task_name: &str,
@@ -164,8 +189,14 @@ impl TaskStore for SqliteTaskStore {
         task: T,
     ) -> Result<Option<String>, TaskStoreError> {
         let task = TaskInstanceBuilder::for_task(task).await?;
+        tracing::info!(
+            "creation id task: {:?} key: {:?} ",
+            task.task_name,
+            task.unique_key
+        );
         let background_task_id = Self::create(&mut *connection, task).await?;
 
+        tracing::info!("task id: {:?}", background_task_id.clone());
         Ok(background_task_id)
     }
 

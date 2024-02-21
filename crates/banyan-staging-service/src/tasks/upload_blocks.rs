@@ -104,6 +104,19 @@ impl TaskLike for UploadBlocksTask {
     }
 
     fn unique_key(&self) -> Option<String> {
-        return Some(self.current_upload_id.clone());
+        Some(self.metadata_id.clone())
+    }
+}
+
+impl UploadBlocksTask {
+    pub fn new_with_metadata_id(metadata_id: String) -> Self {
+        Self {
+            metadata_id,
+            current_upload_id: String::new(),
+            grant_id: String::new(),
+            new_upload_id: String::new(),
+            storage_host_url: String::new(),
+            storage_host_id: String::new(),
+        }
     }
 }

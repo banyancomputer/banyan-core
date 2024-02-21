@@ -36,7 +36,7 @@ impl StorageProviderClient {
     ) -> Result<NewClientResponse, StorageProviderError> {
         let full_url = Url::parse(&self.service_hostname)
             .map_err(|_| StorageProviderError::UrlParseError)?
-            .join(&"/api/v1/admin/clients".to_string())
+            .join("/api/v1/admin/clients")
             .map_err(|_| StorageProviderError::UrlJoinError)?;
 
         let response = self
@@ -62,7 +62,7 @@ impl StorageProviderClient {
     ) -> Result<NewUploadResponse, StorageProviderError> {
         let full_url = Url::parse(&self.service_hostname)
             .map_err(|_| StorageProviderError::UrlParseError)?
-            .join(&"/api/v1/admin/uploads".to_string())
+            .join("/api/v1/admin/uploads")
             .map_err(|_| StorageProviderError::UrlJoinError)?;
 
         let response = self
@@ -91,7 +91,7 @@ impl StorageProviderClient {
     ) -> Result<Response, StorageProviderError> {
         let full_url = Url::parse(&self.service_hostname)
             .map_err(|_| StorageProviderError::UrlParseError)?
-            .join(&"/api/v1/admin/blocks".to_string())
+            .join("/api/v1/admin/blocks")
             .map_err(|_| StorageProviderError::UrlJoinError)?;
 
         let block_upload_request = BlockUploadRequest { cid, details };

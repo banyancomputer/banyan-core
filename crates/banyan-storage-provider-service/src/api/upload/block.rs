@@ -130,9 +130,8 @@ pub async fn handler(
         write_block_to_tables(&db, &upload.id, &normalized_cid, block.len() as i64).await?;
 
         // Write the bytes to the expected location
-        let location = ObjectStorePath::from(
-            format!("{}/{}.block", upload.base_path, normalized_cid).as_str(),
-        );
+        let location =
+            ObjectStorePath::from(format!("{}/{}.bin", upload.base_path, normalized_cid).as_str());
         store
             .put(&location, block)
             .await

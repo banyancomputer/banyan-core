@@ -18,4 +18,5 @@ pub struct DistributeDataRequest {
 #[derive(Serialize)]
 pub struct DeleteBlocksRequest {
     pub normalized_cids: Vec<String>,
+    pub metadata_id: String,
 }

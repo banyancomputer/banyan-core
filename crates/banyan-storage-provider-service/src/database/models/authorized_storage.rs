@@ -61,10 +61,10 @@ impl AuthorizedStorage {
         grant_id: &str,
         allowed_bytes: i64,
     ) -> Result<String, sqlx::Error> {
-        let storage_grant_id = Self::find_by_client_and_grant(&db, &client_id, grant_id).await?;
+        let storage_grant_id = Self::find_by_client_and_grant(db, client_id, grant_id).await?;
         let storage_grant_id = match storage_grant_id {
             Some(storage_grant_id) => storage_grant_id,
-            None => Self::create(&db, &client_id, &grant_id, allowed_bytes).await?,
+            None => Self::create(db, client_id, grant_id, allowed_bytes).await?,
         };
 
         Ok(storage_grant_id)

@@ -1,7 +1,6 @@
 use async_trait::async_trait;
 use banyan_task::{CurrentTask, TaskLike};
 use serde::{Deserialize, Serialize};
-use time::OffsetDateTime;
 use url::Url;
 
 use crate::app::AppState;
@@ -43,6 +42,7 @@ impl TaskLike for DeleteStagingDataTask {
 
         staging_client
             .delete_blocks(DeleteBlocksRequest {
+                metadata_id: self.metadata_id.clone(),
                 normalized_cids: self.normalized_cids.clone(),
             })
             .await?;
@@ -50,8 +50,8 @@ impl TaskLike for DeleteStagingDataTask {
         Ok(())
     }
 
-    fn next_time(&self) -> Option<OffsetDateTime> {
-        Some(OffsetDateTime::now_utc() + time::Duration::seconds(5))
+    fn unique_key(&self) -> Option<String> {
+        Some(self.metadata_id.clone())
     }
 }
 

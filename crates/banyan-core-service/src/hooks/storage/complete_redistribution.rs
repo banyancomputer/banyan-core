@@ -103,6 +103,7 @@ pub async fn handler(
         .enqueue_with_connection::<banyan_task::SqliteTaskStore>(&mut *transaction)
         .await
         .map_err(CompleteRedistributionError::UnableToEnqueueTask)?;
+
     DeleteStagingDataTask::new(metadata_id, request.normalized_cids.clone())
         .enqueue_with_connection::<banyan_task::SqliteTaskStore>(&mut *transaction)
         .await
@@ -139,18 +140,41 @@ mod tests {
     use super::*;
     use crate::app::mock_app_state;
     use crate::database::models::MetadataState;
-    use crate::database::{test_helpers, DatabaseConnection};
+    use crate::database::{test_helpers, Database, DatabaseConnection};
     use crate::extractors::StorageProviderIdentity;
 
-    pub async fn select_blocks_for_host(
-        conn: &mut DatabaseConnection,
+    pub async fn select_storage_grants_for_host(
+        conn: &Database,
         storage_host_id: &str,
-    ) -> Vec<String> {
+    ) -> Option<String> {
+        sqlx::query_scalar!(
+            "SELECT id FROM storage_grants WHERE storage_host_id = $1",
+            storage_host_id
+        )
+        .fetch_optional(conn)
+        .await
+        .expect("storage semgnets")
+    }
+
+    pub async fn select_storage_metadata_grant_for_host(
+        conn: &Database,
+        storage_host_id: &str,
+    ) -> Option<String> {
+        sqlx::query_scalar!(
+            "SELECT metadata_id FROM storage_hosts_metadatas_storage_grants WHERE storage_host_id = $1",
+            storage_host_id
+        )
+            .fetch_optional(conn)
+            .await
+            .expect("storage semgnets")
+    }
+
+    pub async fn select_blocks_for_host(conn: &Database, storage_host_id: &str) -> Vec<String> {
         sqlx::query_scalar!(
             "SELECT block_id FROM block_locations WHERE storage_host_id = $1",
             storage_host_id
         )
-        .fetch_all(&mut *conn)
+        .fetch_all(conn)
         .await
         .expect("block cids")
     }
@@ -170,8 +194,7 @@ mod tests {
         cids
     }
 
-    #[tokio::test]
-    async fn handler_returns_success_for_the_happy_case() {
+    async fn setup_test_environment() -> (Database, String, String, String, String, Vec<String>) {
         let db = test_helpers::setup_database().await;
         let mut conn = db.acquire().await.expect("connection");
 
@@ -207,6 +230,22 @@ mod tests {
         )
         .await;
         let block_cids: Vec<String> = get_block_cids(&mut conn, block_ids.clone()).await;
+
+        (
+            db,
+            new_storage_host_id,
+            metadata_id,
+            storage_grant_id.to_string(),
+            staging_host_id,
+            block_cids,
+        )
+    }
+
+    #[tokio::test]
+    async fn handler_returns_success_for_the_happy_case() {
+        let (db, new_storage_host_id, metadata_id, storage_grant_id, staging_host_id, block_cids) =
+            setup_test_environment().await;
+
         let res = handler(
             StorageProviderIdentity {
                 id: new_storage_host_id.clone(),
@@ -216,7 +255,7 @@ mod tests {
             Path(metadata_id.clone()),
             Json(CompleteRedistributionRequest {
                 normalized_cids: block_cids.clone(),
-                grant_id: storage_grant_id.to_string(),
+                grant_id: storage_grant_id,
             }),
         )
         .await;
@@ -224,10 +263,64 @@ mod tests {
         assert!(res.is_ok());
         assert_eq!(res.unwrap().status(), StatusCode::NO_CONTENT);
 
-        let old_host = select_blocks_for_host(&mut conn, &staging_host_id).await;
+        let old_host = select_blocks_for_host(&db, &staging_host_id).await;
         assert_eq!(old_host.len(), 0);
+        let storage_metadata = select_storage_metadata_grant_for_host(&db, &staging_host_id).await;
+        assert!(storage_metadata.is_none());
+        let storage_grant = select_storage_grants_for_host(&db, &staging_host_id).await;
+        assert!(storage_grant.is_none());
 
-        let blocks_for_host = select_blocks_for_host(&mut conn, &new_storage_host_id).await;
+        let blocks_for_host = select_blocks_for_host(&db, &new_storage_host_id).await;
         assert_eq!(blocks_for_host.len(), block_cids.len());
+        let storage_metadata =
+            select_storage_metadata_grant_for_host(&db, &new_storage_host_id).await;
+        assert!(storage_metadata.is_some());
+        let storage_grant = select_storage_grants_for_host(&db, &new_storage_host_id).await;
+        assert!(storage_grant.is_some());
+    }
+
+    #[tokio::test]
+    async fn handler_rolls_back_on_update_blocks_failure() {
+        let (db, new_storage_host_id, metadata_id, storage_grant_id, staging_host_id, block_cids) =
+            setup_test_environment().await;
+
+        // Simulate a failure in update_blocks
+        let res = handler(
+            StorageProviderIdentity {
+                id: new_storage_host_id.clone(),
+                name: "Bax".to_string(),
+            },
+            mock_app_state(db.clone()),
+            Path(metadata_id.clone()),
+            Json(CompleteRedistributionRequest {
+                normalized_cids: vec!["fake-cid".to_string()],
+                grant_id: storage_grant_id,
+            }),
+        )
+        .await;
+
+        assert!(res.is_err());
+        assert_eq!(res.unwrap_err().to_string(), format!(
+            "failed to update the database correctly: updated {} vs cids {} for metadata {} from host {} to host {}",
+            0,
+            1,
+            metadata_id,
+            staging_host_id,
+            new_storage_host_id
+        ));
+        let old_host = select_blocks_for_host(&db, &staging_host_id).await;
+        assert_eq!(old_host.len(), block_cids.len());
+        let storage_metadata = select_storage_metadata_grant_for_host(&db, &staging_host_id).await;
+        assert!(storage_metadata.is_some());
+        let storage_grant = select_storage_grants_for_host(&db, &staging_host_id).await;
+        assert!(storage_grant.is_some());
+
+        let blocks_for_host = select_blocks_for_host(&db, &new_storage_host_id).await;
+        assert_eq!(blocks_for_host.len(), 0);
+        let storage_metadata =
+            select_storage_metadata_grant_for_host(&db, &new_storage_host_id).await;
+        assert!(storage_metadata.is_none());
+        let storage_grant = select_storage_grants_for_host(&db, &new_storage_host_id).await;
+        assert!(storage_grant.is_none());
     }
 }

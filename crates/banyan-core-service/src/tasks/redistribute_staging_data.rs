@@ -21,7 +21,7 @@ impl RedistributeStagingDataTask {
 }
 #[async_trait]
 impl TaskLike for RedistributeStagingDataTask {
-    const TASK_NAME: &'static str = "redistribute_staging_data";
+    const TASK_NAME: &'static str = "redistribute_staging_data_task";
 
     type Error = RedistributeStagingDataTaskError;
     type Context = AppState;
@@ -30,6 +30,7 @@ impl TaskLike for RedistributeStagingDataTask {
         let database = ctx.database();
         let staging_host = StorageHost::select_by_name(&database, STAGING_SERVICE_NAME).await?;
         let metadata = Metadata::get_by_storage_host_id(&database, &staging_host.id).await?;
+
         let mut undistributed_metadata: HashSet<String> = metadata
             .iter()
             .map(|metadata| metadata.id.clone())
@@ -83,7 +84,7 @@ impl TaskLike for RedistributeStagingDataTask {
     }
 
     fn next_time(&self) -> Option<OffsetDateTime> {
-        Some(OffsetDateTime::now_utc() + time::Duration::seconds(5))
+        Some(OffsetDateTime::now_utc() + time::Duration::hours(1))
     }
 }
 

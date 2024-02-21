@@ -28,8 +28,8 @@ pub async fn start_upload(
     upload.id = sqlx::query_scalar!(
         r#"
         INSERT INTO
-            uploads (client_id, metadata_id, reported_size, base_path, state)
-            VALUES ($1, $2, $3, $4, $5)
+            uploads (client_id, metadata_id, reported_size, base_path, state, created_at)
+            VALUES ($1, $2, $3, $4, $5, DATETIME('now'))
             RETURNING id;
         "#,
         upload.client_id,
@@ -86,7 +86,8 @@ pub async fn complete_upload(
         UPDATE uploads SET
                 state = 'complete',
                 final_size = $1,
-                integrity_hash = $2
+                integrity_hash = $2,
+                finished_at = DATETIME('now')
             WHERE id = $3;
         "#,
         total_size,
