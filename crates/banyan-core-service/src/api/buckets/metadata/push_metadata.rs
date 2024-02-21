@@ -221,13 +221,7 @@ pub async fn handler(
     conn.close().await?;
     let mut conn = database.begin().await?;
 
-    let storage_host = match StorageHost::select_for_capacity(
-        &mut conn,
-        user.region_preference,
-        needed_capacity,
-    )
-    .await?
-    {
+    let storage_host = match StorageHost::select_for_capacity(&mut conn, user.region_preference,needed_capacity ).await? {
         Some(sh) => sh,
         None => {
             tracing::warn!(

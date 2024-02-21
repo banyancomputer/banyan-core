@@ -34,7 +34,6 @@ impl StorageHost {
         // one is specified.
         let region_specific_host: Option<Self> = sqlx::query_as!(
             Self,
-<<<<<<< HEAD
             r#"
                 SELECT *
                 FROM storage_hosts
@@ -43,12 +42,6 @@ impl StorageHost {
                 ORDER BY RANDOM()
                 LIMIT 1;
             "#,
-=======
-            r#"SELECT id,name,url,used_storage,available_storage,fingerprint,pem FROM storage_hosts
-                   WHERE (available_storage - used_storage) > $1 AND name = 'banyan-staging'
-                   ORDER BY RANDOM()
-                   LIMIT 1;"#,
->>>>>>> bfb7c12a (Finished working implementation.)
             required_bytes,
             region_preference,
         )

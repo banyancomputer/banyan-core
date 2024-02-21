@@ -1,10 +1,10 @@
 use axum::extract::{Json, Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
+use serde::Serialize;
 use uuid::Uuid;
 
 use crate::app::AppState;
-use crate::database::models::DeviceApiKey;
 use crate::extractors::UserIdentity;
 
 pub async fn handler(
@@ -16,7 +16,16 @@ pub async fn handler(
     let database = state.database();
 
     let user_id: String = user_identity.id().to_string();
-    let query_result = DeviceApiKey::get_by_id_and_user(&database, &key_id, &user_id).await;
+    let query_result = sqlx::query_as!(
+        DeviceApiKey,
+        r#"SELECT id, user_id, fingerprint, pem
+               FROM device_api_keys
+               WHERE id = $1 AND user_id = $2;"#,
+        key_id,
+        user_id,
+    )
+    .fetch_one(&database)
+    .await;
 
     match query_result {
         Ok(dk) => (StatusCode::OK, Json(dk)).into_response(),
@@ -30,4 +39,12 @@ pub async fn handler(
             (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
         }
     }
+}
+
+#[derive(sqlx::FromRow, Serialize)]
+struct DeviceApiKey {
+    id: String,
+    user_id: String,
+    fingerprint: String,
+    pem: String,
 }

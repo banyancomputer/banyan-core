@@ -23,7 +23,7 @@ pub async fn handler(
     Json(request): Json<CompleteRedistributionRequest>,
 ) -> Result<Response, CompleteRedistributionError> {
     let database = state.database();
-    // check the metadata exists
+    // validate the metadata exists
     Metadata::get_by_id(&database, &metadata_id.to_string()).await?;
     let new_storage_host_id = storage_provider.id.clone();
     let staging_host = StorageHost::select_by_name(&database, STAGING_SERVICE_NAME).await?;

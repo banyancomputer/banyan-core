@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id,name,url,used_storage,available_storage,fingerprint,pem FROM storage_hosts\n                   WHERE (available_storage - used_storage) > $1 AND name = 'banyan-staging'\n                   ORDER BY RANDOM()\n                   LIMIT 1;",
+  "query": "SELECT id,name,url,used_storage,available_storage,fingerprint,pem FROM storage_hosts\n                   WHERE (available_storage - used_storage) > $1\n                   ORDER BY RANDOM()\n                   LIMIT 1;",
   "describe": {
     "columns": [
       {
@@ -52,5 +52,5 @@
       false
     ]
   },
-  "hash": "7fa4df62092937e7cd004d768a2a1f9318327f99d28b2ae3a340f15a4f22b94a"
+  "hash": "9b757f7375999a5d36e63f6e0934ccb7bb6637279d37866906559889a4b05aa1"
 }
