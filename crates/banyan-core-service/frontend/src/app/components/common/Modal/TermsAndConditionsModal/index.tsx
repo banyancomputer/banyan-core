@@ -1,17 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { useIntl } from 'react-intl';
 
 
 import { useModal } from '@app/contexts/modals';
 import { TermsAndColditionsClient } from '@/api/termsAndConditions';
 import { User } from '@/entities/user';
+import { useAppSelector } from '@/app/store';
 
 const termsClient = new TermsAndColditionsClient();
 
 export const TermsAndConditionsModal: React.FC<{
     terms: string, userData: User, setAreTermsAccepted: React.Dispatch<React.SetStateAction<boolean>>
 }> = ({ terms, userData, setAreTermsAccepted }) => {
-    const { messages } = useIntl();
+    const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.termsAndConditions);
     const { closeModal } = useModal();
     const [areTermsRead, setAreTermsRead] = useState(false);
     const termsRef = useRef<HTMLDivElement | null>(null);
@@ -52,7 +52,7 @@ export const TermsAndConditionsModal: React.FC<{
     return (
         <div className="p-1 w-[calc(100vw-100px)] max-w-termsAndConditions max-h-[80vh] flex flex-col gap-6">
             <h3 className="flex items-center justify-between text-m font-semibold">
-                {`${messages.termsOfService}`}
+                {`${messages.title}`}
                 <span>1/2</span>
             </h3>
             <div

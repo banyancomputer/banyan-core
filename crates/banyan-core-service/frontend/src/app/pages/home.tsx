@@ -1,5 +1,4 @@
 import React, { useEffect } from 'react';
-import { useIntl } from 'react-intl';
 
 import { UploadFileModal } from '@components/common/Modal/UploadFileModal';
 import { Fallback } from '@components/common/Fallback';
@@ -10,13 +9,14 @@ import { EmptyState } from '@components/Home/EmptyState';
 import { useTomb } from '@/app/contexts/tomb';
 import { useModal } from '@/app/contexts/modals';
 import { ToastNotifications } from '../utils/toastNotifications';
+import { useAppSelector } from '../store';
 
 import { PlusBold, Upload } from '@static/images/common';
 
 const Home = () => {
     const { openModal } = useModal();
     const { buckets, areBucketsLoading, getBucketsFiles, tomb } = useTomb();
-    const { messages } = useIntl();
+    const messages = useAppSelector(state => state.locales.messages.pages.home);
 
     const uploadFile = () => {
         openModal(<UploadFileModal path={[]} />);

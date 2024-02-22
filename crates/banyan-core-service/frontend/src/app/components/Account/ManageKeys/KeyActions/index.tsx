@@ -1,14 +1,14 @@
 import React from 'react';
-import { useIntl } from 'react-intl';
 
 import { ApproveBucketAccessModal } from '@components/common/Modal/ApproveBucketAccessModal';
 import { RemoveBucketAccessModal } from '@components/common/Modal/RemoveBucketAccessModal';
 
 import { Bucket, BucketKey } from '@app/types/bucket';
 import { useModal } from '@app/contexts/modals';
+import { useAppSelector } from '@/app/store';
 
 export const KeyActions: React.FC<{ bucket: Bucket; bucketKey: BucketKey }> = ({ bucket, bucketKey }) => {
-    const { messages } = useIntl();
+    const messages = useAppSelector(state => state.locales.messages.coponents.account.manageKeys.keyActions);
     const { openModal } = useModal();
 
     const approveAccess = async () => {
@@ -28,14 +28,14 @@ export const KeyActions: React.FC<{ bucket: Bucket; bucketKey: BucketKey }> = ({
                     className="w-full gap-2 py-2 px-3 border-b-1 border-border-regular transition-all hover:bg-hover"
                     onClick={removeAccess}
                 >
-                    {`${messages.removeAccess}`}
+                    {messages.removeAccess}
                 </div>
                 :
                 <div
                     className="w-full gap-2 py-2 px-3 border-b-1 border-border-regular transition-all hover:bg-hover"
                     onClick={approveAccess}
                 >
-                    {`${messages.approveAccess}`}
+                    {messages.approveAccess}
                 </div>
             }
         </div>

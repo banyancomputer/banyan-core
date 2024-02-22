@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useIntl } from 'react-intl';
 
 import { ActionsCell } from '../../../common/ActionsCell';
 import { FolderActions } from '../FolderActions';
@@ -16,6 +15,7 @@ import { stringToBase64 } from '@utils/base64';
 import { useFilesUpload } from '@app/contexts/filesUpload';
 import { ToastNotifications } from '@utils/toastNotifications';
 import { handleDrag, handleDragEnd, handleDragStart, preventDefaultDragAction } from '@utils/dragHandlers';
+import { useAppSelector } from '@/app/store';
 
 import { ChevronUp, Done } from '@static/images/common';
 
@@ -26,9 +26,9 @@ export const FolderRow: React.FC<{
     nestingLevel?: number;
     parrentFolder?: BrowserObject;
 }> = ({ folder, bucket, nestingLevel = 0, path = [], parrentFolder }) => {
+    const messages = useAppSelector(state => state.locales.messages.coponents.bucket.bucketTable.folderRow);
     const folderRef = useRef<HTMLTableRowElement | null>(null);
     const navigate = useNavigate();
-    const { messages } = useIntl();
     const { getExpandedFolderFiles, getSelectedBucketFiles, moveTo, selectBucket } = useTomb();
     const { uploadFiles, setFiles, files } = useFilesUpload();
     const [areFilesDropped, setAreFilesDropped] = useState(false);
@@ -56,7 +56,7 @@ export const FolderRow: React.FC<{
                 await getExpandedFolderFiles([...path, folder.name], folder, bucket);
             };
         } catch (error: any) {
-            ToastNotifications.error('Failed to load files', `${messages.tryAgain}`, () => expandFolder(event));
+            ToastNotifications.error(messages.failedToLoadFiles, messages.tryAgain, () => expandFolder(event));
         };
     };
 
@@ -89,9 +89,9 @@ export const FolderRow: React.FC<{
 
                 await moveTo(bucket, [...droppedItem.path, droppedItem.item.name], [...path, folder.name], droppedItem.item.name);
                 await getSelectedBucketFiles(path);
-                ToastNotifications.notify(`${messages.fileWasMoved}`, <Done width="20px" height="20px" />);
+                ToastNotifications.notify(messages.fileWasMoved, <Done width="20px" height="20px" />);
             } catch (error: any) {
-                ToastNotifications.error(`${messages.moveToError}`);
+                ToastNotifications.error(messages.moveToError);
             }
         }
     };

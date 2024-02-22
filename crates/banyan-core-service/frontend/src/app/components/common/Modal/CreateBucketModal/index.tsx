@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from 'react';
-import { useIntl } from 'react-intl';
 import { useNavigate } from 'react-router-dom';
 
 import { PrimaryButton } from '@components/common/PrimaryButton';
@@ -8,11 +7,12 @@ import { SecondaryButton } from '@components/common/SecondaryButton';
 import { useModal } from '@/app/contexts/modals';
 import { useTomb } from '@/app/contexts/tomb';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
+import { useAppSelector } from '@/app/store';
 
 export const CreateBucketModal = () => {
     const { closeModal } = useModal();
     const navigate = useNavigate();
-    const { messages } = useIntl();
+    const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.createBucket);
     const [bucketName, setBucketName] = useState('');
     const { createBucketAndMount } = useTomb();
     const [bucketType, setBucketType] = useState('interactive');
@@ -49,7 +49,7 @@ export const CreateBucketModal = () => {
                     <input
                         className="mt-2 input w-full h-11 py-3 px-4 rounded-md border-1 border-border-darken focus:outline-none"
                         type="text"
-                        placeholder={`${messages.enterNewDriveName}`}
+                        placeholder={`${messages.enterNewName}`}
                         value={bucketName}
                         onChange={changeBucketName}
                     />

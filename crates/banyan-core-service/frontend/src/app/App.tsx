@@ -1,5 +1,4 @@
 import { Suspense, useEffect, useState } from 'react';
-import { IntlProvider } from 'react-intl';
 import { BrowserRouter } from 'react-router-dom';
 import { Provider } from 'react-redux';
 
@@ -17,38 +16,27 @@ import { TombProvider } from './contexts/tomb';
 import { getLocalStorageItem, setLocalStorageItem } from './utils/localStorage';
 import { SessionProvider } from './contexts/session';
 import { preventDefaultDragAction } from './utils/dragHandlers';
-import en from '@static/locales/en.json';
-import fr from '@static/locales/fr.json';
-import de from '@static/locales/de.json';
-import ja from '@static/locales/ja.json';
-import zh from '@static/locales/zh.json';
+import { store, useAppDispatch } from '@app/store';
+import { LANGUAGES_KEYS, changeLanguage } from '@app/store/locales/slice';
 
-import { store } from '@app/store';
-
-const TRANSLATES: Record<string, Record<string, string>> = {
-    en,
-    fr,
-    de,
-    ja,
-    zh,
-};
-
-export const locales = Object.keys(TRANSLATES);
 
 const App = () => {
-    const [locale, setLocale] = useState('en');
+    const dispatch = useAppDispatch();
 
     useEffect(() => {
         const theme = getLocalStorageItem('theme');
-        theme && document.documentElement.setAttribute('prefers-color-scheme', theme);
+        theme ? document.documentElement.setAttribute('prefers-color-scheme', theme) :
+            document.documentElement.setAttribute('prefers-color-scheme', 'light');
+    }, []);
 
+    useEffect(() => {
         window.addEventListener('storage', () => {
             const selectedLanguage = getLocalStorageItem('lang');
-            setLocale(selectedLanguage || 'en');
+            dispatch(changeLanguage(selectedLanguage as LANGUAGES_KEYS || 'en'));
         });
 
         const selectedLanguage = getLocalStorageItem('lang');
-        setLocale(selectedLanguage || 'en');
+        dispatch(changeLanguage(selectedLanguage as LANGUAGES_KEYS || 'en'));
 
         if (selectedLanguage) { return; }
 
@@ -57,35 +45,33 @@ const App = () => {
 
     return (
         <Provider store={store}>
-            <IntlProvider locale={locale} messages={TRANSLATES[locale]}>
-                <main
-                    className="flex flex-col h-screen max-h-screen font-sans bg-mainBackground text-text-900 max-sm:hidden"
-                    onDragOver={preventDefaultDragAction}
-                    onDrop={preventDefaultDragAction}
-                >
-                    <BrowserRouter basename="/" >
-                        <ModalProvider>
-                            <SessionProvider>
-                                <KeystoreProvider>
-                                    <TombProvider>
-                                        <FileUploadProvider>
-                                            <FilePreviewProvider>
-                                                <Modal />
-                                                <FilePreview />
-                                                <Notifications />
-                                                <Suspense>
-                                                    <Routes />
-                                                </Suspense>
-                                            </FilePreviewProvider>
-                                        </FileUploadProvider>
-                                    </TombProvider>
-                                </KeystoreProvider>
-                            </SessionProvider>
-                        </ModalProvider>
-                    </BrowserRouter>
-                </main>
-                <MobilePlaceholder />
-            </IntlProvider>
+            <main
+                className="flex flex-col h-screen max-h-screen font-sans bg-mainBackground text-text-900 max-sm:hidden"
+                onDragOver={preventDefaultDragAction}
+                onDrop={preventDefaultDragAction}
+            >
+                <BrowserRouter basename="/" >
+                    <ModalProvider>
+                        <SessionProvider>
+                            <KeystoreProvider>
+                                <TombProvider>
+                                    <FileUploadProvider>
+                                        <FilePreviewProvider>
+                                            <Modal />
+                                            <FilePreview />
+                                            <Notifications />
+                                            <Suspense>
+                                                <Routes />
+                                            </Suspense>
+                                        </FilePreviewProvider>
+                                    </FileUploadProvider>
+                                </TombProvider>
+                            </KeystoreProvider>
+                        </SessionProvider>
+                    </ModalProvider>
+                </BrowserRouter>
+            </main>
+            <MobilePlaceholder />
         </Provider>
     );
 };

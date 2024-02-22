@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useIntl } from 'react-intl';
 
 import { Action } from '@components/Bucket/BucketTable/FileActions';
 import { DeleteFileModal } from '@components/common/Modal/DeleteFileModal';
@@ -11,9 +10,10 @@ import { useModal } from '@/app/contexts/modals';
 import { popupClickHandler } from '@/app/utils';
 
 import { Dots, MoveTo, Rename, Trash } from '@/app/static/images/common';
+import { useAppSelector } from '@/app/store';
 
 export const FilePreviewActions: React.FC<{ bucket: Bucket; file: BrowserObject; parrentFolder: BrowserObject; path: string[] }> = ({ bucket, file, path, parrentFolder }) => {
-    const { messages } = useIntl();
+    const messages = useAppSelector(state => state.locales.messages.coponents.common.filePreview.actions);
     const { openModal } = useModal();
     const actionsRef = useRef<HTMLDivElement | null>(null);
     const [isVisible, setIsVisible] = useState(false);

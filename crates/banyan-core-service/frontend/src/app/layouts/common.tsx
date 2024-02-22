@@ -8,11 +8,11 @@ import { BetaBanner } from '@components/common/BetaBanner';
 export const CommonLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <section className="flex flex-col items-stretch flex-grow max-h-full overflow-auto">
-      <ErrorBanner />
-      <BetaBanner />
       <div className="flex flex-grow">
         <Navigation />
         <section className="flex-grow flex flex-col h-full overflow-y-auto">
+          <BetaBanner />
+          <ErrorBanner />
           <Header />
           {children}
         </section>
