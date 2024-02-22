@@ -52,7 +52,7 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BrowserObject; parren
     const copy = async () => {
         try {
             await makeCopy(bucket, path, file.name);
-            ToastNotifications.notify(`${messages.copyOf} ${file.name} ${messages.wasCreated}`, <LinkIcon width="20px" height="20px" />);
+            ToastNotifications.notify(`${messages.copyOf} ${file.name} ${messages.wasCreated}`);
         } catch (error: any) {
             ToastNotifications.error('Error while copying file', `${messages.tryAgain}`, copy);
         };

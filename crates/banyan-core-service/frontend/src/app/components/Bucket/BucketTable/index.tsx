@@ -16,8 +16,6 @@ import { preventDefaultDragAction } from '@utils/dragHandlers';
 import { useTomb } from '@app/contexts/tomb';
 import { useAppSelector } from '@/app/store';
 
-import { Done } from '@static/images/common';
-
 export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const params = useParams();
     const bucketId = params.id;
@@ -54,7 +52,7 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                 if (!droppedItem.path.length) { return; }
 
                 await moveTo(bucket, [...droppedItem.path, droppedItem.item.name], [], droppedItem.item.name);
-                ToastNotifications.notify(messages.fileWasMoved, <Done width="20px" height="20px" />);
+                ToastNotifications.notify(messages.fileWasMoved);
                 await getSelectedBucketFiles([]);
             } catch (error: any) {
                 ToastNotifications.error(messages.moveToError, messages.tryAgain, () => handleDrop(event));

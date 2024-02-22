@@ -17,7 +17,7 @@ import { ToastNotifications } from '@utils/toastNotifications';
 import { handleDrag, handleDragEnd, handleDragStart, preventDefaultDragAction } from '@utils/dragHandlers';
 import { useAppSelector } from '@/app/store';
 
-import { ChevronUp, Done } from '@static/images/common';
+import { ChevronUp } from '@static/images/common';
 
 export const FolderRow: React.FC<{
     folder: BrowserObject;
@@ -89,7 +89,7 @@ export const FolderRow: React.FC<{
 
                 await moveTo(bucket, [...droppedItem.path, droppedItem.item.name], [...path, folder.name], droppedItem.item.name);
                 await getSelectedBucketFiles(path);
-                ToastNotifications.notify(messages.fileWasMoved, <Done width="20px" height="20px" />);
+                ToastNotifications.notify(messages.fileWasMoved);
             } catch (error: any) {
                 ToastNotifications.error(messages.moveToError);
             }
