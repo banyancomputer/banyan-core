@@ -69,7 +69,7 @@ export const Navigation = () => {
 			<div className="flex-grow py-6 text-navigation-text">
 				<NavLink
 					to={'/'}
-					className={`flex items-center justify-between gap-3 py-2.5 px-3 w-full h-10  cursor-pointer rounded-md ${location.pathname === '/' && 'bg-navigation-secondary'}`}
+					className={`flex items-center justify-between gap-3 py-2.5 px-3 w-full h-10  cursor-pointer rounded-md ${location.pathname === '/' && 'bg-navigation-secondary'} transition-all hover:bg-navigation-secondary`}
 				>
 					<span className="text-text-900">
 						{
@@ -101,7 +101,7 @@ export const Navigation = () => {
 										onDrag={preventDefaultDragAction}
 										onDrop={event => handleDrop(event, bucket)}
 										onClick={event => preventNavigation(event, bucket)}
-										className={`relative flex items-center justify-between gap-2 w-full h-10 cursor-pointer ${!bucket.mount && 'cursor-not-allowed'}`}
+										className={`relative flex items-center justify-between gap-2 w-full h-10 cursor-pointer ${!bucket.mount && 'cursor-not-allowed'} transition-all hover:bg-navigation-secondary`}
 									>
 										<span
 											className={`flex items-center gap-3 relative py-2 px-2 ${bucket.locked ? 'pr-6' : 'pr-2'} flex-grow whitespace-nowrap rounded-md overflow-ellipsis z-10 ${location.pathname.includes(bucket.id) && 'bg-navigation-secondary'}`}

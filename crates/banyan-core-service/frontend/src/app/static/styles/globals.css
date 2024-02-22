@@ -33,7 +33,7 @@ input {
 };
 
 .btn-primary:hover {
-	@apply bg-button-primary border-button-primary shadow-lg;
+	@apply bg-button-primaryHover border-button-primary;
 }
 
 .btn-primary:disabled {
@@ -42,11 +42,11 @@ input {
 
 /* Button default styles */
 .btn-secondary {
-    @apply flex items-center justify-center font-semibold border-button-secondary bg-button-secondary rounded-md text-button-secondaryText transition-all;
+    @apply flex items-center justify-center font-semibold bg-button-secondary rounded-md text-button-secondaryText transition-all;
 }
 
 .btn-secondary:hover {
-    @apply border-button-secondary bg-button-secondary brightness-90;
+    @apply  bg-button-secondary brightness-90;
 }
 
 .btn-highlighted {

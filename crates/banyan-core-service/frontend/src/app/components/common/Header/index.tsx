@@ -90,7 +90,7 @@ export const Header: React.FC<{ className?: string }> = ({ className = '' }) => 
                     <Link
                         onClick={upgragePlan}
                         to={RoutesConfig.Billing.fullPath}
-                        className="px-4 py-2 text-xs font-semibold rounded-md bg-text-200 text-button-primary cursor-pointer"
+                        className="btn-secondary px-4 py-2 text-xs font-semibold rounded-md cursor-pointer"
                     >
                         {`${messages.upgrade}`}
                     </Link>
