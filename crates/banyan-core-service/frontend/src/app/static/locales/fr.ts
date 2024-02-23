@@ -213,6 +213,7 @@ export default {
             },
             uploadFileProgress: {
                 uploading: "Téléchargement",
+                uploadFailed: "Échec du téléchargement"
             },
             modal: {
                 approveBucketAccess: {

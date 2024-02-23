@@ -213,6 +213,7 @@ export default {
             },
             uploadFileProgress: {
                 uploading: "Hochladen",
+                uploadFailed: "Upload fehlgeschlagen"
             },
             modal: {
                 approveBucketAccess: {

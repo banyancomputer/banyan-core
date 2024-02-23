@@ -73,6 +73,9 @@ export const UploadFileProgress = () => {
                             </span>
                             {file.status === 'failed' &&
                                 <span className="flex items-center gap-3">
+                                    <span className=" text-[#CB3535] whitespace-nowrap">
+                                        {messages.uploadFailed}
+                                    </span>
                                     <span
                                         className="cursor-pointer"
                                         onClick={() => retryUpload(file)}

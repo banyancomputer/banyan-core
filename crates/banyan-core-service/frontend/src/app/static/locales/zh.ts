@@ -213,6 +213,7 @@ export default {
             },
             uploadFileProgress: {
                 uploading: "上传中",
+                uploadFailed: "上传失败"
             },
             modal: {
                 approveBucketAccess: {
