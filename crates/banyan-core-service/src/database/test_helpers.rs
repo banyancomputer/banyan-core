@@ -3,10 +3,12 @@ use std::ops::Range;
 use rand::Rng;
 use sqlx::sqlite::{SqlitePoolOptions, SqliteQueryResult};
 use time::OffsetDateTime;
+use uuid::Uuid;
 
 use super::models::NewStorageGrant;
 use crate::database::models::{BucketType, DealState, MetadataState, SnapshotState, StorageClass};
 use crate::database::{Database, DatabaseConnection};
+use crate::extractors::{SessionIdentity, SessionIdentityBuilder};
 use crate::tasks::BLOCK_SIZE;
 
 pub(crate) async fn associate_blocks(
@@ -444,6 +446,53 @@ pub(crate) async fn setup_database() -> Database {
     conn.commit().await.expect("db close");
 
     pool
+}
+
+pub(crate) async fn get_or_create_session(
+    conn: &mut DatabaseConnection,
+    user_id: &str,
+) -> SessionIdentity {
+    let user_email = sqlx::query_scalar!(r#"SELECT email FROM users WHERE id = $1;"#, user_id,)
+        .fetch_one(&mut *conn)
+        .await
+        .expect("session query");
+
+    let session = sqlx::query!(
+        r#"SELECT id, user_id, created_at, expires_at FROM sessions WHERE user_id = $1;"#,
+        user_id,
+    )
+    .fetch_optional(&mut *conn)
+    .await
+    .expect("session query");
+
+    match session {
+        Some(session) => SessionIdentityBuilder {
+            session_id: Uuid::parse_str(&session.id).expect("session id"),
+            user_id: Uuid::parse_str(&session.user_id).expect("session id"),
+            email: user_email,
+            created_at: session.created_at,
+            expires_at: session.expires_at,
+        }
+        .build(),
+        None => {
+            let new_session = sqlx::query!(
+                r#"INSERT INTO sessions (user_id, provider, access_token, created_at, expires_at)
+                    VALUES ($1, 'google.com', 'access_token', DATETIME('now'), DATETIME('now', '+1 day'))
+                    RETURNING id, user_id, created_at, expires_at;"#,
+                user_id,
+            )
+                .fetch_one(&mut *conn)
+            .await.expect("session creation");
+            SessionIdentityBuilder {
+                session_id: Uuid::parse_str(&new_session.id).expect("session id"),
+                user_id: Uuid::parse_str(&new_session.user_id).expect("user id"),
+                email: user_email,
+                created_at: new_session.created_at,
+                expires_at: new_session.expires_at,
+            }
+            .build()
+        }
+    }
 }
 
 pub(crate) async fn sample_metadata(
