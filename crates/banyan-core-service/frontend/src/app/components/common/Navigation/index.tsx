@@ -63,7 +63,11 @@ export const Navigation = () => {
 
 	return (
 		<nav className="flex flex-col w-navbar min-w-navbar bg-navigation-primary py-6 pt-6 px-4 text-navigation-text border-r-2 border-r-navigation-border text-xs">
-			<Link to="/" className="mb-2 flex" >
+			<Link
+				to="/"
+				className="mb-2 flex"
+				aria-label="Banyan logo"
+			>
 				<Logo />
 			</Link>
 			<div className="flex-grow py-6 text-navigation-text">

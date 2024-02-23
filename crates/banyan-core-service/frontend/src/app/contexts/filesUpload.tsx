@@ -67,12 +67,6 @@ export const FileUploadProvider: FC<{ children: ReactNode }> = ({ children }) =>
                 continue;
             }
         };
-        if (files.every(file => file.status === 'success')) {
-            setTimeout(() => {
-                ToastNotifications.close();
-                setFiles([]);
-            }, 3000);
-        };
     };
 
     const retryUpload = async (file: UploadingFile) => {
