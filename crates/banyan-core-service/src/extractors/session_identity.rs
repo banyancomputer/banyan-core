@@ -194,3 +194,54 @@ impl IntoResponse for SessionIdentityError {
         Redirect::to(LOGIN_PATH).into_response()
     }
 }
+
+#[cfg(test)]
+pub mod tests {
+    use time::OffsetDateTime;
+    use uuid::Uuid;
+
+    use super::*;
+    use crate::database::test_helpers;
+
+    pub struct SessionIdentityBuilder {
+        pub session_id: Uuid,
+        pub email: String,
+        pub user_id: Uuid,
+        pub created_at: OffsetDateTime,
+        pub expires_at: OffsetDateTime,
+    }
+
+    impl SessionIdentityBuilder {
+        fn new() -> Self {
+            Self {
+                session_id: Uuid::new_v4(),
+                email: String::from("test@example.com"),
+                user_id: Uuid::new_v4(),
+                created_at: OffsetDateTime::now_utc(),
+                expires_at: OffsetDateTime::now_utc() + time::Duration::days(1),
+            }
+        }
+
+        pub fn build(self) -> SessionIdentity {
+            SessionIdentity {
+                session_id: self.session_id,
+                email: self.email,
+                user_id: self.user_id,
+                created_at: self.created_at,
+                expires_at: self.expires_at,
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn test_session_identity_builder() {
+        let db = test_helpers::setup_database().await;
+        let mut conn = db.acquire().await.expect("connection");
+
+        let user_id = test_helpers::sample_user(&mut conn, "test@example.com").await;
+        let session_identity = test_helpers::get_or_create_session(&mut conn, &user_id).await;
+
+        assert_eq!(session_identity.user_id().to_string(), user_id);
+        assert_eq!(session_identity.email(), "test@example.com");
+    }
+}

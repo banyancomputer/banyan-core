@@ -16,6 +16,8 @@ use std::time::Duration;
 pub use admin_identity::AdminIdentity;
 pub use api_identity::ApiIdentity;
 pub use server_base::ServerBase;
+#[cfg(test)]
+pub(crate) use session_identity::tests::SessionIdentityBuilder;
 pub use session_identity::SessionIdentity;
 pub use storage_provider_identity::StorageProviderIdentity;
 pub use stripe_event::StripeEvent;
