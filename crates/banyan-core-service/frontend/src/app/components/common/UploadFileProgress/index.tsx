@@ -6,15 +6,23 @@ import { useFilesUpload } from '@/app/contexts/filesUpload';
 import { useAppSelector } from '@/app/store';
 
 import { ChevronUp, Clock, Close, Retry, UploadFailIcon, UploadSuccessIcon } from '@static/images/common';
+import { ToastNotifications } from '@/app/utils/toastNotifications';
 
 export const UploadFileProgress = () => {
     const messages = useAppSelector(state => state.locales.messages.coponents.common.uploadFileProgress);
-    const { files, deleteFromUploadList, retryUpload } = useFilesUpload();
+    const { files, setFiles, deleteFromUploadList, retryUpload } = useFilesUpload();
     const [isExpanded, setIsExpanded] = useState(true);
     const uploadedFilesLength = useMemo(() => files.filter(file => file.status === 'success').length, [files]);
 
-    const toggleVisibility = () => {
+    const toggleVisibility = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+        event.stopPropagation();
         setIsExpanded(prev => !prev);
+    };
+
+    const close = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+        event.stopPropagation();
+        ToastNotifications.close();
+        setFiles([]);
     };
 
     const ICONS_MAPPER = {
@@ -27,7 +35,7 @@ export const UploadFileProgress = () => {
     return (
         <div
             className="w-80"
-            onClick={event => event.stopPropagation()}
+            onClick={toggleVisibility}
         >
             <div className="flex justify-between items-center p-4 bg-navigation-primary text-text-900 font-semibold text-xs">
                 <div className="flex items-center gap-3">
@@ -38,11 +46,14 @@ export const UploadFileProgress = () => {
                         </>
                     }
                 </div>
-                <div
-                    className={`${isExpanded ? '' : 'rotate-180'}`}
-                    onClick={toggleVisibility}
-                >
-                    <ChevronUp />
+                <div className={`${isExpanded ? '' : 'rotate-180'}`}>
+                    {files.every(file => file.status === 'success') ?
+                        <div onClick={close}>
+                            <Close />
+                        </div>
+                        :
+                        <ChevronUp />
+                    }
                 </div>
             </div>
             {isExpanded ?
@@ -62,6 +73,9 @@ export const UploadFileProgress = () => {
                             </span>
                             {file.status === 'failed' &&
                                 <span className="flex items-center gap-3">
+                                    <span className=" text-[#CB3535] whitespace-nowrap">
+                                        {messages.uploadFailed}
+                                    </span>
                                     <span
                                         className="cursor-pointer"
                                         onClick={() => retryUpload(file)}
