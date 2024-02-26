@@ -5,7 +5,7 @@ use banyan_task::{SqliteTaskStore, TaskLikeExt};
 use http::StatusCode;
 use serde::{Deserialize, Serialize};
 
-use crate::api::admin::distribute::DistributeError::{Database, UnableToEnqueueTask};
+use crate::api::hooks::distribute::DistributeError::{Database, UnableToEnqueueTask};
 use crate::app::AppState;
 use crate::database::models::Uploads;
 use crate::extractors::PlatformIdentity;
@@ -15,6 +15,7 @@ use crate::tasks::RedistributeDataTask;
 pub struct DistributeData {
     metadata_id: String,
     grant_id: String,
+    block_cids: Vec<String>,
     new_host_id: String,
     new_host_url: String,
 }
@@ -32,6 +33,7 @@ pub async fn handler(
     let task = RedistributeDataTask {
         metadata_id: distribute_data.metadata_id.clone(),
         grant_id: distribute_data.grant_id.clone(),
+        block_cids: distribute_data.block_cids.clone(),
         new_host_id: distribute_data.new_host_id.clone(),
         new_host_url: distribute_data.new_host_url.clone(),
     };

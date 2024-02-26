@@ -1,4 +1,4 @@
-use crate::database::Database;
+use crate::database::{Database, DatabaseConnection};
 
 #[derive(sqlx::FromRow)]
 pub struct StorageHostsMetadatasStorageGrants {
@@ -20,5 +20,20 @@ impl StorageHostsMetadatasStorageGrants {
         .fetch_one(conn)
         .await?;
         Ok(storage_host)
+    }
+
+    pub async fn update_host_by_metadata(
+        conn: &mut DatabaseConnection,
+        metadata_id: &str,
+        storage_host_id: &str,
+    ) -> Result<(), sqlx::Error> {
+        sqlx::query!(
+            "UPDATE storage_hosts_metadatas_storage_grants SET storage_host_id = $1 WHERE metadata_id = $2;",
+            storage_host_id,
+            metadata_id
+        )
+        .execute(&mut *conn)
+        .await?;
+        Ok(())
     }
 }

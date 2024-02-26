@@ -139,13 +139,13 @@ mod tests {
     #[tokio::test]
     async fn test_handler_returns_success() {
         let (mut db, metadata_id, _, block_ids) = setup_test_environment().await;
+        let blocks_cids = get_block_cids(&db, block_ids.clone()).await;
         SqliteTaskStore::enqueue(
             &mut db,
             UploadBlocksTask::new_with_metadata_id(metadata_id.clone()),
         )
         .await
         .unwrap();
-        let blocks_cids = get_block_cids(&db, block_ids.clone()).await;
         let app_state = mock_app_state(db.clone());
         test_helpers::save_blocks_to_storage(
             app_state.upload_store_connection(),

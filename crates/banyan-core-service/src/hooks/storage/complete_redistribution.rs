@@ -6,7 +6,9 @@ use serde::Deserialize;
 
 use crate::app::AppState;
 use crate::auth::STAGING_SERVICE_NAME;
-use crate::database::models::{Metadata, StorageHost};
+use crate::database::models::{
+    ExistingStorageGrant, Metadata, StorageHost, StorageHostsMetadatasStorageGrants,
+};
 use crate::extractors::StorageProviderIdentity;
 use crate::tasks::{DeleteStagingDataTask, HostCapacityTask};
 
@@ -24,45 +26,40 @@ pub async fn handler(
 ) -> Result<Response, CompleteRedistributionError> {
     let database = state.database();
     // validate the metadata exists
-    Metadata::get_by_id(&database, &metadata_id.to_string()).await?;
+    Metadata::find_by_id(&database, &metadata_id.to_string()).await?;
     let new_storage_host_id = storage_provider.id.clone();
     let staging_host = StorageHost::select_by_name(&database, STAGING_SERVICE_NAME).await?;
 
     let mut transaction = database.begin().await?;
-
-    let updated_grant_rows = sqlx::query!(
-        "UPDATE storage_grants SET storage_host_id = $1 WHERE id = $2 AND storage_host_id = $3",
-        new_storage_host_id,
-        request.grant_id,
-        staging_host.id,
-    )
-    .execute(&mut *transaction)
-    .await?;
-
-    if updated_grant_rows.rows_affected() != 1 {
-        return Err(CompleteRedistributionError::UpdateFailed(format!(
-            "updated {} rows from storage_grants for grant {}",
-            updated_grant_rows.rows_affected(),
-            request.grant_id
-        )));
+    let storage_grants =
+        ExistingStorageGrant::find_by_id(&mut transaction, &request.grant_id).await?;
+    // it is ok for a storage grant to already have the new storage_host_id if a single grant is associated with multiple uploads
+    if storage_grants.storage_host_id != new_storage_host_id {
+        ExistingStorageGrant::update_storage_host_for_grant(
+            &mut transaction,
+            &request.grant_id,
+            &new_storage_host_id,
+        )
+        .await?;
     }
 
-    let update_metadata_rows  = sqlx::query!(
-        "UPDATE storage_hosts_metadatas_storage_grants SET storage_host_id = $1 WHERE storage_host_id = $2 AND metadata_id = $3",
-        new_storage_host_id,
-        staging_host.id,
-        metadata_id,
+    let host_metadata_grant = sqlx::query_as!(
+        StorageHostsMetadatasStorageGrants,
+        "SELECT * FROM storage_hosts_metadatas_storage_grants WHERE metadata_id = $1;",
+        metadata_id
     )
-    .execute(&mut *transaction)
+    .fetch_one(&mut *transaction)
     .await?;
 
-    if update_metadata_rows.rows_affected() != 1 {
-        return Err(CompleteRedistributionError::UpdateFailed(format!(
-            "updated {} rows from storage_hosts_metadatas_storage_grants for metadata {}",
-            update_metadata_rows.rows_affected(),
-            metadata_id
-        )));
+    if host_metadata_grant.storage_host_id != staging_host.id {
+        StorageHostsMetadatasStorageGrants::update_host_by_metadata(
+            &mut transaction,
+            &metadata_id,
+            &new_storage_host_id,
+        )
+        .await?;
     }
+
     let mut prune_builder =
         sqlx::QueryBuilder::new("UPDATE block_locations SET storage_host_id = ");
     prune_builder.push_bind(&new_storage_host_id);

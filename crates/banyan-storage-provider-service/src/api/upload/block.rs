@@ -89,7 +89,7 @@ pub async fn handler(
             upload_id,
         } => {
             // Assume that the upload has already been created via the `new` endpoint
-            let upload = Upload::get_by_id(&db, &upload_id).await?.unwrap();
+            let upload = Upload::find_by_id(&db, &upload_id).await?.unwrap();
             if upload.id != upload_id {
                 return Err(UploadError::IdMismatch);
             }

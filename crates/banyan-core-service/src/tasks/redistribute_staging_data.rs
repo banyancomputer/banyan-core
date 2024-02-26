@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use async_trait::async_trait;
 use banyan_task::{CurrentTask, TaskLike};
@@ -9,7 +9,7 @@ use url::Url;
 use crate::app::AppState;
 use crate::auth::STAGING_SERVICE_NAME;
 use crate::clients::{DistributeDataRequest, StagingServiceClient, StagingServiceError};
-use crate::database::models::{Metadata, StorageHost, StorageHostsMetadatasStorageGrants};
+use crate::database::models::{Blocks, Metadata, StorageHost, StorageHostsMetadatasStorageGrants};
 
 #[derive(Deserialize, Serialize)]
 pub struct RedistributeStagingDataTask {}
@@ -29,12 +29,10 @@ impl TaskLike for RedistributeStagingDataTask {
     async fn run(&self, _task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
         let database = ctx.database();
         let staging_host = StorageHost::select_by_name(&database, STAGING_SERVICE_NAME).await?;
-        let metadata = Metadata::get_by_storage_host_id(&database, &staging_host.id).await?;
+        let blocks = Blocks::get_metadata_id_and_storage_host(&database, &staging_host.id).await?;
 
-        let mut undistributed_metadata: HashSet<String> = metadata
-            .iter()
-            .map(|metadata| metadata.id.clone())
-            .collect();
+        let mut undistributed_metadata: HashSet<String> =
+            blocks.iter().map(|block| block.id.clone()).collect();
 
         let staging_client = StagingServiceClient::new(
             ctx.secrets().service_key(),
@@ -43,18 +41,28 @@ impl TaskLike for RedistributeStagingDataTask {
             Url::parse(&staging_host.url)?,
         );
 
-        for metadata in metadata.iter() {
-            tracing::info!("Redistributing blocks for metadata: {:?}", metadata.id);
-            let metadata_id = &metadata.id;
-            let metadata = Metadata::get_by_id(&database, metadata_id).await?;
-            let grant_metadata =
-                StorageHostsMetadatasStorageGrants::find_by_metadata_id(&database, metadata_id)
-                    .await?;
-            let total_size = metadata.metadata_size.unwrap_or_default()
-                + metadata
-                    .data_size
-                    .unwrap_or_default()
-                    .max(metadata.expected_data_size);
+        let mut blocks_grouped_by_metadata = HashMap::new();
+        for block in &blocks {
+            blocks_grouped_by_metadata
+                .entry(block.metadata_id.clone())
+                .or_insert_with(Vec::new)
+                .push(block);
+        }
+
+        for (metadata_id, blocks) in &blocks_grouped_by_metadata {
+            tracing::info!("Redistributing blocks for metadata: {:?}", &metadata_id);
+            let metadata = Metadata::find_by_id(&database, &metadata_id.clone()).await?;
+            let grant_metadata = StorageHostsMetadatasStorageGrants::find_by_metadata_id(
+                &database,
+                &metadata_id.clone(),
+            )
+            .await?;
+
+            let total_size = metadata
+                .data_size
+                .unwrap_or_default()
+                .max(metadata.expected_data_size);
+
             let new_storage_host = StorageHost::select_for_capacity_with_exclusion(
                 &database,
                 total_size,
@@ -62,11 +70,17 @@ impl TaskLike for RedistributeStagingDataTask {
             )
             .await?;
 
+            let block_cids = blocks
+                .iter()
+                .map(|block| block.cid.clone())
+                .collect::<Vec<_>>();
+
             staging_client
                 .distribute_data(DistributeDataRequest {
                     metadata_id: metadata_id.clone(),
                     grant_id: grant_metadata.storage_grant_id.clone(),
                     new_host_id: new_storage_host.id.clone(),
+                    block_cids,
                     new_host_url: new_storage_host.url.clone(),
                 })
                 .await?;

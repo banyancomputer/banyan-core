@@ -1,4 +1,5 @@
 mod block_location;
+mod blocks;
 mod bucket;
 mod bucket_key;
 mod bucket_type;
@@ -34,6 +35,7 @@ mod user;
 mod user_total_consumption;
 
 pub use block_location::MinimalBlockLocation;
+pub use blocks::Blocks;
 pub use bucket::Bucket;
 pub use bucket_key::BucketKey;
 pub use bucket_type::BucketType;
@@ -56,7 +58,7 @@ pub use snapshot::Snapshot;
 pub use snapshot_segments::SnapshotSegment;
 pub use snapshot_state::SnapshotState;
 pub use storage_class::StorageClass;
-pub use storage_grant::NewStorageGrant;
+pub use storage_grant::{ExistingStorageGrant, NewStorageGrant};
 pub use storage_grants_metadata::StorageHostsMetadatasStorageGrants;
 pub use storage_host::{StorageHost, UserStorageReport};
 pub use storage_host_total_consumption::StorageHostTotalConsumption;

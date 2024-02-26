@@ -5,7 +5,7 @@ use axum::response::{IntoResponse, Response};
 use axum::{Json, TypedHeader};
 use jwt_simple::prelude::{Deserialize, Serialize};
 
-use crate::api::upload::{start_upload, UploadError};
+use crate::api::upload::{start_upload, Upload, UploadError};
 use crate::app::AppState;
 use crate::database::models::AuthorizedStorage;
 use crate::extractors::PlatformIdentity;
@@ -33,7 +33,13 @@ pub async fn handler(
         request.grant_size,
     )
     .await?;
-    // Start the upload with these specifications
+
+    let upload = Upload::get_by_metadata_id(&db, &request.metadata_id).await?;
+    if let Some(upload) = upload {
+        let msg = serde_json::json!({"upload_id": upload.id});
+        return Ok((StatusCode::OK, Json(msg)).into_response());
+    }
+
     let upload = start_upload(
         &db,
         &request.client_id,
@@ -42,7 +48,6 @@ pub async fn handler(
     )
     .await?;
 
-    // Respond with the upload id
     let msg = serde_json::json!({"upload_id": upload.id});
     Ok((StatusCode::OK, Json(msg)).into_response())
 }

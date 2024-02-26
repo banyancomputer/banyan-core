@@ -211,29 +211,10 @@ impl Metadata {
 
         Ok(())
     }
-    pub async fn get_by_id(database: &Database, id: &str) -> Result<Self, sqlx::Error> {
+    pub async fn find_by_id(database: &Database, id: &str) -> Result<Self, sqlx::Error> {
         sqlx::query_as!(Self, "SELECT * FROM metadata WHERE id = $1;", id)
             .fetch_one(database)
             .await
-    }
-
-    pub async fn get_by_storage_host_id(
-        database: &Database,
-        storage_host_id: &str,
-    ) -> Result<Vec<Self>, sqlx::Error> {
-        let res = sqlx::query_as!(
-            Self,
-            "SELECT DISTINCT m.*
-                FROM metadata AS m
-                JOIN main.block_locations bl on m.id = bl.metadata_id
-                WHERE bl.pruned_at IS NULL
-                    AND bl.expired_at IS NULL
-                    AND bl.storage_host_id = $1;",
-            storage_host_id
-        )
-        .fetch_all(database)
-        .await?;
-        Ok(res)
     }
 }
 

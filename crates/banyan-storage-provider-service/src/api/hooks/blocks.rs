@@ -55,7 +55,7 @@ pub async fn handler(
         .await
         .map_err(BlocksUploadError::InvalidRequestData)?;
 
-    let upload = Upload::get_by_id(&db, &request.details.upload_id)
+    let upload = Upload::find_by_id(&db, &request.details.upload_id)
         .await?
         .unwrap();
     // If the upload had already been marked as complete

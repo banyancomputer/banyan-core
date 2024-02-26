@@ -96,7 +96,7 @@ impl StorageHost {
         .await
     }
 
-    pub async fn get_by_id(conn: &Database, id: &str) -> Result<Self, sqlx::Error> {
+    pub async fn find_by_id(conn: &Database, id: &str) -> Result<Self, sqlx::Error> {
         sqlx::query_as!(Self, "SELECT * FROM storage_hosts WHERE id = $1;", id,)
             .fetch_one(conn)
             .await

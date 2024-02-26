@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use async_trait::async_trait;
 use banyan_task::{CurrentTask, TaskLike, TaskLikeExt, TaskStoreError};
 use serde::{Deserialize, Serialize};
@@ -8,7 +10,7 @@ use crate::clients::{
     ClientsRequest, CoreServiceClient, CoreServiceError, NewUploadRequest, StorageProviderClient,
     StorageProviderError,
 };
-use crate::database::models::{Clients, Uploads};
+use crate::database::models::{Blocks, Clients, Uploads};
 use crate::extractors::authenticated_client::AuthorizedStorage;
 use crate::tasks::upload_blocks::UploadBlocksTask;
 
@@ -37,6 +39,7 @@ pub enum RedistributeDataTaskError {
 pub struct RedistributeDataTask {
     pub metadata_id: String,
     pub grant_id: String,
+    pub block_cids: Vec<String>,
     pub new_host_id: String,
     pub new_host_url: String,
 }
@@ -60,6 +63,25 @@ impl TaskLike for RedistributeDataTask {
         let storage_client =
             StorageProviderClient::new(&self.new_host_url, &provider_credentials.token);
         let upload = Uploads::get_by_metadata_id(&database, &self.metadata_id).await?;
+        let blocks = Blocks::get_blocks_by_cid(&database, &self.block_cids).await?;
+
+        if blocks.len() != self.block_cids.len() {
+            let missing_cids: HashSet<_> = blocks
+                .iter()
+                .map(|block| block.cid.clone())
+                .chain(self.block_cids.iter().cloned())
+                .collect::<HashSet<_>>()
+                .difference(&self.block_cids.iter().cloned().collect::<HashSet<_>>())
+                .cloned()
+                .collect();
+            return Err(RedistributeDataTaskError::StorageProviderError(
+                StorageProviderError::BadRequest(format!(
+                    "Block CIDs do not match {:?}",
+                    missing_cids
+                )),
+            ));
+        }
+
         let client = Clients::find_by_upload_id(&database, &upload.id).await?;
         let authorized_size =
             AuthorizedStorage::get_authorized_size_for_core_grant_id(&database, &self.grant_id)
@@ -82,9 +104,9 @@ impl TaskLike for RedistributeDataTask {
             .await?;
 
         UploadBlocksTask {
-            current_upload_id: upload.id.clone(),
             metadata_id: self.metadata_id.clone(),
             grant_id: self.grant_id.clone(),
+            block_cids: self.block_cids.clone(),
             new_upload_id: new_upload.upload_id.clone(),
             storage_host_id: self.new_host_id.clone(),
             storage_host_url: self.new_host_url.clone(),

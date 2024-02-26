@@ -200,7 +200,24 @@ pub struct Upload {
 }
 
 impl Upload {
-    pub async fn get_by_id(db: &Database, id: &str) -> Result<Option<Upload>, sqlx::Error> {
+    pub async fn get_by_metadata_id(
+        db: &Database,
+        metadata_id: &str,
+    ) -> Result<Option<Upload>, sqlx::Error> {
+        sqlx::query_as!(
+            Upload,
+            r#"
+            SELECT id, client_id, metadata_id, base_path, reported_size, state
+            FROM uploads
+            WHERE metadata_id = $1;
+        "#,
+            metadata_id
+        )
+        .fetch_optional(db)
+        .await
+    }
+
+    pub async fn find_by_id(db: &Database, id: &str) -> Result<Option<Upload>, sqlx::Error> {
         sqlx::query_as!(
             Upload,
             r#"

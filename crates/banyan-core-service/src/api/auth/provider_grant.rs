@@ -21,7 +21,7 @@ pub async fn handler(
     if storage_provider.name != STAGING_SERVICE_NAME {
         return Err(ProviderGrantError::Unauthorized);
     }
-    let request_host = StorageHost::get_by_id(&database, storage_host_id.as_str())
+    let request_host = StorageHost::find_by_id(&database, storage_host_id.as_str())
         .await
         .map_err(ProviderGrantError::LookupFailed)?;
 
