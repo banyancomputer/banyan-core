@@ -13,7 +13,7 @@ export const HelpControls = () => {
         >
             <a
                 className="flex items-center gap-2 py-2.5 px-3 transition-all whitespace-nowrap hover:bg-hover"
-                href="https://banyan8674.zendesk.com/hc/en-us"
+                href="https://banyan8674.zendesk.com/hc/en-us/sections/19265371237517-FAQ"
                 target="_blank"
             >
                 <span className="text-button-primary">

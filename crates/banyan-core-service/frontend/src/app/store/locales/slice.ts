@@ -1,10 +1,17 @@
 import { PayloadAction, createSlice } from '@reduxjs/toolkit';
+
 import en from '@static/locales/en';
+import fr from '@static/locales/fr';
+import zh from '@static/locales/zh';
+import de from '@static/locales/de';
 
 type LocaleType = typeof en;
 
 export const LANGUAGES: Record<string, LocaleType> = {
     en,
+    fr,
+    zh,
+    de,
 };
 
 export type LANGUAGES_KEYS = keyof typeof LANGUAGES;

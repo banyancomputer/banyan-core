@@ -53,14 +53,14 @@ export const NextBillingDate = () => {
             {selectedSubscription?.service_key === 'starter' ?
                 <button
                     onClick={upgragePlan}
-                    className="w-max px-4 py-2 text-xs font-semibold rounded-md bg-text-200 text-button-primary"
+                    className="btn-secondary w-max px-4 py-2 text-xs font-semibold rounded-md"
                 >
                     {messages.upgradeAccount}
                 </button>
                 :
                 <button
                     onClick={manage}
-                    className="w-max px-4 py-2 text-xs font-semibold rounded-md bg-text-200 text-button-primary"
+                    className="btn-secondary w-max px-4 py-2 text-xs font-semibold rounded-md"
                 >
                     {messages.manageSubscriptions}
                 </button>

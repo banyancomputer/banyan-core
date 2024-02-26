@@ -10,8 +10,6 @@ import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 import { useAppSelector } from '@/app/store';
 
-import { Done } from '@static/images/common';
-
 export const RenameFileModal: React.FC<{ bucket: Bucket; file: BrowserObject; path: string[] }> = ({ bucket, file, path }) => {
     const { closeModal } = useModal();
     const { moveTo, getSelectedBucketFiles, selectBucket } = useTomb();
@@ -22,7 +20,7 @@ export const RenameFileModal: React.FC<{ bucket: Bucket; file: BrowserObject; pa
     const save = async () => {
         try {
             await moveTo(bucket, [...path, file.name], [...path], newName);
-            ToastNotifications.notify(`${messages.fileWasRenamed}`, <Done width="20px" height="20px" />);
+            ToastNotifications.notify(`${messages.fileWasRenamed}`);
             if (path.join('/') === folderLocation.join('/')) {
                 await getSelectedBucketFiles(folderLocation);
                 closeModal();
