@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO sessions (user_id, provider, access_token, created_at, expires_at)\n                    VALUES ($1, 'google.com', 'access_token', DATETIME('now'), DATETIME('now', '+1 day'))\n                    RETURNING id, user_id, created_at, expires_at;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "user_id",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 2,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "expires_at",
+        "ordinal": 3,
+        "type_info": "Datetime"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "1333a0670b2bdb99aeaeb1b988091fcf11ce2d10e45fee419169b9f0b3861d2d"
+}

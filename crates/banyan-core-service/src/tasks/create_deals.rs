@@ -370,7 +370,7 @@ mod tests {
         data_generator, generate_cids, normalize_cids, sample_bucket, sample_metadata, sample_user,
         setup_database,
     };
-    use crate::database::DatabaseConnection;
+    use crate::database::{Database, DatabaseConnection};
     use crate::tasks::create_deals::{best_fit_decreasing, Bin, MAX_SNAPSHOT_SEGMENT_SIZE};
     use crate::tasks::{CreateDealsTask, BLOCK_SIZE};
 
@@ -384,30 +384,34 @@ mod tests {
                 updated_at: OffsetDateTime::now_utc(),
             }
         }
+
+        pub(crate) async fn get_all(conn: &Database) -> Vec<SnapshotSegment> {
+            sqlx::query_as!(SnapshotSegment, "SELECT * FROM snapshot_segments;")
+                .fetch_all(conn)
+                .await
+                .expect("fetch snapshot segments")
+        }
     }
 
-    async fn retrieve_snapshots(conn: &mut DatabaseConnection) -> Vec<Snapshot> {
-        sqlx::query_as!(Snapshot, "SELECT * FROM snapshots;")
-            .fetch_all(&mut *conn)
+    impl Snapshot {
+        pub(crate) async fn get_all(conn: &Database) -> Vec<Snapshot> {
+            sqlx::query_as!(Snapshot, "SELECT * FROM snapshots;")
+                .fetch_all(conn)
+                .await
+                .expect("fetch snapshots")
+        }
+    }
+
+    impl Deal {
+        pub(crate) async fn get_all(conn: &Database) -> Vec<Deal> {
+            sqlx::query_as!(
+                Deal,
+                "SELECT id, state, 0 as size, accepted_at, accepted_by FROM deals;"
+            )
+            .fetch_all(conn)
             .await
-            .expect("fetch snapshots")
-    }
-
-    async fn retrieve_deals(conn: &mut DatabaseConnection) -> Vec<Deal> {
-        sqlx::query_as!(
-            Deal,
-            "SELECT id, state, 0 as size, accepted_at, accepted_by FROM deals;"
-        )
-        .fetch_all(&mut *conn)
-        .await
-        .expect("fetch snapshot_segments")
-    }
-
-    async fn retrieve_snapshot_segments(conn: &mut DatabaseConnection) -> Vec<SnapshotSegment> {
-        sqlx::query_as!(SnapshotSegment, "SELECT * FROM snapshot_segments;")
-            .fetch_all(&mut *conn)
-            .await
-            .expect("fetch snapshot_segments")
+            .expect("fetch deals")
+        }
     }
 
     async fn count_segment_associations(conn: &mut DatabaseConnection) -> i32 {
@@ -441,9 +445,9 @@ mod tests {
         let res = task.run(default_current_task(), state.0).await;
 
         assert!(res.is_ok());
-        let all_snapshots = retrieve_snapshots(&mut conn).await;
-        let all_snapshot_segments = retrieve_snapshot_segments(&mut conn).await;
-        let all_deals = retrieve_deals(&mut conn).await;
+        let all_snapshots = Snapshot::get_all(&db).await;
+        let all_snapshot_segments = SnapshotSegment::get_all(&db).await;
+        let all_deals = Deal::get_all(&db).await;
         let number_of_segment_associations = count_segment_associations(&mut conn).await;
         assert_eq!(all_deals.len(), 1);
         assert_eq!(all_snapshots.len(), 1);
@@ -487,9 +491,9 @@ mod tests {
         let res = task.run(default_current_task(), state.0).await;
 
         assert!(res.is_ok());
-        let all_snapshots = retrieve_snapshots(&mut conn).await;
-        let all_snapshot_segments = retrieve_snapshot_segments(&mut conn).await;
-        let all_deals = retrieve_deals(&mut conn).await;
+        let all_snapshots = Snapshot::get_all(&db).await;
+        let all_snapshot_segments = SnapshotSegment::get_all(&db).await;
+        let all_deals = Deal::get_all(&db).await;
         let number_of_segment_associations = count_segment_associations(&mut conn).await;
         assert_eq!(all_deals.len(), 1);
         assert_eq!(all_snapshots.len(), 2);
