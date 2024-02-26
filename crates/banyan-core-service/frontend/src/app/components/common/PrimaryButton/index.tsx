@@ -19,7 +19,7 @@ export const PrimaryButton: React.FC<{ text: string; action?: () => void; disabl
             return () => {
                 window.removeEventListener('keypress', listener);
             };
-        }, []);
+        }, [disabled]);
 
         return (
             <button

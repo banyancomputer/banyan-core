@@ -38,6 +38,7 @@ module.exports = {
 			colors: {
 				button: {
 					primary: 'var(--button-primary)',
+					primaryHover: 'var(--button-primary-hover)',
 					primaryText: 'var(--button-primary-text)',
 					secondary: 'var(--button-secondary)',
 					secondaryText: 'var(--button-secondary-text)',

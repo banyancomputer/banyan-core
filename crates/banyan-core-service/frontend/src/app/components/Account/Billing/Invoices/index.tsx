@@ -57,7 +57,7 @@ export const Invoices = () => {
                         <p className="text-sm text-text-600">{messages.emptyStateDescription}.</p>
                         {selectedSubscription?.service_key === 'starter' ?
                             <button
-                                className="px-4 py-2 text-xs font-semibold rounded-md bg-text-200 text-button-primary"
+                                className="btn-secondary px-4 py-2 text-xs font-semibold rounded-md"
                                 onClick={upgragePlan}
                             >
                                 {messages.upgradeAccount}
@@ -65,7 +65,7 @@ export const Invoices = () => {
                             :
                             <button
                                 onClick={manage}
-                                className="w-max px-4 py-2 text-xs font-semibold rounded-md bg-text-200 text-button-primary"
+                                className="btn-secondary w-max px-4 py-2 text-xs font-semibold rounded-md"
                             >
                                 {messages.manageSubscriptions}
                             </button>

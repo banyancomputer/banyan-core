@@ -12,8 +12,6 @@ import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 import { useFilePreview } from '@/app/contexts/filesPreview';
 import { useAppSelector } from '@/app/store';
 
-import { Done } from '@static/images/common';
-
 export const MoveToModal: React.FC<{ file: BrowserObject; bucket: Bucket; path: string[]; parrentFolder: BrowserObject }> = ({ file, bucket, path, parrentFolder }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.moteTo);
     const { moveTo, getSelectedBucketFiles, getExpandedFolderFiles } = useTomb();
@@ -26,7 +24,7 @@ export const MoveToModal: React.FC<{ file: BrowserObject; bucket: Bucket; path: 
         try {
             await moveTo(bucket, [...path, file.name], [...selectedFolder], file.name);
             closeFile();
-            ToastNotifications.notify(`${messages.fileWasMoved}`, <Done width="20px" height="20px" />);
+            ToastNotifications.notify(`${messages.fileWasMoved}`);
             if (path.join('/') === folderLocation.join('/')) {
                 await getSelectedBucketFiles(folderLocation);
                 closeModal();
