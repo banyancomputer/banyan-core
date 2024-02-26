@@ -1,6 +1,7 @@
 use axum::extract::{Json, Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
+use serde::Deserialize;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
@@ -11,11 +12,12 @@ pub async fn handler(
     user_identity: UserIdentity,
     State(state): State<AppState>,
     Path(bucket_id): Path<Uuid>,
-    Json(name): Json<String>,
+    Json(request): Json<UpdateApiBucketRequest>,
 ) -> Response {
     let database = state.database();
     let user_id = user_identity.id().to_string();
     let bucket_id = bucket_id.to_string();
+    let name = request.name;
     let now = OffsetDateTime::now_utc();
 
     let query_result = sqlx::query!(
@@ -49,4 +51,9 @@ pub async fn handler(
             (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
         }
     }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateApiBucketRequest {
+    name: String,
 }
