@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT * FROM storage_hosts_metadatas_storage_grants WHERE metadata_id = $1;",
+  "query": "SELECT * FROM storage_hosts_metadatas_storage_grants WHERE metadata_id = $1 AND storage_host_id = $2;",
   "describe": {
     "columns": [
       {
@@ -20,7 +20,7 @@
       }
     ],
     "parameters": {
-      "Right": 1
+      "Right": 2
     },
     "nullable": [
       false,
@@ -28,5 +28,5 @@
       false
     ]
   },
-  "hash": "738129d1b11c074ef8bf5b5e0f40d75e585be2dc03ba8f9eef67b1294e1f86c1"
+  "hash": "e96aa024118a3e839359cf801a2a05b7571e4c49f3d82c0b69b4a21dfcabd8e5"
 }

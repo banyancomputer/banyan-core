@@ -107,7 +107,8 @@ impl Bucket {
 
         for chunk in block_cid_list.chunks(BIND_LIMIT) {
             let mut query_builder = sqlx::QueryBuilder::new(
-                r#"SELECT bl.metadata_id AS metadata_id, bl.block_id AS block_id, bl.storage_host_id AS storage_host_id, state FROM block_locations AS bl
+                r#"SELECT bl.metadata_id AS metadata_id, bl.block_id AS block_id, bl.storage_host_id AS storage_host_id, bl.state AS state
+                       FROM block_locations AS bl
                        JOIN blocks AS b ON b.id = bl.block_id
                        JOIN metadata AS m ON m.id = bl.metadata_id
                        WHERE bl.expired_at IS NULL

@@ -64,4 +64,52 @@ impl ExistingStorageGrant {
         .await
         .map(|_| ())
     }
+    pub async fn redeem_storage_grant(
+        conn: &mut DatabaseConnection,
+        provider_id: &str,
+        authorization_id: &str,
+    ) -> Result<(), sqlx::Error> {
+        sqlx::query!(
+            r#"UPDATE storage_grants
+               SET redeemed_at = CURRENT_TIMESTAMP
+               WHERE storage_host_id = $1
+                   AND id = $2
+                   AND redeemed_at IS NULL;"#,
+            provider_id,
+            authorization_id,
+        )
+        .execute(&mut *conn)
+        .await?;
+
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::auth::STAGING_SERVICE_NAME;
+    use crate::database::models::ExistingStorageGrant;
+    use crate::database::test_helpers::{
+        create_storage_grant, create_storage_hosts, sample_user, setup_database,
+    };
+
+    #[tokio::test]
+    async fn test_redeem_grant_works() {
+        let db = setup_database().await;
+        let mut conn = db.acquire().await.expect("connection");
+        let provider_id = create_storage_hosts(&mut conn, "url1", STAGING_SERVICE_NAME).await;
+        let user_id = sample_user(&mut conn, "test@example.com").await;
+        let authorization_id =
+            create_storage_grant(&mut conn, provider_id.as_str(), &user_id, 100).await;
+
+        let result =
+            ExistingStorageGrant::redeem_storage_grant(&mut conn, &provider_id, &authorization_id)
+                .await;
+        assert!(result.is_ok());
+
+        let grant = ExistingStorageGrant::find_by_id(&mut conn, &authorization_id)
+            .await
+            .expect("authorization grant");
+        assert!(grant.redeemed_at.is_some());
+    }
 }

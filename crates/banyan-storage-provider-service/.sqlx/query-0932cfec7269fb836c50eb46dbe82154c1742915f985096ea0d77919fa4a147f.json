@@ -1,0 +1,50 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            SELECT id, client_id, metadata_id, base_path, reported_size, state\n            FROM uploads\n            WHERE metadata_id = $1;\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "client_id",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "metadata_id",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "base_path",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "reported_size",
+        "ordinal": 4,
+        "type_info": "Int64"
+      },
+      {
+        "name": "state",
+        "ordinal": 5,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "0932cfec7269fb836c50eb46dbe82154c1742915f985096ea0d77919fa4a147f"
+}

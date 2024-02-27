@@ -7,7 +7,8 @@ use serde::Deserialize;
 use crate::app::AppState;
 use crate::auth::STAGING_SERVICE_NAME;
 use crate::database::models::{
-    ExistingStorageGrant, Metadata, StorageHost, StorageHostsMetadatasStorageGrants,
+    BlockLocationState, Blocks, ExistingStorageGrant, Metadata, MinimalBlockLocation, StorageHost,
+    StorageHostsMetadatasStorageGrants,
 };
 use crate::extractors::StorageProviderIdentity;
 use crate::tasks::{DeleteStagingDataTask, HostCapacityTask};
@@ -33,6 +34,7 @@ pub async fn handler(
     let mut transaction = database.begin().await?;
     let storage_grants =
         ExistingStorageGrant::find_by_id(&mut transaction, &request.grant_id).await?;
+
     // it is ok for a storage grant to already have the new storage_host_id if a single grant is associated with multiple uploads
     if storage_grants.storage_host_id != new_storage_host_id {
         ExistingStorageGrant::update_storage_host_for_grant(
@@ -43,47 +45,51 @@ pub async fn handler(
         .await?;
     }
 
-    let host_metadata_grant = sqlx::query_as!(
-        StorageHostsMetadatasStorageGrants,
-        "SELECT * FROM storage_hosts_metadatas_storage_grants WHERE metadata_id = $1;",
-        metadata_id
+    StorageHostsMetadatasStorageGrants::update_host_by_metadata_and_host(
+        &mut transaction,
+        &metadata_id,
+        &staging_host.id,
+        &new_storage_host_id,
     )
-    .fetch_one(&mut *transaction)
     .await?;
-
-    if host_metadata_grant.storage_host_id != staging_host.id {
-        StorageHostsMetadatasStorageGrants::update_host_by_metadata(
-            &mut transaction,
-            &metadata_id,
-            &new_storage_host_id,
-        )
-        .await?;
+    let block_ids = Blocks::get_block_ids(&mut transaction, &request.normalized_cids).await?;
+    if block_ids.len() != request.normalized_cids.len() {
+        return Err(CompleteRedistributionError::UpdateFailed(format!(
+            "found {} blocks for cids {} for metadata {} from host {} to host {}",
+            block_ids.len(),
+            request.normalized_cids.len(),
+            metadata_id,
+            staging_host.id,
+            new_storage_host_id
+        )));
     }
 
-    let mut prune_builder =
-        sqlx::QueryBuilder::new("UPDATE block_locations SET storage_host_id = ");
-    prune_builder.push_bind(&new_storage_host_id);
-    prune_builder.push(" FROM blocks WHERE block_locations.storage_host_id = ");
-    prune_builder.push_bind(&staging_host.id);
-    prune_builder.push(" AND block_locations.block_id = blocks.id AND blocks.cid IN (");
-
-    let mut block_id_iterator = request.normalized_cids.iter().peekable();
-    while let Some(bid) = block_id_iterator.next() {
-        prune_builder.push_bind(bid);
-
-        if block_id_iterator.peek().is_some() {
-            prune_builder.push(", ");
+    for block_id in block_ids.iter() {
+        MinimalBlockLocation {
+            block_id: block_id.clone(),
+            metadata_id: metadata_id.clone(),
+            storage_host_id: new_storage_host_id.clone(),
+            state: BlockLocationState::Stable,
         }
+        .save(&mut transaction)
+        .await
+        .map_err(CompleteRedistributionError::QueryFailed)?;
     }
-    prune_builder.push(");");
-
-    let updated_blocks = prune_builder.build().execute(&mut *transaction).await?;
-
-    if updated_blocks.rows_affected() != request.normalized_cids.len() as u64 {
+    let deleted_blocks: u64 = MinimalBlockLocation::delete_blocks_for_host(
+        &mut transaction,
+        &block_ids,
+        &staging_host.id,
+    )
+    .await?
+    .iter()
+    .map(|r| r.rows_affected())
+    .sum();
+    // deleting more blocks form block_locations is fine, however, having deleted less is an issue
+    if deleted_blocks < block_ids.len() as u64 {
         return Err(CompleteRedistributionError::UpdateFailed(format!(
             "updated {} vs cids {} for metadata {} from host {} to host {}",
-            updated_blocks.rows_affected(),
-            request.normalized_cids.len(),
+            deleted_blocks,
+            block_ids.len(),
             metadata_id,
             staging_host.id,
             new_storage_host_id
@@ -301,7 +307,7 @@ mod tests {
 
         assert!(res.is_err());
         assert_eq!(res.unwrap_err().to_string(), format!(
-            "failed to update the database correctly: updated {} vs cids {} for metadata {} from host {} to host {}",
+            "failed to update the database correctly: found {} blocks for cids {} for metadata {} from host {} to host {}",
             0,
             1,
             metadata_id,

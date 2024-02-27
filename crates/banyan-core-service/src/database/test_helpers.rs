@@ -114,9 +114,8 @@ pub(crate) async fn create_storage_hosts(
     let host_name = host_name.to_string();
     let staging = host_name.contains("staging");
     sqlx::query_scalar!(
-        "
-            INSERT INTO storage_hosts (name, url, fingerprint, pem, region, used_storage, available_storage, staging)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id;
+        "INSERT INTO storage_hosts (name, url, fingerprint, pem, region, used_storage, available_storage, staging)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id;
         ",
         host_name,
         host_url,
