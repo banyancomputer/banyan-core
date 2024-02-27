@@ -199,9 +199,13 @@ pub async fn handler(
         let hard_limit_bytes = hard_limit * GIBIBYTE;
 
         let consumed_storage = user.consumed_storage(&mut conn).await?;
-
         if (consumed_storage + needed_capacity) > hard_limit_bytes {
-            tracing::warn!(consumed_storage, "account reached storage limit");
+            tracing::warn!(
+                consumed_storage,
+                needed_capacity,
+                hard_limit_bytes,
+                "account reached storage limit"
+            );
             let err_msg = serde_json::json!({"msg": "account reached available storage threshold"});
             return Ok((StatusCode::PAYLOAD_TOO_LARGE, Json(err_msg)).into_response());
         }
@@ -217,18 +221,23 @@ pub async fn handler(
     conn.close().await?;
     let mut conn = database.begin().await?;
 
-    let storage_host =
-        match SelectedStorageHost::select_for_capacity(&mut conn, needed_capacity).await? {
-            Some(sh) => sh,
-            None => {
-                tracing::warn!(
-                    needed_capacity,
-                    "unable to locate host with sufficient capacity"
-                );
-                let err_msg = serde_json::json!({"msg": ""});
-                return Ok((StatusCode::INSUFFICIENT_STORAGE, Json(err_msg)).into_response());
-            }
-        };
+    let storage_host = match SelectedStorageHost::select_for_capacity(
+        &mut conn,
+        user.region_preference,
+        needed_capacity,
+    )
+    .await?
+    {
+        Some(sh) => sh,
+        None => {
+            tracing::warn!(
+                needed_capacity,
+                "unable to locate host with sufficient capacity"
+            );
+            let err_msg = serde_json::json!({"msg": ""});
+            return Ok((StatusCode::INSUFFICIENT_STORAGE, Json(err_msg)).into_response());
+        }
+    };
     let user_report = StorageHost::user_report(&mut conn, &storage_host.id, &user_id).await?;
 
     let mut storage_authorization: Option<String> = None;

@@ -1287,8 +1287,13 @@ mod tests {
         .await;
 
         // Note: snapshot state is not relevant for this test
-        let _snapshot_id =
-            create_snapshot(&mut conn, &deleted_metadata_id, SnapshotState::Completed).await;
+        let _snapshot_id = create_snapshot(
+            &mut conn,
+            &deleted_metadata_id,
+            SnapshotState::Completed,
+            None,
+        )
+        .await;
 
         // Assert that there is no current metadata
         assert!(Bucket::current_version(&mut conn, &bucket_id)
@@ -1380,6 +1385,7 @@ mod tests {
             &mut conn,
             &snapshotted_metadata_id,
             SnapshotState::Completed,
+            None,
         )
         .await;
 
@@ -1400,6 +1406,7 @@ mod tests {
             &mut conn,
             &later_snapshotted_metadata_id,
             SnapshotState::Completed,
+            None,
         )
         .await;
 

@@ -1,5 +1,4 @@
 import React from 'react';
-import { useIntl } from 'react-intl';
 
 import { PrimaryButton } from '@components/common/PrimaryButton';
 import { SecondaryButton } from '@components/common/SecondaryButton';
@@ -8,12 +7,13 @@ import { Bucket } from '@/app/types/bucket';
 import { useModal } from '@/app/contexts/modals';
 import { useTomb } from '@/app/contexts/tomb';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
+import { useAppSelector } from '@/app/store';
 
 import { Trash } from '@static/images/common';
 
 export const DeleteBucketModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
+    const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.deleteBucket);
     const { closeModal } = useModal();
-    const { messages } = useIntl();
     const { deleteBucket } = useTomb();
 
     const removeBucket = async () => {
@@ -31,9 +31,9 @@ export const DeleteBucketModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         <div className="w-modal flex flex-col gap-5">
             <Trash width="24px" height="24px" />
             <div>
-                <h4 className="text-m font-semibold">{`${messages.deleteBucket}`}</h4>
+                <h4 className="text-m font-semibold">{`${messages.title}`}</h4>
                 <p className="mt-2 text-text-600">
-                    {`${messages.wantToEmpty}`} <b className="text-text-900">{bucket.name}</b>? {`${messages.filesWillBeDeletedPermanently}`}.
+                    {`${messages.subtitle}`} <b className="text-text-900">{bucket.name}</b>? {`${messages.filesWillBeDeletedPermanently}`}.
                 </p>
             </div>
             <div className="mt-3 flex items-center gap-3 text-xs" >

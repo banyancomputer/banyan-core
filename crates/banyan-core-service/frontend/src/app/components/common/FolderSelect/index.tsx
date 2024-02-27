@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useIntl } from 'react-intl';
 
 import { AddNewOption } from '../Select/AddNewOption';
 import { CreateFolderModal } from '../Modal/CreateFolderModal ';
@@ -9,6 +8,7 @@ import { popupClickHandler } from '@/app/utils';
 import { useModal } from '@/app/contexts/modals';
 import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { useTomb } from '@/app/contexts/tomb';
+import { useAppSelector } from '@/app/store';
 
 import { ChevronUp } from '@static/images/common';
 
@@ -26,7 +26,7 @@ export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBu
     const [folder, setFolder] = useState(path);
     const [folders, setFolders] = useState<BrowserObject[]>([]);
     const { openModal, closeModal } = useModal();
-    const { messages } = useIntl();
+    const messages = useAppSelector(state => state.locales.messages.coponents.common.folderSelect);
 
     const toggleSelect = () => {
         setIsOptionsVisible(prev => !prev);

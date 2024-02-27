@@ -1,23 +1,25 @@
 import React, { useEffect, useRef, useState } from 'react';
 
 import { localeToAlpha2CountryCode, localeToLanguage } from '@utils/locales';
-import { useIntl } from 'react-intl';
-import { locales } from '@app/App';
+import { LANGUAGES, LANGUAGES_KEYS, changeLanguage } from '@/app/store/locales/slice';
 import { setLocalStorageItem } from '@utils/localStorage';
 import { popupClickHandler } from '@/app/utils';
 
 import { ChevronUp } from '@static/images/common';
+import { useAppDispatch, useAppSelector } from '@/app/store';
 
 export const LanguageSelect = () => {
+    const { key } = useAppSelector(state => state.locales);
     const selectRef = useRef<HTMLDivElement | null>(null);
+    const dispatch = useAppDispatch();
     const [isOptionstVisible, setIsOptionsVisible] = useState(false);
-    const { locale } = useIntl();
 
     const toggleSelect = () => {
         setIsOptionsVisible(prev => !prev);
     };
 
-    const changeLanguage = (language: string) => {
+    const handleLanguageChange = (language: string) => {
+        dispatch(changeLanguage(language as LANGUAGES_KEYS));
         setLocalStorageItem('lang', language);
         window.dispatchEvent(new Event('storage'));
         toggleSelect();
@@ -44,10 +46,10 @@ export const LanguageSelect = () => {
                 width={22}
                 height={16}
                 alt="Flag"
-                src={`http://purecatamphetamine.github.io/country-flag-icons/3x2/${localeToAlpha2CountryCode[locale || '']}.svg`}
+                src={`http://purecatamphetamine.github.io/country-flag-icons/3x2/${localeToAlpha2CountryCode[key]}.svg`}
             />
             <span className="flex-grow">
-                {localeToLanguage[locale || 'en']}
+                {localeToLanguage[key]}
             </span>
             <span className={`${isOptionstVisible ? 'rotate-0' : 'rotate-180'}`}>
                 <ChevronUp />
@@ -57,11 +59,11 @@ export const LanguageSelect = () => {
                     onClick={stopPropagation}
                     className="absolute left-0 top-12 w-full max-h-48 overflow-y-auto bg-mainBackground border-1 border-border-regular rounded-lg shadow-sm z-10"
                 >
-                    {locales?.map((language: string) =>
+                    {Object.keys(LANGUAGES).map((language) =>
                         <div
                             className="flex items-center gap-2 p-2.5 transition-all bg-secondaryBackground hover:bg-bucket-bucketHoverBackground cursor-pointer"
                             key={language}
-                            onClick={() => changeLanguage(language)}
+                            onClick={() => handleLanguageChange(language)}
                         >
                             <img
                                 width={22}

@@ -1,5 +1,4 @@
 import React from 'react';
-import { useIntl } from 'react-intl';
 
 import { MoveToModal } from '@components/common/Modal/MoveToModal';
 import { RenameFileModal } from '@components/common/Modal/RenameFileModal';
@@ -9,11 +8,12 @@ import { Action } from '@components/Bucket/BucketTable/FileActions';
 
 import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { useModal } from '@/app/contexts/modals';
+import { useAppSelector } from '@/app/store';
 
 import { MoveTo, Rename, Trash, Upload } from '@static/images/common';
 
 export const FolderActions: React.FC<{ bucket: Bucket; file: BrowserObject; parrentFolder: BrowserObject; path: string[] }> = ({ bucket, file, path, parrentFolder }) => {
-    const { messages } = useIntl();
+    const messages = useAppSelector(state => state.locales.messages.coponents.bucket.bucketTable.folderActions);
     const { openModal } = useModal();
     const bucketType = `${bucket.bucketType}_${bucket.storageClass}`;
 
@@ -59,10 +59,10 @@ export const FolderActions: React.FC<{ bucket: Bucket; file: BrowserObject; parr
         );
     };
 
-    const moveToAction = new Action(`${messages.moveTo}`, <MoveTo width="18px" height="18px" />, moveTo);
-    const renameAction = new Action(`${messages.rename}`, <Rename width="18px" height="18px" />, rename);
-    const removeAction = new Action(`${messages.remove}`, <Trash width="18px" height="18px" />, remove);
-    const uploadFolderAction = new Action(`${messages.upload}`, <Upload width="18px" height="18px" />, uploadFile);
+    const moveToAction = new Action(messages.moveTo, <MoveTo width="18px" height="18px" />, moveTo);
+    const renameAction = new Action(messages.rename, <Rename width="18px" height="18px" />, rename);
+    const removeAction = new Action(messages.remove, <Trash width="18px" height="18px" />, remove);
+    const uploadFolderAction = new Action(messages.upload, <Upload width="18px" height="18px" />, uploadFile);
 
     const hotInrecactiveActions = [
         uploadFolderAction, moveToAction, renameAction, removeAction,

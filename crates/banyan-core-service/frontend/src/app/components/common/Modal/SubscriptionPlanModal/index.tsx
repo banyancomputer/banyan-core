@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react'
-import { useIntl } from 'react-intl';
 import { unwrapResult } from '@reduxjs/toolkit';
 
 import { useAppDispatch, useAppSelector } from '@/app/store'
@@ -8,7 +7,7 @@ import { convertSubscriptionsSizes } from '@/app/utils/storage';
 import { getHotStorageAmount } from '@/app/utils/subscritions';
 
 export const SubscriptionPlanModal = () => {
-    const { messages } = useIntl();
+    const messages = useAppSelector(state => state.locales.messages.coponents.common.modal).subscriptionPlan;
     const dispatch = useAppDispatch()
     const { subscriptions } = useAppSelector(state => state.billing);
 
@@ -25,8 +24,8 @@ export const SubscriptionPlanModal = () => {
 
     return (
         <div className="w-[1050px] flex flex-col">
-            <h4 className="text-lg font-semibold text-center ">{`${messages.choosePlan}`}</h4>
-            <p className="mb-8 text-sm text-text-600 text-center">{`${messages.plansDescription}.`}</p>
+            <h4 className="text-lg font-semibold text-center ">{`${messages.title}`}</h4>
+            <p className="mb-8 text-sm text-text-600 text-center">{`${messages.subtitle}.`}</p>
             <div className="mt-4 grid grid-cols-4">
                 <div className="flex flex-col transition-all hover:bg-hover">
                     <div className="h-[300px] px-4 py-2 border-1 border-border-regular"></div>

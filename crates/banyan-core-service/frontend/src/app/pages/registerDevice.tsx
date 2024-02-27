@@ -1,16 +1,16 @@
-import { useIntl } from 'react-intl';
 import { useParams } from 'react-router-dom';
 
 import { SecondaryButton } from '@components/common/SecondaryButton';
 
 import { useTomb } from '@/app/contexts/tomb';
 import { publicPemWrap } from '@app/utils';
+import { useAppSelector } from '../store';
 
 // TODO: design must be handed down and implemented
 const RegisterDevice = () => {
 	const params = useParams();
 	const spki = params.spki || '';
-	const { messages } = useIntl();
+	const messages = useAppSelector(state => state.locales.messages.pages.registerDevice);
 	const { approveDeviceApiKey } = useTomb();
 
 	// Perform all functions required to complete

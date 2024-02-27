@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useIntl } from 'react-intl';
 
 import { ProfileControls } from './ProfileControls';
 import { HelpControls } from './HelpControls';
@@ -21,7 +20,7 @@ import { Question } from '@static/images/common';
 
 export const Header: React.FC<{ className?: string }> = ({ className = '' }) => {
     const dispatch = useAppDispatch();
-    const { messages } = useIntl();
+    const messages = useAppSelector(state => state.locales.messages.coponents.common.header);
     const { selectedSubscription } = useAppSelector(state => state.billing);
     const profileOptionsRef = useRef<HTMLDivElement | null>(null);
     const helpOptionsRef = useRef<HTMLDivElement | null>(null);
@@ -91,7 +90,7 @@ export const Header: React.FC<{ className?: string }> = ({ className = '' }) => 
                     <Link
                         onClick={upgragePlan}
                         to={RoutesConfig.Billing.fullPath}
-                        className="px-4 py-2 text-xs font-semibold rounded-md bg-text-200 text-button-primary cursor-pointer"
+                        className="btn-secondary px-4 py-2 text-xs font-semibold rounded-md cursor-pointer"
                     >
                         {`${messages.upgrade}`}
                     </Link>

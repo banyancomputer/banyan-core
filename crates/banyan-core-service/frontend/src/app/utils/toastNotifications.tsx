@@ -3,7 +3,7 @@ import { toast } from 'react-toastify';
 
 import { UploadFileProgress } from '@components/common/UploadFileProgress';
 
-import { Close } from '@static/images/common';
+import { Close, Info, SuccessToastIcon } from '@static/images/common';
 
 /** Defines toast notifications with message, toast type and theme. */
 export class ToastNotifications {
@@ -14,12 +14,12 @@ export class ToastNotifications {
         toast.info(
             message,
             {
-                theme: 'light',
                 hideProgressBar: true,
                 autoClose: 2000,
-                icon: icon ? <span className="bg-button-primary p-2 rounded-full text-navigation-text">{icon}</span> : null,
-                bodyStyle: { gap: '17px', fontFamily: 'Inter', fontSize: '14px', fontWeight: 600, color: 'black' },
-                style: { padding: '16px', borderRadius: '12px', borderColor: '#7D89B0', borderWidth: '2px', width: '400px' },
+                icon: icon ? icon : <SuccessToastIcon />,
+                closeButton: () => <Close />,
+                bodyStyle: { gap: '8px', padding: '0', fontFamily: 'Inter', fontSize: '14px', fontWeight: 600 },
+                style: { display: "flex", alignItems: 'center', padding: '12px 16px', borderRadius: '4px 4px 0 0', bottom: 0, margin: 0, width: '400px' },
             }
         );
     };
@@ -33,15 +33,15 @@ export class ToastNotifications {
                 },
                 success: {
                     render() { return successMessage; },
-                    icon: <span className="bg-button-primary p-2 rounded-full text-navigation-text">{icon}</span>,
+                    icon: <span className="">{icon}</span>,
                 },
             },
             {
-                theme: 'light',
                 hideProgressBar: true,
+                closeButton: () => <Close />,
                 autoClose: false,
-                bodyStyle: { gap: '17px', fontFamily: 'Inter', fontSize: '14px', fontWeight: 600, color: 'black' },
-                style: { padding: '16px', borderRadius: '12px', borderColor: 'var(--darken-border)', borderWidth: '2px', width: '400px' },
+                bodyStyle: { gap: '8px', padding: '0', fontFamily: 'Inter', fontSize: '14px', fontWeight: 600 },
+                style: { display: "flex", alignItems: 'center', padding: '12px 16px', borderRadius: '4px 4px 0 0', bottom: 0, margin: 0, width: '400px' },
             }
         );
     };
@@ -50,6 +50,8 @@ export class ToastNotifications {
         toast.info(
             <UploadFileProgress />,
             {
+                theme: "light",
+                position: "bottom-right",
                 icon: false,
                 autoClose: false,
                 closeButton: false,
@@ -67,23 +69,14 @@ export class ToastNotifications {
         toast.error(
             <div className="w-full flex flex-col items-start justify-between gap-2 text-xs">
                 {message}
-                {buttonMessage &&
-                    <button
-                        className="text-text-600"
-                        onClick={callback}
-                    >
-                        {buttonMessage}
-                    </button>
-                }
             </div>,
             {
-                icon: <span className="bg-mainBackground p-2 rounded-full">
-                    <Close />
-                </span>,
+                icon: <Info />,
+                closeButton: () => <Close />,
                 hideProgressBar: true,
                 autoClose: 2000,
-                bodyStyle: { gap: '17px', fontFamily: 'Inter', padding: '0 6px', fontSize: '14px', fontWeight: 600, color: 'black' },
-                style: { padding: '16px', borderRadius: '12px', borderColor: '#7D89B0', borderWidth: '2px', width: '400px' },
+                bodyStyle: { gap: '8px', padding: '0', fontFamily: 'Inter', fontSize: '14px', fontWeight: 600 },
+                style: { display: "flex", alignItems: 'center', padding: '12px 16px', borderRadius: '4px 4px 0 0', bottom: 0, margin: 0, width: '400px' },
             }
         );
     }

@@ -1,5 +1,4 @@
 import React, { useEffect } from 'react';
-import { useIntl } from 'react-intl';
 import { unwrapResult } from '@reduxjs/toolkit';
 
 import { SubscriptionPlanModal } from '@/app/components/common/Modal/SubscriptionPlanModal';
@@ -13,7 +12,7 @@ import { getHotStorageAmount } from '@/app/utils/subscritions';
 export const NextBillingDate = () => {
     const dispatch = useAppDispatch();
     const { selectedSubscription } = useAppSelector(state => state.billing);
-    const { messages } = useIntl();
+    const messages = useAppSelector(state => state.locales.messages.coponents.account.billing.invoices.nextBillingDate);
     const { openModal } = useModal();
 
 
@@ -36,34 +35,34 @@ export const NextBillingDate = () => {
         <div className="flex-grow flex flex-col gap-4 p-4 border-1 border-border-regular rounded-lg text-xs">
             <h3 className="text-text-800 text-[18px] font-semibold">Next Billing Date</h3>
             <div className="flex justify-between items-center">
-                <div>{`${messages.onDemandStorage}`}</div>
+                <div>{messages.onDemandStorage}</div>
                 <div className="text-text-800">{convertSubscriptionsSizes(getHotStorageAmount(selectedSubscription))}</div>
             </div>
             {/* <div className="flex justify-between items-center">
-                <div className="text-text-800">{`${messages.archivalStorage}`}</div>
+                <div className="text-text-800">{messages.archivalStorage}</div>
                 <div className="text-text-800">{selectedSubscription?.features.archival_hard_limit || 0} TB</div>
             </div> */}
             <div className="flex justify-between items-center">
-                <div>{`${messages.dataEgress}`}</div>
+                <div>{messages.dataEggress}</div>
                 <div className="text-text-800">{convertSubscriptionsSizes(selectedSubscription?.features?.included_bandwidth!)}</div>
             </div>
             <div className="flex justify-between items-center">
-                <div>{`${messages.totalCost}`}</div>
+                <div>{messages.totalCost}</div>
                 <div className="text-[20px] font-semibold text-text-900">${selectedSubscription?.pricing?.plan_base.toFixed(2) || 0}</div>
             </div>
             {selectedSubscription?.service_key === 'starter' ?
                 <button
                     onClick={upgragePlan}
-                    className="w-max px-4 py-2 text-xs font-semibold rounded-md bg-text-200 text-button-primary"
+                    className="btn-secondary w-max px-4 py-2 text-xs font-semibold rounded-md"
                 >
-                    {`${messages.upgrade} ${messages.account}`}
+                    {messages.upgradeAccount}
                 </button>
                 :
                 <button
                     onClick={manage}
-                    className="w-max px-4 py-2 text-xs font-semibold rounded-md bg-text-200 text-button-primary"
+                    className="btn-secondary w-max px-4 py-2 text-xs font-semibold rounded-md"
                 >
-                    {`${messages.manageSubscriptions}`}
+                    {messages.manageSubscriptions}
                 </button>
             }
         </div>

@@ -1,10 +1,10 @@
 use axum::extract::{Json, Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
+use serde::Deserialize;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
-use crate::api::models::ApiBucket;
 use crate::app::AppState;
 use crate::extractors::UserIdentity;
 
@@ -12,17 +12,22 @@ pub async fn handler(
     user_identity: UserIdentity,
     State(state): State<AppState>,
     Path(bucket_id): Path<Uuid>,
-    Json(bucket): Json<ApiBucket>,
+    Json(request): Json<UpdateApiBucketRequest>,
 ) -> Response {
     let database = state.database();
     let user_id = user_identity.id().to_string();
     let bucket_id = bucket_id.to_string();
-    let name = bucket.name;
+    let name = request.name;
     let now = OffsetDateTime::now_utc();
 
     let query_result = sqlx::query!(
-        r#"UPDATE buckets SET name = $1, updated_at = $2
-             WHERE id = $3 AND user_id = $4 AND deleted_at IS NULL;"#,
+        r#"
+            UPDATE buckets
+            SET name = $1, updated_at = $2
+            WHERE id = $3 
+            AND user_id = $4 
+            AND deleted_at IS NULL;
+        "#,
         name,
         now,
         bucket_id,
@@ -46,4 +51,9 @@ pub async fn handler(
             (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
         }
     }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateApiBucketRequest {
+    name: String,
 }

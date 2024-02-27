@@ -1,4 +1,3 @@
-import { useIntl } from 'react-intl';
 import { useForm } from 'react-hook-form';
 
 import { Input } from '@components/common/Input';
@@ -8,10 +7,10 @@ import { Bolt } from '@static/images/common';
 import { useKeystore } from '@/app/contexts/keystore';
 import { useModal } from '@/app/contexts/modals';
 import { validateKeyphrase } from '@/app/utils/validation';
-
+import { useAppSelector } from '@/app/store';
 
 export const EnterSecretKeyModal = () => {
-    const { messages } = useIntl();
+    const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.enterSecretKey);
     const { initializeKeystore } = useKeystore();
     const { closeModal } = useModal();
     const {
@@ -32,7 +31,7 @@ export const EnterSecretKeyModal = () => {
             closeModal();
         } catch (error: any) {
             /** TODO: rework when error message from tomb will be more specific. */
-            setError('keyphrase', { message: `${messages.wrongSecretKey}` });
+            setError('keyphrase', { message: `${messages.sectretKeyError}` });
         };
     };
 
@@ -45,9 +44,9 @@ export const EnterSecretKeyModal = () => {
                 <Bolt width="24px" height="24px" />
             </span>
             <div>
-                <h4 className="text-m font-semibold">{`${messages.inputSecretKey}`}</h4>
+                <h4 className="text-m font-semibold">{`${messages.title}`}</h4>
                 <p className="mt-2 text-text-600">
-                    {`${messages.enterSecretKeyIntoTextField}`}
+                    {`${messages.subtitle}`}
                 </p>
             </div>
             <Input

@@ -1,0 +1,104 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                SELECT id, email, verified_email, display_name, locale, region_preference, profile_image, \n                       created_at, accepted_tos_at, account_tax_class as 'account_tax_class: TaxClass',\n                       stripe_customer_id, stripe_subscription_id, subscription_id as 'subscription_id!',\n                       subscription_status as 'subscription_status: SubscriptionStatus',\n                       subscription_valid_until\n                FROM users\n                WHERE id = $1;\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "email",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "verified_email",
+        "ordinal": 2,
+        "type_info": "Bool"
+      },
+      {
+        "name": "display_name",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "locale",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "region_preference",
+        "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "profile_image",
+        "ordinal": 6,
+        "type_info": "Text"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 7,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "accepted_tos_at",
+        "ordinal": 8,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "account_tax_class: TaxClass",
+        "ordinal": 9,
+        "type_info": "Text"
+      },
+      {
+        "name": "stripe_customer_id",
+        "ordinal": 10,
+        "type_info": "Text"
+      },
+      {
+        "name": "stripe_subscription_id",
+        "ordinal": 11,
+        "type_info": "Text"
+      },
+      {
+        "name": "subscription_id!",
+        "ordinal": 12,
+        "type_info": "Text"
+      },
+      {
+        "name": "subscription_status: SubscriptionStatus",
+        "ordinal": 13,
+        "type_info": "Text"
+      },
+      {
+        "name": "subscription_valid_until",
+        "ordinal": 14,
+        "type_info": "Datetime"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      true,
+      false,
+      true,
+      true,
+      true,
+      false,
+      true
+    ]
+  },
+  "hash": "b500d733e7c781df072aaa0e69fbc37a349c4b24849f71254ff355dd12de8b00"
+}

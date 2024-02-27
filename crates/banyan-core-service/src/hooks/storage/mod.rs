@@ -1,4 +1,5 @@
 mod prune_blocks;
+mod report_health;
 mod report_upload;
 
 use std::error::Error;
@@ -22,6 +23,7 @@ where
     Router::new()
         .route("/report/:metadata_id", post(report_upload::handler))
         .route("/prune", post(prune_blocks::handler))
+        .route("/report/health", post(report_health::handler))
         .layer(cors_layer)
         .with_state(state)
 }
