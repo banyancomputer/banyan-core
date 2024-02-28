@@ -12,7 +12,7 @@ import { Close } from '@/app/static/images/common';
 export const InvoiceDetails: React.FC<{ invoice: Invoice }> = ({ invoice }) => {
   const messages = useAppSelector(state => state.locales.messages.coponents.account.billing.invoices.invoice);
   const dispatch = useAppDispatch();
-  const { displayName } = useAppSelector(state => state.user)
+  const { displayName } = useAppSelector(state => state.session.user)
   const { subscriptions, selectedSubscription } = useAppSelector(state => state.billing);
   const subscription = subscriptions.find(subscription => subscription.pricing?.plan_base === invoice.total_amount / 100) || selectedSubscription;
 

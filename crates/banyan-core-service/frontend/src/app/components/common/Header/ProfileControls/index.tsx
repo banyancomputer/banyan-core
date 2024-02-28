@@ -18,7 +18,7 @@ export const ProfileControls = () => {
     const messages = useAppSelector(state => state.locales.messages.coponents.common.header.profileControls);
     const { purgeKeystore } = useKeystore();
     const { openModal } = useModal();
-    const { displayName, email, profileImage } = useAppSelector(state => state.user);
+    const { displayName, email, profileImage } = useAppSelector(state => state.session.user);
     const { selectedSubscription } = useAppSelector(state => state.billing);
     const dispatch = useAppDispatch();
 

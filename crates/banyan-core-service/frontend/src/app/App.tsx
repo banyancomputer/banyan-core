@@ -14,7 +14,6 @@ import { ModalProvider } from './contexts/modals';
 import { FileUploadProvider } from './contexts/filesUpload';
 import { TombProvider } from './contexts/tomb';
 import { getLocalStorageItem, setLocalStorageItem } from './utils/localStorage';
-import { SessionProvider } from './contexts/session';
 import { preventDefaultDragAction } from './utils/dragHandlers';
 import { store, useAppDispatch } from '@app/store';
 import { LANGUAGES_KEYS, changeLanguage } from '@app/store/locales/slice';
@@ -44,35 +43,31 @@ const App = () => {
     }, []);
 
     return (
-        <Provider store={store}>
-            <main
-                className="flex flex-col h-screen max-h-screen font-sans bg-mainBackground text-text-900 max-sm:hidden"
-                onDragOver={preventDefaultDragAction}
-                onDrop={preventDefaultDragAction}
-            >
-                <BrowserRouter basename="/" >
-                    <ModalProvider>
-                        <SessionProvider>
-                            <KeystoreProvider>
-                                <TombProvider>
-                                    <FileUploadProvider>
-                                        <FilePreviewProvider>
-                                            <Modal />
-                                            <FilePreview />
-                                            <Notifications />
-                                            <Suspense>
-                                                <Routes />
-                                            </Suspense>
-                                        </FilePreviewProvider>
-                                    </FileUploadProvider>
-                                </TombProvider>
-                            </KeystoreProvider>
-                        </SessionProvider>
-                    </ModalProvider>
-                </BrowserRouter>
-            </main>
+        <main
+            className="flex flex-col h-screen max-h-screen font-sans bg-mainBackground text-text-900 max-sm:hidden"
+            onDragOver={preventDefaultDragAction}
+            onDrop={preventDefaultDragAction}
+        >
+            <BrowserRouter basename="/" >
+                <ModalProvider>
+                    <KeystoreProvider>
+                        <TombProvider>
+                            <FileUploadProvider>
+                                <FilePreviewProvider>
+                                    <Modal />
+                                    <FilePreview />
+                                    <Notifications />
+                                    <Suspense>
+                                        <Routes />
+                                    </Suspense>
+                                </FilePreviewProvider>
+                            </FileUploadProvider>
+                        </TombProvider>
+                    </KeystoreProvider>
+                </ModalProvider>
+            </BrowserRouter>
             <MobilePlaceholder />
-        </Provider>
+        </main>
     );
 };
 
