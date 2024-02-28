@@ -145,10 +145,12 @@ mod tests {
             Json(request.clone()),
         )
         .await;
-        assert!(matches!(
-            result,
-            Err(MeterTrafficError::FailedToStoreTrafficData(_))
-        ));
+        assert!(matches!(result, Ok(response) if response.status() == StatusCode::OK));
+        let rows: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM metrics_traffic")
+            .fetch_one(&state.database())
+            .await
+            .unwrap();
+        assert_eq!(rows.0, 2);
     }
 
     #[tokio::test]
