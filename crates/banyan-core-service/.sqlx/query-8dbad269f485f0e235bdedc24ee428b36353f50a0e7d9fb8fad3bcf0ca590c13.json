@@ -47,6 +47,16 @@
         "name": "region",
         "ordinal": 8,
         "type_info": "Text"
+      },
+      {
+        "name": "last_seen_at",
+        "ordinal": 9,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "current_version",
+        "ordinal": 10,
+        "type_info": "Text"
       }
     ],
     "parameters": {
@@ -61,6 +71,8 @@
       false,
       false,
       false,
+      true,
+      true,
       true
     ]
   },
