@@ -3,17 +3,17 @@ import { Link, useLocation } from 'react-router-dom';
 
 import { ProfileControls } from './ProfileControls';
 import { HelpControls } from './HelpControls';
-import { SubscriptionPlanModal } from '../Modal/SubscriptionPlanModal';
+import { SubscriptionPlanModal } from '@components/common/Modal/SubscriptionPlanModal';
 
-import { popupClickHandler } from '@/app/utils';
-import { useKeystore } from '@/app/contexts/keystore';
+import { popupClickHandler } from '@app/utils';
 import { HttpClient } from '@/api/http/client';
-import { useAppDispatch, useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@app/store';
 import { unwrapResult } from '@reduxjs/toolkit';
-import { getUser } from '@/app/store/session/actions';
-import { RoutesConfig } from '@/app/routes';
-import { useModal } from '@/app/contexts/modals';
-import { getSubscriptionById } from '@/app/store/billing/actions';
+import { getUser } from '@app/store/session/actions';
+import { RoutesConfig } from '@app/routes';
+import { useModal } from '@app/contexts/modals';
+import { getSubscriptionById } from '@app/store/billing/actions';
+import { purgeKeystore } from '@app/store/keystore/actions';
 
 import { Question } from '@static/images/common';
 
@@ -24,7 +24,6 @@ export const Header: React.FC<{ className?: string }> = ({ className = '' }) => 
     const { user } = useAppSelector(state => state.session);
     const profileOptionsRef = useRef<HTMLDivElement | null>(null);
     const helpOptionsRef = useRef<HTMLDivElement | null>(null);
-    const { purgeKeystore } = useKeystore();
     const location = useLocation();
     const { openModal } = useModal();
 
@@ -63,7 +62,7 @@ export const Header: React.FC<{ className?: string }> = ({ className = '' }) => 
             } catch (error: any) {
                 if (error.message === 'Unauthorized') {
                     const api = new HttpClient;
-                    await purgeKeystore();
+                    unwrapResult(await dispatch(purgeKeystore()));
                     await api.get('/auth/logout');
                     window.location.href = '/login';
                 }
