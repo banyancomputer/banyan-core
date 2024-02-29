@@ -93,7 +93,6 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 		return await tombMutex(tomb, async tomb => {
 			const key = unwrapResult(await dispatch(getEncryptionKey()));
 			const wasm_buckets: WasmBucket[] = await tomb!.listBuckets();
-			console.log(getIsUserNew());
 
 			if (getIsUserNew()) {
 				createBucketAndMount("My Drive", 'hot', 'interactive');
@@ -410,12 +409,6 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	}, [user, keystoreInitialized, isLoading, escrowedKeyMaterial]);
 
 	useEffect(() => {
-		console.log('areTermsAccepted', areTermsAccepted);
-		console.log('keystoreInitialized', keystoreInitialized);
-		console.log('isLoading', isLoading);
-		console.log('isLoggingOut', isLoggingOut);
-		console.log('escrowedKeyMaterial', escrowedKeyMaterial);
-
 		if (!areTermsAccepted) return;
 
 		if (!keystoreInitialized && !isLoading && !isLoggingOut) {

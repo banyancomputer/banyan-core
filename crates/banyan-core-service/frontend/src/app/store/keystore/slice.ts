@@ -41,7 +41,7 @@ const sessionSlice = createSlice({
         });
         builder.addCase(initializeKeystore.fulfilled, (state, action) => {
             state.keystoreInitialized = true;
-        })
+        });
     }
 });
 
