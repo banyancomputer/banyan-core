@@ -2,6 +2,7 @@ pub mod car_buffer;
 pub mod keys;
 #[cfg(test)]
 pub mod tests;
+pub mod time;
 
 use std::error::Error;
 use std::str::FromStr;

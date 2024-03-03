@@ -11,6 +11,7 @@ mod invoice;
 mod invoice_status;
 mod metadata;
 mod metadata_state;
+mod metrics_storage;
 mod notification;
 mod notification_severity;
 mod partial_metadata_with_snapshot;
@@ -44,6 +45,7 @@ pub use invoice::{Invoice, NewInvoice};
 pub use invoice_status::InvoiceStatus;
 pub use metadata::{Metadata, NewMetadata};
 pub use metadata_state::MetadataState;
+pub use metrics_storage::MetricsStorage;
 pub use notification::Notification;
 pub use notification_severity::NotificationSeverity;
 pub use partial_metadata_with_snapshot::PartialMetadataWithSnapshot;
@@ -72,5 +74,6 @@ pub use user::User;
 /// such recommending this workaround. See launchbadge/sqlx#2814.
 #[derive(sqlx::FromRow)]
 pub struct ExplicitBigInt {
-    big_int: i64,
+    data_size: i64,
+    metadata_size: i64,
 }

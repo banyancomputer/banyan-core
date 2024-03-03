@@ -2,6 +2,8 @@ mod create_deals;
 mod email;
 mod host_capacity;
 mod prune_blocks;
+mod report_all_users_storage;
+mod report_user_storage;
 
 use banyan_task::{QueueConfig, SqliteTaskStore, WorkerPool};
 pub use create_deals::{CreateDealsTask, BLOCK_SIZE};
@@ -12,6 +14,7 @@ pub use email::{
 };
 pub use host_capacity::HostCapacityTask;
 pub use prune_blocks::PruneBlocksTask;
+pub use report_user_storage::ReportUserStorage;
 use tokio::sync::watch;
 use tokio::task::JoinHandle;
 
@@ -27,6 +30,7 @@ pub async fn start_background_workers(
         .configure_queue(QueueConfig::new("default").with_worker_count(5))
         .register_task_type::<PruneBlocksTask>()
         .register_task_type::<CreateDealsTask>()
+        .register_task_type::<ReportUserStorage>()
         .register_task_type::<HostCapacityTask>()
         .start(async move {
             let _ = shutdown_rx.changed().await;
