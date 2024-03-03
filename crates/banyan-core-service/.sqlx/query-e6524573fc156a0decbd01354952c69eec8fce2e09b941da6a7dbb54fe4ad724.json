@@ -1,0 +1,44 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT * FROM metrics_storage WHERE slot = $1 AND user_id = $2 AND storage_host_id = $3",
+  "describe": {
+    "columns": [
+      {
+        "name": "user_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "hot_storage_bytes",
+        "ordinal": 1,
+        "type_info": "Int64"
+      },
+      {
+        "name": "archival_storage_bytes",
+        "ordinal": 2,
+        "type_info": "Int64"
+      },
+      {
+        "name": "storage_host_id",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "slot",
+        "ordinal": 4,
+        "type_info": "Datetime"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "e6524573fc156a0decbd01354952c69eec8fce2e09b941da6a7dbb54fe4ad724"
+}
