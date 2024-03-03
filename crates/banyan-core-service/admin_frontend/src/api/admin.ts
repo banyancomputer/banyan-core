@@ -1,10 +1,34 @@
-import { StorageHost, Deal, StorageHostRequest } from '@app/types';
+import { StorageHost, Deal, StorageHostRequest, User } from '@app/types';
 import { APIClient } from './http';
 
 export class AdminClient extends APIClient {
 	public async getDeals(): Promise<Deal[]> {
 		const response = await this.http.get(
 			`${this.ROOT_PATH}/api/v1/admin/deals`
+		);
+
+		if (!response.ok) {
+			await this.handleError(response);
+		}
+
+		return await response.json();
+	}
+
+	public async getUsers(): Promise<User[]> {
+		const response = await this.http.get(
+			`${this.ROOT_PATH}/api/v1/admin/users`
+		);
+
+		if (!response.ok) {
+			await this.handleError(response);
+		}
+
+		return await response.json();
+	}
+
+	public async resetUserAccount(id: string): Promise<User> {
+		const response = await this.http.post(
+			`${this.ROOT_PATH}/api/v1/admin/users/${id}/reset`
 		);
 
 		if (!response.ok) {
