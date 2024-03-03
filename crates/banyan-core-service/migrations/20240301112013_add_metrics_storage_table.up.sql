@@ -10,4 +10,4 @@ CREATE TABLE metrics_storage
 CREATE INDEX idx_metrics_storage_user_id ON metrics_storage (user_id);
 CREATE INDEX idx_metrics_storage_storage_host_id ON metrics_storage (storage_host_id);
 CREATE INDEX idx_metrics_storage_slot ON metrics_storage (slot);
-CREATE UNIQUE INDEX idx_metrics_storage_slot_user_id_storage_host_id ON metrics_traffic (slot, user_id, storage_host_id);
+CREATE UNIQUE INDEX idx_metrics_storage_slot_user_id_storage_host_id ON metrics_storage (slot, user_id, storage_host_id);
