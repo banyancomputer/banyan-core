@@ -15,27 +15,13 @@ const authClient = new AuthClient();
         'escrowDevice',
         async (passphrase: string, { dispatch, getState } ): Promise<PrivateKeyMaterial> => {
         const {keystore: {keystore}} = getState() as RootState;
+		const keyMaterial = await keystore!.genKeyMaterial();
+		const privateKeyMaterial = await keystore!.exportPrivateKeyMaterial(keyMaterial);
+		const escrowedKeyMaterial = await keystore!.escrowKeyMaterial(keyMaterial, passphrase);
 
-		if (!keystore) {
-			throw new Error('No keystore');
-		};
+		await authClient.escrowDevice(escrowedKeyMaterial);
+		dispatch(setEscrowedKeyMaterial(escrowedKeyMaterial));
 
-		const keyMaterial = await keystore.genKeyMaterial();
-		const privateKeyMaterial = await keystore.exportPrivateKeyMaterial(keyMaterial);
-		const escrowedKeyMaterial = await keystore.escrowKeyMaterial(
-			keyMaterial,
-			passphrase
-		);
-		// Escrow the user's private key material
-		await authClient
-			.escrowDevice(escrowedKeyMaterial)
-			.then(() => {
-				// Set the escrowed key material in the context state and cookies
-				dispatch(setEscrowedKeyMaterial(escrowedKeyMaterial))
-			})
-			.catch((err) => {
-				throw new Error("Error escrowing device: " + err.message);
-			});
 		return privateKeyMaterial;
 	});
 
@@ -45,23 +31,15 @@ const authClient = new AuthClient();
         async (passphrase: string, { getState }) => {
         const {keystore: {escrowedKeyMaterial, keystore}} = getState() as RootState;
 
-		if (!keystore) {
-			throw new Error('No keystore');
-		}
-		if (!escrowedKeyMaterial) {
-			throw new Error('No escrowed device');
-		}
-		return await keystore.recoverKeyMaterial(
-			escrowedKeyMaterial,
+		return await keystore!.recoverKeyMaterial(
+			escrowedKeyMaterial!,
 			passphrase
 		);
 	});
 
     export const getEscrowedKeyMaterial = createAsyncThunk(
         'getEscrowedKeyMaterial',
-        async () => {
-        return await userClient.getEscrowedKeyMaterial();
-    });
+        async () => await userClient.getEscrowedKeyMaterial());
 
 	// Initialize a keystore based on the user's passphrase
 	export const initializeKeystore = createAsyncThunk(
@@ -69,9 +47,9 @@ const authClient = new AuthClient();
     async (passkey: string, { getState, dispatch }) => {
         const {keystore: {escrowedKeyMaterial, keystore}} = getState() as RootState;
 		let privateKeyMaterial: PrivateKeyMaterial;
-		// TODO: better error handling
+
 		if (!keystore) {
-			throw new Error('Keystore not initialized');
+			throw new Error('No keystore');
 		};
 
 		try {
@@ -82,7 +60,7 @@ const authClient = new AuthClient();
 			}
 			let localKey = getLocalKey();
 			// Cache the key material encrypted with the session key
-			await keystore.cachePrivateKeyMaterial(
+			await keystore!.cachePrivateKeyMaterial(
 				privateKeyMaterial,
 				localKey.key,
 				localKey.id
@@ -96,9 +74,7 @@ const authClient = new AuthClient();
         'purgeKeystore',
         async (_, {getState}): Promise<void> => {
         const {keystore: {keystore}} = getState() as RootState;
-		if (keystore) {
-			await keystore.clear();
-		}
+		await keystore?.clear();
 		// Purge the local key cookie
 		destroyLocalKey();
 	});
@@ -108,25 +84,13 @@ const authClient = new AuthClient();
 	export const getEncryptionKey = createAsyncThunk(
         'getEncryptionKey',
         async (_, { getState }): Promise<{ privatePem: string, publicPem: string }> => {
-        const {keystore: {escrowedKeyMaterial, keystore, keystoreInitialized}} = getState() as RootState;
-
-		if (!keystore) {
-			throw new Error('No keystore');
-		};
-		if (!keystoreInitialized) {
-			throw new Error('Keystore not initialized');
-		};
-		if (!escrowedKeyMaterial) {
-			throw new Error('Missing escrowed data');
-		};
-		let localKey = getLocalKey();
-		const keyMaterial = await keystore.retrieveCachedPrivateKeyMaterial(
-			localKey.key, localKey.id
-		);
+        const {keystore: {escrowedKeyMaterial, keystore}} = getState() as RootState;
+		const localKey = getLocalKey();
+		const keyMaterial = await keystore!.retrieveCachedPrivateKeyMaterial(localKey.key, localKey.id);
 
 		return {
 			privatePem: keyMaterial.encryptionPrivateKeyPem,
-			publicPem: escrowedKeyMaterial.encryptionPublicKeyPem
+			publicPem: escrowedKeyMaterial!.encryptionPublicKeyPem
 		};
 	});
 
@@ -134,20 +98,13 @@ const authClient = new AuthClient();
 	export const getApiKey = createAsyncThunk(
         'getApiKey',
         async (_, {getState}): Promise<{ privatePem: string, publicPem: string }> => {
-        const {keystore: { escrowedKeyMaterial, keystore, keystoreInitialized }} = getState() as RootState;
-		if (!keystore || !keystoreInitialized) {
-			throw new Error('Keystore not initialized');
-		};
-		if (!escrowedKeyMaterial) {
-			throw new Error('Missing escrowed data');
-		};
-		let localKey = getLocalKey();
-		const privateKeyMaterial = await keystore.retrieveCachedPrivateKeyMaterial(
-			localKey.key, localKey.id
-		);
+        const {keystore: { escrowedKeyMaterial, keystore }} = getState() as RootState;
+
+		const localKey = getLocalKey();
+		const privateKeyMaterial = await keystore!.retrieveCachedPrivateKeyMaterial(localKey.key, localKey.id);
 
 		return {
 			privatePem: privateKeyMaterial.apiPrivateKeyPem,
-			publicPem: escrowedKeyMaterial.apiPublicKeyPem
+			publicPem: escrowedKeyMaterial!.apiPublicKeyPem
 		};
 	});

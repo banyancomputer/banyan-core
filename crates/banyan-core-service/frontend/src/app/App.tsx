@@ -1,6 +1,5 @@
 import { Suspense, useEffect } from 'react';
 import { BrowserRouter } from 'react-router-dom';
-import { unwrapResult } from '@reduxjs/toolkit';
 
 import { Modal } from '@components/common/Modal';
 import { Notifications } from '@components/common/Notifications';
@@ -9,7 +8,6 @@ import { MobilePlaceholder } from '@components/common/MobilePlaceholder';
 
 import { Routes } from './routes';
 import { FilePreviewProvider } from '@app/contexts/filesPreview';
-import { useModal } from '@app/contexts/modals';
 import { FileUploadProvider } from '@app/contexts/filesUpload';
 import { TombProvider } from '@app/contexts/tomb';
 import { getLocalStorageItem, setLocalStorageItem } from '@app/utils/localStorage';
@@ -19,12 +17,9 @@ import { LANGUAGES, LANGUAGES_KEYS, changeLanguage } from '@app/store/locales/sl
 import ECCKeystore from '@utils/crypto/ecc/keystore';
 import { getLocalKey } from '@app/utils';
 import { setIsLoading, setKeystore, setKeystoreInitialized } from '@app/store/keystore/slice';
-import { getUser } from '@app/store/session/actions';
-import { getEscrowedKeyMaterial, purgeKeystore } from '@app/store/keystore/actions';
 
 const App = () => {
     const dispatch = useAppDispatch();
-    const { openEscrowModal } = useModal();
 
     useEffect(() => {
         const theme = getLocalStorageItem('theme');
@@ -72,24 +67,6 @@ const App = () => {
                 throw new Error(error.message);
             }
         })();
-
-        (async () => {
-            setIsLoading(true);
-            try {
-                unwrapResult(await dispatch(getUser()));
-            } catch (error: any) {
-                await dispatch(purgeKeystore());
-                window.location.href = '/login';
-                return;
-            };
-
-            try {
-                unwrapResult(await dispatch(getEscrowedKeyMaterial()));
-            } catch (error: any) {
-                openEscrowModal(false);
-            };
-            setIsLoading(false);
-        })()
     }, []);
 
     return (

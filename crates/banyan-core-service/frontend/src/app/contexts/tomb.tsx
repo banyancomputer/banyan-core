@@ -1,4 +1,4 @@
-import React, { ReactNode, createContext, useContext, useEffect, useState } from 'react';
+import { ReactNode, createContext, useContext, useEffect, useState } from 'react';
 import { TombWasm, WasmBucket, WasmSnapshot } from 'tomb-wasm-experimental';
 import { unwrapResult } from '@reduxjs/toolkit';
 import { Mutex } from 'async-mutex';
@@ -20,7 +20,7 @@ import { handleNameDuplication } from '@utils/names';
 import { StorageUsageClient } from '@/api/storageUsage';
 import { useAppDispatch, useAppSelector } from '../store';
 import { BannerError, setError } from '@app/store/errors/slice';
-import { getApiKey, getEncryptionKey } from '@app/store/keystore/actions';
+import { getApiKey, getEncryptionKey, getEscrowedKeyMaterial } from '@app/store/keystore/actions';
 
 interface TombInterface {
 	tomb: TombWasm | null;
@@ -64,7 +64,7 @@ const TombContext = createContext<TombInterface>({} as TombInterface);
 export const TombProvider = ({ children }: { children: ReactNode }) => {
 	const dispatch = useAppDispatch();
 	const { user } = useAppSelector(state => state.session);
-	const { escrowedKeyMaterial, isLoading, isLoggingOut, keystoreInitialized } = useAppSelector(state => state.keystore);
+	const { escrowedKeyMaterial, isLoading, keystoreInitialized } = useAppSelector(state => state.keystore);
 	const navigate = useNavigate();
 	const { openEscrowModal, openModal } = useModal();
 	const [tomb, setTomb] = useState<TombWasm | null>(null);
@@ -390,31 +390,40 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
 	// Initialize the tomb client
 	useEffect(() => {
-		if (!user || !escrowedKeyMaterial || !keystoreInitialized) { return; }
+		if (!user.id || !keystoreInitialized || isLoading || !escrowedKeyMaterial) { return; }
 
 		(async () => {
 			try {
 				const apiKey = unwrapResult(await dispatch(getApiKey()));
-				const TombWasm = (await import('tomb-wasm-experimental')).TombWasm;
-				const tomb = new TombWasm(
+				const tomb = await new TombWasm(
 					apiKey.privatePem,
 					user.id,
 					window.location.protocol + '//' + window.location.host,
 				);
-				setTomb(await tomb);
+				setTomb(tomb);
 			} catch (error: any) {
 				dispatch(setError(new BannerError(error.message)));
 			}
 		})();
-	}, [user, keystoreInitialized, isLoading, escrowedKeyMaterial]);
+	}, [user.id, keystoreInitialized, escrowedKeyMaterial, isLoading]);
 
 	useEffect(() => {
 		if (!areTermsAccepted) return;
 
-		if (!keystoreInitialized && !isLoading && !isLoggingOut) {
+		let escrowedKeyMaterial;
+			(async () => {
+				try {
+					escrowedKeyMaterial = unwrapResult(await dispatch(getEscrowedKeyMaterial()));
+				} catch (error: any) {
+					openEscrowModal(false);
+					return;
+				};
+			})()
+
+		if (!keystoreInitialized && !isLoading) {
 			openEscrowModal(!!escrowedKeyMaterial);
 		};
-	}, [isLoading, keystoreInitialized, areTermsAccepted, escrowedKeyMaterial, isLoggingOut]);
+	}, [isLoading, keystoreInitialized, areTermsAccepted]);
 
 	useEffect(() => {
 		const userClient = new UserClient();

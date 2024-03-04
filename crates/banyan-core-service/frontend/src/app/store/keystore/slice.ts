@@ -9,17 +9,15 @@ export interface KeystoreState {
     escrowedKeyMaterial: EscrowedKeyMaterial | null;
     keystoreInitialized: boolean;
     isLoading: boolean;
-	isLoggingOut: boolean;
 };
 
-const sessionSlice = createSlice({
+const keystoreSlice = createSlice({
     name: 'keystore',
     initialState: {
         keystore: null,
         escrowedKeyMaterial: null,
         keystoreInitialized: false,
         isLoading: true,
-        isLoggingOut: false
     } as KeystoreState,
     reducers: {
         setEscrowedKeyMaterial(state, action:PayloadAction<EscrowedKeyMaterial>){
@@ -38,12 +36,21 @@ const sessionSlice = createSlice({
     extraReducers(builder) {
         builder.addCase(getEscrowedKeyMaterial.fulfilled, (state, action) => {
             state.escrowedKeyMaterial = action.payload;
+            state.isLoading = false;
         });
-        builder.addCase(initializeKeystore.fulfilled, (state, action) => {
+        builder.addCase(getEscrowedKeyMaterial.rejected, (state) => {
+            state.isLoading = false;
+        });
+        builder.addCase(initializeKeystore.pending, (state) => {
             state.keystoreInitialized = true;
+            state.isLoading = true;
+        });
+        builder.addCase(initializeKeystore.fulfilled, (state) => {
+            state.keystoreInitialized = true;
+            state.isLoading = false;
         });
     }
 });
 
-export const { setEscrowedKeyMaterial, setKeystore, setKeystoreInitialized, setIsLoading } = sessionSlice.actions;
-export default sessionSlice.reducer;
+export const { setEscrowedKeyMaterial, setKeystore, setKeystoreInitialized, setIsLoading } = keystoreSlice.actions;
+export default keystoreSlice.reducer;
