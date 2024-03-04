@@ -420,7 +420,8 @@ pub(crate) fn normalize_cids<'a>(
 }
 
 pub(crate) async fn sample_bucket(conn: &mut DatabaseConnection, user_id: &str) -> String {
-    create_hot_bucket(conn, user_id, "Habernero").await
+    let bucket_name = format!("Bucket-{}", rand::random::<u32>());
+    create_hot_bucket(conn, user_id, &bucket_name).await
 }
 
 pub(crate) async fn setup_database() -> Database {
