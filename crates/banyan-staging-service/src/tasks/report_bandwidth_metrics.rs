@@ -33,14 +33,8 @@ pub enum ReportBandwidthMetricsTaskError {
     EndSlotParsingError(#[from] ComponentRange),
 }
 
-#[derive(Deserialize, Serialize)]
-pub struct ReportBandwidthMetricsTask {}
-
-impl ReportBandwidthMetricsTask {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
+#[derive(Deserialize, Serialize, Default)]
+pub struct ReportBandwidthMetricsTask;
 
 #[async_trait]
 impl TaskLike for ReportBandwidthMetricsTask {
