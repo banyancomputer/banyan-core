@@ -7,7 +7,7 @@ use banyan_task::{SqliteTaskStore, TaskStoreError};
 use serde::Deserialize;
 
 use crate::app::AppState;
-use crate::database::models::{Blocks, Uploads};
+use crate::database::models::{AuthorizedStorage, Blocks, Uploads};
 use crate::extractors::PlatformIdentity;
 use crate::tasks::UploadBlocksTask;
 
@@ -15,6 +15,7 @@ use crate::tasks::UploadBlocksTask;
 pub struct DeleteBlocksRequest {
     pub normalized_cids: Vec<String>,
     pub metadata_id: String,
+    pub grant_id: String,
 }
 
 pub async fn handler(
@@ -33,6 +34,7 @@ pub async fn handler(
     Uploads::delete_by_metadata_id(&mut transaction, &metadata_id).await?;
     let deleted_blocks =
         Blocks::delete_blocks_by_cid(&mut transaction, &request.normalized_cids).await?;
+    AuthorizedStorage::delete_by_grant_id(&mut transaction, &request.grant_id).await?;
 
     if deleted_blocks.rows_affected() != request.normalized_cids.len() as u64 {
         return Err(BlocksDeleteError::DeleteFailed(format!(
@@ -102,6 +104,7 @@ mod tests {
         }
         cids
     }
+
     async fn setup_test_environment() -> (Database, String, String, Vec<String>) {
         let db = test_helpers::setup_database().await;
         let metadata_id = "test_metadata_id";
@@ -127,6 +130,7 @@ mod tests {
             Json(DeleteBlocksRequest {
                 normalized_cids: block_ids,
                 metadata_id,
+                grant_id: "some-grant".to_string(),
             }),
         )
         .await;
@@ -160,6 +164,7 @@ mod tests {
             Json(DeleteBlocksRequest {
                 normalized_cids: blocks_cids,
                 metadata_id,
+                grant_id: "some-grant".to_string(),
             }),
         )
         .await;
@@ -185,6 +190,7 @@ mod tests {
             Json(DeleteBlocksRequest {
                 normalized_cids: block_ids,
                 metadata_id,
+                grant_id: "some-grant".to_string(),
             }),
         )
         .await;

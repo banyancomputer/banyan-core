@@ -14,14 +14,9 @@ use crate::database::models::{
     StorageHostsMetadatasStorageGrants,
 };
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Default, Clone)]
 pub struct RedistributeStagingDataTask {}
 
-impl RedistributeStagingDataTask {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
 #[async_trait]
 impl TaskLike for RedistributeStagingDataTask {
     const TASK_NAME: &'static str = "redistribute_staging_data_task";
@@ -92,14 +87,14 @@ impl TaskLike for RedistributeStagingDataTask {
 
             let block_ids = blocks
                 .iter()
-                .map(|block| block.cid.clone())
+                .map(|block| block.id.clone())
                 .collect::<Vec<_>>();
 
             MinimalBlockLocation::update_state(&database, &block_ids, BlockLocationState::Staged)
                 .await
                 .expect("update block location state");
 
-            undistributed_blocks.remove(metadata_id);
+            undistributed_blocks.retain(|s| !block_ids.contains(s));
         }
 
         if !undistributed_blocks.is_empty() {
@@ -126,4 +121,99 @@ pub enum RedistributeStagingDataTaskError {
     JwtError(#[from] jwt_simple::Error),
     #[error("staging error: {0}")]
     StagingServiceError(#[from] StagingServiceError),
+}
+#[cfg(test)]
+mod tests {
+    use banyan_task::{CurrentTask, TaskLike};
+    use mockito::{Server, ServerOpts};
+    use serde_json::json;
+
+    use crate::app::mock_app_state;
+    use crate::auth::STAGING_SERVICE_NAME;
+    use crate::database::models::{BlockLocationState, MetadataState, MinimalBlockLocation};
+    use crate::database::test_helpers;
+    use crate::tasks::redistribute_staging_data::RedistributeStagingDataTask;
+
+    #[tokio::test]
+    async fn test_block_state_changed() {
+        let db = test_helpers::setup_database().await;
+        let mut conn = db.acquire().await.expect("connection");
+        let staging_host_id = test_helpers::create_storage_host(
+            &mut conn,
+            STAGING_SERVICE_NAME,
+            "http://127.0.0.1:8001/",
+            1_000_000,
+        )
+        .await;
+
+        let new_host_id = test_helpers::create_storage_host(
+            &mut conn,
+            "Diskz",
+            "http://127.0.0.1:8002/",
+            1_000_000,
+        )
+        .await;
+
+        let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
+        let bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
+        let storage_grant_id =
+            test_helpers::create_storage_grant(&mut conn, &staging_host_id, &user_id, 1_000_000)
+                .await;
+        let metadata_id =
+            test_helpers::sample_metadata(&mut conn, &bucket_id, 1, MetadataState::Current).await;
+
+        let block_ids = test_helpers::sample_blocks(
+            &mut conn,
+            4,
+            &metadata_id,
+            &staging_host_id,
+            &storage_grant_id,
+        )
+        .await;
+
+        let mut server = Server::new_with_opts_async(ServerOpts {
+            host: "127.0.0.1",
+            port: 8001,
+            assert_on_drop: false,
+        })
+        .await;
+        // do not put in a function or remove the variable, because the mock will get dropped and not match
+        let _m = server
+            .mock("POST", "/api/v1/hooks/distribute")
+            .match_body(mockito::Matcher::PartialJsonString(
+                json!({
+                    "metadata_id": metadata_id,
+                    "new_host_id": new_host_id,
+                    "grant_id": storage_grant_id
+                })
+                .to_string(),
+            ))
+            .with_status(200)
+            .with_body("{}")
+            .create_async()
+            .await;
+
+        let all_blocks = MinimalBlockLocation::get_all(&db)
+            .await
+            .expect("get all blocks");
+        assert_eq!(all_blocks.len(), block_ids.len());
+        for block_location in all_blocks.iter() {
+            assert_eq!(block_location.state, BlockLocationState::SyncRequired);
+        }
+
+        let res = RedistributeStagingDataTask::default()
+            .run(CurrentTask::default(), mock_app_state(db.clone()).0)
+            .await;
+
+        println!("{:?}", res);
+
+        assert!(res.is_ok());
+        let updated_block_locations = MinimalBlockLocation::get_all(&db)
+            .await
+            .expect("get all blocks");
+        assert_eq!(updated_block_locations.len(), block_ids.len());
+        for block_location in updated_block_locations.iter() {
+            assert_eq!(block_location.state, BlockLocationState::Staged);
+        }
+    }
 }

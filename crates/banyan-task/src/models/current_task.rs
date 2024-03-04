@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use time::OffsetDateTime;
 
 use crate::Task;
@@ -41,17 +39,20 @@ pub enum CurrentTaskError {
     TaskNotStarted,
 }
 
+#[cfg(any(test, feature = "test-utils"))]
 pub mod tests {
     use time::OffsetDateTime;
 
     use super::CurrentTask;
 
-    pub fn default_current_task() -> CurrentTask {
-        CurrentTask {
-            id: uuid::Uuid::new_v4().to_string(),
-            current_attempt: 0,
-            scheduled_at: OffsetDateTime::UNIX_EPOCH,
-            started_at: OffsetDateTime::UNIX_EPOCH,
+    impl Default for CurrentTask {
+        fn default() -> Self {
+            Self {
+                id: uuid::Uuid::new_v4().to_string(),
+                current_attempt: 0,
+                scheduled_at: OffsetDateTime::UNIX_EPOCH,
+                started_at: OffsetDateTime::UNIX_EPOCH,
+            }
         }
     }
 

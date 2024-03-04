@@ -20,4 +20,5 @@ pub struct DistributeDataRequest {
 pub struct DeleteBlocksRequest {
     pub normalized_cids: Vec<String>,
     pub metadata_id: String,
+    pub grant_id: String,
 }

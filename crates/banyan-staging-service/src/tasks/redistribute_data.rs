@@ -10,8 +10,7 @@ use crate::clients::{
     ClientsRequest, CoreServiceClient, CoreServiceError, NewUploadRequest, StorageProviderClient,
     StorageProviderError,
 };
-use crate::database::models::{Blocks, Clients, Uploads};
-use crate::extractors::authenticated_client::AuthorizedStorage;
+use crate::database::models::{AuthorizedStorage, Blocks, Clients, Uploads};
 use crate::tasks::upload_blocks::UploadBlocksTask;
 
 pub type RedistributeDataTaskContext = AppState;

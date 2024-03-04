@@ -5,7 +5,7 @@ edition = "2021"
 license = "LicenseRef-LICENSE.txt"
 
 [dependencies]
-banyan-task = { path = "../banyan-task", version = "^0.1"}
+banyan-task = { path = "../banyan-task", version = "^0.1", features = ["test-utils"]}
 banyan-object-store = { path = "../banyan-object-store", version = "^0.1" }
 banyan-cli = { git = "https://github.com/banyancomputer/banyan-cli.git", branch = "main", version = "^1" }
 wnfs = { git = "https://github.com/banyancomputer/rs-wnfs", branch = "main", version = "^0.1" }
@@ -74,6 +74,6 @@ async-stripe = { version = "^0.29", default-features = false, features = ["runti
 hyper = "^0.14"
 proptest = "^1.4.0"
 proptest-derive = "^0.2.0"
-
+mockito = "1.4.0"
 [build-dependencies]
 time = { version = "^0.3", features = ["formatting"] }

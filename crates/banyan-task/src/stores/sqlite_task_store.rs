@@ -189,14 +189,7 @@ impl TaskStore for SqliteTaskStore {
         task: T,
     ) -> Result<Option<String>, TaskStoreError> {
         let task = TaskInstanceBuilder::for_task(task).await?;
-        tracing::info!(
-            "creation id task: {:?} key: {:?} ",
-            task.task_name,
-            task.unique_key
-        );
         let background_task_id = Self::create(&mut *connection, task).await?;
-
-        tracing::info!("task id: {:?}", background_task_id.clone());
         Ok(background_task_id)
     }
 
@@ -423,7 +416,7 @@ impl From<SqliteTaskStoreMetrics> for TaskStoreMetrics {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::tests::{default_task_store_metrics, TestTask};
+    use crate::tests::TestTask;
     use crate::TaskLikeExt;
 
     #[tokio::test]
@@ -523,7 +516,7 @@ pub mod tests {
     async fn empty_store_works() {
         let task_store = empty_task_store().await;
         let metrics = task_store.metrics().await.unwrap();
-        assert_eq!(metrics, default_task_store_metrics());
+        assert_eq!(metrics, TaskStoreMetrics::default());
     }
 
     pub async fn singleton_task_store() -> (SqliteTaskStore, Option<String>) {

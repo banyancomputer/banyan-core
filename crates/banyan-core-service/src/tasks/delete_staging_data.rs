@@ -12,13 +12,15 @@ use crate::database::models::StorageHost;
 pub struct DeleteStagingDataTask {
     normalized_cids: Vec<String>,
     metadata_id: String,
+    grant_id: String,
 }
 
 impl DeleteStagingDataTask {
-    pub fn new(metadata_id: String, normalized_cids: Vec<String>) -> Self {
+    pub fn new(metadata_id: String, normalized_cids: Vec<String>, grant_id: String) -> Self {
         Self {
             metadata_id,
             normalized_cids,
+            grant_id,
         }
     }
 }
@@ -44,6 +46,7 @@ impl TaskLike for DeleteStagingDataTask {
             .delete_blocks(DeleteBlocksRequest {
                 metadata_id: self.metadata_id.clone(),
                 normalized_cids: self.normalized_cids.clone(),
+                grant_id: self.grant_id.clone(),
             })
             .await?;
 

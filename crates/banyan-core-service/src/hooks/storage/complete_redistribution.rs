@@ -107,10 +107,14 @@ pub async fn handler(
         .await
         .map_err(CompleteRedistributionError::UnableToEnqueueTask)?;
 
-    DeleteStagingDataTask::new(metadata_id, request.normalized_cids.clone())
-        .enqueue_with_connection::<banyan_task::SqliteTaskStore>(&mut *transaction)
-        .await
-        .map_err(CompleteRedistributionError::UnableToEnqueueTask)?;
+    DeleteStagingDataTask::new(
+        metadata_id,
+        request.normalized_cids.clone(),
+        request.grant_id,
+    )
+    .enqueue_with_connection::<banyan_task::SqliteTaskStore>(&mut *transaction)
+    .await
+    .map_err(CompleteRedistributionError::UnableToEnqueueTask)?;
 
     transaction.commit().await?;
 

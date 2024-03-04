@@ -48,6 +48,12 @@ pub async fn start_background_workers(
         &mut state.database(),
     )
     .await;
+    if task_in_progress.is_none() {
+        RedistributeStagingDataTask::default()
+            .enqueue::<SqliteTaskStore>(&mut state.database())
+            .await
+            .unwrap();
+    }
 
     WorkerPool::new(task_store.clone(), move || state.clone())
         .configure_queue(QueueConfig::new("default").with_worker_count(5))
