@@ -21,8 +21,8 @@ pub async fn handler(user_identity: UserIdentity, State(state): State<AppState>)
     let query_result = sqlx::query_as!(
         ConsumedStorage,
         r#"SELECT
-            COALESCE(SUM(m.metadata_size), 0) as data_size,
-            COALESCE(SUM(COALESCE(m.data_size, m.expected_data_size)), 0) as meta_size
+            COALESCE(SUM(m.metadata_size), 0) as meta_size,
+            COALESCE(SUM(COALESCE(m.data_size, m.expected_data_size)), 0) as data_size
         FROM
             metadata m
         INNER JOIN

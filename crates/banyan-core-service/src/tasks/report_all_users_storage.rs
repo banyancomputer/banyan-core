@@ -19,8 +19,8 @@ pub enum StorageReporterTaskError {
     EndSlotParsingError(#[from] ComponentRange),
 }
 
-#[derive(Deserialize, Serialize)]
-pub struct ReportAllUserStorageTask;
+#[derive(Deserialize, Serialize, Default)]
+pub struct ReportAllUserStorageTask {}
 
 #[async_trait]
 impl TaskLike for ReportAllUserStorageTask {
@@ -92,5 +92,8 @@ impl TaskLike for ReportAllUserStorageTask {
         }
 
         Ok(())
+    }
+    fn next_time(&self) -> Option<OffsetDateTime> {
+        Some(OffsetDateTime::now_utc() + time::Duration::hours(1))
     }
 }
