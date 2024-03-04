@@ -3,7 +3,7 @@ use time::OffsetDateTime;
 
 use super::Subscription;
 use crate::database::models::{HotUsage, SnapshotState, SubscriptionStatus, TaxClass};
-use crate::database::DatabaseConnection;
+use crate::database::{Database, DatabaseConnection};
 use crate::utils::GIBIBYTE;
 
 #[derive(Debug, Serialize, sqlx::FromRow)]
@@ -33,9 +33,9 @@ impl User {
         sqlx::query_as!(
             User,
             r#"
-                SELECT id, email, verified_email, display_name, locale, region_preference, 
-                       profile_image, created_at, accepted_tos_at, earned_tokens, 
-                       account_tax_class as 'account_tax_class: TaxClass', 
+                SELECT id, email, verified_email, display_name, locale, region_preference,
+                       profile_image, created_at, accepted_tos_at, earned_tokens,
+                       account_tax_class as 'account_tax_class: TaxClass',
                        stripe_customer_id, stripe_subscription_id, subscription_id as 'subscription_id!',
                        subscription_status as 'subscription_status: SubscriptionStatus',
                        subscription_valid_until
@@ -92,7 +92,7 @@ impl User {
         sqlx::query_scalar!(
             r#"
                 SELECT IFNULL(SUM(s.tokens_used), 0)
-                FROM snapshots AS s 
+                FROM snapshots AS s
                 JOIN metadata AS m ON m.id = s.metadata_id
                 JOIN buckets AS b ON b.id = m.bucket_id
                 JOIN users AS u ON u.id = b.user_id
