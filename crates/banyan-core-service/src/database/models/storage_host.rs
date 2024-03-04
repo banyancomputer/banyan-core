@@ -1,3 +1,5 @@
+use time::OffsetDateTime;
+
 use crate::database::models::ExplicitBigInt;
 use crate::database::DatabaseConnection;
 
@@ -12,6 +14,8 @@ pub struct SelectedStorageHost {
     pub reserved_storage: i64,
     pub available_storage: i64,
     pub region: Option<String>,
+    pub last_seen_at: Option<OffsetDateTime>,
+    pub current_version: Option<String>,
     pub fingerprint: String,
     pub pem: String,
 }
