@@ -25,8 +25,6 @@ pub static LOGIN_PATH: &str = "/auth/login";
 
 pub const NEW_USER_COOKIE_NAME: &str = "_is_new_user";
 
-pub const STAGING_SERVICE_NAME: &str = "banyan-staging";
-
 pub static PROVIDER_CONFIGS: phf::Map<&'static str, ProviderConfig> = phf::phf_map! {
     "google" => ProviderConfig::new(
         "https://accounts.google.com/o/oauth2/v2/auth",

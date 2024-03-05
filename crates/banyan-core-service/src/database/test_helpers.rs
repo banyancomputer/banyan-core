@@ -6,7 +6,6 @@ use time::OffsetDateTime;
 use uuid::Uuid;
 
 use super::models::{BlockLocationState, NewStorageGrant, StorageHost};
-use crate::auth::STAGING_SERVICE_NAME;
 use crate::database::models::{BucketType, DealState, MetadataState, SnapshotState, StorageClass};
 use crate::database::{Database, DatabaseConnection};
 use crate::extractors::{SessionIdentity, SessionIdentityBuilder};
@@ -39,7 +38,7 @@ pub(crate) async fn associate_blocks(
         .await
         .expect("storage host");
     let mut state = BlockLocationState::Stable;
-    if storage_host.name == STAGING_SERVICE_NAME {
+    if storage_host.staging {
         state = BlockLocationState::SyncRequired;
     }
 
@@ -147,7 +146,7 @@ pub(crate) async fn create_deal(
     size: Option<i64>,
     accepted_by: Option<String>,
 ) -> Result<String, sqlx::Error> {
-    let user_email = format!("deal_user{}@test.tld", uuid::Uuid::new_v4());
+    let user_email = format!("deal_user{}@test.tld", Uuid::new_v4());
     let user_id = sample_user(database, &user_email).await;
     let bucket_id = create_hot_bucket(database, user_id.as_str(), "test_bucket").await;
     let metadata_id = create_metadata(

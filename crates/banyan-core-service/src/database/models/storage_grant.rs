@@ -64,6 +64,7 @@ impl ExistingStorageGrant {
         .await
         .map(|_| ())
     }
+
     pub async fn redeem_storage_grant(
         conn: &mut DatabaseConnection,
         provider_id: &str,
@@ -87,7 +88,6 @@ impl ExistingStorageGrant {
 
 #[cfg(test)]
 mod tests {
-    use crate::auth::STAGING_SERVICE_NAME;
     use crate::database::models::ExistingStorageGrant;
     use crate::database::test_helpers::{
         create_storage_grant, create_storage_hosts, sample_user, setup_database,
@@ -97,7 +97,7 @@ mod tests {
     async fn test_redeem_grant_works() {
         let db = setup_database().await;
         let mut conn = db.acquire().await.expect("connection");
-        let provider_id = create_storage_hosts(&mut conn, "url1", STAGING_SERVICE_NAME).await;
+        let provider_id = create_storage_hosts(&mut conn, "url1", "staging-service").await;
         let user_id = sample_user(&mut conn, "test@example.com").await;
         let authorization_id =
             create_storage_grant(&mut conn, provider_id.as_str(), &user_id, 100).await;

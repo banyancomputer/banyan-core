@@ -6,7 +6,6 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::app::AppState;
-use crate::auth::STAGING_SERVICE_NAME;
 use crate::database::models::{
     BlockLocationState, Blocks, ExistingStorageGrant, Metadata, MinimalBlockLocation, StorageHost,
     StorageHostsMetadatasStorageGrants,
@@ -48,7 +47,7 @@ pub async fn handler(
     let mut state = BlockLocationState::Stable;
     let staging_host =
         StorageHost::find_by_id_with_transaction(&mut db_conn, &storage_provider.id).await?;
-    if staging_host.name == STAGING_SERVICE_NAME {
+    if staging_host.staging {
         state = BlockLocationState::SyncRequired;
     }
 
@@ -163,7 +162,6 @@ mod tests {
     use uuid::Uuid;
 
     use crate::app::mock_app_state;
-    use crate::auth::STAGING_SERVICE_NAME;
     use crate::database::models::{BlockLocationState, MetadataState, MinimalBlockLocation};
     use crate::database::test_helpers::{
         create_blocks, create_storage_grant, create_storage_hosts, data_generator, generate_cids,
@@ -178,7 +176,7 @@ mod tests {
         let db = setup_database().await;
         let state = mock_app_state(db.clone());
         let mut conn = db.acquire().await.expect("connection");
-        let staging_host_id = create_storage_hosts(&mut conn, "url1", STAGING_SERVICE_NAME).await;
+        let staging_host_id = create_storage_hosts(&mut conn, "url1", "staging-service").await;
         let user_id = sample_user(&mut conn, "test@example.com").await;
         let bucket_id = sample_bucket(&mut conn, &user_id).await;
         let metadata_id = sample_metadata(&mut conn, &bucket_id, 1, MetadataState::Pending).await;
@@ -195,10 +193,9 @@ mod tests {
         };
 
         let result = handler(
-            StorageProviderIdentity {
-                id: staging_host_id.clone(),
-                name: String::from(STAGING_SERVICE_NAME),
-            },
+            StorageProviderIdentity::default()
+                .with_host_id(staging_host_id.as_str())
+                .staging(),
             state,
             Path(Uuid::parse_str(&metadata_id).expect("valid uuid")),
             Json(request),

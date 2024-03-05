@@ -55,6 +55,23 @@ mod tests {
     use crate::database::test_helpers;
     use crate::extractors::StorageProviderIdentity;
 
+    impl StorageProviderIdentity {
+        pub fn with_host_id(&self, host_id: &str) -> Self {
+            Self {
+                id: host_id.to_string(),
+                staging: self.staging,
+                name: self.name.to_string(),
+            }
+        }
+        pub fn staging(&self) -> Self {
+            Self {
+                id: self.id.to_string(),
+                staging: true,
+                name: self.name.to_string(),
+            }
+        }
+    }
+
     #[tokio::test]
     async fn test_accept_deal() {
         let db = test_helpers::setup_database().await;
@@ -70,10 +87,7 @@ mod tests {
             .unwrap();
 
         let res = handler(
-            StorageProviderIdentity {
-                id: host_id,
-                name: "mock_name".to_string(),
-            },
+            StorageProviderIdentity::default().with_host_id(&host_id),
             mock_app_state(db.clone()),
             Path(Uuid::parse_str(active_deal_id.as_str()).unwrap()),
         )
@@ -96,10 +110,7 @@ mod tests {
                 .unwrap();
 
         let res = handler(
-            StorageProviderIdentity {
-                id: host_id,
-                name: "mock_name".to_string(),
-            },
+            StorageProviderIdentity::default().with_host_id(&host_id),
             mock_app_state(db.clone()),
             Path(Uuid::parse_str(accepted_deal_id.as_str()).unwrap()),
         )

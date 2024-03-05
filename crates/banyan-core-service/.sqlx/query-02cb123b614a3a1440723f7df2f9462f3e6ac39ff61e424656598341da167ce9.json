@@ -57,6 +57,11 @@
         "name": "current_version",
         "ordinal": 10,
         "type_info": "Text"
+      },
+      {
+        "name": "staging",
+        "ordinal": 11,
+        "type_info": "Bool"
       }
     ],
     "parameters": {
@@ -73,7 +78,8 @@
       false,
       true,
       true,
-      true
+      true,
+      false
     ]
   },
   "hash": "02cb123b614a3a1440723f7df2f9462f3e6ac39ff61e424656598341da167ce9"

@@ -4,7 +4,6 @@ use serde::{Deserialize, Serialize};
 use url::Url;
 
 use crate::app::AppState;
-use crate::auth::STAGING_SERVICE_NAME;
 use crate::clients::{DeleteBlocksRequest, StagingServiceClient, StagingServiceError};
 use crate::database::models::StorageHost;
 
@@ -33,7 +32,7 @@ impl TaskLike for DeleteStagingDataTask {
 
     async fn run(&self, _task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
         let database = ctx.database();
-        let staging_host = StorageHost::select_by_name(&database, STAGING_SERVICE_NAME).await?;
+        let staging_host = StorageHost::select_staging(&database).await?;
 
         let staging_client = StagingServiceClient::new(
             ctx.secrets().service_key(),

@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT * FROM storage_hosts WHERE name = $1;",
+  "query": "SELECT * FROM storage_hosts WHERE staging IS TRUE;",
   "describe": {
     "columns": [
       {
@@ -57,10 +57,15 @@
         "name": "current_version",
         "ordinal": 10,
         "type_info": "Text"
+      },
+      {
+        "name": "staging",
+        "ordinal": 11,
+        "type_info": "Bool"
       }
     ],
     "parameters": {
-      "Right": 1
+      "Right": 0
     },
     "nullable": [
       false,
@@ -73,8 +78,9 @@
       false,
       true,
       true,
-      true
+      true,
+      false
     ]
   },
-  "hash": "8d01420595e27f32530852cd9629dfd43c55f4b4416cc69fbaa810ac3bc7c044"
+  "hash": "5fb4bb1d46f79bf2139e63c14c282eceed1fc796c88e87560f448d9935664807"
 }

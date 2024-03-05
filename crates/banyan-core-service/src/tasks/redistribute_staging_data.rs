@@ -7,7 +7,6 @@ use time::OffsetDateTime;
 use url::Url;
 
 use crate::app::AppState;
-use crate::auth::STAGING_SERVICE_NAME;
 use crate::clients::{DistributeDataRequest, StagingServiceClient, StagingServiceError};
 use crate::database::models::{
     BlockLocationState, Blocks, Metadata, MinimalBlockLocation, StorageHost,
@@ -26,7 +25,7 @@ impl TaskLike for RedistributeStagingDataTask {
 
     async fn run(&self, _task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
         let database = ctx.database();
-        let staging_host = StorageHost::select_by_name(&database, STAGING_SERVICE_NAME).await?;
+        let staging_host = StorageHost::select_staging(&database).await?;
         let blocks = Blocks::get_blocks_requiring_sync(&database, &staging_host.id).await?;
 
         let mut undistributed_blocks: HashSet<String> =
@@ -129,7 +128,6 @@ mod tests {
     use serde_json::json;
 
     use crate::app::mock_app_state;
-    use crate::auth::STAGING_SERVICE_NAME;
     use crate::database::models::{BlockLocationState, MetadataState, MinimalBlockLocation};
     use crate::database::test_helpers;
     use crate::tasks::redistribute_staging_data::RedistributeStagingDataTask;
@@ -140,7 +138,7 @@ mod tests {
         let mut conn = db.acquire().await.expect("connection");
         let staging_host_id = test_helpers::create_storage_host(
             &mut conn,
-            STAGING_SERVICE_NAME,
+            "staging-service",
             "http://127.0.0.1:8001/",
             1_000_000,
         )

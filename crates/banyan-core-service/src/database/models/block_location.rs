@@ -110,8 +110,13 @@ mod tests {
         let user_id = sample_user(&mut conn, "test@example.com").await;
         let bucket_id = sample_bucket(&mut conn, &user_id).await;
         let metadata_id = sample_metadata(&mut conn, &bucket_id, 1, MetadataState::Current).await;
-        let prim_storage_host_id =
-            create_storage_host(&mut conn, "Diskz", "https://127.0.0.1:8001/", 1_000_000).await;
+        let prim_storage_host_id = create_storage_host(
+            &mut conn,
+            "random-host",
+            "https://127.0.0.1:8001/",
+            1_000_000,
+        )
+        .await;
         let initial_cids: Vec<_> = normalize_cids(generate_cids(data_generator(0..3))).collect();
         let block_ids = create_blocks(&mut conn, initial_cids.iter().map(String::as_str)).await;
         associate_blocks(

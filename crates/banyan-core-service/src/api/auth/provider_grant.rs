@@ -6,7 +6,6 @@ use serde::Serialize;
 
 use crate::app::AppState;
 use crate::auth::storage_ticket::StorageTicketBuilder;
-use crate::auth::STAGING_SERVICE_NAME;
 use crate::database::models::StorageHost;
 use crate::extractors::StorageProviderIdentity;
 
@@ -18,14 +17,14 @@ pub async fn handler(
     let database = state.database();
     let service_key = state.secrets().service_key();
 
-    if storage_provider.name != STAGING_SERVICE_NAME {
+    if !storage_provider.staging {
         return Err(ProviderGrantError::Unauthorized);
     }
     let request_host = StorageHost::find_by_id(&database, storage_host_id.as_str())
         .await
         .map_err(ProviderGrantError::LookupFailed)?;
 
-    let mut ticket_builder = StorageTicketBuilder::new(STAGING_SERVICE_NAME.to_string());
+    let mut ticket_builder = StorageTicketBuilder::new(storage_provider.name);
     ticket_builder.add_audience(request_host.name);
     ticket_builder.add_authorization(request_host.id, request_host.url.clone(), 0);
     let claim = ticket_builder.build();

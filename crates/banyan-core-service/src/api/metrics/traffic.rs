@@ -99,10 +99,7 @@ mod tests {
         let user_id = "fake_user";
 
         let result = handler(
-            StorageProviderIdentity {
-                id: storage_host_id.to_string(),
-                name: "test_host".to_string(),
-            },
+            StorageProviderIdentity::default().with_host_id(&storage_host_id),
             state.clone(),
             Json(setup_mock_request(user_id).clone()),
         )
@@ -125,10 +122,7 @@ mod tests {
         let request = setup_mock_request(user_id.as_str()).clone();
 
         let result = handler(
-            StorageProviderIdentity {
-                id: storage_host_id.to_string(),
-                name: "test_host".to_string(),
-            },
+            StorageProviderIdentity::default().with_host_id(&storage_host_id),
             state.clone(),
             Json(request.clone()),
         )
@@ -141,10 +135,7 @@ mod tests {
         assert_eq!(rows.0, 1);
 
         let result = handler(
-            StorageProviderIdentity {
-                id: storage_host_id.to_string(),
-                name: "test_host".to_string(),
-            },
+            StorageProviderIdentity::default().with_host_id(&storage_host_id),
             state.clone(),
             Json(request.clone()),
         )
@@ -171,10 +162,7 @@ mod tests {
         let request = setup_mock_request(user_id.as_str()).clone();
 
         let result = handler(
-            StorageProviderIdentity {
-                id: storage_host_id_1.to_string(),
-                name: "test_host".to_string(),
-            },
+            StorageProviderIdentity::default().with_host_id(&storage_host_id_1),
             state.clone(),
             Json(request.clone()),
         )
@@ -187,10 +175,7 @@ mod tests {
         assert_eq!(rows.0, 1);
 
         let result = handler(
-            StorageProviderIdentity {
-                id: storage_host_id_2.to_string(),
-                name: "test_host".to_string(),
-            },
+            StorageProviderIdentity::default().with_host_id(&storage_host_id_2),
             state.clone(),
             Json(request.clone()),
         )

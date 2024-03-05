@@ -5,7 +5,6 @@ use banyan_task::TaskLikeExt;
 use serde::Deserialize;
 
 use crate::app::AppState;
-use crate::auth::STAGING_SERVICE_NAME;
 use crate::database::models::{
     BlockLocationState, Blocks, ExistingStorageGrant, Metadata, MinimalBlockLocation, StorageHost,
     StorageHostsMetadatasStorageGrants,
@@ -29,7 +28,7 @@ pub async fn handler(
     // validate the metadata exists
     Metadata::find_by_id(&database, &metadata_id.to_string()).await?;
     let new_storage_host_id = storage_provider.id.clone();
-    let staging_host = StorageHost::select_by_name(&database, STAGING_SERVICE_NAME).await?;
+    let staging_host = StorageHost::select_staging(&database).await?;
 
     let mut transaction = database.begin().await?;
     let storage_grants =
@@ -147,7 +146,6 @@ mod tests {
     use http::StatusCode;
 
     use crate::app::mock_app_state;
-    use crate::auth::STAGING_SERVICE_NAME;
     use crate::database::models::MetadataState;
     use crate::database::{test_helpers, Database, DatabaseConnection};
     use crate::extractors::StorageProviderIdentity;
@@ -210,7 +208,7 @@ mod tests {
 
         let staging_host_id = test_helpers::create_storage_host(
             &mut conn,
-            STAGING_SERVICE_NAME,
+            "staging-service",
             "https://127.0.0.1:8001/",
             1_000_000,
         )
@@ -255,12 +253,8 @@ mod tests {
     async fn handler_returns_success_for_the_happy_case() {
         let (db, new_storage_host_id, metadata_id, storage_grant_id, staging_host_id, block_cids) =
             setup_test_environment().await;
-
         let res = handler(
-            StorageProviderIdentity {
-                id: new_storage_host_id.clone(),
-                name: "Bax".to_string(),
-            },
+            StorageProviderIdentity::default().with_host_id(&new_storage_host_id),
             mock_app_state(db.clone()),
             Path(metadata_id.clone()),
             Json(CompleteRedistributionRequest {
@@ -296,10 +290,7 @@ mod tests {
 
         // Simulate a failure in update_blocks
         let res = handler(
-            StorageProviderIdentity {
-                id: new_storage_host_id.clone(),
-                name: "Bax".to_string(),
-            },
+            StorageProviderIdentity::default().with_host_id(&new_storage_host_id),
             mock_app_state(db.clone()),
             Path(metadata_id.clone()),
             Json(CompleteRedistributionRequest {

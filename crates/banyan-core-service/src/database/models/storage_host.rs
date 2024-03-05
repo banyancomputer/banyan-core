@@ -86,11 +86,10 @@ impl StorageHost {
         .await
     }
 
-    pub async fn select_by_name(conn: &Database, host_name: &str) -> Result<Self, sqlx::Error> {
+    pub async fn select_staging(conn: &Database) -> Result<Self, sqlx::Error> {
         sqlx::query_as!(
             Self,
-            r#"SELECT * FROM storage_hosts WHERE name = $1;"#,
-            host_name,
+            r#"SELECT * FROM storage_hosts WHERE staging IS TRUE;"#,
         )
         .fetch_one(conn)
         .await
