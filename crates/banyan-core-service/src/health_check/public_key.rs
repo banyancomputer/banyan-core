@@ -1,10 +1,11 @@
-use crate::app::AppState;
 use axum::extract::State;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use http::StatusCode;
 use jwt_simple::algorithms::ECDSAP384PublicKeyLike;
 use serde_json::json;
+
+use crate::app::AppState;
 
 pub async fn handler(State(state): State<AppState>) -> Response {
     // Grab the verifcation key from the state secrets
