@@ -13,6 +13,7 @@ pub struct SelectedStorageHost {
     pub used_storage: i64,
     pub reserved_storage: i64,
     pub available_storage: i64,
+    pub staging: bool,
     pub region: Option<String>,
     pub last_seen_at: Option<OffsetDateTime>,
     pub current_version: Option<String>,
