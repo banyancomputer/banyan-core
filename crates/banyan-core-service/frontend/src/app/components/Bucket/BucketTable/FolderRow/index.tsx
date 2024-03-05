@@ -101,7 +101,6 @@ export const FolderRow: React.FC<{
 
         (async () => {
             try {
-                ToastNotifications.uploadProgress();
                 await uploadFiles(bucket, [...path, folder.name]);
                 setAreFilesDropped(false);
             } catch (error: any) {

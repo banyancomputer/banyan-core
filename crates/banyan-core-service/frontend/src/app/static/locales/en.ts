@@ -411,7 +411,8 @@ export default {
             softStorageLimit: "You're approaching the limit of your storage plan, upgrade for more space",
             hardStorageLimit: "Your storage request exceeded storage capacity, please",
             seePricingPage: "See our pricing page",
-            contactSales: "Contact sales"
+            contactSales: "Contact sales",
+            fileSizeExceeded: "File size exceeded. Please retry with a file smaller than 100 MB, or use Banyan CLI."
         }
     }
 };
