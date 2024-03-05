@@ -11,7 +11,7 @@ export const SecondaryButton: React.FC<{ text: string; action?: () => void; disa
             <button
                 disabled={disabled}
                 onClick={action}
-                className={`btn-secondary flex-grow py-3 px-4 ${className}`}
+                className={`btn-secondary py-2 px-4 ${className}`}
             >
                 {text}
             </button>

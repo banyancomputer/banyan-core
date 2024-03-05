@@ -31,16 +31,14 @@ export const ApproveBucketAccessModal: React.FC<{ bucket: Bucket; bucketKey: Buc
                     {`${messages.subtitle}?`}
                 </p>
             </div>
-            <div className="mt-3 flex items-center gap-3 text-xs" >
+            <div className="mt-3 flex items-center justify-end gap-3 text-xs" >
                 <SecondaryButton
-                    className="w-1/2"
                     action={closeModal}
                     text={`${messages.cancel}`}
                 />
                 <PrimaryButton
                     text={`${messages.approveAccess}`}
                     action={approveAccess}
-                    className="w-1/2"
                 />
             </div>
         </div>

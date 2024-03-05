@@ -49,9 +49,6 @@ export const CreateSecretKeyModal = () => {
             className="w-modal flex flex-col gap-8"
             onSubmit={handleSubmit(confirm)}
         >
-            <span className="p-3 w-min rounded-full bg-gray-200">
-                <Bolt width="24px" height="24px" />
-            </span>
             <div>
                 <h4 className="text-m font-semibold">{`${messages.title}`}</h4>
                 <p className="mt-2 text-text-600">

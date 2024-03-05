@@ -29,25 +29,20 @@ export const TakeSnapshotModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
 
     return (
         <div className="w-takeSnapshotModal flex flex-col gap-5">
-            <span className="p-3 w-min rounded-full bg-button-disabled">
-                <Bolt width="24px" height="24px" />
-            </span>
             <div>
                 <h4 className="text-m font-semibold">{`${messages.title}`}</h4>
                 <p className="mt-2 text-text-600">
                     {`${messages.subtitle}`}?
                 </p>
             </div>
-            <div className="mt-3 flex items-center gap-3 text-xs" >
+            <div className="mt-3 flex items-center justify-end gap-3 text-xs" >
                 <SecondaryButton
-                    className="w-1/2"
                     action={closeModal}
                     text={`${messages.cancel}`}
                 />
                 <PrimaryButton
                     text={`${messages.takeArchivalSnapshot}`}
                     action={takeSnapshot}
-                    className="w-1/2"
                 />
             </div>
         </div>
