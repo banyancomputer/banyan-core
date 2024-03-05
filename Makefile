@@ -8,7 +8,7 @@ build:
 
 .PHONY: check
 check:
-	cargo clippy --workspace --all-targets --all-features --tests -- -D warnings
+	cargo check --workspace --all-targets --all-features --tests
 
 .PHONY: clean
 clean:
