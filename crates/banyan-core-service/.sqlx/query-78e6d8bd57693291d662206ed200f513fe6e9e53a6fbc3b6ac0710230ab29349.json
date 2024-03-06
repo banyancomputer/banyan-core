@@ -27,6 +27,11 @@
         "name": "created_at",
         "ordinal": 4,
         "type_info": "Datetime"
+      },
+      {
+        "name": "tokens_used",
+        "ordinal": 5,
+        "type_info": "Int64"
       }
     ],
     "parameters": {
@@ -37,6 +42,7 @@
       false,
       false,
       true,
+      false,
       false
     ]
   },

@@ -7,4 +7,5 @@ pub struct Snapshot {
     pub state: String,
     pub size: Option<i64>,
     pub created_at: OffsetDateTime,
+    pub tokens_used: i64,
 }

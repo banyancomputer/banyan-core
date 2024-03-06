@@ -76,6 +76,40 @@ impl User {
     }
 
     // pub async fn maximum_token_capacity()
+    pub async fn remaining_tokens(
+        conn: &mut DatabaseConnection,
+        id: &str,
+    ) -> Result<i64, sqlx::Error> {
+        sqlx::query_scalar!(
+            r#"
+               SELECT (earned_tokens - consumed_tokens)
+               FROM users
+               WHERE id = $1
+            "#,
+            id
+        )
+        .fetch_one(&mut *conn)
+        .await
+    }
+
+    pub async fn consume_tokens(
+        conn: &mut DatabaseConnection,
+        id: &str,
+        tokens_used: i64,
+    ) -> Result<(), sqlx::Error> {
+        sqlx::query!(
+            r#"
+                UPDATE users
+                SET consumed_tokens = consumed_tokens + $1
+                WHERE id = $2
+            "#,
+            tokens_used,
+            id
+        )
+        .execute(&mut *conn)
+        .await
+        .map(|_| ())
+    }
 
     pub async fn find_by_id(
         conn: &mut DatabaseConnection,

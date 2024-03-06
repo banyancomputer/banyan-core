@@ -6,10 +6,11 @@ use axum::response::{IntoResponse, Response};
 use banyan_task::TaskLikeExt;
 use cid::multibase::Base;
 use cid::Cid;
+use time::OffsetDateTime;
 use uuid::Uuid;
 
 use crate::app::AppState;
-use crate::database::models::SnapshotState;
+use crate::database::models::{SnapshotState, User};
 use crate::extractors::UserIdentity;
 use crate::tasks::{CreateDealsTask, BLOCK_SIZE};
 
@@ -63,17 +64,9 @@ pub async fn handler(
 
     let size_estimate = normalized_cids.len() as i64 * BLOCK_SIZE;
 
-    let remaining_tokens = sqlx::query_scalar!(
-        r#"
-           SELECT (earned_tokens - consumed_tokens)
-           FROM users
-           WHERE id = $1
-        "#,
-        user_id
-    )
-    .fetch_one(&database)
-    .await
-    .map_err(CreateSnapshotError::ArchivalTokenRetrieval)?;
+    let remaining_tokens = User::remaining_tokens(&mut *transaction, &user_id)
+        .await
+        .map_err(CreateSnapshotError::ArchivalTokenRetrieval)?;
 
     tracing::info!(
         "snapshot size_estimate: {}, remaining_tokens: {}",
@@ -87,17 +80,24 @@ pub async fn handler(
     }
 
     let pending_state = SnapshotState::Pending.to_string();
+    let now = OffsetDateTime::now_utc();
     let snapshot_id = sqlx::query_scalar!(
-        r#"INSERT INTO snapshots (metadata_id, state, size)
-               VALUES ($1, $2, $3)
+        r#"INSERT INTO snapshots (metadata_id, state, size, tokens_used, created_at)
+               VALUES ($1, $2, $3, $3, $4)
                RETURNING id;"#,
         metadata_id,
         pending_state,
         size_estimate,
+        now,
     )
     .fetch_one(&mut *transaction)
     .await
     .map_err(CreateSnapshotError::SaveFailed)?;
+
+    // Mark these tokens as consumed by the user
+    User::consume_tokens(&mut *transaction, &user_id, size_estimate)
+        .await
+        .map_err(CreateSnapshotError::TokenConsumption)?;
 
     // Create query builder that can serve as the basis for every chunk
     let mut builder = sqlx::QueryBuilder::new(format!(
@@ -170,6 +170,9 @@ pub enum CreateSnapshotError {
 
     #[error("unable to determine remaining archival tokens: {0}")]
     ArchivalTokenRetrieval(sqlx::Error),
+
+    #[error("unable to consume user's archival tokens: {0}")]
+    TokenConsumption(sqlx::Error),
 
     #[error("insufficient storage!")]
     InsufficientStorage,
