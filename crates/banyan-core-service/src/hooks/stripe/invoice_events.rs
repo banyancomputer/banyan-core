@@ -110,8 +110,13 @@ pub async fn update_handler(
 
     // Grab the user associated with the invoice
     let mut user = User::by_id(&mut *conn, &invoice.user_id).await?;
+    // Grab the total included archival tokens
+    let included = Subscription::find_by_id(&mut *conn, &user.subscription_id)
+        .await?
+        .unwrap()
+        .included_archival;
     // Determine the number of tokens to award the user
-    let tokens_earned = 0;
+    let tokens_earned = std::cmp::max(included - user.earned_tokens, included / 6);
     // Award them tokens
     user.award_tokens(conn, tokens_earned).await?;
 
