@@ -5,13 +5,12 @@ import { ProfileControls } from './ProfileControls';
 import { HelpControls } from './HelpControls';
 import { SubscriptionPlanModal } from '../Modal/SubscriptionPlanModal';
 
-import { useSession } from '@app/contexts/session';
 import { popupClickHandler } from '@/app/utils';
 import { useKeystore } from '@/app/contexts/keystore';
 import { HttpClient } from '@/api/http/client';
 import { useAppDispatch, useAppSelector } from '@/app/store';
 import { unwrapResult } from '@reduxjs/toolkit';
-import { getUserInfo } from '@/app/store/user/actions';
+import { getUser } from '@/app/store/session/actions';
 import { RoutesConfig } from '@/app/routes';
 import { useModal } from '@/app/contexts/modals';
 import { getSubscriptionById } from '@/app/store/billing/actions';
@@ -22,13 +21,13 @@ export const Header: React.FC<{ className?: string }> = ({ className = '' }) => 
     const dispatch = useAppDispatch();
     const messages = useAppSelector(state => state.locales.messages.coponents.common.header);
     const { selectedSubscription } = useAppSelector(state => state.billing);
+    const { user } = useAppSelector(state => state.session);
     const profileOptionsRef = useRef<HTMLDivElement | null>(null);
     const helpOptionsRef = useRef<HTMLDivElement | null>(null);
     const { purgeKeystore } = useKeystore();
     const location = useLocation();
     const { openModal } = useModal();
 
-    const { userData } = useSession();
     const [areProfileOptionsVisible, setAreProfileOptionsVisible] = useState(false);
     const [areHelpOptionsVisible, setAreHelpOptionsVisible] = useState(false);
 
@@ -59,8 +58,8 @@ export const Header: React.FC<{ className?: string }> = ({ className = '' }) => 
     useEffect(() => {
         (async () => {
             try {
-                const userInfo = unwrapResult(await dispatch(getUserInfo()));
-                dispatch(getSubscriptionById(userInfo.subscriptionId));
+                const userData = unwrapResult(await dispatch(getUser()));
+                dispatch(getSubscriptionById(userData.subscriptionId));
             } catch (error: any) {
                 if (error.message === 'Unauthorized') {
                     const api = new HttpClient;
@@ -100,10 +99,10 @@ export const Header: React.FC<{ className?: string }> = ({ className = '' }) => 
                     onClick={toggleProfileOptionsVisibility}
                     ref={profileOptionsRef}
                 >
-                    {userData?.user?.profileImage ?
+                    {user?.profileImage ?
                         <img
                             className="rounded-full"
-                            src={userData?.user.profileImage}
+                            src={user.profileImage}
                             width={40}
                             height={40}
                             alt="User Avatar"

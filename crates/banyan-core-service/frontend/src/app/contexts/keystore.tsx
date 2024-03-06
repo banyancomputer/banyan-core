@@ -2,9 +2,13 @@ import { createContext, useContext, useEffect, useState } from 'react';
 
 import ECCKeystore from '@utils/crypto/ecc/keystore';
 import { EscrowedKeyMaterial, PrivateKeyMaterial } from '@utils/crypto/types';
-import { setUserDataEscrowedKeyMaterial } from '@utils/cookies';
-import { useSession } from '@/app/contexts/session';
 import { AuthClient } from '@/api/auth';
+import { useAppDispatch, useAppSelector } from '../store';
+import { destroyLocalKey, getLocalKey } from '../utils';
+import { unwrapResult } from '@reduxjs/toolkit';
+import { getEscrowedKeyMaterial, getUser } from '../store/session/actions';
+import { useModal } from './modals';
+import { setEscrowedKeyMaterial } from '../store/session/slice';
 
 // The name of the keystore
 const KEY_STORE_NAME_PREFIX = 'banyan-key-cache';
@@ -21,7 +25,6 @@ export const KeystoreContext = createContext<{
 	// Purge the keystore from storage
 	purgeKeystore: () => Promise<void>;
 	isLoading: boolean,
-	escrowedKeyMaterial: EscrowedKeyMaterial | null;
 	isLoggingOut: boolean;
 }>({
 	keystoreInitialized: false,
@@ -34,12 +37,13 @@ export const KeystoreContext = createContext<{
 	initializeKeystore: async (_passkey: string) => { },
 	purgeKeystore: async () => { },
 	isLoading: false,
-	escrowedKeyMaterial: null,
 	isLoggingOut: false
 });
 
 export const KeystoreProvider = ({ children }: any) => {
-	const { getLocalKey, getUserData, destroyLocalKey } = useSession();
+	const dispatch = useAppDispatch();
+	const { escrowedKeyMaterial } = useAppSelector(state => state.session);
+	const { openEscrowModal } = useModal();
 
 	// External State
 	const [keystoreInitialized, setKeystoreInitialized] = useState<boolean>(false);
@@ -49,7 +53,6 @@ export const KeystoreProvider = ({ children }: any) => {
 	// Internal State
 	const api = new AuthClient();
 	const [keystore, setKeystore] = useState<ECCKeystore | null>(null);
-	const [escrowedKeyMaterial, setEscrowedKeyMaterial] = useState<EscrowedKeyMaterial | null>(() => getUserData()?.escrowedKeyMaterial || null);
 	const [error, setError] = useState<string | null>(null);
 
 	/* Effects */
@@ -64,36 +67,29 @@ export const KeystoreProvider = ({ children }: any) => {
 	// Handle creating the keystore if it doesn't exist
 	// Occurs on context initialization
 	useEffect(() => {
-		const createKeystore = async () => {
+		(async () => {
 			try {
 				const ks = await ECCKeystore.init({
 					storeName: KEY_STORE_NAME_PREFIX,
 				});
 				ks.clear();
 				setKeystore(ks);
-				// Try and initialize the keystore with cached key material
-				let initialized = false;
 				let localKey = getLocalKey();
 				try {
 					await ks.retrieveCachedPrivateKeyMaterial(
 						localKey.key, localKey.id
 					);
-					initialized = true;
+					setKeystoreInitialized(true);
 					console.log("createKeystore: using cached key");
 				} catch (err) {
 					console.log("No valid cached key material found for this session");
-				} finally {
-					setKeystoreInitialized(initialized);
-					setIsLoading(false);
 				}
+				setIsLoading(false);
 			} catch (error: any) {
 				setError("Error creating keystore: " + error.message);
 				throw new Error(error.message);
 			}
-		};
-		if (!keystore) {
-			createKeystore()
-		}
+		})();
 	}, []);
 
 	// Initialize a keystore based on the user's passphrase
@@ -144,12 +140,9 @@ export const KeystoreProvider = ({ children }: any) => {
 		const keyMaterial = await keystore.retrieveCachedPrivateKeyMaterial(
 			localKey.key, localKey.id
 		);
-		// Get pems to return
-		let publicPem = escrowedKeyMaterial.encryptionPublicKeyPem;
-		let privatePem = keyMaterial.encryptionPrivateKeyPem;
 		return {
-			privatePem,
-			publicPem
+			privatePem: keyMaterial.encryptionPrivateKeyPem,
+			publicPem: escrowedKeyMaterial.encryptionPublicKeyPem
 		};
 	};
 
@@ -167,12 +160,10 @@ export const KeystoreProvider = ({ children }: any) => {
 		const privateKeyMaterial = await keystore.retrieveCachedPrivateKeyMaterial(
 			localKey.key, localKey.id
 		);
-		// Get pems to return
-		let publicPem = escrowedKeyMaterial.apiPublicKeyPem;
-		let privatePem = privateKeyMaterial.apiPrivateKeyPem;
+
 		return {
-			privatePem,
-			publicPem
+			privatePem: privateKeyMaterial.apiPrivateKeyPem,
+			publicPem: escrowedKeyMaterial.apiPublicKeyPem
 		};
 	};
 
@@ -210,8 +201,7 @@ export const KeystoreProvider = ({ children }: any) => {
 			.escrowDevice(escrowedKeyMaterial)
 			.then(() => {
 				// Set the escrowed key material in the context state and cookies
-				setEscrowedKeyMaterial(escrowedKeyMaterial)
-				setUserDataEscrowedKeyMaterial(escrowedKeyMaterial);
+				dispatch(setEscrowedKeyMaterial(escrowedKeyMaterial))
 			})
 			.catch((err) => {
 				throw new Error("Error escrowing device: " + err.message);
@@ -235,6 +225,26 @@ export const KeystoreProvider = ({ children }: any) => {
 		);
 	};
 
+	useEffect(() => {
+		(async () => {
+			setIsLoading(true);
+			try {
+				unwrapResult(await dispatch(getUser()));
+			} catch (error: any) {
+				await purgeKeystore();
+				window.location.href = '/login';
+				return;
+			};
+
+			try {
+				unwrapResult(await dispatch(getEscrowedKeyMaterial()));
+			} catch (error: any) {
+				openEscrowModal(false);
+			};
+			setIsLoading(false);
+		})()
+	}, []);
+
 	return (
 		<KeystoreContext.Provider
 			value={{
@@ -245,7 +255,6 @@ export const KeystoreProvider = ({ children }: any) => {
 				initializeKeystore,
 				purgeKeystore,
 				isLoading,
-				escrowedKeyMaterial
 			}}
 		>
 			{children}

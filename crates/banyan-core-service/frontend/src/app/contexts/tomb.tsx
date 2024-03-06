@@ -13,13 +13,12 @@ import {
 	BucketSnapshot,
 } from '@/app/types/bucket';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
-import { useSession } from './session';
-import { destroyIsUserNew, prettyFingerprintApiKeyPem, sortByType } from '@app/utils';
+import { destroyIsUserNew, getIsUserNew, prettyFingerprintApiKeyPem, sortByType } from '@app/utils';
 import { TermsAndColditionsClient } from '@/api/termsAndConditions';
 import { UserClient } from '@/api/user';
 import { handleNameDuplication } from '@utils/names';
 import { StorageUsageClient } from '@/api/storageUsage';
-import { useAppDispatch } from '../store';
+import { useAppDispatch, useAppSelector } from '../store';
 import { BannerError, setError } from '../store/errors/slice';
 
 interface TombInterface {
@@ -63,10 +62,10 @@ const TombContext = createContext<TombInterface>({} as TombInterface);
 
 export const TombProvider = ({ children }: { children: ReactNode }) => {
 	const dispatch = useAppDispatch();
-	const { userData, isUserNew } = useSession();
+	const { user, escrowedKeyMaterial } = useAppSelector(state => state.session);
 	const navigate = useNavigate();
 	const { openEscrowModal, openModal } = useModal();
-	const { isLoading, keystoreInitialized, getEncryptionKey, getApiKey, escrowedKeyMaterial, isLoggingOut } = useKeystore();
+	const { isLoading, keystoreInitialized, getEncryptionKey, getApiKey, isLoggingOut } = useKeystore();
 	const [tomb, setTomb] = useState<TombWasm | null>(null);
 	const [buckets, setBuckets] = useState<Bucket[]>([]);
 	const [trash, setTrash] = useState<Bucket | null>(null);
@@ -93,7 +92,9 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 		return await tombMutex(tomb, async tomb => {
 			const key = await getEncryptionKey();
 			const wasm_buckets: WasmBucket[] = await tomb!.listBuckets();
-			if (isUserNew) {
+			console.log(getIsUserNew());
+
+			if (getIsUserNew()) {
 				createBucketAndMount("My Drive", 'hot', 'interactive');
 				destroyIsUserNew();
 				return;
@@ -389,7 +390,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
 	// Initialize the tomb client
 	useEffect(() => {
-		if (!userData || !keystoreInitialized) { return; }
+		if (!user || !escrowedKeyMaterial || !keystoreInitialized) { return; }
 
 		(async () => {
 			try {
@@ -397,7 +398,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 				const TombWasm = (await import('tomb-wasm-experimental')).TombWasm;
 				const tomb = new TombWasm(
 					apiKey.privatePem,
-					userData.user.id,
+					user.id,
 					window.location.protocol + '//' + window.location.host,
 				);
 				setTomb(await tomb);
@@ -405,7 +406,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 				dispatch(setError(new BannerError(error.message)));
 			}
 		})();
-	}, [userData, keystoreInitialized, isLoading, escrowedKeyMaterial]);
+	}, [user, keystoreInitialized, isLoading, escrowedKeyMaterial]);
 
 	useEffect(() => {
 		if (!areTermsAccepted) return;
@@ -413,7 +414,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 		if (!keystoreInitialized && !isLoading && !isLoggingOut) {
 			openEscrowModal(!!escrowedKeyMaterial);
 		};
-	}, [isLoading, keystoreInitialized, areTermsAccepted, isLoggingOut]);
+	}, [isLoading, keystoreInitialized, areTermsAccepted, escrowedKeyMaterial, isLoggingOut]);
 
 	useEffect(() => {
 		const userClient = new UserClient();
@@ -421,26 +422,26 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 		(async () => {
 			try {
 				const termsAndConditions = await termsClient.getTermsAndCondition();
-				const userData = await userClient.getCurrentUser();
+				const user = await userClient.getCurrentUser();
 
-				if (!userData) return;
+				if (!user) return;
 
-				if (!userData.acceptedTosAt) {
+				if (!user.acceptedTosAt) {
 					openModal(
 						<TermaAndConditions
 							acceptTerms={setAreTermsAccepted}
-							userData={userData}
+							userData={user}
 						/>, null, true, '', false);
 
 					return;
 				};
 
-				if (userData.acceptedTosAt <= +termsAndConditions.tos_date) {
+				if (user.acceptedTosAt <= +termsAndConditions.tos_date) {
 					openModal(
 						<TermsAndConditionsModal
 							setAreTermsAccepted={setAreTermsAccepted}
 							terms={termsAndConditions.tos_content}
-							userData={userData} />
+							userData={user} />
 						, null, true, '', false);
 
 					return;
@@ -452,7 +453,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 			}
 
 		})()
-	}, [userData])
+	}, [user])
 
 	useEffect(() => {
 		if (tomb) {
