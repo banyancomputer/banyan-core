@@ -35,7 +35,7 @@ pub async fn handler(
         ));
     }
 
-    let mut user = User::by_id(&mut *conn, &user_identity.id().to_string()).await?;
+    let mut user = User::by_id(&mut conn, &user_identity.id().to_string()).await?;
 
     let metadata_id = sqlx::query_scalar!(
         r#"SELECT m.id FROM metadata AS m
@@ -65,7 +65,7 @@ pub async fn handler(
         .collect::<Result<Vec<_>, _>>()?;
 
     let size_estimate = normalized_cids.len() as i64 * BLOCK_SIZE;
-    let remaining_tokens = user.remaining_tokens(&mut *conn).await?;
+    let remaining_tokens = user.remaining_tokens(&mut conn).await?;
     let tokens_used = size_estimate / GIBIBYTE;
 
     tracing::info!(
@@ -96,7 +96,7 @@ pub async fn handler(
     .map_err(CreateSnapshotError::SaveFailed)?;
 
     // Mark these tokens as consumed by the user
-    user.consume_tokens(&mut *conn, size_estimate / GIBIBYTE)
+    user.consume_tokens(&mut conn, size_estimate / GIBIBYTE)
         .await?;
 
     // Create query builder that can serve as the basis for every chunk

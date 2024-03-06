@@ -114,7 +114,7 @@ impl User {
         .await
         .map(|_| {
             self.consumed_tokens += tokens_used;
-            ()
+            
         })
     }
 
@@ -136,7 +136,7 @@ impl User {
         .await
         .map(|_| {
             self.earned_tokens += tokens_earned;
-            ()
+            
         })
     }
 

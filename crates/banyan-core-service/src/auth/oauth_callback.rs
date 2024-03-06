@@ -194,7 +194,7 @@ pub async fn handler(
 
     let user_data = UserData {
         user: user
-            .as_api_user(&mut *conn)
+            .as_api_user(&mut conn)
             .await
             .map_err(AuthenticationError::UserDataLookupFailed)?,
         escrowed_key_material: escrowed_device.map(|ed| ed.into()),
