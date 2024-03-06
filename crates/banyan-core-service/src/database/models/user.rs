@@ -81,8 +81,8 @@ impl User {
 
     // pub async fn maximum_token_capacity()
     pub async fn remaining_tokens(
+        &self,
         conn: &mut DatabaseConnection,
-        id: &str,
     ) -> Result<i64, sqlx::Error> {
         sqlx::query_scalar!(
             r#"
@@ -90,15 +90,15 @@ impl User {
                FROM users
                WHERE id = $1
             "#,
-            id
+            self.id
         )
         .fetch_one(&mut *conn)
         .await
     }
 
     pub async fn consume_tokens(
+        &mut self,
         conn: &mut DatabaseConnection,
-        id: &str,
         tokens_used: i64,
     ) -> Result<(), sqlx::Error> {
         sqlx::query!(
@@ -108,11 +108,22 @@ impl User {
                 WHERE id = $2
             "#,
             tokens_used,
-            id
+            self.id
         )
         .execute(&mut *conn)
         .await
-        .map(|_| ())
+        .map(|_| {
+            self.consumed_tokens += tokens_used;
+            ()
+        })
+    }
+
+    pub async fn award_tokens(
+        &mut self,
+        conn: &mut DatabaseConnection,
+        tokens_earned: i64,
+    ) -> Result<(), sqlx::Error> {
+        Ok(())
     }
 
     pub async fn find_by_id(
@@ -256,10 +267,7 @@ impl User {
         Ok(())
     }
 
-    pub async fn maximum_tokens(
-        conn: &mut DatabaseConnection,
-        id: &str,
-    ) -> Result<i64, sqlx::Error> {
+    pub async fn maximum_tokens(&self, conn: &mut DatabaseConnection) -> Result<i64, sqlx::Error> {
         sqlx::query_scalar!(
             r#"
                SELECT included_archival
@@ -267,7 +275,7 @@ impl User {
                JOIN users as u ON s.id = u.subscription_id
                WHERE u.id = $1
             "#,
-            id
+            self.id
         )
         .fetch_one(&mut *conn)
         .await
@@ -284,8 +292,8 @@ impl User {
             subscription_id: self.subscription_id.clone(),
             account_tax_class: self.account_tax_class.to_string(),
             subscription_valid_until: self.subscription_valid_until,
-            available_tokens: Self::remaining_tokens(conn, &self.id).await.unwrap(),
-            maximum_tokens: Self::maximum_tokens(conn, &self.id).await.unwrap(),
+            available_tokens: self.remaining_tokens(conn).await.unwrap(),
+            maximum_tokens: self.maximum_tokens(conn).await.unwrap(),
         })
     }
 }

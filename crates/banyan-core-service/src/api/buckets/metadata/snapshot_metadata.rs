@@ -21,7 +21,7 @@ pub async fn handler(
     Json(request): Json<BTreeSet<Cid>>,
 ) -> Result<Response, CreateSnapshotError> {
     let mut database = state.database();
-    let mut transaction = database
+    let mut conn = database
         .begin()
         .await
         .map_err(CreateSnapshotError::SaveFailed)?;
@@ -34,7 +34,8 @@ pub async fn handler(
         ));
     }
 
-    let user_id = user_identity.id().to_string();
+    let user = User::by_id(&mut *conn, &user_identity.id().to_string()).await?;
+
     let metadata_id = sqlx::query_scalar!(
         r#"SELECT m.id FROM metadata AS m
                JOIN buckets AS b ON m.bucket_id = b.id
@@ -44,11 +45,11 @@ pub async fn handler(
                    AND m.id = $3
                    AND m.state != 'deleted'
                    AND s.id IS NULL;"#,
-        user_id,
+        user.id,
         bucket_id,
         metadata_id,
     )
-    .fetch_optional(&mut *transaction)
+    .fetch_optional(&mut *conn)
     .await
     .map_err(CreateSnapshotError::MetadataUnavailable)?
     .ok_or(CreateSnapshotError::NotFound)?;
@@ -64,9 +65,7 @@ pub async fn handler(
 
     let size_estimate = normalized_cids.len() as i64 * BLOCK_SIZE;
 
-    let remaining_tokens = User::remaining_tokens(&mut *transaction, &user_id)
-        .await
-        .map_err(CreateSnapshotError::ArchivalTokenRetrieval)?;
+    let remaining_tokens = user.remaining_tokens(&mut *conn).await?;
 
     tracing::info!(
         "snapshot size_estimate: {}, remaining_tokens: {}",
@@ -90,14 +89,12 @@ pub async fn handler(
         size_estimate,
         now,
     )
-    .fetch_one(&mut *transaction)
+    .fetch_one(&mut *conn)
     .await
     .map_err(CreateSnapshotError::SaveFailed)?;
 
     // Mark these tokens as consumed by the user
-    User::consume_tokens(&mut *transaction, &user_id, size_estimate)
-        .await
-        .map_err(CreateSnapshotError::TokenConsumption)?;
+    user.consume_tokens(&mut *conn, size_estimate).await?;
 
     // Create query builder that can serve as the basis for every chunk
     let mut builder = sqlx::QueryBuilder::new(format!(
@@ -124,7 +121,7 @@ pub async fn handler(
 
         let res = builder
             .build()
-            .execute(&mut *transaction)
+            .execute(&mut *conn)
             .await
             .map_err(CreateSnapshotError::BlockAssociationFailed)?;
 
@@ -137,8 +134,7 @@ pub async fn handler(
         }
     }
 
-    transaction
-        .commit()
+    conn.commit()
         .await
         .map_err(CreateSnapshotError::TransactionFailure)?;
 
@@ -168,12 +164,6 @@ pub enum CreateSnapshotError {
     #[error("associating the snapshot with the block cid failed: {0}")]
     BlockAssociationFailed(sqlx::Error),
 
-    #[error("unable to determine remaining archival tokens: {0}")]
-    ArchivalTokenRetrieval(sqlx::Error),
-
-    #[error("unable to consume user's archival tokens: {0}")]
-    TokenConsumption(sqlx::Error),
-
     #[error("insufficient storage!")]
     InsufficientStorage,
 
@@ -188,6 +178,9 @@ pub enum CreateSnapshotError {
 
     #[error("could not enqueue task: {0}")]
     UnableToEnqueueTask(banyan_task::TaskStoreError),
+
+    #[error("Database error: {0}")]
+    Database(#[from] sqlx::Error),
 }
 
 impl IntoResponse for CreateSnapshotError {
