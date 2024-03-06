@@ -242,7 +242,7 @@ pub(crate) async fn create_snapshot(
 ) -> String {
     let snapshot_state = snapshot_state.to_string();
     let size = size.unwrap_or(BLOCK_SIZE);
-    let tokens = size / GIBIBYTE;
+    let tokens = (size as f64 / GIBIBYTE as f64).ceil() as i64;
     sqlx::query_scalar!(
         r#"INSERT INTO snapshots (metadata_id, state, size, tokens_used)
            VALUES ($1, $2, $3, $4)

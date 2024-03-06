@@ -66,7 +66,7 @@ pub async fn handler(
 
     let size_estimate = normalized_cids.len() as i64 * BLOCK_SIZE;
     let remaining_tokens = user.remaining_tokens(&mut conn).await?;
-    let tokens_used = size_estimate / GIBIBYTE;
+    let tokens_used = (size_estimate as f64 / GIBIBYTE as f64).ceil() as i64;
 
     tracing::info!(
         "snapshot size_estimate: {}, remaining_tokens: {}",
@@ -96,8 +96,7 @@ pub async fn handler(
     .map_err(CreateSnapshotError::SaveFailed)?;
 
     // Mark these tokens as consumed by the user
-    user.consume_tokens(&mut conn, size_estimate / GIBIBYTE)
-        .await?;
+    user.consume_tokens(&mut conn, tokens_used).await?;
 
     // Create query builder that can serve as the basis for every chunk
     let mut builder = sqlx::QueryBuilder::new(format!(
