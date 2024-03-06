@@ -10,6 +10,7 @@ use crate::database::models::{BucketType, DealState, MetadataState, SnapshotStat
 use crate::database::{Database, DatabaseConnection};
 use crate::extractors::{SessionIdentity, SessionIdentityBuilder};
 use crate::tasks::BLOCK_SIZE;
+use crate::GIBIBYTE;
 
 pub(crate) async fn associate_blocks(
     conn: &mut DatabaseConnection,
@@ -241,13 +242,15 @@ pub(crate) async fn create_snapshot(
 ) -> String {
     let snapshot_state = snapshot_state.to_string();
     let size = size.unwrap_or(BLOCK_SIZE);
+    let tokens = size / GIBIBYTE;
     sqlx::query_scalar!(
         r#"INSERT INTO snapshots (metadata_id, state, size, tokens_used)
-           VALUES ($1, $2, $3, $3)
+           VALUES ($1, $2, $3, $4)
            RETURNING id;"#,
         metadata_id,
         snapshot_state,
         size,
+        tokens,
     )
     .fetch_one(database)
     .await

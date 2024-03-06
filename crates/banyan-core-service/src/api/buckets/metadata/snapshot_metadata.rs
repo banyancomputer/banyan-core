@@ -96,7 +96,8 @@ pub async fn handler(
     .map_err(CreateSnapshotError::SaveFailed)?;
 
     // Mark these tokens as consumed by the user
-    user.consume_tokens(&mut *conn, size_estimate).await?;
+    user.consume_tokens(&mut *conn, size_estimate / GIBIBYTE)
+        .await?;
 
     // Create query builder that can serve as the basis for every chunk
     let mut builder = sqlx::QueryBuilder::new(format!(
