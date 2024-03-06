@@ -9,7 +9,7 @@ export const PrimaryButton: React.FC<{ text: string; action?: () => void; disabl
         type = 'submit',
     }) => {
         useEffect(() => {
-            const listener = async(event: KeyboardEvent) => {
+            const listener = async (event: KeyboardEvent) => {
                 if (event.key !== 'Enter' || disabled) { return; }
                 action();
             };
@@ -26,7 +26,7 @@ export const PrimaryButton: React.FC<{ text: string; action?: () => void; disabl
                 type={type}
                 disabled={disabled}
                 onClick={action}
-                className={`btn-primary flex-grow py-3 px-4 ${className}`}
+                className={`btn-primary py-2 px-4 ${className}`}
             >
                 {text}
             </button>
