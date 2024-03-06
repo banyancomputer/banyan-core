@@ -18,4 +18,4 @@ ALTER TABLE users ADD COLUMN consumed_tokens INTEGER NOT NULL DEFAULT 0;
 -- Track the number of tokens associated with each snapshot, so that they can 
 -- be restored to the user if the snapshot is not accepted for storage persistence.
 -- Worth storing separately from snapshot size so metrics can be tracked separately.
-ALTER TABLE snapshots ADD COLUMN tokens_used INTEGER NOT NULL;
+ALTER TABLE snapshots ADD COLUMN tokens_used INTEGER NOT NULL DEFAULT 0;

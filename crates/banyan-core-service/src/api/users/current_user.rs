@@ -2,7 +2,6 @@ use axum::extract::{Json, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
-use crate::api::models::ApiUser;
 use crate::app::AppState;
 use crate::database::models::User;
 use crate::extractors::UserIdentity;

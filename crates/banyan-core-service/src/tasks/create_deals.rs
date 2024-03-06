@@ -221,6 +221,7 @@ impl CreateDealsTask {
         Ok(())
     }
 
+    #[allow(dead_code)]
     async fn return_tokens(
         transaction: &mut Transaction<'_, Sqlite>,
         snapshot_ids: &Vec<String>,
