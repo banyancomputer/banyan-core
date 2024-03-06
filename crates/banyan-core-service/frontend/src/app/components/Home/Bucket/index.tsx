@@ -69,7 +69,6 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
 
         (async () => {
             try {
-                ToastNotifications.uploadProgress();
                 await uploadFiles(bucket, []);
                 setAreFilesDropped(false);
             } catch (error: any) {

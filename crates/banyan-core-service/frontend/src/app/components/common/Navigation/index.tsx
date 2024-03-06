@@ -45,7 +45,6 @@ export const Navigation = () => {
 
 		(async () => {
 			try {
-				ToastNotifications.uploadProgress();
 				await uploadFiles(droppedBucket, []);
 				setDroppedBucket(null);
 			} catch (error: any) {

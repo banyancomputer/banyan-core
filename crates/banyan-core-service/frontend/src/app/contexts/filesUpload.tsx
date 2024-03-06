@@ -1,4 +1,4 @@
-import React, { FC, ReactNode, createContext, useContext, useState } from 'react';
+import React, { FC, ReactNode, createContext, useContext, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { useTomb } from './tomb';
@@ -9,6 +9,7 @@ import { HardStorageLimit } from '../components/common/Modal/HardStorageLimit';
 import { BannerError, setError } from '../store/errors/slice';
 import { useAppDispatch, useAppSelector } from '../store';
 import { SubscriptionPlanModal } from '../components/common/Modal/SubscriptionPlanModal';
+import { FILE_SIZE_LIMIT } from '../utils/storage';
 
 export interface UploadingFile { file: File; status: "pending" | "uploading" | "success" | "failed" };
 interface FilesUploadState {
@@ -26,7 +27,8 @@ export const FilesUploadContext = createContext<FilesUploadState>({} as FilesUpl
 
 export const FileUploadProvider: FC<{ children: ReactNode }> = ({ children }) => {
     const { storageUsage, uploadFile } = useTomb();
-    const { hardStorageLimit, seePricingPage, softStorageLimit, contactSales } = useAppSelector(state => state.locales.messages.contexts.fileUpload)
+    const { hardStorageLimit, seePricingPage, softStorageLimit, contactSales } = useAppSelector(state => state.locales.messages.contexts.fileUpload);
+    const { fileSizeExceeded } = useAppSelector(state => state.locales.messages.contexts.fileUpload);
     const dispatch = useAppDispatch();
     const [files, setFiles] = useState<UploadingFile[]>([]);
     const { openModal } = useModal();
@@ -37,6 +39,13 @@ export const FileUploadProvider: FC<{ children: ReactNode }> = ({ children }) =>
     const navigate = useNavigate();
 
     const uploadFiles = async (bucket: Bucket, path: string[], folder?: BrowserObject) => {
+        if (files.some(file => file.file.size > FILE_SIZE_LIMIT)) {
+            ToastNotifications.error(fileSizeExceeded);
+
+            return;
+        };
+
+        ToastNotifications.uploadProgress();
         setSelectedBucket(bucket);
         setSelectedPath(path);
         setSelectedFolder(folder || null);
@@ -67,6 +76,13 @@ export const FileUploadProvider: FC<{ children: ReactNode }> = ({ children }) =>
                 continue;
             }
         };
+
+        if (files.every(file => file.status === 'success')) {
+            setTimeout(() => {
+                ToastNotifications.close();
+                setFiles([]);
+            }, 3000);
+        };
     };
 
     const retryUpload = async (file: UploadingFile) => {
@@ -88,6 +104,10 @@ export const FileUploadProvider: FC<{ children: ReactNode }> = ({ children }) =>
     const deleteFromUploadList = (file: UploadingFile) => {
         setFiles(prev => prev.filter(uploadingFile => uploadingFile !== file));
     };
+
+    useEffect(() => {
+
+    }, [])
 
     return (
         <FilesUploadContext.Provider value={{ files, selectedBucket, selectedFolder, selectedPath, deleteFromUploadList, retryUpload, setFiles, uploadFiles }}>

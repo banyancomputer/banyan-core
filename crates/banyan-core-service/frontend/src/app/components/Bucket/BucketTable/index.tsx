@@ -65,7 +65,6 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
 
         (async () => {
             try {
-                ToastNotifications.uploadProgress();
                 await uploadFiles(bucket, folderLocation);
                 setAreFilesDropped(false);
             } catch (error: any) {

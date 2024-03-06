@@ -40,7 +40,6 @@ export const EmptyState: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const upload = async () => {
         if (!files.length) { return; }
         try {
-            ToastNotifications.uploadProgress();
             setTimeout(() => {
                 setPreviewFiles([]);
             }, 100);
