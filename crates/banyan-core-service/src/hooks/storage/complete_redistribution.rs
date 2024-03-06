@@ -24,33 +24,31 @@ pub async fn handler(
     Path(metadata_id): Path<String>,
     Json(request): Json<CompleteRedistributionRequest>,
 ) -> Result<Response, CompleteRedistributionError> {
-    let database = state.database();
+    let mut database = state.database();
     // validate the metadata exists
     Metadata::find_by_id(&database, &metadata_id.to_string()).await?;
+
     let new_storage_host_id = storage_provider.id.clone();
     let staging_host = StorageHost::select_staging(&database).await?;
 
     let mut transaction = database.begin().await?;
-    let storage_grants =
-        ExistingStorageGrant::find_by_id(&mut transaction, &request.grant_id).await?;
 
-    // it is ok for a storage grant to already have the new storage_host_id if a single grant is associated with multiple uploads
-    if storage_grants.storage_host_id != new_storage_host_id {
-        ExistingStorageGrant::update_storage_host_for_grant(
-            &mut transaction,
-            &request.grant_id,
-            &new_storage_host_id,
-        )
-        .await?;
-    }
-
-    StorageHostsMetadatasStorageGrants::update_host_by_metadata_and_host(
+    ExistingStorageGrant::redeem_storage_grant(
         &mut transaction,
-        &metadata_id,
-        &staging_host.id,
         &new_storage_host_id,
+        &request.grant_id,
+    )
+    .await
+    .map_err(CompleteRedistributionError::RedeemFailed)?;
+
+    StorageHostsMetadatasStorageGrants::associate_upload(
+        &mut transaction,
+        &new_storage_host_id,
+        &metadata_id,
+        &request.grant_id,
     )
     .await?;
+
     let block_ids = Blocks::get_block_ids(&mut transaction, &request.normalized_cids).await?;
     if block_ids.len() != request.normalized_cids.len() {
         return Err(CompleteRedistributionError::UpdateFailed(format!(
@@ -60,6 +58,29 @@ pub async fn handler(
             metadata_id,
             staging_host.id,
             new_storage_host_id
+        )));
+    }
+
+    let deleted_blocks: u64 = MinimalBlockLocation::delete_blocks_for_host(
+        &mut transaction,
+        &block_ids,
+        &staging_host.id,
+    )
+    .await?
+    .iter()
+    .map(|r| r.rows_affected())
+    .sum();
+
+    // deleting more blocks is fine, since (although rare) there are cases of block duplication
+    // between uploads (thus between metadata_ids). Those duplicated blocks will not be
+    // added to the blocks table, but they will be added to the block_locations table
+    if deleted_blocks > block_ids.len() as u64 {
+        return Err(CompleteRedistributionError::UpdateFailed(format!(
+            "deleted {} vs cids {} for metadata {} from host {}",
+            deleted_blocks,
+            block_ids.len(),
+            metadata_id,
+            staging_host.id,
         )));
     }
 
@@ -74,54 +95,33 @@ pub async fn handler(
         .await
         .map_err(CompleteRedistributionError::QueryFailed)?;
     }
-    let deleted_blocks: u64 = MinimalBlockLocation::delete_blocks_for_host(
-        &mut transaction,
-        &block_ids,
-        &staging_host.id,
-    )
-    .await?
-    .iter()
-    .map(|r| r.rows_affected())
-    .sum();
-    // deleting more blocks form block_locations is fine, however, having deleted less is an issue
-    if deleted_blocks < block_ids.len() as u64 {
-        return Err(CompleteRedistributionError::UpdateFailed(format!(
-            "updated {} vs cids {} for metadata {} from host {} to host {}",
-            deleted_blocks,
-            block_ids.len(),
-            metadata_id,
-            staging_host.id,
-            new_storage_host_id
-        )));
-    }
+
+    transaction.commit().await?;
 
     // Now, let's re-evaluate the capacity of the new storage host
     HostCapacityTask::new(staging_host.id)
-        .enqueue_with_connection::<banyan_task::SqliteTaskStore>(&mut *transaction)
+        .enqueue::<banyan_task::SqliteTaskStore>(&mut database)
         .await
         .map_err(CompleteRedistributionError::UnableToEnqueueTask)?;
     //  revaluate the capacity of staging service
     HostCapacityTask::new(new_storage_host_id)
-        .enqueue_with_connection::<banyan_task::SqliteTaskStore>(&mut *transaction)
+        .enqueue::<banyan_task::SqliteTaskStore>(&mut database)
         .await
         .map_err(CompleteRedistributionError::UnableToEnqueueTask)?;
 
-    DeleteStagingDataTask::new(
-        metadata_id,
-        request.normalized_cids.clone(),
-        request.grant_id,
-    )
-    .enqueue_with_connection::<banyan_task::SqliteTaskStore>(&mut *transaction)
-    .await
-    .map_err(CompleteRedistributionError::UnableToEnqueueTask)?;
-
-    transaction.commit().await?;
+    DeleteStagingDataTask::new(metadata_id, request.normalized_cids.clone())
+        .enqueue::<banyan_task::SqliteTaskStore>(&mut database)
+        .await
+        .map_err(CompleteRedistributionError::UnableToEnqueueTask)?;
 
     Ok((StatusCode::NO_CONTENT, ()).into_response())
 }
 
 #[derive(Debug, thiserror::Error)]
 pub enum CompleteRedistributionError {
+    #[error("failed to register storage grant as redeemed: {0}")]
+    RedeemFailed(sqlx::Error),
+
     #[error("failed to update the database correctly: {0}")]
     UpdateFailed(String),
 
@@ -146,7 +146,7 @@ mod tests {
     use http::StatusCode;
 
     use crate::app::mock_app_state;
-    use crate::database::models::MetadataState;
+    use crate::database::models::{ExistingStorageGrant, MetadataState};
     use crate::database::{test_helpers, Database, DatabaseConnection};
     use crate::extractors::StorageProviderIdentity;
     use crate::hooks::storage::complete_redistribution::{handler, CompleteRedistributionRequest};
@@ -154,14 +154,15 @@ mod tests {
     pub async fn select_storage_grants_for_host(
         conn: &Database,
         storage_host_id: &str,
-    ) -> Option<String> {
-        sqlx::query_scalar!(
-            "SELECT id FROM storage_grants WHERE storage_host_id = $1",
+    ) -> Option<ExistingStorageGrant> {
+        sqlx::query_as!(
+            ExistingStorageGrant,
+            "SELECT * FROM storage_grants WHERE storage_host_id = $1",
             storage_host_id
         )
         .fetch_optional(conn)
         .await
-        .expect("storage semgnets")
+        .expect("storage grants")
     }
 
     pub async fn select_storage_metadata_grant_for_host(
@@ -228,7 +229,13 @@ mod tests {
                 .await;
         let metadata_id =
             test_helpers::sample_metadata(&mut conn, &bucket_id, 1, MetadataState::Current).await;
-
+        let new_storage_grant_id = test_helpers::create_storage_grant(
+            &mut conn,
+            &new_storage_host_id,
+            &user_id,
+            1_000_000,
+        )
+        .await;
         let block_ids = test_helpers::sample_blocks(
             &mut conn,
             4,
@@ -243,7 +250,7 @@ mod tests {
             db,
             new_storage_host_id,
             metadata_id,
-            storage_grant_id.to_string(),
+            new_storage_grant_id.to_string(),
             staging_host_id,
             block_cids,
         )
@@ -251,15 +258,21 @@ mod tests {
 
     #[tokio::test]
     async fn handler_returns_success_for_the_happy_case() {
-        let (db, new_storage_host_id, metadata_id, storage_grant_id, staging_host_id, block_cids) =
-            setup_test_environment().await;
+        let (
+            db,
+            new_storage_host_id,
+            metadata_id,
+            new_storage_grant_id,
+            staging_host_id,
+            block_cids,
+        ) = setup_test_environment().await;
         let res = handler(
             StorageProviderIdentity::default().with_host_id(&new_storage_host_id),
             mock_app_state(db.clone()),
             Path(metadata_id.clone()),
             Json(CompleteRedistributionRequest {
                 normalized_cids: block_cids.clone(),
-                grant_id: storage_grant_id,
+                grant_id: new_storage_grant_id,
             }),
         )
         .await;
@@ -269,24 +282,32 @@ mod tests {
 
         let old_host = select_blocks_for_host(&db, &staging_host_id).await;
         assert_eq!(old_host.len(), 0);
-        let storage_metadata = select_storage_metadata_grant_for_host(&db, &staging_host_id).await;
-        assert!(storage_metadata.is_none());
-        let storage_grant = select_storage_grants_for_host(&db, &staging_host_id).await;
-        assert!(storage_grant.is_none());
+        let staging_grant_metadata =
+            select_storage_metadata_grant_for_host(&db, &staging_host_id).await;
+        assert!(staging_grant_metadata.is_some());
+        let staging_grant = select_storage_grants_for_host(&db, &staging_host_id).await;
+        assert!(staging_grant.is_some());
 
         let blocks_for_host = select_blocks_for_host(&db, &new_storage_host_id).await;
         assert_eq!(blocks_for_host.len(), block_cids.len());
-        let storage_metadata =
+        let new_storage_grant_metadata =
             select_storage_metadata_grant_for_host(&db, &new_storage_host_id).await;
-        assert!(storage_metadata.is_some());
-        let storage_grant = select_storage_grants_for_host(&db, &new_storage_host_id).await;
-        assert!(storage_grant.is_some());
+        assert!(new_storage_grant_metadata.is_some());
+        let new_storage_grant = select_storage_grants_for_host(&db, &new_storage_host_id).await;
+        assert!(new_storage_grant.is_some());
+        assert!(new_storage_grant.unwrap().redeemed_at.is_some());
     }
 
     #[tokio::test]
     async fn handler_rolls_back_on_update_blocks_failure() {
-        let (db, new_storage_host_id, metadata_id, storage_grant_id, staging_host_id, block_cids) =
-            setup_test_environment().await;
+        let (
+            db,
+            new_storage_host_id,
+            metadata_id,
+            new_storage_grant_id,
+            staging_host_id,
+            block_cids,
+        ) = setup_test_environment().await;
 
         // Simulate a failure in update_blocks
         let res = handler(
@@ -295,7 +316,7 @@ mod tests {
             Path(metadata_id.clone()),
             Json(CompleteRedistributionRequest {
                 normalized_cids: vec!["fake-cid".to_string()],
-                grant_id: storage_grant_id,
+                grant_id: new_storage_grant_id,
             }),
         )
         .await;
@@ -322,6 +343,7 @@ mod tests {
             select_storage_metadata_grant_for_host(&db, &new_storage_host_id).await;
         assert!(storage_metadata.is_none());
         let storage_grant = select_storage_grants_for_host(&db, &new_storage_host_id).await;
-        assert!(storage_grant.is_none());
+        assert!(storage_grant.is_some());
+        assert!(storage_grant.unwrap().redeemed_at.is_none());
     }
 }

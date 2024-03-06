@@ -24,6 +24,24 @@ impl AuthorizedStorage {
         .await
     }
 
+    pub async fn save_in_transaction(
+        conn: &mut DatabaseConnection,
+        client_id: String,
+        grant_id: String,
+        allowed_storage: i64,
+    ) -> Result<String, sqlx::Error> {
+        sqlx::query_scalar!(
+            "INSERT INTO storage_grants (client_id, grant_id, allowed_storage)
+            VALUES ($1, $2, $3)
+            RETURNING id;",
+            client_id,
+            grant_id,
+            allowed_storage,
+        )
+        .fetch_one(&mut *conn)
+        .await
+    }
+
     pub async fn delete_by_grant_id(
         db: &mut DatabaseConnection,
         grant_id: &str,
@@ -50,15 +68,15 @@ impl AuthorizedStorage {
         Ok(auth_stor)
     }
 
-    pub async fn get_authorized_size_for_core_grant_id(
-        db: &Database,
+    pub async fn get_client_by_grant_id(
+        conn: &mut DatabaseConnection,
         grant_id: &str,
-    ) -> Result<i64, sqlx::Error> {
+    ) -> Result<String, sqlx::Error> {
         let res = sqlx::query_scalar!(
-            "SELECT allowed_storage AS allowed_bytes FROM storage_grants WHERE grant_id = $1;",
+            "SELECT client_id FROM storage_grants WHERE grant_id = $1;",
             grant_id,
         )
-        .fetch_one(db)
+        .fetch_one(&mut *conn)
         .await?;
 
         Ok(res)

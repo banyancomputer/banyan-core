@@ -56,6 +56,7 @@ impl StorageProviderClient {
         }
         Err(StorageProviderError::BadRequest(response.text().await?))
     }
+
     pub async fn new_upload(
         &self,
         request: &NewUploadRequest,

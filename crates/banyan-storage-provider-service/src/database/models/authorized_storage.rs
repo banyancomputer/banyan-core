@@ -22,6 +22,7 @@ impl AuthorizedStorage {
         .fetch_optional(db)
         .await
     }
+
     pub async fn create(
         db: &Database,
         client_id: &str,

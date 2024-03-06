@@ -22,6 +22,7 @@ use crate::database::models::{
 };
 use crate::extractors::ApiIdentity;
 use crate::utils::car_buffer::CarBuffer;
+use crate::utils::rounded_storage_authorization;
 use crate::{utils, GIBIBYTE};
 
 /// Size limit of the pure metadata CAR file that is being uploaded (128MiB)
@@ -29,8 +30,6 @@ const CAR_DATA_SIZE_LIMIT: u64 = 128 * 1_024 * 1_024;
 
 /// The "official" mime type registered for CAR files, we specifically only accept version 2
 const CAR_MIME_TYPE: &str = "application/vnd.ipld.car; version=2";
-
-const ONE_HUNDRED_MIB: i64 = 100 * 1024 * 1024;
 
 /// Upper size limit on the JSON payload that precedes a metadata CAR file upload (128KiB)
 const REQUEST_DATA_SIZE_LIMIT: u64 = 128 * 1_024;
@@ -241,7 +240,7 @@ pub async fn handler(
     if user_report.authorization_available() < needed_capacity {
         let new_authorized_capacity = rounded_storage_authorization(&user_report, needed_capacity);
 
-        let storage_grant_id = NewStorageGrant {
+        let authorization_grant = NewStorageGrant {
             storage_host_id: &storage_host.id,
             user_id: &user_id,
             authorized_amount: new_authorized_capacity,
@@ -252,7 +251,7 @@ pub async fn handler(
         let mut ticket_builder = StorageTicketBuilder::new(api_id.ticket_subject());
         ticket_builder.add_audience(storage_host.name);
         ticket_builder.add_authorization(
-            storage_grant_id,
+            authorization_grant.id,
             storage_host.url.clone(),
             new_authorized_capacity,
         );
@@ -325,12 +324,6 @@ async fn persist_upload<'a>(
     writer.shutdown().await?;
 
     Ok((hash, size))
-}
-
-fn rounded_storage_authorization(report: &UserStorageReport, additional_capacity: i64) -> i64 {
-    let new_required_amount = report.current_consumption() + additional_capacity;
-    // Integer division always rounds down, we want to round up to the nearest 100MiB
-    ((new_required_amount / ONE_HUNDRED_MIB) + 1) * ONE_HUNDRED_MIB
 }
 
 async fn stream_upload_to_storage<S>(

@@ -14,7 +14,8 @@ use crate::tasks::RedistributeDataTask;
 #[derive(Serialize, Deserialize)]
 pub struct DistributeData {
     metadata_id: String,
-    grant_id: String,
+    storage_grant_id: String,
+    storage_grant_size: i64,
     block_cids: Vec<String>,
     new_host_id: String,
     new_host_url: String,
@@ -32,7 +33,8 @@ pub async fn handler(
 
     let task = RedistributeDataTask {
         metadata_id: distribute_data.metadata_id.clone(),
-        grant_id: distribute_data.grant_id.clone(),
+        storage_grant_id: distribute_data.storage_grant_id.clone(),
+        storage_grant_size: distribute_data.storage_grant_size,
         block_cids: distribute_data.block_cids.clone(),
         new_host_id: distribute_data.new_host_id.clone(),
         new_host_url: distribute_data.new_host_url.clone(),

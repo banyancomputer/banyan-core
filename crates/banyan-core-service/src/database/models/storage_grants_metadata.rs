@@ -12,33 +12,15 @@ impl StorageHostsMetadatasStorageGrants {
         conn: &Database,
         metadata_id: &str,
         storage_host_id: &str,
-    ) -> Result<Self, sqlx::Error> {
-        let storage_host = sqlx::query_as!(
+    ) -> Result<StorageHostsMetadatasStorageGrants, sqlx::Error> {
+        sqlx::query_as!(
             StorageHostsMetadatasStorageGrants,
-            "SELECT * FROM storage_hosts_metadatas_storage_grants WHERE metadata_id = $1 AND storage_host_id = $2;",
-            metadata_id,
+            r#"SELECT * FROM storage_hosts_metadatas_storage_grants WHERE storage_host_id = $1 AND metadata_id = $2;"#,
             storage_host_id,
-        )
-        .fetch_one(conn)
-        .await?;
-        Ok(storage_host)
-    }
-
-    pub async fn update_host_by_metadata_and_host(
-        conn: &mut DatabaseConnection,
-        metadata_id: &str,
-        old_host_id: &str,
-        new_host_id: &str,
-    ) -> Result<(), sqlx::Error> {
-        sqlx::query!(
-            "UPDATE storage_hosts_metadatas_storage_grants SET storage_host_id = $1 WHERE storage_host_id = $2 AND metadata_id = $3;",
-            new_host_id,
-            old_host_id,
             metadata_id
         )
-        .execute(&mut *conn)
-        .await?;
-        Ok(())
+        .fetch_one(conn)
+        .await
     }
 
     pub async fn associate_upload(

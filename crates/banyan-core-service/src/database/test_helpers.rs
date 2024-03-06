@@ -338,14 +338,16 @@ pub(crate) async fn create_storage_grant(
     user_id: &str,
     authorized_amount: i64,
 ) -> String {
-    NewStorageGrant {
+    let grant = NewStorageGrant {
         storage_host_id,
         user_id,
         authorized_amount,
     }
     .save(conn)
     .await
-    .expect("storage grant creation")
+    .expect("storage grant creation");
+
+    grant.id
 }
 
 pub(crate) async fn redeem_storage_grant(

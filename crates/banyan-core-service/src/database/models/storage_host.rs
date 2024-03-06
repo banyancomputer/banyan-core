@@ -1,6 +1,6 @@
 use time::OffsetDateTime;
 
-use crate::database::models::ExplicitBigInt;
+use crate::database::models::{ExistingStorageGrant, ExplicitBigInt};
 use crate::database::{Database, DatabaseConnection};
 
 /// A partial version of a storage host encompassing only the data needed for clients that need to
@@ -118,7 +118,7 @@ impl StorageHost {
 #[derive(Debug)]
 pub struct UserStorageReport {
     current_consumption: i64,
-    maximum_authorized: Option<i64>,
+    existing_storage_grant: Option<ExistingStorageGrant>,
 }
 
 impl UserStorageReport {
@@ -144,22 +144,12 @@ impl UserStorageReport {
         .await?;
         let current_consumption = ex_bigint.big_int;
 
-        let maximum_authorized = sqlx::query_scalar!(
-            r#"SELECT authorized_amount FROM storage_grants
-                   WHERE storage_host_id = $1
-                       AND user_id = $2
-                       AND redeemed_at IS NOT NULL
-                   ORDER BY created_at DESC
-                   LIMIT 1;"#,
-            storage_host_id,
-            user_id,
-        )
-        .fetch_optional(&mut *conn)
-        .await?;
+        let existing_storage_grant =
+            ExistingStorageGrant::find_by_host_and_user(conn, storage_host_id, user_id).await?;
 
         Ok(UserStorageReport {
             current_consumption,
-            maximum_authorized,
+            existing_storage_grant,
         })
     }
 
@@ -188,10 +178,14 @@ impl UserStorageReport {
     /// authorization at a storage host this will return 0.
     /// will never return a negative number.
     pub fn authorization_available(&self) -> i64 {
-        match self.maximum_authorized {
-            Some(ma) => (ma - self.current_consumption).max(0),
+        match &self.existing_storage_grant {
+            Some(grant) => (grant.authorized_amount - self.current_consumption).max(0),
             None => 0,
         }
+    }
+
+    pub fn existing_grant(&self) -> Option<ExistingStorageGrant> {
+        self.existing_storage_grant.clone()
     }
 
     pub fn current_consumption(&self) -> i64 {

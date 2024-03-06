@@ -9,9 +9,10 @@ use url::Url;
 use crate::app::AppState;
 use crate::clients::{DistributeDataRequest, StagingServiceClient, StagingServiceError};
 use crate::database::models::{
-    BlockLocationState, Blocks, Metadata, MinimalBlockLocation, StorageHost,
-    StorageHostsMetadatasStorageGrants,
+    BlockLocationState, Blocks, Bucket, Metadata, MinimalBlockLocation, NewStorageGrant,
+    StorageHost, UserStorageReport,
 };
+use crate::utils::rounded_storage_authorization;
 
 #[derive(Deserialize, Serialize, Default, Clone)]
 pub struct RedistributeStagingDataTask {}
@@ -26,36 +27,38 @@ impl TaskLike for RedistributeStagingDataTask {
     async fn run(&self, _task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
         let database = ctx.database();
         let staging_host = StorageHost::select_staging(&database).await?;
-        let blocks = Blocks::get_blocks_requiring_sync(&database, &staging_host.id).await?;
+        let blocks_for_sync =
+            Blocks::get_blocks_requiring_sync(&database, &staging_host.id).await?;
 
-        let mut undistributed_blocks: HashSet<String> =
-            blocks.iter().map(|block| block.id.clone()).collect();
+        let mut undistributed_blocks: HashSet<String> = blocks_for_sync
+            .iter()
+            .map(|block| block.id.clone())
+            .collect();
 
         let staging_client = StagingServiceClient::new(
             ctx.secrets().service_key(),
             ctx.service_name(),
-            staging_host.name.as_str(),
+            &staging_host.name,
             Url::parse(&staging_host.url)?,
         );
 
-        let mut blocks_grouped_by_metadata = HashMap::new();
-        for block in &blocks {
-            blocks_grouped_by_metadata
-                .entry(block.metadata_id.clone())
-                .or_insert_with(Vec::new)
-                .push(block);
+        let mut blocks_grouped_by_metadata: HashMap<String, Vec<&Blocks>> = HashMap::new();
+        for block in &blocks_for_sync {
+            if !blocks_grouped_by_metadata
+                .values()
+                .any(|blocks| blocks.iter().any(|b| b.id == block.id))
+            {
+                blocks_grouped_by_metadata
+                    .entry(block.metadata_id.clone())
+                    .or_default()
+                    .push(block);
+            }
         }
 
-        for (metadata_id, blocks) in &blocks_grouped_by_metadata {
-            tracing::info!("Redistributing blocks for metadata: {:?}", &metadata_id);
-            let metadata = Metadata::find_by_id(&database, &metadata_id.clone()).await?;
-            let grant_metadata =
-                StorageHostsMetadatasStorageGrants::find_by_metadata_and_storage_host(
-                    &database,
-                    &metadata_id.clone(),
-                    &staging_host.id,
-                )
-                .await?;
+        for (metadata_id, grouped_blocks) in &blocks_grouped_by_metadata {
+            tracing::info!("Redistributing blocks for metadata: {:?}", metadata_id);
+            let metadata = Metadata::find_by_id(&database, metadata_id).await?;
+            let user_id = Bucket::find_user_for_bucket(&database, &metadata.bucket_id).await?;
 
             let total_size = metadata
                 .data_size
@@ -65,29 +68,49 @@ impl TaskLike for RedistributeStagingDataTask {
             let new_storage_host = StorageHost::select_for_capacity_with_exclusion(
                 &database,
                 total_size,
-                staging_host.id.as_str(),
+                &staging_host.id,
             )
             .await?;
+            let mut conn = database.begin().await?;
+            let user_report =
+                UserStorageReport::user_report(&mut conn, &new_storage_host.id, &user_id).await?;
+            let authorization_grant = if user_report.authorization_available() < total_size
+                || user_report.existing_grant().is_none()
+            {
+                let new_authorized_capacity =
+                    rounded_storage_authorization(&user_report, total_size);
+                NewStorageGrant {
+                    storage_host_id: &new_storage_host.id,
+                    user_id: &user_id,
+                    authorized_amount: new_authorized_capacity,
+                }
+                .save(&mut conn)
+                .await?
+            } else {
+                user_report.existing_grant().unwrap()
+            };
+            conn.commit().await?;
 
-            let block_cids = blocks
+            let block_cids: Vec<_> = grouped_blocks
                 .iter()
                 .map(|block| block.cid.clone())
-                .collect::<Vec<_>>();
+                .collect();
 
             staging_client
                 .distribute_data(DistributeDataRequest {
                     metadata_id: metadata_id.clone(),
-                    grant_id: grant_metadata.storage_grant_id.clone(),
+                    storage_grant_id: authorization_grant.id.clone(),
+                    storage_grant_size: authorization_grant.authorized_amount,
                     new_host_id: new_storage_host.id.clone(),
                     block_cids: block_cids.clone(),
                     new_host_url: new_storage_host.url.clone(),
                 })
                 .await?;
 
-            let block_ids = blocks
+            let block_ids: Vec<_> = grouped_blocks
                 .iter()
                 .map(|block| block.id.clone())
-                .collect::<Vec<_>>();
+                .collect();
 
             MinimalBlockLocation::update_state(&database, &block_ids, BlockLocationState::Staged)
                 .await
@@ -182,7 +205,6 @@ mod tests {
                 json!({
                     "metadata_id": metadata_id,
                     "new_host_id": new_host_id,
-                    "grant_id": storage_grant_id
                 })
                 .to_string(),
             ))

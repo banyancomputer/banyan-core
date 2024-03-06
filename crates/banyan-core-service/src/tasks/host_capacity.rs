@@ -89,10 +89,6 @@ impl TaskLike for HostCapacityTask {
 
         Ok(())
     }
-
-    fn unique_key(&self) -> Option<String> {
-        Some(self.storage_host_id.clone())
-    }
 }
 
 #[cfg(test)]

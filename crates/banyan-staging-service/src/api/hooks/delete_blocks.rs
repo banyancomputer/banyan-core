@@ -15,7 +15,14 @@ use crate::tasks::UploadBlocksTask;
 pub struct DeleteBlocksRequest {
     pub normalized_cids: Vec<String>,
     pub metadata_id: String,
-    pub grant_id: String,
+    pub reset_storage_grant: Option<GrantResetRequest>,
+}
+
+#[derive(Deserialize)]
+pub struct GrantResetRequest {
+    pub old_grant_id: String,
+    pub new_grant_id: String,
+    pub new_grant_size: i64,
 }
 
 pub async fn handler(
@@ -34,7 +41,21 @@ pub async fn handler(
     Uploads::delete_by_metadata_id(&mut transaction, &metadata_id).await?;
     let deleted_blocks =
         Blocks::delete_blocks_by_cid(&mut transaction, &request.normalized_cids).await?;
-    AuthorizedStorage::delete_by_grant_id(&mut transaction, &request.grant_id).await?;
+    if request.reset_storage_grant.is_some() {
+        let reset_storage_grant = request.reset_storage_grant.unwrap();
+        let old_client_id = AuthorizedStorage::get_client_by_grant_id(
+            &mut transaction,
+            &reset_storage_grant.old_grant_id,
+        )
+        .await?;
+        AuthorizedStorage::save_in_transaction(
+            &mut transaction,
+            old_client_id,
+            reset_storage_grant.new_grant_id,
+            reset_storage_grant.new_grant_size,
+        )
+        .await?;
+    }
 
     if deleted_blocks.rows_affected() != request.normalized_cids.len() as u64 {
         return Err(BlocksDeleteError::DeleteFailed(format!(
@@ -130,7 +151,7 @@ mod tests {
             Json(DeleteBlocksRequest {
                 normalized_cids: block_ids,
                 metadata_id,
-                grant_id: "some-grant".to_string(),
+                reset_storage_grant: None,
             }),
         )
         .await;
@@ -164,7 +185,7 @@ mod tests {
             Json(DeleteBlocksRequest {
                 normalized_cids: blocks_cids,
                 metadata_id,
-                grant_id: "some-grant".to_string(),
+                reset_storage_grant: None,
             }),
         )
         .await;
@@ -190,7 +211,7 @@ mod tests {
             Json(DeleteBlocksRequest {
                 normalized_cids: block_ids,
                 metadata_id,
-                grant_id: "some-grant".to_string(),
+                reset_storage_grant: None,
             }),
         )
         .await;

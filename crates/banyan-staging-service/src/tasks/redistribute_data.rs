@@ -10,7 +10,7 @@ use crate::clients::{
     ClientsRequest, CoreServiceClient, CoreServiceError, NewUploadRequest, StorageProviderClient,
     StorageProviderError,
 };
-use crate::database::models::{AuthorizedStorage, Blocks, Clients, Uploads};
+use crate::database::models::{Blocks, Clients, Uploads};
 use crate::tasks::upload_blocks::UploadBlocksTask;
 
 pub type RedistributeDataTaskContext = AppState;
@@ -37,7 +37,8 @@ pub enum RedistributeDataTaskError {
 #[derive(Deserialize, Serialize)]
 pub struct RedistributeDataTask {
     pub metadata_id: String,
-    pub grant_id: String,
+    pub storage_grant_id: String,
+    pub storage_grant_size: i64,
     pub block_cids: Vec<String>,
     pub new_host_id: String,
     pub new_host_url: String,
@@ -82,10 +83,6 @@ impl TaskLike for RedistributeDataTask {
         }
 
         let client = Clients::find_by_upload_id(&database, &upload.id).await?;
-        let authorized_size =
-            AuthorizedStorage::get_authorized_size_for_core_grant_id(&database, &self.grant_id)
-                .await?;
-
         let new_client = storage_client
             .push_client(ClientsRequest {
                 platform_id: client.platform_id,
@@ -93,18 +90,19 @@ impl TaskLike for RedistributeDataTask {
                 public_key: client.public_key,
             })
             .await?;
+
         let new_upload = storage_client
             .new_upload(&NewUploadRequest {
                 metadata_id: upload.metadata_id,
                 client_id: new_client.id.clone(),
-                grant_id: self.grant_id.clone(),
-                grant_size: authorized_size,
+                grant_id: self.storage_grant_id.clone(),
+                grant_size: self.storage_grant_size,
             })
             .await?;
 
         UploadBlocksTask {
             metadata_id: self.metadata_id.clone(),
-            grant_id: self.grant_id.clone(),
+            grant_id: self.storage_grant_id.clone(),
             block_cids: self.block_cids.clone(),
             new_upload_id: new_upload.upload_id.clone(),
             storage_host_id: self.new_host_id.clone(),
