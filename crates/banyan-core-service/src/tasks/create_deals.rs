@@ -133,7 +133,6 @@ impl CreateDealsTask {
                 Self::retrieve_snapshots(transaction, segment_ids.clone()).await?;
             snapshot_ids.push(snapshot_id.to_string());
             Self::delete_deals(transaction, segment_ids).await?;
-            Self::return_tokens(transaction, &snapshot_ids).await?;
 
             let new_deal_id = sqlx::query_scalar!(
                 r#" INSERT INTO deals (state) VALUES ($1) RETURNING id;"#,

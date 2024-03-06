@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                UPDATE users\n                SET consumed_tokens = consumed_tokens + $1\n                WHERE id = $2;\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "f9d78e9d010c8b162234a5a5e70094dd9e4991fe19ad563f3980bdadc3341832"
+}

@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n               SELECT (earned_tokens - consumed_tokens)\n               FROM users\n               WHERE id = $1\n            ",
+  "query": "\n               SELECT (earned_tokens - consumed_tokens)\n               FROM users\n               WHERE id = $1;\n            ",
   "describe": {
     "columns": [
       {
@@ -16,5 +16,5 @@
       false
     ]
   },
-  "hash": "24610785a7753ea67ba30ebf32bce2cf3ab262eef3b9a5073cad9b5ac0c5f619"
+  "hash": "8e3cc06ca9a99e2c5a26f1a83560ef07c4c79a7ff6296438e43237aba8f8713f"
 }

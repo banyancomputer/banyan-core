@@ -13,6 +13,7 @@ use crate::app::AppState;
 use crate::database::models::{SnapshotState, User};
 use crate::extractors::UserIdentity;
 use crate::tasks::{CreateDealsTask, BLOCK_SIZE};
+use crate::GIBIBYTE;
 
 pub async fn handler(
     user_identity: UserIdentity,
@@ -64,8 +65,8 @@ pub async fn handler(
         .collect::<Result<Vec<_>, _>>()?;
 
     let size_estimate = normalized_cids.len() as i64 * BLOCK_SIZE;
-
     let remaining_tokens = user.remaining_tokens(&mut *conn).await?;
+    let tokens_used = size_estimate / GIBIBYTE;
 
     tracing::info!(
         "snapshot size_estimate: {}, remaining_tokens: {}",
@@ -74,7 +75,7 @@ pub async fn handler(
     );
 
     // Error and exit if the user doesn't have enough token
-    if size_estimate > remaining_tokens {
+    if tokens_used > remaining_tokens {
         return Err(CreateSnapshotError::InsufficientStorage);
     }
 
@@ -82,11 +83,12 @@ pub async fn handler(
     let now = OffsetDateTime::now_utc();
     let snapshot_id = sqlx::query_scalar!(
         r#"INSERT INTO snapshots (metadata_id, state, size, tokens_used, created_at)
-               VALUES ($1, $2, $3, $3, $4)
+               VALUES ($1, $2, $3, $4, $5)
                RETURNING id;"#,
         metadata_id,
         pending_state,
         size_estimate,
+        tokens_used,
         now,
     )
     .fetch_one(&mut *conn)
@@ -286,6 +288,12 @@ mod tests {
         )
         .await;
 
+        // Make sure the user has capacity
+        let mut user = crate::database::models::User::by_id(&mut conn, &user_id)
+            .await
+            .unwrap();
+        user.award_tokens(&mut conn, 1).await.unwrap();
+
         let res = handler(
             UserIdentity::Session(get_or_create_session(&mut conn, &user_id).await),
             mock_app_state(db.clone()),
@@ -296,6 +304,8 @@ mod tests {
             Json(cids_set.clone()),
         )
         .await;
+
+        println!("res: {:?}", res);
 
         assert!(res.is_ok());
         let response = res.unwrap();

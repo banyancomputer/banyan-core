@@ -88,7 +88,7 @@ impl User {
             r#"
                SELECT (earned_tokens - consumed_tokens)
                FROM users
-               WHERE id = $1
+               WHERE id = $1;
             "#,
             self.id
         )
@@ -105,7 +105,7 @@ impl User {
             r#"
                 UPDATE users
                 SET consumed_tokens = consumed_tokens + $1
-                WHERE id = $2
+                WHERE id = $2;
             "#,
             tokens_used,
             self.id
@@ -123,7 +123,21 @@ impl User {
         conn: &mut DatabaseConnection,
         tokens_earned: i64,
     ) -> Result<(), sqlx::Error> {
-        Ok(())
+        sqlx::query!(
+            r#"
+                UPDATE users
+                SET earned_tokens = earned_tokens + $1
+                WHERE id = $2;
+            "#,
+            tokens_earned,
+            self.id
+        )
+        .execute(&mut *conn)
+        .await
+        .map(|_| {
+            self.earned_tokens += tokens_earned;
+            ()
+        })
     }
 
     pub async fn find_by_id(
