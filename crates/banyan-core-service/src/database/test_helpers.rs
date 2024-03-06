@@ -242,8 +242,8 @@ pub(crate) async fn create_snapshot(
     let snapshot_state = snapshot_state.to_string();
     let size = size.unwrap_or(BLOCK_SIZE);
     sqlx::query_scalar!(
-        r#"INSERT INTO snapshots (metadata_id, state, size)
-           VALUES ($1, $2, $3)
+        r#"INSERT INTO snapshots (metadata_id, state, size, tokens_used)
+           VALUES ($1, $2, $3, $3)
            RETURNING id;"#,
         metadata_id,
         snapshot_state,
