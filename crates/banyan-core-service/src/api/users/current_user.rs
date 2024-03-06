@@ -16,7 +16,7 @@ pub async fn handler(
     let user_id = user_identity.id().to_string();
 
     match User::find_by_id(&mut conn, &user_id).await? {
-        Some(u) => Ok((StatusCode::OK, Json(ApiUser::from(u))).into_response()),
+        Some(u) => Ok((StatusCode::OK, Json(u.as_api_user(&mut *conn).await?)).into_response()),
         None => Err(CurrentUserError::NotFound),
     }
 }

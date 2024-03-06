@@ -1,6 +1,7 @@
 use serde::Serialize;
 use time::OffsetDateTime;
 
+use crate::api::models::ApiUser;
 use crate::database::models::{ExplicitBigInt, SubscriptionStatus, TaxClass};
 use crate::database::DatabaseConnection;
 
@@ -15,6 +16,8 @@ pub struct User {
     pub profile_image: Option<String>,
     pub created_at: OffsetDateTime,
     pub accepted_tos_at: Option<OffsetDateTime>,
+    pub earned_tokens: i64,
+    pub consumed_tokens: i64,
 
     pub account_tax_class: TaxClass,
     pub stripe_customer_id: Option<String>,
@@ -31,7 +34,8 @@ impl User {
             User,
             r#"
                 SELECT id, email, verified_email, display_name, locale, region_preference, profile_image, 
-                       created_at, accepted_tos_at, account_tax_class as 'account_tax_class: TaxClass',
+                       created_at, accepted_tos_at, earned_tokens, consumed_tokens,
+                       account_tax_class as 'account_tax_class: TaxClass',
                        stripe_customer_id, stripe_subscription_id, subscription_id as 'subscription_id!',
                        subscription_status as 'subscription_status: SubscriptionStatus',
                        subscription_valid_until
@@ -119,7 +123,7 @@ impl User {
             User,
             r#"
                 SELECT id, email, verified_email, display_name, locale, region_preference, profile_image, created_at,
-                       accepted_tos_at, account_tax_class as 'account_tax_class: TaxClass',
+                       accepted_tos_at, consumed_tokens, earned_tokens, account_tax_class as 'account_tax_class: TaxClass',
                        stripe_customer_id, stripe_subscription_id, subscription_id as 'subscription_id!',
                        subscription_status as 'subscription_status: SubscriptionStatus',
                        subscription_valid_until 
@@ -140,7 +144,7 @@ impl User {
             User,
             r#"
                 SELECT id, email, verified_email, display_name, locale, region_preference, profile_image, created_at,
-                       accepted_tos_at, account_tax_class as 'account_tax_class: TaxClass',
+                       accepted_tos_at, consumed_tokens, earned_tokens, account_tax_class as 'account_tax_class: TaxClass',
                        stripe_customer_id, stripe_subscription_id, subscription_id as 'subscription_id!',
                        subscription_status as 'subscription_status: SubscriptionStatus',
                        subscription_valid_until
@@ -250,6 +254,39 @@ impl User {
         self.region_preference = new_preference;
 
         Ok(())
+    }
+
+    pub async fn maximum_tokens(
+        conn: &mut DatabaseConnection,
+        id: &str,
+    ) -> Result<i64, sqlx::Error> {
+        sqlx::query_scalar!(
+            r#"
+               SELECT included_archival
+               FROM subscriptions as s
+               JOIN users as u ON s.id = u.subscription_id
+               WHERE u.id = $1
+            "#,
+            id
+        )
+        .fetch_one(&mut *conn)
+        .await
+    }
+
+    pub async fn as_api_user(&self, conn: &mut DatabaseConnection) -> Result<ApiUser, sqlx::Error> {
+        Ok(ApiUser {
+            id: self.id.clone(),
+            email: self.email.clone(),
+            display_name: self.display_name.clone(),
+            locale: self.locale.clone(),
+            profile_image: self.profile_image.clone(),
+            accepted_tos_at: self.accepted_tos_at.map(|t| t.unix_timestamp()),
+            subscription_id: self.subscription_id.clone(),
+            account_tax_class: self.account_tax_class.to_string(),
+            subscription_valid_until: self.subscription_valid_until,
+            available_tokens: Self::remaining_tokens(conn, &self.id).await.unwrap(),
+            maximum_tokens: Self::maximum_tokens(conn, &self.id).await.unwrap(),
+        })
     }
 }
 

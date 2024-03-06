@@ -192,14 +192,17 @@ pub async fn handler(
     .await
     .map_err(AuthenticationError::UserDataLookupFailed)?;
 
+    let user_data = UserData {
+        user: user
+            .as_api_user(&mut *conn)
+            .await
+            .map_err(AuthenticationError::UserDataLookupFailed)?,
+        escrowed_key_material: escrowed_device.map(|ed| ed.into()),
+    };
+
     conn.close()
         .await
         .map_err(AuthenticationError::UserDataLookupFailed)?;
-
-    let user_data = UserData {
-        user: user.into(),
-        escrowed_key_material: escrowed_device.map(|ed| ed.into()),
-    };
 
     // Create a Session to record in the database and attach to the CookieJar
     let new_sid_row = sqlx::query!(

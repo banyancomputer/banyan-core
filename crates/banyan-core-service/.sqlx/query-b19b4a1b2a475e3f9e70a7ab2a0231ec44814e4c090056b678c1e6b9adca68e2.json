@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n               SELECT included_archival\n               FROM subscriptions as s\n               JOIN users as u ON s.id = u.subscription_id\n               WHERE u.id = $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "included_archival",
+        "ordinal": 0,
+        "type_info": "Int64"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "b19b4a1b2a475e3f9e70a7ab2a0231ec44814e4c090056b678c1e6b9adca68e2"
+}
