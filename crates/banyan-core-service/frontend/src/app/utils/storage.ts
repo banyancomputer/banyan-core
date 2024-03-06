@@ -29,3 +29,6 @@ export function convertSubscriptionsSizes(rawSize: number) {
 
     return `${+size.toFixed(2)} ${labels[counter]}`;
 };
+
+/** Banyan file size limit in bytes. */
+export const FILE_SIZE_LIMIT = 100000000;
