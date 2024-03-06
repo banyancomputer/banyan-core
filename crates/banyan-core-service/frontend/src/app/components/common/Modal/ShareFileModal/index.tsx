@@ -25,7 +25,7 @@ export const ShareFileModal: React.FC<{ link: string }> = ({ link }) => {
             <div className="flex flex-col items-start gap-3">
                 <div className="w-full overflow-hidden text-ellipsis whitespace-nowrap text-xs">{link}</div>
             </div>
-            <div className="mt-3 flex items-center gap-3 text-xs" >
+            <div className="mt-3 flex items-center justify-end gap-3 text-xs" >
                 <SecondaryButton
                     action={closeModal}
                     text={`${messages.cancel}`}

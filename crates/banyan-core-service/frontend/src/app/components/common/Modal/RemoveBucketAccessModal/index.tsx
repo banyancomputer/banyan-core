@@ -28,7 +28,7 @@ export const RemoveBucketAccessModal: React.FC<{ bucketKey: BucketKey }> = ({ bu
                     {`${messages.subtitle}`}
                 </p>
             </div>
-            <div className="mt-3 flex items-center gap-3 text-xs" >
+            <div className="mt-3 flex items-center justify-end gap-3 text-xs" >
                 <SecondaryButton
                     action={closeModal}
                     text={`${messages.cancel}`}
@@ -36,7 +36,6 @@ export const RemoveBucketAccessModal: React.FC<{ bucketKey: BucketKey }> = ({ bu
                 <PrimaryButton
                     text={`${messages.removeAccess}`}
                     action={removeAccess}
-                    className="w-1/2"
                 />
             </div>
         </div>

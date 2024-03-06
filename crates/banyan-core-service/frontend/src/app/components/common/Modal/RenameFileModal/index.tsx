@@ -52,7 +52,7 @@ export const RenameFileModal: React.FC<{ bucket: Bucket; file: BrowserObject; pa
                     />
                 </label>
             </div>
-            <div className="mt-3 flex items-center gap-3 text-xs" >
+            <div className="mt-3 flex items-center justify-end gap-3 text-xs" >
                 <SecondaryButton
                     action={closeModal}
                     text={`${messages.cancel}`}
