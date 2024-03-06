@@ -110,25 +110,19 @@ pub async fn update_handler(
 
     // Grab the user associated with the invoice
     let mut user = User::by_id(&mut *conn, &invoice.user_id).await?;
-    // Grab the user's subscription
-    let subscription = Subscription::find_by_id(&mut *conn, &user.subscription_id)
+    // Grab the user's included archival tokens
+    let included = Subscription::find_by_id(&mut *conn, &user.subscription_id)
         .await?
-        .ok_or(StripeWebhookError::missing_data("db subscription"))?;
-    // If the user doesn't already have the included amount, bring them up to it
-    let included = subscription.included_archival;
+        .ok_or(StripeWebhookError::missing_data("db subscription"))?
+        .included_archival;
+    // If the user hasn't met their tier capacity
     if user.earned_tokens < included {
-        user.award_tokens(conn, included - user.earned_tokens)
-            .await?;
-    }
-
-    if let Some(maximum) = subscription.archival_hard_limit {
-        let monthly_dosage = (maximum - included) / 6;
         // Give the user their montly allotment up to the maximum
-        let tokens_earned = std::cmp::min(maximum - user.earned_tokens, monthly_dosage);
-        // If the user is not already over their plan capacity / downgraded
-        if tokens_earned > 0 {
-            user.award_tokens(conn, tokens_earned).await?;
-        }
+        user.award_tokens(
+            conn,
+            std::cmp::min(included - user.earned_tokens, included / 6),
+        )
+        .await?;
     }
 
     Ok(())
