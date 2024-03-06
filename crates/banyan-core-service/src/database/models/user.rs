@@ -304,8 +304,8 @@ impl User {
             subscription_id: self.subscription_id.clone(),
             account_tax_class: self.account_tax_class.to_string(),
             subscription_valid_until: self.subscription_valid_until,
-            available_tokens: self.remaining_tokens(conn).await.unwrap(),
-            maximum_tokens: self.maximum_tokens(conn).await.unwrap(),
+            available_tokens: self.remaining_tokens(conn).await?,
+            maximum_tokens: self.maximum_tokens(conn).await?,
         })
     }
 }
