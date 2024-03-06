@@ -108,16 +108,12 @@ pub async fn update_handler(
         .ok_or(StripeWebhookError::missing_target("db_invoice"))?;
     invoice.update_status(&mut *conn, new_status).await?;
 
-    // Determine the number of tokens to award the user
-    let tokens_earned = 0;
-
     // Grab the user associated with the invoice
     let mut user = User::by_id(&mut *conn, &invoice.user_id).await?;
-
+    // Determine the number of tokens to award the user
+    let tokens_earned = 0;
     // Award them tokens
     user.award_tokens(conn, tokens_earned).await?;
-
-    //let subscriptions = Subscription::
 
     Ok(())
 }

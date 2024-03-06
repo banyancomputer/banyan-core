@@ -34,7 +34,7 @@ pub async fn handler(
         ));
     }
 
-    let user = User::by_id(&mut *conn, &user_identity.id().to_string()).await?;
+    let mut user = User::by_id(&mut *conn, &user_identity.id().to_string()).await?;
 
     let metadata_id = sqlx::query_scalar!(
         r#"SELECT m.id FROM metadata AS m

@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use banyan_task::{CurrentTask, TaskLike};
 use serde::{Deserialize, Serialize};
-use sqlx::{Sqlite, Transaction};
+use sqlx::{QueryBuilder, Sqlite, Transaction};
 
 use crate::app::AppState;
 use crate::database::models::{DealState, MetadataState, SnapshotSegment};
@@ -133,6 +133,7 @@ impl CreateDealsTask {
                 Self::retrieve_snapshots(transaction, segment_ids.clone()).await?;
             snapshot_ids.push(snapshot_id.to_string());
             Self::delete_deals(transaction, segment_ids).await?;
+            Self::return_tokens(transaction, &snapshot_ids).await?;
 
             let new_deal_id = sqlx::query_scalar!(
                 r#" INSERT INTO deals (state) VALUES ($1) RETURNING id;"#,
@@ -217,12 +218,34 @@ impl CreateDealsTask {
         }
         deals_builder.push(")");
         deals_builder.push(");");
+        deals_builder.build().execute(&mut **transaction).await?;
+        Ok(())
+    }
 
-        deals_builder
-            .build()
-            .execute(&mut **transaction)
-            .await
-            .map_err(CreateDealsTaskError::Sqlx)?;
+    async fn return_tokens(
+        transaction: &mut Transaction<'_, Sqlite>,
+        snapshot_ids: &Vec<String>,
+    ) -> Result<(), <CreateDealsTask as TaskLike>::Error> {
+        let mut builder = QueryBuilder::new(
+            r#"
+                UPDATE users AS u
+                SET u.consumed_tokens = u.consumed_tokens - (
+                    SELECT u.tokens_used
+                    FROM snapshots AS s
+                    WHERE s.user_id = u.id
+                    AND s.id IN (
+            "#,
+        );
+
+        let mut separated = builder.separated(", ");
+        for snapshot_id in snapshot_ids {
+            separated.push_bind(snapshot_id);
+        }
+
+        builder.push(")");
+        builder.push(");");
+        builder.build().execute(&mut **transaction).await?;
+
         Ok(())
     }
 }
@@ -241,11 +264,7 @@ impl TaskLike for CreateDealsTask {
     type Context = AppState;
 
     async fn run(&self, _task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
-        let mut transaction = ctx
-            .database()
-            .begin()
-            .await
-            .map_err(CreateDealsTaskError::Sqlx)?;
+        let mut transaction = ctx.database().begin().await?;
 
         let snapshot_info = sqlx::query_as!(
             SnapshotInfo,
@@ -261,8 +280,7 @@ impl TaskLike for CreateDealsTask {
             MetadataState::Current
         )
         .fetch_one(&mut *transaction)
-        .await
-        .map_err(CreateDealsTaskError::Sqlx)?;
+        .await?;
 
         let segment_size =
             snapshot_info.snapshot_size.unwrap_or(0) + snapshot_info.metadata_size.unwrap_or(0);
