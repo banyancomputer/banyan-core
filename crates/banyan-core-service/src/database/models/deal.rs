@@ -2,7 +2,7 @@ use time::OffsetDateTime;
 
 use crate::database::models::deal_state::DealState;
 
-#[derive(sqlx::FromRow)]
+#[derive(Debug, sqlx::FromRow)]
 pub struct Deal {
     pub id: String,
     pub state: DealState,

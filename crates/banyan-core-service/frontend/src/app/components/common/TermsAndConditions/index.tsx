@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { useIntl } from 'react-intl';
 
 import { AccountType } from './AccountType';
 
 import { useModal } from '@app/contexts/modals';
 import { TermsAndColditionsClient } from '@/api/termsAndConditions';
 import { User } from '@/entities/user';
+import { useAppSelector } from '@/app/store';
 
 import folders from "@static/images/termsAndConditions/folders.png";
 import { Done, Logo } from '@static/images/common';
@@ -16,7 +16,7 @@ export const TermaAndConditions: React.FC<{ userData: User, acceptTerms: React.D
     const [accountType, setAccountType] = useState('');
     const [areTermsAccepted, setAreTermsAccepted] = useState(false);
     const { closeModal } = useModal();
-    const { messages } = useIntl();
+    const messages = useAppSelector(state => state.locales.messages.coponents.common.termsAndConditions);
     const isFormFilled = accountType && areTermsAccepted;
 
     const submit = async () => {
@@ -36,7 +36,7 @@ export const TermaAndConditions: React.FC<{ userData: User, acceptTerms: React.D
                     <Logo />
                     <div className="mt-20 flex flex-col">
                         <h4 className="text-[32px] font-semibold">
-                            {`${messages.whatAreYouUsingBanyanFor}`}
+                            {`${messages.accountTypeQuestion}`}
                         </h4>
                         <div className="mt-6 mb-8 flex items-center gap-3">
                             <AccountType

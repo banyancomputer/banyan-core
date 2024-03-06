@@ -20,8 +20,18 @@ pub async fn handler(
     Json(request): Json<BTreeSet<Cid>>,
 ) -> Result<Response, CreateSnapshotError> {
     let mut database = state.database();
+    let mut transaction = database
+        .begin()
+        .await
+        .map_err(CreateSnapshotError::SaveFailed)?;
     let bucket_id = bucket_id.to_string();
     let metadata_id = metadata_id.to_string();
+
+    if request.is_empty() {
+        return Err(CreateSnapshotError::EmptyBucket(
+            "no cids provided".to_string(),
+        ));
+    }
 
     let user_id = user_identity.id().to_string();
     let metadata_id = sqlx::query_scalar!(
@@ -37,7 +47,7 @@ pub async fn handler(
         bucket_id,
         metadata_id,
     )
-    .fetch_optional(&database)
+    .fetch_optional(&mut *transaction)
     .await
     .map_err(CreateSnapshotError::MetadataUnavailable)?
     .ok_or(CreateSnapshotError::NotFound)?;
@@ -85,7 +95,7 @@ pub async fn handler(
         pending_state,
         size_estimate,
     )
-    .fetch_one(&database)
+    .fetch_one(&mut *transaction)
     .await
     .map_err(CreateSnapshotError::SaveFailed)?;
 
@@ -112,12 +122,25 @@ pub async fn handler(
         }
         separated.push_unseparated(");");
 
-        builder
+        let res = builder
             .build()
-            .execute(&database)
+            .execute(&mut *transaction)
             .await
             .map_err(CreateSnapshotError::BlockAssociationFailed)?;
+
+        if res.rows_affected() != cid_chunk.len() as u64 {
+            return Err(CreateSnapshotError::AssociationMismatch(format!(
+                "expected {} got {}",
+                cid_chunk.len(),
+                res.rows_affected()
+            )));
+        }
     }
+
+    transaction
+        .commit()
+        .await
+        .map_err(CreateSnapshotError::TransactionFailure)?;
 
     CreateDealsTask::new(snapshot_id.clone())
         .enqueue::<banyan_task::SqliteTaskStore>(&mut database)
@@ -136,6 +159,9 @@ pub enum CreateSnapshotError {
     #[error("unable to locate requested metadata: {0}")]
     MetadataUnavailable(sqlx::Error),
 
+    #[error("transaction error: {0}")]
+    TransactionFailure(sqlx::Error),
+
     #[error("saving new snapshot association failed: {0}")]
     SaveFailed(sqlx::Error),
 
@@ -147,6 +173,12 @@ pub enum CreateSnapshotError {
 
     #[error("insufficient storage!")]
     InsufficientStorage,
+
+    #[error("association mismatch: {0}")]
+    AssociationMismatch(String),
+
+    #[error("cannot snapshot an empty bucket: {0}")]
+    EmptyBucket(String),
 
     #[error("active cid list was in some way invalid: {0}")]
     InvalidInternalCid(cid::Error),
@@ -162,11 +194,120 @@ impl IntoResponse for CreateSnapshotError {
                 let err_msg = serde_json::json!({"msg": "not found"});
                 (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
             }
+            CreateSnapshotError::AssociationMismatch(e) | CreateSnapshotError::EmptyBucket(e) => {
+                let err_msg = serde_json::json!({"msg": e.to_string()});
+                (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
+            }
             _ => {
                 tracing::error!("encountered error creating snapshot: {self}");
                 let err_msg = serde_json::json!({"msg": "backend service experienced an issue servicing the request"});
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
             }
         }
+    }
+}
+#[cfg(test)]
+mod tests {
+    use std::collections::BTreeSet;
+
+    use axum::extract::{Json, Path};
+    use cid::Cid;
+    use http::StatusCode;
+    use uuid::Uuid;
+
+    use crate::api::buckets::metadata::snapshot_metadata::{handler, CreateSnapshotError};
+    use crate::app::mock_app_state;
+    use crate::database::models::{MetadataState, Snapshot};
+    use crate::database::test_helpers::{
+        associate_blocks, create_blocks, create_storage_host, data_generator, generate_cids,
+        get_or_create_session, normalize_cids, sample_bucket, sample_metadata, sample_user,
+        setup_database,
+    };
+    use crate::database::Database;
+    use crate::extractors::UserIdentity;
+
+    #[derive(Debug, sqlx::FromRow)]
+    pub struct SnapshotBlockLocation {
+        pub snapshot_id: String,
+        pub block_id: String,
+    }
+    impl SnapshotBlockLocation {
+        pub(crate) async fn get_all(conn: &Database) -> Vec<SnapshotBlockLocation> {
+            sqlx::query_as!(
+                SnapshotBlockLocation,
+                "SELECT * FROM snapshot_block_locations;"
+            )
+            .fetch_all(conn)
+            .await
+            .expect("snapshot block locations")
+        }
+    }
+
+    #[tokio::test]
+    async fn test_create_snapshot_no_cids_returns_error() {
+        let db = setup_database().await;
+        let mut conn = db.acquire().await.expect("connection");
+
+        let user_id = sample_user(&mut conn, "test@example.com").await;
+        let bucket_id = sample_bucket(&mut conn, &user_id).await;
+        let metadata_id = sample_metadata(&mut conn, &bucket_id, 1, MetadataState::Current).await;
+
+        let res = handler(
+            UserIdentity::Session(get_or_create_session(&mut conn, &user_id).await),
+            mock_app_state(db.clone()),
+            Path((
+                Uuid::parse_str(&bucket_id).expect("bucket id as uuid"),
+                Uuid::parse_str(&metadata_id).expect("bucket id as uuid"),
+            )),
+            Json(BTreeSet::new()), // No CIDs provided
+        )
+        .await;
+
+        assert!(res.is_err());
+        assert!(matches!(res, Err(CreateSnapshotError::EmptyBucket(_))));
+        assert_eq!(SnapshotBlockLocation::get_all(&db).await.len(), 0);
+        assert_eq!(Snapshot::get_all(&db).await.len(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_create_snapshot_works() {
+        let db = setup_database().await;
+        let mut conn = db.acquire().await.expect("connection");
+
+        let user_id = sample_user(&mut conn, "test@example.com").await;
+        let bucket_id = sample_bucket(&mut conn, &user_id).await;
+        let metadata_id = sample_metadata(&mut conn, &bucket_id, 1, MetadataState::Current).await;
+        let prim_storage_host_id =
+            create_storage_host(&mut conn, "Diskz", "https://127.0.0.1:8001/", 1_000_000).await;
+        let cids_set: BTreeSet<Cid> = generate_cids(data_generator(0..3)).collect();
+        let cids_string: Vec<String> = normalize_cids(cids_set.clone().into_iter()).collect();
+        let initial_blocks = create_blocks(&mut conn, cids_string.iter().map(String::as_str)).await;
+        associate_blocks(
+            &mut conn,
+            &metadata_id,
+            &prim_storage_host_id,
+            initial_blocks.iter().map(String::as_str),
+        )
+        .await;
+
+        let res = handler(
+            UserIdentity::Session(get_or_create_session(&mut conn, &user_id).await),
+            mock_app_state(db.clone()),
+            Path((
+                Uuid::parse_str(&bucket_id).expect("bucket id as uuid"),
+                Uuid::parse_str(&metadata_id).expect("metadata id as uuid"),
+            )),
+            Json(cids_set.clone()),
+        )
+        .await;
+
+        assert!(res.is_ok());
+        let response = res.unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(Snapshot::get_all(&db).await.len(), 1);
+        assert_eq!(
+            SnapshotBlockLocation::get_all(&db).await.len(),
+            cids_set.len()
+        );
     }
 }

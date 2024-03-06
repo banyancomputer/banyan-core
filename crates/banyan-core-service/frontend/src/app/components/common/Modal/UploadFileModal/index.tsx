@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useIntl } from 'react-intl';
 
 import { Select } from '@components/common/Select';
 import { AddNewOption } from '@components/common/Select/AddNewOption';
@@ -13,6 +12,7 @@ import { useModal } from '@/app/contexts/modals';
 import { useTomb } from '@/app/contexts/tomb';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { useFilesUpload } from '@/app/contexts/filesUpload';
+import { useAppSelector } from '@/app/store';
 
 import { Upload } from '@static/images/buckets';
 
@@ -20,7 +20,7 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null; folder?: Browse
     const { buckets } = useTomb();
     const { openModal, closeModal } = useModal();
     const { setFiles, uploadFiles, files } = useFilesUpload();
-    const { messages } = useIntl();
+    const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.uploadFile);
     const [selectedBucket, setSelectedBucket] = useState<Bucket | null>(bucket || null);
     const [selectedFolder, setSelectedFolder] = useState<string[]>(path);
     const isUploadDataFilled = useMemo(() => Boolean(selectedBucket && files.length), [selectedBucket, files]);
@@ -80,9 +80,9 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null; folder?: Browse
     return (
         <div className="w-modal flex flex-col gap-4">
             <div>
-                <h4 className="text-m font-semibold ">{`${messages.uploadFiles}`}</h4>
+                <h4 className="text-m font-semibold ">{`${messages.title}`}</h4>
                 <p className="mt-2 text-text-600">
-                    {`${messages.chooseFilesToUpload}`}
+                    {`${messages.subtitle}`}
                 </p>
             </div>
             {

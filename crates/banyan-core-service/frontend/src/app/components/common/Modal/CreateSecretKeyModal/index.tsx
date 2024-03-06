@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { useIntl } from 'react-intl';
 import { useForm } from 'react-hook-form';
 
 import { PrimaryButton } from '@components/common/PrimaryButton';
@@ -8,11 +7,12 @@ import { Input } from '@components/common/Input';
 import { useKeystore } from '@/app/contexts/keystore';
 import { validateKeyphrase } from '@/app/utils/validation';
 import { useModal } from '@/app/contexts/modals';
+import { useAppSelector } from '@/app/store';
 
 import { Bolt } from '@static/images/common';
 
 export const CreateSecretKeyModal = () => {
-    const { messages } = useIntl();
+    const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.createSecretKey);
     const { initializeKeystore } = useKeystore();
     const { closeModal } = useModal();
     const {
@@ -53,9 +53,9 @@ export const CreateSecretKeyModal = () => {
                 <Bolt width="24px" height="24px" />
             </span>
             <div>
-                <h4 className="text-m font-semibold">{`${messages.createSecretKey}`}</h4>
+                <h4 className="text-m font-semibold">{`${messages.title}`}</h4>
                 <p className="mt-2 text-text-600">
-                    {`${messages.secretKeyDescription}`}
+                    {`${messages.subtitle}`}
                 </p>
             </div>
             <Input

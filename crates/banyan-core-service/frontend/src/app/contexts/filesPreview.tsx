@@ -1,11 +1,11 @@
 import React, { FC, ReactNode, createContext, useContext, useEffect, useState } from 'react';
 import mime from 'mime';
-import { useIntl } from 'react-intl';
 
 import { useTomb } from './tomb';
 import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { ToastNotifications } from '../utils/toastNotifications';
 import { SUPPORTED_EXTENSIONS, fileTypes } from "@app/types/filesPreview"
+import { useAppSelector } from '../store';
 
 
 interface OpenedFile {
@@ -32,7 +32,7 @@ class FilePreviewState {
     public bucket: Bucket | null = null;
     public path: string[] = [];
     public parrentFolder: BrowserObject | undefined = undefined;
-    openFile: (bucket: Bucket, file: BrowserObject, files: BrowserObject[], path: string[], parrentFolder?: BrowserObject) => void = () => {};
+    openFile: (bucket: Bucket, file: BrowserObject, files: BrowserObject[], path: string[], parrentFolder?: BrowserObject) => void = () => { };
     openNext: () => void = () => { };
     openPrevious: () => void = () => { };
     closeFile: () => void = () => { };
@@ -42,15 +42,15 @@ class FilePreviewState {
 export const FilePreviewContext = createContext<FilePreviewState>({} as FilePreviewState);
 
 export const FilePreviewProvider: FC<{ children: ReactNode }> = ({ children }) => {
+    const messages = useAppSelector(state => state.locales.messages.coponents.common.filePreview);
     const [previewState, setPsreviewState] = useState<FilePreviewState>(new FilePreviewState());
     const { bucket, file, files, path, parrentFolder } = previewState;
     const { getFile } = useTomb();
-    const { messages } = useIntl();
 
     const openFile = async (bucket: Bucket, file: BrowserObject, files: BrowserObject[], path: string[], parrentFolder?: BrowserObject) => {
         if (!file) return;
 
-        setPsreviewState(prev => ({...prev, files, file: { ...initialOpenedFileState, name: file.name, browserObject: file }, bucket, path, parrentFolder }));
+        setPsreviewState(prev => ({ ...prev, files, file: { ...initialOpenedFileState, name: file.name, browserObject: file }, bucket, path, parrentFolder }));
 
         const fileExtension = [...file.name.split('.')].pop() || '';
         const isFileSupported = SUPPORTED_EXTENSIONS.some((element, index) => {

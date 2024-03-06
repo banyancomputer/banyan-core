@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useIntl } from 'react-intl';
 
 import { PrimaryButton } from '@components/common/PrimaryButton';
 import { SecondaryButton } from '@components/common/SecondaryButton';
@@ -9,20 +8,19 @@ import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { useTomb } from '@/app/contexts/tomb';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
-
-import { Done } from '@static/images/common';
+import { useAppSelector } from '@/app/store';
 
 export const RenameFileModal: React.FC<{ bucket: Bucket; file: BrowserObject; path: string[] }> = ({ bucket, file, path }) => {
     const { closeModal } = useModal();
     const { moveTo, getSelectedBucketFiles, selectBucket } = useTomb();
-    const { messages } = useIntl();
+    const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.renameFile);
     const [newName, setNewName] = useState('');
     const folderLocation = useFolderLocation();
 
     const save = async () => {
         try {
             await moveTo(bucket, [...path, file.name], [...path], newName);
-            ToastNotifications.notify(`${messages.fileWasRenamed}`, <Done width="20px" height="20px" />);
+            ToastNotifications.notify(`${messages.fileWasRenamed}`);
             if (path.join('/') === folderLocation.join('/')) {
                 await getSelectedBucketFiles(folderLocation);
                 closeModal();
@@ -40,7 +38,7 @@ export const RenameFileModal: React.FC<{ bucket: Bucket; file: BrowserObject; pa
     return (
         <div className="w-modal flex flex-col gap-8" >
             <div>
-                <h4 className="text-m font-semibold ">{`${messages.renameFile}`}</h4>
+                <h4 className="text-m font-semibold ">{`${messages.title}`}</h4>
             </div>
             <div>
                 <label>
@@ -48,7 +46,7 @@ export const RenameFileModal: React.FC<{ bucket: Bucket; file: BrowserObject; pa
                     <input
                         className="mt-2 input w-full h-11 py-3 px-4 rounded-md border-border-darken shadow-sm focus:outline-none"
                         type="text"
-                        placeholder={`${messages.enterNewDriveName}`}
+                        placeholder={`${messages.enterNewName}`}
                         value={newName}
                         onChange={event => setNewName(event.target.value)}
                     />

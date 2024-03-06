@@ -47,6 +47,21 @@
         "name": "region",
         "ordinal": 8,
         "type_info": "Text"
+      },
+      {
+        "name": "last_seen_at",
+        "ordinal": 9,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "current_version",
+        "ordinal": 10,
+        "type_info": "Text"
+      },
+      {
+        "name": "staging",
+        "ordinal": 11,
+        "type_info": "Bool"
       }
     ],
     "parameters": {
@@ -61,7 +76,10 @@
       false,
       false,
       false,
-      true
+      true,
+      true,
+      true,
+      false
     ]
   },
   "hash": "95e1668902c8b23c20ad59205f4f94e1d8cd66c109f64a827d57038cd82d13c6"

@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useIntl } from 'react-intl';
 import { useNavigate } from 'react-router-dom';
 
 import { PrimaryButton } from '@components/common/PrimaryButton';
@@ -11,10 +10,11 @@ import { useTomb } from '@/app/contexts/tomb';
 import { Bucket } from '@/app/types/bucket';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { stringToBase64 } from '@/app/utils/base64';
+import { useAppSelector } from '@/app/store';
 
 export const CreateFolderModal: React.FC<{ bucket: Bucket; onSuccess?: () => void; path: string[], redirect?: boolean }> = ({ bucket, onSuccess = () => { }, path, redirect = false }) => {
     const { closeModal, openModal } = useModal();
-    const { messages } = useIntl();
+    const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.createFolder);
     const [folderName, setfolderName] = useState('');
     const { createDirectory } = useTomb();
     const navigate = useNavigate();
@@ -41,7 +41,7 @@ export const CreateFolderModal: React.FC<{ bucket: Bucket; onSuccess?: () => voi
     return (
         <div className="w-modal flex flex-col gap-5" >
             <div>
-                <h4 className="text-m font-semibold ">{`${messages.createFolder}`}</h4>
+                <h4 className="text-m font-semibold ">{`${messages.title}`}</h4>
             </div>
             <div>
                 <label>
@@ -49,7 +49,7 @@ export const CreateFolderModal: React.FC<{ bucket: Bucket; onSuccess?: () => voi
                     <input
                         className="mt-2 input w-full h-11 py-3 px-4 rounded-md border-border-darken focus:outline-none"
                         type="text"
-                        placeholder={`${messages.enterNewDriveName}`}
+                        placeholder={`${messages.enterNewName}`}
                         value={folderName}
                         onChange={changeName}
                     />

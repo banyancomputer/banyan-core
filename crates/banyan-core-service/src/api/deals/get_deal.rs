@@ -53,6 +53,7 @@ mod tests {
     use crate::app::mock_app_state;
     use crate::database::models::DealState;
     use crate::database::test_helpers;
+    use crate::tasks::BLOCK_SIZE;
     use crate::utils::tests::deserialize_response;
 
     #[tokio::test]
@@ -79,7 +80,7 @@ mod tests {
         assert_eq!(deal.id, active_deal_id);
         assert_eq!(deal.state, DealState::Active);
         // hardcoded in segment creation
-        assert_eq!(deal.size, 262144);
+        assert_eq!(deal.size, 2 * BLOCK_SIZE);
     }
 
     #[tokio::test]

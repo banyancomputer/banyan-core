@@ -1,6 +1,6 @@
-import React from 'react';
-import { useIntl } from 'react-intl';
 import { Link, useLocation } from 'react-router-dom';
+
+import { useAppSelector } from '@/app/store';
 
 class SettingsLink {
     constructor(
@@ -10,14 +10,14 @@ class SettingsLink {
 };
 
 export const AccountNavigation = () => {
-    const { messages } = useIntl();
     const { pathname } = useLocation();
+    const messages = useAppSelector(state => state.locales.messages.coponents.account.navigation);
 
     const links = [
         // new SettingsLink(`${messages.profile}`, '/account/profile'),
-        new SettingsLink(`${messages.appSettings}`, '/account/settings'),
-        new SettingsLink(`${messages.manageKeys}`, '/account/manage-keys'),
-        new SettingsLink(`${messages.billingAndPayments}`, '/account/billing'),
+        new SettingsLink(`${messages.profile}`, '/account/profile'),
+        new SettingsLink(`${messages.manageAccessKeys}`, '/account/manage-keys'),
+        new SettingsLink(`${messages.billingAndPayment}`, '/account/billing'),
         // new SettingsLink(`${messages.services}`, '/account/services'),
     ];
 
@@ -25,7 +25,7 @@ export const AccountNavigation = () => {
         <section className="py-5 px-10" id="buckets">
             <div className="mb-4 flex w-full justify-between items-center">
                 <h2 className="text-xl font-semibold">
-                    {`${messages.account}`}
+                    {`${messages.title}`}
                 </h2>
             </div>
             <div className="border-b-1 border-border-regular">

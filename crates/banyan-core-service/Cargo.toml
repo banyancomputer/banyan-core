@@ -77,6 +77,3 @@ proptest-derive = "^0.2.0"
 
 [build-dependencies]
 time = { version = "^0.3", features = ["formatting"] }
-
-[features]
-fake = []
