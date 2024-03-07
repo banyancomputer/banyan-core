@@ -98,13 +98,13 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         <div
             onDrop={handleDrop}
             onDragOver={preventDefaultDragAction}
-            className={`w-fit h-full overflow-x-auto bg-secondaryBackground max-h-[calc(100vh-388px)]`}
+            className={`w-fit h-full overflow-x-auto bg-mainBackground max-h-[calc(100vh-388px)]`}
             id="table"
         >
             <div >
                 <table className="table table-pin-rows w-full text-text-600 rounded-xl table-fixed">
                     <thead className="border-b-border-regular text-xxs border-b-2 font-normal text-text-900">
-                        <tr className="bg-secondaryBackground font-normal border-none">
+                        <tr className="bg-mainBackground font-normal border-none">
                             <th className="flex items-center gap-3 pl-0 py-4 text-left font-medium">
                                 <SortCell
                                     criteria="name"

@@ -32,7 +32,7 @@ export const NextBillingDate = () => {
     }, []);
 
     return (
-        <div className="flex-grow flex flex-col gap-4 p-4 border-1 border-border-regular rounded-lg text-xs">
+        <div className="flex-grow flex flex-col gap-4 p-4 border-1 border-border-regular bg-secondaryBackground rounded-lg text-xs">
             <h3 className="text-text-800 text-[18px] font-semibold">Next Billing Date</h3>
             <div className="flex justify-between items-center">
                 <div>{messages.onDemandStorage}</div>
