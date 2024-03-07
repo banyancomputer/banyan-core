@@ -61,8 +61,8 @@ export class ToastNotifications {
                 autoClose: false,
                 closeButton: false,
                 toastId: Date.now(),
-                bodyStyle: { padding: '0', margin: '0', height: '100%', minHeight: 'unset !important' },
-                style: { padding: '0', margin: '0', borderRadius: '4px', minHeight: 'unset !important' },
+                bodyStyle: { padding: '0', margin: '0', height: '100%', minHeight: 'unset !important', background: 'transparent' },
+                style: { padding: '0', margin: '0', borderRadius: '4px', minHeight: 'unset !important', background: 'transparent' },
             });
     };
 

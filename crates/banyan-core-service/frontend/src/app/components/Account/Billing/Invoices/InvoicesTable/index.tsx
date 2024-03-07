@@ -18,9 +18,9 @@ export const InvoicesTable: React.FC<{ invoices: Invoice[] }> = ({ invoices }) =
 
     return (
         <>
-            <table className="table table-fixed invoices-table border-1 border-border-regular">
+            <table className="table table-fixed invoices-table border-1 border-border-regular bg-secondaryBackground rounded-lg overflow-hidden">
                 <thead>
-                    <tr className="border-none  bg-gray-100">
+                    <tr className="border-none">
                         <th className="p-3 text-text-600 font-medium text-xs">{messages.date}</th>
                         <th className="p-3 text-text-600 font-medium text-xs">{messages.status}</th>
                         <th className="p-3 text-text-600 font-medium text-xs">{messages.totalCost}</th>

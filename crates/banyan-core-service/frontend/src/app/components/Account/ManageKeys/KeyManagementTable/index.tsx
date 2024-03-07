@@ -11,7 +11,7 @@ export const KeyManagementTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }
 
     return (
         <div
-            className="max-h-[calc(100vh-300px)] overflow-x-auto border-2 border-border-regular bg-secondaryBackground rounded-xl"
+            className="max-h-[calc(100vh-300px)] overflow-x-auto border-2 border-border-regular rounded-xl"
             id="table"
         >
             <table className="table table-pin-rows key-management-table w-full text-text-600 rounded-xl">

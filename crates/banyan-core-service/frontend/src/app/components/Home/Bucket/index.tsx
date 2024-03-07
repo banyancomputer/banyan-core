@@ -86,7 +86,7 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
 
     return (
         <div
-            className={`rounded-xl cursor-pointer transition-all bg-secondaryBackground border-1 border-border-regular ${!bucket.mount && 'cursor-not-allowed'}`}
+            className={`rounded-xl cursor-pointer transition-all border-1 border-border-regular ${!bucket.mount && 'cursor-not-allowed'}`}
             ref={bucketRef}
             onContextMenu={onContextMenu}
             onClick={openBucket}

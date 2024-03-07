@@ -99,6 +99,8 @@ module.exports = {
 				logo: 'var(--logo)',
 				mainBackground: 'var(--main-background)',
 				secondaryBackground: 'var(--secondary-background)',
+				headerBackground: 'var(--header-background)',
+				headerBorder: 'var(--header-border)',
 				invoiceHeadingBackground: 'var(--invoice-heading-background)'
 			},
 			fontFamily: {

@@ -58,7 +58,7 @@ export const UploadFileProgress: React.FC<{bucket: Bucket, path: string[], folde
                 </div>
             </div>
             {isExpanded ?
-                <div className="flex flex-col">
+                <div className="flex flex-col bg-mainBackground">
                     {files.map(file =>
                         <div
                             className="flex items-center px-3 py-2 gap-3 text-xs font-normal text-bucket-actionsText"

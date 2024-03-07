@@ -29,11 +29,11 @@ input {
 }
 
 .btn-primary {
-	@apply flex items-center justify-center font-semibold whitespace-nowrap rounded-md border-2 border-button-primary bg-button-primary text-white transition-all;
+	@apply flex items-center justify-center font-semibold whitespace-nowrap rounded-md border-2 border-button-primary bg-button-primary text-button-primaryText transition-all;
 };
 
 .btn-primary:hover {
-	@apply bg-button-primaryHover border-button-primary;
+	@apply bg-button-primaryHover border-button-primaryHover;
 }
 
 .btn-primary:disabled {
@@ -58,7 +58,7 @@ input {
 }
 
 .input {
-    @apply bg-secondaryBackground
+    @apply bg-modalBackground
 }
 
 *::-webkit-scrollbar {
@@ -109,8 +109,7 @@ input {
 
 .table-pin-cols {
     th {
-        background-color: white;
-        border-bottom: 1px solid #EFF1F5;
+        background-color: var(--main-background);
     }
 }
 
