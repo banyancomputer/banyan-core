@@ -81,18 +81,18 @@ impl StorageHost {
     ) -> Result<UserStorageReport, sqlx::Error> {
         let ex_bigint = sqlx::query_as!(
             ExplicitBigInt,
-            r#"SELECT COALESCE(SUM(COALESCE(m.data_size, m.expected_data_size)), 0) as data_size,
-                      COALESCE(SUM(m.metadata_size), 0) as metadata_size FROM metadata m
-               JOIN storage_hosts_metadatas_storage_grants shmg ON shmg.metadata_id = m.id
-               JOIN storage_grants sg ON shmg.storage_grant_id = sg.id
-              WHERE shmg.storage_host_id = $1 AND sg.user_id = $2;
+            r#"SELECT COALESCE(SUM(m.data_size), 0) as big_int FROM metadata m
+                   JOIN storage_hosts_metadatas_storage_grants shmg ON shmg.metadata_id = m.id
+                   JOIN storage_grants sg ON shmg.storage_grant_id = sg.id
+                   WHERE shmg.storage_host_id = $2
+                       AND sg.user_id = $1;
              "#,
             storage_host_id,
             user_id,
         )
         .fetch_one(&mut *conn)
         .await?;
-        let current_consumption = ex_bigint.data_size;
+        let current_consumption = ex_bigint.big_int;
 
         let maximum_authorized = sqlx::query_scalar!(
             r#"SELECT authorized_amount FROM storage_grants
