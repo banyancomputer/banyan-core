@@ -64,7 +64,7 @@ export const EmptyState: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                     </p>
                 </div>
                 <span
-                    className="mt-4 flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-md bg-text-200 text-button-primary"
+                    className="btn-secondary mt-4 flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-md bg-text-200 text-button-primary"
                 >
                     <Upload />
                     {messages.buttonText}
