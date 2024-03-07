@@ -1,14 +1,15 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 
 import { Loader } from '../Loader';
 
 import { useFilesUpload } from '@/app/contexts/filesUpload';
 import { useAppSelector } from '@/app/store';
+import { ToastNotifications } from '@/app/utils/toastNotifications';
+import { BrowserObject, Bucket } from '@/app/types/bucket';
 
 import { ChevronUp, Clock, Close, Retry, UploadFailIcon, UploadSuccessIcon } from '@static/images/common';
-import { ToastNotifications } from '@/app/utils/toastNotifications';
 
-export const UploadFileProgress = () => {
+export const UploadFileProgress: React.FC<{bucket: Bucket, path: string[], folder?: BrowserObject }> = ({ bucket, path, folder }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.common.uploadFileProgress);
     const { files, setFiles, deleteFromUploadList, retryUpload } = useFilesUpload();
     const [isExpanded, setIsExpanded] = useState(true);
@@ -78,7 +79,7 @@ export const UploadFileProgress = () => {
                                     </span>
                                     <span
                                         className="cursor-pointer"
-                                        onClick={() => retryUpload(file)}
+                                        onClick={() => retryUpload(file, bucket, path, folder)}
                                     >
                                         <Retry />
                                     </span>

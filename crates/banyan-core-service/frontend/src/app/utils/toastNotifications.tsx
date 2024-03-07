@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import { UploadFileProgress } from '@components/common/UploadFileProgress';
 
 import { Close, Info, SuccessToastIcon } from '@static/images/common';
+import { BrowserObject, Bucket } from '../types/bucket';
 
 /** Defines toast notifications with message, toast type and theme. */
 export class ToastNotifications {
@@ -46,9 +47,13 @@ export class ToastNotifications {
         );
     };
 
-    static uploadProgress() {
+    static uploadProgress(bucket: Bucket, path: string[], folder?: BrowserObject) {
         toast.info(
-            <UploadFileProgress />,
+            <UploadFileProgress
+                bucket={bucket}
+                path={path}
+                folder={folder}
+            />,
             {
                 theme: "light",
                 position: "bottom-right",
