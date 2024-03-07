@@ -20,13 +20,12 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const params = useParams();
     const bucketId = params.id;
     const messages = useAppSelector(state => state.locales.messages.coponents.bucket.bucketTable);
-    const { uploadFiles, setFiles, files } = useFilesUpload();
+    const { uploadFiles } = useFilesUpload();
     const { getSelectedBucketFiles, moveTo } = useTomb();
     /** Created to prevent sotring logic affect initial buckets array */
     const [bucketCopy, setBucketCopy] = useState(bucket);
     const [sortState, setSortState] = useState<{ criteria: string; direction: 'ASC' | 'DESC' | '' }>({ criteria: 'name', direction: 'DESC' });
     const folderLocation = useFolderLocation();
-    const [areFilesDropped, setAreFilesDropped] = useState(false);
     const siblingFiles = useMemo(() => bucketCopy.files?.filter(file => file.type !== 'dir'), [bucketCopy.files]);
 
     const sort = (criteria: string) => {
@@ -37,11 +36,14 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         preventDefaultDragAction(event);
 
         if (event?.dataTransfer.files.length) {
-            setFiles(Array.from(event.dataTransfer.files).slice(0, 1).map(file => ({ file, status: 'pending' })));
-            setAreFilesDropped(true);
+            try {
+                await uploadFiles(event.dataTransfer.files, bucket, folderLocation);
+            } catch (error: any) {
+                ToastNotifications.error(messages.uploadError, messages.tryAgain, () => { });
+            };
 
             return;
-        }
+        };
 
         const dragData = event.dataTransfer.getData('browserObject');
         if (dragData) {
@@ -59,20 +61,6 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
             };
         }
     };
-
-    useEffect(() => {
-        if (!files.length || !areFilesDropped) { return; }
-
-        (async () => {
-            try {
-                await uploadFiles(bucket, folderLocation);
-                setAreFilesDropped(false);
-            } catch (error: any) {
-                setAreFilesDropped(false);
-                ToastNotifications.error(messages.uploadError, messages.tryAgain, () => { });
-            }
-        })();
-    }, [files, areFilesDropped]);
 
     useEffect(() => {
         if (!bucket.files) { return; }
