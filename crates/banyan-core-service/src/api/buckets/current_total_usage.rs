@@ -31,8 +31,8 @@ pub async fn handler(user_identity: UserIdentity, State(state): State<AppState>)
             b.user_id = $1 AND b.deleted_at IS NULL AND m.state IN ('current', 'outdated', 'pending');"#,
         user_id,
     )
-        .fetch_one(&database)
-        .await;
+    .fetch_one(&database)
+    .await;
 
     match query_result {
         Ok(store) => {
