@@ -19,11 +19,9 @@ export const KeyActions: React.FC<{ bucket: Bucket; bucketKey: BucketKey }> = ({
         openModal(<RemoveBucketAccessModal bucketKey={bucketKey} />);
     };
 
-    const approved = bucketKey.approved;
-
     return (
         <div className="w-52 text-xs font-medium bg-bucket-actionsBackground rounded-xl shadow-md z-10 text-bucket-actionsText overflow-hidden">
-            {approved ?
+            {bucketKey.approved ?
                 <div
                     className="w-full gap-2 py-2 px-3 border-b-1 border-border-regular transition-all hover:bg-hover"
                     onClick={removeAccess}

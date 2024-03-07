@@ -10,6 +10,7 @@ use tower_http::limit::RequestBodyLimitLayer;
 
 mod data_source;
 mod liveness;
+mod public_key;
 mod readiness;
 mod version;
 
@@ -34,6 +35,7 @@ where
         .route("/healthz", get(liveness::handler))
         .route("/readyz", get(readiness::handler))
         .route("/version", get(version::handler))
+        .route("/public_key", get(public_key::handler))
         .layer(cors_layer)
         .layer(RequestBodyLimitLayer::new(HEALTHCHECK_REQUEST_SIZE_LIMIT))
         .with_state(state)
