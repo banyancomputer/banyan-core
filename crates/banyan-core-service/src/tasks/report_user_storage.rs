@@ -48,8 +48,7 @@ impl TaskLike for ReportUserStorage {
         let user_storage_report =
             StorageHost::user_report(&mut db_conn, &self.storage_host_id, &self.user_id).await?;
 
-        let hot_storage_bytes =
-            user_storage_report.current_consumption() + user_storage_report.current_metadata_size();
+        let hot_storage_bytes = user_storage_report.current_consumption();
         match MetricsStorage::find_by_slot_user_and_storage_host(
             &mut db_conn,
             slot_end,

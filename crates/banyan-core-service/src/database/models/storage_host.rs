@@ -93,7 +93,6 @@ impl StorageHost {
         .fetch_one(&mut *conn)
         .await?;
         let current_consumption = ex_bigint.data_size;
-        let current_metadata_size = ex_bigint.metadata_size;
 
         let maximum_authorized = sqlx::query_scalar!(
             r#"SELECT authorized_amount FROM storage_grants
@@ -110,7 +109,6 @@ impl StorageHost {
 
         Ok(UserStorageReport {
             current_consumption,
-            current_metadata_size,
             maximum_authorized,
         })
     }
@@ -123,7 +121,6 @@ impl StorageHost {
 #[derive(Debug)]
 pub struct UserStorageReport {
     current_consumption: i64,
-    current_metadata_size: i64,
     maximum_authorized: Option<i64>,
 }
 
@@ -141,8 +138,5 @@ impl UserStorageReport {
 
     pub fn current_consumption(&self) -> i64 {
         self.current_consumption
-    }
-    pub fn current_metadata_size(&self) -> i64 {
-        self.current_metadata_size
     }
 }

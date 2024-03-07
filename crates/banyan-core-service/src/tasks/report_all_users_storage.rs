@@ -56,8 +56,7 @@ impl TaskLike for ReportAllUserStorageTask {
                 )
                 .await?;
 
-                let hot_storage_bytes = user_storage_report.current_consumption()
-                    + user_storage_report.current_metadata_size();
+                let hot_storage_bytes = user_storage_report.current_consumption();
                 if hot_storage_bytes == 0 {
                     continue;
                 }
