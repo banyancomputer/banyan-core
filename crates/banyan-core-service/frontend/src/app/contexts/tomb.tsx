@@ -1,25 +1,26 @@
-import React, { ReactNode, createContext, useContext, useEffect, useState } from 'react';
-import { TombWasm, WasmBucket, WasmMount, WasmSnapshot } from 'tomb-wasm-experimental';
+import { ReactNode, createContext, useContext, useEffect, useState } from 'react';
+import { TombWasm, WasmBucket, WasmSnapshot } from 'tomb-wasm-experimental';
+import { unwrapResult } from '@reduxjs/toolkit';
 import { Mutex } from 'async-mutex';
 import { useNavigate } from 'react-router-dom';
 
 import { TermsAndConditionsModal } from '@components/common/Modal/TermsAndConditionsModal';
 import { TermaAndConditions } from '@components/common/TermsAndConditions';
 
-import { useModal } from '@/app/contexts/modals';
-import { useKeystore } from './keystore';
+import { useModal } from '@app/contexts/modals';
 import {
 	BrowserObject, Bucket, BucketKey,
 	BucketSnapshot,
 } from '@/app/types/bucket';
-import { useFolderLocation } from '@/app/hooks/useFolderLocation';
+import { useFolderLocation } from '@app/hooks/useFolderLocation';
 import { destroyIsUserNew, getIsUserNew, prettyFingerprintApiKeyPem, sortByType } from '@app/utils';
 import { TermsAndColditionsClient } from '@/api/termsAndConditions';
 import { UserClient } from '@/api/user';
 import { handleNameDuplication } from '@utils/names';
 import { StorageUsageClient } from '@/api/storageUsage';
 import { useAppDispatch, useAppSelector } from '../store';
-import { BannerError, setError } from '../store/errors/slice';
+import { BannerError, setError } from '@app/store/errors/slice';
+import { getApiKey, getEncryptionKey, getEscrowedKeyMaterial } from '@app/store/keystore/actions';
 
 interface TombInterface {
 	tomb: TombWasm | null;
@@ -62,10 +63,10 @@ const TombContext = createContext<TombInterface>({} as TombInterface);
 
 export const TombProvider = ({ children }: { children: ReactNode }) => {
 	const dispatch = useAppDispatch();
-	const { user, escrowedKeyMaterial } = useAppSelector(state => state.session);
+	const { user } = useAppSelector(state => state.session);
+	const { escrowedKeyMaterial, isLoading, keystoreInitialized } = useAppSelector(state => state.keystore);
 	const navigate = useNavigate();
 	const { openEscrowModal, openModal } = useModal();
-	const { isLoading, keystoreInitialized, getEncryptionKey, getApiKey, isLoggingOut } = useKeystore();
 	const [tomb, setTomb] = useState<TombWasm | null>(null);
 	const [buckets, setBuckets] = useState<Bucket[]>([]);
 	const [trash, setTrash] = useState<Bucket | null>(null);
@@ -90,9 +91,8 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	/** Returns list of buckets. */
 	const getBuckets = async () => {
 		return await tombMutex(tomb, async tomb => {
-			const key = await getEncryptionKey();
+			const key = unwrapResult(await dispatch(getEncryptionKey()));
 			const wasm_buckets: WasmBucket[] = await tomb!.listBuckets();
-			console.log(getIsUserNew());
 
 			if (getIsUserNew()) {
 				createBucketAndMount("My Drive", 'hot', 'interactive');
@@ -149,7 +149,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
 	const remountBucket = async (bucket: Bucket) => {
 		return await tombMutex(tomb, async tomb => {
-			const key = await getEncryptionKey();
+			const key = unwrapResult(await dispatch(getEncryptionKey()));
 			const mount = await tomb!.mount(bucket.id, key.privatePem);
 			const locked = await mount.locked();
 			const isSnapshotValid = await mount.hasSnapshot();
@@ -209,7 +209,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	/** Creates new bucket with recieved parameters of type and storag class. */
 	const createBucketAndMount = async (name: string, storageClass: string, bucketType: string): Promise<string> => {
 		return await tombMutex(tomb, async tomb => {
-			const key = await getEncryptionKey();
+			const key = unwrapResult(await dispatch(getEncryptionKey()));
 			const { bucket: wasmBucket, mount: wasmMount } = await tomb!.createBucketAndMount(name, storageClass, bucketType, key.privatePem, key.publicPem);
 			const bucket = {
 				mount: wasmMount,
@@ -390,31 +390,40 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
 	// Initialize the tomb client
 	useEffect(() => {
-		if (!user || !escrowedKeyMaterial || !keystoreInitialized) { return; }
+		if (!user.id || !keystoreInitialized || isLoading || !escrowedKeyMaterial) { return; }
 
 		(async () => {
 			try {
-				const apiKey = await getApiKey();
-				const TombWasm = (await import('tomb-wasm-experimental')).TombWasm;
-				const tomb = new TombWasm(
+				const apiKey = unwrapResult(await dispatch(getApiKey()));
+				const tomb = await new TombWasm(
 					apiKey.privatePem,
 					user.id,
 					window.location.protocol + '//' + window.location.host,
 				);
-				setTomb(await tomb);
+				setTomb(tomb);
 			} catch (error: any) {
 				dispatch(setError(new BannerError(error.message)));
 			}
 		})();
-	}, [user, keystoreInitialized, isLoading, escrowedKeyMaterial]);
+	}, [user.id, keystoreInitialized, escrowedKeyMaterial, isLoading]);
 
 	useEffect(() => {
 		if (!areTermsAccepted) return;
 
-		if (!keystoreInitialized && !isLoading && !isLoggingOut) {
+		let escrowedKeyMaterial;
+			(async () => {
+				try {
+					escrowedKeyMaterial = unwrapResult(await dispatch(getEscrowedKeyMaterial()));
+				} catch (error: any) {
+					openEscrowModal(false);
+					return;
+				};
+			})()
+
+		if (!keystoreInitialized && !isLoading) {
 			openEscrowModal(!!escrowedKeyMaterial);
 		};
-	}, [isLoading, keystoreInitialized, areTermsAccepted, escrowedKeyMaterial, isLoggingOut]);
+	}, [isLoading, keystoreInitialized, areTermsAccepted]);
 
 	useEffect(() => {
 		const userClient = new UserClient();

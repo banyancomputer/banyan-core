@@ -10,10 +10,3 @@ export const getUser = createAsyncThunk(
         return await client.getCurrentUser();
     }
 );
-
-    export const getEscrowedKeyMaterial = createAsyncThunk(
-        'getEscrowedKeyMaterial',
-        async () => {
-        return await client.getEscrowedKeyMaterial();
-    }
-);

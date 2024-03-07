@@ -3,9 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 import { useTomb } from './tomb';
 import { BrowserObject, Bucket } from '@/app/types/bucket';
-import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { useModal } from './modals';
-import { HardStorageLimit } from '../components/common/Modal/HardStorageLimit';
 import { BannerError, setError } from '../store/errors/slice';
 import { useAppDispatch, useAppSelector } from '../store';
 import { SubscriptionPlanModal } from '../components/common/Modal/SubscriptionPlanModal';
