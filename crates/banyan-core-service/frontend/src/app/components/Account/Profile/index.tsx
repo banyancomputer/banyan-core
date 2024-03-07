@@ -29,10 +29,9 @@ export const Profile = () => {
             <h2 className="text-lg font-semibold">
                 {messages.title}
             </h2>
-            {/* <div className="flex justify-between items-center py-5 px-4 border-1 rounded-lg bg-secondaryBackground text-text-800 border-border-regular">
+            <div className="flex justify-between items-center py-5 px-4 border-1 rounded-lg text-text-800 border-border-regular">
                 <div>
-                    <h5 className="font-semibold">{`${messages.theme}`}</h5>
-                    <p>{messages.selectTheme}</p>
+                    <h5 className="font-semibold">Dark mode</h5>
                 </div>
                 <input
                     type="checkbox"
@@ -40,8 +39,8 @@ export const Profile = () => {
                     checked={isDarkModaActive}
                     onChange={toggleTheme}
                 />
-            </div> */}
-            <div className="flex justify-between items-center py-5 px-4 border-1 rounded-lg bg-secondaryBackground text-text-800 border-border-regular">
+            </div>
+            <div className="flex justify-between items-center py-5 px-4 border-1 rounded-lg text-text-800 border-border-regular">
                 <div>
                     <h5 className="font-semibold">{`${messages.language}`}</h5>
                     <p>{messages.chooseYourLanguage}</p>

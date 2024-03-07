@@ -92,9 +92,7 @@ export const FolderActions: React.FC<{ bucket: Bucket; file: BrowserObject; parr
                     onClick={action.value}
                     id="action"
                 >
-                    <span className="text-button-primary">
-                        {action.icon}
-                    </span>
+                    {action.icon}
                     {action.label}
                 </div>
             )
