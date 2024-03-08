@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT DISTINCT user_id FROM main.buckets",
+  "query": "SELECT DISTINCT user_id FROM buckets",
   "describe": {
     "columns": [
       {
@@ -16,5 +16,5 @@
       false
     ]
   },
-  "hash": "dee15dc5f937b319a88179d064f65cf6148c822f72066b38a29af58f20ce6681"
+  "hash": "8535d718a5d11be39a9366e3790493d33d48e0180df54982518386c6e94f6907"
 }
