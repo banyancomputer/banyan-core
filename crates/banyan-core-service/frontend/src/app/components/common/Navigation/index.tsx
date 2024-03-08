@@ -82,7 +82,7 @@ export const Navigation = () => {
 				</NavLink>
 				{
 					isBucketsVisible &&
-					<ul className="flex-col gap-2 px-2 text-xxs">
+					<ul className="flex-col gap-2 max-h-[calc(100vh-360px)] overflow-y-auto px-2 text-xxs">
 						{
 							buckets.map(bucket =>
 								<li key={bucket.id}>
