@@ -41,7 +41,8 @@ impl TaskLike for HostCapacityTask {
         let storage_host_id = self.storage_host_id.clone();
 
         // Update used_storage by summing the metadata entries over data_size
-        let total_consumption = StorageHost::total_consumption(&mut db_conn, &storage_host_id).await?;
+        let total_consumption =
+            StorageHost::total_consumption(&mut db_conn, &storage_host_id).await?;
         sqlx::query!(
             r#"
                 UPDATE storage_hosts
