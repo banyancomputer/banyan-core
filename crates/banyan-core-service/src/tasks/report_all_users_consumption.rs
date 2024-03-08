@@ -5,8 +5,8 @@ use time::error::ComponentRange;
 use time::OffsetDateTime;
 
 use crate::app::AppState;
-use crate::tasks::report_user_storage::calculate_and_store_consumed_storage;
-use crate::utils::time::round_to_previous_hour;
+use crate::tasks::report_user_consumption::save_user_consumption;
+use crate::utils::time::round_to_next_hour;
 
 pub type StorageReporterTaskContext = AppState;
 
@@ -20,25 +20,25 @@ pub enum StorageReporterTaskError {
 }
 
 #[derive(Deserialize, Serialize, Default)]
-pub struct ReportAllUserStorageTask {}
+pub struct ReportAllUsersConsumptionTask {}
 
 #[async_trait]
-impl TaskLike for ReportAllUserStorageTask {
-    const TASK_NAME: &'static str = "report_all_users_storage_task";
+impl TaskLike for ReportAllUsersConsumptionTask {
+    const TASK_NAME: &'static str = "report_all_users_consumption_task";
 
     type Error = StorageReporterTaskError;
     type Context = StorageReporterTaskContext;
 
     async fn run(&self, _task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
         let mut conn = ctx.database().acquire().await?;
-        let slot_end = round_to_previous_hour(OffsetDateTime::now_utc())?;
+        let slot_end = round_to_next_hour(OffsetDateTime::now_utc())?;
 
-        let users = sqlx::query!("SELECT DISTINCT user_id FROM buckets")
+        let users = sqlx::query_scalar!("SELECT DISTINCT user_id FROM buckets")
             .fetch_all(&mut *conn)
             .await?;
 
-        for user in users {
-            calculate_and_store_consumed_storage(&mut conn, slot_end, &user.user_id).await?;
+        for user_id in users {
+            save_user_consumption(&mut conn, slot_end, &user_id).await?;
         }
 
         Ok(())
@@ -54,12 +54,12 @@ mod test {
     use banyan_task::TaskLike;
 
     use crate::app::mock_app_state;
-    use crate::database::models::{Metadata, MetadataState, MetricsStorage};
+    use crate::database::models::{Metadata, MetadataState, UserTotalConsumption};
     use crate::database::test_helpers::{
         create_user, sample_bucket, sample_metadata, setup_database,
     };
     use crate::database::DatabaseConnection;
-    use crate::tasks::report_all_users_storage::ReportAllUserStorageTask;
+    use crate::tasks::report_all_users_consumption::ReportAllUsersConsumptionTask;
 
     pub async fn setup_user_and_data(conn: &mut DatabaseConnection, email: &str) -> String {
         let user_id = create_user(conn, email, "Test User").await;
@@ -79,12 +79,12 @@ mod test {
         setup_user_and_data(&mut conn, "test1@example.com").await;
         setup_user_and_data(&mut conn, "test2@example.com").await;
 
-        let result = ReportAllUserStorageTask::default()
+        let result = ReportAllUsersConsumptionTask::default()
             .run(default_current_task(), state.0)
             .await;
 
         assert!(result.is_ok());
-        let metrics_storage = MetricsStorage::find_all(&db)
+        let metrics_storage = UserTotalConsumption::find_all(&db)
             .await
             .expect("metrics_storage");
         assert_eq!(metrics_storage.len(), 2);

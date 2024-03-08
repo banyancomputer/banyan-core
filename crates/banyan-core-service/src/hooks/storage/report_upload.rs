@@ -9,7 +9,7 @@ use crate::app::AppState;
 use crate::database::models::Metadata;
 use crate::database::DatabaseConnection;
 use crate::extractors::StorageProviderIdentity;
-use crate::tasks::{HostCapacityTask, ReportUserStorage};
+use crate::tasks::{HostCapacityTask, ReportStorageHostConsumptionTask, ReportUserConsumptionTask};
 
 /// When a client finishes uploading their data to either staging or a storage host, the storage
 /// host will make a request to this end point letting us know that we have all the data safely
@@ -98,7 +98,12 @@ pub async fn handler(
         .await
         .map_err(ReportUploadError::QueryFailed)?;
 
-    ReportUserStorage::new(user_id)
+    ReportStorageHostConsumptionTask::new(storage_provider.id.clone())
+        .enqueue::<banyan_task::SqliteTaskStore>(&mut database)
+        .await
+        .map_err(ReportUploadError::UnableToEnqueueTask)?;
+
+    ReportUserConsumptionTask::new(user_id)
         .enqueue::<banyan_task::SqliteTaskStore>(&mut database)
         .await
         .map_err(ReportUploadError::UnableToEnqueueTask)?;

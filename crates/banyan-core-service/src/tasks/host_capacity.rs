@@ -3,6 +3,7 @@ use banyan_task::{CurrentTask, TaskLike};
 use serde::{Deserialize, Serialize};
 
 use crate::app::AppState;
+use crate::database::models::StorageHost;
 
 #[non_exhaustive]
 #[derive(Debug, thiserror::Error)]
@@ -40,18 +41,15 @@ impl TaskLike for HostCapacityTask {
         let storage_host_id = self.storage_host_id.clone();
 
         // Update used_storage by summing the metadata entries over data_size
+        let total_consumption = StorageHost::total_consumption(&mut db_conn, &storage_host_id).await?;
         sqlx::query!(
             r#"
                 UPDATE storage_hosts
-                SET used_storage = (
-                    SELECT COALESCE(SUM(m.data_size), 0) as big_int
-                    FROM storage_hosts_metadatas_storage_grants shms
-                    INNER JOIN metadata AS m ON m.id = shms.metadata_id 
-                    WHERE shms.storage_host_id = $1
-                )
+                SET used_storage = $2
                 WHERE id = $1;
             "#,
             storage_host_id,
+            total_consumption
         )
         .execute(&mut *db_conn)
         .await?;

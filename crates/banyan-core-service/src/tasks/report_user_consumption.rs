@@ -5,9 +5,9 @@ use time::error::ComponentRange;
 use time::OffsetDateTime;
 
 use crate::app::AppState;
-use crate::database::models::{MetricsStorage, User};
+use crate::database::models::{User, UserTotalConsumption};
 use crate::database::DatabaseConnection;
-use crate::utils::time::round_to_previous_hour;
+use crate::utils::time::round_to_next_hour;
 
 pub type StorageReporterTaskContext = AppState;
 
@@ -21,18 +21,18 @@ pub enum StorageReporterTaskError {
 }
 
 #[derive(Deserialize, Serialize)]
-pub struct ReportUserStorage {
+pub struct ReportUserConsumptionTask {
     user_id: String,
 }
 
-impl ReportUserStorage {
+impl ReportUserConsumptionTask {
     pub fn new(user_id: String) -> Self {
         Self { user_id }
     }
 }
 
 #[async_trait]
-impl TaskLike for ReportUserStorage {
+impl TaskLike for ReportUserConsumptionTask {
     const TASK_NAME: &'static str = "report_user_storage_task";
 
     type Error = StorageReporterTaskError;
@@ -40,22 +40,23 @@ impl TaskLike for ReportUserStorage {
 
     async fn run(&self, _task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
         let mut db_conn = ctx.database().acquire().await?;
-        let slot_end = round_to_previous_hour(OffsetDateTime::now_utc())?;
+        // round up as it makes more sense when looking backwards
+        let slot_end = round_to_next_hour(OffsetDateTime::now_utc())?;
 
-        calculate_and_store_consumed_storage(&mut db_conn, slot_end, &self.user_id).await?;
+        save_user_consumption(&mut db_conn, slot_end, &self.user_id).await?;
 
         Ok(())
     }
 }
 
-pub async fn calculate_and_store_consumed_storage(
+pub async fn save_user_consumption(
     conn: &mut DatabaseConnection,
     slot_end: OffsetDateTime,
     user_id: &str,
 ) -> Result<(), sqlx::Error> {
     let user = User::by_id(conn, user_id).await?;
     let hot_storage_bytes = user.consumed_storage(conn).await?;
-    match MetricsStorage::find_by_slot_and_user(conn, slot_end, user_id).await {
+    match UserTotalConsumption::find_by_slot_and_user(conn, slot_end, user_id).await {
         Ok(Some(existing_metrics)) => {
             let updated_hot_storage_bytes =
                 std::cmp::max(existing_metrics.hot_storage_bytes, hot_storage_bytes);
@@ -68,7 +69,7 @@ pub async fn calculate_and_store_consumed_storage(
                 .await?;
         }
         Ok(None) => {
-            MetricsStorage {
+            UserTotalConsumption {
                 user_id: user.id.clone(),
                 hot_storage_bytes,
                 archival_storage_bytes: 0,
@@ -86,18 +87,19 @@ pub async fn calculate_and_store_consumed_storage(
 mod test {
     use time::OffsetDateTime;
 
-    use crate::database::models::{Metadata, MetadataState, MetricsStorage};
+    use crate::database::models::{Metadata, MetadataState, UserTotalConsumption};
     use crate::database::test_helpers::{
         create_user, sample_bucket, sample_metadata, setup_database,
     };
     use crate::database::{Database, DatabaseConnection};
-    use crate::tasks::report_user_storage::calculate_and_store_consumed_storage;
-    use crate::utils::time::round_to_previous_hour;
-    impl MetricsStorage {
+    use crate::tasks::report_user_consumption::save_user_consumption;
+    use crate::utils::time::round_to_next_hour;
+    impl UserTotalConsumption {
         pub async fn find_all(conn: &Database) -> Result<Vec<Self>, sqlx::Error> {
-            let result = sqlx::query_as!(MetricsStorage, "SELECT * FROM metrics_storage")
-                .fetch_all(conn)
-                .await?;
+            let result =
+                sqlx::query_as!(UserTotalConsumption, "SELECT * FROM user_total_consumption")
+                    .fetch_all(conn)
+                    .await?;
             Ok(result)
         }
     }
@@ -131,17 +133,17 @@ mod test {
             .await
             .expect("metadata size update");
 
-        let slot_end = round_to_previous_hour(OffsetDateTime::now_utc()).unwrap();
-        let result = calculate_and_store_consumed_storage(&mut conn, slot_end, &user_id).await;
+        let slot_end = round_to_next_hour(OffsetDateTime::now_utc()).unwrap();
+        let result = save_user_consumption(&mut conn, slot_end, &user_id).await;
 
         assert!(result.is_ok());
-        let metrics_storage = MetricsStorage::find_all(&db)
+        let user_total_consumption = UserTotalConsumption::find_all(&db)
             .await
-            .expect("metrics_storage");
-        assert_eq!(metrics_storage.len(), 1);
-        assert_eq!(metrics_storage[0].user_id, user_id);
-        assert_eq!(metrics_storage[0].hot_storage_bytes, 130);
-        assert_eq!(metrics_storage[0].archival_storage_bytes, 0);
-        assert_eq!(metrics_storage[0].slot, slot_end);
+            .expect("user_total_consumption");
+        assert_eq!(user_total_consumption.len(), 1);
+        assert_eq!(user_total_consumption[0].user_id, user_id);
+        assert_eq!(user_total_consumption[0].hot_storage_bytes, 130);
+        assert_eq!(user_total_consumption[0].archival_storage_bytes, 0);
+        assert_eq!(user_total_consumption[0].slot, slot_end);
     }
 }

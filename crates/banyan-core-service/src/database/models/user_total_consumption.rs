@@ -3,16 +3,16 @@ use time::OffsetDateTime;
 use crate::database::DatabaseConnection;
 
 #[derive(Debug, sqlx::FromRow)]
-pub struct MetricsStorage {
+pub struct UserTotalConsumption {
     pub user_id: String,
     pub hot_storage_bytes: i64,
     pub archival_storage_bytes: i64,
     pub slot: OffsetDateTime,
 }
-impl MetricsStorage {
+impl UserTotalConsumption {
     pub async fn save(&self, db: &mut DatabaseConnection) -> Result<(), sqlx::Error> {
         sqlx::query!(
-            "INSERT INTO metrics_storage (user_id, hot_storage_bytes, archival_storage_bytes, slot)
+            "INSERT INTO user_total_consumption (user_id, hot_storage_bytes, archival_storage_bytes, slot)
         VALUES ($1, $2, $3, $4)
         ",
             self.user_id,
@@ -32,7 +32,7 @@ impl MetricsStorage {
         new_archival_storage_bytes: i64,
     ) -> Result<(), sqlx::Error> {
         sqlx::query!(
-            "UPDATE metrics_storage SET hot_storage_bytes = $1, archival_storage_bytes = $2 WHERE user_id = $3 AND slot = $4",
+            "UPDATE user_total_consumption SET hot_storage_bytes = $1, archival_storage_bytes = $2 WHERE user_id = $3 AND slot = $4",
             new_hot_storage_bytes,
             new_archival_storage_bytes,
             self.user_id,
@@ -50,7 +50,7 @@ impl MetricsStorage {
     ) -> Result<Option<Self>, sqlx::Error> {
         let result = sqlx::query_as!(
             Self,
-            "SELECT * FROM metrics_storage WHERE slot = $1 AND user_id = $2",
+            "SELECT * FROM user_total_consumption WHERE slot = $1 AND user_id = $2",
             slot,
             user_id,
         )

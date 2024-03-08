@@ -111,6 +111,25 @@ impl StorageHost {
             maximum_authorized,
         })
     }
+
+    pub async fn total_consumption(
+        conn: &mut DatabaseConnection,
+        storage_host_id: &str,
+    ) -> Result<i64, sqlx::Error> {
+        let ex_bigint = sqlx::query_as!(
+            ExplicitBigInt,
+            r#"SELECT COALESCE(SUM(COALESCE(m.data_size, m.expected_data_size, 0)), 0) as big_int
+                    FROM storage_hosts_metadatas_storage_grants shms
+                    INNER JOIN metadata AS m ON m.id = shms.metadata_id
+                    WHERE shms.storage_host_id = $1;
+             "#,
+            storage_host_id,
+        )
+        .fetch_one(&mut *conn)
+        .await?;
+
+        Ok(ex_bigint.big_int)
+    }
 }
 
 /// Type representing the amount of data a particular user has stored at an individual storage host
