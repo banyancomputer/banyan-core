@@ -101,7 +101,6 @@ mod tests {
     use std::thread;
     use std::time::Duration;
 
-    use banyan_task::tests::current_task::default_current_task;
     use banyan_task::{CurrentTask, TaskLike};
 
     use super::*;
@@ -155,7 +154,7 @@ mod tests {
     /// Return a base context and a test account id
     pub async fn test_setup() -> (AppState, CurrentTask, StorageHosts) {
         let (ctx, storage_hosts) = host_capacity_context().await;
-        (ctx, default_current_task(), storage_hosts)
+        (ctx, CurrentTask::default(), storage_hosts)
     }
 
     #[tokio::test]
@@ -182,7 +181,7 @@ mod tests {
         // Do the same for the other storage host and assert it is empty
         assert!(
             HostCapacityTask::new(String::from(storage_hosts.storage_host_id_2.as_str()))
-                .run(default_current_task(), ctx.clone())
+                .run(CurrentTask::default(), ctx.clone())
                 .await
                 .is_ok()
         );

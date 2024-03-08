@@ -35,12 +35,14 @@ impl TryFrom<&Task> for CurrentTask {
     }
 }
 
-pub fn default_current_task() -> CurrentTask {
-    CurrentTask {
-        id: uuid::Uuid::new_v4().to_string(),
-        current_attempt: 0,
-        scheduled_at: OffsetDateTime::UNIX_EPOCH,
-        started_at: OffsetDateTime::UNIX_EPOCH,
+impl Default for CurrentTask {
+    fn default() -> CurrentTask {
+        CurrentTask {
+            id: uuid::Uuid::new_v4().to_string(),
+            current_attempt: 0,
+            scheduled_at: OffsetDateTime::UNIX_EPOCH,
+            started_at: OffsetDateTime::UNIX_EPOCH,
+        }
     }
 }
 

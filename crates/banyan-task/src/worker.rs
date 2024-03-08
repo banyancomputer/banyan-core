@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 use time::{Duration, OffsetDateTime};
 
 use crate::panic_safe_future::PanicSafeFuture;
-use crate::worker_pool::NextScheduleFn;
+use crate::worker_pool::{NextScheduleFn, StartRecurringTaskFn};
 use crate::{
     CurrentTask, CurrentTaskError, ExecuteTaskFn, QueueConfig, StateFn, Task, TaskExecError,
     TaskState, TaskStore, TaskStoreError, MAXIMUM_CHECK_DELAY,
@@ -23,6 +23,7 @@ where
     store: S,
     task_registry: BTreeMap<&'static str, ExecuteTaskFn<Context>>,
     schedule_registry: BTreeMap<&'static str, NextScheduleFn>,
+    startup_registry: BTreeMap<&'static str, StartRecurringTaskFn<Context>>,
     shutdown_signal: Option<tokio::sync::watch::Receiver<()>>,
 }
 
@@ -38,6 +39,7 @@ where
         store: S,
         task_registry: BTreeMap<&'static str, ExecuteTaskFn<Context>>,
         schedule_registry: BTreeMap<&'static str, NextScheduleFn>,
+        startup_registry: BTreeMap<&'static str, StartRecurringTaskFn<Context>>,
         shutdown_signal: Option<tokio::sync::watch::Receiver<()>>,
     ) -> Self {
         Self {
@@ -46,6 +48,7 @@ where
             context_data_fn,
             store,
             task_registry,
+            startup_registry,
             schedule_registry,
             shutdown_signal,
         }
@@ -77,32 +80,6 @@ where
         let safe_runner = PanicSafeFuture::wrap(async move {
             deserialize_and_run_task_fn(task_info, payload, context).await
         });
-
-        /*
-        let task_name = task.task_name.clone();
-        let task_id = task.id.clone();
-        let payload = task.payload.clone();
-        let safe_scheduler = async move {
-            if let Some(next_schedule_fn) = self.schedule_registry.get(task_name.as_str()) {
-                if let Some(next_schedule) = next_schedule_fn(payload) {
-                    self.store
-                        .schedule_next(task_id, next_schedule)
-                        .await
-                        .map(|_| ())
-                        .map_err(|err| {
-                            WorkerError::ScheduleFailed(format!(
-                                "unable to schedule {}, err: {}",
-                                task.task_name, err
-                            ))
-                        })
-                } else {
-                    Ok(())
-                }
-            } else {
-                Ok(())
-            }
-        };
-        */
 
         // an error here occurs only when the task panicks, deserialization and regular task
         // execution errors are handled next
@@ -156,10 +133,10 @@ where
     }
 
     async fn schedule_if_needed(&self, task: &Task) -> Result<(), WorkerError> {
-        // If there is something to schedule
         if let Some(get_next_schedule) = self.schedule_registry.get(task.task_name.as_str()) {
             if let Ok(Some(next_schedule)) = get_next_schedule(task.payload.clone()) {
-                self.store
+                return self
+                    .store
                     .schedule_next(task.id.clone(), next_schedule)
                     .await
                     .map(|_| ())
@@ -168,22 +145,27 @@ where
                             "unable to schedule {}, err: {}",
                             task.task_name, err
                         ))
-                    })
-            } else {
-                Ok(())
+                    });
             }
         }
-        // If nothing needs to be scheduled we're fine
-        else {
-            Ok(())
-        }
+
+        Ok(())
     }
 
     pub async fn run_tasks(&mut self) -> Result<(), WorkerError> {
         /*
+        let recurring_task_names: Vec<&'static str> =
+            self..keys().cloned().collect();
+
+
         while !self.startup_registry.is_empty() {
         }
         */
+        for (task_name, startup_fn) in &self.startup_registry {
+            let context = (self.context_data_fn)();
+            let result = startup_fn(context).await; //self.run(task)
+            tracing::info!("result: {:?}", result);
+        }
 
         let relevant_task_names: Vec<&'static str> = self.task_registry.keys().cloned().collect();
         // While there are still tasks in the queue
@@ -316,6 +298,7 @@ mod tests {
             context_data_fn.clone(),
             task_store,
             task_registry.clone(),
+            BTreeMap::new(),
             BTreeMap::new(),
             Some(inner_shutdown_rx.clone()),
         )

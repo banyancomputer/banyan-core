@@ -199,7 +199,7 @@ pub async fn send_email_message(
 
 #[cfg(test)]
 pub mod tests {
-    use banyan_task::{tests::current_task::default_current_task, CurrentTask, TaskLike};
+    use banyan_task::{CurrentTask, TaskLike};
     use time::OffsetDateTime;
 
     use super::*;
@@ -213,7 +213,7 @@ pub mod tests {
         (
             email_task_context().await,
             Uuid::parse_str(USER_ID).expect("account id parse"),
-            default_current_task(),
+            CurrentTask::default(),
         )
     }
 
@@ -313,7 +313,7 @@ pub mod tests {
     async fn example_email_task(ctx: EmailTaskContext) -> Result<(), EmailTaskError> {
         // Use GaReleaseEmailTask as a stand in for any email task here
         let task = GaReleaseEmailTask::new(Uuid::parse_str(USER_ID).unwrap());
-        task.run(default_current_task(), ctx).await?;
+        task.run(CurrentTask::default(), ctx).await?;
         Ok(())
     }
 
