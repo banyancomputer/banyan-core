@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 use time::{Duration, OffsetDateTime};
 
 use crate::panic_safe_future::PanicSafeFuture;
-use crate::worker_pool::QueueRecurringTaskFn;
+use crate::worker_pool::NextScheduleFn;
 use crate::{
     CurrentTask, CurrentTaskError, ExecuteTaskFn, QueueConfig, StateFn, Task, TaskExecError,
     TaskState, TaskStore, TaskStoreError, MAXIMUM_CHECK_DELAY,
@@ -22,7 +22,7 @@ where
     context_data_fn: StateFn<Context>,
     store: S,
     task_registry: BTreeMap<&'static str, ExecuteTaskFn<Context>>,
-    frequency_registry: BTreeMap<&'static str, Duration>,
+    schedule_registry: BTreeMap<&'static str, NextScheduleFn>,
     shutdown_signal: Option<tokio::sync::watch::Receiver<()>>,
 }
 
@@ -37,7 +37,7 @@ where
         context_data_fn: StateFn<Context>,
         store: S,
         task_registry: BTreeMap<&'static str, ExecuteTaskFn<Context>>,
-        frequency_registry: BTreeMap<&'static str, Duration>,
+        schedule_registry: BTreeMap<&'static str, NextScheduleFn>,
         shutdown_signal: Option<tokio::sync::watch::Receiver<()>>,
     ) -> Self {
         Self {
@@ -46,13 +46,25 @@ where
             context_data_fn,
             store,
             task_registry,
-            frequency_registry,
+            schedule_registry,
             shutdown_signal,
         }
     }
 
     #[tracing::instrument(level = "error", skip_all, fields(task_name = %task.task_name, task_id = %task.id))]
     pub async fn run(&self, task: Task) -> Result<(), WorkerError> {
+        // check to see if its time to shutdown the worker
+        //
+        // todo: turn this into a select with a short fallback timeout on task execution to try
+        // and finish it within our graceful shutdown window
+        if let Some(shutdown_signal) = &self.shutdown_signal {
+            match shutdown_signal.has_changed() {
+                Ok(true) => return Ok(()),
+                Err(_) => return Err(WorkerError::EmergencyShutdown),
+                _ => (),
+            }
+        }
+
         let task_info = CurrentTask::try_from(&task).map_err(WorkerError::CantMakeCurrent)?;
         let deserialize_and_run_task_fn = self
             .task_registry
@@ -65,6 +77,32 @@ where
         let safe_runner = PanicSafeFuture::wrap(async move {
             deserialize_and_run_task_fn(task_info, payload, context).await
         });
+
+        /*
+        let task_name = task.task_name.clone();
+        let task_id = task.id.clone();
+        let payload = task.payload.clone();
+        let safe_scheduler = async move {
+            if let Some(next_schedule_fn) = self.schedule_registry.get(task_name.as_str()) {
+                if let Some(next_schedule) = next_schedule_fn(payload) {
+                    self.store
+                        .schedule_next(task_id, next_schedule)
+                        .await
+                        .map(|_| ())
+                        .map_err(|err| {
+                            WorkerError::ScheduleFailed(format!(
+                                "unable to schedule {}, err: {}",
+                                task.task_name, err
+                            ))
+                        })
+                } else {
+                    Ok(())
+                }
+            } else {
+                Ok(())
+            }
+        };
+        */
 
         // an error here occurs only when the task panicks, deserialization and regular task
         // execution errors are handled next
@@ -119,24 +157,21 @@ where
 
     async fn schedule_if_needed(&self, task: &Task) -> Result<(), WorkerError> {
         // If there is something to schedule
-        if let Some(frequency) = self.frequency_registry.get(task.task_name.as_str()) {
-            let next_schedule = OffsetDateTime::now_utc().checked_add(*frequency).ok_or(
-                WorkerError::ScheduleFailed(format!(
-                    "unable to schedule {} invalid schedule time",
-                    task.task_name
-                )),
-            )?;
-
-            self.store
-                .schedule_next(task.id.clone(), next_schedule)
-                .await
-                .map(|_| ())
-                .map_err(|err| {
-                    WorkerError::ScheduleFailed(format!(
-                        "unable to schedule {}, err: {}",
-                        task.task_name, err
-                    ))
-                })
+        if let Some(get_next_schedule) = self.schedule_registry.get(task.task_name.as_str()) {
+            if let Ok(Some(next_schedule)) = get_next_schedule(task.payload.clone()) {
+                self.store
+                    .schedule_next(task.id.clone(), next_schedule)
+                    .await
+                    .map(|_| ())
+                    .map_err(|err| {
+                        WorkerError::ScheduleFailed(format!(
+                            "unable to schedule {}, err: {}",
+                            task.task_name, err
+                        ))
+                    })
+            } else {
+                Ok(())
+            }
         }
         // If nothing needs to be scheduled we're fine
         else {
@@ -145,56 +180,45 @@ where
     }
 
     pub async fn run_tasks(&mut self) -> Result<(), WorkerError> {
+        /*
+        while !self.startup_registry.is_empty() {
+        }
+        */
+
         let relevant_task_names: Vec<&'static str> = self.task_registry.keys().cloned().collect();
+        // While there are still tasks in the queue
+        while let Some(task) = self
+            .store
+            .next(self.queue_config.name(), &relevant_task_names)
+            .await
+            .map_err(WorkerError::StoreUnavailable)?
+        {
+            self.run(task).await?;
+        }
 
-        loop {
-            // check to see if its time to shutdown the worker
-            //
-            // todo: turn this into a select with a short fallback timeout on task execution to try
-            // and finish it within our graceful shutdown window
-            if let Some(shutdown_signal) = &self.shutdown_signal {
-                match shutdown_signal.has_changed() {
-                    Ok(true) => return Ok(()),
-                    Err(_) => return Err(WorkerError::EmergencyShutdown),
-                    _ => (),
+        // todo this should probably be handled by some form of a centralized wake up manager
+        // when things are enqueued which can also 'alarm' when a pending task is ready to be
+        // scheduled instead of relying... and that change should probably be done using
+        // future wakers instead of internal timeouts but some central scheduler
+        match &mut self.shutdown_signal {
+            Some(ss) => {
+                if let Ok(_signaled) = tokio::time::timeout(MAXIMUM_CHECK_DELAY, ss.changed()).await
+                {
+                    // todo might want to handle graceful / non-graceful differently
+                    tracing::info!("received worker shutdown signal while idle");
+                    return Ok(());
                 }
+
+                // intentionally letting the 'error' type fall through here as it means we
+                // timed out on waiting for a shutdown signal and should continue
             }
-
-            let next_task = self
-                .store
-                .next(self.queue_config.name(), &relevant_task_names)
-                .await
-                .map_err(WorkerError::StoreUnavailable)?;
-
-            if let Some(task) = next_task {
-                tracing::info!(id = ?task.id, "starting execution of task");
-                self.run(task).await?;
-                continue;
-            }
-
-            // todo this should probably be handled by some form of a centralized wake up manager
-            // when things are enqueued which can also 'alarm' when a pending task is ready to be
-            // scheduled instead of relying... and that change should probably be done using
-            // future wakers instead of internal timeouts but some central scheduler
-            match &mut self.shutdown_signal {
-                Some(ss) => {
-                    if let Ok(_signaled) =
-                        tokio::time::timeout(MAXIMUM_CHECK_DELAY, ss.changed()).await
-                    {
-                        // todo might want to handle graceful / non-graceful differently
-                        tracing::info!("received worker shutdown signal while idle");
-                        return Ok(());
-                    }
-
-                    // intentionally letting the 'error' type fall through here as it means we
-                    // timed out on waiting for a shutdown signal and should continue
-                }
-                None => {
-                    tracing::info!("no tasks available for worker, sleeping for a time...");
-                    let _ = tokio::time::sleep(MAXIMUM_CHECK_DELAY).await;
-                }
+            None => {
+                tracing::info!("no tasks available for worker, sleeping for a time...");
+                let _ = tokio::time::sleep(MAXIMUM_CHECK_DELAY).await;
             }
         }
+
+        Ok(())
     }
 }
 

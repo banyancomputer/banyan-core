@@ -56,7 +56,7 @@ where
 }
 
 pub trait RecurringTask: TaskLike + Default {
-    fn schedule_next(previous_completion_time: OffsetDateTime) -> OffsetDateTime;
+    fn next_schedule(&self) -> Option<OffsetDateTime>;
 }
 
 pub mod tests {

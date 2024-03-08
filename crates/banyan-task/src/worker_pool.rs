@@ -4,14 +4,14 @@ use std::sync::Arc;
 
 use futures::future::join_all;
 use futures::Future;
-use time::Duration;
+use time::{Duration, OffsetDateTime};
 use tokio::sync::watch;
 use tokio::task::JoinHandle;
 use tokio::time::timeout;
 
 use crate::{
     task_like::RecurringTask, CurrentTask, QueueConfig, Task, TaskExecError, TaskInstanceBuilder,
-    TaskLike, TaskState, TaskStore, TaskStoreError, Worker, WORKER_SHUTDOWN_TIMEOUT,
+    TaskLike, TaskLikeExt, TaskState, TaskStore, TaskStoreError, Worker, WORKER_SHUTDOWN_TIMEOUT,
 };
 
 pub type ExecuteTaskFn<Context> = Arc<
@@ -24,11 +24,16 @@ pub type ExecuteTaskFn<Context> = Arc<
         + Sync,
 >;
 
+pub type NextScheduleFn =
+    Arc<dyn Fn(Vec<u8>) -> Result<Option<OffsetDateTime>, TaskExecError> + Send + Sync>;
+
+/*
 pub type QueueRecurringTaskFn<TS> = Arc<
     dyn Fn(&TS) -> Pin<Box<dyn Future<Output = Result<Option<String>, TaskStoreError>> + Send + '_>>
         + Send
         + Sync,
 >;
+*/
 
 pub type StateFn<Context> = Arc<dyn Fn() -> Context + Send + Sync>;
 
@@ -41,8 +46,8 @@ where
     context_data_fn: StateFn<Context>,
     task_store: S,
     task_registry: BTreeMap<&'static str, ExecuteTaskFn<Context>>,
-    startup_registry: BTreeMap<&'static str, QueueRecurringTaskFn<S>>,
-    frequency_registry: BTreeMap<&'static str, Duration>,
+    //startup_registry: BTreeMap<&'static str, QueueRecurringTaskFn<S>>,
+    schedule_registry: BTreeMap<&'static str, NextScheduleFn>,
     queue_tasks: BTreeMap<&'static str, Vec<&'static str>>,
     worker_queues: BTreeMap<&'static str, QueueConfig>,
 }
@@ -65,8 +70,8 @@ where
             context_data_fn: Arc::new(context_data_fn),
             task_store,
             task_registry: BTreeMap::new(),
-            startup_registry: BTreeMap::new(),
-            frequency_registry: BTreeMap::new(),
+            //startup_registry: BTreeMap::new(),
+            schedule_registry: BTreeMap::new(),
             queue_tasks: BTreeMap::new(),
             worker_queues: BTreeMap::new(),
         }
@@ -87,37 +92,41 @@ where
         self
     }
 
-    pub fn register_recurring_task_type<TL>(mut self) -> Self
+    pub async fn register_recurring_task_type<RT>(mut self, connection: &mut S::Connection) -> Self
     where
-        TL: RecurringTask<Context = Context>,
+        RT: RecurringTask<Context = Context>,
     {
-        self.queue_tasks
-            .entry(TL::QUEUE_NAME)
-            .or_default()
-            .push(TL::TASK_NAME);
+        self.schedule_registry
+            .insert(RT::TASK_NAME, Arc::new(next_schedule::<RT>));
 
-        self.task_registry
-            .insert(TL::TASK_NAME, Arc::new(deserialize_and_run_task::<TL>));
+        S::enqueue_with_connection(connection, RT::default())
+            .await
+            .unwrap();
+
+        //self.frequency_registry.insert(RT::TASK_NAME, RT::FREQUENCY);
+
+        //if TL as
 
         /*
         self.startup_registry
             .insert(TL::TASK_NAME, Arc::new(queue_recurring_task::<TL, S>));
 
-        self.frequency_registry.insert(TL::TASK_NAME, TL::FREQUENCY);
         */
-
-        self
+        self.register_task_type::<RT>()
     }
 
     pub async fn start<F>(self, shutdown_signal: F) -> Result<JoinHandle<()>, WorkerPoolError>
     where
         F: Future<Output = ()> + Send + 'static,
     {
+        /*
         for (task_name, add_to_queue_fn) in self.startup_registry.iter() {
+            let context = (self.context_data_fn)();
             add_to_queue_fn(&self.task_store).await.map_err(|err| {
                 WorkerPoolError::FailedToQueueRecurring(task_name.to_string(), err)
             })?;
         }
+        */
 
         for (queue_name, queue_tracked_tasks) in self.queue_tasks.iter() {
             if !self.worker_queues.contains_key(queue_name) {
@@ -143,7 +152,7 @@ where
                     self.context_data_fn.clone(),
                     self.task_store.clone(),
                     self.task_registry.clone(),
-                    self.frequency_registry.clone(),
+                    self.schedule_registry.clone(),
                     Some(inner_shutdown_rx.clone()),
                 );
 
@@ -230,14 +239,9 @@ where
     })
 }
 
-/*
-fn queue_recurring_task<RT, TS>(
-    task_store: &TS,
-) -> Pin<Box<dyn Future<Output = Result<Option<String>, TaskStoreError>> + Send + '_>>
-where
-    RT: RecurringTask,
-    TS: TaskStore,
-{
-    Box::pin(async move { task_store.enqueue(RT::default()).await })
+fn next_schedule<RT: RecurringTask>(
+    payload: Vec<u8>,
+) -> Result<Option<OffsetDateTime>, TaskExecError> {
+    let task: RT = serde_json::from_slice(&payload)?;
+    Ok(task.next_schedule())
 }
-*/
