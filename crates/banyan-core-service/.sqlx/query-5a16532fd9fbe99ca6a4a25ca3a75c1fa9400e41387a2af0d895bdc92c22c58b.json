@@ -1,38 +1,32 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT * FROM metrics_storage",
+  "query": "SELECT * FROM storage_host_total_consumption WHERE slot = $1 AND storage_host_id = $2",
   "describe": {
     "columns": [
       {
-        "name": "user_id",
+        "name": "storage_host_id",
         "ordinal": 0,
         "type_info": "Text"
       },
       {
-        "name": "hot_storage_bytes",
+        "name": "storage_bytes",
         "ordinal": 1,
         "type_info": "Int64"
       },
       {
-        "name": "archival_storage_bytes",
-        "ordinal": 2,
-        "type_info": "Int64"
-      },
-      {
         "name": "slot",
-        "ordinal": 3,
+        "ordinal": 2,
         "type_info": "Datetime"
       }
     ],
     "parameters": {
-      "Right": 0
+      "Right": 2
     },
     "nullable": [
-      false,
       false,
       false,
       false
     ]
   },
-  "hash": "83644419c352a8ba3887759f0046ce9f1f79bfab468c0e858dff4d5c32d1d216"
+  "hash": "5a16532fd9fbe99ca6a4a25ca3a75c1fa9400e41387a2af0d895bdc92c22c58b"
 }

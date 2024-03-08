@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT * FROM metrics_storage WHERE slot = $1 AND user_id = $2",
+  "query": "SELECT * FROM user_total_consumption",
   "describe": {
     "columns": [
       {
@@ -25,7 +25,7 @@
       }
     ],
     "parameters": {
-      "Right": 2
+      "Right": 0
     },
     "nullable": [
       false,
@@ -34,5 +34,5 @@
       false
     ]
   },
-  "hash": "62041b67c9cf05ad8ca2c2f8a7cf6a68cf7a44711bd0740909104b297528f684"
+  "hash": "4652c15b54ad3ee5c114896b0de65fe311427842e207f6dba407dbbe964d50fc"
 }
