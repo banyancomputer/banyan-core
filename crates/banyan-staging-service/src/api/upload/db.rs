@@ -1,13 +1,11 @@
 use std::str::FromStr;
 use std::time::Duration;
 
-use banyan_task::TaskLikeExt;
 use cid::Cid;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
 use crate::database::Database;
-use crate::tasks::ReportUploadTask;
 
 pub const UPLOAD_SESSION_DURATION: Duration = Duration::from_secs(60 * 60 * 6);
 
@@ -116,13 +114,7 @@ pub async fn upload_size(db: &Database, upload_id: &str) -> Result<i64, sqlx::Er
     Ok(total_size as i64)
 }
 
-pub async fn report_upload(
-    db: &mut Database,
-    storage_grant_id: Uuid,
-    metadata_id: &str,
-    upload_id: &str,
-    total_size: i64,
-) -> Result<(), sqlx::Error> {
+pub async fn all_cids(db: &mut Database, upload_id: &str) -> Result<Vec<Cid>, sqlx::Error> {
     let all_cids: Vec<String> = sqlx::query_scalar!(
         r#"
             SELECT blocks.cid 
@@ -136,17 +128,10 @@ pub async fn report_upload(
     .fetch_all(&*db)
     .await?;
 
-    let all_cids = all_cids
+    Ok(all_cids
         .into_iter()
         .map(|cid_string| Cid::from_str(&cid_string).unwrap())
-        .collect::<Vec<Cid>>();
-
-    ReportUploadTask::new(storage_grant_id, metadata_id, &all_cids, total_size as u64)
-        .enqueue::<banyan_task::SqliteTaskStore>(db)
-        .await
-        .unwrap();
-
-    Ok(())
+        .collect::<Vec<Cid>>())
 }
 
 pub async fn get_upload(

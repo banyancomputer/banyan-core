@@ -357,7 +357,7 @@ fn best_fit_decreasing(snapshot_segments: Vec<SnapshotSegment>, bin_capacity: i6
 mod tests {
     use std::collections::HashSet;
 
-    use banyan_task::tests::default_current_task;
+    use banyan_task::tests::current_task::default_current_task;
     use banyan_task::TaskLike;
     use time::OffsetDateTime;
 

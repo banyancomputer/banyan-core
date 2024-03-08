@@ -199,8 +199,7 @@ pub async fn send_email_message(
 
 #[cfg(test)]
 pub mod tests {
-    use banyan_task::tests::default_current_task;
-    use banyan_task::{CurrentTask, TaskLike};
+    use banyan_task::{tests::current_task::default_current_task, CurrentTask, TaskLike};
     use time::OffsetDateTime;
 
     use super::*;

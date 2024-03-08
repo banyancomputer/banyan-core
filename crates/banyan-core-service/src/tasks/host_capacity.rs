@@ -101,7 +101,7 @@ mod tests {
     use std::thread;
     use std::time::Duration;
 
-    use banyan_task::tests::default_current_task;
+    use banyan_task::tests::current_task::default_current_task;
     use banyan_task::{CurrentTask, TaskLike};
 
     use super::*;

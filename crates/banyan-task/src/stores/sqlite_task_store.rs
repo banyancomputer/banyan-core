@@ -63,35 +63,6 @@ impl SqliteTaskStore {
         )
     }
 
-    pub async fn task_in_state<T: TaskLike>(
-        &self,
-        states: Vec<TaskState>,
-    ) -> Result<Option<Task>, TaskStoreError> {
-        let mut query_builder =
-            sqlx::QueryBuilder::new("SELECT * FROM background_tasks WHERE task_name =");
-
-        query_builder.push_bind(T::TASK_NAME);
-        query_builder.push(" AND state IN (");
-
-        let mut separated_values = query_builder.separated(", ");
-        for state in states {
-            separated_values.push_bind(state);
-        }
-        query_builder.push(");");
-
-        let query = query_builder
-            .build_query_as::<Task>()
-            .persistent(false)
-            .fetch_optional(&self.pool)
-            .await;
-
-        match query {
-            Ok(Some(res)) => Ok(Some(res)),
-            Ok(None) => Ok(None),
-            Err(err) => Err(TaskStoreError::DatabaseError(err)),
-        }
-    }
-
     pub async fn get_task(&self, id: String) -> Result<Task, TaskStoreError> {
         let connection = self.pool.clone();
         let task = sqlx::query_as!(Task, r#"SELECT * FROM background_tasks WHERE id = $1"#, id)
@@ -115,13 +86,16 @@ impl SqliteTaskStore {
         }
 
         let background_task_id: String = sqlx::query_scalar!(
-            r#"INSERT INTO background_tasks (
-                           task_name, queue_name, unique_key, payload,
-                           current_attempt, maximum_attempts, state,
-                           original_task_id, scheduled_to_run_at
-                       )
-                       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-                       RETURNING id;"#,
+            r#"
+                INSERT INTO background_tasks
+                (
+                    task_name, queue_name, unique_key, payload, 
+                    current_attempt, maximum_attempts, state,
+                    original_task_id, scheduled_to_run_at
+                )
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                RETURNING id;
+            "#,
             task.task_name,
             task.queue_name,
             task.unique_key,
@@ -353,6 +327,34 @@ impl TaskStore for SqliteTaskStore {
 
         Ok(())
     }
+
+    async fn get_task_in_state(
+        &self,
+        task_name: &str,
+        states: Vec<TaskState>,
+    ) -> Result<Option<Task>, TaskStoreError> {
+        let mut query_builder =
+            sqlx::QueryBuilder::new("SELECT * FROM background_tasks WHERE task_name =");
+        query_builder.push_bind(task_name);
+        query_builder.push(" AND state IN (");
+        let mut separated_values = query_builder.separated(", ");
+        for state in states {
+            separated_values.push_bind(state);
+        }
+        query_builder.push(");");
+
+        let query = query_builder
+            .build_query_as::<Task>()
+            .persistent(false)
+            .fetch_optional(&self.pool)
+            .await;
+
+        match query {
+            Ok(Some(res)) => Ok(Some(res)),
+            Ok(None) => Ok(None),
+            Err(err) => Err(TaskStoreError::DatabaseError(err)),
+        }
+    }
 }
 #[derive(sqlx::FromRow)]
 struct SqliteTaskStoreMetrics {
@@ -392,8 +394,10 @@ impl From<SqliteTaskStoreMetrics> for TaskStoreMetrics {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::tests::{default_task_store_metrics, TestTask};
-    use crate::TaskLikeExt;
+    use crate::{
+        tests::{default_task_store_metrics, TestTask},
+        TaskLikeExt,
+    };
 
     #[tokio::test]
     async fn reschedule_tasks_work() {

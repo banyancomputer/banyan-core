@@ -4,16 +4,18 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::TypedHeader;
 use banyan_object_store::{ObjectStore, ObjectStorePath};
+use banyan_task::{SqliteTaskStore, TaskLikeExt};
 use bytes::Bytes;
 use cid::multibase::Base;
 use cid::multihash::{Code, MultihashDigest};
 use cid::Cid;
 use serde::{Deserialize, Serialize};
 
-use super::db::{complete_upload, get_upload, report_upload, upload_size, write_block_to_tables};
+use super::db::{all_cids, complete_upload, get_upload, upload_size, write_block_to_tables};
 use super::error::UploadError;
 use crate::app::AppState;
 use crate::extractors::AuthenticatedClient;
+use crate::tasks::ReportUploadTask;
 
 #[derive(Deserialize, Serialize)]
 pub struct BlockUploadRequest {
@@ -142,13 +144,13 @@ pub async fn handler(
     if completed {
         let total_size = upload_size(&db, &upload.id).await?;
         complete_upload(&db, total_size, "", &upload.id).await?;
-        report_upload(
-            &mut db,
+        ReportUploadTask::new(
             client.storage_grant_id(),
             &upload.metadata_id,
-            &upload.id,
-            total_size,
+            &all_cids(&mut db, &upload.id).await?,
+            total_size as u64,
         )
+        .enqueue::<SqliteTaskStore>(&mut db)
         .await?;
     }
 

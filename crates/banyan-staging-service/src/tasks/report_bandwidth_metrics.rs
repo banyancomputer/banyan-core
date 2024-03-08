@@ -33,14 +33,8 @@ pub enum ReportBandwidthMetricsTaskError {
     EndSlotParsingError(#[from] ComponentRange),
 }
 
-#[derive(Deserialize, Serialize)]
-pub struct ReportBandwidthMetricsTask {}
-
-impl ReportBandwidthMetricsTask {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
+#[derive(Default, Deserialize, Serialize)]
+pub struct ReportBandwidthMetricsTask;
 
 #[async_trait]
 impl TaskLike for ReportBandwidthMetricsTask {
@@ -88,12 +82,13 @@ impl TaskLike for ReportBandwidthMetricsTask {
 
         Ok(())
     }
-
-    fn next_time(&self) -> Option<OffsetDateTime> {
-        // every 20 minutes; not to miss the hour window
-        Some(OffsetDateTime::now_utc() + Duration::minutes(20))
-    }
 }
+
+/*
+impl RecurringTask for ReportBandwidthMetricsTask {
+    const FREQUENCY: Duration = Duration::minutes(20);
+}
+*/
 
 fn round_to_previous_hour(start_time: OffsetDateTime) -> Result<OffsetDateTime, ComponentRange> {
     start_time

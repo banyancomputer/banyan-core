@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 
-use banyan_task::TaskLikeExt;
+use banyan_task::{SqliteTaskStore, TaskLike, TaskLikeExt};
 use sqlx::QueryBuilder;
 use time::OffsetDateTime;
 
@@ -195,7 +195,7 @@ impl Bucket {
             total_rows_pruned += block_list.len();
 
             let queue_result = PruneBlocksTask::new(storage_host_id, block_list)
-                .enqueue_with_connection::<banyan_task::SqliteTaskStore>(&mut *conn)
+                .enqueue_with_connection::<SqliteTaskStore>(&mut *conn)
                 .await;
 
             // A future clean up task can always come back through and catch any blocks not missed.

@@ -5,7 +5,7 @@ use axum::response::{IntoResponse, Response};
 use axum::TypedHeader;
 use banyan_car_analyzer::{CarReport, StreamingCarAnalyzer, StreamingCarAnalyzerError};
 use banyan_object_store::{ObjectStore, ObjectStorePath};
-use banyan_task::TaskLikeExt;
+use banyan_task::{SqliteTaskStore, TaskLikeExt};
 use futures::{TryStream, TryStreamExt};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -114,7 +114,7 @@ pub async fn handler(
                 cr.cids(),
                 cr.total_size(),
             )
-            .enqueue::<banyan_task::SqliteTaskStore>(&mut db)
+            .enqueue::<SqliteTaskStore>(&mut db)
             .await
             .map_err(UploadError::FailedToEnqueueTask)?;
 

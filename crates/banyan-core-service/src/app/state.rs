@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use banyan_object_store::{ObjectStore, ObjectStoreConnection, ObjectStoreError};
+use banyan_task::SqliteTaskStore;
 use jwt_simple::prelude::*;
 
 use crate::app::{
@@ -25,14 +26,6 @@ pub struct State {
 }
 
 impl State {
-    pub fn database(&self) -> Database {
-        self.database.clone()
-    }
-
-    pub fn event_bus(&self) -> EventBus {
-        self.event_bus.clone()
-    }
-
     pub async fn from_config(config: &Config) -> Result<Self, StateSetupError> {
         // Do a test setup to make sure the upload directory exists and is writable as an early
         // sanity check
@@ -72,6 +65,14 @@ impl State {
             upload_directory: config.upload_directory(),
             frontend_folder: config.frontend_folder().to_string(),
         })
+    }
+
+    pub fn database(&self) -> Database {
+        self.database.clone()
+    }
+
+    pub fn event_bus(&self) -> EventBus {
+        self.event_bus.clone()
     }
 
     pub fn secrets(&self) -> Secrets {

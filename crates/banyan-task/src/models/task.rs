@@ -1,7 +1,6 @@
-use time::OffsetDateTime;
-
 use crate::panic_safe_future::CaughtPanic;
 use crate::TaskState;
+use time::OffsetDateTime;
 
 #[derive(Clone, Debug, PartialEq, sqlx::FromRow)]
 pub struct Task {

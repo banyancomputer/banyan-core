@@ -3,7 +3,7 @@ mod report_bandwidth_metrics;
 mod report_health;
 mod report_upload;
 
-use banyan_task::{QueueConfig, SqliteTaskStore, TaskLikeExt, TaskState, WorkerPool};
+use banyan_task::{QueueConfig, SqliteTaskStore, TaskLike, TaskLikeExt, TaskStore, WorkerPool};
 pub use prune_blocks::PruneBlocksTask;
 pub use report_health::ReportHealthTask;
 pub use report_upload::ReportUploadTask;
@@ -21,12 +21,12 @@ pub async fn start_background_workers(
 
     // Enqueue a report bandwidth task if there is none in progress
     if task_store
-        .task_in_state::<ReportBandwidthMetricsTask>(vec![TaskState::New, TaskState::Retry])
+        .get_living_task(ReportHealthTask::TASK_NAME)
         .await
         .expect("get report bandwidth metrics task")
         .is_none()
     {
-        ReportBandwidthMetricsTask::new()
+        ReportBandwidthMetricsTask
             .enqueue::<SqliteTaskStore>(&mut state.database())
             .await
             .expect("enqueue report bandwidth metrics task");
@@ -34,7 +34,7 @@ pub async fn start_background_workers(
 
     // Enqueue a report health task if there is none in progress
     if task_store
-        .task_in_state::<ReportHealthTask>(vec![TaskState::New, TaskState::Retry])
+        .get_living_task(ReportHealthTask::TASK_NAME)
         .await
         .expect("get report health task")
         .is_none()

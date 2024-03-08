@@ -2,10 +2,10 @@
 
 use std::collections::BTreeMap;
 
-use time::OffsetDateTime;
+use time::{Duration, OffsetDateTime};
 
 use crate::panic_safe_future::PanicSafeFuture;
-use crate::worker_pool::ScheduleFn;
+use crate::worker_pool::QueueRecurringTaskFn;
 use crate::{
     CurrentTask, CurrentTaskError, ExecuteTaskFn, QueueConfig, StateFn, Task, TaskExecError,
     TaskState, TaskStore, TaskStoreError, MAXIMUM_CHECK_DELAY,
@@ -22,8 +22,7 @@ where
     context_data_fn: StateFn<Context>,
     store: S,
     task_registry: BTreeMap<&'static str, ExecuteTaskFn<Context>>,
-    schedule_registry: BTreeMap<&'static str, ScheduleFn>,
-
+    frequency_registry: BTreeMap<&'static str, Duration>,
     shutdown_signal: Option<tokio::sync::watch::Receiver<()>>,
 }
 
@@ -38,7 +37,7 @@ where
         context_data_fn: StateFn<Context>,
         store: S,
         task_registry: BTreeMap<&'static str, ExecuteTaskFn<Context>>,
-        schedule_registry: BTreeMap<&'static str, ScheduleFn>,
+        frequency_registry: BTreeMap<&'static str, Duration>,
         shutdown_signal: Option<tokio::sync::watch::Receiver<()>>,
     ) -> Self {
         Self {
@@ -47,7 +46,7 @@ where
             context_data_fn,
             store,
             task_registry,
-            schedule_registry,
+            frequency_registry,
             shutdown_signal,
         }
     }
@@ -79,7 +78,7 @@ where
                 match task_result {
                     Ok(_) => {
                         match self.store.completed(task.id.clone()).await {
-                            Ok(_) => self.schedule_next_if_necessary(&task).await,
+                            Ok(_) => self.schedule_if_needed(&task).await,
                             Err(err) => {
                                 // TODO: "error returned from tests database: (code: 1) no such table: background_tasks"
                                 Err(WorkerError::UpdateTaskStatusFailed(err))
@@ -97,7 +96,7 @@ where
                             .await
                         {
                             // not retried
-                            Ok(None) => self.schedule_next_if_necessary(&task).await,
+                            Ok(None) => self.schedule_if_needed(&task).await,
                             // retry failed
                             Err(err) => Err(WorkerError::RetryTaskFailed(err)),
                             // retried
@@ -118,30 +117,31 @@ where
         }
     }
 
-    async fn schedule_next_if_necessary(&self, task: &Task) -> Result<(), WorkerError> {
-        if let Some(next_schedule) = self.get_next_schedule(task) {
-            return match self
-                .store
+    async fn schedule_if_needed(&self, task: &Task) -> Result<(), WorkerError> {
+        // If there is something to schedule
+        if let Some(frequency) = self.frequency_registry.get(task.task_name.as_str()) {
+            let next_schedule = OffsetDateTime::now_utc().checked_add(*frequency).ok_or(
+                WorkerError::ScheduleFailed(format!(
+                    "unable to schedule {} invalid schedule time",
+                    task.task_name
+                )),
+            )?;
+
+            self.store
                 .schedule_next(task.id.clone(), next_schedule)
                 .await
-            {
-                Ok(_) => Ok(()),
-                Err(err) => {
-                    tracing::error!("Failed to schedule next occurrence of task: {err}");
-                    Err(WorkerError::ScheduleFailed(task.id.clone()))
-                }
-            };
+                .map(|_| ())
+                .map_err(|err| {
+                    WorkerError::ScheduleFailed(format!(
+                        "unable to schedule {}, err: {}",
+                        task.task_name, err
+                    ))
+                })
         }
-
-        Ok(())
-    }
-
-    fn get_next_schedule(&self, task: &Task) -> Option<OffsetDateTime> {
-        if let Some(next_schedule) = self.schedule_registry.get(task.task_name.as_str()) {
-            return next_schedule(task.payload.clone());
+        // If nothing needs to be scheduled we're fine
+        else {
+            Ok(())
         }
-
-        None
     }
 
     pub async fn run_tasks(&mut self) -> Result<(), WorkerError> {
@@ -257,10 +257,7 @@ mod tests {
     }
     #[derive(Clone)]
     struct TestContext {}
-    fn create_registry() -> (
-        BTreeMap<&'static str, ExecuteTaskFn<TestContext>>,
-        BTreeMap<&'static str, ScheduleFn>,
-    ) {
+    fn create_registry() -> (BTreeMap<&'static str, ExecuteTaskFn<TestContext>>) {
         let mut task_registry = BTreeMap::new();
 
         let test_task_fn: ExecuteTaskFn<TestContext> =
@@ -278,24 +275,14 @@ mod tests {
 
         task_registry.insert(TestTask::TASK_NAME, test_task_fn);
         task_registry.insert(ScheduleTestTask::TASK_NAME, schedule_test_task_fn);
-
-        let mut schedule_registry = BTreeMap::new();
-
-        let test_task_fn: ScheduleFn = |_payload| None;
-        let schedule_test_task_fn: ScheduleFn =
-            |_payload| Some(OffsetDateTime::now_utc() - Duration::from_secs(60));
-
-        schedule_registry.insert(TestTask::TASK_NAME, test_task_fn);
-        schedule_registry.insert(ScheduleTestTask::TASK_NAME, schedule_test_task_fn);
-
-        (task_registry, schedule_registry)
+        task_registry
     }
     fn create_worker(
         ctx: &'static TestContext,
         task_store: SqliteTaskStore,
     ) -> Worker<TestContext, SqliteTaskStore> {
         let queue_config = QueueConfig::new(WORKER_NAME).with_worker_count(1);
-        let (task_registry, schedule_registry) = create_registry();
+        let task_registry = create_registry();
         let context_data_fn = Arc::new(move || ctx.clone());
         let (_, inner_shutdown_rx) = watch::channel(());
 
@@ -305,7 +292,7 @@ mod tests {
             context_data_fn.clone(),
             task_store,
             task_registry.clone(),
-            schedule_registry.clone(),
+            BTreeMap::new(),
             Some(inner_shutdown_rx.clone()),
         )
     }

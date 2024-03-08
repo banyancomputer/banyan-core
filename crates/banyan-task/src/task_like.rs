@@ -10,7 +10,6 @@ use crate::{CurrentTask, TaskStoreError};
 pub trait TaskLike: Serialize + DeserializeOwned + Sync + Send + 'static {
     const MAX_ATTEMPTS: i64 = 3;
     const QUEUE_NAME: &'static str = "default";
-
     const TASK_NAME: &'static str;
 
     type Error: std::error::Error;
@@ -19,10 +18,6 @@ pub trait TaskLike: Serialize + DeserializeOwned + Sync + Send + 'static {
     async fn run(&self, task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error>;
 
     fn unique_key(&self) -> Option<String> {
-        None
-    }
-
-    fn next_time(&self) -> Option<OffsetDateTime> {
         None
     }
 }
@@ -36,7 +31,7 @@ pub trait TaskLikeExt {
 
     async fn enqueue_with_connection<S: TaskStore>(
         self,
-        pool: &mut S::Connection,
+        connection: &mut S::Connection,
     ) -> Result<Option<String>, TaskStoreError>;
 }
 
@@ -60,17 +55,18 @@ where
     }
 }
 
-pub mod tests {
-    use std::time::Duration;
+pub trait RecurringTask: TaskLike + Default {
+    fn schedule_next(previous_completion_time: OffsetDateTime) -> OffsetDateTime;
+}
 
+pub mod tests {
+    use super::*;
     use async_trait::async_trait;
     use serde::{Deserialize, Serialize};
 
-    use super::*;
-
     #[derive(Debug, Serialize, Deserialize)]
     pub struct TestTask;
-    #[derive(Debug, Serialize, Deserialize)]
+    #[derive(Debug, Default, Serialize, Deserialize)]
     pub struct ScheduleTestTask;
 
     #[async_trait]
@@ -95,9 +91,12 @@ pub mod tests {
         async fn run(&self, _task: CurrentTask, _ctx: Self::Context) -> Result<(), Self::Error> {
             Ok(())
         }
-
-        fn next_time(&self) -> Option<OffsetDateTime> {
-            Some(OffsetDateTime::now_utc() + Duration::from_secs(60))
-        }
     }
+
+    /*
+    #[async_trait]
+    impl RecurringTask for ScheduleTestTask {
+        const FREQUENCY: Duration = Duration::minutes(1);
+    }
+    */
 }

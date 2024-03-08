@@ -4,13 +4,14 @@ use std::sync::Arc;
 
 use futures::future::join_all;
 use futures::Future;
-use time::OffsetDateTime;
+use time::Duration;
 use tokio::sync::watch;
 use tokio::task::JoinHandle;
 use tokio::time::timeout;
 
 use crate::{
-    CurrentTask, QueueConfig, TaskExecError, TaskLike, TaskStore, Worker, WORKER_SHUTDOWN_TIMEOUT,
+    task_like::RecurringTask, CurrentTask, QueueConfig, Task, TaskExecError, TaskInstanceBuilder,
+    TaskLike, TaskState, TaskStore, TaskStoreError, Worker, WORKER_SHUTDOWN_TIMEOUT,
 };
 
 pub type ExecuteTaskFn<Context> = Arc<
@@ -23,9 +24,13 @@ pub type ExecuteTaskFn<Context> = Arc<
         + Sync,
 >;
 
-pub type StateFn<Context> = Arc<dyn Fn() -> Context + Send + Sync>;
+pub type QueueRecurringTaskFn<TS> = Arc<
+    dyn Fn(&TS) -> Pin<Box<dyn Future<Output = Result<Option<String>, TaskStoreError>> + Send + '_>>
+        + Send
+        + Sync,
+>;
 
-pub type ScheduleFn = fn(Vec<u8>) -> Option<OffsetDateTime>;
+pub type StateFn<Context> = Arc<dyn Fn() -> Context + Send + Sync>;
 
 #[derive(Clone)]
 pub struct WorkerPool<Context, S>
@@ -36,8 +41,8 @@ where
     context_data_fn: StateFn<Context>,
     task_store: S,
     task_registry: BTreeMap<&'static str, ExecuteTaskFn<Context>>,
-    schedule_registry: BTreeMap<&'static str, ScheduleFn>,
-
+    startup_registry: BTreeMap<&'static str, QueueRecurringTaskFn<S>>,
+    frequency_registry: BTreeMap<&'static str, Duration>,
     queue_tasks: BTreeMap<&'static str, Vec<&'static str>>,
     worker_queues: BTreeMap<&'static str, QueueConfig>,
 }
@@ -60,8 +65,8 @@ where
             context_data_fn: Arc::new(context_data_fn),
             task_store,
             task_registry: BTreeMap::new(),
-            schedule_registry: BTreeMap::new(),
-
+            startup_registry: BTreeMap::new(),
+            frequency_registry: BTreeMap::new(),
             queue_tasks: BTreeMap::new(),
             worker_queues: BTreeMap::new(),
         }
@@ -79,8 +84,27 @@ where
         self.task_registry
             .insert(TL::TASK_NAME, Arc::new(deserialize_and_run_task::<TL>));
 
-        self.schedule_registry
-            .insert(TL::TASK_NAME, get_next_schedule::<TL>);
+        self
+    }
+
+    pub fn register_recurring_task_type<TL>(mut self) -> Self
+    where
+        TL: RecurringTask<Context = Context>,
+    {
+        self.queue_tasks
+            .entry(TL::QUEUE_NAME)
+            .or_default()
+            .push(TL::TASK_NAME);
+
+        self.task_registry
+            .insert(TL::TASK_NAME, Arc::new(deserialize_and_run_task::<TL>));
+
+        /*
+        self.startup_registry
+            .insert(TL::TASK_NAME, Arc::new(queue_recurring_task::<TL, S>));
+
+        self.frequency_registry.insert(TL::TASK_NAME, TL::FREQUENCY);
+        */
 
         self
     }
@@ -89,6 +113,12 @@ where
     where
         F: Future<Output = ()> + Send + 'static,
     {
+        for (task_name, add_to_queue_fn) in self.startup_registry.iter() {
+            add_to_queue_fn(&self.task_store).await.map_err(|err| {
+                WorkerPoolError::FailedToQueueRecurring(task_name.to_string(), err)
+            })?;
+        }
+
         for (queue_name, queue_tracked_tasks) in self.queue_tasks.iter() {
             if !self.worker_queues.contains_key(queue_name) {
                 return Err(WorkerPoolError::QueueNotConfigured(
@@ -100,7 +130,6 @@ where
 
         let (inner_shutdown_tx, inner_shutdown_rx) = watch::channel(());
         let mut worker_handles = Vec::new();
-
         for (queue_name, queue_config) in self.worker_queues.iter() {
             for idx in 0..queue_config.worker_count() {
                 let worker_name = format!("worker-{queue_name}-{idx}");
@@ -114,7 +143,7 @@ where
                     self.context_data_fn.clone(),
                     self.task_store.clone(),
                     self.task_registry.clone(),
-                    self.schedule_registry.clone(),
+                    self.frequency_registry.clone(),
                     Some(inner_shutdown_rx.clone()),
                 );
 
@@ -178,6 +207,9 @@ where
 pub enum WorkerPoolError {
     #[error("found named queue '{0}' defined by task(s) {1:?} that doesn't have a matching queue config")]
     QueueNotConfigured(&'static str, Vec<&'static str>),
+
+    #[error("failed to add the recurring task {0}, to the startup queue: {1}")]
+    FailedToQueueRecurring(String, TaskStoreError),
 }
 
 fn deserialize_and_run_task<TL>(
@@ -198,10 +230,14 @@ where
     })
 }
 
-fn get_next_schedule<TL>(payload: Vec<u8>) -> Option<OffsetDateTime>
+/*
+fn queue_recurring_task<RT, TS>(
+    task_store: &TS,
+) -> Pin<Box<dyn Future<Output = Result<Option<String>, TaskStoreError>> + Send + '_>>
 where
-    TL: TaskLike,
+    RT: RecurringTask,
+    TS: TaskStore,
 {
-    let task: TL = serde_json::from_slice(&payload).unwrap();
-    task.next_time()
+    Box::pin(async move { task_store.enqueue(RT::default()).await })
 }
+*/

@@ -1,7 +1,7 @@
 use axum::extract::{Json, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use banyan_task::TaskLikeExt;
+use banyan_task::{SqliteTaskStore, TaskLikeExt};
 use cid::Cid;
 
 use crate::app::AppState;
@@ -28,7 +28,7 @@ pub async fn handler(
     }
 
     PruneBlocksTask::new(prune_block_list)
-        .enqueue::<banyan_task::SqliteTaskStore>(&mut db)
+        .enqueue::<SqliteTaskStore>(&mut db)
         .await?;
 
     Ok((StatusCode::OK, ()).into_response())
