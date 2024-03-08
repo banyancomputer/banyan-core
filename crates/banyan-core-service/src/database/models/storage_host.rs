@@ -84,8 +84,7 @@ impl StorageHost {
             r#"SELECT COALESCE(SUM(m.data_size), 0) as big_int FROM metadata m
                    JOIN storage_hosts_metadatas_storage_grants shmg ON shmg.metadata_id = m.id
                    JOIN storage_grants sg ON shmg.storage_grant_id = sg.id
-                   WHERE shmg.storage_host_id = $2
-                       AND sg.user_id = $1;
+                   WHERE shmg.storage_host_id = $1 AND sg.user_id = $2;
              "#,
             storage_host_id,
             user_id,

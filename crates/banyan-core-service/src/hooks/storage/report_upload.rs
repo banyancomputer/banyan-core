@@ -98,7 +98,7 @@ pub async fn handler(
         .await
         .map_err(ReportUploadError::QueryFailed)?;
 
-    ReportUserStorage::new(user_id, storage_provider.id)
+    ReportUserStorage::new(user_id)
         .enqueue::<banyan_task::SqliteTaskStore>(&mut database)
         .await
         .map_err(ReportUploadError::UnableToEnqueueTask)?;

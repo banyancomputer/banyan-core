@@ -5,7 +5,7 @@ use time::error::ComponentRange;
 use time::OffsetDateTime;
 
 use crate::app::AppState;
-use crate::database::models::{MetricsStorage, StorageHost};
+use crate::tasks::report_user_storage::calculate_and_store_consumed_storage;
 use crate::utils::time::round_to_previous_hour;
 
 pub type StorageReporterTaskContext = AppState;
@@ -30,69 +30,63 @@ impl TaskLike for ReportAllUserStorageTask {
     type Context = StorageReporterTaskContext;
 
     async fn run(&self, _task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
-        let mut db_conn = ctx.database().acquire().await?;
+        let mut conn = ctx.database().acquire().await?;
         let slot_end = round_to_previous_hour(OffsetDateTime::now_utc())?;
 
-        let users = sqlx::query!("SELECT DISTINCT user_id FROM main.buckets")
-            .fetch_all(&mut *db_conn)
+        let users = sqlx::query!("SELECT DISTINCT user_id FROM buckets")
+            .fetch_all(&mut *conn)
             .await?;
 
         for user in users {
-            let storage_hosts = sqlx::query!(
-                "SELECT DISTINCT storage_host_id FROM storage_hosts_metadatas_storage_grants shms
-                INNER JOIN metadata AS m ON m.id = shms.metadata_id
-                INNER JOIN main.buckets b ON m.bucket_id = b.id
-                WHERE b.user_id = $1;",
-                user.user_id,
-            )
-            .fetch_all(&mut *db_conn)
-            .await?;
-
-            for storage_host in storage_hosts {
-                let user_storage_report = StorageHost::user_report(
-                    &mut db_conn,
-                    &storage_host.storage_host_id,
-                    &user.user_id,
-                )
-                .await?;
-
-                let hot_storage_bytes = user_storage_report.current_consumption();
-                if hot_storage_bytes == 0 {
-                    continue;
-                }
-                match MetricsStorage::find_by_slot_user_and_storage_host(
-                    &mut db_conn,
-                    slot_end,
-                    user.user_id.clone(),
-                    storage_host.storage_host_id.clone(),
-                )
-                .await
-                {
-                    Ok(Some(existing_metrics)) => {
-                        let hot_storage_bytes =
-                            existing_metrics.hot_storage_bytes.max(hot_storage_bytes);
-                        existing_metrics
-                            .update(&mut db_conn, hot_storage_bytes, 0)
-                            .await?;
-                    }
-                    Ok(None) => {
-                        let new_metrics = MetricsStorage {
-                            user_id: user.user_id.clone(),
-                            hot_storage_bytes,
-                            archival_storage_bytes: 0,
-                            storage_host_id: storage_host.storage_host_id.clone(),
-                            slot: slot_end,
-                        };
-                        new_metrics.save(&mut db_conn).await?;
-                    }
-                    Err(e) => return Err(StorageReporterTaskError::Sqlx(e)),
-                }
-            }
+            calculate_and_store_consumed_storage(&mut conn, slot_end, &user.user_id).await?;
         }
 
         Ok(())
     }
+
     fn next_time(&self) -> Option<OffsetDateTime> {
         Some(OffsetDateTime::now_utc() + time::Duration::hours(1))
+    }
+}
+#[cfg(test)]
+mod test {
+    use banyan_task::tests::default_current_task;
+    use banyan_task::TaskLike;
+
+    use crate::app::mock_app_state;
+    use crate::database::models::{Metadata, MetadataState, MetricsStorage};
+    use crate::database::test_helpers::{
+        create_user, sample_bucket, sample_metadata, setup_database,
+    };
+    use crate::database::DatabaseConnection;
+    use crate::tasks::report_all_users_storage::ReportAllUserStorageTask;
+
+    pub async fn setup_user_and_data(conn: &mut DatabaseConnection, email: &str) -> String {
+        let user_id = create_user(conn, email, "Test User").await;
+        let bucket_id = sample_bucket(conn, &user_id).await;
+        let metadata_id = sample_metadata(conn, &bucket_id, 1, MetadataState::Current).await;
+        Metadata::update_size(conn, &metadata_id, 100, 30)
+            .await
+            .expect("metadata size update");
+        user_id
+    }
+
+    #[tokio::test]
+    async fn report_all_users_storage_test() {
+        let db = setup_database().await;
+        let state = mock_app_state(db.clone());
+        let mut conn = db.acquire().await.expect("connection");
+        setup_user_and_data(&mut conn, "test1@example.com").await;
+        setup_user_and_data(&mut conn, "test2@example.com").await;
+
+        let result = ReportAllUserStorageTask::default()
+            .run(default_current_task(), state.0)
+            .await;
+
+        assert!(result.is_ok());
+        let metrics_storage = MetricsStorage::find_all(&db)
+            .await
+            .expect("metrics_storage");
+        assert_eq!(metrics_storage.len(), 2);
     }
 }
