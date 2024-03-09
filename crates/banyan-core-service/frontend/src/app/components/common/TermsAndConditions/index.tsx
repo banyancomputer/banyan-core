@@ -31,7 +31,7 @@ export const TermaAndConditions: React.FC<{ userData: User, acceptTerms: React.D
 
     return (
         <section className="w-screen h-screen flex-grow flex items-stretch">
-            <div className="w-1/2 pt-5 pl-14 flex flex-col bg-white">
+            <div className="w-1/2 pt-5 pl-14 flex flex-col bg-mainBackground">
                 <div>
                     <Logo />
                     <div className="mt-20 flex flex-col">

@@ -8,10 +8,12 @@ import { getSubscriptions, manageSubscriptions } from '@/app/store/billing/actio
 import { useModal } from '@/app/contexts/modals';
 import { convertSubscriptionsSizes } from '@/app/utils/storage';
 import { getHotStorageAmount } from '@/app/utils/subscritions';
+import { getDateLabel } from '@/app/utils/date';
 
 export const NextBillingDate = () => {
     const dispatch = useAppDispatch();
     const { selectedSubscription } = useAppSelector(state => state.billing);
+    const { subscriptionValidUntil } = useAppSelector(state => state.user);
     const messages = useAppSelector(state => state.locales.messages.coponents.account.billing.invoices.nextBillingDate);
     const { openModal } = useModal();
 
@@ -33,7 +35,10 @@ export const NextBillingDate = () => {
 
     return (
         <div className="flex-grow flex flex-col gap-4 p-4 border-1 border-border-regular bg-secondaryBackground rounded-lg text-xs">
-            <h3 className="text-text-800 text-[18px] font-semibold">Next Billing Date</h3>
+            <div className="flex justify-between items-center">
+                <h3 className="text-text-800 text-[18px] font-semibold">Next Billing Date</h3>
+                <span>{subscriptionValidUntil ? getDateLabel(new Date(subscriptionValidUntil).getTime() / 1000) : '-'}</span>
+            </div>
             <div className="flex justify-between items-center">
                 <div>{messages.onDemandStorage}</div>
                 <div className="text-text-800">{convertSubscriptionsSizes(getHotStorageAmount(selectedSubscription))}</div>
