@@ -13,6 +13,7 @@ export const CreateBucketModal = () => {
     const { closeModal } = useModal();
     const navigate = useNavigate();
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.createBucket);
+    const { driveAlreadyExists } = useAppSelector(state => state.locales.messages.contexts.tomb);
     const [bucketName, setBucketName] = useState('');
     const { createBucketAndMount } = useTomb();
     const [bucketType, setBucketType] = useState('interactive');
@@ -34,7 +35,9 @@ export const CreateBucketModal = () => {
             closeModal();
             navigate(`/drive/${bucketId}`);
         } catch (error: any) {
-            ToastNotifications.error(`${messages.creationError}`, `${messages.tryAgain}`, create);
+            if(error.message !== driveAlreadyExists) {
+                ToastNotifications.error(`${messages.creationError}`, `${messages.tryAgain}`, create);
+            };
         };
     };
 
