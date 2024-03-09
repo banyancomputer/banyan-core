@@ -24,14 +24,14 @@ pub type ExecuteTaskFn<Context> = Arc<
         + Sync,
 >;
 
-pub type NextScheduleFn =
-    Arc<dyn Fn(Vec<u8>) -> Result<Option<OffsetDateTime>, TaskExecError> + Send + Sync>;
-
 pub type StartRecurringTaskFn<Context> = Arc<
     dyn Fn(Context) -> Pin<Box<dyn Future<Output = Result<(), TaskExecError>> + Send>>
         + Send
         + Sync,
 >;
+
+pub type NextScheduleFn =
+    Arc<dyn Fn(Vec<u8>) -> Result<Option<OffsetDateTime>, TaskExecError> + Send + Sync>;
 
 pub type StateFn<Context> = Arc<dyn Fn() -> Context + Send + Sync>;
 

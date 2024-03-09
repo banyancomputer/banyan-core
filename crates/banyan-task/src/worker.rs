@@ -54,6 +54,12 @@ where
         }
     }
 
+    /*
+    async fn safely_run_future(&self) -> Result<(), WorkerError> {
+
+    }
+    */
+
     #[tracing::instrument(level = "error", skip_all, fields(task_name = %task.task_name, task_id = %task.id))]
     pub async fn run(&self, task: Task) -> Result<(), WorkerError> {
         // check to see if its time to shutdown the worker
@@ -91,14 +97,12 @@ where
         match safe_runner.await {
             Ok(task_result) => {
                 match task_result {
-                    Ok(_) => {
-                        match self.store.completed(task.id.clone()).await {
-                            Ok(_) => self.schedule_if_needed(&task).await,
-                            Err(err) => {
-                                // TODO: "error returned from tests database: (code: 1) no such table: background_tasks"
-                                Err(WorkerError::UpdateTaskStatusFailed(err))
-                            }
-                        }
+                    Ok(()) => {
+                        self.store
+                            .completed(task.id.clone())
+                            .await
+                            .map_err(WorkerError::UpdateTaskStatusFailed)?;
+                        self.schedule_if_needed(&task).await
                     }
                     Err(err) => {
                         tracing::error!("task failed with error: {err}");
@@ -109,11 +113,10 @@ where
                                 TaskExecError::ExecutionFailed(err.to_string()),
                             )
                             .await
+                            .map_err(WorkerError::RetryTaskFailed)?
                         {
                             // not retried
-                            Ok(None) => self.schedule_if_needed(&task).await,
-                            // retry failed
-                            Err(err) => Err(WorkerError::RetryTaskFailed(err)),
+                            None => self.schedule_if_needed(&task).await,
                             // retried
                             _ => Ok(()),
                         }
@@ -152,21 +155,33 @@ where
         Ok(())
     }
 
+    pub async fn run_startup(&self) -> Result<(), WorkerError> {
+        let registry = self.startup_registry.clone();
+        // For each recurring task that needs to be started up
+        for (task_name, start_recurring_task_fn) in registry {
+            // Only run if there is no living task
+            if self
+                .store
+                .get_living_task(task_name)
+                .await
+                .map_err(WorkerError::StoreUnavailable)?
+                .is_none()
+            {
+                let context = (self.context_data_fn.clone())();
+                let safe_runner =
+                    PanicSafeFuture::wrap(async move { start_recurring_task_fn(context).await });
+
+                match safe_runner.await {
+                    Ok(_) => todo!(),
+                    Err(_) => todo!(),
+                }
+            }
+        }
+
+        Ok(())
+    }
+
     pub async fn run_tasks(&mut self) -> Result<(), WorkerError> {
-        /*
-        let recurring_task_names: Vec<&'static str> =
-            self..keys().cloned().collect();
-
-
-        while !self.startup_registry.is_empty() {
-        }
-        */
-        for (task_name, startup_fn) in &self.startup_registry {
-            let context = (self.context_data_fn)();
-            let result = startup_fn(context).await; //self.run(task)
-            tracing::info!("{} result: {:?}", task_name, result);
-        }
-
         let relevant_task_names: Vec<&'static str> = self.task_registry.keys().cloned().collect();
         // While there are still tasks in the queue
         loop {
