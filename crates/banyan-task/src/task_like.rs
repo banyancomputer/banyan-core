@@ -28,6 +28,13 @@ pub trait TaskLikeExt {
         self,
         connection: &mut S::Connection,
     ) -> Result<Option<String>, TaskStoreError>;
+
+    /*
+    async fn enqueue_with_connection<S: TaskStore>(
+        self,
+        connection: &mut S::Connection,
+    ) -> Result<Option<String>, TaskStoreError>;
+    */
 }
 
 #[async_trait]
@@ -39,7 +46,7 @@ where
         self,
         connection: &mut S::Connection,
     ) -> Result<Option<String>, TaskStoreError> {
-        S::enqueue(connection, self).await
+        S::enqueue_with_connection(connection, self).await
     }
 }
 
@@ -51,6 +58,7 @@ pub mod tests {
     use super::*;
     use async_trait::async_trait;
     use serde::{Deserialize, Serialize};
+    use time::Duration;
 
     #[derive(Debug, Serialize, Deserialize)]
     pub struct TestTask;
@@ -81,10 +89,10 @@ pub mod tests {
         }
     }
 
-    /*
     #[async_trait]
     impl RecurringTask for ScheduleTestTask {
-        const FREQUENCY: Duration = Duration::minutes(1);
+        fn next_schedule(&self) -> Option<OffsetDateTime> {
+            OffsetDateTime::now_utc().checked_add(Duration::minutes(1))
+        }
     }
-    */
 }

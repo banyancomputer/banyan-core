@@ -1,15 +1,11 @@
 #![allow(dead_code)]
-
-use std::collections::BTreeMap;
-
-use time::{Duration, OffsetDateTime};
-
 use crate::panic_safe_future::PanicSafeFuture;
-use crate::worker_pool::{NextScheduleFn, StartRecurringTaskFn};
 use crate::{
-    CurrentTask, CurrentTaskError, ExecuteTaskFn, QueueConfig, StateFn, Task, TaskExecError,
-    TaskState, TaskStore, TaskStoreError, MAXIMUM_CHECK_DELAY,
+    CurrentTask, CurrentTaskError, ExecuteTaskFn, NextScheduleFn, QueueConfig, StateFn, Task,
+    TaskExecError, TaskState, TaskStore, TaskStoreError, MAXIMUM_CHECK_DELAY,
 };
+use std::collections::BTreeMap;
+use time::{Duration, OffsetDateTime};
 
 pub struct Worker<Context, S>
 where
@@ -23,7 +19,6 @@ where
     store: S,
     task_registry: BTreeMap<&'static str, ExecuteTaskFn<Context>>,
     schedule_registry: BTreeMap<&'static str, NextScheduleFn>,
-    startup_registry: BTreeMap<&'static str, StartRecurringTaskFn<Context>>,
     shutdown_signal: Option<tokio::sync::watch::Receiver<()>>,
 }
 
@@ -39,7 +34,6 @@ where
         store: S,
         task_registry: BTreeMap<&'static str, ExecuteTaskFn<Context>>,
         schedule_registry: BTreeMap<&'static str, NextScheduleFn>,
-        startup_registry: BTreeMap<&'static str, StartRecurringTaskFn<Context>>,
         shutdown_signal: Option<tokio::sync::watch::Receiver<()>>,
     ) -> Self {
         Self {
@@ -48,17 +42,10 @@ where
             context_data_fn,
             store,
             task_registry,
-            startup_registry,
             schedule_registry,
             shutdown_signal,
         }
     }
-
-    /*
-    async fn safely_run_future(&self) -> Result<(), WorkerError> {
-
-    }
-    */
 
     #[tracing::instrument(level = "error", skip_all, fields(task_name = %task.task_name, task_id = %task.id))]
     pub async fn run(&self, task: Task) -> Result<(), WorkerError> {
@@ -149,32 +136,6 @@ where
                             task.task_name, err
                         ))
                     });
-            }
-        }
-
-        Ok(())
-    }
-
-    pub async fn run_startup(&self) -> Result<(), WorkerError> {
-        let registry = self.startup_registry.clone();
-        // For each recurring task that needs to be started up
-        for (task_name, start_recurring_task_fn) in registry {
-            // Only run if there is no living task
-            if self
-                .store
-                .get_living_task(task_name)
-                .await
-                .map_err(WorkerError::StoreUnavailable)?
-                .is_none()
-            {
-                let context = (self.context_data_fn.clone())();
-                let safe_runner =
-                    PanicSafeFuture::wrap(async move { start_recurring_task_fn(context).await });
-
-                match safe_runner.await {
-                    Ok(_) => todo!(),
-                    Err(_) => todo!(),
-                }
             }
         }
 
@@ -315,7 +276,6 @@ mod tests {
             context_data_fn.clone(),
             task_store,
             task_registry.clone(),
-            BTreeMap::new(),
             BTreeMap::new(),
             Some(inner_shutdown_rx.clone()),
         )

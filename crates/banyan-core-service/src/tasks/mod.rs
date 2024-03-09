@@ -23,14 +23,20 @@ pub async fn start_background_workers(
 ) -> Result<JoinHandle<()>, &'static str> {
     let task_store = SqliteTaskStore::new(state.database());
 
-    WorkerPool::new(task_store.clone(), move || state.clone())
-        .configure_queue(QueueConfig::new("default").with_worker_count(5))
-        .register_task_type::<PruneBlocksTask>()
-        .register_task_type::<CreateDealsTask>()
-        .register_task_type::<HostCapacityTask>()
-        .start(async move {
-            let _ = shutdown_rx.changed().await;
-        })
-        .await
-        .map_err(|_| "background worker startup failed")
+    let state1 = state.clone();
+
+    WorkerPool::new(
+        task_store.clone(),
+        move || state1.database(),
+        move || state.clone(),
+    )
+    .configure_queue(QueueConfig::new("default").with_worker_count(5))
+    .register_task_type::<PruneBlocksTask>()
+    .register_task_type::<CreateDealsTask>()
+    .register_task_type::<HostCapacityTask>()
+    .start(async move {
+        let _ = shutdown_rx.changed().await;
+    })
+    .await
+    .map_err(|_| "background worker startup failed")
 }

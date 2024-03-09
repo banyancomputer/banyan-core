@@ -16,9 +16,8 @@ use crate::tasks::report_bandwidth_metrics::ReportBandwidthMetricsTask;
 pub async fn start_background_workers(
     state: AppState,
     mut shutdown_rx: watch::Receiver<()>,
-) -> Result<JoinHandle<()>, &'static str> {
+) -> Result<JoinHandle<()>, ()> {
     let task_store = SqliteTaskStore::new(state.database());
-
     /*
     // Enqueue a report bandwidth task if there is none in progress
     if task_store
@@ -46,16 +45,25 @@ pub async fn start_background_workers(
             .expect("enqueue report health task");
     }
     */
+    let state1 = state.clone();
 
-    WorkerPool::new(task_store.clone(), move || state.clone())
-        .configure_queue(QueueConfig::new("default").with_worker_count(5))
-        .register_task_type::<ReportUploadTask>()
-        .register_task_type::<PruneBlocksTask>()
-        .register_recurring_task_type::<ReportHealthTask>()
-        .register_task_type::<ReportBandwidthMetricsTask>()
-        .start(async move {
-            let _ = shutdown_rx.changed().await;
-        })
-        .await
-        .map_err(|_| "prune blocks worker startup failed")
+    WorkerPool::new(
+        task_store.clone(),
+        move || state1.database(),
+        move || state.clone(),
+    )
+    .configure_queue(QueueConfig::new("default").with_worker_count(5))
+    .register_task_type::<ReportUploadTask>()
+    .register_task_type::<PruneBlocksTask>()
+    .register_recurring_task_type::<ReportHealthTask>()
+    .await
+    .map_err(|_| ())?
+    .register_recurring_task_type::<ReportBandwidthMetricsTask>()
+    .await
+    .map_err(|_| ())?
+    .start(async move {
+        let _ = shutdown_rx.changed().await;
+    })
+    .await
+    .map_err(|_| ())
 }

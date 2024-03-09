@@ -1,9 +1,10 @@
 use async_trait::async_trait;
-use banyan_task::{CurrentTask, TaskLike};
+use banyan_task::{CurrentTask, RecurringTask, TaskLike};
 use jwt_simple::prelude::*;
 use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
+use time::OffsetDateTime;
 use url::Url;
 
 use crate::app::{AppState, Version};
@@ -105,9 +106,9 @@ impl TaskLike for ReportHealthTask {
     }
 }
 
-/*
 impl RecurringTask for ReportHealthTask {
-    const FREQUENCY: time::Duration = time::Duration::seconds(10);
-    //const FREQUENCY: Option<time::Duration> = Some(time::Duration::minutes(5));
+    fn next_schedule(&self) -> Option<OffsetDateTime> {
+        //OffsetDateTime::now_utc().checked_add(Duration::minutes(5))
+        OffsetDateTime::now_utc().checked_add(time::Duration::seconds(5))
+    }
 }
-*/

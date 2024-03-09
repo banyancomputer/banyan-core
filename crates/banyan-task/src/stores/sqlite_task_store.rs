@@ -20,6 +20,7 @@ impl SqliteTaskStore {
     async fn connect(&self) -> PoolConnection<Sqlite> {
         self.pool.clone().acquire().await.unwrap()
     }
+
     pub async fn is_key_present(
         conn: &mut SqliteConnection,
         key: &str,
@@ -119,15 +120,27 @@ impl SqliteTaskStore {
 
 #[async_trait]
 impl TaskStore for SqliteTaskStore {
+    type Pool = SqlitePool;
     type Connection = SqliteConnection;
 
     async fn enqueue<T: TaskLike>(
+        pool: &mut Self::Pool,
+        task: T,
+    ) -> Result<Option<String>, TaskStoreError> {
+        let mut transaction = pool.acquire().await?;
+        let mut connection = transaction.begin().await?;
+        let task = TaskInstanceBuilder::for_task(task).await?;
+        let background_task_id = Self::create(&mut *connection, task).await?;
+        connection.commit().await?;
+        Ok(background_task_id)
+    }
+
+    async fn enqueue_with_connection<T: TaskLike>(
         connection: &mut Self::Connection,
         task: T,
     ) -> Result<Option<String>, TaskStoreError> {
         let task = TaskInstanceBuilder::for_task(task).await?;
         let background_task_id = Self::create(&mut *connection, task).await?;
-
         Ok(background_task_id)
     }
 

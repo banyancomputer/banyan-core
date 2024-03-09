@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use async_trait::async_trait;
-use banyan_task::{CurrentTask, TaskLike};
+use banyan_task::{CurrentTask, RecurringTask, TaskLike};
 use serde::{Deserialize, Serialize};
 use time::error::ComponentRange;
 use time::{Duration, OffsetDateTime};
@@ -84,11 +84,11 @@ impl TaskLike for ReportBandwidthMetricsTask {
     }
 }
 
-/*
 impl RecurringTask for ReportBandwidthMetricsTask {
-    const FREQUENCY: Duration = Duration::minutes(20);
+    fn next_schedule(&self) -> Option<OffsetDateTime> {
+        OffsetDateTime::now_utc().checked_add(Duration::minutes(20))
+    }
 }
-*/
 
 fn round_to_previous_hour(start_time: OffsetDateTime) -> Result<OffsetDateTime, ComponentRange> {
     start_time
