@@ -23,7 +23,6 @@ pub async fn handler(
     TypedHeader(content_len): TypedHeader<ContentLength>,
     Json(request): Json<NewUploadRequest>,
 ) -> Result<Response, UploadError> {
-    let db = state.database();
     let reported_body_length = content_len.0;
     if reported_body_length > client.remaining_storage() {
         return Err(UploadError::InsufficientAuthorizedStorage(
@@ -33,13 +32,15 @@ pub async fn handler(
     }
 
     // Start the upload with these specifications
+    let mut conn = state.connection().await;
     let upload = start_upload(
-        &db,
+        &mut conn,
         &client.id(),
         &request.metadata_id,
         reported_body_length,
     )
     .await?;
+    conn.commit().await?;
 
     // Respond with the upload id
     let msg = serde_json::json!({"upload_id": upload.id});

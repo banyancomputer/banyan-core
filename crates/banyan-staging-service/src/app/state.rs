@@ -3,11 +3,13 @@ use std::path::PathBuf;
 use banyan_object_store::{
     ObjectStore, ObjectStoreConnection, ObjectStoreConnectionError, ObjectStoreError,
 };
+use banyan_task::{SqliteTaskStore, TaskStore};
 use jwt_simple::prelude::*;
+use sqlx::{Sqlite, Transaction};
 use url::Url;
 
 use crate::app::{Config, Secrets};
-use crate::database::{self, Database, DatabaseSetupError};
+use crate::database::{self, Database, DatabaseConnection, DatabaseSetupError};
 use crate::utils::{fingerprint_key_pair, fingerprint_public_key, SigningKey, VerificationKey};
 
 #[derive(Clone)]
@@ -75,6 +77,10 @@ impl State {
 
     pub fn database(&self) -> Database {
         self.database.clone()
+    }
+
+    pub async fn connection(&self) -> Transaction<'_, Sqlite> {
+        self.database().begin().await.map_err(|_| ()).unwrap()
     }
 
     pub fn upload_store_connection(&self) -> &ObjectStoreConnection {

@@ -164,43 +164,45 @@ where
         for (task_name, startup_fn) in &self.startup_registry {
             let context = (self.context_data_fn)();
             let result = startup_fn(context).await; //self.run(task)
-            tracing::info!("result: {:?}", result);
+            tracing::info!("{} result: {:?}", task_name, result);
         }
 
         let relevant_task_names: Vec<&'static str> = self.task_registry.keys().cloned().collect();
         // While there are still tasks in the queue
-        while let Some(task) = self
-            .store
-            .next(self.queue_config.name(), &relevant_task_names)
-            .await
-            .map_err(WorkerError::StoreUnavailable)?
-        {
-            self.run(task).await?;
-        }
+        loop {
+            if let Some(task) = self
+                .store
+                .next(self.queue_config.name(), &relevant_task_names)
+                .await
+                .map_err(WorkerError::StoreUnavailable)?
+            {
+                self.run(task).await?;
+                continue;
+            }
 
-        // todo this should probably be handled by some form of a centralized wake up manager
-        // when things are enqueued which can also 'alarm' when a pending task is ready to be
-        // scheduled instead of relying... and that change should probably be done using
-        // future wakers instead of internal timeouts but some central scheduler
-        match &mut self.shutdown_signal {
-            Some(ss) => {
-                if let Ok(_signaled) = tokio::time::timeout(MAXIMUM_CHECK_DELAY, ss.changed()).await
-                {
-                    // todo might want to handle graceful / non-graceful differently
-                    tracing::info!("received worker shutdown signal while idle");
-                    return Ok(());
+            // todo this should probably be handled by some form of a centralized wake up manager
+            // when things are enqueued which can also 'alarm' when a pending task is ready to be
+            // scheduled instead of relying... and that change should probably be done using
+            // future wakers instead of internal timeouts but some central scheduler
+            match &mut self.shutdown_signal {
+                Some(ss) => {
+                    if let Ok(_signaled) =
+                        tokio::time::timeout(MAXIMUM_CHECK_DELAY, ss.changed()).await
+                    {
+                        // todo might want to handle graceful / non-graceful differently
+                        tracing::info!("received worker shutdown signal while idle");
+                        return Ok(());
+                    }
+
+                    // intentionally letting the 'error' type fall through here as it means we
+                    // timed out on waiting for a shutdown signal and should continue
                 }
-
-                // intentionally letting the 'error' type fall through here as it means we
-                // timed out on waiting for a shutdown signal and should continue
-            }
-            None => {
-                tracing::info!("no tasks available for worker, sleeping for a time...");
-                let _ = tokio::time::sleep(MAXIMUM_CHECK_DELAY).await;
+                None => {
+                    tracing::info!("no tasks available for worker, sleeping for a time...");
+                    let _ = tokio::time::sleep(MAXIMUM_CHECK_DELAY).await;
+                }
             }
         }
-
-        Ok(())
     }
 }
 

@@ -5,12 +5,12 @@ use cid::Cid;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
-use crate::database::Database;
+use crate::database::DatabaseConnection;
 
 pub const UPLOAD_SESSION_DURATION: Duration = Duration::from_secs(60 * 60 * 6);
 
 pub async fn start_upload(
-    db: &Database,
+    conn: &mut DatabaseConnection,
     client_id: &Uuid,
     metadata_id: &Uuid,
     reported_size: u64,
@@ -37,27 +37,30 @@ pub async fn start_upload(
         upload.base_path,
         upload.state,
     )
-    .fetch_one(db)
+    .fetch_one(&mut *conn)
     .await?;
 
     Ok(upload)
 }
 
 /// Marks an upload as failed
-pub async fn fail_upload(db: &Database, upload_id: &str) -> Result<(), sqlx::Error> {
+pub async fn fail_upload(
+    conn: &mut DatabaseConnection,
+    upload_id: &str,
+) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
         UPDATE uploads SET state = 'failed' WHERE id = $1;
         "#,
         upload_id
     )
-    .execute(db)
+    .execute(&mut *conn)
     .await
     .map(|_| ())
 }
 
 pub async fn complete_upload(
-    db: &Database,
+    conn: &mut DatabaseConnection,
     total_size: i64,
     integrity_hash: &str,
     upload_id: &str,
@@ -92,12 +95,15 @@ pub async fn complete_upload(
         integrity_hash,
         upload_id,
     )
-    .execute(db)
+    .execute(&mut *conn)
     .await
     .map(|_| ())
 }
 
-pub async fn upload_size(db: &Database, upload_id: &str) -> Result<i64, sqlx::Error> {
+pub async fn upload_size(
+    conn: &mut DatabaseConnection,
+    upload_id: &str,
+) -> Result<i64, sqlx::Error> {
     let total_size: i32 = sqlx::query_scalar!(
         r#"
             SELECT COALESCE(SUM(blocks.data_length), 0)
@@ -108,13 +114,16 @@ pub async fn upload_size(db: &Database, upload_id: &str) -> Result<i64, sqlx::Er
             "#,
         upload_id
     )
-    .fetch_one(db)
+    .fetch_one(&mut *conn)
     .await?;
 
     Ok(total_size as i64)
 }
 
-pub async fn all_cids(db: &mut Database, upload_id: &str) -> Result<Vec<Cid>, sqlx::Error> {
+pub async fn all_cids(
+    conn: &mut DatabaseConnection,
+    upload_id: &str,
+) -> Result<Vec<Cid>, sqlx::Error> {
     let all_cids: Vec<String> = sqlx::query_scalar!(
         r#"
             SELECT blocks.cid 
@@ -125,7 +134,7 @@ pub async fn all_cids(db: &mut Database, upload_id: &str) -> Result<Vec<Cid>, sq
         "#,
         upload_id
     )
-    .fetch_all(&*db)
+    .fetch_all(&mut *conn)
     .await?;
 
     Ok(all_cids
@@ -135,7 +144,7 @@ pub async fn all_cids(db: &mut Database, upload_id: &str) -> Result<Vec<Cid>, sq
 }
 
 pub async fn get_upload(
-    db: &Database,
+    conn: &mut DatabaseConnection,
     client_id: Uuid,
     upload_id: &str,
 ) -> Result<Option<Upload>, sqlx::Error> {
@@ -154,12 +163,12 @@ pub async fn get_upload(
         upload_id,
         now
     )
-    .fetch_optional(db)
+    .fetch_optional(&mut *conn)
     .await
 }
 
 pub async fn write_block_to_tables(
-    db: &Database,
+    conn: &mut DatabaseConnection,
     upload_id: &str,
     normalized_cid: &str,
     data_length: i64,
@@ -169,14 +178,14 @@ pub async fn write_block_to_tables(
         normalized_cid,
         data_length,
     )
-    .fetch_optional(db)
+    .fetch_optional(&mut *conn)
     .await?;
 
     let block_id = match maybe_block_id {
         Some(block_id) => block_id,
         None => {
             sqlx::query_scalar!("SELECT id FROM blocks WHERE cid = $1;", normalized_cid,)
-                .fetch_one(db)
+                .fetch_one(&mut *conn)
                 .await?
         }
     };
@@ -192,7 +201,7 @@ pub async fn write_block_to_tables(
         upload_id,
         block_id,
     )
-    .execute(db)
+    .execute(&mut *conn)
     .await?;
 
     Ok(())

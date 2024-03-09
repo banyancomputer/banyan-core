@@ -114,15 +114,15 @@ pub async fn handler(
         }
     }
 
+    CreateDealsTask::new(snapshot_id.clone())
+        .enqueue::<banyan_task::SqliteTaskStore>(&mut *transaction)
+        .await
+        .map_err(CreateSnapshotError::UnableToEnqueueTask)?;
+
     transaction
         .commit()
         .await
         .map_err(CreateSnapshotError::TransactionFailure)?;
-
-    CreateDealsTask::new(snapshot_id.clone())
-        .enqueue::<banyan_task::SqliteTaskStore>(&mut database)
-        .await
-        .map_err(CreateSnapshotError::UnableToEnqueueTask)?;
 
     let resp_msg = serde_json::json!({ "id": snapshot_id });
     Ok((StatusCode::OK, Json(resp_msg)).into_response())

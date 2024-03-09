@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::app::AppState;
-use crate::database::Database;
+use crate::database::{Database, DatabaseConnection};
 use crate::extractors::AuthenticatedClient;
 use crate::tasks::ReportUploadTask;
 pub(crate) mod block;
@@ -39,7 +39,7 @@ pub async fn handler(
     TypedHeader(content_type): TypedHeader<ContentType>,
     body: BodyStream,
 ) -> Result<Response, UploadError> {
-    let mut db = state.database();
+    let mut conn = state.connection().await;
     let reported_body_length = content_len.0;
     if reported_body_length > client.remaining_storage() {
         return Err(UploadError::InsufficientAuthorizedStorage(
@@ -76,7 +76,7 @@ pub async fn handler(
     let content_hash = request.content_hash;
 
     let upload = start_upload(
-        &db,
+        &mut conn,
         &client.id(),
         &request.metadata_id,
         reported_body_length,
@@ -96,7 +96,7 @@ pub async fn handler(
     // TODO: validate type is "application/vnd.ipld.car; version=2" (request_data_field.content_type())
 
     match process_upload_stream(
-        &db,
+        &mut conn,
         &upload,
         store,
         reported_body_length as usize,
@@ -106,7 +106,7 @@ pub async fn handler(
     .await
     {
         Ok(cr) => {
-            complete_upload(&db, 0, cr.integrity_hash(), &upload.id).await?;
+            complete_upload(&mut conn, 0, cr.integrity_hash(), &upload.id).await?;
 
             ReportUploadTask::new(
                 client.storage_grant_id(),
@@ -114,23 +114,26 @@ pub async fn handler(
                 cr.cids(),
                 cr.total_size(),
             )
-            .enqueue::<SqliteTaskStore>(&mut db)
+            .enqueue::<SqliteTaskStore>(&mut conn)
             .await
             .map_err(UploadError::FailedToEnqueueTask)?;
+
+            conn.commit().await?;
 
             Ok((StatusCode::NO_CONTENT, ()).into_response())
         }
         Err(err) => {
             // todo: we don't care in the response if this fails, but if it does we will want to
             // clean it up in the future which should be handled by a background task
-            let _ = fail_upload(&db, &upload.id).await;
+            let _ = fail_upload(&mut conn, &upload.id).await;
+            conn.commit().await?;
             Err(err)
         }
     }
 }
 
 async fn process_upload_stream<S>(
-    db: &Database,
+    conn: &mut DatabaseConnection,
     upload: &Upload,
     store: ObjectStore,
     expected_size: usize,
@@ -161,7 +164,7 @@ where
                 .await
                 .map_err(UploadError::ObjectStore)?;
 
-            write_block_to_tables(db, &upload.id, &cid_string, length).await?;
+            write_block_to_tables(conn, &upload.id, &cid_string, length).await?;
         }
 
         if car_analyzer.seen_bytes() as usize > expected_size && !warning_issued {

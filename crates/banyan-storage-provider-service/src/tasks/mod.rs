@@ -19,6 +19,7 @@ pub async fn start_background_workers(
 ) -> Result<JoinHandle<()>, &'static str> {
     let task_store = SqliteTaskStore::new(state.database());
 
+    /*
     // Enqueue a report bandwidth task if there is none in progress
     if task_store
         .get_living_task(ReportHealthTask::TASK_NAME)
@@ -44,6 +45,7 @@ pub async fn start_background_workers(
             .await
             .expect("enqueue report health task");
     }
+    */
 
     WorkerPool::new(task_store.clone(), move || state.clone())
         .configure_queue(QueueConfig::new("default").with_worker_count(5))

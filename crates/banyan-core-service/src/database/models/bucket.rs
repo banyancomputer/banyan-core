@@ -195,7 +195,7 @@ impl Bucket {
             total_rows_pruned += block_list.len();
 
             let queue_result = PruneBlocksTask::new(storage_host_id, block_list)
-                .enqueue_with_connection::<SqliteTaskStore>(&mut *conn)
+                .enqueue::<SqliteTaskStore>(&mut *conn)
                 .await;
 
             // A future clean up task can always come back through and catch any blocks not missed.

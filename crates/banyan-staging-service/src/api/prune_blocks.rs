@@ -14,8 +14,6 @@ pub async fn handler(
     State(state): State<AppState>,
     Json(prune_cids): Json<Vec<Cid>>,
 ) -> Result<Response, PruneBlocksError> {
-    let mut db = state.database();
-
     // Normalize the block CIDs, warn but keep going on any invalid ones
     let mut prune_block_list = Vec::new();
     for cid in prune_cids.into_iter() {
@@ -27,10 +25,11 @@ pub async fn handler(
         }
     }
 
+    let mut conn = state.connection().await;
     PruneBlocksTask::new(prune_block_list)
-        .enqueue::<banyan_task::SqliteTaskStore>(&mut db)
+        .enqueue::<banyan_task::SqliteTaskStore>(&mut conn)
         .await?;
-
+    conn.commit().await?;
     Ok((StatusCode::OK, ()).into_response())
 }
 
@@ -38,6 +37,8 @@ pub async fn handler(
 pub enum PruneBlocksError {
     #[error("could not enqueue task: {0}")]
     UnableToEnqueueTask(#[from] banyan_task::TaskStoreError),
+    #[error("database: {0}")]
+    Database(#[from] sqlx::Error),
 }
 
 impl IntoResponse for PruneBlocksError {

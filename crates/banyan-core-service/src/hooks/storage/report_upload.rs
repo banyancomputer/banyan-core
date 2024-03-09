@@ -85,14 +85,14 @@ pub async fn handler(
         .await
         .map_err(ReportUploadError::DeleteOutdatedFailed)?;
 
-    // Close the connection to prevent locking
-    db_conn.close().await?;
-
     // Now, let's re-evaluate the capacity of that storage host
     HostCapacityTask::new(storage_provider.id)
-        .enqueue::<banyan_task::SqliteTaskStore>(&mut database)
+        .enqueue::<banyan_task::SqliteTaskStore>(&mut db_conn)
         .await
         .map_err(ReportUploadError::UnableToEnqueueTask)?;
+
+    // Close the connection to prevent locking
+    db_conn.close().await?;
 
     Ok((StatusCode::NO_CONTENT, ()).into_response())
 }
