@@ -24,6 +24,14 @@ pub type ExecuteTaskFn<Context> = Arc<
         + Sync,
 >;
 
+pub type EnqueueRecurringTaskFn<S> = Arc<
+    dyn Fn(
+            <S as TaskStore>::Pool,
+        ) -> Pin<Box<dyn Future<Output = Result<(), TaskExecError>> + Send>>
+        + Send
+        + Sync,
+>;
+
 pub type NextScheduleFn =
     Arc<dyn Fn(Vec<u8>) -> Result<Option<OffsetDateTime>, TaskExecError> + Send + Sync>;
 
@@ -36,10 +44,11 @@ where
     S: TaskStore + Clone,
 {
     context_data_fn: StateFn<Context>,
-    connection_fn: StateFn<S::Pool>,
+    pool_fn: StateFn<S::Pool>,
     task_store: S,
     task_registry: BTreeMap<&'static str, ExecuteTaskFn<Context>>,
     schedule_registry: BTreeMap<&'static str, NextScheduleFn>,
+    startup_registry: BTreeMap<&'static str, EnqueueRecurringTaskFn<S>>,
     queue_tasks: BTreeMap<&'static str, Vec<&'static str>>,
     worker_queues: BTreeMap<&'static str, QueueConfig>,
 }
@@ -54,17 +63,18 @@ where
         self
     }
 
-    pub fn new<A, B>(task_store: S, connection_fn: A, context_data_fn: B) -> Self
+    pub fn new<A, B>(task_store: S, pool_fn: A, context_data_fn: B) -> Self
     where
         A: Fn() -> S::Pool + Send + Sync + 'static,
         B: Fn() -> Context + Send + Sync + 'static,
     {
         Self {
             context_data_fn: Arc::new(context_data_fn),
-            connection_fn: Arc::new(connection_fn),
+            pool_fn: Arc::new(pool_fn),
             task_store,
             task_registry: BTreeMap::new(),
             schedule_registry: BTreeMap::new(),
+            startup_registry: BTreeMap::new(),
             queue_tasks: BTreeMap::new(),
             worker_queues: BTreeMap::new(),
         }
@@ -92,8 +102,8 @@ where
         self.schedule_registry
             .insert(RT::TASK_NAME, Arc::new(next_schedule::<RT>));
 
-        let mut conn = (self.connection_fn)();
-        //S::enqueue_pool(&mut conn, RT::default()).await?;
+        self.startup_registry
+            .insert(RT::TASK_NAME, Arc::new(enqueue_recurring_task::<RT, S>));
 
         Ok(self.register_task_type::<RT>())
     }
@@ -102,11 +112,11 @@ where
     where
         F: Future<Output = ()> + Send + 'static,
     {
-        /*
-        for (task_name, fn) in self.startup_registry.iter() {
-
+        for (task_name, enqueue_recurring_task_fn) in self.startup_registry.iter() {
+            let mut pool = (self.pool_fn)();
+            let queue_result = enqueue_recurring_task_fn(pool).await;
+            tracing::info!("result: {:?}", queue_result);
         }
-        */
 
         for (queue_name, queue_tracked_tasks) in self.queue_tasks.iter() {
             if !self.worker_queues.contains_key(queue_name) {
@@ -225,15 +235,15 @@ fn next_schedule<RT: RecurringTask>(
     Ok(task.next_schedule())
 }
 
-fn start_recurring_task<RT>(
-    context: RT::Context,
+fn enqueue_recurring_task<RT, S>(
+    mut pool: S::Pool,
 ) -> Pin<Box<dyn Future<Output = Result<(), TaskExecError>> + Send>>
 where
     RT: RecurringTask,
+    S: TaskStore,
 {
     Box::pin(async move {
-        RT::default()
-            .run(CurrentTask::default(), context)
+        S::enqueue(&mut pool, RT::default())
             .await
             .map(|_| ())
             .map_err(|err| TaskExecError::ExecutionFailed(err.to_string()))

@@ -108,6 +108,7 @@ pub async fn handler(
         Ok(cr) => {
             complete_upload(&mut conn, 0, cr.integrity_hash(), &upload.id).await?;
 
+            /*
             ReportUploadTask::new(
                 client.storage_grant_id(),
                 &request.metadata_id.to_string(),
@@ -117,6 +118,7 @@ pub async fn handler(
             .enqueue_with_connection::<SqliteTaskStore>(&mut conn)
             .await
             .map_err(UploadError::FailedToEnqueueTask)?;
+            */
 
             conn.commit().await?;
 

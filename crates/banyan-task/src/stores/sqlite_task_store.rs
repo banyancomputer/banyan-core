@@ -420,7 +420,7 @@ pub mod tests {
         let mut conn = task_store.pool.begin().await.unwrap();
         let task = TestTask;
         let task_id = task
-            .enqueue::<SqliteTaskStore>(&mut conn)
+            .enqueue_with_connnection::<SqliteTaskStore>(&mut conn)
             .await
             .expect("enqueue")
             .expect("task create_from_taskd");
@@ -439,7 +439,7 @@ pub mod tests {
         let mut conn = task_store.pool.begin().await.unwrap();
         let task = TestTask;
         let task_id = task
-            .enqueue::<SqliteTaskStore>(&mut conn)
+            .enqueue_with_connnection::<SqliteTaskStore>(&mut conn)
             .await
             .expect("enqueue")
             .expect("task created");
@@ -461,7 +461,7 @@ pub mod tests {
         let mut conn = task_store.pool.begin().await.unwrap();
 
         let task_id = task
-            .enqueue::<SqliteTaskStore>(&mut conn)
+            .enqueue_with_connnection::<SqliteTaskStore>(&mut conn)
             .await
             .expect("enqueue")
             .expect("task create_from_taskd");
@@ -482,7 +482,7 @@ pub mod tests {
         let task = TestTask;
         let mut conn = task_store.pool.begin().await.unwrap();
         let task_id = task
-            .enqueue::<SqliteTaskStore>(&mut conn)
+            .enqueue_with_connnection::<SqliteTaskStore>(&mut conn)
             .await
             .expect("enqueue")
             .expect("task create_from_taskd");
@@ -508,7 +508,7 @@ pub mod tests {
         let task_store = empty_task_store().await;
         let mut conn = task_store.pool.begin().await.unwrap();
         let task_id = TestTask
-            .enqueue::<SqliteTaskStore>(&mut conn)
+            .enqueue_with_connnection::<SqliteTaskStore>(&mut conn)
             .await
             .expect("enqueue");
         (task_store, task_id)
