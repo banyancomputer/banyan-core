@@ -114,7 +114,7 @@ pub async fn handler(
                 cr.cids(),
                 cr.total_size(),
             )
-            .enqueue::<SqliteTaskStore>(&mut conn)
+            .enqueue_with_connection::<SqliteTaskStore>(&mut conn)
             .await
             .map_err(UploadError::FailedToEnqueueTask)?;
 

@@ -24,17 +24,15 @@ pub trait TaskLike: Serialize + DeserializeOwned + Sync + Send + 'static {
 
 #[async_trait]
 pub trait TaskLikeExt {
-    async fn enqueue<S: TaskStore>(
+    async fn enqueue_with_connnection<S: TaskStore>(
         self,
         connection: &mut S::Connection,
     ) -> Result<Option<String>, TaskStoreError>;
 
-    /*
-    async fn enqueue_with_connection<S: TaskStore>(
+    async fn enqueue<S: TaskStore>(
         self,
-        connection: &mut S::Connection,
+        pool: &mut S::Pool,
     ) -> Result<Option<String>, TaskStoreError>;
-    */
 }
 
 #[async_trait]
@@ -43,6 +41,13 @@ where
     T: TaskLike,
 {
     async fn enqueue<S: TaskStore>(
+        self,
+        pool: &mut S::Pool,
+    ) -> Result<Option<String>, TaskStoreError> {
+        S::enqueue(pool, self).await
+    }
+
+    async fn enqueue_with_connnection<S: TaskStore>(
         self,
         connection: &mut S::Connection,
     ) -> Result<Option<String>, TaskStoreError> {

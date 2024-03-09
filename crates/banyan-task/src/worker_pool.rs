@@ -102,6 +102,12 @@ where
     where
         F: Future<Output = ()> + Send + 'static,
     {
+        /*
+        for (task_name, fn) in self.startup_registry.iter() {
+
+        }
+        */
+
         for (queue_name, queue_tracked_tasks) in self.queue_tasks.iter() {
             if !self.worker_queues.contains_key(queue_name) {
                 return Err(WorkerPoolError::QueueNotConfigured(

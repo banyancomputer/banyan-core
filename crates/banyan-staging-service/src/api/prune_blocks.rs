@@ -27,7 +27,7 @@ pub async fn handler(
 
     let mut conn = state.connection().await;
     PruneBlocksTask::new(prune_block_list)
-        .enqueue::<banyan_task::SqliteTaskStore>(&mut conn)
+        .enqueue_with_connnection::<banyan_task::SqliteTaskStore>(&mut conn)
         .await?;
     conn.commit().await?;
     Ok((StatusCode::OK, ()).into_response())
