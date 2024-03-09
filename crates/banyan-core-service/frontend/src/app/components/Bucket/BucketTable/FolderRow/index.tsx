@@ -30,8 +30,7 @@ export const FolderRow: React.FC<{
     const folderRef = useRef<HTMLTableRowElement | null>(null);
     const navigate = useNavigate();
     const { getExpandedFolderFiles, getSelectedBucketFiles, moveTo, selectBucket } = useTomb();
-    const { uploadFiles, setFiles, files } = useFilesUpload();
-    const [areFilesDropped, setAreFilesDropped] = useState(false);
+    const { uploadFiles } = useFilesUpload();
     const [isFolderDraggingOver, setIsFolderDragingOver] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const siblingFiles = useMemo(() => folder.files?.filter(file => file.type !== 'dir'), [folder.files]);
@@ -75,11 +74,14 @@ export const FolderRow: React.FC<{
         setIsFolderDragingOver(false);
 
         if (event?.dataTransfer.files.length) {
-            setFiles(Array.from(event.dataTransfer.files).slice(0, 1).map(file => ({ file, status: 'pending' })));
-            setAreFilesDropped(true);
+            try {
+                await uploadFiles(event.dataTransfer.files, bucket, [...path, folder.name]);
+            } catch (error: any) {
+                ToastNotifications.error(`${messages.uploadError}`, `${messages.tryAgain}`, () => { });
+            };
 
             return;
-        }
+        };
 
         const dragData = event.dataTransfer.getData('browserObject');
         if (dragData) {
@@ -95,21 +97,6 @@ export const FolderRow: React.FC<{
             }
         }
     };
-
-    useEffect(() => {
-        if (!files.length || !areFilesDropped) { return; }
-
-        (async () => {
-            try {
-                ToastNotifications.uploadProgress();
-                await uploadFiles(bucket, [...path, folder.name]);
-                setAreFilesDropped(false);
-            } catch (error: any) {
-                setAreFilesDropped(false);
-                ToastNotifications.error(`${messages.uploadError}`, `${messages.tryAgain}`, () => { });
-            }
-        })();
-    }, [files, areFilesDropped]);
 
     return (
         <tr

@@ -143,9 +143,7 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BrowserObject; parren
                     className="w-full flex items-center gap-2 py-2 px-3 border-b-1 border-border-regular transition-all hover:bg-hover"
                     onClick={action.value}
                 >
-                    <span className="text-button-primary">
-                        {action.icon}
-                    </span>
+                    {action.icon}
                     {action.label}
                 </div>
             )

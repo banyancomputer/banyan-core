@@ -58,7 +58,7 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     };
 
     const createFolder = async () => {
-        openModal(<CreateFolderModal bucket={bucket} path={folderLocation} onSuccess={closeModal} redirect/>);
+        openModal(<CreateFolderModal bucket={bucket} path={folderLocation} onSuccess={closeModal} redirect />);
     };
 
     const retoreColdVersion = async () => {
@@ -146,9 +146,7 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                                 className="w-full flex items-center gap-2 py-2 px-3 transition-colors hover:bg-hover"
                                 onClick={unlock}
                             >
-                                <span className="text-button-primary">
-                                    <Lock width="18px" height="18px" />
-                                </span>
+                                <Lock width="18px" height="18px" />
                                 {`${messages.unlock}`}
                             </div>
                             :
@@ -159,12 +157,10 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                                         className="w-full flex items-center gap-2 py-2 px-3 transition-colors hover:bg-hover"
                                         onClick={action.value}
                                     >
-                                        <span className="text-button-primary">
-                                            {action.icon}
-                                        </span>
+                                        {action.icon}
                                         {action.label}
                                         {action.tooltip ?
-                                            <span className="text-button-primary" title={action.tooltip}>(?)</span>
+                                            <span title={action.tooltip}>(?)</span>
                                             :
                                             null
                                         }
@@ -179,9 +175,7 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                     className="w-full flex items-center gap-2 py-2 px-3 transition-colors hover:bg-hover"
                     onClick={remount}
                 >
-                    <span className="text-button-primary">
-                        <Retry width="18px" height="18px" />
-                    </span>
+                    <Retry width="18px" height="18px" />
                     {`${messages.unlock}`}
                 </div>
             }
