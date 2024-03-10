@@ -28,7 +28,7 @@ pub type ExecuteTaskFn<Context> = Arc<
 pub type EnqueueRecurringTaskFn<S> = Arc<
     dyn Fn(
             <S as TaskStore>::Pool,
-        ) -> Pin<Box<dyn Future<Output = Result<(), TaskExecError>> + Send>>
+        ) -> Pin<Box<dyn Future<Output = Result<Option<String>, TaskStoreError>> + Send>>
         + Send
         + Sync,
 >;
@@ -113,10 +113,22 @@ where
     where
         F: Future<Output = ()> + Send + 'static,
     {
-        for (_task_name, enqueue_recurring_task_fn) in self.startup_registry.iter() {
+        for (task_name, enqueue_recurring_task_fn) in self.startup_registry.iter() {
             let pool = (self.pool_fn)();
-            let queue_result = enqueue_recurring_task_fn(pool).await;
-            tracing::info!("result: {:?}", queue_result);
+            match enqueue_recurring_task_fn(pool).await.map_err(|err| {
+                WorkerPoolError::FailedToEnqueueRecurring(task_name.to_string(), err)
+            }) {
+                Ok(task_id) => {
+                    tracing::info!(
+                        "enqueued recurring task `{}` with task_id `{}`",
+                        task_name,
+                        task_id.unwrap_or("None".to_string())
+                    );
+                }
+                Err(err) => {
+                    tracing::error!("failed to enqueue recurring task: {err}");
+                }
+            }
         }
 
         for (queue_name, queue_tracked_tasks) in self.queue_tasks.iter() {
@@ -209,7 +221,7 @@ pub enum WorkerPoolError {
     QueueNotConfigured(&'static str, Vec<&'static str>),
 
     #[error("failed to add the recurring task {0}, to the startup queue: {1}")]
-    FailedToQueueRecurring(String, TaskStoreError),
+    FailedToEnqueueRecurring(String, TaskStoreError),
 }
 
 fn deserialize_and_run_task<TL>(
@@ -238,15 +250,10 @@ fn next_schedule<RT: RecurringTask>(
 
 fn enqueue_recurring_task<RT, S>(
     mut pool: S::Pool,
-) -> Pin<Box<dyn Future<Output = Result<(), TaskExecError>> + Send>>
+) -> Pin<Box<dyn Future<Output = Result<Option<String>, TaskStoreError>> + Send>>
 where
     RT: RecurringTask,
     S: TaskStore,
 {
-    Box::pin(async move {
-        S::enqueue(&mut pool, RT::default())
-            .await
-            .map(|_| ())
-            .map_err(|err| TaskExecError::ExecutionFailed(err.to_string()))
-    })
+    Box::pin(async move { S::enqueue(&mut pool, RT::default()).await })
 }
