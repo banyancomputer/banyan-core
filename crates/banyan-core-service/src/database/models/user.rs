@@ -2,8 +2,10 @@ use serde::Serialize;
 use time::OffsetDateTime;
 
 use crate::api::models::ApiUser;
-use crate::database::models::{ExplicitBigInt, SubscriptionStatus, TaxClass};
-use crate::database::DatabaseConnection;
+use crate::database::{
+    models::{ExplicitBigInt, SnapshotState, SubscriptionStatus, TaxClass},
+    DatabaseConnection,
+};
 
 #[derive(Debug, Serialize, sqlx::FromRow)]
 pub struct User {
@@ -89,9 +91,11 @@ impl User {
                 JOIN metadata AS m ON m.id = s.metadata_id
                 JOIN buckets AS b ON b.id = m.bucket_id
                 JOIN users AS u ON u.id = b.user_id
-                WHERE u.id = $1;
+                WHERE u.id = $1
+                AND s.state = $2;
             "#,
-            self.id
+            self.id,
+            SnapshotState::Completed
         )
         .fetch_one(&mut *conn)
         .await
