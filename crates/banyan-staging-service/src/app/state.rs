@@ -4,8 +4,7 @@ use banyan_object_store::{
     ObjectStore, ObjectStoreConnection, ObjectStoreConnectionError, ObjectStoreError,
 };
 use jwt_simple::prelude::*;
-use sqlx::pool::PoolConnection;
-use sqlx::{Acquire, Sqlite, Transaction};
+use sqlx::{Sqlite, Transaction};
 use url::Url;
 
 use crate::app::{Config, Secrets};

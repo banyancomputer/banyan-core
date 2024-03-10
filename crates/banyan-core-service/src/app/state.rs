@@ -4,7 +4,6 @@ use std::sync::Arc;
 
 use banyan_object_store::{ObjectStore, ObjectStoreConnection, ObjectStoreError};
 use jwt_simple::prelude::*;
-use sqlx::{Sqlite, Transaction};
 
 use crate::app::{
     Config, MailgunSigningKey, ProviderCredential, Secrets, ServiceKey, ServiceVerificationKey,
