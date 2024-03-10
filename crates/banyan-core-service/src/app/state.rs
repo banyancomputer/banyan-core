@@ -3,7 +3,6 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use banyan_object_store::{ObjectStore, ObjectStoreConnection, ObjectStoreError};
-use banyan_task::SqliteTaskStore;
 use jwt_simple::prelude::*;
 
 use crate::app::{

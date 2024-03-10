@@ -130,7 +130,7 @@ impl TaskStore for SqliteTaskStore {
         let mut transaction = pool.acquire().await?;
         let mut connection = transaction.begin().await?;
         let task = TaskInstanceBuilder::for_task(task).await?;
-        let background_task_id = Self::create(&mut *connection, task).await?;
+        let background_task_id = Self::create(&mut connection, task).await?;
         connection.commit().await?;
         Ok(background_task_id)
     }
@@ -395,10 +395,8 @@ impl From<SqliteTaskStoreMetrics> for TaskStoreMetrics {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::{
-        tests::{default_task_store_metrics, TestTask},
-        TaskLikeExt,
-    };
+    use crate::tests::{default_task_store_metrics, TestTask};
+    use crate::TaskLikeExt;
 
     #[tokio::test]
     async fn reschedule_tasks_work() {

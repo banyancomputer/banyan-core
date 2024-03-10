@@ -4,14 +4,15 @@ use std::sync::Arc;
 
 use futures::future::join_all;
 use futures::Future;
-use time::{Duration, OffsetDateTime};
+use time::OffsetDateTime;
 use tokio::sync::watch;
 use tokio::task::JoinHandle;
 use tokio::time::timeout;
 
+use crate::task_like::RecurringTask;
 use crate::{
-    task_like::RecurringTask, CurrentTask, QueueConfig, Task, TaskExecError, TaskInstanceBuilder,
-    TaskLike, TaskLikeExt, TaskState, TaskStore, TaskStoreError, Worker, WORKER_SHUTDOWN_TIMEOUT,
+    CurrentTask, QueueConfig, TaskExecError, TaskLike, TaskStore, TaskStoreError, Worker,
+    WORKER_SHUTDOWN_TIMEOUT,
 };
 
 pub type ExecuteTaskFn<Context> = Arc<
@@ -112,8 +113,8 @@ where
     where
         F: Future<Output = ()> + Send + 'static,
     {
-        for (task_name, enqueue_recurring_task_fn) in self.startup_registry.iter() {
-            let mut pool = (self.pool_fn)();
+        for (_task_name, enqueue_recurring_task_fn) in self.startup_registry.iter() {
+            let pool = (self.pool_fn)();
             let queue_result = enqueue_recurring_task_fn(pool).await;
             tracing::info!("result: {:?}", queue_result);
         }

@@ -5,15 +5,14 @@ use axum::response::{IntoResponse, Response};
 use axum::TypedHeader;
 use banyan_car_analyzer::{CarReport, StreamingCarAnalyzer, StreamingCarAnalyzerError};
 use banyan_object_store::{ObjectStore, ObjectStorePath};
-use banyan_task::{SqliteTaskStore, TaskLikeExt};
 use futures::{TryStream, TryStreamExt};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::app::AppState;
-use crate::database::{Database, DatabaseConnection};
+use crate::database::DatabaseConnection;
 use crate::extractors::AuthenticatedClient;
-use crate::tasks::ReportUploadTask;
+
 pub(crate) mod block;
 mod db;
 mod error;

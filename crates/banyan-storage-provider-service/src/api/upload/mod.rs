@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::app::AppState;
-use crate::database::{Database, DatabaseConnection};
+use crate::database::DatabaseConnection;
 use crate::extractors::AuthenticatedClient;
 use crate::tasks::ReportUploadTask;
 pub(crate) mod block;

@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 
-use banyan_task::{SqliteTaskStore, TaskLike, TaskLikeExt};
+use banyan_task::{SqliteTaskStore, TaskLikeExt};
 use sqlx::QueryBuilder;
 use time::OffsetDateTime;
 

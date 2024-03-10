@@ -22,7 +22,7 @@ pub async fn handler(
 ) -> Result<Response, ReportUploadError> {
     let db_metadata_id = metadata_id.to_string();
 
-    let mut database = state.database();
+    let database = state.database();
     let mut db_conn = database.acquire().await?;
 
     redeem_storage_grant(

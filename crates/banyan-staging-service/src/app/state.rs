@@ -3,13 +3,12 @@ use std::path::PathBuf;
 use banyan_object_store::{
     ObjectStore, ObjectStoreConnection, ObjectStoreConnectionError, ObjectStoreError,
 };
-use banyan_task::{SqliteTaskStore, TaskStore};
 use jwt_simple::prelude::*;
 use sqlx::{Sqlite, Transaction};
 use url::Url;
 
 use crate::app::{Config, Secrets};
-use crate::database::{self, Database, DatabaseConnection, DatabaseSetupError};
+use crate::database::{self, Database, DatabaseSetupError};
 use crate::utils::{fingerprint_key_pair, fingerprint_public_key, SigningKey, VerificationKey};
 
 #[derive(Clone)]

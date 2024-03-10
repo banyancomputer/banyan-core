@@ -19,7 +19,7 @@ pub async fn handler(
     Path((bucket_id, metadata_id)): Path<(Uuid, Uuid)>,
     Json(request): Json<BTreeSet<Cid>>,
 ) -> Result<Response, CreateSnapshotError> {
-    let mut database = state.database();
+    let database = state.database();
     let mut transaction = database
         .begin()
         .await

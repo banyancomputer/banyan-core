@@ -3,7 +3,7 @@ mod report_bandwidth_metrics;
 mod report_health;
 mod report_upload;
 
-use banyan_task::{QueueConfig, SqliteTaskStore, TaskLike, TaskLikeExt, TaskStore, WorkerPool};
+use banyan_task::{QueueConfig, SqliteTaskStore, WorkerPool};
 pub use prune_blocks::PruneBlocksTask;
 pub use report_health::ReportHealthTask;
 pub use report_upload::ReportUploadTask;
