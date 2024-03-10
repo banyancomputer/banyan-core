@@ -210,14 +210,16 @@ pub enum WorkerError {
 }
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
+
+    use futures::FutureExt;
+    use tokio::sync::watch;
+
     use super::*;
     use crate::stores::{singleton_task_store, SqliteTaskStore};
     use crate::task_like::tests::ScheduleTestTask;
     use crate::tests::TestTask;
     use crate::TaskLike;
-    use futures::FutureExt;
-    use std::sync::Arc;
-    use tokio::sync::watch;
     const WORKER_NAME: &str = "default";
     const TEST_CONTEXT: TestContext = TestContext {};
     impl Worker<TestContext, SqliteTaskStore> {

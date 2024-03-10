@@ -534,7 +534,7 @@ mod tests {
 
         assert!(!is_bucket_key_approved(&mut conn, &bucket_id, "001122")
             .await
-            .unwrap())
+            .unwrap());
     }
 
     #[tokio::test]
@@ -557,7 +557,7 @@ mod tests {
             .unwrap());
         assert!(is_bucket_key_approved(&mut conn, &bucket_id, "003355")
             .await
-            .unwrap())
+            .unwrap());
     }
 
     #[tokio::test]
@@ -585,7 +585,7 @@ mod tests {
             .unwrap());
         assert!(is_bucket_key_approved(&mut conn, &bucket_id, "abcdef")
             .await
-            .unwrap())
+            .unwrap());
     }
 
     #[tokio::test]

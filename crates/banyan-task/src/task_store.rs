@@ -81,8 +81,11 @@ pub trait TaskStore: Send + Sync + 'static {
     ) -> Result<Option<String>, TaskStoreError>;
 
     async fn get_living_task(&self, task_name: &str) -> Result<Option<Task>, TaskStoreError> {
-        self.get_task_in_state(task_name, vec![TaskState::New, TaskState::Retry])
-            .await
+        self.get_task_in_state(
+            task_name,
+            vec![TaskState::New, TaskState::InProgress, TaskState::Retry],
+        )
+        .await
     }
 
     async fn get_task_in_state(
