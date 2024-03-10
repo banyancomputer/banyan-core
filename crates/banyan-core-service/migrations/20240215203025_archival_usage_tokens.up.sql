@@ -13,7 +13,6 @@ UPDATE subscriptions SET included_archival =
 -- Track earned and consumed archival tokens, knowing that the maximum
 -- limit can be derived from whatever plan they are on.
 ALTER TABLE users ADD COLUMN earned_tokens INTEGER NOT NULL DEFAULT 0;
-ALTER TABLE users ADD COLUMN consumed_tokens INTEGER NOT NULL DEFAULT 0;
 
 -- Track the number of tokens associated with each snapshot, so that they can 
 -- be restored to the user if the snapshot is not accepted for storage persistence.

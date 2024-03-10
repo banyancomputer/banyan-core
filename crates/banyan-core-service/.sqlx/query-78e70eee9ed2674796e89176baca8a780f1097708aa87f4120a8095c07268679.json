@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n                SELECT id, email, verified_email, display_name, locale, region_preference, profile_image, \n                       created_at, accepted_tos_at, earned_tokens, consumed_tokens,\n                       account_tax_class as 'account_tax_class: TaxClass',\n                       stripe_customer_id, stripe_subscription_id, subscription_id as 'subscription_id!',\n                       subscription_status as 'subscription_status: SubscriptionStatus',\n                       subscription_valid_until\n                FROM users\n                WHERE id = $1;\n            ",
+  "query": "\n                SELECT id, email, verified_email, display_name, locale, region_preference, \n                       profile_image, created_at, accepted_tos_at, earned_tokens, \n                       account_tax_class as 'account_tax_class: TaxClass', \n                       stripe_customer_id, stripe_subscription_id, subscription_id as 'subscription_id!',\n                       subscription_status as 'subscription_status: SubscriptionStatus',\n                       subscription_valid_until\n                FROM users\n                WHERE id = $1;\n            ",
   "describe": {
     "columns": [
       {
@@ -54,38 +54,33 @@
         "type_info": "Int64"
       },
       {
-        "name": "consumed_tokens",
-        "ordinal": 10,
-        "type_info": "Int64"
-      },
-      {
         "name": "account_tax_class: TaxClass",
-        "ordinal": 11,
+        "ordinal": 10,
         "type_info": "Text"
       },
       {
         "name": "stripe_customer_id",
-        "ordinal": 12,
+        "ordinal": 11,
         "type_info": "Text"
       },
       {
         "name": "stripe_subscription_id",
-        "ordinal": 13,
+        "ordinal": 12,
         "type_info": "Text"
       },
       {
         "name": "subscription_id!",
-        "ordinal": 14,
+        "ordinal": 13,
         "type_info": "Text"
       },
       {
         "name": "subscription_status: SubscriptionStatus",
-        "ordinal": 15,
+        "ordinal": 14,
         "type_info": "Text"
       },
       {
         "name": "subscription_valid_until",
-        "ordinal": 16,
+        "ordinal": 15,
         "type_info": "Datetime"
       }
     ],
@@ -104,7 +99,6 @@
       true,
       false,
       false,
-      false,
       true,
       true,
       true,
@@ -112,5 +106,5 @@
       true
     ]
   },
-  "hash": "f05977a399e3f118452d99865692149104534dd44f8a9557f87b780852d020aa"
+  "hash": "78e70eee9ed2674796e89176baca8a780f1097708aa87f4120a8095c07268679"
 }

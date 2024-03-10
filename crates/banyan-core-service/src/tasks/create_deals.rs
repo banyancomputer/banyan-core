@@ -220,34 +220,6 @@ impl CreateDealsTask {
         deals_builder.build().execute(&mut **transaction).await?;
         Ok(())
     }
-
-    #[allow(dead_code)]
-    async fn return_tokens(
-        transaction: &mut Transaction<'_, Sqlite>,
-        snapshot_ids: &Vec<String>,
-    ) -> Result<(), <CreateDealsTask as TaskLike>::Error> {
-        let mut builder = QueryBuilder::new(
-            r#"
-                UPDATE users AS u
-                SET u.consumed_tokens = u.consumed_tokens - (
-                    SELECT u.tokens_used
-                    FROM snapshots AS s
-                    WHERE s.user_id = u.id
-                    AND s.id IN (
-            "#,
-        );
-
-        let mut separated = builder.separated(", ");
-        for snapshot_id in snapshot_ids {
-            separated.push_bind(snapshot_id);
-        }
-
-        builder.push(")");
-        builder.push(");");
-        builder.build().execute(&mut **transaction).await?;
-
-        Ok(())
-    }
 }
 #[derive(Debug, sqlx::FromRow)]
 struct SnapshotInfo {

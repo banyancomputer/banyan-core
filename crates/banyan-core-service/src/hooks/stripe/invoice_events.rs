@@ -4,6 +4,7 @@ use crate::app::stripe_helper::{METADATA_SUBSCRIPTION_KEY, METADATA_USER_KEY};
 use crate::database::models::{Invoice, InvoiceStatus, NewInvoice, PriceUnits, Subscription, User};
 use crate::database::DatabaseConnection;
 use crate::hooks::stripe::StripeWebhookError;
+use crate::GIBIBYTE;
 
 pub async fn creation_handler(
     conn: &mut DatabaseConnection,
@@ -114,7 +115,8 @@ pub async fn update_handler(
     let included = Subscription::find_by_id(&mut *conn, &user.subscription_id)
         .await?
         .ok_or(StripeWebhookError::missing_data("db subscription"))?
-        .included_archival;
+        .included_archival
+        * GIBIBYTE;
     // If the user hasn't met their tier capacity
     if user.earned_tokens < included {
         // Give the user their montly allotment up to the maximum

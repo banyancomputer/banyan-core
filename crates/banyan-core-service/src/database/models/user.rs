@@ -17,7 +17,6 @@ pub struct User {
     pub created_at: OffsetDateTime,
     pub accepted_tos_at: Option<OffsetDateTime>,
     pub earned_tokens: i64,
-    pub consumed_tokens: i64,
 
     pub account_tax_class: TaxClass,
     pub stripe_customer_id: Option<String>,
@@ -33,9 +32,9 @@ impl User {
         sqlx::query_as!(
             User,
             r#"
-                SELECT id, email, verified_email, display_name, locale, region_preference, profile_image, 
-                       created_at, accepted_tos_at, earned_tokens, consumed_tokens,
-                       account_tax_class as 'account_tax_class: TaxClass',
+                SELECT id, email, verified_email, display_name, locale, region_preference, 
+                       profile_image, created_at, accepted_tos_at, earned_tokens, 
+                       account_tax_class as 'account_tax_class: TaxClass', 
                        stripe_customer_id, stripe_subscription_id, subscription_id as 'subscription_id!',
                        subscription_status as 'subscription_status: SubscriptionStatus',
                        subscription_valid_until
@@ -79,42 +78,24 @@ impl User {
         Ok(ex_size.big_int)
     }
 
-    // pub async fn maximum_token_capacity()
     pub async fn remaining_tokens(
         &self,
         conn: &mut DatabaseConnection,
     ) -> Result<i64, sqlx::Error> {
         sqlx::query_scalar!(
             r#"
-               SELECT (earned_tokens - consumed_tokens)
-               FROM users
-               WHERE id = $1;
+                SELECT IFNULL(u.earned_tokens - IFNULL(SUM(s.tokens_used), 0), 0)
+                FROM snapshots AS s 
+                JOIN metadata AS m ON m.id = s.metadata_id
+                JOIN buckets AS b ON b.id = m.bucket_id
+                JOIN users AS u ON u.id = b.user_id
+                WHERE u.id = $1;
             "#,
             self.id
         )
         .fetch_one(&mut *conn)
         .await
-    }
-
-    pub async fn consume_tokens(
-        &mut self,
-        conn: &mut DatabaseConnection,
-        tokens_used: i64,
-    ) -> Result<(), sqlx::Error> {
-        sqlx::query!(
-            r#"
-                UPDATE users
-                SET consumed_tokens = consumed_tokens + $1
-                WHERE id = $2;
-            "#,
-            tokens_used,
-            self.id
-        )
-        .execute(&mut *conn)
-        .await
-        .map(|_| {
-            self.consumed_tokens += tokens_used;
-        })
+        .map(|remaining| remaining as i64)
     }
 
     pub async fn award_tokens(
@@ -146,7 +127,7 @@ impl User {
             User,
             r#"
                 SELECT id, email, verified_email, display_name, locale, region_preference, profile_image, created_at,
-                       accepted_tos_at, consumed_tokens, earned_tokens, account_tax_class as 'account_tax_class: TaxClass',
+                       accepted_tos_at, earned_tokens, account_tax_class as 'account_tax_class: TaxClass',
                        stripe_customer_id, stripe_subscription_id, subscription_id as 'subscription_id!',
                        subscription_status as 'subscription_status: SubscriptionStatus',
                        subscription_valid_until 
@@ -167,7 +148,7 @@ impl User {
             User,
             r#"
                 SELECT id, email, verified_email, display_name, locale, region_preference, profile_image, created_at,
-                       accepted_tos_at, consumed_tokens, earned_tokens, account_tax_class as 'account_tax_class: TaxClass',
+                       accepted_tos_at, earned_tokens, account_tax_class as 'account_tax_class: TaxClass',
                        stripe_customer_id, stripe_subscription_id, subscription_id as 'subscription_id!',
                        subscription_status as 'subscription_status: SubscriptionStatus',
                        subscription_valid_until
