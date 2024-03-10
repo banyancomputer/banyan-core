@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 
 import { useFolderLocation } from '@app/hooks/useFolderLocation';
 import { Bucket } from '@app/types/bucket';
@@ -10,8 +10,7 @@ import { useAppSelector } from '@/app/store';
 
 export const EmptyState: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.bucket.emptyState);
-    const { setFiles, uploadFiles, files } = useFilesUpload();
-    const [previewFiles, setPreviewFiles] = useState<File[]>([]);
+    const { uploadFiles } = useFilesUpload();
 
     const folderLocation = useFolderLocation();
 
@@ -21,40 +20,27 @@ export const EmptyState: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
 
         if (!event.dataTransfer.files) { return; }
 
-        setFiles(Array.from(event.dataTransfer.files).slice(0, 1).map(file => ({ file, status: 'pending' })));
-        setPreviewFiles(Array.from(event.dataTransfer.files).slice(0, 1));
+        try {
+            await uploadFiles(event.dataTransfer.files, bucket!, folderLocation);
+        } catch (error: any) {
+            ToastNotifications.error(messages.uploadError);
+        };
     };
 
     const handleChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         if (!event.target.files) { return; }
 
-        setFiles(Array.from(event.target.files).map(file => ({ file, status: 'pending' })));
-        setPreviewFiles(Array.from(event.target.files));
+        try {
+            await uploadFiles(event.target.files, bucket!, folderLocation);
+        } catch (error: any) {
+            ToastNotifications.error(messages.uploadError);
+        };
     };
 
     const handleDrag = async (event: React.DragEvent<HTMLInputElement | HTMLLabelElement>) => {
         event.preventDefault();
         event.stopPropagation();
     };
-
-    const upload = async () => {
-        if (!files.length) { return; }
-        try {
-            ToastNotifications.uploadProgress();
-            setTimeout(() => {
-                setPreviewFiles([]);
-            }, 100);
-            await uploadFiles(bucket!, folderLocation);
-        } catch (error: any) {
-            ToastNotifications.error(messages.uploadError, messages.tryAgain, upload);
-        };
-    };
-
-    useEffect(() => {
-        return () => {
-            setPreviewFiles([]);
-        };
-    }, []);
 
     return (
         <label
@@ -71,34 +57,18 @@ export const EmptyState: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
             <div
                 className="flex flex-col items-center text-[#A99996]"
             >
-                {!previewFiles.length ?
-                    <>
-                        <Upload width="63" height="63px" />
-                        <div className="mt-14 flex flex-col items-center">
-                            <p className="text-text-900">
-                                {messages.description}
-                            </p>
-                        </div>
-                    </>
-                    :
-                    <>
-                        {previewFiles.map(file =>
-                            <span
-                                className="overflow-hidden text-ellipsis whitespace-nowrap text-text-900"
-                                key={file.name}
-                            >
-                                {file.name}
-                            </span>
-                        )}
-                        <button
-                            className="mt-4 flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-md bg-text-200 text-button-primary"
-                            onClick={upload}
-                        >
-                            <Upload />
-                            {messages.buttonText}
-                        </button>
-                    </>
-                }
+                <Upload width="63" height="63px" />
+                <div className="mt-14 flex flex-col items-center">
+                    <p className="text-text-900">
+                        {messages.description}
+                    </p>
+                </div>
+                <span
+                    className="btn-secondary mt-4 flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-md bg-text-200 text-button-primary"
+                >
+                    <Upload />
+                    {messages.buttonText}
+                </span>
             </div>
         </label>
     )
