@@ -15,7 +15,7 @@ where
     name: String,
     queue_config: QueueConfig,
 
-    context_data_fn: StateFn<Context>,
+    context_fn: StateFn<Context>,
     store: S,
     task_registry: BTreeMap<&'static str, ExecuteTaskFn<Context>>,
     schedule_registry: BTreeMap<&'static str, NextScheduleFn>,
@@ -30,7 +30,7 @@ where
     pub fn new(
         name: String,
         queue_config: QueueConfig,
-        context_data_fn: StateFn<Context>,
+        context_fn: StateFn<Context>,
         store: S,
         task_registry: BTreeMap<&'static str, ExecuteTaskFn<Context>>,
         schedule_registry: BTreeMap<&'static str, NextScheduleFn>,
@@ -39,7 +39,7 @@ where
         Self {
             name,
             queue_config,
-            context_data_fn,
+            context_fn,
             store,
             task_registry,
             schedule_registry,
@@ -56,7 +56,7 @@ where
             .ok_or_else(|| WorkerError::UnregisteredTaskName(task.task_name.clone()))?
             .clone();
 
-        let context = (self.context_data_fn)();
+        let context = (self.context_fn)();
         let payload = task.payload.clone();
         let safe_runner = PanicSafeFuture::wrap(async move {
             deserialize_and_run_task_fn(task_info, payload, context).await
@@ -249,13 +249,13 @@ mod tests {
     ) -> Worker<TestContext, SqliteTaskStore> {
         let queue_config = QueueConfig::new(WORKER_NAME).with_worker_count(1);
         let task_registry = create_registry();
-        let context_data_fn = Arc::new(move || ctx.clone());
+        let context_fn = Arc::new(move || ctx.clone());
         let (_, inner_shutdown_rx) = watch::channel(());
 
         Worker::new(
             WORKER_NAME.to_string(),
             queue_config.clone(),
-            context_data_fn.clone(),
+            context_fn.clone(),
             task_store,
             task_registry.clone(),
             BTreeMap::new(),

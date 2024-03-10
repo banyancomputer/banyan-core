@@ -44,8 +44,8 @@ where
     Context: Clone + Send + 'static,
     S: TaskStore + Clone,
 {
-    context_data_fn: StateFn<Context>,
     pool_fn: StateFn<S::Pool>,
+    context_fn: StateFn<Context>,
     task_store: S,
     task_registry: BTreeMap<&'static str, ExecuteTaskFn<Context>>,
     schedule_registry: BTreeMap<&'static str, NextScheduleFn>,
@@ -64,14 +64,14 @@ where
         self
     }
 
-    pub fn new<A, B>(task_store: S, pool_fn: A, context_data_fn: B) -> Self
+    pub fn new<A, B>(task_store: S, pool_fn: A, context_fn: B) -> Self
     where
         A: Fn() -> S::Pool + Send + Sync + 'static,
         B: Fn() -> Context + Send + Sync + 'static,
     {
         Self {
-            context_data_fn: Arc::new(context_data_fn),
             pool_fn: Arc::new(pool_fn),
+            context_fn: Arc::new(context_fn),
             task_store,
             task_registry: BTreeMap::new(),
             schedule_registry: BTreeMap::new(),
@@ -152,7 +152,7 @@ where
                 let mut worker: Worker<Context, S> = Worker::new(
                     worker_name.clone(),
                     queue_config.clone(),
-                    self.context_data_fn.clone(),
+                    self.context_fn.clone(),
                     self.task_store.clone(),
                     self.task_registry.clone(),
                     self.schedule_registry.clone(),
