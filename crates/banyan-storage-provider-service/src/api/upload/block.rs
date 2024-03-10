@@ -40,7 +40,7 @@ pub async fn handler(
     TypedHeader(content_type): TypedHeader<ContentType>,
     body: BodyStream,
 ) -> Result<Response, UploadError> {
-    let mut conn = state.connection().await;
+    let mut trans = state.transaction().await?;
     let reported_body_length = content_len.0;
     if reported_body_length > client.remaining_storage() {
         return Err(UploadError::InsufficientAuthorizedStorage(
@@ -90,7 +90,7 @@ pub async fn handler(
             upload_id,
         } => {
             // Assume that the upload has already been created via the `new` endpoint
-            let upload = get_upload(&mut conn, client.id(), &upload_id)
+            let upload = get_upload(&mut trans, client.id(), &upload_id)
                 .await?
                 .unwrap();
             if upload.id != upload_id {
@@ -130,7 +130,7 @@ pub async fn handler(
             return Err(UploadError::MismatchedCid((normalized_cid, computed_cid)));
         }
         // Write this block to the tables
-        write_block_to_tables(&mut conn, &upload.id, &normalized_cid, block.len() as i64).await?;
+        write_block_to_tables(&mut trans, &upload.id, &normalized_cid, block.len() as i64).await?;
 
         // Write the bytes to the expected location
         let location = ObjectStorePath::from(
@@ -144,19 +144,19 @@ pub async fn handler(
 
     // If we've just finished off the upload, complete and report it
     if completed {
-        let total_size = upload_size(&mut conn, &upload.id).await?;
-        complete_upload(&mut conn, total_size, "", &upload.id).await?;
+        let total_size = upload_size(&mut trans, &upload.id).await?;
+        complete_upload(&mut trans, total_size, "", &upload.id).await?;
         ReportUploadTask::new(
             client.storage_grant_id(),
             &upload.metadata_id,
-            &all_cids(&mut conn, &upload.id).await?,
+            &all_cids(&mut trans, &upload.id).await?,
             total_size as u64,
         )
-        .enqueue_with_connection::<SqliteTaskStore>(&mut conn)
+        .enqueue_with_connection::<SqliteTaskStore>(&mut trans)
         .await?;
     }
 
-    conn.commit().await?;
+    trans.commit().await?;
 
     Ok((StatusCode::NO_CONTENT, ()).into_response())
 }

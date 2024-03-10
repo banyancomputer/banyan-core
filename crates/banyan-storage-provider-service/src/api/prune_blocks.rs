@@ -25,11 +25,11 @@ pub async fn handler(
         }
     }
 
-    let mut conn = state.connection().await;
+    let mut trans = state.transaction().await?;
     PruneBlocksTask::new(prune_block_list)
-        .enqueue_with_connection::<SqliteTaskStore>(&mut conn)
+        .enqueue_with_connection::<SqliteTaskStore>(&mut trans)
         .await?;
-    conn.commit().await?;
+    trans.commit().await?;
 
     Ok((StatusCode::OK, ()).into_response())
 }

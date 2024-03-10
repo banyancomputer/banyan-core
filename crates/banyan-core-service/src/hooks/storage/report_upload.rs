@@ -1,7 +1,7 @@
 use axum::extract::{Json, Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use banyan_task::TaskLikeExt;
+use banyan_task::{SqliteTaskStore, TaskLikeExt};
 use serde::Deserialize;
 use uuid::Uuid;
 
@@ -87,7 +87,7 @@ pub async fn handler(
 
     // Now, let's re-evaluate the capacity of that storage host
     HostCapacityTask::new(storage_provider.id)
-        .enqueue_with_connection::<banyan_task::SqliteTaskStore>(&mut db_conn)
+        .enqueue_with_connection::<SqliteTaskStore>(&mut db_conn)
         .await
         .map_err(ReportUploadError::UnableToEnqueueTask)?;
 

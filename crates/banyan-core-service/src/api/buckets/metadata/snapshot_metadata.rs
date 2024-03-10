@@ -3,7 +3,7 @@ use std::collections::BTreeSet;
 use axum::extract::{Json, Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use banyan_task::TaskLikeExt;
+use banyan_task::{SqliteTaskStore, TaskLikeExt};
 use cid::multibase::Base;
 use cid::Cid;
 use uuid::Uuid;
@@ -115,7 +115,7 @@ pub async fn handler(
     }
 
     CreateDealsTask::new(snapshot_id.clone())
-        .enqueue_with_connection::<banyan_task::SqliteTaskStore>(&mut *transaction)
+        .enqueue_with_connection::<SqliteTaskStore>(&mut *transaction)
         .await
         .map_err(CreateSnapshotError::UnableToEnqueueTask)?;
 
