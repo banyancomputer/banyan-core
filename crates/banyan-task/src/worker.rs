@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 use crate::panic_safe_future::PanicSafeFuture;
 use crate::{
     CurrentTask, CurrentTaskError, ExecuteTaskFn, NextScheduleFn, QueueConfig, StateFn, Task,
-    TaskState, TaskStore, TaskStoreError, MAXIMUM_CHECK_DELAY,
+    TaskExecError, TaskStore, TaskStoreError, MAXIMUM_CHECK_DELAY,
 };
 
 pub struct Worker<Context, S>
@@ -69,33 +69,26 @@ where
         // chance that the worker is corrupted in some way by the panic so I should set a flag on
         // this worker and handle two consecutive panics as a worker problem. The second task
         // triggering the panic should be presumed innocent and restored to a runnable state.
-        match safe_runner.await {
-            Ok(Ok(())) => {
+        match safe_runner.await.map_err(TaskExecError::Panicked) {
+            Ok(Err(err)) | Err(err) => {
+                tracing::error!("task failed with error: {err}");
+                // todo: save panic message into the task.error and save it back to the memory
+                // store somehow
+                self.store
+                    .errored(task.id.clone(), err)
+                    .await
+                    .map_err(WorkerError::ErrorTaskFailed)?
+                    // If it retried successfully, we're done
+                    .map(|_| Ok(()))
+                    // Otherwise schedule
+                    .unwrap_or(self.schedule_if_needed(&task).await)
+            }
+            Ok(_) => {
                 self.store
                     .completed(task.id.clone())
                     .await
                     .map_err(WorkerError::UpdateTaskStatusFailed)?;
                 self.schedule_if_needed(&task).await
-            }
-            Ok(Err(err)) => {
-                tracing::error!("task failed with error: {err}");
-                self.store
-                    .errored(task.id.clone(), err)
-                    .await
-                    .map_err(WorkerError::RetryTaskFailed)?
-                    // If it retried, we're done
-                    .map(|_| Ok(()))
-                    // Otherwise schedule
-                    .unwrap_or(self.schedule_if_needed(&task).await)
-            }
-            _ => {
-                tracing::error!("task `{}` with id `{}` panicked", task.task_name, task.id);
-                // todo: save panic message into the task.error and save it back to the memory
-                // store somehow...
-                self.store
-                    .update_state(task.id.clone(), TaskState::Panicked)
-                    .await
-                    .map_err(WorkerError::UpdateTaskStatusFailed)
             }
         }
     }
@@ -180,8 +173,8 @@ pub enum WorkerError {
     #[error("worker detected an error in the shutdown channel and forced and immediate exit")]
     EmergencyShutdown,
 
-    #[error("failed to enqueue a failed task for re-execution: {0}")]
-    RetryTaskFailed(TaskStoreError),
+    #[error("failed to process error state of failed task {0}")]
+    ErrorTaskFailed(TaskStoreError),
 
     #[error("error while attempting to retrieve the next task: {0}")]
     StoreUnavailable(TaskStoreError),
