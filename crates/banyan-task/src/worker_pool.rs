@@ -96,7 +96,7 @@ where
         self
     }
 
-    pub async fn register_recurring_task_type<RT>(mut self) -> Result<Self, TaskStoreError>
+    pub fn register_recurring_task_type<RT>(mut self) -> Self
     where
         RT: RecurringTask<Context = Context>,
     {
@@ -106,7 +106,7 @@ where
         self.startup_registry
             .insert(RT::TASK_NAME, Arc::new(enqueue_recurring_task::<RT, S>));
 
-        Ok(self.register_task_type::<RT>())
+        self.register_task_type::<RT>()
     }
 
     pub async fn start<F>(self, shutdown_signal: F) -> Result<JoinHandle<()>, WorkerPoolError>

@@ -135,6 +135,11 @@ where
                 .await
                 .map_err(WorkerError::StoreUnavailable)?
             {
+                tracing::info!(
+                    "running background task `{}` with id `{}`",
+                    task.task_name,
+                    task.id
+                );
                 self.run(task).await?;
                 continue;
             }
