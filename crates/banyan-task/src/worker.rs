@@ -284,7 +284,7 @@ mod tests {
     }
 
     // currently has issues with accessing the in-memory database
-    //#[ignore]
+    #[ignore]
     #[tokio::test]
     async fn test_worker_run_successful_task() {
         let (task_store, _task_id) = singleton_task_store().await;
