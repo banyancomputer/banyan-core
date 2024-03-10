@@ -32,7 +32,7 @@ pub async fn handler(
     }
 
     // Start the upload with these specifications
-    let mut conn = state.connection().await;
+    let mut conn = state.connection().await?;
     let upload = start_upload(
         &mut conn,
         &client.id(),

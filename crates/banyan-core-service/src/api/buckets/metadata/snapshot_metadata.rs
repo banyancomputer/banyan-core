@@ -115,7 +115,7 @@ pub async fn handler(
     }
 
     CreateDealsTask::new(snapshot_id.clone())
-        .enqueue_with_connnection::<banyan_task::SqliteTaskStore>(&mut *transaction)
+        .enqueue_with_connection::<banyan_task::SqliteTaskStore>(&mut *transaction)
         .await
         .map_err(CreateSnapshotError::UnableToEnqueueTask)?;
 

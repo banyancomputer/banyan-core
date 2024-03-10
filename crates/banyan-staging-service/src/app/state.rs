@@ -78,8 +78,8 @@ impl State {
         self.database.clone()
     }
 
-    pub async fn connection(&self) -> Transaction<'_, Sqlite> {
-        self.database().begin().await.map_err(|_| ()).unwrap()
+    pub async fn connection(&self) -> Result<Transaction<'_, Sqlite>, sqlx::Error> {
+        self.database().begin().await
     }
 
     pub fn upload_store_connection(&self) -> &ObjectStoreConnection {

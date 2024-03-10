@@ -5,6 +5,7 @@ use axum::response::{IntoResponse, Response};
 use axum::TypedHeader;
 use banyan_car_analyzer::{CarReport, StreamingCarAnalyzer, StreamingCarAnalyzerError};
 use banyan_object_store::{ObjectStore, ObjectStorePath};
+use banyan_task::{SqliteTaskStore, TaskLikeExt};
 use futures::{TryStream, TryStreamExt};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -12,6 +13,7 @@ use uuid::Uuid;
 use crate::app::AppState;
 use crate::database::DatabaseConnection;
 use crate::extractors::AuthenticatedClient;
+use crate::tasks::ReportUploadTask;
 
 pub(crate) mod block;
 mod db;
@@ -38,7 +40,7 @@ pub async fn handler(
     TypedHeader(content_type): TypedHeader<ContentType>,
     body: BodyStream,
 ) -> Result<Response, UploadError> {
-    let mut conn = state.connection().await;
+    let mut conn = state.connection().await?;
     let reported_body_length = content_len.0;
     if reported_body_length > client.remaining_storage() {
         return Err(UploadError::InsufficientAuthorizedStorage(
@@ -107,7 +109,6 @@ pub async fn handler(
         Ok(cr) => {
             complete_upload(&mut conn, 0, cr.integrity_hash(), &upload.id).await?;
 
-            /*
             ReportUploadTask::new(
                 client.storage_grant_id(),
                 &request.metadata_id.to_string(),
@@ -117,7 +118,6 @@ pub async fn handler(
             .enqueue_with_connection::<SqliteTaskStore>(&mut conn)
             .await
             .map_err(UploadError::FailedToEnqueueTask)?;
-            */
 
             conn.commit().await?;
 

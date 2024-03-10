@@ -210,17 +210,14 @@ pub enum WorkerError {
 }
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
-    use std::time::Duration;
-
-    use futures::FutureExt;
-    use tokio::sync::watch;
-
     use super::*;
     use crate::stores::{singleton_task_store, SqliteTaskStore};
     use crate::task_like::tests::ScheduleTestTask;
     use crate::tests::TestTask;
     use crate::TaskLike;
+    use futures::FutureExt;
+    use std::sync::Arc;
+    use tokio::sync::watch;
     const WORKER_NAME: &str = "default";
     const TEST_CONTEXT: TestContext = TestContext {};
     impl Worker<TestContext, SqliteTaskStore> {
@@ -241,7 +238,7 @@ mod tests {
     }
     #[derive(Clone)]
     struct TestContext {}
-    fn create_registry() -> (BTreeMap<&'static str, ExecuteTaskFn<TestContext>>) {
+    fn create_registry() -> BTreeMap<&'static str, ExecuteTaskFn<TestContext>> {
         let mut task_registry = BTreeMap::new();
 
         let test_task_fn: ExecuteTaskFn<TestContext> =

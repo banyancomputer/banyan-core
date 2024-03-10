@@ -194,14 +194,13 @@ impl Bucket {
             let block_list = block_set.into_iter().collect::<Vec<_>>();
             total_rows_pruned += block_list.len();
 
-            let queue_result = PruneBlocksTask::new(storage_host_id, block_list)
-                .enqueue_with_connnection::<SqliteTaskStore>(&mut *conn)
-                .await;
-
-            // A future clean up task can always come back through and catch any blocks not missed.
-            // We want to know if the queueing fails, but its not critical enough to abort the
-            // expiration transaction.
-            if let Err(err) = queue_result {
+            if let Err(err) = PruneBlocksTask::new(storage_host_id, block_list)
+                .enqueue_with_connection::<SqliteTaskStore>(&mut *conn)
+                .await
+            {
+                // A future clean up task can always come back through and catch any blocks not missed.
+                // We want to know if the queueing fails, but its not critical enough to abort the
+                // expiration transaction.
                 tracing::warn!("failed to queue prune block task: {err}");
             }
         }
@@ -535,7 +534,7 @@ mod tests {
 
         assert!(!is_bucket_key_approved(&mut conn, &bucket_id, "001122")
             .await
-            .unwrap());
+            .unwrap())
     }
 
     #[tokio::test]
@@ -558,7 +557,7 @@ mod tests {
             .unwrap());
         assert!(is_bucket_key_approved(&mut conn, &bucket_id, "003355")
             .await
-            .unwrap());
+            .unwrap())
     }
 
     #[tokio::test]
@@ -586,7 +585,7 @@ mod tests {
             .unwrap());
         assert!(is_bucket_key_approved(&mut conn, &bucket_id, "abcdef")
             .await
-            .unwrap());
+            .unwrap())
     }
 
     #[tokio::test]
