@@ -200,10 +200,10 @@ pub async fn handler(
     if let Some(hard_limit) = subscription.hot_storage_hard_limit {
         let hard_limit_bytes = hard_limit * GIBIBYTE;
 
-        let consumed_storage = user.consumed_storage(&mut conn).await?;
-        if (consumed_storage + needed_capacity) > hard_limit_bytes {
+        let hot_usage = user.hot_usage(&mut conn).await?.total();
+        if (hot_usage + needed_capacity) > hard_limit_bytes {
             tracing::warn!(
-                consumed_storage,
+                hot_usage,
                 needed_capacity,
                 hard_limit_bytes,
                 "account reached storage limit"

@@ -1,9 +1,8 @@
 use serde::Serialize;
 use time::OffsetDateTime;
 
-use crate::api::models::ApiUser;
 use crate::database::{
-    models::{ExplicitBigInt, SnapshotState, SubscriptionStatus, TaxClass},
+    models::{HotUsage, SnapshotState, SubscriptionStatus, TaxClass},
     DatabaseConnection,
 };
 
@@ -60,24 +59,23 @@ impl User {
     /// This measure needs to be updated once blocks are properly expired as we'll need to do
     /// better accounting on older metadata versions that no longer have all their associated
     /// blocks.
-    pub async fn consumed_storage(
-        &self,
-        conn: &mut DatabaseConnection,
-    ) -> Result<i64, sqlx::Error> {
-        let ex_size = sqlx::query_as!(
-            ExplicitBigInt,
-            r#"SELECT
-                   COALESCE(SUM(m.metadata_size), 0) +
-                     COALESCE(SUM(COALESCE(m.data_size, m.expected_data_size)), 0) AS big_int
-                 FROM metadata m
-                 INNER JOIN buckets b ON b.id = m.bucket_id
-                 WHERE b.user_id = $1 AND m.state IN ('current', 'outdated', 'pending');"#,
+    pub async fn hot_usage(&self, conn: &mut DatabaseConnection) -> Result<HotUsage, sqlx::Error> {
+        sqlx::query_as!(
+            HotUsage,
+            r#"
+                SELECT
+                   COALESCE(SUM(m.metadata_size), 0) as data_size,
+                   COALESCE(SUM(COALESCE(m.data_size, m.expected_data_size)), 0) AS meta_size
+                FROM metadata m
+                INNER JOIN buckets b ON b.id = m.bucket_id
+                WHERE b.user_id = $1
+                AND b.deleted_at IS NULL
+                AND m.state IN ('current', 'outdated', 'pending');
+            "#,
             self.id,
         )
         .fetch_one(&mut *conn)
-        .await?;
-
-        Ok(ex_size.big_int)
+        .await
     }
 
     pub async fn remaining_tokens(
@@ -276,22 +274,6 @@ impl User {
         )
         .fetch_one(&mut *conn)
         .await
-    }
-
-    pub async fn as_api_user(&self, conn: &mut DatabaseConnection) -> Result<ApiUser, sqlx::Error> {
-        Ok(ApiUser {
-            id: self.id.clone(),
-            email: self.email.clone(),
-            display_name: self.display_name.clone(),
-            locale: self.locale.clone(),
-            profile_image: self.profile_image.clone(),
-            accepted_tos_at: self.accepted_tos_at.map(|t| t.unix_timestamp()),
-            subscription_id: self.subscription_id.clone(),
-            account_tax_class: self.account_tax_class.to_string(),
-            subscription_valid_until: self.subscription_valid_until,
-            available_tokens: self.remaining_tokens(conn).await?,
-            maximum_tokens: self.maximum_tokens(conn).await?,
-        })
     }
 }
 

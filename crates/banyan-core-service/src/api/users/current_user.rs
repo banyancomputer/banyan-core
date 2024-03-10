@@ -2,6 +2,7 @@ use axum::extract::{Json, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
+use crate::api::models::ApiUser;
 use crate::app::AppState;
 use crate::database::models::User;
 use crate::extractors::UserIdentity;
@@ -14,10 +15,12 @@ pub async fn handler(
     let mut conn = database.acquire().await?;
     let user_id = user_identity.id().to_string();
 
-    match User::find_by_id(&mut conn, &user_id).await? {
-        Some(u) => Ok((StatusCode::OK, Json(u.as_api_user(&mut conn).await?)).into_response()),
-        None => Err(CurrentUserError::NotFound),
-    }
+    let user: ApiUser = User::find_by_id(&mut conn, &user_id)
+        .await?
+        .map(Into::into)
+        .ok_or(CurrentUserError::NotFound)?;
+
+    Ok((StatusCode::OK, Json(user)).into_response())
 }
 
 #[derive(Debug, thiserror::Error)]
