@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 use crate::panic_safe_future::PanicSafeFuture;
 use crate::{
     CurrentTask, CurrentTaskError, ExecuteTaskFn, NextScheduleFn, QueueConfig, StateFn, Task,
-    TaskExecError, TaskState, TaskStore, TaskStoreError, MAXIMUM_CHECK_DELAY,
+    TaskState, TaskStore, TaskStoreError, MAXIMUM_CHECK_DELAY,
 };
 
 pub struct Worker<Context, S>
@@ -49,18 +49,6 @@ where
 
     #[tracing::instrument(level = "error", skip_all, fields(task_name = %task.task_name, task_id = %task.id))]
     pub async fn run(&self, task: Task) -> Result<(), WorkerError> {
-        // check to see if its time to shutdown the worker
-        //
-        // todo: turn this into a select with a short fallback timeout on task execution to try
-        // and finish it within our graceful shutdown window
-        if let Some(shutdown_signal) = &self.shutdown_signal {
-            match shutdown_signal.has_changed() {
-                Ok(true) => return Ok(()),
-                Err(_) => return Err(WorkerError::EmergencyShutdown),
-                _ => (),
-            }
-        }
-
         let task_info = CurrentTask::try_from(&task).map_err(WorkerError::CantMakeCurrent)?;
         let deserialize_and_run_task_fn = self
             .task_registry
@@ -82,36 +70,26 @@ where
         // this worker and handle two consecutive panics as a worker problem. The second task
         // triggering the panic should be presumed innocent and restored to a runnable state.
         match safe_runner.await {
-            Ok(task_result) => {
-                match task_result {
-                    Ok(()) => {
-                        self.store
-                            .completed(task.id.clone())
-                            .await
-                            .map_err(WorkerError::UpdateTaskStatusFailed)?;
-                        self.schedule_if_needed(&task).await
-                    }
-                    Err(err) => {
-                        tracing::error!("task failed with error: {err}");
-                        match self
-                            .store
-                            .errored(
-                                task.id.clone(),
-                                TaskExecError::ExecutionFailed(err.to_string()),
-                            )
-                            .await
-                            .map_err(WorkerError::RetryTaskFailed)?
-                        {
-                            // not retried
-                            None => self.schedule_if_needed(&task).await,
-                            // retried
-                            _ => Ok(()),
-                        }
-                    }
-                }
+            Ok(Ok(())) => {
+                self.store
+                    .completed(task.id.clone())
+                    .await
+                    .map_err(WorkerError::UpdateTaskStatusFailed)?;
+                self.schedule_if_needed(&task).await
             }
-            Err(_) => {
-                tracing::error!("task panicked");
+            Ok(Err(err)) => {
+                tracing::error!("task failed with error: {err}");
+                self.store
+                    .errored(task.id.clone(), err)
+                    .await
+                    .map_err(WorkerError::RetryTaskFailed)?
+                    // If it retried, we're done
+                    .map(|_| Ok(()))
+                    // Otherwise schedule
+                    .unwrap_or(self.schedule_if_needed(&task).await)
+            }
+            _ => {
+                tracing::error!("task `{}` with id `{}` panicked", task.task_name, task.id);
                 // todo: save panic message into the task.error and save it back to the memory
                 // store somehow...
                 self.store
@@ -146,6 +124,18 @@ where
         let relevant_task_names: Vec<&'static str> = self.task_registry.keys().cloned().collect();
         // While there are still tasks in the queue
         loop {
+            // check to see if its time to shutdown the worker
+            //
+            // todo: turn this into a select with a short fallback timeout on task execution to try
+            // and finish it within our graceful shutdown window
+            if let Some(shutdown_signal) = &self.shutdown_signal {
+                match shutdown_signal.has_changed() {
+                    Ok(true) => return Ok(()),
+                    Err(_) => return Err(WorkerError::EmergencyShutdown),
+                    _ => (),
+                }
+            }
+
             if let Some(task) = self
                 .store
                 .next(self.queue_config.name(), &relevant_task_names)
@@ -293,21 +283,22 @@ mod tests {
             result.is_err(),
             "Worker run should fail with unregistered task"
         );
-        if let WorkerError::UnregisteredTaskName(err) = result.unwrap_err() {
+        if let Err(WorkerError::UnregisteredTaskName(err)) = result {
             assert_eq!(err, task_name);
         } else {
-            panic!("did not return the correct error type")
+            panic!("did not return the correct error type {:?}", result);
         }
     }
 
     // currently has issues with accessing the in-memory database
-    #[ignore]
+    //#[ignore]
     #[tokio::test]
     async fn test_worker_run_successful_task() {
         let (task_store, _task_id) = singleton_task_store().await;
         let worker = create_worker(&TEST_CONTEXT, task_store);
         let task = worker.next_task(TestTask::TASK_NAME).await;
         let result = worker.run(task).await;
+        println!("result: {:?}", result);
         assert!(result.is_ok(), "Worker run failed with a valid task");
     }
 }
