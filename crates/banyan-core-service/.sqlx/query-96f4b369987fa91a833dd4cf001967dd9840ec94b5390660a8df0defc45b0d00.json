@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                UPDATE storage_hosts\n                SET used_storage = $2\n                WHERE id = $1;\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "96f4b369987fa91a833dd4cf001967dd9840ec94b5390660a8df0defc45b0d00"
+}

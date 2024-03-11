@@ -9,7 +9,7 @@ use crate::app::AppState;
 use crate::database::models::Metadata;
 use crate::database::DatabaseConnection;
 use crate::extractors::StorageProviderIdentity;
-use crate::tasks::HostCapacityTask;
+use crate::tasks::{HostCapacityTask, ReportStorageHostConsumptionTask, ReportUserConsumptionTask};
 
 /// When a client finishes uploading their data to either staging or a storage host, the storage
 /// host will make a request to this end point letting us know that we have all the data safely
@@ -79,7 +79,6 @@ pub async fn handler(
     )
     .await
     .map_err(ReportUploadError::MarkCurrentFailed)?;
-
     // Now that the state has changed, mark old unsnapshotted metadatas as being deleted
     Metadata::delete_outdated(&mut db_conn, &bucket_id)
         .await
@@ -89,7 +88,22 @@ pub async fn handler(
     db_conn.close().await?;
 
     // Now, let's re-evaluate the capacity of that storage host
-    HostCapacityTask::new(storage_provider.id)
+    HostCapacityTask::new(storage_provider.id.clone())
+        .enqueue::<banyan_task::SqliteTaskStore>(&mut database)
+        .await
+        .map_err(ReportUploadError::UnableToEnqueueTask)?;
+
+    let user_id = sqlx::query_scalar!("SELECT user_id FROM buckets WHERE id = $1", bucket_id)
+        .fetch_one(&database)
+        .await
+        .map_err(ReportUploadError::QueryFailed)?;
+
+    ReportStorageHostConsumptionTask::new(storage_provider.id.clone())
+        .enqueue::<banyan_task::SqliteTaskStore>(&mut database)
+        .await
+        .map_err(ReportUploadError::UnableToEnqueueTask)?;
+
+    ReportUserConsumptionTask::new(user_id)
         .enqueue::<banyan_task::SqliteTaskStore>(&mut database)
         .await
         .map_err(ReportUploadError::UnableToEnqueueTask)?;

@@ -22,6 +22,7 @@ mod snapshot_state;
 mod storage_class;
 mod storage_grant;
 mod storage_host;
+mod storage_host_total_consumption;
 mod stripe_checkout_session;
 mod stripe_checkout_session_status;
 mod stripe_product;
@@ -29,6 +30,7 @@ mod subscription;
 mod subscription_status;
 mod tax_class;
 mod user;
+mod user_total_consumption;
 
 pub use block_location::MinimalBlockLocation;
 pub use bucket::Bucket;
@@ -55,6 +57,7 @@ pub use snapshot_state::SnapshotState;
 pub use storage_class::StorageClass;
 pub use storage_grant::NewStorageGrant;
 pub use storage_host::{SelectedStorageHost, StorageHost, UserStorageReport};
+pub use storage_host_total_consumption::StorageHostTotalConsumption;
 pub use stripe_checkout_session::{NewStripeCheckoutSession, StripeCheckoutSession};
 pub use stripe_checkout_session_status::StripeCheckoutSessionStatus;
 pub use stripe_product::StripeProduct;
@@ -62,6 +65,7 @@ pub use subscription::{NewSubscription, Subscription};
 pub use subscription_status::SubscriptionStatus;
 pub use tax_class::TaxClass;
 pub use user::User;
+pub use user_total_consumption::UserTotalConsumption;
 
 /// Something about sqlx's type detection fails on complex queries such as the result of COALESCE
 /// that forces it to assume the result is a 32-bit signed integer, and it seems to ignore the sqlx
