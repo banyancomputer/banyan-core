@@ -9,8 +9,7 @@ use url::Url;
 use crate::app::AppState;
 use crate::clients::{DistributeDataRequest, StagingServiceClient, StagingServiceError};
 use crate::database::models::{
-    BlockLocationState, Blocks, Bucket, Metadata, MinimalBlockLocation, NewStorageGrant,
-    StorageHost, UserStorageReport,
+    Blocks, Bucket, Metadata, MinimalBlockLocation, NewStorageGrant, StorageHost, UserStorageReport,
 };
 use crate::utils::rounded_storage_authorization;
 
@@ -89,8 +88,6 @@ impl TaskLike for RedistributeStagingDataTask {
             } else {
                 user_report.existing_grant().unwrap()
             };
-            conn.commit().await?;
-
             let block_cids: Vec<_> = grouped_blocks
                 .iter()
                 .map(|block| block.cid.clone())
@@ -112,9 +109,16 @@ impl TaskLike for RedistributeStagingDataTask {
                 .map(|block| block.id.clone())
                 .collect();
 
-            MinimalBlockLocation::update_state(&database, &block_ids, BlockLocationState::Staged)
-                .await
-                .expect("update block location state");
+            for block_id in block_ids.iter() {
+                MinimalBlockLocation {
+                    block_id: block_id.clone(),
+                    metadata_id: metadata_id.clone(),
+                    storage_host_id: new_storage_host.id.clone(),
+                }
+                .save(&mut conn)
+                .await?;
+            }
+            conn.commit().await?;
 
             undistributed_blocks.retain(|s| !block_ids.contains(s));
         }
@@ -151,7 +155,7 @@ mod tests {
     use serde_json::json;
 
     use crate::app::mock_app_state;
-    use crate::database::models::{BlockLocationState, MetadataState, MinimalBlockLocation};
+    use crate::database::models::{BlockLocations, MetadataState};
     use crate::database::test_helpers;
     use crate::tasks::redistribute_staging_data::RedistributeStagingDataTask;
 
@@ -213,14 +217,8 @@ mod tests {
             .create_async()
             .await;
 
-        let all_blocks = MinimalBlockLocation::get_all(&db)
-            .await
-            .expect("get all blocks");
+        let all_blocks = BlockLocations::get_all(&db).await.expect("get all blocks");
         assert_eq!(all_blocks.len(), block_ids.len());
-        for block_location in all_blocks.iter() {
-            assert_eq!(block_location.state, BlockLocationState::SyncRequired);
-        }
-
         let res = RedistributeStagingDataTask::default()
             .run(CurrentTask::default(), mock_app_state(db.clone()).0)
             .await;
@@ -228,12 +226,17 @@ mod tests {
         println!("{:?}", res);
 
         assert!(res.is_ok());
-        let updated_block_locations = MinimalBlockLocation::get_all(&db)
-            .await
-            .expect("get all blocks");
-        assert_eq!(updated_block_locations.len(), block_ids.len());
-        for block_location in updated_block_locations.iter() {
-            assert_eq!(block_location.state, BlockLocationState::Staged);
+        let all_block_locations = BlockLocations::get_all(&db).await.expect("get all blocks");
+        assert_eq!(all_block_locations.len(), block_ids.len() * 2);
+        for block_location in all_block_locations.iter() {
+            assert_eq!(block_location.expired_at, None);
+            assert_eq!(block_location.pruned_at, None);
+
+            if block_location.storage_host_id == new_host_id {
+                assert_eq!(block_location.stored_at, None);
+            } else {
+                assert_ne!(block_location.stored_at, None);
+            }
         }
     }
 }

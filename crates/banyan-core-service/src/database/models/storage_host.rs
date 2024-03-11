@@ -100,15 +100,6 @@ impl StorageHost {
             .fetch_one(conn)
             .await
     }
-
-    pub async fn find_by_id_with_transaction(
-        conn: &mut DatabaseConnection,
-        id: &str,
-    ) -> Result<Self, sqlx::Error> {
-        sqlx::query_as!(Self, "SELECT * FROM storage_hosts WHERE id = $1;", id,)
-            .fetch_one(&mut *conn)
-            .await
-    }
 }
 
 /// Type representing the amount of data a particular user has stored at an individual storage host

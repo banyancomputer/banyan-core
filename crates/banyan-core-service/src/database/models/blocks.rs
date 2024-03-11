@@ -1,6 +1,5 @@
 use sqlx::sqlite::SqliteQueryResult;
 
-use crate::database::models::block_location_state::BlockLocationState;
 use crate::database::{Database, DatabaseConnection};
 
 #[derive(sqlx::FromRow)]
@@ -34,15 +33,19 @@ impl Blocks {
     ) -> Result<Vec<Blocks>, sqlx::Error> {
         sqlx::query_as!(
             Blocks,
-            "
-            SELECT b.id, b.cid, m.id AS metadata_id FROM blocks AS b
+            "SELECT b.id, b.cid, m.id AS metadata_id
+            FROM blocks AS b
                 JOIN block_locations AS bl on b.id = bl.block_id
                 JOIN metadata AS m ON m.id = bl.metadata_id
-            WHERE bl.pruned_at IS NULL AND bl.expired_at IS NULL
-                AND bl.storage_host_id = $1 and bl.state = $2;
+            WHERE bl.pruned_at IS NULL
+                AND bl.expired_at IS NULL
+                AND bl.storage_host_id = $1
+                AND b.id NOT IN (
+                    SELECT bl2.block_id
+                    FROM block_locations AS bl2
+                    WHERE bl2.storage_host_id != $1);
             ",
-            storage_host_id,
-            BlockLocationState::SyncRequired
+            storage_host_id
         )
         .fetch_all(database)
         .await

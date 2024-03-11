@@ -7,7 +7,7 @@ use uuid::Uuid;
 
 use crate::app::AppState;
 use crate::database::models::{
-    BlockLocationState, Blocks, ExistingStorageGrant, Metadata, MinimalBlockLocation, StorageHost,
+    Blocks, ExistingStorageGrant, Metadata, MinimalBlockLocation,
     StorageHostsMetadatasStorageGrants,
 };
 use crate::extractors::StorageProviderIdentity;
@@ -44,13 +44,6 @@ pub async fn handler(
     .await
     .map_err(ReportUploadError::NoUploadAssociation)?;
 
-    let mut state = BlockLocationState::Stable;
-    let staging_host =
-        StorageHost::find_by_id_with_transaction(&mut db_conn, &storage_provider.id).await?;
-    if staging_host.staging {
-        state = BlockLocationState::SyncRequired;
-    }
-
     for block_cid in request.normalized_cids.iter() {
         Blocks::insert_block_cid(&mut db_conn, block_cid)
             .await
@@ -62,9 +55,8 @@ pub async fn handler(
             block_id,
             metadata_id: db_metadata_id.clone(),
             storage_host_id: storage_provider.id.clone(),
-            state: state.clone(),
         }
-        .save(&mut db_conn)
+        .save_with_stored_at(&mut db_conn)
         .await
         .map_err(ReportUploadError::UnableToRecordBlock)?;
     }
@@ -162,7 +154,7 @@ mod tests {
     use uuid::Uuid;
 
     use crate::app::mock_app_state;
-    use crate::database::models::{BlockLocationState, MetadataState, MinimalBlockLocation};
+    use crate::database::models::{BlockLocations, MetadataState};
     use crate::database::test_helpers::{
         create_blocks, create_storage_grant, create_storage_hosts, data_generator, generate_cids,
         normalize_cids, redeem_storage_grant, sample_bucket, sample_metadata, sample_user,
@@ -203,16 +195,7 @@ mod tests {
         .await;
 
         assert!(result.is_ok());
-        let block_locations = MinimalBlockLocation::get_all(&db)
-            .await
-            .expect("block locations");
+        let block_locations = BlockLocations::get_all(&db).await.expect("block locations");
         assert_eq!(block_locations.len(), initial_cids.len());
-        assert_eq!(
-            block_locations
-                .iter()
-                .map(|s| s.state.clone())
-                .collect::<Vec<_>>(),
-            vec![BlockLocationState::SyncRequired; initial_cids.len()]
-        );
     }
 }

@@ -5,7 +5,7 @@ use sqlx::sqlite::{SqlitePoolOptions, SqliteQueryResult};
 use time::OffsetDateTime;
 use uuid::Uuid;
 
-use super::models::{BlockLocationState, NewStorageGrant, StorageHost};
+use super::models::NewStorageGrant;
 use crate::database::models::{BucketType, DealState, MetadataState, SnapshotState, StorageClass};
 use crate::database::{Database, DatabaseConnection};
 use crate::extractors::{SessionIdentity, SessionIdentityBuilder};
@@ -34,21 +34,12 @@ pub(crate) async fn associate_blocks(
     storage_host_id: &str,
     block_ids: impl Iterator<Item = &str>,
 ) {
-    let storage_host = StorageHost::find_by_id_with_transaction(&mut *conn, storage_host_id)
-        .await
-        .expect("storage host");
-    let mut state = BlockLocationState::Stable;
-    if storage_host.staging {
-        state = BlockLocationState::SyncRequired;
-    }
-
     for bid in block_ids {
         sqlx::query!(
-            "INSERT INTO block_locations (metadata_id, storage_host_id, block_id, state) VALUES ($1, $2, $3, $4);",
+            "INSERT INTO block_locations (metadata_id, storage_host_id, block_id, stored_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP);",
             metadata_id,
             storage_host_id,
             bid,
-            state,
         )
         .execute(&mut *conn)
         .await

@@ -6,7 +6,7 @@ use serde::Deserialize;
 
 use crate::app::AppState;
 use crate::database::models::{
-    BlockLocationState, Blocks, ExistingStorageGrant, Metadata, MinimalBlockLocation, StorageHost,
+    Blocks, ExistingStorageGrant, Metadata, MinimalBlockLocation, StorageHost,
     StorageHostsMetadatasStorageGrants,
 };
 use crate::extractors::StorageProviderIdentity;
@@ -52,7 +52,7 @@ pub async fn handler(
     let block_ids = Blocks::get_block_ids(&mut transaction, &request.normalized_cids).await?;
     if block_ids.len() != request.normalized_cids.len() {
         return Err(CompleteRedistributionError::UpdateFailed(format!(
-            "found {} blocks for cids {} for metadata {} from host {} to host {}",
+            "not enough blocks found {} for cids {} for metadata {} from host {} to host {}",
             block_ids.len(),
             request.normalized_cids.len(),
             metadata_id,
@@ -74,7 +74,7 @@ pub async fn handler(
     // deleting more blocks is fine, since (although rare) there are cases of block duplication
     // between uploads (thus between metadata_ids). Those duplicated blocks will not be
     // added to the blocks table, but they will be added to the block_locations table
-    if deleted_blocks > block_ids.len() as u64 {
+    if deleted_blocks < block_ids.len() as u64 {
         return Err(CompleteRedistributionError::UpdateFailed(format!(
             "deleted {} vs cids {} for metadata {} from host {}",
             deleted_blocks,
@@ -84,16 +84,24 @@ pub async fn handler(
         )));
     }
 
-    for block_id in block_ids.iter() {
-        MinimalBlockLocation {
-            block_id: block_id.clone(),
-            metadata_id: metadata_id.clone(),
-            storage_host_id: new_storage_host_id.clone(),
-            state: BlockLocationState::Stable,
-        }
-        .save(&mut transaction)
-        .await
-        .map_err(CompleteRedistributionError::QueryFailed)?;
+    let updated_blocks =
+        MinimalBlockLocation::update_stored_at(&mut transaction, &block_ids).await?;
+    if updated_blocks
+        .iter()
+        .map(|r| r.rows_affected())
+        .sum::<u64>()
+        != block_ids.len() as u64
+    {
+        return Err(CompleteRedistributionError::UpdateFailed(format!(
+            "updated {} vs cids {} for metadata {} from host {}",
+            updated_blocks
+                .iter()
+                .map(|r| r.rows_affected())
+                .sum::<u64>(),
+            block_ids.len(),
+            metadata_id,
+            staging_host.id,
+        )));
     }
 
     transaction.commit().await?;
@@ -244,6 +252,15 @@ mod tests {
             &storage_grant_id,
         )
         .await;
+
+        test_helpers::associate_blocks(
+            &mut conn,
+            &metadata_id,
+            &new_storage_host_id,
+            block_ids.iter().map(String::as_str),
+        )
+        .await;
+
         let block_cids: Vec<String> = get_block_cids(&mut conn, block_ids.clone()).await;
 
         (
@@ -323,7 +340,7 @@ mod tests {
 
         assert!(res.is_err());
         assert_eq!(res.unwrap_err().to_string(), format!(
-            "failed to update the database correctly: found {} blocks for cids {} for metadata {} from host {} to host {}",
+            "failed to update the database correctly: not enough blocks found {} for cids {} for metadata {} from host {} to host {}",
             0,
             1,
             metadata_id,
@@ -337,8 +354,6 @@ mod tests {
         let storage_grant = select_storage_grants_for_host(&db, &staging_host_id).await;
         assert!(storage_grant.is_some());
 
-        let blocks_for_host = select_blocks_for_host(&db, &new_storage_host_id).await;
-        assert_eq!(blocks_for_host.len(), 0);
         let storage_metadata =
             select_storage_metadata_grant_for_host(&db, &new_storage_host_id).await;
         assert!(storage_metadata.is_none());
