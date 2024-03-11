@@ -16,8 +16,7 @@ pub async fn handler(
     let user_id = user_identity.id().to_string();
     let user = User::by_id(&mut trans, &user_id).await?;
     let hot_usage = user.hot_usage(&mut trans).await?.total();
-    //let remaining_tokens = user.remaining_tokens(&mut trans).await?;
-    //let maximum_tokens = user.maximum_tokens(&mut trans).await?;
+    let token_usage = user.token_usage(&mut trans).await?;
 
     let resp = serde_json::json!({
         // Let's deprecate this from future versions once clients can accept the new version

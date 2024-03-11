@@ -65,7 +65,7 @@ pub async fn handler(
         .collect::<Result<Vec<_>, _>>()?;
 
     let size_estimate = normalized_cids.len() as i64 * BLOCK_SIZE;
-    let remaining_tokens = user.remaining_tokens(&mut conn).await?;
+    let remaining_tokens = user.earned_tokens - user.token_usage(&mut conn).await?;
     let tokens_used = size_estimate;
 
     tracing::info!(

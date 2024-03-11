@@ -78,13 +78,10 @@ impl User {
         .await
     }
 
-    pub async fn remaining_tokens(
-        &self,
-        conn: &mut DatabaseConnection,
-    ) -> Result<i64, sqlx::Error> {
+    pub async fn token_usage(&self, conn: &mut DatabaseConnection) -> Result<i64, sqlx::Error> {
         sqlx::query_scalar!(
             r#"
-                SELECT IFNULL(u.earned_tokens - IFNULL(SUM(s.tokens_used), 0), 0)
+                SELECT IFNULL(SUM(s.tokens_used), 0)
                 FROM snapshots AS s 
                 JOIN metadata AS m ON m.id = s.metadata_id
                 JOIN buckets AS b ON b.id = m.bucket_id
@@ -97,7 +94,7 @@ impl User {
         )
         .fetch_one(&mut *conn)
         .await
-        .map(|remaining| remaining as i64)
+        .map(|t| t as i64)
     }
 
     pub async fn award_tokens(
