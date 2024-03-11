@@ -256,20 +256,6 @@ impl User {
 
         Ok(())
     }
-
-    pub async fn maximum_tokens(&self, conn: &mut DatabaseConnection) -> Result<i64, sqlx::Error> {
-        sqlx::query_scalar!(
-            r#"
-               SELECT included_archival
-               FROM subscriptions as s
-               JOIN users as u ON s.id = u.subscription_id
-               WHERE u.id = $1
-            "#,
-            self.id
-        )
-        .fetch_one(&mut *conn)
-        .await
-    }
 }
 
 #[cfg(test)]
