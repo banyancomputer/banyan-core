@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use banyan_task::{CurrentTask, TaskLike};
 use serde::{Deserialize, Serialize};
-use sqlx::{QueryBuilder, Sqlite, Transaction};
+use sqlx::{Sqlite, Transaction};
 
 use crate::app::AppState;
 use crate::database::models::{DealState, MetadataState, SnapshotSegment};

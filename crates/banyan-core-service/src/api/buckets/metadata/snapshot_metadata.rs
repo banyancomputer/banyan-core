@@ -13,7 +13,6 @@ use crate::app::AppState;
 use crate::database::models::{SnapshotState, User};
 use crate::extractors::UserIdentity;
 use crate::tasks::{CreateDealsTask, BLOCK_SIZE};
-use crate::GIBIBYTE;
 
 pub async fn handler(
     user_identity: UserIdentity,
@@ -35,7 +34,7 @@ pub async fn handler(
         ));
     }
 
-    let mut user = User::by_id(&mut conn, &user_identity.id().to_string()).await?;
+    let user = User::by_id(&mut conn, &user_identity.id().to_string()).await?;
 
     let metadata_id = sqlx::query_scalar!(
         r#"SELECT m.id FROM metadata AS m
@@ -65,7 +64,7 @@ pub async fn handler(
         .collect::<Result<Vec<_>, _>>()?;
 
     let size_estimate = normalized_cids.len() as i64 * BLOCK_SIZE;
-    let remaining_tokens = user.earned_tokens - user.token_usage(&mut conn).await?;
+    let remaining_tokens = user.earned_tokens - user.archival_usage(&mut conn).await?;
     let tokens_used = size_estimate;
 
     tracing::info!(

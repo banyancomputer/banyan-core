@@ -14,16 +14,18 @@ pub async fn handler(
     let database = state.database();
     let mut trans = database.begin().await?;
     let user_id = user_identity.id().to_string();
-    let user = User::by_id(&mut trans, &user_id).await?;
+    let user = User::find_by_id(&mut trans, &user_id)
+        .await?
+        .ok_or(UsageError::NotFound)?;
     let hot_usage = user.hot_usage(&mut trans).await?.total();
-    let token_usage = user.token_usage(&mut trans).await?;
+    let archival_usage = user.archival_usage(&mut trans).await?;
 
     let resp = serde_json::json!({
         // Let's deprecate this from future versions once clients can accept the new version
         "size": hot_usage,
+        // These will actually stay, imo
         "hot_usage": hot_usage,
-
-     //   "tokens": remaining_tokens,
+        "archival_usage": archival_usage,
     });
     Ok((StatusCode::OK, Json(resp)).into_response())
 }
@@ -32,6 +34,9 @@ pub async fn handler(
 pub enum UsageError {
     #[error("an error occurred querying the database: {0}")]
     DatabaseFailure(#[from] sqlx::Error),
+
+    #[error("associated data couldn't be found")]
+    NotFound,
 }
 
 impl IntoResponse for UsageError {
@@ -39,6 +44,11 @@ impl IntoResponse for UsageError {
         match self {
             UsageError::DatabaseFailure(_) => {
                 tracing::error!("{self}");
+                let err_msg = serde_json::json!({"msg": "backend service experienced an issue servicing the request"});
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
+            }
+            _ => {
+                tracing::error!("usage lookup error: {self}");
                 let err_msg = serde_json::json!({"msg": "backend service experienced an issue servicing the request"});
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
             }

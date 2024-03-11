@@ -1,10 +1,8 @@
 use serde::Serialize;
 use time::OffsetDateTime;
 
-use crate::database::{
-    models::{HotUsage, SnapshotState, SubscriptionStatus, TaxClass},
-    DatabaseConnection,
-};
+use crate::database::models::{HotUsage, SnapshotState, SubscriptionStatus, TaxClass};
+use crate::database::DatabaseConnection;
 
 #[derive(Debug, Serialize, sqlx::FromRow)]
 pub struct User {
@@ -78,7 +76,7 @@ impl User {
         .await
     }
 
-    pub async fn token_usage(&self, conn: &mut DatabaseConnection) -> Result<i64, sqlx::Error> {
+    pub async fn archival_usage(&self, conn: &mut DatabaseConnection) -> Result<i64, sqlx::Error> {
         sqlx::query_scalar!(
             r#"
                 SELECT IFNULL(SUM(s.tokens_used), 0)

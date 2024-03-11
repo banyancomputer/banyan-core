@@ -10,7 +10,6 @@ use crate::database::models::{BucketType, DealState, MetadataState, SnapshotStat
 use crate::database::{Database, DatabaseConnection};
 use crate::extractors::{SessionIdentity, SessionIdentityBuilder};
 use crate::tasks::BLOCK_SIZE;
-use crate::GIBIBYTE;
 
 pub(crate) async fn associate_blocks(
     conn: &mut DatabaseConnection,
