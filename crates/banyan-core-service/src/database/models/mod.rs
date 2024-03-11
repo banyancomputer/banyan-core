@@ -1,5 +1,4 @@
 mod block_location;
-mod block_location_state;
 mod blocks;
 mod bucket;
 mod bucket_key;
@@ -35,8 +34,9 @@ mod tax_class;
 mod user;
 mod user_total_consumption;
 
+#[cfg(test)]
+pub use block_location::tests::BlockLocations;
 pub use block_location::MinimalBlockLocation;
-pub use block_location_state::BlockLocationState;
 pub use blocks::Blocks;
 pub use bucket::Bucket;
 pub use bucket_key::BucketKey;
