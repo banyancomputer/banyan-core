@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT block_id, metadata_id, storage_host_id, state FROM block_locations;",
+  "query": "SELECT block_id, metadata_id, storage_host_id FROM block_locations;",
   "describe": {
     "columns": [
       {
@@ -17,11 +17,6 @@
         "name": "storage_host_id",
         "ordinal": 2,
         "type_info": "Text"
-      },
-      {
-        "name": "state",
-        "ordinal": 3,
-        "type_info": "Text"
       }
     ],
     "parameters": {
@@ -30,9 +25,8 @@
     "nullable": [
       false,
       false,
-      false,
       false
     ]
   },
-  "hash": "0d0219a583ad250e8020d8d2c4c4014abd349aa7007694e515946d45891bac88"
+  "hash": "ec8caee073c53d4f4631c73244d3edcf9a2d58c72678d78231cf07dbbedc79bc"
 }
