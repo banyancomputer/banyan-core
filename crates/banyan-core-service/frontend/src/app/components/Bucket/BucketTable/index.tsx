@@ -20,13 +20,12 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const params = useParams();
     const bucketId = params.id;
     const messages = useAppSelector(state => state.locales.messages.coponents.bucket.bucketTable);
-    const { uploadFiles, setFiles, files } = useFilesUpload();
+    const { uploadFiles } = useFilesUpload();
     const { getSelectedBucketFiles, moveTo } = useTomb();
     /** Created to prevent sotring logic affect initial buckets array */
     const [bucketCopy, setBucketCopy] = useState(bucket);
     const [sortState, setSortState] = useState<{ criteria: string; direction: 'ASC' | 'DESC' | '' }>({ criteria: 'name', direction: 'DESC' });
     const folderLocation = useFolderLocation();
-    const [areFilesDropped, setAreFilesDropped] = useState(false);
     const siblingFiles = useMemo(() => bucketCopy.files?.filter(file => file.type !== 'dir'), [bucketCopy.files]);
 
     const sort = (criteria: string) => {
@@ -37,11 +36,14 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         preventDefaultDragAction(event);
 
         if (event?.dataTransfer.files.length) {
-            setFiles(Array.from(event.dataTransfer.files).slice(0, 1).map(file => ({ file, status: 'pending' })));
-            setAreFilesDropped(true);
+            try {
+                await uploadFiles(event.dataTransfer.files, bucket, folderLocation);
+            } catch (error: any) {
+                ToastNotifications.error(messages.uploadError, messages.tryAgain, () => { });
+            };
 
             return;
-        }
+        };
 
         const dragData = event.dataTransfer.getData('browserObject');
         if (dragData) {
@@ -59,20 +61,6 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
             };
         }
     };
-
-    useEffect(() => {
-        if (!files.length || !areFilesDropped) { return; }
-
-        (async () => {
-            try {
-                await uploadFiles(bucket, folderLocation);
-                setAreFilesDropped(false);
-            } catch (error: any) {
-                setAreFilesDropped(false);
-                ToastNotifications.error(messages.uploadError, messages.tryAgain, () => { });
-            }
-        })();
-    }, [files, areFilesDropped]);
 
     useEffect(() => {
         if (!bucket.files) { return; }
@@ -98,13 +86,13 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         <div
             onDrop={handleDrop}
             onDragOver={preventDefaultDragAction}
-            className={`w-fit h-full overflow-x-auto bg-secondaryBackground max-h-[calc(100vh-388px)]`}
+            className={`w-fit h-full overflow-x-auto bg-mainBackground max-h-[calc(100vh-388px)]`}
             id="table"
         >
             <div >
                 <table className="table table-pin-rows w-full text-text-600 rounded-xl table-fixed">
                     <thead className="border-b-border-regular text-xxs border-b-2 font-normal text-text-900">
-                        <tr className="bg-secondaryBackground font-normal border-none">
+                        <tr className="bg-mainBackground font-normal border-none">
                             <th className="flex items-center gap-3 pl-0 py-4 text-left font-medium">
                                 <SortCell
                                     criteria="name"

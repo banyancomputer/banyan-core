@@ -20,6 +20,7 @@ export class UserClient extends APIClient {
             acceptedTosAt: rawUser.accepted_tos_at,
 			accountTaxClass: rawUser.account_tax_class,
             subscriptionId: rawUser.subscription_id,
+            subscriptionValidUntil: rawUser.subscription_valid_until,
         };
     };
 };
