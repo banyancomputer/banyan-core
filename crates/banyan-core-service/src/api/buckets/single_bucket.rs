@@ -20,7 +20,7 @@ pub async fn handler(
     let user_id = user_identity.id().to_string();
     let query_result = sqlx::query_as!(
         Bucket,
-        r#"SELECT id, user_id, name, type as 'type: BucketType',
+        r#"SELECT id, user_id, name, replicas, type as 'type: BucketType',
               storage_class as 'storage_class: StorageClass', updated_at as 'updated_at!',
               deleted_at
             FROM buckets

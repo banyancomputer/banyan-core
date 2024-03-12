@@ -275,15 +275,17 @@ pub(crate) async fn create_hot_bucket(
     user_id: &str,
     name: &str,
 ) -> String {
+    let now = OffsetDateTime::now_utc();
     sqlx::query_scalar!(
         r#"INSERT INTO
-                buckets (user_id, name, type, storage_class)
-                VALUES ($1, $2, $3, $4)
+                buckets (user_id, name, type, storage_class, updated_at)
+                VALUES ($1, $2, $3, $4, $5)
                 RETURNING id;"#,
         user_id,
         name,
         BucketType::Interactive,
         StorageClass::Hot,
+        now
     )
     .fetch_one(conn)
     .await

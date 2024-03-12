@@ -56,19 +56,13 @@ pub async fn handler(
     .fetch_one(&database)
     .await
     .map_err(CreateBucketError::BucketKeyCreationFailed)?;
-
-    let bucket = sqlx::query_as!(
-        Bucket,
-        "SELECT id, user_id, name, type as 'type: BucketType',
-             storage_class as 'storage_class: StorageClass', updated_at as 'updated_at!',
-             deleted_at
-           FROM buckets
-           WHERE id = $1;",
-        bucket_id,
-    )
-    .fetch_one(&database)
-    .await
-    .map_err(CreateBucketError::BucketKeyCreationFailed)?;
+    let mut conn = database
+        .acquire()
+        .await
+        .map_err(CreateBucketError::BucketKeyCreationFailed)?;
+    let bucket = Bucket::find_by_id(&mut conn, &bucket_id)
+        .await
+        .map_err(CreateBucketError::BucketKeyCreationFailed)?;
 
     let bucket_key = sqlx::query_as!(
         BucketKey,

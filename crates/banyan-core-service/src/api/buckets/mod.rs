@@ -13,11 +13,12 @@ mod current_total_usage;
 mod current_total_usage_limit;
 
 mod authorization_grants;
+mod bucket_configuration;
 
 use std::error::Error;
 
 use axum::body::HttpBody;
-use axum::routing::get;
+use axum::routing::{get, put};
 use axum::Router;
 
 use crate::app::AppState;
@@ -40,6 +41,10 @@ where
         .nest("/:bucket_id/metadata", metadata::router(state.clone()))
         .nest("/:bucket_id/snapshots", snapshots::router(state.clone()))
         .route("/:bucket_id/usage", get(bucket_usage::handler))
+        .route(
+            "/:bucket_id/configuration",
+            put(bucket_configuration::handler),
+        )
         .route(
             "/:bucket_id/authorization_grants",
             get(authorization_grants::handler),
