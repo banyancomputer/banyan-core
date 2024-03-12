@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { ActionsCell } from '../../../common/ActionsCell';
+import { ActionsCell } from '@components/common/ActionsCell';
 import { FolderActions } from '../FolderActions';
-import { FileCell } from '../../../common/FileCell';
+import { FileCell } from '@components/common/FileCell';
 import { FileRow } from '../FileRow';
 import { DraggingPreview } from '../FileRow/DraggingPreview';
 
@@ -26,7 +26,7 @@ export const FolderRow: React.FC<{
     nestingLevel?: number;
     parrentFolder?: BrowserObject;
 }> = ({ folder, bucket, nestingLevel = 0, path = [], parrentFolder }) => {
-    const messages = useAppSelector(state => state.locales.messages.coponents.bucket.bucketTable.folderRow);
+    const messages = useAppSelector(state => state.locales.messages.coponents.bucket.files.bucketTable.folderRow);
     const folderRef = useRef<HTMLTableRowElement | null>(null);
     const navigate = useNavigate();
     const { getExpandedFolderFiles, getSelectedBucketFiles, moveTo, selectBucket } = useTomb();

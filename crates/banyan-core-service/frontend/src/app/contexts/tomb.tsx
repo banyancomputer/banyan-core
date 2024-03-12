@@ -103,6 +103,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 				let mount;
 				let locked;
 				let isSnapshotValid;
+				const snapshots = await tomb!.listBucketSnapshots(bucket.id());
 				try {
 					mount = await tomb!.mount(bucket.id(), key.privatePem);
 					locked = await mount.locked();
@@ -115,7 +116,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 					storageClass: bucket.storageClass(),
 					bucketType: bucket.bucketType(),
 					files: [],
-					snapshots: [],
+					snapshots,
 					keys: [],
 					locked: locked || false,
 					isSnapshotValid: isSnapshotValid || false

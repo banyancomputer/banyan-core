@@ -16,7 +16,7 @@ import { Close, Copy, Upload } from '@static/images/common';
 import { AddFolderIcon } from '@static/images/buckets';
 
 const BucketHeader = () => {
-    const messages = useAppSelector(state => state.locales.messages.coponents.bucket.header);
+    const messages = useAppSelector(state => state.locales.messages.coponents.bucket.files.header);
     const folderLocation = useFolderLocation();
     const { selectedBucket } = useTomb();
     const params = useParams();
