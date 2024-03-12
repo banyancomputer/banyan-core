@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE user_total_consumption SET hot_storage_bytes = $1, archival_storage_bytes = $2 WHERE user_id = $3 AND slot = $4",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "f4fcae0d164af76c26e9a89b3ef8a73264ab35ff735ec308034ee0c721bf3d63"
+}
