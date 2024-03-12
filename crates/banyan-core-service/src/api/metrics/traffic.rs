@@ -112,7 +112,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn same_slot_and_host_request_results_in_error() {
+    async fn same_slot_and_host_request_works() {
         let db = setup_database().await;
         let state = mock_app_state(db.clone());
         let mut conn = db.begin().await.expect("connection");
