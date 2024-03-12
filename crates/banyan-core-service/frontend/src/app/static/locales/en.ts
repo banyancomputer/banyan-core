@@ -431,6 +431,10 @@ export default {
             seePricingPage: "See our pricing page",
             contactSales: "Contact sales",
             fileSizeExceeded: "File size exceeded. Please retry with a file smaller than 100 MB, or use Banyan CLI."
+        },
+        tomb: {
+            folderAlreadyExists: 'Folder name must be unique – please enter a unique name',
+            driveAlreadyExists: 'Drive name must be unique – please enter a unique name',
         }
     }
 };

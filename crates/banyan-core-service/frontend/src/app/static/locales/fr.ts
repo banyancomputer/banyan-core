@@ -431,6 +431,10 @@ export default {
             seePricingPage: "Voir notre page de tarification",
             contactSales: "Contacter les ventes",
             fileSizeExceeded: "Taille du fichier dépassée. Veuillez réessayer avec un fichier de moins de 100 Mo ou utiliser l'interface de ligne de commande Banyan."
+        },
+        tomb: {
+            folderAlreadyExists: 'Le nom du dossier doit être unique - veuillez saisir un nom unique',
+            driveAlreadyExists: 'Le nom du lecteur doit être unique - veuillez saisir un nom unique'
         }
     }
 }

@@ -19,8 +19,9 @@ import { TermsAndColditionsClient } from '@/api/termsAndConditions';
 import { UserClient } from '@/api/user';
 import { handleNameDuplication } from '@utils/names';
 import { StorageUsageClient } from '@/api/storageUsage';
-import { useAppDispatch } from '../store';
+import { useAppDispatch, useAppSelector } from '../store';
 import { BannerError, setError } from '../store/errors/slice';
+import { ToastNotifications } from '../utils/toastNotifications';
 
 interface TombInterface {
 	tomb: TombWasm | null;
@@ -75,6 +76,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	const [storageUsage, setStorageUsage] = useState<{ usage: number, softLimit: number, hardLimit: number }>({ usage: 0, softLimit: 0, hardLimit: 0 });
 	const [areBucketsLoading, setAreBucketsLoading] = useState<boolean>(true);
 	const folderLocation = useFolderLocation();
+	const { driveAlreadyExists, folderAlreadyExists } = useAppSelector(state => state.locales.messages.contexts.tomb);
 
 	/** Prevents rust recursion error. */
 	const tombMutex = async <T,>(tomb: T, callback: (tomb: T) => Promise<any>) => {
@@ -208,6 +210,13 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
 	/** Creates new bucket with recieved parameters of type and storag class. */
 	const createBucketAndMount = async (name: string, storageClass: string, bucketType: string): Promise<string> => {
+		const existingBuckets = buckets.map(bucket => bucket.name);
+
+		if (existingBuckets.includes(name)) {
+			ToastNotifications.error(driveAlreadyExists);
+
+			throw new Error(driveAlreadyExists);
+		}
 		return await tombMutex(tomb, async tomb => {
 			const key = await getEncryptionKey();
 			const { bucket: wasmBucket, mount: wasmMount } = await tomb!.createBucketAndMount(name, storageClass, bucketType, key.privatePem, key.publicPem);
@@ -281,7 +290,6 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	};
 
 	/** Renames bucket */
-
 	const moveTo = async (bucket: Bucket, from: string[], to: string[], name: string) => {
 		return await await tombMutex(bucket.mount!, async mount => {
 			const extstingFiles = (await mount.ls(to)).map(file => file.name);
@@ -319,6 +327,14 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	/** Creates directory inside selected bucket */
 	const createDirectory = async (bucket: Bucket, path: string[], name: string) => {
 		return await tombMutex(bucket.mount!, async mount => {
+			const extstingFolders = (await mount.ls(path)).map(file => file.name);
+
+			if (extstingFolders.includes(name)) {
+				ToastNotifications.error(folderAlreadyExists);
+
+				throw new Error(folderAlreadyExists);
+			};
+
 			await mount.mkdir([...path, name]);
 			if (path.join('') !== folderLocation.join('')) { return; }
 			const files = await mount.ls(path) || [];
