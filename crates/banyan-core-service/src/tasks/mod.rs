@@ -47,11 +47,11 @@ pub async fn start_background_workers(
     )
     .await;
     // TODO: uncomment after testing with small uploads on production
-    enqueue_task_if_none_in_progress::<RedistributeStagingDataTask>(
-        &task_store,
-        &mut state.database(),
-    )
-    .await;
+    // enqueue_task_if_none_in_progress::<RedistributeStagingDataTask>(
+    //     &task_store,
+    //     &mut state.database(),
+    // )
+    // .await;
 
     WorkerPool::new(task_store.clone(), move || state.clone())
         .configure_queue(QueueConfig::new("default").with_worker_count(5))
