@@ -10,6 +10,8 @@ pub struct ApiSnapshot {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub size: Option<i64>,
+
+    pub state: String,
 }
 
 impl From<Snapshot> for ApiSnapshot {
@@ -18,6 +20,7 @@ impl From<Snapshot> for ApiSnapshot {
             id: val.id,
             metadata_id: val.metadata_id,
             size: val.size,
+            state: val.state.to_string(),
             created_at: val.created_at.unix_timestamp(),
         }
     }
