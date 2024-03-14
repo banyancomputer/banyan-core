@@ -61,9 +61,10 @@ export default {
                 billingAndPayment: "Abrechnung und Zahlung"
             },
             profile: {
-                title: "Profil",
-                language: "Sprache",
-                chooseYourLanguage: "Wählen Sie Ihre Sprache"
+                name: "Name",
+                email: "E-Mail-Adresse",
+                darkMode: "Dunkelmodus",
+                language: "Sprache"
             },
         },
         bucket: {

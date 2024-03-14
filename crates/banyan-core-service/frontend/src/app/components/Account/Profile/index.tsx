@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { LanguageSelect } from '@components/common/LanguageSelect';
 
@@ -7,6 +7,7 @@ import { useAppSelector } from '@/app/store';
 
 export const Profile = () => {
     const messages = useAppSelector(state => state.locales.messages.coponents.account.profile);
+    const { email, displayName } = useAppSelector(state => state.user);
     const [isDarkModaActive, setIsDarkModeActive] = useState(false);
 
     /** Uncomment when dark theme will be updated. */
@@ -25,26 +26,29 @@ export const Profile = () => {
     }, []);
 
     return (
-        <div className="flex flex-col gap-5 px-10">
-            <h2 className="text-lg font-semibold">
-                {messages.title}
-            </h2>
-            <div className="flex justify-between items-center py-5 px-4 border-1 rounded-lg text-text-800 border-border-regular">
-                <div>
-                    <h5 className="font-semibold">Dark mode</h5>
-                </div>
-                <input
-                    type="checkbox"
-                    className="toggle"
-                    checked={isDarkModaActive}
-                    onChange={toggleTheme}
-                />
+        <div className="flex flex-col px-10 text-text-900 text-xs">
+            <div className="flex justify-between items-center p-4 border-b-1 border-border-regular">
+                <span>{messages.name}</span>
+                <span className="font-medium">{displayName}</span>
             </div>
-            <div className="flex justify-between items-center py-5 px-4 border-1 rounded-lg text-text-800 border-border-regular">
-                <div>
-                    <h5 className="font-semibold">{`${messages.language}`}</h5>
-                    <p>{messages.chooseYourLanguage}</p>
-                </div>
+            <div className="flex justify-between items-center p-4 border-b-1 border-border-regular">
+                <span>{messages.email}</span>
+                <span className="font-medium">{email}</span>
+            </div>
+            <div className="flex justify-between items-center p-4 border-b-1 border-border-regular">
+                <span>{messages.darkMode}</span>
+                <span className="flex items-center gap-4 font-medium">
+                    {isDarkModaActive ? "On" : "Off"}
+                    <input
+                        type="checkbox"
+                        className="toggle"
+                        checked={isDarkModaActive}
+                        onChange={toggleTheme}
+                    />
+                </span>
+            </div>
+            <div className="flex justify-between items-center py-2 px-4 border-b-1 border-border-regular">
+                <span>{messages.language}</span>
                 <LanguageSelect />
             </div>
         </div>
