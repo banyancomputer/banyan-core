@@ -64,7 +64,7 @@ pub async fn handler(
         .collect::<Result<Vec<_>, _>>()?;
 
     let size_estimate = normalized_cids.len() as i64 * BLOCK_SIZE;
-    let remaining_tokens = user.earned_tokens - user.archival_usage(&mut conn).await?;
+    let remaining_tokens = user.remaining_tokens(&mut conn).await?;
     let tokens_used = size_estimate;
 
     tracing::info!(
@@ -288,7 +288,7 @@ mod tests {
         let mut user = crate::database::models::User::by_id(&mut conn, &user_id)
             .await
             .unwrap();
-        user.award_tokens(&mut conn, 1).await.unwrap();
+        user.award_tokens(&mut conn).await.unwrap();
 
         let res = handler(
             UserIdentity::Session(get_or_create_session(&mut conn, &user_id).await),

@@ -79,6 +79,16 @@ impl User {
         .await
     }
 
+    pub async fn included_archival(
+        &self,
+        conn: &mut DatabaseConnection,
+    ) -> Result<i64, sqlx::Error> {
+        // Grab the user's included archival tokens based on subscription
+        Subscription::by_id(&mut *conn, &self.subscription_id)
+            .await
+            .map(|subscription| subscription.included_archival * GIBIBYTE)
+    }
+
     pub async fn archival_usage(&self, conn: &mut DatabaseConnection) -> Result<i64, sqlx::Error> {
         sqlx::query_scalar!(
             r#"
@@ -98,12 +108,19 @@ impl User {
         .map(|t| t as i64)
     }
 
+    pub async fn remaining_tokens(
+        &self,
+        conn: &mut DatabaseConnection,
+    ) -> Result<i64, sqlx::Error> {
+        // Ensure that even if a user has earned more than their current plan, they cannot
+        // currently take advantage of it
+        let available = std::cmp::min(self.included_archival(conn).await?, self.earned_tokens);
+        let usage = self.archival_usage(conn).await?;
+        Ok(available - usage)
+    }
+
     pub async fn award_tokens(&mut self, conn: &mut DatabaseConnection) -> Result<(), sqlx::Error> {
-        // Grab the user's included archival tokens based on subscription
-        let included = Subscription::by_id(&mut *conn, &self.subscription_id)
-            .await?
-            .included_archival
-            * GIBIBYTE;
+        let included = self.included_archival(conn).await?;
         let tokens_earned = std::cmp::min(included - self.earned_tokens, included / 6);
 
         // No need to query if we've already maxxed out
