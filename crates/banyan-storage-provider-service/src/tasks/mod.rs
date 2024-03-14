@@ -19,21 +19,17 @@ pub async fn start_background_workers(
     mut shutdown_rx: watch::Receiver<()>,
 ) -> Result<JoinHandle<()>, ()> {
     let task_store = SqliteTaskStore::new(state.database());
-    let database: SqliteConnection = state.database().into();
+    let database = state.database();
 
-    WorkerPool::new(
-        task_store.clone(),
-        move || database.clone(),
-        move || state.clone(),
-    )
-    .configure_queue(QueueConfig::new("default").with_worker_count(5))
-    .register_task_type::<ReportUploadTask>()
-    .register_task_type::<PruneBlocksTask>()
-    .register_recurring_task_type::<ReportHealthTask>()
-    .register_recurring_task_type::<ReportBandwidthMetricsTask>()
-    .start(async move {
-        let _ = shutdown_rx.changed().await;
-    })
-    .await
-    .map_err(|_| ())
+    WorkerPool::new(task_store.clone(), move || state.clone())
+        .configure_queue(QueueConfig::new("default").with_worker_count(5))
+        .register_task_type::<ReportUploadTask>()
+        .register_task_type::<PruneBlocksTask>()
+        .register_recurring_task_type::<ReportHealthTask>()
+        .register_recurring_task_type::<ReportBandwidthMetricsTask>()
+        .start(async move {
+            let _ = shutdown_rx.changed().await;
+        })
+        .await
+        .map_err(|_| ())
 }

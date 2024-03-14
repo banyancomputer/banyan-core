@@ -21,7 +21,9 @@ pub use task_instance_builder::TaskInstanceBuilder;
 pub use task_like::{RecurringTask, TaskLike, TaskLikeExt};
 pub use task_store::{TaskStore, TaskStoreError, TaskStoreMetrics};
 pub use worker::{Worker, WorkerError};
-pub use worker_pool::{ExecuteTaskFn, NextScheduleFn, StateFn, WorkerPool, WorkerPoolError};
+pub use worker_pool::{
+    Contexxt, ExecuteTaskFn, NextScheduleFn, StateFn, WorkerPool, WorkerPoolError,
+};
 
 pub mod tests {
     pub use task_like::tests::TestTask;
