@@ -3,6 +3,9 @@ use time::OffsetDateTime;
 
 use crate::database::models::{HotUsage, SnapshotState, SubscriptionStatus, TaxClass};
 use crate::database::DatabaseConnection;
+use crate::GIBIBYTE;
+
+use super::Subscription;
 
 #[derive(Debug, Serialize, sqlx::FromRow)]
 pub struct User {
@@ -95,11 +98,19 @@ impl User {
         .map(|t| t as i64)
     }
 
-    pub async fn award_tokens(
-        &mut self,
-        conn: &mut DatabaseConnection,
-        tokens_earned: i64,
-    ) -> Result<(), sqlx::Error> {
+    pub async fn award_tokens(&mut self, conn: &mut DatabaseConnection) -> Result<(), sqlx::Error> {
+        // Grab the user's included archival tokens based on subscription
+        let included = Subscription::by_id(&mut *conn, &self.subscription_id)
+            .await?
+            .included_archival
+            * GIBIBYTE;
+        let tokens_earned = std::cmp::min(included - self.earned_tokens, included / 6);
+
+        // No need to query if we've already maxxed out
+        if tokens_earned == 0 {
+            return Ok(());
+        }
+
         sqlx::query!(
             r#"
                 UPDATE users

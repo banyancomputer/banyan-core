@@ -111,21 +111,8 @@ pub async fn update_handler(
 
     // Grab the user associated with the invoice
     let mut user = User::by_id(&mut *conn, &invoice.user_id).await?;
-    // Grab the user's included archival tokens
-    let included = Subscription::find_by_id(&mut *conn, &user.subscription_id)
-        .await?
-        .ok_or(StripeWebhookError::missing_data("db subscription"))?
-        .included_archival
-        * GIBIBYTE;
-    // If the user hasn't met their tier capacity
-    if user.earned_tokens < included {
-        // Give the user their montly allotment up to the maximum
-        user.award_tokens(
-            conn,
-            std::cmp::min(included - user.earned_tokens, included / 6),
-        )
-        .await?;
-    }
+    // Give the user their montly allotment
+    user.award_tokens(conn).await?;
 
     Ok(())
 }
