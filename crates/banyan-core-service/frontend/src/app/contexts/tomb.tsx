@@ -171,7 +171,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 					const approved = key.approved();
 					const id = key.id();
 					const fingerPrint = await prettyFingerprintApiKeyPem(pem);
-					keys.push({ approved, bucket_id: bucket.id, fingerPrint, id, pem })
+					keys.push({ approved, bucket_id: bucket.id, fingerPrint, id, pem });
 				};
 				wasm_bukets.push({
 					...bucket,

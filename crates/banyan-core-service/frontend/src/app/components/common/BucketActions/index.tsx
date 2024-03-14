@@ -137,7 +137,7 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     };
 
     return (
-        <div className={'w-64 text-xs font-medium bg-bucket-actionsBackground rounded-xl overflow-hidden shadow-md z-10 select-none text-bucket-actionsText'}>
+        <div className={'w-64 text-xs font-medium bg-bucket-actionsBackground rounded-md overflow-hidden shadow-md z-10 select-none text-bucket-actionsText'}>
             {bucket.mount ?
                 <>
                     {
