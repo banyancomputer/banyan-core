@@ -27,7 +27,7 @@ pub async fn handler(
     }
 
     Bucket::update_configuration(&mut conn, &bucket_id, &request).await?;
-    Ok((StatusCode::NO_CONTENT, ()).into_response())
+    Ok((StatusCode::OK, Json(())).into_response())
 }
 
 #[derive(Debug, thiserror::Error)]
