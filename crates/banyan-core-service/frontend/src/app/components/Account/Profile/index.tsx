@@ -26,7 +26,7 @@ export const Profile = () => {
     }, []);
 
     return (
-        <div className="flex flex-col px-10 text-text-900 text-xs">
+        <div className="flex flex-col px-6 text-text-900 text-xs">
             <div className="flex justify-between items-center p-4 border-b-1 border-border-regular">
                 <span>{messages.name}</span>
                 <span className="font-medium">{displayName}</span>

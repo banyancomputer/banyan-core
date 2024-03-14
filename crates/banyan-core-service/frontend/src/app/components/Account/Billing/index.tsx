@@ -4,7 +4,7 @@ import { Invoices } from './Invoices';
 
 export const Billing = () => {
     return (
-        <div className="flex flex-col gap-10 px-10 py-5">
+        <div className="flex flex-col gap-10 p-6">
             <div className='flex items-stretch gap-2'>
                 <NextBillingDate />
             </div>
