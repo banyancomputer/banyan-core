@@ -4,7 +4,6 @@ use std::sync::Arc;
 
 use axum::async_trait;
 use banyan_object_store::{ObjectStore, ObjectStoreConnection, ObjectStoreError};
-use banyan_task::Contexxt;
 use jwt_simple::prelude::*;
 use sqlx::{Pool, Sqlite, SqliteConnection, SqlitePool, Transaction};
 
