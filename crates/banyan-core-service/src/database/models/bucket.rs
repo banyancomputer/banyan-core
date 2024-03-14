@@ -509,19 +509,9 @@ impl Bucket {
             query.push_bind(name);
         }
 
-        if let Some(storage_class) = &configuration.storage_class {
-            query.push(" ,storage_class = ");
-            query.push_bind(storage_class);
-        }
-
         if let Some(replicas) = &configuration.replicas {
             query.push(" ,replicas = ");
             query.push_bind(replicas);
-        }
-
-        if let Some(bucket_type) = &configuration.bucket_type {
-            query.push(" ,type = ");
-            query.push_bind(bucket_type);
         }
 
         query.push(" WHERE id = ");
