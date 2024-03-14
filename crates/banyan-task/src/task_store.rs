@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use serde::Serialize;
+use sqlx::{Database, Executor};
 use time::OffsetDateTime;
 
 use crate::{Task, TaskExecError, TaskLike, TaskState};
@@ -21,7 +22,7 @@ pub struct TaskStoreMetrics {
 }
 
 #[async_trait]
-pub trait TaskStore: Send + Sync + 'static {
+pub trait TaskStore<D: Database>: Send + Sync + 'static {
     type Pool: Send;
     type Connection: Send;
 
@@ -47,13 +48,21 @@ pub trait TaskStore: Send + Sync + 'static {
     where
         Self: Sized;
 
+    async fn enqueue_exec<T, E>(conn: &mut E, task: T) -> Result<Option<String>, TaskStoreError>
+    where
+        Self: Sized,
+        T: TaskLike,
+        for<'e> &'e mut E: Executor<'e, Database = D>;
+
     async fn errored(
         &self,
         id: String,
         error: TaskExecError,
     ) -> Result<Option<String>, TaskStoreError> {
         match error {
-            TaskExecError::DeserializationFailed(_) | TaskExecError::Panicked(_) => {
+            TaskExecError::DeserializationFailed(_)
+            | TaskExecError::Panicked(_)
+            | TaskExecError::SchedulingFailed(_) => {
                 self.update_state(id, TaskState::Dead).await?;
                 Ok(None)
             }

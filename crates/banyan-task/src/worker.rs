@@ -1,5 +1,8 @@
 #![allow(dead_code)]
 use std::collections::BTreeMap;
+use std::marker::PhantomData;
+
+use sqlx::Database;
 
 use crate::panic_safe_future::PanicSafeFuture;
 use crate::{
@@ -7,25 +10,28 @@ use crate::{
     TaskExecError, TaskStore, TaskStoreError, MAXIMUM_CHECK_DELAY,
 };
 
-pub struct Worker<Context, S>
+pub struct Worker<Context, S, D>
 where
     Context: Clone + Send + 'static,
-    S: TaskStore + Clone,
+    D: Database + Send,
+    S: TaskStore<D> + Send + Clone,
 {
     name: String,
     queue_config: QueueConfig,
 
     context_fn: StateFn<Context>,
     store: S,
+    _db: PhantomData<D>,
     task_registry: BTreeMap<&'static str, ExecuteTaskFn<Context>>,
     schedule_registry: BTreeMap<&'static str, NextScheduleFn>,
     shutdown_signal: Option<tokio::sync::watch::Receiver<()>>,
 }
 
-impl<Context, S> Worker<Context, S>
+impl<Context, S, D> Worker<Context, S, D>
 where
     Context: Clone + Send + 'static,
-    S: TaskStore + Clone,
+    D: Database,
+    S: TaskStore<D> + Clone,
 {
     pub fn new(
         name: String,
@@ -41,6 +47,7 @@ where
             queue_config,
             context_fn,
             store,
+            _db: PhantomData,
             task_registry,
             schedule_registry,
             shutdown_signal,
@@ -201,6 +208,7 @@ mod tests {
     use std::sync::Arc;
 
     use futures::FutureExt;
+    use sqlx::Sqlite;
     use tokio::sync::watch;
 
     use super::*;
@@ -210,7 +218,7 @@ mod tests {
     use crate::TaskLike;
     const WORKER_NAME: &str = "default";
     const TEST_CONTEXT: TestContext = TestContext {};
-    impl Worker<TestContext, SqliteTaskStore> {
+    impl Worker<TestContext, SqliteTaskStore, Sqlite> {
         async fn next_task(&self, task_name: &str) -> Task {
             self.store
                 .next(WORKER_NAME, &[task_name])
@@ -251,7 +259,7 @@ mod tests {
     fn create_worker(
         ctx: &'static TestContext,
         task_store: SqliteTaskStore,
-    ) -> Worker<TestContext, SqliteTaskStore> {
+    ) -> Worker<TestContext, SqliteTaskStore, Sqlite> {
         let queue_config = QueueConfig::new(WORKER_NAME).with_worker_count(1);
         let task_registry = create_registry();
         let context_fn = Arc::new(move || ctx.clone());

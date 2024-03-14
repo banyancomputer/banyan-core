@@ -37,6 +37,9 @@ pub enum TaskExecError {
     #[error("task execution failed: {0}")]
     ExecutionFailed(String),
 
+    #[error("scheduling task failed: {0}")]
+    SchedulingFailed(String),
+
     #[error("task panicked: {0}")]
     Panicked(#[from] CaughtPanic),
 }

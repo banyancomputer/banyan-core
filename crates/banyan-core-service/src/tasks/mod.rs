@@ -12,6 +12,7 @@ pub use email::{
 };
 pub use host_capacity::HostCapacityTask;
 pub use prune_blocks::PruneBlocksTask;
+use sqlx::SqliteConnection;
 use tokio::sync::watch;
 use tokio::task::JoinHandle;
 
@@ -23,11 +24,12 @@ pub async fn start_background_workers(
 ) -> Result<JoinHandle<()>, &'static str> {
     let task_store = SqliteTaskStore::new(state.database());
 
+    let mut connection: SqliteConnection = state.database();
     let state1 = state.clone();
 
     WorkerPool::new(
         task_store.clone(),
-        move || state1.database(),
+        move || connection,
         move || state.clone(),
     )
     .configure_queue(QueueConfig::new("default").with_worker_count(5))

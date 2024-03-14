@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
+use sqlx::{Database, Executor, Sqlite};
 use time::OffsetDateTime;
 
 use crate::task_store::TaskStore;
@@ -23,40 +24,61 @@ pub trait TaskLike: Serialize + DeserializeOwned + Sync + Send + 'static {
 }
 
 #[async_trait]
-pub trait TaskLikeExt {
-    async fn enqueue<S: TaskStore>(
+pub trait TaskLikeExt<DB>
+where
+    DB: Database,
+{
+    async fn enqueue<S: TaskStore<DB>>(
         self,
         pool: &mut S::Pool,
     ) -> Result<Option<String>, TaskStoreError>;
 
-    async fn enqueue_with_connection<S: TaskStore>(
+    async fn enqueue_with_connection<S: TaskStore<DB>>(
         self,
         conn: &mut S::Connection,
     ) -> Result<Option<String>, TaskStoreError>;
+
+    async fn enqueue_exec<'e, 'c: 'e, E, S: TaskStore<DB>>(
+        self,
+        conn: E,
+    ) -> Result<Option<String>, TaskStoreError>
+    where
+        E: 'e + Executor<'c, Database = DB>;
 }
 
 #[async_trait]
-impl<T> TaskLikeExt for T
+impl<T, DB> TaskLikeExt<DB> for T
 where
     T: TaskLike,
+    DB: Database,
 {
-    async fn enqueue<S: TaskStore>(
+    async fn enqueue<S: TaskStore<DB>>(
         self,
         pool: &mut S::Pool,
     ) -> Result<Option<String>, TaskStoreError> {
         S::enqueue(pool, self).await
     }
 
-    async fn enqueue_with_connection<S: TaskStore>(
+    async fn enqueue_with_connection<S: TaskStore<DB>>(
         self,
         conn: &mut S::Connection,
     ) -> Result<Option<String>, TaskStoreError> {
         S::enqueue_with_connection(conn, self).await
     }
+
+    async fn enqueue_exec<'e, 'c: 'e, E, S: TaskStore<DB>>(
+        self,
+        conn: E,
+    ) -> Result<Option<String>, TaskStoreError>
+    where
+        E: 'e + Executor<'c, Database = DB>,
+    {
+        Ok(None)
+    }
 }
 
 pub trait RecurringTask: TaskLike + Default {
-    fn next_schedule(&self) -> Option<OffsetDateTime>;
+    fn next_schedule(&self) -> Result<Option<OffsetDateTime>, String>;
 }
 
 pub mod tests {
@@ -97,8 +119,8 @@ pub mod tests {
 
     #[async_trait]
     impl RecurringTask for ScheduleTestTask {
-        fn next_schedule(&self) -> Option<OffsetDateTime> {
-            OffsetDateTime::now_utc().checked_add(Duration::minutes(1))
+        fn next_schedule(&self) -> Result<Option<OffsetDateTime>, String> {
+            Ok(OffsetDateTime::now_utc().checked_add(Duration::minutes(5)))
         }
     }
 }

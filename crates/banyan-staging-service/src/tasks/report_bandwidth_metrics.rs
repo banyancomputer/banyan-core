@@ -85,8 +85,8 @@ impl TaskLike for ReportBandwidthMetricsTask {
 }
 
 impl RecurringTask for ReportBandwidthMetricsTask {
-    fn next_schedule(&self) -> Option<OffsetDateTime> {
-        OffsetDateTime::now_utc().checked_add(Duration::minutes(20))
+    fn next_schedule(&self) -> Result<Option<OffsetDateTime>, String> {
+        Ok(OffsetDateTime::now_utc().checked_add(Duration::minutes(20)))
     }
 }
 

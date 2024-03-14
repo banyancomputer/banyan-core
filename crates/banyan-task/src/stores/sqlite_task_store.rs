@@ -2,7 +2,9 @@ use std::time::Duration;
 
 use async_trait::async_trait;
 use sqlx::pool::PoolConnection;
-use sqlx::{Acquire, Sqlite, SqliteConnection, SqlitePool};
+use sqlx::{
+    Acquire, Database, Execute, Executor, Sqlite, SqliteConnection, SqliteExecutor, SqlitePool,
+};
 use time::OffsetDateTime;
 
 use crate::task_store::TaskStore;
@@ -17,21 +19,26 @@ pub struct SqliteTaskStore {
 }
 
 impl SqliteTaskStore {
+    //async fn exec(&self) -> SqliteExecutor
+
     async fn connect(&self) -> PoolConnection<Sqlite> {
         self.pool.acquire().await.unwrap()
     }
 
-    pub async fn is_key_present(
-        conn: &mut SqliteConnection,
+    pub async fn is_key_present<E>(
+        executor: &mut E,
         key: &str,
         task_name: &str,
-    ) -> Result<bool, TaskStoreError> {
+    ) -> Result<bool, TaskStoreError>
+    where
+        for<'e> &'e mut E: SqliteExecutor<'e>,
+    {
         let query_res = sqlx::query_scalar!(
             "SELECT 1 FROM background_tasks WHERE unique_key = $1 AND task_name = $2;",
             key,
             task_name
         )
-        .fetch_optional(&mut *conn)
+        .fetch_optional(&mut *executor)
         .await?;
 
         Ok(query_res.is_some())
@@ -76,15 +83,18 @@ impl SqliteTaskStore {
         Ok(task)
     }
 
-    async fn create(
-        conn: &mut SqliteConnection,
+    async fn create<E>(
+        executor: &mut E,
         task: TaskInstanceBuilder,
-    ) -> Result<Option<String>, TaskStoreError> {
+    ) -> Result<Option<String>, TaskStoreError>
+    where
+        for<'e> &'e mut E: SqliteExecutor<'e>,
+    {
         if let Some(ukey) = &task.unique_key {
             // right now if we encounter a unique key that is already present in the DB we simply
             // don't queue the new instance of that task, the old one will have a bit of priority
             // due to its age.
-            if SqliteTaskStore::is_key_present(conn, ukey, &task.task_name).await? {
+            if SqliteTaskStore::is_key_present(executor, ukey, &task.task_name).await? {
                 return Ok(None);
             }
         }
@@ -110,17 +120,33 @@ impl SqliteTaskStore {
             task.original_task_id,
             task.scheduled_to_run_at,
         )
-        .fetch_one(&mut *conn)
+        .fetch_one(&mut *executor)
         .await?;
 
         Ok(Some(background_task_id))
     }
+
+    async fn some_function<T>(executor: &mut T) -> Result<(), TaskStoreError>
+    where
+        for<'e> &'e mut T: SqliteExecutor<'e>,
+    {
+        let id = "str";
+        let task = sqlx::query_as!(Task, r#"SELECT * FROM background_tasks WHERE id = $1"#, id)
+            .fetch_one(&mut *executor)
+            .await?;
+
+        let task2 = sqlx::query_as!(Task, r#"SELECT * FROM background_tasks WHERE id = $1"#, id)
+            .fetch_one(&mut *executor)
+            .await?;
+        Ok(())
+    }
 }
 
 #[async_trait]
-impl TaskStore for SqliteTaskStore {
+impl TaskStore<Sqlite> for SqliteTaskStore {
     type Pool = SqlitePool;
     type Connection = SqliteConnection;
+    //stype Executor = SqliteExecutor;
 
     async fn enqueue<T: TaskLike>(
         pool: &mut Self::Pool,
@@ -129,9 +155,10 @@ impl TaskStore for SqliteTaskStore {
         let mut transaction = pool.acquire().await?;
         let mut connection = transaction.begin().await?;
         let task = TaskInstanceBuilder::for_task(task).await?;
-        let background_task_id = Self::create(&mut connection, task).await?;
+        //let background_task_id = Self::create(&mut connection, task).await?;
         connection.commit().await?;
-        Ok(background_task_id)
+        //Ok(background_task_id)
+        Ok(None)
     }
 
     async fn enqueue_with_connection<T: TaskLike>(
@@ -141,6 +168,24 @@ impl TaskStore for SqliteTaskStore {
         let task = TaskInstanceBuilder::for_task(task).await?;
         let background_task_id = Self::create(&mut *connection, task).await?;
         Ok(background_task_id)
+    }
+
+    async fn enqueue_exec<T, E>(conn: &mut E, task: T) -> Result<Option<String>, TaskStoreError>
+    where
+        Self: Sized,
+        T: TaskLike,
+        for<'e> &'e mut E: Executor<'e, Database = Sqlite>,
+    {
+        let key = "";
+        let task_name = "";
+        let query_res = sqlx::query_scalar!(
+            "SELECT 1 FROM background_tasks WHERE unique_key = $1 AND task_name = $2;",
+            key,
+            task_name
+        )
+        .fetch_optional(&mut *conn)
+        .await?;
+        Ok(None)
     }
 
     async fn next(
@@ -284,29 +329,12 @@ impl TaskStore for SqliteTaskStore {
         let task = TaskInstanceBuilder::from_task_instance(retried_task)
             .await
             .run_at(next_run_at);
-        let new_task_id = Self::create(&mut transaction, task).await?;
+        //let new_task_id = Self::create(&mut transaction, task).await?;
 
         transaction.commit().await?;
 
-        Ok(new_task_id)
-    }
-
-    async fn schedule_next(
-        &self,
-        task_id: String,
-        next_schedule: OffsetDateTime,
-    ) -> Result<Option<String>, TaskStoreError> {
-        let task_instance = self.get_task(task_id).await?;
-
-        let task = TaskInstanceBuilder::from_task_instance(task_instance)
-            .await
-            .reset_task()
-            .run_at(next_schedule);
-
-        let mut connection = self.pool.acquire().await?;
-        let new_task_id = Self::create(&mut connection, task).await?;
-        connection.close().await?;
-        Ok(new_task_id)
+        //Ok(new_task_id)
+        Ok(None)
     }
 
     async fn update_state(&self, id: String, new_state: TaskState) -> Result<(), TaskStoreError> {
@@ -325,6 +353,25 @@ impl TaskStore for SqliteTaskStore {
         .await?;
 
         Ok(())
+    }
+
+    async fn schedule_next(
+        &self,
+        task_id: String,
+        next_schedule: OffsetDateTime,
+    ) -> Result<Option<String>, TaskStoreError> {
+        let task_instance = self.get_task(task_id).await?;
+
+        let task = TaskInstanceBuilder::from_task_instance(task_instance)
+            .await
+            .reset_task()
+            .run_at(next_schedule);
+
+        let mut connection = self.pool.acquire().await?;
+        //let new_task_id = Self::create(&mut connection, task).await?;
+        connection.close().await?;
+        //Ok(new_task_id)
+        Ok(None)
     }
 
     async fn get_task_in_state(

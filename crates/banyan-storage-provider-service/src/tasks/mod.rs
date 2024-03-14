@@ -7,6 +7,7 @@ use banyan_task::{QueueConfig, SqliteTaskStore, WorkerPool};
 pub use prune_blocks::PruneBlocksTask;
 pub use report_health::ReportHealthTask;
 pub use report_upload::ReportUploadTask;
+use sqlx::SqliteConnection;
 use tokio::sync::watch;
 use tokio::task::JoinHandle;
 
@@ -18,7 +19,7 @@ pub async fn start_background_workers(
     mut shutdown_rx: watch::Receiver<()>,
 ) -> Result<JoinHandle<()>, ()> {
     let task_store = SqliteTaskStore::new(state.database());
-    let database = state.database();
+    let database: SqliteConnection = state.database().into();
 
     WorkerPool::new(
         task_store.clone(),
