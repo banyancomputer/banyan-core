@@ -273,6 +273,27 @@ impl Subscription {
         .await
     }
 
+    pub async fn by_id(
+        conn: &mut DatabaseConnection,
+        subscription_id: &str,
+    ) -> Result<Self, sqlx::Error> {
+        sqlx::query_as!(
+            Self,
+            r#"SELECT id, service_key, tax_class as 'tax_class: TaxClass', title, visible,
+                   plan_base_price as 'plan_base_price: PriceUnits', plan_price_stripe_id,
+                   archival_available, archival_price as 'archival_price: PriceUnits',
+                   archival_stripe_price_id, archival_hard_limit,
+                   hot_storage_price as 'hot_storage_price: PriceUnits', hot_storage_stripe_price_id,
+                   hot_storage_hard_limit, bandwidth_price as 'bandwidth_price: PriceUnits',
+                   bandwidth_stripe_price_id, bandwidth_hard_limit, included_hot_replica_count,
+                   included_hot_storage, included_bandwidth, included_archival, created_at FROM subscriptions
+                 WHERE visible = true AND id = $1;"#,
+            subscription_id,
+        )
+        .fetch_one(&mut *conn)
+        .await
+    }
+
     pub async fn persist_bandwidth_price_stripe_id(
         &mut self,
         conn: &mut DatabaseConnection,
