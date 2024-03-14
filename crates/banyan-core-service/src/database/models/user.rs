@@ -1,11 +1,10 @@
 use serde::Serialize;
 use time::OffsetDateTime;
 
+use super::Subscription;
 use crate::database::models::{HotUsage, SnapshotState, SubscriptionStatus, TaxClass};
 use crate::database::DatabaseConnection;
 use crate::GIBIBYTE;
-
-use super::Subscription;
 
 #[derive(Debug, Serialize, sqlx::FromRow)]
 pub struct User {
