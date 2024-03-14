@@ -57,13 +57,16 @@ pub trait Contexxt<D, E>: Clone + Send + Sync + 'static
 where
     for<'e> &'e mut E: Executor<'e, Database = D>,
 {
-    fn executor(&self) -> E;
+    //
+    //fn executor(&self) -> E;
 }
 
 #[derive(Clone)]
 pub struct WorkerPool<C, S, D, E>
 where
-    C: Contexxt<D, E>,
+    //C: Contexxt<D, E>,
+    C: Clone + Send + Sync + 'static,
+
     D: Database + Sync,
     S: TaskStore<D> + Clone,
     for<'e> &'e mut E: Executor<'e, Database = D>,
@@ -81,7 +84,9 @@ where
 
 impl<C, D, S, E> WorkerPool<C, S, D, E>
 where
-    C: Contexxt<D, E>,
+    //C: Contexxt<D, E>,
+    C: Clone + Send + Sync + 'static,
+
     D: Database + Sync,
     S: TaskStore<D> + Clone,
     for<'e> &'e mut E: Executor<'e, Database = D>,
@@ -281,6 +286,7 @@ fn next_schedule<RT: RecurringTask>(
         .map_err(TaskExecError::SchedulingFailed)
 }
 
+/*
 fn enqueue_recurring_task<RT, S, C, D, E>(
     _db: PhantomData<D>,
     context: C,
@@ -294,5 +300,7 @@ where
     E: std::marker::Send + 'static,
 {
     let mut executor = context.executor();
+
     Box::pin(async move { S::enqueue_exec(&mut executor, RT::default()).await })
 }
+*/

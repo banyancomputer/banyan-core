@@ -107,11 +107,7 @@ impl TaskLike for ReportHealthTask {
 }
 
 impl RecurringTask for ReportHealthTask {
-    fn next_schedule(&self) -> Option<time::OffsetDateTime> {
-        Some(
-            OffsetDateTime::now_utc()
-                .checked_add(time::Duration::minutes(5))
-                .ok_or(()),
-        )
+    fn next_schedule(&self) -> Result<Option<time::OffsetDateTime>, String> {
+        Ok(OffsetDateTime::now_utc().checked_add(time::Duration::minutes(5)))
     }
 }

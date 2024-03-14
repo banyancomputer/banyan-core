@@ -104,11 +104,13 @@ impl State {
     }
 }
 
+/*
 impl Contexxt<Sqlite, &Pool<Sqlite>> for State {
     fn executor<'a>(&self) -> Pin<Box<dyn Future<Output = &Pool<Sqlite>>> {
         Box::pin(async move { self.database() })
     }
 }
+*/
 #[derive(Debug, thiserror::Error)]
 pub enum StateSetupError {
     #[error("unable to access configured upload directory: {0}")]
