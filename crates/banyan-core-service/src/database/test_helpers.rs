@@ -391,12 +391,20 @@ pub(crate) async fn create_user(
     email: &str,
     display_name: &str,
 ) -> String {
+    let subscription_id = sqlx::query_scalar!(
+        "SELECT id FROM subscriptions WHERE service_key = $1 ORDER BY created_at DESC LIMIT 1;",
+        "business",
+    )
+    .fetch_one(&mut *conn)
+    .await
+    .expect("business");
     sqlx::query_scalar!(
-        r#"INSERT INTO users (email, verified_email, display_name)
-                VALUES ($1, true, $2)
+        r#"INSERT INTO users (email, verified_email, display_name, subscription_id)
+                VALUES ($1, true, $2, $3)
                 RETURNING id;"#,
         email,
         display_name,
+        subscription_id
     )
     .fetch_one(conn)
     .await

@@ -1,10 +1,9 @@
 use time::OffsetDateTime;
 
 use crate::app::stripe_helper::{METADATA_SUBSCRIPTION_KEY, METADATA_USER_KEY};
-use crate::database::models::{Invoice, InvoiceStatus, NewInvoice, PriceUnits, Subscription, User};
+use crate::database::models::{Invoice, InvoiceStatus, NewInvoice, PriceUnits, User};
 use crate::database::DatabaseConnection;
 use crate::hooks::stripe::StripeWebhookError;
-use crate::GIBIBYTE;
 
 pub async fn creation_handler(
     conn: &mut DatabaseConnection,
