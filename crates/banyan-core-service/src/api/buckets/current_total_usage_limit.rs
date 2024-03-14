@@ -28,8 +28,8 @@ pub async fn handler(
     let resp = UsageLimitResponse {
         soft_hot_storage_limit: subscription.included_hot_storage * GIBIBYTE,
         hard_hot_storage_limit: subscription.hot_storage_hard_limit.map(|l| l * GIBIBYTE),
-        soft_archival_storage_limit: subscription.included_archival * GIBIBYTE,
-        hard_archival_storage_limit: subscription.archival_hard_limit.map(|l| l * GIBIBYTE),
+        soft_archival_storage_limit: user.earned_tokens,
+        hard_archival_storage_limit: Some(subscription.included_archival * GIBIBYTE),
         size: subscription.included_hot_storage * GIBIBYTE,
     };
 
