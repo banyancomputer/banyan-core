@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::app::AppState;
+use crate::database::models::AuthorizedStorage;
 use crate::database::{map_sqlx_error, BareId, Database, DatabaseError, DbResult};
 use crate::extractors::StorageGrant;
 
@@ -71,16 +72,17 @@ async fn create_storage_grant(
     database: &Database,
     grant: &StorageGrant,
 ) -> Result<Uuid, GrantError> {
-    let grant_id: DbResult<BareId> = sqlx::query_as("INSERT INTO storage_grants (client_id, grant_id, allowed_storage) VALUES ($1, $2, $3) RETURNING id;")
-                .bind(client_id.to_string())
-                .bind(grant.grant_id().to_string())
-                .bind(grant.authorized_data_size() as i64)
-                .fetch_one(database)
-                .await
-                .map_err(map_sqlx_error);
+    let grant_id: DbResult<String> = AuthorizedStorage::save(
+        database,
+        client_id.to_string(),
+        grant.grant_id().to_string(),
+        grant.authorized_data_size() as i64,
+    )
+    .await
+    .map_err(map_sqlx_error);
 
     match grant_id {
-        Ok(gid) => Ok(Uuid::parse_str(gid.id.as_str()).unwrap()),
+        Ok(gid) => Ok(Uuid::parse_str(gid.as_str()).unwrap()),
         Err(DatabaseError::RecordExists) => Err(GrantError::AlreadyRecorded),
         Err(err) => Err(GrantError::Database(err)),
     }

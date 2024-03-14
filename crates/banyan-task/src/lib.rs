@@ -23,15 +23,13 @@ pub use task_store::{TaskStore, TaskStoreError, TaskStoreMetrics};
 pub use worker::{Worker, WorkerError};
 pub use worker_pool::{ExecuteTaskFn, StateFn, WorkerPool, WorkerPoolError};
 
+#[cfg(any(test, feature = "test-utils"))]
 pub mod tests {
     pub use task_like::tests::TestTask;
-    pub use task_store::tests::default_task_store_metrics;
 
-    use super::{task_like, task_store};
+    use super::task_like;
     pub use crate::models::current_task;
-    pub use crate::models::current_task::tests::{
-        default_current_task, increment_current_task_attempt_count,
-    };
+    pub use crate::models::current_task::tests::increment_current_task_attempt_count;
 }
 
 pub const MAXIMUM_CHECK_DELAY: Duration = Duration::from_millis(250);

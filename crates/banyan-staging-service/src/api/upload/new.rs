@@ -18,8 +18,8 @@ pub struct NewUploadRequest {
 }
 
 pub async fn handler(
-    State(state): State<AppState>,
     client: AuthenticatedClient,
+    State(state): State<AppState>,
     TypedHeader(content_len): TypedHeader<ContentLength>,
     Json(request): Json<NewUploadRequest>,
 ) -> Result<Response, UploadError> {

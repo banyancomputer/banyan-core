@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM uploads WHERE metadata_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "7dd350695153a59cdfdc841a2f10fcb35aa52f6255e4250cdccbe744a04ed576"
+}

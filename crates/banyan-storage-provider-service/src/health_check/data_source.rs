@@ -98,9 +98,10 @@ where
 
 #[cfg(test)]
 pub(crate) mod tests {
-    use banyan_task::tests::default_task_store_metrics;
+    use async_trait::async_trait;
+    use banyan_task::TaskStoreMetrics;
 
-    use super::*;
+    use crate::health_check::data_source::{DataSource, DataSourceError, DataSourceMetrics};
 
     #[derive(Clone)]
     pub(crate) enum MockReadiness {
@@ -116,7 +117,7 @@ pub(crate) mod tests {
 
             match self {
                 DependencyFailure => Err(DataSourceError::DependencyFailure),
-                Ready => Ok(DataSourceMetrics::new(default_task_store_metrics())),
+                Ready => Ok(DataSourceMetrics::new(TaskStoreMetrics::default())),
                 ShuttingDown => Err(DataSourceError::ShuttingDown),
             }
         }

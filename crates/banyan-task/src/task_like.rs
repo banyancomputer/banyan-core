@@ -60,6 +60,7 @@ where
     }
 }
 
+#[cfg(any(test, feature = "test-utils"))]
 pub mod tests {
     use std::time::Duration;
 

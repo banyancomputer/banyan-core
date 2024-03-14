@@ -1,3 +1,4 @@
+mod complete_redistribution;
 mod prune_blocks;
 mod report_health;
 mod report_upload;
@@ -22,6 +23,10 @@ where
 
     Router::new()
         .route("/report/:metadata_id", post(report_upload::handler))
+        .route(
+            "/redistribution/:metadata_id",
+            post(complete_redistribution::handler),
+        )
         .route("/prune", post(prune_blocks::handler))
         .route("/report/health", post(report_health::handler))
         .layer(cors_layer)
