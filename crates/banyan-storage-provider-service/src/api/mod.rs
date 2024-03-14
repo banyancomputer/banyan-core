@@ -19,6 +19,8 @@ use uuid::Uuid;
 
 mod block_retrieval;
 mod client_grant;
+mod hooks;
+mod models;
 mod prune_blocks;
 mod upload;
 
@@ -43,6 +45,7 @@ where
         .route("/blocks/:block_id", get(block_retrieval::handler))
         .route("/client_grant", post(client_grant::handler))
         .route("/upload", post(upload::handler))
+        .nest("/hooks", hooks::router(state.clone()))
         .route("/upload/new", post(upload::new::handler))
         .route("/upload/block", post(upload::block::handler))
         .route("/core/prune", post(prune_blocks::handler))

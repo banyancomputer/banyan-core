@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM uploads_blocks WHERE block_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "afc38cbd181d3c332aabf8afe4de98d70e9b1312993b6c748a9d793d9ab018ff"
+}

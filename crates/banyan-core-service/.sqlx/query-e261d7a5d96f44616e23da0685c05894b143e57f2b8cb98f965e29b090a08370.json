@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT * FROM storage_hosts_metadatas_storage_grants WHERE storage_host_id = $1 AND metadata_id = $2;",
+  "describe": {
+    "columns": [
+      {
+        "name": "storage_host_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "metadata_id",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "storage_grant_id",
+        "ordinal": 2,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "e261d7a5d96f44616e23da0685c05894b143e57f2b8cb98f965e29b090a08370"
+}

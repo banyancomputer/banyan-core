@@ -6,7 +6,7 @@ use sqlx::QueryBuilder;
 use time::OffsetDateTime;
 
 use crate::database::models::{BucketType, MinimalBlockLocation, StorageClass};
-use crate::database::{DatabaseConnection, BIND_LIMIT};
+use crate::database::{Database, DatabaseConnection, BIND_LIMIT};
 use crate::tasks::PruneBlocksTask;
 
 /// Used to prevent writes of new metadata versions when there is a newer metadata currently being
@@ -34,6 +34,15 @@ pub struct Bucket {
 }
 
 impl Bucket {
+    pub async fn find_user_for_bucket(
+        conn: &Database,
+        bucket_id: &str,
+    ) -> Result<String, sqlx::Error> {
+        sqlx::query_scalar!("SELECT user_id FROM buckets WHERE id = $1;", bucket_id,)
+            .fetch_one(conn)
+            .await
+    }
+
     /// For a particular bucket mark keys with the fingerprints contained within as having been
     /// approved for use with that bucket. We can't verify the key payload correctly contains valid
     /// copies of the inner filesystem key, so there is a little bit of trust here. Key lifecycle
@@ -107,7 +116,8 @@ impl Bucket {
 
         for chunk in block_cid_list.chunks(BIND_LIMIT) {
             let mut query_builder = sqlx::QueryBuilder::new(
-                r#"SELECT bl.metadata_id AS metadata_id, bl.block_id AS block_id, bl.storage_host_id AS storage_host_id FROM block_locations AS bl
+                r#"SELECT bl.metadata_id AS metadata_id, bl.block_id AS block_id, bl.storage_host_id AS storage_host_id
+                       FROM block_locations AS bl
                        JOIN blocks AS b ON b.id = bl.block_id
                        JOIN metadata AS m ON m.id = bl.metadata_id
                        WHERE bl.expired_at IS NULL
@@ -496,9 +506,10 @@ mod tests {
 
     use time::OffsetDateTime;
 
-    use super::*;
-    use crate::database::models::{MetadataState, SnapshotState, StorageClass};
+    use crate::database::models::bucket::METADATA_WRITE_LOCK_DURATION;
+    use crate::database::models::{Bucket, BucketType, MetadataState, SnapshotState, StorageClass};
     use crate::database::test_helpers::*;
+    use crate::database::DatabaseConnection;
 
     async fn is_bucket_key_approved(
         conn: &mut DatabaseConnection,
