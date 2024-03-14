@@ -9,7 +9,7 @@
     price: None, // "free"
 
     included_allowances: Allowances(
-      archival: 10,
+      archival: 0,
       bandwidth: 10,
 
       storage: 10,

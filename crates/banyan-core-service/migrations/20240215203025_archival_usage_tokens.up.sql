@@ -4,7 +4,7 @@ ALTER TABLE subscriptions ADD COLUMN included_archival INTEGER NOT NULL DEFAULT 
 UPDATE subscriptions SET included_archival = 
 (
 	CASE 
-		WHEN service_key = "starter"  THEN 10
+		WHEN service_key = "starter"  THEN 0
 		WHEN service_key = "lite"     THEN 150
 		WHEN service_key = "business" THEN 3072
 		ELSE 0
