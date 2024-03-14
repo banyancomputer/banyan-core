@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use futures::future::join_all;
 use futures::Future;
-use sqlx::{Database, Executor, Sqlite};
+use sqlx::{Connection, Database, Executor, Sqlite};
 use std::marker::PhantomData;
 use time::OffsetDateTime;
 use tokio::sync::watch;
@@ -31,20 +31,7 @@ pub type ExecuteTaskFn<Context> = Arc<
         + Sync,
 >;
 
-pub type EnqueueRecurringTaskFn<E, D>
-where
-    D: Database,
-    for<'e> &'e mut E: Executor<'e, Database = D>,
-    E: std::marker::Send + 'static,
-= Arc<
-    dyn Fn(
-        PhantomData<D>,
-    ) -> Pin<
-        Box<
-            dyn Fn(&mut E) -> Pin<Box<dyn Future<Output = Result<Option<String>, TaskStoreError>>>>,
-        >,
-    >,
->;
+pub type RecurringTaskDefaultFn = Arc<dyn Fn() -> dyn RecurringTask>;
 
 pub type NextScheduleFn =
     Arc<dyn Fn(Vec<u8>) -> Result<Option<OffsetDateTime>, TaskExecError> + Send + Sync>;
@@ -66,7 +53,7 @@ pub struct WorkerPool<C, S, D>
 where
     //C: Contexxt<D, E>,
     C: Clone + Send + Sync + 'static,
-    D: Database + Sync,
+    D: Database,
     S: TaskStore<D> + Clone,
 {
     _lifetime: PhantomData<D>,
@@ -74,15 +61,15 @@ where
     task_store: S,
     task_registry: BTreeMap<&'static str, ExecuteTaskFn<C>>,
     schedule_registry: BTreeMap<&'static str, NextScheduleFn>,
+    startup_registry: BTreeMap<&'static str, RecurringTaskDefaultFn>,
     queue_tasks: BTreeMap<&'static str, Vec<&'static str>>,
     worker_queues: BTreeMap<&'static str, QueueConfig>,
 }
 
 impl<C, D, S> WorkerPool<C, S, D>
 where
-    //C: Contexxt<D, E>,
     C: Clone + Send + Sync + 'static,
-    D: Database + Sync,
+    D: Database,
     S: TaskStore<D> + Clone,
 {
     pub fn configure_queue(mut self, config: QueueConfig) -> Self {
@@ -101,7 +88,7 @@ where
             //       executor,
             task_registry: BTreeMap::new(),
             schedule_registry: BTreeMap::new(),
-            //startup_registry: BTreeMap::new(),
+            startup_registry: BTreeMap::new(),
             queue_tasks: BTreeMap::new(),
             worker_queues: BTreeMap::new(),
         }
@@ -122,27 +109,30 @@ where
         self
     }
 
-    pub async fn register_recurring_task_type<RT, E>(mut self, executor: &mut E) -> Self
+    pub fn register_recurring_task_type<RT>(mut self) -> Self
     where
         RT: RecurringTask<Context = C>,
-        for<'e> &'e mut E: Executor<'e, Database = D>,
     {
         self.schedule_registry
             .insert(RT::TASK_NAME, Arc::new(next_schedule::<RT>));
 
-        S::enqueue_exec(&mut *executor, RT::default()).await;
+        self.startup_registry
+            .insert(RT::TASK_NAME, Arc::new(recurring_task_default::<RT>));
 
         self.register_task_type::<RT>()
     }
 
-    pub async fn start<F>(self, shutdown_signal: F) -> Result<JoinHandle<()>, WorkerPoolError>
+    pub async fn start<F, E>(
+        self,
+        conn: &mut E,
+        shutdown_signal: F,
+    ) -> Result<JoinHandle<()>, WorkerPoolError>
     where
         F: Future<Output = ()> + Send + 'static,
+        for<'e> &'e mut E: Executor<'e, Database = D>,
     {
-        /*
-        for (task_name, enqueue_recurring_task_fn) in self.startup_registry.clone().into_iter() {
-            let future = enqueue_recurring_task_fn(PhantomData);
-            let result = future(&mut *executor).await;
+        for (task_name, recurring_task_default_fn) in self.startup_registry.clone().into_iter() {
+            let result = S::enqueue_exec(&mut *conn, recurring_task_default_fn()).await;
 
             match result.map_err(|err| {
                 WorkerPoolError::FailedToEnqueueRecurring(task_name.to_string(), err)
@@ -159,7 +149,6 @@ where
                 }
             }
         }
-        */
 
         for (queue_name, queue_tracked_tasks) in self.queue_tasks.iter() {
             if !self.worker_queues.contains_key(queue_name) {
@@ -279,16 +268,9 @@ fn next_schedule<RT: RecurringTask>(
         .map_err(TaskExecError::SchedulingFailed)
 }
 
-/*
-fn enqueue_recurring_task<RT, S, D, E>(
-    _db: PhantomData<D>,
-) -> Pin<Box<dyn Fn(&mut E) -> dyn Future<Output = Result<Option<String>, TaskStoreError>>>>
+fn recurring_task_default<RT>() -> RT
 where
     RT: RecurringTask,
-    D: Database,
-    S: TaskStore<D>,
-    for<'e> &'e mut E: Executor<'e, Database = D>,
 {
-    Box::pin(move |executor| S::enqueue_exec(executor, RT::default()))
+    RT::default()
 }
-*/

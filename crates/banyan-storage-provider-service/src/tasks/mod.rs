@@ -26,13 +26,9 @@ pub async fn start_background_workers(
         .configure_queue(QueueConfig::new("default").with_worker_count(5))
         .register_task_type::<ReportUploadTask>()
         .register_task_type::<PruneBlocksTask>()
-        .register_recurring_task_type::<ReportHealthTask, SqliteConnection>(&mut *connection)
-        .await
-        .register_recurring_task_type::<ReportBandwidthMetricsTask, SqliteConnection>(
-            &mut *connection,
-        )
-        .await
-        .start(async move {
+        .register_recurring_task_type::<ReportHealthTask>()
+        .register_recurring_task_type::<ReportBandwidthMetricsTask>()
+        .start::<SqliteConnection>(&mut *connection, async move {
             let _ = shutdown_rx.changed().await;
         })
         .await
