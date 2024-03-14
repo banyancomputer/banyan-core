@@ -167,7 +167,7 @@ where
                 .map_err(WorkerError::StoreUnavailable)?;
 
             if let Some(task) = next_task {
-                tracing::info!(id = ?task.id, "starting execution of task");
+                tracing::info!(name = ?task.task_name, id = ?task.id, "starting execution of task");
                 self.run(task).await?;
                 continue;
             }

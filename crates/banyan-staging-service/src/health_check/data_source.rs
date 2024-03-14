@@ -98,8 +98,6 @@ where
 
 #[cfg(test)]
 pub(crate) mod tests {
-    use banyan_task::tests::default_task_store_metrics;
-
     use super::*;
 
     #[derive(Clone)]
@@ -116,7 +114,7 @@ pub(crate) mod tests {
 
             match self {
                 DependencyFailure => Err(DataSourceError::DependencyFailure),
-                Ready => Ok(DataSourceMetrics::new(default_task_store_metrics())),
+                Ready => Ok(DataSourceMetrics::new(TaskStoreMetrics::default())),
                 ShuttingDown => Err(DataSourceError::ShuttingDown),
             }
         }

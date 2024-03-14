@@ -34,8 +34,11 @@ pub struct StorageHostToken {
     pub subject: String,
 }
 
+#[derive(Default)]
 pub struct StorageProviderIdentity {
     pub id: String,
+    pub name: String,
+    pub staging: bool,
 }
 
 #[async_trait]
@@ -79,7 +82,7 @@ where
 
         let maybe_storage_host = sqlx::query_as!(
             StorageHost,
-            "SELECT id, name, pem FROM storage_hosts WHERE fingerprint = $1",
+            "SELECT id, name, pem, staging FROM storage_hosts WHERE fingerprint = $1",
             key_id
         )
         .fetch_optional(&database)
@@ -123,6 +126,8 @@ where
 
         Ok(StorageProviderIdentity {
             id: storage_host.id,
+            name: storage_host.name,
+            staging: storage_host.staging,
         })
     }
 }
@@ -174,4 +179,5 @@ struct StorageHost {
     id: String,
     name: String,
     pem: String,
+    staging: bool,
 }

@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO uploads (client_id, metadata_id, reported_size, base_path, state)\n                VALUES ($1, $2, $3, $4, $5)\n                RETURNING id;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "fe4bc8c04d9e866e5d21e91ada83300b4430ac920bd387be21b5aabfe07de23c"
+}

@@ -3,7 +3,6 @@ use std::time::Duration;
 
 use banyan_task::TaskLikeExt;
 use cid::Cid;
-use time::OffsetDateTime;
 use uuid::Uuid;
 
 use crate::database::Database;
@@ -13,8 +12,8 @@ pub const UPLOAD_SESSION_DURATION: Duration = Duration::from_secs(60 * 60 * 6);
 
 pub async fn start_upload(
     db: &Database,
-    client_id: &Uuid,
-    metadata_id: &Uuid,
+    client_id: &String,
+    metadata_id: &String,
     reported_size: u64,
 ) -> Result<Upload, sqlx::Error> {
     let mut upload = Upload {
@@ -29,8 +28,8 @@ pub async fn start_upload(
     upload.id = sqlx::query_scalar!(
         r#"
         INSERT INTO
-            uploads (client_id, metadata_id, reported_size, base_path, state)
-            VALUES ($1, $2, $3, $4, $5)
+            uploads (client_id, metadata_id, reported_size, base_path, state, created_at)
+            VALUES ($1, $2, $3, $4, $5, DATETIME('now'))
             RETURNING id;
         "#,
         upload.client_id,
@@ -87,7 +86,8 @@ pub async fn complete_upload(
         UPDATE uploads SET
                 state = 'complete',
                 final_size = $1,
-                integrity_hash = $2
+                integrity_hash = $2,
+                finished_at = DATETIME('now')
             WHERE id = $3;
         "#,
         total_size,
@@ -149,30 +149,6 @@ pub async fn report_upload(
     Ok(())
 }
 
-pub async fn get_upload(
-    db: &Database,
-    client_id: Uuid,
-    upload_id: &str,
-) -> Result<Option<Upload>, sqlx::Error> {
-    let client_id = client_id.to_string();
-    let now = OffsetDateTime::now_utc() - UPLOAD_SESSION_DURATION;
-
-    sqlx::query_as!(
-        Upload,
-        r#"
-        SELECT id, client_id, metadata_id, base_path, reported_size, state FROM uploads
-            WHERE client_id = $1
-            AND id = $2
-            AND created_at >= $3;
-        "#,
-        client_id,
-        upload_id,
-        now
-    )
-    .fetch_optional(db)
-    .await
-}
-
 pub async fn write_block_to_tables(
     db: &Database,
     upload_id: &str,
@@ -221,4 +197,37 @@ pub struct Upload {
     pub base_path: String,
     pub reported_size: i64,
     pub state: String,
+}
+
+impl Upload {
+    pub async fn get_by_metadata_id(
+        db: &Database,
+        metadata_id: &str,
+    ) -> Result<Option<Upload>, sqlx::Error> {
+        sqlx::query_as!(
+            Upload,
+            r#"
+            SELECT id, client_id, metadata_id, base_path, reported_size, state
+            FROM uploads
+            WHERE metadata_id = $1;
+        "#,
+            metadata_id
+        )
+        .fetch_optional(db)
+        .await
+    }
+
+    pub async fn find_by_id(db: &Database, id: &str) -> Result<Option<Upload>, sqlx::Error> {
+        sqlx::query_as!(
+            Upload,
+            r#"
+             SELECT id, client_id, metadata_id, base_path, reported_size, state
+             FROM uploads
+             WHERE id = $1;
+         "#,
+            id
+        )
+        .fetch_optional(db)
+        .await
+    }
 }

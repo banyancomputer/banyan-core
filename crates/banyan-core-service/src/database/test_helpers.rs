@@ -11,6 +11,23 @@ use crate::database::{Database, DatabaseConnection};
 use crate::extractors::{SessionIdentity, SessionIdentityBuilder};
 use crate::tasks::BLOCK_SIZE;
 
+pub(crate) async fn link_storage_metadata_and_grant(
+    conn: &mut DatabaseConnection,
+    storage_host_id: &str,
+    metadata_id: &str,
+    storage_grant_id: &str,
+) {
+    sqlx::query!(
+            "INSERT INTO storage_hosts_metadatas_storage_grants (storage_host_id, metadata_id, storage_grant_id) VALUES ($1, $2, $3);",
+            storage_host_id,
+            metadata_id,
+            storage_grant_id,
+        )
+            .execute(&mut *conn)
+            .await
+            .expect("storage_host_metadata");
+}
+
 pub(crate) async fn associate_blocks(
     conn: &mut DatabaseConnection,
     metadata_id: &str,
@@ -19,7 +36,7 @@ pub(crate) async fn associate_blocks(
 ) {
     for bid in block_ids {
         sqlx::query!(
-            "INSERT INTO block_locations (metadata_id, storage_host_id, block_id) VALUES ($1, $2, $3);",
+            "INSERT INTO block_locations (metadata_id, storage_host_id, block_id, stored_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP);",
             metadata_id,
             storage_host_id,
             bid,
@@ -97,9 +114,8 @@ pub(crate) async fn create_storage_hosts(
     let host_name = host_name.to_string();
     let staging = host_name.contains("staging");
     sqlx::query_scalar!(
-        "
-            INSERT INTO storage_hosts (name, url, fingerprint, pem, region, used_storage, available_storage, staging)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id;
+        "INSERT INTO storage_hosts (name, url, fingerprint, pem, region, used_storage, available_storage, staging)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id;
         ",
         host_name,
         host_url,
@@ -121,7 +137,7 @@ pub(crate) async fn create_deal(
     size: Option<i64>,
     accepted_by: Option<String>,
 ) -> Result<String, sqlx::Error> {
-    let user_email = format!("deal_user{}@test.tld", uuid::Uuid::new_v4());
+    let user_email = format!("deal_user{}@test.tld", Uuid::new_v4());
     let user_id = sample_user(database, &user_email).await;
     let bucket_id = create_hot_bucket(database, user_id.as_str(), "test_bucket").await;
     let metadata_id = create_metadata(
@@ -313,14 +329,16 @@ pub(crate) async fn create_storage_grant(
     user_id: &str,
     authorized_amount: i64,
 ) -> String {
-    NewStorageGrant {
+    let grant = NewStorageGrant {
         storage_host_id,
         user_id,
         authorized_amount,
     }
     .save(conn)
     .await
-    .expect("storage grant creation")
+    .expect("storage grant creation");
+
+    grant.id
 }
 
 pub(crate) async fn redeem_storage_grant(
@@ -450,6 +468,29 @@ pub(crate) async fn setup_database() -> Database {
     conn.commit().await.expect("db close");
 
     pool
+}
+pub(crate) async fn sample_blocks(
+    conn: &mut DatabaseConnection,
+    number_of_blocks: usize,
+    metadata_id: &str,
+    storage_host_id: &str,
+    grant_id: &str,
+) -> Vec<String> {
+    let initial_cids: Vec<_> =
+        normalize_cids(generate_cids(data_generator(0..number_of_blocks))).collect();
+    let block_ids = create_blocks(&mut *conn, initial_cids.iter().map(String::as_str)).await;
+
+    associate_blocks(
+        &mut *conn,
+        metadata_id,
+        storage_host_id,
+        block_ids.iter().map(String::as_str),
+    )
+    .await;
+
+    link_storage_metadata_and_grant(&mut *conn, storage_host_id, metadata_id, grant_id).await;
+
+    block_ids
 }
 
 pub(crate) async fn get_or_create_session(
