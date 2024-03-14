@@ -166,30 +166,25 @@ impl SqliteTaskStore {
 
 #[async_trait]
 impl TaskStore for SqliteTaskStore {
-    type Pool = SqlitePool;
     type Connection = SqliteConnection;
 
     async fn enqueue<T: TaskLike>(
-        pool: &mut Self::Pool,
+        conn: &mut Self::Connection,
         task: T,
     ) -> Result<Option<String>, TaskStoreError> {
-        let mut connection = pool.acquire().await?;
-        let mut transaction = connection.begin().await?;
-
         let task = TaskInstanceBuilder::for_task(task).await?;
-        let background_task_id = Self::create(&mut transaction, task).await?;
-
-        transaction.commit().await?;
+        let background_task_id = Self::create(conn, task).await?;
 
         Ok(background_task_id)
     }
 
     async fn enqueue_with_connection<T: TaskLike>(
-        connection: &mut Self::Connection,
+        conn: &mut Self::Connection,
         task: T,
     ) -> Result<Option<String>, TaskStoreError> {
         let task = TaskInstanceBuilder::for_task(task).await?;
-        let background_task_id = Self::create(&mut *connection, task).await?;
+        let background_task_id = Self::create(&mut *conn, task).await?;
+
         Ok(background_task_id)
     }
 

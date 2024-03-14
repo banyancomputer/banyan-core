@@ -22,7 +22,6 @@ pub struct TaskStoreMetrics {
 
 #[async_trait]
 pub trait TaskStore: Send + Sync + 'static {
-    type Pool: Send;
     type Connection: Send;
 
     async fn cancel(&self, id: String) -> Result<(), TaskStoreError> {
@@ -36,7 +35,7 @@ pub trait TaskStore: Send + Sync + 'static {
     }
 
     async fn enqueue<T: TaskLike>(
-        pool: &mut Self::Pool,
+        conn: &mut Self::Connection,
         task: T,
     ) -> Result<Option<String>, TaskStoreError>
     where
