@@ -1,4 +1,5 @@
 mod block_location;
+mod blocks;
 mod bucket;
 mod bucket_key;
 mod bucket_type;
@@ -21,6 +22,7 @@ mod snapshot_segments;
 mod snapshot_state;
 mod storage_class;
 mod storage_grant;
+mod storage_grants_metadata;
 mod storage_host;
 mod storage_host_total_consumption;
 mod stripe_checkout_session;
@@ -32,7 +34,10 @@ mod tax_class;
 mod user;
 mod user_total_consumption;
 
+#[cfg(test)]
+pub use block_location::tests::BlockLocations;
 pub use block_location::MinimalBlockLocation;
+pub use blocks::Blocks;
 pub use bucket::Bucket;
 pub use bucket_key::BucketKey;
 pub use bucket_type::BucketType;
@@ -55,8 +60,9 @@ pub use snapshot::Snapshot;
 pub use snapshot_segments::SnapshotSegment;
 pub use snapshot_state::SnapshotState;
 pub use storage_class::StorageClass;
-pub use storage_grant::NewStorageGrant;
-pub use storage_host::{SelectedStorageHost, StorageHost, UserStorageReport};
+pub use storage_grant::{ExistingStorageGrant, NewStorageGrant};
+pub use storage_grants_metadata::StorageHostsMetadatasStorageGrants;
+pub use storage_host::{StorageHost, UserStorageReport};
 pub use storage_host_total_consumption::StorageHostTotalConsumption;
 pub use stripe_checkout_session::{NewStripeCheckoutSession, StripeCheckoutSession};
 pub use stripe_checkout_session_status::StripeCheckoutSessionStatus;

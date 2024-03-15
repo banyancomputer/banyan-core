@@ -2,10 +2,29 @@ use sqlx::sqlite::SqlitePoolOptions;
 use time::OffsetDateTime;
 
 use crate::database::models::BandwidthMetrics;
-use crate::database::{Database, DatabaseConnection};
+use crate::database::Database;
+
+pub(crate) async fn create_storage_grant(
+    conn: &Database,
+    client_id: &str,
+    grant_id: &str,
+    allowed_storage: i64,
+) -> String {
+    sqlx::query_scalar!(
+        r#"INSERT INTO storage_grants (grant_id, client_id, allowed_storage)
+                VALUES ($1, $2, $3)
+                RETURNING id;"#,
+        grant_id,
+        client_id,
+        allowed_storage,
+    )
+    .fetch_one(conn)
+    .await
+    .expect("storage grant creation")
+}
 
 pub(crate) async fn create_client(
-    conn: &mut DatabaseConnection,
+    conn: &Database,
     platform_id: &str,
     fingerprint: &str,
     public_key: &str,

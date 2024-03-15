@@ -16,7 +16,32 @@ pub struct SqliteTaskStore {
 }
 
 impl SqliteTaskStore {
-    pub async fn is_key_present(
+    pub async fn is_present<T: TaskLike>(
+        conn: &mut SqliteConnection,
+        task: &T,
+    ) -> Result<bool, TaskStoreError> {
+        let unique_key = task.unique_key();
+        if unique_key.is_none() {
+            let res = sqlx::query_scalar!(
+                "SELECT 1 FROM background_tasks WHERE task_name = $1",
+                T::TASK_NAME
+            )
+            .fetch_optional(&mut *conn)
+            .await?;
+            return Ok(res.unwrap_or(0) == 1);
+        }
+        let res = sqlx::query_scalar!(
+            "SELECT 1 FROM background_tasks WHERE task_name = $1 AND unique_key = $2",
+            T::TASK_NAME,
+            unique_key
+        )
+        .fetch_optional(&mut *conn)
+        .await?;
+
+        Ok(res.unwrap_or(0) == 1)
+    }
+
+    async fn is_key_present(
         conn: &mut SqliteConnection,
         key: &str,
         task_name: &str,
@@ -165,7 +190,6 @@ impl TaskStore for SqliteTaskStore {
     ) -> Result<Option<String>, TaskStoreError> {
         let task = TaskInstanceBuilder::for_task(task).await?;
         let background_task_id = Self::create(&mut *connection, task).await?;
-
         Ok(background_task_id)
     }
 
@@ -392,7 +416,7 @@ impl From<SqliteTaskStoreMetrics> for TaskStoreMetrics {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::tests::{default_task_store_metrics, TestTask};
+    use crate::tests::TestTask;
     use crate::TaskLikeExt;
 
     #[tokio::test]
@@ -492,7 +516,7 @@ pub mod tests {
     async fn empty_store_works() {
         let task_store = empty_task_store().await;
         let metrics = task_store.metrics().await.unwrap();
-        assert_eq!(metrics, default_task_store_metrics());
+        assert_eq!(metrics, TaskStoreMetrics::default());
     }
 
     pub async fn singleton_task_store() -> (SqliteTaskStore, Option<String>) {

@@ -35,8 +35,8 @@ pub async fn handler(
     // Start the upload with these specifications
     let upload = start_upload(
         &db,
-        &client.id(),
-        &request.metadata_id,
+        &client.id().to_string(),
+        &request.metadata_id.to_string(),
         reported_body_length,
     )
     .await?;

@@ -12,6 +12,7 @@ use uuid::Uuid;
 
 use super::{fingerprint_validator, MAXIMUM_TOKEN_AGE};
 use crate::app::PlatformName;
+use crate::database::models::{AuthorizedStorage, Clients};
 use crate::database::Database;
 
 pub struct AuthenticatedClient {
@@ -89,7 +90,7 @@ where
 
         let database = Database::from_ref(state);
 
-        let client_id = id_from_fingerprint(&database, &key_id).await?;
+        let client_id = Clients::id_from_fingerprint(&database, &key_id).await?;
         let client_verification_key = ES384PublicKey::from_pem(&client_id.public_key)
             .map_err(Self::Rejection::CorruptDatabaseKey)?;
 
@@ -118,7 +119,10 @@ where
             return Err(Self::Rejection::BadNonce);
         }
 
-        let authorized_storage = current_authorized_storage(&database, &client_id.id).await?;
+        let authorized_storage =
+            AuthorizedStorage::current_authorized_storage(&database, &client_id.id)
+                .await?
+                .ok_or(AuthenticatedClientError::MissingGrant)?;
         let consumed_storage = current_consumed_storage(&database, &client_id.id).await?;
 
         let internal_id = match Uuid::parse_str(&client_id.id) {
@@ -163,24 +167,6 @@ where
     }
 }
 
-pub async fn current_authorized_storage(
-    db: &Database,
-    client_id: &str,
-) -> Result<AuthorizedStorage, AuthenticatedClientError> {
-    let auth_stor: Option<AuthorizedStorage> = sqlx::query_as(
-        "SELECT grant_id, allowed_storage AS allowed_bytes FROM storage_grants
-                     WHERE client_id = $1
-                     ORDER BY created_at DESC
-                     LIMIT 1;",
-    )
-    .bind(client_id)
-    .fetch_optional(db)
-    .await
-    .map_err(AuthenticatedClientError::DbFailure)?;
-
-    auth_stor.ok_or(AuthenticatedClientError::MissingGrant)
-}
-
 pub async fn current_consumed_storage(
     db: &Database,
     client_id: &str,
@@ -194,23 +180,6 @@ pub async fn current_consumed_storage(
             .map_err(AuthenticatedClientError::DbFailure)?;
 
     Ok(maybe_consumed_storage.unwrap_or(0) as u64)
-}
-
-pub async fn id_from_fingerprint(
-    db: &Database,
-    fingerprint: &str,
-) -> Result<RemoteId, AuthenticatedClientError> {
-    let maybe_remote_id: Option<RemoteId> =
-        sqlx::query_as("SELECT id, platform_id, public_key FROM clients WHERE fingerprint = $1;")
-            .bind(fingerprint)
-            .fetch_optional(db)
-            .await
-            .map_err(AuthenticatedClientError::DbFailure)?;
-
-    match maybe_remote_id {
-        Some(id) => Ok(id),
-        None => Err(AuthenticatedClientError::UnknownFingerprint),
-    }
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -231,7 +200,7 @@ pub enum AuthenticatedClientError {
     CorruptPlatformId(uuid::Error),
 
     #[error("an unexpected database failure before the authentication could be verified")]
-    DbFailure(sqlx::Error),
+    DbFailure(#[from] sqlx::Error),
 
     #[error("bearer token key ID does not conform to our expectations")]
     InvalidKeyId,
@@ -278,12 +247,6 @@ impl IntoResponse for AuthenticatedClientError {
             }
         }
     }
-}
-
-#[derive(sqlx::FromRow)]
-pub struct AuthorizedStorage {
-    pub grant_id: String,
-    pub allowed_bytes: i64,
 }
 
 #[derive(FromRow)]

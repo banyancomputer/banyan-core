@@ -47,9 +47,10 @@ impl EmailTransport {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::email::config::SmtpConnection;
+    use crate::email::error::EmailError;
+    use crate::email::transport::EmailTransport;
 
-    #[test]
     fn stub_transport() -> Result<(), EmailError> {
         let transport = EmailTransport::new(None)?;
         match transport {

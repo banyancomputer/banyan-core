@@ -50,8 +50,7 @@ impl TaskLike for ReportAllUsersConsumptionTask {
 }
 #[cfg(test)]
 mod test {
-    use banyan_task::tests::default_current_task;
-    use banyan_task::TaskLike;
+    use banyan_task::{CurrentTask, TaskLike};
 
     use crate::app::mock_app_state;
     use crate::database::models::{Metadata, MetadataState, UserTotalConsumption};
@@ -80,7 +79,7 @@ mod test {
         setup_user_and_data(&mut conn, "test2@example.com").await;
 
         let result = ReportAllUsersConsumptionTask::default()
-            .run(default_current_task(), state.0)
+            .run(CurrentTask::default(), state.0)
             .await;
 
         assert!(result.is_ok());
