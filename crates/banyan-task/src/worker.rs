@@ -87,7 +87,7 @@ where
                         }
                     }
                     Err(err) => {
-                        tracing::error!("task failed with error: {err}");
+                        tracing::error!(name = task.task_name, id = task.id, error = ?err,"task failed");
                         match self
                             .store
                             .errored(
@@ -107,7 +107,7 @@ where
                 }
             }
             Err(_) => {
-                tracing::error!("task panicked");
+                tracing::error!(name = task.task_name, id = task.id, "task panicked");
                 // todo: save panic message into the task.error and save it back to the memory
                 // store somehow...
                 self.store
@@ -167,8 +167,11 @@ where
                 .map_err(WorkerError::StoreUnavailable)?;
 
             if let Some(task) = next_task {
-                tracing::info!(name = ?task.task_name, id = ?task.id, "starting execution of task");
+                let task_name = task.task_name.clone();
+                let task_id = task.id.clone();
+                tracing::info!(name = ?task_name, id = ?task_id, "starting execution of task");
                 self.run(task).await?;
+                tracing::info!(name = ?task_name, id = ?task_id, "finished execution of task");
                 continue;
             }
 
