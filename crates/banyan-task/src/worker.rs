@@ -172,13 +172,13 @@ where
                 tracing::info!(
                     task_name = task_name,
                     task_id = task_id,
-                    "starting execution of task"
+                    "starting execution of"
                 );
                 self.run(task).await?;
                 tracing::info!(
                     task_name = task_name,
                     task_id = task_id,
-                    "finished execution of task"
+                    "finished execution of"
                 );
                 continue;
             }
