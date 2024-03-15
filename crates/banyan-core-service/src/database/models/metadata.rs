@@ -223,6 +223,16 @@ impl Metadata {
 
         Ok(())
     }
+
+    pub async fn find_by_bucket_id(
+        database: &Database,
+        bucket_id: &str,
+    ) -> Result<Vec<Self>, sqlx::Error> {
+        sqlx::query_as!(Self, "SELECT * FROM metadata WHERE bucket_id = $1;", bucket_id)
+            .fetch_all(database)
+            .await
+    }
+
     pub async fn find_by_id(database: &Database, id: &str) -> Result<Self, sqlx::Error> {
         sqlx::query_as!(Self, "SELECT * FROM metadata WHERE id = $1;", id)
             .fetch_one(database)

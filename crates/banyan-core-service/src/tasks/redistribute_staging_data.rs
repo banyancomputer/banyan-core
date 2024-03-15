@@ -222,7 +222,7 @@ mod tests {
             .create_async()
             .await;
 
-        let all_blocks = BlockLocations::get_all(&db).await.expect("get all blocks");
+        let all_blocks = BlockLocations::find_all(&db).await.expect("get all blocks");
         assert_eq!(all_blocks.len(), block_ids.len());
         let res = RedistributeStagingDataTask::default()
             .run(CurrentTask::default(), mock_app_state(db.clone()).0)
@@ -231,7 +231,7 @@ mod tests {
         println!("{:?}", res);
 
         assert!(res.is_ok());
-        let all_block_locations = BlockLocations::get_all(&db).await.expect("get all blocks");
+        let all_block_locations = BlockLocations::find_all(&db).await.expect("get all blocks");
         assert_eq!(all_block_locations.len(), block_ids.len() * 2);
         for block_location in all_block_locations.iter() {
             assert_eq!(block_location.expired_at, None);

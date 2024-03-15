@@ -8,6 +8,20 @@ pub struct StorageHostsMetadatasStorageGrants {
 }
 
 impl StorageHostsMetadatasStorageGrants {
+    // pub async fn find_by_bucket_id(
+    //     conn: &Database,
+    //     bucket_id: &str,
+    // ) -> Result<Vec<StorageHostsMetadatasStorageGrants>, sqlx::Error> {
+    //     sqlx::query_as!(
+    //         Self::drop(),
+    //         r#"SELECT * FROM storage_hosts_metadatas_storage_grants
+    //            WHERE metadata_id IN (SELECT id FROM metadatas WHERE bucket_id = $1);"#,
+    //         bucket_id
+    //     )
+    //     .fetch_all(conn)
+    //     .await
+    // }
+
     pub async fn find_by_metadata_and_storage_host(
         conn: &Database,
         metadata_id: &str,

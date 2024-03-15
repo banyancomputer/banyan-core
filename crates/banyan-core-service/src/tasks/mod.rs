@@ -8,6 +8,7 @@ mod report_all_storage_hosts_consumption;
 mod report_all_users_consumption;
 mod report_storage_host_consumption;
 mod report_user_consumption;
+mod replicate_data;
 
 use banyan_task::{QueueConfig, SqliteTaskStore, WorkerPool};
 pub use create_deals::{CreateDealsTask, BLOCK_SIZE};
@@ -26,6 +27,7 @@ use tokio::task::JoinHandle;
 
 use crate::app::AppState;
 use crate::tasks::redistribute_staging_data::RedistributeStagingDataTask;
+use crate::tasks::replicate_data::ReplicateDataTask;
 use crate::tasks::report_all_storage_hosts_consumption::ReportAllStorageHostsConsumptionTask;
 use crate::tasks::report_all_users_consumption::ReportAllUsersConsumptionTask;
 
@@ -39,6 +41,7 @@ pub async fn start_background_workers(
         .register_task_type::<PruneBlocksTask>()
         .register_task_type::<CreateDealsTask>()
         .register_task_type::<RedistributeStagingDataTask>()
+        .register_task_type::<ReplicateDataTask>()
         .register_task_type::<ReportUserConsumptionTask>()
         .register_task_type::<ReportAllUsersConsumptionTask>()
         .register_task_type::<ReportStorageHostConsumptionTask>()
