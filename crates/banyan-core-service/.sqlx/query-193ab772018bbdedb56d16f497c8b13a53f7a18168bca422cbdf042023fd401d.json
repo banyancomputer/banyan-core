@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, user_id, name, type as 'type: BucketType',\n              storage_class as 'storage_class: StorageClass', updated_at as 'updated_at!',\n              deleted_at\n            FROM buckets\n            WHERE user_id = $1 AND id = $2 AND deleted_at IS NULL;",
+  "query": "SELECT id, user_id, name, replicas, type as 'type: BucketType',\n              storage_class as 'storage_class: StorageClass', updated_at as 'updated_at!',\n              deleted_at\n            FROM buckets\n            WHERE user_id = $1 AND id = $2 AND deleted_at IS NULL;",
   "describe": {
     "columns": [
       {
@@ -19,23 +19,28 @@
         "type_info": "Text"
       },
       {
-        "name": "type: BucketType",
+        "name": "replicas",
         "ordinal": 3,
-        "type_info": "Text"
+        "type_info": "Int64"
       },
       {
-        "name": "storage_class: StorageClass",
+        "name": "type: BucketType",
         "ordinal": 4,
         "type_info": "Text"
       },
       {
-        "name": "updated_at!",
+        "name": "storage_class: StorageClass",
         "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "updated_at!",
+        "ordinal": 6,
         "type_info": "Datetime"
       },
       {
         "name": "deleted_at",
-        "ordinal": 6,
+        "ordinal": 7,
         "type_info": "Datetime"
       }
     ],
@@ -48,9 +53,10 @@
       false,
       false,
       false,
+      false,
       true,
       true
     ]
   },
-  "hash": "5f95e85837690041959916980582ef5162260d0098a65fb01a8186dd844ea0f2"
+  "hash": "193ab772018bbdedb56d16f497c8b13a53f7a18168bca422cbdf042023fd401d"
 }
