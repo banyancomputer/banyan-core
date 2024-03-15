@@ -431,9 +431,11 @@ pub mod tests {
     #[tokio::test]
     async fn update_state_works() {
         let (task_store, _task_id) = singleton_task_store().await;
+        let mut conn = task_store.pool.clone().acquire().await.expect("acquire");
+
         let task = TestTask;
         let task_id = task
-            .enqueue::<SqliteTaskStore>(&mut task_store.pool.clone())
+            .enqueue::<SqliteTaskStore>(&mut conn)
             .await
             .expect("enqueue")
             .expect("task create_from_taskd");
@@ -449,9 +451,11 @@ pub mod tests {
     #[tokio::test]
     async fn error_tasks_are_retried() {
         let (task_store, _task_id) = singleton_task_store().await;
+        let mut conn = task_store.pool.clone().acquire().await.expect("acquire");
+
         let task = TestTask;
         let task_id = task
-            .enqueue::<SqliteTaskStore>(&mut task_store.pool.clone())
+            .enqueue::<SqliteTaskStore>(&mut conn)
             .await
             .expect("enqueue")
             .expect("task created");
@@ -469,10 +473,12 @@ pub mod tests {
     #[tokio::test]
     async fn timeout_tasks_are_retried() {
         let (task_store, _task_id) = singleton_task_store().await;
+        let mut conn = task_store.pool.clone().acquire().await.expect("acquire");
+
         let task = TestTask;
 
         let task_id = task
-            .enqueue::<SqliteTaskStore>(&mut task_store.pool.clone())
+            .enqueue::<SqliteTaskStore>(&mut conn)
             .await
             .expect("enqueue")
             .expect("task create_from_taskd");
@@ -490,9 +496,11 @@ pub mod tests {
     #[tokio::test]
     async fn non_error_tasks_are_not_retried() {
         let (task_store, _task_id) = singleton_task_store().await;
+        let mut conn = task_store.pool.clone().acquire().await.expect("acquire");
+
         let task = TestTask;
         let task_id = task
-            .enqueue::<SqliteTaskStore>(&mut task_store.pool.clone())
+            .enqueue::<SqliteTaskStore>(&mut conn)
             .await
             .expect("enqueue")
             .expect("task create_from_taskd");
@@ -516,8 +524,10 @@ pub mod tests {
 
     pub async fn singleton_task_store() -> (SqliteTaskStore, Option<String>) {
         let task_store = empty_task_store().await;
+        let mut conn = task_store.pool.clone().acquire().await.expect("acquire");
+
         let task_id = TestTask
-            .enqueue::<SqliteTaskStore>(&mut task_store.pool.clone())
+            .enqueue::<SqliteTaskStore>(&mut conn)
             .await
             .expect("enqueue");
         (task_store, task_id)
