@@ -14,6 +14,8 @@ use std::sync::OnceLock;
 use std::time::Duration;
 
 pub use admin_identity::AdminIdentity;
+#[cfg(test)]
+pub(crate) use api_identity::tests::ApiIdentityBuilder;
 pub use api_identity::ApiIdentity;
 pub use server_base::ServerBase;
 #[cfg(test)]

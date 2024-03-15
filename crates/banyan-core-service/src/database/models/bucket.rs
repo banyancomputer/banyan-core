@@ -2,9 +2,11 @@ use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 
 use banyan_task::TaskLikeExt;
+use sqlx::sqlite::SqliteQueryResult;
 use sqlx::QueryBuilder;
 use time::OffsetDateTime;
 
+use crate::api::models::ApiBucketConfiguration;
 use crate::database::models::{BucketType, MinimalBlockLocation, StorageClass};
 use crate::database::{Database, DatabaseConnection, BIND_LIMIT};
 use crate::tasks::PruneBlocksTask;
@@ -28,6 +30,7 @@ pub struct Bucket {
     pub name: String,
     pub r#type: BucketType,
     pub storage_class: StorageClass,
+    pub replicas: i64,
 
     pub updated_at: OffsetDateTime,
     pub deleted_at: Option<OffsetDateTime>,
@@ -491,6 +494,47 @@ impl Bucket {
         }
 
         Ok(())
+    }
+
+    pub async fn update_configuration(
+        conn: &mut DatabaseConnection,
+        bucket_id: &str,
+        configuration: &ApiBucketConfiguration,
+    ) -> Result<SqliteQueryResult, sqlx::Error> {
+        let mut query =
+            sqlx::QueryBuilder::new("UPDATE buckets SET updated_at = CURRENT_TIMESTAMP");
+
+        if let Some(name) = &configuration.name {
+            query.push(" ,name = ");
+            query.push_bind(name);
+        }
+
+        if let Some(replicas) = &configuration.replicas {
+            query.push(" ,replicas = ");
+            query.push_bind(replicas);
+        }
+
+        query.push(" WHERE id = ");
+        query.push_bind(bucket_id);
+
+        query.build().execute(&mut *conn).await
+    }
+
+    pub async fn find_by_id(
+        conn: &mut DatabaseConnection,
+        bucket_id: &str,
+    ) -> Result<Bucket, sqlx::Error> {
+        let bucket = sqlx::query_as!(
+             Bucket,
+            "SELECT id, user_id, name, replicas, type as 'type: BucketType', storage_class as 'storage_class: StorageClass',
+                updated_at as 'updated_at!', deleted_at
+            FROM buckets WHERE id = $1;",
+            bucket_id,
+        )
+        .fetch_one(&mut *conn)
+        .await?;
+
+        Ok(bucket)
     }
 }
 
@@ -1239,18 +1283,9 @@ mod tests {
         assert_eq!(deleted_metadata_state, MetadataState::Deleted);
 
         // Get the bucket and ensure it's soft deleted
-        let deleted_bucket = sqlx::query_as!(
-            Bucket,
-            r#"SELECT id, user_id, name, type as 'type: BucketType',
-                   storage_class as 'storage_class: StorageClass', updated_at as 'updated_at!',
-                   deleted_at
-                 FROM buckets
-                 WHERE id = $1;"#,
-            bucket_id,
-        )
-        .fetch_one(&mut *conn)
-        .await
-        .expect("query success");
+        let deleted_bucket = Bucket::find_by_id(&mut conn, &bucket_id)
+            .await
+            .expect("query success");
 
         let deleted_metadata_updated_at = sqlx::query_scalar!(
             "SELECT updated_at as 'updated_at: OffsetDateTime' FROM metadata WHERE id = $1;",
@@ -1336,7 +1371,7 @@ mod tests {
         // Get the bucket and ensure it's soft deleted
         let deleted_bucket = sqlx::query_as!(
             Bucket,
-            r#"SELECT id, user_id, name, type as 'type: BucketType',
+            r#"SELECT id, user_id, name, replicas, type as 'type: BucketType',
                     storage_class as 'storage_class: StorageClass', updated_at as 'updated_at!',
                     deleted_at
                     FROM buckets
