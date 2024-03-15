@@ -2,13 +2,13 @@ import { useEffect, useState } from 'react';
 
 import { LanguageSelect } from '@components/common/LanguageSelect';
 
-import { getLocalStorageItem, setLocalStorageItem } from '@/app/utils/localStorage';
-import { useAppSelector } from '@/app/store';
+import { getLocalStorageItem, setLocalStorageItem } from '@app/utils/localStorage';
+import { useAppSelector } from '@app/store';
 
 export const Profile = () => {
     const messages = useAppSelector(state => state.locales.messages.coponents.account.profile);
     const { email, displayName } = useAppSelector(state => state.user);
-    const [isDarkModaActive, setIsDarkModeActive] = useState(false);
+    const [isDarkModeActive, setIsDarkModeActive] = useState(false);
 
     /** Uncomment when dark theme will be updated. */
     const toggleTheme = () => {
@@ -38,11 +38,11 @@ export const Profile = () => {
             <div className="flex justify-between items-center p-4 border-b-1 border-border-regular">
                 <span>{messages.darkMode}</span>
                 <span className="flex items-center gap-4 font-medium">
-                    {isDarkModaActive ? "On" : "Off"}
+                    {isDarkModeActive ? "On" : "Off"}
                     <input
                         type="checkbox"
                         className="toggle"
-                        checked={isDarkModaActive}
+                        checked={isDarkModeActive}
                         onChange={toggleTheme}
                     />
                 </span>
