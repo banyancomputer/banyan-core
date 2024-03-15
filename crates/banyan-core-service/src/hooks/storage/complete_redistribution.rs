@@ -24,7 +24,7 @@ pub async fn handler(
     Path(metadata_id): Path<String>,
     Json(request): Json<CompleteRedistributionRequest>,
 ) -> Result<Response, CompleteRedistributionError> {
-    let mut database = state.database();
+    let database = state.database();
     // validate the metadata exists
     Metadata::find_by_id(&database, &metadata_id.to_string()).await?;
 
@@ -104,23 +104,23 @@ pub async fn handler(
         )));
     }
 
-    transaction.commit().await?;
-
     // Now, let's re-evaluate the capacity of the new storage host
     HostCapacityTask::new(staging_host.id)
-        .enqueue::<banyan_task::SqliteTaskStore>(&mut database)
+        .enqueue::<banyan_task::SqliteTaskStore>(&mut *transaction)
         .await
         .map_err(CompleteRedistributionError::UnableToEnqueueTask)?;
     //  revaluate the capacity of staging service
     HostCapacityTask::new(new_storage_host_id)
-        .enqueue::<banyan_task::SqliteTaskStore>(&mut database)
+        .enqueue::<banyan_task::SqliteTaskStore>(&mut *transaction)
         .await
         .map_err(CompleteRedistributionError::UnableToEnqueueTask)?;
 
     DeleteStagingDataTask::new(metadata_id, request.normalized_cids.clone())
-        .enqueue::<banyan_task::SqliteTaskStore>(&mut database)
+        .enqueue::<banyan_task::SqliteTaskStore>(&mut *transaction)
         .await
         .map_err(CompleteRedistributionError::UnableToEnqueueTask)?;
+
+    transaction.commit().await?;
 
     Ok((StatusCode::NO_CONTENT, ()).into_response())
 }

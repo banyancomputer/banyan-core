@@ -43,8 +43,7 @@ pub async fn handler(
     if SqliteTaskStore::is_present(&mut transaction, &task).await? {
         return Ok((StatusCode::OK, ()).into_response());
     }
-    task.enqueue_with_connection::<SqliteTaskStore>(&mut transaction)
-        .await?;
+    task.enqueue::<SqliteTaskStore>(&mut transaction).await?;
     transaction.commit().await?;
 
     Ok((StatusCode::OK, ()).into_response())
