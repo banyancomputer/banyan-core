@@ -5,7 +5,7 @@ use http::StatusCode;
 
 use crate::api::models::ApiSelectedStorageHostAdmin;
 use crate::app::AppState;
-use crate::database::models::SelectedStorageHost;
+use crate::database::models::StorageHost;
 use crate::extractors::AdminIdentity;
 
 pub async fn handler(
@@ -13,7 +13,7 @@ pub async fn handler(
     State(state): State<AppState>,
 ) -> Result<Response, AllStorageHostsError> {
     let database = state.database();
-    let query_result = sqlx::query_as!(SelectedStorageHost, r#"SELECT * FROM storage_hosts;"#,)
+    let query_result = sqlx::query_as!(StorageHost, r#"SELECT * FROM storage_hosts;"#,)
         .fetch_all(&database)
         .await
         .map_err(AllStorageHostsError::DatabaseFailure)?;

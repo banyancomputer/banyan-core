@@ -28,8 +28,9 @@ impl MailgunHookRequest {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::hooks::mailgun::MailgunEvent;
+    use uuid::Uuid;
+
+    use crate::hooks::mailgun::{MailgunEvent, MailgunHookRequest};
 
     static JSON_DATA: &str = r#"
     {

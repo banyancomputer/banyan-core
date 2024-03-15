@@ -20,7 +20,7 @@ pub enum ReportHealthTaskError {
     Http(http::StatusCode, Url),
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Default)]
 pub struct ReportHealthTask;
 
 #[derive(Deserialize, Serialize)]

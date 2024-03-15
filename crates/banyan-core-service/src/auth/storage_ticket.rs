@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use jwt_simple::prelude::*;
 use serde::{Deserialize, Serialize};

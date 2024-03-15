@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT block_id FROM block_locations WHERE storage_host_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "name": "block_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "2e9d74ba76782b601c34faeb7ff8a5f1bc9c9cbb2e5cf44b820f9f737a368cf7"
+}

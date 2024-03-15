@@ -33,14 +33,8 @@ pub enum ReportBandwidthMetricsTaskError {
     EndSlotParsingError(#[from] ComponentRange),
 }
 
-#[derive(Deserialize, Serialize)]
-pub struct ReportBandwidthMetricsTask {}
-
-impl ReportBandwidthMetricsTask {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
+#[derive(Deserialize, Serialize, Default)]
+pub struct ReportBandwidthMetricsTask;
 
 #[async_trait]
 impl TaskLike for ReportBandwidthMetricsTask {
@@ -63,7 +57,7 @@ impl TaskLike for ReportBandwidthMetricsTask {
 
         for metrics in partitioned_metrics {
             let meter_traffic_request = MeterTrafficRequest {
-                user_id: metrics.user_id.as_str(),
+                user_id: &metrics.user_id,
                 ingress: metrics.ingress,
                 egress: metrics.egress,
                 slot: metrics.created_at.unix_timestamp(),
@@ -71,7 +65,7 @@ impl TaskLike for ReportBandwidthMetricsTask {
             if let Err(err) = client.report_user_bandwidth(meter_traffic_request).await {
                 tracing::error!(
                     "could not report metrics for user {} err {}",
-                    metrics.user_id.as_str(),
+                    &metrics.user_id,
                     err
                 );
                 continue;
@@ -177,8 +171,6 @@ fn partition_bandwidth_metrics_by_hour_and_user(
 #[cfg(test)]
 mod tests {
     use std::ops::Add;
-
-    use time::OffsetDateTime;
 
     use super::*;
     use crate::database::test_helpers::{create_bandwidth_metric, setup_database};

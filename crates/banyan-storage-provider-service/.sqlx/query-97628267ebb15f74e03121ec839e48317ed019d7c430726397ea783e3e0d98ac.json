@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id AS allowed_bytes FROM storage_grants\n                     WHERE client_id = $1 AND grant_id = $2;",
+  "describe": {
+    "columns": [
+      {
+        "name": "allowed_bytes",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "97628267ebb15f74e03121ec839e48317ed019d7c430726397ea783e3e0d98ac"
+}

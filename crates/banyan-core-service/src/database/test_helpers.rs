@@ -1,5 +1,6 @@
 use std::ops::Range;
 
+use jwt_simple::algorithms::ES384KeyPair;
 use rand::Rng;
 use sqlx::sqlite::{SqlitePoolOptions, SqliteQueryResult};
 use time::OffsetDateTime;
@@ -8,8 +9,26 @@ use uuid::Uuid;
 use super::models::NewStorageGrant;
 use crate::database::models::{BucketType, DealState, MetadataState, SnapshotState, StorageClass};
 use crate::database::{Database, DatabaseConnection};
-use crate::extractors::{SessionIdentity, SessionIdentityBuilder};
+use crate::extractors::{ApiIdentity, ApiIdentityBuilder, SessionIdentity, SessionIdentityBuilder};
 use crate::tasks::BLOCK_SIZE;
+use crate::utils::keys::fingerprint_public_key;
+
+pub(crate) async fn link_storage_metadata_and_grant(
+    conn: &mut DatabaseConnection,
+    storage_host_id: &str,
+    metadata_id: &str,
+    storage_grant_id: &str,
+) {
+    sqlx::query!(
+            "INSERT INTO storage_hosts_metadatas_storage_grants (storage_host_id, metadata_id, storage_grant_id) VALUES ($1, $2, $3);",
+            storage_host_id,
+            metadata_id,
+            storage_grant_id,
+        )
+            .execute(&mut *conn)
+            .await
+            .expect("storage_host_metadata");
+}
 
 pub(crate) async fn associate_blocks(
     conn: &mut DatabaseConnection,
@@ -19,7 +38,7 @@ pub(crate) async fn associate_blocks(
 ) {
     for bid in block_ids {
         sqlx::query!(
-            "INSERT INTO block_locations (metadata_id, storage_host_id, block_id) VALUES ($1, $2, $3);",
+            "INSERT INTO block_locations (metadata_id, storage_host_id, block_id, stored_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP);",
             metadata_id,
             storage_host_id,
             bid,
@@ -97,9 +116,8 @@ pub(crate) async fn create_storage_hosts(
     let host_name = host_name.to_string();
     let staging = host_name.contains("staging");
     sqlx::query_scalar!(
-        "
-            INSERT INTO storage_hosts (name, url, fingerprint, pem, region, used_storage, available_storage, staging)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id;
+        "INSERT INTO storage_hosts (name, url, fingerprint, pem, region, used_storage, available_storage, staging)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id;
         ",
         host_name,
         host_url,
@@ -121,7 +139,7 @@ pub(crate) async fn create_deal(
     size: Option<i64>,
     accepted_by: Option<String>,
 ) -> Result<String, sqlx::Error> {
-    let user_email = format!("deal_user{}@test.tld", uuid::Uuid::new_v4());
+    let user_email = format!("deal_user{}@test.tld", Uuid::new_v4());
     let user_id = sample_user(database, &user_email).await;
     let bucket_id = create_hot_bucket(database, user_id.as_str(), "test_bucket").await;
     let metadata_id = create_metadata(
@@ -259,15 +277,17 @@ pub(crate) async fn create_hot_bucket(
     user_id: &str,
     name: &str,
 ) -> String {
+    let now = OffsetDateTime::now_utc();
     sqlx::query_scalar!(
         r#"INSERT INTO
-                buckets (user_id, name, type, storage_class)
-                VALUES ($1, $2, $3, $4)
+                buckets (user_id, name, type, storage_class, updated_at)
+                VALUES ($1, $2, $3, $4, $5)
                 RETURNING id;"#,
         user_id,
         name,
         BucketType::Interactive,
         StorageClass::Hot,
+        now
     )
     .fetch_one(conn)
     .await
@@ -313,14 +333,16 @@ pub(crate) async fn create_storage_grant(
     user_id: &str,
     authorized_amount: i64,
 ) -> String {
-    NewStorageGrant {
+    let grant = NewStorageGrant {
         storage_host_id,
         user_id,
         authorized_amount,
     }
     .save(conn)
     .await
-    .expect("storage grant creation")
+    .expect("storage grant creation");
+
+    grant.id
 }
 
 pub(crate) async fn redeem_storage_grant(
@@ -451,7 +473,77 @@ pub(crate) async fn setup_database() -> Database {
 
     pool
 }
+pub(crate) async fn sample_blocks(
+    conn: &mut DatabaseConnection,
+    number_of_blocks: usize,
+    metadata_id: &str,
+    storage_host_id: &str,
+    grant_id: &str,
+) -> Vec<String> {
+    let initial_cids: Vec<_> =
+        normalize_cids(generate_cids(data_generator(0..number_of_blocks))).collect();
+    let block_ids = create_blocks(&mut *conn, initial_cids.iter().map(String::as_str)).await;
 
+    associate_blocks(
+        &mut *conn,
+        metadata_id,
+        storage_host_id,
+        block_ids.iter().map(String::as_str),
+    )
+    .await;
+
+    link_storage_metadata_and_grant(&mut *conn, storage_host_id, metadata_id, grant_id).await;
+
+    block_ids
+}
+
+pub(crate) async fn get_or_create_identity(
+    conn: &mut DatabaseConnection,
+    user_id: &str,
+) -> ApiIdentity {
+    sqlx::query_scalar!(r#"SELECT email FROM users WHERE id = $1;"#, user_id,)
+        .fetch_one(&mut *conn)
+        .await
+        .expect("user query");
+
+    let device_api_key = sqlx::query!(
+        "SELECT id, pem, fingerprint FROM device_api_keys WHERE user_id = $1;",
+        user_id
+    )
+    .fetch_optional(&mut *conn)
+    .await
+    .expect("device api query");
+
+    match device_api_key {
+        Some(api_key) => ApiIdentityBuilder {
+            user_id: Uuid::parse_str(user_id).expect("user id"),
+            key_fingerprint: api_key.fingerprint.clone(),
+        }
+        .build(),
+        None => {
+            let key_pair = ES384KeyPair::generate();
+            let pem = key_pair.to_pem().expect("pem key");
+            let fingerprint = fingerprint_public_key(&key_pair.public_key());
+
+            sqlx::query_scalar!(
+                r#"INSERT INTO device_api_keys (user_id, fingerprint, pem)
+                    VALUES ($1, $2, $3)
+                    RETURNING id;"#,
+                user_id,
+                fingerprint,
+                pem,
+            )
+            .fetch_one(&mut *conn)
+            .await
+            .expect("device api key query");
+            ApiIdentityBuilder {
+                user_id: Uuid::parse_str(user_id).expect("user id"),
+                key_fingerprint: fingerprint.clone(),
+            }
+            .build()
+        }
+    }
+}
 pub(crate) async fn get_or_create_session(
     conn: &mut DatabaseConnection,
     user_id: &str,

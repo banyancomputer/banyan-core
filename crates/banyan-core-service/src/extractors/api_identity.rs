@@ -208,3 +208,47 @@ struct DeviceApiKey {
     user_id: String,
     pem: String,
 }
+
+#[cfg(test)]
+pub mod tests {
+    use uuid::Uuid;
+
+    use super::*;
+    use crate::database::test_helpers;
+
+    pub struct ApiIdentityBuilder {
+        pub user_id: Uuid,
+        pub key_fingerprint: String,
+    }
+
+    impl Default for ApiIdentityBuilder {
+        fn default() -> Self {
+            Self {
+                user_id: Uuid::new_v4(),
+                key_fingerprint: String::default(),
+            }
+        }
+    }
+    impl ApiIdentityBuilder {
+        pub fn build(self) -> ApiIdentity {
+            ApiIdentity {
+                user_id: self.user_id,
+                key_fingerprint: self.key_fingerprint,
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn test_api_identity_builder() {
+        let db = test_helpers::setup_database().await;
+        let mut conn = db.acquire().await.expect("connection");
+
+        let user_id = test_helpers::sample_user(&mut conn, "test@example.com").await;
+        let api_identity = test_helpers::get_or_create_identity(&mut conn, &user_id).await;
+
+        assert_eq!(api_identity.user_id().to_string(), user_id);
+
+        let retry_identity = test_helpers::get_or_create_identity(&mut conn, &user_id).await;
+        assert_eq!(retry_identity.key_fingerprint, api_identity.key_fingerprint);
+    }
+}

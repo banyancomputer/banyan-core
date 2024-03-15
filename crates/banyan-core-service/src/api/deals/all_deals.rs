@@ -83,9 +83,7 @@ mod tests {
         let created_deals = setup_deals(&mut conn).await.unwrap();
 
         let res = handler(
-            StorageProviderIdentity {
-                id: String::from("1"),
-            },
+            StorageProviderIdentity::default(),
             mock_app_state(db.clone()),
         )
         .await;

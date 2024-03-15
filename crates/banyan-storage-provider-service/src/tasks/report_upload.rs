@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use async_trait::async_trait;
 use banyan_task::{CurrentTask, TaskLike};
 use cid::multibase::Base;
