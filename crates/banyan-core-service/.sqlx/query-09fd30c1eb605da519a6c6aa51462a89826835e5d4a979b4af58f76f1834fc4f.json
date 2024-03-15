@@ -1,0 +1,86 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT * FROM metadata WHERE bucket_id = $1;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "bucket_id",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "root_cid",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "metadata_cid",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "expected_data_size",
+        "ordinal": 4,
+        "type_info": "Int64"
+      },
+      {
+        "name": "data_size",
+        "ordinal": 5,
+        "type_info": "Int64"
+      },
+      {
+        "name": "metadata_size",
+        "ordinal": 6,
+        "type_info": "Int64"
+      },
+      {
+        "name": "metadata_hash",
+        "ordinal": 7,
+        "type_info": "Text"
+      },
+      {
+        "name": "state",
+        "ordinal": 8,
+        "type_info": "Text"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 9,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "updated_at",
+        "ordinal": 10,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "previous_metadata_cid",
+        "ordinal": 11,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "09fd30c1eb605da519a6c6aa51462a89826835e5d4a979b4af58f76f1834fc4f"
+}
