@@ -5,11 +5,17 @@ import { RenameAccessKeyModal } from '@components/common/Modal/RenameAccessKeyMo
 import { Bucket, BucketKey } from '@app/types/bucket';
 import { useModal } from '@app/contexts/modals';
 import { useAppSelector } from '@app/store';
-import { Rename, Trash } from '@app/static/images/common';
+import { AccessKeysClient } from '@/api/accessKeys';
+import { useTomb } from '@app/contexts/tomb';
+
+import { Rename, Trash } from '@static/images/common';
+
+const client = new AccessKeysClient();
 
 export const KeyActions: React.FC<{ bucket: Bucket; bucketKey: BucketKey }> = ({ bucket, bucketKey }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.account.manageKeys.keyActions);
     const { openModal } = useModal();
+    const { getBucketsKeys } = useTomb();
 
     const rename = async () => {
         openModal(<RenameAccessKeyModal bucket={bucket} bucketKey={bucketKey} />);
@@ -17,7 +23,8 @@ export const KeyActions: React.FC<{ bucket: Bucket; bucketKey: BucketKey }> = ({
 
     const remove = async () => {
         try {
-            /** TODO: implement when api will be ready. */
+            await client.deleteAccessKey(bucket.id, bucketKey.id);
+            await getBucketsKeys();
         } catch (error: any) {
         };
     };
