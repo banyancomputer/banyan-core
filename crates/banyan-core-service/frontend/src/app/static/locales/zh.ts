@@ -61,9 +61,10 @@ export default {
                 billingAndPayment: "账单和付款"
             },
             profile: {
-                title: "个人资料",
-                language: "语言",
-                chooseYourLanguage: "选择您的语言"
+                name: "名称",
+                email: "电子邮件地址",
+                darkMode: "暗模式",
+                language: "语言"
             },
         },
         bucket: {
