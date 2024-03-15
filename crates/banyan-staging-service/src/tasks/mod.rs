@@ -14,7 +14,7 @@ use tokio::sync::watch;
 use tokio::task::JoinHandle;
 
 use crate::app::AppState;
-use crate::database::Database;
+use crate::database::DatabaseConnection;
 use crate::tasks::report_bandwidth_metrics::ReportBandwidthMetricsTask;
 pub use crate::tasks::upload_blocks::UploadBlocksTask;
 
@@ -24,12 +24,14 @@ pub async fn start_background_workers(
 ) -> Result<JoinHandle<()>, &'static str> {
     let task_store = SqliteTaskStore::new(state.database());
 
-    enqueue_task_if_none_in_progress::<ReportBandwidthMetricsTask>(
-        &task_store,
-        &mut state.database(),
-    )
-    .await;
-    enqueue_task_if_none_in_progress::<ReportHealthTask>(&task_store, &mut state.database()).await;
+    let mut conn = state
+        .database()
+        .acquire()
+        .await
+        .map_err(|_| "failed to get database connect")?;
+
+    enqueue_task_if_none_in_progress::<ReportBandwidthMetricsTask>(&task_store, &mut conn).await;
+    enqueue_task_if_none_in_progress::<ReportHealthTask>(&task_store, &mut conn).await;
 
     WorkerPool::new(task_store.clone(), move || state.clone())
         .configure_queue(QueueConfig::new("default").with_worker_count(5))
@@ -48,7 +50,7 @@ pub async fn start_background_workers(
 
 async fn enqueue_task_if_none_in_progress<T: TaskLikeExt + TaskLike + Default>(
     task_store: &SqliteTaskStore,
-    db: &mut Database,
+    conn: &mut DatabaseConnection,
 ) {
     if task_store
         .task_in_state::<T>(vec![TaskState::New, TaskState::Retry])
@@ -60,7 +62,7 @@ async fn enqueue_task_if_none_in_progress<T: TaskLikeExt + TaskLike + Default>(
     }
 
     T::default()
-        .enqueue::<SqliteTaskStore>(db)
+        .enqueue::<SqliteTaskStore>(conn)
         .await
         .expect("enqueue task");
 }

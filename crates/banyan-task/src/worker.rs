@@ -87,7 +87,7 @@ where
                         }
                     }
                     Err(err) => {
-                        tracing::error!("task failed with error: {err}");
+                        tracing::error!(error = ?err,"task failed");
                         match self
                             .store
                             .errored(
@@ -167,8 +167,19 @@ where
                 .map_err(WorkerError::StoreUnavailable)?;
 
             if let Some(task) = next_task {
-                tracing::info!(name = ?task.task_name, id = ?task.id, "starting execution of task");
+                let task_name = task.task_name.clone();
+                let task_id = task.id.clone();
+                tracing::info!(
+                    task_name = task_name,
+                    task_id = task_id,
+                    "starting execution of"
+                );
                 self.run(task).await?;
+                tracing::info!(
+                    task_name = task_name,
+                    task_id = task_id,
+                    "finished execution of"
+                );
                 continue;
             }
 

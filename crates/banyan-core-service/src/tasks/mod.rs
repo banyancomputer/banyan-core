@@ -83,8 +83,10 @@ async fn enqueue_task_if_none_in_progress<T: TaskLikeExt + TaskLike + Default>(
         return;
     }
 
+    let mut conn = db.acquire().await.expect("get db connection");
+
     T::default()
-        .enqueue::<SqliteTaskStore>(db)
+        .enqueue::<SqliteTaskStore>(&mut conn)
         .await
         .expect("enqueue task");
 }
