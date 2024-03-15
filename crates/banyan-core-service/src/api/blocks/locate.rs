@@ -40,6 +40,7 @@ pub async fn handler(
                    WHERE buckets.user_id = $1
                        AND blocks.cid = $2
                        AND block_locations.expired_at IS NULL
+                       AND block_locations.stored_at IS NOT NULL
                    ORDER BY RANDOM()
                    LIMIT 5;"#,
             user_id,

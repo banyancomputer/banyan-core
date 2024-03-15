@@ -187,3 +187,35 @@ fn load_platform_verfication_key(path: &PathBuf) -> Result<VerificationKey, Stat
 
     Ok(VerificationKey::new(platform_verification_key_inner))
 }
+
+#[cfg(test)]
+pub mod test {
+    use axum::extract::State;
+    use banyan_object_store::ObjectStoreConnection;
+    use jwt_simple::algorithms::ES384KeyPair;
+    use url::Url;
+
+    use crate::app::{AppState, Secrets};
+    use crate::database::Database;
+    use crate::utils::{SigningKey, VerificationKey};
+
+    pub fn mock_app_state(database: Database) -> State<AppState> {
+        let platform_key = ES384KeyPair::generate();
+        let platform_public_key = platform_key.public_key();
+        let service_key = ES384KeyPair::generate();
+        let service_public_key = service_key.public_key();
+        let url = Url::parse("file:///tmp").unwrap();
+
+        State(AppState {
+            database,
+            upload_store_connection: ObjectStoreConnection::try_from(url).unwrap(),
+            secrets: Secrets::new(SigningKey::new(platform_key)),
+            service_name: "service_name".to_string(),
+            service_hostname: Url::parse("http://127.0.0.1:3001").unwrap(),
+            service_verification_key: VerificationKey::new(service_public_key),
+            platform_name: "platform_name".to_string(),
+            platform_hostname: Url::parse("http://127.0.0.1:3002").unwrap(),
+            platform_verification_key: VerificationKey::new(platform_public_key),
+        })
+    }
+}

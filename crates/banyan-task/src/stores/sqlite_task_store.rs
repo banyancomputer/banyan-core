@@ -16,7 +16,32 @@ pub struct SqliteTaskStore {
 }
 
 impl SqliteTaskStore {
-    pub async fn is_key_present(
+    pub async fn is_present<T: TaskLike>(
+        conn: &mut SqliteConnection,
+        task: &T,
+    ) -> Result<bool, TaskStoreError> {
+        let unique_key = task.unique_key();
+        if unique_key.is_none() {
+            let res = sqlx::query_scalar!(
+                "SELECT 1 FROM background_tasks WHERE task_name = $1",
+                T::TASK_NAME
+            )
+            .fetch_optional(&mut *conn)
+            .await?;
+            return Ok(res.unwrap_or(0) == 1);
+        }
+        let res = sqlx::query_scalar!(
+            "SELECT 1 FROM background_tasks WHERE task_name = $1 AND unique_key = $2",
+            T::TASK_NAME,
+            unique_key
+        )
+        .fetch_optional(&mut *conn)
+        .await?;
+
+        Ok(res.unwrap_or(0) == 1)
+    }
+
+    async fn is_key_present(
         conn: &mut SqliteConnection,
         key: &str,
         task_name: &str,
@@ -141,30 +166,24 @@ impl SqliteTaskStore {
 
 #[async_trait]
 impl TaskStore for SqliteTaskStore {
-    type Pool = SqlitePool;
     type Connection = SqliteConnection;
 
     async fn enqueue<T: TaskLike>(
-        pool: &mut Self::Pool,
+        conn: &mut Self::Connection,
         task: T,
     ) -> Result<Option<String>, TaskStoreError> {
-        let mut connection = pool.acquire().await?;
-        let mut transaction = connection.begin().await?;
-
         let task = TaskInstanceBuilder::for_task(task).await?;
-        let background_task_id = Self::create(&mut transaction, task).await?;
-
-        transaction.commit().await?;
+        let background_task_id = Self::create(conn, task).await?;
 
         Ok(background_task_id)
     }
 
     async fn enqueue_with_connection<T: TaskLike>(
-        connection: &mut Self::Connection,
+        conn: &mut Self::Connection,
         task: T,
     ) -> Result<Option<String>, TaskStoreError> {
         let task = TaskInstanceBuilder::for_task(task).await?;
-        let background_task_id = Self::create(&mut *connection, task).await?;
+        let background_task_id = Self::create(&mut *conn, task).await?;
 
         Ok(background_task_id)
     }
@@ -331,8 +350,8 @@ impl TaskStore for SqliteTaskStore {
             .reset_task()
             .run_at(next_schedule);
 
-        let mut transaction = self.pool.clone().acquire().await?;
-        let new_task_id = Self::create(&mut transaction, task).await?;
+        let mut conn = self.pool.clone().acquire().await?;
+        let new_task_id = Self::create(&mut conn, task).await?;
         Ok(new_task_id)
     }
 
@@ -392,7 +411,7 @@ impl From<SqliteTaskStoreMetrics> for TaskStoreMetrics {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::tests::{default_task_store_metrics, TestTask};
+    use crate::tests::TestTask;
     use crate::TaskLikeExt;
 
     #[tokio::test]
@@ -412,9 +431,11 @@ pub mod tests {
     #[tokio::test]
     async fn update_state_works() {
         let (task_store, _task_id) = singleton_task_store().await;
+        let mut conn = task_store.pool.clone().acquire().await.expect("acquire");
+
         let task = TestTask;
         let task_id = task
-            .enqueue::<SqliteTaskStore>(&mut task_store.pool.clone())
+            .enqueue::<SqliteTaskStore>(&mut conn)
             .await
             .expect("enqueue")
             .expect("task create_from_taskd");
@@ -430,9 +451,11 @@ pub mod tests {
     #[tokio::test]
     async fn error_tasks_are_retried() {
         let (task_store, _task_id) = singleton_task_store().await;
+        let mut conn = task_store.pool.clone().acquire().await.expect("acquire");
+
         let task = TestTask;
         let task_id = task
-            .enqueue::<SqliteTaskStore>(&mut task_store.pool.clone())
+            .enqueue::<SqliteTaskStore>(&mut conn)
             .await
             .expect("enqueue")
             .expect("task created");
@@ -450,10 +473,12 @@ pub mod tests {
     #[tokio::test]
     async fn timeout_tasks_are_retried() {
         let (task_store, _task_id) = singleton_task_store().await;
+        let mut conn = task_store.pool.clone().acquire().await.expect("acquire");
+
         let task = TestTask;
 
         let task_id = task
-            .enqueue::<SqliteTaskStore>(&mut task_store.pool.clone())
+            .enqueue::<SqliteTaskStore>(&mut conn)
             .await
             .expect("enqueue")
             .expect("task create_from_taskd");
@@ -471,9 +496,11 @@ pub mod tests {
     #[tokio::test]
     async fn non_error_tasks_are_not_retried() {
         let (task_store, _task_id) = singleton_task_store().await;
+        let mut conn = task_store.pool.clone().acquire().await.expect("acquire");
+
         let task = TestTask;
         let task_id = task
-            .enqueue::<SqliteTaskStore>(&mut task_store.pool.clone())
+            .enqueue::<SqliteTaskStore>(&mut conn)
             .await
             .expect("enqueue")
             .expect("task create_from_taskd");
@@ -492,13 +519,15 @@ pub mod tests {
     async fn empty_store_works() {
         let task_store = empty_task_store().await;
         let metrics = task_store.metrics().await.unwrap();
-        assert_eq!(metrics, default_task_store_metrics());
+        assert_eq!(metrics, TaskStoreMetrics::default());
     }
 
     pub async fn singleton_task_store() -> (SqliteTaskStore, Option<String>) {
         let task_store = empty_task_store().await;
+        let mut conn = task_store.pool.clone().acquire().await.expect("acquire");
+
         let task_id = TestTask
-            .enqueue::<SqliteTaskStore>(&mut task_store.pool.clone())
+            .enqueue::<SqliteTaskStore>(&mut conn)
             .await
             .expect("enqueue");
         (task_store, task_id)

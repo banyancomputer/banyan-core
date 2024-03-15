@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT client_id FROM storage_grants WHERE grant_id = $1;",
+  "describe": {
+    "columns": [
+      {
+        "name": "client_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "bab18130fce8f1d15df64c8d4c4a8e9381e955557e1a2dbf512947165a8849be"
+}

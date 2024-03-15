@@ -19,8 +19,10 @@ mod db;
 mod error;
 pub(crate) mod new;
 
-use db::{complete_upload, fail_upload, start_upload, write_block_to_tables, Upload};
-use error::UploadError;
+pub use db::{
+    complete_upload, fail_upload, start_upload, upload_size, write_block_to_tables, Upload,
+};
+pub use error::UploadError;
 
 /// Limit on the size of the JSON request that accompanies an upload.
 const UPLOAD_REQUEST_SIZE_LIMIT: u64 = 100 * 1_024;
@@ -39,7 +41,8 @@ pub async fn handler(
     TypedHeader(content_type): TypedHeader<ContentType>,
     body: BodyStream,
 ) -> Result<Response, UploadError> {
-    let mut db = state.database();
+    let db = state.database();
+
     let reported_body_length = content_len.0;
     if reported_body_length > client.remaining_storage() {
         return Err(UploadError::InsufficientAuthorizedStorage(
@@ -77,8 +80,8 @@ pub async fn handler(
 
     let upload = start_upload(
         &db,
-        &client.id(),
-        &request.metadata_id,
+        &client.id().to_string(),
+        &request.metadata_id.to_string(),
         reported_body_length,
     )
     .await?;
@@ -108,13 +111,15 @@ pub async fn handler(
         Ok(cr) => {
             complete_upload(&db, 0, cr.integrity_hash(), &upload.id).await?;
 
+            let mut conn = db.acquire().await?;
+
             ReportUploadTask::new(
                 client.storage_grant_id(),
                 &request.metadata_id.to_string(),
                 cr.cids(),
                 cr.total_size(),
             )
-            .enqueue::<banyan_task::SqliteTaskStore>(&mut db)
+            .enqueue::<banyan_task::SqliteTaskStore>(&mut conn)
             .await
             .map_err(UploadError::FailedToEnqueueTask)?;
 

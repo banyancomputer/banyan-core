@@ -2,11 +2,13 @@ use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 
 use banyan_task::TaskLikeExt;
+use sqlx::sqlite::SqliteQueryResult;
 use sqlx::QueryBuilder;
 use time::OffsetDateTime;
 
+use crate::api::models::ApiBucketConfiguration;
 use crate::database::models::{BucketType, MinimalBlockLocation, StorageClass};
-use crate::database::{DatabaseConnection, BIND_LIMIT};
+use crate::database::{Database, DatabaseConnection, BIND_LIMIT};
 use crate::tasks::PruneBlocksTask;
 
 /// Used to prevent writes of new metadata versions when there is a newer metadata currently being
@@ -28,12 +30,22 @@ pub struct Bucket {
     pub name: String,
     pub r#type: BucketType,
     pub storage_class: StorageClass,
+    pub replicas: i64,
 
     pub updated_at: OffsetDateTime,
     pub deleted_at: Option<OffsetDateTime>,
 }
 
 impl Bucket {
+    pub async fn find_user_for_bucket(
+        conn: &Database,
+        bucket_id: &str,
+    ) -> Result<String, sqlx::Error> {
+        sqlx::query_scalar!("SELECT user_id FROM buckets WHERE id = $1;", bucket_id,)
+            .fetch_one(conn)
+            .await
+    }
+
     /// For a particular bucket mark keys with the fingerprints contained within as having been
     /// approved for use with that bucket. We can't verify the key payload correctly contains valid
     /// copies of the inner filesystem key, so there is a little bit of trust here. Key lifecycle
@@ -107,7 +119,8 @@ impl Bucket {
 
         for chunk in block_cid_list.chunks(BIND_LIMIT) {
             let mut query_builder = sqlx::QueryBuilder::new(
-                r#"SELECT bl.metadata_id AS metadata_id, bl.block_id AS block_id, bl.storage_host_id AS storage_host_id FROM block_locations AS bl
+                r#"SELECT bl.metadata_id AS metadata_id, bl.block_id AS block_id, bl.storage_host_id AS storage_host_id
+                       FROM block_locations AS bl
                        JOIN blocks AS b ON b.id = bl.block_id
                        JOIN metadata AS m ON m.id = bl.metadata_id
                        WHERE bl.expired_at IS NULL
@@ -195,7 +208,7 @@ impl Bucket {
             total_rows_pruned += block_list.len();
 
             let queue_result = PruneBlocksTask::new(storage_host_id, block_list)
-                .enqueue_with_connection::<banyan_task::SqliteTaskStore>(&mut *conn)
+                .enqueue::<banyan_task::SqliteTaskStore>(&mut *conn)
                 .await;
 
             // A future clean up task can always come back through and catch any blocks not missed.
@@ -482,6 +495,47 @@ impl Bucket {
 
         Ok(())
     }
+
+    pub async fn update_configuration(
+        conn: &mut DatabaseConnection,
+        bucket_id: &str,
+        configuration: &ApiBucketConfiguration,
+    ) -> Result<SqliteQueryResult, sqlx::Error> {
+        let mut query =
+            sqlx::QueryBuilder::new("UPDATE buckets SET updated_at = CURRENT_TIMESTAMP");
+
+        if let Some(name) = &configuration.name {
+            query.push(" ,name = ");
+            query.push_bind(name);
+        }
+
+        if let Some(replicas) = &configuration.replicas {
+            query.push(" ,replicas = ");
+            query.push_bind(replicas);
+        }
+
+        query.push(" WHERE id = ");
+        query.push_bind(bucket_id);
+
+        query.build().execute(&mut *conn).await
+    }
+
+    pub async fn find_by_id(
+        conn: &mut DatabaseConnection,
+        bucket_id: &str,
+    ) -> Result<Bucket, sqlx::Error> {
+        let bucket = sqlx::query_as!(
+             Bucket,
+            "SELECT id, user_id, name, replicas, type as 'type: BucketType', storage_class as 'storage_class: StorageClass',
+                updated_at as 'updated_at!', deleted_at
+            FROM buckets WHERE id = $1;",
+            bucket_id,
+        )
+        .fetch_one(&mut *conn)
+        .await?;
+
+        Ok(bucket)
+    }
 }
 
 #[derive(Debug, sqlx::FromRow)]
@@ -496,9 +550,10 @@ mod tests {
 
     use time::OffsetDateTime;
 
-    use super::*;
-    use crate::database::models::{MetadataState, SnapshotState, StorageClass};
+    use crate::database::models::bucket::METADATA_WRITE_LOCK_DURATION;
+    use crate::database::models::{Bucket, BucketType, MetadataState, SnapshotState, StorageClass};
     use crate::database::test_helpers::*;
+    use crate::database::DatabaseConnection;
 
     async fn is_bucket_key_approved(
         conn: &mut DatabaseConnection,
@@ -1228,18 +1283,9 @@ mod tests {
         assert_eq!(deleted_metadata_state, MetadataState::Deleted);
 
         // Get the bucket and ensure it's soft deleted
-        let deleted_bucket = sqlx::query_as!(
-            Bucket,
-            r#"SELECT id, user_id, name, type as 'type: BucketType',
-                   storage_class as 'storage_class: StorageClass', updated_at as 'updated_at!',
-                   deleted_at
-                 FROM buckets
-                 WHERE id = $1;"#,
-            bucket_id,
-        )
-        .fetch_one(&mut *conn)
-        .await
-        .expect("query success");
+        let deleted_bucket = Bucket::find_by_id(&mut conn, &bucket_id)
+            .await
+            .expect("query success");
 
         let deleted_metadata_updated_at = sqlx::query_scalar!(
             "SELECT updated_at as 'updated_at: OffsetDateTime' FROM metadata WHERE id = $1;",
@@ -1325,7 +1371,7 @@ mod tests {
         // Get the bucket and ensure it's soft deleted
         let deleted_bucket = sqlx::query_as!(
             Bucket,
-            r#"SELECT id, user_id, name, type as 'type: BucketType',
+            r#"SELECT id, user_id, name, replicas, type as 'type: BucketType',
                     storage_class as 'storage_class: StorageClass', updated_at as 'updated_at!',
                     deleted_at
                     FROM buckets

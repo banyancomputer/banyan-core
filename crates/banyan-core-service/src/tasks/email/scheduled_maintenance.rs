@@ -47,8 +47,10 @@ impl TaskLike for ScheduledMaintenanceEmailTask {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use banyan_task::TaskLike;
+
     use crate::tasks::email::tests::test_setup;
+    use crate::tasks::ScheduledMaintenanceEmailTask;
 
     #[tokio::test]
     /// ScheduledMaintenanceEmailTask should succeed in a valid context
