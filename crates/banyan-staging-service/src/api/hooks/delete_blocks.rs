@@ -163,10 +163,12 @@ mod tests {
 
     #[tokio::test]
     async fn test_handler_returns_success() {
-        let (mut db, metadata_id, _, block_ids) = setup_test_environment().await;
+        let (db, metadata_id, _, block_ids) = setup_test_environment().await;
+        let mut conn = db.acquire().await.unwrap();
+
         let blocks_cids = get_block_cids(&db, block_ids.clone()).await;
         SqliteTaskStore::enqueue(
-            &mut db,
+            &mut conn,
             UploadBlocksTask::new_with_metadata_id(metadata_id.clone()),
         )
         .await
@@ -197,9 +199,11 @@ mod tests {
 
     #[tokio::test]
     async fn test_rollback_on_error() {
-        let (mut db, metadata_id, _, block_ids) = setup_test_environment().await;
+        let (db, metadata_id, _, block_ids) = setup_test_environment().await;
+        let mut conn = db.acquire().await.unwrap();
+
         SqliteTaskStore::enqueue(
-            &mut db,
+            &mut conn,
             UploadBlocksTask::new_with_metadata_id(metadata_id.clone()),
         )
         .await
