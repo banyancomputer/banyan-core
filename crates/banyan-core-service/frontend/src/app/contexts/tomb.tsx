@@ -21,6 +21,7 @@ import { StorageUsageClient } from '@/api/storageUsage';
 import { useAppDispatch, useAppSelector } from '../store';
 import { BannerError, setError } from '@app/store/errors/slice';
 import { getApiKey, getEncryptionKey, getEscrowedKeyMaterial } from '@app/store/keystore/actions';
+import { ToastNotifications } from '../utils/toastNotifications';
 
 interface TombInterface {
 	tomb: TombWasm | null;
