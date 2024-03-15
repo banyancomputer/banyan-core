@@ -123,6 +123,8 @@ pub async fn report_upload(
     upload_id: &str,
     total_size: i64,
 ) -> Result<(), sqlx::Error> {
+    let mut conn = db.begin().await?;
+
     let all_cids: Vec<String> = sqlx::query_scalar!(
         r#"
             SELECT blocks.cid 
@@ -142,7 +144,7 @@ pub async fn report_upload(
         .collect::<Vec<Cid>>();
 
     ReportUploadTask::new(storage_grant_id, metadata_id, &all_cids, total_size as u64)
-        .enqueue::<banyan_task::SqliteTaskStore>(db)
+        .enqueue::<banyan_task::SqliteTaskStore>(&mut conn)
         .await
         .unwrap();
 
@@ -155,6 +157,8 @@ pub async fn write_block_to_tables(
     normalized_cid: &str,
     data_length: i64,
 ) -> Result<(), sqlx::Error> {
+    let mut conn = db.begin().await?;
+
     let maybe_block_id: Option<String> = sqlx::query_scalar!(
         "INSERT OR IGNORE INTO blocks (cid, data_length) VALUES ($1, $2) RETURNING id;",
         normalized_cid,
@@ -167,7 +171,7 @@ pub async fn write_block_to_tables(
         Some(block_id) => block_id,
         None => {
             sqlx::query_scalar!("SELECT id FROM blocks WHERE cid = $1;", normalized_cid,)
-                .fetch_one(db)
+                .fetch_one(&mut *conn)
                 .await?
         }
     };
