@@ -197,7 +197,9 @@ mod tests {
         .await;
 
         assert!(result.is_ok());
-        let block_locations = BlockLocations::get_all(&db).await.expect("block locations");
+        let block_locations = BlockLocations::find_all(&db)
+            .await
+            .expect("block locations");
         assert_eq!(block_locations.len(), initial_cids.len());
     }
 }

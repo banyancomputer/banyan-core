@@ -470,7 +470,9 @@ impl Bucket {
         Ok(bucket)
     }
 
-    pub async fn find_all_non_deleted(conn: &mut DatabaseConnection) -> Result<Vec<Self>, sqlx::Error> {
+    pub async fn find_all_non_deleted(
+        conn: &mut DatabaseConnection,
+    ) -> Result<Vec<Self>, sqlx::Error> {
         sqlx::query_as!(
             Self,
             r#"SELECT id, user_id, name, replicas, type as 'type: BucketType', storage_class as 'storage_class: StorageClass',

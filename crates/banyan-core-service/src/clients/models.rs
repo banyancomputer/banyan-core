@@ -27,8 +27,6 @@ pub struct ReplicateDataRequest {
     pub old_host_url: String,
 }
 
-
-
 #[derive(Serialize)]
 pub struct DeleteBlocksRequest {
     pub normalized_cids: Vec<String>,

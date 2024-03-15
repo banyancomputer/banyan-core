@@ -35,7 +35,9 @@ mod tax_class;
 mod user;
 mod user_total_consumption;
 
-pub use block_location::{MinimalBlockLocation, BlockLocations};
+#[cfg(test)]
+pub use block_location::{BlockLocations};
+pub use block_location::{MinimalBlockLocation};
 pub use blocks::Blocks;
 pub use bucket::Bucket;
 pub use bucket_key::BucketKey;

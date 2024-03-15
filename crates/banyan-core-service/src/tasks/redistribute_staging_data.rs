@@ -45,6 +45,7 @@ impl TaskLike for RedistributeStagingDataTask {
         for block in &blocks_for_sync {
             if !blocks_grouped_by_metadata
                 .values()
+                // deduplicate blocks across metadata
                 .any(|blocks| blocks.iter().any(|b| b.id == block.id))
             {
                 blocks_grouped_by_metadata
@@ -63,14 +64,13 @@ impl TaskLike for RedistributeStagingDataTask {
                 .data_size
                 .unwrap_or_default()
                 .max(metadata.expected_data_size);
-
+            let mut conn = database.begin().await?;
             let new_storage_host = StorageHost::select_for_capacity_with_exclusion(
-                &database,
+                &mut conn,
                 total_size,
-                &staging_host.id,
+                &vec![staging_host.id.clone()],
             )
             .await?;
-            let mut conn = database.begin().await?;
             let user_report =
                 UserStorageReport::user_report(&mut conn, &new_storage_host.id, &user_id).await?;
             let authorization_grant = if user_report.authorization_available() < total_size

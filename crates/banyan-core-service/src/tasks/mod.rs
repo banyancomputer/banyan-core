@@ -4,11 +4,11 @@ mod email;
 mod host_capacity;
 mod prune_blocks;
 mod redistribute_staging_data;
+mod replicate_data;
 mod report_all_storage_hosts_consumption;
 mod report_all_users_consumption;
 mod report_storage_host_consumption;
 mod report_user_consumption;
-mod replicate_data;
 
 use banyan_task::{QueueConfig, SqliteTaskStore, WorkerPool};
 pub use create_deals::{CreateDealsTask, BLOCK_SIZE};

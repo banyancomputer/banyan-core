@@ -119,8 +119,6 @@ impl StagingServiceClient {
 
         Err(StagingServiceError::BadRequest(response.text().await?))
     }
-
-
 }
 
 #[derive(Debug, thiserror::Error)]
