@@ -16,6 +16,7 @@ mod end_regwait;
 pub(crate) mod registration_event;
 mod start_regwait;
 
+mod provider_grant;
 mod who_am_i;
 
 pub fn router<B>(state: AppState) -> Router<AppState, B>
@@ -25,6 +26,10 @@ where
     Box<dyn Error + Send + Sync + 'static>: From<B::Error>,
 {
     Router::new()
+        .route(
+            "/provider_grant/:storage_host_id",
+            get(provider_grant::handler),
+        )
         .route(
             "/device_api_key",
             get(read_all_device_api_keys::handler).post(create_device_api_key::handler),

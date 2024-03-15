@@ -38,14 +38,13 @@ export const DeleteFileModal: React.FC<{ bucket: Bucket; file: BrowserObject; pa
 
     return (
         <div className="w-modal flex flex-col gap-5">
-            <Trash width="24px" height="24px" />
             <div>
                 <h4 className="text-m font-semibold">{`${messages.title}`}</h4>
                 <p className="mt-2 text-text-600">
                     {`${messages.wantToMove}`} <b className="text-text-900">{file.name}</b>? <br /> {`${messages.filesWillBeMoved}`}.
                 </p>
             </div>
-            <div className="mt-3 flex items-center gap-3 text-xs" >
+            <div className="mt-3 flex items-center justify-end gap-3 text-xs" >
                 <SecondaryButton
                     action={closeModal}
                     text={`${messages.cancel}`}

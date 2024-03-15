@@ -33,14 +33,8 @@ pub enum ReportBandwidthMetricsTaskError {
     EndSlotParsingError(#[from] ComponentRange),
 }
 
-#[derive(Deserialize, Serialize)]
-pub struct ReportBandwidthMetricsTask {}
-
-impl ReportBandwidthMetricsTask {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
+#[derive(Deserialize, Serialize, Default)]
+pub struct ReportBandwidthMetricsTask;
 
 #[async_trait]
 impl TaskLike for ReportBandwidthMetricsTask {
@@ -177,8 +171,6 @@ fn partition_bandwidth_metrics_by_hour_and_user(
 #[cfg(test)]
 mod tests {
     use std::ops::Add;
-
-    use time::OffsetDateTime;
 
     use super::*;
     use crate::database::test_helpers::{create_bandwidth_metric, setup_database};

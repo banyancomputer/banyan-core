@@ -71,7 +71,7 @@ export const Header: React.FC<{ className?: string }> = ({ className = '' }) => 
     }, [location]);
 
     return (
-        <header className={`flex items-center justify-between p-4 bg-mainBackground border-b-1 border-border-regular ${className}`}>
+        <header className={`flex items-center justify-between p-4 bg-headerBackground border-b-1 border-headerBorder ${className}`}>
             {/* <SearchInput /> */}
             <div className="flex flex-grow items-center justify-end gap-6">
                 <div

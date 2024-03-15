@@ -411,7 +411,12 @@ export default {
             softStorageLimit: "您接近存储计划的限制，请升级以获得更多空间",
             hardStorageLimit: "您的存储请求超出存储容量，请",
             seePricingPage: "查看我们的定价页面",
-            contactSales: "联系销售"
+            contactSales: "联系销售",
+            fileSizeExceeded: "文件大小超过限制。请重试，使用小于 100 MB 的文件，或使用 Banyan CLI。"
+        },
+        tomb: {
+            folderAlreadyExists: '文件夹名称必须唯一 - 请输入唯一名称',
+            driveAlreadyExists: '驱动器名称必须唯一 - 请键入唯一名称'
         }
     }
 };

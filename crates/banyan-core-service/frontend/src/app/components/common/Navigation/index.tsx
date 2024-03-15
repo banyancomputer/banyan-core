@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 
 import { LockedTooltip } from './LockedTooltip';
@@ -15,11 +15,10 @@ import { ActiveDirectory, ChevronUp, Directory, Logo } from '@static/images/comm
 
 export const Navigation = () => {
 	const { buckets } = useTomb();
-	const { uploadFiles, setFiles, files } = useFilesUpload();
+	const { uploadFiles } = useFilesUpload();
 	const [isBucketsVisible, setIsBucketsVisible] = useState(false);
 	const messages = useAppSelector(state => state.locales.messages.coponents.common.navigation);
 	const location = useLocation();
-	const [droppedBucket, setDroppedBucket] = useState<null | Bucket>(null)
 
 	const toggleBucketsVisibility = (event: React.MouseEvent<HTMLDivElement>) => {
 		event.stopPropagation();
@@ -32,28 +31,16 @@ export const Navigation = () => {
 
 		if (!event?.dataTransfer.files.length) { return; }
 
-		setFiles(Array.from(event.dataTransfer.files).slice(0, 1).map(file => ({ file, status: 'pending' })));
-		setDroppedBucket(bucket!);
+		try {
+			await uploadFiles(event.dataTransfer.files, bucket, []);
+		} catch (error: any) {
+			ToastNotifications.error(`${messages.uploadError}`, `${messages.tryAgain}`, () => { });
+		};
 	};
 
 	const preventNavigation = (event: React.MouseEvent<HTMLAnchorElement, MouseEvent>, bucket: Bucket) => {
 		!bucket.mount && event.preventDefault();
 	};
-
-	useEffect(() => {
-		if (!files.length || !droppedBucket) return;
-
-		(async () => {
-			try {
-				ToastNotifications.uploadProgress();
-				await uploadFiles(droppedBucket, []);
-				setDroppedBucket(null);
-			} catch (error: any) {
-				setDroppedBucket(null);
-				ToastNotifications.error(`${messages.uploadError}`, `${messages.tryAgain}`, () => { });
-			}
-		})()
-	}, [files, droppedBucket]);
 
 	useEffect(() => {
 		if (isBucketsVisible) { return; }
@@ -95,7 +82,7 @@ export const Navigation = () => {
 				</NavLink>
 				{
 					isBucketsVisible &&
-					<ul className="flex-col gap-2 px-2 text-xxs">
+					<ul className="flex-col gap-2 max-h-[calc(100vh-360px)] overflow-y-auto px-2 text-xxs">
 						{
 							buckets.map(bucket =>
 								<li key={bucket.id}>

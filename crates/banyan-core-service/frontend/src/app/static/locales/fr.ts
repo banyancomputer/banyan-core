@@ -411,7 +411,12 @@ export default {
             softStorageLimit: "Vous approchez de la limite de votre plan de stockage, mettez à niveau pour plus d'espace",
             hardStorageLimit: "Votre demande de stockage dépasse la capacité de stockage, veuillez",
             seePricingPage: "Voir notre page de tarification",
-            contactSales: "Contacter les ventes"
+            contactSales: "Contacter les ventes",
+            fileSizeExceeded: "Taille du fichier dépassée. Veuillez réessayer avec un fichier de moins de 100 Mo ou utiliser l'interface de ligne de commande Banyan."
+        },
+        tomb: {
+            folderAlreadyExists: 'Le nom du dossier doit être unique - veuillez saisir un nom unique',
+            driveAlreadyExists: 'Le nom du lecteur doit être unique - veuillez saisir un nom unique'
         }
     }
 }

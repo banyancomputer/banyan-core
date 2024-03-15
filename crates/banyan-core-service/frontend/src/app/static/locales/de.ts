@@ -411,7 +411,12 @@ export default {
             softStorageLimit: "Sie nähern sich dem Limit Ihres Speicherplans, aktualisieren Sie für mehr Platz",
             hardStorageLimit: "Ihre Speicheranforderung übersteigt die Speicherkapazität, bitte",
             seePricingPage: "Besuchen Sie unsere Preisgestaltungsseite",
-            contactSales: "Vertrieb kontaktieren"
+            contactSales: "Vertrieb kontaktieren",
+            fileSizeExceeded: "Dateigröße überschritten. Bitte versuchen Sie es erneut mit einer Datei kleiner als 100 MB oder verwenden Sie die Banyan-Befehlszeilenschnittstelle."
+        },
+        tomb: {
+            folderAlreadyExists: 'Ordnername muss eindeutig sein - bitte geben Sie einen eindeutigen Namen ein',
+            driveAlreadyExists: 'Laufwerksname muss eindeutig sein - bitte geben Sie einen eindeutigen Namen ein'
         }
     }
 };

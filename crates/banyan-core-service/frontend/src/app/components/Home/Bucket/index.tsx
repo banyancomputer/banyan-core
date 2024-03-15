@@ -16,12 +16,11 @@ import { Dots, Question } from '@static/images/common';
 
 export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.home.bucket);
-    const { uploadFiles, setFiles, files } = useFilesUpload();
+    const { uploadFiles } = useFilesUpload();
     const bucketRef = useRef<HTMLDivElement | null>(null);
     const bucketActionsRef = useRef<HTMLDivElement | null>(null);
     const [position, setPosition] = useState({ x: 0, y: 0 });
     const [isContextMenuVisible, setIsContextMenuVisible] = useState(false);
-    const [areFilesDropped, setAreFilesDropped] = useState(false);
     const navigate = useNavigate();
     type messagesKeys = keyof typeof messages;
 
@@ -60,24 +59,12 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
 
         if (!event?.dataTransfer.files.length) { return; }
 
-        setFiles(Array.from(event.dataTransfer.files).slice(0, 1).map(file => ({ file, status: 'pending' })));
-        setAreFilesDropped(true);
+        try {
+            await uploadFiles(event.dataTransfer.files, bucket, []);
+        } catch (error: any) {
+            ToastNotifications.error(`${messages.uploadError}`, `${messages.tryAgain}`, () => { });
+        }
     };
-
-    useEffect(() => {
-        if (!files.length || !areFilesDropped) return;
-
-        (async () => {
-            try {
-                ToastNotifications.uploadProgress();
-                await uploadFiles(bucket, []);
-                setAreFilesDropped(false);
-            } catch (error: any) {
-                setAreFilesDropped(false);
-                ToastNotifications.error(`${messages.uploadError}`, `${messages.tryAgain}`, () => { });
-            }
-        })()
-    }, [files, areFilesDropped]);
 
     useEffect(() => {
         const listener = popupClickHandler(bucketActionsRef.current!, setIsContextMenuVisible);
@@ -99,7 +86,7 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
 
     return (
         <div
-            className={`rounded-xl cursor-pointer transition-all bg-secondaryBackground border-1 border-border-regular ${!bucket.mount && 'cursor-not-allowed'}`}
+            className={`rounded-xl cursor-pointer transition-all border-1 border-border-regular ${!bucket.mount && 'cursor-not-allowed'}`}
             ref={bucketRef}
             onContextMenu={onContextMenu}
             onClick={openBucket}

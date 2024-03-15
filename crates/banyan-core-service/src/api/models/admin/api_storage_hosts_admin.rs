@@ -1,6 +1,6 @@
 use jwt_simple::prelude::{Deserialize, Serialize};
 
-use crate::database::models::SelectedStorageHost;
+use crate::database::models::StorageHost;
 
 #[derive(Serialize, Deserialize)]
 pub struct ApiSelectedStorageHostAdmin {
@@ -12,8 +12,8 @@ pub struct ApiSelectedStorageHostAdmin {
     pub fingerprint: String,
     pub pem: String,
 }
-impl From<SelectedStorageHost> for ApiSelectedStorageHostAdmin {
-    fn from(value: SelectedStorageHost) -> Self {
+impl From<StorageHost> for ApiSelectedStorageHostAdmin {
+    fn from(value: StorageHost) -> Self {
         Self {
             id: value.id,
             name: value.name,

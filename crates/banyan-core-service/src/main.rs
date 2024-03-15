@@ -6,6 +6,7 @@ use tracing_subscriber::{EnvFilter, Layer};
 mod api;
 mod app;
 mod auth;
+mod clients;
 mod database;
 mod email;
 mod event_bus;

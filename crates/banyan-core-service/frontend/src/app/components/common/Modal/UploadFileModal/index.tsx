@@ -19,12 +19,12 @@ import { Upload } from '@static/images/buckets';
 export const UploadFileModal: React.FC<{ bucket?: Bucket | null; folder?: BrowserObject; path: string[] }> = ({ bucket, folder, path }) => {
     const { buckets } = useTomb();
     const { openModal, closeModal } = useModal();
-    const { setFiles, uploadFiles, files } = useFilesUpload();
+    const { uploadFiles } = useFilesUpload();
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.uploadFile);
     const [selectedBucket, setSelectedBucket] = useState<Bucket | null>(bucket || null);
     const [selectedFolder, setSelectedFolder] = useState<string[]>(path);
-    const isUploadDataFilled = useMemo(() => Boolean(selectedBucket && files.length), [selectedBucket, files]);
-    const [previewFiles, setPreviewFiles] = useState<File[]>([]);
+    const [previewFiles, setPreviewFiles] = useState<FileList | null>(null);
+    const isUploadDataFilled = useMemo(() => Boolean(selectedBucket && previewFiles?.length), [selectedBucket, previewFiles]);
 
     const selectBucket = (bucket: Bucket) => {
         setSelectedBucket(bucket);
@@ -37,8 +37,7 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null; folder?: Browse
     const handleChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         if (!event.target.files) { return; }
 
-        setFiles(Array.from(event.target.files).map(file => ({ file, status: 'pending' })));
-        setPreviewFiles(Array.from(event.target.files));
+        setPreviewFiles(event.target.files);
     };
 
     const handleDrop = async (event: React.DragEvent<HTMLInputElement | HTMLLabelElement>) => {
@@ -47,8 +46,7 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null; folder?: Browse
 
         if (!event.dataTransfer.files) { return; }
 
-        setFiles(Array.from(event.dataTransfer.files).slice(0, 1).map(file => ({ file, status: 'pending' })));
-        setPreviewFiles(Array.from(event.dataTransfer.files).slice(0, 1));
+        setPreviewFiles(event.dataTransfer.files);
     };
 
     const handleDrag = async (event: React.DragEvent<HTMLInputElement | HTMLLabelElement>) => {
@@ -57,11 +55,11 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null; folder?: Browse
     };
 
     const upload = async () => {
-        if (!files.length) { return; }
+        if (!previewFiles) { return; };
+
         try {
             closeModal();
-            ToastNotifications.uploadProgress();
-            await uploadFiles(selectedBucket!, selectedFolder.length ? selectedFolder : [], folder);
+            await uploadFiles(previewFiles!, selectedBucket!, selectedFolder.length ? selectedFolder : [], folder);
         } catch (error: any) {
             ToastNotifications.error(`${messages.uploadError}`, `${messages.tryAgain}`, upload);
         };
@@ -73,7 +71,7 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null; folder?: Browse
 
     useEffect(() => {
         return () => {
-            setPreviewFiles([]);
+            setPreviewFiles(null);
         };
     }, []);
 
@@ -113,9 +111,9 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null; folder?: Browse
                 onDrop={handleDrop}
                 onDragOver={handleDrag}
             >
-                {previewFiles.length ?
+                {previewFiles ?
                     <React.Fragment >
-                        {previewFiles.map(file =>
+                        {Array.from(previewFiles).map(file =>
                             <span
                                 className="w-full overflow-hidden text-ellipsis whitespace-nowrap"
                                 key={file.name}
@@ -140,7 +138,7 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null; folder?: Browse
                     onChange={handleChange}
                 />
             </label>
-            <div className="flex items-center gap-3 text-xs" >
+            <div className="flex items-center justify-end gap-3 text-xs" >
                 <SecondaryButton
                     action={closeModal}
                     text={`${messages.cancel}`}

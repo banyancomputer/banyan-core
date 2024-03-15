@@ -15,6 +15,7 @@ import { useAppSelector } from '@/app/store';
 export const CreateFolderModal: React.FC<{ bucket: Bucket; onSuccess?: () => void; path: string[], redirect?: boolean }> = ({ bucket, onSuccess = () => { }, path, redirect = false }) => {
     const { closeModal, openModal } = useModal();
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.createFolder);
+    const { folderAlreadyExists } = useAppSelector(state => state.locales.messages.contexts.tomb);
     const [folderName, setfolderName] = useState('');
     const { createDirectory } = useTomb();
     const navigate = useNavigate();
@@ -34,7 +35,9 @@ export const CreateFolderModal: React.FC<{ bucket: Bucket; onSuccess?: () => voi
                 :
                 openModal(<UploadFileModal bucket={bucket} path={[...path, folderName]} />);
         } catch (error: any) {
-            ToastNotifications.error(`${messages.creationError}`, `${messages.tryAgain}`, create);
+            if (error.message !== folderAlreadyExists) {
+                ToastNotifications.error(`${messages.creationError}`);
+            };
         };
     };
 
@@ -55,7 +58,7 @@ export const CreateFolderModal: React.FC<{ bucket: Bucket; onSuccess?: () => voi
                     />
                 </label>
             </div>
-            <div className="flex items-center gap-3 text-xs" >
+            <div className="flex items-center justify-end gap-3 text-xs" >
                 <SecondaryButton
                     action={closeModal}
                     text={`${messages.cancel}`}

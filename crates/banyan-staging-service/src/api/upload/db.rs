@@ -29,8 +29,8 @@ pub async fn start_upload(
     upload.id = sqlx::query_scalar!(
         r#"
         INSERT INTO
-            uploads (client_id, metadata_id, reported_size, base_path, state)
-            VALUES ($1, $2, $3, $4, $5)
+            uploads (client_id, metadata_id, reported_size, base_path, state, created_at)
+            VALUES ($1, $2, $3, $4, $5, DATETIME('now'))
             RETURNING id;
         "#,
         upload.client_id,
@@ -87,7 +87,8 @@ pub async fn complete_upload(
         UPDATE uploads SET
                 state = 'complete',
                 final_size = $1,
-                integrity_hash = $2
+                integrity_hash = $2,
+                finished_at = DATETIME('now')
             WHERE id = $3;
         "#,
         total_size,
@@ -123,6 +124,8 @@ pub async fn report_upload(
     upload_id: &str,
     total_size: i64,
 ) -> Result<(), sqlx::Error> {
+    let mut conn = db.acquire().await?;
+
     let all_cids: Vec<String> = sqlx::query_scalar!(
         r#"
             SELECT blocks.cid 
@@ -133,7 +136,7 @@ pub async fn report_upload(
         "#,
         upload_id
     )
-    .fetch_all(&*db)
+    .fetch_all(&mut *conn)
     .await?;
 
     let all_cids = all_cids
@@ -142,7 +145,7 @@ pub async fn report_upload(
         .collect::<Vec<Cid>>();
 
     ReportUploadTask::new(storage_grant_id, metadata_id, &all_cids, total_size as u64)
-        .enqueue::<banyan_task::SqliteTaskStore>(db)
+        .enqueue::<banyan_task::SqliteTaskStore>(&mut conn)
         .await
         .unwrap();
 

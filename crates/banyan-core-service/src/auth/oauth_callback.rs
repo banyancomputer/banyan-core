@@ -125,7 +125,7 @@ pub async fn handler(
                 user_info.email,
                 user_info.verified_email,
                 user_info.name,
-                user_info.locale,
+                "en",
                 user_info.picture,
                 subscription_id,
             )
@@ -229,5 +229,4 @@ pub struct GoogleUserProfile {
     verified_email: bool,
 
     picture: String,
-    locale: String,
 }

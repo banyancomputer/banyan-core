@@ -16,9 +16,7 @@ export const HelpControls = () => {
                 href="https://banyan8674.zendesk.com/hc/en-us/sections/19265371237517-FAQ"
                 target="_blank"
             >
-                <span className="text-button-primary">
-                    <Question />
-                </span>
+                <Question />
                 FAQ
             </a>
             <a
@@ -26,9 +24,7 @@ export const HelpControls = () => {
                 className="flex items-center gap-2 py-2.5 px-3 transition-all whitespace-nowrap hover:bg-hover"
                 target="_blank"
             >
-                <span className="text-button-primary">
-                    <Mail />
-                </span>
+                <Mail />
                 {`${messages.contactUs}`}
             </a>
         </div>
