@@ -318,41 +318,6 @@ impl Bucket {
         Ok(outdated_result)
     }
 
-    /// Check whether the provided `previous_cid` is based within the bucket's history
-    /// following its recent updates, including and following the current metadata version.
-    pub async fn update_is_valid(
-        conn: &mut DatabaseConnection,
-        bucket_id: &str,
-        previous_metadata_cid: &str,
-    ) -> Result<bool, sqlx::Error> {
-        // Get the most recent piece of metadata. If not available return false
-        let current_metadata_id = match Self::current_version(conn, bucket_id).await? {
-            Some(cm) => cm,
-            None => return Ok(false),
-        };
-
-        // Query for the versions of all pieces of metadata that could serve as a base for the
-        // requested update. This includes all pieces of metadata that:
-        // - follow, or are, the current one
-        // - are in a valid state ('current', 'pending', 'uploading')
-        // - specify the previous_metadata_cid as their metadata_cid
-        // If any such base exists, return true, otherwise return false
-        Ok(sqlx::query_scalar!(
-            r#"SELECT id FROM metadata 
-                WHERE bucket_id = $1
-                 AND metadata_cid = $2
-                 AND state IN ('current', 'pending', 'uploading')
-                 AND created_at >= (SELECT created_at FROM metadata WHERE id = $3 LIMIT 1)
-                ORDER BY created_at DESC"#,
-            bucket_id,
-            previous_metadata_cid,
-            current_metadata_id,
-        )
-        .fetch_optional(&mut *conn)
-        .await?
-        .is_some())
-    }
-
     /// Checks whether the provided bucket ID is owned by the provided user ID. This will return
     /// false when the user IDs don't match, if the bucket doesn't exist (the user inherently
     /// doesn't own an unknown ID), or if the bucket has already been deleted.
@@ -535,6 +500,51 @@ impl Bucket {
         .await?;
 
         Ok(bucket)
+    }
+
+    /// Check whether the provided `previous_id` is based within the bucket's history
+    /// following its recent updates, including and following the current metadata version.
+    pub async fn update_is_valid(
+        conn: &mut DatabaseConnection,
+        bucket_id: &str,
+        previous_metadata_id: &str,
+    ) -> Result<bool, sqlx::Error> {
+        // Get the most recent piece of metadata. If there isn't any produce a warning but allow
+        // the update.
+        let current_metadata_id = match Self::current_version(conn, bucket_id).await? {
+            Some(cm) => cm,
+            None => {
+                tracing::warn!(
+                    ?bucket_id,
+                    "no current metadata for bucket, allowing update"
+                );
+
+                return Ok(true);
+            }
+        };
+
+        // If they're the same the history is straight forward and valid
+        if current_metadata_id == previous_metadata_id {
+            return Ok(true);
+        }
+
+        // There are a couple of other versions we consider valid, primarily if there are any
+        // metadata instances that are newer and still valid than the metadata marked as the
+        // current one. If it meets those conditions we'll still allow the update.
+        Ok(sqlx::query_scalar!(
+            r#"SELECT id FROM metadata
+                 WHERE id = $1
+                   AND bucket_id = $2
+                   AND state IN ('current', 'pending', 'uploading')
+                   AND created_at >= (SELECT created_at FROM metadata WHERE id = $3 LIMIT 1)
+                 ORDER BY created_at DESC"#,
+            previous_metadata_id,
+            bucket_id,
+            current_metadata_id,
+        )
+        .fetch_optional(&mut *conn)
+        .await?
+        .is_some())
     }
 }
 
