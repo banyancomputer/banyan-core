@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n        SELECT id, client_id, metadata_id, base_path, reported_size, state FROM uploads\n            WHERE client_id = $1\n            AND id = $2\n            AND created_at >= $3;\n        ",
+  "query": "\n             SELECT id, client_id, metadata_id, base_path, reported_size, state\n             FROM uploads\n             WHERE id = $1;\n         ",
   "describe": {
     "columns": [
       {
@@ -35,7 +35,7 @@
       }
     ],
     "parameters": {
-      "Right": 3
+      "Right": 1
     },
     "nullable": [
       false,
@@ -46,5 +46,5 @@
       false
     ]
   },
-  "hash": "16bb7623507749b2af05b8ab4770450433fe7fc3c74e4b76f55564a4a7c5a625"
+  "hash": "74d65651e4a8b76c66bd7d175308b86874eeb9caac1d0922e3746cee1b9aa97e"
 }

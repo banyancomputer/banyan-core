@@ -4,18 +4,17 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::TypedHeader;
 use banyan_object_store::{ObjectStore, ObjectStorePath};
-use banyan_task::{SqliteTaskStore, TaskLikeExt};
 use bytes::Bytes;
 use cid::multibase::Base;
 use cid::multihash::{Code, MultihashDigest};
 use cid::Cid;
 use serde::{Deserialize, Serialize};
 
-use super::db::{all_cids, complete_upload, get_upload, upload_size, write_block_to_tables};
+use super::db::{complete_upload, report_upload, upload_size, write_block_to_tables};
 use super::error::UploadError;
+use crate::api::upload::Upload;
 use crate::app::AppState;
 use crate::extractors::AuthenticatedClient;
-use crate::tasks::ReportUploadTask;
 
 #[derive(Deserialize, Serialize)]
 pub struct BlockUploadRequest {
@@ -40,7 +39,7 @@ pub async fn handler(
     TypedHeader(content_type): TypedHeader<ContentType>,
     body: BodyStream,
 ) -> Result<Response, UploadError> {
-    let mut trans = state.transaction().await?;
+    let db = state.database();
     let reported_body_length = content_len.0;
     if reported_body_length > client.remaining_storage() {
         return Err(UploadError::InsufficientAuthorizedStorage(
@@ -90,9 +89,7 @@ pub async fn handler(
             upload_id,
         } => {
             // Assume that the upload has already been created via the `new` endpoint
-            let upload = get_upload(&mut trans, client.id(), &upload_id)
-                .await?
-                .unwrap();
+            let upload = Upload::find_by_id(&db, &upload_id).await?.unwrap();
             if upload.id != upload_id {
                 return Err(UploadError::IdMismatch);
             }
@@ -103,6 +100,8 @@ pub async fn handler(
     if upload.state == "complete" {
         return Err(UploadError::UploadIsComplete);
     }
+
+    let mut conn = db.acquire().await?;
     // While there are still block fields encoded
     while let Some(block_field) = multipart
         .next_field()
@@ -130,12 +129,11 @@ pub async fn handler(
             return Err(UploadError::MismatchedCid((normalized_cid, computed_cid)));
         }
         // Write this block to the tables
-        write_block_to_tables(&mut trans, &upload.id, &normalized_cid, block.len() as i64).await?;
+        write_block_to_tables(&mut conn, &upload.id, &normalized_cid, block.len() as i64).await?;
 
         // Write the bytes to the expected location
-        let location = ObjectStorePath::from(
-            format!("{}/{}.block", upload.base_path, normalized_cid).as_str(),
-        );
+        let location =
+            ObjectStorePath::from(format!("{}/{}.bin", upload.base_path, normalized_cid).as_str());
         store
             .put(&location, block)
             .await
@@ -144,19 +142,17 @@ pub async fn handler(
 
     // If we've just finished off the upload, complete and report it
     if completed {
-        let total_size = upload_size(&mut trans, &upload.id).await?;
-        complete_upload(&mut trans, total_size, "", &upload.id).await?;
-        ReportUploadTask::new(
+        let total_size = upload_size(&mut conn, &upload.id).await?;
+        complete_upload(&mut conn, total_size, "", &upload.id).await?;
+        report_upload(
+            &mut conn,
             client.storage_grant_id(),
             &upload.metadata_id,
-            &all_cids(&mut trans, &upload.id).await?,
-            total_size as u64,
+            &upload.id,
+            total_size,
         )
-        .enqueue::<SqliteTaskStore>(&mut trans)
         .await?;
     }
-
-    trans.commit().await?;
 
     Ok((StatusCode::NO_CONTENT, ()).into_response())
 }

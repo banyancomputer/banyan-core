@@ -25,6 +25,14 @@ pub struct State {
 }
 
 impl State {
+    pub fn database(&self) -> Database {
+        self.database.clone()
+    }
+
+    pub fn event_bus(&self) -> EventBus {
+        self.event_bus.clone()
+    }
+
     pub async fn from_config(config: &Config) -> Result<Self, StateSetupError> {
         // Do a test setup to make sure the upload directory exists and is writable as an early
         // sanity check
@@ -66,14 +74,6 @@ impl State {
         })
     }
 
-    pub fn database(&self) -> Database {
-        self.database.clone()
-    }
-
-    pub fn event_bus(&self) -> EventBus {
-        self.event_bus.clone()
-    }
-
     pub fn secrets(&self) -> Secrets {
         self.secrets.clone()
     }
@@ -101,13 +101,6 @@ impl State {
     }
 }
 
-/*
-impl Contexxt<Sqlite, &Pool<Sqlite>> for State {
-    fn executor<'a>(&self) -> Pin<Box<dyn Future<Output = &Pool<Sqlite>>> {
-        Box::pin(async move { self.database() })
-    }
-}
-*/
 #[derive(Debug, thiserror::Error)]
 pub enum StateSetupError {
     #[error("unable to access configured upload directory: {0}")]

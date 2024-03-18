@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        UPDATE uploads SET\n                state = 'complete',\n                final_size = $1,\n                integrity_hash = $2,\n                finished_at = DATETIME('now')\n            WHERE id = $3;\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "eb1a1b164f0de8447f3d534763504269487ba28fb88a02275cb561caf6a9a900"
+}

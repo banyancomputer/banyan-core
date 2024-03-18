@@ -14,6 +14,7 @@ use crate::pricing;
 pub const BIND_LIMIT: usize = 32_000;
 
 pub type Database = SqlitePool;
+
 pub type DatabaseConnection = sqlx::SqliteConnection;
 
 pub async fn connect(db_url: &url::Url) -> Result<Database, DatabaseSetupError> {

@@ -4,7 +4,6 @@ use banyan_object_store::{
     ObjectStore, ObjectStoreConnection, ObjectStoreConnectionError, ObjectStoreError,
 };
 use jwt_simple::prelude::*;
-use sqlx::{Sqlite, Transaction};
 use url::Url;
 
 use crate::app::{Config, Secrets};
@@ -76,10 +75,6 @@ impl State {
 
     pub fn database(&self) -> Database {
         self.database.clone()
-    }
-
-    pub async fn transaction(&self) -> Result<Transaction<'_, Sqlite>, sqlx::Error> {
-        self.database().begin().await
     }
 
     pub fn upload_store_connection(&self) -> &ObjectStoreConnection {

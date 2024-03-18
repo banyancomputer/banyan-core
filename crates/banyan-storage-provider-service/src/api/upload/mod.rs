@@ -5,7 +5,7 @@ use axum::response::{IntoResponse, Response};
 use axum::TypedHeader;
 use banyan_car_analyzer::{CarReport, StreamingCarAnalyzer, StreamingCarAnalyzerError};
 use banyan_object_store::{ObjectStore, ObjectStorePath};
-use banyan_task::{SqliteTaskStore, TaskLikeExt};
+use banyan_task::TaskLikeExt;
 use futures::{TryStream, TryStreamExt};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -19,8 +19,8 @@ mod db;
 mod error;
 pub(crate) mod new;
 
-use db::{complete_upload, fail_upload, start_upload, write_block_to_tables, Upload};
-use error::UploadError;
+pub use db::{complete_upload, fail_upload, start_upload, write_block_to_tables, Upload};
+pub use error::UploadError;
 
 /// Limit on the size of the JSON request that accompanies an upload.
 const UPLOAD_REQUEST_SIZE_LIMIT: u64 = 100 * 1_024;
@@ -39,7 +39,8 @@ pub async fn handler(
     TypedHeader(content_type): TypedHeader<ContentType>,
     body: BodyStream,
 ) -> Result<Response, UploadError> {
-    let mut trans = state.transaction().await?;
+    let db = state.database();
+
     let reported_body_length = content_len.0;
     if reported_body_length > client.remaining_storage() {
         return Err(UploadError::InsufficientAuthorizedStorage(
@@ -76,9 +77,9 @@ pub async fn handler(
     let content_hash = request.content_hash;
 
     let upload = start_upload(
-        &mut trans,
-        &client.id(),
-        &request.metadata_id,
+        &db,
+        &client.id().to_string(),
+        &request.metadata_id.to_string(),
         reported_body_length,
     )
     .await?;
@@ -94,9 +95,9 @@ pub async fn handler(
 
     // TODO: validate name is car-upload (request_data_field.name())
     // TODO: validate type is "application/vnd.ipld.car; version=2" (request_data_field.content_type())
-
+    let mut conn = db.acquire().await?;
     match process_upload_stream(
-        &mut trans,
+        &mut conn,
         &upload,
         store,
         reported_body_length as usize,
@@ -106,27 +107,23 @@ pub async fn handler(
     .await
     {
         Ok(cr) => {
-            complete_upload(&mut trans, 0, cr.integrity_hash(), &upload.id).await?;
-
+            complete_upload(&mut conn, 0, cr.integrity_hash(), &upload.id).await?;
             ReportUploadTask::new(
                 client.storage_grant_id(),
                 &request.metadata_id.to_string(),
                 cr.cids(),
                 cr.total_size(),
             )
-            .enqueue::<SqliteTaskStore>(&mut trans)
+            .enqueue::<banyan_task::SqliteTaskStore>(&mut conn)
             .await
             .map_err(UploadError::FailedToEnqueueTask)?;
-
-            trans.commit().await?;
 
             Ok((StatusCode::NO_CONTENT, ()).into_response())
         }
         Err(err) => {
             // todo: we don't care in the response if this fails, but if it does we will want to
             // clean it up in the future which should be handled by a background task
-            let _ = fail_upload(&mut trans, &upload.id).await;
-            trans.commit().await?;
+            let _ = fail_upload(&db, &upload.id).await;
             Err(err)
         }
     }

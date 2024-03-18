@@ -4,18 +4,16 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::TypedHeader;
 use banyan_object_store::{ObjectStore, ObjectStorePath};
-use banyan_task::{SqliteTaskStore, TaskLikeExt};
 use bytes::Bytes;
 use cid::multibase::Base;
 use cid::multihash::{Code, MultihashDigest};
 use cid::Cid;
 use serde::{Deserialize, Serialize};
 
-use super::db::{all_cids, complete_upload, get_upload, upload_size, write_block_to_tables};
+use super::db::{complete_upload, get_upload, report_upload, upload_size, write_block_to_tables};
 use super::error::UploadError;
 use crate::app::AppState;
 use crate::extractors::AuthenticatedClient;
-use crate::tasks::ReportUploadTask;
 
 #[derive(Deserialize, Serialize)]
 pub struct BlockUploadRequest {
@@ -40,7 +38,7 @@ pub async fn handler(
     TypedHeader(content_type): TypedHeader<ContentType>,
     body: BodyStream,
 ) -> Result<Response, UploadError> {
-    let mut conn = state.database().begin().await?;
+    let db = state.database();
     let reported_body_length = content_len.0;
     if reported_body_length > client.remaining_storage() {
         return Err(UploadError::InsufficientAuthorizedStorage(
@@ -90,9 +88,7 @@ pub async fn handler(
             upload_id,
         } => {
             // Assume that the upload has already been created via the `new` endpoint
-            let upload = get_upload(&mut conn, client.id(), &upload_id)
-                .await?
-                .unwrap();
+            let upload = get_upload(&db, client.id(), &upload_id).await?.unwrap();
             if upload.id != upload_id {
                 return Err(UploadError::IdMismatch);
             }
@@ -103,6 +99,8 @@ pub async fn handler(
     if upload.state == "complete" {
         return Err(UploadError::UploadIsComplete);
     }
+
+    let mut conn = db.acquire().await?;
     // While there are still block fields encoded
     while let Some(block_field) = multipart
         .next_field()
@@ -133,9 +131,8 @@ pub async fn handler(
         write_block_to_tables(&mut conn, &upload.id, &normalized_cid, block.len() as i64).await?;
 
         // Write the bytes to the expected location
-        let location = ObjectStorePath::from(
-            format!("{}/{}.block", upload.base_path, normalized_cid).as_str(),
-        );
+        let location =
+            ObjectStorePath::from(format!("{}/{}.bin", upload.base_path, normalized_cid).as_str());
         store
             .put(&location, block)
             .await
@@ -146,13 +143,13 @@ pub async fn handler(
     if completed {
         let total_size = upload_size(&mut conn, &upload.id).await?;
         complete_upload(&mut conn, total_size, "", &upload.id).await?;
-        ReportUploadTask::new(
+        report_upload(
+            &mut conn,
             client.storage_grant_id(),
             &upload.metadata_id,
-            &all_cids(&mut conn, &upload.id).await?,
-            total_size as u64,
+            &upload.id,
+            total_size,
         )
-        .enqueue::<SqliteTaskStore>(&mut conn)
         .await?;
     }
 

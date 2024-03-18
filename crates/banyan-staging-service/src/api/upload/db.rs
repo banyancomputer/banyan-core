@@ -1,16 +1,18 @@
 use std::str::FromStr;
 use std::time::Duration;
 
+use banyan_task::TaskLikeExt;
 use cid::Cid;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
-use crate::database::DatabaseConnection;
+use crate::database::{Database, DatabaseConnection};
+use crate::tasks::ReportUploadTask;
 
 pub const UPLOAD_SESSION_DURATION: Duration = Duration::from_secs(60 * 60 * 6);
 
 pub async fn start_upload(
-    conn: &mut DatabaseConnection,
+    db: &Database,
     client_id: &Uuid,
     metadata_id: &Uuid,
     reported_size: u64,
@@ -27,8 +29,8 @@ pub async fn start_upload(
     upload.id = sqlx::query_scalar!(
         r#"
         INSERT INTO
-            uploads (client_id, metadata_id, reported_size, base_path, state)
-            VALUES ($1, $2, $3, $4, $5)
+            uploads (client_id, metadata_id, reported_size, base_path, state, created_at)
+            VALUES ($1, $2, $3, $4, $5, DATETIME('now'))
             RETURNING id;
         "#,
         upload.client_id,
@@ -37,24 +39,21 @@ pub async fn start_upload(
         upload.base_path,
         upload.state,
     )
-    .fetch_one(&mut *conn)
+    .fetch_one(db)
     .await?;
 
     Ok(upload)
 }
 
 /// Marks an upload as failed
-pub async fn fail_upload(
-    conn: &mut DatabaseConnection,
-    upload_id: &str,
-) -> Result<(), sqlx::Error> {
+pub async fn fail_upload(db: &Database, upload_id: &str) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
         UPDATE uploads SET state = 'failed' WHERE id = $1;
         "#,
         upload_id
     )
-    .execute(&mut *conn)
+    .execute(db)
     .await
     .map(|_| ())
 }
@@ -88,7 +87,8 @@ pub async fn complete_upload(
         UPDATE uploads SET
                 state = 'complete',
                 final_size = $1,
-                integrity_hash = $2
+                integrity_hash = $2,
+                finished_at = DATETIME('now')
             WHERE id = $3;
         "#,
         total_size,
@@ -120,13 +120,16 @@ pub async fn upload_size(
     Ok(total_size as i64)
 }
 
-pub async fn all_cids(
+pub async fn report_upload(
     conn: &mut DatabaseConnection,
+    storage_grant_id: Uuid,
+    metadata_id: &str,
     upload_id: &str,
-) -> Result<Vec<Cid>, sqlx::Error> {
+    total_size: i64,
+) -> Result<(), sqlx::Error> {
     let all_cids: Vec<String> = sqlx::query_scalar!(
         r#"
-            SELECT blocks.cid 
+            SELECT blocks.cid
             FROM blocks
             JOIN uploads_blocks ON blocks.id = uploads_blocks.block_id
             JOIN uploads ON uploads_blocks.upload_id = uploads.id
@@ -137,14 +140,21 @@ pub async fn all_cids(
     .fetch_all(&mut *conn)
     .await?;
 
-    Ok(all_cids
+    let all_cids = all_cids
         .into_iter()
         .map(|cid_string| Cid::from_str(&cid_string).unwrap())
-        .collect::<Vec<Cid>>())
+        .collect::<Vec<Cid>>();
+
+    ReportUploadTask::new(storage_grant_id, metadata_id, &all_cids, total_size as u64)
+        .enqueue::<banyan_task::SqliteTaskStore>(&mut *conn)
+        .await
+        .unwrap();
+
+    Ok(())
 }
 
 pub async fn get_upload(
-    conn: &mut DatabaseConnection,
+    db: &Database,
     client_id: Uuid,
     upload_id: &str,
 ) -> Result<Option<Upload>, sqlx::Error> {
@@ -163,7 +173,7 @@ pub async fn get_upload(
         upload_id,
         now
     )
-    .fetch_optional(&mut *conn)
+    .fetch_optional(db)
     .await
 }
 
@@ -203,7 +213,6 @@ pub async fn write_block_to_tables(
     )
     .execute(&mut *conn)
     .await?;
-
     Ok(())
 }
 
