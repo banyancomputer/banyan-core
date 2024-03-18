@@ -1,0 +1,98 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT * FROM background_tasks\n                   WHERE id = $1\n                       AND state IN ($2, $3)\n                       AND current_attempt < maximum_attempts;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "original_task_id",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "task_name",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "queue_name",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "unique_key",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "state",
+        "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "current_attempt",
+        "ordinal": 6,
+        "type_info": "Int64"
+      },
+      {
+        "name": "maximum_attempts",
+        "ordinal": 7,
+        "type_info": "Int64"
+      },
+      {
+        "name": "payload",
+        "ordinal": 8,
+        "type_info": "Blob"
+      },
+      {
+        "name": "error",
+        "ordinal": 9,
+        "type_info": "Blob"
+      },
+      {
+        "name": "scheduled_at",
+        "ordinal": 10,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "scheduled_to_run_at",
+        "ordinal": 11,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "started_at",
+        "ordinal": 12,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "finished_at",
+        "ordinal": 13,
+        "type_info": "Datetime"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false,
+      true,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "062d1a4c65541f20b88fafe9e859277cd2cc27c4b603f2bdeb2eec30bef5a230"
+}

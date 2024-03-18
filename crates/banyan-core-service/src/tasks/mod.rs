@@ -25,7 +25,7 @@ use tokio::sync::watch;
 use tokio::task::JoinHandle;
 
 use crate::app::AppState;
-use crate::database::Database;
+use crate::database::DatabaseConnection;
 use crate::tasks::redistribute_staging_data::RedistributeStagingDataTask;
 use crate::tasks::report_all_storage_hosts_consumption::ReportAllStorageHostsConsumptionTask;
 use crate::tasks::report_all_users_consumption::ReportAllUsersConsumptionTask;
@@ -35,21 +35,18 @@ pub async fn start_background_workers(
     mut shutdown_rx: watch::Receiver<()>,
 ) -> Result<JoinHandle<()>, &'static str> {
     let task_store = SqliteTaskStore::new(state.database());
+    let mut conn = state
+        .database()
+        .acquire()
+        .await
+        .map_err(|_| "failed to acquire db connection")?;
 
-    enqueue_task_if_none_in_progress::<ReportAllUsersConsumptionTask>(
-        &task_store,
-        &mut state.database(),
-    )
-    .await;
-    enqueue_task_if_none_in_progress::<ReportAllUsersConsumptionTask>(
-        &task_store,
-        &mut state.database(),
-    )
-    .await;
+    enqueue_task_if_none_in_progress::<ReportAllUsersConsumptionTask>(&task_store, &mut conn).await;
+    enqueue_task_if_none_in_progress::<ReportAllUsersConsumptionTask>(&task_store, &mut conn).await;
     // TODO: uncomment after testing with small uploads on production
     // enqueue_task_if_none_in_progress::<RedistributeStagingDataTask>(
     //     &task_store,
-    //     &mut state.database(),
+    //     state.database(),
     // )
     // .await;
 
@@ -70,12 +67,13 @@ pub async fn start_background_workers(
         .await
         .map_err(|_| "background worker startup failed")
 }
+
 async fn enqueue_task_if_none_in_progress<T: TaskLikeExt + TaskLike + Default>(
     task_store: &SqliteTaskStore,
-    db: &mut Database,
+    conn: &mut DatabaseConnection,
 ) {
     if task_store
-        .task_in_state::<T>(vec![TaskState::New, TaskState::Retry])
+        .task_in_state::<T>(conn, vec![TaskState::New, TaskState::Retry])
         .await
         .expect("get task")
         .is_some()
@@ -83,10 +81,8 @@ async fn enqueue_task_if_none_in_progress<T: TaskLikeExt + TaskLike + Default>(
         return;
     }
 
-    let mut conn = db.acquire().await.expect("get db connection");
-
     T::default()
-        .enqueue::<SqliteTaskStore>(&mut conn)
+        .enqueue::<SqliteTaskStore>(conn)
         .await
         .expect("enqueue task");
 }
