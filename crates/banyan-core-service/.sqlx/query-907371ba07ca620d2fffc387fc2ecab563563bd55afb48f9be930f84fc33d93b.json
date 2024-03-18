@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id FROM background_tasks\n                   WHERE state IN ($1, $2)\n                      AND DATETIME(started_at) <= DATETIME($3)\n                   ORDER BY DATETIME(started_at) ASC\n                   LIMIT 10;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "907371ba07ca620d2fffc387fc2ecab563563bd55afb48f9be930f84fc33d93b"
+}
