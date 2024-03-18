@@ -68,7 +68,7 @@ impl TaskLike for RedistributeStagingDataTask {
             let new_storage_host = StorageHost::select_for_capacity_with_exclusion(
                 &mut conn,
                 total_size,
-                &vec![staging_host.id.clone()],
+                &[staging_host.id.clone()],
             )
             .await?;
             let user_report =

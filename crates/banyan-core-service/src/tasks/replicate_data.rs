@@ -4,21 +4,25 @@ use async_trait::async_trait;
 use banyan_task::{CurrentTask, TaskLike};
 use rand::prelude::SliceRandom;
 use serde::{Deserialize, Serialize};
+use sqlx::Error;
 use time::OffsetDateTime;
 use url::Url;
 
 use crate::app::AppState;
 use crate::clients::{ReplicateDataRequest, StagingServiceClient, StagingServiceError};
-use crate::database::models::{
-    Blocks, Bucket, Metadata, MinimalBlockLocation, StorageHost,
-};
+use crate::database::models::{Blocks, Bucket, Metadata, MinimalBlockLocation, StorageHost};
+use crate::database::DatabaseConnection;
+use crate::tasks::replicate_data::ReplicateDataTaskError::NotEnoughStorageHosts;
+
+const DEFAULT_REPLICATION_FACTOR: i32 = 1;
 
 #[derive(sqlx::FromRow)]
 pub struct BlockData {
     pub block_id: String,
     pub metadata_id: String,
     pub storage_host_id: String,
-    pub host_count: i64,
+    // the field cannot be null
+    pub host_count: Option<i32>,
 }
 
 #[derive(Deserialize, Serialize, Default, Clone)]
@@ -42,8 +46,7 @@ impl TaskLike for ReplicateDataTask {
             Url::parse(&staging_host.url)?,
         );
         let mut conn = db.acquire().await?;
-        // let blocks_for_replication = get_blocks_for_replication(&mut conn).await?;
-        let blocks_for_replication: Vec<BlockData> = Vec::new();
+        let blocks_for_replication = get_blocks_for_replication(&mut conn).await?;
         let mut undistributed_blocks: HashSet<String> = blocks_for_replication
             .iter()
             .map(|block| block.block_id.clone())
@@ -74,23 +77,31 @@ impl TaskLike for ReplicateDataTask {
             }
             let metadata = Metadata::find_by_id_with_conn(&mut conn, metadata_id).await?;
             let bucket = Bucket::find_by_id(&mut conn, &metadata.bucket_id).await?;
-            let replication_factor = bucket.replicas;
-            let replicas_diff = replication_factor - grouped_blocks[0].host_count;
+            let replication_factor = bucket.replicas as i32;
+            let replicas_diff = replication_factor
+                - grouped_blocks[0]
+                    .host_count
+                    .unwrap_or(DEFAULT_REPLICATION_FACTOR);
 
+            // nothing to replicate
             if replicas_diff <= 0 {
                 continue;
             }
+
             let block_ids: Vec<String> = grouped_blocks
                 .iter()
                 .map(|block| block.block_id.clone())
                 .collect::<Vec<_>>();
+
             let block_cids: Vec<String> = Blocks::get_cids_by_ids(&mut conn, &block_ids).await?;
-            let mut selected_hosts: Vec<String> = grouped_blocks
+
+            let mut already_selected_hosts: Vec<String> = grouped_blocks
                 .iter()
                 .map(|block| block.storage_host_id.clone())
                 .collect::<HashSet<_>>()
                 .into_iter()
                 .collect();
+
             let existing_hosts: Vec<String> = grouped_blocks
                 .iter()
                 .map(|block| block.storage_host_id.clone())
@@ -99,17 +110,24 @@ impl TaskLike for ReplicateDataTask {
                 .collect();
 
             for _ in 0..replicas_diff {
-                let new_storage_host = StorageHost::select_for_capacity_with_exclusion(
+                let new_storage_host = match StorageHost::select_for_capacity_with_exclusion(
                     &mut conn,
                     metadata.expected_data_size,
-                    &selected_hosts,
+                    &already_selected_hosts,
                 )
-                .await?;
-                selected_hosts.push(new_storage_host.id.clone());
+                .await
+                {
+                    Ok(host) => host,
+                    _ => {
+                        tracing::error!("not enough storage hosts for metadata {}", metadata_id);
+                        return Err(NotEnoughStorageHosts(Error::RowNotFound));
+                    }
+                };
+                already_selected_hosts.push(new_storage_host.id.clone());
 
                 // jumble the host that will be sending the data to avoid single host getting overloaded
                 let old_host_id = existing_hosts.choose(&mut rand::thread_rng()).unwrap();
-                let old_storage_host = StorageHost::find_by_id(&mut conn, &old_host_id).await?;
+                let old_storage_host = StorageHost::find_by_id(&mut conn, old_host_id).await?;
 
                 staging_client
                     .replicate_data(ReplicateDataRequest {
@@ -151,27 +169,36 @@ impl TaskLike for ReplicateDataTask {
     }
 }
 
-// async fn get_blocks_for_replication(
-//     conn: &mut DatabaseConnection,
-// ) -> Result<Vec<BlockData>, sqlx::Error> {
-//     let blocks_for_replication = sqlx::query_as!(
-//         BlockData,
-//         "SELECT bl.block_id, bl.metadata_id, bl.storage_host_id, COUNT(DISTINCT bl.storage_host_id) as host_count
-//         FROM block_locations bl
-//                  JOIN blocks b ON bl.block_id = b.id
-//                  JOIN metadata m ON bl.metadata_id = m.id
-//                  JOIN buckets bu ON m.bucket_id = bu.id
-//                  JOIN users u ON bu.user_id = u.id
-//         WHERE bl.storage_host_id != (SELECT id FROM storage_hosts WHERE staging IS TRUE)
-//           AND bl.pruned_at IS NULL
-//           AND bl.expired_at IS NULL
-//           AND bu.deleted_at IS NULL
-//         GROUP BY bl.block_id, bl.metadata_id
-//         HAVING host_count < bu.host_count;",
-//     )
-//         .fetch_all(&mut *conn).await?;
-//     Ok(blocks_for_replication)
-// }
+async fn get_blocks_for_replication(
+    conn: &mut DatabaseConnection,
+) -> Result<Vec<BlockData>, sqlx::Error> {
+    // An invariant must be preserved for the below query yield correct results
+    // 1. There is not a single block with two entries in the block_locations table,
+    //    where one is associated with a staging host and the other is not
+    // 2. There is not a single metadata_id that, during the run(),
+    //    has had some blocks fail and some blocks succeed the replication process
+    let blocks_for_replication = sqlx::query_as!(
+        BlockData,
+        "SELECT bl.block_id, bl.metadata_id, bl.storage_host_id, COUNT(DISTINCT bl.storage_host_id) as host_count
+            FROM block_locations bl
+                 JOIN blocks b ON bl.block_id = b.id
+                 JOIN metadata m ON bl.metadata_id = m.id
+                 JOIN buckets bu ON m.bucket_id = bu.id
+                 JOIN users u ON bu.user_id = u.id
+                 LEFT JOIN block_locations bl2 ON bl.block_id = bl2.block_id
+                    AND bl2.storage_host_id = (SELECT id FROM storage_hosts WHERE staging IS TRUE)
+                    OR bl2.stored_at IS NULL
+            WHERE bl2.block_id IS NULL
+              AND bl.pruned_at IS NULL
+              AND bl.expired_at IS NULL
+              AND bu.deleted_at IS NULL
+            GROUP BY bl.block_id, bl.storage_host_id
+            HAVING host_count < bu.replicas;",
+    )
+    .fetch_all(&mut *conn).await?;
+
+    Ok(blocks_for_replication)
+}
 
 #[derive(Debug, thiserror::Error)]
 pub enum ReplicateDataTaskError {
@@ -184,11 +211,7 @@ pub enum ReplicateDataTaskError {
     #[error("staging error: {0}")]
     StagingServiceError(#[from] StagingServiceError),
     #[error("not enough storage hosts")]
-    NotEnoughStorageHosts,
-    #[error("not all blocks were replicated")]
-    NotAllBlocksReplicated,
-    #[error("inconsistent replica count in the same metadata")]
-    InconsistentReplicaCount,
+    NotEnoughStorageHosts(sqlx::Error),
 }
 
 #[cfg(test)]
