@@ -29,9 +29,15 @@ pub async fn start_background_workers(
         .register_task_type::<PruneBlocksTask>()
         .register_task_type::<CreateDealsTask>()
         .register_task_type::<HostCapacityTask>()
-        .start::<SqliteConnection>(&mut *connection, async move {
-            let _ = shutdown_rx.changed().await;
-        })
+        .start(
+            move || {
+                //&mut state.database().begin().await.unwrap()
+                executor
+            },
+            async move {
+                let _ = shutdown_rx.changed().await;
+            },
+        )
         .await
         .map_err(|_| "background worker startup failed")
 }

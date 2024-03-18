@@ -24,54 +24,50 @@ pub trait TaskLike: Serialize + DeserializeOwned + Sync + Send + 'static {
 }
 
 #[async_trait]
-pub trait TaskLikeExt<DB>
-where
-    DB: Database,
-{
-    async fn enqueue<S: TaskStore<DB>>(
+pub trait TaskLikeExt {
+    async fn enqueue<S: TaskStore>(
         self,
         pool: &mut S::Pool,
     ) -> Result<Option<String>, TaskStoreError>;
 
-    async fn enqueue_with_connection<S: TaskStore<DB>>(
+    async fn enqueue_with_connection<S: TaskStore>(
         self,
         conn: &mut S::Connection,
     ) -> Result<Option<String>, TaskStoreError>;
 
-    async fn enqueue_exec<'e, 'c: 'e, E, S: TaskStore<DB>>(
+    async fn enqueue_exec<E, D, S: TaskStore>(
         self,
-        conn: E,
+        conn: &mut E,
     ) -> Result<Option<String>, TaskStoreError>
     where
-        E: 'e + Executor<'c, Database = DB>;
+        for<'e> &'e mut E: Executor<'e, Database = D>;
 }
 
 #[async_trait]
-impl<T, DB> TaskLikeExt<DB> for T
+impl<T> TaskLikeExt for T
 where
     T: TaskLike,
-    DB: Database,
 {
-    async fn enqueue<S: TaskStore<DB>>(
+    async fn enqueue<S: TaskStore>(
         self,
         pool: &mut S::Pool,
     ) -> Result<Option<String>, TaskStoreError> {
         S::enqueue(pool, self).await
     }
 
-    async fn enqueue_with_connection<S: TaskStore<DB>>(
+    async fn enqueue_with_connection<S: TaskStore>(
         self,
         conn: &mut S::Connection,
     ) -> Result<Option<String>, TaskStoreError> {
         S::enqueue_with_connection(conn, self).await
     }
 
-    async fn enqueue_exec<'e, 'c: 'e, E, S: TaskStore<DB>>(
+    async fn enqueue_exec<E, D, S: TaskStore>(
         self,
-        conn: E,
+        conn: &mut E,
     ) -> Result<Option<String>, TaskStoreError>
     where
-        E: 'e + Executor<'c, Database = DB>,
+        for<'e> &'e mut E: Executor<'e, Database = D>,
     {
         Ok(None)
     }

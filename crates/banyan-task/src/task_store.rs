@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use serde::Serialize;
-use sqlx::{Database, Executor};
+use sqlx::{AnyConnection, AnyExecutor, Connection, Database, Executor};
 use time::OffsetDateTime;
 
 use crate::{Task, TaskExecError, TaskLike, TaskState};
@@ -22,7 +22,8 @@ pub struct TaskStoreMetrics {
 }
 
 #[async_trait]
-pub trait TaskStore<D: Database>: Send + Sync + 'static {
+pub trait TaskStore: Send + Sync + 'static {
+    type DB: Database;
     type Pool: Send;
     type Connection: Send;
 
@@ -48,11 +49,14 @@ pub trait TaskStore<D: Database>: Send + Sync + 'static {
     where
         Self: Sized;
 
-    async fn enqueue_exec<T, E>(conn: &mut E, task: T) -> Result<Option<String>, TaskStoreError>
+    async fn enqueue_exec<T, E>(
+        executor: &mut E,
+        task: T,
+    ) -> Result<Option<String>, TaskStoreError>
     where
         Self: Sized,
         T: TaskLike,
-        for<'e> &'e mut E: Executor<'e, Database = D>;
+        for<'e> &'e mut E: Executor<'e, Database = Self::DB>;
 
     async fn errored(
         &self,

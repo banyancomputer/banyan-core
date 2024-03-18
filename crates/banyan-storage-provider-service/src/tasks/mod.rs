@@ -28,7 +28,7 @@ pub async fn start_background_workers(
         .register_task_type::<PruneBlocksTask>()
         .register_recurring_task_type::<ReportHealthTask>()
         .register_recurring_task_type::<ReportBandwidthMetricsTask>()
-        .start::<SqliteConnection>(&mut *connection, async move {
+        .start(&mut *connection, async move {
             let _ = shutdown_rx.changed().await;
         })
         .await

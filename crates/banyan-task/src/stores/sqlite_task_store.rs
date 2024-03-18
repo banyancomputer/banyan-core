@@ -3,7 +3,8 @@ use std::time::Duration;
 use async_trait::async_trait;
 use sqlx::pool::PoolConnection;
 use sqlx::{
-    Acquire, Database, Execute, Executor, Sqlite, SqliteConnection, SqliteExecutor, SqlitePool,
+    Acquire, AnyConnection, AnyExecutor, Database, Execute, Executor, Sqlite, SqliteConnection,
+    SqliteExecutor, SqlitePool,
 };
 use time::OffsetDateTime;
 
@@ -26,7 +27,7 @@ impl SqliteTaskStore {
     }
 
     pub async fn is_key_present<E>(
-        executor: &mut E,
+        connection: &mut E,
         key: &str,
         task_name: &str,
     ) -> Result<bool, TaskStoreError>
@@ -38,7 +39,7 @@ impl SqliteTaskStore {
             key,
             task_name
         )
-        .fetch_optional(&mut *executor)
+        .fetch_optional(&mut *connection)
         .await?;
 
         Ok(query_res.is_some())
@@ -94,7 +95,7 @@ impl SqliteTaskStore {
             // right now if we encounter a unique key that is already present in the DB we simply
             // don't queue the new instance of that task, the old one will have a bit of priority
             // due to its age.
-            if SqliteTaskStore::is_key_present(executor, ukey, &task.task_name).await? {
+            if SqliteTaskStore::is_key_present(&mut *executor, ukey, &task.task_name).await? {
                 return Ok(None);
             }
         }
@@ -143,7 +144,8 @@ impl SqliteTaskStore {
 }
 
 #[async_trait]
-impl TaskStore<Sqlite> for SqliteTaskStore {
+impl TaskStore for SqliteTaskStore {
+    type DB = Sqlite;
     type Pool = SqlitePool;
     type Connection = SqliteConnection;
     //stype Executor = SqliteExecutor;
@@ -170,11 +172,11 @@ impl TaskStore<Sqlite> for SqliteTaskStore {
         Ok(background_task_id)
     }
 
-    async fn enqueue_exec<T, E>(conn: &mut E, task: T) -> Result<Option<String>, TaskStoreError>
+    async fn enqueue_exec<T, E>(executor: &mut E, task: T) -> Result<Option<String>, TaskStoreError>
     where
         Self: Sized,
         T: TaskLike,
-        for<'e> &'e mut E: Executor<'e, Database = Sqlite>,
+        for<'e> &'e mut E: Executor<'e, Database = Self::DB>,
     {
         let key = "";
         let task_name = "";
@@ -183,7 +185,7 @@ impl TaskStore<Sqlite> for SqliteTaskStore {
             key,
             task_name
         )
-        .fetch_optional(&mut *conn)
+        .fetch_optional(&mut *executor)
         .await?;
         Ok(None)
     }
