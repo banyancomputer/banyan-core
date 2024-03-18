@@ -39,7 +39,7 @@ pub async fn handler(
     TypedHeader(content_type): TypedHeader<ContentType>,
     body: BodyStream,
 ) -> Result<Response, UploadError> {
-    let mut db = state.database();
+    let db = state.database();
     let reported_body_length = content_len.0;
     if reported_body_length > client.remaining_storage() {
         return Err(UploadError::InsufficientAuthorizedStorage(
@@ -70,7 +70,7 @@ pub async fn handler(
         BlockUploadDetails::OneOff => {
             /*
             let upload = start_upload(
-                &db,
+                &mut conn,
                 &client.id(),
                 &request.metadata_id,
                 reported_body_length,
@@ -100,6 +100,8 @@ pub async fn handler(
     if upload.state == "complete" {
         return Err(UploadError::UploadIsComplete);
     }
+
+    let mut conn = db.acquire().await?;
     // While there are still block fields encoded
     while let Some(block_field) = multipart
         .next_field()
@@ -127,7 +129,7 @@ pub async fn handler(
             return Err(UploadError::MismatchedCid((normalized_cid, computed_cid)));
         }
         // Write this block to the tables
-        write_block_to_tables(&db, &upload.id, &normalized_cid, block.len() as i64).await?;
+        write_block_to_tables(&mut conn, &upload.id, &normalized_cid, block.len() as i64).await?;
 
         // Write the bytes to the expected location
         let location =
@@ -140,10 +142,10 @@ pub async fn handler(
 
     // If we've just finished off the upload, complete and report it
     if completed {
-        let total_size = upload_size(&db, &upload.id).await?;
-        complete_upload(&db, total_size, "", &upload.id).await?;
+        let total_size = upload_size(&mut conn, &upload.id).await?;
+        complete_upload(&mut conn, total_size, "", &upload.id).await?;
         report_upload(
-            &mut db,
+            &mut conn,
             client.storage_grant_id(),
             &upload.metadata_id,
             &upload.id,

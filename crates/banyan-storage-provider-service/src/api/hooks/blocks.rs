@@ -16,6 +16,7 @@ use uuid::Uuid;
 
 use crate::api::upload::{complete_upload, upload_size, write_block_to_tables, Upload};
 use crate::app::AppState;
+use crate::database::DatabaseConnection;
 use crate::extractors::PlatformIdentity;
 use crate::tasks::ReportRedistributionTask;
 
@@ -38,7 +39,7 @@ pub async fn handler(
     TypedHeader(content_type): TypedHeader<ContentType>,
     body: BodyStream,
 ) -> Result<Response, BlocksUploadError> {
-    let mut db = state.database();
+    let db = state.database();
     let mime_ct = mime::Mime::from(content_type);
     let boundary = multer::parse_boundary(mime_ct).unwrap();
     let constraints = multer::Constraints::new().allowed_fields(vec!["request-data", "block"]);
@@ -63,6 +64,7 @@ pub async fn handler(
         return Err(BlocksUploadError::UploadIsComplete);
     }
 
+    let mut conn = db.acquire().await?;
     // While there are still block fields encoded
     while let Some(block_field) = multipart
         .next_field()
@@ -93,7 +95,7 @@ pub async fn handler(
             )));
         }
         // Write this block to the tables
-        write_block_to_tables(&db, &upload.id, &normalized_cid, block.len() as i64).await?;
+        write_block_to_tables(&mut conn, &upload.id, &normalized_cid, block.len() as i64).await?;
 
         // Write the bytes to the expected location
         let location =
@@ -106,10 +108,10 @@ pub async fn handler(
 
     // If we've just finished off the upload, complete and report it
     if request.details.completed {
-        let total_size = upload_size(&db, &upload.id).await?;
-        complete_upload(&db, total_size, "", &upload.id).await?;
+        let total_size = upload_size(&mut conn, &upload.id).await?;
+        complete_upload(&mut conn, total_size, "", &upload.id).await?;
         report_complete_redistribution(
-            &mut db,
+            &mut conn,
             request.details.grant_id,
             &upload.metadata_id,
             &upload.id,
@@ -193,14 +195,12 @@ impl IntoResponse for BlocksUploadError {
 }
 
 pub async fn report_complete_redistribution(
-    db: &mut crate::database::Database,
+    conn: &mut DatabaseConnection,
     grant_id: Uuid,
     metadata_id: &str,
     upload_id: &str,
     total_size: i64,
 ) -> Result<(), sqlx::Error> {
-    let mut conn = db.acquire().await?;
-
     let all_cids: Vec<String> = sqlx::query_scalar!(
         r#"
             SELECT blocks.cid
@@ -220,7 +220,7 @@ pub async fn report_complete_redistribution(
         .collect::<Vec<Cid>>();
 
     ReportRedistributionTask::new(grant_id, metadata_id, &all_cids, total_size as u64)
-        .enqueue::<banyan_task::SqliteTaskStore>(&mut conn)
+        .enqueue::<banyan_task::SqliteTaskStore>(&mut *conn)
         .await
         .unwrap();
 

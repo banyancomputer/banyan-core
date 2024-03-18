@@ -90,6 +90,7 @@ impl SqliteTaskStore {
 
     pub async fn task_in_state<T: TaskLike>(
         &self,
+        conn: &mut SqliteConnection,
         states: Vec<TaskState>,
     ) -> Result<Option<Task>, TaskStoreError> {
         let mut query_builder =
@@ -107,7 +108,7 @@ impl SqliteTaskStore {
         let query = query_builder
             .build_query_as::<Task>()
             .persistent(false)
-            .fetch_optional(&self.pool)
+            .fetch_optional(&mut *conn)
             .await;
 
         match query {
