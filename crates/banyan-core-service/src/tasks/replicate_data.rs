@@ -14,7 +14,6 @@ use crate::database::models::{Blocks, Bucket, Metadata, MinimalBlockLocation, St
 use crate::database::DatabaseConnection;
 use crate::tasks::replicate_data::ReplicateDataTaskError::NotEnoughStorageHosts;
 
-
 #[derive(sqlx::FromRow)]
 pub struct BlockData {
     pub block_id: String,
