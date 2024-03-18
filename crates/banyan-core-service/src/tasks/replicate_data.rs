@@ -14,15 +14,13 @@ use crate::database::models::{Blocks, Bucket, Metadata, MinimalBlockLocation, St
 use crate::database::DatabaseConnection;
 use crate::tasks::replicate_data::ReplicateDataTaskError::NotEnoughStorageHosts;
 
-const DEFAULT_REPLICATION_FACTOR: i32 = 1;
 
 #[derive(sqlx::FromRow)]
 pub struct BlockData {
     pub block_id: String,
     pub metadata_id: String,
     pub storage_host_id: String,
-    // the field cannot be null
-    pub host_count: Option<i32>,
+    pub host_count: i64,
 }
 
 #[derive(Deserialize, Serialize, Default, Clone)]
@@ -77,11 +75,8 @@ impl TaskLike for ReplicateDataTask {
             }
             let metadata = Metadata::find_by_id_with_conn(&mut conn, metadata_id).await?;
             let bucket = Bucket::find_by_id(&mut conn, &metadata.bucket_id).await?;
-            let replication_factor = bucket.replicas as i32;
-            let replicas_diff = replication_factor
-                - grouped_blocks[0]
-                    .host_count
-                    .unwrap_or(DEFAULT_REPLICATION_FACTOR);
+            let replication_factor = bucket.replicas;
+            let replicas_diff = replication_factor - grouped_blocks[0].host_count;
 
             // nothing to replicate
             if replicas_diff <= 0 {
