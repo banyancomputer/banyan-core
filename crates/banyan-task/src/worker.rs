@@ -133,17 +133,14 @@ where
                 .store
                 .next(self.queue_config.name(), &relevant_task_names)
                 .await
-                .map_err(WorkerError::StoreUnavailable)? {
+                .map_err(WorkerError::StoreUnavailable)?
+            {
                 tracing::info!(
-                    task_name = task_name,
-                    task_id = task_id,
-                    "starting execution of");
-                self.run(task).await?;
-                tracing::info!(
-                    task_name = task_name,
-                    task_id = task_id,
-                    "finished execution of"
+                    task_name = task.task_name,
+                    task_id = task.id,
+                    "starting execution of"
                 );
+                self.run(task).await?;
                 continue;
             }
 

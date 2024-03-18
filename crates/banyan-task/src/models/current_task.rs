@@ -54,17 +54,6 @@ pub enum CurrentTaskError {
 pub mod tests {
     use super::CurrentTask;
 
-    impl Default for CurrentTask {
-        fn default() -> Self {
-            Self {
-                id: uuid::Uuid::new_v4().to_string(),
-                current_attempt: 0,
-                scheduled_at: OffsetDateTime::UNIX_EPOCH,
-                started_at: OffsetDateTime::UNIX_EPOCH,
-            }
-        }
-    }
-  
     pub fn increment_current_task_attempt_count(ct: &mut CurrentTask) -> &mut CurrentTask {
         ct.current_attempt += 1;
         ct

@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use async_trait::async_trait;
 use sqlx::pool::PoolConnection;
-use sqlx::{Acquire, Sqlite, SqliteConnection, SqliteExecutor, SqlitePool};
+use sqlx::{Acquire, Sqlite, SqliteConnection, SqlitePool};
 use time::OffsetDateTime;
 
 use crate::task_store::TaskStore;
@@ -50,16 +50,13 @@ impl SqliteTaskStore {
         conn: &mut SqliteConnection,
         key: &str,
         task_name: &str,
-    ) -> Result<bool, TaskStoreError>
-    where
-        for<'e> &'e mut E: SqliteExecutor<'e>,
-    {
+    ) -> Result<bool, TaskStoreError> {
         let query_res = sqlx::query_scalar!(
             "SELECT 1 FROM background_tasks WHERE unique_key = $1 AND task_name = $2;",
             key,
             task_name
         )
-        .fetch_optional(&mut *connection)
+        .fetch_optional(&mut *conn)
         .await?;
 
         Ok(query_res.is_some())
@@ -427,8 +424,6 @@ pub mod tests {
     #[tokio::test]
     async fn update_state_works() {
         let (task_store, _task_id) = singleton_task_store().await;
-        let mut conn = task_store.pool.clone().acquire().await.expect("acquire");
-
         let task = TestTask;
         let mut conn = task_store.connect().await;
         let task_id = task
@@ -448,8 +443,6 @@ pub mod tests {
     #[tokio::test]
     async fn error_tasks_are_retried() {
         let (task_store, _task_id) = singleton_task_store().await;
-        let mut conn = task_store.pool.clone().acquire().await.expect("acquire");
-
         let task = TestTask;
         let mut conn = task_store.connect().await;
         let task_id = task
@@ -471,8 +464,6 @@ pub mod tests {
     #[tokio::test]
     async fn timeout_tasks_are_retried() {
         let (task_store, _task_id) = singleton_task_store().await;
-        let mut conn = task_store.pool.clone().acquire().await.expect("acquire");
-
         let task = TestTask;
         let mut conn = task_store.connect().await;
         let task_id = task
@@ -494,8 +485,6 @@ pub mod tests {
     #[tokio::test]
     async fn non_error_tasks_are_not_retried() {
         let (task_store, _task_id) = singleton_task_store().await;
-        let mut conn = task_store.pool.clone().acquire().await.expect("acquire");
-
         let task = TestTask;
         let mut conn = task_store.connect().await;
         let task_id = task

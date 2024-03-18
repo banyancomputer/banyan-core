@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use banyan_task::{CurrentTask, TaskLike};
+use banyan_task::{CurrentTask, RecurringTask, TaskLike};
 use serde::{Deserialize, Serialize};
 use time::error::ComponentRange;
 use time::OffsetDateTime;
@@ -43,11 +43,14 @@ impl TaskLike for ReportAllUsersConsumptionTask {
 
         Ok(())
     }
+}
 
-    fn next_time(&self) -> Option<OffsetDateTime> {
-        Some(OffsetDateTime::now_utc() + time::Duration::hours(1))
+impl RecurringTask for ReportAllUsersConsumptionTask {
+    fn next_schedule(&self) -> Result<Option<OffsetDateTime>, String> {
+        Ok(Some(OffsetDateTime::now_utc() + time::Duration::hours(1)))
     }
 }
+
 #[cfg(test)]
 mod test {
     use banyan_task::{CurrentTask, TaskLike};

@@ -14,7 +14,6 @@ pub async fn handler(
     State(state): State<AppState>,
     Json(prune_cids): Json<Vec<Cid>>,
 ) -> Result<Response, PruneBlocksError> {
-
     // Normalize the block CIDs, warn but keep going on any invalid ones
     let mut prune_block_list = Vec::new();
     for cid in prune_cids.into_iter() {
@@ -35,9 +34,6 @@ pub async fn handler(
 
 #[derive(Debug, thiserror::Error)]
 pub enum PruneBlocksError {
-    #[error("could not acquire a database connection: {0}")]
-    DatabaseError(#[from] sqlx::Error),
-
     #[error("could not enqueue task: {0}")]
     UnableToEnqueueTask(#[from] banyan_task::TaskStoreError),
 

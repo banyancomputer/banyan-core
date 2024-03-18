@@ -20,7 +20,7 @@ mod error;
 pub(crate) mod new;
 
 pub use db::{
-    complete_upload, fail_upload, start_upload, write_block_to_tables, Upload,
+    complete_upload, fail_upload, start_upload, upload_size, write_block_to_tables, Upload,
 };
 pub use error::UploadError;
 

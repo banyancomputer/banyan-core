@@ -5,7 +5,7 @@ mod report_health;
 mod report_upload;
 mod upload_blocks;
 
-use banyan_task::{QueueConfig, SqliteTaskStore, TaskLike, TaskLikeExt, TaskState, WorkerPool};
+use banyan_task::{QueueConfig, SqliteTaskStore, TaskLike, TaskLikeExt, TaskStore, WorkerPool};
 pub use prune_blocks::PruneBlocksTask;
 pub use redistribute_data::RedistributeDataTask;
 pub use report_health::ReportHealthTask;
@@ -18,15 +18,12 @@ use crate::database::DatabaseConnection;
 use crate::tasks::report_bandwidth_metrics::ReportBandwidthMetricsTask;
 pub use crate::tasks::upload_blocks::UploadBlocksTask;
 
-use self::report_health::ReportHealthTask;
-
 pub async fn start_background_workers(
     state: AppState,
     mut shutdown_rx: watch::Receiver<()>,
 ) -> Result<JoinHandle<()>, &'static str> {
     let task_store = SqliteTaskStore::new(state.database());
 
-  /*
     let mut conn = state
         .database()
         .acquire()
@@ -35,8 +32,7 @@ pub async fn start_background_workers(
 
     enqueue_task_if_none_in_progress::<ReportBandwidthMetricsTask>(&task_store, &mut conn).await;
     enqueue_task_if_none_in_progress::<ReportHealthTask>(&task_store, &mut conn).await;
-*/
-  
+
     WorkerPool::new(task_store.clone(), move || state.clone())
         .configure_queue(QueueConfig::new("default").with_worker_count(5))
         .register_task_type::<ReportUploadTask>()
@@ -57,7 +53,7 @@ async fn enqueue_task_if_none_in_progress<T: TaskLikeExt + TaskLike + Default>(
     conn: &mut DatabaseConnection,
 ) {
     if task_store
-        .task_in_state::<T>(conn, vec![TaskState::New, TaskState::Retry])
+        .get_living_task(T::TASK_NAME)
         .await
         .expect("get task")
         .is_some()

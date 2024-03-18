@@ -39,8 +39,6 @@ pub enum PruneBlocksError {
 
     #[error("could not enqueue task: {0}")]
     UnableToEnqueueTask(#[from] banyan_task::TaskStoreError),
-    #[error("database: {0}")]
-    Database(#[from] sqlx::Error),
 }
 
 impl IntoResponse for PruneBlocksError {
