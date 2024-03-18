@@ -52,7 +52,7 @@ impl TaskLike for RedistributeDataTask {
     type Context = RedistributeDataTaskContext;
 
     async fn run(&self, _task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
-        let mut database = ctx.database();
+        let database = ctx.database();
         let client = CoreServiceClient::new(
             ctx.secrets().service_signing_key(),
             ctx.service_name(),
@@ -100,6 +100,8 @@ impl TaskLike for RedistributeDataTask {
             })
             .await?;
 
+        let mut conn = database.acquire().await?;
+
         UploadBlocksTask {
             metadata_id: self.metadata_id.clone(),
             grant_id: self.storage_grant_id.clone(),
@@ -108,8 +110,9 @@ impl TaskLike for RedistributeDataTask {
             storage_host_id: self.new_host_id.clone(),
             storage_host_url: self.new_host_url.clone(),
         }
-        .enqueue::<banyan_task::SqliteTaskStore>(&mut database)
+        .enqueue::<banyan_task::SqliteTaskStore>(&mut conn)
         .await?;
+
         Ok(())
     }
 

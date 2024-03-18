@@ -6,11 +6,10 @@ use axum::response::{IntoResponse, Response};
 use banyan_task::TaskLikeExt;
 use cid::multibase::Base;
 use cid::Cid;
-use time::OffsetDateTime;
 use uuid::Uuid;
 
 use crate::app::AppState;
-use crate::database::models::{SnapshotState, User};
+use crate::database::models::SnapshotState;
 use crate::extractors::UserIdentity;
 use crate::tasks::{CreateDealsTask, BLOCK_SIZE};
 
@@ -20,8 +19,8 @@ pub async fn handler(
     Path((bucket_id, metadata_id)): Path<(Uuid, Uuid)>,
     Json(request): Json<BTreeSet<Cid>>,
 ) -> Result<Response, CreateSnapshotError> {
-    let mut database = state.database();
-    let mut conn = database
+    let database = state.database();
+    let mut transaction = database
         .begin()
         .await
         .map_err(CreateSnapshotError::SaveFailed)?;
@@ -34,8 +33,7 @@ pub async fn handler(
         ));
     }
 
-    let user = User::by_id(&mut conn, &user_identity.id().to_string()).await?;
-
+    let user_id = user_identity.id().to_string();
     let metadata_id = sqlx::query_scalar!(
         r#"SELECT m.id FROM metadata AS m
                JOIN buckets AS b ON m.bucket_id = b.id
@@ -45,11 +43,11 @@ pub async fn handler(
                    AND m.id = $3
                    AND m.state != 'deleted'
                    AND s.id IS NULL;"#,
-        user.id,
+        user_id,
         bucket_id,
         metadata_id,
     )
-    .fetch_optional(&mut *conn)
+    .fetch_optional(&mut *transaction)
     .await
     .map_err(CreateSnapshotError::MetadataUnavailable)?
     .ok_or(CreateSnapshotError::NotFound)?;
@@ -64,33 +62,17 @@ pub async fn handler(
         .collect::<Result<Vec<_>, _>>()?;
 
     let size_estimate = normalized_cids.len() as i64 * BLOCK_SIZE;
-    let remaining_tokens = user.remaining_tokens(&mut conn).await?;
-    let tokens_used = size_estimate;
-
-    tracing::info!(
-        "snapshot size_estimate: {}, remaining_tokens: {}",
-        size_estimate,
-        remaining_tokens
-    );
-
-    // Error and exit if the user doesn't have enough token
-    if tokens_used > remaining_tokens {
-        return Err(CreateSnapshotError::InsufficientStorage);
-    }
 
     let pending_state = SnapshotState::Pending.to_string();
-    let now = OffsetDateTime::now_utc();
     let snapshot_id = sqlx::query_scalar!(
-        r#"INSERT INTO snapshots (metadata_id, state, size, tokens_used, created_at)
-               VALUES ($1, $2, $3, $4, $5)
+        r#"INSERT INTO snapshots (metadata_id, state, size)
+               VALUES ($1, $2, $3)
                RETURNING id;"#,
         metadata_id,
         pending_state,
         size_estimate,
-        tokens_used,
-        now,
     )
-    .fetch_one(&mut *conn)
+    .fetch_one(&mut *transaction)
     .await
     .map_err(CreateSnapshotError::SaveFailed)?;
 
@@ -119,7 +101,7 @@ pub async fn handler(
 
         let res = builder
             .build()
-            .execute(&mut *conn)
+            .execute(&mut *transaction)
             .await
             .map_err(CreateSnapshotError::BlockAssociationFailed)?;
 
@@ -132,14 +114,15 @@ pub async fn handler(
         }
     }
 
-    conn.commit()
-        .await
-        .map_err(CreateSnapshotError::TransactionFailure)?;
-
     CreateDealsTask::new(snapshot_id.clone())
-        .enqueue::<banyan_task::SqliteTaskStore>(&mut database)
+        .enqueue::<banyan_task::SqliteTaskStore>(&mut *transaction)
         .await
         .map_err(CreateSnapshotError::UnableToEnqueueTask)?;
+
+    transaction
+        .commit()
+        .await
+        .map_err(CreateSnapshotError::TransactionFailure)?;
 
     let resp_msg = serde_json::json!({ "id": snapshot_id });
     Ok((StatusCode::OK, Json(resp_msg)).into_response())
@@ -162,9 +145,6 @@ pub enum CreateSnapshotError {
     #[error("associating the snapshot with the block cid failed: {0}")]
     BlockAssociationFailed(sqlx::Error),
 
-    #[error("insufficient storage!")]
-    InsufficientStorage,
-
     #[error("association mismatch: {0}")]
     AssociationMismatch(String),
 
@@ -176,9 +156,6 @@ pub enum CreateSnapshotError {
 
     #[error("could not enqueue task: {0}")]
     UnableToEnqueueTask(banyan_task::TaskStoreError),
-
-    #[error("Database error: {0}")]
-    Database(#[from] sqlx::Error),
 }
 
 impl IntoResponse for CreateSnapshotError {
@@ -283,12 +260,6 @@ mod tests {
             initial_blocks.iter().map(String::as_str),
         )
         .await;
-
-        // Make sure the user has capacity
-        let mut user = crate::database::models::User::by_id(&mut conn, &user_id)
-            .await
-            .unwrap();
-        user.award_tokens(&mut conn).await.unwrap();
 
         let res = handler(
             UserIdentity::Session(get_or_create_session(&mut conn, &user_id).await),

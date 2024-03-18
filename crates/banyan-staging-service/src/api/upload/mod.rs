@@ -39,7 +39,8 @@ pub async fn handler(
     TypedHeader(content_type): TypedHeader<ContentType>,
     body: BodyStream,
 ) -> Result<Response, UploadError> {
-    let mut db = state.database();
+    let db = state.database();
+
     let reported_body_length = content_len.0;
     if reported_body_length > client.remaining_storage() {
         return Err(UploadError::InsufficientAuthorizedStorage(
@@ -108,13 +109,15 @@ pub async fn handler(
         Ok(cr) => {
             complete_upload(&db, 0, cr.integrity_hash(), &upload.id).await?;
 
+            let mut conn = db.acquire().await?;
+
             ReportUploadTask::new(
                 client.storage_grant_id(),
                 &request.metadata_id.to_string(),
                 cr.cids(),
                 cr.total_size(),
             )
-            .enqueue::<banyan_task::SqliteTaskStore>(&mut db)
+            .enqueue::<banyan_task::SqliteTaskStore>(&mut *conn)
             .await
             .map_err(UploadError::FailedToEnqueueTask)?;
 

@@ -199,6 +199,8 @@ pub async fn report_complete_redistribution(
     upload_id: &str,
     total_size: i64,
 ) -> Result<(), sqlx::Error> {
+    let mut conn = db.acquire().await?;
+
     let all_cids: Vec<String> = sqlx::query_scalar!(
         r#"
             SELECT blocks.cid
@@ -209,7 +211,7 @@ pub async fn report_complete_redistribution(
         "#,
         upload_id
     )
-    .fetch_all(&*db)
+    .fetch_all(&mut *conn)
     .await?;
 
     let all_cids = all_cids
@@ -218,7 +220,7 @@ pub async fn report_complete_redistribution(
         .collect::<Vec<Cid>>();
 
     ReportRedistributionTask::new(grant_id, metadata_id, &all_cids, total_size as u64)
-        .enqueue::<banyan_task::SqliteTaskStore>(db)
+        .enqueue::<banyan_task::SqliteTaskStore>(&mut conn)
         .await
         .unwrap();
 

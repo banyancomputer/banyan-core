@@ -1,5 +1,6 @@
 use std::ops::Range;
 
+use jwt_simple::algorithms::ES384KeyPair;
 use rand::Rng;
 use sqlx::sqlite::{SqlitePoolOptions, SqliteQueryResult};
 use time::OffsetDateTime;
@@ -8,8 +9,9 @@ use uuid::Uuid;
 use super::models::NewStorageGrant;
 use crate::database::models::{BucketType, DealState, MetadataState, SnapshotState, StorageClass};
 use crate::database::{Database, DatabaseConnection};
-use crate::extractors::{SessionIdentity, SessionIdentityBuilder};
+use crate::extractors::{ApiIdentity, ApiIdentityBuilder, SessionIdentity, SessionIdentityBuilder};
 use crate::tasks::BLOCK_SIZE;
+use crate::utils::keys::fingerprint_public_key;
 
 pub(crate) async fn link_storage_metadata_and_grant(
     conn: &mut DatabaseConnection,
@@ -275,15 +277,17 @@ pub(crate) async fn create_hot_bucket(
     user_id: &str,
     name: &str,
 ) -> String {
+    let now = OffsetDateTime::now_utc();
     sqlx::query_scalar!(
         r#"INSERT INTO
-                buckets (user_id, name, type, storage_class)
-                VALUES ($1, $2, $3, $4)
+                buckets (user_id, name, type, storage_class, updated_at)
+                VALUES ($1, $2, $3, $4, $5)
                 RETURNING id;"#,
         user_id,
         name,
         BucketType::Interactive,
         StorageClass::Hot,
+        now
     )
     .fetch_one(conn)
     .await
@@ -501,6 +505,53 @@ pub(crate) async fn sample_blocks(
     block_ids
 }
 
+pub(crate) async fn get_or_create_identity(
+    conn: &mut DatabaseConnection,
+    user_id: &str,
+) -> ApiIdentity {
+    sqlx::query_scalar!(r#"SELECT email FROM users WHERE id = $1;"#, user_id,)
+        .fetch_one(&mut *conn)
+        .await
+        .expect("user query");
+
+    let device_api_key = sqlx::query!(
+        "SELECT id, pem, fingerprint FROM device_api_keys WHERE user_id = $1;",
+        user_id
+    )
+    .fetch_optional(&mut *conn)
+    .await
+    .expect("device api query");
+
+    match device_api_key {
+        Some(api_key) => ApiIdentityBuilder {
+            user_id: Uuid::parse_str(user_id).expect("user id"),
+            key_fingerprint: api_key.fingerprint.clone(),
+        }
+        .build(),
+        None => {
+            let key_pair = ES384KeyPair::generate();
+            let pem = key_pair.to_pem().expect("pem key");
+            let fingerprint = fingerprint_public_key(&key_pair.public_key());
+
+            sqlx::query_scalar!(
+                r#"INSERT INTO device_api_keys (user_id, fingerprint, pem)
+                    VALUES ($1, $2, $3)
+                    RETURNING id;"#,
+                user_id,
+                fingerprint,
+                pem,
+            )
+            .fetch_one(&mut *conn)
+            .await
+            .expect("device api key query");
+            ApiIdentityBuilder {
+                user_id: Uuid::parse_str(user_id).expect("user id"),
+                key_fingerprint: fingerprint.clone(),
+            }
+            .build()
+        }
+    }
+}
 pub(crate) async fn get_or_create_session(
     conn: &mut DatabaseConnection,
     user_id: &str,

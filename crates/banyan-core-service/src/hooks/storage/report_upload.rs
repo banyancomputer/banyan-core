@@ -24,7 +24,7 @@ pub async fn handler(
 ) -> Result<Response, ReportUploadError> {
     let db_metadata_id = metadata_id.to_string();
 
-    let mut database = state.database();
+    let database = state.database();
     let mut db_conn = database.acquire().await?;
 
     ExistingStorageGrant::redeem_storage_grant(
@@ -81,27 +81,24 @@ pub async fn handler(
         .await
         .map_err(ReportUploadError::DeleteOutdatedFailed)?;
 
-    // Close the connection to prevent locking
-    db_conn.close().await?;
-
     // Now, let's re-evaluate the capacity of that storage host
     HostCapacityTask::new(storage_provider.id.clone())
-        .enqueue::<banyan_task::SqliteTaskStore>(&mut database)
+        .enqueue::<banyan_task::SqliteTaskStore>(&mut db_conn)
         .await
         .map_err(ReportUploadError::UnableToEnqueueTask)?;
 
     let user_id = sqlx::query_scalar!("SELECT user_id FROM buckets WHERE id = $1", bucket_id)
-        .fetch_one(&database)
+        .fetch_one(&mut *db_conn)
         .await
         .map_err(ReportUploadError::QueryFailed)?;
 
     ReportStorageHostConsumptionTask::new(storage_provider.id.clone())
-        .enqueue::<banyan_task::SqliteTaskStore>(&mut database)
+        .enqueue::<banyan_task::SqliteTaskStore>(&mut db_conn)
         .await
         .map_err(ReportUploadError::UnableToEnqueueTask)?;
 
     ReportUserConsumptionTask::new(user_id)
-        .enqueue::<banyan_task::SqliteTaskStore>(&mut database)
+        .enqueue::<banyan_task::SqliteTaskStore>(&mut db_conn)
         .await
         .map_err(ReportUploadError::UnableToEnqueueTask)?;
 

@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT s.* FROM snapshots AS s\n             JOIN metadata AS m ON s.metadata_id = m.id\n             JOIN buckets AS b ON m.bucket_id = b.id\n             WHERE b.user_id = $1 \n             AND m.bucket_id = $2\n             AND s.id = $3;",
+  "query": "SELECT s.*,m.bucket_id FROM snapshots as s JOIN metadata AS m ON s.metadata_id = m.id;",
   "describe": {
     "columns": [
       {
@@ -29,13 +29,13 @@
         "type_info": "Datetime"
       },
       {
-        "name": "tokens_used",
+        "name": "bucket_id",
         "ordinal": 5,
-        "type_info": "Int64"
+        "type_info": "Text"
       }
     ],
     "parameters": {
-      "Right": 3
+      "Right": 0
     },
     "nullable": [
       false,
@@ -46,5 +46,5 @@
       false
     ]
   },
-  "hash": "78e6d8bd57693291d662206ed200f513fe6e9e53a6fbc3b6ac0710230ab29349"
+  "hash": "4b8d90f9433539bb9b6c7757553be6f994a0c055a804cd569fa2b80569aeaf71"
 }

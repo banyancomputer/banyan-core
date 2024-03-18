@@ -384,7 +384,7 @@ mod tests {
 
     impl Snapshot {
         pub(crate) async fn get_all(conn: &Database) -> Vec<Snapshot> {
-            sqlx::query_as!(Snapshot, "SELECT * FROM snapshots;")
+            sqlx::query_as!(Snapshot, "SELECT s.*,m.bucket_id FROM snapshots as s JOIN metadata AS m ON s.metadata_id = m.id;")
                 .fetch_all(conn)
                 .await
                 .expect("fetch snapshots")
