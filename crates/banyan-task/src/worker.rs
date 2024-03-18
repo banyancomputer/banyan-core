@@ -71,6 +71,7 @@ where
         match safe_runner.await.map_err(TaskExecError::Panicked) {
             Ok(Err(err)) | Err(err) => {
                 tracing::error!("task failed with error: {err}");
+
                 // todo: save panic message into the task.error and save it back to the memory
                 // store somehow
                 self.store
@@ -132,14 +133,17 @@ where
                 .store
                 .next(self.queue_config.name(), &relevant_task_names)
                 .await
-                .map_err(WorkerError::StoreUnavailable)?
-            {
+                .map_err(WorkerError::StoreUnavailable)? {
                 tracing::info!(
-                    "running background task `{}` with id `{}`",
-                    task.task_name,
-                    task.id
-                );
+                    task_name = task_name,
+                    task_id = task_id,
+                    "starting execution of");
                 self.run(task).await?;
+                tracing::info!(
+                    task_name = task_name,
+                    task_id = task_id,
+                    "finished execution of"
+                );
                 continue;
             }
 

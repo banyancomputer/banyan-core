@@ -19,7 +19,9 @@ mod db;
 mod error;
 pub(crate) mod new;
 
-pub use db::{complete_upload, fail_upload, start_upload, write_block_to_tables, Upload};
+pub use db::{
+    complete_upload, fail_upload, start_upload, write_block_to_tables, Upload,
+};
 pub use error::UploadError;
 
 /// Limit on the size of the JSON request that accompanies an upload.

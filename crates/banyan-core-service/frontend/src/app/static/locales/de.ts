@@ -61,9 +61,10 @@ export default {
                 billingAndPayment: "Abrechnung und Zahlung"
             },
             profile: {
-                title: "Profil",
-                language: "Sprache",
-                chooseYourLanguage: "Wählen Sie Ihre Sprache"
+                name: "Name",
+                email: "E-Mail-Adresse",
+                darkMode: "Dunkelmodus",
+                language: "Sprache"
             },
         },
         bucket: {
@@ -413,6 +414,10 @@ export default {
             seePricingPage: "Besuchen Sie unsere Preisgestaltungsseite",
             contactSales: "Vertrieb kontaktieren",
             fileSizeExceeded: "Dateigröße überschritten. Bitte versuchen Sie es erneut mit einer Datei kleiner als 100 MB oder verwenden Sie die Banyan-Befehlszeilenschnittstelle."
+        },
+        tomb: {
+            folderAlreadyExists: 'Ordnername muss eindeutig sein - bitte geben Sie einen eindeutigen Namen ein',
+            driveAlreadyExists: 'Laufwerksname muss eindeutig sein - bitte geben Sie einen eindeutigen Namen ein'
         }
     }
 };

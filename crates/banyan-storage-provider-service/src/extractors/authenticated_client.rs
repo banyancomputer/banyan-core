@@ -12,6 +12,7 @@ use uuid::Uuid;
 
 use super::{fingerprint_validator, MAXIMUM_TOKEN_AGE};
 use crate::app::PlatformName;
+use crate::database::models::AuthorizedStorage;
 use crate::database::Database;
 
 pub struct AuthenticatedClient {
@@ -118,7 +119,10 @@ where
             return Err(Self::Rejection::BadNonce);
         }
 
-        let authorized_storage = current_authorized_storage(&database, &client_id.id).await?;
+        let authorized_storage =
+            AuthorizedStorage::current_authorized_storage(&database, &client_id.id)
+                .await?
+                .ok_or(AuthenticatedClientError::MissingGrant)?;
         let consumed_storage = current_consumed_storage(&database, &client_id.id).await?;
 
         let internal_id = match Uuid::parse_str(&client_id.id) {
@@ -161,24 +165,6 @@ where
             storage_grant_id,
         })
     }
-}
-
-pub async fn current_authorized_storage(
-    db: &Database,
-    client_id: &str,
-) -> Result<AuthorizedStorage, AuthenticatedClientError> {
-    let auth_stor: Option<AuthorizedStorage> = sqlx::query_as(
-        "SELECT grant_id, allowed_storage AS allowed_bytes FROM storage_grants
-                     WHERE client_id = $1
-                     ORDER BY created_at DESC
-                     LIMIT 1;",
-    )
-    .bind(client_id)
-    .fetch_optional(db)
-    .await
-    .map_err(AuthenticatedClientError::DbFailure)?;
-
-    auth_stor.ok_or(AuthenticatedClientError::MissingGrant)
 }
 
 pub async fn current_consumed_storage(
@@ -231,7 +217,7 @@ pub enum AuthenticatedClientError {
     CorruptPlatformId(uuid::Error),
 
     #[error("an unexpected database failure before the authentication could be verified")]
-    DbFailure(sqlx::Error),
+    DbFailure(#[from] sqlx::Error),
 
     #[error("bearer token key ID does not conform to our expectations")]
     InvalidKeyId,
@@ -278,12 +264,6 @@ impl IntoResponse for AuthenticatedClientError {
             }
         }
     }
-}
-
-#[derive(sqlx::FromRow)]
-pub struct AuthorizedStorage {
-    pub grant_id: String,
-    pub allowed_bytes: i64,
 }
 
 #[derive(FromRow)]

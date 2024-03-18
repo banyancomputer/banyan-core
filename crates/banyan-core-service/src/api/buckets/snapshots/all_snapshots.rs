@@ -19,7 +19,7 @@ pub async fn handler(
     let user_id = user_identity.id().to_string();
     let query_result = sqlx::query_as!(
         Snapshot,
-        "SELECT s.* FROM snapshots AS s
+        "SELECT s.*,m.bucket_id FROM snapshots AS s
              JOIN metadata AS m ON s.metadata_id = m.id
              JOIN buckets AS b ON m.bucket_id = b.id
              WHERE b.user_id = $1 AND m.bucket_id = $2;",

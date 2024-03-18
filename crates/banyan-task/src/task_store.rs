@@ -4,7 +4,7 @@ use time::OffsetDateTime;
 
 use crate::{Task, TaskExecError, TaskLike, TaskState};
 
-#[derive(Debug, Serialize, Eq, PartialEq)]
+#[derive(Debug, Serialize, Eq, PartialEq, Default)]
 pub struct TaskStoreMetrics {
     pub(crate) total: i32,
     pub(crate) new: i32,
@@ -35,7 +35,7 @@ pub trait TaskStore: Send + Sync + 'static {
     }
 
     async fn enqueue<T>(
-        pool: &mut Self::Connection,
+        conn: &mut Self::Connection,
         task: T,
     ) -> Result<Option<String>, TaskStoreError>
     where
@@ -119,26 +119,5 @@ pub enum TaskStoreError {
 impl From<sqlx::Error> for TaskStoreError {
     fn from(value: sqlx::Error) -> Self {
         TaskStoreError::ConnectionFailure(value.to_string())
-    }
-}
-
-pub mod tests {
-    use super::TaskStoreMetrics;
-
-    pub fn default_task_store_metrics() -> TaskStoreMetrics {
-        TaskStoreMetrics {
-            total: 0,
-            new: 0,
-            in_progress: 0,
-            panicked: 0,
-            retried: 0,
-            cancelled: 0,
-            errored: 0,
-            completed: 0,
-            timed_out: 0,
-            dead: 0,
-            scheduled: 0,
-            scheduled_future: 0,
-        }
     }
 }

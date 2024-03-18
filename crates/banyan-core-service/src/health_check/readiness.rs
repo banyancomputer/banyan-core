@@ -25,8 +25,11 @@ pub async fn handler(data_src: StateDataSource) -> Response {
 mod tests {
     use std::sync::Arc;
 
-    use super::*;
+    use http::StatusCode;
+
     use crate::health_check::data_source::tests::*;
+    use crate::health_check::data_source::StateDataSource;
+    use crate::health_check::readiness::handler;
 
     #[tokio::test]
     async fn test_handler_direct() {

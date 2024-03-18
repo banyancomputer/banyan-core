@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO storage_grants (grant_id, client_id, allowed_storage)\n                VALUES ($1, $2, $3)\n                RETURNING id;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "8dcf7d880cd3a49304303f62b574bbdfd7f98af3df1e5c37c2d19ed22b27a3f9"
+}

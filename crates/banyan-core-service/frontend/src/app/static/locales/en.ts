@@ -61,9 +61,10 @@ export default {
                 billingAndPayment: "Billing & Payment"
             },
             profile: {
-                title: "Profile",
+                name:"Name",
+                email:"Email address",
+                darkMode:"Dark mode",
                 language:"Language",
-                chooseYourLanguage: "Choose your language"
             },
         },
         bucket: {
@@ -413,6 +414,10 @@ export default {
             seePricingPage: "See our pricing page",
             contactSales: "Contact sales",
             fileSizeExceeded: "File size exceeded. Please retry with a file smaller than 100 MB, or use Banyan CLI."
+        },
+        tomb: {
+            folderAlreadyExists: 'Folder name must be unique – please enter a unique name',
+            driveAlreadyExists: 'Drive name must be unique – please enter a unique name',
         }
     }
 };

@@ -34,6 +34,9 @@ pub async fn handler(
 
 #[derive(Debug, thiserror::Error)]
 pub enum PruneBlocksError {
+    #[error("database failure: {0}")]
+    Database(#[from] sqlx::Error),
+
     #[error("could not enqueue task: {0}")]
     UnableToEnqueueTask(#[from] banyan_task::TaskStoreError),
     #[error("database: {0}")]

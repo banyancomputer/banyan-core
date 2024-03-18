@@ -173,8 +173,6 @@ fn partition_bandwidth_metrics_by_hour_and_user(
 mod tests {
     use std::ops::Add;
 
-    use time::OffsetDateTime;
-
     use super::*;
     use crate::database::test_helpers::{create_bandwidth_metric, setup_database};
 

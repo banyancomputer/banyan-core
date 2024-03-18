@@ -74,9 +74,10 @@ mod tests {
     use axum::http::StatusCode;
     use time::OffsetDateTime;
 
-    use super::*;
+    use crate::api::metrics::traffic::{handler, MeterTrafficError, MeterTrafficRequest};
     use crate::app::mock_app_state;
     use crate::database::test_helpers::{create_storage_hosts, sample_user, setup_database};
+    use crate::extractors::StorageProviderIdentity;
 
     fn setup_mock_request(user_id: &str) -> MeterTrafficRequest {
         MeterTrafficRequest {
@@ -98,9 +99,7 @@ mod tests {
         let user_id = "fake_user";
 
         let result = handler(
-            StorageProviderIdentity {
-                id: storage_host_id.to_string(),
-            },
+            StorageProviderIdentity::default().with_host_id(&storage_host_id),
             state.clone(),
             Json(setup_mock_request(user_id).clone()),
         )
@@ -112,7 +111,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn same_slot_and_host_request_results_in_error() {
+    async fn same_slot_and_host_request_works() {
         let db = setup_database().await;
         let state = mock_app_state(db.clone());
         let mut conn = db.begin().await.expect("connection");
@@ -123,9 +122,7 @@ mod tests {
         let request = setup_mock_request(user_id.as_str()).clone();
 
         let result = handler(
-            StorageProviderIdentity {
-                id: storage_host_id.to_string(),
-            },
+            StorageProviderIdentity::default().with_host_id(&storage_host_id),
             state.clone(),
             Json(request.clone()),
         )
@@ -138,9 +135,7 @@ mod tests {
         assert_eq!(rows.0, 1);
 
         let result = handler(
-            StorageProviderIdentity {
-                id: storage_host_id.to_string(),
-            },
+            StorageProviderIdentity::default().with_host_id(&storage_host_id),
             state.clone(),
             Json(request.clone()),
         )
@@ -167,9 +162,7 @@ mod tests {
         let request = setup_mock_request(user_id.as_str()).clone();
 
         let result = handler(
-            StorageProviderIdentity {
-                id: storage_host_id_1.to_string(),
-            },
+            StorageProviderIdentity::default().with_host_id(&storage_host_id_1),
             state.clone(),
             Json(request.clone()),
         )
@@ -182,9 +175,7 @@ mod tests {
         assert_eq!(rows.0, 1);
 
         let result = handler(
-            StorageProviderIdentity {
-                id: storage_host_id_2.to_string(),
-            },
+            StorageProviderIdentity::default().with_host_id(&storage_host_id_2),
             state.clone(),
             Json(request.clone()),
         )

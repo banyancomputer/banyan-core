@@ -47,6 +47,7 @@ pub trait RecurringTask: TaskLike + Default {
     fn next_schedule(&self) -> Result<Option<OffsetDateTime>, String>;
 }
 
+#[cfg(any(test, feature = "test-utils"))]
 pub mod tests {
     use async_trait::async_trait;
     use serde::{Deserialize, Serialize};
