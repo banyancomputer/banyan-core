@@ -2,10 +2,8 @@ use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use axum::async_trait;
 use banyan_object_store::{ObjectStore, ObjectStoreConnection, ObjectStoreError};
 use jwt_simple::prelude::*;
-use sqlx::{Pool, Sqlite, SqliteConnection, SqlitePool, Transaction};
 
 use crate::app::{
     Config, MailgunSigningKey, ProviderCredential, Secrets, ServiceKey, ServiceVerificationKey,

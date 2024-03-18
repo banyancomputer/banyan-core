@@ -4,8 +4,6 @@ use std::sync::Arc;
 
 use futures::future::join_all;
 use futures::Future;
-use sqlx::{AnyExecutor, Connection, Database, Executor, Sqlite};
-use std::marker::PhantomData;
 use time::OffsetDateTime;
 use tokio::sync::watch;
 use tokio::task::JoinHandle;
@@ -55,26 +53,24 @@ where
 */
 
 #[derive(Clone)]
-pub struct WorkerPool<'a, C, S, E: 'static>
+pub struct WorkerPool<C, S>
 where
     C: Clone + Send + Sync + 'static,
     S: TaskStore + Clone,
-    for<'e> &'e mut E: Executor<'e, Database = S::DB>,
 {
     context_fn: StateFn<C>,
     task_store: S,
     task_registry: BTreeMap<&'static str, ExecuteTaskFn<C>>,
     schedule_registry: BTreeMap<&'static str, NextScheduleFn>,
-    startup_registry: BTreeMap<&'static str, EnqueueRecurringTaskFn<&'a mut E>>,
+    //startup_registry: BTreeMap<&'static str, EnqueueRecurringTaskFn<&'a mut E>>,
     queue_tasks: BTreeMap<&'static str, Vec<&'static str>>,
     worker_queues: BTreeMap<&'static str, QueueConfig>,
 }
 
-impl<C, S, E> WorkerPool<'static, C, S, E>
+impl<C, S> WorkerPool<C, S>
 where
     C: Clone + Send + Sync + 'static,
     S: TaskStore + Clone,
-    for<'e> &'e mut E: Executor<'e, Database = S::DB>,
 {
     pub fn configure_queue(mut self, config: QueueConfig) -> Self {
         self.worker_queues.insert(config.name(), config);
@@ -88,10 +84,9 @@ where
         Self {
             context_fn: Arc::new(context_fn),
             task_store,
-            //       executor,
             task_registry: BTreeMap::new(),
             schedule_registry: BTreeMap::new(),
-            startup_registry: BTreeMap::new(),
+            //startup_registry: BTreeMap::new(),
             queue_tasks: BTreeMap::new(),
             worker_queues: BTreeMap::new(),
         }
@@ -119,15 +114,17 @@ where
         self.schedule_registry
             .insert(RT::TASK_NAME, Arc::new(next_schedule::<RT>));
 
+        /*
         self.startup_registry
             .insert(RT::TASK_NAME, Arc::new(enqueue_recurring_task::<RT, S, E>));
+        */
 
         self.register_task_type::<RT>()
     }
 
     pub async fn start<F>(
         self,
-        executor: StateFn<&'static mut E>,
+        //executor: StateFn<&'static mut E>,
         shutdown_signal: F,
     ) -> Result<JoinHandle<()>, WorkerPoolError>
     where
@@ -135,10 +132,11 @@ where
         F: Future<Output = ()> + Send + 'static,
         //for<'e> &'e mut G: Executor<'e, Database = S::DB>,
     {
-        let registry = self.startup_registry.clone();
-        let fddd = registry.get("ad").unwrap();
+        //let registry = self.startup_registry.clone();
+        //let fddd = registry.get("ad").unwrap();
         //let x = executor.awa
 
+        /*
         for (task_name, enqueue_recurring_task_fn) in self.startup_registry.clone().into_iter() {
             let result = enqueue_recurring_task_fn(executor()).await;
             match result.map_err(|err| {
@@ -165,6 +163,7 @@ where
                 ));
             }
         }
+        */
 
         let (inner_shutdown_tx, inner_shutdown_rx) = watch::channel(());
         let mut worker_handles = Vec::new();
@@ -275,6 +274,7 @@ fn next_schedule<RT: RecurringTask>(
         .map_err(TaskExecError::SchedulingFailed)
 }
 
+/*
 fn enqueue_recurring_task<RT, S, E>(
     executor: &mut E,
 ) -> Pin<Box<dyn Future<Output = Result<Option<String>, TaskStoreError>> + Send + '_>>
@@ -285,3 +285,4 @@ where
 {
     Box::pin(async move { S::enqueue_exec(&mut *executor, RT::default()).await })
 }
+*/

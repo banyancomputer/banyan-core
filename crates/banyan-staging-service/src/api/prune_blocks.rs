@@ -25,8 +25,9 @@ pub async fn handler(
         }
     }
 
+    let mut conn = state.database().acquire().await?;
     PruneBlocksTask::new(prune_block_list)
-        .enqueue::<SqliteTaskStore>(&mut state.database())
+        .enqueue::<SqliteTaskStore>(&mut conn)
         .await?;
     Ok((StatusCode::OK, ()).into_response())
 }

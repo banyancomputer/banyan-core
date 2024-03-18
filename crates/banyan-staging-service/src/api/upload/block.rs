@@ -152,7 +152,7 @@ pub async fn handler(
             &all_cids(&mut conn, &upload.id).await?,
             total_size as u64,
         )
-        .enqueue_with_connection::<SqliteTaskStore>(&mut conn)
+        .enqueue::<SqliteTaskStore>(&mut conn)
         .await?;
     }
 

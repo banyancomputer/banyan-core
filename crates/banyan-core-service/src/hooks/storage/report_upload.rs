@@ -87,7 +87,7 @@ pub async fn handler(
 
     // Now, let's re-evaluate the capacity of that storage host
     HostCapacityTask::new(storage_provider.id)
-        .enqueue_with_connection::<SqliteTaskStore>(&mut db_conn)
+        .enqueue::<SqliteTaskStore>(&mut db_conn)
         .await
         .map_err(ReportUploadError::UnableToEnqueueTask)?;
 

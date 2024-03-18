@@ -1,7 +1,6 @@
 use async_trait::async_trait;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use sqlx::{Database, Executor, Sqlite};
 use time::OffsetDateTime;
 
 use crate::task_store::TaskStore;
@@ -27,20 +26,8 @@ pub trait TaskLike: Serialize + DeserializeOwned + Sync + Send + 'static {
 pub trait TaskLikeExt {
     async fn enqueue<S: TaskStore>(
         self,
-        pool: &mut S::Pool,
-    ) -> Result<Option<String>, TaskStoreError>;
-
-    async fn enqueue_with_connection<S: TaskStore>(
-        self,
         conn: &mut S::Connection,
     ) -> Result<Option<String>, TaskStoreError>;
-
-    async fn enqueue_exec<E, D, S: TaskStore>(
-        self,
-        conn: &mut E,
-    ) -> Result<Option<String>, TaskStoreError>
-    where
-        for<'e> &'e mut E: Executor<'e, Database = D>;
 }
 
 #[async_trait]
@@ -50,26 +37,9 @@ where
 {
     async fn enqueue<S: TaskStore>(
         self,
-        pool: &mut S::Pool,
-    ) -> Result<Option<String>, TaskStoreError> {
-        S::enqueue(pool, self).await
-    }
-
-    async fn enqueue_with_connection<S: TaskStore>(
-        self,
         conn: &mut S::Connection,
     ) -> Result<Option<String>, TaskStoreError> {
-        S::enqueue_with_connection(conn, self).await
-    }
-
-    async fn enqueue_exec<E, D, S: TaskStore>(
-        self,
-        conn: &mut E,
-    ) -> Result<Option<String>, TaskStoreError>
-    where
-        for<'e> &'e mut E: Executor<'e, Database = D>,
-    {
-        Ok(None)
+        S::enqueue(conn, self).await
     }
 }
 

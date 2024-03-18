@@ -5,14 +5,14 @@ mod report_upload;
 
 use banyan_task::{QueueConfig, SqliteTaskStore, WorkerPool};
 pub use prune_blocks::PruneBlocksTask;
-pub use report_health::ReportHealthTask;
 pub use report_upload::ReportUploadTask;
-use sqlx::SqliteConnection;
 use tokio::sync::watch;
 use tokio::task::JoinHandle;
 
 use crate::app::AppState;
 use crate::tasks::report_bandwidth_metrics::ReportBandwidthMetricsTask;
+
+use self::report_health::ReportHealthTask;
 
 pub async fn start_background_workers(
     state: AppState,
@@ -20,7 +20,6 @@ pub async fn start_background_workers(
 ) -> Result<JoinHandle<()>, &'static str> {
     let task_store = SqliteTaskStore::new(state.database());
 
-    /*
     WorkerPool::new(task_store.clone(), move || state.clone())
         .configure_queue(QueueConfig::new("default").with_worker_count(5))
         .register_task_type::<ReportUploadTask>()
@@ -32,6 +31,4 @@ pub async fn start_background_workers(
         })
         .await
         .map_err(|_| "prune blocks worker startup failed")
-        */
-    Err("asfa")
 }

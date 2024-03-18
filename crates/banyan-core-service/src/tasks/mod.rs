@@ -12,7 +12,6 @@ pub use email::{
 };
 pub use host_capacity::HostCapacityTask;
 pub use prune_blocks::PruneBlocksTask;
-use sqlx::SqliteConnection;
 use tokio::sync::watch;
 use tokio::task::JoinHandle;
 
@@ -23,21 +22,14 @@ pub async fn start_background_workers(
     mut shutdown_rx: watch::Receiver<()>,
 ) -> Result<JoinHandle<()>, &'static str> {
     let task_store = SqliteTaskStore::new(state.database());
-    let mut executor = state.database().begin().await.unwrap();
     WorkerPool::new(task_store.clone(), move || state.clone())
         .configure_queue(QueueConfig::new("default").with_worker_count(5))
         .register_task_type::<PruneBlocksTask>()
         .register_task_type::<CreateDealsTask>()
         .register_task_type::<HostCapacityTask>()
-        .start(
-            move || {
-                //&mut state.database().begin().await.unwrap()
-                executor
-            },
-            async move {
-                let _ = shutdown_rx.changed().await;
-            },
-        )
+        .start(async move {
+            let _ = shutdown_rx.changed().await;
+        })
         .await
         .map_err(|_| "background worker startup failed")
 }

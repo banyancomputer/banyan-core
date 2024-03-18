@@ -7,7 +7,6 @@ use banyan_task::{QueueConfig, SqliteTaskStore, WorkerPool};
 pub use prune_blocks::PruneBlocksTask;
 pub use report_health::ReportHealthTask;
 pub use report_upload::ReportUploadTask;
-use sqlx::{Connection, Sqlite, SqliteConnection, Transaction};
 use tokio::sync::watch;
 use tokio::task::JoinHandle;
 
@@ -19,8 +18,6 @@ pub async fn start_background_workers(
     mut shutdown_rx: watch::Receiver<()>,
 ) -> Result<JoinHandle<()>, ()> {
     let task_store = SqliteTaskStore::new(state.database());
-    let database = state.database();
-    let mut connection = database.acquire().await.unwrap();
 
     WorkerPool::new(task_store.clone(), move || state.clone())
         .configure_queue(QueueConfig::new("default").with_worker_count(5))
@@ -28,7 +25,7 @@ pub async fn start_background_workers(
         .register_task_type::<PruneBlocksTask>()
         .register_recurring_task_type::<ReportHealthTask>()
         .register_recurring_task_type::<ReportBandwidthMetricsTask>()
-        .start(&mut *connection, async move {
+        .start(async move {
             let _ = shutdown_rx.changed().await;
         })
         .await
