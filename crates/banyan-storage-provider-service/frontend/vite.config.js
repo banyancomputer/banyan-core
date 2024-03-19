@@ -45,6 +45,7 @@ export default ({ mode }) => {
       alias: {
         "@": path.resolve(__dirname, "./src/"),
         "@app": path.resolve(__dirname, "./src/app/"),
+        "@pages": path.resolve(__dirname, "./src/app/pages/"),
         "@components": path.resolve(__dirname, "./src/app/components/"),
         "@static": path.resolve(__dirname, "./src/app/static/"),
       },
