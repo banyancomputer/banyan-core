@@ -9,6 +9,21 @@ pub struct Clients {
 }
 
 impl Clients {
+    pub async fn find_bu_metadata_id(
+        conn: &Database,
+        metadata_id: &str,
+    ) -> Result<Option<Self>, sqlx::Error> {
+        sqlx::query_as!(
+            Clients,
+            "SELECT c.id, c.platform_id, c.fingerprint, c.public_key FROM clients AS c
+              JOIN uploads u on c.id = u.client_id
+            WHERE u.metadata_id = $1;",
+            metadata_id
+        )
+        .fetch_optional(conn)
+        .await
+    }
+
     pub async fn find_by_upload_id(conn: &Database, upload_id: &str) -> Result<Self, sqlx::Error> {
         let client = sqlx::query_as!(
             Clients,

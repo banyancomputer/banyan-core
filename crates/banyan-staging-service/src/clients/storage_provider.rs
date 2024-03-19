@@ -7,7 +7,7 @@ use crate::clients::models::{
     BlockUploadDetailsRequest, BlockUploadRequest, ClientsRequest, NewUploadRequest,
     NewUploadResponse,
 };
-use crate::clients::NewClientResponse;
+use crate::clients::{ExistingClientResponse, NewClientResponse};
 
 pub struct StorageProviderClient {
     client: Client,
@@ -27,6 +27,26 @@ impl StorageProviderClient {
             service_hostname: service_hostname.to_string(),
             service_authorization: service_authorization.to_string(),
         }
+    }
+
+    pub async fn get_block(&self, cid: &str) -> Result<Vec<u8>, StorageProviderError> {
+        let full_url = Url::parse(&self.service_hostname)
+            .map_err(|_| StorageProviderError::UrlParseError)?
+            .join(&format!("/api/v1/blocks/{}", cid))
+            .map_err(|_| StorageProviderError::UrlJoinError)?;
+
+        let response = self
+            .client
+            .get(full_url)
+            .bearer_auth(&self.service_authorization)
+            .send()
+            .await
+            .map_err(StorageProviderError::RequestError)?;
+
+        if response.status().is_success() {
+            return Ok(response.bytes().await?.to_vec());
+        }
+        Err(StorageProviderError::BadRequest(response.text().await?))
     }
 
     pub async fn push_client(
@@ -56,6 +76,57 @@ impl StorageProviderClient {
         Err(StorageProviderError::BadRequest(response.text().await?))
     }
 
+    pub async fn get_client(
+        &self,
+        metadata_id: &str,
+    ) -> Result<ExistingClientResponse, StorageProviderError> {
+        let full_url = Url::parse(&self.service_hostname)
+            .map_err(|_| StorageProviderError::UrlParseError)?
+            .join(&format!("/api/v1/hooks/clients/{}", metadata_id))
+            .map_err(|_| StorageProviderError::UrlJoinError)?;
+
+        let response = self
+            .client
+            .get(full_url)
+            .bearer_auth(&self.service_authorization)
+            .send()
+            .await
+            .map_err(StorageProviderError::RequestError)?;
+
+        if response.status().is_success() {
+            return match response.json::<ExistingClientResponse>().await {
+                Ok(response) => Ok(response),
+                Err(_) => Err(StorageProviderError::ResponseParseError),
+            };
+        }
+        Err(StorageProviderError::BadRequest(response.text().await?))
+    }
+
+    pub async fn get_upload(
+        &self,
+        metadata_id: &str,
+    ) -> Result<NewUploadResponse, StorageProviderError> {
+        let full_url = Url::parse(&self.service_hostname)
+            .map_err(|_| StorageProviderError::UrlParseError)?
+            .join(&format!("/api/v1/hooks/uploads/{}", metadata_id))
+            .map_err(|_| StorageProviderError::UrlJoinError)?;
+
+        let response = self
+            .client
+            .get(full_url)
+            .bearer_auth(&self.service_authorization)
+            .send()
+            .await
+            .map_err(StorageProviderError::RequestError)?;
+
+        if response.status().is_success() {
+            return match response.json::<NewUploadResponse>().await {
+                Ok(response) => Ok(response),
+                Err(_) => Err(StorageProviderError::ResponseParseError),
+            };
+        }
+        Err(StorageProviderError::BadRequest(response.text().await?))
+    }
     pub async fn new_upload(
         &self,
         request: &NewUploadRequest,

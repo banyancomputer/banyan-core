@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use axum::extract::State;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
@@ -5,9 +7,8 @@ use banyan_task::{SqliteTaskStore, TaskLikeExt};
 use http::StatusCode;
 use serde::{Deserialize, Serialize};
 
-use crate::api::hooks::distribute::DistributeError::{Database, UnableToEnqueueTask};
 use crate::app::AppState;
-use crate::database::models::Uploads;
+use crate::database::models::{Blocks, Uploads};
 use crate::extractors::PlatformIdentity;
 use crate::tasks::RedistributeDataTask;
 
@@ -25,11 +26,10 @@ pub async fn handler(
     _: PlatformIdentity,
     State(state): State<AppState>,
     Json(distribute_data): Json<DistributeData>,
-) -> Result<Response, DistributeError> {
+) -> Result<Response, DistributeBlocksError> {
     let db = state.database();
+    let mut conn = db.acquire().await?;
     let metadata_id = &distribute_data.metadata_id;
-
-    Uploads::get_by_metadata_id(&db, metadata_id).await?;
 
     let task = RedistributeDataTask {
         metadata_id: distribute_data.metadata_id.clone(),
@@ -39,35 +39,54 @@ pub async fn handler(
         new_host_id: distribute_data.new_host_id.clone(),
         new_host_url: distribute_data.new_host_url.clone(),
     };
-    let mut transaction = db.begin().await?;
-    if SqliteTaskStore::is_present(&mut transaction, &task).await? {
+    if SqliteTaskStore::is_present(&mut conn, &task).await? {
         return Ok((StatusCode::OK, ()).into_response());
     }
-    task.enqueue::<SqliteTaskStore>(&mut transaction).await?;
-    transaction.commit().await?;
+
+    Uploads::get_by_metadata_id(&db, metadata_id).await?;
+    let blocks: Vec<Blocks> = Blocks::get_blocks_by_cid(&db, &distribute_data.block_cids).await?;
+
+    if blocks.len() != distribute_data.block_cids.len() {
+        let block_cids: HashSet<String> = distribute_data.block_cids.into_iter().collect();
+        let blocks_cids_set: HashSet<String> =
+            blocks.iter().map(|block| block.cid.clone()).collect();
+
+        let missing_cids = block_cids
+            .symmetric_difference(&blocks_cids_set)
+            .cloned()
+            .collect::<HashSet<_>>();
+
+        return Err(DistributeBlocksError::BadRequest(format!(
+            "block CIDs do not match: {:?}",
+            missing_cids
+        )));
+    }
+
+    task.enqueue::<SqliteTaskStore>(&mut conn).await?;
 
     Ok((StatusCode::OK, ()).into_response())
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum DistributeError {
-    #[error("a database error occurred during an upload {0}")]
+pub enum DistributeBlocksError {
+    #[error("a database error occurred: {0}")]
     Database(#[from] sqlx::Error),
+    #[error("could not task: {0}")]
+    BadRequest(String),
     #[error("could not enqueue task: {0}")]
     UnableToEnqueueTask(#[from] banyan_task::TaskStoreError),
 }
 
-impl IntoResponse for DistributeError {
+impl IntoResponse for DistributeBlocksError {
     fn into_response(self) -> Response {
         match self {
-            UnableToEnqueueTask(_) => {
+            DistributeBlocksError::UnableToEnqueueTask(_) => {
                 tracing::error!("{self}");
-                let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
+                let err_msg = serde_json::json!({ "msg": self.to_string() });
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
             }
-            Database(_) => {
-                tracing::error!("{self}");
-                let err_msg = serde_json::json!({ "msg": "upload not found" });
+            DistributeBlocksError::BadRequest(_) | DistributeBlocksError::Database(_) => {
+                let err_msg = serde_json::json!({ "msg": self.to_string() });
                 (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
             }
         }

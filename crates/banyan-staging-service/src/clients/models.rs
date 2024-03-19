@@ -41,6 +41,7 @@ pub struct BlockUploadRequest {
 
 #[derive(Serialize)]
 pub struct BlockUploadDetailsRequest {
+    pub replication: bool,
     pub completed: bool,
     pub upload_id: String,
     pub grant_id: String,
@@ -49,6 +50,13 @@ pub struct BlockUploadDetailsRequest {
 #[derive(Deserialize)]
 pub struct NewClientResponse {
     pub id: String,
+}
+
+#[derive(Deserialize)]
+pub struct ExistingClientResponse {
+    pub platform_id: String,
+    pub fingerprint: String,
+    pub public_key: String,
 }
 
 #[derive(Serialize)]
