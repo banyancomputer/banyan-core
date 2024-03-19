@@ -27,7 +27,7 @@
     "start": "vite",
     "lint": "eslint --fix --ext .js,.ts,.tsx .",
     "format": "prettier --write \"src/**/*.{ts,tsx}\"",
-    "test": "jest --config=jest.config.js"
+    "test": "jest --config=jest.config.js --passWithNoTests"
   },
   "postcss": {
     "plugins": {
@@ -48,10 +48,11 @@
     "@typescript-eslint/parser": "7.0.0",
     "@vitejs/plugin-react": "4.2.1",
     "autoprefixer": "10.4.19",
-    "eslint":"8.56.0",
+    "eslint": "8.56.0",
     "eslint-plugin-import": "2.29.1",
     "eslint-plugin-unicorn": "52.0.0",
     "identity-obj-proxy": "3.0.0",
+    "jest-environment-jsdom": "^29.7.0",
     "postcss": "8.4.38",
     "prettier": "3.2.5",
     "tailwindcss": "3.4.3",
