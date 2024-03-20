@@ -1,8 +1,8 @@
-use std::collections::{HashMap, HashSet};
-use std::time::Duration;
 use banyan_task::{SqliteTaskStore, TaskLikeExt};
 use sqlx::sqlite::SqliteQueryResult;
 use sqlx::QueryBuilder;
+use std::collections::{HashMap, HashSet};
+use std::time::Duration;
 use time::OffsetDateTime;
 
 use crate::api::models::ApiBucketConfiguration;
@@ -207,7 +207,7 @@ impl Bucket {
             total_rows_pruned += block_list.len();
 
             if let Err(err) = PruneBlocksTask::new(storage_host_id, block_list)
-                .enqueue::<SqliteTaskStore>(&mut *conn)
+                .enqueue::<SqliteTaskStore>(conn)
                 .await
             {
                 // A future clean up task can always come back through and catch any blocks not missed.

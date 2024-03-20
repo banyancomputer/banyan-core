@@ -30,9 +30,12 @@ pub async fn start_background_workers(
         .await
         .map_err(|_| "failed to get database connect")?;
 
+    /*
     enqueue_task_if_none_in_progress::<ReportBandwidthMetricsTask>(&task_store, &mut conn).await;
     enqueue_task_if_none_in_progress::<ReportHealthTask>(&task_store, &mut conn).await;
+    */
 
+    /*
     WorkerPool::new(task_store.clone(), move || state.clone())
         .configure_queue(QueueConfig::new("default").with_worker_count(5))
         .register_task_type::<ReportUploadTask>()
@@ -41,11 +44,13 @@ pub async fn start_background_workers(
         .register_recurring_task_type::<ReportBandwidthMetricsTask>()
         .register_task_type::<RedistributeDataTask>()
         .register_task_type::<UploadBlocksTask>()
-        .start(async move {
+        .start(&mut conn, async move {
             let _ = shutdown_rx.changed().await;
         })
         .await
         .map_err(|_| "prune blocks worker startup failed")
+        */
+    Err("asdf")
 }
 
 async fn enqueue_task_if_none_in_progress<T: TaskLikeExt + TaskLike + Default>(

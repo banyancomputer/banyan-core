@@ -17,9 +17,20 @@ pub struct SqliteTaskStore {
 }
 
 impl SqliteTaskStore {
-    async fn connect(&self) -> PoolConnection<Sqlite> {
-        self.pool.acquire().await.unwrap()
+    async fn connect(&self) -> Result<PoolConnection<Sqlite>, TaskStoreError> {
+        Ok(self.pool.clone().acquire().await?)
     }
+
+    /*
+    async fn connect2(&self) -> Result<SqliteConnection, TaskStoreError> {
+        let mut conn = self.pool.clone().acquire().await?;
+        Ok(Self::fixer(conn))
+    }
+    pub fn fixer(conn: SqliteConnection) -> SqliteConnection {
+        conn
+
+    }
+    */
 
     pub async fn is_present<T: TaskLike>(
         conn: &mut SqliteConnection,
@@ -67,10 +78,10 @@ impl SqliteTaskStore {
     }
 
     pub async fn metrics(&self) -> Result<TaskStoreMetrics, TaskStoreError> {
-        let mut connection = self.pool.acquire().await?;
+        let mut conn = self.connect().await?;
         let mut query_base = self.metrics_query();
         let query = query_base.build_query_as::<SqliteTaskStoreMetrics>();
-        let metrics = query.fetch_one(&mut *connection).await?;
+        let metrics = query.fetch_one(&mut *conn).await?;
         Ok(metrics.into())
     }
 
@@ -144,7 +155,7 @@ impl SqliteTaskStore {
 
 #[async_trait]
 impl TaskStore for SqliteTaskStore {
-    type Connection = SqliteConnection;
+    type Connection = PoolConnection<Sqlite>;
 
     async fn enqueue<T: TaskLike>(
         connection: &mut Self::Connection,
@@ -160,7 +171,7 @@ impl TaskStore for SqliteTaskStore {
         queue_name: &str,
         _task_names: &[&str],
     ) -> Result<Option<Task>, TaskStoreError> {
-        let mut transaction = self.pool.begin().await?;
+        let mut transaction = self.pool.clone().begin().await?;
         // todo: need to dynamically build up the task_names portion of this query since sqlx
         // doesn't support generation of IN queries or have a concept of arrays for sqlite.l
 
@@ -196,7 +207,7 @@ impl TaskStore for SqliteTaskStore {
         }
 
         transaction.commit().await?;
-        let mut connection = self.pool.acquire().await?;
+        let mut conn = self.connect().await?;
         let timed_out_start_threshold = time::OffsetDateTime::now_utc() - TASK_EXECUTION_TIMEOUT;
         let pending_retry_tasks = sqlx::query_scalar!(
             r#"SELECT id FROM background_tasks
@@ -208,9 +219,9 @@ impl TaskStore for SqliteTaskStore {
             TaskState::Retry,
             timed_out_start_threshold,
         )
-        .fetch_all(&mut *connection)
+        .fetch_all(&mut *conn)
         .await;
-        connection.close().await?;
+        conn.close().await?;
 
         // if this query fails or any of our rescheduling fails, we still want to process our task,
         // let these retry again sometime in the future. Ideally we'd randomly shuffle some of
@@ -220,7 +231,7 @@ impl TaskStore for SqliteTaskStore {
         // extra complicated logic we don't need right now
         if let Ok(task_ids) = pending_retry_tasks {
             for id in task_ids.into_iter() {
-                let mut connection = self.pool.acquire().await?;
+                let mut conn = self.connect().await?;
                 // we don't care of these fail either, but we'll stop attempting to retry them once
                 // we hit an error. Something else can handle the trouble
 
@@ -233,10 +244,10 @@ impl TaskStore for SqliteTaskStore {
                     TaskState::TimedOut,
                     id,
                 )
-                .execute(&mut *connection)
+                .execute(&mut *conn)
                 .await;
 
-                connection.close().await?;
+                conn.close().await?;
 
                 if state_update_res.is_err() {
                     break;
@@ -425,7 +436,7 @@ pub mod tests {
     async fn update_state_works() {
         let (task_store, _task_id) = singleton_task_store().await;
         let task = TestTask;
-        let mut conn = task_store.connect().await;
+        let mut conn = task_store.connect().await.unwrap();
         let task_id = task
             .enqueue::<SqliteTaskStore>(&mut conn)
             .await
@@ -444,7 +455,7 @@ pub mod tests {
     async fn error_tasks_are_retried() {
         let (task_store, _task_id) = singleton_task_store().await;
         let task = TestTask;
-        let mut conn = task_store.connect().await;
+        let mut conn = task_store.connect().await.unwrap();
         let task_id = task
             .enqueue::<SqliteTaskStore>(&mut conn)
             .await
@@ -465,7 +476,7 @@ pub mod tests {
     async fn timeout_tasks_are_retried() {
         let (task_store, _task_id) = singleton_task_store().await;
         let task = TestTask;
-        let mut conn = task_store.connect().await;
+        let mut conn = task_store.connect().await.unwrap();
         let task_id = task
             .enqueue::<SqliteTaskStore>(&mut conn)
             .await
@@ -486,7 +497,7 @@ pub mod tests {
     async fn non_error_tasks_are_not_retried() {
         let (task_store, _task_id) = singleton_task_store().await;
         let task = TestTask;
-        let mut conn = task_store.connect().await;
+        let mut conn = task_store.connect().await.unwrap();
         let task_id = task
             .enqueue::<SqliteTaskStore>(&mut conn)
             .await
@@ -512,7 +523,7 @@ pub mod tests {
 
     pub async fn singleton_task_store() -> (SqliteTaskStore, Option<String>) {
         let task_store = empty_task_store().await;
-        let mut conn = task_store.connect().await;
+        let mut conn = task_store.connect().await.unwrap();
         let task_id = TestTask
             .enqueue::<SqliteTaskStore>(&mut conn)
             .await

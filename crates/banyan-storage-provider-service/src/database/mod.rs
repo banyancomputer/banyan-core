@@ -1,4 +1,4 @@
-use sqlx::{FromRow, SqlitePool};
+use sqlx::{pool::PoolConnection, FromRow, Sqlite, SqlitePool};
 
 pub mod models;
 mod sqlite;

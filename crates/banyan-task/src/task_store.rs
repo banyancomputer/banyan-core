@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use serde::Serialize;
 use time::OffsetDateTime;
 
-use crate::{Task, TaskExecError, TaskLike, TaskState};
+use crate::{CurrentTask, Task, TaskExecError, TaskLike, TaskState};
 
 #[derive(Debug, Serialize, Eq, PartialEq, Default)]
 pub struct TaskStoreMetrics {
@@ -22,6 +22,8 @@ pub struct TaskStoreMetrics {
 
 #[async_trait]
 pub trait TaskStore: Send + Sync + 'static {
+    //type Context: Clone + Send + 'static;
+
     type Connection: Send;
 
     async fn cancel(&self, id: String) -> Result<(), TaskStoreError> {
@@ -41,6 +43,14 @@ pub trait TaskStore: Send + Sync + 'static {
     where
         Self: Sized,
         T: TaskLike;
+
+    /*
+    async fn run(&self, task: Task) -> Result<(), TaskStoreError> {
+        let task_info = CurrentTask::try_from(&task).map_err(WorkerError::CantMakeCurrent)?;
+        //let current_task = self.get_living_task(&task.task_name);
+        Ok(())
+    }
+    */
 
     async fn errored(
         &self,

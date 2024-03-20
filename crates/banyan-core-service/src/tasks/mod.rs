@@ -35,12 +35,14 @@ pub async fn start_background_workers(
     mut shutdown_rx: watch::Receiver<()>,
 ) -> Result<JoinHandle<()>, &'static str> {
     let task_store = SqliteTaskStore::new(state.database());
-
     let mut conn = state.database().acquire().await.unwrap();
 
+    /*
     enqueue_task_if_none_in_progress::<ReportAllUsersConsumptionTask>(&task_store, &mut conn).await;
     enqueue_task_if_none_in_progress::<ReportAllUsersConsumptionTask>(&task_store, &mut conn).await;
+    */
 
+    /*
     WorkerPool::new(task_store.clone(), move || state.clone())
         .configure_queue(QueueConfig::new("default").with_worker_count(5))
         .register_task_type::<PruneBlocksTask>()
@@ -52,11 +54,15 @@ pub async fn start_background_workers(
         .register_task_type::<ReportAllStorageHostsConsumptionTask>()
         .register_task_type::<DeleteStagingDataTask>()
         .register_task_type::<HostCapacityTask>()
-        .start(async move {
+        .start(async move { &mut conn }, async move {
             let _ = shutdown_rx.changed().await;
         })
         .await
+
         .map_err(|_| "background worker startup failed")
+
+        */
+    Err("asdf")
 }
 
 async fn enqueue_task_if_none_in_progress<T: TaskLikeExt + TaskLike + Default>(
