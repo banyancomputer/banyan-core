@@ -43,7 +43,8 @@ export default {
             manageKeys: {
                 keyActions: {
                     rename: "重命名",
-                    removeKey: "删除密钥"
+                    removeKey: "删除密钥",
+                    lastKeyError: '不能在没有至少一个备份的情况下禁用或删除最后一个密钥。'
                 },
                 keyManagementTable: {
                     key: "密钥",

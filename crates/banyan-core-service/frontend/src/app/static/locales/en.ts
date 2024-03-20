@@ -44,6 +44,7 @@ export default {
                 keyActions: {
                     rename:"Rename",
                     removeKey:"Remove key",
+                    lastKeyError: 'The final key cannot be disabled or removed without at least one backup.'
                 },
                 keyManagementTable: {
                     key: "Key",

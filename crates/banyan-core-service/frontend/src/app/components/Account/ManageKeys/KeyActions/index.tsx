@@ -7,6 +7,7 @@ import { useModal } from '@app/contexts/modals';
 import { useAppSelector } from '@app/store';
 import { AccessKeysClient } from '@/api/accessKeys';
 import { useTomb } from '@app/contexts/tomb';
+import { ToastNotifications } from '@/app/utils/toastNotifications';
 
 import { Rename, Trash } from '@static/images/common';
 
@@ -22,6 +23,10 @@ export const KeyActions: React.FC<{ bucket: Bucket; bucketKey: BucketKey }> = ({
     };
 
     const remove = async () => {
+        if (bucket.keys.length <= 1) {
+            ToastNotifications.error('The final key cannot be disabled or removed without at least one backup.');
+            return;
+        };
         try {
             await client.deleteAccessKey(bucket.id, bucketKey.id);
             await getBucketsKeys();

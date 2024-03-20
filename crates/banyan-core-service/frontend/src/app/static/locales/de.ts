@@ -43,7 +43,8 @@ export default {
             manageKeys: {
                 keyActions: {
                     rename: "Umbenennen",
-                    removeKey: "Schlüssel entfernen"
+                    removeKey: "Schlüssel entfernen",
+                    lastKeyError: 'Der letzte Schlüssel kann nicht deaktiviert oder entfernt werden, ohne mindestens ein Backup.'
                 },
                 keyManagementTable: {
                     key: "Schlüssel",
