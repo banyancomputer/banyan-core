@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-import { Action } from '@components/Bucket/BucketTable/FileActions';
+import { Action } from '@components/Bucket/Files/BucketTable/FileActions';
 import { DeleteFileModal } from '@components/common/Modal/DeleteFileModal';
 import { RenameFileModal } from '@components/common/Modal/RenameFileModal';
 import { MoveToModal } from '@components/common/Modal/MoveToModal';
