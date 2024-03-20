@@ -1,23 +1,25 @@
-import React, { useEffect, useState } from 'react';
-
-import { SortCell } from '@components/common/SortCell';
+import { useEffect } from 'react';
 
 import { useTomb } from '@app/contexts/tomb';
 import { useAppSelector } from '@app/store';
 import { ToastNotifications } from '@app/utils/toastNotifications';
 import { getDateLabel, getTime } from '@app/utils/date';
 import { convertFileSize } from '@app/utils/storage';
-import { Directory } from '@/app/static/images/common';
-import { ActionsCell } from '@/app/components/common/ActionsCell';
-import { SnapshotActions } from './SnapshotActions';
+
+import { Bucket } from '@/app/types/bucket';
 
 export const SnapshotsTable = () => {
-    const { getBucketShapshots, tomb, selectedBucket } = useTomb();
-    const messages = useAppSelector(state => state.locales.messages.coponents.bucket.snapshots.table);
-    const [sortState, setSortState] = useState<{ criteria: string; direction: 'ASC' | 'DESC' | '' }>({ criteria: 'name', direction: 'DESC' });
+    const { getBucketSnapshots, restore, tomb, selectedBucket } = useTomb();
+    const { date, size, state } = useAppSelector(state => state.locales.messages.coponents.bucket.snapshots.table);
+    const snapshotsActionsMessages = useAppSelector(state => state.locales.messages.coponents.bucket.snapshots.table.snapshotActions);
 
-    const sort = (criteria: string) => {
-        setSortState(prev => ({ criteria, direction: prev.direction === 'ASC' ? 'DESC' : 'ASC' }));
+    const restoreFromSnapshot = async (bucket: Bucket, snapshotId: string) => {
+        try {
+            await restore(bucket, snapshotId);
+            ToastNotifications.notify('Restoring could take up to 72 hours');
+        } catch (error: any) {
+            ToastNotifications.error('Error while restoring from snapshot');
+        };
     };
 
     useEffect(() => {
@@ -25,7 +27,7 @@ export const SnapshotsTable = () => {
 
         (async () => {
             try {
-                await getBucketShapshots(selectedBucket?.id || '');
+                await getBucketSnapshots(selectedBucket?.id || '');
             } catch (error: any) {
                 ToastNotifications.error('Error while getting snapshots');
             }
@@ -42,22 +44,14 @@ export const SnapshotsTable = () => {
             >
                 <thead className="border-b-border-regular border-b-2 font-normal text-text-900">
                     <tr className="bg-mainBackground font-normal border-none">
-                        <th className="flex items-center gap-3 pl-2 py-4 text-left font-medium">
-                            <SortCell
-                                criteria="name"
-                                onChange={sort}
-                                sortState={sortState}
-                                text={messages.name}
-                            />
-                        </th>
                         <th className="px-6 py-4 text-left font-semibold w-56">
-                            {messages.date}
+                            {date}
                         </th>
                         <th className="px-6 py-4 text-left font-semibold w-36  ">
-                            {messages.size}
+                            {size}
                         </th>
                         <th className="px-6 py-4 w-20 text-xs text-left font-semibold">
-                            {messages.state}
+                            {state}
                         </th>
                         <th className="px-6 py-4 w-20 text-xs text-left font-semibold" />
                     </tr>
@@ -67,18 +61,13 @@ export const SnapshotsTable = () => {
                         <tr
                             className="cursor-pointer border-b-1 border-b-border-regular text-text-900 font-normal transition-all last:border-b-0 hover:bg-bucket-bucketHoverBackground"
                         >
-                            <td className="pr-6 pl-2 py-2">
-                                <div className="flex gap-2">
-                                    <Directory width="20px" height="20px" />
-                                </div>
-                            </td>
-                            <td className="px-6 py-2 whitespace-nowrap overflow-hidden text-ellipsis">{`${getDateLabel(snapshot.createdAt)}, ${getTime(snapshot.createdAt)}`}</td>
+                            <td className="px-6 py-2 whitespace-nowrap overflow-hidden text-ellipsis">{`${getDateLabel(snapshot.created_at)}, ${getTime(snapshot.created_at)}`}</td>
                             <td className="px-6 py-2 font-semibold">{convertFileSize(snapshot.size)}</td>
-                            <td className="px-6 py-2">{snapshot.state}</td>
-                            <td className="px-6 py-2">
-                                <ActionsCell
-                                    actions={<SnapshotActions bucket={selectedBucket} snapshot={snapshot} />}
-                                />
+                            <td className="px-6 py-2 capitalize">{snapshot.state}</td>
+                            <td className="px-6 py-2 font-semibold text-right text-button-primary transition-all hover:text-button-primaryHover">
+                                <button onClick={() => restoreFromSnapshot(selectedBucket, snapshot.id)}>
+                                    {snapshotsActionsMessages.restore}
+                                </button>
                             </td>
                         </tr>
                     )}

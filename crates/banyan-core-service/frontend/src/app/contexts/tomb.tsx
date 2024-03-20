@@ -1,5 +1,5 @@
 import React, { ReactNode, createContext, useContext, useEffect, useState } from 'react';
-import { TombWasm, WasmBucket, WasmMount, WasmSnapshot } from 'tomb-wasm-experimental';
+import { TombWasm, WasmBucket } from 'tomb-wasm-experimental';
 import { Mutex } from 'async-mutex';
 import { useNavigate } from 'react-router-dom';
 
@@ -21,7 +21,8 @@ import { handleNameDuplication } from '@utils/names';
 import { StorageUsageClient } from '@/api/storageUsage';
 import { useAppDispatch, useAppSelector } from '../store';
 import { BannerError, setError } from '../store/errors/slice';
-import { ToastNotifications } from '../utils/toastNotifications';
+import { ToastNotifications } from '@utils/toastNotifications';
+import { SnapshotsClient } from '@/api/snapshots';
 
 interface TombInterface {
 	tomb: TombWasm | null;
@@ -38,7 +39,7 @@ interface TombInterface {
 	getSelectedBucketFiles: (path: string[]) => void;
 	getExpandedFolderFiles: (path: string[], folder: BrowserObject, bucket: Bucket) => Promise<void>;
 	takeColdSnapshot: (bucket: Bucket) => Promise<void>;
-	getBucketShapshots: (id: string) => Promise<BucketSnapshot[]>;
+	getBucketSnapshots: (id: string) => Promise<BucketSnapshot[]>;
 	createBucketAndMount: (name: string, storageClass: string, bucketType: string) => Promise<string>;
 	renameBucket: (bucket: Bucket, newName: string) => void;
 	deleteBucket: (id: string) => void;
@@ -54,9 +55,10 @@ interface TombInterface {
 	approveDeviceApiKey: (pem: string) => Promise<void>;
 	approveBucketAccess: (bucket: Bucket, bucket_key_id: string) => Promise<void>;
 	removeBucketAccess: (id: string) => Promise<void>;
-	restore: (bucket: Bucket, snapshot: WasmSnapshot) => Promise<void>;
+	restore: (bucket: Bucket, snapshotId: string) => Promise<void>;
 };
 const storageUsageClient = new StorageUsageClient();
+const snapshotsClient = new SnapshotsClient();
 
 const mutex = new Mutex();
 
@@ -105,7 +107,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 				let mount;
 				let locked;
 				let isSnapshotValid;
-				const snapshots = await tomb!.listBucketSnapshots(bucket.id());
+				const snapshots = await snapshotsClient.getSnapshots(bucket.id());
 				try {
 					mount = await tomb!.mount(bucket.id(), key.privatePem);
 					locked = await mount.locked();
@@ -259,8 +261,8 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 		await uploadFile(bucket, path, `Copy of ${name}`, arrayBuffer);
 	};
 
-	/** Retuns array buffer of selected file. */
-	const restore = async (bucket: Bucket, snapshot: WasmSnapshot) => await tombMutex(bucket.mount!, async mount => await mount.restore(snapshot));
+	/** Restores bucket from selected snapshot. */
+	const restore = async (bucket: Bucket, snapshotId: string) => await snapshotsClient.restoreFromSnapshot(bucket.id, snapshotId);
 
 	/** Generates public link to share file. */
 	const shareFile = async (bucket: Bucket, path: string[]) => await tombMutex(bucket.mount!, async mount => await mount.shareFile(path));
@@ -274,7 +276,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	};
 
 	/** Returns list of snapshots for selected bucket */
-	const getBucketShapshots = async (id: string) => await tombMutex(tomb, async tomb => await tomb!.listBucketSnapshots(id));
+	const getBucketSnapshots = async (id: string) => await snapshotsClient.getSnapshots(id);
 
 	/** Approves a new deviceKey */
 	const approveDeviceApiKey = async (pem: string) => await tombMutex(tomb, async tomb => await tomb!.approveDeviceApiKey(pem));
@@ -489,7 +491,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 			value={{
 				tomb, buckets, storageUsage, trash, areBucketsLoading, selectedBucket,
 				getBuckets, getBucketsFiles, getBucketsKeys, selectBucket, getSelectedBucketFiles,
-				takeColdSnapshot, getBucketShapshots, createBucketAndMount, deleteBucket, remountBucket,
+				takeColdSnapshot, getBucketSnapshots, createBucketAndMount, deleteBucket, remountBucket,
 				getFile, renameBucket, createDirectory, uploadFile, purgeSnapshot,
 				removeBucketAccess, approveBucketAccess, approveDeviceApiKey, shareFile, download, moveTo,
 				restore, deleteFile, makeCopy, getExpandedFolderFiles,

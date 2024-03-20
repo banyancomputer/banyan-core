@@ -29,7 +29,7 @@ export interface BucketSnapshot {
     state: string;
     version: string;
     size: number;
-    createdAt: number;
+    created_at: number;
 };
 
 export interface Bucket {
