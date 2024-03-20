@@ -22,9 +22,9 @@ export const AccountNavigation = () => {
     ];
 
     return (
-        <section className="py-5 px-10" id="buckets">
+        <section className="pt-5 px-6" id="buckets">
             <div className="mb-4 flex w-full justify-between items-center">
-                <h2 className="text-xl font-semibold">
+                <h2 className="text-lg font-semibold">
                     {`${messages.title}`}
                 </h2>
             </div>
