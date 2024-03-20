@@ -34,7 +34,7 @@ export default {
                         onDemandStorage: "On Demand Storage",
                         archivalStorage: "Archival Storage",
                         dataEggress: "Data egress",
-                        totalCost: "Total cost",
+                        totalCost: "Total",
                         upgradeAccount: "Upgrade account",
                         manageSubscriptions: "Manage subscriptions",
                     },

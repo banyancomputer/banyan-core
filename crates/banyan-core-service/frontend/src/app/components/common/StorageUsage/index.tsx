@@ -24,11 +24,16 @@ export const StorageUsage = () => {
             <span className="flex justify-between items-center font-semibold">
                 {`${messages.storage}`}
             </span>
-            <progress className="progress w-full" value={storageUsage.usage} max={storageUsage.softLimit / (selectedSubscription?.features.included_hot_replica_count || 2)}></progress>
+            <progress
+                className="progress w-full [&::-webkit-progress-value]:bg-button-primary"
+                value={storageUsage.usage * 100}
+                max={storageUsage.softLimit / (selectedSubscription?.features.included_hot_replica_count || 2)}
+            />
             <span className="text-xs font-medium">
                 {` ${messages.used} `}
                 <span className="uppercase">
-                    {convertFileSize(storageUsage.usage)}</span>
+                    {convertFileSize(storageUsage.usage)}
+                </span>
                 {` ${messages.of} `}
                 <span className="uppercase">{convertFileSize(storageUsage.softLimit / selectedSubscription?.features.included_hot_replica_count!)}</span>.
             </span>
