@@ -6,7 +6,7 @@ use cid::Cid;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
-use crate::database::Database;
+use crate::database::{Database, DatabaseConnection};
 use crate::tasks::ReportUploadTask;
 
 pub const UPLOAD_SESSION_DURATION: Duration = Duration::from_secs(60 * 60 * 6);
@@ -59,7 +59,7 @@ pub async fn fail_upload(db: &Database, upload_id: &str) -> Result<(), sqlx::Err
 }
 
 pub async fn complete_upload(
-    db: &Database,
+    conn: &mut DatabaseConnection,
     total_size: i64,
     integrity_hash: &str,
     upload_id: &str,
@@ -95,12 +95,15 @@ pub async fn complete_upload(
         integrity_hash,
         upload_id,
     )
-    .execute(db)
+    .execute(&mut *conn)
     .await
     .map(|_| ())
 }
 
-pub async fn upload_size(db: &Database, upload_id: &str) -> Result<i64, sqlx::Error> {
+pub async fn upload_size(
+    conn: &mut DatabaseConnection,
+    upload_id: &str,
+) -> Result<i64, sqlx::Error> {
     let total_size: i32 = sqlx::query_scalar!(
         r#"
             SELECT COALESCE(SUM(blocks.data_length), 0)
@@ -111,24 +114,22 @@ pub async fn upload_size(db: &Database, upload_id: &str) -> Result<i64, sqlx::Er
             "#,
         upload_id
     )
-    .fetch_one(db)
+    .fetch_one(&mut *conn)
     .await?;
 
     Ok(total_size as i64)
 }
 
 pub async fn report_upload(
-    db: &mut Database,
+    conn: &mut DatabaseConnection,
     storage_grant_id: Uuid,
     metadata_id: &str,
     upload_id: &str,
     total_size: i64,
 ) -> Result<(), sqlx::Error> {
-    let mut conn = db.acquire().await?;
-
     let all_cids: Vec<String> = sqlx::query_scalar!(
         r#"
-            SELECT blocks.cid 
+            SELECT blocks.cid
             FROM blocks
             JOIN uploads_blocks ON blocks.id = uploads_blocks.block_id
             JOIN uploads ON uploads_blocks.upload_id = uploads.id
@@ -145,7 +146,7 @@ pub async fn report_upload(
         .collect::<Vec<Cid>>();
 
     ReportUploadTask::new(storage_grant_id, metadata_id, &all_cids, total_size as u64)
-        .enqueue::<banyan_task::SqliteTaskStore>(&mut conn)
+        .enqueue::<banyan_task::SqliteTaskStore>(&mut *conn)
         .await
         .unwrap();
 
@@ -177,7 +178,7 @@ pub async fn get_upload(
 }
 
 pub async fn write_block_to_tables(
-    db: &Database,
+    conn: &mut DatabaseConnection,
     upload_id: &str,
     normalized_cid: &str,
     data_length: i64,
@@ -187,14 +188,14 @@ pub async fn write_block_to_tables(
         normalized_cid,
         data_length,
     )
-    .fetch_optional(db)
+    .fetch_optional(&mut *conn)
     .await?;
 
     let block_id = match maybe_block_id {
         Some(block_id) => block_id,
         None => {
             sqlx::query_scalar!("SELECT id FROM blocks WHERE cid = $1;", normalized_cid,)
-                .fetch_one(db)
+                .fetch_one(&mut *conn)
                 .await?
         }
     };
@@ -210,9 +211,8 @@ pub async fn write_block_to_tables(
         upload_id,
         block_id,
     )
-    .execute(db)
+    .execute(&mut *conn)
     .await?;
-
     Ok(())
 }
 
