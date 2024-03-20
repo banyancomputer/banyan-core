@@ -111,76 +111,26 @@ where
         self.schedule_registry
             .insert(RT::TASK_NAME, Arc::new(next_schedule::<RT>));
 
-        /*
-        let context = (self.context_fn)();
-        context.enqueue(RT::default()).await;
-        */
         self.startup_registry
             .insert(RT::TASK_NAME, Arc::new(enqueue_recurring_task::<RT, C>));
 
         self.register_task_type::<RT>()
     }
 
-    pub async fn start<F>(
-        self,
-        //locked_connection: Arc<Mutex<S::Connection>>,
-        //locked_connection: &'a mut S::Connection,
-        //executor: R,
-        shutdown_signal: F,
-    ) -> Result<JoinHandle<()>, WorkerPoolError>
+    pub async fn start<F>(self, shutdown_signal: F) -> Result<JoinHandle<()>, WorkerPoolError>
     where
-        //R: Fn() -> Pin<Box<dyn Future<Output = Result<&'static mut S::Connection, ()>>>>,
-        //R: Fn() -> &'a mut S::Connection + Send + 'static,
-        //R: &mut TaskStore::Connection,
-        /*
-        R: Fn(
-            EnqueueRecurringTaskFn<&mut S::Connection>,
-        )
-            -> Pin<Box<dyn Future<Output = Result<Option<String>, TaskStoreError>> + Send>>,
-            */
-        //ERTF + Send + Sync + 'static,
-        //R: Future<Output = &'a mut S::Connection> + Send + 'static,
         F: Future<Output = ()> + Send + 'static,
     {
-        //let registry = self.startup_registry.clone();
-        //let fddd = registry.get("ad").unwrap();
-        //let x = executor.awa
-        //
-        // fn<T>() -> (fn(conn) )
-        //
-        //fn(conn)
-
-        //let mut x = locked_connection.lock().unwrap();
         for (task_name, enqueue_recurring_task_fn) in self.startup_registry.clone().into_iter() {
-            enqueue_recurring_task_fn((self.context_fn)())
-                .await
-                .unwrap();
-
-            //let x = &mut *locked_connection;
-            //let y = x.borrow();
-            //let x = connection_fn();
-            //let meow: Option<String> = enqueue_recurring_task_fn(x).await.unwrap();
-            //drop(x);
-            //t
-            //enqueue_recurring_task_fn(connection_fn());
-
-            //let result = enqueue_recurring_task_fn(executor().await.unwrap()).await;
-            /*
-            match result.map_err(|err| {
-                WorkerPoolError::FailedToEnqueueRecurring(task_name.to_string(), err)
-            }) {
+            tracing::info!("enqueuing {}", task_name);
+            match enqueue_recurring_task_fn((self.context_fn)()).await {
                 Ok(task_id) => {
-                    tracing::info!(
-                        "enqueued recurring task `{}` with task_id `{}`",
-                        task_name,
-                        task_id.unwrap_or("None".to_string())
-                    );
+                    tracing::info!("successfully enqueues recurring task with id {:?}", task_id)
                 }
                 Err(err) => {
-                    tracing::error!("failed to enqueue recurring task: {err}");
+                    tracing::error!("error setting up recurring task {:?}", err)
                 }
             }
-            */
         }
 
         for (queue_name, queue_tracked_tasks) in self.queue_tasks.iter() {

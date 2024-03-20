@@ -4,9 +4,7 @@ use axum::async_trait;
 use banyan_object_store::{
     ObjectStore, ObjectStoreConnection, ObjectStoreConnectionError, ObjectStoreError,
 };
-use banyan_task::{
-    Contextual, RecurringTask, SqliteTaskStore, TaskLike, TaskStore, TaskStoreError,
-};
+use banyan_task::{Contextual, SqliteTaskStore, TaskLike, TaskStore, TaskStoreError};
 use jwt_simple::prelude::*;
 use url::Url;
 
@@ -114,7 +112,6 @@ impl State {
     }
 }
 
-//use banyan_task::
 #[async_trait]
 impl Contextual for State {
     type S = SqliteTaskStore;

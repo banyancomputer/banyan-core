@@ -26,37 +26,15 @@ pub async fn start_background_workers(
     state: AppState,
     mut shutdown_rx: watch::Receiver<()>,
 ) -> Result<JoinHandle<()>, ()> {
-    let database = state.database();
     let task_store = SqliteTaskStore::new(state.database());
-
-    let x = state.clone();
-
-    let mut conn = state.database().acquire().await.unwrap();
-    //let conn = correct(&mut conn);
-    //let x: &mut SqliteConnection = correct(&mut conn);
-    //let locked_connection = Arc::new(Mutex::new(x));
-
-    /*
-    enqueue_task_if_none_in_progress::<ReportBandwidthMetricsTask>(&task_store, &mut conn).await;
-    enqueue_task_if_none_in_progress::<ReportHealthTask>(&task_store, &mut conn).await;
-    */
-
-    /*
-    async fn run_thingy() {
-    }
-    */
-
-    //let locked = Mutex::new(&mut conn);
-
-    //let thing: Pin<Box<dyn Future<Output = SqliteConnection>>> = Box::pin(async move { conn });
 
     WorkerPool::new(task_store.clone(), move || state.clone())
         .configure_queue(QueueConfig::new("default").with_worker_count(5))
         .register_task_type::<ReportUploadTask>()
         .register_task_type::<PruneBlocksTask>()
+        .register_task_type::<ReportRedistributionTask>()
         .register_recurring_task_type::<ReportHealthTask>()
         .register_recurring_task_type::<ReportBandwidthMetricsTask>()
-        .register_task_type::<ReportRedistributionTask>()
         .start(async move {
             let _ = shutdown_rx.changed().await;
         })
