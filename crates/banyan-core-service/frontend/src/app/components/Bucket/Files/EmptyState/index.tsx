@@ -9,7 +9,7 @@ import { ToastNotifications } from '@utils/toastNotifications';
 import { useAppSelector } from '@/app/store';
 
 export const EmptyState: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
-    const messages = useAppSelector(state => state.locales.messages.coponents.bucket.emptyState);
+    const messages = useAppSelector(state => state.locales.messages.coponents.bucket.files.emptyState);
     const { uploadFiles } = useFilesUpload();
 
     const folderLocation = useFolderLocation();
