@@ -47,6 +47,9 @@ impl TaskLike for ReportAllStorageHostsConsumptionTask {
 
 impl RecurringTask for ReportAllStorageHostsConsumptionTask {
     fn next_schedule(&self) -> Result<Option<OffsetDateTime>, String> {
-        Ok(Some(OffsetDateTime::now_utc() + time::Duration::hours(1)))
+        OffsetDateTime::now_utc()
+            .checked_add(time::Duration::hours(1))
+            .ok_or(String::from("Addding time failed!"))
+            .map(Some)
     }
 }

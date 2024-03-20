@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 use crate::panic_safe_future::PanicSafeFuture;
 use crate::{
     CurrentTask, CurrentTaskError, ExecuteTaskFn, NextScheduleFn, QueueConfig, StateFn, Task,
-    TaskExecError, TaskStore, TaskStoreError, MAXIMUM_CHECK_DELAY,
+    TaskExecError, TaskState, TaskStore, TaskStoreError, MAXIMUM_CHECK_DELAY,
 };
 
 pub struct Worker<Context, S>
@@ -95,6 +95,18 @@ where
     }
 
     async fn schedule_if_needed(&self, task: &Task) -> Result<(), WorkerError> {
+        // If there's already a schedule in place
+        if self
+            .store
+            .get_task_in_state(task.task_name.as_str(), vec![TaskState::New])
+            .await
+            .map_err(WorkerError::StoreUnavailable)?
+            .is_some()
+        {
+            return Ok(());
+        }
+
+        // If we need to schedule one and we can get one
         if let Some(get_next_schedule) = self.schedule_registry.get(task.task_name.as_str()) {
             if let Ok(Some(next_schedule)) = get_next_schedule(task.payload.clone()) {
                 return self

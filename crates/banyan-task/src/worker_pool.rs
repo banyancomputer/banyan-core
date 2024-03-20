@@ -117,16 +117,26 @@ where
     {
         // Queue up all the recurring tasks
         for (task_name, enqueue_recurring_task_fn) in self.startup_registry.clone().into_iter() {
-            match enqueue_recurring_task_fn((self.context_fn)()).await {
-                Ok(Some(task_id)) => {
-                    tracing::info!(
-                        "successfully enqueued {} recurring with id {:?}",
-                        task_name,
-                        task_id
-                    )
-                }
-                Ok(None) | Err(_) => {
-                    tracing::error!("error setting up {} recurring task!", task_name)
+            if self
+                .task_store
+                .get_living_task(task_name)
+                .await
+                .map_err(|err| {
+                    WorkerPoolError::FailedToEnqueueRecurring(String::from(task_name), err)
+                })?
+                .is_none()
+            {
+                match enqueue_recurring_task_fn((self.context_fn)()).await {
+                    Ok(Some(task_id)) => {
+                        tracing::info!(
+                            "successfully enqueued {} recurring with id {:?}",
+                            task_name,
+                            task_id
+                        )
+                    }
+                    Ok(None) | Err(_) => {
+                        tracing::error!("error setting up {} recurring task!", task_name)
+                    }
                 }
             }
         }

@@ -87,7 +87,10 @@ pub mod tests {
     #[async_trait]
     impl RecurringTask for ScheduleTestTask {
         fn next_schedule(&self) -> Result<Option<OffsetDateTime>, String> {
-            Ok(OffsetDateTime::now_utc().checked_add(Duration::minutes(5)))
+            OffsetDateTime::now_utc()
+                .checked_add(Duration::minutes(5))
+                .ok_or(String::from("Addding time failed!"))
+                .map(Some)
         }
     }
 }
