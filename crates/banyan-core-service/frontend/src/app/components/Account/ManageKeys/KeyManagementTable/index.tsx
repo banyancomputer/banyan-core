@@ -4,11 +4,23 @@ import { KeyActions } from '@components/Account/ManageKeys/KeyActions';
 import { ActionsCell } from '@components/common/ActionsCell';
 
 import { useAppSelector } from '@/app/store';
-import { Bucket as IBucket } from '@/app/types/bucket';
+import { Bucket, BucketKey, Bucket as IBucket } from '@/app/types/bucket';
 import { SecondaryButton } from '@/app/components/common/SecondaryButton';
+import { useModal } from '@/app/contexts/modals';
+import { ApproveBucketAccessModal } from '@components/common/Modal/ApproveBucketAccessModal';
+import { RemoveBucketAccessModal } from '@components/common/Modal/RemoveBucketAccessModal';
 
 export const KeyManagementTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.account.manageKeys.keyManagementTable);
+    const { openModal } = useModal();
+
+    const approveAccess = async (bucket: Bucket, bucketKey: BucketKey) => {
+        openModal(<ApproveBucketAccessModal bucket={bucket} bucketKey={bucketKey} />);
+    };
+
+    const removeAccess = async (bucket: Bucket, bucketKey: BucketKey) => {
+        openModal(<RemoveBucketAccessModal bucket={bucket} bucketKey={bucketKey} />);
+    };
 
     return (
         <div
@@ -49,6 +61,7 @@ export const KeyManagementTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }
                                         <td className="px-6 py-12">
                                             <SecondaryButton
                                                 text={bucketKey.approved ? messages.disable : messages.enable}
+                                                action={() => bucketKey.approved ? removeAccess(bucket, bucketKey) :  approveAccess(bucket, bucketKey)}
                                             />
                                         </td>
                                         <td className="px-3 py-12">
