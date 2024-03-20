@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT * FROM user_total_consumption WHERE slot = $1 AND user_id = $2",
+  "describe": {
+    "columns": [
+      {
+        "name": "user_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "hot_storage_bytes",
+        "ordinal": 1,
+        "type_info": "Int64"
+      },
+      {
+        "name": "archival_storage_bytes",
+        "ordinal": 2,
+        "type_info": "Int64"
+      },
+      {
+        "name": "slot",
+        "ordinal": 3,
+        "type_info": "Datetime"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "ef3a8f4765b9b9f8722a030a2d6035824d1aaeeb516e400133a76780348f2d9a"
+}

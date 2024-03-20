@@ -5,7 +5,7 @@ edition = "2021"
 license = "LicenseRef-LICENSE.txt"
 
 [dependencies]
-banyan-task = { path = "../banyan-task", version = "^0.1" }
+banyan-task = { path = "../banyan-task", version = "^0.1"}
 banyan-car-analyzer = { path = "../banyan-car-analyzer", version = "^0.1" }
 banyan-object-store = { path = "../banyan-object-store", version = "^0.1" }
 banyan-traffic-counter = { path = "../banyan-traffic-counter", version = "^0.1" }
@@ -49,3 +49,4 @@ tracing-subscriber = { version = "^0.3", default-features = false, features = ["
 [dev-dependencies]
 bytes = "^1.4"
 reqwest = { version = "^0.11", default-features = false, features = ["multipart", "stream"] }
+banyan-task = { path = "../banyan-task", version = "^0.1", features = ["test-utils"]}

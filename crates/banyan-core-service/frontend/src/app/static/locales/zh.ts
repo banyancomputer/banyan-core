@@ -61,9 +61,10 @@ export default {
                 billingAndPayment: "账单和付款"
             },
             profile: {
-                title: "个人资料",
-                language: "语言",
-                chooseYourLanguage: "选择您的语言"
+                name: "名称",
+                email: "电子邮件地址",
+                darkMode: "暗模式",
+                language: "语言"
             },
         },
         bucket: {
@@ -432,6 +433,10 @@ export default {
             seePricingPage: "查看我们的定价页面",
             contactSales: "联系销售",
             fileSizeExceeded: "文件大小超过限制。请重试，使用小于 100 MB 的文件，或使用 Banyan CLI。"
+        },
+        tomb: {
+            folderAlreadyExists: '文件夹名称必须唯一 - 请输入唯一名称',
+            driveAlreadyExists: '驱动器名称必须唯一 - 请键入唯一名称'
         }
     }
 };

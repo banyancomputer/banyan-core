@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::app::AppState;
-use crate::database::Database;
+use crate::database::DatabaseConnection;
 use crate::extractors::AuthenticatedClient;
 use crate::tasks::ReportUploadTask;
 pub(crate) mod block;
@@ -19,8 +19,10 @@ mod db;
 mod error;
 pub(crate) mod new;
 
-use db::{complete_upload, fail_upload, start_upload, write_block_to_tables, Upload};
-use error::UploadError;
+pub use db::{
+    complete_upload, fail_upload, start_upload, upload_size, write_block_to_tables, Upload,
+};
+pub use error::UploadError;
 
 /// Limit on the size of the JSON request that accompanies an upload.
 const UPLOAD_REQUEST_SIZE_LIMIT: u64 = 100 * 1_024;
@@ -39,7 +41,8 @@ pub async fn handler(
     TypedHeader(content_type): TypedHeader<ContentType>,
     body: BodyStream,
 ) -> Result<Response, UploadError> {
-    let mut db = state.database();
+    let db = state.database();
+
     let reported_body_length = content_len.0;
     if reported_body_length > client.remaining_storage() {
         return Err(UploadError::InsufficientAuthorizedStorage(
@@ -77,8 +80,8 @@ pub async fn handler(
 
     let upload = start_upload(
         &db,
-        &client.id(),
-        &request.metadata_id,
+        &client.id().to_string(),
+        &request.metadata_id.to_string(),
         reported_body_length,
     )
     .await?;
@@ -94,9 +97,9 @@ pub async fn handler(
 
     // TODO: validate name is car-upload (request_data_field.name())
     // TODO: validate type is "application/vnd.ipld.car; version=2" (request_data_field.content_type())
-
+    let mut conn = db.acquire().await?;
     match process_upload_stream(
-        &db,
+        &mut conn,
         &upload,
         store,
         reported_body_length as usize,
@@ -106,15 +109,14 @@ pub async fn handler(
     .await
     {
         Ok(cr) => {
-            complete_upload(&db, 0, cr.integrity_hash(), &upload.id).await?;
-
+            complete_upload(&mut conn, 0, cr.integrity_hash(), &upload.id).await?;
             ReportUploadTask::new(
                 client.storage_grant_id(),
                 &request.metadata_id.to_string(),
                 cr.cids(),
                 cr.total_size(),
             )
-            .enqueue::<banyan_task::SqliteTaskStore>(&mut db)
+            .enqueue::<banyan_task::SqliteTaskStore>(&mut conn)
             .await
             .map_err(UploadError::FailedToEnqueueTask)?;
 
@@ -130,7 +132,7 @@ pub async fn handler(
 }
 
 async fn process_upload_stream<S>(
-    db: &Database,
+    conn: &mut DatabaseConnection,
     upload: &Upload,
     store: ObjectStore,
     expected_size: usize,
@@ -161,7 +163,7 @@ where
                 .await
                 .map_err(UploadError::ObjectStore)?;
 
-            write_block_to_tables(db, &upload.id, &cid_string, length).await?;
+            write_block_to_tables(conn, &upload.id, &cid_string, length).await?;
         }
 
         if car_analyzer.seen_bytes() as usize > expected_size && !warning_issued {

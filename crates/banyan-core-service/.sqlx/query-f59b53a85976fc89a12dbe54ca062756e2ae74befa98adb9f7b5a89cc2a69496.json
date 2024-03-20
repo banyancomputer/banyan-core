@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO user_total_consumption (user_id, hot_storage_bytes, archival_storage_bytes, slot)\n        VALUES ($1, $2, $3, $4)\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "f59b53a85976fc89a12dbe54ca062756e2ae74befa98adb9f7b5a89cc2a69496"
+}

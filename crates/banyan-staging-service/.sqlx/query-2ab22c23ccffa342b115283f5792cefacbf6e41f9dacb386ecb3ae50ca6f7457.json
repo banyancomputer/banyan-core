@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM storage_grants WHERE grant_id = $1;",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "2ab22c23ccffa342b115283f5792cefacbf6e41f9dacb386ecb3ae50ca6f7457"
+}

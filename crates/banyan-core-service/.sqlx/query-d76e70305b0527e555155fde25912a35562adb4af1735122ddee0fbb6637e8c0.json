@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT COALESCE(SUM(COALESCE(m.data_size, m.expected_data_size, 0)), 0) as big_int\n                    FROM storage_hosts_metadatas_storage_grants shms\n                    INNER JOIN metadata AS m ON m.id = shms.metadata_id\n                    WHERE shms.storage_host_id = $1;\n             ",
+  "describe": {
+    "columns": [
+      {
+        "name": "big_int",
+        "ordinal": 0,
+        "type_info": "Int"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "d76e70305b0527e555155fde25912a35562adb4af1735122ddee0fbb6637e8c0"
+}

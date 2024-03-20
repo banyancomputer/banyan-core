@@ -1,8 +1,9 @@
 use http::{HeaderMap, HeaderValue};
 use jwt_simple::prelude::*;
-use reqwest::Client;
+use reqwest::{Client, Response};
 use url::Url;
 
+use crate::clients::models::{ReportUploadRequest, StorageProviderAuthResponse};
 use crate::clients::MeterTrafficRequest;
 use crate::utils::SigningKey;
 
@@ -41,6 +42,66 @@ impl CoreServiceClient {
             platform_hostname,
         }
     }
+
+    pub async fn report_upload(
+        &self,
+        metadata_id: String,
+        data_size: u64,
+        normalized_cids: Vec<String>,
+        storage_authorization_id: String,
+    ) -> Result<Response, CoreServiceError> {
+        let report_upload = ReportUploadRequest {
+            data_size,
+            storage_authorization_id,
+            normalized_cids,
+        };
+
+        let report_endpoint = self
+            .platform_hostname
+            .join(&format!("/hooks/storage/report/{}", metadata_id))
+            .unwrap();
+
+        let response = self
+            .client
+            .post(report_endpoint.clone())
+            .json(&report_upload)
+            .bearer_auth(&self.bearer_token)
+            .send()
+            .await?;
+
+        if response.status().is_success() {
+            return Ok(response);
+        }
+
+        Err(CoreServiceError::BadRequest(response.text().await?))
+    }
+
+    pub async fn request_provider_token(
+        &self,
+        storage_provider_id: &str,
+    ) -> Result<StorageProviderAuthResponse, CoreServiceError> {
+        let provider_token_url = self
+            .platform_hostname
+            .join(format!("/api/v1/auth/provider_grant/{}", storage_provider_id).as_str())
+            .unwrap();
+
+        let response = self
+            .client
+            .get(provider_token_url.clone())
+            .bearer_auth(&self.bearer_token)
+            .send()
+            .await?;
+
+        if response.status().is_success() {
+            return match response.json::<StorageProviderAuthResponse>().await {
+                Ok(response) => Ok(response),
+                Err(_) => Err(CoreServiceError::ResponseParseError),
+            };
+        }
+
+        Err(CoreServiceError::BadRequest(response.text().await?))
+    }
+
     pub async fn report_user_bandwidth(
         &self,
         traffic_metrics: MeterTrafficRequest<'_>,
@@ -68,6 +129,8 @@ impl CoreServiceClient {
 
 #[derive(Debug, thiserror::Error)]
 pub enum CoreServiceError {
+    #[error("response parse error")]
+    ResponseParseError,
     #[error("failure during request: {0}")]
     RequestError(#[from] reqwest::Error),
     #[error("bad request: {0}")]

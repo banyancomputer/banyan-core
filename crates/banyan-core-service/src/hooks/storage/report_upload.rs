@@ -6,10 +6,12 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::app::AppState;
-use crate::database::models::Metadata;
-use crate::database::DatabaseConnection;
+use crate::database::models::{
+    Blocks, ExistingStorageGrant, Metadata, MinimalBlockLocation,
+    StorageHostsMetadatasStorageGrants,
+};
 use crate::extractors::StorageProviderIdentity;
-use crate::tasks::HostCapacityTask;
+use crate::tasks::{HostCapacityTask, ReportStorageHostConsumptionTask, ReportUserConsumptionTask};
 
 /// When a client finishes uploading their data to either staging or a storage host, the storage
 /// host will make a request to this end point letting us know that we have all the data safely
@@ -22,44 +24,39 @@ pub async fn handler(
 ) -> Result<Response, ReportUploadError> {
     let db_metadata_id = metadata_id.to_string();
 
-    let mut database = state.database();
+    let database = state.database();
     let mut db_conn = database.acquire().await?;
 
-    redeem_storage_grant(
+    ExistingStorageGrant::redeem_storage_grant(
         &mut db_conn,
         &storage_provider.id,
         &request.storage_authorization_id,
     )
-    .await?;
-    associate_upload(
+    .await
+    .map_err(ReportUploadError::RedeemFailed)?;
+
+    StorageHostsMetadatasStorageGrants::associate_upload(
         &mut db_conn,
         &storage_provider.id,
         &db_metadata_id,
         &request.storage_authorization_id,
     )
-    .await?;
+    .await
+    .map_err(ReportUploadError::NoUploadAssociation)?;
 
     for block_cid in request.normalized_cids.iter() {
-        sqlx::query!("INSERT OR IGNORE INTO blocks (cid) VALUES ($1);", block_cid)
-            .execute(&mut *db_conn)
+        Blocks::insert_block_cid(&mut db_conn, block_cid)
             .await
             .map_err(ReportUploadError::UnableToRecordBlock)?;
-
-        let block_id = sqlx::query_scalar!("SELECT id FROM blocks WHERE cid = $1", block_cid)
-            .fetch_one(&mut *db_conn)
+        let block_id = Blocks::get_block_id(&mut db_conn, block_cid)
             .await
             .map_err(ReportUploadError::UnableToRecordBlock)?;
-
-        // Completeley insert the block location into the database, treating it like we've definitely never seen it before
-        sqlx::query!(
-            r#"INSERT INTO block_locations
-            (block_id, metadata_id, storage_host_id)
-            VALUES ($1, $2, $3);"#,
+        MinimalBlockLocation {
             block_id,
-            db_metadata_id,
-            storage_provider.id,
-        )
-        .execute(&mut *db_conn)
+            metadata_id: db_metadata_id.clone(),
+            storage_host_id: storage_provider.id.clone(),
+        }
+        .save_with_stored_at(&mut db_conn)
         .await
         .map_err(ReportUploadError::UnableToRecordBlock)?;
     }
@@ -79,18 +76,29 @@ pub async fn handler(
     )
     .await
     .map_err(ReportUploadError::MarkCurrentFailed)?;
-
     // Now that the state has changed, mark old unsnapshotted metadatas as being deleted
     Metadata::delete_outdated(&mut db_conn, &bucket_id)
         .await
         .map_err(ReportUploadError::DeleteOutdatedFailed)?;
 
-    // Close the connection to prevent locking
-    db_conn.close().await?;
-
     // Now, let's re-evaluate the capacity of that storage host
-    HostCapacityTask::new(storage_provider.id)
-        .enqueue::<banyan_task::SqliteTaskStore>(&mut database)
+    HostCapacityTask::new(storage_provider.id.clone())
+        .enqueue::<banyan_task::SqliteTaskStore>(&mut db_conn)
+        .await
+        .map_err(ReportUploadError::UnableToEnqueueTask)?;
+
+    let user_id = sqlx::query_scalar!("SELECT user_id FROM buckets WHERE id = $1", bucket_id)
+        .fetch_one(&mut *db_conn)
+        .await
+        .map_err(ReportUploadError::QueryFailed)?;
+
+    ReportStorageHostConsumptionTask::new(storage_provider.id.clone())
+        .enqueue::<banyan_task::SqliteTaskStore>(&mut db_conn)
+        .await
+        .map_err(ReportUploadError::UnableToEnqueueTask)?;
+
+    ReportUserConsumptionTask::new(user_id)
+        .enqueue::<banyan_task::SqliteTaskStore>(&mut db_conn)
         .await
         .map_err(ReportUploadError::UnableToEnqueueTask)?;
 
@@ -115,7 +123,7 @@ pub enum ReportUploadError {
     #[error("failed to delete the metadatas no longer needed: {0}")]
     DeleteOutdatedFailed(sqlx::Error),
 
-    #[error("failed to associate finalized uploaded with storage host")]
+    #[error("failed to associate finalized uploaded with storage host: {0}")]
     NoUploadAssociation(sqlx::Error),
 
     #[error("failed to register storage grant as redeemed: {0}")]
@@ -136,43 +144,55 @@ impl IntoResponse for ReportUploadError {
     }
 }
 
-async fn associate_upload(
-    conn: &mut DatabaseConnection,
-    provider_id: &str,
-    metadata_id: &str,
-    authorization_id: &str,
-) -> Result<(), ReportUploadError> {
-    sqlx::query!(
-        r#"INSERT INTO storage_hosts_metadatas_storage_grants
-               (storage_host_id, metadata_id, storage_grant_id)
-               VALUES ($1, $2, $3);"#,
-        provider_id,
-        metadata_id,
-        authorization_id,
-    )
-    .execute(&mut *conn)
-    .await
-    .map_err(ReportUploadError::NoUploadAssociation)?;
+#[cfg(test)]
+mod tests {
+    use axum::extract::Path;
+    use axum::Json;
+    use uuid::Uuid;
 
-    Ok(())
-}
-async fn redeem_storage_grant(
-    conn: &mut DatabaseConnection,
-    provider_id: &str,
-    authorization_id: &str,
-) -> Result<(), ReportUploadError> {
-    sqlx::query!(
-        r#"UPDATE storage_grants
-               SET redeemed_at = CURRENT_TIMESTAMP
-               WHERE storage_host_id = $1
-                   AND id = $2
-                   AND redeemed_at IS NULL;"#,
-        provider_id,
-        authorization_id,
-    )
-    .execute(&mut *conn)
-    .await
-    .map_err(ReportUploadError::RedeemFailed)?;
+    use crate::app::mock_app_state;
+    use crate::database::models::{BlockLocations, MetadataState};
+    use crate::database::test_helpers::{
+        create_blocks, create_storage_grant, create_storage_hosts, data_generator, generate_cids,
+        normalize_cids, redeem_storage_grant, sample_bucket, sample_metadata, sample_user,
+        setup_database,
+    };
+    use crate::extractors::StorageProviderIdentity;
+    use crate::hooks::storage::report_upload::{handler, ReportUploadRequest};
 
-    Ok(())
+    #[tokio::test]
+    async fn test_handler_for_staging() {
+        let db = setup_database().await;
+        let state = mock_app_state(db.clone());
+        let mut conn = db.acquire().await.expect("connection");
+        let staging_host_id = create_storage_hosts(&mut conn, "url1", "staging-service").await;
+        let user_id = sample_user(&mut conn, "test@example.com").await;
+        let bucket_id = sample_bucket(&mut conn, &user_id).await;
+        let metadata_id = sample_metadata(&mut conn, &bucket_id, 1, MetadataState::Pending).await;
+        let storage_grant_id =
+            create_storage_grant(&mut conn, &staging_host_id, &user_id, 1_000_000).await;
+        redeem_storage_grant(&mut conn, staging_host_id.as_str(), &storage_grant_id).await;
+        let initial_cids: Vec<_> = normalize_cids(generate_cids(data_generator(0..2))).collect();
+        create_blocks(&mut conn, initial_cids.iter().map(String::as_str)).await;
+
+        let request = ReportUploadRequest {
+            data_size: 1024,
+            normalized_cids: initial_cids.clone(),
+            storage_authorization_id: storage_grant_id.to_string(),
+        };
+
+        let result = handler(
+            StorageProviderIdentity::default()
+                .with_host_id(staging_host_id.as_str())
+                .staging(),
+            state,
+            Path(Uuid::parse_str(&metadata_id).expect("valid uuid")),
+            Json(request),
+        )
+        .await;
+
+        assert!(result.is_ok());
+        let block_locations = BlockLocations::get_all(&db).await.expect("block locations");
+        assert_eq!(block_locations.len(), initial_cids.len());
+    }
 }

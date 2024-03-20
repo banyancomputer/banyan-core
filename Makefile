@@ -8,7 +8,7 @@ build:
 
 .PHONY: check
 check:
-	cargo check --workspace
+	cargo check --workspace --all-targets --all-features --tests
 
 .PHONY: clean
 clean:

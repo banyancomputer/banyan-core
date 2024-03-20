@@ -357,8 +357,7 @@ fn best_fit_decreasing(snapshot_segments: Vec<SnapshotSegment>, bin_capacity: i6
 mod tests {
     use std::collections::HashSet;
 
-    use banyan_task::tests::default_current_task;
-    use banyan_task::TaskLike;
+    use banyan_task::{CurrentTask, TaskLike};
     use time::OffsetDateTime;
 
     use crate::app::mock_app_state;
@@ -395,7 +394,7 @@ mod tests {
 
     impl Snapshot {
         pub(crate) async fn get_all(conn: &Database) -> Vec<Snapshot> {
-            sqlx::query_as!(Snapshot, "SELECT * FROM snapshots;")
+            sqlx::query_as!(Snapshot, "SELECT s.*,m.bucket_id FROM snapshots as s JOIN metadata AS m ON s.metadata_id = m.id;")
                 .fetch_all(conn)
                 .await
                 .expect("fetch snapshots")
@@ -442,7 +441,7 @@ mod tests {
         create_snapshot_block_locations(&mut conn, &snapshot_id, block_ids).await;
 
         let task = CreateDealsTask::new(snapshot_id);
-        let res = task.run(default_current_task(), state.0).await;
+        let res = task.run(CurrentTask::default(), state.0).await;
 
         assert!(res.is_ok());
         let all_snapshots = Snapshot::get_all(&db).await;
@@ -488,7 +487,7 @@ mod tests {
         create_snapshot_block_locations(&mut conn, &snapshot_id, block_ids).await;
 
         let task = CreateDealsTask::new(snapshot_id);
-        let res = task.run(default_current_task(), state.0).await;
+        let res = task.run(CurrentTask::default(), state.0).await;
 
         assert!(res.is_ok());
         let all_snapshots = Snapshot::get_all(&db).await;
