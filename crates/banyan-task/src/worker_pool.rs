@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use std::pin::Pin;
 use std::sync::{Arc, Mutex, RwLock};
 
+use async_trait::async_trait;
 use futures::future::join_all;
 use futures::Future;
 use time::OffsetDateTime;
@@ -29,46 +30,42 @@ pub type ExecuteTaskFn<Context> = Arc<
         + Send
         + Sync,
 >;
-pub type EnqueueRecurringTaskFn<SC> = Arc<
-    dyn Fn(SC) -> Pin<Box<dyn Future<Output = Result<Option<String>, TaskStoreError>> + Send>>
+pub type EnqueueRecurringTaskFn<C> = Arc<
+    dyn Fn(C) -> Pin<Box<dyn Future<Output = Result<Option<String>, TaskStoreError>> + Send>>
         + Send
         + Sync,
 >;
-
-pub type ERTF = Arc<
-    dyn Fn() -> Pin<Box<dyn Future<Output = Result<Option<String>, TaskStoreError>> + Send>>
-        + Send
-        + Sync,
->;
-
-//pub type RecurringTaskDefaultFn = Arc<dyn Fn() -> dyn RecurringTask>;
-//pub type RecurringTaskDefaultFn = (); //Arc<dyn Fn() -> dyn RecurringTask>;
 
 pub type NextScheduleFn =
     Arc<dyn Fn(Vec<u8>) -> Result<Option<OffsetDateTime>, TaskExecError> + Send + Sync>;
 
 pub type StateFn<State> = Arc<dyn Fn() -> State + Send + Sync>;
-//pub type StateFn<State> = Arc<dyn Fn() -> State + Send + Sync>;
+
+#[async_trait]
+pub trait Contextual: Clone + Send + Sync + 'static {
+    type S: TaskStore;
+
+    async fn enqueue<T: TaskLike>(&self, task: T) -> Result<Option<String>, TaskStoreError>;
+}
 
 #[derive(Clone)]
-pub struct WorkerPool<C, S, R>
+pub struct WorkerPool<C, S>
 where
-    C: Clone + Send + Sync + 'static,
+    C: Contextual,
     S: TaskStore + Clone,
 {
     context_fn: StateFn<C>,
-    connection_fn: Arc<R>,
     task_store: S,
     task_registry: BTreeMap<&'static str, ExecuteTaskFn<C>>,
     schedule_registry: BTreeMap<&'static str, NextScheduleFn>,
-    startup_registry: BTreeMap<&'static str, EnqueueRecurringTaskFn<&'static mut S::Connection>>,
+    startup_registry: BTreeMap<&'static str, EnqueueRecurringTaskFn<C>>,
     queue_tasks: BTreeMap<&'static str, Vec<&'static str>>,
     worker_queues: BTreeMap<&'static str, QueueConfig>,
 }
 
-impl<C, S, R> WorkerPool<C, S, R>
+impl<C, S> WorkerPool<C, S>
 where
-    C: Clone + Send + Sync + 'static,
+    C: Contextual + Clone + Send + Sync + 'static,
     S: TaskStore + Clone,
 {
     pub fn configure_queue(mut self, config: QueueConfig) -> Self {
@@ -76,14 +73,13 @@ where
         self
     }
 
-    pub fn new<A>(task_store: S, connection_fn: R, context_fn: A) -> Self
+    pub fn new<A>(task_store: S, context_fn: A) -> Self
     where
         A: Fn() -> C + Send + Sync + 'static,
-        R: Fn() -> &'a mut S::Connection + Send + 'static,
     {
         Self {
             context_fn: Arc::new(context_fn),
-            connection_fn: Arc::new(connection_fn),
+            //connection_fn: Arc::new(connection_fn),
             task_store,
             task_registry: BTreeMap::new(),
             schedule_registry: BTreeMap::new(),
@@ -115,8 +111,12 @@ where
         self.schedule_registry
             .insert(RT::TASK_NAME, Arc::new(next_schedule::<RT>));
 
+        /*
+        let context = (self.context_fn)();
+        context.enqueue(RT::default()).await;
+        */
         self.startup_registry
-            .insert(RT::TASK_NAME, Arc::new(enqueue_recurring_task::<RT, S>));
+            .insert(RT::TASK_NAME, Arc::new(enqueue_recurring_task::<RT, C>));
 
         self.register_task_type::<RT>()
     }
@@ -125,9 +125,11 @@ where
         self,
         //locked_connection: Arc<Mutex<S::Connection>>,
         //locked_connection: &'a mut S::Connection,
+        //executor: R,
         shutdown_signal: F,
     ) -> Result<JoinHandle<()>, WorkerPoolError>
     where
+        //R: Fn() -> Pin<Box<dyn Future<Output = Result<&'static mut S::Connection, ()>>>>,
         //R: Fn() -> &'a mut S::Connection + Send + 'static,
         //R: &mut TaskStore::Connection,
         /*
@@ -150,6 +152,10 @@ where
 
         //let mut x = locked_connection.lock().unwrap();
         for (task_name, enqueue_recurring_task_fn) in self.startup_registry.clone().into_iter() {
+            enqueue_recurring_task_fn((self.context_fn)())
+                .await
+                .unwrap();
+
             //let x = &mut *locked_connection;
             //let y = x.borrow();
             //let x = connection_fn();
@@ -158,8 +164,8 @@ where
             //t
             //enqueue_recurring_task_fn(connection_fn());
 
+            //let result = enqueue_recurring_task_fn(executor().await.unwrap()).await;
             /*
-            let result = enqueue_recurring_task_fn(executor()).await;
             match result.map_err(|err| {
                 WorkerPoolError::FailedToEnqueueRecurring(task_name.to_string(), err)
             }) {
@@ -295,12 +301,12 @@ fn next_schedule<RT: RecurringTask>(
         .map_err(TaskExecError::SchedulingFailed)
 }
 
-fn enqueue_recurring_task<RT, S>(
-    conn: &mut S::Connection,
-) -> Pin<Box<dyn Future<Output = Result<Option<String>, TaskStoreError>> + Send + '_>>
+fn enqueue_recurring_task<RT, C>(
+    context: C,
+) -> Pin<Box<dyn Future<Output = Result<Option<String>, TaskStoreError>> + Send>>
 where
-    S: TaskStore,
     RT: RecurringTask,
+    C: Contextual,
 {
-    Box::pin(async move { S::enqueue(&mut *conn, RT::default()).await })
+    Box::pin(async move { context.enqueue(RT::default()).await })
 }

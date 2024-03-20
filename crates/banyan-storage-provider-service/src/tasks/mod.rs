@@ -4,9 +4,12 @@ mod report_health;
 mod report_redistribution;
 mod report_upload;
 
+use std::ops::DerefMut;
+use std::pin::Pin;
 use std::sync::{Arc, Mutex, RwLock};
 
 use banyan_task::{QueueConfig, SqliteTaskStore, TaskLike, TaskLikeExt, TaskStore, WorkerPool};
+use futures::Future;
 pub use prune_blocks::PruneBlocksTask;
 pub use report_health::ReportHealthTask;
 pub use report_redistribution::ReportRedistributionTask;
@@ -43,6 +46,10 @@ pub async fn start_background_workers(
     }
     */
 
+    //let locked = Mutex::new(&mut conn);
+
+    //let thing: Pin<Box<dyn Future<Output = SqliteConnection>>> = Box::pin(async move { conn });
+
     WorkerPool::new(task_store.clone(), move || state.clone())
         .configure_queue(QueueConfig::new("default").with_worker_count(5))
         .register_task_type::<ReportUploadTask>()
@@ -50,20 +57,9 @@ pub async fn start_background_workers(
         .register_recurring_task_type::<ReportHealthTask>()
         .register_recurring_task_type::<ReportBandwidthMetricsTask>()
         .register_task_type::<ReportRedistributionTask>()
-        .start(
-            //move || correct(&mut conn),
-            //&mut *x,
-            //locked_connection,
-            /*
-            move |func| {
-                let mut conn = locked_connection.write().unwrap();
-                func(&mut *conn)
-            },
-            */
-            async move {
-                let _ = shutdown_rx.changed().await;
-            },
-        )
+        .start(async move {
+            let _ = shutdown_rx.changed().await;
+        })
         .await
         .map_err(|_| ())
 }

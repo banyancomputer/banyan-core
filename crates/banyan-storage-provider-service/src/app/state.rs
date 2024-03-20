@@ -1,13 +1,17 @@
 use std::path::PathBuf;
 
+use axum::async_trait;
 use banyan_object_store::{
     ObjectStore, ObjectStoreConnection, ObjectStoreConnectionError, ObjectStoreError,
+};
+use banyan_task::{
+    Contextual, RecurringTask, SqliteTaskStore, TaskLike, TaskStore, TaskStoreError,
 };
 use jwt_simple::prelude::*;
 use url::Url;
 
 use crate::app::{Config, Secrets};
-use crate::database::{self, Database, DatabaseSetupError};
+use crate::database::{self, correct, Database, DatabaseSetupError};
 use crate::utils::{fingerprint_key_pair, fingerprint_public_key, SigningKey, VerificationKey};
 
 #[derive(Clone)]
@@ -107,6 +111,16 @@ impl State {
 
     pub fn platform_verification_key(&self) -> VerificationKey {
         self.platform_verification_key.clone()
+    }
+}
+
+//use banyan_task::
+#[async_trait]
+impl Contextual for State {
+    type S = SqliteTaskStore;
+    async fn enqueue<T: TaskLike>(&self, task: T) -> Result<Option<String>, TaskStoreError> {
+        let mut conn = self.database().acquire().await.unwrap();
+        Self::S::enqueue(&mut conn, task).await
     }
 }
 

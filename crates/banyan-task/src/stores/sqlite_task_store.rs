@@ -155,7 +155,7 @@ impl SqliteTaskStore {
 
 #[async_trait]
 impl TaskStore for SqliteTaskStore {
-    type Connection = PoolConnection<Sqlite>;
+    type Connection = SqliteConnection;
 
     async fn enqueue<T: TaskLike>(
         connection: &mut Self::Connection,
