@@ -1,10 +1,11 @@
 #![allow(dead_code)]
+use std::collections::BTreeMap;
+
 use crate::panic_safe_future::PanicSafeFuture;
 use crate::{
     CurrentTask, CurrentTaskError, ExecuteTaskFn, NextScheduleFn, QueueConfig, StateFn, Task,
     TaskExecError, TaskStore, TaskStoreError, MAXIMUM_CHECK_DELAY,
 };
-use std::collections::BTreeMap;
 
 pub struct Worker<Context, S>
 where

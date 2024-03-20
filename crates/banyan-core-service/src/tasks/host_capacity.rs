@@ -95,6 +95,7 @@ impl TaskLike for HostCapacityTask {
 mod tests {
     use std::thread;
     use std::time::Duration;
+
     use super::*;
     use crate::app::mock_app_state;
     use crate::database::models::{Metadata, MetadataState};
