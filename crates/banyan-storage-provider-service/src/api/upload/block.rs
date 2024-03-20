@@ -6,7 +6,6 @@ use axum::TypedHeader;
 use banyan_object_store::{ObjectStore, ObjectStorePath};
 use bytes::Bytes;
 use cid::multibase::Base;
-use cid::multihash::{Code, MultihashDigest};
 use cid::Cid;
 use serde::{Deserialize, Serialize};
 
@@ -115,19 +114,10 @@ pub async fn handler(
             .map_err(UploadError::DataFieldUnavailable)?;
 
         // Compute the cid associated with that block to verify data integrity
-        let codec = request.cid.codec();
-        let hash = Code::Sha2_256.digest(&block);
-        let computed_cid = Cid::new(cid::Version::V1, codec, hash)
-            .map_err(UploadError::Cid)?
-            .to_string_of_base(Base::Base64Url)
-            .map_err(UploadError::Cid)?;
         let normalized_cid = request
             .cid
             .to_string_of_base(Base::Base64Url)
             .map_err(UploadError::Cid)?;
-        if computed_cid != normalized_cid {
-            return Err(UploadError::MismatchedCid((normalized_cid, computed_cid)));
-        }
         // Write this block to the tables
         write_block_to_tables(&mut conn, &upload.id, &normalized_cid, block.len() as i64).await?;
 
