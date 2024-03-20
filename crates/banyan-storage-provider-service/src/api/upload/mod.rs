@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::app::AppState;
-use crate::database::Database;
+use crate::database::DatabaseConnection;
 use crate::extractors::AuthenticatedClient;
 use crate::tasks::ReportUploadTask;
 pub(crate) mod block;
@@ -97,9 +97,9 @@ pub async fn handler(
 
     // TODO: validate name is car-upload (request_data_field.name())
     // TODO: validate type is "application/vnd.ipld.car; version=2" (request_data_field.content_type())
-
+    let mut conn = db.acquire().await?;
     match process_upload_stream(
-        &db,
+        &mut conn,
         &upload,
         store,
         reported_body_length as usize,
@@ -109,10 +109,7 @@ pub async fn handler(
     .await
     {
         Ok(cr) => {
-            complete_upload(&db, 0, cr.integrity_hash(), &upload.id).await?;
-
-            let mut conn = db.acquire().await?;
-
+            complete_upload(&mut conn, 0, cr.integrity_hash(), &upload.id).await?;
             ReportUploadTask::new(
                 client.storage_grant_id(),
                 &request.metadata_id.to_string(),
@@ -135,7 +132,7 @@ pub async fn handler(
 }
 
 async fn process_upload_stream<S>(
-    db: &Database,
+    conn: &mut DatabaseConnection,
     upload: &Upload,
     store: ObjectStore,
     expected_size: usize,
@@ -166,7 +163,7 @@ where
                 .await
                 .map_err(UploadError::ObjectStore)?;
 
-            write_block_to_tables(db, &upload.id, &cid_string, length).await?;
+            write_block_to_tables(conn, &upload.id, &cid_string, length).await?;
         }
 
         if car_analyzer.seen_bytes() as usize > expected_size && !warning_issued {
