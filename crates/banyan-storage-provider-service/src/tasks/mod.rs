@@ -4,22 +4,15 @@ mod report_health;
 mod report_redistribution;
 mod report_upload;
 
-use std::ops::DerefMut;
-use std::pin::Pin;
-use std::sync::{Arc, Mutex, RwLock};
-
-use banyan_task::{QueueConfig, SqliteTaskStore, TaskLike, TaskLikeExt, TaskStore, WorkerPool};
-use futures::Future;
+use banyan_task::{QueueConfig, SqliteTaskStore, WorkerPool};
 pub use prune_blocks::PruneBlocksTask;
 pub use report_health::ReportHealthTask;
 pub use report_redistribution::ReportRedistributionTask;
 pub use report_upload::ReportUploadTask;
-use sqlx::SqliteConnection;
 use tokio::sync::watch;
 use tokio::task::JoinHandle;
 
 use crate::app::AppState;
-use crate::database::{correct, DatabaseConnection};
 use crate::tasks::report_bandwidth_metrics::ReportBandwidthMetricsTask;
 
 pub async fn start_background_workers(
@@ -40,23 +33,4 @@ pub async fn start_background_workers(
         })
         .await
         .map_err(|_| ())
-}
-
-async fn enqueue_task_if_none_in_progress<T: TaskLikeExt + TaskLike + Default>(
-    task_store: &SqliteTaskStore,
-    conn: &mut DatabaseConnection,
-) {
-    if task_store
-        .get_living_task(T::TASK_NAME)
-        .await
-        .expect("get task")
-        .is_some()
-    {
-        return;
-    }
-
-    T::default()
-        .enqueue::<SqliteTaskStore>(conn)
-        .await
-        .expect("enqueue task");
 }

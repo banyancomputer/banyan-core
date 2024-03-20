@@ -1,4 +1,4 @@
-use sqlx::{pool::PoolConnection, FromRow, Sqlite, SqlitePool};
+use sqlx::{FromRow, SqlitePool};
 
 pub mod models;
 mod sqlite;
@@ -18,10 +18,6 @@ impl BareId {
 
 pub type Database = SqlitePool;
 pub type DatabaseConnection = sqlx::SqliteConnection;
-
-pub fn correct(conn: &mut PoolConnection<Sqlite>) -> &mut DatabaseConnection {
-    conn
-}
 
 pub async fn connect(db_url: &url::Url) -> Result<Database, DatabaseSetupError> {
     if db_url.scheme() == "sqlite" {

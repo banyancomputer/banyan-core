@@ -1,7 +1,6 @@
-use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::pin::Pin;
-use std::sync::{Arc, Mutex, RwLock};
+use std::sync::Arc;
 
 use async_trait::async_trait;
 use futures::future::join_all;
@@ -16,10 +15,6 @@ use crate::{
     CurrentTask, QueueConfig, TaskExecError, TaskLike, TaskStore, TaskStoreError, Worker,
     WORKER_SHUTDOWN_TIMEOUT,
 };
-
-//type exec = for<'e> &'e mut C: Executor<'e, Database = Sqlite>;
-
-//ktype Exec = dyn Executor<'_, Database = Sqlite>;
 
 pub type ExecuteTaskFn<Context> = Arc<
     dyn Fn(
@@ -79,7 +74,6 @@ where
     {
         Self {
             context_fn: Arc::new(context_fn),
-            //connection_fn: Arc::new(connection_fn),
             task_store,
             task_registry: BTreeMap::new(),
             schedule_registry: BTreeMap::new(),
@@ -121,14 +115,18 @@ where
     where
         F: Future<Output = ()> + Send + 'static,
     {
+        // Queue up all the recurring tasks
         for (task_name, enqueue_recurring_task_fn) in self.startup_registry.clone().into_iter() {
-            tracing::info!("enqueuing {}", task_name);
             match enqueue_recurring_task_fn((self.context_fn)()).await {
-                Ok(task_id) => {
-                    tracing::info!("successfully enqueues recurring task with id {:?}", task_id)
+                Ok(Some(task_id)) => {
+                    tracing::info!(
+                        "successfully enqueued {} recurring with id {:?}",
+                        task_name,
+                        task_id
+                    )
                 }
-                Err(err) => {
-                    tracing::error!("error setting up recurring task {:?}", err)
+                Ok(None) | Err(_) => {
+                    tracing::error!("error setting up {} recurring task!", task_name)
                 }
             }
         }
