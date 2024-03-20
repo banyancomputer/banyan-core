@@ -51,20 +51,10 @@ export const SnapshotsTable = () => {
                             />
                         </th>
                         <th className="px-6 py-4 text-left font-semibold w-56">
-                            <SortCell
-                                criteria="date"
-                                onChange={sort}
-                                sortState={sortState}
-                                text={messages.date}
-                            />
+                            {messages.date}
                         </th>
                         <th className="px-6 py-4 text-left font-semibold w-36  ">
-                            <SortCell
-                                criteria="size"
-                                onChange={sort}
-                                sortState={sortState}
-                                text={messages.size}
-                            />
+                            {messages.size}
                         </th>
                         <th className="px-6 py-4 w-20 text-xs text-left font-semibold">
                             {messages.state}
@@ -84,7 +74,7 @@ export const SnapshotsTable = () => {
                             </td>
                             <td className="px-6 py-2 whitespace-nowrap overflow-hidden text-ellipsis">{`${getDateLabel(snapshot.createdAt)}, ${getTime(snapshot.createdAt)}`}</td>
                             <td className="px-6 py-2 font-semibold">{convertFileSize(snapshot.size)}</td>
-                            <td className="px-6 py-2">{snapshot.snapshot_type}</td>
+                            <td className="px-6 py-2">{snapshot.state}</td>
                             <td className="px-6 py-2">
                                 <ActionsCell
                                     actions={<SnapshotActions bucket={selectedBucket} snapshot={snapshot} />}

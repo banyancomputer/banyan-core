@@ -123,6 +123,7 @@ export default {
                 },
             },
             snapshots: {
+                title: "快照",
                 table: {
                     name: "名称",
                     date: "日期",

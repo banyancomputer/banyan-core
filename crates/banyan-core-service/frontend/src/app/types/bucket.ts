@@ -26,7 +26,7 @@ export interface BucketKey {
 export interface BucketSnapshot {
     id: string;
     bucket_id: string;
-    snapshot_type: string;
+    state: string;
     version: string;
     size: number;
     createdAt: number;

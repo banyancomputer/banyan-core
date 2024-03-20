@@ -123,6 +123,7 @@ export default {
                 },
             },
             snapshots: {
+                title: "Snapshots",
                 table: {
                     name: "Name",
                     date: "Datum",
