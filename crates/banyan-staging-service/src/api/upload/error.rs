@@ -25,8 +25,11 @@ pub enum UploadError {
     #[error("account is not authorized to store {0} bytes, {1} bytes are still authorized")]
     InsufficientAuthorizedStorage(u64, u64),
 
-    #[error("a CID from our internal reports wasn't convertable: {0}")]
-    Cid(cid::Error),
+    #[error("don't support CIDs with a size of {0}")]
+    InvalidCidSize(usize),
+
+    #[error("failed to parse CID: {0}")]
+    Cid(#[from] cid::Error),
 
     #[error("cannot write blocks to a CAR file directly")]
     CarFile,
@@ -76,6 +79,7 @@ impl IntoResponse for UploadError {
             }
             DataFieldUnavailable(_)
             | IdMismatch
+            | InvalidCidSize(_)
             | DataFieldMissing
             | InvalidRequestData(_)
             | RequestFieldUnavailable(_)

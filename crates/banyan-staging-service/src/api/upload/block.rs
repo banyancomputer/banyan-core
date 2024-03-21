@@ -5,8 +5,6 @@ use axum::response::{IntoResponse, Response};
 use axum::TypedHeader;
 use banyan_object_store::{ObjectStore, ObjectStorePath};
 use bytes::Bytes;
-use cid::multibase::Base;
-use cid::Cid;
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 
@@ -20,7 +18,7 @@ use crate::extractors::AuthenticatedClient;
 
 #[derive(Deserialize, Serialize)]
 pub struct BlockUploadRequest {
-    cid: Cid,
+    cid: String,
 
     #[serde(flatten, default)]
     details: Option<UploadDetails>,
@@ -55,14 +53,26 @@ pub async fn handler(
 
     let mut multipart = multer::Multipart::with_constraints(body, boundary, constraints);
 
-    let request: BlockUploadRequest = multipart
+    let client_id_str = client.id().to_string();
+    tracing::error!(client_id = ?client_id_str, "block upload starting");
+
+    let request_field = multipart
         .next_field()
         .await
         .map_err(UploadError::RequestFieldUnavailable)?
-        .ok_or(UploadError::RequestFieldMissing)?
-        .json()
-        .await
-        .map_err(UploadError::InvalidRequestData)?;
+        .ok_or(UploadError::RequestFieldMissing)?;
+
+    let request = match request_field.json::<BlockUploadRequest>().await {
+        Ok(r) => r,
+        Err(err) => {
+            tracing::error!("failed to parse upload request: {err}");
+            return Err(UploadError::InvalidRequestData(err));
+        }
+    };
+
+    // todo: the CID crate fails to read non 512 bytes hash CIDs which we don't want to use, we
+    // should get a better parser and validate this...
+    let normalized_cid = request.cid;
 
     let mut conn = db.acquire().await?;
 
@@ -74,7 +84,6 @@ pub async fn handler(
 
     let (req_upload_id, completed) = (details.upload_id, details.completed);
 
-    let client_id_str = client.id().to_string();
     tracing::warn!(
         client_id_str,
         req_upload_id,
@@ -92,39 +101,31 @@ pub async fn handler(
         return Err(UploadError::IdMismatch);
     }
 
-    // If the upload had already been marked as complete
+    // Don't allow additional data on a completed upload
     if upload.state == "complete" {
         return Err(UploadError::UploadIsComplete);
     }
 
-    // While there are still block fields encoded
-    while let Some(block_field) = multipart
+    let block_field = multipart
         .next_field()
         .await
         .map_err(UploadError::DataFieldUnavailable)?
-    {
-        // Grab all of the block data from this request part
-        let block: Bytes = block_field
-            .bytes()
-            .await
-            .map_err(UploadError::DataFieldUnavailable)?;
+        .ok_or(UploadError::DataFieldMissing)?;
 
-        let normalized_cid = request
-            .cid
-            .to_string_of_base(Base::Base64Url)
-            .map_err(UploadError::Cid)?;
+    let block: Bytes = block_field
+        .bytes()
+        .await
+        .map_err(UploadError::DataFieldUnavailable)?;
 
-        // Write this block to the tables
-        write_block_to_tables(&mut conn, &upload.id, &normalized_cid, block.len() as i64).await?;
+    write_block_to_tables(&mut conn, &upload.id, &normalized_cid, block.len() as i64).await?;
 
-        // Write the bytes to the expected location
-        let location =
-            ObjectStorePath::from(format!("{}/{}.bin", upload.base_path, normalized_cid).as_str());
-        store
-            .put(&location, block)
-            .await
-            .map_err(UploadError::ObjectStore)?;
-    }
+    let location =
+        ObjectStorePath::from(format!("{}/{}.bin", upload.base_path, normalized_cid).as_str());
+
+    store
+        .put(&location, block)
+        .await
+        .map_err(UploadError::ObjectStore)?;
 
     // If we've just finished off the upload, complete and report it
     if completed {

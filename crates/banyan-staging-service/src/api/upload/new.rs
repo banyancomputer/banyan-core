@@ -35,6 +35,8 @@ pub async fn handler(
     .save(&mut conn)
     .await?;
 
+    tracing::error!(client_id = ?client_id_str, metadata_id = ?metadata_id_str, upload_id = ?upload_id, "created upload session");
+
     let msg = serde_json::json!({"upload_id": upload_id});
     Ok((StatusCode::OK, Json(msg)).into_response())
 }
