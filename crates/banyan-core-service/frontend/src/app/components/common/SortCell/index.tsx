@@ -14,7 +14,7 @@ export const SortCell: React.FC<SortCellProps> = ({ criteria, onChange, sortStat
 
     return (
         <div
-            className="flex items-center gap-1 cursor-pointer select-none"
+            className="flex items-center gap-1 text-xs cursor-pointer select-none"
             onClick={() => onChange(criteria)}
         >
             {text}
