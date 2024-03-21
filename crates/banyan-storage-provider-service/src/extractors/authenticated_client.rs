@@ -101,9 +101,16 @@ where
             ..Default::default()
         };
 
-        let claims = client_verification_key
+        let claims = match client_verification_key
             .verify_token::<TokenClaims>(raw_token, Some(verification_options))
-            .map_err(Self::Rejection::ValidationFailed)?;
+            .map_err(Self::Rejection::ValidationFailed)
+        {
+            Ok(c) => c,
+            Err(err) => {
+                tracing::error!("failed to validate JWT: {err}");
+                return Err(err);
+            }
+        };
 
         // annoyingly jwt-simple doesn't use the correct encoding for this... we can support both
         // though and maybe we can fix upstream so it follows the spec
