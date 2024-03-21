@@ -4,8 +4,8 @@ import { useParams } from 'react-router-dom';
 import { ActionsCell } from '@components/common/ActionsCell';
 import { BucketActions } from '@components/common/BucketActions';
 import { SortCell } from '@components/common/SortCell';
-import { FolderRow } from '@components/Bucket/BucketTable/FolderRow';
-import { FileRow } from '@components/Bucket/BucketTable/FileRow';
+import { FolderRow } from '@components/Bucket/Files/BucketTable/FolderRow';
+import { FileRow } from '@components/Bucket/Files/BucketTable/FileRow';
 
 import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
@@ -19,7 +19,7 @@ import { useAppSelector } from '@/app/store';
 export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const params = useParams();
     const bucketId = params.id;
-    const messages = useAppSelector(state => state.locales.messages.coponents.bucket.bucketTable);
+    const messages = useAppSelector(state => state.locales.messages.coponents.bucket.files.bucketTable);
     const { uploadFiles } = useFilesUpload();
     const { getSelectedBucketFiles, moveTo } = useTomb();
     /** Created to prevent sotring logic affect initial buckets array */

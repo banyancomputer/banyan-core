@@ -1,18 +1,13 @@
 import React, { useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-
-import { BucketTable } from '@components/Bucket/BucketTable';
-import { Fallback } from '@components/common/Fallback';
-import BucketHeader from '@components/Bucket/Header';
+import { Outlet, useParams } from 'react-router-dom';
 
 import { useTomb } from '@/app/contexts/tomb';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
-import { EmptyState } from '@components/Bucket/EmptyState';
 
 const Bucket = () => {
     const params = useParams();
     const bucketId = params.id;
-    const { buckets, areBucketsLoading, selectedBucket, selectBucket, getSelectedBucketFiles } = useTomb();
+    const { buckets, selectedBucket, selectBucket, getSelectedBucketFiles } = useTomb();
     const folderLocation = useFolderLocation();
 
     useEffect(() => {
@@ -34,19 +29,8 @@ const Bucket = () => {
     }, []);
 
     return (
-        <section className="py-9 px-10 flex flex-col flex-grow">
-            <BucketHeader />
-            <Fallback shouldRender={!areBucketsLoading}>
-                {selectedBucket &&
-                    <>
-                        {selectedBucket.files.length ?
-                            <BucketTable bucket={selectedBucket} />
-                            :
-                            <EmptyState bucket={selectedBucket} />
-                        }
-                    </>
-                }
-            </Fallback>
+        <section className="flex flex-col flex-grow">
+            <Outlet />
         </section>
     );
 };
