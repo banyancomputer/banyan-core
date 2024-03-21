@@ -23,7 +23,7 @@ export class Action {
 }
 
 export const FileActions: React.FC<{ bucket: Bucket; file: BrowserObject; parrentFolder: BrowserObject; path: string[] }> = ({ bucket, file, path, parrentFolder }) => {
-    const messages = useAppSelector(state => state.locales.messages.coponents.bucket.bucketTable.fileActions);
+    const messages = useAppSelector(state => state.locales.messages.coponents.bucket.files.bucketTable.fileActions);
     const { download, makeCopy, shareFile } = useTomb();
     const { openModal } = useModal();
     const bucketType = `${bucket.bucketType}_${bucket.storageClass}`;

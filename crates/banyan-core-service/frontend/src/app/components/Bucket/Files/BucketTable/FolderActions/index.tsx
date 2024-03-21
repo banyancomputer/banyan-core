@@ -4,7 +4,7 @@ import { MoveToModal } from '@components/common/Modal/MoveToModal';
 import { RenameFileModal } from '@components/common/Modal/RenameFileModal';
 import { DeleteFileModal } from '@components/common/Modal/DeleteFileModal';
 import { UploadFileModal } from '@components/common/Modal/UploadFileModal';
-import { Action } from '@components/Bucket/BucketTable/FileActions';
+import { Action } from '@components/Bucket/Files/BucketTable/FileActions';
 
 import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { useModal } from '@/app/contexts/modals';
@@ -13,7 +13,7 @@ import { useAppSelector } from '@/app/store';
 import { MoveTo, Rename, Trash, Upload } from '@static/images/common';
 
 export const FolderActions: React.FC<{ bucket: Bucket; file: BrowserObject; parrentFolder: BrowserObject; path: string[] }> = ({ bucket, file, path, parrentFolder }) => {
-    const messages = useAppSelector(state => state.locales.messages.coponents.bucket.bucketTable.folderActions);
+    const messages = useAppSelector(state => state.locales.messages.coponents.bucket.files.bucketTable.folderActions);
     const { openModal } = useModal();
     const bucketType = `${bucket.bucketType}_${bucket.storageClass}`;
 

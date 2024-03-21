@@ -68,58 +68,73 @@ export default {
             },
         },
         bucket: {
-            bucketTable: {
-                name: "名称",
-                lastModified: "上次修改",
-                fileSize: "文件大小",
-                moveToError: "移动文件时出现问题。 请重试。",
-                tryAgain: "重试",
-                fileWasMoved: "文件已移动",
-                uploadError: "上传时出现问题。 请重试",
-                fileActions: {
-                    download: "下载",
-                    moveTo: "移动到",
-                    makeCopy: "制作副本",
-                    viewFileVersions: "查看文件版本",
-                    rename: "重命名",
-                    remove: "删除",
-                    shareFile: "分享文件",
-                    yourFileIsSecure: "您的文件已安全",
-                    tryAgain: "重试",
-                    downloading: "下载中",
-                    fileWasDownloaded: "文件已下载",
-                    copyOf: "副本",
-                    wasCreated: "已创建",
-                },
-                folderActions: {
-                    moveTo: "移动到",
-                    rename: "重命名",
-                    remove: "删除",
-                    upload: "上传",
-                },
-                folderRow: {
+            files: {
+                bucketTable: {
+                    name: "名称",
+                    lastModified: "上次修改",
+                    fileSize: "文件大小",
+                    moveToError: "移动文件时出现问题。 请重试。",
                     tryAgain: "重试",
                     fileWasMoved: "文件已移动",
-                    moveToError: "移动文件时出现问题。 请重试。",
                     uploadError: "上传时出现问题。 请重试",
-                    failedToLoadFiles: "加载文件失败"
+                    fileActions: {
+                        download: "下载",
+                        moveTo: "移动到",
+                        makeCopy: "制作副本",
+                        viewFileVersions: "查看文件版本",
+                        rename: "重命名",
+                        remove: "删除",
+                        shareFile: "分享文件",
+                        yourFileIsSecure: "您的文件已安全",
+                        tryAgain: "重试",
+                        downloading: "下载中",
+                        fileWasDownloaded: "文件已下载",
+                        copyOf: "副本",
+                        wasCreated: "已创建",
+                    },
+                    folderActions: {
+                        moveTo: "移动到",
+                        rename: "重命名",
+                        remove: "删除",
+                        upload: "上传",
+                    },
+                    folderRow: {
+                        tryAgain: "重试",
+                        fileWasMoved: "文件已移动",
+                        moveToError: "移动文件时出现问题。 请重试。",
+                        uploadError: "上传时出现问题。 请重试",
+                        failedToLoadFiles: "加载文件失败"
+                    }
+                },
+                emptyState: {
+                    description: "将文件拖放到此处以上传，或使用“上传”按钮",
+                    buttonText: "上传",
+                    tryAgain: "重试",
+                    uploadError: "上传时出现问题。 请重试",
+                },
+                header: {
+                    files: "文件",
+                    uploadButton: "上传",
+                    createFolderButton: "创建文件夹",
+                    snapshotBannerTitle: "归档快照",
+                    snapshotBannerSubtitle: "此驱动器没有快照",
+                    snapshotBannerExplanation: "什么是快照",
+                    snapshotBannerTooltip: "归档快照提供文件的某个时刻的快照，对版本控制很有用",
+                    makeSnapshot: "创建快照",
+                },
+            },
+            snapshots: {
+                title: "快照",
+                table: {
+                    name: "名称",
+                    date: "日期",
+                    size: "大小",
+                    state: "状态",
+                    snapshotActions: {
+                        rename: "重命名",
+                        restore: "恢复"
+                    }
                 }
-            },
-            emptyState: {
-                description: "将文件拖放到此处以上传，或使用“上传”按钮",
-                buttonText: "上传",
-                tryAgain: "重试",
-                uploadError: "上传时出现问题。 请重试",
-            },
-            header: {
-                files: "文件",
-                uploadButton: "上传",
-                createFolderButton: "创建文件夹",
-                snapshotBannerTitle: "归档快照",
-                snapshotBannerSubtitle: "此驱动器没有快照",
-                snapshotBannerExplanation: "什么是快照",
-                snapshotBannerTooltip: "归档快照提供文件的某个时刻的快照，对版本控制很有用",
-                makeSnapshot: "创建快照",
             }
         },
         home: {
@@ -223,12 +238,6 @@ export default {
                     tryAgain: "重试",
                     cancel: "取消",
                     approveAccess: "批准访问",
-                },
-                bucketSnapshots: {
-                    title: "查看归档快照",
-                    subtitle: "访问并查看以前的版本",
-                    tryAgain: "重试",
-                    close: "关闭",
                 },
                 createBucket: {
                     createNewDrive: "创建新驱动器",
@@ -339,6 +348,16 @@ export default {
                     cancel: "取消",
                     save: "保存",
                     keyWasRenamed: "密钥已重命名",
+                    editError: "您的编辑出现问题。请重试",
+                    tryAgain: "重试"
+                },
+                renameSnapshot: {
+                    title: "重命名快照",
+                    snapshotName: "快照名称",
+                    enterNewName: "输入新名称",
+                    cancel: "取消",
+                    save: "保存",
+                    snapshotWasRenamed: "快照已重命名",
                     editError: "您的编辑出现问题。请重试",
                     tryAgain: "重试"
                 },
