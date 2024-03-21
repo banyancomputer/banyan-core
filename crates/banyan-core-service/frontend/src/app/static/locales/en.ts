@@ -44,6 +44,7 @@ export default {
                 keyActions: {
                     rename:"Rename",
                     removeKey:"Remove key",
+                    lastKeyError: 'The final key cannot be disabled or removed without at least one backup.'
                 },
                 keyManagementTable: {
                     key: "Key",
@@ -351,7 +352,7 @@ export default {
                     editError: "There was an issue with your edit. Please try again",
                     tryAgain: "Try again",
                 },
-                renameSnapshot: {
+                renameSnapshot:{
                     title: "Rename snapshot",
                     snapshotName: "Snapshot name",
                     enterNewName: "Enter new name",
