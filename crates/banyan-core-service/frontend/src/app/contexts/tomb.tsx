@@ -53,8 +53,8 @@ interface TombInterface {
 	purgeSnapshot: (id: string) => void;
 	deleteFile: (bucket: Bucket, path: string[], name: string) => void;
 	approveDeviceApiKey: (pem: string) => Promise<void>;
-	approveBucketAccess: (bucket: Bucket, bucket_key_id: string) => Promise<void>;
-	removeBucketAccess: (id: string) => Promise<void>;
+	approveBucketAccess: (bucket: Bucket, bucketKeyId: string) => Promise<void>;
+	removeBucketAccess: (bucket: Bucket, bucketKeyId: string) => Promise<void>;
 	restore: (bucket: Bucket, snapshotId: string) => Promise<void>;
 };
 const storageUsageClient = new StorageUsageClient();
@@ -174,7 +174,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 					const approved = key.approved();
 					const id = key.id();
 					const fingerPrint = await prettyFingerprintApiKeyPem(pem);
-					keys.push({ approved, bucket_id: bucket.id, fingerPrint, id, pem })
+					keys.push({ approved, bucket_id: bucket.id, fingerPrint, id, pem });
 				};
 				wasm_bukets.push({
 					...bucket,
@@ -268,9 +268,9 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	const shareFile = async (bucket: Bucket, path: string[]) => await tombMutex(bucket.mount!, async mount => await mount.shareFile(path));
 
 	/** Approves access key for bucket */
-	const approveBucketAccess = async (bucket: Bucket, bucket_key_id: string) => {
+	const approveBucketAccess = async (bucket: Bucket, bucketKeyId: string) => {
 		await tombMutex(bucket.mount!, async mount => {
-			await mount.shareWith(bucket_key_id);
+			await mount.shareWith(bucketKeyId);
 		});
 		await getBucketsKeys();
 	};
@@ -282,8 +282,10 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	const approveDeviceApiKey = async (pem: string) => await tombMutex(tomb, async tomb => await tomb!.approveDeviceApiKey(pem));
 
 	/** Deletes access key for bucket */
-	const removeBucketAccess = async (id: string) => {
-		/** TODO:  connect removeBucketAccess method when in will be implemented.  */
+	const removeBucketAccess = async (bucket: Bucket, bucketKeyId: string) => {
+		await tombMutex(bucket.mount!, async mount => {
+			/** TODO:  connect removeBucketAccess method when in will be implemented.  */
+		});
 		await getBucketsKeys();
 	};
 

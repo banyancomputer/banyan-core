@@ -42,16 +42,17 @@ export default {
             },
             manageKeys: {
                 keyActions: {
-                    removeAccess:"Remove access",
-                    approveAccess:"Approve access",
+                    rename:"Rename",
+                    removeKey:"Remove key",
+                    lastKeyError: 'The final key cannot be disabled or removed without at least one backup.'
                 },
                 keyManagementTable: {
+                    key: "Key",
                     device: "Device",
-                    client: "Client",
-                    fingerprint: "Fingerprint",
-                    status: "Status",
-                    approved: "Approved",
-                    noAccess: "No access",
+                    drive: "Drive",
+                    createdOn: "Created On",
+                    disable: "Disable",
+                    enable: "Enable",
                 }
             },
             navigation: {
@@ -341,7 +342,17 @@ export default {
                     editError: "There was an issue with your edit. Please try again",
                     tryAgain: "Try again",
                 },
-                renameSnapshot: {
+                renameAccessKey: {
+                    title: "Rename key",
+                    keyName: "Key name",
+                    enterNewName: "Enter new name",
+                    cancel: "Cancel",
+                    save: "Save",
+                    keyWasRenamed: "Key was renamed",
+                    editError: "There was an issue with your edit. Please try again",
+                    tryAgain: "Try again",
+                },
+                renameSnapshot:{
                     title: "Rename snapshot",
                     snapshotName: "Snapshot name",
                     enterNewName: "Enter new name",

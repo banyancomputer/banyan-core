@@ -42,16 +42,17 @@ export default {
             },
             manageKeys: {
                 keyActions: {
-                    removeAccess: "Supprimer l'accès",
-                    approveAccess: "Approuver l'accès",
+                    rename: "Renommer",
+                    removeKey: "Supprimer la clé",
+                    lastKeyError: 'La clé finale ne peut pas être désactivée ou supprimée sans au moins une sauvegarde.'
                 },
                 keyManagementTable: {
-                    device: "Dispositif",
-                    client: "Client",
-                    fingerprint: "Empreinte digitale",
-                    status: "Statut",
-                    approved: "Approuvé",
-                    noAccess: "Pas d'accès",
+                    key: "Clé",
+                    device: "Appareil",
+                    drive: "Disque",
+                    createdOn: "Créé le",
+                    disable: "Désactiver",
+                    enable: "Activer",
                 }
             },
             navigation: {
@@ -340,6 +341,16 @@ export default {
                     fileWasRenamed: "Le fichier a été renommé",
                     editError: "Un problème est survenu avec votre modification. Veuillez réessayer",
                     tryAgain: "Réessayer",
+                },
+                renameAccessKey: {
+                    title: "Renommer la clé",
+                    keyName: "Nom de la clé",
+                    enterNewName: "Entrer un nouveau nom",
+                    cancel: "Annuler",
+                    save: "Enregistrer",
+                    keyWasRenamed: "La clé a été renommée",
+                    editError: "Il y a eu un problème avec votre modification. Veuillez réessayer",
+                    tryAgain: "Réessayer"
                 },
                 renameSnapshot:{
                     title: "Renommer la capture instantanée",
