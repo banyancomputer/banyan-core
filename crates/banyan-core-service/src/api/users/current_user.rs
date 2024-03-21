@@ -4,7 +4,7 @@ use axum::response::{IntoResponse, Response};
 
 use crate::api::models::ApiUser;
 use crate::app::AppState;
-use crate::database::models::{MetricsTraffic, Subscription, User};
+use crate::database::models::{MetricsTraffic, User};
 use crate::extractors::UserIdentity;
 
 pub async fn handler(
@@ -20,16 +20,9 @@ pub async fn handler(
         .ok_or(CurrentUserError::NotFound)?;
 
     let user_metrics = MetricsTraffic::find_by_user_for_the_month(&mut conn, &user_id).await?;
-    let subscription = Subscription::find_by_id(&mut conn, &user.subscription_id).await?;
-
-    let archival_hard_limit = subscription.map(|sub| sub.archival_hard_limit);
-
     let mut api_user = ApiUser::from(user);
     if let Some(metrics) = user_metrics {
-        api_user = api_user.with_ingress_egress(metrics.ingress, metrics.egress);
-    }
-    if let Some(limit) = archival_hard_limit {
-        api_user = api_user.with_archival_hard_limit(limit);
+        api_user = api_user.with_egress(metrics.egress);
     }
 
     Ok((StatusCode::OK, Json(api_user)).into_response())

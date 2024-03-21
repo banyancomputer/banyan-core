@@ -21,23 +21,14 @@ pub struct ApiUser {
         with = "time::serde::rfc3339::option"
     )]
     pub subscription_valid_until: Option<OffsetDateTime>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub archival_hard_limit: Option<i64>,
 
     // metrics info
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub monthly_ingress: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub monthly_egress: Option<i64>,
 }
 impl ApiUser {
-    pub fn with_ingress_egress(mut self, ingress: i64, egress: i64) -> Self {
-        self.monthly_ingress = Some(ingress);
+    pub fn with_egress(mut self, egress: i64) -> Self {
         self.monthly_egress = Some(egress);
-        self
-    }
-    pub fn with_archival_hard_limit(mut self, limit: Option<i64>) -> Self {
-        self.archival_hard_limit = limit;
         self
     }
 }
@@ -53,8 +44,6 @@ impl From<User> for ApiUser {
             subscription_id: user.subscription_id,
             account_tax_class: user.account_tax_class.to_string(),
             subscription_valid_until: user.subscription_valid_until,
-            archival_hard_limit: None,
-            monthly_ingress: None,
             monthly_egress: None,
         }
     }

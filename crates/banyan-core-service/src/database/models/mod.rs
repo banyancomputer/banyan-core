@@ -64,7 +64,7 @@ pub use snapshot_state::SnapshotState;
 pub use storage_class::StorageClass;
 pub use storage_grant::{ExistingStorageGrant, NewStorageGrant};
 pub use storage_grants_metadata::StorageHostsMetadatasStorageGrants;
-pub use storage_host::{StorageHost, UserStorageReport};
+pub use storage_host::{ConsumedStorage, StorageHost, UserStorageReport};
 pub use storage_host_total_consumption::StorageHostTotalConsumption;
 pub use stripe_checkout_session::{NewStripeCheckoutSession, StripeCheckoutSession};
 pub use stripe_checkout_session_status::StripeCheckoutSessionStatus;
