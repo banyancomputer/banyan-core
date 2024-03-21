@@ -13,8 +13,6 @@ pub struct ApiUser {
     pub accepted_tos_at: Option<i64>,
 
     pub account_tax_class: String,
-
-    // subscription info
     pub subscription_id: String,
     #[serde(
         skip_serializing_if = "Option::is_none",
@@ -22,7 +20,6 @@ pub struct ApiUser {
     )]
     pub subscription_valid_until: Option<OffsetDateTime>,
 
-    // metrics info
     #[serde(skip_serializing_if = "Option::is_none")]
     pub monthly_egress: Option<i64>,
 }
