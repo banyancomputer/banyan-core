@@ -55,7 +55,7 @@ interface TombInterface {
 	approveDeviceApiKey: (pem: string) => Promise<void>;
 	approveBucketAccess: (bucket: Bucket, bucketKeyId: string) => Promise<void>;
 	removeBucketAccess: (bucket: Bucket, bucketKeyId: string) => Promise<void>;
-	restore: (bucket: Bucket, snapshot: string) => Promise<void>;
+	restore: (bucket: Bucket, snapshotId: string) => Promise<void>;
 };
 const storageUsageClient = new StorageUsageClient();
 const snapshotsClient = new SnapshotsClient();
