@@ -8,15 +8,20 @@ use bytes::Bytes;
 use cid::multibase::Base;
 use cid::Cid;
 use serde::{Deserialize, Serialize};
+use time::OffsetDateTime;
 
-use super::db::{complete_upload, get_upload, report_upload, upload_size, write_block_to_tables};
+use super::db::{
+    complete_upload, report_upload, upload_size, write_block_to_tables, UPLOAD_SESSION_DURATION,
+};
 use super::error::UploadError;
 use crate::app::AppState;
+use crate::database::models::Uploads;
 use crate::extractors::AuthenticatedClient;
 
 #[derive(Deserialize, Serialize)]
 pub struct BlockUploadRequest {
     cid: Cid,
+
     // Optional additional details about the nature of the upload
     #[serde(flatten)]
     details: BlockUploadDetails,
@@ -62,6 +67,8 @@ pub async fn handler(
         .await
         .map_err(UploadError::InvalidRequestData)?;
 
+    let mut conn = db.acquire().await?;
+
     // Get the upload either new or ongoing
     let (upload, completed) = match request.details {
         // This request is the start and end of this block upload
@@ -76,11 +83,19 @@ pub async fn handler(
             completed,
             upload_id,
         } => {
-            // Assume that the upload has already been created via the `new` endpoint
-            let upload = get_upload(&db, client.id(), &upload_id).await?.unwrap();
+            let client_id_str = client.id().to_string();
+            tracing::warn!(client_id_str, upload_id, completed, "looking for upload...");
+            let upload = Uploads::by_id_and_client(&mut *conn, &upload_id, &client_id_str).await?;
+
+            let created_at = upload.created_at.ok_or(UploadError::UploadLookupFailure)?;
+            if created_at < (OffsetDateTime::now_utc() - UPLOAD_SESSION_DURATION) {
+                return Err(UploadError::UploadLookupFailure);
+            }
+
             if upload.id != upload_id {
                 return Err(UploadError::IdMismatch);
             }
+
             (upload, completed)
         }
     };
@@ -89,7 +104,6 @@ pub async fn handler(
         return Err(UploadError::UploadIsComplete);
     }
 
-    let mut conn = db.acquire().await?;
     // While there are still block fields encoded
     while let Some(block_field) = multipart
         .next_field()

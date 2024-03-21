@@ -55,6 +55,9 @@ pub enum UploadError {
     #[error("tried to write to a completed upload")]
     UploadIsComplete,
 
+    #[error("failed to locate upload")]
+    UploadLookupFailure,
+
     #[error("not yet supported")]
     NotSupported,
 }
@@ -100,6 +103,10 @@ impl IntoResponse for UploadError {
             CarFile => {
                 tracing::error!("client asked to write block to car");
                 default_response
+            }
+            UploadLookupFailure => {
+                let err_msg = serde_json::json!({ "msg": "upload not found" });
+                (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
             }
             UploadIsComplete => {
                 tracing::warn!("client is trying to write more data to a completed upload");

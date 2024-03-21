@@ -3,7 +3,6 @@ use std::time::Duration;
 
 use banyan_task::TaskLikeExt;
 use cid::Cid;
-use time::OffsetDateTime;
 use uuid::Uuid;
 
 use crate::database::{Database, DatabaseConnection};
@@ -119,30 +118,6 @@ pub async fn report_upload(
     Ok(())
 }
 
-pub async fn get_upload(
-    db: &Database,
-    client_id: Uuid,
-    upload_id: &str,
-) -> Result<Option<Upload>, sqlx::Error> {
-    let client_id = client_id.to_string();
-    let now = OffsetDateTime::now_utc() - UPLOAD_SESSION_DURATION;
-
-    sqlx::query_as!(
-        Upload,
-        r#"
-        SELECT id, client_id, metadata_id, base_path, reported_size, state FROM uploads
-            WHERE client_id = $1
-            AND id = $2
-            AND created_at >= $3;
-        "#,
-        client_id,
-        upload_id,
-        now
-    )
-    .fetch_optional(db)
-    .await
-}
-
 pub async fn write_block_to_tables(
     conn: &mut DatabaseConnection,
     upload_id: &str,
@@ -180,14 +155,4 @@ pub async fn write_block_to_tables(
     .execute(&mut *conn)
     .await?;
     Ok(())
-}
-
-#[derive(sqlx::FromRow, sqlx::Decode)]
-pub struct Upload {
-    pub id: String,
-    pub client_id: String,
-    pub metadata_id: String,
-    pub base_path: String,
-    pub reported_size: i64,
-    pub state: String,
 }
