@@ -2,13 +2,14 @@ import React from 'react';
 
 import { KeyActions } from '@components/Account/ManageKeys/KeyActions';
 import { ActionsCell } from '@components/common/ActionsCell';
+import { ApproveBucketAccessModal } from '@components/common/Modal/ApproveBucketAccessModal';
+import { RemoveBucketAccessModal } from '@components/common/Modal/RemoveBucketAccessModal';
+import { SecondaryButton } from '@components/common/SecondaryButton';
 
 import { useAppSelector } from '@/app/store';
 import { Bucket, BucketKey, Bucket as IBucket } from '@/app/types/bucket';
-import { SecondaryButton } from '@/app/components/common/SecondaryButton';
 import { useModal } from '@/app/contexts/modals';
-import { ApproveBucketAccessModal } from '@components/common/Modal/ApproveBucketAccessModal';
-import { RemoveBucketAccessModal } from '@components/common/Modal/RemoveBucketAccessModal';
+import { ToastNotifications } from '@/app/utils/toastNotifications';
 
 export const KeyManagementTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.account.manageKeys.keyManagementTable);
@@ -19,6 +20,10 @@ export const KeyManagementTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }
     };
 
     const removeAccess = async (bucket: Bucket, bucketKey: BucketKey) => {
+        if (bucket.keys.length <= 1) {
+            ToastNotifications.error('The final key cannot be disabled or removed without at least one backup.');
+            return;
+        };
         openModal(<RemoveBucketAccessModal bucket={bucket} bucketKey={bucketKey} />);
     };
 
@@ -61,7 +66,7 @@ export const KeyManagementTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }
                                         <td className="px-6 py-12">
                                             <SecondaryButton
                                                 text={bucketKey.approved ? messages.disable : messages.enable}
-                                                action={() => bucketKey.approved ? removeAccess(bucket, bucketKey) :  approveAccess(bucket, bucketKey)}
+                                                action={() => bucketKey.approved ? removeAccess(bucket, bucketKey) : approveAccess(bucket, bucketKey)}
                                             />
                                         </td>
                                         <td className="px-3 py-12">

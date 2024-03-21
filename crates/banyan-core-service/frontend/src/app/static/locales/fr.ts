@@ -43,7 +43,8 @@ export default {
             manageKeys: {
                 keyActions: {
                     rename: "Renommer",
-                    removeKey: "Supprimer la clé"
+                    removeKey: "Supprimer la clé",
+                    lastKeyError: 'La clé finale ne peut pas être désactivée ou supprimée sans au moins une sauvegarde.'
                 },
                 keyManagementTable: {
                     key: "Clé",
