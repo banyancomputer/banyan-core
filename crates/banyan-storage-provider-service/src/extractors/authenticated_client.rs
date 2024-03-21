@@ -216,7 +216,7 @@ pub enum AuthenticatedClientError {
     #[error("an unexpected database failure before the authentication could be verified")]
     DbFailure(#[from] sqlx::Error),
 
-    #[error("bearer token key ID does not conform to our expectations")]
+    #[error("authenticated client bearer token key ID does not conform to our expectations")]
     InvalidKeyId,
 
     #[error("grant (required for account) was not present")]

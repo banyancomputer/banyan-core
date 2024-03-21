@@ -12,7 +12,7 @@ use uuid::Uuid;
 
 use super::{fingerprint_validator, MAXIMUM_TOKEN_AGE};
 use crate::app::PlatformName;
-use crate::database::models::{AuthorizedStorage, Clients};
+use crate::database::models::AuthorizedStorage;
 use crate::database::Database;
 
 pub struct AuthenticatedClient {
@@ -90,7 +90,7 @@ where
 
         let database = Database::from_ref(state);
 
-        let client_id = Clients::id_from_fingerprint(&database, &key_id).await?;
+        let client_id = id_from_fingerprint(&database, &key_id).await?;
         let client_verification_key = ES384PublicKey::from_pem(&client_id.public_key)
             .map_err(Self::Rejection::CorruptDatabaseKey)?;
 
@@ -179,6 +179,23 @@ pub async fn current_consumed_storage(
     Ok(maybe_consumed_storage.unwrap_or(0) as u64)
 }
 
+pub async fn id_from_fingerprint(
+    db: &Database,
+    fingerprint: &str,
+) -> Result<RemoteId, AuthenticatedClientError> {
+    let maybe_remote_id: Option<RemoteId> =
+        sqlx::query_as("SELECT id, platform_id, public_key FROM clients WHERE fingerprint = $1;")
+            .bind(fingerprint)
+            .fetch_optional(db)
+            .await
+            .map_err(AuthenticatedClientError::DbFailure)?;
+
+    match maybe_remote_id {
+        Some(id) => Ok(id),
+        None => Err(AuthenticatedClientError::UnknownFingerprint),
+    }
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum AuthenticatedClientError {
     #[error("nonce wasn't present or insufficiently long")]
@@ -199,7 +216,7 @@ pub enum AuthenticatedClientError {
     #[error("an unexpected database failure before the authentication could be verified")]
     DbFailure(#[from] sqlx::Error),
 
-    #[error("bearer token key ID does not conform to our expectations")]
+    #[error("authenticated client bearer token key ID does not conform to our expectations")]
     InvalidKeyId,
 
     #[error("grant (required for account) was not present")]

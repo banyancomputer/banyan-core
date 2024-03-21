@@ -69,7 +69,7 @@ pub enum PlatformIdentityError {
     #[error("unable to decode bearer token metadata")]
     CorruptHeader(jwt_simple::Error),
 
-    #[error("bearer token key ID does not conform to our expectations")]
+    #[error("platform identity bearer token key ID does not conform to our expectations")]
     InvalidKeyId,
 
     #[error("authentication header wasn't present")]
