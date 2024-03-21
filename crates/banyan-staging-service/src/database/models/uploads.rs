@@ -3,6 +3,18 @@ use time::OffsetDateTime;
 
 use crate::database::{Database, DatabaseConnection};
 
+pub struct CreateUpload<'a> {
+    pub(crate) client_id: &'a str,
+    pub(crate) metadata_id: &'a str,
+    pub(crate) reported_size: i64,
+}
+
+impl CreateUpload {
+    pub fn save(self, conn: &mut DatabaseConnection) -> Result<String, sqlx::Error> {
+        todo!()
+    }
+}
+
 #[derive(sqlx::FromRow)]
 pub struct Uploads {
     pub id: String,
