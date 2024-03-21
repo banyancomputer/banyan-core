@@ -9,9 +9,24 @@ pub struct CreateUpload<'a> {
     pub(crate) reported_size: i64,
 }
 
-impl CreateUpload {
-    pub fn save(self, conn: &mut DatabaseConnection) -> Result<String, sqlx::Error> {
-        todo!()
+impl<'a> CreateUpload<'a> {
+    pub async fn save(self, conn: &mut DatabaseConnection) -> Result<String, sqlx::Error> {
+        let time = OffsetDateTime::now_utc();
+
+        sqlx::query_scalar!(
+            r#"INSERT INTO uploads
+                 (client_id, metadata_id, reported_size, base_path, state, created_at)
+                 VALUES ($1, $2, $3, $4, $5, $6)
+                 RETURNING id;"#,
+            self.client_id,
+            self.metadata_id,
+            self.reported_size,
+            self.metadata_id,
+            "started",
+            time
+        )
+        .fetch_one(&mut *conn)
+        .await
     }
 }
 

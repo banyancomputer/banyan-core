@@ -66,16 +66,6 @@ pub async fn handler(
     let (upload, completed) = match request.details {
         // This request is the start and end of this block upload
         BlockUploadDetails::OneOff => {
-            /*
-            let upload = start_upload(
-                &db,
-                &client.id(),
-                &request.metadata_id,
-                reported_body_length,
-            )
-            .await?;
-            (upload, true)
-            */
             // TODO there isn't currently a way to start uploads without having an
             // associated metadata_id. If future OneOff requests are to exist outside
             // of the context of our pipelines, this needs to change.

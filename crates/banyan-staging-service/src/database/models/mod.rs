@@ -11,4 +11,4 @@ pub use block_details::BlockDetails;
 pub use blocks::Blocks;
 pub use clients::Clients;
 pub use storage_grants::AuthorizedStorage;
-pub use uploads::Uploads;
+pub use uploads::{CreateUpload, Uploads};

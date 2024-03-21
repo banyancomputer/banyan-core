@@ -19,7 +19,7 @@ mod db;
 mod error;
 pub(crate) mod new;
 
-use db::{complete_upload, fail_upload, start_upload, write_block_to_tables, Upload};
+use db::{complete_upload, fail_upload, write_block_to_tables, Upload};
 use error::UploadError;
 
 /// Limit on the size of the JSON request that accompanies an upload.
@@ -76,12 +76,15 @@ pub async fn handler(
         .map_err(UploadError::InvalidRequestData)?;
     let content_hash = request.content_hash;
 
-    let upload = start_upload(
-        &db,
-        &client.id(),
-        &request.metadata_id,
-        reported_body_length,
-    )
+    let client_id_str = client.id().to_string();
+    let metadata_id_str = request.metadata_id.to_string();
+
+    let upload_id = CreateUpload {
+        client_id: &client_id_str,
+        metadata_id: &metadata_id_str,
+        reported_size: reported_body_length,
+    }
+    .save(&mut conn)
     .await?;
 
     // todo: should make sure I have a clean up task that watches for failed uploads and handles

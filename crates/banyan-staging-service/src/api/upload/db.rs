@@ -11,40 +11,6 @@ use crate::tasks::ReportUploadTask;
 
 pub const UPLOAD_SESSION_DURATION: Duration = Duration::from_secs(60 * 60 * 6);
 
-pub async fn start_upload(
-    db: &Database,
-    client_id: &Uuid,
-    metadata_id: &Uuid,
-    reported_size: u64,
-) -> Result<Upload, sqlx::Error> {
-    let mut upload = Upload {
-        id: String::new(),
-        client_id: client_id.to_string(),
-        metadata_id: metadata_id.to_string(),
-        base_path: metadata_id.to_string(),
-        reported_size: reported_size as i64,
-        state: String::from("started"),
-    };
-
-    upload.id = sqlx::query_scalar!(
-        r#"
-        INSERT INTO
-            uploads (client_id, metadata_id, reported_size, base_path, state, created_at)
-            VALUES ($1, $2, $3, $4, $5, DATETIME('now'))
-            RETURNING id;
-        "#,
-        upload.client_id,
-        upload.metadata_id,
-        upload.reported_size,
-        upload.base_path,
-        upload.state,
-    )
-    .fetch_one(db)
-    .await?;
-
-    Ok(upload)
-}
-
 /// Marks an upload as failed
 pub async fn fail_upload(db: &Database, upload_id: &str) -> Result<(), sqlx::Error> {
     sqlx::query!(
