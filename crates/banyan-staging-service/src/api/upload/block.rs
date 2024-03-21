@@ -22,16 +22,14 @@ use crate::extractors::AuthenticatedClient;
 pub struct BlockUploadRequest {
     cid: Cid,
 
-    // Optional additional details about the nature of the upload
-    #[serde(flatten)]
-    details: BlockUploadDetails,
+    #[serde(flatten, default)]
+    details: Option<UploadDetails>,
 }
 
 #[derive(Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum BlockUploadDetails {
-    Ongoing { completed: bool, upload_id: String },
-    OneOff,
+pub struct UploadDetails {
+    completed: bool,
+    upload_id: String,
 }
 
 pub async fn handler(
@@ -57,7 +55,6 @@ pub async fn handler(
 
     let mut multipart = multer::Multipart::with_constraints(body, boundary, constraints);
 
-    // Grab the request object
     let request: BlockUploadRequest = multipart
         .next_field()
         .await
@@ -69,36 +66,32 @@ pub async fn handler(
 
     let mut conn = db.acquire().await?;
 
-    // Get the upload either new or ongoing
-    let (upload, completed) = match request.details {
-        // This request is the start and end of this block upload
-        BlockUploadDetails::OneOff => {
-            // TODO there isn't currently a way to start uploads without having an
-            // associated metadata_id. If future OneOff requests are to exist outside
-            // of the context of our pipelines, this needs to change.
-            return Err(UploadError::NotSupported);
-        }
-        // We're in the middle of a multi-request block writing sequence
-        BlockUploadDetails::Ongoing {
-            completed,
-            upload_id,
-        } => {
-            let client_id_str = client.id().to_string();
-            tracing::warn!(client_id_str, upload_id, completed, "looking for upload...");
-            let upload = Uploads::by_id_and_client(&mut *conn, &upload_id, &client_id_str).await?;
-
-            let created_at = upload.created_at.ok_or(UploadError::UploadLookupFailure)?;
-            if created_at < (OffsetDateTime::now_utc() - UPLOAD_SESSION_DURATION) {
-                return Err(UploadError::UploadLookupFailure);
-            }
-
-            if upload.id != upload_id {
-                return Err(UploadError::IdMismatch);
-            }
-
-            (upload, completed)
-        }
+    let details = match request.details {
+        Some(details) => details,
+        // The one off case isn't supported yet
+        None => return Err(UploadError::NotSupported),
     };
+
+    let (req_upload_id, completed) = (details.upload_id, details.completed);
+
+    let client_id_str = client.id().to_string();
+    tracing::warn!(
+        client_id_str,
+        req_upload_id,
+        completed,
+        "looking for upload..."
+    );
+    let upload = Uploads::by_id_and_client(&mut *conn, &req_upload_id, &client_id_str).await?;
+
+    let created_at = upload.created_at.ok_or(UploadError::UploadLookupFailure)?;
+    if created_at < (OffsetDateTime::now_utc() - UPLOAD_SESSION_DURATION) {
+        return Err(UploadError::UploadLookupFailure);
+    }
+
+    if upload.id != req_upload_id {
+        return Err(UploadError::IdMismatch);
+    }
+
     // If the upload had already been marked as complete
     if upload.state == "complete" {
         return Err(UploadError::UploadIsComplete);
