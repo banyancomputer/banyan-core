@@ -42,16 +42,16 @@ export default {
             },
             manageKeys: {
                 keyActions: {
-                    removeAccess: "移除访问",
-                    approveAccess: "批准访问",
+                    rename: "重命名",
+                    removeKey: "删除密钥"
                 },
                 keyManagementTable: {
+                    key: "密钥",
                     device: "设备",
-                    client: "客户端",
-                    fingerprint: "指纹",
-                    status: "状态",
-                    approved: "已批准",
-                    noAccess: "无访问",
+                    drive: "驱动器",
+                    createdOn: "创建于",
+                    disable: "禁用",
+                    enable: "启用",
                 }
             },
             navigation: {
@@ -340,6 +340,16 @@ export default {
                     fileWasRenamed: "文件已重命名",
                     editError: "您的编辑出现问题。 请重试",
                     tryAgain: "重试",
+                },
+                renameAccessKey: {
+                    title: "重命名密钥",
+                    keyName: "密钥名称",
+                    enterNewName: "输入新名称",
+                    cancel: "取消",
+                    save: "保存",
+                    keyWasRenamed: "密钥已重命名",
+                    editError: "您的编辑出现问题。请重试",
+                    tryAgain: "重试"
                 },
                 renameSnapshot: {
                     title: "重命名快照",

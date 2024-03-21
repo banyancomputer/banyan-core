@@ -42,16 +42,16 @@ export default {
             },
             manageKeys: {
                 keyActions: {
-                    removeAccess: "Zugriff entfernen",
-                    approveAccess: "Zugriff genehmigen",
+                    rename: "Umbenennen",
+                    removeKey: "Schlüssel entfernen"
                 },
                 keyManagementTable: {
+                    key: "Schlüssel",
                     device: "Gerät",
-                    client: "Client",
-                    fingerprint: "Fingerabdruck",
-                    status: "Status",
-                    approved: "Genehmigt",
-                    noAccess: "Kein Zugriff",
+                    drive: "Laufwerk",
+                    createdOn: "Erstellt am",
+                    disable: "Deaktivieren",
+                    enable: "Aktivieren",
                 }
             },
             navigation: {
@@ -340,6 +340,16 @@ export default {
                     fileWasRenamed: "Datei wurde umbenannt",
                     editError: "Beim Bearbeiten ist ein Problem aufgetreten. Bitte versuchen Sie es erneut",
                     tryAgain: "Erneut versuchen",
+                },
+                renameAccessKey: {
+                    title: "Schlüssel umbenennen",
+                    keyName: "Schlüsselname",
+                    enterNewName: "Neuen Namen eingeben",
+                    cancel: "Abbrechen",
+                    save: "Speichern",
+                    keyWasRenamed: "Der Schlüssel wurde umbenannt",
+                    editError: "Es gab ein Problem mit Ihrer Bearbeitung. Bitte versuchen Sie es erneut",
+                    tryAgain: "Erneut versuchen"
                 },
                 renameSnapshot: {
                     title: "Snapshot umbenennen",
