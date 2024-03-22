@@ -29,6 +29,34 @@ impl StorageProviderClient {
         }
     }
 
+    pub async fn blocks_present(
+        &self,
+        block_cids: Vec<String>,
+    ) -> Result<Vec<String>, StorageProviderError> {
+        let url = Url::parse(&self.service_hostname)
+            .map_err(|_| StorageProviderError::UrlParseError)?
+            .join("/api/v1/blocks/present")
+            .map_err(|_| StorageProviderError::UrlJoinError)?;
+
+        let response = self
+            .client
+            .get(url)
+            .bearer_auth(&self.service_authorization)
+            .body(serde_json::json!(block_cids).to_string())
+            .send()
+            .await
+            .map_err(StorageProviderError::RequestError)?;
+
+        if response.status().is_success() {
+            return match response.json::<Vec<String>>().await {
+                Ok(response) => Ok(response),
+                Err(_) => Err(StorageProviderError::ResponseParseError),
+            };
+        }
+
+        Err(StorageProviderError::BadRequest(response.text().await?))
+    }
+
     pub async fn get_block(&self, cid: &str) -> Result<Vec<u8>, StorageProviderError> {
         let full_url = Url::parse(&self.service_hostname)
             .map_err(|_| StorageProviderError::UrlParseError)?

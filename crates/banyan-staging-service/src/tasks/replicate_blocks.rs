@@ -63,6 +63,9 @@ impl TaskLike for ReplicateBlocksTask {
             StorageProviderClient::new(&self.new_storage_host_url, &provider_credentials.token);
 
         let mut blocks = self.block_cids.clone();
+        let located_blocks = new_client.blocks_present(blocks.clone()).await?;
+        blocks.retain(|block| !located_blocks.contains(block));
+
         // handling the case where we failed and want to start from another block
         // so that in the end only the failing block would be left
         blocks.as_mut_slice().shuffle(&mut rand::thread_rng());
