@@ -193,6 +193,8 @@ impl ConsumedStorage {
         conn: &mut DatabaseConnection,
         user_id: &str,
     ) -> Result<Self, sqlx::Error> {
+        // (sstelfox): we need to include outdated currently as they include blocks referenced by the current
+        // version, todo: we'll need a better way of calculating this
         sqlx::query_as!(
             Self,
             r#"SELECT
