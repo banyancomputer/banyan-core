@@ -3,10 +3,10 @@ use axum::headers::ContentLength;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::{Json, TypedHeader};
-use jwt_simple::prelude::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 use crate::app::AppState;
-use crate::database::models::{AuthorizedStorage, Upload};
+use crate::database::models::{AuthorizedStorage, CreateUpload, Upload};
 use crate::extractors::PlatformIdentity;
 
 #[derive(Serialize, Deserialize)]
@@ -40,15 +40,17 @@ pub async fn handler(
         return Ok((StatusCode::OK, Json(msg)).into_response());
     }
 
-    let upload = start_upload(
-        &db,
-        &request.client_id,
-        &request.metadata_id,
-        reported_body_length,
-    )
+    let mut conn = db.acquire().await?;
+
+    let upload_id = CreateUpload {
+        client_id: &request.client_id,
+        metadata_id: &request.metadata_id,
+        reported_size: reported_body_length as i64,
+    }
+    .save(&mut *conn)
     .await?;
 
-    let msg = serde_json::json!({"upload_id": upload.id});
+    let msg = serde_json::json!({"upload_id": upload_id});
     Ok((StatusCode::OK, Json(msg)).into_response())
 }
 

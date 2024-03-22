@@ -9,7 +9,7 @@ use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::api::upload::{complete_upload, write_block_to_tables};
+use crate::api::upload::db::{complete_upload, write_block_to_tables};
 use crate::app::AppState;
 use crate::database::models::Upload;
 use crate::database::DatabaseConnection;
@@ -36,6 +36,8 @@ pub async fn handler(
     body: BodyStream,
 ) -> Result<Response, BlocksUploadError> {
     let db = state.database();
+    let mut conn = db.acquire().await?;
+
     let mime_ct = mime::Mime::from(content_type);
     let boundary = multer::parse_boundary(mime_ct).unwrap();
     let constraints = multer::Constraints::new().allowed_fields(vec!["request-data", "block"]);
@@ -53,10 +55,8 @@ pub async fn handler(
         .await
         .map_err(BlocksUploadError::InvalidRequestData)?;
 
-    let upload = Upload::find_by_id(&db, &request.details.upload_id)
-        .await?
-        .unwrap();
-    // If the upload had already been marked as complete
+    let upload = Upload::by_id(&mut conn, &request.details.upload_id).await?;
+
     if upload.state == "complete" {
         return Err(BlocksUploadError::UploadIsComplete);
     }
@@ -93,7 +93,8 @@ pub async fn handler(
 
     // If we've just finished off the upload, complete and report it
     if request.details.completed {
-        complete_upload(&mut conn, upload.final_size, "", &upload.id).await?;
+        complete_upload(&mut conn, total_size as i64, "", &upload.id).await?;
+
         report_complete_redistribution(
             &mut conn,
             request.details.grant_id,

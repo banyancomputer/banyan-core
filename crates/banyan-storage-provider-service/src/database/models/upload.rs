@@ -78,15 +78,16 @@ impl Upload {
     pub async fn get_by_metadata_id(
         pool: &Database,
         metadata_id: &str,
-    ) -> sqlx::Result<Self, sqlx::Error> {
+    ) -> sqlx::Result<Option<Self>, sqlx::Error> {
         sqlx::query_as!(
             Self,
             "SELECT * FROM uploads WHERE metadata_id = $1",
             metadata_id
         )
-        .fetch_one(pool)
+        .fetch_optional(pool)
         .await
     }
+
     pub async fn delete_by_metadata_id(
         transaction: &mut DatabaseConnection,
         metadata_id: &str,

@@ -64,6 +64,7 @@ impl CoreServiceClient {
 
         Err(CoreServiceError::BadRequest(response.text().await?))
     }
+
     pub async fn report_distribution_complete(
         &self,
         metadata_id: &str,
