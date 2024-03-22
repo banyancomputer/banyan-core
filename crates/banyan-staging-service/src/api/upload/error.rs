@@ -25,11 +25,8 @@ pub enum UploadError {
     #[error("account is not authorized to store {0} bytes, {1} bytes are still authorized")]
     InsufficientAuthorizedStorage(u64, u64),
 
-    #[error("don't support CIDs with a size of {0}")]
-    InvalidCidSize(usize),
-
-    #[error("failed to parse CID: {0}")]
-    Cid(#[from] cid::Error),
+    #[error("request contained invalid CID")]
+    InvalidCid,
 
     #[error("cannot write blocks to a CAR file directly")]
     CarFile,
@@ -72,14 +69,14 @@ impl IntoResponse for UploadError {
         let default_response =
             (StatusCode::INTERNAL_SERVER_ERROR, Json(default_err_msg)).into_response();
         match self {
-            Database(_) | FailedToEnqueueTask(_) | Cid(_) | NotSupported => {
+            Database(_) | FailedToEnqueueTask(_) | NotSupported => {
                 tracing::error!("{self}");
                 let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
             }
             DataFieldUnavailable(_)
             | IdMismatch
-            | InvalidCidSize(_)
+            | InvalidCid
             | DataFieldMissing
             | InvalidRequestData(_)
             | RequestFieldUnavailable(_)

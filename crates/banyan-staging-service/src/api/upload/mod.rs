@@ -155,11 +155,7 @@ where
         hasher.update(&chunk);
         car_analyzer.add_chunk(&chunk)?;
         while let Some(block) = car_analyzer.next().await? {
-            let cid_string = block
-                .cid()
-                .to_string_of_base(cid::multibase::Base::Base64Url)
-                .expect("parsed cid to unparse");
-
+            let cid_string = block.cid().to_string();
             let file_path = format!("{}/{}.bin", upload.base_path, cid_string);
             let obj_path = ObjectStorePath::from(file_path);
             let length = block.length() as i64;

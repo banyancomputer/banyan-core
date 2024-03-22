@@ -1,8 +1,6 @@
-use std::str::FromStr;
 use std::time::Duration;
 
 use banyan_task::TaskLikeExt;
-use cid::Cid;
 use uuid::Uuid;
 
 use crate::database::{Database, DatabaseConnection};
@@ -104,11 +102,6 @@ pub async fn report_upload(
     )
     .fetch_all(&mut *conn)
     .await?;
-
-    let all_cids = all_cids
-        .into_iter()
-        .map(|cid_string| Cid::from_str(&cid_string).unwrap())
-        .collect::<Vec<Cid>>();
 
     ReportUploadTask::new(storage_grant_id, metadata_id, &all_cids, total_size as u64)
         .enqueue::<banyan_task::SqliteTaskStore>(&mut *conn)
