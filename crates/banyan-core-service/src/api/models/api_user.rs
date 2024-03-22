@@ -23,12 +23,14 @@ pub struct ApiUser {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub monthly_egress: Option<i64>,
 }
+
 impl ApiUser {
     pub fn with_egress(mut self, egress: i64) -> Self {
         self.monthly_egress = Some(egress);
         self
     }
 }
+
 impl From<User> for ApiUser {
     fn from(user: User) -> Self {
         Self {

@@ -21,10 +21,10 @@ pub async fn handler(
 
     let user_metrics = MetricsTraffic::find_by_user_for_the_month(&mut conn, &user_id).await?;
     let mut api_user = ApiUser::from(user);
-    if let Some(metrics) = user_metrics {
-        api_user = api_user.with_egress(metrics.egress);
+    match user_metrics {
+        Some(metrics) => api_user = api_user.with_egress(metrics.egress),
+        None => api_user = api_user.with_egress(0),
     }
-
     Ok((StatusCode::OK, Json(api_user)).into_response())
 }
 
