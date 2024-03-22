@@ -60,12 +60,6 @@ pub async fn handler(
         return Ok((StatusCode::NOT_FOUND, Json(err_msg)).into_response());
     }
 
-    if Bucket::is_change_in_progress(&mut conn, &bucket_id).await? {
-        tracing::warn!("attempted upload to bucket while other write was in progress");
-        let err_msg = serde_json::json!({"msg": "waiting for other upload to complete"});
-        return Ok((StatusCode::CONFLICT, Json(err_msg)).into_response());
-    }
-
     // Request is authorized, and we're ready to receive it. Start processing the multipart
     // segments of the request.
 
@@ -135,19 +129,13 @@ pub async fn handler(
     .save(&mut conn)
     .await?;
 
-    let normalized_cids: Vec<_> = match request_data
+    // todo(sstelfox): The CID crate doesn't properly parse hashes other than 512 byte sha2 hashes
+    // which we no longer use. We should be replace this with a proper CID parsing and normalization.
+    let normalized_cids: Vec<_> = request_data
         .deleted_block_cids
         .iter()
-        .map(String::as_str)
-        .map(utils::normalize_cid)
-        .collect()
-    {
-        Ok(nc) => nc,
-        Err(_) => {
-            let err_msg = serde_json::json!({"msg": "request data included invalid CID in deleted block list"});
-            return Ok((StatusCode::BAD_REQUEST, Json(err_msg)).into_response());
-        }
-    };
+        .map(|s| s.to_string())
+        .collect();
 
     PendingExpiration::record_pending_block_expirations(
         &mut conn,
@@ -208,8 +196,12 @@ pub async fn handler(
         }
     }
 
+    // We no longer need the pending state as the filesystem is now aware of when data should and
+    // shouldn't be available. We'll mark this as complete, and continue handling the request if we
+    // expect there to be data.
+    Metadata::mark_current(&mut conn, &bucket_id, &metadata_id, None).await?;
+
     if request_data.expected_data_size == 0 {
-        Metadata::mark_current(&mut conn, &bucket_id, &metadata_id, None).await?;
         let resp_msg = serde_json::json!({"id": metadata_id, "state": "current"});
         return Ok((StatusCode::OK, Json(resp_msg)).into_response());
     }
@@ -228,7 +220,7 @@ pub async fn handler(
                     needed_capacity,
                     "unable to locate host with sufficient capacity"
                 );
-                let err_msg = serde_json::json!({"msg": ""});
+                let err_msg = serde_json::json!({"msg": "insufficient storage"});
                 return Ok((StatusCode::INSUFFICIENT_STORAGE, Json(err_msg)).into_response());
             }
         };
@@ -277,6 +269,7 @@ pub async fn handler(
         "storage_host": storage_host.url,
         "storage_authorization": storage_authorization,
     });
+
     Ok((StatusCode::OK, Json(response)).into_response())
 }
 
