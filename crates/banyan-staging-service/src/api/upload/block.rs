@@ -54,8 +54,6 @@ pub async fn handler(
     let mut multipart = multer::Multipart::with_constraints(body, boundary, constraints);
 
     let client_id_str = client.id().to_string();
-    tracing::error!(client_id = ?client_id_str, "block upload starting");
-
     let request_field = multipart
         .next_field()
         .await
@@ -83,13 +81,6 @@ pub async fn handler(
     };
 
     let (req_upload_id, completed) = (details.upload_id, details.completed);
-
-    tracing::warn!(
-        client_id_str,
-        req_upload_id,
-        completed,
-        "looking for upload..."
-    );
     let upload = Uploads::by_id_and_client(&mut *conn, &req_upload_id, &client_id_str).await?;
 
     let created_at = upload.created_at.ok_or(UploadError::UploadLookupFailure)?;
