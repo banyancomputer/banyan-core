@@ -12,6 +12,7 @@ use crate::app::AppState;
 use crate::clients::{ReplicateDataRequest, StagingServiceClient, StagingServiceError};
 use crate::database::models::{Blocks, Bucket, Metadata, MinimalBlockLocation, StorageHost};
 use crate::database::DatabaseConnection;
+use crate::tasks::redistribute_staging_data::get_or_create_client_grant;
 use crate::tasks::replicate_data::ReplicateDataTaskError::NotEnoughStorageHosts;
 
 #[derive(sqlx::FromRow)]
@@ -69,7 +70,10 @@ impl TaskLike for ReplicateDataTask {
                 .map(|block| block.host_count)
                 .collect::<HashSet<_>>();
             if block_replicas.len() > 1 {
-                tracing::error!("metadata {} has inconsistent replica count", metadata_id);
+                tracing::error!(
+                    "metadata {} has inconsistent replica count across blocks",
+                    metadata_id
+                );
                 continue;
             }
             let metadata = Metadata::find_by_id_with_conn(&mut conn, metadata_id).await?;
@@ -103,10 +107,15 @@ impl TaskLike for ReplicateDataTask {
                 .into_iter()
                 .collect();
 
+            let total_size = metadata
+                .data_size
+                .unwrap_or_default()
+                .max(metadata.expected_data_size);
+
             for _ in 0..replicas_diff {
                 let new_storage_host = match StorageHost::select_for_capacity_with_exclusion(
                     &mut conn,
-                    metadata.expected_data_size,
+                    total_size,
                     &already_selected_hosts,
                 )
                 .await
@@ -118,6 +127,13 @@ impl TaskLike for ReplicateDataTask {
                     }
                 };
                 already_selected_hosts.push(new_storage_host.id.clone());
+                let authorization_grant = get_or_create_client_grant(
+                    &mut conn,
+                    &bucket.user_id,
+                    total_size,
+                    &new_storage_host,
+                )
+                .await?;
 
                 // jumble the host that will be sending the data to avoid single host getting overloaded
                 let old_host_id = existing_hosts.choose(&mut rand::thread_rng()).unwrap();
@@ -127,6 +143,8 @@ impl TaskLike for ReplicateDataTask {
                     .replicate_data(ReplicateDataRequest {
                         metadata_id: metadata_id.clone(),
                         block_cids: block_cids.clone(),
+                        new_storage_grant_id: authorization_grant.id.clone(),
+                        new_storage_grant_size: authorization_grant.authorized_amount,
                         new_host_id: new_storage_host.id.clone(),
                         new_host_url: new_storage_host.url.clone(),
                         old_host_id: old_storage_host.id.clone(),

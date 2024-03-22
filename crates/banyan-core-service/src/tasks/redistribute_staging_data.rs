@@ -9,8 +9,10 @@ use url::Url;
 use crate::app::AppState;
 use crate::clients::{DistributeDataRequest, StagingServiceClient, StagingServiceError};
 use crate::database::models::{
-    Blocks, Bucket, Metadata, MinimalBlockLocation, NewStorageGrant, StorageHost, UserStorageReport,
+    Blocks, Bucket, ExistingStorageGrant, Metadata, MinimalBlockLocation, NewStorageGrant,
+    StorageHost, UserStorageReport,
 };
+use crate::database::DatabaseConnection;
 use crate::utils::rounded_storage_authorization;
 
 #[derive(Deserialize, Serialize, Default, Clone)]
@@ -64,30 +66,17 @@ impl TaskLike for RedistributeStagingDataTask {
                 .data_size
                 .unwrap_or_default()
                 .max(metadata.expected_data_size);
-            let mut conn = database.begin().await?;
+
+            let mut conn = database.acquire().await?;
             let new_storage_host = StorageHost::select_for_capacity_with_exclusion(
                 &mut conn,
                 total_size,
                 &[staging_host.id.clone()],
             )
             .await?;
-            let user_report =
-                UserStorageReport::user_report(&mut conn, &new_storage_host.id, &user_id).await?;
-            let authorization_grant = if user_report.authorization_available() < total_size
-                || user_report.existing_grant().is_none()
-            {
-                let new_authorized_capacity =
-                    rounded_storage_authorization(&user_report, total_size);
-                NewStorageGrant {
-                    storage_host_id: &new_storage_host.id,
-                    user_id: &user_id,
-                    authorized_amount: new_authorized_capacity,
-                }
-                .save(&mut conn)
-                .await?
-            } else {
-                user_report.existing_grant().unwrap()
-            };
+            let authorization_grant =
+                get_or_create_client_grant(&mut conn, &user_id, total_size, &new_storage_host)
+                    .await?;
             let block_cids: Vec<_> = grouped_blocks
                 .iter()
                 .map(|block| block.cid.clone())
@@ -118,7 +107,6 @@ impl TaskLike for RedistributeStagingDataTask {
                 .save(&mut conn)
                 .await?;
             }
-            conn.commit().await?;
 
             undistributed_blocks.retain(|s| !block_ids.contains(s));
         }
@@ -140,6 +128,32 @@ impl RecurringTask for RedistributeStagingDataTask {
             .ok_or(RecurringTaskError::DateTimeAddition)
             .map(Some)
     }
+}
+
+pub async fn get_or_create_client_grant(
+    conn: &mut DatabaseConnection,
+    user_id: &String,
+    total_size: i64,
+    new_storage_host: &StorageHost,
+) -> Result<ExistingStorageGrant, sqlx::Error> {
+    let user_report = UserStorageReport::user_report(conn, &new_storage_host.id, user_id).await?;
+
+    let authorization_grant = if user_report.authorization_available() < total_size
+        || user_report.existing_grant().is_none()
+    {
+        let new_authorized_capacity = rounded_storage_authorization(&user_report, total_size);
+        NewStorageGrant {
+            storage_host_id: &new_storage_host.id,
+            user_id,
+            authorized_amount: new_authorized_capacity,
+        }
+        .save(conn)
+        .await?
+    } else {
+        user_report.existing_grant().unwrap()
+    };
+
+    Ok(authorization_grant)
 }
 
 #[derive(Debug, thiserror::Error)]

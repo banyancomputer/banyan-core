@@ -23,6 +23,8 @@ pub struct ReplicateDataRequest {
     pub block_cids: Vec<String>,
     pub new_host_id: String,
     pub new_host_url: String,
+    pub new_storage_grant_id: String,
+    pub new_storage_grant_size: i64,
     pub old_host_id: String,
     pub old_host_url: String,
 }
