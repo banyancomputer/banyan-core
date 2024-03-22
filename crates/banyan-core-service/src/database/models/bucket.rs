@@ -1,5 +1,4 @@
 use std::collections::{HashMap, HashSet};
-use std::time::Duration;
 
 use banyan_task::TaskLikeExt;
 use sqlx::sqlite::SqliteQueryResult;
@@ -10,11 +9,6 @@ use crate::api::models::ApiBucketConfiguration;
 use crate::database::models::{BucketType, MinimalBlockLocation, StorageClass};
 use crate::database::{Database, DatabaseConnection, BIND_LIMIT};
 use crate::tasks::PruneBlocksTask;
-
-/// Used to prevent writes of new metadata versions when there is a newer metadata currently being
-/// written. This protection is needed until we can handle merge conflicts and resolve the rapid
-/// data only unbatched changes in the client.
-pub const METADATA_WRITE_LOCK_DURATION: Duration = Duration::from_secs(30);
 
 /// Internal representation of a "Drive", the name is a holdover from a previous design iteration
 /// that referred to these as Buckets. This type is an organization type collecting the contents
@@ -100,8 +94,6 @@ impl Bucket {
     ///
     /// * This expects that the provided bucket ID has already been validated to be owned by a user
     ///   with appropriate write access.
-    /// * This expects that all CIDs in the block_list have already been normalized by
-    ///   `crate::utils::normalize_cid`.
     ///
     /// Returns a tuple of the number of rows expired and the number of rows that are ready to be
     /// pruned. If a block has a single owner and it gets expired, that block is a candidate for
@@ -220,48 +212,6 @@ impl Bucket {
         }
 
         Ok((total_rows_expired, total_rows_pruned as u64))
-    }
-
-    /// When a new metadata is pushed to this service we mark it as pending until we receive
-    /// appropriate data also uploaded to our storage hosts. Allows checking whether a new metadata
-    /// can be written. This will return false only when there is a pending write that is within
-    /// the `METADATA_WRITE_LOCK_DURATION` window.
-    pub async fn is_change_in_progress(
-        conn: &mut DatabaseConnection,
-        bucket_id: &str,
-    ) -> Result<bool, sqlx::Error> {
-        let current_ts = sqlx::query_scalar!(
-            r#"SELECT created_at FROM metadata
-                   WHERE bucket_id = $1 AND state = 'current'
-                   ORDER BY created_at DESC
-                   LIMIT 1;"#,
-            bucket_id,
-        )
-        .fetch_optional(&mut *conn)
-        .await?;
-
-        let lock_window = OffsetDateTime::now_utc() - METADATA_WRITE_LOCK_DURATION;
-        let lock_threshold = match current_ts {
-            // We both have a "current" metadata to reference and its existence is less than our
-            // lock window so use it as our threshold instead of the lock window.
-            Some(ts) if ts > lock_window => ts,
-            _ => lock_window,
-        };
-
-        let locked_id = sqlx::query_scalar!(
-            r#"SELECT id FROM metadata
-                   WHERE bucket_id = $1
-                       AND created_at > $2
-                       AND state IN ('pending', 'uploading')
-                   ORDER BY created_at DESC
-                   LIMIT 1;"#,
-            bucket_id,
-            lock_threshold,
-        )
-        .fetch_optional(&mut *conn)
-        .await?;
-
-        Ok(locked_id.is_some())
     }
 
     #[tracing::instrument(skip(conn))]
@@ -461,6 +411,25 @@ impl Bucket {
         Ok(())
     }
 
+    pub async fn is_valid_previous_version(
+        conn: &mut DatabaseConnection,
+        bucket_id: &str,
+        metadata_id: &str,
+    ) -> Result<bool, sqlx::Error> {
+        let found_metadata = sqlx::query_scalar!(
+            r#"SELECT id FROM metadata
+                 WHERE id = $1
+                   AND bucket_id = $2
+                   AND state IN ('uploading', 'pending', 'current', 'outdated');"#,
+            metadata_id,
+            bucket_id,
+        )
+        .fetch_optional(&mut *conn)
+        .await?;
+
+        Ok(found_metadata.is_some())
+    }
+
     pub async fn update_configuration(
         conn: &mut DatabaseConnection,
         bucket_id: &str,
@@ -528,23 +497,7 @@ impl Bucket {
             return Ok(true);
         }
 
-        // There are a couple of other versions we consider valid, primarily if there are any
-        // metadata instances that are newer and still valid than the metadata marked as the
-        // current one. If it meets those conditions we'll still allow the update.
-        Ok(sqlx::query_scalar!(
-            r#"SELECT id FROM metadata
-                 WHERE id = $1
-                   AND bucket_id = $2
-                   AND state IN ('current', 'pending', 'uploading')
-                   AND created_at >= (SELECT created_at FROM metadata WHERE id = $3 LIMIT 1)
-                 ORDER BY created_at DESC"#,
-            previous_metadata_id,
-            bucket_id,
-            current_metadata_id,
-        )
-        .fetch_optional(&mut *conn)
-        .await?
-        .is_some())
+        Self::is_valid_previous_version(conn, bucket_id, previous_metadata_id).await
     }
 }
 
@@ -560,7 +513,6 @@ mod tests {
 
     use time::OffsetDateTime;
 
-    use crate::database::models::bucket::METADATA_WRITE_LOCK_DURATION;
     use crate::database::models::{Bucket, BucketType, MetadataState, SnapshotState, StorageClass};
     use crate::database::test_helpers::*;
     use crate::database::DatabaseConnection;
@@ -578,10 +530,6 @@ mod tests {
         .fetch_optional(&mut *conn)
         .await
         .expect("query success")
-    }
-
-    fn time_outside_lock_window() -> OffsetDateTime {
-        OffsetDateTime::now_utc() - METADATA_WRITE_LOCK_DURATION - Duration::from_secs(5)
     }
 
     #[tokio::test]
@@ -650,208 +598,6 @@ mod tests {
             .await
             .unwrap());
         assert!(is_bucket_key_approved(&mut conn, &bucket_id, "abcdef")
-            .await
-            .unwrap());
-    }
-
-    #[tokio::test]
-    async fn test_is_no_metadata_not_in_progress() {
-        let db = setup_database().await;
-        let mut conn = db.begin().await.expect("connection");
-
-        let user_id = sample_user(&mut conn, "user@domain.tld").await;
-        let bucket_id = sample_bucket(&mut conn, &user_id).await;
-
-        // No metadata instances have yet been uploaded, no change should be in progress
-        assert!(!Bucket::is_change_in_progress(&mut conn, &bucket_id)
-            .await
-            .unwrap());
-    }
-
-    #[tokio::test]
-    async fn test_is_current_not_in_progress() {
-        let db = setup_database().await;
-        let mut conn = db.begin().await.expect("connection");
-
-        let user_id = sample_user(&mut conn, "user@domain.tld").await;
-        let bucket_id = sample_bucket(&mut conn, &user_id).await;
-
-        let base_time = OffsetDateTime::now_utc();
-        create_metadata(
-            &mut conn,
-            &bucket_id,
-            "meta-cid",
-            "root-cid",
-            MetadataState::Current,
-            Some(base_time),
-            None,
-        )
-        .await;
-
-        // All the metadata is current, no change should be in progress
-        assert!(!Bucket::is_change_in_progress(&mut conn, &bucket_id)
-            .await
-            .unwrap());
-
-        let older_time = base_time - Duration::from_secs(20);
-        create_metadata(
-            &mut conn,
-            &bucket_id,
-            "old-meta-cid",
-            "old-root-cid",
-            MetadataState::Current,
-            Some(older_time),
-            None,
-        )
-        .await;
-
-        // The pending metadata was created at "before" the current metadata so shouldn't cause the
-        // bucket to be considered actively being changed
-        assert!(!Bucket::is_change_in_progress(&mut conn, &bucket_id)
-            .await
-            .unwrap());
-    }
-
-    #[tokio::test]
-    async fn test_pending_is_in_progress() {
-        let db = setup_database().await;
-        let mut conn = db.begin().await.expect("connection");
-
-        let user_id = sample_user(&mut conn, "user@domain.tld").await;
-        let bucket_id = sample_bucket(&mut conn, &user_id).await;
-
-        let base_time = OffsetDateTime::now_utc();
-        create_metadata(
-            &mut conn,
-            &bucket_id,
-            "meta-cid",
-            "root-cid",
-            MetadataState::Pending,
-            Some(base_time),
-            None,
-        )
-        .await;
-
-        // A just created (within our window) pending metadata should keep the bucket locked as its
-        // being changed
-        assert!(Bucket::is_change_in_progress(&mut conn, &bucket_id)
-            .await
-            .unwrap());
-    }
-
-    #[tokio::test]
-    async fn test_old_pending_not_in_progress() {
-        let db = setup_database().await;
-        let mut conn = db.begin().await.expect("connection");
-
-        let user_id = sample_user(&mut conn, "user@domain.tld").await;
-        let bucket_id = sample_bucket(&mut conn, &user_id).await;
-
-        let base_time = time_outside_lock_window();
-        create_metadata(
-            &mut conn,
-            &bucket_id,
-            "meta-cid",
-            "root-cid",
-            MetadataState::Pending,
-            Some(base_time),
-            None,
-        )
-        .await;
-
-        // A just created (within our window) pending metadata should keep the bucket locked as its
-        // being changed
-        assert!(!Bucket::is_change_in_progress(&mut conn, &bucket_id)
-            .await
-            .unwrap());
-
-        // There is a different code path when a 'current' metadata exists, we want to make sure
-        // this is still _before_ the pending metadata
-        let older_time = base_time - Duration::from_secs(10);
-        create_metadata(
-            &mut conn,
-            &bucket_id,
-            "og-meta-cid",
-            "og-root-cid",
-            MetadataState::Current,
-            Some(older_time),
-            None,
-        )
-        .await;
-
-        assert!(!Bucket::is_change_in_progress(&mut conn, &bucket_id)
-            .await
-            .unwrap());
-    }
-
-    #[tokio::test]
-    async fn test_uploading_is_in_progress() {
-        let db = setup_database().await;
-        let mut conn = db.begin().await.expect("connection");
-
-        let user_id = sample_user(&mut conn, "user@domain.tld").await;
-        let bucket_id = sample_bucket(&mut conn, &user_id).await;
-
-        let base_time = OffsetDateTime::now_utc();
-        create_metadata(
-            &mut conn,
-            &bucket_id,
-            "meta-cid",
-            "root-cid",
-            MetadataState::Uploading,
-            Some(base_time),
-            None,
-        )
-        .await;
-
-        // A just created (within our window) uploading metadata should keep the bucket locked as
-        // its being changed.
-        assert!(Bucket::is_change_in_progress(&mut conn, &bucket_id)
-            .await
-            .unwrap());
-    }
-
-    #[tokio::test]
-    async fn test_old_uploading_not_in_progress() {
-        let db = setup_database().await;
-        let mut conn = db.begin().await.expect("connection");
-
-        let user_id = sample_user(&mut conn, "user@domain.tld").await;
-        let bucket_id = sample_bucket(&mut conn, &user_id).await;
-
-        let base_time = time_outside_lock_window();
-        create_metadata(
-            &mut conn,
-            &bucket_id,
-            "meta-cid",
-            "root-cid",
-            MetadataState::Uploading,
-            Some(base_time),
-            None,
-        )
-        .await;
-
-        // A just created (within our window) pending metadata should keep the bucket locked as its
-        // being changed
-        assert!(!Bucket::is_change_in_progress(&mut conn, &bucket_id)
-            .await
-            .unwrap());
-
-        // There is a different code path when a 'current' metadata exists, we want to make sure
-        // this is still _before_ the uploading metadata
-        let older_time = base_time - Duration::from_secs(10);
-        create_metadata(
-            &mut conn,
-            &bucket_id,
-            "og-meta-cid",
-            "og-root-cid",
-            MetadataState::Current,
-            Some(older_time),
-            None,
-        )
-        .await;
-
-        assert!(!Bucket::is_change_in_progress(&mut conn, &bucket_id)
             .await
             .unwrap());
     }
@@ -1579,7 +1325,7 @@ mod tests {
         )
         .await;
 
-        let initial_cids: Vec<_> = normalize_cids(generate_cids(data_generator(0..3))).collect();
+        let initial_cids: Vec<_> = generate_cids(data_generator(0..3)).collect();
         let initial_blocks =
             create_blocks(&mut conn, initial_cids.iter().map(String::as_str)).await;
 
@@ -1610,7 +1356,7 @@ mod tests {
         )
         .await;
 
-        let following_cids: Vec<_> = normalize_cids(generate_cids(data_generator(3..6))).collect();
+        let following_cids: Vec<_> = generate_cids(data_generator(3..6)).collect();
         let following_blocks =
             create_blocks(&mut conn, following_cids.iter().map(String::as_str)).await;
 

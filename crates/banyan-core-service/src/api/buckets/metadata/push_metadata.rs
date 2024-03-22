@@ -22,8 +22,7 @@ use crate::database::models::{
 };
 use crate::extractors::ApiIdentity;
 use crate::utils::car_buffer::CarBuffer;
-use crate::utils::rounded_storage_authorization;
-use crate::{utils, GIBIBYTE};
+use crate::utils::{is_valid_cid, rounded_storage_authorization, GIBIBYTE};
 
 /// Size limit of the pure metadata CAR file that is being uploaded (128MiB)
 const CAR_DATA_SIZE_LIMIT: u64 = 128 * 1_024 * 1_024;
@@ -129,19 +128,23 @@ pub async fn handler(
     .save(&mut conn)
     .await?;
 
+    let deleted_block_cids: Vec<_> = request_data.deleted_block_cids.iter().cloned().collect();
+
     // todo(sstelfox): The CID crate doesn't properly parse hashes other than 512 byte sha2 hashes
     // which we no longer use. We should be replace this with a proper CID parsing and normalization.
-    let normalized_cids: Vec<_> = request_data
-        .deleted_block_cids
+    if deleted_block_cids
         .iter()
-        .map(|s| s.to_string())
-        .collect();
+        .find(|c| !is_valid_cid(c))
+        .is_some()
+    {
+        return Err(PushMetadataError::InvalidCid);
+    }
 
     PendingExpiration::record_pending_block_expirations(
         &mut conn,
         &bucket_id,
         &metadata_id,
-        &normalized_cids,
+        &deleted_block_cids,
     )
     .await?;
 
@@ -277,6 +280,9 @@ pub async fn handler(
 pub enum PushMetadataError {
     #[error("failed to run query: {0}")]
     QueryFailure(#[from] sqlx::Error),
+
+    #[error("request contained one or more invalid CIDs")]
+    InvalidCid,
 
     #[error("the request was badly formatted: {0}")]
     InvalidMultipart(#[from] multer::Error),
