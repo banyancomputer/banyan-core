@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { unwrapResult } from '@reduxjs/toolkit';
 
 import { SubscriptionPlanModal } from '@/app/components/common/Modal/SubscriptionPlanModal';
@@ -14,14 +14,10 @@ import { useTomb } from '@app/contexts/tomb';
 export const NextBillingDate = () => {
     const dispatch = useAppDispatch();
     const { selectedSubscription } = useAppSelector(state => state.billing);
-    const { subscriptionValidUntil } = useAppSelector(state => state.user);
+    const { subscriptionValidUntil, monthlyEggress } = useAppSelector(state => state.user);
     const messages = useAppSelector(state => state.locales.messages.coponents.account.billing.invoices.nextBillingDate);
     const { openModal } = useModal();
-    const { storageUsage } = useTomb();
-
-    /**TODO: delete when api will be reworked. */
-    const mockedDataEggress = 2;
-
+    const { storageUsage, storageLimits } = useTomb();
 
     const upgragePlan = () => {
         openModal(<SubscriptionPlanModal />);
@@ -55,28 +51,35 @@ export const NextBillingDate = () => {
                 <div className="flex justify-between items-center">
                     <div>{messages.onDemandStorage}</div>
                     <div className="text-text-800 font-medium">{
-                        `${convertFileSize(storageUsage.usage)} of ${convertSubscriptionsSizes(getHotStorageAmount(selectedSubscription))}`
+                        `${convertFileSize(storageUsage.hotStorage)} of ${convertSubscriptionsSizes(getHotStorageAmount(selectedSubscription))}`
                     }</div>
                 </div>
                 <progress
                     className="progress w-full [&::-webkit-progress-value]:bg-button-primary"
-                    value={storageUsage.usage}
-                    max={storageUsage.softLimit / (selectedSubscription?.features.included_hot_replica_count || 2)}
+                    value={storageUsage.hotStorage}
+                    max={storageLimits.softLimit / (selectedSubscription?.features.included_hot_replica_count || 2)}
                 />
             </div>
-            {/* <div className="flex justify-between items-center">
-                <div className="text-text-800">{messages.archivalStorage}</div>
-                <div className="text-text-800">{selectedSubscription?.features.archival_hard_limit || 0} TB</div>
-            </div> */}
+            <div className="flex flex-col gap-2">
+                <div className="flex justify-between items-center">
+                    <div className="text-text-800">{messages.archivalStorage}</div>
+                    <div className="text-text-800">{`${convertFileSize(storageUsage.archivalStorage)} of ${convertSubscriptionsSizes(getHotStorageAmount(selectedSubscription))}`}</div>
+                </div>
+                <progress
+                    className="progress w-full [&::-webkit-progress-value]:bg-button-primary"
+                    value={storageUsage.archivalStorage}
+                    max={storageLimits.softLimit / (selectedSubscription?.features.included_hot_replica_count || 2)}
+                />
+            </div>
             <div className="flex flex-col gap-2">
                 <div className="flex justify-between items-center">
                     <div>{messages.dataEggress}</div>
                     <div className="text-text-800 font-medium">{
-                    `2GB of${convertSubscriptionsSizes(selectedSubscription?.features?.included_bandwidth!)}`}</div>
+                        `${convertFileSize(monthlyEggress)} of ${convertSubscriptionsSizes(selectedSubscription?.features?.included_bandwidth!)}`}</div>
                 </div>
                 <progress
                     className="progress w-full  [&::-webkit-progress-value]:bg-[#57221E]"
-                    value={mockedDataEggress}
+                    value={monthlyEggress}
                     max={selectedSubscription?.features?.included_bandwidth!}
                 />
             </div>

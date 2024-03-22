@@ -23,11 +23,13 @@ import { useAppDispatch, useAppSelector } from '../store';
 import { BannerError, setError } from '../store/errors/slice';
 import { ToastNotifications } from '@utils/toastNotifications';
 import { SnapshotsClient } from '@/api/snapshots';
+import { StorageLimits, StorageUsage } from '@/entities/storage';
 
 interface TombInterface {
 	tomb: TombWasm | null;
 	buckets: Bucket[];
-	storageUsage: { usage: number, softLimit: number, hardLimit: number };
+	storageUsage: StorageUsage;
+	storageLimits: StorageLimits;
 	trash: Bucket | null;
 	areBucketsLoading: boolean;
 	selectedBucket: Bucket | null;
@@ -75,7 +77,8 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	const [trash, setTrash] = useState<Bucket | null>(null);
 	const [areTermsAccepted, setAreTermsAccepted] = useState(false);
 	const [selectedBucket, setSelectedBucket] = useState<Bucket | null>(null);
-	const [storageUsage, setStorageUsage] = useState<{ usage: number, softLimit: number, hardLimit: number }>({ usage: 0, softLimit: 0, hardLimit: 0 });
+	const [storageUsage, setStorageUsage] = useState<StorageUsage>(new StorageUsage());
+	const [storageLimits, setStorageLimits] = useState<StorageLimits>(new StorageLimits());
 	const [areBucketsLoading, setAreBucketsLoading] = useState<boolean>(true);
 	const folderLocation = useFolderLocation();
 	const { driveAlreadyExists, folderAlreadyExists } = useAppSelector(state => state.locales.messages.contexts.tomb);
@@ -348,14 +351,18 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 		});
 	};
 
-	const getStorageUsageState = async () => {
-		const usage = await storageUsageClient.getStorageUsage();
-		const limit = await storageUsageClient.getStorageLimits();
-		setStorageUsage({
-			usage: usage.size,
-			softLimit: limit.soft_hot_storage_limit,
-			hardLimit: limit.hard_hot_storage_limit
-		});
+	const updateStorageUsageState = async () => {
+		try {
+			const usage = await storageUsageClient.getStorageUsage();
+			setStorageUsage(usage);
+		} catch (error: any) { };
+	};
+
+	const updateStorageLimitsState = async () => {
+		try {
+			const limits = await storageUsageClient.getStorageLimits();
+			setStorageLimits(limits);
+		} catch (error: any) { };
 	};
 
 	/** Uploads file to selected bucket/directory, updates buckets state */
@@ -376,7 +383,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 			await updateBucketsState('files', files.sort(sortByType), bucket.id);
 			const isSnapshotValid = await mount.hasSnapshot();
 			await updateBucketsState('isSnapshotValid', isSnapshotValid, bucket.id);
-			await getStorageUsageState();
+			await updateStorageUsageState();
 		});
 	};
 
@@ -388,16 +395,18 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 			await updateBucketsState('snapshots', snapshots, bucket.id);
 			const isSnapshotValid = await bucket.mount!.hasSnapshot();
 			await updateBucketsState('isSnapshotValid', isSnapshotValid, bucket.id);
+			await updateStorageUsageState();
 		});
 	};
 
 	const deleteBucket = async (id: string) => {
 		await tomb?.deleteBucket(id);
 		await getBuckets();
-		await getStorageUsageState();
+		await updateStorageUsageState();
 		if (selectedBucket?.id === id) {
 			navigate('/')
 		}
+		await updateStorageUsageState();
 	};
 
 	const deleteFile = async (bucket: Bucket, path: string[], name: string) => {
@@ -405,6 +414,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 			await mount.rm([...path, name]);
 			const isSnapshotValid = await mount.hasSnapshot();
 			await updateBucketsState('isSnapshotValid', isSnapshotValid, bucket.id);
+			await updateStorageUsageState();
 		});
 	};
 
@@ -480,7 +490,8 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 			(async () => {
 				try {
 					await getBuckets();
-					await getStorageUsageState();
+					await updateStorageUsageState();
+					await updateStorageLimitsState();
 				} catch (error: any) {
 					dispatch(setError(new BannerError(error.message)));
 				}
@@ -491,7 +502,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	return (
 		<TombContext.Provider
 			value={{
-				tomb, buckets, storageUsage, trash, areBucketsLoading, selectedBucket,
+				tomb, buckets, storageUsage, storageLimits, trash, areBucketsLoading, selectedBucket,
 				getBuckets, getBucketsFiles, getBucketsKeys, selectBucket, getSelectedBucketFiles,
 				takeColdSnapshot, getBucketSnapshots, createBucketAndMount, deleteBucket, remountBucket,
 				getFile, renameBucket, createDirectory, uploadFile, purgeSnapshot,
