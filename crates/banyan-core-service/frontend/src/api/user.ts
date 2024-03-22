@@ -16,6 +16,7 @@ export class UserClient extends APIClient {
             email: rawUser.email,
             displayName: rawUser.display_name,
             locale: rawUser.locale,
+            monthlyEggress: rawUser.monthly_egress,
             profileImage: rawUser.profile_image,
             acceptedTosAt: rawUser.accepted_tos_at,
 			accountTaxClass: rawUser.account_tax_class,
