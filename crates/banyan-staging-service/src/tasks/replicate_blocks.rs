@@ -63,11 +63,21 @@ impl TaskLike for ReplicateBlocksTask {
             StorageProviderClient::new(&self.new_storage_host_url, &provider_credentials.token);
 
         let mut blocks = self.block_cids.clone();
+        // it's possible the below, won't return the block_id even thought it's present on the new host
+        // but it seems good enough for now
+        let located_blocks = client.locate_blocks(blocks.clone()).await?;
+        blocks.retain(|block| {
+            if let Some(hosts) = located_blocks.get(block) {
+                !hosts.contains(&self.new_storage_host_url)
+            } else {
+                true
+            }
+        });
+
         // handling the case where we failed and want to start from another block
         // so that in the end only the failing block would be left
         blocks.as_mut_slice().shuffle(&mut rand::thread_rng());
         let total_blocks = blocks.len();
-        // TODO: dedupe this, otherwise it can become expensive, e.g. store a bloom filter somewhere
         for (index, block_cid) in blocks.into_iter().enumerate() {
             let fetched_block = old_client.get_block(&block_cid).await?;
             let block_cid =
@@ -79,7 +89,6 @@ impl TaskLike for ReplicateBlocksTask {
                     fetched_block,
                     block_cid,
                     BlockUploadDetailsRequest {
-                        replication: true,
                         completed: is_last_block,
                         grant_id: self.grant_id.clone(),
                         upload_id: self.new_upload_id.clone(),

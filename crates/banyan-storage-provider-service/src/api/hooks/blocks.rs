@@ -11,6 +11,7 @@ use uuid::Uuid;
 
 use crate::api::upload::db::{complete_upload, write_block_to_tables};
 use crate::app::AppState;
+use crate::clients::{CoreServiceClient, ReportRedistributionRequest};
 use crate::database::models::Upload;
 use crate::database::DatabaseConnection;
 use crate::extractors::PlatformIdentity;
@@ -24,6 +25,7 @@ pub struct BlockUploadRequest {
 
 #[derive(Serialize, Deserialize)]
 pub struct BlockUploadDetails {
+    pub replicted: bool,
     pub completed: bool,
     pub upload_id: String,
     pub grant_id: Uuid,
@@ -95,12 +97,13 @@ pub async fn handler(
     if request.details.completed {
         complete_upload(&mut conn, total_size as i64, "", &upload.id).await?;
 
-        report_complete_redistribution(
+        save_and_report_redistribution(
             &mut conn,
+            state,
             request.details.grant_id,
             &upload.metadata_id,
             &upload.id,
-            total_size as i64,
+            total_size,
         )
         .await?;
     }
@@ -180,8 +183,9 @@ impl IntoResponse for BlocksUploadError {
     }
 }
 
-pub async fn report_complete_redistribution(
+pub async fn save_and_report_redistribution(
     conn: &mut DatabaseConnection,
+    state: AppState,
     grant_id: Uuid,
     metadata_id: &str,
     upload_id: &str,
@@ -200,10 +204,28 @@ pub async fn report_complete_redistribution(
     .fetch_all(&mut *conn)
     .await?;
 
-    ReportRedistributionTask::new(grant_id, metadata_id, &all_cids, total_size as u64)
-        .enqueue::<banyan_task::SqliteTaskStore>(&mut *conn)
-        .await
-        .unwrap();
+    let all_cids = all_cids
+        .into_iter()
+        .map(|cid_string| Cid::from_str(&cid_string).unwrap().to_string_of_base(Base::Base64Url)?)
+        .collect::<Vec<String>>();
+
+    let client = CoreServiceClient::new(
+        state.secrets().service_signing_key(),
+        state.service_name(),
+        state.platform_name(),
+        state.platform_hostname(),
+    );
+
+    client
+        .report_distribution_complete(
+            &metadata_id,
+            ReportRedistributionRequest {
+                data_size,
+                grant_id: grant_id.to_string(),
+                normalized_cids: all_cids,
+            },
+        )
+        .await?;
 
     Ok(())
 }

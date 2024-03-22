@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use http::{HeaderMap, HeaderValue};
 use jwt_simple::prelude::*;
 use reqwest::{Client, Response};
@@ -41,6 +43,32 @@ impl CoreServiceClient {
             bearer_token,
             platform_hostname,
         }
+    }
+    pub async fn locate_blocks(
+        &self,
+        block_cids: Vec<String>,
+    ) -> Result<HashMap<String, Vec<String>>, CoreServiceError> {
+        let locate_blocks_endpoint = self
+            .platform_hostname
+            .join("/api/v1/blocks/locate")
+            .unwrap();
+
+        let response = self
+            .client
+            .post(locate_blocks_endpoint.clone())
+            .json(&block_cids)
+            .bearer_auth(&self.bearer_token)
+            .send()
+            .await?;
+
+        if response.status().is_success() {
+            return match response.json::<HashMap<String, Vec<String>>>().await {
+                Ok(response) => Ok(response),
+                Err(_) => Err(CoreServiceError::ResponseParseError),
+            };
+        }
+
+        Err(CoreServiceError::BadRequest(response.text().await?))
     }
 
     pub async fn report_upload(
