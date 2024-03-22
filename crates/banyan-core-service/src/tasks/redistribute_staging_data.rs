@@ -67,16 +67,20 @@ impl TaskLike for RedistributeStagingDataTask {
                 .unwrap_or_default()
                 .max(metadata.expected_data_size);
 
-            let mut conn = database.acquire().await?;
+            let mut transaction = database.begin().await?;
             let new_storage_host = StorageHost::select_for_capacity_with_exclusion(
-                &mut conn,
+                &mut transaction,
                 total_size,
                 &[staging_host.id.clone()],
             )
             .await?;
-            let authorization_grant =
-                get_or_create_client_grant(&mut conn, &user_id, total_size, &new_storage_host)
-                    .await?;
+            let authorization_grant = get_or_create_client_grant(
+                &mut transaction,
+                &user_id,
+                total_size,
+                &new_storage_host,
+            )
+            .await?;
             let block_cids: Vec<_> = grouped_blocks
                 .iter()
                 .map(|block| block.cid.clone())
@@ -104,9 +108,10 @@ impl TaskLike for RedistributeStagingDataTask {
                     metadata_id: metadata_id.clone(),
                     storage_host_id: new_storage_host.id.clone(),
                 }
-                .save(&mut conn)
+                .save(&mut transaction)
                 .await?;
             }
+            transaction.commit().await?;
 
             undistributed_blocks.retain(|s| !block_ids.contains(s));
         }
