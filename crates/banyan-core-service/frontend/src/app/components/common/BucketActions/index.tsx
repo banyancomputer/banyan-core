@@ -1,13 +1,13 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
-import { BucketSnapshotsModal } from '@components/common/Modal/BucketSnapshotsModal';
 import { RenameBucketModal } from '@components/common/Modal/RenameBucketModal';
 import { DeleteBucketModal } from '@components/common/Modal/DeleteBucketModal';
 import { TakeSnapshotModal } from '@components/common/Modal/TakeSnapshotModal';
 import { UploadFileModal } from '@components/common/Modal/UploadFileModal';
 import { CreateFolderModal } from '@components/common/Modal/CreateFolderModal ';
 
-import { Action } from '@components/Bucket/BucketTable/FileActions';
+import { Action } from '@components/Bucket/Files/BucketTable/FileActions';
 import { useModal } from '@/app/contexts/modals';
 import { Bucket } from '@/app/types/bucket';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
@@ -24,6 +24,7 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const { remountBucket } = useTomb();
     const bucketType = `${bucket.bucketType}_${bucket.storageClass}`;
     const folderLocation = useFolderLocation();
+    const navigate = useNavigate();
 
     const upload = async () => {
         try {
@@ -43,7 +44,7 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
 
     const viewBucketSnapshots = async () => {
         try {
-            openModal(<BucketSnapshotsModal bucketId={bucket.id} />);
+            navigate(`/drive/${bucket.id}/snapshots`);
         } catch (error: any) { }
     };
 
@@ -137,7 +138,7 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     };
 
     return (
-        <div className={'w-64 text-xs font-medium bg-bucket-actionsBackground rounded-xl overflow-hidden shadow-md z-10 select-none text-bucket-actionsText'}>
+        <div className={'w-64 text-xs font-medium bg-bucket-actionsBackground rounded-md overflow-hidden shadow-md z-10 select-none text-bucket-actionsText'}>
             {bucket.mount ?
                 <>
                     {
