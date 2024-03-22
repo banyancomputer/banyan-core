@@ -31,7 +31,13 @@ pub struct ReportRedistributionTask {
 }
 
 impl ReportRedistributionTask {
-    pub fn new(grant_id: Uuid, metadata_id: &str, cids: &[Cid], data_size: i64, replication: bool) -> Self {
+    pub fn new(
+        grant_id: Uuid,
+        metadata_id: &str,
+        cids: &[Cid],
+        data_size: i64,
+        replication: bool,
+    ) -> Self {
         Self {
             grant_id,
             metadata_id: String::from(metadata_id),

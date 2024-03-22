@@ -189,7 +189,7 @@ pub async fn report_complete_redistribution(
     metadata_id: &str,
     upload_id: &str,
     total_size: i64,
-    replication: bool
+    replication: bool,
 ) -> Result<(), sqlx::Error> {
     let all_cids: Vec<String> = sqlx::query_scalar!(
         r#"
@@ -201,8 +201,8 @@ pub async fn report_complete_redistribution(
         "#,
         upload_id
     )
-        .fetch_all(&mut *conn)
-        .await?;
+    .fetch_all(&mut *conn)
+    .await?;
 
     let all_cids = all_cids
         .into_iter()
