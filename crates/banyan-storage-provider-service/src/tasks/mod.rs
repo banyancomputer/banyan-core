@@ -38,6 +38,7 @@ pub async fn start_background_workers(
         .register_task_type::<ReportRedistributionTask>()
         .register_recurring_task_type::<ReportHealthTask>()
         .register_recurring_task_type::<ReportBandwidthMetricsTask>()
+        .register_task_type::<ReportRedistributionTask>()
         .start(async move {
             let _ = shutdown_rx.changed().await;
         })

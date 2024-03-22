@@ -95,6 +95,7 @@ impl TaskLike for RedistributeBlocksTask {
                     content.into(),
                     block_cid,
                     BlockUploadDetailsRequest {
+                        replication: false,
                         completed: is_last_block,
                         grant_id: self.grant_id.clone(),
                         upload_id: self.new_upload_id.clone(),

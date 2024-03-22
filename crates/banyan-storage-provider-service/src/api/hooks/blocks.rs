@@ -25,7 +25,7 @@ pub struct BlockUploadRequest {
 
 #[derive(Serialize, Deserialize)]
 pub struct BlockUploadDetails {
-    pub replicted: bool,
+    pub replication: bool,
     pub completed: bool,
     pub upload_id: String,
     pub grant_id: Uuid,
@@ -97,13 +97,13 @@ pub async fn handler(
     if request.details.completed {
         complete_upload(&mut conn, total_size as i64, "", &upload.id).await?;
 
-        save_and_report_redistribution(
+        report_complete_redistribution(
             &mut conn,
-            state,
             request.details.grant_id,
             &upload.metadata_id,
             &upload.id,
             total_size,
+            request.details.replication,
         )
         .await?;
     }
@@ -183,13 +183,13 @@ impl IntoResponse for BlocksUploadError {
     }
 }
 
-pub async fn save_and_report_redistribution(
+pub async fn report_complete_redistribution(
     conn: &mut DatabaseConnection,
-    state: AppState,
     grant_id: Uuid,
     metadata_id: &str,
     upload_id: &str,
     total_size: i64,
+    replication: bool
 ) -> Result<(), sqlx::Error> {
     let all_cids: Vec<String> = sqlx::query_scalar!(
         r#"
@@ -201,31 +201,18 @@ pub async fn save_and_report_redistribution(
         "#,
         upload_id
     )
-    .fetch_all(&mut *conn)
-    .await?;
+        .fetch_all(&mut *conn)
+        .await?;
 
     let all_cids = all_cids
         .into_iter()
-        .map(|cid_string| Cid::from_str(&cid_string).unwrap().to_string_of_base(Base::Base64Url)?)
-        .collect::<Vec<String>>();
+        .map(|cid_string| Cid::from_str(&cid_string).unwrap())
+        .collect::<Vec<Cid>>();
 
-    let client = CoreServiceClient::new(
-        state.secrets().service_signing_key(),
-        state.service_name(),
-        state.platform_name(),
-        state.platform_hostname(),
-    );
-
-    client
-        .report_distribution_complete(
-            &metadata_id,
-            ReportRedistributionRequest {
-                data_size,
-                grant_id: grant_id.to_string(),
-                normalized_cids: all_cids,
-            },
-        )
-        .await?;
+    ReportRedistributionTask::new(grant_id, metadata_id, &all_cids, total_size, replication)
+        .enqueue::<banyan_task::SqliteTaskStore>(&mut *conn)
+        .await
+        .unwrap();
 
     Ok(())
 }
