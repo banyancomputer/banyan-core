@@ -2,7 +2,6 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use bytes::{Bytes, BytesMut};
-use cid::Cid;
 
 const CAR_HEADER_UPPER_LIMIT: u64 = 16 * 1024 * 1024; // Limit car headers to 16MiB
 
@@ -14,14 +13,14 @@ const CARV2_PRAGMA: &[u8] = &[
 
 #[derive(Debug, PartialEq)]
 pub struct Block {
-    cid: Cid,
+    cid: String,
     offset: u64,
     length: u64,
     data: Vec<u8>,
 }
 
 impl Block {
-    pub fn cid(&self) -> &Cid {
+    pub fn cid(&self) -> &str {
         &self.cid
     }
 
@@ -60,7 +59,7 @@ enum CarState {
         // advances to each block until we reach data_end
         data_start: u64,
         data_length: u64,
-        cid: Cid,
+        cid: String,
 
         data_end: u64,
         index_start: u64,
@@ -74,7 +73,7 @@ enum CarState {
 pub struct CarReport {
     integrity_hash: String,
     total_size: u64,
-    cids: Vec<Cid>,
+    cids: Vec<String>,
 }
 
 impl CarReport {
@@ -86,7 +85,7 @@ impl CarReport {
         self.total_size
     }
 
-    pub fn cids(&self) -> &[Cid] {
+    pub fn cids(&self) -> &[String] {
         self.cids.as_slice()
     }
 }
@@ -96,7 +95,7 @@ pub struct StreamingCarAnalyzer {
     buffer: BytesMut,
     state: CarState,
     stream_offset: u64,
-    cids: Vec<Cid>,
+    cids: Vec<String>,
     hasher: blake3::Hasher,
 }
 
@@ -292,35 +291,39 @@ impl StreamingCarAnalyzer {
                         None => return Ok(None),
                     };
 
-                    // 64-bytes is the longest reasonable CID we're going to care about it. We're
-                    // going to wait until we have that much then try and decode the CID from
-                    // there. The edge case here is if the total block length (CID included) is
-                    // less than 64-bytes we'll just wait for the entire block. The CID has to be
-                    // included and we'll decode it from there just as neatly.
-                    let minimum_cid_blocks = blk_len.min(64) as usize;
+                    // A cid of length 49 is our standard one but we've also used a 97 length one.
+                    // We'll try and decode once we hit that if not we'll wait for more to come
+                    // in.
+                    let minimum_cid_blocks = blk_len.min(49) as usize;
                     let cid_buffer = &self.buffer[(varint_len as usize)..];
                     if cid_buffer.len() < minimum_cid_blocks {
                         return Ok(None);
                     }
 
-                    let cid = match Cid::read_bytes(&cid_buffer[..minimum_cid_blocks]) {
-                        Ok(cid) => cid,
-                        Err(err) => {
-                            tracing::error!("uploaded car file contained an invalid CID: {err}");
+                    let cid_length = match cid_buffer[0] {
+                        // old style CIDs
+                        0x62 => 59,
+                        // banyanfs CIDs
+                        0x75 => 49,
+                        _ => {
                             return Err(StreamingCarAnalyzerError::InvalidBlockCid(
                                 self.stream_offset,
-                                err,
-                            ));
+                            ))
                         }
                     };
-                    let cid_length = cid.encoded_len() as u64;
-                    self.cids.push(cid);
+
+                    let cid =
+                        String::from_utf8(cid_buffer[..cid_length].to_vec()).map_err(|_| {
+                            StreamingCarAnalyzerError::InvalidBlockCid(self.stream_offset)
+                        })?;
+
+                    self.cids.push(cid.clone());
 
                     // This might be the end of all data, we'll check once we reach the block_start
                     // offset
                     self.state = CarState::BlockData {
-                        data_start: self.stream_offset + varint_len + cid_length,
-                        data_length: blk_len - cid_length,
+                        data_start: self.stream_offset + varint_len + cid_length as u64,
+                        data_length: blk_len - cid_length as u64,
                         cid,
 
                         data_end: *data_end,
@@ -337,7 +340,7 @@ impl StreamingCarAnalyzer {
                 } => {
                     let data_start = *data_start;
                     let data_length = *data_length;
-                    let cid = *cid;
+                    let cid = cid.to_string();
 
                     // Skip any left over data and padding until we reach our goal
                     if self.stream_offset < data_start {
@@ -427,7 +430,7 @@ pub enum StreamingCarAnalyzerError {
     IncompleteData,
 
     #[error("CID located at offset {0} was not valid")]
-    InvalidBlockCid(u64, cid::Error),
+    InvalidBlockCid(u64),
 
     #[error("received {0} bytes which exceeds our upper limit for an individual CAR upload")]
     MaxCarSizeExceeded(u64),
@@ -474,6 +477,20 @@ fn try_read_varint_u64(buf: &[u8]) -> Result<Option<(u64, u64)>, StreamingCarAna
     }
 
     Ok(None)
+}
+
+pub fn quick_cid(data: &[u8]) -> String {
+    use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+    use base64::Engine;
+
+    let mut cid_bytes = Vec::with_capacity(36);
+
+    cid_bytes.extend_from_slice(&[0x01, 0x55, 0x1e, 0x20]);
+    cid_bytes.extend_from_slice(blake3::hash(data).as_bytes());
+
+    let encoded = URL_SAFE_NO_PAD.encode(cid_bytes);
+
+    format!("u{}", encoded)
 }
 
 #[cfg(test)]
