@@ -42,16 +42,17 @@ export default {
             },
             manageKeys: {
                 keyActions: {
-                    removeAccess: "Zugriff entfernen",
-                    approveAccess: "Zugriff genehmigen",
+                    rename: "Umbenennen",
+                    removeKey: "Schlüssel entfernen",
+                    lastKeyError: 'Der letzte Schlüssel kann nicht deaktiviert oder entfernt werden, ohne mindestens ein Backup.'
                 },
                 keyManagementTable: {
+                    key: "Schlüssel",
                     device: "Gerät",
-                    client: "Client",
-                    fingerprint: "Fingerabdruck",
-                    status: "Status",
-                    approved: "Genehmigt",
-                    noAccess: "Kein Zugriff",
+                    drive: "Laufwerk",
+                    createdOn: "Erstellt am",
+                    disable: "Deaktivieren",
+                    enable: "Aktivieren",
                 }
             },
             navigation: {
@@ -61,64 +62,80 @@ export default {
                 billingAndPayment: "Abrechnung und Zahlung"
             },
             profile: {
-                title: "Profil",
-                language: "Sprache",
-                chooseYourLanguage: "Wählen Sie Ihre Sprache"
+                name: "Name",
+                email: "E-Mail-Adresse",
+                darkMode: "Dunkelmodus",
+                language: "Sprache"
             },
         },
         bucket: {
-            bucketTable: {
-                name: "Name",
-                lastModified: "Zuletzt geändert",
-                fileSize: "Dateigröße",
-                moveToError: "Beim Verschieben Ihrer Datei ist ein Problem aufgetreten. Bitte versuchen Sie es erneut.",
-                tryAgain: "Erneut versuchen",
-                fileWasMoved: "Datei wurde verschoben",
-                uploadError: "Beim Hochladen ist ein Problem aufgetreten. Bitte versuchen Sie es erneut.",
-                fileActions: {
-                    download: "Herunterladen",
-                    moveTo: "Verschieben nach",
-                    makeCopy: "Kopie erstellen",
-                    viewFileVersions: "Dateiversionen anzeigen",
-                    rename: "Umbenennen",
-                    remove: "Entfernen",
-                    shareFile: "Datei teilen",
-                    yourFileIsSecure: "Ihre Datei ist sicher",
-                    tryAgain: "Erneut versuchen",
-                    downloading: "Herunterladen",
-                    fileWasDownloaded: "Datei wurde heruntergeladen",
-                    copyOf: "Kopie von",
-                    wasCreated: "wurde erstellt",
-                },
-                folderActions: {
-                    moveTo: "Verschieben nach",
-                    rename: "Umbenennen",
-                    remove: "Entfernen",
-                    upload: "Hochladen",
-                },
-                folderRow: {
+            files: {
+                bucketTable: {
+                    name: "Name",
+                    lastModified: "Zuletzt geändert",
+                    fileSize: "Dateigröße",
+                    moveToError: "Beim Verschieben Ihrer Datei ist ein Problem aufgetreten. Bitte versuchen Sie es erneut.",
                     tryAgain: "Erneut versuchen",
                     fileWasMoved: "Datei wurde verschoben",
-                    moveToError: "Beim Verschieben Ihrer Datei ist ein Problem aufgetreten. Bitte versuchen Sie es erneut.",
                     uploadError: "Beim Hochladen ist ein Problem aufgetreten. Bitte versuchen Sie es erneut.",
-                    failedToLoadFiles: "Fehler beim Laden der Dateien"
-                }
+                    fileActions: {
+                        download: "Herunterladen",
+                        moveTo: "Verschieben nach",
+                        makeCopy: "Kopie erstellen",
+                        viewFileVersions: "Dateiversionen anzeigen",
+                        rename: "Umbenennen",
+                        remove: "Entfernen",
+                        shareFile: "Datei teilen",
+                        yourFileIsSecure: "Ihre Datei ist sicher",
+                        tryAgain: "Erneut versuchen",
+                        downloading: "Herunterladen",
+                        fileWasDownloaded: "Datei wurde heruntergeladen",
+                        copyOf: "Kopie von",
+                        wasCreated: "wurde erstellt",
+                    },
+                    folderActions: {
+                        moveTo: "Verschieben nach",
+                        rename: "Umbenennen",
+                        remove: "Entfernen",
+                        upload: "Hochladen",
+                    },
+                    folderRow: {
+                        tryAgain: "Erneut versuchen",
+                        fileWasMoved: "Datei wurde verschoben",
+                        moveToError: "Beim Verschieben Ihrer Datei ist ein Problem aufgetreten. Bitte versuchen Sie es erneut.",
+                        uploadError: "Beim Hochladen ist ein Problem aufgetreten. Bitte versuchen Sie es erneut.",
+                        failedToLoadFiles: "Fehler beim Laden der Dateien"
+                    }
+                },
+                emptyState: {
+                    description: "Ziehen Sie Dateien hierher, um sie hochzuladen, oder verwenden Sie die Schaltfläche „Hochladen“",
+                    buttonText: "Hochladen",
+                    tryAgain: "Erneut versuchen",
+                    uploadError: "Beim Hochladen ist ein Problem aufgetreten. Bitte versuchen Sie es erneut.",
+                },
+                header: {
+                    files: "Dateien",
+                    uploadButton: "Hochladen",
+                    createFolderButton: "Ordner erstellen",
+                    snapshotBannerTitle: "Archiv-Snapshots",
+                    snapshotBannerSubtitle: "Dieses Laufwerk hat keine Snapshots",
+                    snapshotBannerExplanation: "Was ist ein Snapshot",
+                    snapshotBannerTooltip: "Archiv-Snapshots bieten einen Momentaufnahme des Dateiinhalts und sind nützlich für die Versionierung",
+                    makeSnapshot: "Snapshot erstellen",
+                },
             },
-            emptyState: {
-                description: "Ziehen Sie Dateien hierher, um sie hochzuladen, oder verwenden Sie die Schaltfläche „Hochladen“",
-                buttonText: "Hochladen",
-                tryAgain: "Erneut versuchen",
-                uploadError: "Beim Hochladen ist ein Problem aufgetreten. Bitte versuchen Sie es erneut.",
-            },
-            header: {
-                files: "Dateien",
-                uploadButton: "Hochladen",
-                createFolderButton: "Ordner erstellen",
-                snapshotBannerTitle: "Archiv-Snapshots",
-                snapshotBannerSubtitle: "Dieses Laufwerk hat keine Snapshots",
-                snapshotBannerExplanation: "Was ist ein Snapshot",
-                snapshotBannerTooltip: "Archiv-Snapshots bieten einen Momentaufnahme des Dateiinhalts und sind nützlich für die Versionierung",
-                makeSnapshot: "Snapshot erstellen",
+            snapshots: {
+                title: "Snapshots",
+                table: {
+                    name: "Name",
+                    date: "Datum",
+                    size: "Größe",
+                    state: "Status",
+                    snapshotActions: {
+                        rename: "Umbenennen",
+                        restore: "Wiederherstellen"
+                    }
+                },
             }
         },
         home: {
@@ -223,12 +240,6 @@ export default {
                     cancel: "Abbrechen",
                     approveAccess: "Zugriff genehmigen",
                 },
-                bucketSnapshots: {
-                    title: "Archiv-Snapshots anzeigen",
-                    subtitle: "Zugriff auf und Überprüfung früherer Versionen",
-                    tryAgain: "Erneut versuchen",
-                    close: "Schließen",
-                },
                 createBucket: {
                     createNewDrive: "Neues Laufwerk erstellen",
                     driveName: "Laufwerkname",
@@ -330,6 +341,26 @@ export default {
                     fileWasRenamed: "Datei wurde umbenannt",
                     editError: "Beim Bearbeiten ist ein Problem aufgetreten. Bitte versuchen Sie es erneut",
                     tryAgain: "Erneut versuchen",
+                },
+                renameAccessKey: {
+                    title: "Schlüssel umbenennen",
+                    keyName: "Schlüsselname",
+                    enterNewName: "Neuen Namen eingeben",
+                    cancel: "Abbrechen",
+                    save: "Speichern",
+                    keyWasRenamed: "Der Schlüssel wurde umbenannt",
+                    editError: "Es gab ein Problem mit Ihrer Bearbeitung. Bitte versuchen Sie es erneut",
+                    tryAgain: "Erneut versuchen"
+                },
+                renameSnapshot: {
+                    title: "Snapshot umbenennen",
+                    snapshotName: "Snapshot-Name",
+                    enterNewName: "Neuen Namen eingeben",
+                    cancel: "Abbrechen",
+                    save: "Speichern",
+                    snapshotWasRenamed: "Snapshot wurde umbenannt",
+                    editError: "Es gab ein Problem mit Ihrer Bearbeitung. Bitte versuchen Sie es erneut",
+                    tryAgain: "Erneut versuchen"
                 },
                 requestBucketAccess: {
                     title: "Zugriff anfordern",

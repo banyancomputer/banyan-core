@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            SELECT blocks.cid\n            FROM blocks\n            JOIN uploads_blocks ON blocks.id = uploads_blocks.block_id\n            JOIN uploads ON uploads_blocks.upload_id = uploads.id\n            WHERE uploads.id = $1;\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "cid",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "bf195262c5b6b1b06a8195cd4b080cfb9499c70e7abed12f48bd41f644bb89e9"
+}

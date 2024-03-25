@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
-import { Action } from '@components/Bucket/BucketTable/FileActions';
+import { Action } from '@components/Bucket/Files/BucketTable/FileActions';
 import { SubscriptionPlanModal } from '@components/common/Modal/SubscriptionPlanModal';
 
 import { HttpClient } from '@/api/http/client';

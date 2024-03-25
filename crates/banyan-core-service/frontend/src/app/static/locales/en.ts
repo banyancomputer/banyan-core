@@ -34,7 +34,7 @@ export default {
                         onDemandStorage: "On Demand Storage",
                         archivalStorage: "Archival Storage",
                         dataEggress: "Data egress",
-                        totalCost: "Total cost",
+                        totalCost: "Total",
                         upgradeAccount: "Upgrade account",
                         manageSubscriptions: "Manage subscriptions",
                     },
@@ -42,16 +42,17 @@ export default {
             },
             manageKeys: {
                 keyActions: {
-                    removeAccess:"Remove access",
-                    approveAccess:"Approve access",
+                    rename:"Rename",
+                    removeKey:"Remove key",
+                    lastKeyError: 'The final key cannot be disabled or removed without at least one backup.'
                 },
                 keyManagementTable: {
+                    key: "Key",
                     device: "Device",
-                    client: "Client",
-                    fingerprint: "Fingerprint",
-                    status: "Status",
-                    approved: "Approved",
-                    noAccess: "No access",
+                    drive: "Drive",
+                    createdOn: "Created On",
+                    disable: "Disable",
+                    enable: "Enable",
                 }
             },
             navigation: {
@@ -61,64 +62,80 @@ export default {
                 billingAndPayment: "Billing & Payment"
             },
             profile: {
-                title: "Profile",
+                name:"Name",
+                email:"Email address",
+                darkMode:"Dark mode",
                 language:"Language",
-                chooseYourLanguage: "Choose your language"
             },
         },
         bucket: {
-            bucketTable:{
-                name: "Name",
-                lastModified: "Last Modified",
-                fileSize: "File size",
-                moveToError: "There was an issue moving your file. Please try again.",
-                tryAgain: "Try again",
-                fileWasMoved: "File was moved",
-                uploadError: "There was an issue with upload. Please try again",
-                fileActions: {
-                    download: "Download",
-                    moveTo: "Move to",
-                    makeCopy: "Make a copy",
-                    viewFileVersions: "View file versions",
-                    rename: "Rename",
-                    remove: "Remove",
-                    shareFile: "Share file",
-                    yourFileIsSecure: "Your file is secure",
-                    tryAgain: "Try again",
-                    downloading: "Downloading",
-                    fileWasDownloaded: "File was downloaded",
-                    copyOf: "Copy of",
-                    wasCreated: "was created",
-                },
-                folderActions: {
-                    moveTo: "Move to",
-                    rename: "Rename",
-                    remove: "Remove",
-                    upload: "Upload",
-                },
-                folderRow: {
+            files: {
+                bucketTable:{
+                    name: "Name",
+                    lastModified: "Last Modified",
+                    fileSize: "File size",
+                    moveToError: "There was an issue moving your file. Please try again.",
                     tryAgain: "Try again",
                     fileWasMoved: "File was moved",
-                    moveToError: "There was an issue moving your file. Please try again.",
                     uploadError: "There was an issue with upload. Please try again",
-                    failedToLoadFiles: "Failed to load files"
+                    fileActions: {
+                        download: "Download",
+                        moveTo: "Move to",
+                        makeCopy: "Make a copy",
+                        viewFileVersions: "View file versions",
+                        rename: "Rename",
+                        remove: "Remove",
+                        shareFile: "Share file",
+                        yourFileIsSecure: "Your file is secure",
+                        tryAgain: "Try again",
+                        downloading: "Downloading",
+                        fileWasDownloaded: "File was downloaded",
+                        copyOf: "Copy of",
+                        wasCreated: "was created",
+                    },
+                    folderActions: {
+                        moveTo: "Move to",
+                        rename: "Rename",
+                        remove: "Remove",
+                        upload: "Upload",
+                    },
+                    folderRow: {
+                        tryAgain: "Try again",
+                        fileWasMoved: "File was moved",
+                        moveToError: "There was an issue moving your file. Please try again.",
+                        uploadError: "There was an issue with upload. Please try again",
+                        failedToLoadFiles: "Failed to load files"
+                    }
+                },
+                emptyState: {
+                    description: "Drag & drop files here to upload,or use the 'Upload' button",
+                    buttonText: "Upload",
+                    tryAgain: "Try again",
+                    uploadError: "There was an issue with upload. Please try again",
+                },
+                header: {
+                    files: "Files",
+                    uploadButton: "Upload",
+                    createFolderButton: "Create Folder",
+                    snapshotBannerTitle: "Archival Snapshots",
+                    snapshotBannerSubtitle: "This drive has no snapshots",
+                    snapshotBannerExplanation: "What is a snapshot",
+                    snapshotBannerTooltip: "Archival snapshots offer a point-in-time glimpse of the file and are useful for versioning",
+                    makeSnapshot: "Make a Snapshot",
                 }
             },
-            emptyState: {
-                description: "Drag & drop files here to upload,or use the 'Upload' button",
-                buttonText: "Upload",
-                tryAgain: "Try again",
-                uploadError: "There was an issue with upload. Please try again",
-            },
-            header: {
-                files: "Files",
-                uploadButton: "Upload",
-                createFolderButton: "Create Folder",
-                snapshotBannerTitle: "Archival Snapshots",
-                snapshotBannerSubtitle: "This drive has no snapshots",
-                snapshotBannerExplanation: "What is a snapshot",
-                snapshotBannerTooltip: "Archival snapshots offer a point-in-time glimpse of the file and are useful for versioning",
-                makeSnapshot: "Make a Snapshot",
+            snapshots: {
+                title: "Snapshots",
+                table: {
+                    name: "Name",
+                    date: "Date",
+                    size: "Size",
+                    state: "State",
+                    snapshotActions: {
+                        rename: "Rename",
+                        restore: "Restore",
+                    }
+                }
             }
         },
         home: {
@@ -223,12 +240,6 @@ export default {
                     cancel: "Cancel",
                     approveAccess: "Approve access",
                 },
-                bucketSnapshots: {
-                    title: "View archival snapshots",
-                    subtitle: "Access and review previous versions",
-                    tryAgain: "Try again",
-                    close: "Close",
-                },
                 createBucket: {
                     createNewDrive: "Create new drive",
                     driveName: "Drive name",
@@ -328,6 +339,26 @@ export default {
                     cancel: "Cancel",
                     save: "Save",
                     fileWasRenamed: "File was renamed",
+                    editError: "There was an issue with your edit. Please try again",
+                    tryAgain: "Try again",
+                },
+                renameAccessKey: {
+                    title: "Rename key",
+                    keyName: "Key name",
+                    enterNewName: "Enter new name",
+                    cancel: "Cancel",
+                    save: "Save",
+                    keyWasRenamed: "Key was renamed",
+                    editError: "There was an issue with your edit. Please try again",
+                    tryAgain: "Try again",
+                },
+                renameSnapshot:{
+                    title: "Rename snapshot",
+                    snapshotName: "Snapshot name",
+                    enterNewName: "Enter new name",
+                    cancel: "Cancel",
+                    save: "Save",
+                    snapshotWasRenamed: "Snapshot was renamed",
                     editError: "There was an issue with your edit. Please try again",
                     tryAgain: "Try again",
                 },

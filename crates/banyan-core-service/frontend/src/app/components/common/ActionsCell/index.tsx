@@ -64,7 +64,7 @@ export const ActionsCell: React.FC<{ actions: ReactElement; }> = ({ actions }) =
                 <Dots />
             </span>
             <div
-                className={`right-0 top-5 z-20 transition-none ${isActionsVisible ? 'absolute visible opacity-100' : 'fixed invisible opacity-0'}`}
+                className={`right-0 top-6 z-20 transition-none ${isActionsVisible ? 'absolute visible opacity-100' : 'fixed invisible opacity-0'}`}
             >
                 <div
                     ref={actionsBodyRef}
