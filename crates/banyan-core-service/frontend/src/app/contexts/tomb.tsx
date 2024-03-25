@@ -3,10 +3,6 @@ import { TombWasm, WasmBucket } from 'tomb-wasm-experimental';
 import { Mutex } from 'async-mutex';
 import { useNavigate } from 'react-router-dom';
 
-import { TermsAndConditionsModal } from '@components/common/Modal/TermsAndConditionsModal';
-import { TermaAndConditions } from '@components/common/TermsAndConditions';
-
-import { useModal } from '@/app/contexts/modals';
 import { useKeystore } from './keystore';
 import {
 	BrowserObject, Bucket, BucketKey,
@@ -15,8 +11,6 @@ import {
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 import { useSession } from './session';
 import { destroyIsUserNew, prettyFingerprintApiKeyPem, sortByType } from '@app/utils';
-import { TermsAndColditionsClient } from '@/api/termsAndConditions';
-import { UserClient } from '@/api/user';
 import { handleNameDuplication } from '@utils/names';
 import { StorageUsageClient } from '@/api/storageUsage';
 import { useAppDispatch, useAppSelector } from '../store';
@@ -24,6 +18,7 @@ import { BannerError, setError } from '../store/errors/slice';
 import { ToastNotifications } from '@utils/toastNotifications';
 import { SnapshotsClient } from '@/api/snapshots';
 import { StorageLimits, StorageUsage } from '@/entities/storage';
+import { RoutesConfig } from '@app/routes';
 
 interface TombInterface {
 	tomb: TombWasm | null;
@@ -70,12 +65,10 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	const dispatch = useAppDispatch();
 	const { userData, isUserNew } = useSession();
 	const navigate = useNavigate();
-	const { openEscrowModal, openModal } = useModal();
 	const { isLoading, keystoreInitialized, getEncryptionKey, getApiKey, escrowedKeyMaterial, isLoggingOut } = useKeystore();
 	const [tomb, setTomb] = useState<TombWasm | null>(null);
 	const [buckets, setBuckets] = useState<Bucket[]>([]);
 	const [trash, setTrash] = useState<Bucket | null>(null);
-	const [areTermsAccepted, setAreTermsAccepted] = useState(false);
 	const [selectedBucket, setSelectedBucket] = useState<Bucket | null>(null);
 	const [storageUsage, setStorageUsage] = useState<StorageUsage>(new StorageUsage());
 	const [storageLimits, setStorageLimits] = useState<StorageLimits>(new StorageLimits());
@@ -439,51 +432,10 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	}, [userData, keystoreInitialized, isLoading, escrowedKeyMaterial]);
 
 	useEffect(() => {
-		if (!areTermsAccepted) return;
-
 		if (!keystoreInitialized && !isLoading && !isLoggingOut) {
-			openEscrowModal(!!escrowedKeyMaterial);
+			navigate(escrowedKeyMaterial ? RoutesConfig.EnterEncryptionKey.path : RoutesConfig.CreateEncryptionKey.path);
 		};
-	}, [isLoading, keystoreInitialized, areTermsAccepted, isLoggingOut]);
-
-	useEffect(() => {
-		const userClient = new UserClient();
-		const termsClient = new TermsAndColditionsClient();
-		(async () => {
-			try {
-				const termsAndConditions = await termsClient.getTermsAndCondition();
-				const userData = await userClient.getCurrentUser();
-
-				if (!userData) return;
-
-				if (!userData.acceptedTosAt) {
-					openModal(
-						<TermaAndConditions
-							acceptTerms={setAreTermsAccepted}
-							userData={userData}
-						/>, null, true, '', false);
-
-					return;
-				};
-
-				if (userData.acceptedTosAt <= +termsAndConditions.tos_date) {
-					openModal(
-						<TermsAndConditionsModal
-							setAreTermsAccepted={setAreTermsAccepted}
-							terms={termsAndConditions.tos_content}
-							userData={userData} />
-						, null, true, '', false);
-
-					return;
-				};
-
-				setAreTermsAccepted(true);
-			} catch (error: any) {
-				console.log(error);
-			}
-
-		})()
-	}, [userData])
+	}, [isLoading, keystoreInitialized, escrowedKeyMaterial, isLoggingOut]);
 
 	useEffect(() => {
 		if (tomb) {

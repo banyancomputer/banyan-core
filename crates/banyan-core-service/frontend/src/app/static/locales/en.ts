@@ -220,14 +220,6 @@ export default {
                 of: "of",
                 upgradePlan: "Upgrade Plan",
             },
-            termsAndConditions: {
-                accountTypeQuestion: "What are you using Banyan For?",
-                agreeToTerms: "I agree to Banyan’s",
-                termsOf:"terms of service",
-                and: "and",
-                privacyPolicy: "privacy policy",
-                continue: "Continue",
-            },
             uploadFileProgress: {
                 uploading: "Uploading",
                 uploadFailed: "Upload failed",
@@ -258,17 +250,6 @@ export default {
                     creationError: "There was an issue creating your folder. Please try again.",
                     tryAgain: "Try again",
                 },
-                createSecretKey: {
-                    title: "Create a secret key",
-                    subtitle: "Your secret key is the way to unlock your account; create a secret key you can remember and keep it safe – no one else has access to it, not even Banyan, so make sure you can remember it to unlock your account.",
-                    secretKey: "Secret Key",
-                    enterSecretKey: "Enter secret key",
-                    keyRequirements: "Key must be at least 8 characters",
-                    confirmSecretKey: "Confirm secret key",
-                    passphraseNotMatch: "The passphrases do not match, please try again",
-                    confirm: "Confirm",
-                    creationError: "Failed to initialize keystore"
-                },
                 deleteBucket: {
                     title: "Delete drive",
                     subtitle: "Are you sure you want to delete",
@@ -290,15 +271,6 @@ export default {
                     wasDeleted: "was deleted",
                     deletionError: "There was an issue with deletion. Please try again",
                     tryAgain: "Try again",
-                },
-                enterSecretKey: {
-                    title: "Input secret key",
-                    subtitle: "Enter the secret key into text field",
-                    secretKey: "Secret Key",
-                    enterSecretKey: "Enter secret key",
-                    keyRequirements: "Key must be at least 8 characters",
-                    confirm: "Confirm",
-                    sectretKeyError: "Wrong secret key",
                 },
                 hardStorageLimit: {
                     title: "You’re out of storage",
@@ -435,6 +407,30 @@ export default {
             emptyTrash: "Click to empty trash",
             trashIsEmpty: "Trash is empty",
             clickToEmptyTrash: "Click to empty trash",
+        },
+        createEncryptionKey: {
+            title: 'Create an encryption key',
+            subtitle: 'Encryption key is your way to access your account data, so make sure you can remember it.',
+            newEncryptionKey: 'New encryption key',
+            newEncryptionKeyPlaceholder: 'create new key',
+            reenterEncryptionKey: 'Re-enter encryption key',
+            reenterEncryptionKeyPlaceholder: 'confirm key',
+            keyRequirements: "Key must be at least 8 characters",
+            passphraseNotMatch: "The passphrases do not match, please try again",
+            agreeToTerms: 'I agree to Banyan’s',
+            termsOfService: 'terms of service',
+            and: 'and',
+            privacyPolicy: 'privacy policy',
+            continue: 'Continue'
+        },
+        enterEncryptionKey: {
+            title: 'Enter encryption key',
+            encryptionKey: 'Encryption key',
+            encryptionKeyPlaceholder: 'Enter your encryption key',
+            forgotEncryptionKey: 'Forgot encryption key',
+            resetKey: 'Reset key',
+            continue: 'Continue',
+            secretKeyError: "Wrong secret key",
         }
     },
     contexts: {

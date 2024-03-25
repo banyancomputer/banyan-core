@@ -220,14 +220,6 @@ export default {
                 of: "von",
                 upgradePlan: "Plan aktualisieren",
             },
-            termsAndConditions: {
-                accountTypeQuestion: "Wofür verwenden Sie Banyan?",
-                agreeToTerms: "Ich akzeptiere die",
-                termsOf: "Nutzungsbedingungen",
-                and: "und",
-                privacyPolicy: "Datenschutzbestimmungen",
-                continue: "Fortsetzen",
-            },
             uploadFileProgress: {
                 uploading: "Hochladen",
                 uploadFailed: "Upload fehlgeschlagen"
@@ -258,17 +250,6 @@ export default {
                     creationError: "Beim Erstellen Ihres Ordners ist ein Problem aufgetreten. Bitte versuchen Sie es erneut.",
                     tryAgain: "Erneut versuchen",
                 },
-                createSecretKey: {
-                    title: "Geheimen Schlüssel erstellen",
-                    subtitle: "Ihr geheimer Schlüssel ist der Weg, um Ihr Konto zu entsperren; erstellen Sie einen geheimen Schlüssel, den Sie sich merken können und halten Sie ihn sicher auf – niemand sonst hat Zugriff darauf, nicht einmal Banyan, also stellen Sie sicher, dass Sie sich daran erinnern können, um Ihr Konto zu entsperren.",
-                    secretKey: "Geheimer Schlüssel",
-                    enterSecretKey: "Geheimen Schlüssel eingeben",
-                    keyRequirements: "Der Schlüssel muss mindestens 8 Zeichen lang sein",
-                    confirmSecretKey: "Geheimen Schlüssel bestätigen",
-                    passphraseNotMatch: "Die Passwörter stimmen nicht überein, bitte versuchen Sie es erneut",
-                    confirm: "Bestätigen",
-                    creationError: "Fehler beim Initialisieren des Schlüsselspeichers"
-                },
                 deleteBucket: {
                     title: "Laufwerk löschen",
                     subtitle: "Sind Sie sicher, dass Sie löschen möchten",
@@ -290,15 +271,6 @@ export default {
                     wasDeleted: "wurde gelöscht",
                     deletionError: "Beim Löschen ist ein Problem aufgetreten. Bitte versuchen Sie es erneut",
                     tryAgain: "Erneut versuchen",
-                },
-                enterSecretKey: {
-                    title: "Geheimen Schlüssel eingeben",
-                    subtitle: "Geben Sie den geheimen Schlüssel in das Textfeld ein",
-                    secretKey: "Geheimer Schlüssel",
-                    enterSecretKey: "Geheimen Schlüssel eingeben",
-                    keyRequirements: "Der Schlüssel muss mindestens 8 Zeichen lang sein",
-                    confirm: "Bestätigen",
-                    sectretKeyError: "Falscher geheimer Schlüssel",
                 },
                 hardStorageLimit: {
                     title: "Ihr Speicher ist erschöpft",
@@ -435,6 +407,30 @@ export default {
             emptyTrash: "Papierkorb leeren",
             trashIsEmpty: "Papierkorb ist leer",
             clickToEmptyTrash: "Klicken Sie zum Leeren des Papierkorbs",
+        },
+        createEncryptionKey: {
+            title: "Verschlüsselungsschlüssel erstellen",
+            subtitle: "Der Verschlüsselungsschlüssel ist Ihr Zugang zu Ihren Kontodaten. Stellen Sie sicher, dass Sie ihn sich merken können.",
+            newEncryptionKey: "Neuer Verschlüsselungsschlüssel",
+            newEncryptionKeyPlaceholder: "neuen Schlüssel erstellen",
+            reenterEncryptionKey: "Verschlüsselungsschlüssel erneut eingeben",
+            reenterEncryptionKeyPlaceholder: "Schlüssel bestätigen",
+            keyRequirements: "Der Schlüssel muss mindestens 8 Zeichen lang sein",
+            passphraseNotMatch: "Die Passphrasen stimmen nicht überein. Bitte versuchen Sie es erneut.",
+            agreeToTerms: "Ich stimme den",
+            termsOfService: "Nutzungsbedingungen",
+            and: "und",
+            privacyPolicy: "Datenschutzrichtlinien",
+            continue: "Fortfahren"
+        },
+        enterEncryptionKey: {
+            title: "Verschlüsselungsschlüssel eingeben",
+            encryptionKey: "Verschlüsselungsschlüssel",
+            encryptionKeyPlaceholder: "Geben Sie Ihren Verschlüsselungsschlüssel ein",
+            forgotEncryptionKey: "Verschlüsselungsschlüssel vergessen",
+            resetKey: "Schlüssel zurücksetzen",
+            continue: "Fortfahren",
+            secretKeyError: "Falscher Geheimschlüssel"
         }
     },
     contexts: {
