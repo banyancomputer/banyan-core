@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT user_id, SUM(ingress) as ingress, SUM(egress) as egress, storage_host_id\n                FROM metrics_traffic\n                WHERE user_id = $1 AND slot >= $2\n                GROUP BY user_id;",
+  "describe": {
+    "columns": [
+      {
+        "name": "user_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "ingress",
+        "ordinal": 1,
+        "type_info": "Int64"
+      },
+      {
+        "name": "egress",
+        "ordinal": 2,
+        "type_info": "Int64"
+      },
+      {
+        "name": "storage_host_id",
+        "ordinal": 3,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "e6a3299ffbbc9a70def64c222611298d073a69ee44e1763d5eacae2b63aa4ec8"
+}

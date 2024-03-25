@@ -65,7 +65,7 @@ export const SnapshotsTable = () => {
                             <td className="px-6 py-2 font-semibold">{convertFileSize(snapshot.size)}</td>
                             <td className="px-6 py-2 capitalize">{snapshot.state}</td>
                             <td className="px-6 py-2 font-semibold text-right text-button-primary transition-all hover:text-button-primaryHover">
-                                <button onClick={() => restoreFromSnapshot(selectedBucket, snapshot.id)}>
+                                <button onClick={() => restoreFromSnapshot(selectedBucket, snapshot.metadata_id)}>
                                     {snapshotsActionsMessages.restore}
                                 </button>
                             </td>
