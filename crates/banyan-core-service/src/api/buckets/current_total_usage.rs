@@ -2,11 +2,9 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
-use sqlx::SqliteConnection;
 
 use crate::app::AppState;
 use crate::database::models::User;
-use crate::database::models::{ConsumedStorage, Snapshot};
 use crate::extractors::UserIdentity;
 
 pub async fn handler(
@@ -24,7 +22,7 @@ pub async fn handler(
     let archival_storage = user.archival_usage(&mut conn).await?;
 
     let resp = serde_json::json!({
-        "hot_storage": hot_storage.data_size + hot_storage.meta_size,
+        "hot_storage": hot_storage.total(),
         "archival_storage": archival_storage,
     });
 

@@ -1,7 +1,6 @@
 use time::OffsetDateTime;
 
-use crate::database::models::{ExplicitBigInt, SnapshotState};
-use crate::database::DatabaseConnection;
+use crate::database::models::SnapshotState;
 
 #[derive(Debug, sqlx::FromRow)]
 pub struct Snapshot {
@@ -13,4 +12,3 @@ pub struct Snapshot {
     pub tokens_used: i64,
     pub created_at: OffsetDateTime,
 }
-
