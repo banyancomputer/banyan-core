@@ -13,6 +13,8 @@ const RegisterDevice = lazy(() => import('@pages/registerDevice'));
 const Billing = lazy(() => import('@components/Account/Billing'));
 const ManageKeys = lazy(() => import('@components/Account/ManageKeys'));
 const Profile = lazy(() => import('@components/Account/Profile'));
+const Snapshots = lazy(() => import('@components/Bucket/Snapshots'));
+const Files = lazy(() => import('@components/Bucket/Files'));
 
 /**
  * Route describes location mapping with components.
@@ -50,11 +52,16 @@ export class RoutesConfig {
     public static Billing = new Route('billing', <Billing />, null);
     public static ManageKeys = new Route('manage-keys', <ManageKeys />, null);
     public static Profile = new Route('profile', <Profile />, null);
+    public static Snapshots = new Route('snapshots', <Snapshots />, null);
+    public static Files = new Route('', <Files />, null);
 
     /** Routes is an array of logical router components */
     public static routes: Route[] = [
         RoutesConfig.Home,
-        RoutesConfig.Bucket,
+        RoutesConfig.Bucket.addChildren([
+            RoutesConfig.Files,
+            RoutesConfig.Snapshots
+        ]),
         RoutesConfig.RegisterDevice,
         RoutesConfig.Account.addChildren([
             RoutesConfig.Billing,

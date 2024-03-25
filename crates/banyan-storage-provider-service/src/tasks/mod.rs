@@ -50,7 +50,7 @@ async fn enqueue_task_if_none_in_progress<T: TaskLikeExt + TaskLike + Default>(
     conn: &mut DatabaseConnection,
 ) {
     if task_store
-        .task_in_state::<T>(vec![TaskState::New, TaskState::Retry])
+        .task_in_state::<T>(conn, vec![TaskState::New, TaskState::Retry])
         .await
         .expect("get task")
         .is_some()

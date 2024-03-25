@@ -97,10 +97,12 @@ impl User {
                 JOIN buckets AS b ON b.id = m.bucket_id
                 JOIN users AS u ON u.id = b.user_id
                 WHERE u.id = $1
-                AND s.state = $2;
+                AND b.deleted_at IS NULL
+                AND m.state IN ('current', 'outdated', 'pending')
+                AND s.state != $2;
             "#,
             self.id,
-            SnapshotState::Completed
+            SnapshotState::Error
         )
         .fetch_one(&mut *conn)
         .await

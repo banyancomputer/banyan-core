@@ -2,9 +2,11 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
+use sqlx::SqliteConnection;
 
 use crate::app::AppState;
 use crate::database::models::User;
+use crate::database::models::{ConsumedStorage, Snapshot};
 use crate::extractors::UserIdentity;
 
 pub async fn handler(
@@ -12,21 +14,20 @@ pub async fn handler(
     State(state): State<AppState>,
 ) -> Result<Response, UsageError> {
     let database = state.database();
-    let mut trans = database.begin().await?;
     let user_id = user_identity.id().to_string();
-    let user = User::find_by_id(&mut trans, &user_id)
+
+    let mut conn = database.acquire().await?;
+    let user = User::find_by_id(&mut conn, &user_id)
         .await?
         .ok_or(UsageError::NotFound)?;
-    let hot_usage = user.hot_usage(&mut trans).await?.total();
-    let archival_usage = user.archival_usage(&mut trans).await?;
+    let hot_storage = user.hot_usage(&mut conn).await?;
+    let archival_storage = user.archival_usage(&mut conn).await?;
 
     let resp = serde_json::json!({
-        // Let's deprecate this from future versions once clients can accept the new version
-        "size": hot_usage,
-        // These will actually stay, imo
-        "hot_usage": hot_usage,
-        "archival_usage": archival_usage,
+        "hot_storage": hot_storage.data_size + hot_storage.meta_size,
+        "archival_storage": archival_storage,
     });
+
     Ok((StatusCode::OK, Json(resp)).into_response())
 }
 
@@ -34,7 +35,6 @@ pub async fn handler(
 pub enum UsageError {
     #[error("an error occurred querying the database: {0}")]
     DatabaseFailure(#[from] sqlx::Error),
-
     #[error("associated data couldn't be found")]
     NotFound,
 }

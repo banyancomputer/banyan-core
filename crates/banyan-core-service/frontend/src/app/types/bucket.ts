@@ -26,10 +26,11 @@ export interface BucketKey {
 export interface BucketSnapshot {
     id: string;
     bucket_id: string;
-    snapshot_type: string;
+    metadata_id: string;
+    state: string;
     version: string;
     size: number;
-    createdAt: number;
+    created_at: number;
 };
 
 export interface Bucket {

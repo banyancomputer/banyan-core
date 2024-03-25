@@ -9,7 +9,7 @@ export const HelpControls = () => {
 
     return (
         <div
-            className="absolute right-0 top-10  flex flex-col items-stretch shadow-xl rounded-xl overflow-hidden text-xs font-semibold overflow-hiddenaa bg-bucket-actionsBackground cursor-pointer text-bucket-actionsText"
+            className="absolute right-0 top-10  flex flex-col items-stretch shadow-xl rounded-md overflow-hidden text-xs font-semibold overflow-hiddenaa bg-bucket-actionsBackground cursor-pointer text-bucket-actionsText"
         >
             <a
                 className="flex items-center gap-2 py-2.5 px-3 transition-all whitespace-nowrap hover:bg-hover"
