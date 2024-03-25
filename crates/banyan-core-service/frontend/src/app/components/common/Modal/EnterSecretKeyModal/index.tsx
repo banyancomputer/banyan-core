@@ -1,17 +1,17 @@
 import { useForm } from 'react-hook-form';
+import { unwrapResult } from '@reduxjs/toolkit';
 
 import { Input } from '@components/common/Input';
 import { PrimaryButton } from '@components/common/PrimaryButton';
 
-import { Bolt } from '@static/images/common';
-import { useKeystore } from '@/app/contexts/keystore';
-import { useModal } from '@/app/contexts/modals';
-import { validateKeyphrase } from '@/app/utils/validation';
-import { useAppSelector } from '@/app/store';
+import { useModal } from '@app/contexts/modals';
+import { validateKeyphrase } from '@app/utils/validation';
+import { useAppDispatch, useAppSelector } from '@app/store';
+import { initializeKeystore } from '@app/store/keystore/actions';
 
 export const EnterSecretKeyModal = () => {
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.enterSecretKey);
-    const { initializeKeystore } = useKeystore();
+    const dispatch = useAppDispatch();
     const { closeModal } = useModal();
     const {
         formState: { errors },
@@ -27,7 +27,7 @@ export const EnterSecretKeyModal = () => {
 
     const confirm = async () => {
         try {
-            await initializeKeystore(keyphrase);
+            unwrapResult(await dispatch(initializeKeystore(keyphrase)));
             closeModal();
         } catch (error: any) {
             /** TODO: rework when error message from tomb will be more specific. */
