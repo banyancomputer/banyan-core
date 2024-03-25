@@ -62,7 +62,7 @@ impl TaskLike for ReportUploadTask {
         let storage_authorization_id = self.storage_authorization_id.to_string();
         let data_size = self.data_size;
 
-        if self.cids.iter().find(|c| !is_valid_cid(c)).is_some() {
+        if self.cids.iter().any(|c| !is_valid_cid(c)) {
             return Err(ReportUploadTaskError::InvalidCid);
         }
 

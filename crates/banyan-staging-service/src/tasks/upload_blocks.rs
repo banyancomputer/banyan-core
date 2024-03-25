@@ -70,7 +70,7 @@ impl TaskLike for UploadBlocksTask {
             StorageProviderClient::new(&self.storage_host_url, &provider_credentials.token);
 
         let mut blocks = self.block_cids.clone();
-        if blocks.iter().find(|c| !is_valid_cid(c)).is_some() {
+        if blocks.iter().any(|c| !is_valid_cid(c)) {
             return Err(UploadBlocksTaskError::InvalidCid);
         }
 

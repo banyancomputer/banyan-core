@@ -132,11 +132,7 @@ pub async fn handler(
 
     // todo(sstelfox): The CID crate doesn't properly parse hashes other than 512 byte sha2 hashes
     // which we no longer use. We should be replace this with a proper CID parsing and normalization.
-    if deleted_block_cids
-        .iter()
-        .find(|c| !is_valid_cid(c))
-        .is_some()
-    {
+    if deleted_block_cids.iter().any(|c| !is_valid_cid(c)) {
         return Err(PushMetadataError::InvalidCid);
     }
 

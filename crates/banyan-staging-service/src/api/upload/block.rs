@@ -81,7 +81,7 @@ pub async fn handler(
     };
 
     let (req_upload_id, completed) = (details.upload_id, details.completed);
-    let upload = Uploads::by_id_and_client(&mut *conn, &req_upload_id, &client_id_str).await?;
+    let upload = Uploads::by_id_and_client(&mut conn, &req_upload_id, &client_id_str).await?;
 
     let created_at = upload.created_at.ok_or(UploadError::UploadLookupFailure)?;
     if created_at < (OffsetDateTime::now_utc() - UPLOAD_SESSION_DURATION) {

@@ -16,7 +16,7 @@ pub async fn handler(
     Json(cids_to_prune): Json<HashSet<String>>,
 ) -> Result<Response, PruneBlocksError> {
     let cids_to_prune = cids_to_prune.into_iter().collect::<Vec<_>>();
-    if cids_to_prune.iter().find(|c| !is_valid_cid(c)).is_some() {
+    if cids_to_prune.iter().any(|c| !is_valid_cid(c)) {
         return Err(PruneBlocksError::InvalidCid);
     }
 

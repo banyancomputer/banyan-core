@@ -47,7 +47,7 @@ pub async fn handler(
         metadata_id: &request.metadata_id,
         reported_size: reported_body_length as i64,
     }
-    .save(&mut *conn)
+    .save(&mut conn)
     .await?;
 
     let msg = serde_json::json!({"upload_id": upload_id});

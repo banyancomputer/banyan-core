@@ -24,7 +24,7 @@ pub async fn handler(
     for cid in cid_list.iter() {
         // todo(sstelfox): The CID crate only supports parsing data from 512 bit hashes which we
         // don't use exclusively.
-        if !is_valid_cid(&cid) {
+        if !is_valid_cid(cid) {
             return Err(BlockLocationError::InvalidCid);
         }
 
