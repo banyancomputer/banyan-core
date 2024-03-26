@@ -7,8 +7,8 @@ use crate::extractors::AuthenticatedClient;
 /// Return the account id of the currently authenticated user
 pub async fn handler(identity: AuthenticatedClient) -> Response {
     let resp_msg = serde_json::json!({
+        "remaining_storage": identity.remaining_storage(),
         "consumed_storage": identity.consumed_storage(),
-        "fingerprint": identity.fingerprint(),
         "platform_id": identity.platform_id(),
     });
 
