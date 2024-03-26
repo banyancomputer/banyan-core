@@ -198,7 +198,19 @@ pub async fn handler(
     // We no longer need the pending state as the filesystem is now aware of when data should and
     // shouldn't be available. We'll mark this as complete, and continue handling the request if we
     // expect there to be data.
-    Metadata::mark_current(&mut conn, &bucket_id, &metadata_id, None).await?;
+    //
+    // We do need to trust the client size here as we haven't received it. If they give us a size
+    // and its too large, we'll trust what the client tells us and bill for that until we receive
+    // the data and can't update it with the true size. If they tell us too little they won't get a
+    // storage authorization sufficient to store their data (and we'll still learn about the true
+    // size if they're in the margins of error on our storage).
+    Metadata::mark_current(
+        &mut conn,
+        &bucket_id,
+        &metadata_id,
+        Some(request_data.expected_data_size),
+    )
+    .await?;
 
     if request_data.expected_data_size == 0 {
         let resp_msg = serde_json::json!({"id": metadata_id, "state": "current"});
@@ -226,6 +238,14 @@ pub async fn handler(
     let user_report = UserStorageReport::user_report(&mut conn, &storage_host.id, &user_id).await?;
 
     let mut storage_authorization: Option<String> = None;
+
+    // We need to take into account all the data the user currently has stored in at the storage
+    // host. We need to take that into account in addition to the newly requested capacity to
+    // determine if we need to issue a new grant authorization.
+    //
+    // todo(sstelfox): This was your stopping point, query for all the existing data the user has
+    // stored at the select storage hots.
+
     if user_report.authorization_available() < needed_capacity {
         let new_authorized_capacity = rounded_storage_authorization(&user_report, needed_capacity);
 
