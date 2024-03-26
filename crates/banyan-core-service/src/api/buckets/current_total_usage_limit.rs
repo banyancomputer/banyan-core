@@ -7,7 +7,7 @@ use serde::Serialize;
 use crate::app::AppState;
 use crate::database::models::{Subscription, User};
 use crate::extractors::UserIdentity;
-use crate::GIBIBYTE;
+use crate::utils::GIBIBYTE;
 
 pub async fn handler(
     user_id: UserIdentity,

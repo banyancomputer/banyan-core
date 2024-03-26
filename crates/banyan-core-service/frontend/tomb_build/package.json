@@ -1,30 +1,34 @@
 {
   "name": "tomb-wasm-experimental",
-  "description": "Banyan manages data and security for use with Filecoin",
-  "version": "1.1.1",
-  "license": "MIT",
+  "collaborators": [
+    "Sam Stelfox <sstelfox@bedroomprogrammers.net>"
+  ],
+  "description": "A modern end-to-end encrypted filesystem built on distributed block replication primitives",
+  "version": "0.2.0",
+  "license": "MIT OR Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/banyancomputer/tomb"
+    "url": "https://github.com/banyancomputer/banyanfs"
   },
   "files": [
-    "banyan_cli_bg.wasm",
-    "banyan_cli.js",
-    "banyan_cli_bg.js",
-    "banyan_cli.d.ts",
+    "banyanfs_bg.wasm",
+    "banyanfs.js",
+    "banyanfs_bg.js",
+    "banyanfs.d.ts",
+    "LICENSE-APACHE",
     "LICENSE-MIT"
   ],
-  "module": "banyan_cli.js",
+  "module": "banyanfs.js",
   "homepage": "https://banyan.computer",
-  "types": "banyan_cli.d.ts",
+  "types": "banyanfs.d.ts",
   "sideEffects": [
-    "./banyan_cli.js",
+    "./banyanfs.js",
     "./snippets/*"
   ],
   "keywords": [
-    "decentralization",
-    "filecoin",
-    "ipfs",
+    "banyan",
+    "filesystem",
+    "encryption",
     "storage"
   ]
 }

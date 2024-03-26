@@ -9,26 +9,34 @@ use crate::clients::{
     BlockUploadDetailsRequest, CoreServiceClient, CoreServiceError, StorageProviderClient,
     StorageProviderError,
 };
+use crate::utils::is_valid_cid;
 
 pub type UploadBlocksTaskContext = AppState;
 
 #[non_exhaustive]
 #[derive(Debug, thiserror::Error)]
 pub enum UploadBlocksTaskError {
-    #[error("invalid cid provided in request: {0}")]
-    InvalidCid(cid::Error),
+    #[error("invalid cid provided in request")]
+    InvalidCid,
+
     #[error("object store error: {0}")]
     ObjectStoreError(#[from] ObjectStoreError),
+
     #[error("sql error: {0}")]
     DatabaseError(#[from] sqlx::Error),
+
     #[error("core service error: {0}")]
     CoreServiceError(#[from] CoreServiceError),
+
     #[error("could not load file {0}")]
     FileLoadError(String),
+
     #[error("could not convert object {0} to bytes")]
     ByteConversionError(String),
+
     #[error("scheduling task error: {0}")]
     SchedulingTaskError(#[from] TaskStoreError),
+
     #[error("storage provider error: {0}")]
     StorageProviderError(#[from] StorageProviderError),
 }
@@ -62,6 +70,10 @@ impl TaskLike for UploadBlocksTask {
             StorageProviderClient::new(&self.storage_host_url, &provider_credentials.token);
 
         let mut blocks = self.block_cids.clone();
+        if blocks.iter().any(|c| !is_valid_cid(c)) {
+            return Err(UploadBlocksTaskError::InvalidCid);
+        }
+
         // handling the case where we failed and want to start from another block
         // so that in the end only the failing block would be left
         blocks.as_mut_slice().shuffle(&mut rand::thread_rng());
@@ -80,8 +92,6 @@ impl TaskLike for UploadBlocksTask {
                 .bytes()
                 .await
                 .map_err(|_| UploadBlocksTaskError::ByteConversionError(block_cid.clone()))?;
-            let block_cid =
-                cid::Cid::try_from(block_cid).map_err(UploadBlocksTaskError::InvalidCid)?;
 
             let is_last_block = index == total_blocks - 1;
             client

@@ -1,47 +1,40 @@
 use axum::extract::State;
-use axum::headers::ContentLength;
 use axum::response::{IntoResponse, Response};
-use axum::{Json, TypedHeader};
+use axum::Json;
 use http::StatusCode;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use super::db::start_upload;
 use super::error::UploadError;
 use crate::app::AppState;
+use crate::database::models::CreateUpload;
 use crate::extractors::AuthenticatedClient;
 
-// Requests need only the associated metadata id
 #[derive(Serialize, Deserialize)]
 pub struct NewUploadRequest {
     metadata_id: Uuid,
+    session_data_size: u64,
 }
 
 pub async fn handler(
-    State(state): State<AppState>,
     client: AuthenticatedClient,
-    TypedHeader(content_len): TypedHeader<ContentLength>,
+    State(state): State<AppState>,
     Json(request): Json<NewUploadRequest>,
 ) -> Result<Response, UploadError> {
     let db = state.database();
-    let reported_body_length = content_len.0;
-    if reported_body_length > client.remaining_storage() {
-        return Err(UploadError::InsufficientAuthorizedStorage(
-            reported_body_length,
-            client.remaining_storage(),
-        ));
-    }
+    let mut conn = db.acquire().await?;
 
-    // Start the upload with these specifications
-    let upload = start_upload(
-        &db,
-        &client.id().to_string(),
-        &request.metadata_id.to_string(),
-        reported_body_length,
-    )
+    let client_id_str = client.id().to_string();
+    let metadata_id_str = request.metadata_id.to_string();
+
+    let upload_id = CreateUpload {
+        client_id: &client_id_str,
+        metadata_id: &metadata_id_str,
+        reported_size: request.session_data_size as i64,
+    }
+    .save(&mut conn)
     .await?;
 
-    // Respond with the upload id
-    let msg = serde_json::json!({"upload_id": upload.id});
+    let msg = serde_json::json!({"upload_id": upload_id});
     Ok((StatusCode::OK, Json(msg)).into_response())
 }
