@@ -14,3 +14,10 @@ pub struct ReportRedistributionRequest {
     pub normalized_cids: Vec<String>,
     pub grant_id: String,
 }
+
+#[derive(Serialize)]
+pub struct ReportUploadRequest {
+    pub data_size: u64,
+    pub normalized_cids: Vec<String>,
+    pub storage_authorization_id: String,
+}

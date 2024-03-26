@@ -3,6 +3,7 @@ use jwt_simple::prelude::*;
 use reqwest::Client;
 use url::Url;
 
+use crate::clients::models::ReportUploadRequest;
 use crate::clients::{MeterTrafficRequest, ReportRedistributionRequest};
 use crate::utils::SigningKey;
 
@@ -64,6 +65,7 @@ impl CoreServiceClient {
 
         Err(CoreServiceError::BadRequest(response.text().await?))
     }
+
     pub async fn report_distribution_complete(
         &self,
         metadata_id: &str,
@@ -84,6 +86,39 @@ impl CoreServiceClient {
 
         if response.status().is_success() {
             return Ok(());
+        }
+
+        Err(CoreServiceError::BadRequest(response.text().await?))
+    }
+
+    pub async fn report_upload(
+        &self,
+        metadata_id: String,
+        data_size: u64,
+        normalized_cids: Vec<String>,
+        storage_authorization_id: String,
+    ) -> Result<reqwest::Response, CoreServiceError> {
+        let report_upload = ReportUploadRequest {
+            data_size,
+            storage_authorization_id,
+            normalized_cids,
+        };
+
+        let report_endpoint = self
+            .platform_hostname
+            .join(&format!("/hooks/storage/report/{}", metadata_id))
+            .unwrap();
+
+        let response = self
+            .client
+            .post(report_endpoint.clone())
+            .json(&report_upload)
+            .bearer_auth(&self.bearer_token)
+            .send()
+            .await?;
+
+        if response.status().is_success() {
+            return Ok(response);
         }
 
         Err(CoreServiceError::BadRequest(response.text().await?))

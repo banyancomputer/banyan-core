@@ -31,7 +31,7 @@ impl<'a> CreateUpload<'a> {
 }
 
 #[derive(sqlx::FromRow)]
-pub struct Uploads {
+pub struct Upload {
     pub id: String,
 
     pub client_id: String,
@@ -50,14 +50,23 @@ pub struct Uploads {
     pub created_at: Option<OffsetDateTime>,
 }
 
-impl Uploads {
+impl Upload {
+    pub async fn by_id(
+        conn: &mut DatabaseConnection,
+        upload_id: &str,
+    ) -> Result<Self, sqlx::Error> {
+        sqlx::query_as!(Upload, r#"SELECT * FROM uploads WHERE id = $1;"#, upload_id,)
+            .fetch_one(&mut *conn)
+            .await
+    }
+
     pub async fn by_id_and_client(
         conn: &mut DatabaseConnection,
         upload_id: &str,
         client_id: &str,
     ) -> Result<Self, sqlx::Error> {
         sqlx::query_as!(
-            Uploads,
+            Upload,
             r#"SELECT * FROM uploads WHERE id = $1 AND client_id = $2;"#,
             upload_id,
             client_id,
@@ -69,15 +78,16 @@ impl Uploads {
     pub async fn get_by_metadata_id(
         pool: &Database,
         metadata_id: &str,
-    ) -> sqlx::Result<Self, sqlx::Error> {
+    ) -> sqlx::Result<Option<Self>, sqlx::Error> {
         sqlx::query_as!(
             Self,
             "SELECT * FROM uploads WHERE metadata_id = $1",
             metadata_id
         )
-        .fetch_one(pool)
+        .fetch_optional(pool)
         .await
     }
+
     pub async fn delete_by_metadata_id(
         transaction: &mut DatabaseConnection,
         metadata_id: &str,

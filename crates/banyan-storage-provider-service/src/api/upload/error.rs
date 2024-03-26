@@ -25,8 +25,8 @@ pub enum UploadError {
     #[error("account is not authorized to store {0} bytes, {1} bytes are still authorized")]
     InsufficientAuthorizedStorage(u64, u64),
 
-    #[error("a CID from our internal reports wasn't convertable: {0}")]
-    Cid(cid::Error),
+    #[error("request contained invalid CID")]
+    InvalidCid,
 
     #[error("cannot write blocks to a CAR file directly")]
     CarFile,
@@ -55,6 +55,9 @@ pub enum UploadError {
     #[error("tried to write to a completed upload")]
     UploadIsComplete,
 
+    #[error("failed to locate upload")]
+    UploadLookupFailure,
+
     #[error("not yet supported")]
     NotSupported,
 }
@@ -66,13 +69,14 @@ impl IntoResponse for UploadError {
         let default_response =
             (StatusCode::INTERNAL_SERVER_ERROR, Json(default_err_msg)).into_response();
         match self {
-            Database(_) | FailedToEnqueueTask(_) | Cid(_) | NotSupported => {
+            Database(_) | FailedToEnqueueTask(_) | NotSupported => {
                 tracing::error!("{self}");
                 let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
             }
             DataFieldUnavailable(_)
             | IdMismatch
+            | InvalidCid
             | DataFieldMissing
             | InvalidRequestData(_)
             | RequestFieldUnavailable(_)
@@ -100,6 +104,10 @@ impl IntoResponse for UploadError {
             CarFile => {
                 tracing::error!("client asked to write block to car");
                 default_response
+            }
+            UploadLookupFailure => {
+                let err_msg = serde_json::json!({ "msg": "upload not found" });
+                (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
             }
             UploadIsComplete => {
                 tracing::warn!("client is trying to write more data to a completed upload");
