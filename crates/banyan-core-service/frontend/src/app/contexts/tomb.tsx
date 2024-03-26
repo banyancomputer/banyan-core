@@ -1,6 +1,5 @@
 import React, { ReactNode, createContext, useContext, useEffect, useState } from 'react';
 import { TombWasm, WasmBucket } from 'tomb-wasm-experimental';
-import { Mutex } from 'async-mutex';
 import { useNavigate } from 'react-router-dom';
 
 import { TermsAndConditionsModal } from '@components/common/Modal/TermsAndConditionsModal';
@@ -61,8 +60,6 @@ interface TombInterface {
 };
 const storageUsageClient = new StorageUsageClient();
 const snapshotsClient = new SnapshotsClient();
-
-const mutex = new Mutex();
 
 const TombContext = createContext<TombInterface>({} as TombInterface);
 
