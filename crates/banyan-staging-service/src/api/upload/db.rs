@@ -1,49 +1,12 @@
-use std::str::FromStr;
 use std::time::Duration;
 
 use banyan_task::TaskLikeExt;
-use cid::Cid;
-use time::OffsetDateTime;
 use uuid::Uuid;
 
 use crate::database::{Database, DatabaseConnection};
 use crate::tasks::ReportUploadTask;
 
 pub const UPLOAD_SESSION_DURATION: Duration = Duration::from_secs(60 * 60 * 6);
-
-pub async fn start_upload(
-    db: &Database,
-    client_id: &Uuid,
-    metadata_id: &Uuid,
-    reported_size: u64,
-) -> Result<Upload, sqlx::Error> {
-    let mut upload = Upload {
-        id: String::new(),
-        client_id: client_id.to_string(),
-        metadata_id: metadata_id.to_string(),
-        base_path: metadata_id.to_string(),
-        reported_size: reported_size as i64,
-        state: String::from("started"),
-    };
-
-    upload.id = sqlx::query_scalar!(
-        r#"
-        INSERT INTO
-            uploads (client_id, metadata_id, reported_size, base_path, state, created_at)
-            VALUES ($1, $2, $3, $4, $5, DATETIME('now'))
-            RETURNING id;
-        "#,
-        upload.client_id,
-        upload.metadata_id,
-        upload.reported_size,
-        upload.base_path,
-        upload.state,
-    )
-    .fetch_one(db)
-    .await?;
-
-    Ok(upload)
-}
 
 /// Marks an upload as failed
 pub async fn fail_upload(db: &Database, upload_id: &str) -> Result<(), sqlx::Error> {
@@ -140,41 +103,12 @@ pub async fn report_upload(
     .fetch_all(&mut *conn)
     .await?;
 
-    let all_cids = all_cids
-        .into_iter()
-        .map(|cid_string| Cid::from_str(&cid_string).unwrap())
-        .collect::<Vec<Cid>>();
-
     ReportUploadTask::new(storage_grant_id, metadata_id, &all_cids, total_size as u64)
         .enqueue::<banyan_task::SqliteTaskStore>(&mut *conn)
         .await
         .unwrap();
 
     Ok(())
-}
-
-pub async fn get_upload(
-    db: &Database,
-    client_id: Uuid,
-    upload_id: &str,
-) -> Result<Option<Upload>, sqlx::Error> {
-    let client_id = client_id.to_string();
-    let now = OffsetDateTime::now_utc() - UPLOAD_SESSION_DURATION;
-
-    sqlx::query_as!(
-        Upload,
-        r#"
-        SELECT id, client_id, metadata_id, base_path, reported_size, state FROM uploads
-            WHERE client_id = $1
-            AND id = $2
-            AND created_at >= $3;
-        "#,
-        client_id,
-        upload_id,
-        now
-    )
-    .fetch_optional(db)
-    .await
 }
 
 pub async fn write_block_to_tables(
@@ -214,14 +148,4 @@ pub async fn write_block_to_tables(
     .execute(&mut *conn)
     .await?;
     Ok(())
-}
-
-#[derive(sqlx::FromRow, sqlx::Decode)]
-pub struct Upload {
-    pub id: String,
-    pub client_id: String,
-    pub metadata_id: String,
-    pub base_path: String,
-    pub reported_size: i64,
-    pub state: String,
 }

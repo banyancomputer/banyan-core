@@ -101,7 +101,7 @@ pub mod tests {
     use crate::database::models::MetadataState;
     use crate::database::test_helpers::{
         associate_blocks, create_blocks, create_storage_host, data_generator, generate_cids,
-        normalize_cids, sample_bucket, sample_metadata, sample_user, setup_database,
+        sample_bucket, sample_metadata, sample_user, setup_database,
     };
     use crate::database::Database;
 
@@ -139,7 +139,7 @@ pub mod tests {
             1_000_000,
         )
         .await;
-        let initial_cids: Vec<_> = normalize_cids(generate_cids(data_generator(0..3))).collect();
+        let initial_cids: Vec<_> = generate_cids(data_generator(0..3)).collect();
         let block_ids = create_blocks(&mut conn, initial_cids.iter().map(String::as_str)).await;
         associate_blocks(
             &mut conn,
