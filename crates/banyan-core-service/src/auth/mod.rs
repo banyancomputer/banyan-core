@@ -40,9 +40,6 @@ pub static PROVIDER_CONFIGS: phf::Map<&'static str, ProviderConfig> = phf::phf_m
 /// Name of the cookie used to store the session identifier
 pub static SESSION_COOKIE_NAME: &str = "_session_id";
 
-/// Name of the cookie used to store user related data
-pub static USER_DATA_COOKIE_NAME: &str = "_user_data";
-
 /// When creating a new signed JWT, we explicitly set the not before at (minimum timestamp the
 /// ticket is considered valid) as well as its validity period. This constant represents the time
 /// before the ticket was created that we allow the ticket to remain valid (this extends the total

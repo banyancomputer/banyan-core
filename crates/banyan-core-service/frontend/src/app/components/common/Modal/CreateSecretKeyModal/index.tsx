@@ -4,16 +4,14 @@ import { useForm } from 'react-hook-form';
 import { PrimaryButton } from '@components/common/PrimaryButton';
 import { Input } from '@components/common/Input';
 
-import { useKeystore } from '@/app/contexts/keystore';
-import { validateKeyphrase } from '@/app/utils/validation';
-import { useModal } from '@/app/contexts/modals';
-import { useAppSelector } from '@/app/store';
-
-import { Bolt } from '@static/images/common';
+import { validateKeyphrase } from '@app/utils/validation';
+import { useModal } from '@app/contexts/modals';
+import { useAppDispatch, useAppSelector } from '@app/store';
+import { unwrapResult } from '@reduxjs/toolkit';
+import { initializeKeystore } from '@app/store/keystore/actions';
 
 export const CreateSecretKeyModal = () => {
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.createSecretKey);
-    const { initializeKeystore } = useKeystore();
     const { closeModal } = useModal();
     const {
         formState: { errors },
@@ -26,12 +24,13 @@ export const CreateSecretKeyModal = () => {
         mode: 'all',
         values: { keyphrase: '', keyphraseConfirmation: '' },
     });
+    const dispatch = useAppDispatch();
     const { keyphrase, keyphraseConfirmation } = watch();
     const isDataCorrect = !Object.keys(errors).length && !!keyphrase && !!keyphraseConfirmation && keyphraseConfirmation === keyphrase;
 
     const confirm = async () => {
         try {
-            await initializeKeystore(keyphrase);
+            unwrapResult(await dispatch(initializeKeystore(keyphrase)));
             closeModal();
         } catch (error: any) {
             console.log(`Failed to initialize keystore: ${error.message}`);

@@ -4,7 +4,9 @@ import { UserClient } from "@/api/user";
 
 const client = new UserClient();
 
-export const getUserInfo = createAsyncThunk(
-    'getUserInfo',
-    async () => await client.getCurrentUser()
+export const getUser = createAsyncThunk(
+    'getUser',
+    async () => {
+        return await client.getCurrentUser();
+    }
 );
