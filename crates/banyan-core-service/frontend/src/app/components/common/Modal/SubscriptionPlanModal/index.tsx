@@ -85,7 +85,7 @@ export const SubscriptionPlanModal = () => {
             </div>
             <p className="mt-4 mb-3 text-xxs font-semibold text-center">{`${messages.needCustomPlan}`}</p>
             <a
-                href="mailto:sam@banyan.computer"
+                href="mailto:tim@banyan.computer"
                 target="_blank"
                 className="mx-auto font-bold text-xxs text-button-contactSales"
             >
