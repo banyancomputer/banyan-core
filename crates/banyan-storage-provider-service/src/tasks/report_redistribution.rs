@@ -1,7 +1,5 @@
 use async_trait::async_trait;
 use banyan_task::{CurrentTask, TaskLike};
-use cid::multibase::Base;
-use cid::Cid;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -13,24 +11,26 @@ pub type ReportRedistributionTaskContext = AppState;
 #[non_exhaustive]
 #[derive(Debug, thiserror::Error)]
 pub enum ReportRedistributionTaskError {
-    #[error("invalid cid: {0}")]
-    InvalidInternalCid(#[from] cid::Error),
-    #[error("sql error: {0}")]
-    DatabaseError(#[from] sqlx::Error),
     #[error("reqwest error: {0}")]
     CoreServiceError(#[from] CoreServiceError),
+
+    #[error("sql error: {0}")]
+    DatabaseError(#[from] sqlx::Error),
+
+    #[error("invalid cid")]
+    InvalidCid,
 }
 
 #[derive(Deserialize, Serialize)]
 pub struct ReportRedistributionTask {
     grant_id: Uuid,
     metadata_id: String,
-    cids: Vec<Cid>,
+    cids: Vec<String>,
     data_size: u64,
 }
 
 impl ReportRedistributionTask {
-    pub fn new(grant_id: Uuid, metadata_id: &str, cids: &[Cid], data_size: u64) -> Self {
+    pub fn new(grant_id: Uuid, metadata_id: &str, cids: &[String], data_size: u64) -> Self {
         Self {
             grant_id,
             metadata_id: String::from(metadata_id),
@@ -50,14 +50,6 @@ impl TaskLike for ReportRedistributionTask {
     async fn run(&self, _task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
         let grant_id = self.grant_id.to_string();
         let data_size = self.data_size;
-        let normalized_cids = self
-            .cids
-            .iter()
-            .map(|c| {
-                c.to_string_of_base(Base::Base64Url)
-                    .map_err(ReportRedistributionTaskError::InvalidInternalCid)
-            })
-            .collect::<Result<Vec<_>, _>>()?;
 
         let client = CoreServiceClient::new(
             ctx.secrets().service_signing_key(),
@@ -72,7 +64,7 @@ impl TaskLike for ReportRedistributionTask {
                 ReportRedistributionRequest {
                     data_size,
                     grant_id,
-                    normalized_cids,
+                    normalized_cids: self.cids.clone(),
                 },
             )
             .await?;

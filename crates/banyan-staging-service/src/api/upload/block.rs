@@ -5,29 +5,29 @@ use axum::response::{IntoResponse, Response};
 use axum::TypedHeader;
 use banyan_object_store::{ObjectStore, ObjectStorePath};
 use bytes::Bytes;
-use cid::multibase::Base;
-use cid::multihash::{Code, MultihashDigest};
-use cid::Cid;
 use serde::{Deserialize, Serialize};
+use time::OffsetDateTime;
 
-use super::db::{complete_upload, get_upload, report_upload, upload_size, write_block_to_tables};
+use super::db::{
+    complete_upload, report_upload, upload_size, write_block_to_tables, UPLOAD_SESSION_DURATION,
+};
 use super::error::UploadError;
 use crate::app::AppState;
+use crate::database::models::Uploads;
 use crate::extractors::AuthenticatedClient;
 
 #[derive(Deserialize, Serialize)]
 pub struct BlockUploadRequest {
-    cid: Cid,
-    // Optional additional details about the nature of the upload
-    #[serde(flatten)]
-    details: BlockUploadDetails,
+    cid: String,
+
+    #[serde(flatten, default)]
+    details: Option<UploadDetails>,
 }
 
 #[derive(Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum BlockUploadDetails {
-    Ongoing { completed: bool, upload_id: String },
-    OneOff,
+pub struct UploadDetails {
+    completed: bool,
+    upload_id: String,
 }
 
 pub async fn handler(
@@ -53,91 +53,70 @@ pub async fn handler(
 
     let mut multipart = multer::Multipart::with_constraints(body, boundary, constraints);
 
-    // Grab the request object
-    let request: BlockUploadRequest = multipart
+    let client_id_str = client.id().to_string();
+    let request_field = multipart
         .next_field()
         .await
         .map_err(UploadError::RequestFieldUnavailable)?
-        .ok_or(UploadError::RequestFieldMissing)?
-        .json()
-        .await
-        .map_err(UploadError::InvalidRequestData)?;
+        .ok_or(UploadError::RequestFieldMissing)?;
 
-    // Get the upload either new or ongoing
-    let (upload, completed) = match request.details {
-        // This request is the start and end of this block upload
-        BlockUploadDetails::OneOff => {
-            /*
-            let upload = start_upload(
-                &db,
-                &client.id(),
-                &request.metadata_id,
-                reported_body_length,
-            )
-            .await?;
-            (upload, true)
-            */
-            // TODO there isn't currently a way to start uploads without having an
-            // associated metadata_id. If future OneOff requests are to exist outside
-            // of the context of our pipelines, this needs to change.
-            return Err(UploadError::NotSupported);
-        }
-        // We're in the middle of a multi-request block writing sequence
-        BlockUploadDetails::Ongoing {
-            completed,
-            upload_id,
-        } => {
-            // Assume that the upload has already been created via the `new` endpoint
-            let upload = get_upload(&db, client.id(), &upload_id).await?.unwrap();
-            if upload.id != upload_id {
-                return Err(UploadError::IdMismatch);
-            }
-            (upload, completed)
+    let request = match request_field.json::<BlockUploadRequest>().await {
+        Ok(r) => r,
+        Err(err) => {
+            tracing::error!("failed to parse upload request: {err}");
+            return Err(UploadError::InvalidRequestData(err));
         }
     };
-    // If the upload had already been marked as complete
+
+    // todo: the CID crate fails to read non 512 bytes hash CIDs which we don't want to use, we
+    // should get a better parser and validate this...
+    let normalized_cid = request.cid;
+
+    let mut conn = db.acquire().await?;
+
+    let details = match request.details {
+        Some(details) => details,
+        // The one off case isn't supported yet
+        None => return Err(UploadError::NotSupported),
+    };
+
+    let (req_upload_id, completed) = (details.upload_id, details.completed);
+    let upload = Uploads::by_id_and_client(&mut conn, &req_upload_id, &client_id_str).await?;
+
+    let created_at = upload.created_at.ok_or(UploadError::UploadLookupFailure)?;
+    if created_at < (OffsetDateTime::now_utc() - UPLOAD_SESSION_DURATION) {
+        return Err(UploadError::UploadLookupFailure);
+    }
+
+    if upload.id != req_upload_id {
+        return Err(UploadError::IdMismatch);
+    }
+
+    // Don't allow additional data on a completed upload
     if upload.state == "complete" {
         return Err(UploadError::UploadIsComplete);
     }
 
-    let mut conn = db.acquire().await?;
-    // While there are still block fields encoded
-    while let Some(block_field) = multipart
+    let block_field = multipart
         .next_field()
         .await
         .map_err(UploadError::DataFieldUnavailable)?
-    {
-        // Grab all of the block data from this request part
-        let block: Bytes = block_field
-            .bytes()
-            .await
-            .map_err(UploadError::DataFieldUnavailable)?;
+        .ok_or(UploadError::DataFieldMissing)?;
 
-        // Compute the cid associated with that block to verify data integrity
-        let codec = request.cid.codec();
-        let hash = Code::Sha2_256.digest(&block);
-        let computed_cid = Cid::new(cid::Version::V1, codec, hash)
-            .map_err(UploadError::Cid)?
-            .to_string_of_base(Base::Base64Url)
-            .map_err(UploadError::Cid)?;
-        let normalized_cid = request
-            .cid
-            .to_string_of_base(Base::Base64Url)
-            .map_err(UploadError::Cid)?;
-        if computed_cid != normalized_cid {
-            return Err(UploadError::MismatchedCid((normalized_cid, computed_cid)));
-        }
-        // Write this block to the tables
-        write_block_to_tables(&mut conn, &upload.id, &normalized_cid, block.len() as i64).await?;
+    let block: Bytes = block_field
+        .bytes()
+        .await
+        .map_err(UploadError::DataFieldUnavailable)?;
 
-        // Write the bytes to the expected location
-        let location =
-            ObjectStorePath::from(format!("{}/{}.bin", upload.base_path, normalized_cid).as_str());
-        store
-            .put(&location, block)
-            .await
-            .map_err(UploadError::ObjectStore)?;
-    }
+    write_block_to_tables(&mut conn, &upload.id, &normalized_cid, block.len() as i64).await?;
+
+    let location =
+        ObjectStorePath::from(format!("{}/{}.bin", upload.base_path, normalized_cid).as_str());
+
+    store
+        .put(&location, block)
+        .await
+        .map_err(UploadError::ObjectStore)?;
 
     // If we've just finished off the upload, complete and report it
     if completed {
