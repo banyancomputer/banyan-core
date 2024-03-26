@@ -85,7 +85,7 @@ const BucketHeader = () => {
                     <span className="w-1 h-1 bg-text-400 rounded-full" />
                     0 GB
                 </div>
-                {selectedBucket?.bucketType !== 'backup' &&
+                {selectedBucket?.bucketType !== 'backup' && !selectedBucket?.locked &&
                     <div className="flex items-stretch gap-2">
                         <button
                             className="btn-primary gap-2 w-40 py-2 px-4 bg-"
