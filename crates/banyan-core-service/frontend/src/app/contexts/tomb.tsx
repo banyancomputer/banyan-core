@@ -92,7 +92,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 			throw new Error(error);
 		} finally {
 			release();
-		}
+		};
 	};
 
 	/** Returns list of buckets. */

@@ -13,6 +13,7 @@ export const LockedTooltip: React.FC<{ bucket: Bucket, className?: string, size?
     const tooltipRef = useRef<null | HTMLDivElement>(null);
     const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
     const { openModal } = useModal();
+
     const stopPopagation = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
         event.stopPropagation();
         event.preventDefault();
@@ -34,8 +35,8 @@ export const LockedTooltip: React.FC<{ bucket: Bucket, className?: string, size?
 
         return () => {
             tooltipRef.current?.removeEventListener('mouseenter', listener);
-        }
-    }, [tooltipRef])
+        };
+    }, [tooltipRef]);
 
     return (
         <div
@@ -47,13 +48,12 @@ export const LockedTooltip: React.FC<{ bucket: Bucket, className?: string, size?
                 className={`fixed top-[${tooltipPosition.y}px] left-[${tooltipPosition.x}px] hidden flex-col px-3 py-1 border-2 rounded-md border-border-regular bg-bucket-actionsBackground cursor-default whitespace-nowrap group-hover:flex z-10 ${bodyClassName}`}
                 onClick={stopPopagation}
             >
-                {`${messages.youHaveNoAccess};`}
-                <span
+                {`${messages.youHaveNoAccess}`}
+                {/* <span
                     className="font-semibold underline text-button-primary cursor-pointer"
                     onClick={requestAccess}
-                >
                     {`${messages.requestAccess} ${messages.here}`}
-                </span>
+                </span> */}
             </div>
         </div>
     );
