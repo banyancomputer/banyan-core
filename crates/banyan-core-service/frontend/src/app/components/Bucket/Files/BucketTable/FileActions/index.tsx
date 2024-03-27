@@ -108,10 +108,10 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BrowserObject; parren
     const shareAction = new Action(messages.shareFile, <Share width="18px" height="18px" />, share);
 
     const hotInrecactiveActions = [
-        downloadAction, moveToAction, makeCopyAction, renameAction, removeAction, shareAction,
+        downloadAction, moveToAction, makeCopyAction, renameAction, removeAction,
     ];
     const warmInrecactiveActions = [
-        downloadAction, moveToAction, makeCopyAction, renameAction, removeAction, shareAction,
+        downloadAction, moveToAction, makeCopyAction, renameAction, removeAction,
     ];
     const coldIntecactiveActions = [
         downloadAction,
