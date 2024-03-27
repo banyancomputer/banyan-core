@@ -131,7 +131,7 @@ pub async fn handler(
         Err(err) => {
             // todo: we don't care in the response if this fails, but if it does we will want to
             // clean it up in the future which should be handled by a background task
-            let _ = fail_upload(&db, &upload_id).await;
+            let _ = fail_upload(&mut conn, &upload_id).await;
             Err(err)
         }
     }
