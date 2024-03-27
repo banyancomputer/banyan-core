@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT user_id, state as 'state: EmailMessageState' FROM emails WHERE id = $1;",
+  "describe": {
+    "columns": [
+      {
+        "name": "user_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "state: EmailMessageState",
+        "ordinal": 1,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "2aed9c80b165f96c0e39d75ccfb9a41da1a4fd4e4599a62abd60718484d72c84"
+}

@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO snapshot_restore_requests (user_id, snapshot_id, state)\n               VALUES ($1, $2, 'pending')\n               RETURNING id;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "1b4d085bc1895d1e12fdd34419cbcb0bedc20cc58eb0a6b7533d7f8089e86e2e"
+}

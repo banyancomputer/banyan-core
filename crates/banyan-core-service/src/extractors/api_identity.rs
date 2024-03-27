@@ -103,10 +103,10 @@ where
 
         let db_device_api_key = sqlx::query_as!(
             DeviceApiKey,
-            r#"SELECT dak.id, u.id as user_id, dak.pem
-                   FROM device_api_keys AS dak
-                   JOIN users AS u ON dak.user_id = u.id
-                   WHERE dak.fingerprint = $1;"#,
+            r#"SELECT ak.id, u.id as user_id, ak.pem
+                   FROM api_keys AS ak
+                   JOIN users AS u ON ak.user_id = u.id
+                   WHERE ak.fingerprint = $1;"#,
             key_id
         )
         .fetch_one(&database)

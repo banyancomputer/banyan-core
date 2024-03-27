@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                UPDATE users\n                SET region_preference = $1\n                WHERE id = $2;\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "e47e401c21be9139708a702a4b2c6af3e99cf654f21052ebfea00ffb783401b8"
+}

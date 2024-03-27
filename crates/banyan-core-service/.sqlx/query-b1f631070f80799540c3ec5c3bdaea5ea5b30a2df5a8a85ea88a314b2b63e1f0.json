@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO sessions\n            (user_id, provider, access_token, access_expires_at, refresh_token, expires_at)\n            VALUES ($1, $2, $3, $4, $5, $6)\n            RETURNING id;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "b1f631070f80799540c3ec5c3bdaea5ea5b30a2df5a8a85ea88a314b2b63e1f0"
+}

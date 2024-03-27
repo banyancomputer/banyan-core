@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE subscriptions SET hot_storage_stripe_price_id = $1 WHERE id = $2;",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "70d6a0290f1913c6f1d0268c944f72c19f485ff184ae8de730b26ca4e18fcbab"
+}

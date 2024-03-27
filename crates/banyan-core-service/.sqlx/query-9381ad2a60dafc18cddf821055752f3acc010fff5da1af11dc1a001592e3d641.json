@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO oauth_provider_accounts (user_id, provider, provider_id)\n                     VALUES ($1, 'google', $2);",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "9381ad2a60dafc18cddf821055752f3acc010fff5da1af11dc1a001592e3d641"
+}

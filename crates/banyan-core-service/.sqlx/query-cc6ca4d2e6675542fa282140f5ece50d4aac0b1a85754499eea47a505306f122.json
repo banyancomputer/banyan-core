@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT\n                SUM(CASE WHEN state = 'failed' THEN 1 ELSE 0 END) AS failures\n            FROM (\n                SELECT state\n                FROM emails e\n                WHERE e.user_id = $1\n                ORDER BY e.sent_at DESC\n                LIMIT 3 \n            ) AS last_three_emails;",
+  "describe": {
+    "columns": [
+      {
+        "name": "failures",
+        "ordinal": 0,
+        "type_info": "Int"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "cc6ca4d2e6675542fa282140f5ece50d4aac0b1a85754499eea47a505306f122"
+}

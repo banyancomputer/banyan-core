@@ -54,7 +54,7 @@ pub async fn handler(
     .await?;
 
     sqlx::query!(
-        "INSERT INTO device_api_keys (user_id, fingerprint, pem) VALUES ($1, $2, $3);",
+        "INSERT INTO api_keys (user_id, fingerprint, pem) VALUES ($1, $2, $3);",
         user_id,
         device_api_key_fingerprint,
         api_public_key_pem,

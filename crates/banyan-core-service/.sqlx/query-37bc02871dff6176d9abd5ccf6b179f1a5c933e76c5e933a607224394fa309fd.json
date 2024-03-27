@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                SELECT region_preference \n                FROM users \n                WHERE id = $1\n                AND region_preference IS NOT NULL;\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "region_preference",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "37bc02871dff6176d9abd5ccf6b179f1a5c933e76c5e933a607224394fa309fd"
+}

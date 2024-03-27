@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id FROM buckets WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "28577e8bd6f2c5061cef2abcf76bce014f75a5dc0497cae318d4b5fd7a70330e"
+}

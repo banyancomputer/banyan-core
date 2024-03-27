@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO bucket_keys (bucket_id, approved, pem, fingerprint)\n               VALUES ($1, true, $2, $3)\n               RETURNING id;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "56ae8e4c71ef3ba2eed31747958dd7dd2f26263295a4ce187dc215a0f80b4cda"
+}

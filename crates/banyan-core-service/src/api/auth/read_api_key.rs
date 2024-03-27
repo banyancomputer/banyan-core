@@ -18,9 +18,12 @@ pub async fn handler(
     let user_id: String = user_identity.id().to_string();
     let query_result = sqlx::query_as!(
         DeviceApiKey,
-        r#"SELECT id, user_id, fingerprint, pem
-               FROM device_api_keys
-               WHERE id = $1 AND user_id = $2;"#,
+        r#"
+            SELECT id, user_id, fingerprint, pem
+            FROM api_keys
+            WHERE id = $1 
+            AND user_id = $2;
+        "#,
         key_id,
         user_id,
     )

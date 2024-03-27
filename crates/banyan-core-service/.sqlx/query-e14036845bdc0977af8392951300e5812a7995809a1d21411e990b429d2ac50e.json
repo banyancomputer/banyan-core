@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT s.id FROM snapshots AS s\n               JOIN metadata AS m ON s.metadata_id = m.id\n               JOIN buckets AS b ON m.bucket_id = b.id\n               WHERE b.user_id = $1\n                   AND b.id = $2\n                   AND m.id = $3;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "e14036845bdc0977af8392951300e5812a7995809a1d21411e990b429d2ac50e"
+}

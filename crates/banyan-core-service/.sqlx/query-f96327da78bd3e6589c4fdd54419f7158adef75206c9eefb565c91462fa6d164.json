@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT\n                   COALESCE(SUM(m.metadata_size), 0) +\n                     COALESCE(SUM(COALESCE(m.data_size, m.expected_data_size)), 0) AS big_int\n                 FROM metadata m\n                 INNER JOIN buckets b ON b.id = m.bucket_id\n                 WHERE b.user_id = $1 AND m.state IN ('current', 'outdated', 'pending');",
+  "describe": {
+    "columns": [
+      {
+        "name": "big_int",
+        "ordinal": 0,
+        "type_info": "Int"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "f96327da78bd3e6589c4fdd54419f7158adef75206c9eefb565c91462fa6d164"
+}

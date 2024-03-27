@@ -507,7 +507,7 @@ pub(crate) async fn get_or_create_identity(
         .expect("user query");
 
     let device_api_key = sqlx::query!(
-        "SELECT id, pem, fingerprint FROM device_api_keys WHERE user_id = $1;",
+        "SELECT id, pem, fingerprint FROM api_keys WHERE user_id = $1;",
         user_id
     )
     .fetch_optional(&mut *conn)
@@ -526,7 +526,7 @@ pub(crate) async fn get_or_create_identity(
             let fingerprint = fingerprint_public_key(&key_pair.public_key());
 
             sqlx::query_scalar!(
-                r#"INSERT INTO device_api_keys (user_id, fingerprint, pem)
+                r#"INSERT INTO api_keys (user_id, fingerprint, pem)
                     VALUES ($1, $2, $3)
                     RETURNING id;"#,
                 user_id,

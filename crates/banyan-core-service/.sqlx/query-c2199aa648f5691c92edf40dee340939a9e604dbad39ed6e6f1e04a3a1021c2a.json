@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            SELECT 1 FROM api_keys\n            WHERE user_id = $1\n            AND fingerprint = $2;\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "1",
+        "ordinal": 0,
+        "type_info": "Int"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "c2199aa648f5691c92edf40dee340939a9e604dbad39ed6e6f1e04a3a1021c2a"
+}

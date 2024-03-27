@@ -6,11 +6,11 @@ use axum::Router;
 
 use crate::app::AppState;
 
-mod create_device_api_key;
+mod create_api_key;
 mod create_escrowed_device;
-mod delete_device_api_key;
-mod read_all_device_api_keys;
-mod read_device_api_key;
+mod delete_api_key;
+mod read_all_api_keys;
+mod read_api_key;
 
 mod end_regwait;
 pub(crate) mod registration_event;
@@ -32,11 +32,11 @@ where
         )
         .route(
             "/device_api_key",
-            get(read_all_device_api_keys::handler).post(create_device_api_key::handler),
+            get(read_all_api_keys::handler).post(create_api_key::handler),
         )
         .route(
             "/device_api_key/:key_id",
-            get(read_device_api_key::handler).delete(delete_device_api_key::handler),
+            get(read_api_key::handler).delete(delete_api_key::handler),
         )
         .route(
             "/device_api_key/start_regwait/:fingerprint",

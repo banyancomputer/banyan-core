@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE subscriptions SET bandwidth_stripe_price_id = $1 WHERE id = $2;",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "2bc19831a5b72aeecc93f23d9fa390c32f4d53450cfbd578ed3ecbd2445ab09d"
+}
