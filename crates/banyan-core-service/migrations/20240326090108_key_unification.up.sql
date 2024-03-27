@@ -31,3 +31,30 @@ CREATE TABLE api_key_access (
          CHECK (state IN ('pending', 'approved', 'revoked'))
          DEFAULT 'pending'
 );
+
+-- Part 2: Modify Bucket Keys
+-- These will default to being keys without API access
+INSERT INTO api_keys(id, user_id, fingerprint, pem, name)
+    SELECT 
+		bk.id,
+        u.id, 
+        bk.fingerprint, 
+        bk.pem, 
+        ("Inherited key from " || b.name) 
+    FROM bucket_keys AS bk
+    JOIN buckets AS b ON bk.bucket_id = b.id
+    JOIN users AS u ON b.user_id = u.id
+;
+
+INSERT INTO api_key_access(id, api_key_id, bucket_id, state) 
+    SELECT
+        bk.id,
+        ak.id,
+        bk.bucket_id,
+		(CASE WHEN bk.approved THEN 'approved' ELSE 'pending' END)
+    FROM bucket_keys AS bk
+    JOIN api_keys AS ak ON ak.fingerprint = bk.fingerprint
+;
+
+-- Scary! ^w^
+DROP TABLE bucket_keys;
