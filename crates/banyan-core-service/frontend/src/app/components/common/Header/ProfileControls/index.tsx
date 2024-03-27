@@ -2,23 +2,23 @@ import React, { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { Action } from '@components/Bucket/Files/BucketTable/FileActions';
-import { SubscriptionPlanModal } from '../../Modal/SubscriptionPlanModal';
+import { SubscriptionPlanModal } from '@components/common/Modal/SubscriptionPlanModal';
 
 import { HttpClient } from '@/api/http/client';
-import { useKeystore } from '@app/contexts/keystore';
-import { useAppDispatch, useAppSelector } from '@/app/store';
-import { getSubscriptions } from '@/app/store/billing/actions';
+import { useAppDispatch, useAppSelector } from '@app/store';
+import { getSubscriptions } from '@app/store/billing/actions';
 import { RoutesConfig } from '@/app/routes';
-import { useModal } from '@/app/contexts/modals';
+import { useModal } from '@app/contexts/modals';
+import { unwrapResult } from '@reduxjs/toolkit';
+import { purgeKeystore } from '@app/store/keystore/actions';
 
 import { LogoutAlternative, Settings } from '@static/images/common';
 
 export const ProfileControls = () => {
     const navigate = useNavigate();
     const messages = useAppSelector(state => state.locales.messages.coponents.common.header.profileControls);
-    const { purgeKeystore } = useKeystore();
     const { openModal } = useModal();
-    const { displayName, email, profileImage } = useAppSelector(state => state.user);
+    const { displayName, email, profileImage } = useAppSelector(state => state.session.user);
     const { selectedSubscription } = useAppSelector(state => state.billing);
     const dispatch = useAppDispatch();
 
@@ -30,7 +30,7 @@ export const ProfileControls = () => {
     const logout = async () => {
         const api = new HttpClient();
         try {
-            await purgeKeystore();
+            unwrapResult(await dispatch(purgeKeystore()));
             await api.get('/auth/logout');
             window.location.href = '/login';
         }
