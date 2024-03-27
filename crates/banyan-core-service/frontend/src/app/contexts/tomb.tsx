@@ -444,6 +444,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 					await updateStorageLimitsState();
 				} catch (error: any) {
 					dispatch(setError(new BannerError(error.message)));
+					setAreBucketsLoading(false);
 				}
 			})();
 		};

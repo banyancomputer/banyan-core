@@ -23,7 +23,7 @@ const storageUsageClient = new StorageUsageClient();
 const BucketHeader = () => {
     const messages = useAppSelector(state => state.locales.messages.coponents.bucket.files.header);
     const folderLocation = useFolderLocation();
-    const { selectedBucket } = useTomb();
+    const { selectedBucket, areBucketsLoading } = useTomb();
     const params = useParams();
     const bucketId = params.id;
     const { openModal, closeModal } = useModal();
@@ -86,37 +86,44 @@ const BucketHeader = () => {
     return (
         <div className="mb-8">
             <div className="mb-4 flex flex-col w-full">
-                <h2 className="mb-2 text-lg font-semibold">
-                    <Link to={`/drive/${bucketId}`}>{selectedBucket?.name}</Link>
-                    {folderLocation.map((folder, index) =>
-                        <React.Fragment key={index}>
-                            {' > '}
-                            <Link to={`/drive/${bucketId}?${folderLocation.slice(0, ++index).map(element => stringToBase64(element)).join('/')}`}>{folder}</Link>
-                        </React.Fragment>
-                    )}
-                </h2>
-                <div className="mb-4 flex items-center gap-2 text-text-400 text-xs">
-                    {selectedBucket?.files.length} {messages.files}
-                    <span className="w-1 h-1 bg-text-400 rounded-full" />
-                    {convertFileSize(storageUsage)}
-                </div>
-                {selectedBucket?.bucketType !== 'backup' && !selectedBucket?.locked &&
-                    <div className="flex items-stretch gap-2">
-                        <button
-                            className="btn-primary gap-2 w-40 py-2 px-4 bg-"
-                            onClick={uploadFile}
-                        >
-                            <Upload />
-                            {messages.uploadButton}
-                        </button>
-                        <button
-                            className="flex items-center gap-2 py-2 px-4 border-1 border-border-regular rounded-md text-text-900 font-semibold"
-                            onClick={createFolder}
-                        >
-                            <AddFolderIcon width="20px" height="20px" />
-                            {messages.createFolderButton}
-                        </button>
-                    </div>
+                {!areBucketsLoading
+                    ?
+                    <>
+                        <h2 className="mb-2 text-lg font-semibold">
+                            <Link to={`/drive/${bucketId}`}>{selectedBucket?.name}</Link>
+                            {folderLocation.map((folder, index) =>
+                                <React.Fragment key={index}>
+                                    {' > '}
+                                    <Link to={`/drive/${bucketId}?${folderLocation.slice(0, ++index).map(element => stringToBase64(element)).join('/')}`}>{folder}</Link>
+                                </React.Fragment>
+                            )}
+                        </h2>
+                        <div className="mb-4 flex items-center gap-2 text-text-400 text-xs">
+                            {selectedBucket?.files.length} {messages.files}
+                            <span className="w-1 h-1 bg-text-400 rounded-full" />
+                            {convertFileSize(storageUsage)}
+                        </div>
+                        {selectedBucket?.bucketType !== 'backup' && !selectedBucket?.locked &&
+                            <div className="flex items-stretch gap-2">
+                                <button
+                                    className="btn-primary gap-2 w-40 py-2 px-4 bg-"
+                                    onClick={uploadFile}
+                                >
+                                    <Upload />
+                                    {messages.uploadButton}
+                                </button>
+                                <button
+                                    className="flex items-center gap-2 py-2 px-4 border-1 border-border-regular rounded-md text-text-900 font-semibold"
+                                    onClick={createFolder}
+                                >
+                                    <AddFolderIcon width="20px" height="20px" />
+                                    {messages.createFolderButton}
+                                </button>
+                            </div>
+                        }
+                    </>
+                    :
+                    null
                 }
             </div>
             {isBannerVisible &&
