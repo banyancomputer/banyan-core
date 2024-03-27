@@ -1,6 +1,7 @@
 use axum::extract::{Json, Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
+use base64::{engine::general_purpose::URL_SAFE, Engine as _};
 use jwt_simple::prelude::*;
 use url::Url;
 
@@ -12,10 +13,26 @@ use crate::extractors::ApiIdentity;
 pub async fn handler(
     api_id: ApiIdentity,
     State(state): State<AppState>,
-    Path(base_url): Path<String>,
+    Path(encoded_base_url): Path<String>,
 ) -> Response {
     let database = state.database();
     let service_key = state.secrets().service_key();
+
+    let decoded_url_bytes = match URL_SAFE.decode(encoded_base_url) {
+        Ok(bu) => bu,
+        Err(_) => {
+            let err_msg = serde_json::json!({"msg": "invalid base64url encoding"});
+            return (StatusCode::BAD_REQUEST, Json(err_msg)).into_response();
+        }
+    };
+
+    let base_url = match String::from_utf8(decoded_url_bytes) {
+        Ok(url) => url,
+        Err(_) => {
+            let err_msg = serde_json::json!({"msg": "invalid utf-8 encoding"});
+            return (StatusCode::BAD_REQUEST, Json(err_msg)).into_response();
+        }
+    };
 
     let full_domain = match Url::parse(&base_url) {
         Ok(url) => url,
