@@ -3,20 +3,23 @@ use std::time::Duration;
 use banyan_task::TaskLikeExt;
 use uuid::Uuid;
 
-use crate::database::{Database, DatabaseConnection};
+use crate::database::DatabaseConnection;
 use crate::tasks::ReportUploadTask;
 
 pub const UPLOAD_SESSION_DURATION: Duration = Duration::from_secs(60 * 60 * 6);
 
 /// Marks an upload as failed
-pub async fn fail_upload(db: &Database, upload_id: &str) -> Result<(), sqlx::Error> {
+pub async fn fail_upload(
+    conn: &mut DatabaseConnection,
+    upload_id: &str,
+) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
         UPDATE uploads SET state = 'failed' WHERE id = $1;
         "#,
         upload_id
     )
-    .execute(db)
+    .execute(&mut *conn)
     .await
     .map(|_| ())
 }
