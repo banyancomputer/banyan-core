@@ -9,7 +9,7 @@ import { useModal } from '@/app/contexts/modals';
 import { useTomb } from '@/app/contexts/tomb';
 import { Bucket } from '@/app/types/bucket';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
-import { stringToBase64 } from '@/app/utils/base64';
+import { stringToHex } from '@/app/utils/hex';
 import { useAppSelector } from '@/app/store';
 
 export const CreateFolderModal: React.FC<{ bucket: Bucket; onSuccess?: () => void; path: string[], redirect?: boolean }> = ({ bucket, onSuccess = () => { }, path, redirect = false }) => {
@@ -29,7 +29,7 @@ export const CreateFolderModal: React.FC<{ bucket: Bucket; onSuccess?: () => voi
     const create = async () => {
         try {
             await createDirectory(bucket, path, folderName);
-            redirect && navigate(`/drive/${bucket.id}${path.length ? '?' : ''}${path.map(path => stringToBase64(path)).join('/')}${path.length ? '/' : '?'}${stringToBase64(folderName)}`);
+            redirect && navigate(`/drive/${bucket.id}${path.length ? '?' : ''}${path.map(path => stringToHex(path)).join('/')}${path.length ? '/' : '?'}${stringToHex(folderName)}`);
             onSuccess ?
                 onSuccess()
                 :

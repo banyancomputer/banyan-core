@@ -11,7 +11,7 @@ import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { getDateLabel } from '@/app/utils/date';
 import { convertFileSize } from '@/app/utils/storage';
 import { useTomb } from '@/app/contexts/tomb';
-import { stringToBase64 } from '@utils/base64';
+import { stringToHex } from '@utils/hex';
 import { useFilesUpload } from '@app/contexts/filesUpload';
 import { ToastNotifications } from '@utils/toastNotifications';
 import { handleDrag, handleDragEnd, handleDragStart, preventDefaultDragAction } from '@utils/dragHandlers';
@@ -41,7 +41,7 @@ export const FolderRow: React.FC<{
             return;
         };
 
-        navigate(`/drive/${bucket.id}?${path.length ? `${path.map(element => stringToBase64(element)).join('/')}/${stringToBase64(folder.name)}` : stringToBase64(folder.name)}`);
+        navigate(`/drive/${bucket.id}?${path.length ? `${path.map(element => stringToHex(element)).join('/')}/${stringToHex(folder.name)}` : stringToHex(folder.name)}`);
     };
 
     const expandFolder = async (event: any) => {

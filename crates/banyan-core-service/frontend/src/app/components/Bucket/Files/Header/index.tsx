@@ -8,7 +8,7 @@ import { CreateFolderModal } from '@components/common/Modal/CreateFolderModal ';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 import { useModal } from '@/app/contexts/modals';
 import { useTomb } from '@/app/contexts/tomb';
-import { stringToBase64 } from '@utils/base64';
+import { stringToHex } from '@utils/hex';
 import { getLocalStorageItem, setLocalStorageItem } from '@utils/localStorage';
 import { useAppSelector } from '@/app/store';
 import { Tooltip } from '@components/common/Tooltip';
@@ -91,7 +91,7 @@ const BucketHeader = () => {
                     {folderLocation.map((folder, index) =>
                         <React.Fragment key={index}>
                             {' > '}
-                            <Link to={`/drive/${bucketId}?${folderLocation.slice(0, ++index).map(element => stringToBase64(element)).join('/')}`}>{folder}</Link>
+                            <Link to={`/drive/${bucketId}?${folderLocation.slice(0, ++index).map(element => stringToHex(element)).join('/')}`}>{folder}</Link>
                         </React.Fragment>
                     )}
                 </h2>
