@@ -34,7 +34,6 @@ interface TombInterface {
 	areBucketsLoading: boolean;
 	selectedBucket: Bucket | null;
 	getBuckets: () => Promise<void>;
-	getBucketsFiles: () => Promise<void>;
 	getBucketsKeys: () => Promise<void>;
 	remountBucket: (bucket: Bucket) => Promise<void>;
 	selectBucket: (bucket: Bucket | null) => void;
@@ -83,6 +82,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
 	/** Returns list of buckets. */
 	const getBuckets = async () => {
+		setAreBucketsLoading(true);
 		const key = unwrapResult(await dispatch(getEncryptionKey()));
 		const wasm_buckets: WasmBucket[] = await tomb!.listBuckets();
 		if (getIsUserNew()) {
@@ -113,24 +113,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 			});
 		};
 		setBuckets(buckets);
-	};
-
-	/** Pushes files and snapshots inside of buckets list. */
-	const getBucketsFiles = async () => {
-		const wasm_bukets: Bucket[] = [];
-		for (const bucket of buckets) {
-			const files: BrowserObject[] = bucket.mount ? await bucket.mount!.ls([]) : [];
-			const snapshots = await tomb!.listBucketSnapshots(bucket.id);
-			wasm_bukets.push({
-				...bucket,
-				snapshots,
-				files,
-			});
-		};
-		setBuckets(wasm_bukets);
-		setTimeout(() => {
-			setAreBucketsLoading(false);
-		}, 300);
+		setAreBucketsLoading(false);
 	};
 
 	const remountBucket = async (bucket: Bucket) => {
@@ -470,7 +453,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 		<TombContext.Provider
 			value={{
 				tomb, buckets, storageUsage, storageLimits, trash, areBucketsLoading, selectedBucket,
-				getBuckets, getBucketsFiles, getBucketsKeys, selectBucket, getSelectedBucketFiles,
+				getBuckets, getBucketsKeys, selectBucket, getSelectedBucketFiles,
 				takeColdSnapshot, getBucketSnapshots, createBucketAndMount, deleteBucket, remountBucket,
 				getFile, renameBucket, createDirectory, uploadFile, purgeSnapshot,
 				removeBucketAccess, approveBucketAccess, approveDeviceApiKey, shareFile, download, moveTo,

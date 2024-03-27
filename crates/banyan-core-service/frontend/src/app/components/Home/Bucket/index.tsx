@@ -138,9 +138,6 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
                     </div>
                     <div className="capitalize">{bucket.bucketType}</div>
                     {bucket.snapshots.length ? <div>{bucket.snapshots.length} {`${messages.coldSnapshots}`}</div> : null}
-                    <div className="flex justify-between items-center">
-                        <div>{bucket.files.length} {`${messages.files}`}</div>
-                    </div>
                 </div>
             </div>
         </div>

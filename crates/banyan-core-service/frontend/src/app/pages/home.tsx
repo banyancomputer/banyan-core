@@ -8,14 +8,13 @@ import { EmptyState } from '@components/Home/EmptyState';
 
 import { useTomb } from '@/app/contexts/tomb';
 import { useModal } from '@/app/contexts/modals';
-import { ToastNotifications } from '../utils/toastNotifications';
 import { useAppSelector } from '../store';
 
 import { PlusBold, Upload } from '@static/images/common';
 
 const Home = () => {
     const { openModal } = useModal();
-    const { buckets, areBucketsLoading, getBucketsFiles, tomb } = useTomb();
+    const { buckets, areBucketsLoading } = useTomb();
     const messages = useAppSelector(state => state.locales.messages.pages.home);
 
     const uploadFile = () => {
@@ -25,20 +24,6 @@ const Home = () => {
     const createDrive = () => {
         openModal(<CreateBucketModal />);
     };
-
-    useEffect(() => {
-        if (!tomb) { return; }
-
-        const getFiles = async () => {
-            try {
-                await getBucketsFiles();
-            } catch (error: any) {
-                ToastNotifications.error('Error on files loading', 'Try again', getFiles);
-            };
-        };
-
-        getFiles();
-    }, [buckets.length, tomb]);
 
     return (
         <section className="h-[455px] py-9 pt-14 px-4" id="buckets">
