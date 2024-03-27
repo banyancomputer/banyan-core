@@ -83,9 +83,9 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
 	/** Returns list of buckets. */
 	const getBuckets = async () => {
-		const key = await getEncryptionKey();
+		const key = unwrapResult(await dispatch(getEncryptionKey()));
 		const wasm_buckets: WasmBucket[] = await tomb!.listBuckets();
-		if (isUserNew) {
+		if (getIsUserNew()) {
 			createBucketAndMount("My Drive", 'hot', 'interactive');
 			destroyIsUserNew();
 			return;
@@ -134,7 +134,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	};
 
 	const remountBucket = async (bucket: Bucket) => {
-		const key = await getEncryptionKey();
+		const key = unwrapResult(await dispatch(getEncryptionKey()));
 		const mount = await tomb!.mount(bucket.id, key.privatePem);
 		const locked = await mount.locked();
 		const isSnapshotValid = await mount.hasSnapshot();
@@ -194,7 +194,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 			throw new Error(driveAlreadyExists);
 		};
 
-		const key = await getEncryptionKey();
+		const key = unwrapResult(await dispatch(getEncryptionKey()));
 		const { bucket: wasmBucket, mount: wasmMount } = await tomb!.createBucketAndMount(name, storageClass, bucketType, key.privatePem, key.publicPem);
 		const bucket = {
 			mount: wasmMount,
@@ -399,18 +399,18 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 		if (!areTermsAccepted) return;
 
 		let escrowedKeyMaterial;
-			(async () => {
-				try {
-					escrowedKeyMaterial = unwrapResult(await dispatch(getEscrowedKeyMaterial()));
-				} catch (error: any) {
-					openEscrowModal(false);
-					return;
-				};
+		(async () => {
+			try {
+				escrowedKeyMaterial = unwrapResult(await dispatch(getEscrowedKeyMaterial()));
+			} catch (error: any) {
+				openEscrowModal(false);
+				return;
+			};
 
-				if (!keystoreInitialized && !isLoading) {
-					openEscrowModal(!!escrowedKeyMaterial);
-				};
-			})();
+			if (!keystoreInitialized && !isLoading) {
+				openEscrowModal(!!escrowedKeyMaterial);
+			};
+		})();
 	}, [isLoading, keystoreInitialized, areTermsAccepted]);
 
 	useEffect(() => {
