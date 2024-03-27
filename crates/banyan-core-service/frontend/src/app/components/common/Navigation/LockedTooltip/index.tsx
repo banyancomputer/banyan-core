@@ -45,7 +45,7 @@ export const LockedTooltip: React.FC<{ bucket: Bucket, className?: string, size?
         >
             <Lock width={size || '20px'} height={size || '20px'} />
             <div
-                className={`fixed top-[${tooltipPosition.y}px] left-[${tooltipPosition.x}px] hidden flex-col px-3 py-1 border-2 rounded-md border-border-regular bg-bucket-actionsBackground cursor-default whitespace-nowrap group-hover:flex z-10 ${bodyClassName}`}
+                className={`fixed top-[${tooltipPosition.y}px] left-[${tooltipPosition.x}px] max-w-[320px]  hidden flex-col px-3 py-1 border-2 rounded-md border-border-regular bg-bucket-actionsBackground whitespace-normal cursor-default group-hover:flex z-10 ${bodyClassName}`}
                 onClick={stopPopagation}
             >
                 {`${messages.youHaveNoAccess}`}

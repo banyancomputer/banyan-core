@@ -88,11 +88,11 @@ export const Navigation = () => {
 								<li key={bucket.id}>
 									<NavLink
 										id={bucket.id}
-										to={`/drive/${bucket.id}`}
+										to={bucket.locked ? '' : `/drive/${bucket.id}`}
 										onDrag={preventDefaultDragAction}
 										onDrop={event => handleDrop(event, bucket)}
 										onClick={event => preventNavigation(event, bucket)}
-										className={`flex items-center justify-between gap-2 w-full h-10 cursor-pointer ${!bucket.mount && 'cursor-not-allowed'} transition-all hover:bg-navigation-secondary`}
+										className={`flex items-center justify-between gap-2 w-full h-10 ${!bucket.mount && 'cursor-not-allowed'} transition-all hover:bg-navigation-secondary ${bucket.locked ? 'cursor-not-allowed' : 'cursor-pointer'}`}
 									>
 										<span
 											className={`w-full flex items-center gap-3 py-2 px-2 ${bucket.locked ? 'pr-8' : 'pr-2'} flex-grow whitespace-nowrap rounded-md ${location.pathname.includes(bucket.id) && 'bg-navigation-secondary'}`}

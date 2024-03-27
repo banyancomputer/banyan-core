@@ -209,7 +209,7 @@ export default {
                 tryAgain: "Réessayer",
                 allDrives: "Tous les lecteurs",
                 lockedTooltip: {
-                    youHaveNoAccess: "Vous n'avez pas accès à ce lecteur",
+                    youHaveNoAccess: "Vos données sont en sécurité. Pendant la migration WNFS, ce compartiment est verrouillé, il sera déverrouillé sous peu. Contactez-nous pour toute question.",
                     requestAccess: "Demander l'accès",
                     here: "ici",
                 }
