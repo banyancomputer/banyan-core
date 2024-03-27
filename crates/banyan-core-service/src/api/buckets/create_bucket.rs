@@ -7,7 +7,7 @@ use time::OffsetDateTime;
 use validify::{Validate, Validify};
 
 use crate::app::AppState;
-use crate::database::models::{Bucket, BucketKey, BucketType, StorageClass};
+use crate::database::models::{ApiKeyState, Bucket, BucketKey, BucketType, StorageClass};
 use crate::extractors::ApiIdentity;
 use crate::utils::keys::fingerprint_public_key;
 
@@ -46,7 +46,7 @@ pub async fn handler(
     // we need to keep a handle on the id
 
     let bucket_key_id = sqlx::query_scalar!(
-        r#"INSERT INTO bucket_keys (bucket_id, approved, pem, fingerprint)
+        r#"INSERT INTO api_keys (bucket_id, approved, pem, fingerprint)
                VALUES ($1, true, $2, $3)
                RETURNING id;"#,
         bucket_id,
@@ -66,7 +66,7 @@ pub async fn handler(
 
     let bucket_key = sqlx::query_as!(
         BucketKey,
-        "SELECT * FROM bucket_keys WHERE id = $1;",
+        "SELECT * FROM api_keys WHERE id = $1;",
         bucket_key_id
     )
     .fetch_one(&mut *conn)
@@ -80,7 +80,7 @@ pub async fn handler(
         storage_class: bucket.storage_class,
         initial_bucket_key: ApiBucketKeyResponse {
             id: bucket_key.id,
-            approved: bucket_key.approved,
+            state: bucket_key.state,
             fingerprint: bucket_key.fingerprint,
         },
     };
@@ -112,7 +112,7 @@ struct ApiCreateBucketResponse {
 #[derive(Debug, Serialize, Deserialize)]
 struct ApiBucketKeyResponse {
     pub id: String,
-    pub approved: bool,
+    pub state: ApiKeyState,
     pub fingerprint: String,
 }
 #[derive(Debug, thiserror::Error)]
@@ -163,7 +163,7 @@ mod tests {
             conn: &mut DatabaseConnection,
             id: &str,
         ) -> Result<BucketKey, sqlx::Error> {
-            sqlx::query_as!(BucketKey, "SELECT * FROM bucket_keys WHERE id = $1;", id)
+            sqlx::query_as!(BucketKey, "SELECT * FROM api_keys WHERE id = $1;", id)
                 .fetch_one(conn)
                 .await
         }
@@ -211,9 +211,6 @@ mod tests {
             bucket_key.fingerprint,
             bucket_response.initial_bucket_key.fingerprint
         );
-        assert_eq!(
-            bucket_key.approved,
-            bucket_response.initial_bucket_key.approved
-        );
+        assert_eq!(bucket_key.state, bucket_response.initial_bucket_key.state);
     }
 }

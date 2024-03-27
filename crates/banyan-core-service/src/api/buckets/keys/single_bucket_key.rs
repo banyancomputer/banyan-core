@@ -21,11 +21,11 @@ pub async fn handler(
     let user_id = user_identity.id().to_string();
     let maybe_bucket_key = sqlx::query_as!(
         BucketKey,
-        r#"SELECT bk.* FROM bucket_keys AS bk
-               JOIN buckets b ON bk.bucket_id = b.id
+        r#"SELECT ak.* FROM api_keys AS ak
+               JOIN buckets b ON ak.bucket_id = b.id
                WHERE b.user_id = $1
-                   AND bk.bucket_id = $2
-                   AND bk.id = $3;"#,
+                   AND ak.bucket_id = $2
+                   AND ak.id = $3;"#,
         user_id,
         bucket_id,
         bucket_key_id,

@@ -40,7 +40,7 @@ pub use block_location::tests::BlockLocations;
 pub use block_location::MinimalBlockLocation;
 pub use blocks::Blocks;
 pub use bucket::Bucket;
-pub use bucket_key::BucketKey;
+pub use bucket_key::{ApiKeyState, BucketKey};
 pub use bucket_type::BucketType;
 pub use deal::Deal;
 pub use deal_state::DealState;

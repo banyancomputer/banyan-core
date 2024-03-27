@@ -13,9 +13,9 @@ pub async fn handler(
     user_identity: UserIdentity,
     State(state): State<AppState>,
     Path(bucket_id): Path<Uuid>,
-    Json(bucket_key_req): Json<CreateBucketKeyRequest>,
+    Json(api_key_req): Json<CreateBucketKeyRequest>,
 ) -> Result<Response, CreateBucketKeyError> {
-    let public_key = ES384PublicKey::from_pem(&bucket_key_req.public_key)
+    let public_key = ES384PublicKey::from_pem(&api_key_req.public_key)
         .map_err(CreateBucketKeyError::InvalidPublicKey)?;
     let fingerprint = fingerprint_public_key(&public_key);
 
@@ -41,12 +41,12 @@ pub async fn handler(
         }
     };
 
-    let bucket_key_id: String = sqlx::query_scalar!(
-        r#"INSERT INTO bucket_keys (bucket_id, pem, fingerprint, approved)
+    let api_key_id: String = sqlx::query_scalar!(
+        r#"INSERT INTO api_keys (bucket_id, pem, fingerprint, approved)
                VALUES ($1, $2, $3, 'false')
                RETURNING id;"#,
         authorized_bucket_id,
-        bucket_key_req.public_key,
+        api_key_req.public_key,
         fingerprint,
     )
     .fetch_one(&database)
@@ -54,7 +54,7 @@ pub async fn handler(
     .map_err(CreateBucketKeyError::DatabaseFailure)?;
 
     let resp_msg = serde_json::json!({
-        "id": bucket_key_id,
+        "id": api_key_id,
         "approved": false,
         "fingerprint": fingerprint,
     });

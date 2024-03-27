@@ -6,7 +6,7 @@ use sqlx::sqlite::{SqlitePoolOptions, SqliteQueryResult};
 use time::OffsetDateTime;
 use uuid::Uuid;
 
-use super::models::NewStorageGrant;
+use super::models::{ApiKeyState, NewStorageGrant};
 use crate::database::models::{BucketType, DealState, MetadataState, SnapshotState, StorageClass};
 use crate::database::{Database, DatabaseConnection};
 use crate::extractors::{ApiIdentity, ApiIdentityBuilder, SessionIdentity, SessionIdentityBuilder};
@@ -91,16 +91,18 @@ pub(crate) async fn create_bucket_key(
     bucket_id: &str,
     public_key: &str,
     fingerprint: &str,
-    approved: bool,
+    state: ApiKeyState,
 ) -> String {
     sqlx::query_scalar!(
-        r#"INSERT INTO bucket_keys (bucket_id, pem, fingerprint, approved)
-                VALUES ($1, $2, $3, $4)
-                RETURNING id;"#,
+        r#"
+            INSERT INTO api_keys (bucket_id, pem, fingerprint, state)
+            VALUES ($1, $2, $3, $4)
+            RETURNING id;
+        "#,
         bucket_id,
         public_key,
         fingerprint,
-        approved,
+        state,
     )
     .fetch_one(&mut *conn)
     .await

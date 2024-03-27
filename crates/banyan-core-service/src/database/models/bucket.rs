@@ -68,7 +68,7 @@ impl Bucket {
             let chunk = &fingerprints[offset_start..offset_end];
 
             let mut query =
-                QueryBuilder::new("UPDATE bucket_keys SET approved = 1 WHERE bucket_id = ");
+                QueryBuilder::new("UPDATE api_keys SET approved = 1 WHERE bucket_id = ");
 
             query.push_bind(bucket_id);
             query.push(" AND fingerprint IN (");
@@ -561,7 +561,7 @@ mod tests {
         fingerprint: &str,
     ) -> Option<bool> {
         sqlx::query_scalar!(
-            "SELECT approved FROM bucket_keys WHERE bucket_id = $1 AND fingerprint = $2;",
+            "SELECT state FROM api_keys WHERE bucket_id = $1 AND fingerprint = $2;",
             bucket_id,
             fingerprint,
         )

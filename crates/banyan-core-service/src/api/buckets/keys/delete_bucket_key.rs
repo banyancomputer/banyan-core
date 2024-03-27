@@ -18,11 +18,11 @@ pub async fn handler(
 
     let user_id = user_identity.id().to_string();
     let query_result = sqlx::query!(
-        r#"DELETE FROM bucket_keys
+        r#"DELETE FROM api_keys
                 WHERE id IN (
-                    SELECT bk.id FROM bucket_keys AS bk
-                        JOIN buckets AS b ON bk.bucket_id = b.id
-                        WHERE b.user_id = $1 AND bk.id = $2 AND bk.bucket_id = $3
+                    SELECT ak.id FROM api_keys AS ak
+                        JOIN buckets AS b ON ak.bucket_id = b.id
+                        WHERE b.user_id = $1 AND ak.id = $2 AND ak.bucket_id = $3
                 );"#,
         user_id,
         bucket_key_id,
