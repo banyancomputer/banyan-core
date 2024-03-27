@@ -8,12 +8,12 @@ export const preventDefaultDragAction = (event: React.DragEvent<HTMLElement>) =>
 /** Sets drag data, removes default drag preview. */
 export const handleDragStart = async(
     event: React.DragEvent<HTMLDivElement>,
-    item: BrowserObject,
+    name: string,
     setIsDragging: React.Dispatch<React.SetStateAction<boolean>>,
     path: string[],
 ) => {
     event.stopPropagation();
-    event.dataTransfer.setData('browserObject', JSON.stringify({ item, path }));
+    event.dataTransfer.setData('browserObject', JSON.stringify({ name, path }));
     event.dataTransfer.setDragImage(new Image(), 0, 0);
     setIsDragging(true);
 };

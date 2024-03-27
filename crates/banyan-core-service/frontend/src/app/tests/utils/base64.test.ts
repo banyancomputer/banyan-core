@@ -7,7 +7,7 @@ const encodedValue = 'dGVzdCBzdHJpbmc=';
 describe(
     'base64',
     () => {
-        test('stringTOBase64', () => {
+        test('stringToBase64', () => {
             expect(stringToBase64(decodedValue)).toBe(encodedValue);
         });
         test('base64ToString', () => {
