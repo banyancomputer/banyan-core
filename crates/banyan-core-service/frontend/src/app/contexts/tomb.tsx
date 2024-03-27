@@ -149,9 +149,9 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 			const rawKeys = await tomb!.listBucketKeys(bucket.id);
 			const keys: BucketKey[] = [];
 			for (let key of rawKeys) {
-				const pem = key.pem();
-				const approved = key.approved();
-				const id = key.id();
+				const pem = key.publicKey;
+				const approved = key.approved;
+				const id = key.id;
 				const fingerPrint = await prettyFingerprintApiKeyPem(pem);
 				keys.push({ approved, bucket_id: bucket.id, fingerPrint, id, pem });
 			};
