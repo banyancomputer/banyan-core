@@ -2,22 +2,21 @@ use axum::extract::{Json, Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use jwt_simple::prelude::*;
-use serde::Deserialize;
 use url::Url;
 
-use crate::api::models::ApiUser;
-use crate::app::{AppState, ServiceKey};
+use crate::app::AppState;
 use crate::auth::storage_ticket::StorageTicketBuilder;
-use crate::database::models::{MetricsTraffic, User};
-use crate::database::Database;
-use crate::extractors::UserIdentity;
+use crate::extractors::ApiIdentity;
 
+#[axum::debug_handler]
 pub async fn handler(
     api_id: ApiIdentity,
-    database: Database,
-    service_key: ServiceKey,
+    State(state): State<AppState>,
     Path(base_url): Path<String>,
 ) -> Response {
+    let database = state.database();
+    let service_key = state.secrets().service_key();
+
     let full_domain = match Url::parse(&base_url) {
         Ok(url) => url,
         Err(_) => {
@@ -43,13 +42,51 @@ pub async fn handler(
                    sh.name as service_name, sh.url as service_url
                FROM storage_grants AS sg
                JOIN storage_hosts AS sh ON sh.id = sg.storage_host_id
-               WHERE sg.user_id = $1 AND sh.url = $2"#,
-        &user_id,
+               JOIN storage_hosts_metadatas_storage_grants AS shmsg ON shmsg.storage_grant_id = sg.id
+               JOIN metadata AS m ON m.id = shmsg.metadata_id
+               JOIN buckets AS b ON m.bucket_id = b.id
+               WHERE b.deleted_at IS NULL
+                   AND sg.redeemed_at IS NOT NULL
+                   AND sg.user_id = $1
+                   AND sh.url = $2
+               ORDER BY sg.redeemed_at DESC
+               LIMIT 1;"#,
+        user_id,
+        storage_host_base_url,
     )
-    .fetch_one(&database)
-    .await?;
+    .fetch_optional(&database)
+    .await;
 
-    todo!()
+    let token_details = match token_details {
+        Ok(Some(token_details)) => token_details,
+        Ok(None) => {
+            let err_msg = serde_json::json!({"msg": "user has no grants with requested host"});
+            return (StatusCode::CONFLICT, Json(err_msg)).into_response();
+        }
+        Err(_) => {
+            let err_msg = serde_json::json!({"msg": "internal server error"});
+            return (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response();
+        }
+    };
+
+    let mut ticket_builder = StorageTicketBuilder::new(api_id.ticket_subject());
+    ticket_builder.add_audience(token_details.service_name);
+    ticket_builder.add_authorization(
+        token_details.storage_grant_id,
+        token_details.service_url,
+        token_details.authorized_amount,
+    );
+    let claim = ticket_builder.build();
+    let bearer_token = match service_key.sign(claim) {
+        Ok(token) => token,
+        Err(_) => {
+            let err_msg = serde_json::json!({"msg": "internal server error"});
+            return (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response();
+        }
+    };
+
+    let resp = serde_json::json!({"token": bearer_token });
+    (StatusCode::OK, Json(resp)).into_response()
 }
 
 #[derive(sqlx::FromRow)]
