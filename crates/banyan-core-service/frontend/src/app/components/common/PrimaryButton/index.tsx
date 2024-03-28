@@ -8,6 +8,7 @@ export const PrimaryButton: React.FC<{ text: string; action?: () => void; disabl
         text,
         type = 'submit',
     }) => {
+
         useEffect(() => {
             const listener = async (event: KeyboardEvent) => {
                 if (event.key !== 'Enter' || disabled) { return; }
@@ -19,7 +20,7 @@ export const PrimaryButton: React.FC<{ text: string; action?: () => void; disabl
             return () => {
                 window.removeEventListener('keypress', listener);
             };
-        }, [disabled]);
+        });
 
         return (
             <button
