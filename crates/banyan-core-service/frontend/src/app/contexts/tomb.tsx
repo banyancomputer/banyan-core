@@ -66,7 +66,7 @@ const TombContext = createContext<TombInterface>({} as TombInterface);
 export const TombProvider = ({ children }: { children: ReactNode }) => {
 	const dispatch = useAppDispatch();
 	const { user } = useAppSelector(state => state.session);
-	const { escrowedKeyMaterial, isLoading, keystoreInitialized } = useAppSelector(state => state.keystore);
+	const { escrowedKeyMaterial, keystoreInitialized } = useAppSelector(state => state.keystore);
 	const navigate = useNavigate();
 	const { openEscrowModal, openModal } = useModal();
 	const [tomb, setTomb] = useState<TombWasm | null>(null);
@@ -361,7 +361,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
 	// Initialize the tomb client
 	useEffect(() => {
-		if (!user.id || !keystoreInitialized || isLoading || !escrowedKeyMaterial) { return; }
+		if (!user.id || !keystoreInitialized  || !escrowedKeyMaterial) { return; }
 
 		(async () => {
 			try {
@@ -376,7 +376,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 				dispatch(setError(new BannerError(error.message)));
 			}
 		})();
-	}, [user, keystoreInitialized, escrowedKeyMaterial, isLoading]);
+	}, [user, keystoreInitialized, escrowedKeyMaterial]);
 
 	useEffect(() => {
 		if (!areTermsAccepted) return;
@@ -390,15 +390,16 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 				return;
 			};
 
-			if (!keystoreInitialized && !isLoading) {
+			if (!keystoreInitialized) {
 				openEscrowModal(!!escrowedKeyMaterial);
 			};
 		})();
-	}, [isLoading, keystoreInitialized, areTermsAccepted]);
+	}, [keystoreInitialized, areTermsAccepted]);
 
 	useEffect(() => {
 		const userClient = new UserClient();
 		const termsClient = new TermsAndColditionsClient();
+
 		(async () => {
 			try {
 				const termsAndConditions = await termsClient.getTermsAndCondition();
