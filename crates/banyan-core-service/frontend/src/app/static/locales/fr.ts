@@ -42,16 +42,17 @@ export default {
             },
             manageKeys: {
                 keyActions: {
-                    removeAccess: "Supprimer l'accès",
-                    approveAccess: "Approuver l'accès",
+                    rename: "Renommer",
+                    removeKey: "Supprimer la clé",
+                    lastKeyError: 'La clé finale ne peut pas être désactivée ou supprimée sans au moins une sauvegarde.'
                 },
                 keyManagementTable: {
-                    device: "Dispositif",
-                    client: "Client",
-                    fingerprint: "Empreinte digitale",
-                    status: "Statut",
-                    approved: "Approuvé",
-                    noAccess: "Pas d'accès",
+                    key: "Clé",
+                    device: "Appareil",
+                    drive: "Disque",
+                    createdOn: "Créé le",
+                    disable: "Désactiver",
+                    enable: "Activer",
                 }
             },
             navigation: {
@@ -68,58 +69,73 @@ export default {
             },
         },
         bucket: {
-            bucketTable: {
-                name: "Nom",
-                lastModified: "Dernière modification",
-                fileSize: "Taille du fichier",
-                moveToError: "Un problème est survenu lors du déplacement de votre fichier. Veuillez réessayer.",
-                tryAgain: "Réessayer",
-                fileWasMoved: "Le fichier a été déplacé",
-                uploadError: "Un problème est survenu avec le téléchargement. Veuillez réessayer.",
-                fileActions: {
-                    download: "Télécharger",
-                    moveTo: "Déplacer vers",
-                    makeCopy: "Faire une copie",
-                    viewFileVersions: "Voir les versions du fichier",
-                    rename: "Renommer",
-                    remove: "Supprimer",
-                    shareFile: "Partager le fichier",
-                    yourFileIsSecure: "Votre fichier est sécurisé",
-                    tryAgain: "Réessayer",
-                    downloading: "Téléchargement",
-                    fileWasDownloaded: "Le fichier a été téléchargé",
-                    copyOf: "Copie de",
-                    wasCreated: "a été créé",
-                },
-                folderActions: {
-                    moveTo: "Déplacer vers",
-                    rename: "Renommer",
-                    remove: "Supprimer",
-                    upload: "Télécharger",
-                },
-                folderRow: {
+            files: {
+                bucketTable: {
+                    name: "Nom",
+                    lastModified: "Dernière modification",
+                    fileSize: "Taille du fichier",
+                    moveToError: "Un problème est survenu lors du déplacement de votre fichier. Veuillez réessayer.",
                     tryAgain: "Réessayer",
                     fileWasMoved: "Le fichier a été déplacé",
-                    moveToError: "Un problème est survenu lors du déplacement de votre fichier. Veuillez réessayer.",
                     uploadError: "Un problème est survenu avec le téléchargement. Veuillez réessayer.",
-                    failedToLoadFiles: "Impossible de charger les fichiers"
+                    fileActions: {
+                        download: "Télécharger",
+                        moveTo: "Déplacer vers",
+                        makeCopy: "Faire une copie",
+                        viewFileVersions: "Voir les versions du fichier",
+                        rename: "Renommer",
+                        remove: "Supprimer",
+                        shareFile: "Partager le fichier",
+                        yourFileIsSecure: "Votre fichier est sécurisé",
+                        tryAgain: "Réessayer",
+                        downloading: "Téléchargement",
+                        fileWasDownloaded: "Le fichier a été téléchargé",
+                        copyOf: "Copie de",
+                        wasCreated: "a été créé",
+                    },
+                    folderActions: {
+                        moveTo: "Déplacer vers",
+                        rename: "Renommer",
+                        remove: "Supprimer",
+                        upload: "Télécharger",
+                    },
+                    folderRow: {
+                        tryAgain: "Réessayer",
+                        fileWasMoved: "Le fichier a été déplacé",
+                        moveToError: "Un problème est survenu lors du déplacement de votre fichier. Veuillez réessayer.",
+                        uploadError: "Un problème est survenu avec le téléchargement. Veuillez réessayer.",
+                        failedToLoadFiles: "Impossible de charger les fichiers"
+                    }
+                },
+                emptyState: {
+                    description: "Faites glisser-déposer des fichiers ici pour les téléverser, ou utilisez le bouton 'Téléverser'",
+                    buttonText: "Téléverser",
+                    tryAgain: "Réessayer",
+                    uploadError: "Un problème est survenu avec le téléchargement. Veuillez réessayer.",
+                },
+                header: {
+                    files: "Fichiers",
+                    uploadButton: "Téléverser",
+                    createFolderButton: "Créer un dossier",
+                    snapshotBannerTitle: "Instantanés d'archives",
+                    snapshotBannerSubtitle: "Ce lecteur n'a pas d'instantanés",
+                    snapshotBannerExplanation: "Qu'est-ce qu'un instantané",
+                    snapshotBannerTooltip: "Les instantanés d'archives offrent un aperçu à un moment donné du fichier et sont utiles pour la version",
+                    makeSnapshot: "Faire un instantané",
+                },
+            },
+            snapshots: {
+                title: "Instantanés",
+                table: {
+                    name: "Nom",
+                    date: "Date",
+                    size: "Taille",
+                    state: "État",
+                    snapshotActions: {
+                        rename: "Renommer",
+                        restore: "Restaurer"
+                    }
                 }
-            },
-            emptyState: {
-                description: "Faites glisser-déposer des fichiers ici pour les téléverser, ou utilisez le bouton 'Téléverser'",
-                buttonText: "Téléverser",
-                tryAgain: "Réessayer",
-                uploadError: "Un problème est survenu avec le téléchargement. Veuillez réessayer.",
-            },
-            header: {
-                files: "Fichiers",
-                uploadButton: "Téléverser",
-                createFolderButton: "Créer un dossier",
-                snapshotBannerTitle: "Instantanés d'archives",
-                snapshotBannerSubtitle: "Ce lecteur n'a pas d'instantanés",
-                snapshotBannerExplanation: "Qu'est-ce qu'un instantané",
-                snapshotBannerTooltip: "Les instantanés d'archives offrent un aperçu à un moment donné du fichier et sont utiles pour la version",
-                makeSnapshot: "Faire un instantané",
             }
         },
         home: {
@@ -193,7 +209,7 @@ export default {
                 tryAgain: "Réessayer",
                 allDrives: "Tous les lecteurs",
                 lockedTooltip: {
-                    youHaveNoAccess: "Vous n'avez pas accès à ce lecteur",
+                    youHaveNoAccess: "Vos données sont en sécurité. Pendant la migration WNFS, ce compartiment est verrouillé, il sera déverrouillé sous peu. Contactez-nous pour toute question.",
                     requestAccess: "Demander l'accès",
                     here: "ici",
                 }
@@ -223,12 +239,6 @@ export default {
                     tryAgain: "Réessayer",
                     cancel: "Annuler",
                     approveAccess: "Approuver l'accès",
-                },
-                bucketSnapshots: {
-                    title: "Voir les instantanés d'archives",
-                    subtitle: "Accédez et examinez les versions précédentes",
-                    tryAgain: "Réessayer",
-                    close: "Fermer",
                 },
                 createBucket: {
                     createNewDrive: "Créer un nouveau lecteur",
@@ -331,6 +341,26 @@ export default {
                     fileWasRenamed: "Le fichier a été renommé",
                     editError: "Un problème est survenu avec votre modification. Veuillez réessayer",
                     tryAgain: "Réessayer",
+                },
+                renameAccessKey: {
+                    title: "Renommer la clé",
+                    keyName: "Nom de la clé",
+                    enterNewName: "Entrer un nouveau nom",
+                    cancel: "Annuler",
+                    save: "Enregistrer",
+                    keyWasRenamed: "La clé a été renommée",
+                    editError: "Il y a eu un problème avec votre modification. Veuillez réessayer",
+                    tryAgain: "Réessayer"
+                },
+                renameSnapshot:{
+                    title: "Renommer la capture instantanée",
+                    snapshotName: "Nom de la capture instantanée",
+                    enterNewName: "Entrez un nouveau nom",
+                    cancel: "Annuler",
+                    save: "Enregistrer",
+                    snapshotWasRenamed: "La capture instantanée a été renommée",
+                    editError: "Il y a eu un problème avec votre édition. Veuillez réessayer",
+                    tryAgain: "Réessayer"
                 },
                 requestBucketAccess: {
                     title: "Demander l'accès",

@@ -10,7 +10,7 @@ import { RoutesConfig } from '@/app/routes';
 import { useModal } from '@/app/contexts/modals';
 
 export const StorageUsage = () => {
-    const { storageUsage } = useTomb();
+    const { storageUsage, storageLimits } = useTomb();
     const { openModal } = useModal();
     const messages = useAppSelector(state => state.locales.messages.coponents.common.storageUsage);
     const { selectedSubscription } = useAppSelector(state => state.billing);
@@ -24,13 +24,18 @@ export const StorageUsage = () => {
             <span className="flex justify-between items-center font-semibold">
                 {`${messages.storage}`}
             </span>
-            <progress className="progress w-full" value={storageUsage.usage} max={storageUsage.softLimit / (selectedSubscription?.features.included_hot_replica_count || 2)}></progress>
+            <progress
+                className="progress w-full [&::-webkit-progress-value]:bg-button-primary"
+                value={storageUsage.hotStorage * 100}
+                max={storageLimits.softLimit / (selectedSubscription?.features.included_hot_replica_count || 2)}
+            />
             <span className="text-xs font-medium">
                 {` ${messages.used} `}
                 <span className="uppercase">
-                    {convertFileSize(storageUsage.usage)}</span>
+                    {convertFileSize(storageUsage.hotStorage)}
+                </span>
                 {` ${messages.of} `}
-                <span className="uppercase">{convertFileSize(storageUsage.softLimit / selectedSubscription?.features.included_hot_replica_count!)}</span>.
+                <span className="uppercase">{convertFileSize(storageLimits.softLimit / selectedSubscription?.features.included_hot_replica_count!)}</span>.
             </span>
             {!selectedSubscription?.pricing &&
                 <div className="flex justify-end">

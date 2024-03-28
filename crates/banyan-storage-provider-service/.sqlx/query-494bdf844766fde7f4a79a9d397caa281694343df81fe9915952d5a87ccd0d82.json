@@ -1,0 +1,80 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT * FROM uploads WHERE id = $1;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "client_id",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "metadata_id",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "reported_size",
+        "ordinal": 3,
+        "type_info": "Int64"
+      },
+      {
+        "name": "final_size",
+        "ordinal": 4,
+        "type_info": "Int64"
+      },
+      {
+        "name": "base_path",
+        "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "state",
+        "ordinal": 6,
+        "type_info": "Text"
+      },
+      {
+        "name": "integrity_hash",
+        "ordinal": 7,
+        "type_info": "Text"
+      },
+      {
+        "name": "started_at",
+        "ordinal": 8,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "finished_at",
+        "ordinal": 9,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 10,
+        "type_info": "Datetime"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "494bdf844766fde7f4a79a9d397caa281694343df81fe9915952d5a87ccd0d82"
+}

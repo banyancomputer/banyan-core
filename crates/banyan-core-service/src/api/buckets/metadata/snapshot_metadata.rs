@@ -4,35 +4,37 @@ use axum::extract::{Json, Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use banyan_task::TaskLikeExt;
-use cid::multibase::Base;
-use cid::Cid;
 use uuid::Uuid;
 
 use crate::app::AppState;
 use crate::database::models::SnapshotState;
 use crate::extractors::UserIdentity;
 use crate::tasks::{CreateDealsTask, BLOCK_SIZE};
+use crate::utils::is_valid_cid;
 
 pub async fn handler(
     user_identity: UserIdentity,
     State(state): State<AppState>,
     Path((bucket_id, metadata_id)): Path<(Uuid, Uuid)>,
-    Json(request): Json<BTreeSet<Cid>>,
+    Json(request_cids): Json<BTreeSet<String>>,
 ) -> Result<Response, CreateSnapshotError> {
     let database = state.database();
-    let mut transaction = database
-        .begin()
-        .await
-        .map_err(CreateSnapshotError::SaveFailed)?;
+
     let bucket_id = bucket_id.to_string();
     let metadata_id = metadata_id.to_string();
 
-    if request.is_empty() {
+    if request_cids.is_empty() {
         return Err(CreateSnapshotError::EmptyBucket(
             "no cids provided".to_string(),
         ));
     }
 
+    if let Some(invalid_cid) = request_cids.iter().find(|cid| !is_valid_cid(cid)) {
+        tracing::error!("received invalid CID: {}", invalid_cid);
+        return Err(CreateSnapshotError::InvalidRequestCid);
+    }
+
+    let mut transaction = database.begin().await?;
     let user_id = user_identity.id().to_string();
     let metadata_id = sqlx::query_scalar!(
         r#"SELECT m.id FROM metadata AS m
@@ -48,20 +50,11 @@ pub async fn handler(
         metadata_id,
     )
     .fetch_optional(&mut *transaction)
-    .await
-    .map_err(CreateSnapshotError::MetadataUnavailable)?
+    .await?
     .ok_or(CreateSnapshotError::NotFound)?;
 
-    // Normalize all the CIDs
-    let normalized_cids = request
-        .into_iter()
-        .map(|cid| {
-            cid.to_string_of_base(Base::Base64Url)
-                .map_err(CreateSnapshotError::InvalidInternalCid)
-        })
-        .collect::<Result<Vec<_>, _>>()?;
-
-    let size_estimate = normalized_cids.len() as i64 * BLOCK_SIZE;
+    let cid_list: Vec<_> = request_cids.into_iter().collect();
+    let size_estimate = cid_list.len() as i64 * BLOCK_SIZE;
 
     let pending_state = SnapshotState::Pending.to_string();
     let snapshot_id = sqlx::query_scalar!(
@@ -73,8 +66,7 @@ pub async fn handler(
         size_estimate,
     )
     .fetch_one(&mut *transaction)
-    .await
-    .map_err(CreateSnapshotError::SaveFailed)?;
+    .await?;
 
     // Create query builder that can serve as the basis for every chunk
     let mut builder = sqlx::QueryBuilder::new(format!(
@@ -90,7 +82,7 @@ pub async fn handler(
     ));
 
     // For every chunk of 1000 CIDs
-    for cid_chunk in normalized_cids.chunks(1000) {
+    for cid_chunk in cid_list.chunks(1000) {
         // Reset the builder and append the CID list
         builder.reset();
         let mut separated = builder.separated(", ");
@@ -99,11 +91,7 @@ pub async fn handler(
         }
         separated.push_unseparated(");");
 
-        let res = builder
-            .build()
-            .execute(&mut *transaction)
-            .await
-            .map_err(CreateSnapshotError::BlockAssociationFailed)?;
+        let res = builder.build().execute(&mut *transaction).await?;
 
         if res.rows_affected() != cid_chunk.len() as u64 {
             return Err(CreateSnapshotError::AssociationMismatch(format!(
@@ -119,10 +107,7 @@ pub async fn handler(
         .await
         .map_err(CreateSnapshotError::UnableToEnqueueTask)?;
 
-    transaction
-        .commit()
-        .await
-        .map_err(CreateSnapshotError::TransactionFailure)?;
+    transaction.commit().await?;
 
     let resp_msg = serde_json::json!({ "id": snapshot_id });
     Ok((StatusCode::OK, Json(resp_msg)).into_response())
@@ -130,29 +115,20 @@ pub async fn handler(
 
 #[derive(Debug, thiserror::Error)]
 pub enum CreateSnapshotError {
-    #[error("no matching metadata for the current account")]
-    NotFound,
-
-    #[error("unable to locate requested metadata: {0}")]
-    MetadataUnavailable(sqlx::Error),
-
-    #[error("transaction error: {0}")]
-    TransactionFailure(sqlx::Error),
-
-    #[error("saving new snapshot association failed: {0}")]
-    SaveFailed(sqlx::Error),
-
-    #[error("associating the snapshot with the block cid failed: {0}")]
-    BlockAssociationFailed(sqlx::Error),
-
     #[error("association mismatch: {0}")]
     AssociationMismatch(String),
+
+    #[error("an error occurred while interacting with the database: {0}")]
+    DatabaseFailure(#[from] sqlx::Error),
 
     #[error("cannot snapshot an empty bucket: {0}")]
     EmptyBucket(String),
 
-    #[error("active cid list was in some way invalid: {0}")]
-    InvalidInternalCid(cid::Error),
+    #[error("one or more of the provided CIDs are invalid")]
+    InvalidRequestCid,
+
+    #[error("no matching metadata for the current account")]
+    NotFound,
 
     #[error("could not enqueue task: {0}")]
     UnableToEnqueueTask(banyan_task::TaskStoreError),
@@ -165,7 +141,11 @@ impl IntoResponse for CreateSnapshotError {
                 let err_msg = serde_json::json!({"msg": "not found"});
                 (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
             }
-            CreateSnapshotError::AssociationMismatch(e) | CreateSnapshotError::EmptyBucket(e) => {
+            CreateSnapshotError::EmptyBucket(_) | CreateSnapshotError::InvalidRequestCid => {
+                let err_msg = serde_json::json!({"msg": self.to_string()});
+                (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
+            }
+            CreateSnapshotError::AssociationMismatch(e) => {
                 let err_msg = serde_json::json!({"msg": e.to_string()});
                 (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
             }
@@ -182,7 +162,6 @@ mod tests {
     use std::collections::BTreeSet;
 
     use axum::extract::{Json, Path};
-    use cid::Cid;
     use http::StatusCode;
     use uuid::Uuid;
 
@@ -191,8 +170,7 @@ mod tests {
     use crate::database::models::{MetadataState, Snapshot};
     use crate::database::test_helpers::{
         associate_blocks, create_blocks, create_storage_host, data_generator, generate_cids,
-        get_or_create_session, normalize_cids, sample_bucket, sample_metadata, sample_user,
-        setup_database,
+        get_or_create_session, sample_bucket, sample_metadata, sample_user, setup_database,
     };
     use crate::database::Database;
     use crate::extractors::UserIdentity;
@@ -250,8 +228,8 @@ mod tests {
         let metadata_id = sample_metadata(&mut conn, &bucket_id, 1, MetadataState::Current).await;
         let prim_storage_host_id =
             create_storage_host(&mut conn, "Diskz", "https://127.0.0.1:8001/", 1_000_000).await;
-        let cids_set: BTreeSet<Cid> = generate_cids(data_generator(0..3)).collect();
-        let cids_string: Vec<String> = normalize_cids(cids_set.clone().into_iter()).collect();
+        let cids_set: BTreeSet<String> = generate_cids(data_generator(0..3)).collect();
+        let cids_string: Vec<String> = cids_set.iter().cloned().collect();
         let initial_blocks = create_blocks(&mut conn, cids_string.iter().map(String::as_str)).await;
         associate_blocks(
             &mut conn,

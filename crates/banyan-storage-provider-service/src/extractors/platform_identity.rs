@@ -41,10 +41,6 @@ where
 
         let verification_options = VerificationOptions {
             accept_future: false,
-            // TODO: this might not be a quite right, but it's probably fine for now
-            allowed_audiences: Some(HashSet::from_strings(&[
-                ServiceName::from_ref(state).to_string()
-            ])),
             max_validity: Some(Duration::from_secs(MAXIMUM_TOKEN_AGE)),
             time_tolerance: Some(Duration::from_secs(15)),
             ..Default::default()
@@ -73,7 +69,7 @@ pub enum PlatformIdentityError {
     #[error("unable to decode bearer token metadata")]
     CorruptHeader(jwt_simple::Error),
 
-    #[error("bearer token key ID does not conform to our expectations")]
+    #[error("platform identity bearer token key ID does not conform to our expectations")]
     InvalidKeyId,
 
     #[error("authentication header wasn't present")]
