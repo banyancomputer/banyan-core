@@ -1,7 +1,8 @@
 use axum::extract::{Json, Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use base64::{engine::general_purpose::URL_SAFE, Engine as _};
+use base64::engine::general_purpose::URL_SAFE;
+use base64::Engine as _;
 use jwt_simple::prelude::*;
 use url::Url;
 
