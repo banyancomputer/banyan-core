@@ -8,8 +8,8 @@ use crate::extractors::AuthenticatedClient;
 pub async fn handler(identity: AuthenticatedClient) -> Response {
     let resp_msg = serde_json::json!({
         "consumed_storage": identity.consumed_storage(),
-        "fingerprint": identity.fingerprint(),
         "platform_id": identity.platform_id(),
+        "remaining_storage": identity.remaining_storage(),
     });
 
     (StatusCode::OK, Json(resp_msg)).into_response()
