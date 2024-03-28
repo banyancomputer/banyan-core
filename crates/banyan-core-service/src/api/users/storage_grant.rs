@@ -10,7 +10,6 @@ use crate::app::AppState;
 use crate::auth::storage_ticket::StorageTicketBuilder;
 use crate::extractors::ApiIdentity;
 
-#[axum::debug_handler]
 pub async fn handler(
     api_id: ApiIdentity,
     State(state): State<AppState>,
