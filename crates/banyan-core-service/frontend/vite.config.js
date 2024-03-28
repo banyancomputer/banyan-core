@@ -5,6 +5,8 @@ import react from "@vitejs/plugin-react";
 import viteCompression from "vite-plugin-compression";
 import wasm from "vite-plugin-wasm";
 import topLevelAwait from "vite-plugin-top-level-await";
+import { resolve } from 'path';
+import { rm } from 'node:fs/promises';
 
 const PRODUCTION_PLUGINS = [
 	react(),
@@ -27,7 +29,13 @@ const PRODUCTION_PLUGINS = [
 const DEVELOPMENT_PLUGINS = [
 	react(),
 	wasm(),
-	topLevelAwait()
+	topLevelAwait(),
+	{
+		name: "Cleaning assets folder",
+		async buildStart() {
+			await rm(resolve(__dirname, '../dist/assets'), { recursive: true, force: true });
+		}
+	}
 ];
 
 export default ({ mode }) => {

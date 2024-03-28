@@ -66,8 +66,6 @@ const authClient = new AuthClient();
 				localKey.id
 			);
 
-			/** TODO: temporary solution, after reopening pr on main branch have weird behaivor, this reload fixes it, but should be reworked properly. */
-			window.location.reload();
 		} catch (err: any) {
 			throw new Error(err.message);
 		}

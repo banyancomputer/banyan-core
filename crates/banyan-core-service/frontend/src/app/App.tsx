@@ -16,7 +16,7 @@ import { useAppDispatch } from '@app/store';
 import { LANGUAGES, LANGUAGES_KEYS, changeLanguage } from '@app/store/locales/slice';
 import ECCKeystore from '@utils/crypto/ecc/keystore';
 import { getLocalKey } from '@app/utils';
-import { setIsLoading, setKeystore, setKeystoreInitialized } from '@app/store/keystore/slice';
+import { setKeystore, setKeystoreInitialized } from '@app/store/keystore/slice';
 
 const App = () => {
     const dispatch = useAppDispatch();
@@ -62,7 +62,6 @@ const App = () => {
                 } catch (err) {
                     console.log("No valid cached key material found for this session");
                 };
-                dispatch(setIsLoading(false));
             } catch (error: any) {
                 throw new Error(error.message);
             }

@@ -8,7 +8,6 @@ export interface KeystoreState {
     keystore: ECCKeystore | null;
     escrowedKeyMaterial: EscrowedKeyMaterial | null;
     keystoreInitialized: boolean;
-    isLoading: boolean;
 };
 
 const keystoreSlice = createSlice({
@@ -17,7 +16,6 @@ const keystoreSlice = createSlice({
         keystore: null,
         escrowedKeyMaterial: null,
         keystoreInitialized: false,
-        isLoading: true,
     } as KeystoreState,
     reducers: {
         setEscrowedKeyMaterial(state, action:PayloadAction<EscrowedKeyMaterial>){
@@ -29,28 +27,19 @@ const keystoreSlice = createSlice({
         setKeystoreInitialized(state, action:PayloadAction<boolean>){
             state.keystoreInitialized = action.payload;
         },
-        setIsLoading(state, action:PayloadAction<boolean>){
-            state.isLoading = action.payload;
-        },
     },
     extraReducers(builder) {
         builder.addCase(getEscrowedKeyMaterial.fulfilled, (state, action) => {
             state.escrowedKeyMaterial = action.payload;
-            state.isLoading = false;
         });
         builder.addCase(getEscrowedKeyMaterial.rejected, (state) => {
-            state.isLoading = false;
-        });
-        builder.addCase(initializeKeystore.pending, (state) => {
-            state.keystoreInitialized = true;
-            state.isLoading = true;
+            state.keystoreInitialized = false;
         });
         builder.addCase(initializeKeystore.fulfilled, (state) => {
             state.keystoreInitialized = true;
-            state.isLoading = false;
         });
     }
 });
 
-export const { setEscrowedKeyMaterial, setKeystore, setKeystoreInitialized, setIsLoading } = keystoreSlice.actions;
+export const { setEscrowedKeyMaterial, setKeystore, setKeystoreInitialized } = keystoreSlice.actions;
 export default keystoreSlice.reducer;
