@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT OR IGNORE INTO storage_hosts_metadatas_storage_grants\n               (storage_host_id, metadata_id, storage_grant_id)\n               VALUES ($1, $2, $3);",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "42b90b48867b38baa2961cb28d007b3eb97602bf9e7de7c7598a4db4a0497996"
+}
