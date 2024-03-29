@@ -30,7 +30,7 @@ impl StorageHostsMetadatasStorageGrants {
         authorization_id: &str,
     ) -> Result<(), sqlx::Error> {
         sqlx::query!(
-            r#"INSERT INTO storage_hosts_metadatas_storage_grants
+            r#"INSERT OR IGNORE INTO storage_hosts_metadatas_storage_grants
                (storage_host_id, metadata_id, storage_grant_id)
                VALUES ($1, $2, $3);"#,
             provider_id,
