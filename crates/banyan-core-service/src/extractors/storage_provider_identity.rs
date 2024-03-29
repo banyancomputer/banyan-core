@@ -103,7 +103,7 @@ where
             Ok(k) => k,
             Err(err) => {
                 tracing::error!("storage host for public key was invalid: {err}");
-                return Ok(StorageProviderIdentityError::FormatError);
+                return Err(StorageProviderIdentityError::FormatError(err));
             }
         };
 
@@ -111,7 +111,7 @@ where
             Ok(td) => td,
             Err(err) => {
                 tracing::error!("failed to validate the JWT with our given parameters: {err}");
-                return StorageProviderIdentityError::FormatError;
+                return Err(StorageProviderIdentityError::FormatError(err));
             }
         };
 
