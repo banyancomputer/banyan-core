@@ -58,34 +58,34 @@ impl TaskLike for HostCapacityTask {
         // Update reserved_storage
         // Ensure that we are only summing authorized amounts on one storage grant per user, taking
         // care to sort those grants by redemption time and ensure the redemption time is not null
-        sqlx::query!(
-            r#"
-                UPDATE storage_hosts
-                SET reserved_storage = 
-                COALESCE(
-	                (
-                        SELECT SUM(sg.authorized_amount)
-	                    FROM storage_hosts sh
-	                    INNER JOIN (
-                            SELECT a.user_id, a.storage_host_id, a.redeemed_at, a.authorized_amount 
-                            FROM storage_grants a
-                            WHERE a.redeemed_at IN (
-                                SELECT MAX(b.redeemed_at)
-                                FROM storage_grants b
-                                WHERE a.user_id = b.user_id
-                            )
-                            GROUP BY a.id
-	                    ) AS sg 
-	                    WHERE sg.storage_host_id = sh.id 
-                        AND sh.id = $1
-                    ), 
-                0)
-                WHERE id = $1;
-            "#,
-            storage_host_id,
-        )
-        .execute(&mut *db_conn)
-        .await?;
+        //sqlx::query!(
+        //    r#"
+        //        UPDATE storage_hosts
+        //        SET reserved_storage =
+        //        COALESCE(
+        //            (
+        //                SELECT SUM(sg.authorized_amount)
+        //                FROM storage_hosts sh
+        //                INNER JOIN (
+        //                    SELECT a.user_id, a.storage_host_id, a.redeemed_at, a.authorized_amount
+        //                    FROM storage_grants a
+        //                    WHERE a.redeemed_at IN (
+        //                        SELECT MAX(b.redeemed_at)
+        //                        FROM storage_grants b
+        //                        WHERE a.user_id = b.user_id
+        //                    )
+        //                    GROUP BY a.id
+        //                ) AS sg
+        //                WHERE sg.storage_host_id = sh.id
+        //                AND sh.id = $1
+        //            ),
+        //        0)
+        //        WHERE id = $1;
+        //    "#,
+        //    storage_host_id,
+        //)
+        //.execute(&mut *db_conn)
+        //.await?;
 
         Ok(())
     }
