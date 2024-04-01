@@ -1,16 +1,17 @@
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
+import { unwrapResult } from '@reduxjs/toolkit';
 
 import { Input } from '@components/common/Input';
 import { PrimaryButton } from '@components/common/PrimaryButton';
 
-import { useAppSelector } from '@app/store';
-import { useKeystore } from '@app/contexts/keystore';
+import { useAppDispatch, useAppSelector } from '@app/store';
+import { initializeKeystore } from '@store/keystore/actions';
 
 const EnterEncryptionKey = () => {
     const messages = useAppSelector(state => state.locales.messages.pages.enterEncryptionKey);
-    const { initializeKeystore } = useKeystore();
     const navigate = useNavigate();
+    const dispatch = useAppDispatch();
     const {
         formState: { errors },
         handleSubmit,
@@ -26,7 +27,7 @@ const EnterEncryptionKey = () => {
 
     const confirm = async () => {
         try {
-            await initializeKeystore(keyphrase);
+            unwrapResult(await dispatch(initializeKeystore(keyphrase)));
             navigate('/');
         } catch (error: any) {
             setError('keyphrase', { message: `${messages.secretKeyError}` });

@@ -13,12 +13,11 @@ import { destroyIsUserNew, getIsUserNew, prettyFingerprintApiKeyPem, sortByType 
 import { handleNameDuplication } from '@utils/names';
 import { StorageUsageClient } from '@/api/storageUsage';
 import { useAppDispatch, useAppSelector } from '../store';
-import { BannerError, setError } from '@app/store/errors/slice';
-import { getApiKey, getEncryptionKey } from '@app/store/keystore/actions';
+import { BannerError, setError } from '@store/errors/slice';
+import { getApiKey, getEncryptionKey } from '@store/keystore/actions';
 import { ToastNotifications } from '@utils/toastNotifications';
 import { SnapshotsClient } from '@/api/snapshots';
 import { StorageLimits, StorageUsage } from '@/entities/storage';
-import { RoutesConfig } from '@app/routes';
 
 interface TombInterface {
 	tomb: TombWasm | null;
@@ -61,7 +60,7 @@ const TombContext = createContext<TombInterface>({} as TombInterface);
 export const TombProvider = ({ children }: { children: ReactNode }) => {
 	const dispatch = useAppDispatch();
 	const { user } = useAppSelector(state => state.session);
-	const {  keystoreInitialized, escrowedKeyMaterial} = useAppSelector(state => state.keystore);
+	const { keystoreInitialized, escrowedKeyMaterial } = useAppSelector(state => state.keystore);
 	const navigate = useNavigate();
 	const [tomb, setTomb] = useState<TombWasm | null>(null);
 	const [buckets, setBuckets] = useState<Bucket[]>([]);
@@ -354,7 +353,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
 	// Initialize the tomb client
 	useEffect(() => {
-		if (!user.id || !keystoreInitialized  || !escrowedKeyMaterial) { return; }
+		if (!user.id || !keystoreInitialized || !escrowedKeyMaterial) { return; }
 
 		(async () => {
 			try {
@@ -370,12 +369,6 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 			}
 		})();
 	}, [user, keystoreInitialized, escrowedKeyMaterial]);
-
-	useEffect(() => {
-		if (!keystoreInitialized) {
-			navigate(escrowedKeyMaterial ? RoutesConfig.EnterEncryptionKey.path : RoutesConfig.CreateEncryptionKey.path);
-		};
-	}, [keystoreInitialized, escrowedKeyMaterial]);
 
 	useEffect(() => {
 		if (tomb) {

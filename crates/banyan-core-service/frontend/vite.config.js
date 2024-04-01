@@ -64,6 +64,8 @@ export default ({ mode }) => {
 				"@components": path.resolve(__dirname, "./src/app/components/"),
 				"@pages": path.resolve(__dirname, "./src/app/pages/"),
 				"@layouts": path.resolve(__dirname, "./src/app/layouts/"),
+				"@store": path.resolve(__dirname, "./src/app/store/"),
+				"@contexts": path.resolve(__dirname, "./src/app/contexts/"),
 				"@utils": path.resolve(__dirname, "./src/app/utils/"),
 				"@static": path.resolve(__dirname, "./src/app/static/"),
 			},

@@ -1,15 +1,16 @@
 import React, { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
+import { unwrapResult } from '@reduxjs/toolkit';
 
 import { Input } from '@components/common/Input';
 import { PrimaryButton } from '@components/common/PrimaryButton';
 
-import { useAppSelector } from '@app/store';
-import { useKeystore } from '@app/contexts/keystore';
+import { useAppDispatch, useAppSelector } from '@app/store';
 import { UserClient } from '@/api/user';
 import { validateKeyphrase } from '@utils/validation';
 import { TermsAndColditionsClient } from '@/api/termsAndConditions';
+import { initializeKeystore } from '../store/keystore/actions';
 
 import { Done } from '@static/images/common';
 
@@ -19,7 +20,7 @@ const userClient = new UserClient();
 const CreateEncryptionKey = () => {
     const messages = useAppSelector(state => state.locales.messages.pages.createEncryptionKey);
     const [areTermsAccepted, setAreTermsAccepted] = useState(false);
-    const { initializeKeystore } = useKeystore();
+    const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const {
         formState: { errors },
@@ -42,7 +43,7 @@ const CreateEncryptionKey = () => {
         try {
             /** TODO: disscuss account type filed which was removed in current design. */
             await termsClient.confirmTermsAndConditions(userData, accepted_tos_at, 'personal');
-            await initializeKeystore(keyphrase);
+            unwrapResult(await dispatch(initializeKeystore(keyphrase)));
             navigate('/');
         } catch (error: any) {
             console.log(`Failed to initialize keystore: ${error.message}`);
