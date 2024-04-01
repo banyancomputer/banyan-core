@@ -5,6 +5,7 @@ use serde::Serialize;
 use uuid::Uuid;
 
 use crate::app::AppState;
+use crate::database::models::ApiKey;
 use crate::extractors::UserIdentity;
 
 pub async fn handler(
@@ -17,9 +18,9 @@ pub async fn handler(
 
     let user_id: String = user_identity.id().to_string();
     let query_result = sqlx::query_as!(
-        DeviceApiKey,
+        ApiKey,
         r#"
-            SELECT id, user_id, fingerprint, pem
+            SELECT *
             FROM api_keys
             WHERE id = $1 
             AND user_id = $2;
@@ -42,12 +43,4 @@ pub async fn handler(
             (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
         }
     }
-}
-
-#[derive(sqlx::FromRow, Serialize)]
-struct DeviceApiKey {
-    id: String,
-    user_id: String,
-    fingerprint: String,
-    pem: String,
 }

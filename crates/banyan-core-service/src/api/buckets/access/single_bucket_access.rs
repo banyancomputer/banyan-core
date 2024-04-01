@@ -5,7 +5,7 @@ use uuid::Uuid;
 
 use crate::api::models::ApiBucketKey;
 use crate::app::AppState;
-use crate::database::models::BucketKey;
+use crate::database::models::ApiKey;
 use crate::extractors::UserIdentity;
 
 pub async fn handler(

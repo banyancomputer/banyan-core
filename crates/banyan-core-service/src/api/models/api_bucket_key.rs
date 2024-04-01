@@ -1,22 +1,21 @@
 use serde::Serialize;
 
-use crate::database::models::BucketKey;
+use crate::database::models::{ApiKey, BucketAccessState};
 
 #[derive(Serialize)]
-pub struct ApiBucketKey {
+pub struct ApiBucketAccess {
     pub id: String,
-    pub approved: bool,
-    #[serde(rename = "pem")]
-    pub public_key: String,
+    pub state: BucketAccessState,
+    pub pem: String,
     pub fingerprint: String,
 }
 
-impl From<BucketKey> for ApiBucketKey {
-    fn from(val: BucketKey) -> Self {
+impl From<ApiKey> for ApiBucketAccess {
+    fn from(val: ApiKey) -> Self {
         Self {
             id: val.id,
-            approved: val.approved,
-            public_key: val.pem,
+            state: val.state,
+            pem: val.pem,
             fingerprint: val.fingerprint,
         }
     }

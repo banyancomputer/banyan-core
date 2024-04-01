@@ -15,7 +15,7 @@ pub use admin::api_deals_admin::ApiDealsAdmin;
 pub use admin::api_storage_hosts_admin::ApiSelectedStorageHostAdmin;
 pub use api_bucket::ApiBucket;
 pub use api_bucket_configuration::ApiBucketConfiguration;
-pub use api_bucket_key::ApiBucketKey;
+//pub use api_bucket_key::ApiBucketKey;
 pub use api_deals::ApiDeal;
 pub use api_escrowed_key_material::ApiEscrowedKeyMaterial;
 pub use api_invoice::ApiInvoice;

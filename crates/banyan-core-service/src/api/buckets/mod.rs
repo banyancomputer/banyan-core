@@ -1,4 +1,4 @@
-mod keys;
+mod access;
 mod metadata;
 mod snapshots;
 
@@ -36,7 +36,7 @@ where
                 .put(update_bucket::handler)
                 .delete(delete_bucket::handler),
         )
-        .nest("/:bucket_id/keys", keys::router(state.clone()))
+        .nest("/:bucket_id/keys", access::router(state.clone()))
         .nest("/:bucket_id/metadata", metadata::router(state.clone()))
         .nest("/:bucket_id/snapshots", snapshots::router(state.clone()))
         .route("/:bucket_id/usage", get(bucket_usage::handler))

@@ -3,9 +3,9 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use uuid::Uuid;
 
-use crate::api::models::ApiBucketKey;
+//use crate::api::models::ApiBucketKey;
 use crate::app::AppState;
-use crate::database::models::BucketKey;
+use crate::database::models::ApiKey;
 use crate::extractors::UserIdentity;
 
 pub async fn handler(
@@ -19,9 +19,13 @@ pub async fn handler(
     let user_id = user_identity.id().to_string();
     let query_result = sqlx::query_as!(
         BucketKey,
-        "SELECT ak.* FROM api_keys AS ak
-             JOIN buckets AS b ON ak.bucket_id = b.id
-             WHERE b.user_id = $1 AND ak.bucket_id = $2;",
+        r#"
+            SELECT ak.* 
+            FROM api_keys AS ak
+            JOIN buckets AS b ON ak.bucket_id = b.id
+            WHERE b.user_id = $1
+            AND ak.bucket_id = $2;
+        "#,
         user_id,
         bucket_id,
     )

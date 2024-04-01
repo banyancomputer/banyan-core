@@ -6,7 +6,7 @@ use sqlx::sqlite::{SqlitePoolOptions, SqliteQueryResult};
 use time::OffsetDateTime;
 use uuid::Uuid;
 
-use super::models::{ApiKeyState, NewStorageGrant};
+use super::models::{BucketAccessState, NewStorageGrant};
 use crate::database::models::{BucketType, DealState, MetadataState, SnapshotState, StorageClass};
 use crate::database::{Database, DatabaseConnection};
 use crate::extractors::{ApiIdentity, ApiIdentityBuilder, SessionIdentity, SessionIdentityBuilder};
@@ -86,12 +86,12 @@ pub(crate) async fn create_blocks(
     block_ids
 }
 
-pub(crate) async fn create_bucket_key(
+pub(crate) async fn grant_bucket_access(
     conn: &mut DatabaseConnection,
     bucket_id: &str,
     public_key: &str,
     fingerprint: &str,
-    state: ApiKeyState,
+    state: BucketAccessState,
 ) -> String {
     sqlx::query_scalar!(
         r#"

@@ -551,7 +551,9 @@ mod tests {
     use time::OffsetDateTime;
 
     use crate::database::models::bucket::METADATA_WRITE_LOCK_DURATION;
-    use crate::database::models::{Bucket, BucketType, MetadataState, SnapshotState, StorageClass};
+    use crate::database::models::{
+        Bucket, BucketAccessState, BucketType, MetadataState, SnapshotState, StorageClass,
+    };
     use crate::database::test_helpers::*;
     use crate::database::DatabaseConnection;
 
@@ -582,7 +584,7 @@ mod tests {
         let user_id = sample_user(&mut conn, "user@domain.tld").await;
         let bucket_id = sample_bucket(&mut conn, &user_id).await;
 
-        create_bucket_key(&mut conn, &bucket_id, "<pubkey>", "001122", false).await;
+        grant_bucket_access(&mut conn, &bucket_id, "<pubkey>", "001122", false).await;
 
         Bucket::approve_keys_by_fingerprint(&mut conn, &bucket_id, &Vec::new())
             .await
@@ -601,8 +603,8 @@ mod tests {
         let user_id = sample_user(&mut conn, "user@domain.tld").await;
         let bucket_id = sample_bucket(&mut conn, &user_id).await;
 
-        create_bucket_key(&mut conn, &bucket_id, "<pubkey>", "001122", false).await;
-        create_bucket_key(&mut conn, &bucket_id, "<pubkey>", "003355", false).await;
+        grant_bucket_access(&mut conn, &bucket_id, "<pubkey>", "001122", false).await;
+        grant_bucket_access(&mut conn, &bucket_id, "<pubkey>", "003355", false).await;
 
         Bucket::approve_keys_by_fingerprint(&mut conn, &bucket_id, &["003355".to_string()])
             .await
@@ -624,9 +626,16 @@ mod tests {
         let user_id = sample_user(&mut conn, "user@domain.tld").await;
         let bucket_id = sample_bucket(&mut conn, &user_id).await;
 
-        create_bucket_key(&mut conn, &bucket_id, "<pubkey>", "001122", false).await;
-        create_bucket_key(&mut conn, &bucket_id, "<pubkey>", "003355", false).await;
-        create_bucket_key(&mut conn, &bucket_id, "<pubkey>", "abcdef", false).await;
+        grant_bucket_access(
+            &mut conn,
+            &bucket_id,
+            "<pubkey>",
+            "001122",
+            BucketAccessState::Pending,
+        )
+        .await;
+        grant_bucket_access(&mut conn, &bucket_id, "<pubkey>", "003355", false).await;
+        grant_bucket_access(&mut conn, &bucket_id, "<pubkey>", "abcdef", false).await;
 
         let approve_keys = vec!["001122".to_string(), "abcdef".to_string()];
         Bucket::approve_keys_by_fingerprint(&mut conn, &bucket_id, &approve_keys)
