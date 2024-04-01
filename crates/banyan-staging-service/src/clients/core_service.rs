@@ -29,7 +29,9 @@ impl CoreServiceClient {
 
         claims.create_nonce();
         claims.issued_at = Some(Clock::now_since_epoch());
-        let bearer_token = service_signing_key.sign(claims).map_err(|_| CoreServiceError::TokenSigningError)?;
+        let bearer_token = service_signing_key
+            .sign(claims)
+            .map_err(|_| CoreServiceError::TokenSigningError)?;
         let mut default_headers = HeaderMap::new();
         default_headers.insert("Content-Type", HeaderValue::from_static("application/json"));
 
@@ -51,7 +53,7 @@ impl CoreServiceClient {
         let locate_blocks_endpoint = self
             .platform_hostname
             .join("/api/v1/blocks/locate")
-              .map_err(|_| CoreServiceError::UrlJoinError)?;
+            .map_err(|_| CoreServiceError::UrlJoinError)?;
 
         let response = self
             .client
@@ -61,14 +63,13 @@ impl CoreServiceClient {
             .send()
             .await?;
 
-        if response.status().is_success() {
-            return match response.json::<HashMap<String, Vec<String>>>().await {
-                Ok(response) => Ok(response),
-                Err(_) => Err(CoreServiceError::ResponseParseError),
-            };
+        if !response.status().is_success() {
+            return Err(CoreServiceError::BadRequest(response.text().await?));
         }
-
-        Err(CoreServiceError::BadRequest(response.text().await?))
+        response
+            .json::<HashMap<String, Vec<String>>>()
+            .await
+            .map_err(|_| CoreServiceError::ResponseParseError)
     }
 
     pub async fn report_upload(
@@ -87,7 +88,7 @@ impl CoreServiceClient {
         let report_endpoint = self
             .platform_hostname
             .join(&format!("/hooks/storage/report/{}", metadata_id))
-              .map_err(|_| CoreServiceError::UrlJoinError)?;
+            .map_err(|_| CoreServiceError::UrlJoinError)?;
 
         let response = self
             .client
@@ -97,11 +98,10 @@ impl CoreServiceClient {
             .send()
             .await?;
 
-        if response.status().is_success() {
-            return Ok(response);
+        if !response.status().is_success() {
+            return Err(CoreServiceError::BadRequest(response.text().await?));
         }
-
-        Err(CoreServiceError::BadRequest(response.text().await?))
+        Ok(response)
     }
 
     pub async fn request_provider_token(
@@ -111,7 +111,7 @@ impl CoreServiceClient {
         let provider_token_url = self
             .platform_hostname
             .join(format!("/api/v1/auth/provider_grant/{}", storage_provider_id).as_str())
-              .map_err(|_| CoreServiceError::UrlJoinError)?;
+            .map_err(|_| CoreServiceError::UrlJoinError)?;
 
         let response = self
             .client
@@ -120,14 +120,13 @@ impl CoreServiceClient {
             .send()
             .await?;
 
-        if response.status().is_success() {
-            return match response.json::<StorageProviderAuthResponse>().await {
-                Ok(response) => Ok(response),
-                Err(_) => Err(CoreServiceError::ResponseParseError),
-            };
+        if !response.status().is_success() {
+            return Err(CoreServiceError::BadRequest(response.text().await?));
         }
-
-        Err(CoreServiceError::BadRequest(response.text().await?))
+        response
+            .json::<StorageProviderAuthResponse>()
+            .await
+            .map_err(|_| CoreServiceError::ResponseParseError)
     }
 
     pub async fn report_user_bandwidth(
@@ -137,7 +136,7 @@ impl CoreServiceClient {
         let storage_hosts_endpoint = self
             .platform_hostname
             .join("/api/v1/metrics/traffic")
-          .map_err(|_| CoreServiceError::UrlJoinError)?;
+            .map_err(|_| CoreServiceError::UrlJoinError)?;
 
         let response = self
             .client
@@ -147,11 +146,10 @@ impl CoreServiceClient {
             .send()
             .await?;
 
-        if response.status().is_success() {
-            return Ok(());
+        if !response.status().is_success() {
+            return Err(CoreServiceError::BadRequest(response.text().await?));
         }
-
-        Err(CoreServiceError::BadRequest(response.text().await?))
+        Ok(())
     }
 }
 

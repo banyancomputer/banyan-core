@@ -47,14 +47,14 @@ impl StorageProviderClient {
             .await
             .map_err(StorageProviderError::RequestError)?;
 
-        if response.status().is_success() {
-            return match response.json::<Vec<String>>().await {
-                Ok(response) => Ok(response),
-                Err(_) => Err(StorageProviderError::ResponseParseError),
-            };
+        if !response.status().is_success() {
+            return Err(StorageProviderError::BadRequest(response.text().await?));
         }
 
-        Err(StorageProviderError::BadRequest(response.text().await?))
+        response
+            .json::<Vec<String>>()
+            .await
+            .map_err(|_| StorageProviderError::ResponseParseError)
     }
 
     pub async fn get_block(&self, cid: &str) -> Result<Vec<u8>, StorageProviderError> {
@@ -71,10 +71,10 @@ impl StorageProviderClient {
             .await
             .map_err(StorageProviderError::RequestError)?;
 
-        if response.status().is_success() {
-            return Ok(response.bytes().await?.to_vec());
+        if !response.status().is_success() {
+            return Err(StorageProviderError::BadRequest(response.text().await?));
         }
-        Err(StorageProviderError::BadRequest(response.text().await?))
+        Ok(response.bytes().await?.to_vec())
     }
 
     pub async fn push_client(
@@ -95,13 +95,13 @@ impl StorageProviderClient {
             .await
             .map_err(StorageProviderError::RequestError)?;
 
-        if response.status().is_success() {
-            return match response.json::<NewClientResponse>().await {
-                Ok(response) => Ok(response),
-                Err(_) => Err(StorageProviderError::ResponseParseError),
-            };
+        if !response.status().is_success() {
+            return Err(StorageProviderError::BadRequest(response.text().await?));
         }
-        Err(StorageProviderError::BadRequest(response.text().await?))
+        response
+            .json::<NewClientResponse>()
+            .await
+            .map_err(|_| StorageProviderError::ResponseParseError)
     }
 
     pub async fn get_client(
@@ -121,13 +121,13 @@ impl StorageProviderClient {
             .await
             .map_err(StorageProviderError::RequestError)?;
 
-        if response.status().is_success() {
-            return match response.json::<ExistingClientResponse>().await {
-                Ok(response) => Ok(response),
-                Err(_) => Err(StorageProviderError::ResponseParseError),
-            };
+        if !response.status().is_success() {
+            return Err(StorageProviderError::BadRequest(response.text().await?));
         }
-        Err(StorageProviderError::BadRequest(response.text().await?))
+        response
+            .json::<ExistingClientResponse>()
+            .await
+            .map_err(|_| StorageProviderError::ResponseParseError)
     }
 
     pub async fn get_upload(
@@ -147,14 +147,15 @@ impl StorageProviderClient {
             .await
             .map_err(StorageProviderError::RequestError)?;
 
-        if response.status().is_success() {
-            return match response.json::<NewUploadResponse>().await {
-                Ok(response) => Ok(response),
-                Err(_) => Err(StorageProviderError::ResponseParseError),
-            };
+        if !response.status().is_success() {
+            return Err(StorageProviderError::BadRequest(response.text().await?));
         }
-        Err(StorageProviderError::BadRequest(response.text().await?))
+        response
+            .json::<NewUploadResponse>()
+            .await
+            .map_err(|_| StorageProviderError::ResponseParseError)
     }
+
     pub async fn new_upload(
         &self,
         request: &NewUploadRequest,
@@ -172,14 +173,13 @@ impl StorageProviderClient {
             .send()
             .await?;
 
-        if response.status().is_success() {
-            return match response.json::<NewUploadResponse>().await {
-                Ok(response) => Ok(response),
-                Err(_) => Err(StorageProviderError::ResponseParseError),
-            };
+        if !response.status().is_success() {
+            return Err(StorageProviderError::BadRequest(response.text().await?));
         }
-
-        Err(StorageProviderError::BadRequest(response.text().await?))
+        response
+            .json::<NewUploadResponse>()
+            .await
+            .map_err(|_| StorageProviderError::ResponseParseError)
     }
 
     pub async fn upload_block(

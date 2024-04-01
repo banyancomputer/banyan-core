@@ -13,7 +13,7 @@ pub async fn handler(
     Path(metadata_id): Path<String>,
 ) -> Result<Response, GetClientError> {
     let db = state.database();
-    let client = match Clients::find_bu_metadata_id(&db, &metadata_id).await? {
+    let client = match Clients::find_by_metadata_id(&db, &metadata_id).await? {
         Some(client) => client,
         None => return Err(GetClientError::ClientNotFound),
     };

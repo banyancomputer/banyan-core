@@ -9,7 +9,7 @@ pub struct Clients {
 }
 
 impl Clients {
-    pub async fn find_bu_metadata_id(
+    pub async fn find_by_metadata_id(
         conn: &Database,
         metadata_id: &str,
     ) -> Result<Option<Self>, sqlx::Error> {

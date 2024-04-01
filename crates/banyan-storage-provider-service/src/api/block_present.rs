@@ -4,7 +4,6 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 
 use crate::app::AppState;
-use crate::database::Database;
 use crate::extractors::BlockReader;
 
 pub async fn handler(
@@ -14,32 +13,16 @@ pub async fn handler(
 ) -> Result<Response, BlockPresentError> {
     let db = state.database();
 
-    let block_details = present_cids(&db, &cids).await?;
-
-    Ok((StatusCode::OK, Json(block_details)).into_response())
-}
-
-pub async fn present_cids(
-    database: &Database,
-    normalized_cids: &[String],
-) -> Result<Vec<String>, sqlx::Error> {
-    let mut prune_builder = sqlx::QueryBuilder::new("SELECT * FROM blocks WHERE cid IN(");
-
-    let mut block_id_iterator = normalized_cids.iter().peekable();
-    while let Some(bid) = block_id_iterator.next() {
-        prune_builder.push_bind(bid);
-
-        if block_id_iterator.peek().is_some() {
-            prune_builder.push(", ");
-        }
+    let mut prune_builder = sqlx::QueryBuilder::new("SELECT cid FROM blocks WHERE cid IN(");
+    let mut separated = prune_builder.separated(", ");
+    for bid in cids.iter() {
+        separated.push_bind(bid);
     }
     prune_builder.push(");");
 
-    let res = prune_builder
-        .build_query_scalar()
-        .fetch_all(database)
-        .await?;
-    Ok(res)
+    let block_details: Vec<String> = prune_builder.build_query_scalar().fetch_all(&db).await?;
+
+    Ok((StatusCode::OK, Json(block_details)).into_response())
 }
 
 #[derive(Debug, thiserror::Error)]
