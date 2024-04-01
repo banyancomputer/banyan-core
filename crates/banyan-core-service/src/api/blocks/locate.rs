@@ -1,35 +1,32 @@
 use std::collections::HashMap;
-use std::str::FromStr;
 
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
-use cid::multibase::Base;
-use cid::Cid;
 
 use crate::app::AppState;
 use crate::extractors::ApiIdentity;
+use crate::utils::is_valid_cid;
 
 const NA_LABEL: &str = "NA";
-
-pub type LocationRequest = Vec<String>;
 
 pub async fn handler(
     api_id: ApiIdentity,
     State(state): State<AppState>,
-    Json(request): Json<LocationRequest>,
+    Json(cid_list): Json<Vec<String>>,
 ) -> Result<Response, BlockLocationError> {
     let database = state.database();
 
     let user_id = api_id.user_id().to_string();
     let mut result_map: HashMap<String, Vec<String>> = HashMap::new();
 
-    for original_cid in request {
-        let normalized_cid = Cid::from_str(&original_cid)
-            .map_err(BlockLocationError::InvalidCid)?
-            .to_string_of_base(Base::Base64Url)
-            .map_err(BlockLocationError::InvalidCid)?;
+    for cid in cid_list.iter() {
+        // todo(sstelfox): The CID crate only supports parsing data from 512 bit hashes which we
+        // don't use exclusively.
+        if !is_valid_cid(cid) {
+            return Err(BlockLocationError::InvalidCid);
+        }
 
         let block_locations = sqlx::query_scalar!(
             r#"SELECT storage_hosts.url FROM storage_hosts
@@ -44,7 +41,7 @@ pub async fn handler(
                    ORDER BY RANDOM()
                    LIMIT 5;"#,
             user_id,
-            normalized_cid,
+            cid,
         )
         .fetch_all(&database)
         .await
@@ -54,13 +51,10 @@ pub async fn handler(
             result_map
                 .entry(NA_LABEL.to_string())
                 .or_default()
-                .push(original_cid);
+                .push(cid.clone());
         } else {
             for location in block_locations {
-                result_map
-                    .entry(location)
-                    .or_default()
-                    .push(original_cid.clone());
+                result_map.entry(location).or_default().push(cid.clone());
             }
         }
     }
@@ -70,8 +64,8 @@ pub async fn handler(
 
 #[derive(Debug, thiserror::Error)]
 pub enum BlockLocationError {
-    #[error("invalid cid provided in request: {0}")]
-    InvalidCid(cid::Error),
+    #[error("invalid CID provided in request")]
+    InvalidCid,
 
     #[error("failed to locate storages hosts associated with block: {0}")]
     LookupFailed(sqlx::Error),
@@ -80,7 +74,7 @@ pub enum BlockLocationError {
 impl IntoResponse for BlockLocationError {
     fn into_response(self) -> Response {
         match &self {
-            BlockLocationError::InvalidCid(_) => {
+            BlockLocationError::InvalidCid => {
                 let err_msg = serde_json::json!({"msg": "invalid CID provided in the list"});
                 (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
             }

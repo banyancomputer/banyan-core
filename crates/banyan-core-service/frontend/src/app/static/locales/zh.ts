@@ -209,7 +209,7 @@ export default {
                 tryAgain: "重试",
                 allDrives: "所有驱动器",
                 lockedTooltip: {
-                    youHaveNoAccess: "您无权访问此驱动器",
+                    youHaveNoAccess: "您的数据是安全的。在 WNFS 迁移期间，此存储桶已被锁定，将很快解锁。如有任何疑问，请与我们联系。",
                     requestAccess: "请求访问",
                     here: "这里",
                 }

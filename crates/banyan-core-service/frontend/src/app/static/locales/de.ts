@@ -209,7 +209,7 @@ export default {
                 tryAgain: "Erneut versuchen",
                 allDrives: "Alle Laufwerke",
                 lockedTooltip: {
-                    youHaveNoAccess: "Sie haben keinen Zugriff auf dieses Laufwerk",
+                    youHaveNoAccess: "Ihre Daten sind sicher. Während der WNFS-Migration ist dieser Bucket gesperrt. Er wird in Kürze entsperrt. Kontaktieren Sie uns bei Fragen.",
                     requestAccess: "Zugriff anfordern",
                     here: "hier",
                 }

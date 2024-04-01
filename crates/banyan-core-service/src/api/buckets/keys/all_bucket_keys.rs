@@ -29,9 +29,6 @@ pub async fn handler(
     .await
     .map_err(AllBucketKeysError::DatabaseFailure)?;
 
-    // note: this also includes user_id which wasn't being returned before and may cause
-    // compatibility issues
-
     let buckets: Vec<_> = query_result.into_iter().map(ApiBucketKey::from).collect();
     Ok((StatusCode::OK, Json(buckets)).into_response())
 }

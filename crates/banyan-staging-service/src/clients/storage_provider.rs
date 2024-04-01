@@ -1,4 +1,3 @@
-use cid::Cid;
 use http::{HeaderMap, HeaderValue};
 use reqwest::multipart::{Form, Part};
 use reqwest::{Client, Response};
@@ -87,7 +86,7 @@ impl StorageProviderClient {
     pub async fn upload_block(
         &self,
         block: Vec<u8>,
-        cid: Cid,
+        cid: String,
         details: BlockUploadDetailsRequest,
     ) -> Result<Response, StorageProviderError> {
         let full_url = Url::parse(&self.service_hostname)

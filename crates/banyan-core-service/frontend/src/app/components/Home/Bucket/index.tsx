@@ -48,7 +48,7 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
     };
 
     const openBucket = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-        if (!bucket.mount) return;
+        if (!bucket.mount || bucket.locked) return;
         // @ts-ignore
         if (event.target.id === 'bucketContextMenu') { return; }
         navigate(`/drive/${bucket.id}`);
@@ -86,7 +86,7 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
 
     return (
         <div
-            className={`rounded-xl cursor-pointer transition-all border-1 border-border-regular ${!bucket.mount && 'cursor-not-allowed'}`}
+            className={`rounded-xl transition-all border-1 border-border-regular ${!bucket.mount || bucket.locked ? 'cursor-not-allowed' : 'cursor-pointer'}`}
             ref={bucketRef}
             onContextMenu={onContextMenu}
             onClick={openBucket}
@@ -138,9 +138,6 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
                     </div>
                     <div className="capitalize">{bucket.bucketType}</div>
                     {bucket.snapshots.length ? <div>{bucket.snapshots.length} {`${messages.coldSnapshots}`}</div> : null}
-                    <div className="flex justify-between items-center">
-                        <div>{bucket.files.length} {`${messages.files}`}</div>
-                    </div>
                 </div>
             </div>
         </div>

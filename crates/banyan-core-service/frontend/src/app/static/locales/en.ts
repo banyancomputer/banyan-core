@@ -209,7 +209,7 @@ export default {
                 tryAgain: "Try again",
                 allDrives: "All Drives",
                 lockedTooltip: {
-                    youHaveNoAccess: "You don't have access to this drive",
+                    youHaveNoAccess: "Your data is safe. During the WNFS migration, this bucket is locked, it will be unlocked shortly. Contact us with any questions.",
                     requestAccess: "Request access",
                     here: "here",
                 }

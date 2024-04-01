@@ -366,8 +366,7 @@ mod tests {
     };
     use crate::database::test_helpers::{
         create_blocks, create_deal, create_snapshot, create_snapshot_block_locations,
-        data_generator, generate_cids, normalize_cids, sample_bucket, sample_metadata, sample_user,
-        setup_database,
+        data_generator, generate_cids, sample_bucket, sample_metadata, sample_user, setup_database,
     };
     use crate::database::{Database, DatabaseConnection};
     use crate::tasks::create_deals::{best_fit_decreasing, Bin, MAX_SNAPSHOT_SEGMENT_SIZE};
@@ -428,7 +427,7 @@ mod tests {
         let user_id = sample_user(&mut conn, "user1@domain.tld").await;
         let bucket_id = sample_bucket(&mut conn, &user_id).await;
         let metadata_id = sample_metadata(&mut conn, &bucket_id, 1, MetadataState::Current).await;
-        let initial_cids: Vec<_> = normalize_cids(generate_cids(data_generator(0..4))).collect();
+        let initial_cids: Vec<_> = generate_cids(data_generator(0..4)).collect();
         let block_ids = create_blocks(&mut conn, initial_cids.iter().map(String::as_str)).await;
 
         let snapshot_id = create_snapshot(
@@ -482,7 +481,7 @@ mod tests {
             Some(BLOCK_SIZE),
         )
         .await;
-        let initial_cids: Vec<_> = normalize_cids(generate_cids(data_generator(0..4))).collect();
+        let initial_cids: Vec<_> = generate_cids(data_generator(0..4)).collect();
         let block_ids = create_blocks(&mut conn, initial_cids.iter().map(String::as_str)).await;
         create_snapshot_block_locations(&mut conn, &snapshot_id, block_ids).await;
 
