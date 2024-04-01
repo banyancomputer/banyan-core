@@ -1,0 +1,512 @@
+openapi: 3.0.0
+info:
+  title: Banyan Core Service API
+  version: 1.0.0
+paths:
+  /invoices:
+    get:
+      summary: Get all invoices for the user
+      operationId: getAllInvoices
+      security:
+        - ApiIdentity: []
+        - SessionIdentity: []
+      responses:
+        '200':
+          description: List of all invoices
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ApiInvoice'
+        '500':
+          description: Internal server error
+
+  /invoices/{invoice_id}:
+    get:
+      summary: Get a single invoice by ID
+      operationId: getSingleInvoice
+      security:
+        - ApiIdentity: []
+        - SessionIdentity: []
+      parameters:
+        - name: invoice_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Details of the specified invoice
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiInvoice'
+        '404':
+          description: Invoice not found or not owned by the user
+        '500':
+          description: Internal server error
+  /notifications:
+    get:
+      summary: Get all notifications for the user
+      operationId: getAllNotifications
+      security:
+        - ApiIdentity: []
+        - SessionIdentity: []
+      responses:
+        '200':
+          description: List of all notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ApiNotification'
+        '500':
+          description: Internal server error
+
+  /notifications/{notification_id}:
+    delete:
+      summary: Delete a notification by ID
+      operationId: deleteNotification
+      security:
+        - ApiIdentity: []
+        - SessionIdentity: []
+      parameters:
+        - name: notification_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Notification deleted successfully
+        '404':
+          description: Notification not found or not owned by the user
+        '400':
+          description: Notification cannot be deleted because it is not dismissible
+        '500':
+          description: Internal server error
+  /subscriptions:
+    get:
+      summary: Get all subscriptions
+      operationId: getAllSubscriptions
+      security:
+        - ApiIdentity: []
+        - SessionIdentity: []
+      responses:
+        '200':
+          description: List of all subscriptions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ApiSubscription'
+        '500':
+          description: Internal server error
+
+  /subscriptions/{subscription_id}:
+    get:
+      summary: Get a single subscription by ID
+      operationId: getSingleSubscription
+      security:
+        - ApiIdentity: []
+        - SessionIdentity: []
+      parameters:
+        - name: subscription_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Subscription object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSubscription'
+        '404':
+          description: Subscription not found
+        '500':
+          description: Internal server error
+
+  /subscriptions/{subscription_id}/subscribe:
+    post:
+      summary: Purchase a subscription
+      operationId: purchaseSubscription
+      security:
+        - ApiIdentity: []
+        - SessionIdentity: []
+      parameters:
+        - name: subscription_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Checkout session created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  checkout_url:
+                    type: string
+        '402':
+          description: Payment required
+        '404':
+          description: Subscription not found
+        '500':
+          description: Internal server error
+
+  /subscriptions/manage:
+    get:
+      summary: Manage the subscription
+      operationId: manageSubscription
+      security:
+        - ApiIdentity: []
+        - SessionIdentity: []
+      responses:
+        '200':
+          description: Billing portal session created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  portal_url:
+                    type: string
+        '404':
+          description: User without stripe association not found
+        '500':
+          description: Internal server error
+
+  /subscriptions/success/{checkout_session_id}:
+    get:
+      summary: Subscription purchase success redirect
+      operationId: subscriptionPurchaseSuccess
+      security:
+        - ApiIdentity: []
+        - SessionIdentity: []
+      parameters:
+        - name: checkout_session_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redirect to success page
+
+  /subscriptions/cancel:
+    get:
+      summary: Subscription purchase cancel redirect
+      operationId: subscriptionPurchaseCancel
+      security:
+        - ApiIdentity: []
+        - SessionIdentity: []
+      responses:
+        '302':
+          description: Redirect to cancel page
+  /escrowed_device:
+    get:
+      summary: Get current user's escrowed device
+      operationId: getCurrentEscrowedDevice
+      security:
+        - ApiIdentity: []
+        - SessionIdentity: []
+      responses:
+        '200':
+          description: Escrowed device information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiEscrowedKeyMaterial'
+        '500':
+          description: Internal server error
+
+  /current_user:
+    get:
+      summary: Get current user information
+      operationId: getCurrentUser
+      security:
+        - ApiIdentity: []
+        - SessionIdentity: []
+      responses:
+        '200':
+          description: A user object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiUser'
+        '404':
+          description: User not found
+  /update_user:
+    patch:
+      summary: Update current user information
+      operationId: updateCurrentUser
+      security:
+        - ApiIdentity: []
+        - SessionIdentity: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiUser'
+      responses:
+        '204':
+          description: User updated successfully
+        '400':
+          description: Invalid request
+        '404':
+          description: User not found
+  /current_escrowed_device:
+    get:
+      summary: Get current user's escrowed device
+      operationId: getCurrentEscrowedDevice
+      security:
+        - ApiIdentity: []
+        - SessionIdentity: []
+      responses:
+        '200':
+          description: Escrowed device information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiEscrowedKeyMaterial'
+        '500':
+          description: Internal server error
+components:
+  securitySchemes:
+    ApiIdentity:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    SessionIdentity:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://accounts.google.com/o/oauth2/v2/auth
+          tokenUrl: https://oauth2.googleapis.com/token
+          scopes:
+            email: Access to the user's email address
+            profile: Access to the user's basic profile information
+  schemas:
+    ApiUser:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        display_name:
+          type: string
+        locale:
+          type: string
+          nullable: true
+        profile_image:
+          type: string
+          nullable: true
+        accepted_tos_at:
+          type: integer
+          format: int64
+          nullable: true
+        account_tax_class:
+          type: string
+        subscription_id:
+          type: string
+        subscription_valid_until:
+          type: string
+          format: date-time
+          nullable: true
+        monthly_egress:
+          type: integer
+          format: int64
+          nullable: true
+    ApiBucket:
+      type: object
+      properties:
+        id:
+          type: string
+        owner_id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum: [BucketType]
+        storage_class:
+          type: string
+          enum: [StorageClass]
+        updated_at:
+          type: string
+          format: date-time
+    ApiBucketKey:
+      type: object
+      properties:
+        id:
+          type: string
+        bucket_id:
+          type: string
+        approved:
+          type: boolean
+        pem:
+          type: string
+        fingerprint:
+          type: string
+    ApiBucketConfiguration:
+      type: object
+      properties:
+        name:
+          type: string
+          nullable: true
+        replicas:
+          type: integer
+          format: int64
+          nullable: true
+          ApiDeal:
+            type: object
+            properties:
+              id:
+                type: string
+              state:
+                type: string
+              size:
+                type: integer
+                format: int64
+    ApiInvoice:
+      type: object
+      properties:
+        id:
+          type: string
+        billing_start:
+          type: string
+          format: date-time
+        billing_end:
+          type: string
+          format: date-time
+        subscription_id:
+          type: string
+        total_amount:
+          type: integer
+          format: int64
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    ApiNotification:
+      type: object
+      properties:
+        id:
+          type: string
+        user_id:
+          type: string
+        dismissable:
+          type: boolean
+        message:
+          type: string
+        message_key:
+          type: string
+        severity:
+          type: string
+        created_at:
+          type: integer
+          format: int64
+    ApiEscrowedKeyMaterial:
+      type: object
+      properties:
+        api_public_key_pem:
+          type: string
+        encryption_public_key_pem:
+          type: string
+        encrypted_private_key_material:
+          type: string
+        pass_key_salt:
+          type: string
+    ApiSnapshot:
+      type: object
+      properties:
+        id:
+          type: string
+        bucket_id:
+          type: string
+        metadata_id:
+          type: string
+        size:
+          type: integer
+          format: int64
+          nullable: true
+        state:
+          type: string
+        created_at:
+          type: integer
+          format: int64
+    ApiSubscription:
+      type: object
+      properties:
+        id:
+          type: string
+        currently_active:
+          type: boolean
+          nullable: true
+        service_key:
+          type: string
+        tax_class:
+          type: string
+        title:
+          type: string
+        features:
+          $ref: '#/components/schemas/ApiSubscriptionFeatures'
+        pricing:
+          $ref: '#/components/schemas/ApiSubscriptionPricing'
+    ApiSubscriptionFeatures:
+      type: object
+      properties:
+        archival_available:
+          type: boolean
+        included_hot_replica_count:
+          type: integer
+          format: int64
+        included_hot_storage:
+          type: integer
+          format: int64
+        included_bandwidth:
+          type: integer
+          format: int64
+        archival_hard_limit:
+          type: integer
+          format: int64
+          nullable: true
+        hot_storage_hard_limit:
+          type: integer
+          format: int64
+          nullable: true
+        bandwidth_hard_limit:
+          type: integer
+          format: int64
+          nullable: true
+    ApiSubscriptionPricing:
+      type: object
+      properties:
+        archival:
+          type: number
+          format: float
+          nullable: true
+        hot_storage:
+          type: number
+          format: float
+          nullable: true
+        plan_base:
+          type: number
+          format: float
+          nullable: true
+        bandwidth:
+          type: number
+          format: float
+          nullable: true

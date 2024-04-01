@@ -1,0 +1,36 @@
+openapi: 3.0.0
+info:
+  title: Banyan Core Service API
+  version: 1.0.0
+paths:
+  /redistributeStagingData:
+    post:
+      summary: Redistribute staging data
+      operationId: redistributeStagingData
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RedistributeStagingDataRequest'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RedistributeStagingDataResponse'
+        '400':
+          description: Invalid request
+        '500':
+          description: Internal server error
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    
