@@ -1,7 +1,5 @@
 use async_trait::async_trait;
 use banyan_task::{CurrentTask, TaskLike};
-use cid::multibase::Base;
-use cid::Cid;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -13,8 +11,8 @@ pub type ReportRedistributionTaskContext = AppState;
 #[non_exhaustive]
 #[derive(Debug, thiserror::Error)]
 pub enum ReportRedistributionTaskError {
-    #[error("invalid cid: {0}")]
-    InvalidInternalCid(#[from] cid::Error),
+    #[error("invalid cid")]
+    InvalidInternalCid,
     #[error("sql error: {0}")]
     DatabaseError(#[from] sqlx::Error),
     #[error("reqwest error: {0}")]
@@ -26,7 +24,7 @@ pub struct ReportRedistributionTask {
     grant_id: Uuid,
     replication: bool,
     metadata_id: String,
-    cids: Vec<Cid>,
+    cids: Vec<String>,
     data_size: i64,
 }
 
@@ -34,7 +32,7 @@ impl ReportRedistributionTask {
     pub fn new(
         grant_id: Uuid,
         metadata_id: &str,
-        cids: &[Cid],
+        cids: &[String],
         data_size: i64,
         replication: bool,
     ) -> Self {
@@ -56,14 +54,15 @@ impl TaskLike for ReportRedistributionTask {
     type Context = ReportRedistributionTaskContext;
 
     async fn run(&self, _task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
-        let normalized_cids = self
-            .cids
-            .iter()
-            .map(|c| {
-                c.to_string_of_base(Base::Base64Url)
-                    .map_err(ReportRedistributionTaskError::InvalidInternalCid)
-            })
-            .collect::<Result<Vec<_>, _>>()?;
+        // let normalized_cids = self
+        //     .cids
+        //     .iter()
+        // TODO: is that going to be a problem?
+        // .map(|c| {
+        //     c.to_string_of_base(Base::Base64Url)
+        //         .map_err(ReportRedistributionTaskError::InvalidInternalCid)
+        // })
+        // .collect::<Result<Vec<_>, _>>()?;
 
         let client = CoreServiceClient::new(
             ctx.secrets().service_signing_key(),
@@ -79,7 +78,7 @@ impl TaskLike for ReportRedistributionTask {
                     replication: self.replication,
                     data_size: self.data_size,
                     grant_id: self.grant_id.to_string(),
-                    normalized_cids,
+                    normalized_cids: self.cids.clone(),
                 },
             )
             .await?;

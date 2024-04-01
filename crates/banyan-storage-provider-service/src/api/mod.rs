@@ -17,8 +17,8 @@ use time::{Date, OffsetDateTime};
 use tower_http::cors::CorsLayer;
 use uuid::Uuid;
 
-mod block_present;
 mod auth;
+mod block_present;
 mod block_retrieval;
 mod client_grant;
 mod hooks;

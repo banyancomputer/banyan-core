@@ -64,7 +64,7 @@ impl TaskLike for RedistributeBlocksTask {
 
         let mut blocks = self.block_cids.clone();
         if blocks.iter().any(|c| !is_valid_cid(c)) {
-            return Err(UploadBlocksTaskError::InvalidCid);
+            return Err(RedistributeBlocksTaskError::InvalidCid);
         }
 
         // handling the case where we failed and want to start from another block
@@ -84,9 +84,6 @@ impl TaskLike for RedistributeBlocksTask {
             let content = content
                 .bytes()
                 .await
-                .map_err(|_| RedistributeBlocksTaskError::ByteConversionError(block_cid.clone()))?;
-            let block_cid =
-                cid::Cid::try_from(block_cid).map_err(RedistributeBlocksTaskError::InvalidCid)?;
                 .map_err(|_| RedistributeBlocksTaskError::ByteConversionError(block_cid.clone()))?;
 
             let is_last_block = index == total_blocks - 1;

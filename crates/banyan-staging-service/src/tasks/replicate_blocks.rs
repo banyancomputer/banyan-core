@@ -14,8 +14,8 @@ pub type ReplicateBlocksTaskContext = AppState;
 #[non_exhaustive]
 #[derive(Debug, thiserror::Error)]
 pub enum ReplicateBlocksTaskError {
-    #[error("invalid cid provided in request: {0}")]
-    InvalidCid(cid::Error),
+    #[error("invalid cid provided in request")]
+    InvalidCid,
     #[error("sql error: {0}")]
     DatabaseError(#[from] sqlx::Error),
     #[error("core service error: {0}")]
@@ -73,8 +73,6 @@ impl TaskLike for ReplicateBlocksTask {
         // TODO: dedupe this, otherwise it can become expensive, e.g. store a bloom filter somewhere
         for (index, block_cid) in blocks.into_iter().enumerate() {
             let fetched_block = old_client.get_block(&block_cid).await?;
-            let block_cid =
-                cid::Cid::try_from(block_cid).map_err(ReplicateBlocksTaskError::InvalidCid)?;
 
             let is_last_block = index == total_blocks - 1;
             new_client

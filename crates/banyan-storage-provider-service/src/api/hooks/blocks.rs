@@ -11,7 +11,6 @@ use uuid::Uuid;
 
 use crate::api::upload::db::{complete_upload, write_block_to_tables};
 use crate::app::AppState;
-use crate::clients::{CoreServiceClient, ReportRedistributionRequest};
 use crate::database::models::Upload;
 use crate::database::DatabaseConnection;
 use crate::extractors::PlatformIdentity;
@@ -82,6 +81,7 @@ pub async fn handler(
 
         // Write this block to the tables
         write_block_to_tables(&mut conn, &upload.id, &request.cid, block.len() as i64).await?;
+        // TODO: that doesn't seem correct
         total_size += block.len();
 
         // Write the bytes to the expected location
@@ -102,7 +102,7 @@ pub async fn handler(
             request.details.grant_id,
             &upload.metadata_id,
             &upload.id,
-            total_size,
+            total_size as i64,
             request.details.replication,
         )
         .await?;
@@ -203,11 +203,6 @@ pub async fn report_complete_redistribution(
     )
     .fetch_all(&mut *conn)
     .await?;
-
-    let all_cids = all_cids
-        .into_iter()
-        .map(|cid_string| Cid::from_str(&cid_string).unwrap())
-        .collect::<Vec<Cid>>();
 
     ReportRedistributionTask::new(grant_id, metadata_id, &all_cids, total_size, replication)
         .enqueue::<banyan_task::SqliteTaskStore>(&mut *conn)

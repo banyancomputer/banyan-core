@@ -2,7 +2,6 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
-use cid::Cid;
 
 use crate::app::AppState;
 use crate::database::Database;
@@ -14,25 +13,15 @@ pub async fn handler(
     Json(cids): Json<Vec<String>>,
 ) -> Result<Response, BlockPresentError> {
     let db = state.database();
-    let mut normalized_cid = Vec::new();
-    for cid in &cids {
-        let cid_str = Cid::try_from(cid.as_str())
-            .map_err(BlockPresentError::InvalidCid)
-            .and_then(|cid| {
-                cid.to_string_of_base(cid::multibase::Base::Base64Url)
-                    .map_err(BlockPresentError::InvalidCid)
-            })?;
-        normalized_cid.push(cid_str);
-    }
 
-    let block_details = present_cids(&db, normalized_cid).await?;
+    let block_details = present_cids(&db, &cids).await?;
 
     Ok((StatusCode::OK, Json(block_details)).into_response())
 }
 
 pub async fn present_cids(
     database: &Database,
-    normalized_cids: Vec<String>,
+    normalized_cids: &[String],
 ) -> Result<Vec<String>, sqlx::Error> {
     let mut prune_builder = sqlx::QueryBuilder::new("SELECT * FROM blocks WHERE cid IN(");
 
@@ -59,7 +48,7 @@ pub enum BlockPresentError {
     DbFailure(#[from] sqlx::Error),
 
     #[error("request for invalid CID rejected")]
-    InvalidCid(#[from] cid::Error),
+    InvalidCid(String),
 }
 
 impl IntoResponse for BlockPresentError {
@@ -72,8 +61,8 @@ impl IntoResponse for BlockPresentError {
                 let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
             }
-            InvalidCid(err) => {
-                tracing::warn!("invalid CID: {}", err);
+            InvalidCid(cid) => {
+                tracing::warn!("invalid CID: {}", cid);
                 let err_msg = serde_json::json!({ "msg": "blocks not found" });
                 (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
             }

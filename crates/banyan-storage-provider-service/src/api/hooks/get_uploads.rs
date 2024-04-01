@@ -3,8 +3,8 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 
-use crate::api::upload::Upload;
 use crate::app::AppState;
+use crate::database::models::Upload;
 use crate::extractors::PlatformIdentity;
 
 pub async fn handler(
