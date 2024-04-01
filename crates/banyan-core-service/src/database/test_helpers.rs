@@ -177,9 +177,9 @@ pub(crate) async fn create_deal(
     let size = size.unwrap_or(BLOCK_SIZE);
     let random_number = rand::thread_rng().gen_range(10000..10000000);
     let number_of_blocks = 2;
-    let initial_cids: Vec<_> = normalize_cids(generate_cids(data_generator(
+    let initial_cids: Vec<_> = generate_cids(data_generator(
         random_number..random_number + number_of_blocks,
-    )))
+    ))
     .collect();
     let block_ids = create_blocks(database, initial_cids.iter().map(String::as_str)).await;
     let segment_id = create_snapshot_segment(
@@ -431,18 +431,8 @@ pub(crate) fn data_generator<'a>(range: Range<usize>) -> impl Iterator<Item = Ve
 
 pub(crate) fn generate_cids<'a>(
     src_data: impl Iterator<Item = Vec<u8>> + 'a,
-) -> impl Iterator<Item = cid::Cid> + 'a {
-    use cid::multihash::MultihashDigest;
-    src_data.map(|d| cid::Cid::new_v1(0x55, cid::multihash::Code::Blake3_256.digest(d.as_slice())))
-}
-
-pub(crate) fn normalize_cids<'a>(
-    src_data: impl Iterator<Item = cid::Cid> + 'a,
 ) -> impl Iterator<Item = String> + 'a {
-    src_data.map(|cid| {
-        cid.to_string_of_base(cid::multibase::Base::Base64Url)
-            .expect("valid conversion")
-    })
+    src_data.map(|d| quick_cid(&d))
 }
 
 pub(crate) async fn sample_bucket(conn: &mut DatabaseConnection, user_id: &str) -> String {
@@ -480,8 +470,7 @@ pub(crate) async fn sample_blocks(
     storage_host_id: &str,
     grant_id: &str,
 ) -> Vec<String> {
-    let initial_cids: Vec<_> =
-        normalize_cids(generate_cids(data_generator(0..number_of_blocks))).collect();
+    let initial_cids: Vec<_> = generate_cids(data_generator(0..number_of_blocks)).collect();
     let block_ids = create_blocks(&mut *conn, initial_cids.iter().map(String::as_str)).await;
 
     associate_blocks(
@@ -622,6 +611,20 @@ pub(crate) async fn metadata_timestamps(
     .expect("query success");
 
     (rec.created_at, rec.updated_at)
+}
+
+pub(crate) fn quick_cid(data: &[u8]) -> String {
+    use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+    use base64::Engine;
+
+    let mut cid_bytes = Vec::with_capacity(36);
+
+    cid_bytes.extend_from_slice(&[0x01, 0x55, 0x1e, 0x20]);
+    cid_bytes.extend_from_slice(blake3::hash(data).as_bytes());
+
+    let encoded = URL_SAFE_NO_PAD.encode(cid_bytes);
+
+    format!("u{}", encoded)
 }
 
 pub(crate) async fn raw_metadata_timestamps(

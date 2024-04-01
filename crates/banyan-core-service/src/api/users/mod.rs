@@ -8,6 +8,7 @@ use crate::app::AppState;
 
 mod current_escrowed_device;
 mod current_user;
+mod storage_grant;
 mod update_user;
 
 pub fn router<B>(state: AppState) -> Router<AppState, B>
@@ -22,5 +23,6 @@ where
             get(current_user::handler).patch(update_user::handler),
         )
         .route("/escrowed_device", get(current_escrowed_device::handler))
+        .route("/storage_grant/:base_url", get(storage_grant::handler))
         .with_state(state)
 }

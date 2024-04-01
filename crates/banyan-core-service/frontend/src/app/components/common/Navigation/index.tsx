@@ -82,20 +82,20 @@ export const Navigation = () => {
 				</NavLink>
 				{
 					isBucketsVisible &&
-					<ul className="flex-col gap-2 max-h-[calc(100vh-360px)] overflow-y-auto px-2 text-xxs">
+					<ul className="flex-col gap-2 max-h-[calc(100vh-360px)] h-full w-full overflow-y-auto overflow-x-visible px-2 text-xxs">
 						{
 							buckets.map(bucket =>
 								<li key={bucket.id}>
 									<NavLink
 										id={bucket.id}
-										to={`/drive/${bucket.id}`}
+										to={bucket.locked ? '' : `/drive/${bucket.id}`}
 										onDrag={preventDefaultDragAction}
 										onDrop={event => handleDrop(event, bucket)}
 										onClick={event => preventNavigation(event, bucket)}
-										className={`relative flex items-center justify-between gap-2 w-full h-10 cursor-pointer ${!bucket.mount && 'cursor-not-allowed'} transition-all hover:bg-navigation-secondary`}
+										className={`flex items-center justify-between gap-2 w-full h-10 ${!bucket.mount && 'cursor-not-allowed'} transition-all hover:bg-navigation-secondary ${bucket.locked ? 'cursor-not-allowed' : 'cursor-pointer'}`}
 									>
 										<span
-											className={`flex items-center gap-3 relative py-2 px-2 ${bucket.locked ? 'pr-6' : 'pr-2'} flex-grow whitespace-nowrap rounded-md overflow-ellipsis z-10 ${location.pathname.includes(bucket.id) && 'bg-navigation-secondary'}`}
+											className={`w-full flex items-center gap-3 py-2 px-2 ${bucket.locked ? 'pr-8' : 'pr-2'} flex-grow whitespace-nowrap rounded-md ${location.pathname.includes(bucket.id) && 'bg-navigation-secondary'}`}
 										>
 											<span className={`${location.pathname.includes(bucket.id) ? 'text-text-900' : 'text-navigation-textSecondary'}`}>
 												{
@@ -105,8 +105,12 @@ export const Navigation = () => {
 														<Directory />
 												}
 											</span>
-											{bucket.name}
-											{bucket.locked && <LockedTooltip bucket={bucket} className="right-0" />}
+											<div className="overflow-hidden text-ellipsis w-full">
+												{bucket.name}
+											</div>
+											<div className='relative h-4 '>
+												{bucket.locked && <LockedTooltip bucket={bucket} className="left-0 top-0" />}
+											</div>
 										</span>
 									</NavLink>
 								</li>

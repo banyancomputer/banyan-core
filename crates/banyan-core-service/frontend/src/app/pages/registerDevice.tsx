@@ -22,7 +22,7 @@ const RegisterDevice = () => {
 				console.log(`error: ${error}`);
 				alert('failed to authorize new device!');
 			});
-	}
+	};
 
 	return (
 		<section className="py-9 px-4" id="buckets">

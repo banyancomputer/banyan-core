@@ -14,7 +14,7 @@ import { useTomb } from '@app/contexts/tomb';
 export const NextBillingDate = () => {
     const dispatch = useAppDispatch();
     const { selectedSubscription } = useAppSelector(state => state.billing);
-    const { subscriptionValidUntil, monthlyEggress } = useAppSelector(state => state.user);
+    const { subscriptionValidUntil, monthlyEggress } = useAppSelector(state => state.session.user);
     const messages = useAppSelector(state => state.locales.messages.coponents.account.billing.invoices.nextBillingDate);
     const { openModal } = useModal();
     const { storageUsage, storageLimits } = useTomb();

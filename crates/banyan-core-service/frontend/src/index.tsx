@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { Provider } from 'react-redux';
 
 import { store } from './app/store';
+import { ModalProvider } from './app/contexts/modals';
 import App from './app/App';
 
 import './index.css';
@@ -13,6 +14,8 @@ const root = ReactDOM.createRoot(
 
 root.render(
     <Provider store={store}>
-        <App />
+        <ModalProvider>
+            <App />
+        </ModalProvider>
     </Provider>
 );
