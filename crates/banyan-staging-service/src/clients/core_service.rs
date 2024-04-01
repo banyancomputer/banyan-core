@@ -21,7 +21,7 @@ impl CoreServiceClient {
         service_name: &str,
         platform_name: &str,
         platform_hostname: Url,
-    ) -> Self {
+    ) -> Result<Self, CoreServiceError> {
         let mut claims = Claims::create(Duration::from_secs(60))
             .with_audiences(HashSet::from_strings(&[platform_name]))
             .with_subject(service_name)
@@ -29,20 +29,20 @@ impl CoreServiceClient {
 
         claims.create_nonce();
         claims.issued_at = Some(Clock::now_since_epoch());
-        let bearer_token = service_signing_key.sign(claims).unwrap();
+        let bearer_token = service_signing_key.sign(claims).map_err(|_| CoreServiceError::TokenSigningError)?;
         let mut default_headers = HeaderMap::new();
         default_headers.insert("Content-Type", HeaderValue::from_static("application/json"));
 
         let client = Client::builder()
             .default_headers(default_headers)
             .build()
-            .unwrap();
+            .map_err(|_| CoreServiceError::ClientBuildingError)?;
 
-        Self {
+        Ok(Self {
             client,
             bearer_token,
             platform_hostname,
-        }
+        })
     }
     pub async fn locate_blocks(
         &self,
@@ -51,7 +51,7 @@ impl CoreServiceClient {
         let locate_blocks_endpoint = self
             .platform_hostname
             .join("/api/v1/blocks/locate")
-            .unwrap();
+              .map_err(|_| CoreServiceError::UrlJoinError)?;
 
         let response = self
             .client
@@ -87,7 +87,7 @@ impl CoreServiceClient {
         let report_endpoint = self
             .platform_hostname
             .join(&format!("/hooks/storage/report/{}", metadata_id))
-            .unwrap();
+              .map_err(|_| CoreServiceError::UrlJoinError)?;
 
         let response = self
             .client
@@ -111,7 +111,7 @@ impl CoreServiceClient {
         let provider_token_url = self
             .platform_hostname
             .join(format!("/api/v1/auth/provider_grant/{}", storage_provider_id).as_str())
-            .unwrap();
+              .map_err(|_| CoreServiceError::UrlJoinError)?;
 
         let response = self
             .client
@@ -137,7 +137,7 @@ impl CoreServiceClient {
         let storage_hosts_endpoint = self
             .platform_hostname
             .join("/api/v1/metrics/traffic")
-            .unwrap();
+          .map_err(|_| CoreServiceError::UrlJoinError)?;
 
         let response = self
             .client
@@ -157,6 +157,12 @@ impl CoreServiceClient {
 
 #[derive(Debug, thiserror::Error)]
 pub enum CoreServiceError {
+    #[error("client building error")]
+    ClientBuildingError,
+    #[error("token signing error")]
+    TokenSigningError,
+    #[error("url join error")]
+    UrlJoinError,
     #[error("response parse error")]
     ResponseParseError,
     #[error("failure during request: {0}")]

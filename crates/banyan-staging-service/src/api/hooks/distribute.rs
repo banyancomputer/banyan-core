@@ -53,7 +53,6 @@ pub async fn handler(
 
         let missing_cids = block_cids
             .symmetric_difference(&blocks_cids_set)
-            .cloned()
             .collect::<HashSet<_>>();
 
         return Err(DistributeBlocksError::BadRequest(format!(
@@ -82,11 +81,11 @@ impl IntoResponse for DistributeBlocksError {
         match self {
             DistributeBlocksError::UnableToEnqueueTask(_) => {
                 tracing::error!("{self}");
-                let err_msg = serde_json::json!({ "msg": self.to_string() });
+                let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
             }
             DistributeBlocksError::BadRequest(_) | DistributeBlocksError::Database(_) => {
-                let err_msg = serde_json::json!({ "msg": self.to_string() });
+                let err_msg = serde_json::json!({ "msg": "invalid request" });
                 (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
             }
         }

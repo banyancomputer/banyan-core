@@ -49,7 +49,7 @@ impl TaskLike for ReplicateBlocksTask {
             ctx.service_name(),
             ctx.platform_name(),
             ctx.platform_hostname(),
-        );
+        )?;
         let provider_credentials = client
             .request_provider_token(&self.old_storage_host_id)
             .await?;
@@ -69,19 +69,18 @@ impl TaskLike for ReplicateBlocksTask {
         // handling the case where we failed and want to start from another block
         // so that in the end only the failing block would be left
         blocks.as_mut_slice().shuffle(&mut rand::thread_rng());
-        let total_blocks = blocks.len();
         // TODO: dedupe this, otherwise it can become expensive, e.g. store a bloom filter somewhere
-        for (index, block_cid) in blocks.into_iter().enumerate() {
+        let mut blocks_iter = blocks.into_iter().peekable();
+        while let Some(block_cid) = blocks_iter.next() {
             let fetched_block = old_client.get_block(&block_cid).await?;
 
-            let is_last_block = index == total_blocks - 1;
             new_client
                 .upload_block(
                     fetched_block,
                     block_cid,
                     BlockUploadDetailsRequest {
                         replication: true,
-                        completed: is_last_block,
+                        completed: blocks_iter.peek().is_none(),
                         grant_id: self.grant_id.clone(),
                         upload_id: self.new_upload_id.clone(),
                     },

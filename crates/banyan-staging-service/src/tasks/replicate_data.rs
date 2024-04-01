@@ -57,7 +57,7 @@ impl TaskLike for ReplicateDataTask {
             ctx.service_name(),
             ctx.platform_name(),
             ctx.platform_hostname(),
-        );
+        )?;
         let old_provider_credentials = client.request_provider_token(&self.old_host_id).await?;
         let old_storage_client =
             StorageProviderClient::new(&self.old_host_url, &old_provider_credentials.token);

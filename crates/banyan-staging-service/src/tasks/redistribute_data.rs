@@ -56,7 +56,7 @@ impl TaskLike for RedistributeDataTask {
             ctx.service_name(),
             ctx.platform_name(),
             ctx.platform_hostname(),
-        );
+        )?;
         let provider_credentials = client.request_provider_token(&self.new_host_id).await?;
         let storage_client =
             StorageProviderClient::new(&self.new_host_url, &provider_credentials.token);
