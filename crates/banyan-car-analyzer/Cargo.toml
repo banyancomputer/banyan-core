@@ -9,9 +9,9 @@ path = "src/lib.rs"
 
 [dependencies]
 thiserror = "^1"
+base64 = "^0.22"
 blake3 = "^1"
 bytes = "^1"
-cid = { version = "^0.10", features = ["serde-codec"] }
 axum = { version = "^0.6", features = [
   "headers",
   "http2",

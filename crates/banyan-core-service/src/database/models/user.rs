@@ -4,7 +4,7 @@ use time::OffsetDateTime;
 use super::Subscription;
 use crate::database::models::{HotUsage, SnapshotState, SubscriptionStatus, TaxClass};
 use crate::database::DatabaseConnection;
-use crate::GIBIBYTE;
+use crate::utils::GIBIBYTE;
 
 #[derive(Debug, Serialize, sqlx::FromRow)]
 pub struct User {

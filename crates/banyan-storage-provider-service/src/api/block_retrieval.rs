@@ -8,6 +8,7 @@ use crate::app::AppState;
 use crate::database::models::BlockDetails;
 use crate::database::Database;
 use crate::extractors::BlockReader;
+use crate::utils::is_valid_cid;
 
 pub async fn handler(
     State(state): State<AppState>,
@@ -16,12 +17,12 @@ pub async fn handler(
     Path(cid): Path<String>,
 ) -> Result<Response, BlockRetrievalError> {
     let db = state.database();
-    let cid = cid::Cid::try_from(cid).map_err(BlockRetrievalError::InvalidCid)?;
-    let normalized_cid = cid
-        .to_string_of_base(cid::multibase::Base::Base64Url)
-        .expect("parsed cid to unparse");
 
-    let block_details = block_from_normalized_cid(&db, &normalized_cid).await?;
+    if !is_valid_cid(&cid) {
+        return Err(BlockRetrievalError::InvalidCid);
+    }
+
+    let block_details = block_from_cid(&db, &cid).await?;
     if !client.can_read_block(&block_details) {
         return Err(BlockRetrievalError::NotBlockOwner);
     }
@@ -34,9 +35,7 @@ pub async fn handler(
     );
     headers.insert(
         axum::http::header::CONTENT_DISPOSITION,
-        "attachment; filename=\"{normalized_cid}.bin\""
-            .parse()
-            .unwrap(),
+        "attachment; filename=\"{cid}.bin\"".parse().unwrap(),
     );
     headers.insert(
         axum::http::header::CONTENT_LENGTH,
@@ -64,10 +63,7 @@ pub async fn handler(
     // If the car_offset is null (no CAR file in the object store)
     else {
         // First try with the new version
-        let object_path = ObjectStorePath::from(format!(
-            "{}/{}.bin",
-            block_details.base_path, normalized_cid
-        ));
+        let object_path = ObjectStorePath::from(format!("{}/{}.bin", block_details.base_path, cid));
 
         // Get the data from the expected block location
         let data = store
@@ -81,9 +77,9 @@ pub async fn handler(
     }
 }
 
-pub async fn block_from_normalized_cid(
+pub async fn block_from_cid(
     database: &Database,
-    normalized_cid: &str,
+    cid: &str,
 ) -> Result<BlockDetails, BlockRetrievalError> {
     let maybe_block_id: Option<BlockDetails> = sqlx::query_as!(
         BlockDetails,
@@ -100,7 +96,7 @@ pub async fn block_from_normalized_cid(
             JOIN clients ON uploads.client_id = clients.id
             WHERE blocks.cid = $1;
         "#,
-        normalized_cid,
+        cid,
     )
     .fetch_optional(database)
     .await
@@ -117,8 +113,8 @@ pub enum BlockRetrievalError {
     #[error("internal database error occurred")]
     DbFailure(sqlx::Error),
 
-    #[error("request for invalid CID rejected")]
-    InvalidCid(cid::Error),
+    #[error("provided CID was invalid")]
+    InvalidCid,
 
     #[error("authenticated user requested block not owned by them")]
     NotBlockOwner,
@@ -145,9 +141,8 @@ impl IntoResponse for BlockRetrievalError {
                 let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
             }
-            InvalidCid(err) => {
-                tracing::warn!("client attempted authenticated upload with invalid CID: {err}");
-                let err_msg = serde_json::json!({ "msg": format!("block not found") });
+            InvalidCid => {
+                let err_msg = serde_json::json!({ "msg": format!("provided CID was note valid") });
                 (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
             }
             NotBlockOwner => {

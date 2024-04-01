@@ -96,17 +96,21 @@ where
 
         let verification_options = VerificationOptions {
             accept_future: false,
-            allowed_audiences: Some(HashSet::from_strings(&[
-                PlatformName::from_ref(state).to_string()
-            ])),
             max_validity: Some(Duration::from_secs(MAXIMUM_TOKEN_AGE)),
             time_tolerance: Some(Duration::from_secs(15)),
             ..Default::default()
         };
 
-        let claims = client_verification_key
+        let claims = match client_verification_key
             .verify_token::<TokenClaims>(raw_token, Some(verification_options))
-            .map_err(Self::Rejection::ValidationFailed)?;
+            .map_err(Self::Rejection::ValidationFailed)
+        {
+            Ok(c) => c,
+            Err(err) => {
+                tracing::error!("failed to validate JWT: {err}");
+                return Err(err);
+            }
+        };
 
         // annoyingly jwt-simple doesn't use the correct encoding for this... we can support both
         // though and maybe we can fix upstream so it follows the spec
@@ -219,7 +223,7 @@ pub enum AuthenticatedClientError {
     #[error("an unexpected database failure before the authentication could be verified")]
     DbFailure(#[from] sqlx::Error),
 
-    #[error("bearer token key ID does not conform to our expectations")]
+    #[error("authenticated client bearer token key ID does not conform to our expectations")]
     InvalidKeyId,
 
     #[error("grant (required for account) was not present")]

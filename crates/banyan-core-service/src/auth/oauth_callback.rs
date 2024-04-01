@@ -9,26 +9,17 @@ use base64::Engine;
 use ecdsa::signature::RandomizedDigestSigner;
 use jwt_simple::algorithms::ECDSAP384KeyPairLike;
 use oauth2::{AuthorizationCode, CsrfToken, PkceCodeVerifier, TokenResponse};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use time::OffsetDateTime;
 use url::Url;
 use uuid::Uuid;
 
-use crate::api::models::{ApiEscrowedKeyMaterial, ApiUser};
 use crate::app::AppState;
 use crate::auth::{
     oauth_client, AuthenticationError, NEW_USER_COOKIE_NAME, SESSION_COOKIE_NAME, SESSION_TTL,
-    USER_DATA_COOKIE_NAME,
 };
-use crate::database::models::{EscrowedDevice, Subscription, User};
+use crate::database::models::Subscription;
 use crate::extractors::ServerBase;
-
-// Data returned in the User Data Cookie
-#[derive(Serialize)]
-struct UserData {
-    user: ApiUser,
-    escrowed_key_material: Option<ApiEscrowedKeyMaterial>,
-}
 
 pub async fn handler(
     mut cookie_jar: CookieJar,
@@ -174,33 +165,6 @@ pub async fn handler(
 
     let expires_at = time::OffsetDateTime::now_utc() + Duration::from_secs(SESSION_TTL);
 
-    let mut conn = database
-        .acquire()
-        .await
-        .map_err(AuthenticationError::DatabaseConnectionFailure)?;
-    let user = User::find_by_id(&mut conn, &user_id)
-        .await
-        .map_err(AuthenticationError::UserDataLookupFailed)?
-        .expect("created user to exist");
-
-    let escrowed_device = sqlx::query_as!(
-        EscrowedDevice,
-        "SELECT * FROM escrowed_devices WHERE user_id = $1;",
-        user_id
-    )
-    .fetch_optional(&mut *conn)
-    .await
-    .map_err(AuthenticationError::UserDataLookupFailed)?;
-
-    let user_data = UserData {
-        user: user.into(),
-        escrowed_key_material: escrowed_device.map(|ed| ed.into()),
-    };
-
-    conn.close()
-        .await
-        .map_err(AuthenticationError::UserDataLookupFailed)?;
-
     // Create a Session to record in the database and attach to the CookieJar
     let new_sid_row = sqlx::query!(
         "INSERT INTO sessions
@@ -234,7 +198,6 @@ pub async fn handler(
     let auth_tag = B64.encode(signature.to_vec());
 
     let session_value = format!("{session_enc}{auth_tag}");
-    let user_data_value = serde_json::to_string(&user_data).expect("user data to serialize");
 
     // Populate the CookieJar
     cookie_jar = cookie_jar.add(
@@ -244,16 +207,6 @@ pub async fn handler(
             .same_site(SameSite::Lax)
             .path("/")
             .domain(cookie_domain.clone())
-            .secure(cookie_secure)
-            .finish(),
-    );
-    cookie_jar = cookie_jar.add(
-        Cookie::build(USER_DATA_COOKIE_NAME, user_data_value)
-            .http_only(false)
-            .expires(expires_at)
-            .same_site(SameSite::Lax)
-            .path("/")
-            .domain(cookie_domain)
             .secure(cookie_secure)
             .finish(),
     );

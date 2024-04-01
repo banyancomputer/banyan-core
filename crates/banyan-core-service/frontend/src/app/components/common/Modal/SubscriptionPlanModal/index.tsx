@@ -46,13 +46,13 @@ export const SubscriptionPlanModal = () => {
                                     <span className='inline-block text-[11px] font-normal leading-5'>/mo</span>
                                 </span>
                             }
-                            <button
+                            {/* <button
                                 className={`mt-11 mb-28 w-full py-3 text-xxs font-semibold leading-4 rounded-lg cursor-pointer ${subscription.service_key === 'starter' ? 'bg-button-disabled text-text-600' : 'bg-button-primary text-button-primaryText'}`}
                                 disabled={subscription.currently_active}
                                 onClick={() => updateSubscription(subscription.id)}
                             >
                                 {subscription.currently_active ? `${messages.currentPlan}` : `${messages.upgradeTo} ${subscription.title}`}
-                            </button>
+                            </button> */}
                         </div>
                         <div className="flex items-center justify-between px-4 py-2 border-1 border-border-regular">
                             {convertSubscriptionsSizes(getHotStorageAmount(subscription))}
@@ -85,7 +85,7 @@ export const SubscriptionPlanModal = () => {
             </div>
             <p className="mt-4 mb-3 text-xxs font-semibold text-center">{`${messages.needCustomPlan}`}</p>
             <a
-                href="mailto:sam@banyan.computer"
+                href="mailto:tim@banyan.computer"
                 target="_blank"
                 className="mx-auto font-bold text-xxs text-button-contactSales"
             >

@@ -29,12 +29,16 @@ pub async fn handler(
 pub enum ClientsCreateError {
     #[error("a database failure occurred: {0}")]
     DbFailure(#[from] sqlx::Error),
+
     #[error("block retrieval failed: {0}")]
     RetrievalFailed(#[from] ObjectStoreError),
-    #[error("client attempted authenticated upload with invalid CID: {0}")]
-    InvalidCid(#[from] cid::Error),
+
+    #[error("request contained invalid CID")]
+    InvalidCid,
+
     #[error("client attempted to access block that wasn't theirs")]
     NotBlockOwner,
+
     #[error("block not found")]
     UnknownBlock,
 }
@@ -54,9 +58,8 @@ impl IntoResponse for ClientsCreateError {
                 let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
             }
-            InvalidCid(err) => {
-                tracing::warn!("client attempted authenticated upload with invalid CID: {err}");
-                let err_msg = serde_json::json!({ "msg": format!("block not found") });
+            InvalidCid => {
+                let err_msg = serde_json::json!({ "msg": format!("invalid cid") });
                 (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
             }
             NotBlockOwner => {
