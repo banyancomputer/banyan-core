@@ -5,6 +5,9 @@ info:
 paths:
   /api/v1/buckets/metadata:
     post:
+      tags:
+        - Buckets
+        - Bucket Metadata
       summary: Push new metadata to a bucket
       operationId: pushBucketMetadata
       security:
@@ -46,6 +49,9 @@ paths:
           description: Internal server error
 
     get:
+      tags:
+        - Buckets
+        - Bucket Metadata
       summary: Retrieve all metadata associated with the user's account
       operationId: getAllBucketMetadata
       security:
@@ -64,6 +70,9 @@ paths:
 
   /api/v1/buckets/metadata/current:
     get:
+      tags:
+        - Buckets
+        - Bucket Metadata
       summary: Retrieve the current metadata for a bucket
       operationId: getCurrentBucketMetadata
       security:
@@ -82,6 +91,9 @@ paths:
 
   /api/v1/buckets/metadata/{metadata_id}:
     get:
+      tags:
+        - Buckets
+        - Bucket Metadata
       summary: Retrieve a single metadata entry by its ID
       operationId: getSingleBucketMetadata
       security:
@@ -106,6 +118,9 @@ paths:
           description: Internal server error
 
     delete:
+      tags:
+        - Buckets
+        - Bucket Metadata
       summary: Delete a metadata entry by its ID
       operationId: deleteBucketMetadata
       security:
@@ -127,6 +142,9 @@ paths:
 
   /api/v1/buckets/metadata/{metadata_id}/pull:
     get:
+      tags:
+        - Buckets
+        - Bucket Metadata
       summary: Pull metadata by its ID
       operationId: pullBucketMetadata
       security:
@@ -161,6 +179,8 @@ paths:
 
   /api/v1/buckets/metadata/{metadata_id}/snapshot:
     post:
+      tags:
+        - Buckets
       summary: Create a snapshot for the metadata by its ID
       operationId: snapshotBucketMetadata
       security:
@@ -186,6 +206,9 @@ paths:
 
   /api/v1/buckets/{bucket_id}/keys:
     get:
+      tags:
+        - Buckets
+        - Bucket Keys
       summary: Get all keys for a specific bucket
       operationId: getAllBucketKeys
       security:
@@ -210,6 +233,9 @@ paths:
           description: Internal server error
 
     post:
+      tags:
+        - Buckets
+        - Bucket Keys
       summary: Create a new key for a specific bucket
       operationId: createBucketKey
       security:
@@ -243,6 +269,9 @@ paths:
 
   /api/v1/buckets/{bucket_id}/keys/{bucket_key_id}:
     get:
+      tags:
+        - Buckets
+        - Bucket Keys
       summary: Get a single key for a specific bucket
       operationId: getSingleBucketKey
       security:
@@ -273,6 +302,9 @@ paths:
           description: Internal server error
 
     delete:
+      tags:
+        - Buckets
+        - Bucket Keys
       summary: Delete a key for a specific bucket
       operationId: deleteBucketKey
       security:
@@ -299,6 +331,9 @@ paths:
           description: Internal server error
   /api/v1/buckets/{bucket_id}/snapshots:
     get:
+      tags:
+        - Buckets
+        - Bucket Snapshots
       summary: Get all snapshots for a specific bucket
       operationId: getAllSnapshots
       security:
@@ -328,6 +363,9 @@ paths:
 
   /api/v1/buckets/{bucket_id}/snapshots/{snapshot_id}:
     get:
+      tags:
+        - Buckets
+        - Bucket Snapshots
       summary: Get a single snapshot for a specific bucket
       operationId: getSingleSnapshot
       security:
@@ -361,6 +399,9 @@ paths:
 
   /api/v1/buckets/{bucket_id}/snapshots/{snapshot_id}/restore:
     put:
+      tags:
+        - Buckets
+        - Bucket Snapshots
       summary: Restore a snapshot for a specific bucket
       operationId: restoreSnapshot
       security:
@@ -397,6 +438,8 @@ paths:
           description: Internal server error
   /api/v1/buckets/{bucket_id}/usage:
     get:
+      tags:
+        - Buckets
       summary: Get the usage information for a specific bucket
       operationId: getBucketUsage
       security:
@@ -424,6 +467,8 @@ paths:
 
   /api/v1/buckets/{bucket_id}/authorization_grants:
     get:
+      tags:
+        - Buckets
       summary: Get authorization grants for a specific bucket
       operationId: getBucketAuthorizationGrants
       security:
@@ -451,6 +496,8 @@ paths:
 
   /api/v1/buckets:
     get:
+      tags:
+        - Buckets
       summary: Get all buckets for the user
       operationId: getAllBuckets
       security:
@@ -467,6 +514,8 @@ paths:
         '500':
           description: Internal server error
     post:
+      tags:
+        - Buckets
       summary: Create a new bucket
       operationId: createBucket
       security:
@@ -492,6 +541,8 @@ paths:
           description: Internal server error
   /api/v1/buckets/{bucket_id}:
     get:
+      tags:
+        - Buckets
       summary: Get a single bucket by ID
       operationId: getSingleBucket
       security:
@@ -515,6 +566,8 @@ paths:
         '500':
           description: Internal server error
     delete:
+      tags:
+        - Buckets
       summary: Delete a single bucket by ID
       operationId: deleteBucket
       security:
@@ -534,6 +587,8 @@ paths:
         '500':
           description: Internal server error
     put:
+      tags:
+        - Buckets
       summary: Update a single bucket by ID
       operationId: updateBucket
       security:
@@ -562,6 +617,8 @@ paths:
           description: Internal server error
   /api/v1/auth/provider_grant/{storage_host_id}:
     get:
+      tags:
+        - Auth
       summary: Grant a storage provider access to a storage host
       operationId: grantProviderAccess
       security:
@@ -589,6 +646,8 @@ paths:
 
   /api/v1/auth/device_api_key:
     get:
+      tags:
+        - Auth
       summary: Get all device API keys for the user
       operationId: readAllDeviceApiKeys
       security:
@@ -605,6 +664,8 @@ paths:
         '500':
           description: Internal server error
     post:
+      tags:
+        - Auth
       summary: Create a new device API key
       operationId: createDeviceApiKey
       security:
@@ -635,6 +696,8 @@ paths:
 
   /api/v1/auth/device_api_key/{key_id}:
     get:
+      tags:
+        - Auth
       summary: Read a specific device API key
       operationId: readDeviceApiKey
       security:
@@ -658,6 +721,8 @@ paths:
         '500':
           description: Backend service experienced an issue servicing the request
     delete:
+      tags:
+        - Auth
       summary: Delete a specific device API key
       operationId: deleteDeviceApiKey
       security:
@@ -678,6 +743,8 @@ paths:
           description: Backend service experienced an issue servicing the request
   /api/v1/auth/who_am_i:
     get:
+      tags:
+        - Auth
       summary: Get the user ID of the currently authenticated user
       operationId: whoAmI
       security:
@@ -698,6 +765,8 @@ paths:
 
   /api/v1/blocks/locate:
     post:
+      tags:
+        - Blocks
       summary: Locate blocks in storage
       operationId: locateBlocks
       security:
@@ -728,6 +797,8 @@ paths:
   /api/v1/deals:
     get:
       summary: Get all deals for the user
+      tags: 
+        - Deals
       operationId: getAllDeals
       security:
         - ApiIdentity: []
@@ -748,6 +819,8 @@ paths:
     get:
       summary: Get a single deal by ID
       operationId: getSingleDeal
+      tags: 
+        - Deals
       security:
         - ApiIdentity: []
         - SessionIdentity: []
@@ -773,6 +846,8 @@ paths:
   /api/v1/deals/{deal_id}/accept:
     post:
       summary: Accept a deal by ID
+      tags: 
+        - Deals
       operationId: acceptDeal
       security:
         - ApiIdentity: []
@@ -795,6 +870,8 @@ paths:
   /api/v1/deals/{deal_id}/cancel:
     post:
       summary: Cancel a deal by ID
+      tags: 
+        - Deals
       operationId: cancelDeal
       security:
         - ApiIdentity: []
@@ -816,6 +893,8 @@ paths:
   /api/v1/invoices:
     get:
       summary: Get all invoices for the user
+      tags: 
+        - Invoices
       operationId: getAllInvoices
       security:
         - ApiIdentity: []
@@ -834,6 +913,8 @@ paths:
 
   /api/v1/invoices/{invoice_id}:
     get:
+      tags: 
+        - Invoices
       summary: Get a single invoice by ID
       operationId: getSingleInvoice
       security:
@@ -859,6 +940,8 @@ paths:
           description: Internal server error
   /api/v1/notifications:
     get:
+      tags: 
+        - Notifications
       summary: Get all notifications for the user
       operationId: getAllNotifications
       security:
@@ -878,6 +961,8 @@ paths:
 
   /api/v1/notifications/{notification_id}:
     delete:
+      tags: 
+        - Notifications
       summary: Delete a notification by ID
       operationId: deleteNotification
       security:
@@ -901,6 +986,8 @@ paths:
           description: Internal server error
   /api/v1/subscriptions:
     get:
+      tags: 
+        - Subscriptions
       summary: Get all subscriptions
       operationId: getAllSubscriptions
       security:
@@ -920,6 +1007,8 @@ paths:
 
   /api/v1/subscriptions/{subscription_id}:
     get:
+      tags: 
+        - Subscriptions
       summary: Get a single subscription by ID
       operationId: getSingleSubscription
       security:
@@ -945,6 +1034,8 @@ paths:
 
   /api/v1/subscriptions/{subscription_id}/subscribe:
     post:
+      tags:
+        - Subscriptions
       summary: Purchase a subscription
       operationId: purchaseSubscription
       security:
@@ -975,6 +1066,8 @@ paths:
 
   /api/v1/subscriptions/manage:
     get:
+      tags:
+        - Subscriptions
       summary: Manage the subscription
       operationId: manageSubscription
       security:
@@ -997,6 +1090,8 @@ paths:
 
   /api/v1/subscriptions/success/{checkout_session_id}:
     get:
+      tags:
+        - Subscriptions
       summary: Subscription purchase success redirect
       operationId: subscriptionPurchaseSuccess
       security:
@@ -1014,6 +1109,8 @@ paths:
 
   /api/v1/subscriptions/cancel:
     get:
+      tags:
+        - Subscriptions
       summary: Subscription purchase cancel redirect
       operationId: subscriptionPurchaseCancel
       security:
@@ -1022,8 +1119,10 @@ paths:
       responses:
         '302':
           description: Redirect to cancel page
-  /api/v1/escrowed_device:
+  /api/v1/users/escrowed_device:
     get:
+      tags:
+        - Users 
       summary: Get current user's escrowed device
       operationId: getEscrowedDevice
       security:
@@ -1039,8 +1138,10 @@ paths:
         '500':
           description: Internal server error
 
-  /api/v1/current_user:
+  /api/v1/users/current_user:
     get:
+      tags:
+        - Users 
       summary: Get current user information
       operationId: getCurrentUser
       security:
@@ -1055,8 +1156,10 @@ paths:
                 $ref: '#/components/schemas/ApiUser'
         '404':
           description: User not found
-  /api/v1/update_user:
+  /api/v1/users/update_user:
     patch:
+      tags:
+        - Users 
       summary: Update current user information
       operationId: updateCurrentUser
       security:
@@ -1075,22 +1178,6 @@ paths:
           description: Invalid request
         '404':
           description: User not found
-  /api/v1/current_escrowed_device:
-    get:
-      summary: Get current user's escrowed device
-      operationId: getCurrentEscrowedDevice
-      security:
-        - ApiIdentity: []
-        - SessionIdentity: []
-      responses:
-        '200':
-          description: Escrowed device information
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiEscrowedKeyMaterial'
-        '500':
-          description: Internal server error
 components:
   securitySchemes:
     ApiIdentity:
@@ -1117,6 +1204,13 @@ components:
           scopes:
             email: Access to the user's email address
             profile: Access to the user's basic profile information
+  responses:
+    GenericError:     
+      description: An error occurred.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
   schemas:
     ApiUser:
       type: object
@@ -1479,4 +1573,10 @@ components:
         approved:
           type: boolean
         fingerprint:
+          type: string
+
+    Error:
+      type: object
+      properties:
+        msg:
           type: string
