@@ -9,6 +9,7 @@
     price: None, // "free"
 
     included_allowances: Allowances(
+      archival: 0,
       bandwidth: 10,
 
       storage: 10,
@@ -18,6 +19,7 @@
     // Hard limits aren't needed as overages aren't allowed turning the
     // allowances into hard limits.
     hard_limits: Limits(
+      archival: Some(10),
       bandwidth: Some(10),
       storage: Some(20),
     ),
@@ -38,6 +40,7 @@
     )),
 
     included_allowances: Allowances(
+      archival: 150,
       bandwidth: 150,
 
       storage: 150,
@@ -66,6 +69,7 @@
     )),
 
     included_allowances: Allowances(
+      archival: 3_072,
       bandwidth: 3_072,
       storage: 3_072,
       storage_replicas: 2,
