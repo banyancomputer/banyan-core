@@ -266,7 +266,7 @@ impl Subscription {
                    hot_storage_hard_limit, bandwidth_price as 'bandwidth_price: PriceUnits',
                    bandwidth_stripe_price_id, bandwidth_hard_limit, included_hot_replica_count,
                    included_hot_storage, included_bandwidth, included_archival, created_at FROM subscriptions
-                 WHERE visible = true AND id = $1;"#,
+                 WHERE id = $1;"#,
             subscription_id,
         )
         .fetch_optional(&mut *conn)
@@ -287,7 +287,7 @@ impl Subscription {
                    hot_storage_hard_limit, bandwidth_price as 'bandwidth_price: PriceUnits',
                    bandwidth_stripe_price_id, bandwidth_hard_limit, included_hot_replica_count,
                    included_hot_storage, included_bandwidth, included_archival, created_at FROM subscriptions
-                 WHERE visible = true AND id = $1;"#,
+                 WHERE id = $1;"#,
             subscription_id,
         )
         .fetch_one(&mut *conn)
