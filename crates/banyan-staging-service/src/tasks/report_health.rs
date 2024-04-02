@@ -14,10 +14,11 @@ pub type ReportHealthTaskContext = AppState;
 #[non_exhaustive]
 #[derive(Debug, thiserror::Error)]
 pub enum ReportHealthTaskError {
-    #[error("reqwest error: {0}")]
-    Reqwest(#[from] reqwest::Error),
     #[error("http error: {0} response from {1}")]
     Http(http::StatusCode, Url),
+
+    #[error("reqwest error: {0}")]
+    Reqwest(#[from] reqwest::Error),
 }
 
 #[derive(Deserialize, Serialize, Default)]

@@ -76,6 +76,7 @@ pub async fn handler(
     )
     .await
     .map_err(ReportUploadError::MarkCurrentFailed)?;
+
     // Now that the state has changed, mark old unsnapshotted metadatas as being deleted
     Metadata::delete_outdated(&mut db_conn, &bucket_id)
         .await
