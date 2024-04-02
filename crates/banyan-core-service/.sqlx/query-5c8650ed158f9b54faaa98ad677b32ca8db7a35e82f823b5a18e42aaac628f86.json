@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                SELECT IFNULL(SUM(s.tokens_used), 0)\n                FROM snapshots AS s \n                JOIN metadata AS m ON m.id = s.metadata_id\n                JOIN buckets AS b ON b.id = m.bucket_id\n                JOIN users AS u ON u.id = b.user_id\n                WHERE u.id = $1\n                AND b.deleted_at IS NULL\n                AND m.state IN ('current', 'outdated', 'pending')\n                AND s.state != $2;\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "IFNULL(SUM(s.tokens_used), 0)",
+        "ordinal": 0,
+        "type_info": "Int"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "5c8650ed158f9b54faaa98ad677b32ca8db7a35e82f823b5a18e42aaac628f86"
+}

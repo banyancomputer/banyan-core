@@ -16,12 +16,18 @@ pub async fn handler(
     let deal_id = deal_id.to_string();
 
     let query_result = sqlx::query!(
-        r#"UPDATE deals SET state = 'cancelled' WHERE id = $1 AND state == 'accepted' AND accepted_by=$2;"#,
+        r#"
+            UPDATE deals
+            SET state = 'cancelled'
+            WHERE id = $1 
+            AND state == 'accepted' 
+            AND accepted_by=$2;
+        "#,
         deal_id,
         storage_provider.id,
     )
-        .execute(&database)
-        .await;
+    .execute(&database)
+    .await;
 
     match query_result {
         Ok(result) => {

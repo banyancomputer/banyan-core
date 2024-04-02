@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, service_key, tax_class as 'tax_class: TaxClass', title, visible,\n                   plan_base_price as 'plan_base_price: PriceUnits', plan_price_stripe_id,\n                   archival_available, archival_price as 'archival_price: PriceUnits',\n                   archival_stripe_price_id, archival_hard_limit,\n                   hot_storage_price as 'hot_storage_price: PriceUnits', hot_storage_stripe_price_id,\n                   hot_storage_hard_limit, bandwidth_price as 'bandwidth_price: PriceUnits',\n                   bandwidth_stripe_price_id, bandwidth_hard_limit, included_hot_replica_count,\n                   included_hot_storage, included_bandwidth, created_at FROM subscriptions\n                 WHERE service_key = $1 AND tax_class = $2 AND visible = true\n                 ORDER BY created_at DESC\n                 LIMIT 1;",
+  "query": "SELECT id, service_key, tax_class as 'tax_class: TaxClass', title, visible,\n                   plan_base_price as 'plan_base_price: PriceUnits', plan_price_stripe_id,\n                   archival_available, archival_price as 'archival_price: PriceUnits',\n                   archival_stripe_price_id, archival_hard_limit,\n                   hot_storage_price as 'hot_storage_price: PriceUnits', hot_storage_stripe_price_id,\n                   hot_storage_hard_limit, bandwidth_price as 'bandwidth_price: PriceUnits',\n                   bandwidth_stripe_price_id, bandwidth_hard_limit, included_hot_replica_count,\n                   included_hot_storage, included_bandwidth, included_archival, created_at FROM subscriptions\n                 WHERE service_key = $1 AND tax_class = $2 AND visible = true\n                 ORDER BY created_at DESC\n                 LIMIT 1;",
   "describe": {
     "columns": [
       {
@@ -104,8 +104,13 @@
         "type_info": "Int64"
       },
       {
-        "name": "created_at",
+        "name": "included_archival",
         "ordinal": 20,
+        "type_info": "Int64"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 21,
         "type_info": "Datetime"
       }
     ],
@@ -133,8 +138,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "d1eb8cd9e4515c6e572e6248ba1cdbd0176e932988468c38266f8e4af37528e8"
+  "hash": "3ba631938d9c7b0fe9e5836ae72a8934890dc54d2b19e4ecd34b5a7b79ea23e9"
 }

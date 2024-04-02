@@ -260,8 +260,8 @@ pub(crate) async fn create_snapshot(
     let snapshot_state = snapshot_state.to_string();
     let size = size.unwrap_or(BLOCK_SIZE);
     sqlx::query_scalar!(
-        r#"INSERT INTO snapshots (metadata_id, state, size)
-           VALUES ($1, $2, $3)
+        r#"INSERT INTO snapshots (metadata_id, state, size, tokens_used)
+           VALUES ($1, $2, $3, $3)
            RETURNING id;"#,
         metadata_id,
         snapshot_state,
@@ -413,12 +413,20 @@ pub(crate) async fn create_user(
     email: &str,
     display_name: &str,
 ) -> String {
+    let subscription_id = sqlx::query_scalar!(
+        "SELECT id FROM subscriptions WHERE service_key = $1 ORDER BY created_at DESC LIMIT 1;",
+        "business",
+    )
+    .fetch_one(&mut *conn)
+    .await
+    .expect("business");
     sqlx::query_scalar!(
-        r#"INSERT INTO users (email, verified_email, display_name)
-                VALUES ($1, true, $2)
+        r#"INSERT INTO users (email, verified_email, display_name, subscription_id)
+                VALUES ($1, true, $2, $3)
                 RETURNING id;"#,
         email,
         display_name,
+        subscription_id
     )
     .fetch_one(conn)
     .await

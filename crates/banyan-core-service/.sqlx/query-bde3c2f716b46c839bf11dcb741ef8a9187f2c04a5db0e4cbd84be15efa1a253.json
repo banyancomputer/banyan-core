@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            UPDATE deals\n            SET state = 'cancelled'\n            WHERE id = $1 \n            AND state == 'accepted' \n            AND accepted_by=$2;\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "bde3c2f716b46c839bf11dcb741ef8a9187f2c04a5db0e4cbd84be15efa1a253"
+}
