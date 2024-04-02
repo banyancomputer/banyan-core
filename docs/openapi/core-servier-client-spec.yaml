@@ -1296,7 +1296,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /users/current_user:
+  /users/current:
     get:
       tags:
         - Users
@@ -1318,7 +1318,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  /users/update_user:
     patch:
       tags:
         - Users
@@ -1352,16 +1351,13 @@ components:
   securitySchemes:
     ApiIdentity:
       type: http
-      scheme: bearer
-      bearerFormat: JWT
-
-    AdminIdentity:
-      type: http
+      description: User signed JWT API key
       scheme: bearer
       bearerFormat: JWT
 
     SessionIdentity:
       type: oauth2
+      description: User session JWT token generated after going through Google Oauth flow
       flows:
         authorizationCode:
           authorizationUrl: https://accounts.google.com/o/oauth2/v2/auth
