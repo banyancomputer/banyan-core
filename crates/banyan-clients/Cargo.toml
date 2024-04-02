@@ -1,0 +1,29 @@
+[package]
+name = "banyan-clients"
+description = "Banyan clients for Rust"
+version = "0.1.0"
+edition = "2021"
+license = "LicenseRef-LICENSE.txt"
+
+[lib]
+name = "banyan_api_client"
+path = "src/lib.rs"
+
+[dependencies]
+
+
+futures = "0.3"
+progenitor-client = { git = "https://github.com/oxidecomputer/progenitor" }
+reqwest = { version = "0.12.1", features = ["json", "stream"] }
+chrono = { version = "0.4", features = ["serde"] }
+base64 = "0.22"
+rand = "0.8"
+serde = { version = "1.0", features = ["derive"] }
+uuid = { version = "1.7", features = ["serde", "v4"] }
+
+[build-dependencies]
+prettyplease = "0.2.17"
+progenitor = { git = "https://github.com/oxidecomputer/progenitor" }
+serde_json = "1.0"
+syn = "2.0"
+

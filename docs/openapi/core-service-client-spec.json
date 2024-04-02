@@ -1,0 +1,2756 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Banyan Core Service API",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://beta.data.banyan.computer/api/v1"
+    }
+  ],
+  "paths": {
+    "/buckets/metadata": {
+      "post": {
+        "tags": [
+          "Buckets",
+          "Bucket Metadata"
+        ],
+        "summary": "Push new metadata to a bucket",
+        "operationId": "pushBucketMetadata",
+        "security": [
+          {
+            "ApiIdentity": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "request-data": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "JSON payload that precedes the metadata CAR file upload"
+                  },
+                  "car-upload": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "The CAR file containing the metadata to be uploaded"
+                  }
+                },
+                "required": [
+                  "request-data",
+                  "car-upload"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Metadata pushed and processed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiMetadataResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request, possibly due to missing or invalid fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized, missing or invalid authentication credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict, possibly due to conflicting state with existing metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload too large, the upload exceeds the allowed size",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Buckets",
+          "Bucket Metadata"
+        ],
+        "summary": "Retrieve all metadata associated with the user's account",
+        "operationId": "getAllBucketMetadata",
+        "security": [
+          {
+            "ApiIdentity": []
+          },
+          {
+            "SessionIdentity": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved all metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApiMetadata"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/buckets/metadata/current": {
+      "get": {
+        "tags": [
+          "Buckets",
+          "Bucket Metadata"
+        ],
+        "summary": "Retrieve the current metadata for a bucket",
+        "operationId": "getCurrentBucketMetadata",
+        "security": [
+          {
+            "ApiIdentity": []
+          },
+          {
+            "SessionIdentity": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved the current metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiMetadata"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, no current metadata for the given bucket ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/buckets/metadata/{metadata_id}": {
+      "get": {
+        "tags": [
+          "Buckets",
+          "Bucket Metadata"
+        ],
+        "summary": "Retrieve a single metadata entry by its ID",
+        "operationId": "getSingleBucketMetadata",
+        "security": [
+          {
+            "ApiIdentity": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "metadata_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The ID of the metadata to retrieve"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved the metadata entry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiMetadata"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, no metadata entry for the given ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Buckets",
+          "Bucket Metadata"
+        ],
+        "summary": "Delete a metadata entry by its ID",
+        "operationId": "deleteBucketMetadata",
+        "security": [
+          {
+            "ApiIdentity": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "metadata_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The ID of the metadata to delete"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successfully deleted the metadata entry"
+          },
+          "404": {
+            "description": "Not found, no metadata entry for the given ID to delete",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/buckets/metadata/{metadata_id}/pull": {
+      "get": {
+        "tags": [
+          "Buckets",
+          "Bucket Metadata"
+        ],
+        "summary": "Pull metadata by its ID",
+        "operationId": "pullBucketMetadata",
+        "security": [
+          {
+            "ApiIdentity": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "metadata_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The ID of the metadata to pull"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully pulled the metadata",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            },
+            "headers": {
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "default": "application/vnd.ipld.car; version=2"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, no metadata entry for the given ID to pull",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/buckets/metadata/{metadata_id}/snapshot": {
+      "post": {
+        "tags": [
+          "Buckets"
+        ],
+        "summary": "Create a snapshot for the metadata by its ID",
+        "operationId": "snapshotBucketMetadata",
+        "security": [
+          {
+            "ApiIdentity": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "metadata_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The ID of the metadata to snapshot"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully created a snapshot of the metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiMetadata"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, no metadata entry for the given ID to snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/buckets/{bucket_id}/keys": {
+      "get": {
+        "tags": [
+          "Buckets",
+          "Bucket Keys"
+        ],
+        "summary": "Get all keys for a specific bucket",
+        "operationId": "getAllBucketKeys",
+        "security": [
+          {
+            "ApiIdentity": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "bucket_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The ID of the bucket to get keys for"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of bucket keys retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApiBucketKey"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Buckets",
+          "Bucket Keys"
+        ],
+        "summary": "Create a new key for a specific bucket",
+        "operationId": "createBucketKey",
+        "security": [
+          {
+            "ApiIdentity": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "bucket_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The ID of the bucket to create a key for"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBucketKeyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Bucket key created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBucketKey"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid public key provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bucket not found or unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/buckets/{bucket_id}/keys/{bucket_key_id}": {
+      "get": {
+        "tags": [
+          "Buckets",
+          "Bucket Keys"
+        ],
+        "summary": "Get a single key for a specific bucket",
+        "operationId": "getSingleBucketKey",
+        "security": [
+          {
+            "ApiIdentity": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "bucket_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The ID of the bucket the key belongs to"
+          },
+          {
+            "in": "path",
+            "name": "bucket_key_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The ID of the key to retrieve"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bucket key retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBucketKey"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bucket key not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Buckets",
+          "Bucket Keys"
+        ],
+        "summary": "Delete a key for a specific bucket",
+        "operationId": "deleteBucketKey",
+        "security": [
+          {
+            "ApiIdentity": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "bucket_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The ID of the bucket the key belongs to"
+          },
+          {
+            "in": "path",
+            "name": "bucket_key_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The ID of the key to delete"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Bucket key deleted successfully"
+          },
+          "404": {
+            "description": "Bucket key not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/buckets/{bucket_id}/snapshots": {
+      "get": {
+        "tags": [
+          "Buckets",
+          "Bucket Snapshots"
+        ],
+        "summary": "Get all snapshots for a specific bucket",
+        "operationId": "getAllSnapshots",
+        "security": [
+          {
+            "ApiIdentity": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "bucket_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The ID of the bucket to get snapshots for"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of snapshots retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApiSnapshot"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized access attempt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bucket not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/buckets/{bucket_id}/snapshots/{snapshot_id}": {
+      "get": {
+        "tags": [
+          "Buckets",
+          "Bucket Snapshots"
+        ],
+        "summary": "Get a single snapshot for a specific bucket",
+        "operationId": "getSingleSnapshot",
+        "security": [
+          {
+            "ApiIdentity": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "bucket_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The ID of the bucket the snapshot belongs to"
+          },
+          {
+            "in": "path",
+            "name": "snapshot_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The ID of the snapshot to retrieve"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Snapshot retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiSnapshot"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized access attempt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Snapshot not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/buckets/{bucket_id}/snapshots/{snapshot_id}/restore": {
+      "put": {
+        "tags": [
+          "Buckets",
+          "Bucket Snapshots"
+        ],
+        "summary": "Restore a snapshot for a specific bucket",
+        "operationId": "restoreSnapshot",
+        "security": [
+          {
+            "ApiIdentity": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "bucket_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The ID of the bucket the snapshot belongs to"
+          },
+          {
+            "in": "path",
+            "name": "snapshot_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The ID of the snapshot to restore"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Snapshot restore request created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "The ID of the restore request"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized access attempt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Snapshot not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/buckets/{bucket_id}/usage": {
+      "get": {
+        "tags": [
+          "Buckets"
+        ],
+        "summary": "Get the usage information for a specific bucket",
+        "operationId": "getBucketUsage",
+        "security": [
+          {
+            "ApiIdentity": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "bucket_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The ID of the bucket to get usage information for"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bucket usage information retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BucketUsage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized access attempt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bucket not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/buckets/{bucket_id}/authorization_grants": {
+      "get": {
+        "tags": [
+          "Buckets"
+        ],
+        "summary": "Get authorization grants for a specific bucket",
+        "operationId": "getBucketAuthorizationGrants",
+        "security": [
+          {
+            "ApiIdentity": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "bucket_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The ID of the bucket to get authorization grants for"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorization grants retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthorizationGrant"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized access attempt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bucket not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/buckets": {
+      "get": {
+        "tags": [
+          "Buckets"
+        ],
+        "summary": "Get all buckets for the user",
+        "operationId": "getAllBuckets",
+        "security": [
+          {
+            "ApiIdentity": []
+          },
+          {
+            "SessionIdentity": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of all buckets for the user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApiBucket"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Buckets"
+        ],
+        "summary": "Create a new bucket",
+        "operationId": "createBucket",
+        "security": [
+          {
+            "ApiIdentity": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBucketRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Bucket created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateBucketResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized access attempt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/buckets/{bucket_id}": {
+      "get": {
+        "tags": [
+          "Buckets"
+        ],
+        "summary": "Get a single bucket by ID",
+        "operationId": "getSingleBucket",
+        "security": [
+          {
+            "ApiIdentity": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "bucket_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The unique identifier for the bucket"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bucket retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBucket"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bucket not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Buckets"
+        ],
+        "summary": "Delete a single bucket by ID",
+        "operationId": "deleteBucket",
+        "security": [
+          {
+            "ApiIdentity": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "bucket_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The unique identifier for the bucket to be deleted"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Bucket deleted successfully"
+          },
+          "404": {
+            "description": "Bucket not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Buckets"
+        ],
+        "summary": "Update a single bucket by ID",
+        "operationId": "updateBucket",
+        "security": [
+          {
+            "ApiIdentity": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "bucket_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The unique identifier for the bucket to be updated"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiBucketConfiguration"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Bucket updated successfully"
+          },
+          "400": {
+            "description": "Invalid request parameters"
+          },
+          "404": {
+            "description": "Bucket not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/auth/device_api_key": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Get all device API keys for the user",
+        "operationId": "readAllDeviceApiKeys",
+        "security": [
+          {
+            "ApiIdentity": []
+          },
+          {
+            "SessionIdentity": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of all device API keys",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DeviceApiKey"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Create a new device API key",
+        "operationId": "createDeviceApiKey",
+        "security": [
+          {
+            "ApiIdentity": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDeviceApiKeyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Device API key created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "fingerprint": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid public key provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Backend service experienced an issue servicing the request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/device_api_key/{key_id}": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Read a specific device API key",
+        "operationId": "readDeviceApiKey",
+        "security": [
+          {
+            "ApiIdentity": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "key_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Details of the specified device API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceApiKey"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Device API key not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Backend service experienced an issue servicing the request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Delete a specific device API key",
+        "operationId": "deleteDeviceApiKey",
+        "security": [
+          {
+            "ApiIdentity": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "key_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Device API key deleted successfully"
+          },
+          "404": {
+            "description": "Device API key not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Backend service experienced an issue servicing the request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/who_am_i": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Get the user ID of the currently authenticated user",
+        "operationId": "whoAmI",
+        "security": [
+          {
+            "ApiIdentity": []
+          },
+          {
+            "SessionIdentity": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User ID of the authenticated user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Backend service experienced an issue servicing the request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/blocks/locate": {
+      "post": {
+        "tags": [
+          "Blocks"
+        ],
+        "summary": "Locate blocks in storage",
+        "operationId": "locateBlocks",
+        "security": [
+          {
+            "ApiIdentity": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Map of storage locations for each block CID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid CID provided in request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Backend service experienced an issue servicing the request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/invoices": {
+      "get": {
+        "summary": "Get all invoices for the user",
+        "tags": [
+          "Invoices"
+        ],
+        "operationId": "getAllInvoices",
+        "security": [
+          {
+            "ApiIdentity": []
+          },
+          {
+            "SessionIdentity": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of all invoices",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApiInvoice"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/invoices/{invoice_id}": {
+      "get": {
+        "tags": [
+          "Invoices"
+        ],
+        "summary": "Get a single invoice by ID",
+        "operationId": "getSingleInvoice",
+        "security": [
+          {
+            "ApiIdentity": []
+          },
+          {
+            "SessionIdentity": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "invoice_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Details of the specified invoice",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiInvoice"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Invoice not found or not owned by the user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notifications": {
+      "get": {
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "Get all notifications for the user",
+        "operationId": "getAllNotifications",
+        "security": [
+          {
+            "ApiIdentity": []
+          },
+          {
+            "SessionIdentity": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of all notifications",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApiNotification"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notifications/{notification_id}": {
+      "delete": {
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "Delete a notification by ID",
+        "operationId": "deleteNotification",
+        "security": [
+          {
+            "ApiIdentity": []
+          },
+          {
+            "SessionIdentity": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "notification_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Notification deleted successfully"
+          },
+          "400": {
+            "description": "Notification cannot be deleted because it is not dismissible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Notification not found or not owned by the user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/subscriptions": {
+      "get": {
+        "tags": [
+          "Subscriptions"
+        ],
+        "summary": "Get all subscriptions",
+        "operationId": "getAllSubscriptions",
+        "security": [
+          {
+            "ApiIdentity": []
+          },
+          {
+            "SessionIdentity": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of all subscriptions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApiSubscription"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/subscriptions/{subscription_id}": {
+      "get": {
+        "tags": [
+          "Subscriptions"
+        ],
+        "summary": "Get a single subscription by ID",
+        "operationId": "getSingleSubscription",
+        "security": [
+          {
+            "ApiIdentity": []
+          },
+          {
+            "SessionIdentity": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "subscription_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Subscription object",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiSubscription"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Subscription not found"
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/subscriptions/{subscription_id}/subscribe": {
+      "post": {
+        "tags": [
+          "Subscriptions"
+        ],
+        "summary": "Purchase a subscription",
+        "operationId": "purchaseSubscription",
+        "security": [
+          {
+            "ApiIdentity": []
+          },
+          {
+            "SessionIdentity": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "subscription_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Checkout session created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "checkout_url": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment required"
+          },
+          "404": {
+            "description": "Subscription not found"
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/subscriptions/manage": {
+      "get": {
+        "tags": [
+          "Subscriptions"
+        ],
+        "summary": "Manage the subscription",
+        "operationId": "manageSubscription",
+        "security": [
+          {
+            "SessionIdentity": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Billing portal session created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "portal_url": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User without stripe association not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/subscriptions/success/{checkout_session_id}": {
+      "get": {
+        "tags": [
+          "Subscriptions"
+        ],
+        "summary": "Subscription purchase success redirect",
+        "operationId": "subscriptionPurchaseSuccess",
+        "security": [
+          {
+            "ApiIdentity": []
+          },
+          {
+            "SessionIdentity": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "checkout_session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirect to success page"
+          }
+        }
+      }
+    },
+    "/subscriptions/cancel": {
+      "get": {
+        "tags": [
+          "Subscriptions"
+        ],
+        "summary": "Subscription purchase cancel redirect",
+        "operationId": "subscriptionPurchaseCancel",
+        "security": [
+          {
+            "ApiIdentity": []
+          },
+          {
+            "SessionIdentity": []
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirect to cancel page"
+          }
+        }
+      }
+    },
+    "/users/escrowed_device": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Get current user's escrowed device",
+        "operationId": "getEscrowedDevice",
+        "security": [
+          {
+            "SessionIdentity": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Escrowed device information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiEscrowedKeyMaterial"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/current": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Get current user information",
+        "operationId": "getCurrentUser",
+        "security": [
+          {
+            "ApiIdentity": []
+          },
+          {
+            "SessionIdentity": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A user object",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUser"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Update current user information",
+        "operationId": "updateCurrentUser",
+        "security": [
+          {
+            "ApiIdentity": []
+          },
+          {
+            "SessionIdentity": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiUser"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "User updated successfully"
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiIdentity": {
+        "type": "http",
+        "description": "User signed JWT API key",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      },
+      "SessionIdentity": {
+        "type": "oauth2",
+        "description": "User session JWT token generated after going through Google Oauth flow",
+        "flows": {
+          "authorizationCode": {
+            "authorizationUrl": "https://accounts.google.com/o/oauth2/v2/auth",
+            "tokenUrl": "https://oauth2.googleapis.com/token",
+            "scopes": {
+              "email": "Access to the user's email address",
+              "profile": "Access to the user's basic profile information"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "ApiUser": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "locale": {
+            "type": "string",
+            "nullable": true
+          },
+          "profile_image": {
+            "type": "string",
+            "nullable": true
+          },
+          "accepted_tos_at": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "account_tax_class": {
+            "type": "string"
+          },
+          "subscription_id": {
+            "type": "string"
+          },
+          "subscription_valid_until": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "monthly_egress": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          }
+        }
+      },
+      "ApiBucket": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "owner_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "BucketType"
+            ]
+          },
+          "storage_class": {
+            "type": "string",
+            "enum": [
+              "StorageClass"
+            ]
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CreateBucketRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "type",
+          "storage_class",
+          "initial_bucket_key_pem"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 32
+          },
+          "type": {
+            "$ref": "#/components/schemas/BucketType"
+          },
+          "storage_class": {
+            "$ref": "#/components/schemas/StorageClass"
+          },
+          "initial_bucket_key_pem": {
+            "type": "string",
+            "format": "pem"
+          }
+        }
+      },
+      "CreateBucketResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/BucketType"
+          },
+          "storage_class": {
+            "$ref": "#/components/schemas/StorageClass"
+          },
+          "initial_bucket_key": {
+            "$ref": "#/components/schemas/ApiBucketKeyResponse"
+          }
+        }
+      },
+      "ApiBucketKey": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "bucket_id": {
+            "type": "string"
+          },
+          "approved": {
+            "type": "boolean"
+          },
+          "pem": {
+            "type": "string",
+            "format": "pem"
+          },
+          "fingerprint": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiBucketConfiguration": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "replicas": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          }
+        }
+      },
+      "ApiInvoice": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "billing_start": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "billing_end": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "subscription_id": {
+            "type": "string"
+          },
+          "total_amount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "status": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ApiNotification": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "user_id": {
+            "type": "string"
+          },
+          "dismissable": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "message_key": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ApiEscrowedKeyMaterial": {
+        "type": "object",
+        "properties": {
+          "api_public_key_pem": {
+            "type": "string",
+            "format": "pem"
+          },
+          "encryption_public_key_pem": {
+            "type": "string",
+            "format": "pem"
+          },
+          "encrypted_private_key_material": {
+            "type": "string"
+          },
+          "pass_key_salt": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiSnapshot": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "bucket_id": {
+            "type": "string"
+          },
+          "metadata_id": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "state": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ApiSubscription": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "currently_active": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "service_key": {
+            "type": "string"
+          },
+          "tax_class": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "features": {
+            "$ref": "#/components/schemas/ApiSubscriptionFeatures"
+          },
+          "pricing": {
+            "$ref": "#/components/schemas/ApiSubscriptionPricing"
+          }
+        }
+      },
+      "ApiSubscriptionFeatures": {
+        "type": "object",
+        "properties": {
+          "archival_available": {
+            "type": "boolean"
+          },
+          "included_hot_replica_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "included_hot_storage": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "included_bandwidth": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "archival_hard_limit": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "hot_storage_hard_limit": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "bandwidth_hard_limit": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          }
+        }
+      },
+      "ApiSubscriptionPricing": {
+        "type": "object",
+        "properties": {
+          "archival": {
+            "type": "number",
+            "format": "float",
+            "nullable": true
+          },
+          "hot_storage": {
+            "type": "number",
+            "format": "float",
+            "nullable": true
+          },
+          "plan_base": {
+            "type": "number",
+            "format": "float",
+            "nullable": true
+          },
+          "bandwidth": {
+            "type": "number",
+            "format": "float",
+            "nullable": true
+          }
+        }
+      },
+      "AuthorizationGrant": {
+        "type": "object",
+        "properties": {
+          "authorization_token": {
+            "type": "string"
+          }
+        }
+      },
+      "BucketUsage": {
+        "type": "object",
+        "properties": {
+          "size": {
+            "type": "number",
+            "format": "int64"
+          }
+        }
+      },
+      "ProviderGrantResponse": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          }
+        }
+      },
+      "DeviceApiKey": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "user_id": {
+            "type": "string"
+          },
+          "fingerprint": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateDeviceApiKeyRequest": {
+        "type": "object",
+        "properties": {
+          "pem": {
+            "description": "The PEM encoded public key for the device",
+            "type": "string",
+            "format": "pem"
+          }
+        }
+      },
+      "CreateBucketKeyRequest": {
+        "type": "object",
+        "required": [
+          "pem"
+        ],
+        "properties": {
+          "pem": {
+            "description": "The PEM encoded public key for the device",
+            "type": "string",
+            "format": "pem"
+          }
+        }
+      },
+      "ApiMetadata": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "root_cid": {
+            "type": "string"
+          },
+          "metadata_cid": {
+            "type": "string"
+          },
+          "data_size": {
+            "type": "number",
+            "format": "int64"
+          },
+          "state": {
+            "$ref": "#/components/schemas/MetadataState"
+          },
+          "created_at": {
+            "type": "number",
+            "format": "int64"
+          },
+          "updated_at": {
+            "type": "number",
+            "format": "int64"
+          },
+          "snapshot_id": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "ApiMetadataResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/MetadataState"
+          },
+          "storage_host": {
+            "type": "string"
+          },
+          "storage_authorization": {
+            "type": "string"
+          }
+        }
+      },
+      "MetadataState": {
+        "type": "string",
+        "enum": [
+          "active",
+          "inactive",
+          "deleted"
+        ]
+      },
+      "BucketType": {
+        "description": "The type of the bucket",
+        "type": "string",
+        "enum": [
+          "backup",
+          "interactive"
+        ]
+      },
+      "StorageClass": {
+        "description": "The storage class of the bucket",
+        "type": "string",
+        "enum": [
+          "hot",
+          "warm",
+          "cold"
+        ]
+      },
+      "ApiBucketKeyResponse": {
+        "type": "object",
+        "required": [
+          "id",
+          "approved",
+          "fingerprint"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "approved": {
+            "type": "boolean"
+          },
+          "fingerprint": {
+            "type": "string"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "msg": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
