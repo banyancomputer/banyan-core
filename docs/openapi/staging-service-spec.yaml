@@ -8,7 +8,7 @@ paths:
       summary: Redistribute staging data
       operationId: redistributeStagingData
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       requestBody:
         required: true
         content:

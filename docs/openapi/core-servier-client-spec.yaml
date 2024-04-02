@@ -2,8 +2,10 @@ openapi: 3.0.0
 info:
   title: Banyan Core Service API
   version: 1.0.0
+servers:
+  - url: https://beta.data.banyan.computer/api/v1
 paths:
-  /api/v1/buckets/metadata:
+  /buckets/metadata:
     post:
       tags:
         - Buckets
@@ -11,7 +13,7 @@ paths:
       summary: Push new metadata to a bucket
       operationId: pushBucketMetadata
       security:
-        - ApiIdentity: []
+        - ApiIdentity: [ ]
       requestBody:
         required: true
         content:
@@ -39,14 +41,34 @@ paths:
                 $ref: '#/components/schemas/ApiMetadataResponse'
         '400':
           description: Bad request, possibly due to missing or invalid fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Unauthorized, missing or invalid authentication credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '409':
           description: Conflict, possibly due to conflicting state with existing metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '413':
           description: Payload too large, the upload exceeds the allowed size
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
     get:
       tags:
@@ -55,7 +77,8 @@ paths:
       summary: Retrieve all metadata associated with the user's account
       operationId: getAllBucketMetadata
       security:
-        - ApiIdentity: []
+        - ApiIdentity: [ ]
+        - SessionIdentity: [ ]
       responses:
         '200':
           description: Successfully retrieved all metadata
@@ -67,8 +90,12 @@ paths:
                   $ref: '#/components/schemas/ApiMetadata'
         '500':
           description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
-  /api/v1/buckets/metadata/current:
+  /buckets/metadata/current:
     get:
       tags:
         - Buckets
@@ -76,7 +103,8 @@ paths:
       summary: Retrieve the current metadata for a bucket
       operationId: getCurrentBucketMetadata
       security:
-        - ApiIdentity: []
+        - ApiIdentity: [ ]
+        - SessionIdentity: [ ]
       responses:
         '200':
           description: Successfully retrieved the current metadata
@@ -86,10 +114,18 @@ paths:
                 $ref: '#/components/schemas/ApiMetadata'
         '404':
           description: Not found, no current metadata for the given bucket ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
-  /api/v1/buckets/metadata/{metadata_id}:
+  /buckets/metadata/{metadata_id}:
     get:
       tags:
         - Buckets
@@ -97,7 +133,7 @@ paths:
       summary: Retrieve a single metadata entry by its ID
       operationId: getSingleBucketMetadata
       security:
-        - ApiIdentity: []
+        - ApiIdentity: [ ]
       parameters:
         - in: path
           name: metadata_id
@@ -114,8 +150,16 @@ paths:
                 $ref: '#/components/schemas/ApiMetadata'
         '404':
           description: Not found, no metadata entry for the given ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
     delete:
       tags:
@@ -124,7 +168,7 @@ paths:
       summary: Delete a metadata entry by its ID
       operationId: deleteBucketMetadata
       security:
-        - ApiIdentity: []
+        - ApiIdentity: [ ]
       parameters:
         - in: path
           name: metadata_id
@@ -137,10 +181,18 @@ paths:
           description: Successfully deleted the metadata entry
         '404':
           description: Not found, no metadata entry for the given ID to delete
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
-  /api/v1/buckets/metadata/{metadata_id}/pull:
+  /buckets/metadata/{metadata_id}/pull:
     get:
       tags:
         - Buckets
@@ -148,7 +200,7 @@ paths:
       summary: Pull metadata by its ID
       operationId: pullBucketMetadata
       security:
-        - ApiIdentity: []
+        - ApiIdentity: [ ]
       parameters:
         - in: path
           name: metadata_id
@@ -174,17 +226,25 @@ paths:
                 default: application/vnd.ipld.car; version=2
         '404':
           description: Not found, no metadata entry for the given ID to pull
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
-  /api/v1/buckets/metadata/{metadata_id}/snapshot:
+  /buckets/metadata/{metadata_id}/snapshot:
     post:
       tags:
         - Buckets
       summary: Create a snapshot for the metadata by its ID
       operationId: snapshotBucketMetadata
       security:
-        - ApiIdentity: []
+        - ApiIdentity: [ ]
       parameters:
         - in: path
           name: metadata_id
@@ -201,10 +261,18 @@ paths:
                 $ref: '#/components/schemas/ApiMetadata'
         '404':
           description: Not found, no metadata entry for the given ID to snapshot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
-  /api/v1/buckets/{bucket_id}/keys:
+  /buckets/{bucket_id}/keys:
     get:
       tags:
         - Buckets
@@ -212,7 +280,7 @@ paths:
       summary: Get all keys for a specific bucket
       operationId: getAllBucketKeys
       security:
-        - ApiIdentity: []
+        - ApiIdentity: [ ]
       parameters:
         - in: path
           name: bucket_id
@@ -231,6 +299,10 @@ paths:
                   $ref: '#/components/schemas/ApiBucketKey'
         '500':
           description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
     post:
       tags:
@@ -239,7 +311,7 @@ paths:
       summary: Create a new key for a specific bucket
       operationId: createBucketKey
       security:
-        - ApiIdentity: []
+        - ApiIdentity: [ ]
       parameters:
         - in: path
           name: bucket_id
@@ -262,12 +334,24 @@ paths:
                 $ref: '#/components/schemas/ApiBucketKey'
         '400':
           description: Invalid public key provided
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
           description: Bucket not found or unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
-  /api/v1/buckets/{bucket_id}/keys/{bucket_key_id}:
+  /buckets/{bucket_id}/keys/{bucket_key_id}:
     get:
       tags:
         - Buckets
@@ -275,7 +359,7 @@ paths:
       summary: Get a single key for a specific bucket
       operationId: getSingleBucketKey
       security:
-        - ApiIdentity: []
+        - ApiIdentity: [ ]
       parameters:
         - in: path
           name: bucket_id
@@ -298,8 +382,16 @@ paths:
                 $ref: '#/components/schemas/ApiBucketKey'
         '404':
           description: Bucket key not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
     delete:
       tags:
@@ -308,7 +400,7 @@ paths:
       summary: Delete a key for a specific bucket
       operationId: deleteBucketKey
       security:
-        - ApiIdentity: []
+        - ApiIdentity: [ ]
       parameters:
         - in: path
           name: bucket_id
@@ -327,9 +419,17 @@ paths:
           description: Bucket key deleted successfully
         '404':
           description: Bucket key not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Internal server error
-  /api/v1/buckets/{bucket_id}/snapshots:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /buckets/{bucket_id}/snapshots:
     get:
       tags:
         - Buckets
@@ -337,7 +437,7 @@ paths:
       summary: Get all snapshots for a specific bucket
       operationId: getAllSnapshots
       security:
-        - ApiIdentity: []
+        - ApiIdentity: [ ]
       parameters:
         - in: path
           name: bucket_id
@@ -356,12 +456,24 @@ paths:
                   $ref: '#/components/schemas/ApiSnapshot'
         '401':
           description: Unauthorized access attempt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
           description: Bucket not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
-  /api/v1/buckets/{bucket_id}/snapshots/{snapshot_id}:
+  /buckets/{bucket_id}/snapshots/{snapshot_id}:
     get:
       tags:
         - Buckets
@@ -369,7 +481,7 @@ paths:
       summary: Get a single snapshot for a specific bucket
       operationId: getSingleSnapshot
       security:
-        - ApiIdentity: []
+        - ApiIdentity: [ ]
       parameters:
         - in: path
           name: bucket_id
@@ -392,12 +504,24 @@ paths:
                 $ref: '#/components/schemas/ApiSnapshot'
         '401':
           description: Unauthorized access attempt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
           description: Snapshot not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
-  /api/v1/buckets/{bucket_id}/snapshots/{snapshot_id}/restore:
+  /buckets/{bucket_id}/snapshots/{snapshot_id}/restore:
     put:
       tags:
         - Buckets
@@ -405,7 +529,7 @@ paths:
       summary: Restore a snapshot for a specific bucket
       operationId: restoreSnapshot
       security:
-        - ApiIdentity: []
+        - ApiIdentity: [ ]
       parameters:
         - in: path
           name: bucket_id
@@ -432,18 +556,30 @@ paths:
                     description: The ID of the restore request
         '401':
           description: Unauthorized access attempt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
           description: Snapshot not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Internal server error
-  /api/v1/buckets/{bucket_id}/usage:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /buckets/{bucket_id}/usage:
     get:
       tags:
         - Buckets
       summary: Get the usage information for a specific bucket
       operationId: getBucketUsage
       security:
-        - ApiIdentity: []
+        - ApiIdentity: [ ]
       parameters:
         - in: path
           name: bucket_id
@@ -460,19 +596,31 @@ paths:
                 $ref: '#/components/schemas/BucketUsage'
         '401':
           description: Unauthorized access attempt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
           description: Bucket not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
-  /api/v1/buckets/{bucket_id}/authorization_grants:
+  /buckets/{bucket_id}/authorization_grants:
     get:
       tags:
         - Buckets
       summary: Get authorization grants for a specific bucket
       operationId: getBucketAuthorizationGrants
       security:
-        - ApiIdentity: []
+        - ApiIdentity: [ ]
       parameters:
         - in: path
           name: bucket_id
@@ -489,19 +637,32 @@ paths:
                 $ref: '#/components/schemas/AuthorizationGrant'
         '401':
           description: Unauthorized access attempt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
           description: Bucket not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
-  /api/v1/buckets:
+  /buckets:
     get:
       tags:
         - Buckets
       summary: Get all buckets for the user
       operationId: getAllBuckets
       security:
-        - ApiIdentity: []
+        - ApiIdentity: [ ]
+        - SessionIdentity: [ ]
       responses:
         '200':
           description: List of all buckets for the user
@@ -513,13 +674,17 @@ paths:
                   $ref: '#/components/schemas/ApiBucket'
         '500':
           description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     post:
       tags:
         - Buckets
       summary: Create a new bucket
       operationId: createBucket
       security:
-        - ApiIdentity: []
+        - ApiIdentity: [ ]
       requestBody:
         required: true
         content:
@@ -535,18 +700,30 @@ paths:
                 $ref: '#/components/schemas/CreateBucketResponse'
         '400':
           description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Unauthorized access attempt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Internal server error
-  /api/v1/buckets/{bucket_id}:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /buckets/{bucket_id}:
     get:
       tags:
         - Buckets
       summary: Get a single bucket by ID
       operationId: getSingleBucket
       security:
-        - ApiIdentity: []
+        - ApiIdentity: [ ]
       parameters:
         - in: path
           name: bucket_id
@@ -563,15 +740,23 @@ paths:
                 $ref: '#/components/schemas/ApiBucket'
         '404':
           description: Bucket not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     delete:
       tags:
         - Buckets
       summary: Delete a single bucket by ID
       operationId: deleteBucket
       security:
-        - ApiIdentity: []
+        - ApiIdentity: [ ]
       parameters:
         - in: path
           name: bucket_id
@@ -584,15 +769,23 @@ paths:
           description: Bucket deleted successfully
         '404':
           description: Bucket not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     put:
       tags:
         - Buckets
       summary: Update a single bucket by ID
       operationId: updateBucket
       security:
-        - ApiIdentity: []
+        - ApiIdentity: [ ]
       parameters:
         - in: path
           name: bucket_id
@@ -615,43 +808,16 @@ paths:
           description: Bucket not found
         '500':
           description: Internal server error
-  /api/v1/auth/provider_grant/{storage_host_id}:
-    get:
-      tags:
-        - Auth
-      summary: Grant a storage provider access to a storage host
-      operationId: grantProviderAccess
-      security:
-        - StorageProviderIdentity: []
-      parameters:
-        - in: path
-          name: storage_host_id
-          required: true
-          schema:
-            type: string
-          description: The ID of the storage host to grant access to
-      responses:
-        '200':
-          description: Access granted to the storage provider
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProviderGrantResponse'
-        '401':
-          description: Unauthorized access attempt
-        '404':
-          description: Storage host not found
-        '500':
-          description: Internal server error
 
-  /api/v1/auth/device_api_key:
+  /auth/device_api_key:
     get:
       tags:
         - Auth
       summary: Get all device API keys for the user
       operationId: readAllDeviceApiKeys
       security:
-        - ApiIdentity: []
+        - ApiIdentity: [ ]
+        - SessionIdentity: [ ]
       responses:
         '200':
           description: List of all device API keys
@@ -669,7 +835,7 @@ paths:
       summary: Create a new device API key
       operationId: createDeviceApiKey
       security:
-        - ApiIdentity: []
+        - ApiIdentity: [ ]
       requestBody:
         required: true
         content:
@@ -691,17 +857,24 @@ paths:
                     type: string
         '400':
           description: Invalid public key provided
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Backend service experienced an issue servicing the request
-
-  /api/v1/auth/device_api_key/{key_id}:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /auth/device_api_key/{key_id}:
     get:
       tags:
         - Auth
       summary: Read a specific device API key
       operationId: readDeviceApiKey
       security:
-        - ApiIdentity: []
+        - ApiIdentity: [ ]
       parameters:
         - name: key_id
           in: path
@@ -718,15 +891,23 @@ paths:
                 $ref: '#/components/schemas/DeviceApiKey'
         '404':
           description: Device API key not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Backend service experienced an issue servicing the request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     delete:
       tags:
         - Auth
       summary: Delete a specific device API key
       operationId: deleteDeviceApiKey
       security:
-        - ApiIdentity: []
+        - ApiIdentity: [ ]
       parameters:
         - name: key_id
           in: path
@@ -739,16 +920,25 @@ paths:
           description: Device API key deleted successfully
         '404':
           description: Device API key not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Backend service experienced an issue servicing the request
-  /api/v1/auth/who_am_i:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /auth/who_am_i:
     get:
       tags:
         - Auth
       summary: Get the user ID of the currently authenticated user
       operationId: whoAmI
       security:
-        - ApiIdentity: []
+        - ApiIdentity: [ ]
+        - SessionIdentity: [ ]
       responses:
         '200':
           description: User ID of the authenticated user
@@ -762,15 +952,19 @@ paths:
                     format: uuid
         '500':
           description: Backend service experienced an issue servicing the request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
-  /api/v1/blocks/locate:
+  /blocks/locate:
     post:
       tags:
         - Blocks
       summary: Locate blocks in storage
       operationId: locateBlocks
       security:
-        - ApiIdentity: []
+        - ApiIdentity: [ ]
       requestBody:
         required: true
         content:
@@ -792,113 +986,26 @@ paths:
                     type: string
         '400':
           description: Invalid CID provided in request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Backend service experienced an issue servicing the request
-  /api/v1/deals:
-    get:
-      summary: Get all deals for the user
-      tags: 
-        - Deals
-      operationId: getAllDeals
-      security:
-        - ApiIdentity: []
-        - SessionIdentity: []
-      responses:
-        '200':
-          description: List of all deals
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ApiDeal'
-        '500':
-          description: Internal server error
+                $ref: '#/components/schemas/Error'
 
-  /api/v1/deals/{deal_id}:
-    get:
-      summary: Get a single deal by ID
-      operationId: getSingleDeal
-      tags: 
-        - Deals
-      security:
-        - ApiIdentity: []
-        - SessionIdentity: []
-      parameters:
-        - name: deal_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Details of the specified deal
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiDeal'
-        '404':
-          description: Deal not found or not owned by the user
-        '500':
-          description: Internal server error
-
-  /api/v1/deals/{deal_id}/accept:
-    post:
-      summary: Accept a deal by ID
-      tags: 
-        - Deals
-      operationId: acceptDeal
-      security:
-        - ApiIdentity: []
-        - SessionIdentity: []
-      parameters:
-        - name: deal_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '204':
-          description: Deal accepted successfully
-        '404':
-          description: Deal not found or not in a state that can be accepted
-        '500':
-          description: Internal server error
-
-  /api/v1/deals/{deal_id}/cancel:
-    post:
-      summary: Cancel a deal by ID
-      tags: 
-        - Deals
-      operationId: cancelDeal
-      security:
-        - ApiIdentity: []
-        - SessionIdentity: []
-      parameters:
-        - name: deal_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '204':
-          description: Deal cancelled successfully
-        '404':
-          description: Deal not found or not in a state that can be cancelled
-        '500':
-          description: Internal server error
-  /api/v1/invoices:
+  /invoices:
     get:
       summary: Get all invoices for the user
-      tags: 
+      tags:
         - Invoices
       operationId: getAllInvoices
       security:
-        - ApiIdentity: []
-        - SessionIdentity: []
+        - ApiIdentity: [ ]
+        - SessionIdentity: [ ]
       responses:
         '200':
           description: List of all invoices
@@ -910,16 +1017,20 @@ paths:
                   $ref: '#/components/schemas/ApiInvoice'
         '500':
           description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
-  /api/v1/invoices/{invoice_id}:
+  /invoices/{invoice_id}:
     get:
-      tags: 
+      tags:
         - Invoices
       summary: Get a single invoice by ID
       operationId: getSingleInvoice
       security:
-        - ApiIdentity: []
-        - SessionIdentity: []
+        - ApiIdentity: [ ]
+        - SessionIdentity: [ ]
       parameters:
         - name: invoice_id
           in: path
@@ -936,17 +1047,25 @@ paths:
                 $ref: '#/components/schemas/ApiInvoice'
         '404':
           description: Invoice not found or not owned by the user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Internal server error
-  /api/v1/notifications:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /notifications:
     get:
-      tags: 
+      tags:
         - Notifications
       summary: Get all notifications for the user
       operationId: getAllNotifications
       security:
-        - ApiIdentity: []
-        - SessionIdentity: []
+        - ApiIdentity: [ ]
+        - SessionIdentity: [ ]
       responses:
         '200':
           description: List of all notifications
@@ -958,16 +1077,20 @@ paths:
                   $ref: '#/components/schemas/ApiNotification'
         '500':
           description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
-  /api/v1/notifications/{notification_id}:
+  /notifications/{notification_id}:
     delete:
-      tags: 
+      tags:
         - Notifications
       summary: Delete a notification by ID
       operationId: deleteNotification
       security:
-        - ApiIdentity: []
-        - SessionIdentity: []
+        - ApiIdentity: [ ]
+        - SessionIdentity: [ ]
       parameters:
         - name: notification_id
           in: path
@@ -980,19 +1103,31 @@ paths:
           description: Notification deleted successfully
         '404':
           description: Notification not found or not owned by the user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '400':
           description: Notification cannot be deleted because it is not dismissible
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Internal server error
-  /api/v1/subscriptions:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /subscriptions:
     get:
-      tags: 
+      tags:
         - Subscriptions
       summary: Get all subscriptions
       operationId: getAllSubscriptions
       security:
-        - ApiIdentity: []
-        - SessionIdentity: []
+        - ApiIdentity: [ ]
+        - SessionIdentity: [ ]
       responses:
         '200':
           description: List of all subscriptions
@@ -1004,16 +1139,20 @@ paths:
                   $ref: '#/components/schemas/ApiSubscription'
         '500':
           description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
-  /api/v1/subscriptions/{subscription_id}:
+  /subscriptions/{subscription_id}:
     get:
-      tags: 
+      tags:
         - Subscriptions
       summary: Get a single subscription by ID
       operationId: getSingleSubscription
       security:
-        - ApiIdentity: []
-        - SessionIdentity: []
+        - ApiIdentity: [ ]
+        - SessionIdentity: [ ]
       parameters:
         - name: subscription_id
           in: path
@@ -1031,16 +1170,20 @@ paths:
           description: Subscription not found
         '500':
           description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
-  /api/v1/subscriptions/{subscription_id}/subscribe:
+  /subscriptions/{subscription_id}/subscribe:
     post:
       tags:
         - Subscriptions
       summary: Purchase a subscription
       operationId: purchaseSubscription
       security:
-        - ApiIdentity: []
-        - SessionIdentity: []
+        - ApiIdentity: [ ]
+        - SessionIdentity: [ ]
       parameters:
         - name: subscription_id
           in: path
@@ -1063,16 +1206,19 @@ paths:
           description: Subscription not found
         '500':
           description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
-  /api/v1/subscriptions/manage:
+  /subscriptions/manage:
     get:
       tags:
         - Subscriptions
       summary: Manage the subscription
       operationId: manageSubscription
       security:
-        - ApiIdentity: []
-        - SessionIdentity: []
+        - SessionIdentity: [ ]
       responses:
         '200':
           description: Billing portal session created
@@ -1085,18 +1231,26 @@ paths:
                     type: string
         '404':
           description: User without stripe association not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
-  /api/v1/subscriptions/success/{checkout_session_id}:
+  /subscriptions/success/{checkout_session_id}:
     get:
       tags:
         - Subscriptions
       summary: Subscription purchase success redirect
       operationId: subscriptionPurchaseSuccess
       security:
-        - ApiIdentity: []
-        - SessionIdentity: []
+        - ApiIdentity: [ ]
+        - SessionIdentity: [ ]
       parameters:
         - name: checkout_session_id
           in: path
@@ -1107,27 +1261,27 @@ paths:
         '302':
           description: Redirect to success page
 
-  /api/v1/subscriptions/cancel:
+  /subscriptions/cancel:
     get:
       tags:
         - Subscriptions
       summary: Subscription purchase cancel redirect
       operationId: subscriptionPurchaseCancel
       security:
-        - ApiIdentity: []
-        - SessionIdentity: []
+        - ApiIdentity: [ ]
+        - SessionIdentity: [ ]
       responses:
         '302':
           description: Redirect to cancel page
-  /api/v1/users/escrowed_device:
+
+  /users/escrowed_device:
     get:
       tags:
-        - Users 
+        - Users
       summary: Get current user's escrowed device
       operationId: getEscrowedDevice
       security:
-        - ApiIdentity: []
-        - SessionIdentity: []
+        - SessionIdentity: [ ]
       responses:
         '200':
           description: Escrowed device information
@@ -1137,16 +1291,20 @@ paths:
                 $ref: '#/components/schemas/ApiEscrowedKeyMaterial'
         '500':
           description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
-  /api/v1/users/current_user:
+  /users/current_user:
     get:
       tags:
-        - Users 
+        - Users
       summary: Get current user information
       operationId: getCurrentUser
       security:
-        - ApiIdentity: []
-        - SessionIdentity: []
+        - ApiIdentity: [ ]
+        - SessionIdentity: [ ]
       responses:
         '200':
           description: A user object
@@ -1156,15 +1314,19 @@ paths:
                 $ref: '#/components/schemas/ApiUser'
         '404':
           description: User not found
-  /api/v1/users/update_user:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /users/update_user:
     patch:
       tags:
-        - Users 
+        - Users
       summary: Update current user information
       operationId: updateCurrentUser
       security:
-        - ApiIdentity: []
-        - SessionIdentity: []
+        - ApiIdentity: [ ]
+        - SessionIdentity: [ ]
       requestBody:
         required: true
         content:
@@ -1176,16 +1338,19 @@ paths:
           description: User updated successfully
         '400':
           description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
           description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 components:
   securitySchemes:
     ApiIdentity:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-
-    StorageProviderIdentity:
       type: http
       scheme: bearer
       bearerFormat: JWT
@@ -1204,13 +1369,6 @@ components:
           scopes:
             email: Access to the user's email address
             profile: Access to the user's basic profile information
-  responses:
-    GenericError:     
-      description: An error occurred.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
   schemas:
     ApiUser:
       type: object
@@ -1254,10 +1412,10 @@ components:
           type: string
         type:
           type: string
-          enum: [BucketType]
+          enum: [ BucketType ]
         storage_class:
           type: string
-          enum: [StorageClass]
+          enum: [ StorageClass ]
         updated_at:
           type: string
           format: date-time
@@ -1319,16 +1477,7 @@ components:
           type: integer
           format: int64
           nullable: true
-    ApiDeal:
-      type: object
-      properties:
-        id:
-          type: string
-        state:
-          type: string
-        size:
-          type: integer
-          format: int64
+
     ApiInvoice:
       type: object
       properties:
