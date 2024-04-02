@@ -4,7 +4,6 @@ use crate::database::models::{ApiKey, BucketAccessState};
 
 #[derive(Serialize)]
 pub struct ApiBucketAccess {
-    pub id: String,
     pub state: BucketAccessState,
     pub pem: String,
     pub fingerprint: String,

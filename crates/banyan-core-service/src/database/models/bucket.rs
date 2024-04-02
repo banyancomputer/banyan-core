@@ -11,6 +11,8 @@ use crate::database::models::{BucketType, MinimalBlockLocation, StorageClass};
 use crate::database::{Database, DatabaseConnection, BIND_LIMIT};
 use crate::tasks::PruneBlocksTask;
 
+use super::BucketAccessState;
+
 /// Used to prevent writes of new metadata versions when there is a newer metadata currently being
 /// written. This protection is needed until we can handle merge conflicts and resolve the rapid
 /// data only unbatched changes in the client.
@@ -87,6 +89,26 @@ impl Bucket {
         }
 
         Ok(changed_rows)
+    }
+
+    pub async fn set_access(
+        conn: &mut DatabaseConnection,
+        user_key_id: &str,
+        bucket_id: &str,
+        state: BucketAccessState,
+    ) -> Result<(), sqlx::Error> {
+        sqlx::query!(
+            r#"
+                INSERT OR REPLACE INTO bucket_access (user_key_id, bucket_id, state)
+                VALUES ($1, $2, $3);
+            "#,
+            user_key_id,
+            bucket_id,
+            state,
+        )
+        .execute(&mut *conn)
+        .await
+        .map(|_| ())
     }
 
     /// Takes that list of blocks, verifies they're associated with the bucket (part of the query),

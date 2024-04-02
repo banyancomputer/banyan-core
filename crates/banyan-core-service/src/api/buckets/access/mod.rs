@@ -19,9 +19,9 @@ where
     Router::new()
         .route("/", get(all_bucket_access::handler))
         .route(
-            "/:api_key",
+            "/:bucket_access",
             get(single_bucket_access::handler).delete(revoke_bucket_access::handler),
         )
-        .route("/:api_key/reject", post(revoke_bucket_access::handler))
+        .route("/:user_key/reject", post(revoke_bucket_access::handler))
         .with_state(state)
 }

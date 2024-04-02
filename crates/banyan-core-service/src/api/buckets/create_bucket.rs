@@ -17,13 +17,6 @@ pub async fn handler(
     Json(request): Json<CreateBucketRequest>,
 ) -> Result<Response, CreateBucketError> {
     request.validate()?;
-
-    //let api_key =
-
-    // todo: should probably move this validation into the validate() call...
-    let public_key = ES384PublicKey::from_pem(&request.initial_bucket_key_pem)
-        .map_err(CreateBucketError::InvalidPublicKey)?;
-    let fingerprint = fingerprint_public_key(&public_key);
     let database = state.database();
     let now = OffsetDateTime::now_utc();
 
@@ -46,10 +39,16 @@ pub async fn handler(
 
     // todo: when the extra returns have been removed this can turn into an execute query, for now
     // we need to keep a handle on the id
-
-    let pem = request.initial_bucket_key_pem;
     //let
     // Provide this Api Key with Bucket Access
+
+    Bucket::set_access(
+        &database,
+        &user_key_id,
+        &bucket_id,
+        BucketAccessState::Approved,
+    )
+    .await?;
     let bucket_key_id = sqlx::query_scalar!(
         r#"
             INSERT INTO bucket_access (api_key_id, bucket_id, state)
@@ -84,11 +83,7 @@ pub async fn handler(
         name: bucket.name,
         r#type: bucket.r#type,
         storage_class: bucket.storage_class,
-        initial_bucket_key: ApiBucketKeyResponse {
-            id: bucket_key.id,
-            state: bucket_key.state,
-            fingerprint: bucket_key.fingerprint,
-        },
+        state: bucket_access.state,
     };
 
     Ok((StatusCode::OK, Json(resp)).into_response())
@@ -102,8 +97,6 @@ pub struct CreateBucketRequest {
     #[serde(rename = "type")]
     bucket_type: BucketType,
     storage_class: StorageClass,
-
-    initial_bucket_key_pem: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -112,15 +105,9 @@ struct ApiCreateBucketResponse {
     name: String,
     r#type: BucketType,
     storage_class: StorageClass,
-    initial_bucket_key: ApiBucketKeyResponse,
+    state: BucketAccessState,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-struct ApiBucketKeyResponse {
-    pub id: String,
-    pub state: BucketAccessState,
-    pub fingerprint: String,
-}
 #[derive(Debug, thiserror::Error)]
 pub enum CreateBucketError {
     #[error("retrieving additional bucket details failed: {0}")]
