@@ -1,7 +1,6 @@
 use axum::extract::{Json, Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use serde::Serialize;
 use uuid::Uuid;
 
 use crate::app::AppState;
@@ -18,10 +17,10 @@ pub async fn handler(
 
     let user_id: String = user_identity.id().to_string();
     let query_result = sqlx::query_as!(
-        ApiKey,
+        UserKey,
         r#"
             SELECT *
-            FROM api_keys
+            FROM user_keys
             WHERE id = $1 
             AND user_id = $2;
         "#,

@@ -10,7 +10,6 @@ use crate::api::models::ApiBucketAccess;
 use crate::app::AppState;
 use crate::database::models::{Bucket, BucketAccessState, BucketType, StorageClass, UserKey};
 use crate::extractors::ApiIdentity;
-use crate::utils::keys::fingerprint_public_key;
 
 pub async fn handler(
     api_id: ApiIdentity,
@@ -49,7 +48,7 @@ pub async fn handler(
     //let
     // Provide this Api Key with Bucket Access
 
-    Bucket::set_access(
+    let access = Bucket::set_access(
         &mut conn,
         &user_key.id,
         &bucket_id,
@@ -67,7 +66,10 @@ pub async fn handler(
         name: bucket.name,
         r#type: bucket.r#type,
         storage_class: bucket.storage_class,
-        access: ApiBucketAccess,
+        access: ApiBucketAccess {
+            fingerprint: user_key.fingerprint,
+            state: access.state,
+        },
     };
 
     Ok((StatusCode::OK, Json(resp)).into_response())

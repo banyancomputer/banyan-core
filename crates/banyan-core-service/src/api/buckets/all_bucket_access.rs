@@ -20,7 +20,7 @@ pub async fn handler(
         r#"
             SELECT uk.fingerprint, ba.state 
             FROM bucket_access AS ba
-            JOIN user_keys AS uk ba.user_key_id = uk.id
+            JOIN user_keys AS uk ON ba.user_key_id = uk.id
             WHERE uk.user_id = $1
             AND ba.bucket_id = $2;
         "#,

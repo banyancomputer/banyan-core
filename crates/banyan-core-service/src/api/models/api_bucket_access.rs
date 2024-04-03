@@ -1,4 +1,4 @@
-use crate::database::models::BucketAccessState;
+use crate::database::models::{BucketAccess, BucketAccessState};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]

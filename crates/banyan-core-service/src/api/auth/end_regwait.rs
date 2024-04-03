@@ -17,7 +17,7 @@ pub async fn handler(
     let user_id = user_identity.id().to_string();
     let maybe_present = sqlx::query_scalar!(
         r#"
-            SELECT 1 FROM api_keys
+            SELECT 1 FROM user_keys
             WHERE user_id = $1
             AND fingerprint = $2;
         "#,

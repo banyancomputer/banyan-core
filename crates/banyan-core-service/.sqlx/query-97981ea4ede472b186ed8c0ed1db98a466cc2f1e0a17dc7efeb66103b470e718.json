@@ -1,0 +1,62 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            SELECT *\n            FROM user_keys\n            WHERE user_id = $1;\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "user_id",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "fingerprint",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "pem",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 4,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "updated_at",
+        "ordinal": 5,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "name",
+        "ordinal": 6,
+        "type_info": "Text"
+      },
+      {
+        "name": "api_access",
+        "ordinal": 7,
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "97981ea4ede472b186ed8c0ed1db98a466cc2f1e0a17dc7efeb66103b470e718"
+}

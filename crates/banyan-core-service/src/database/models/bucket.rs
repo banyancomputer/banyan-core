@@ -7,7 +7,7 @@ use sqlx::QueryBuilder;
 use time::OffsetDateTime;
 
 use crate::api::models::ApiBucketConfiguration;
-use crate::database::models::{BucketType, MinimalBlockLocation, StorageClass};
+use crate::database::models::{BucketAccess, BucketType, MinimalBlockLocation, StorageClass};
 use crate::database::{Database, DatabaseConnection, BIND_LIMIT};
 use crate::tasks::PruneBlocksTask;
 
@@ -53,8 +53,9 @@ impl Bucket {
         user_key_id: &str,
         bucket_id: &str,
         state: BucketAccessState,
-    ) -> Result<(), sqlx::Error> {
-        sqlx::query!(
+    ) -> Result<BucketAccess, sqlx::Error> {
+        sqlx::query_as!(
+            BucketAccess,
             r#"
                 INSERT OR REPLACE INTO bucket_access (user_key_id, bucket_id, state)
                 VALUES ($1, $2, $3);
@@ -63,9 +64,8 @@ impl Bucket {
             bucket_id,
             state,
         )
-        .execute(&mut *conn)
+        .fetch_one(&mut *conn)
         .await
-        .map(|_| ())
     }
 
     /// Takes that list of blocks, verifies they're associated with the bucket (part of the query),

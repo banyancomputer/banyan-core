@@ -10,6 +10,7 @@ mod api_notification;
 mod api_snapshot;
 mod api_subscription;
 mod api_user;
+mod api_user_key;
 
 pub use admin::api_deals_admin::ApiDealsAdmin;
 pub use admin::api_storage_hosts_admin::ApiSelectedStorageHostAdmin;
@@ -24,3 +25,5 @@ pub use api_notification::ApiNotification;
 pub use api_snapshot::ApiSnapshot;
 pub use api_subscription::ApiSubscription;
 pub use api_user::ApiUser;
+pub use api_user_key::ApiUserKey;
+

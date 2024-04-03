@@ -12,10 +12,7 @@ pub async fn handler(
     Path(bucket_id): Path<Uuid>,
 ) -> Response {
     let bucket_id = bucket_id.to_string();
-    let bucket_key_id = bucket_key_id.to_string();
-
     let database = state.database();
-
     let user_id = user_identity.id().to_string();
 
     let query_result = sqlx::query!(
