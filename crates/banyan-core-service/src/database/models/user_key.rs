@@ -1,12 +1,10 @@
-use serde::{Deserialize, Serialize};
+use serde::{Serialize};
 use time::OffsetDateTime;
 
 use crate::{
     database::{
-        models::{BucketAccess, BucketAccessState},
         DatabaseConnection,
     },
-    extractors::{ApiIdentity, UserIdentity},
 };
 
 #[derive(sqlx::FromRow, Serialize)]

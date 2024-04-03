@@ -1,7 +1,7 @@
 use axum::extract::{Json, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use serde::Serialize;
+
 
 use crate::api::models::ApiUserKey;
 use crate::app::AppState;

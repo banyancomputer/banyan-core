@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 
 use banyan_task::TaskLikeExt;
-use sqlx::query::Query;
+
 use sqlx::sqlite::SqliteQueryResult;
 use sqlx::QueryBuilder;
 use time::OffsetDateTime;
