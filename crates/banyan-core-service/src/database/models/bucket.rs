@@ -7,11 +7,9 @@ use sqlx::QueryBuilder;
 use time::OffsetDateTime;
 
 use crate::api::models::ApiBucketConfiguration;
-use crate::database::models::{BucketAccess, BucketType, MinimalBlockLocation, StorageClass};
+use crate::database::models::{BucketAccess, BucketAccessState, BucketType, MinimalBlockLocation, StorageClass};
 use crate::database::{Database, DatabaseConnection, BIND_LIMIT};
 use crate::tasks::PruneBlocksTask;
-
-use super::BucketAccessState;
 
 /// Used to prevent writes of new metadata versions when there is a newer metadata currently being
 /// written. This protection is needed until we can handle merge conflicts and resolve the rapid
@@ -54,15 +52,17 @@ impl Bucket {
         bucket_id: &str,
         state: BucketAccessState,
     ) -> Result<BucketAccess, sqlx::Error> {
+        let state = state.to_string();
         let access = sqlx::query_as!(
             BucketAccess,
             r#"
                 INSERT OR REPLACE INTO bucket_access (user_key_id, bucket_id, state)
-                VALUES ($1, $2, $3);
+                VALUES ($1, $2, $3)
+                RETURNING user_key_id, bucket_id, state as 'state: BucketAccessState';
             "#,
             user_key_id,
             bucket_id,
-            &state.to_string(),
+            state,
         )
         .fetch_one(&mut *conn)
         .await?;
