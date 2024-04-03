@@ -17,7 +17,7 @@ pub async fn handler(
     let user_id = user_identity.id().to_string();
     let query_result = sqlx::query!(
         r#"
-            DELETE FROM api_keys
+            DELETE FROM user_keys
             WHERE id = $1
             AND user_id = $2;
         "#,

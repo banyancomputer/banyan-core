@@ -17,15 +17,11 @@ pub async fn handler(
 
     let query_result = sqlx::query!(
         r#"
-            UPDATE bucket_access AS ba
-            JOIN buckets AS b ON ba.bucket_id = b.id
-            JOIN user_keys AS uk ON uk.id = ba.user_key_id
-            WHERE uk.user_id = $1
-            AND ak.id = $2
-            AND ak.bucket_id = $3;
+            UPDATE bucket_access
+            WHERE user_key_id = $1
+            AND bucket_id = $2;
         "#,
-        user_id,
-        bucket_key_id,
+        user_key_id,
         bucket_id,
     )
     .execute(&database)

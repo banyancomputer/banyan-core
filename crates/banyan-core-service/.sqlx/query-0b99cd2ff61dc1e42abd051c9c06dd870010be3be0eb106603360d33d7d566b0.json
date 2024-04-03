@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                SELECT ba.user_key_id, ba.bucket_id, ba.state AS 'state: BucketAccessState' FROM bucket_access AS ba\n                JOIN buckets AS b ON b.id = ba.bucket_id\n                JOIN user_keys AS uk ON uk.id = ba.user_key_id\n                JOIN users AS u ON u.id = uk.user_id\n                WHERE u.id = $1\n                AND b.id = $2;\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "user_key_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "bucket_id",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "state: BucketAccessState",
+        "ordinal": 2,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "0b99cd2ff61dc1e42abd051c9c06dd870010be3be0eb106603360d33d7d566b0"
+}
