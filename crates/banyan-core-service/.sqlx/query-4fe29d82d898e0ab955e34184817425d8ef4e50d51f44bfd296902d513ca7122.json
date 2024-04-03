@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n                INSERT OR REPLACE INTO bucket_access (user_key_id, bucket_id, state)\n                VALUES ($1, $2, $3)\n                RETURNING user_key_id, bucket_id, state as 'state: BucketAccessState';\n            ",
+  "query": "\n                INSERT OR REPLACE INTO bucket_access (user_key_id, bucket_id, state)\n                VALUES ($1, $2, 'approved')\n                RETURNING user_key_id, bucket_id, state as 'state: BucketAccessState';\n            ",
   "describe": {
     "columns": [
       {
@@ -20,7 +20,7 @@
       }
     ],
     "parameters": {
-      "Right": 3
+      "Right": 2
     },
     "nullable": [
       false,
@@ -28,5 +28,5 @@
       false
     ]
   },
-  "hash": "52a87686698b78e589895ad8a8d59c492fe85f2a86cb13430672ccfe3c798313"
+  "hash": "4fe29d82d898e0ab955e34184817425d8ef4e50d51f44bfd296902d513ca7122"
 }

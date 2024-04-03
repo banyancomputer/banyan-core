@@ -88,23 +88,20 @@ impl Bucket {
         Ok(())
     }
 
-    pub async fn set_access(
+    pub async fn grant_bucket_access(
         conn: &mut DatabaseConnection,
         user_key_id: &str,
         bucket_id: &str,
-        state: BucketAccessState,
     ) -> Result<BucketAccess, sqlx::Error> {
-        let state = state.to_string();
         let access = sqlx::query_as!(
             BucketAccess,
             r#"
                 INSERT OR REPLACE INTO bucket_access (user_key_id, bucket_id, state)
-                VALUES ($1, $2, $3)
+                VALUES ($1, $2, 'approved')
                 RETURNING user_key_id, bucket_id, state as 'state: BucketAccessState';
             "#,
             user_key_id,
             bucket_id,
-            state,
         )
         .fetch_one(&mut *conn)
         .await?;

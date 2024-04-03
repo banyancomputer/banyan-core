@@ -50,14 +50,9 @@ pub async fn handler(
     // Provide this Api Key with Bucket Access
 
     let mut conn = database.acquire().await?;
-    let access = Bucket::set_access(
-        &mut conn,
-        &user_key.id,
-        &bucket_id,
-        BucketAccessState::Approved,
-    )
-    .await
-    .map_err(CreateBucketError::GrantAccessFailed)?;
+    let access = Bucket::grant_bucket_access(&mut conn, &user_key.id, &bucket_id)
+        .await
+        .map_err(CreateBucketError::GrantAccessFailed)?;
 
     let bucket = Bucket::find_by_id(&mut conn, &bucket_id)
         .await
