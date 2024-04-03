@@ -2246,6 +2246,13 @@
     "schemas": {
       "ApiUser": {
         "type": "object",
+        "required": [
+          "id",
+          "email",
+          "display_name",
+          "account_tax_class",
+          "subscription_id"
+        ],
         "properties": {
           "id": {
             "type": "string"
@@ -2289,6 +2296,13 @@
       },
       "ApiBucket": {
         "type": "object",
+        "required": [
+          "id",
+          "owner_id",
+          "name",
+          "type",
+          "storage_class"
+        ],
         "properties": {
           "id": {
             "type": "string"
@@ -2365,6 +2379,13 @@
       },
       "ApiBucketKey": {
         "type": "object",
+        "required": [
+          "id",
+          "bucket_id",
+          "approved",
+          "pem",
+          "fingerprint"
+        ],
         "properties": {
           "id": {
             "type": "string"
@@ -2400,6 +2421,15 @@
       },
       "ApiInvoice": {
         "type": "object",
+        "required": [
+          "id",
+          "billing_start",
+          "billing_end",
+          "subscription_id",
+          "total_amount",
+          "status",
+          "created_at"
+        ],
         "properties": {
           "id": {
             "type": "string"
@@ -2430,6 +2460,15 @@
       },
       "ApiNotification": {
         "type": "object",
+        "required": [
+          "id",
+          "user_id",
+          "dismissable",
+          "message",
+          "message_key",
+          "severity",
+          "created_at"
+        ],
         "properties": {
           "id": {
             "type": "string"
@@ -2457,6 +2496,12 @@
       },
       "ApiEscrowedKeyMaterial": {
         "type": "object",
+        "required": [
+          "api_public_key_pem",
+          "encryption_public_key_pem",
+          "encrypted_private_key_material",
+          "pass_key_salt"
+        ],
         "properties": {
           "api_public_key_pem": {
             "type": "string",
@@ -2476,6 +2521,13 @@
       },
       "ApiSnapshot": {
         "type": "object",
+        "required": [
+          "id",
+          "bucket_id",
+          "metadata_id",
+          "state",
+          "created_at"
+        ],
         "properties": {
           "id": {
             "type": "string"
@@ -2502,6 +2554,14 @@
       },
       "ApiSubscription": {
         "type": "object",
+        "required": [
+          "id",
+          "service_key",
+          "tax_class",
+          "title",
+          "features",
+          "pricing"
+        ],
         "properties": {
           "id": {
             "type": "string"
@@ -2529,6 +2589,12 @@
       },
       "ApiSubscriptionFeatures": {
         "type": "object",
+        "required": [
+          "archival_available",
+          "included_hot_replica_count",
+          "included_hot_storage",
+          "included_bandwidth"
+        ],
         "properties": {
           "archival_available": {
             "type": "boolean"
@@ -2589,6 +2655,9 @@
       },
       "AuthorizationGrant": {
         "type": "object",
+        "required": [
+          "authorization_token"
+        ],
         "properties": {
           "authorization_token": {
             "type": "string"
@@ -2597,6 +2666,9 @@
       },
       "BucketUsage": {
         "type": "object",
+        "required": [
+          "size"
+        ],
         "properties": {
           "size": {
             "type": "number",
@@ -2606,6 +2678,9 @@
       },
       "ProviderGrantResponse": {
         "type": "object",
+        "required": [
+          "token"
+        ],
         "properties": {
           "token": {
             "type": "string"
@@ -2614,6 +2689,11 @@
       },
       "DeviceApiKey": {
         "type": "object",
+        "required": [
+          "id",
+          "user_id",
+          "fingerprint"
+        ],
         "properties": {
           "id": {
             "type": "string"
@@ -2628,6 +2708,9 @@
       },
       "CreateDeviceApiKeyRequest": {
         "type": "object",
+        "required": [
+          "pem"
+        ],
         "properties": {
           "pem": {
             "description": "The PEM encoded public key for the device",
@@ -2651,6 +2734,15 @@
       },
       "ApiMetadata": {
         "type": "object",
+        "required": [
+          "id",
+          "root_cid",
+          "metadata_cid",
+          "data_size",
+          "state",
+          "created_at",
+          "updated_at"
+        ],
         "properties": {
           "id": {
             "type": "string"
@@ -2684,6 +2776,12 @@
       },
       "ApiMetadataResponse": {
         "type": "object",
+        "required": [
+          "id",
+          "state",
+          "storage_host",
+          "storage"
+        ],
         "properties": {
           "id": {
             "type": "string"

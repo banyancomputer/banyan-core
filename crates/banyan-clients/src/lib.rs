@@ -1,2 +1,2 @@
-mod core_admin;
-mod core_storage_providers;
+pub mod core_admin;
+pub mod core_storage_providers;
