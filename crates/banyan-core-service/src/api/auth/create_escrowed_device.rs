@@ -42,8 +42,16 @@ pub async fn handler(
     };
 
     sqlx::query!(
-        r#"INSERT INTO escrowed_devices (user_id, api_public_key_pem, encryption_public_key_pem, encrypted_private_key_material, pass_key_salt)
-            VALUES ($1, $2, $3, $4, $5);"#,
+        r#"
+            INSERT INTO escrowed_devices (
+                user_id, 
+                api_public_key_pem, 
+                encryption_public_key_pem, 
+                encrypted_private_key_material, 
+                pass_key_salt
+            )
+            VALUES ($1, $2, $3, $4, $5);
+        "#,
         user_id,
         api_public_key_pem,
         encryption_public_key_pem,
@@ -54,7 +62,11 @@ pub async fn handler(
     .await?;
 
     sqlx::query!(
-        "INSERT INTO api_keys (user_id, fingerprint, pem) VALUES ($1, $2, $3);",
+        r#"
+            INSERT INTO user_keys (name, user_id, fingerprint, pem)
+            VALUES ($1, $2, $3, $4);
+        "#,
+        "Owner",
         user_id,
         device_api_key_fingerprint,
         api_public_key_pem,

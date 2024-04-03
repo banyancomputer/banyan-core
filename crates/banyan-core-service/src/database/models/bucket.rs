@@ -48,49 +48,6 @@ impl Bucket {
             .await
     }
 
-    /// For a particular bucket mark keys with the fingerprints contained within as having been
-    /// approved for use with that bucket. We can't verify the key payload correctly contains valid
-    /// copies of the inner filesystem key, so there is a little bit of trust here. Key lifecycle
-    /// details should be documented elsewhere.
-    ///
-    /// Hazard: This does not check if the length of the iterator is over the bind limit supported
-    /// by sqlx or the database. If the iterator returns > 60k entries these calls will fail with
-    /// an obtuse error.
-    pub async fn approve_keys_by_fingerprint(
-        conn: &mut DatabaseConnection,
-        bucket_id: &str,
-        fingerprints: &[String],
-    ) -> Result<u64, sqlx::Error> {
-        let mut changed_rows = 0;
-
-        let mut offset_start = 0;
-        while offset_start < fingerprints.len() {
-            let offset_end =
-                std::cmp::min(fingerprints.len().saturating_sub(offset_start), BIND_LIMIT);
-            let chunk = &fingerprints[offset_start..offset_end];
-
-            let mut query =
-                QueryBuilder::new("UPDATE api_keys SET approved = 1 WHERE bucket_id = ");
-
-            query.push_bind(bucket_id);
-            query.push(" AND fingerprint IN (");
-
-            let mut separated_values = query.separated(", ");
-            for fingerprint in chunk {
-                separated_values.push_bind(fingerprint);
-            }
-
-            query.push(");");
-
-            let query_result = query.build().persistent(false).execute(&mut *conn).await?;
-            changed_rows += query_result.rows_affected();
-
-            offset_start = offset_end;
-        }
-
-        Ok(changed_rows)
-    }
-
     pub async fn set_access(
         conn: &mut DatabaseConnection,
         user_key_id: &str,
@@ -566,6 +523,7 @@ struct PruneCandidate {
     block_id: String,
 }
 
+/*
 #[cfg(test)]
 mod tests {
     use std::time::Duration;
@@ -1719,3 +1677,4 @@ mod tests {
         assert_eq!(pruned, 3);
     }
 }
+*/

@@ -16,15 +16,14 @@ pub async fn handler(
 ) -> Result<Response, CreateDeviceApiKeyError> {
     let public_device_key = ES384PublicKey::from_pem(&request.pem)
         .map_err(CreateDeviceApiKeyError::InvalidPublicKey)?;
-
     let database = state.database();
     let fingerprint = fingerprint_public_key(&public_device_key);
-
     let user_id = user_identity.id().to_string();
     let device_api_key_id = sqlx::query_scalar!(
-        r#"INSERT INTO api_keys (user_id, fingerprint, pem)
-            VALUES ($1, $2, $3)
+        r#"INSERT INTO user_keys (name, user_id, fingerprint, pem)
+            VALUES ($1, $2, $3, $4)
             RETURNING id;"#,
+        request.name,
         user_id,
         fingerprint,
         request.pem,
@@ -64,5 +63,6 @@ impl IntoResponse for CreateDeviceApiKeyError {
 
 #[derive(Deserialize)]
 pub struct CreateDeviceApiKeyRequest {
+    name: String,
     pem: String,
 }
