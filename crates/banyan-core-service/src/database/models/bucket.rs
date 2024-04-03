@@ -470,20 +470,6 @@ impl Bucket {
         Ok(bucket)
     }
 
-    pub async fn find_all_non_deleted(
-        conn: &mut DatabaseConnection,
-    ) -> Result<Vec<Self>, sqlx::Error> {
-        sqlx::query_as!(
-            Self,
-            r#"SELECT id, user_id, name, replicas, type as 'type: BucketType', storage_class as 'storage_class: StorageClass',
-                updated_at as 'updated_at!', deleted_at
-              FROM buckets
-              WHERE deleted_at IS NULL;"#,
-        )
-        .fetch_all(&mut *conn)
-        .await
-    }
-
     /// Check whether the provided `previous_id` is based within the bucket's history
     /// following its recent updates, including and following the current metadata version.
     pub async fn update_is_valid(

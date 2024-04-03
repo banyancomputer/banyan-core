@@ -73,7 +73,7 @@ impl StorageHost {
         exclude_host_ids: &[String],
     ) -> Result<Self, sqlx::Error> {
         let mut query = sqlx::QueryBuilder::new(
-            "SELECT * FROM storage_hosts WHERE (available_storage - used_storage) > ",
+            "SELECT * FROM storage_hosts WHERE (available_storage - reserved_storage) > ",
         );
         query.push_bind(required_bytes);
         query.push(" AND id NOT IN (");
