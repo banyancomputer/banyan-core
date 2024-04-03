@@ -54,7 +54,7 @@ impl Bucket {
         bucket_id: &str,
         state: BucketAccessState,
     ) -> Result<BucketAccess, sqlx::Error> {
-        sqlx::query_as!(
+        let access = sqlx::query_as!(
             BucketAccess,
             r#"
                 INSERT OR REPLACE INTO bucket_access (user_key_id, bucket_id, state)
@@ -62,10 +62,12 @@ impl Bucket {
             "#,
             user_key_id,
             bucket_id,
-            state,
+            &state.to_string(),
         )
         .fetch_one(&mut *conn)
-        .await
+        .await?;
+
+        Ok(access)
     }
 
     /// Takes that list of blocks, verifies they're associated with the bucket (part of the query),

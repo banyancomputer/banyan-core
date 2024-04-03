@@ -101,8 +101,12 @@ where
         };
 
         let database = Database::from_ref(state);
+        let mut conn = database
+            .acquire()
+            .await
+            .map_err(ApiIdentityError::DeviceApiKeyNotFound)?;
 
-        let db_user_key = UserKey::from_fingerprint(&database, &key_id)
+        let db_user_key = UserKey::from_fingerprint(&mut conn, &key_id)
             .await
             .map_err(ApiIdentityError::DeviceApiKeyNotFound)?;
 

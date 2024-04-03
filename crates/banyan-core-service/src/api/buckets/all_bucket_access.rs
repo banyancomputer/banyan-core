@@ -4,6 +4,7 @@ use axum::response::{IntoResponse, Response};
 use uuid::Uuid;
 
 use crate::api::models::ApiBucketAccess;
+use crate::database::models::BucketAccessState;
 use crate::app::AppState;
 use crate::extractors::UserIdentity;
 
@@ -18,7 +19,7 @@ pub async fn handler(
     let buckets = sqlx::query_as!(
         ApiBucketAccess,
         r#"
-            SELECT uk.fingerprint, ba.state 
+            SELECT uk.fingerprint, ba.state as 'state: BucketAccessState'
             FROM bucket_access AS ba
             JOIN user_keys AS uk ON ba.user_key_id = uk.id
             WHERE uk.user_id = $1
