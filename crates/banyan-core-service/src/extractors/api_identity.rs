@@ -94,21 +94,18 @@ where
         let token = bearer.token();
         let header_data = decode_header(token).map_err(ApiIdentityError::FormatError)?;
 
-        let key_id = match header_data.kid {
-            Some(key_id) if key_regex.is_match(key_id.as_str()) => key_id,
+        let user_key_id = match header_data.kid {
+            Some(user_key_id) if key_regex.is_match(user_key_id.as_str()) => user_key_id,
             Some(_) => return Err(ApiIdentityError::BadKeyFormat),
             None => return Err(ApiIdentityError::UnidentifiedKey),
         };
 
         let database = Database::from_ref(state);
-        let mut conn = database
-            .acquire()
-            .await
-            .map_err(ApiIdentityError::DeviceApiKeyNotFound)?;
+        let mut conn = database.acquire().await?;
 
-        let db_user_key = UserKey::from_fingerprint(&mut conn, &key_id)
+        let db_user_key = UserKey::by_fingerprint(&mut conn, &user_key_id)
             .await
-            .map_err(ApiIdentityError::DeviceApiKeyNotFound)?;
+            .map_err(ApiIdentityError::UserKeyNotFound)?;
 
         let key = DecodingKey::from_ec_pem(db_user_key.pem.as_bytes())
             .map_err(|err| ApiIdentityError::DatabaseCorrupt(db_user_key.id.clone(), err))?;
@@ -143,7 +140,7 @@ where
 
         let user_id =
             Uuid::parse_str(&claims.subject).map_err(ApiIdentityError::DatabaseUuidCorrupt)?;
-        let key_fingerprint = key_id.clone();
+        let key_fingerprint = user_key_id.clone();
         let api_identity = ApiIdentity {
             user_id,
             key_fingerprint,
@@ -163,8 +160,11 @@ pub enum ApiIdentityError {
     #[error("uuid '{0}' stored in database is corrupted")]
     DatabaseUuidCorrupt(uuid::Error),
 
-    #[error("unable to lookup device API key in database")]
-    DeviceApiKeyNotFound(sqlx::Error),
+    #[error("database error: {0}")]
+    Database(#[from] sqlx::Error),
+
+    #[error("unable to lookup user key in database: {0}")]
+    UserKeyNotFound(sqlx::Error),
 
     #[error("the provided token's validity range is outside our allowed range")]
     ExtremeTokenValidity,

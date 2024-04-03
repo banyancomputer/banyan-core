@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n                SELECT * FROM user_keys\n                WHERE fingerprint = $2;\n            ",
+  "query": "\n                SELECT * FROM user_keys\n                WHERE fingerprint = $1;\n            ",
   "describe": {
     "columns": [
       {
@@ -58,5 +58,5 @@
       false
     ]
   },
-  "hash": "6901b278098aee622dbfdb1336f70221c1d0266df5918d6b92973388cfc812f7"
+  "hash": "b091fe1ffeb0d9d0c14bba082cfa2f80c520b0b9db23ddc4c479c7f63e8fce4a"
 }
