@@ -225,11 +225,3 @@ pub enum ReplicateDataTaskError {
     #[error("not enough storage hosts")]
     NotEnoughStorageHosts(sqlx::Error),
 }
-
-#[cfg(test)]
-mod tests {
-    #[tokio::test]
-    async fn test_replication_task() {
-        // TODO: Implement tests for the replication task
-    }
-}
