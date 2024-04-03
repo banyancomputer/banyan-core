@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "INSERT INTO user_keys (name, user_id, fingerprint, pem)\n            VALUES ($1, $2, $3, $4)\n            RETURNING id;",
+  "query": "INSERT INTO user_keys (name, user_id, fingerprint, pem, api_access)\n            VALUES ($1, $2, $3, $4, TRUE)\n            RETURNING id;",
   "describe": {
     "columns": [
       {
@@ -16,5 +16,5 @@
       false
     ]
   },
-  "hash": "8a42bb79409e5a625b8015aeb8892fe1a4e9b1a672f269366e114952a7710fe4"
+  "hash": "da205b044d69bc07ec34e1c3a7ffea30078eca9bd1035afee31d3679ad38ecba"
 }

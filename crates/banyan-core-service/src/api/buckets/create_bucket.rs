@@ -18,13 +18,14 @@ pub async fn handler(
 ) -> Result<Response, CreateBucketError> {
     request.validate()?;
     let database = state.database();
-    let mut conn = database.acquire().await?;
     let now = OffsetDateTime::now_utc();
 
+    let mut conn = database.acquire().await?;
     let user_key = UserKey::by_fingerprint(&mut conn, api_id.key_fingerprint()).await?;
     if !user_key.api_access || user_key.user_id != api_id.user_id().to_string() {
         return Err(CreateBucketError::Unauthorized);
     }
+    conn.close().await?;
 
     let user_id = api_id.user_id().to_string();
     let bucket_id = sqlx::query_scalar!(
@@ -48,6 +49,7 @@ pub async fn handler(
     //let
     // Provide this Api Key with Bucket Access
 
+    let mut conn = database.acquire().await?;
     let access = Bucket::set_access(
         &mut conn,
         &user_key.id,

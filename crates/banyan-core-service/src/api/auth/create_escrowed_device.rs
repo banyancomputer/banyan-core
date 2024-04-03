@@ -63,8 +63,8 @@ pub async fn handler(
 
     sqlx::query!(
         r#"
-            INSERT INTO user_keys (name, user_id, fingerprint, pem)
-            VALUES ($1, $2, $3, $4);
+            INSERT INTO user_keys (name, user_id, fingerprint, pem, api_access)
+            VALUES ($1, $2, $3, $4, TRUE);
         "#,
         "Owner",
         user_id,
