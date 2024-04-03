@@ -1,41 +1,55 @@
 import React from 'react';
 
-import { ApproveBucketAccessModal } from '@components/common/Modal/ApproveBucketAccessModal';
-import { RemoveBucketAccessModal } from '@components/common/Modal/RemoveBucketAccessModal';
+import { RenameAccessKeyModal } from '@components/common/Modal/RenameAccessKeyModal ';
 
 import { Bucket, BucketKey } from '@app/types/bucket';
 import { useModal } from '@app/contexts/modals';
-import { useAppSelector } from '@/app/store';
+import { useAppSelector } from '@app/store';
+import { AccessKeysClient } from '@/api/accessKeys';
+import { useTomb } from '@app/contexts/tomb';
+import { ToastNotifications } from '@/app/utils/toastNotifications';
+
+import { Rename, Trash } from '@static/images/common';
+
+const client = new AccessKeysClient();
 
 export const KeyActions: React.FC<{ bucket: Bucket; bucketKey: BucketKey }> = ({ bucket, bucketKey }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.account.manageKeys.keyActions);
     const { openModal } = useModal();
+    const { getBucketsKeys } = useTomb();
 
-    const approveAccess = async () => {
-        openModal(<ApproveBucketAccessModal bucket={bucket} bucketKey={bucketKey} />);
+    const rename = async () => {
+        openModal(<RenameAccessKeyModal bucket={bucket} bucketKey={bucketKey} />);
     };
 
-    const removeAccess = async () => {
-        openModal(<RemoveBucketAccessModal bucketKey={bucketKey} />);
+    const remove = async () => {
+        if (bucket.keys.length <= 1) {
+            ToastNotifications.error('The final key cannot be disabled or removed without at least one backup.');
+            return;
+        };
+        try {
+            await client.deleteAccessKey(bucket.id, bucketKey.id);
+            await getBucketsKeys();
+        } catch (error: any) {
+        };
     };
 
     return (
-        <div className="w-52 text-xs font-medium bg-bucket-actionsBackground rounded-xl shadow-md z-10 text-bucket-actionsText overflow-hidden">
-            {bucketKey.approved ?
-                <div
-                    className="w-full gap-2 py-2 px-3 border-b-1 border-border-regular transition-all hover:bg-hover"
-                    onClick={removeAccess}
-                >
-                    {messages.removeAccess}
-                </div>
-                :
-                <div
-                    className="w-full gap-2 py-2 px-3 border-b-1 border-border-regular transition-all hover:bg-hover"
-                    onClick={approveAccess}
-                >
-                    {messages.approveAccess}
-                </div>
-            }
+        <div className="w-52 text-xs font-medium bg-bucket-actionsBackground rounded-md shadow-md z-10 text-bucket-actionsText overflow-hidden">
+            <div
+                className="flex items-center gap-2 py-3 px-4 transition-all hover:bg-hover"
+                onClick={rename}
+            >
+                <Rename />
+                {messages.rename}
+            </div>
+            <div
+                className="flex items-center gap-2 py-3 px-4 transition-all hover:bg-hover"
+                onClick={remove}
+            >
+                <Trash />
+                {messages.removeKey}
+            </div>
         </div>
     );
 };
