@@ -33,7 +33,7 @@ export const Header = () => {
     return (
         <header className='mx-auto max-w-wrapper flex items-center gap-10 justify-between px-12 py-10 bg-mainBackground text-lightText'>
             <Logo />
-            <nav className="flex items-center flex-grow gap-4 text-black">
+            {/* <nav className="flex items-center flex-grow gap-4 text-black">
                 <NavLink
                     to="/"
                     className={`px-4 py-2 text-16 font-semibold ${location.pathname === '/' ? 'text-lightText border-b-1 border-lightText' : ''}`}
@@ -46,7 +46,7 @@ export const Header = () => {
                 >
                     Leaderboard
                 </NavLink>
-            </nav>
+            </nav> */}
             <div className='flex items-center gap-3 text-darkText'>
                 <div
                     className='relative p-2.5 cursor-pointer'
