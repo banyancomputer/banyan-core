@@ -22,7 +22,7 @@ pub async fn handler(
 
     let mut conn = database.acquire().await?;
     //UserKey::can
-    let user_key = UserKey::by_fingerprint(&mut conn, api_id.key_fingerprint()).await?;
+    let user_key = UserKey::by_fingerprint(&mut conn, &request.fingerprint).await?;
     if !user_key.api_access || user_key.user_id != api_id.user_id().to_string() {
         return Err(CreateBucketError::Unauthorized);
     }
