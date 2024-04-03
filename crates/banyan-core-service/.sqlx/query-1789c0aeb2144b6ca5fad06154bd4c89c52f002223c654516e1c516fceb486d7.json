@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            INSERT INTO bucket_access (bucket_id, user_key_id, state)\n            VALUES ($1, $2, 'approved');\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "1789c0aeb2144b6ca5fad06154bd4c89c52f002223c654516e1c516fceb486d7"
+}

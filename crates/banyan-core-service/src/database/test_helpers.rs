@@ -20,14 +20,21 @@ pub(crate) async fn link_storage_metadata_and_grant(
     storage_grant_id: &str,
 ) {
     sqlx::query!(
-            "INSERT INTO storage_hosts_metadatas_storage_grants (storage_host_id, metadata_id, storage_grant_id) VALUES ($1, $2, $3);",
-            storage_host_id,
-            metadata_id,
-            storage_grant_id,
-        )
-            .execute(&mut *conn)
-            .await
-            .expect("storage_host_metadata");
+        r#"
+            INSERT INTO storage_hosts_metadatas_storage_grants (
+                storage_host_id, 
+                metadata_id, 
+                storage_grant_id
+            ) 
+            VALUES ($1, $2, $3);
+        "#,
+        storage_host_id,
+        metadata_id,
+        storage_grant_id,
+    )
+    .execute(&mut *conn)
+    .await
+    .expect("storage_host_metadata");
 }
 
 pub(crate) async fn associate_blocks(
@@ -38,7 +45,15 @@ pub(crate) async fn associate_blocks(
 ) {
     for bid in block_ids {
         sqlx::query!(
-            "INSERT INTO block_locations (metadata_id, storage_host_id, block_id, stored_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP);",
+            r#"
+                INSERT INTO block_locations (
+                    metadata_id, 
+                    storage_host_id, 
+                    block_id, 
+                    stored_at
+                ) 
+                VALUES ($1, $2, $3, CURRENT_TIMESTAMP);
+            "#,
             metadata_id,
             storage_host_id,
             bid,
@@ -55,7 +70,10 @@ pub(crate) async fn assert_metadata_in_state(
     expected_state: MetadataState,
 ) {
     let db_state = sqlx::query_scalar!(
-        r#"SELECT state as 'state: MetadataState' FROM metadata WHERE id = $1;"#,
+        r#"
+            SELECT state as 'state: MetadataState'
+            FROM metadata WHERE id = $1;
+        "#,
         metadata_id,
     )
     .fetch_one(&mut *conn)
@@ -88,25 +106,38 @@ pub(crate) async fn create_blocks(
 
 pub(crate) async fn grant_bucket_access(
     conn: &mut DatabaseConnection,
+    user_id: &str,
     bucket_id: &str,
-    public_key: &str,
     fingerprint: &str,
-    state: BucketAccessState,
+    pem: &str,
 ) -> String {
-    sqlx::query_scalar!(
+    let user_key_id = sqlx::query_scalar!(
         r#"
-            INSERT INTO api_keys (bucket_id, pem, fingerprint, state)
-            VALUES ($1, $2, $3, $4)
+            INSERT INTO user_keys (name, user_id, fingerprint, pem)
+            VALUES ('Owner', $1, $2, $3)
             RETURNING id;
         "#,
-        bucket_id,
-        public_key,
+        user_id,
         fingerprint,
-        state,
+        pem,
     )
     .fetch_one(&mut *conn)
     .await
-    .expect("bucket key creation")
+    .expect("user key creation");
+
+    sqlx::query_scalar!(
+        r#"
+            INSERT INTO bucket_access (bucket_id, user_key_id, state)
+            VALUES ($1, $2, 'approved');
+        "#,
+        bucket_id,
+        user_key_id,
+    )
+    .fetch_one(&mut *conn)
+    .await
+    .expect("bucket access creation");
+
+    user_key_id
 }
 
 pub(crate) async fn create_storage_hosts(
@@ -118,14 +149,25 @@ pub(crate) async fn create_storage_hosts(
     let host_name = host_name.to_string();
     let staging = host_name.contains("staging");
     sqlx::query_scalar!(
-        "INSERT INTO storage_hosts (name, url, fingerprint, pem, region, used_storage, available_storage, staging)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id;
-        ",
+        r#"
+            INSERT INTO storage_hosts (
+                name, 
+                url, 
+                fingerprint, 
+                pem, 
+                region, 
+                used_storage, 
+                available_storage, 
+                staging
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            RETURNING id;
+        "#,
         host_name,
         host_url,
         "fingerprint_1",
         "pem_1",
-        "North America", 
+        "North America",
         0,
         0,
         staging

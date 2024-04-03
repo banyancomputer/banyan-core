@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            INSERT INTO storage_hosts (\n                name, \n                url, \n                fingerprint, \n                pem, \n                region, \n                used_storage, \n                available_storage, \n                staging\n            )\n            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)\n            RETURNING id;\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 8
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "fa8b4f501da64835ce8ce810fa10ca878fdb3f7b8b9230496ee0c35326a15831"
+}

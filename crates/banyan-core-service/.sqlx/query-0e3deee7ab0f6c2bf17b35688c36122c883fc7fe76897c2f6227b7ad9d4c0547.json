@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            INSERT INTO storage_hosts_metadatas_storage_grants (\n                storage_host_id, \n                metadata_id, \n                storage_grant_id\n            ) \n            VALUES ($1, $2, $3);\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "0e3deee7ab0f6c2bf17b35688c36122c883fc7fe76897c2f6227b7ad9d4c0547"
+}
