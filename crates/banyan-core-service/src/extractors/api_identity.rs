@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use super::{EXPIRATION_WINDOW, KEY_ID_REGEX, KEY_ID_VALIDATOR};
+use crate::database::models::UserKey;
 use crate::database::Database;
 
 #[derive(Deserialize, Serialize)]
@@ -101,20 +102,12 @@ where
 
         let database = Database::from_ref(state);
 
-        let db_device_api_key = sqlx::query_as!(
-            DeviceApiKey,
-            r#"SELECT ak.id, u.id as user_id, ak.pem
-                   FROM api_keys AS ak
-                   JOIN users AS u ON ak.user_id = u.id
-                   WHERE ak.fingerprint = $1;"#,
-            key_id
-        )
-        .fetch_one(&database)
-        .await
-        .map_err(ApiIdentityError::DeviceApiKeyNotFound)?;
+        let db_user_key = UserKey::from_fingerprint(&database, &key_id)
+            .await
+            .map_err(ApiIdentityError::DeviceApiKeyNotFound)?;
 
-        let key = DecodingKey::from_ec_pem(db_device_api_key.pem.as_bytes())
-            .map_err(|err| ApiIdentityError::DatabaseCorrupt(db_device_api_key.id.clone(), err))?;
+        let key = DecodingKey::from_ec_pem(db_user_key.pem.as_bytes())
+            .map_err(|err| ApiIdentityError::DatabaseCorrupt(db_user_key.id.clone(), err))?;
 
         // TODO: we probably want to use device keys to sign this instead of a
         // static AES key, this works for now
@@ -140,7 +133,7 @@ where
             }
         }
 
-        if db_device_api_key.user_id != claims.subject {
+        if db_user_key.user_id != claims.subject {
             return Err(ApiIdentityError::MismatchedSubject);
         }
 

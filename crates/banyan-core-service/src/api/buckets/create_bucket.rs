@@ -6,8 +6,9 @@ use serde::Deserialize;
 use time::OffsetDateTime;
 use validify::{Validate, Validify};
 
+use crate::api::models::ApiBucketAccess;
 use crate::app::AppState;
-use crate::database::models::{ApiKey, Bucket, BucketAccessState, BucketType, StorageClass};
+use crate::database::models::{Bucket, BucketAccessState, BucketType, StorageClass, UserKey};
 use crate::extractors::ApiIdentity;
 use crate::utils::keys::fingerprint_public_key;
 
@@ -18,7 +19,13 @@ pub async fn handler(
 ) -> Result<Response, CreateBucketError> {
     request.validate()?;
     let database = state.database();
+    let mut conn = database.acquire().await?;
     let now = OffsetDateTime::now_utc();
+
+    let user_key = UserKey::from_fingerprint(&mut conn, api_id.key_fingerprint()).await?;
+    if !user_key.api_access || user_key.user_id != api_id.user_id().to_string() {
+        return Err(CreateBucketError::Unauthorized);
+    }
 
     let user_id = api_id.user_id().to_string();
     let bucket_id = sqlx::query_scalar!(
@@ -43,47 +50,24 @@ pub async fn handler(
     // Provide this Api Key with Bucket Access
 
     Bucket::set_access(
-        &database,
-        &user_key_id,
+        &mut conn,
+        &user_key.id,
         &bucket_id,
         BucketAccessState::Approved,
     )
-    .await?;
-    let bucket_key_id = sqlx::query_scalar!(
-        r#"
-            INSERT INTO bucket_access (api_key_id, bucket_id, state)
-            VALUES ($1, $2, 'approved')
-            RETURNING id;
-        "#,
-        api_key_id,
-        bucket_id,
-    )
-    .fetch_one(&database)
     .await
-    .map_err(CreateBucketError::BucketKeyCreationFailed)?;
-    let mut conn = database
-        .acquire()
-        .await
-        .map_err(CreateBucketError::BucketKeyCreationFailed)?;
+    .map_err(CreateBucketError::GrantAccessFailed)?;
+
     let bucket = Bucket::find_by_id(&mut conn, &bucket_id)
         .await
-        .map_err(CreateBucketError::BucketKeyCreationFailed)?;
-
-    let bucket_key = sqlx::query_as!(
-        ApiKey,
-        "SELECT * FROM api_bucket_keys WHERE id = $1;",
-        bucket_key_id
-    )
-    .fetch_one(&mut *conn)
-    .await
-    .map_err(CreateBucketError::AdditionalDetailsUnavailable)?;
+        .map_err(CreateBucketError::BucketLookupFailed)?;
 
     let resp = ApiCreateBucketResponse {
         id: bucket.id,
         name: bucket.name,
         r#type: bucket.r#type,
         storage_class: bucket.storage_class,
-        state: bucket_access.state,
+        access: ApiBucketAccess,
     };
 
     Ok((StatusCode::OK, Json(resp)).into_response())
@@ -105,19 +89,25 @@ struct ApiCreateBucketResponse {
     name: String,
     r#type: BucketType,
     storage_class: StorageClass,
-    state: BucketAccessState,
+    access: ApiBucketAccess,
 }
 
 #[derive(Debug, thiserror::Error)]
 pub enum CreateBucketError {
+    #[error("key is unauthorized for API use")]
+    Unauthorized,
+
     #[error("retrieving additional bucket details failed: {0}")]
-    AdditionalDetailsUnavailable(sqlx::Error),
+    Database(#[from] sqlx::Error),
+
+    #[error("retrieving additional bucket details failed: {0}")]
+    BucketLookupFailed(sqlx::Error),
 
     #[error("failed to insert bucket into database: {0}")]
     BucketCreationFailed(sqlx::Error),
 
     #[error("failed to insert bucket key into database: {0}")]
-    BucketKeyCreationFailed(sqlx::Error),
+    GrantAccessFailed(sqlx::Error),
 
     #[error("invalid bucket creation request received: {0}")]
     InvalidBucket(#[from] validify::ValidationErrors),
@@ -151,11 +141,11 @@ mod tests {
     use crate::database::test_helpers::{get_or_create_identity, sample_user, setup_database};
     use crate::database::DatabaseConnection;
     use crate::utils::tests::deserialize_response;
-    impl ApiKey {
+    impl UserKey {
         pub async fn find_by_id(
             conn: &mut DatabaseConnection,
             id: &str,
-        ) -> Result<ApiKey, sqlx::Error> {
+        ) -> Result<UserKey, sqlx::Error> {
             sqlx::query_as!(ApiKey, "SELECT * FROM api_keys WHERE id = $1;", id)
                 .fetch_one(conn)
                 .await
@@ -191,7 +181,7 @@ mod tests {
         let bucket_in_db = Bucket::find_by_id(&mut conn, &bucket_response.id)
             .await
             .unwrap();
-        let bucket_key = ApiKey::find_by_id(&mut conn, &bucket_response.initial_bucket_key.id)
+        let bucket_key = UserKey::find_by_id(&mut conn, &bucket_response.initial_bucket_key.id)
             .await
             .unwrap();
         assert_eq!(status, StatusCode::OK);

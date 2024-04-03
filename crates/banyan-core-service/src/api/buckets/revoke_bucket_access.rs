@@ -9,7 +9,7 @@ use crate::extractors::UserIdentity;
 pub async fn handler(
     user_identity: UserIdentity,
     State(state): State<AppState>,
-    Path((bucket_id, bucket_key_id)): Path<(Uuid, Uuid)>,
+    Path(bucket_id): Path<Uuid>,
 ) -> Response {
     let bucket_id = bucket_id.to_string();
     let bucket_key_id = bucket_key_id.to_string();
@@ -17,13 +17,16 @@ pub async fn handler(
     let database = state.database();
 
     let user_id = user_identity.id().to_string();
+
     let query_result = sqlx::query!(
-        r#"DELETE FROM api_keys
-                WHERE id IN (
-                    SELECT ak.id FROM api_keys AS ak
-                        JOIN buckets AS b ON ak.bucket_id = b.id
-                        WHERE b.user_id = $1 AND ak.id = $2 AND ak.bucket_id = $3
-                );"#,
+        r#"
+            UPDATE bucket_access AS ba
+            JOIN buckets AS b ON ba.bucket_id = b.id
+            JOIN user_keys AS uk ON uk.id = ba.user_key_id
+            WHERE uk.user_id = $1
+            AND ak.id = $2
+            AND ak.bucket_id = $3;
+        "#,
         user_id,
         bucket_key_id,
         bucket_id,

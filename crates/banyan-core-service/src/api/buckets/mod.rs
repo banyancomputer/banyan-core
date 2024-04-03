@@ -38,7 +38,7 @@ where
                 .delete(delete_bucket::handler),
         )
         .route(
-            "/:bucket_id/keys",
+            "/:bucket_id/access",
             get(all_bucket_access::handler).delete(revoke_bucket_access::handler),
         )
         .nest("/:bucket_id/metadata", metadata::router(state.clone()))

@@ -5,7 +5,7 @@ use serde::Serialize;
 use uuid::Uuid;
 
 use crate::app::AppState;
-use crate::database::models::ApiKey;
+use crate::database::models::UserKey;
 use crate::extractors::UserIdentity;
 
 pub async fn handler(

@@ -1,7 +1,7 @@
-mod api_key;
 mod block_location;
 mod blocks;
 mod bucket;
+mod bucket_access;
 mod bucket_type;
 mod deal;
 mod deal_state;
@@ -33,14 +33,15 @@ mod subscription;
 mod subscription_status;
 mod tax_class;
 mod user;
+mod user_key;
 mod user_total_consumption;
 
-pub use api_key::{ApiKey, BucketAccessState};
 #[cfg(test)]
 pub use block_location::tests::BlockLocations;
 pub use block_location::MinimalBlockLocation;
 pub use blocks::Blocks;
 pub use bucket::Bucket;
+pub use bucket_access::{BucketAccess, BucketAccessState};
 pub use bucket_type::BucketType;
 pub use deal::Deal;
 pub use deal_state::DealState;
@@ -73,6 +74,7 @@ pub use subscription::{NewSubscription, Subscription};
 pub use subscription_status::SubscriptionStatus;
 pub use tax_class::TaxClass;
 pub use user::User;
+pub use user_key::UserKey;
 pub use user_total_consumption::UserTotalConsumption;
 
 /// Something about sqlx's type detection fails on complex queries such as the result of COALESCE
