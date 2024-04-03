@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            UPDATE bucket_access\n            SET state = 'revoked'\n            WHERE user_key_id = $1\n            AND bucket_id = $2;\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "c20e94a532ef8adabaed4f20321fd2ebaf774dceb8276ecc6c1b51b6c168a599"
+}

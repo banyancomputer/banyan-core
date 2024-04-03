@@ -1,7 +1,9 @@
 use serde::Serialize;
 use time::OffsetDateTime;
 
-use crate::database::models::{ExplicitBigInt, SubscriptionStatus, TaxClass};
+use crate::database::models::{
+    BucketAccess, BucketAccessState, ExplicitBigInt, SubscriptionStatus, TaxClass,
+};
 use crate::database::DatabaseConnection;
 
 #[derive(Debug, Serialize, sqlx::FromRow)]
@@ -214,6 +216,28 @@ impl User {
         self.region_preference = new_preference;
 
         Ok(())
+    }
+
+    pub async fn bucket_access(
+        conn: &mut DatabaseConnection,
+        user_id: &str,
+        bucket_id: &str,
+    ) -> Result<Option<BucketAccess>, sqlx::Error> {
+        sqlx::query_as!(
+            BucketAccess,
+            r#"
+                SELECT ba.user_key_id, ba.bucket_id, ba.state AS 'state: BucketAccessState' FROM bucket_access AS ba
+                JOIN buckets AS b ON b.id = ba.bucket_id
+                JOIN user_keys AS uk ON uk.id = ba.user_key_id
+                JOIN users AS u ON u.id = uk.user_id
+                WHERE u.id = $1
+                AND b.id = $2;
+            "#,
+            user_id,
+            bucket_id,
+        )
+        .fetch_optional(&mut *conn)
+        .await
     }
 }
 
