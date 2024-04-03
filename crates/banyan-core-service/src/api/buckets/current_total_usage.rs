@@ -4,45 +4,52 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 
 use crate::app::AppState;
+use crate::database::models::User;
 use crate::extractors::UserIdentity;
 
-#[derive(sqlx::FromRow)]
-struct ConsumedStorage {
-    data_size: i32,
-    meta_size: i32,
+pub async fn handler(
+    user_identity: UserIdentity,
+    State(state): State<AppState>,
+) -> Result<Response, UsageError> {
+    let database = state.database();
+    let user_id = user_identity.id().to_string();
+
+    let mut conn = database.acquire().await?;
+    let user = User::find_by_id(&mut conn, &user_id)
+        .await?
+        .ok_or(UsageError::NotFound)?;
+    let hot_storage = user.hot_usage(&mut conn).await?;
+    let archival_storage = user.archival_usage(&mut conn).await?;
+
+    let resp = serde_json::json!({
+        "hot_storage": hot_storage.total(),
+        "archival_storage": archival_storage,
+    });
+
+    Ok((StatusCode::OK, Json(resp)).into_response())
 }
 
-pub async fn handler(user_identity: UserIdentity, State(state): State<AppState>) -> Response {
-    let database = state.database();
+#[derive(Debug, thiserror::Error)]
+pub enum UsageError {
+    #[error("an error occurred querying the database: {0}")]
+    DatabaseFailure(#[from] sqlx::Error),
+    #[error("associated data couldn't be found")]
+    NotFound,
+}
 
-    // we need to include outdated currently as they include blocks referenced by the current
-    // version, todo: we'll need a better way of calculating this
-    let user_id = user_identity.id().to_string();
-    let query_result = sqlx::query_as!(
-        ConsumedStorage,
-        r#"SELECT
-            COALESCE(SUM(m.metadata_size), 0) as data_size,
-            COALESCE(SUM(COALESCE(m.data_size, m.expected_data_size)), 0) as meta_size
-        FROM
-            metadata m
-        INNER JOIN
-            buckets b ON b.id = m.bucket_id
-        WHERE
-            b.user_id = $1 AND b.deleted_at IS NULL AND m.state IN ('current', 'outdated', 'pending');"#,
-        user_id,
-    )
-    .fetch_one(&database)
-    .await;
-
-    match query_result {
-        Ok(store) => {
-            let resp = serde_json::json!({"size": store.data_size + store.meta_size});
-            (StatusCode::OK, Json(resp)).into_response()
-        }
-        Err(err) => {
-            tracing::error!("failed to calculate current total usage: {err}");
-            let err_msg = serde_json::json!({"msg": "backend service experienced an issue servicing the request"});
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
+impl IntoResponse for UsageError {
+    fn into_response(self) -> Response {
+        match self {
+            UsageError::DatabaseFailure(_) => {
+                tracing::error!("{self}");
+                let err_msg = serde_json::json!({"msg": "backend service experienced an issue servicing the request"});
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
+            }
+            _ => {
+                tracing::error!("usage lookup error: {self}");
+                let err_msg = serde_json::json!({"msg": "backend service experienced an issue servicing the request"});
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
+            }
         }
     }
 }

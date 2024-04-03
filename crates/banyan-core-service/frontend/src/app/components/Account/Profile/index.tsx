@@ -7,7 +7,7 @@ import { useAppSelector } from '@app/store';
 
 export const Profile = () => {
     const messages = useAppSelector(state => state.locales.messages.coponents.account.profile);
-    const { email, displayName } = useAppSelector(state => state.user);
+    const { email, displayName } = useAppSelector(state => state.session.user);
     const [isDarkModeActive, setIsDarkModeActive] = useState(false);
 
     /** Uncomment when dark theme will be updated. */

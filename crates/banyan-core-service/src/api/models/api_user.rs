@@ -14,12 +14,21 @@ pub struct ApiUser {
 
     pub account_tax_class: String,
     pub subscription_id: String,
-
     #[serde(
         skip_serializing_if = "Option::is_none",
         with = "time::serde::rfc3339::option"
     )]
     pub subscription_valid_until: Option<OffsetDateTime>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub monthly_egress: Option<i64>,
+}
+
+impl ApiUser {
+    pub fn with_egress(mut self, egress: i64) -> Self {
+        self.monthly_egress = Some(egress);
+        self
+    }
 }
 
 impl From<User> for ApiUser {
@@ -34,6 +43,7 @@ impl From<User> for ApiUser {
             subscription_id: user.subscription_id,
             account_tax_class: user.account_tax_class.to_string(),
             subscription_valid_until: user.subscription_valid_until,
+            monthly_egress: None,
         }
     }
 }

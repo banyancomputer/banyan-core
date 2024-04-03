@@ -90,7 +90,7 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null; folder?: Browse
                     <Select
                         selectedOption={selectedBucket}
                         onChange={selectBucket}
-                        options={buckets.filter(bucket => bucket.bucketType !== 'backup').map(bucket => ({ value: bucket, label: bucket.name }))}
+                        options={buckets.filter(bucket => bucket.bucketType !== 'backup' && !bucket.locked).map(bucket => ({ value: bucket, label: bucket.name }))}
                         placeholder={`${messages.selectDrive}`}
                         initialOption={<AddNewOption label={`${messages.createNewDrive}`} action={addNewBucket} />}
                     />

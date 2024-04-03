@@ -3,6 +3,7 @@ export interface User {
     email: string;
     displayName: string;
     locale: string;
+    monthlyEggress: number;
     profileImage: string;
     acceptedTosAt: number | null;
     accountTaxClass: string;

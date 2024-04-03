@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::app::AppState;
+use crate::database::models::{CreateUpload, Uploads};
 use crate::database::DatabaseConnection;
 use crate::extractors::AuthenticatedClient;
 use crate::tasks::ReportUploadTask;
@@ -19,7 +20,7 @@ mod db;
 mod error;
 pub(crate) mod new;
 
-use db::{complete_upload, fail_upload, start_upload, write_block_to_tables, Upload};
+use db::{complete_upload, fail_upload, write_block_to_tables};
 use error::UploadError;
 
 /// Limit on the size of the JSON request that accompanies an upload.
@@ -76,13 +77,20 @@ pub async fn handler(
         .map_err(UploadError::InvalidRequestData)?;
     let content_hash = request.content_hash;
 
-    let upload = start_upload(
-        &db,
-        &client.id(),
-        &request.metadata_id,
-        reported_body_length,
-    )
+    let client_id_str = client.id().to_string();
+    let metadata_id_str = request.metadata_id.to_string();
+
+    let mut conn = db.acquire().await?;
+
+    let upload_id = CreateUpload {
+        client_id: &client_id_str,
+        metadata_id: &metadata_id_str,
+        reported_size: reported_body_length as i64,
+    }
+    .save(&mut conn)
     .await?;
+
+    let upload = Uploads::by_id_and_client(&mut conn, &upload_id, &client_id_str).await?;
 
     // todo: should make sure I have a clean up task that watches for failed uploads and handles
     // them appropriately
@@ -95,7 +103,6 @@ pub async fn handler(
 
     // TODO: validate name is car-upload (request_data_field.name())
     // TODO: validate type is "application/vnd.ipld.car; version=2" (request_data_field.content_type())
-    let mut conn = db.acquire().await?;
 
     match process_upload_stream(
         &mut conn,
@@ -108,7 +115,7 @@ pub async fn handler(
     .await
     {
         Ok(cr) => {
-            complete_upload(&mut conn, 0, cr.integrity_hash(), &upload.id).await?;
+            complete_upload(&mut conn, 0, cr.integrity_hash(), &upload_id).await?;
             ReportUploadTask::new(
                 client.storage_grant_id(),
                 &request.metadata_id.to_string(),
@@ -124,7 +131,7 @@ pub async fn handler(
         Err(err) => {
             // todo: we don't care in the response if this fails, but if it does we will want to
             // clean it up in the future which should be handled by a background task
-            let _ = fail_upload(&db, &upload.id).await;
+            let _ = fail_upload(&mut conn, &upload_id).await;
             Err(err)
         }
     }
@@ -132,7 +139,7 @@ pub async fn handler(
 
 async fn process_upload_stream<S>(
     conn: &mut DatabaseConnection,
-    upload: &Upload,
+    upload: &Uploads,
     store: ObjectStore,
     expected_size: usize,
     content_hash: String,
@@ -148,11 +155,7 @@ where
         hasher.update(&chunk);
         car_analyzer.add_chunk(&chunk)?;
         while let Some(block) = car_analyzer.next().await? {
-            let cid_string = block
-                .cid()
-                .to_string_of_base(cid::multibase::Base::Base64Url)
-                .expect("parsed cid to unparse");
-
+            let cid_string = block.cid().to_string();
             let file_path = format!("{}/{}.bin", upload.base_path, cid_string);
             let obj_path = ObjectStorePath::from(file_path);
             let length = block.length() as i64;

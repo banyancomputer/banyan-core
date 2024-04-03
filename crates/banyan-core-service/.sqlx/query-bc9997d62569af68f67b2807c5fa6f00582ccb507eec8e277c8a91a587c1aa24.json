@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT sg.id as storage_grant_id, sg.authorized_amount as authorized_amount,\n                   sh.name as service_name, sh.url as service_url\n               FROM storage_grants AS sg\n               JOIN storage_hosts AS sh ON sh.id = sg.storage_host_id\n               JOIN storage_hosts_metadatas_storage_grants AS shmsg ON shmsg.storage_grant_id = sg.id\n               JOIN metadata AS m ON m.id = shmsg.metadata_id\n               JOIN buckets AS b ON m.bucket_id = b.id\n               WHERE b.deleted_at IS NULL\n                   AND sg.user_id = $1\n                   AND sh.url = $2\n               ORDER BY sg.created_at DESC\n               LIMIT 1;",
+  "describe": {
+    "columns": [
+      {
+        "name": "storage_grant_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "authorized_amount",
+        "ordinal": 1,
+        "type_info": "Int64"
+      },
+      {
+        "name": "service_name",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "service_url",
+        "ordinal": 3,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "bc9997d62569af68f67b2807c5fa6f00582ccb507eec8e277c8a91a587c1aa24"
+}

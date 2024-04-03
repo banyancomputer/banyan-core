@@ -3,13 +3,12 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 import { useTomb } from './tomb';
 import { BrowserObject, Bucket } from '@/app/types/bucket';
-import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { useModal } from './modals';
-import { HardStorageLimit } from '../components/common/Modal/HardStorageLimit';
 import { BannerError, setError } from '../store/errors/slice';
 import { useAppDispatch, useAppSelector } from '../store';
 import { SubscriptionPlanModal } from '../components/common/Modal/SubscriptionPlanModal';
-import { FILE_SIZE_LIMIT } from '../utils/storage';
+import { FILE_SIZE_LIMIT } from '@app/utils/storage';
+import { ToastNotifications } from '@app/utils/toastNotifications';
 
 export interface UploadingFile { file: File; status: "pending" | "uploading" | "success" | "failed" };
 interface FilesUploadState {
@@ -23,7 +22,7 @@ interface FilesUploadState {
 export const FilesUploadContext = createContext<FilesUploadState>({} as FilesUploadState);
 
 export const FileUploadProvider: FC<{ children: ReactNode }> = ({ children }) => {
-    const { storageUsage, uploadFile } = useTomb();
+    const { storageUsage, storageLimits, uploadFile } = useTomb();
     const { hardStorageLimit, seePricingPage, softStorageLimit, contactSales } = useAppSelector(state => state.locales.messages.contexts.fileUpload);
     const { fileSizeExceeded } = useAppSelector(state => state.locales.messages.contexts.fileUpload);
     const dispatch = useAppDispatch();
@@ -50,9 +49,9 @@ export const FileUploadProvider: FC<{ children: ReactNode }> = ({ children }) =>
 
         for (const file of files) {
             try {
-                if (file.file.size > storageUsage.softLimit - storageUsage.usage) {
+                if (file.file.size > storageLimits.softLimit - storageUsage.hotStorage) {
                     setFiles(prev => prev.map(file => file.status === 'pending' ? { ...file, status: 'failed' } : file));
-                    file.file.size > storageUsage.hardLimit - storageUsage.usage ?
+                    file.file.size > storageLimits.hardLimit - storageUsage.hotStorage ?
                         dispatch(setError(new BannerError(hardStorageLimit, { callback: () => { window.location.href = 'mailto:tim@banyan.computer' }, label: contactSales })))
                         :
                         dispatch(setError(new BannerError(softStorageLimit, { callback: () => { openModal(<SubscriptionPlanModal />) }, label: seePricingPage })))
@@ -80,7 +79,7 @@ export const FileUploadProvider: FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const retryUpload = async (file: UploadingFile, bucket: Bucket, path: string[], folder?: BrowserObject) => {
-        if ((file.file.size > storageUsage.softLimit - storageUsage.usage) || (file.file.size > storageUsage.hardLimit - storageUsage.usage)) { return };
+        if ((file.file.size > storageLimits.softLimit - storageUsage.hotStorage) || (file.file.size > storageLimits.hardLimit - storageUsage.hotStorage)) { return };
 
         try {
             const arrayBuffer = await file.file.arrayBuffer();

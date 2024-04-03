@@ -1,4 +1,3 @@
-use cid::Cid;
 use jwt_simple::prelude::Deserialize;
 use serde::Serialize;
 
@@ -36,7 +35,7 @@ pub struct NewUploadResponse {
 
 #[derive(Serialize)]
 pub struct BlockUploadRequest {
-    pub cid: Cid,
+    pub cid: String,
     pub details: BlockUploadDetailsRequest,
 }
 

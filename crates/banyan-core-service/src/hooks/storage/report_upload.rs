@@ -76,6 +76,7 @@ pub async fn handler(
     )
     .await
     .map_err(ReportUploadError::MarkCurrentFailed)?;
+
     // Now that the state has changed, mark old unsnapshotted metadatas as being deleted
     Metadata::delete_outdated(&mut db_conn, &bucket_id)
         .await
@@ -154,8 +155,7 @@ mod tests {
     use crate::database::models::{BlockLocations, MetadataState};
     use crate::database::test_helpers::{
         create_blocks, create_storage_grant, create_storage_hosts, data_generator, generate_cids,
-        normalize_cids, redeem_storage_grant, sample_bucket, sample_metadata, sample_user,
-        setup_database,
+        redeem_storage_grant, sample_bucket, sample_metadata, sample_user, setup_database,
     };
     use crate::extractors::StorageProviderIdentity;
     use crate::hooks::storage::report_upload::{handler, ReportUploadRequest};
@@ -172,7 +172,9 @@ mod tests {
         let storage_grant_id =
             create_storage_grant(&mut conn, &staging_host_id, &user_id, 1_000_000).await;
         redeem_storage_grant(&mut conn, staging_host_id.as_str(), &storage_grant_id).await;
-        let initial_cids: Vec<_> = normalize_cids(generate_cids(data_generator(0..2))).collect();
+
+        let initial_cids: Vec<_> = generate_cids(data_generator(0..2)).collect();
+
         create_blocks(&mut conn, initial_cids.iter().map(String::as_str)).await;
 
         let request = ReportUploadRequest {

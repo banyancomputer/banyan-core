@@ -5,6 +5,7 @@ use axum::routing::{get, post};
 use axum::Router;
 use tower_http::cors::CorsLayer;
 
+mod auth;
 mod block_retrieval;
 mod client_grant;
 mod hooks;
@@ -23,6 +24,7 @@ where
     let cors_layer = CorsLayer::very_permissive();
 
     Router::new()
+        .nest("/auth", auth::router(state.clone()))
         .nest("/hooks", hooks::router(state.clone()))
         .route("/blocks/:block_id", get(block_retrieval::handler))
         .route("/client_grant", post(client_grant::handler))

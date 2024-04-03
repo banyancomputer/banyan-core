@@ -107,7 +107,7 @@ impl StorageHost {
     ) -> Result<i64, sqlx::Error> {
         let ex_bigint = sqlx::query_as!(
             ExplicitBigInt,
-            r#"SELECT COALESCE(SUM(COALESCE(m.data_size, m.expected_data_size, 0)), 0) as big_int
+            r#"SELECT COALESCE(SUM(COALESCE(m.data_size, m.expected_data_size, 0)), 0) AS big_int
                     FROM storage_hosts_metadatas_storage_grants shms
                     INNER JOIN metadata AS m ON m.id = shms.metadata_id
                     WHERE shms.storage_host_id = $1;
@@ -180,5 +180,17 @@ impl UserStorageReport {
 
     pub fn current_consumption(&self) -> i64 {
         self.current_consumption
+    }
+}
+
+#[derive(sqlx::FromRow)]
+pub struct HotUsage {
+    pub data_size: i32,
+    pub meta_size: i32,
+}
+
+impl HotUsage {
+    pub fn total(&self) -> i64 {
+        self.data_size as i64 + self.meta_size as i64
     }
 }

@@ -84,7 +84,7 @@ mod tests {
         let metadata_id = sample_metadata(&mut conn, &bucket_id, 1, MetadataState::Outdated).await;
         let storage_host_id = create_storage_host(&mut conn, "SP", "https://[::1]:8001/", 0).await;
 
-        let blk_cids: Vec<_> = normalize_cids(generate_cids(data_generator(0..3))).collect();
+        let blk_cids: Vec<_> = generate_cids(data_generator(0..3)).collect();
         let mut blk_ids = create_blocks(&mut conn, blk_cids.iter().map(String::as_str)).await;
 
         // make comparison consistent later on

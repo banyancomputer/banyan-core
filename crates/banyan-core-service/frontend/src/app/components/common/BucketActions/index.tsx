@@ -143,13 +143,22 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                 <>
                     {
                         bucket.locked ?
-                            <div
-                                className="w-full flex items-center gap-2 py-2 px-3 transition-colors hover:bg-hover"
-                                onClick={unlock}
-                            >
-                                <Lock width="18px" height="18px" />
-                                {`${messages.unlock}`}
-                            </div>
+                            <>
+                                <div
+                                    className="w-full flex items-center gap-2 py-2 px-3 transition-colors hover:bg-hover"
+                                    onClick={deletedAction.value}
+                                >
+                                    {deletedAction.icon}
+                                    {deletedAction.label}
+                                </div>
+                                <div
+                                    className="w-full flex items-center gap-2 py-2 px-3 transition-colors hover:bg-hover"
+                                    onClick={unlock}
+                                >
+                                    <Lock width="18px" height="18px" color="#111322" />
+                                    {`${messages.unlock}`}
+                                </div>
+                            </>
                             :
                             actions[bucketType].map(action =>
                                 action ?

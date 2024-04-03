@@ -14,18 +14,8 @@ pub(crate) fn data_generator<'a>(range: Range<usize>) -> impl Iterator<Item = Ve
 
 pub(crate) fn generate_cids<'a>(
     src_data: impl Iterator<Item = Vec<u8>> + 'a,
-) -> impl Iterator<Item = cid::Cid> + 'a {
-    use cid::multihash::MultihashDigest;
-    src_data.map(|d| cid::Cid::new_v1(0x55, cid::multihash::Code::Blake3_256.digest(d.as_slice())))
-}
-
-pub(crate) fn normalize_cids<'a>(
-    src_data: impl Iterator<Item = cid::Cid> + 'a,
 ) -> impl Iterator<Item = String> + 'a {
-    src_data.map(|cid| {
-        cid.to_string_of_base(cid::multibase::Base::Base64Url)
-            .expect("valid conversion")
-    })
+    src_data.map(|d| quick_cid(d.as_slice()))
 }
 
 pub(crate) async fn create_storage_grant(
@@ -112,8 +102,7 @@ pub(crate) async fn sample_blocks(
     number_of_blocks: usize,
     upload_id: &str,
 ) -> Vec<String> {
-    let initial_cids: Vec<_> =
-        normalize_cids(generate_cids(data_generator(0..number_of_blocks))).collect();
+    let initial_cids: Vec<_> = generate_cids(data_generator(0..number_of_blocks)).collect();
     let block_ids = create_blocks(db, initial_cids.iter().map(String::as_str)).await;
     associate_blocks_to_upload(db, upload_id, block_ids.clone()).await;
 
@@ -169,6 +158,20 @@ pub(crate) async fn create_bandwidth_metric(
     .save(conn)
     .await
     .unwrap()
+}
+
+pub(crate) fn quick_cid(data: &[u8]) -> String {
+    use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+    use base64::Engine;
+
+    let mut cid_bytes = Vec::with_capacity(36);
+
+    cid_bytes.extend_from_slice(&[0x01, 0x55, 0x1e, 0x20]);
+    cid_bytes.extend_from_slice(blake3::hash(data).as_bytes());
+
+    let encoded = URL_SAFE_NO_PAD.encode(cid_bytes);
+
+    format!("u{}", encoded)
 }
 
 pub(crate) async fn setup_database() -> Database {
