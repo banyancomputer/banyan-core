@@ -11,6 +11,7 @@ const Account = lazy(() => import('@pages/account'));
 const CreateEncryptionKey = lazy(() => import('@pages/createEncryptionKey'));
 const EnterEncryptionKey = lazy(() => import('@pages/enterEncryptionKey'));
 const RegisterDevice = lazy(() => import('@pages/registerDevice'));
+const SeedPhrase = lazy(() => import('@pages/seedPhrase'));
 
 /** Components */
 const Billing = lazy(() => import('@components/Account/Billing'));
@@ -50,6 +51,7 @@ export class RoutesConfig {
     public static Home = new Route('/', <Home />);
     public static CreateEncryptionKey = new Route('/create-encryption-key', <CreateEncryptionKey />, AuthLayout);
     public static EnterEncryptionKey = new Route('/enter-encryption-key', <EnterEncryptionKey />, AuthLayout);
+    public static SeedPhrase = new Route('/seed-phrase', <SeedPhrase />, AuthLayout);
     public static Bucket = new Route('/drive/:id', <Bucket />);
     public static Account = new Route('/account', <Account />);
     public static RegisterDevice = new Route('/register-device/:spki', <RegisterDevice />);
@@ -65,6 +67,7 @@ export class RoutesConfig {
         RoutesConfig.Home,
         RoutesConfig.CreateEncryptionKey,
         RoutesConfig.EnterEncryptionKey,
+        RoutesConfig.SeedPhrase,
         RoutesConfig.Bucket.addChildren([
             RoutesConfig.Files,
             RoutesConfig.Snapshots
