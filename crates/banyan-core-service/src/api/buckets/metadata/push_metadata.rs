@@ -119,14 +119,12 @@ pub async fn handler(
         tracing::warn!("pushed metadata specified no previous cid");
     };
 
-    /*
-    Bucket::approve_keys_by_fingerprint(
+    Bucket::approve_user_keys(
         &mut conn,
         &bucket_id,
         &request_data.included_key_fingerprints,
     )
     .await?;
-    */
 
     let metadata_id = NewMetadata {
         bucket_id: &bucket_id,

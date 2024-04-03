@@ -2,12 +2,15 @@ use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 
 use banyan_task::TaskLikeExt;
+use sqlx::query::Query;
 use sqlx::sqlite::SqliteQueryResult;
 use sqlx::QueryBuilder;
 use time::OffsetDateTime;
 
 use crate::api::models::ApiBucketConfiguration;
-use crate::database::models::{BucketAccess, BucketAccessState, BucketType, MinimalBlockLocation, StorageClass};
+use crate::database::models::{
+    BucketAccess, BucketAccessState, BucketType, MinimalBlockLocation, StorageClass,
+};
 use crate::database::{Database, DatabaseConnection, BIND_LIMIT};
 use crate::tasks::PruneBlocksTask;
 
@@ -44,6 +47,45 @@ impl Bucket {
         sqlx::query_scalar!("SELECT user_id FROM buckets WHERE id = $1;", bucket_id,)
             .fetch_one(conn)
             .await
+    }
+
+    pub async fn approve_user_keys(
+        conn: &mut DatabaseConnection,
+        bucket_id: &str,
+        fingerprints: &[String],
+    ) -> Result<(), sqlx::Error> {
+        let mut builder = QueryBuilder::new(
+            r#"
+                INSERT OR REPLACE INTO bucket_access (user_key_id, bucket_id, state)
+                VALUES
+            "#,
+        );
+
+        //let mut separator = builder.separated(", ");
+
+        /*
+        for fingerprint in fingerprints {
+            builder.push(r#"((SELECT id FROM user_keys WHERE fingerprint = "#);
+            builder.push_bind(fingerprint);
+            builder.push(r#" LIMIT 1), "#);
+            builder.push_bind(bucket_id);
+            builder.push(r#", 'approved'),"#);
+        }
+        */
+
+        builder.push_tuples(fingerprints.iter(), |mut b, fingerprint| {
+            b.push(r#"(SELECT id FROM user_keys WHERE fingerprint = $1)"#);
+            b.push_bind(fingerprint);
+            b.push(r#" LIMIT 1), "#);
+            b.push_bind(bucket_id);
+            b.push(r#", 'approved'),"#);
+        });
+        builder.push(";");
+
+        println!("sql: {}", builder.sql());
+
+        builder.build().execute(&mut *conn).await?;
+        Ok(())
     }
 
     pub async fn set_access(

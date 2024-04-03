@@ -136,7 +136,6 @@ impl IntoResponse for CreateBucketError {
     }
 }
 
-/*
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -150,7 +149,7 @@ mod tests {
             conn: &mut DatabaseConnection,
             id: &str,
         ) -> Result<UserKey, sqlx::Error> {
-            sqlx::query_as!(ApiKey, "SELECT * FROM api_keys WHERE id = $1;", id)
+            sqlx::query_as!(UserKey, "SELECT * FROM user_keys WHERE id = $1;", id)
                 .fetch_one(conn)
                 .await
         }
@@ -168,7 +167,6 @@ mod tests {
             name: "new_name".to_string(),
             bucket_type: BucketType::Backup,
             storage_class: StorageClass::Hot,
-            initial_bucket_key_pem: key_pair.public_key().to_pem().expect("pem"),
         };
 
         let result = handler(
@@ -185,6 +183,8 @@ mod tests {
         let bucket_in_db = Bucket::find_by_id(&mut conn, &bucket_response.id)
             .await
             .unwrap();
+        /*
+
         let bucket_key = UserKey::find_by_id(&mut conn, &bucket_response.initial_bucket_key.id)
             .await
             .unwrap();
@@ -199,6 +199,6 @@ mod tests {
             bucket_response.initial_bucket_key.fingerprint
         );
         //assert_eq!(bucket_key.state, bucket_response.initial_bucket_key.state);
+        */
     }
 }
-*/
