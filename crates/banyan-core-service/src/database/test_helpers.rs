@@ -570,9 +570,11 @@ pub(crate) async fn get_or_create_identity(
             let fingerprint = fingerprint_public_key(&key_pair.public_key());
 
             sqlx::query_scalar!(
-                r#"INSERT INTO user_keys (name, user_id, fingerprint, pem)
+                r#"
+                    INSERT INTO user_keys (name, user_id, fingerprint, pem)
                     VALUES ('example', $1, $2, $3)
-                    RETURNING id;"#,
+                    RETURNING id;
+                "#,
                 user_id,
                 fingerprint,
                 pem,
