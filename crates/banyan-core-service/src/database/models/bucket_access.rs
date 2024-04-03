@@ -1,5 +1,7 @@
 use std::fmt::{self, Display, Formatter};
 
+use crate::database::models::UserKey;
+use crate::database::DatabaseConnection;
 use serde::{Deserialize, Serialize};
 use sqlx::encode::IsNull;
 use sqlx::error::BoxDynError;
@@ -20,6 +22,27 @@ pub enum BucketAccessState {
     Approved,
     Revoked,
 }
+
+impl BucketAccess {
+    pub async fn by_fingerprint(
+        conn: &mut DatabaseConnection,
+        fingerprint: &str,
+    ) -> Result<BucketAccess, sqlx::Error> {
+        tracing::warn!("looking key up by fingerprint {fingerprint}");
+        sqlx::query_as!(
+            BucketAccess,
+            r#"
+                SELECT ba.user_key_id, ba.bucket_id, ba.state AS 'state: BucketAccessState' FROM bucket_access AS ba
+                JOIN user_keys AS uk ON uk.id = ba.user_key_id
+                WHERE uk.fingerprint = $1;
+            "#,
+            fingerprint,
+        )
+        .fetch_one(&mut *conn)
+        .await
+    }
+}
+
 impl Display for BucketAccessState {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {

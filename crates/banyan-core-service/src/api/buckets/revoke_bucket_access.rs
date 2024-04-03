@@ -1,28 +1,25 @@
 use axum::extract::{Json, Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
+use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::app::AppState;
-use crate::database::models::{BucketAccessState, User};
+use crate::database::models::{BucketAccess, BucketAccessState, User};
 use crate::extractors::UserIdentity;
 
 pub async fn handler(
     user_identity: UserIdentity,
     State(state): State<AppState>,
     Path(bucket_id): Path<Uuid>,
+    Json(request): Json<RevokeBucketAccessRequest>,
 ) -> Result<Response, RevokeBucketAccessError> {
     let bucket_id = bucket_id.to_string();
     let database = state.database();
     let mut conn = database.acquire().await?;
     let user_id = user_identity.id().to_string();
 
-    // todo verify api access???
-
-    let bucket_access = User::bucket_access(&mut conn, &user_id, &bucket_id)
-        .await?
-        .ok_or(RevokeBucketAccessError::Unauthorized)?;
-
+    let bucket_access = BucketAccess::by_fingerprint(&mut conn, &request.fingerprint).await?;
     if bucket_access.state != BucketAccessState::Approved {
         return Err(RevokeBucketAccessError::Unauthorized);
     }
@@ -41,6 +38,11 @@ pub async fn handler(
     .await?;
 
     Ok((StatusCode::NO_CONTENT, ()).into_response())
+}
+
+#[derive(Debug, Deserialize)]
+pub struct RevokeBucketAccessRequest {
+    pub fingerprint: String,
 }
 
 #[derive(Debug, thiserror::Error)]

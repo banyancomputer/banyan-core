@@ -21,11 +21,14 @@ pub async fn handler(
     let now = OffsetDateTime::now_utc();
 
     let mut conn = database.acquire().await?;
+    //UserKey::can
     let user_key = UserKey::by_fingerprint(&mut conn, api_id.key_fingerprint()).await?;
     if !user_key.api_access || user_key.user_id != api_id.user_id().to_string() {
         return Err(CreateBucketError::Unauthorized);
     }
     conn.close().await?;
+
+    //request.fingerprint;
 
     let user_id = api_id.user_id().to_string();
     let bucket_id = sqlx::query_scalar!(
@@ -80,6 +83,7 @@ pub struct CreateBucketRequest {
     #[serde(rename = "type")]
     bucket_type: BucketType,
     storage_class: StorageClass,
+    fingerprint: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -159,19 +163,16 @@ mod tests {
 
         let user_id = sample_user(&mut conn, "test@example.com").await;
         let key_pair = ES384KeyPair::generate();
+        let api_id = get_or_create_identity(&mut conn, &user_id).await;
 
         let new_config = CreateBucketRequest {
             name: "new_name".to_string(),
             bucket_type: BucketType::Backup,
             storage_class: StorageClass::Hot,
+            fingerprint: api_id.key_fingerprint().to_string(),
         };
 
-        let result = handler(
-            get_or_create_identity(&mut conn, &user_id).await,
-            mock_app_state(db.clone()),
-            Json(new_config.clone()),
-        )
-        .await;
+        let result = handler(api_id, mock_app_state(db.clone()), Json(new_config.clone())).await;
 
         assert!(result.is_ok());
         let response = result.unwrap();
