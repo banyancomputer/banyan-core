@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO user_keys (name, user_id, fingerprint, pem)\n                    VALUES ('example', $1, $2, $3)\n                    RETURNING id;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "ac80f1deec859bf3e936698108b273a50ee5988dc4b7c85d9f41c2602d1ce295"
+}
