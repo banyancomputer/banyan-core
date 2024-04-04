@@ -13,15 +13,15 @@ const ManageKeys = () => {
     useEffect(() => {
         if (!tomb) { return; }
 
-        const getKeys = async () => {
+        const getAccess = async () => {
             try {
                 await getBucketsAccess();
             } catch (error: any) {
-                ToastNotifications.error('Failed to upload files', 'Try again', getKeys)
+                ToastNotifications.error('Failed to get bucket access', 'Try again', getAccess)
             }
         };
 
-        getKeys();
+        getAccess();
     }, [buckets.length, tomb]);
 
     return (

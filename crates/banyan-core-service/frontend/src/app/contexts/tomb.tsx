@@ -1,5 +1,5 @@
 import React, { ReactNode, createContext, useContext, useEffect, useState } from 'react';
-import { TombWasm, WasmBucket } from 'tomb-wasm-experimental';
+import { TombWasm, WasmBucket, WasmBucketAccess } from 'tomb-wasm-experimental';
 import { Mutex } from 'async-mutex';
 import { useNavigate } from 'react-router-dom';
 
@@ -170,22 +170,24 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 		return await tombMutex(tomb, async tomb => {
 			const wasm_buckets: Bucket[] = [];
 			for (const bucket of buckets) {
-				const rawAccess = await tomb!.listBucketAccess(bucket.id);
+				const rawAccess: WasmBucketAccess[] = await tomb!.listBucketAccess(bucket.id);
+				console.log("ralen: " + rawAccess.length + ", " + JSON.stringify(rawAccess[0]));
 				const access: BucketAccess[] = [];
-				for (let key of rawAccess) {
-					const user_key_id = key.user_key_id();
-					const bucket_id = key.bucket_id();
-					const fingerprint = key.fingerprint();
-					const state = key.state();
+				for (let a of rawAccess) {
+					const user_key_id = a.user_key_id;
+					const bucket_id = a.driveId;
+					const fingerprint = a.fingerprint;
+					const state = a.state;
 					access.push({ user_key_id, bucket_id, fingerprint, state });
 				};
 				wasm_buckets.push({
 					...bucket,
 					access,
 				});
+
+				setBuckets(wasm_buckets);
+				setAreBucketsLoading(false);
 			}
-			setBuckets(wasm_buckets);
-			setAreBucketsLoading(false);
 		});
 	};
 
