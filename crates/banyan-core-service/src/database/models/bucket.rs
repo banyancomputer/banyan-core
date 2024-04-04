@@ -13,6 +13,7 @@ use crate::database::models::{
 };
 use crate::database::{Database, DatabaseConnection, BIND_LIMIT};
 use crate::tasks::PruneBlocksTask;
+use crate::utils::keys::FINGERPRINT_SIZE;
 
 /// Used to prevent writes of new metadata versions when there is a newer metadata currently being
 /// written. This protection is needed until we can handle merge conflicts and resolve the rapid
@@ -57,33 +58,24 @@ impl Bucket {
         let mut builder = QueryBuilder::new(
             r#"
                 INSERT OR REPLACE INTO bucket_access (user_key_id, bucket_id, state)
-                VALUES
+                SELECT id,
+            "#,
+        );
+        builder.push_bind(bucket_id);
+
+        builder.push(
+            r#"
+                , 'approved'  
+                FROM user_keys 
+                WHERE fingerprint IN (
             "#,
         );
 
-        //let mut separator = builder.separated(", ");
-
-        /*
+        let mut separator = builder.separated(", ");
         for fingerprint in fingerprints {
-            builder.push(r#"((SELECT id FROM user_keys WHERE fingerprint = "#);
-            builder.push_bind(fingerprint);
-            builder.push(r#" LIMIT 1), "#);
-            builder.push_bind(bucket_id);
-            builder.push(r#", 'approved'),"#);
+            separator.push_bind(fingerprint);
         }
-        */
-
-        builder.push_tuples(fingerprints.iter(), |mut b, fingerprint| {
-            b.push(r#"(SELECT id FROM user_keys WHERE fingerprint = $1)"#);
-            b.push_bind(fingerprint);
-            b.push(r#" LIMIT 1), "#);
-            b.push_bind(bucket_id);
-            b.push(r#", 'approved'),"#);
-        });
-        builder.push(";");
-
-        println!("sql: {}", builder.sql());
-
+        builder.push(");");
         builder.build().execute(&mut *conn).await?;
         Ok(())
     }
