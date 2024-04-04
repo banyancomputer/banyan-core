@@ -4,11 +4,11 @@ import { PrimaryButton } from '@components/common/PrimaryButton';
 import { SecondaryButton } from '@components/common/SecondaryButton';
 
 import { useModal } from '@/app/contexts/modals';
-import { Bucket, BucketKey } from '@/app/types/bucket';
+import { Bucket, BucketAccess } from '@/app/types/bucket';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { useAppSelector } from '@/app/store';
 
-export const RenameAccessKeyModal: React.FC<{ bucket: Bucket; bucketKey: BucketKey }> = ({ bucket, bucketKey }) => {
+export const RenameAccessKeyModal: React.FC<{ bucket: Bucket; bucketAccess: BucketAccess }> = ({ bucket, bucketAccess }) => {
     const { closeModal } = useModal();
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.renameAccessKey);
     const [newName, setNewName] = useState('');

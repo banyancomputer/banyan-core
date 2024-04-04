@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 
 import { AddNewOption } from '../Select/AddNewOption';
-import { CreateFolderModal } from '../Modal/CreateFolderModal ';
+import { CreateFolderModal } from '../Modal/CreateFolderModal';
 import { UploadFileModal } from '../Modal/UploadFileModal';
 
 import { popupClickHandler } from '@/app/utils';

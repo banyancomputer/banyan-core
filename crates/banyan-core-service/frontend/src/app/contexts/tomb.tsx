@@ -9,7 +9,7 @@ import { TermaAndConditions } from '@components/common/TermsAndConditions';
 import { useModal } from '@/app/contexts/modals';
 import { useKeystore } from './keystore';
 import {
-	BrowserObject, Bucket, BucketKey,
+	BrowserObject, Bucket, BucketAccess,
 	BucketSnapshot,
 } from '@/app/types/bucket';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
@@ -35,7 +35,7 @@ interface TombInterface {
 	selectedBucket: Bucket | null;
 	getBuckets: () => Promise<void>;
 	getBucketsFiles: () => Promise<void>;
-	getBucketsKeys: () => Promise<void>;
+	getBucketsAccess: () => Promise<void>;
 	remountBucket: (bucket: Bucket) => Promise<void>;
 	selectBucket: (bucket: Bucket | null) => void;
 	getSelectedBucketFiles: (path: string[]) => void;
@@ -124,7 +124,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 					bucketType: bucket.bucketType(),
 					files: [],
 					snapshots,
-					keys: [],
+					access: [],
 					locked: locked || false,
 					isSnapshotValid: isSnapshotValid || false
 				});
@@ -165,26 +165,26 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	};
 
 	/** Pushes keys inside of buckets list. */
-	const getBucketsKeys = async () => {
+	const getBucketsAccess = async () => {
 		setAreBucketsLoading(true);
 		return await tombMutex(tomb, async tomb => {
-			const wasm_bukets: Bucket[] = [];
+			const wasm_buckets: Bucket[] = [];
 			for (const bucket of buckets) {
-				const rawKeys = await tomb!.listBucketKeys(bucket.id);
-				const keys: BucketKey[] = [];
-				for (let key of rawKeys) {
-					const pem = key.pem();
-					const approved = key.approved();
-					const id = key.id();
-					const fingerPrint = await prettyFingerprintApiKeyPem(pem);
-					keys.push({ approved, bucket_id: bucket.id, fingerPrint, id, pem });
+				const rawAccess = await tomb!.listBucketAccess(bucket.id);
+				const access: BucketAccess[] = [];
+				for (let key of rawAccess) {
+					const user_key_id = key.user_key_id();
+					const bucket_id = key.bucket_id();
+					const fingerprint = key.fingerprint();
+					const state = key.state();
+					access.push({ user_key_id, bucket_id, fingerprint, state });
 				};
-				wasm_bukets.push({
+				wasm_buckets.push({
 					...bucket,
-					keys,
+					access,
 				});
 			}
-			setBuckets(wasm_bukets);
+			setBuckets(wasm_buckets);
 			setAreBucketsLoading(false);
 		});
 	};
@@ -233,7 +233,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 				bucketType: wasmBucket.bucketType(),
 				files: [],
 				snapshots: [],
-				keys: [],
+				access: [],
 				locked: false,
 				isSnapshotValid: false
 			};
@@ -271,11 +271,11 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	const shareFile = async (bucket: Bucket, path: string[]) => await tombMutex(bucket.mount!, async mount => await mount.shareFile(path));
 
 	/** Approves access key for bucket */
-	const approveBucketAccess = async (bucket: Bucket, bucketKeyId: string) => {
+	const approveBucketAccess = async (bucket: Bucket, userKeyId: string) => {
 		await tombMutex(bucket.mount!, async mount => {
-			await mount.shareWith(bucketKeyId);
+			await mount.shareWith(userKeyId);
 		});
-		await getBucketsKeys();
+		await getBucketsAccess();
 	};
 
 	/** Returns list of snapshots for selected bucket */
@@ -289,7 +289,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 		await tombMutex(bucket.mount!, async mount => {
 			/** TODO:  connect removeBucketAccess method when in will be implemented.  */
 		});
-		await getBucketsKeys();
+		await getBucketsAccess();
 	};
 
 	const purgeSnapshot = async (id: string) => {
@@ -503,7 +503,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 		<TombContext.Provider
 			value={{
 				tomb, buckets, storageUsage, storageLimits, trash, areBucketsLoading, selectedBucket,
-				getBuckets, getBucketsFiles, getBucketsKeys, selectBucket, getSelectedBucketFiles,
+				getBuckets, getBucketsFiles, getBucketsAccess, selectBucket, getSelectedBucketFiles,
 				takeColdSnapshot, getBucketSnapshots, createBucketAndMount, deleteBucket, remountBucket,
 				getFile, renameBucket, createDirectory, uploadFile, purgeSnapshot,
 				removeBucketAccess, approveBucketAccess, approveDeviceApiKey, shareFile, download, moveTo,

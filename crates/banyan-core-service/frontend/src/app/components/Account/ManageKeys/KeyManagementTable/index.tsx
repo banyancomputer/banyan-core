@@ -7,7 +7,7 @@ import { RemoveBucketAccessModal } from '@components/common/Modal/RemoveBucketAc
 import { SecondaryButton } from '@components/common/SecondaryButton';
 
 import { useAppSelector } from '@/app/store';
-import { Bucket, BucketKey, Bucket as IBucket } from '@/app/types/bucket';
+import { Bucket, BucketAccess, Bucket as IBucket } from '@/app/types/bucket';
 import { useModal } from '@/app/contexts/modals';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 
@@ -15,16 +15,16 @@ export const KeyManagementTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }
     const messages = useAppSelector(state => state.locales.messages.coponents.account.manageKeys.keyManagementTable);
     const { openModal } = useModal();
 
-    const approveAccess = async (bucket: Bucket, bucketKey: BucketKey) => {
-        openModal(<ApproveBucketAccessModal bucket={bucket} bucketKey={bucketKey} />);
+    const approveAccess = async (bucket: Bucket, bucketAccess: BucketAccess) => {
+        openModal(<ApproveBucketAccessModal bucket={bucket} bucketAccess={bucketAccess} />);
     };
 
-    const removeAccess = async (bucket: Bucket, bucketKey: BucketKey) => {
-        if (bucket.keys.length <= 1) {
+    const removeAccess = async (bucket: Bucket, bucketAccess: BucketAccess) => {
+        if (bucket.access.length <= 1) {
             ToastNotifications.error('The final key cannot be disabled or removed without at least one backup.');
             return;
         };
-        openModal(<RemoveBucketAccessModal bucket={bucket} bucketKey={bucketKey} />);
+        openModal(<RemoveBucketAccessModal bucket={bucket} bucketAccess={bucketAccess} />);
     };
 
     return (
@@ -53,11 +53,11 @@ export const KeyManagementTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }
                     {buckets.map(bucket =>
                         <React.Fragment key={bucket.id}>
                             {
-                                bucket?.keys?.map(bucketKey =>
-                                    <tr key={bucketKey.id} className="border-b-1 border-y-border-regular">
+                                bucket?.access?.map(bucketAccess =>
+                                    <tr key={bucketAccess.user_key_id} className="border-b-1 border-y-border-regular">
                                         <td className="px-6 py-12 ">
                                             <div className="text-ellipsis overflow-hidden">
-                                                {bucketKey.fingerPrint}
+                                                {bucketAccess.fingerprint}
                                             </div>
                                         </td>
                                         <td className="px-6 py-12">-</td>
@@ -65,14 +65,15 @@ export const KeyManagementTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }
                                         <td className="px-6 py-12">-</td>
                                         <td className="px-6 py-12">
                                             <SecondaryButton
-                                                text={bucketKey.approved ? messages.disable : messages.enable}
-                                                action={() => bucketKey.approved ? removeAccess(bucket, bucketKey) : approveAccess(bucket, bucketKey)}
+                                                // TODO make this language compatible
+                                                text={bucketAccess.state}
+                                                action={() => bucketAccess.state == "approved" ? removeAccess(bucket, bucketAccess) : approveAccess(bucket, bucketAccess)}
                                             />
                                         </td>
                                         <td className="px-3 py-12">
-                                            {bucket.keys.length >= 1 &&
+                                            {bucket.access.length >= 1 &&
                                                 <ActionsCell
-                                                    actions={<KeyActions bucket={bucket} bucketKey={bucketKey} />}
+                                                    actions={<KeyActions bucket={bucket} bucketAccess={bucketAccess} />}
                                                 />
                                             }
                                         </td>

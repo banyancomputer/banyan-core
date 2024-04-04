@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 
 import { TakeSnapshotModal } from '@components/common/Modal/TakeSnapshotModal';
 import { UploadFileModal } from '@components/common/Modal/UploadFileModal';
-import { CreateFolderModal } from '@components/common/Modal/CreateFolderModal ';
+import { CreateFolderModal } from '@components/common/Modal/CreateFolderModal';
 
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 import { useModal } from '@/app/contexts/modals';

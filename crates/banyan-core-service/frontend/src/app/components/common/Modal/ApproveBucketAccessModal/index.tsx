@@ -5,18 +5,18 @@ import { SecondaryButton } from '@components/common/SecondaryButton';
 
 import { useModal } from '@/app/contexts/modals';
 import { useTomb } from '@/app/contexts/tomb';
-import { Bucket, BucketKey } from '@/app/types/bucket';
+import { Bucket, BucketAccess } from '@/app/types/bucket';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { useAppSelector } from '@/app/store';
 
-export const ApproveBucketAccessModal: React.FC<{ bucket: Bucket; bucketKey: BucketKey }> = ({ bucket, bucketKey }) => {
+export const ApproveBucketAccessModal: React.FC<{ bucket: Bucket; bucketAccess: BucketAccess }> = ({ bucket, bucketAccess }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.approveBucketAccess);
     const { approveBucketAccess } = useTomb();
     const { closeModal } = useModal();
 
     const approveAccess = async () => {
         try {
-            await approveBucketAccess(bucket, bucketKey.id);
+            await approveBucketAccess(bucket, bucketAccess.user_key_id);
             closeModal();
         } catch (error: any) {
             ToastNotifications.error('Something went wrong', `${messages.tryAgain}`, approveAccess);

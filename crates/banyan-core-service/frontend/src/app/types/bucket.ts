@@ -1,7 +1,7 @@
 import { WasmMount } from 'tomb-wasm-experimental';
 
 export interface FileMetadata {
-    [key: string]:string | number;
+    [key: string]: string | number;
     created: string;
     modified: string;
     size: number;
@@ -15,12 +15,11 @@ export interface BrowserObject {
     metadata: FileMetadata;
 };
 
-export interface BucketKey {
-    id: string;
+export interface BucketAccess {
+    user_key_id: string;
     bucket_id: string;
-    pem: string;
-    approved: boolean;
-    fingerPrint: string;
+    state: string;
+    fingerprint: string;
 };
 
 export interface BucketSnapshot {
@@ -42,7 +41,7 @@ export interface Bucket {
     files: BrowserObject[];
     snapshots: BucketSnapshot[];
     isSnapshotValid: boolean;
-    keys: BucketKey[];
+    access: BucketAccess[];
     locked: boolean;
 };
 
@@ -55,6 +54,6 @@ export class MockBucket {
     public files = [];
     public isSnapshotValid = false;
     public snapshots = [];
-    public keys = [];
+    public access = [];
     public locked = false;
 };

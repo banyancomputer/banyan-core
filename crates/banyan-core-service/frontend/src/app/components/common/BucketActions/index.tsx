@@ -5,7 +5,7 @@ import { RenameBucketModal } from '@components/common/Modal/RenameBucketModal';
 import { DeleteBucketModal } from '@components/common/Modal/DeleteBucketModal';
 import { TakeSnapshotModal } from '@components/common/Modal/TakeSnapshotModal';
 import { UploadFileModal } from '@components/common/Modal/UploadFileModal';
-import { CreateFolderModal } from '@components/common/Modal/CreateFolderModal ';
+import { CreateFolderModal } from '@components/common/Modal/CreateFolderModal';
 
 import { Action } from '@components/Bucket/Files/BucketTable/FileActions';
 import { useModal } from '@/app/contexts/modals';

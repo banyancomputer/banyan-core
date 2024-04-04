@@ -8,14 +8,14 @@ import { useTomb } from '@/app/contexts/tomb';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 
 const ManageKeys = () => {
-    const { buckets, areBucketsLoading, tomb, getBucketsKeys } = useTomb();
+    const { buckets, areBucketsLoading, tomb, getBucketsAccess } = useTomb();
 
     useEffect(() => {
         if (!tomb) { return; }
 
         const getKeys = async () => {
             try {
-                await getBucketsKeys();
+                await getBucketsAccess();
             } catch (error: any) {
                 ToastNotifications.error('Failed to upload files', 'Try again', getKeys)
             }
