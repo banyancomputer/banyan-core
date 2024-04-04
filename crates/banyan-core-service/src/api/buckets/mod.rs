@@ -7,6 +7,7 @@ mod create_bucket;
 mod delete_bucket;
 mod revoke_bucket_access;
 mod single_bucket;
+mod single_bucket_access;
 mod update_bucket;
 
 mod bucket_usage;
@@ -40,6 +41,10 @@ where
         .route(
             "/:bucket_id/access",
             get(all_bucket_access::handler).delete(revoke_bucket_access::handler),
+        )
+        .route(
+            "/:bucket_id/access/:user_key_id",
+            get(single_bucket_access::handler),
         )
         .nest("/:bucket_id/metadata", metadata::router(state.clone()))
         .nest("/:bucket_id/snapshots", snapshots::router(state.clone()))

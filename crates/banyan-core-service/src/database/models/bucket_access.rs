@@ -47,8 +47,8 @@ impl Display for BucketAccessState {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             BucketAccessState::Pending => f.write_str("pending"),
-            BucketAccessState::Approved => f.write_str("pending"),
-            BucketAccessState::Revoked => f.write_str("pending"),
+            BucketAccessState::Approved => f.write_str("approved"),
+            BucketAccessState::Revoked => f.write_str("revoked"),
         }
     }
 }

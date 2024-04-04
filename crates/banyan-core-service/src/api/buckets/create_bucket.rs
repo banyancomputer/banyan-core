@@ -60,12 +60,13 @@ pub async fn handler(
         .map_err(CreateBucketError::BucketLookupFailed)?;
 
     let resp = ApiCreateBucketResponse {
-        id: bucket.id,
+        id: bucket.id.clone(),
         name: bucket.name,
         r#type: bucket.r#type,
         storage_class: bucket.storage_class,
         access: ApiBucketAccess {
             user_key_id: user_key.id,
+            bucket_id: bucket.id,
             fingerprint: user_key.fingerprint,
             state: access.state,
         },

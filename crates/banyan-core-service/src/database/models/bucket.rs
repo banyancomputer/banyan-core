@@ -13,7 +13,6 @@ use crate::database::models::{
 };
 use crate::database::{Database, DatabaseConnection, BIND_LIMIT};
 use crate::tasks::PruneBlocksTask;
-use crate::utils::keys::FINGERPRINT_SIZE;
 
 /// Used to prevent writes of new metadata versions when there is a newer metadata currently being
 /// written. This protection is needed until we can handle merge conflicts and resolve the rapid

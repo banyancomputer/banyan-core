@@ -12,14 +12,14 @@ pub async fn handler(
     user_identity: UserIdentity,
     State(state): State<AppState>,
     Path(bucket_id): Path<Uuid>,
-) -> Result<Response, AllBucketKeysError> {
+) -> Result<Response, AllBucketAccessError> {
     let database = state.database();
     let bucket_id = bucket_id.to_string();
     let user_id = user_identity.id().to_string();
-    let buckets = sqlx::query_as!(
+    let access = sqlx::query_as!(
         ApiBucketAccess,
         r#"
-            SELECT ba.user_key_id, uk.fingerprint, ba.state as 'state: BucketAccessState'
+            SELECT ba.user_key_id, ba.bucket_id, uk.fingerprint, ba.state as 'state: BucketAccessState'
             FROM bucket_access AS ba
             JOIN user_keys AS uk ON ba.user_key_id = uk.id
             WHERE uk.user_id = $1
@@ -30,18 +30,18 @@ pub async fn handler(
     )
     .fetch_all(&database)
     .await
-    .map_err(AllBucketKeysError::DatabaseFailure)?;
+    .map_err(AllBucketAccessError::DatabaseFailure)?;
 
-    Ok((StatusCode::OK, Json(buckets)).into_response())
+    Ok((StatusCode::OK, Json(access)).into_response())
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum AllBucketKeysError {
+pub enum AllBucketAccessError {
     #[error("failed to query the database: {0}")]
     DatabaseFailure(sqlx::Error),
 }
 
-impl IntoResponse for AllBucketKeysError {
+impl IntoResponse for AllBucketAccessError {
     fn into_response(self) -> Response {
         tracing::error!("failed to lookup all bucket keys: {self}");
         let err_msg = serde_json::json!({"msg": "backend service experienced an issue servicing the request"});
