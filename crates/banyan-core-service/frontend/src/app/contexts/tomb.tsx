@@ -174,7 +174,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 				console.log("ralen: " + rawAccess.length + ", " + JSON.stringify(rawAccess[0]));
 				const access: BucketAccess[] = [];
 				for (let a of rawAccess) {
-					const user_key_id = a.user_key_id;
+					const user_key_id = a.userKeyId;
 					const bucket_id = a.driveId;
 					const fingerprint = a.fingerprint;
 					const state = a.state;
