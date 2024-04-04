@@ -8,7 +8,7 @@ use validify::{Validate, Validify};
 
 use crate::api::models::ApiBucketAccess;
 use crate::app::AppState;
-use crate::database::models::{Bucket, BucketAccessState, BucketType, StorageClass, UserKey};
+use crate::database::models::{Bucket, BucketType, StorageClass, UserKey};
 use crate::extractors::ApiIdentity;
 
 pub async fn handler(
@@ -27,8 +27,6 @@ pub async fn handler(
         return Err(CreateBucketError::Unauthorized);
     }
     conn.close().await?;
-
-    //request.fingerprint;
 
     let user_id = api_id.user_id().to_string();
     let bucket_id = sqlx::query_scalar!(
@@ -67,6 +65,7 @@ pub async fn handler(
         r#type: bucket.r#type,
         storage_class: bucket.storage_class,
         access: ApiBucketAccess {
+            user_key_id: user_key.id,
             fingerprint: user_key.fingerprint,
             state: access.state,
         },
@@ -100,7 +99,7 @@ pub enum CreateBucketError {
     #[error("key is unauthorized for API use")]
     Unauthorized,
 
-    #[error("retrieving additional bucket details failed: {0}")]
+    #[error("database errror: {0}")]
     Database(#[from] sqlx::Error),
 
     #[error("retrieving additional bucket details failed: {0}")]

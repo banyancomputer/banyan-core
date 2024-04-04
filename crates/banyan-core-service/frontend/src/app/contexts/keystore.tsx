@@ -14,8 +14,6 @@ export const KeystoreContext = createContext<{
 	keystoreInitialized: boolean;
 	// Initialize a keystore based on the user's passphrase
 	initializeKeystore: (passkey: string) => Promise<void>;
-	// Get the user's Encryption Key Pair
-	getEncryptionKey: () => Promise<{ privatePem: string, publicPem: string }>;
 	// Get the user's API Key Pair
 	getApiKey: () => Promise<{ privatePem: string, publicPem: string }>;
 	// Purge the keystore from storage
@@ -25,9 +23,6 @@ export const KeystoreContext = createContext<{
 	isLoggingOut: boolean;
 }>({
 	keystoreInitialized: false,
-	getEncryptionKey: async () => {
-		throw new Error('Keystore not initialized');
-	},
 	getApiKey: async () => {
 		throw new Error('Keystore not initialized');
 	},
@@ -126,33 +121,6 @@ export const KeystoreProvider = ({ children }: any) => {
 		}
 	};
 
-	// Get the user's Encryption Key Pair as a Public / Private PEM combo
-	const getEncryptionKey = async (): Promise<{ privatePem: string, publicPem: string }> => {
-		if (!keystore) {
-			setError('No keystore');
-			throw new Error('No keystore');
-		}
-		if (!keystoreInitialized) {
-			setError('Keystore not initialized');
-			throw new Error('Keystore not initialized');
-		}
-		if (!escrowedKeyMaterial) {
-			setError('Missing escrowed data');
-			throw new Error('Missing escrowed data');
-		}
-		let localKey = getLocalKey();
-		const keyMaterial = await keystore.retrieveCachedPrivateKeyMaterial(
-			localKey.key, localKey.id
-		);
-		// Get pems to return
-		let publicPem = escrowedKeyMaterial.encryptionPublicKeyPem;
-		let privatePem = keyMaterial.encryptionPrivateKeyPem;
-		return {
-			privatePem,
-			publicPem
-		};
-	};
-
 	// Get the user's API Key as a Private / Public PEM combo
 	const getApiKey = async (): Promise<{ privatePem: string, publicPem: string }> => {
 		if (!keystore || !keystoreInitialized) {
@@ -240,7 +208,6 @@ export const KeystoreProvider = ({ children }: any) => {
 			value={{
 				keystoreInitialized,
 				isLoggingOut,
-				getEncryptionKey,
 				getApiKey,
 				initializeKeystore,
 				purgeKeystore,

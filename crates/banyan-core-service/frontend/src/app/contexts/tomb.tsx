@@ -71,7 +71,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	const { userData, isUserNew } = useSession();
 	const navigate = useNavigate();
 	const { openEscrowModal, openModal } = useModal();
-	const { isLoading, keystoreInitialized, getEncryptionKey, getApiKey, escrowedKeyMaterial, isLoggingOut } = useKeystore();
+	const { isLoading, keystoreInitialized, getApiKey, escrowedKeyMaterial, isLoggingOut } = useKeystore();
 	const [tomb, setTomb] = useState<TombWasm | null>(null);
 	const [buckets, setBuckets] = useState<Bucket[]>([]);
 	const [trash, setTrash] = useState<Bucket | null>(null);
@@ -98,7 +98,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	/** Returns list of buckets. */
 	const getBuckets = async () => {
 		return await tombMutex(tomb, async tomb => {
-			const key = await getEncryptionKey();
+			const key = await getApiKey();
 			const wasm_buckets: WasmBucket[] = await tomb!.listBuckets();
 			if (isUserNew) {
 				createBucketAndMount("My Drive", 'hot', 'interactive');
@@ -156,7 +156,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
 	const remountBucket = async (bucket: Bucket) => {
 		return await tombMutex(tomb, async tomb => {
-			const key = await getEncryptionKey();
+			const key = await getApiKey();
 			const mount = await tomb!.mount(bucket.id, key.privatePem);
 			const locked = await mount.locked();
 			const isSnapshotValid = await mount.hasSnapshot();
@@ -223,7 +223,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 			throw new Error(driveAlreadyExists);
 		}
 		return await tombMutex(tomb, async tomb => {
-			const key = await getEncryptionKey();
+			const key = await getApiKey();
 			const { bucket: wasmBucket, mount: wasmMount } = await tomb!.createBucketAndMount(name, storageClass, bucketType, key.privatePem, key.publicPem);
 			const bucket = {
 				mount: wasmMount,
