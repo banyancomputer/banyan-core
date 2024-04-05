@@ -6,19 +6,13 @@ import {
 	ChevronUp,
 	Directory,
 	Logo,
-	DeleteHotData,
+	DeleteHotData, Done, Mail
 } from '@static/images/common';
+import Users from '../../../../../../admin_dist/assets/users-25c11d26';
 
 export const Navigation = () => {
-	const [isBucketsVisible, setIsBucketsVisible] = useState(false);
 	const location = useLocation();
-	const [droppedBucket, setDroppedBucket] = useState<null>(null);
 
-	const toggleBucketsVisibility = (event: React.MouseEvent<HTMLDivElement>) => {
-		event.stopPropagation();
-		event.preventDefault();
-		setIsBucketsVisible((prev) => !prev);
-	};
 
 	return (
 		<nav className="flex flex-col w-navbar min-w-navbar bg-navigation-primary py-6 pt-12 px-4 text-navigation-text border-r-2 border-r-navigation-border text-xs">
@@ -36,14 +30,7 @@ export const Navigation = () => {
 						<Directory />
 					</span>
 					<span className="flex-grow">Providers</span>
-					<span
-						onClick={toggleBucketsVisibility}
-						className={`${!isBucketsVisible && 'rotate-180'} ${
-							![].length && 'hidden'
-						}`}
-					>
 						<ChevronUp />
-					</span>
 				</NavLink>
 				<NavLink
 					to={'/deals'}
@@ -55,17 +42,21 @@ export const Navigation = () => {
 						<DeleteHotData />
 					</span>
 					<span className="flex-grow">Deals</span>
-					<span
-						onClick={toggleBucketsVisibility}
-						className={`${!isBucketsVisible && 'rotate-180'} ${
-							![].length && 'hidden'
-						}`}
-					>
 						<ChevronUp />
-					</span>
 				</NavLink>
 
-				{isBucketsVisible && <ul className="flex-col gap-2 px-2 text-xxs"></ul>}
+					<NavLink
+						to={'/users'}
+						className={`flex items-center justify-between gap-3 py-2.5 px-3 w-full h-10  cursor-pointer rounded-md ${
+							location.pathname === '/users' && 'bg-navigation-secondary'
+						}`}
+					>
+					<span className="text-text-900">
+						<Mail />
+					</span>
+						<span className="flex-grow">Users</span>
+						<ChevronUp />
+				</NavLink>
 			</div>
 		</nav>
 	);

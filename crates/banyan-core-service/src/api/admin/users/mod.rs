@@ -1,7 +1,7 @@
 use std::error::Error;
 
 use axum::body::HttpBody;
-use axum::routing::{get, put};
+use axum::routing::{delete, get};
 use axum::Router;
 
 mod all_users;
@@ -16,6 +16,6 @@ where
 {
     Router::new()
         .route("/", get(all_users::handler))
-        .route("/:user_id/reset", put(reset_user::handler))
+        .route("/:user_id", delete(reset_user::handler))
         .with_state(state)
 }

@@ -3,7 +3,7 @@ use time::OffsetDateTime;
 
 use super::Subscription;
 use crate::database::models::{HotUsage, SnapshotState, SubscriptionStatus, TaxClass};
-use crate::database::{Database, DatabaseConnection};
+use crate::database::DatabaseConnection;
 use crate::utils::GIBIBYTE;
 
 #[derive(Debug, Serialize, sqlx::FromRow)]
