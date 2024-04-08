@@ -2,18 +2,18 @@ import React from 'react';
 import { User } from '@app/types';
 import { AdminClient } from '@/api/admin';
 import { ToastNotifications } from '@app/utils/toastNotifications';
-import { Done } from '@static/images/common';
 
 interface UsersTableProps {
 	users: User[];
+	onReset: () => Promise<void>;
 }
 
-export const UsersTable: React.FC<UsersTableProps> = ({ users }) => {
+export const UsersTable: React.FC<UsersTableProps> = ({ users, onReset }) => {
 	const client = new AdminClient();
 	const resetUser = async (userId: string): Promise<void> => {
 		try {
 			await client.resetUser(userId)
-			ToastNotifications.notify('User reset successfully');
+			await onReset();
 		} catch (error: any) {
 			ToastNotifications.error('Could not reset user', "Close", () => {});
 		}
@@ -49,12 +49,14 @@ export const UsersTable: React.FC<UsersTableProps> = ({ users }) => {
 							<td className="px-3 py-6 border-t-1 border-l-1 border-border-regular">
 								{user.acceptedTosAt}
 							</td>
-							<button
-								className="btn-secondary h-10 w-20 ml-4 mt-3"
+							<td className="px-3 py-6 border-t-1 border-l-1 border-border-regular">
+								<button
+								className="btn-secondary h-10 w-20 ml-4"
 								onClick={() => resetUser(user.id)}
-							>
+								>
 								{'Reset User'}
-							</button>
+								</button>
+							</td>
 						</tr>
 					))}
 				</tbody>
