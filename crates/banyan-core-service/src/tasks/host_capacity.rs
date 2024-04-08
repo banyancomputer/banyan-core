@@ -57,31 +57,21 @@ impl TaskLike for HostCapacityTask {
 
         // Update reserved_storage
         // Ensure that we are only summing authorized amounts on one storage grant per user, taking
-        // care to sort those grants by redemption time and ensure the redemption time is not null
+        // care to use the most recently created grant that has been redeemed.
         sqlx::query!(
             r#"
-                UPDATE storage_hosts
-                SET reserved_storage = 
-                COALESCE(
-	                (
-                        SELECT SUM(sg.authorized_amount)
-	                    FROM storage_hosts sh
-	                    INNER JOIN (
-                            SELECT a.user_id, a.storage_host_id, a.redeemed_at, a.authorized_amount 
-                            FROM storage_grants a
-                            WHERE a.redeemed_at IN (
-                                SELECT MAX(b.redeemed_at)
-                                FROM storage_grants b
-                                WHERE a.user_id = b.user_id
-                            )
-                            GROUP BY a.id
-	                    ) AS sg 
-	                    WHERE sg.storage_host_id = sh.id 
-                        AND sh.id = $1
-                    ), 
-                0)
-                WHERE id = $1;
-            "#,
+            UPDATE storage_hosts
+                SET reserved_storage = COALESCE((
+                    SELECT SUM(sg.authorized_amount)
+                    FROM (
+                        SELECT id, user_id, MAX(created_at) AS max_created_at
+                        FROM storage_grants
+                        WHERE redeemed_at IS NOT NULL AND storage_host_id = $1
+                        GROUP BY user_id
+                    ) AS latest_grants
+                    JOIN storage_grants AS sg ON sg.id = latest_grants.id
+                ), 0)
+                WHERE id = $1;"#,
             storage_host_id,
         )
         .execute(&mut *db_conn)
@@ -171,7 +161,7 @@ mod tests {
         // factored into this result because it was uploaded to a different storage provider.
         assert_eq!(reserved_storage, DOG_UPLOAD_2 + CAT_UPLOAD_2);
 
-        // Do the same for the other storage host and assert it is empty
+        // Do the same for the other storage host, there has been a cat upload to this host
         assert!(
             HostCapacityTask::new(String::from(storage_hosts.storage_host_id_2.as_str()))
                 .run(CurrentTask::default(), ctx.clone())
@@ -181,7 +171,7 @@ mod tests {
         let (used_storage, reserved_storage) =
             get_stats(ctx.clone(), storage_hosts.storage_host_id_2.as_str()).await;
         assert_eq!(used_storage, 0);
-        assert_eq!(reserved_storage, 0);
+        assert_eq!(reserved_storage, 750);
     }
 
     async fn host_capacity_context() -> (AppState, StorageHosts) {

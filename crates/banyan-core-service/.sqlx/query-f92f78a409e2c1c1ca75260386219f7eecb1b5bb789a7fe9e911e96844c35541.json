@@ -29,8 +29,13 @@
         "type_info": "Datetime"
       },
       {
-        "name": "bucket_id",
+        "name": "tokens_used",
         "ordinal": 5,
+        "type_info": "Int64"
+      },
+      {
+        "name": "bucket_id",
+        "ordinal": 6,
         "type_info": "Text"
       }
     ],
@@ -42,6 +47,7 @@
       false,
       false,
       true,
+      false,
       false,
       false
     ]

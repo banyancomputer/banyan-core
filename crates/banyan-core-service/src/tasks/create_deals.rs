@@ -217,12 +217,7 @@ impl CreateDealsTask {
         }
         deals_builder.push(")");
         deals_builder.push(");");
-
-        deals_builder
-            .build()
-            .execute(&mut **transaction)
-            .await
-            .map_err(CreateDealsTaskError::Sqlx)?;
+        deals_builder.build().execute(&mut **transaction).await?;
         Ok(())
     }
 }
@@ -241,11 +236,7 @@ impl TaskLike for CreateDealsTask {
     type Context = AppState;
 
     async fn run(&self, _task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
-        let mut transaction = ctx
-            .database()
-            .begin()
-            .await
-            .map_err(CreateDealsTaskError::Sqlx)?;
+        let mut transaction = ctx.database().begin().await?;
 
         let snapshot_info = sqlx::query_as!(
             SnapshotInfo,
@@ -261,8 +252,7 @@ impl TaskLike for CreateDealsTask {
             MetadataState::Current
         )
         .fetch_one(&mut *transaction)
-        .await
-        .map_err(CreateDealsTaskError::Sqlx)?;
+        .await?;
 
         let segment_size =
             snapshot_info.snapshot_size.unwrap_or(0) + snapshot_info.metadata_size.unwrap_or(0);
