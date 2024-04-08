@@ -4,9 +4,9 @@ import { TombWasm, WasmBucket, WasmMount, WasmSnapshot } from 'tomb-wasm-experim
 import {
 	BrowserObject, Bucket, BucketKey,
 	BucketSnapshot,
-} from '../app/types/bucket';
-import { handleNameDuplication } from "@/app/utils/names";
-import { prettyFingerprintApiKeyPem, sortByType } from "@/app/utils";
+} from '@app/types/bucket';
+import { handleNameDuplication } from "@app/utils/names";
+import { prettyFingerprintApiKeyPem, sortByType } from "@app/utils";
 import { StorageUsageClient } from "@/api/storageUsage";
 import { SnapshotsClient } from "@/api/snapshots";
 import { StorageLimits, StorageUsage } from "@/entities/storage";
@@ -83,7 +83,7 @@ export class TombWorker {
             this.state.areBucketsLoading = false;
 			self.postMessage('buckets');
 	};
-		
+
 	async remountBucket(bucketId: string) {
 		const mount = await this.state.tomb!.mount(bucketId, this.state.encryptionKey!.privatePem);
 		const locked = await mount.locked();
@@ -176,10 +176,15 @@ export class TombWorker {
 	};
 
     async updateStorageUsageState  () {
-		try {
-			const usage = await storageUsageClient.getStorageUsage();
-			this.state.storageUsage = usage;
-		} catch (error: any) { };
+		const usage = await storageUsageClient.getStorageUsage();
+		this.state.storageUsage = usage;
+		self.postMessage('storageUsage');
+	};
+
+    async updateStorageLimitsState() {
+		const limits = await storageUsageClient.getStorageLimits();
+		this.state.storageLimits = limits;
+		self.postMessage('storageLimits');
 	};
 
     /** Creates new bucket with recieved parameters of type and storag class. */
@@ -282,12 +287,6 @@ export class TombWorker {
 		self.postMessage('selectedBucket');
 	};
 
-    async updateStorageLimitsState() {
-		try {
-			const limits = await storageUsageClient.getStorageLimits();
-			this.state.storageLimits = limits;
-		} catch (error: any) { };
-	};
 
     /** Creates bucket snapshot */
 	async takeColdSnapshot (bucketId: string) {

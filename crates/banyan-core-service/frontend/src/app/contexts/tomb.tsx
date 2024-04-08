@@ -1,8 +1,8 @@
 import React, { ReactNode, createContext, useContext, useEffect, useState } from 'react';
-
 import { TombWasm } from 'tomb-wasm-experimental';
 import { unwrapResult } from '@reduxjs/toolkit';
 import { useNavigate } from 'react-router-dom';
+import { wrap } from 'comlink';
 
 import {
 	BrowserObject, Bucket,
@@ -11,10 +11,9 @@ import { useFolderLocation } from '@app/hooks/useFolderLocation';
 import { sortByType } from '@app/utils';
 import { useAppDispatch, useAppSelector } from '@app/store';
 import { BannerError, setError } from '@app/store/errors/slice';
-import { getApiKey, getEncryptionKey, getEscrowedKeyMaterial } from '@app/store/keystore/actions';
+import { getApiKey, getEncryptionKey } from '@app/store/keystore/actions';
 import { StorageLimits, StorageUsage } from '@/entities/storage';
 import { TombWorker } from '@/workers/tomb.worker';
-import { wrap } from 'comlink';
 
 interface TombInterface {
 	tomb: TombWasm | null;
@@ -244,6 +243,12 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 						break;
 					case 'configured':
 						setIsWorkerReady(true);
+						break;
+					case 'storageUsage':
+						setStorageUsage((await tombWorker.state).storageUsage);
+						break;
+					case 'storageLimits':
+						setStorageLimits((await tombWorker.state).storageLimits);
 						break;
 				}
 			};
