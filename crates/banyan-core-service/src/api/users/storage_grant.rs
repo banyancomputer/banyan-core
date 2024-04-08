@@ -63,10 +63,9 @@ pub async fn handler(
                JOIN metadata AS m ON m.id = shmsg.metadata_id
                JOIN buckets AS b ON m.bucket_id = b.id
                WHERE b.deleted_at IS NULL
-                   AND sg.redeemed_at IS NOT NULL
                    AND sg.user_id = $1
                    AND sh.url = $2
-               ORDER BY sg.redeemed_at DESC
+               ORDER BY sg.created_at DESC
                LIMIT 1;"#,
         user_id,
         storage_host_base_url,

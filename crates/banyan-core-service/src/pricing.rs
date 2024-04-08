@@ -55,8 +55,8 @@ pub async fn sync_pricing_config(
 /// for extra capacity.
 #[derive(Debug, Deserialize)]
 pub struct Allowances {
+    pub archival: i64,
     pub bandwidth: i64,
-
     pub storage: i64,
     pub storage_replicas: i64,
 }
@@ -149,6 +149,7 @@ impl<'a> PricingTier {
             included_hot_storage: self.included_allowances.storage_replicas
                 * self.included_allowances.storage,
             included_bandwidth: self.included_allowances.bandwidth,
+            included_archival: self.included_allowances.archival,
         };
 
         // A pricing tier without any price doesn't need tax related information and there will

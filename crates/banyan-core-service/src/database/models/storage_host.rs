@@ -184,31 +184,13 @@ impl UserStorageReport {
 }
 
 #[derive(sqlx::FromRow)]
-pub struct ConsumedStorage {
-    pub data_size: i64,
-    pub meta_size: i64,
+pub struct HotUsage {
+    pub data_size: i32,
+    pub meta_size: i32,
 }
-impl ConsumedStorage {
-    pub async fn total_consumption_for_user(
-        conn: &mut DatabaseConnection,
-        user_id: &str,
-    ) -> Result<Self, sqlx::Error> {
-        // (sstelfox): we need to include outdated currently as they include blocks referenced by the current
-        // version, todo: we'll need a better way of calculating this
-        sqlx::query_as!(
-            Self,
-            r#"SELECT
-                COALESCE(SUM(m.metadata_size), 0) as data_size,
-                COALESCE(SUM(COALESCE(m.data_size, m.expected_data_size)), 0) as meta_size
-            FROM
-                metadata m
-            INNER JOIN
-                buckets b ON b.id = m.bucket_id
-            WHERE
-                b.user_id = $1 AND b.deleted_at IS NULL AND m.state IN ('current', 'outdated', 'pending');"#,
-            user_id,
-        )
-        .fetch_one(&mut *conn)
-        .await
+
+impl HotUsage {
+    pub fn total(&self) -> i64 {
+        self.data_size as i64 + self.meta_size as i64
     }
 }

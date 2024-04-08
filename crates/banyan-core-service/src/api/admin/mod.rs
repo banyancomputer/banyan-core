@@ -5,8 +5,8 @@ use axum::routing::get;
 use axum::Router;
 
 mod all_deals;
-mod all_storage_hosts;
-mod create_storage_host;
+mod storage_host;
+mod users;
 
 use crate::app::AppState;
 
@@ -18,9 +18,7 @@ where
 {
     Router::new()
         .route("/deals", get(all_deals::handler))
-        .route(
-            "/providers",
-            get(all_storage_hosts::handler).post(create_storage_host::handler),
-        )
+        .nest("/users", users::router(state.clone()))
+        .nest("/providers", storage_host::router(state.clone()))
         .with_state(state)
 }

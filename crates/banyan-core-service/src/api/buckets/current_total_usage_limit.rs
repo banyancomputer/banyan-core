@@ -28,7 +28,8 @@ pub async fn handler(
     let resp = UsageLimitResponse {
         soft_hot_storage_limit: subscription.included_hot_storage * GIBIBYTE,
         hard_hot_storage_limit: subscription.hot_storage_hard_limit.map(|l| l * GIBIBYTE),
-        archival_hard_limit: subscription.archival_hard_limit.map(|l| l * GIBIBYTE),
+        soft_archival_storage_limit: user.earned_tokens,
+        hard_archival_storage_limit: subscription.archival_hard_limit.map(|l| l * GIBIBYTE),
         size: subscription.included_hot_storage * GIBIBYTE,
     };
 
@@ -42,8 +43,10 @@ struct UsageLimitResponse {
     #[serde(skip_serializing_if = "Option::is_none")]
     hard_hot_storage_limit: Option<i64>,
 
+    soft_archival_storage_limit: i64,
+
     #[serde(skip_serializing_if = "Option::is_none")]
-    archival_hard_limit: Option<i64>,
+    hard_archival_storage_limit: Option<i64>,
 
     // legacy option, should be removed as soon as the frontend doesn't use this
     size: i64,

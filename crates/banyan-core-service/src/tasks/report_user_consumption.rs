@@ -55,7 +55,7 @@ pub async fn save_user_consumption(
     user_id: &str,
 ) -> Result<(), sqlx::Error> {
     let user = User::by_id(conn, user_id).await?;
-    let hot_storage_bytes = user.consumed_storage(conn).await?;
+    let hot_storage_bytes = user.hot_usage(conn).await?.total();
     match UserTotalConsumption::find_by_slot_and_user(conn, slot_end, user_id).await {
         Ok(Some(existing_metrics)) => {
             let updated_hot_storage_bytes =

@@ -26,6 +26,7 @@ pub struct NewSubscription<'a> {
     pub included_hot_replica_count: i64,
     pub included_hot_storage: i64,
     pub included_bandwidth: i64,
+    pub included_archival: i64,
 }
 
 impl NewSubscription<'_> {
@@ -87,9 +88,8 @@ impl NewSubscription<'_> {
             r#"INSERT INTO subscriptions (service_key, tax_class, title, visible, plan_base_price,
                     archival_available, archival_price, archival_hard_limit, hot_storage_price,
                     hot_storage_hard_limit, bandwidth_price, bandwidth_hard_limit,
-                    included_hot_replica_count, included_hot_storage, included_bandwidth,
-                    created_at
-                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    included_hot_replica_count, included_hot_storage, included_bandwidth, included_archival, created_at
+                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                  RETURNING id;"#,
             self.service_key,
             self.tax_class,
@@ -106,6 +106,7 @@ impl NewSubscription<'_> {
             self.included_hot_replica_count,
             self.included_hot_storage,
             self.included_bandwidth,
+            self.included_archival,
             now,
         )
         .fetch_one(&mut *conn)
@@ -145,6 +146,7 @@ impl std::cmp::PartialEq<Subscription> for NewSubscription<'_> {
             && self.included_hot_replica_count == other.included_hot_replica_count
             && self.included_hot_storage == other.included_hot_storage
             && self.included_bandwidth == other.included_bandwidth
+            && self.included_archival == other.included_archival
     }
 }
 
@@ -176,6 +178,7 @@ pub struct Subscription {
     pub included_hot_replica_count: i64,
     pub included_hot_storage: i64,
     pub included_bandwidth: i64,
+    pub included_archival: i64,
 
     pub created_at: OffsetDateTime,
 }
@@ -195,7 +198,7 @@ impl Subscription {
                    hot_storage_price as 'hot_storage_price: PriceUnits', hot_storage_stripe_price_id,
                    hot_storage_hard_limit, bandwidth_price as 'bandwidth_price: PriceUnits',
                    bandwidth_stripe_price_id, bandwidth_hard_limit, included_hot_replica_count,
-                   included_hot_storage, included_bandwidth, created_at FROM subscriptions
+                   included_hot_storage, included_bandwidth, included_archival, created_at FROM subscriptions
                  WHERE service_key = $1 AND tax_class = $2 AND visible = true
                  ORDER BY created_at DESC
                  LIMIT 1;"#,
@@ -222,32 +225,11 @@ impl Subscription {
                    hot_storage_price as 'hot_storage_price: PriceUnits', hot_storage_stripe_price_id,
                    hot_storage_hard_limit, bandwidth_price as 'bandwidth_price: PriceUnits',
                    bandwidth_stripe_price_id, bandwidth_hard_limit, included_hot_replica_count,
-                   included_hot_storage, included_bandwidth, created_at FROM subscriptions
+                   included_hot_storage, included_bandwidth, included_archival, created_at FROM subscriptions
                  WHERE visible = true OR ($1 IS NOT NULL AND id = $1);"#,
             current_id,
         )
         .fetch_all(&mut *conn)
-        .await
-    }
-
-    pub async fn by_id(
-        conn: &mut DatabaseConnection,
-        subscription_id: &str,
-    ) -> Result<Self, sqlx::Error> {
-        sqlx::query_as!(
-            Self,
-            r#"SELECT id, service_key, tax_class as 'tax_class: TaxClass', title, visible,
-                   plan_base_price as 'plan_base_price: PriceUnits', plan_price_stripe_id,
-                   archival_available, archival_price as 'archival_price: PriceUnits',
-                   archival_stripe_price_id, archival_hard_limit,
-                   hot_storage_price as 'hot_storage_price: PriceUnits', hot_storage_stripe_price_id,
-                   hot_storage_hard_limit, bandwidth_price as 'bandwidth_price: PriceUnits',
-                   bandwidth_stripe_price_id, bandwidth_hard_limit, included_hot_replica_count,
-                   included_hot_storage, included_bandwidth, created_at FROM subscriptions
-                 WHERE visible = true AND id = $1;"#,
-            subscription_id,
-        )
-        .fetch_one(&mut *conn)
         .await
     }
 
@@ -268,6 +250,8 @@ impl Subscription {
         .await
     }
 
+    /// Find a subscription by a specific ID, returning None if that subscription does not exist or
+    /// is not in the visible state.
     pub async fn find_by_id(
         conn: &mut DatabaseConnection,
         subscription_id: &str,
@@ -281,11 +265,32 @@ impl Subscription {
                    hot_storage_price as 'hot_storage_price: PriceUnits', hot_storage_stripe_price_id,
                    hot_storage_hard_limit, bandwidth_price as 'bandwidth_price: PriceUnits',
                    bandwidth_stripe_price_id, bandwidth_hard_limit, included_hot_replica_count,
-                   included_hot_storage, included_bandwidth, created_at FROM subscriptions
+                   included_hot_storage, included_bandwidth, included_archival, created_at FROM subscriptions
                  WHERE visible = true AND id = $1;"#,
             subscription_id,
         )
         .fetch_optional(&mut *conn)
+        .await
+    }
+
+    pub async fn by_id(
+        conn: &mut DatabaseConnection,
+        subscription_id: &str,
+    ) -> Result<Self, sqlx::Error> {
+        sqlx::query_as!(
+            Self,
+            r#"SELECT id, service_key, tax_class as 'tax_class: TaxClass', title, visible,
+                   plan_base_price as 'plan_base_price: PriceUnits', plan_price_stripe_id,
+                   archival_available, archival_price as 'archival_price: PriceUnits',
+                   archival_stripe_price_id, archival_hard_limit,
+                   hot_storage_price as 'hot_storage_price: PriceUnits', hot_storage_stripe_price_id,
+                   hot_storage_hard_limit, bandwidth_price as 'bandwidth_price: PriceUnits',
+                   bandwidth_stripe_price_id, bandwidth_hard_limit, included_hot_replica_count,
+                   included_hot_storage, included_bandwidth, included_archival, created_at FROM subscriptions
+                 WHERE visible = true AND id = $1;"#,
+            subscription_id,
+        )
+        .fetch_one(&mut *conn)
         .await
     }
 
