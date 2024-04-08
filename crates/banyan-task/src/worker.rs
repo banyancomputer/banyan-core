@@ -309,7 +309,6 @@ mod tests {
         let worker = create_worker(&TEST_CONTEXT, task_store);
         let task = worker.next_task(TestTask::TASK_NAME).await;
         let result = worker.run(task).await;
-        println!("result: {:?}", result);
         assert!(result.is_ok(), "Worker run failed with a valid task");
     }
 }

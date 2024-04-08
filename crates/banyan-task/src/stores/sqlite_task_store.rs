@@ -21,17 +21,6 @@ impl SqliteTaskStore {
         Ok(self.pool.clone().acquire().await?)
     }
 
-    /*
-    async fn connect2(&self) -> Result<SqliteConnection, TaskStoreError> {
-        let mut conn = self.pool.clone().acquire().await?;
-        Ok(Self::fixer(conn))
-    }
-    pub fn fixer(conn: SqliteConnection) -> SqliteConnection {
-        conn
-
-    }
-    */
-
     pub async fn is_present<T: TaskLike>(
         conn: &mut SqliteConnection,
         task: &T,

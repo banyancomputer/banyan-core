@@ -18,7 +18,7 @@ use crate::tasks::report_bandwidth_metrics::ReportBandwidthMetricsTask;
 pub async fn start_background_workers(
     state: AppState,
     mut shutdown_rx: watch::Receiver<()>,
-) -> Result<JoinHandle<()>, ()> {
+) -> Result<JoinHandle<()>, &'static str> {
     let task_store = SqliteTaskStore::new(state.database());
 
     WorkerPool::new(task_store.clone(), move || state.clone())
@@ -32,5 +32,5 @@ pub async fn start_background_workers(
             let _ = shutdown_rx.changed().await;
         })
         .await
-        .map_err(|_| ())
+        .map_err(|_| "background worker startup failed")
 }
