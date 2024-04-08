@@ -131,14 +131,14 @@ export const FolderRow: React.FC<{
                             >
                                 <DraggingPreview name={folder.name} isDragging={isDragging} type="dir" />
                                 <FileCell name={folder.name} type="dir" />
-                                {!parrentFolder &&
+                                {/* {!parrentFolder &&
                                     <span
                                         className={`${!folder.files?.length && 'rotate-180'} cursor-pointer p-2`}
                                         onClick={expandFolder}
                                     >
                                         <ChevronUp />
                                     </span>
-                                }
+                                } */}
                             </td>
                             <td className="px-6 py-2">{getDateLabel(+folder.metadata.modified)}</td>
                             <td className="px-6 py-2">{convertFileSize(folder.metadata.size)}</td>

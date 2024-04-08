@@ -1,6 +1,7 @@
 const path = require("path");
 const zlib = require("zlib");
 import { defineConfig, loadEnv } from "vite";
+import { comlink } from "vite-plugin-comlink";
 import react from "@vitejs/plugin-react";
 import viteCompression from "vite-plugin-compression";
 import wasm from "vite-plugin-wasm";
@@ -23,12 +24,14 @@ const PRODUCTION_PLUGINS = [
 		deleteOriginalAssets: true,
 	}),
 	wasm(),
+	comlink(),
 	topLevelAwait()
 ];
 
 const DEVELOPMENT_PLUGINS = [
 	react(),
 	wasm(),
+	comlink(),
 	topLevelAwait(),
 	{
 		name: "Cleaning assets folder",
@@ -50,6 +53,12 @@ export default ({ mode }) => {
 		root: path.join(__dirname, "/"),
 		server: {
 			port: 3000,
+		},
+		worker: {
+			plugins: [topLevelAwait(), wasm(), comlink()],
+			rollupOptions: {
+				watch: false,
+			}
 		},
 		build: {
 			minify: isProduction ? "esbuild": false,

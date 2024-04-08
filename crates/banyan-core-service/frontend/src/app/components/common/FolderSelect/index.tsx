@@ -20,7 +20,7 @@ export interface FolderSelectProps {
 };
 
 export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBucket, onFolderCreation, path }) => {
-    const { buckets, uploadFile, tomb } = useTomb();
+    const { buckets, getSelectedBucketFiles, uploadFile, tomb } = useTomb();
     const selectRef = useRef<HTMLDivElement | null>(null);
     const [isOptionstVisible, setIsOptionsVisible] = useState(false);
     const [folder, setFolder] = useState(path);
@@ -62,7 +62,7 @@ export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBu
         (async () => {
             const bucket = selectedBucket;
             if (!bucket.mount) return;
-            const files = await bucket.mount.ls(folder);
+            const files = await getSelectedBucketFiles(folder);
             setFolders(files.filter(file => file.type === 'dir'));
         })();
     }, [folder, buckets]);
