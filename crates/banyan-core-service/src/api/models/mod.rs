@@ -13,6 +13,7 @@ mod api_user;
 
 pub use admin::api_deals_admin::ApiDealsAdmin;
 pub use admin::api_storage_hosts_admin::ApiSelectedStorageHostAdmin;
+pub use admin::api_users_admin::ApiUsersAdmin;
 pub use api_bucket::ApiBucket;
 pub use api_bucket_configuration::ApiBucketConfiguration;
 pub use api_bucket_key::ApiBucketKey;

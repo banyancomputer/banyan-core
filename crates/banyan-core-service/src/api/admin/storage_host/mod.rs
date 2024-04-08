@@ -4,9 +4,8 @@ use axum::body::HttpBody;
 use axum::routing::get;
 use axum::Router;
 
-mod all_deals;
-mod storage_host;
-mod users;
+mod all_storage_hosts;
+mod create_storage_host;
 
 use crate::app::AppState;
 
@@ -17,8 +16,9 @@ where
     Box<dyn Error + Send + Sync + 'static>: From<B::Error>,
 {
     Router::new()
-        .route("/deals", get(all_deals::handler))
-        .nest("/users", users::router(state.clone()))
-        .nest("/providers", storage_host::router(state.clone()))
+        .route(
+            "/",
+            get(all_storage_hosts::handler).post(create_storage_host::handler),
+        )
         .with_state(state)
 }
