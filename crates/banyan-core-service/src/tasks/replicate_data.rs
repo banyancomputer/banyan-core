@@ -185,10 +185,9 @@ async fn get_blocks_for_replication(
     conn: &mut DatabaseConnection,
 ) -> Result<Vec<BlockData>, sqlx::Error> {
     // The below query will skip:
-    // 1. Metadatas* that has a block on the staging host. Those need to handled first by the redistribute_staging_data task.
-    // 2. Metadatas* that has a block on a storage host that is not marked as pruned, expired or deleted.
-    // 3. Metadatas* that have been kicked off for replication but not yet completed.
-    // * and their associated blocks
+    // 1. Metadatas (and their associated blocks)  that have a block on the staging host. Those need to handled first by the redistribute_staging_data task.
+    // 2. Blocks that have a block on a storage host that is not marked as pruned or expired.
+    // 3. Blocks that have been kicked off for replication but not yet completed.
     let rows = sqlx::query(
         "SELECT bl.block_id, bl.metadata_id, bl.storage_host_id, COUNT(DISTINCT bl.storage_host_id) as host_count
             FROM block_locations bl
@@ -566,7 +565,6 @@ mod tests {
         let block_ids =
             sample_block_for_host(&mut conn, &user_id, &storage_host_id, &bucket_id).await;
 
-        // Simulate scheduled replication blocks
         for block_id in &block_ids {
             sqlx::query!(
                 "UPDATE block_locations SET stored_at = NULL WHERE block_id = $1",
