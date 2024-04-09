@@ -316,7 +316,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_full_replication_no_blocks_returned() {
+    async fn test_no_blocks_returned_on_full_replication() {
         let db = test_helpers::setup_database().await;
         let mut conn = db.acquire().await.expect("connection");
         let (user_id, bucket_id, _) = setup_test_environment(
@@ -368,7 +368,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_scheduled_and_complete_return_no_blocks() {
+    async fn test_scheduled_and_completed_returns_no_blocks() {
         let db = test_helpers::setup_database().await;
         let mut conn = db.acquire().await.expect("connection");
         let (user_id, bucket_id, _) = setup_test_environment(
@@ -465,7 +465,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_all_blocks_on_pruned_or_expired_host() {
+    async fn test_returns_no_blocks_on_pruned_or_expired_host() {
         let db = test_helpers::setup_database().await;
         let mut conn = db.acquire().await.expect("connection");
         let (user_id, bucket_id, _) = setup_test_environment(
@@ -488,9 +488,20 @@ mod tests {
         .await;
         sample_block_for_host(&mut conn, &user_id, &storage_host_id, &bucket_id).await;
 
-        // Mark the storage host as pruned
         sqlx::query!(
             "UPDATE block_locations SET pruned_at = DATETIME('now') WHERE storage_host_id = $1",
+            storage_host_id
+        )
+        .execute(&mut *conn)
+        .await
+        .unwrap();
+
+        let blocks_for_replication = get_blocks_for_replication(&mut conn).await.unwrap();
+        assert!(blocks_for_replication.is_empty());
+
+        sample_block_for_host(&mut conn, &user_id, &storage_host_id, &bucket_id).await;
+        sqlx::query!(
+            "UPDATE block_locations SET expired_at = DATETIME('now') WHERE storage_host_id = $1",
             storage_host_id
         )
         .execute(&mut *conn)
@@ -502,7 +513,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_blocks_scheduled_for_replication_when_old_ones_complete() {
+    async fn test_schedules_blocks_for_replication() {
         let db = test_helpers::setup_database().await;
         let mut conn = db.acquire().await.expect("connection");
         let (user_id, bucket_id, _) = setup_test_environment(
@@ -555,7 +566,7 @@ mod tests {
         let block_ids =
             sample_block_for_host(&mut conn, &user_id, &storage_host_id, &bucket_id).await;
 
-        // Simulate failed replication for all blocks
+        // Simulate scheduled replication blocks
         for block_id in &block_ids {
             sqlx::query!(
                 "UPDATE block_locations SET stored_at = NULL WHERE block_id = $1",
