@@ -3,6 +3,7 @@ import { useRoutes } from 'react-router-dom';
 
 const Home = lazy(() => import('@app/pages/home'));
 const Deals = lazy(() => import('@app/pages/deals'));
+const Users = lazy(() => import('@app/pages/users'));
 /**
  * Route describes location mapping with components.
  */
@@ -31,9 +32,10 @@ class Route {
 export class RoutesConfig {
 	public static Home = new Route('/', <Home />);
 	public static Deals = new Route('/deals', <Deals />);
+	public static Users = new Route('/users', <Users />);
 
 	/** Routes is an array of logical router components */
-	public static routes: Route[] = [RoutesConfig.Home, RoutesConfig.Deals];
+	public static routes: Route[] = [RoutesConfig.Home, RoutesConfig.Deals, RoutesConfig.Users];
 }
 
 export const Routes = () => {

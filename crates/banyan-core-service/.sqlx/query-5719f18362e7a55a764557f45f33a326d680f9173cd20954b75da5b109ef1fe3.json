@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM storage_hosts_metadatas_storage_grants\n    WHERE storage_grant_id IN (SELECT id\n                               FROM storage_grants\n                               WHERE user_id = $1);",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "5719f18362e7a55a764557f45f33a326d680f9173cd20954b75da5b109ef1fe3"
+}

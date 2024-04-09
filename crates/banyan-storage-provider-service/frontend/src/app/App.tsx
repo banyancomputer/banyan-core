@@ -1,26 +1,25 @@
+import { Suspense } from 'react';
 import { Provider } from 'react-redux';
-
-import { ActiveDeals } from '@components/ActiveDeals';
-import { Charts } from '@components/Charts';
-import { Header } from '@components/Header';
-import { PotentialDeals } from '@components/PotentialDeals';
+import { BrowserRouter } from 'react-router-dom';
 
 import { store } from '@app/store';
-import { Statistic } from '@components/Statistic';
+import { Routes } from './routes';
+import { Header } from '@components/common/Header';
 
 function App() {
   return (
-    <Provider store={store}>
-      <section className='bg-mainBackground'>
-        <Header />
-        <main className="max-w-wrapper m-auto px-12 py-10 text-lightText font-inter">
-          <Statistic />
-          <Charts />
-          <PotentialDeals />
-          <ActiveDeals />
-        </main>
-      </section>
-    </Provider>
+    <section className='bg-mainBackground'>
+      <Provider store={store}>
+        <BrowserRouter basename="/" >
+          <Header />
+          <main className="max-w-wrapper m-auto px-12 py-10 text-lightText font-inter">
+            <Suspense>
+              <Routes />
+            </Suspense>
+          </main>
+        </BrowserRouter>
+      </Provider>
+    </section>
   );
 }
 
