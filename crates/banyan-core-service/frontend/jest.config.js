@@ -6,6 +6,7 @@ module.exports = {
     moduleNameMapper: {
         '@app/(.*)': '<rootDir>/src/app/$1',
         '@components/(.*)': '<rootDir>/src/app/components/$1',
+        '@utils/(.*)': '<rootDir>/src/app/utils/$1',
         '^@/(.*)$': '<rootDir>/src/$1',
         '^@static/(.*)$': '<rootDir>/src/app/static/$1',
         '\\.(css|less|sass|scss)$': 'identity-obj-proxy'
