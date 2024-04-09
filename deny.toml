@@ -7,15 +7,14 @@
 # scans on the content of the code as well to provide additional detections on
 # whether a vulnerability is present. The two tools should be used together.
 
+[graph]
 # Collect metadata using all the features available in this repository. We do
 # not want security vulnerabilities in any of our subset of builds.
 all-features = true
 
 [advisories]
-vulnerability = "deny"
-unmaintained = "deny"
+version = 2
 yanked = "deny"
-notice = "deny"
 
 # If we accept an advisory either because no fix is available and we need to
 # continue development, or because a vulnerability doesn't effect how we use
@@ -27,16 +26,10 @@ ignore = [
   # impacted by this vulnerability as the impacted code is converting between
   # local timezones from offsets and we only operate on UTC timestamps.
   "RUSTSEC-2023-0071",
-
-  # This is coming from banyan-cli and isn't directly relevant to how we're
-  # using it, but we also can't update it in banyan-cli. Once that's been
-  # pulled out we should remove this
-  "RUSTSEC-2021-0145",
 ]
 
 [licenses]
-unlicensed = "deny"
-
+version = 2
 
 # Licenses we always allow without any additional thoughts, this list should
 # only be updated when we encounter a dependency using a license we want to
@@ -55,21 +48,6 @@ allow = [
   "0BSD",
   "BSL-1.0",
 ]
-
-# We don't care what these organization think of the license, we are making our
-# own assessments as to whether they are fit for our project.
-allow-osi-fsf-free = "neither"
-
-# Licenses that we have reviewed and chosen to explicitly reject.
-deny = []
-
-# If a license is considered copyleft, we want to consider them carefully as
-# they may violate our license or goals by their use. Copy left licenses should
-# be reviewed and selectively added by the lead maintainer only.
-copyleft = "deny"
-
-# If we haven't approved it, explicitly deny it
-default = "deny"
 
 # If we need to use a crate that violates our general policy, we can add that
 # to the list here to accept it.
@@ -97,7 +75,7 @@ exceptions = [
   ] },
   { name = "banyan-object-store", allow = [
     "LicenseRef-LICENSE.txt",
-  ] }, 
+  ] },
 ]
 
 # Ring doesn't specify the license in their Cargo manifest, we have to
@@ -133,7 +111,3 @@ unknown-registry = "deny"
 # lead project maintainer (who will approve the modifications to this file as
 # required by the CODEOWNERS file).
 unknown-git = "deny"
-
-# Allow all crates that we have made
-[sources.allow-org]
-github = ["banyancomputer"]
