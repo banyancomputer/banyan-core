@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import { PrimaryButton } from '@components/common/PrimaryButton';
 import { SecondaryButton } from '@components/common/SecondaryButton';
@@ -11,15 +11,16 @@ import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 import { useAppSelector } from '@/app/store';
 
 export const RenameFileModal: React.FC<{ bucket: Bucket; file: BrowserObject; path: string[] }> = ({ bucket, file, path }) => {
+    const inputRef = useRef<HTMLInputElement | null>(null);
     const { closeModal } = useModal();
     const { moveTo, getSelectedBucketFiles, selectBucket } = useTomb();
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.renameFile);
-    const [newName, setNewName] = useState('');
+    const [newName, setNewName] = useState(file.name);
     const folderLocation = useFolderLocation();
 
     const save = async () => {
         try {
-            await moveTo(bucket, [...path, file.name], [...path], `${newName}.${file.name.split('.').pop()}`);
+            await moveTo(bucket, [...path, file.name], [...path], newName);
             ToastNotifications.notify(`${messages.fileWasRenamed}`);
             if (path.join('/') === folderLocation.join('/')) {
                 await getSelectedBucketFiles(folderLocation);
@@ -35,22 +36,30 @@ export const RenameFileModal: React.FC<{ bucket: Bucket; file: BrowserObject; pa
         };
     };
 
+    useEffect(() => {
+        if(!inputRef.current) return;
+
+        const separatorIndex = file.name.lastIndexOf('.');
+        inputRef.current.select();
+        inputRef.current.selectionEnd = separatorIndex;
+    }, [inputRef]);
+
     return (
         <div className="w-modal flex flex-col gap-8" >
             <div>
                 <h4 className="text-m font-semibold ">{`${messages.title}`}</h4>
             </div>
             <div>
-                <label className="relative">
+                <label>
                     {`${messages.fileName}`}
                     <input
-                        className="mt-2 input w-full h-11 py-3 px-4 pr-14 rounded-md border-border-darken shadow-sm focus:outline-none"
+                        ref={inputRef}
+                        className="mt-2 input w-full h-11 py-3 px-4 rounded-md border-border-darken shadow-sm focus:outline-none"
                         type="text"
                         placeholder={`${messages.enterNewName}`}
                         value={newName}
                         onChange={event => setNewName(event.target.value)}
                     />
-                <span className="absolute bottom-0 right-5 text-text-600 pointer-events-none">.{file.name.split('.').pop()}</span>
                 </label>
             </div>
             <div className="mt-3 flex items-center justify-end gap-3 text-xs" >
@@ -61,7 +70,7 @@ export const RenameFileModal: React.FC<{ bucket: Bucket; file: BrowserObject; pa
                 <PrimaryButton
                     text={`${messages.save}`}
                     action={save}
-                    disabled={newName.length < 3}
+                    disabled={newName === file.name || newName.length < 3}
                 />
             </div>
         </div >
