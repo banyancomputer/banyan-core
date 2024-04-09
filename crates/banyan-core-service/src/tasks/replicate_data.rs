@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use banyan_task::{CurrentTask, TaskLike};
 use rand::prelude::SliceRandom;
 use serde::{Deserialize, Serialize};
-use sqlx::Error;
+use sqlx::{Error, Row};
 use time::OffsetDateTime;
 use url::Url;
 
@@ -20,7 +20,7 @@ pub struct BlockData {
     pub block_id: String,
     pub metadata_id: String,
     pub storage_host_id: String,
-    pub host_count: i64,
+    pub host_count: Option<i64>,
 }
 
 #[derive(Deserialize, Serialize, Default, Clone)]
@@ -79,7 +79,7 @@ impl TaskLike for ReplicateDataTask {
             let metadata = Metadata::find_by_id_with_conn(&mut conn, metadata_id).await?;
             let bucket = Bucket::find_by_id(&mut conn, &metadata.bucket_id).await?;
             let replication_factor = bucket.replicas;
-            let replicas_diff = replication_factor - grouped_blocks[0].host_count;
+            let replicas_diff = replication_factor - grouped_blocks[0].host_count.unwrap();
 
             // nothing to replicate
             if replicas_diff <= 0 {
@@ -184,32 +184,73 @@ impl TaskLike for ReplicateDataTask {
 async fn get_blocks_for_replication(
     conn: &mut DatabaseConnection,
 ) -> Result<Vec<BlockData>, sqlx::Error> {
-    // An invariant must be preserved for the below query yield correct results
-    // 1. There is not a single block with two entries in the block_locations table,
-    //    where one is associated with a staging host and the other is not
-    // 2. There is not a single metadata_id that, during the run(),
-    //    has had some blocks fail and some blocks succeed the replication process
-    let blocks_for_replication = sqlx::query_as!(
-        BlockData,
+    // The below query will skip:
+    // 1. Metadatas* that has a block on the staging host. Those need to handled first by the redistribute_staging_data task.
+    // 2. Metadatas* that has a block on a storage host that is not marked as pruned, expired or deleted.
+    // 3. Metadatas* that have been kicked off for replication but not yet completed.
+    // * and their associated blocks
+    let rows = sqlx::query(
         "SELECT bl.block_id, bl.metadata_id, bl.storage_host_id, COUNT(DISTINCT bl.storage_host_id) as host_count
             FROM block_locations bl
                  JOIN blocks b ON bl.block_id = b.id
                  JOIN metadata m ON bl.metadata_id = m.id
                  JOIN buckets bu ON m.bucket_id = bu.id
                  JOIN users u ON bu.user_id = u.id
-                 LEFT JOIN block_locations bl2 ON bl.block_id = bl2.block_id
-                    AND bl2.storage_host_id = (SELECT id FROM storage_hosts WHERE staging IS TRUE)
-                    OR bl2.stored_at IS NULL
+                 LEFT JOIN block_locations bl2 ON bl.block_id = bl2.block_id AND bl2.stored_at IS NULL
             WHERE bl2.block_id IS NULL
               AND bl.pruned_at IS NULL
               AND bl.expired_at IS NULL
               AND bu.deleted_at IS NULL
-            GROUP BY bl.block_id, bl.storage_host_id
+              AND NOT EXISTS (
+                  SELECT 1 FROM block_locations bl3
+                  WHERE bl3.metadata_id = bl.metadata_id
+                  AND bl3.storage_host_id = (SELECT id FROM storage_hosts WHERE staging IS TRUE)
+              )
+            GROUP BY bl.block_id
             HAVING host_count < bu.replicas;",
     )
     .fetch_all(&mut *conn).await?;
 
-    Ok(blocks_for_replication)
+    // explicit conversion to BlockData because of weird  unsupported type NULL of column #4 ("host_count")
+    // regardless of the COALESCE, NOT NULL, Option on the struct, etc.
+    let blocks_for_replication: Vec<BlockData> = rows
+        .into_iter()
+        .map(|row| BlockData {
+            block_id: row.get(0),
+            metadata_id: row.get(1),
+            storage_host_id: row.get(2),
+            host_count: row.get(3),
+        })
+        .collect();
+
+    let blocks_for_replication: Vec<BlockData> = blocks_for_replication
+        .into_iter()
+        .map(|row| BlockData {
+            block_id: row.block_id,
+            metadata_id: row.metadata_id,
+            storage_host_id: row.storage_host_id,
+            host_count: row.host_count,
+        })
+        .collect();
+
+    let staging_host_id = sqlx::query!("SELECT id FROM storage_hosts WHERE staging IS TRUE")
+        .fetch_one(&mut *conn)
+        .await?
+        .id;
+
+    let mut staging_metadata_ids = HashSet::new();
+    for block in &blocks_for_replication {
+        if block.storage_host_id == staging_host_id {
+            staging_metadata_ids.insert(block.metadata_id.clone());
+        }
+    }
+
+    let final_blocks_for_replication: Vec<BlockData> = blocks_for_replication
+        .into_iter()
+        .filter(|block| !staging_metadata_ids.contains(&block.metadata_id))
+        .collect();
+
+    Ok(final_blocks_for_replication)
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -224,4 +265,308 @@ pub enum ReplicateDataTaskError {
     StagingServiceError(#[from] StagingServiceError),
     #[error("not enough storage hosts")]
     NotEnoughStorageHosts(sqlx::Error),
+}
+#[cfg(test)]
+mod tests {
+    use crate::database::models::MetadataState;
+    use crate::database::test_helpers::associate_blocks;
+    use crate::database::{test_helpers, DatabaseConnection};
+    use crate::tasks::replicate_data::get_blocks_for_replication;
+
+    async fn sample_block_for_host(
+        conn: &mut DatabaseConnection,
+        user_id: &str,
+        storage_host_id: &str,
+        bucket_id: &str,
+    ) -> Vec<String> {
+        let storage_grant_id =
+            test_helpers::create_storage_grant(conn, storage_host_id, user_id, 1_000_000).await;
+        let metadata_id =
+            test_helpers::sample_metadata(conn, bucket_id, 1, MetadataState::Current).await;
+
+        test_helpers::sample_blocks(conn, 4, &metadata_id, storage_host_id, &storage_grant_id).await
+    }
+
+    async fn setup_test_environment(
+        conn: &mut DatabaseConnection,
+        user_email: &str,
+        host_name: &str,
+        host_url: &str,
+    ) -> (String, String, String) {
+        let user_id = test_helpers::sample_user(conn, user_email).await;
+        let bucket_id = test_helpers::sample_bucket(conn, &user_id).await;
+        let host_id = test_helpers::create_storage_host(conn, host_name, host_url, 1_000_000).await;
+        (user_id, bucket_id, host_id)
+    }
+
+    #[tokio::test]
+    async fn test_all_blocks_on_staging_host() {
+        let db = test_helpers::setup_database().await;
+        let mut conn = db.acquire().await.expect("connection");
+        let (user_id, bucket_id, staging_host_id) = setup_test_environment(
+            &mut conn,
+            "user@domain.tld",
+            "staging-service",
+            "http://127.0.0.1:8001/",
+        )
+        .await;
+        sample_block_for_host(&mut conn, &user_id, &staging_host_id, &bucket_id).await;
+        let blocks_for_replication = get_blocks_for_replication(&mut conn).await.unwrap();
+        assert!(blocks_for_replication.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_full_replication_no_blocks_returned() {
+        let db = test_helpers::setup_database().await;
+        let mut conn = db.acquire().await.expect("connection");
+        let (user_id, bucket_id, _) = setup_test_environment(
+            &mut conn,
+            "user@domain.tld",
+            "staging-service",
+            "http://127.0.0.1:8001/",
+        )
+        .await;
+        sqlx::query!("UPDATE buckets SET replicas = 2 WHERE id = $1", bucket_id)
+            .execute(&mut *conn)
+            .await
+            .unwrap();
+        let storage_host_id = test_helpers::create_storage_host(
+            &mut conn,
+            "storage-service",
+            "http://127.0.0.1:8002/",
+            1_000_000,
+        )
+        .await;
+        let block_ids =
+            sample_block_for_host(&mut conn, &user_id, &storage_host_id, &bucket_id).await;
+
+        let storage_host_two_id = test_helpers::create_storage_host(
+            &mut conn,
+            "storage-service-two",
+            "http://127.0.0.1:8002/",
+            1_000_000,
+        )
+        .await;
+        let metadata_id = sqlx::query_scalar!(
+            "SELECT id FROM metadata AS m JOIN block_locations as bl ON bl.metadata_id = m.id WHERE block_id = $1;",
+            block_ids[0]
+        )
+        .fetch_one(&mut *conn)
+        .await
+        .unwrap();
+
+        associate_blocks(
+            &mut conn,
+            &metadata_id,
+            &storage_host_two_id,
+            block_ids.iter().map(String::as_str),
+        )
+        .await;
+
+        let blocks_for_replication = get_blocks_for_replication(&mut conn).await.unwrap();
+        assert!(blocks_for_replication.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_scheduled_and_complete_return_no_blocks() {
+        let db = test_helpers::setup_database().await;
+        let mut conn = db.acquire().await.expect("connection");
+        let (user_id, bucket_id, _) = setup_test_environment(
+            &mut conn,
+            "user@domain.tld",
+            "staging-service",
+            "http://127.0.0.1:8001/",
+        )
+        .await;
+        sqlx::query!("UPDATE buckets SET replicas = 2 WHERE id = $1", bucket_id)
+            .execute(&mut *conn)
+            .await
+            .unwrap();
+        let storage_host_id = test_helpers::create_storage_host(
+            &mut conn,
+            "storage-service",
+            "http://127.0.0.1:8002/",
+            1_000_000,
+        )
+        .await;
+        let block_ids =
+            sample_block_for_host(&mut conn, &user_id, &storage_host_id, &bucket_id).await;
+
+        let storage_host_two_id = test_helpers::create_storage_host(
+            &mut conn,
+            "storage-service-two",
+            "http://127.0.0.1:8002/",
+            1_000_000,
+        )
+        .await;
+        let metadata_id = sqlx::query_scalar!(
+            "SELECT id FROM metadata AS m JOIN block_locations as bl ON bl.metadata_id = m.id WHERE block_id = $1;",
+            block_ids[0]
+        )
+            .fetch_one(&mut *conn)
+            .await
+            .unwrap();
+
+        associate_blocks(
+            &mut conn,
+            &metadata_id,
+            &storage_host_two_id,
+            block_ids.iter().map(String::as_str),
+        )
+        .await;
+
+        for block_id in &block_ids {
+            sqlx::query!(
+                "UPDATE block_locations SET stored_at = NULL WHERE block_id = $1 AND storage_host_id != $2;",
+                block_id,
+                storage_host_two_id
+            )
+                .execute(&mut *conn)
+                .await
+                .unwrap();
+        }
+
+        let blocks_for_replication = get_blocks_for_replication(&mut conn).await.unwrap();
+        assert!(blocks_for_replication.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_staging_blocks_are_skipped() {
+        let db = test_helpers::setup_database().await;
+        let mut conn = db.acquire().await.expect("connection");
+        let (user_id, bucket_id, staging_host_id) = setup_test_environment(
+            &mut conn,
+            "user@domain.tld",
+            "staging-service",
+            "http://127.0.0.1:8001/",
+        )
+        .await;
+        sqlx::query!("UPDATE buckets SET replicas = 2 WHERE id = $1", bucket_id)
+            .execute(&mut *conn)
+            .await
+            .unwrap();
+        let new_host_id = test_helpers::create_storage_host(
+            &mut conn,
+            "Diskz",
+            "http://127.0.0.1:8002/",
+            1_000_000,
+        )
+        .await;
+
+        let staging_blocks =
+            sample_block_for_host(&mut conn, &user_id, &staging_host_id, &bucket_id).await;
+        let new_host_blocks =
+            sample_block_for_host(&mut conn, &user_id, &new_host_id, &bucket_id).await;
+        let blocks_for_replication = get_blocks_for_replication(&mut conn).await.unwrap();
+        assert_eq!(blocks_for_replication.len(), new_host_blocks.len());
+        for block in blocks_for_replication {
+            assert!(!staging_blocks.contains(&block.block_id));
+        }
+    }
+
+    #[tokio::test]
+    async fn test_all_blocks_on_pruned_or_expired_host() {
+        let db = test_helpers::setup_database().await;
+        let mut conn = db.acquire().await.expect("connection");
+        let (user_id, bucket_id, _) = setup_test_environment(
+            &mut conn,
+            "user@domain.tld",
+            "staging-service",
+            "http://127.0.0.1:8001/",
+        )
+        .await;
+        sqlx::query!("UPDATE buckets SET replicas = 2 WHERE id = $1", bucket_id)
+            .execute(&mut *conn)
+            .await
+            .unwrap();
+        let storage_host_id = test_helpers::create_storage_host(
+            &mut conn,
+            "storage-service",
+            "http://127.0.0.1:8002/",
+            1_000_000,
+        )
+        .await;
+        sample_block_for_host(&mut conn, &user_id, &storage_host_id, &bucket_id).await;
+
+        // Mark the storage host as pruned
+        sqlx::query!(
+            "UPDATE block_locations SET pruned_at = DATETIME('now') WHERE storage_host_id = $1",
+            storage_host_id
+        )
+        .execute(&mut *conn)
+        .await
+        .unwrap();
+
+        let blocks_for_replication = get_blocks_for_replication(&mut conn).await.unwrap();
+        assert!(blocks_for_replication.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_blocks_scheduled_for_replication_when_old_ones_complete() {
+        let db = test_helpers::setup_database().await;
+        let mut conn = db.acquire().await.expect("connection");
+        let (user_id, bucket_id, _) = setup_test_environment(
+            &mut conn,
+            "user@domain.tld",
+            "staging-service",
+            "http://127.0.0.1:8001/",
+        )
+        .await;
+        sqlx::query!("UPDATE buckets SET replicas = 2 WHERE id = $1", bucket_id)
+            .execute(&mut *conn)
+            .await
+            .unwrap();
+        let storage_host_id = test_helpers::create_storage_host(
+            &mut conn,
+            "storage-service",
+            "http://127.0.0.1:8002/",
+            1_000_000,
+        )
+        .await;
+        sample_block_for_host(&mut conn, &user_id, &storage_host_id, &bucket_id).await;
+
+        let blocks_for_replication = get_blocks_for_replication(&mut conn).await.unwrap();
+
+        assert_eq!(blocks_for_replication.len(), 4);
+    }
+
+    #[tokio::test]
+    async fn test_new_blocks_not_scheduled_on_replication_not_complete() {
+        let db = test_helpers::setup_database().await;
+        let mut conn = db.acquire().await.expect("connection");
+        let (user_id, bucket_id, _) = setup_test_environment(
+            &mut conn,
+            "user@domain.tld",
+            "staging-service",
+            "http://127.0.0.1:8001/",
+        )
+        .await;
+        sqlx::query!("UPDATE buckets SET replicas = 2 WHERE id = $1", bucket_id)
+            .execute(&mut *conn)
+            .await
+            .unwrap();
+        let storage_host_id = test_helpers::create_storage_host(
+            &mut conn,
+            "storage-service",
+            "http://127.0.0.1:8002/",
+            1_000_000,
+        )
+        .await;
+        let block_ids =
+            sample_block_for_host(&mut conn, &user_id, &storage_host_id, &bucket_id).await;
+
+        // Simulate failed replication for all blocks
+        for block_id in &block_ids {
+            sqlx::query!(
+                "UPDATE block_locations SET stored_at = NULL WHERE block_id = $1",
+                block_id
+            )
+            .execute(&mut *conn)
+            .await
+            .unwrap();
+        }
+
+        let blocks_for_replication = get_blocks_for_replication(&mut conn).await.unwrap();
+        assert!(blocks_for_replication.is_empty());
+    }
 }
