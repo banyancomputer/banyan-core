@@ -195,7 +195,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	const download = async (bucket: Bucket, path: string[], name: string) => {
 		const link = document.createElement('a');
 		const arrayBuffer: Uint8Array = await getFile(bucket, path, name);
-		const blob = new Blob([arrayBuffer], { type: 'application/octet-stream' });
+		const blob = new Blob([arrayBuffer]);
 		const objectURL = URL.createObjectURL(blob);
 		link.href = objectURL;
 		link.download = name;
