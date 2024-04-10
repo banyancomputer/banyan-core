@@ -107,6 +107,10 @@ where
             .await
             .map_err(ApiIdentityError::UserKeyNotFound)?;
 
+        if !db_user_key.api_access {
+            return Err(ApiIdentityError::UserKeyNotApiAuthorized);
+        }
+
         let key = DecodingKey::from_ec_pem(db_user_key.pem.as_bytes())
             .map_err(|err| ApiIdentityError::DatabaseCorrupt(db_user_key.id.clone(), err))?;
 
@@ -185,6 +189,9 @@ pub enum ApiIdentityError {
         "header didn't include kid required to lookup the appropriate authentication mechanism"
     )]
     UnidentifiedKey,
+
+    #[error("user key not api authorized")]
+    UserKeyNotApiAuthorized,
 }
 
 impl IntoResponse for ApiIdentityError {

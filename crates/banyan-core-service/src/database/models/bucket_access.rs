@@ -1,12 +1,13 @@
 use std::fmt::{self, Display, Formatter};
 
-use crate::database::models::UserKey;
-use crate::database::DatabaseConnection;
 use serde::{Deserialize, Serialize};
 use sqlx::encode::IsNull;
 use sqlx::error::BoxDynError;
 use sqlx::sqlite::{SqliteArgumentValue, SqliteTypeInfo, SqliteValueRef};
 use sqlx::{Decode, Encode, Sqlite, Type};
+
+use crate::database::models::UserKey;
+use crate::database::DatabaseConnection;
 
 #[derive(sqlx::FromRow, Serialize)]
 pub struct BucketAccess {

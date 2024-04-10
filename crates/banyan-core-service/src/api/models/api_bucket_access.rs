@@ -1,5 +1,6 @@
-use crate::database::models::BucketAccessState;
 use serde::{Deserialize, Serialize};
+
+use crate::database::models::BucketAccessState;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ApiBucketAccess {
