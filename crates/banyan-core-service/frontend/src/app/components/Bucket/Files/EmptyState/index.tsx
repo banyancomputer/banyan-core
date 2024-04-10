@@ -50,7 +50,7 @@ export const EmptyState: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         >
             <input
                 type="file"
-                multiple={false}
+                multiple
                 className="hidden"
                 onChange={handleChange}
             />
