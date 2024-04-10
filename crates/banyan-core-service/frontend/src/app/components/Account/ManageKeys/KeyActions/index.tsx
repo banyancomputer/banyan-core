@@ -3,10 +3,10 @@ import React from 'react';
 import { RenameAccessKeyModal } from '@components/common/Modal/RenameAccessKeyModal ';
 
 import { Bucket, BucketKey } from '@app/types/bucket';
-import { useModal } from '@app/contexts/modals';
+import { useModal } from '@contexts/modals';
 import { useAppSelector } from '@app/store';
 import { AccessKeysClient } from '@/api/accessKeys';
-import { useTomb } from '@app/contexts/tomb';
+import { useTomb } from '@contexts/tomb';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 
 import { Rename, Trash } from '@static/images/common';

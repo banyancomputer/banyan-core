@@ -9,7 +9,7 @@ import { useModal } from '@/app/contexts/modals';
 import { convertFileSize, convertSubscriptionsSizes } from '@/app/utils/storage';
 import { getHotStorageAmount } from '@/app/utils/subscritions';
 import { getDateLabel } from '@/app/utils/date';
-import { useTomb } from '@app/contexts/tomb';
+import { useTomb } from '@contexts/tomb';
 
 export const NextBillingDate = () => {
     const dispatch = useAppDispatch();

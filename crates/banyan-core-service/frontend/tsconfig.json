@@ -18,6 +18,12 @@
       "@layouts/*": [
         "./src/app/layouts/*"
       ],
+      "@store/*": [
+        "./src/app/store/*"
+      ],
+      "@contexts/*": [
+        "./src/app/contexts/*"
+      ],
       "@utils/*": [
         "./src/app/utils/*"
       ],

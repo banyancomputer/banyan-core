@@ -10,7 +10,7 @@ import { getDateLabel } from '@/app/utils/date';
 import { convertFileSize } from '@/app/utils/storage';
 import { useFilePreview } from '@/app/contexts/filesPreview';
 import { handleDrag, handleDragEnd, handleDragStart } from '@utils/dragHandlers';
-import { useTomb } from '@app/contexts/tomb';
+import { useTomb } from '@contexts/tomb';
 
 export const FileRow: React.FC<{
     file: BrowserObject;
