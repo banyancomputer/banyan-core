@@ -3,7 +3,7 @@ import React from 'react';
 import { PrimaryButton } from '@components/common/PrimaryButton';
 import { SecondaryButton } from '@components/common/SecondaryButton';
 
-import { useModal } from '@app/contexts/modals';
+import { useModal } from '@contexts/modals';
 import { Bucket } from '@app/types/bucket';
 import { useAppSelector } from '@/app/store';
 

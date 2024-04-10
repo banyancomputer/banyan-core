@@ -2,7 +2,7 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 import { EscrowedKeyMaterial } from "@app/types/escrowedKeyMaterial";
 import ECCKeystore from '@utils/crypto/ecc/keystore';
-import { getEscrowedKeyMaterial, initializeKeystore } from "@app/store/keystore/actions";
+import { getEscrowedKeyMaterial, initializeKeystore } from "@store/keystore/actions";
 
 export interface KeystoreState {
     keystore: ECCKeystore | null;
