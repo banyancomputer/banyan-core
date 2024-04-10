@@ -20,7 +20,7 @@ pub struct BlockData {
     pub block_id: String,
     pub metadata_id: String,
     pub storage_host_id: String,
-    pub host_count: Option<i64>,
+    pub host_count: i64,
 }
 
 #[derive(Deserialize, Serialize, Default, Clone)]
@@ -79,7 +79,7 @@ impl TaskLike for ReplicateDataTask {
             let metadata = Metadata::find_by_id_with_conn(&mut conn, metadata_id).await?;
             let bucket = Bucket::find_by_id(&mut conn, &metadata.bucket_id).await?;
             let replication_factor = bucket.replicas;
-            let replicas_diff = replication_factor - grouped_blocks[0].host_count.unwrap();
+            let replicas_diff = replication_factor - grouped_blocks[0].host_count;
 
             // nothing to replicate
             if replicas_diff <= 0 {
@@ -154,7 +154,7 @@ impl TaskLike for ReplicateDataTask {
 
                 for block_id in block_ids.iter() {
                     MinimalBlockLocation {
-                        block_id: block_id.clone(),
+                        block_id: (*block_id).clone(),
                         metadata_id: metadata_id.clone(),
                         storage_host_id: new_storage_host.id.clone(),
                     }
@@ -194,16 +194,15 @@ async fn get_blocks_for_replication(
                  JOIN blocks b ON bl.block_id = b.id
                  JOIN metadata m ON bl.metadata_id = m.id
                  JOIN buckets bu ON m.bucket_id = bu.id
-                 JOIN users u ON bu.user_id = u.id
-                 LEFT JOIN block_locations bl2 ON bl.block_id = bl2.block_id AND bl2.stored_at IS NULL
+             LEFT JOIN block_locations bl2 ON bl.block_id = bl2.block_id AND bl2.stored_at IS NULL
             WHERE bl2.block_id IS NULL
               AND bl.pruned_at IS NULL
               AND bl.expired_at IS NULL
               AND bu.deleted_at IS NULL
               AND NOT EXISTS (
-                  SELECT 1 FROM block_locations bl3
-                  WHERE bl3.metadata_id = bl.metadata_id
-                  AND bl3.storage_host_id = (SELECT id FROM storage_hosts WHERE staging IS TRUE)
+                  SELECT 1 FROM block_locations bl2
+                  WHERE bl2.metadata_id = bl.metadata_id
+                  AND bl2.storage_host_id = (SELECT id FROM storage_hosts WHERE staging IS TRUE)
               )
             GROUP BY bl.block_id
             HAVING host_count < bu.replicas;",
