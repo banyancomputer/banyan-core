@@ -1,5 +1,4 @@
 import localforage from 'localforage'
-import { checkIsKeyPair, checkIsKey } from './errors'
 
 // Note: These are the main things we need right now
 export async function putBlob(id: string, blob: Blob, store: LocalForage = localforage): Promise<Blob> {
@@ -13,12 +12,6 @@ export async function getBlob(id: string, store: LocalForage = localforage): Pro
 /* istanbul ignore next */
 export function createStore(name: string): LocalForage {
   return localforage.createInstance({ name })
-}
-
-/* istanbul ignore next */
-export async function exists(id: string, store: LocalForage = localforage): Promise<boolean> {
-  const key = await store.getItem(id)
-  return key !== null
 }
 
 /* istanbul ignore next */
@@ -43,7 +36,6 @@ export default {
   createStore,
   getBlob,
   putBlob,
-  exists,
   rm,
   dropStore,
 	clear

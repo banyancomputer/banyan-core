@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-import { localeToAlpha2CountryCode, localeToLanguage } from '@utils/locales';
+import { localeToLanguage } from '@utils/locales';
 import { LANGUAGES, LANGUAGES_KEYS, changeLanguage } from '@/app/store/locales/slice';
 import { setLocalStorageItem } from '@utils/localStorage';
 import { popupClickHandler } from '@/app/utils';

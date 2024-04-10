@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-import { useTomb } from '@app/contexts/tomb';
+import { useTomb } from '@contexts/tomb';
 import { useAppSelector } from '@app/store';
 import { ToastNotifications } from '@app/utils/toastNotifications';
 import { getDateLabel, getTime } from '@app/utils/date';

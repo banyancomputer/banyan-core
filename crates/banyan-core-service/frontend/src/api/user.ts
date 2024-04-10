@@ -1,4 +1,4 @@
-import { EscrowedKeyMaterial } from '@/app/types';
+import { EscrowedKeyMaterial } from '@/app/types/escrowedKeyMaterial';
 import { APIClient } from './http';
 import { User } from '@/entities/user';
 

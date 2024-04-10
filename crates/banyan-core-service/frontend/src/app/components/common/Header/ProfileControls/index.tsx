@@ -6,11 +6,11 @@ import { SubscriptionPlanModal } from '@components/common/Modal/SubscriptionPlan
 
 import { HttpClient } from '@/api/http/client';
 import { useAppDispatch, useAppSelector } from '@app/store';
-import { getSubscriptions } from '@app/store/billing/actions';
+import { getSubscriptions } from '@store/billing/actions';
 import { RoutesConfig } from '@/app/routes';
-import { useModal } from '@app/contexts/modals';
+import { useModal } from '@contexts/modals';
 import { unwrapResult } from '@reduxjs/toolkit';
-import { purgeKeystore } from '@app/store/keystore/actions';
+import { purgeKeystore } from '@store/keystore/actions';
 
 import { LogoutAlternative, Settings } from '@static/images/common';
 

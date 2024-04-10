@@ -9,11 +9,11 @@ import { popupClickHandler } from '@app/utils';
 import { HttpClient } from '@/api/http/client';
 import { useAppDispatch, useAppSelector } from '@app/store';
 import { unwrapResult } from '@reduxjs/toolkit';
-import { getUser } from '@app/store/session/actions';
+import { getUser } from '@store/session/actions';
 import { RoutesConfig } from '@app/routes';
-import { useModal } from '@app/contexts/modals';
-import { getSubscriptionById } from '@app/store/billing/actions';
-import { purgeKeystore } from '@app/store/keystore/actions';
+import { useModal } from '@contexts/modals';
+import { getSubscriptionById } from '@store/billing/actions';
+import { purgeKeystore } from '@store/keystore/actions';
 
 import { Question } from '@static/images/common';
 

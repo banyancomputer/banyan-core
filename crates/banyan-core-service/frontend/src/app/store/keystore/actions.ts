@@ -4,7 +4,7 @@ import { UserClient } from "@/api/user";
 import { AuthClient } from "@/api/auth";
 import { RootState } from "..";
 import { PrivateKeyMaterial } from "@app/utils/crypto/types";
-import { setEscrowedKeyMaterial } from "@app/store/keystore/slice";
+import { setEscrowedKeyMaterial } from "@store/keystore/slice";
 import { destroyLocalKey, getLocalKey } from "@app/utils";
 
 const userClient = new UserClient();
