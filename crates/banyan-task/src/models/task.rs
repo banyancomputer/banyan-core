@@ -1,7 +1,7 @@
 use time::OffsetDateTime;
 
 use crate::panic_safe_future::CaughtPanic;
-use crate::TaskState;
+use crate::{RecurringTaskError, TaskState};
 
 #[derive(Clone, Debug, PartialEq, sqlx::FromRow)]
 pub struct Task {
@@ -38,7 +38,7 @@ pub enum TaskExecError {
     ExecutionFailed(String),
 
     #[error("scheduling task failed: {0}")]
-    SchedulingFailed(String),
+    SchedulingFailed(#[from] RecurringTaskError),
 
     #[error("task panicked: {0}")]
     Panicked(#[from] CaughtPanic),

@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use async_trait::async_trait;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -44,7 +46,20 @@ where
 }
 
 pub trait RecurringTask: TaskLike + Default {
-    fn next_schedule(&self) -> Result<Option<OffsetDateTime>, String>;
+    fn next_schedule(&self) -> Result<Option<OffsetDateTime>, RecurringTaskError>;
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum RecurringTaskError {
+    DateTimeAddition,
+}
+
+impl Display for RecurringTaskError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::DateTimeAddition => f.write_str("OffsetDateTime checked_add failed"),
+        }
+    }
 }
 
 #[cfg(any(test, feature = "test-utils"))]
@@ -86,10 +101,10 @@ pub mod tests {
 
     #[async_trait]
     impl RecurringTask for ScheduleTestTask {
-        fn next_schedule(&self) -> Result<Option<OffsetDateTime>, String> {
+        fn next_schedule(&self) -> Result<Option<OffsetDateTime>, RecurringTaskError> {
             OffsetDateTime::now_utc()
                 .checked_add(Duration::minutes(5))
-                .ok_or(String::from("Addding time failed!"))
+                .ok_or(RecurringTaskError::DateTimeAddition)
                 .map(Some)
         }
     }

@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use banyan_task::{CurrentTask, RecurringTask, TaskLike};
+use banyan_task::{CurrentTask, RecurringTask, RecurringTaskError, TaskLike};
 use jwt_simple::prelude::*;
 use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest::Client;
@@ -108,10 +108,10 @@ impl TaskLike for ReportHealthTask {
 }
 
 impl RecurringTask for ReportHealthTask {
-    fn next_schedule(&self) -> Result<Option<OffsetDateTime>, String> {
+    fn next_schedule(&self) -> Result<Option<OffsetDateTime>, RecurringTaskError> {
         OffsetDateTime::now_utc()
             .checked_add(time::Duration::minutes(5))
-            .ok_or(String::from("Addding time failed!"))
+            .ok_or(RecurringTaskError::DateTimeAddition)
             .map(Some)
     }
 }

@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use async_trait::async_trait;
-use banyan_task::{CurrentTask, RecurringTask, TaskLike};
+use banyan_task::{CurrentTask, RecurringTask, RecurringTaskError, TaskLike};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use url::Url;
@@ -134,8 +134,11 @@ impl TaskLike for RedistributeStagingDataTask {
 }
 
 impl RecurringTask for RedistributeStagingDataTask {
-    fn next_schedule(&self) -> Result<Option<OffsetDateTime>, String> {
-        Ok(Some(OffsetDateTime::now_utc() + time::Duration::hours(1)))
+    fn next_schedule(&self) -> Result<Option<OffsetDateTime>, RecurringTaskError> {
+        OffsetDateTime::now_utc()
+            .checked_add(time::Duration::hours(1))
+            .ok_or(RecurringTaskError::DateTimeAddition)
+            .map(Some)
     }
 }
 
