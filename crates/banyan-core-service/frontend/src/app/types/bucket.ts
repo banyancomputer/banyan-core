@@ -45,16 +45,3 @@ export interface Bucket {
     keys: BucketKey[];
     locked: boolean;
 };
-
-export class MockBucket {
-    public id = '';
-    public name = '';
-    public bucketType = '';
-    public storageClass = '';
-    public mount = {} as WasmMount;
-    public files = [];
-    public isSnapshotValid = false;
-    public snapshots = [];
-    public keys = [];
-    public locked = false;
-};

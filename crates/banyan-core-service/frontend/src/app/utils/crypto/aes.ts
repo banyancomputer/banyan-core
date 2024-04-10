@@ -1,20 +1,18 @@
 import { webcrypto } from 'one-webcrypto';
-import utils from '../utils';
-import { DEFAULT_SALT_LENGTH, DEFAULT_SYMM_ALG } from '../constants';
+import utils from './utils';
+import { DEFAULT_SALT_LENGTH, DEFAULT_SYMM_ALG } from './constants';
 import {
     CipherText,
-    ExportKeyFormat,
     Msg,
     SymmAlg,
     SymmKey,
     SymmKeyOpts,
-    SymmWrappingKey,
-} from '../types';
+} from './types';
 import {
     InvalidCipherTextLength,
     InvalidIvLength,
     UnsupportedSymmCrypto,
-} from '../errors';
+} from './errors';
 
 /**
  * Encrypt a message with a symmetric key
@@ -135,57 +133,9 @@ export async function decrypt(
     return utils.arrBufToStr(msgBytes, 16);
 }
 
-/**
- * Wrap a symmetric key with another symmetric key using AES-KW
- * key: The symmetric key to wrap
- * wrappingKey: The symmetric key to use for wrapping
- * opts: The options for wrapping
- * returns The wrapped key as an ArrayBuffer
- */
-export async function wrapKey(
-    key: CryptoKey,
-    wrappingKey: SymmWrappingKey
-): Promise<CipherText> {
-    return await webcrypto.subtle.wrapKey(
-        ExportKeyFormat.RAW,
-        key,
-        wrappingKey,
-        'AES-KW'
-    );
-}
-
-/**
- * Unwrap a symmetric key with another symmetric key using AES-KW
- * wrappedKey: The wrapped key as an ArrayBuffer
- * unwrappingKey: The symmetric key to use for unwrapping
- * unwrappedKeyAlgParams: The algorithm parameters for the unwrapped key
- * extractable: Whether the unwrapped key is extractable
- * keyUsages: The usages for the unwrapped key
- * returns The unwrapped key as a CryptoKey
- */
-export async function unwrapKey(
-    wrappedKey: CipherText,
-    unwrappingKey: SymmWrappingKey,
-    unwrappedKeyAlgParams: AlgorithmIdentifier,
-    extractable: boolean,
-    keyUsages: KeyUsage[]
-): Promise<CryptoKey> {
-    return await webcrypto.subtle.unwrapKey(
-        ExportKeyFormat.RAW,
-        wrappedKey,
-        unwrappingKey,
-        'AES-KW',
-        unwrappedKeyAlgParams,
-        extractable,
-        keyUsages
-    );
-}
-
 export default {
     encryptBytes,
     decryptBytes,
     encrypt,
     decrypt,
-    wrapKey,
-    unwrapKey,
 };

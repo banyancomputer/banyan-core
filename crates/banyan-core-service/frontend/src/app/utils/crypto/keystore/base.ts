@@ -1,4 +1,4 @@
-import aes from '../aes/index';
+import aes from '../aes';
 import pbkdf2 from '../pbkdf2/index';
 import idb from '../idb';
 import utils from '../utils';
