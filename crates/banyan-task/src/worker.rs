@@ -69,27 +69,54 @@ where
         // chance that the worker is corrupted in some way by the panic so I should set a flag on
         // this worker and handle two consecutive panics as a worker problem. The second task
         // triggering the panic should be presumed innocent and restored to a runnable state.
-        match safe_runner.await.map_err(TaskExecError::Panicked) {
-            Ok(Err(err)) | Err(err) => {
-                tracing::error!("task failed with error: {err}");
 
-                // todo: save panic message into the task.error and save it back to the memory
-                // store somehow
-                self.store
-                    .errored(task.id.clone(), err)
-                    .await
-                    .map_err(WorkerError::ErrorTaskFailed)?
-                    // If it retried successfully, we're done
-                    .map(|_| Ok(()))
-                    // Otherwise schedule
-                    .unwrap_or(self.schedule_if_needed(&task).await)
+        // an error here occurs only when the task panicks, deserialization and regular task
+        // execution errors are handled next
+        //
+        // todo: should note the task as having panicked if that's why this failed. There is also a
+        // chance that the worker is corrupted in some way by the panic so I should set a flag on
+        // this worker and handle two consecutive panics as a worker problem. The second task
+        // triggering the panic should be presumed innocent and restored to a runnable state.
+        match safe_runner.await {
+            Ok(task_result) => {
+                match task_result {
+                    Ok(_) => {
+                        match self.store.completed(task.id.clone()).await {
+                            Ok(_) => self.schedule_if_needed(&task).await,
+                            Err(err) => {
+                                // TODO: "error returned from tests database: (code: 1) no such table: background_tasks"
+                                Err(WorkerError::UpdateTaskStatusFailed(err))
+                            }
+                        }
+                    }
+                    Err(err) => {
+                        tracing::error!(error = ?err,"task failed");
+                        match self
+                            .store
+                            .errored(
+                                task.id.clone(),
+                                TaskExecError::ExecutionFailed(err.to_string()),
+                            )
+                            .await
+                        {
+                            // not retried
+                            Ok(None) => self.schedule_if_needed(&task).await,
+                            // retry failed
+                            Err(err) => Err(WorkerError::RetryTaskFailed(err)),
+                            // retried
+                            _ => Ok(()),
+                        }
+                    }
+                }
             }
-            Ok(_) => {
+            Err(_) => {
+                tracing::error!("task panicked");
+                // todo: save panic message into the task.error and save it back to the memory
+                // store somehow...
                 self.store
-                    .completed(task.id.clone())
+                    .update_state(task.id.clone(), TaskState::Panicked)
                     .await
-                    .map_err(WorkerError::UpdateTaskStatusFailed)?;
-                self.schedule_if_needed(&task).await
+                    .map_err(WorkerError::UpdateTaskStatusFailed)
             }
         }
     }
@@ -193,6 +220,9 @@ pub enum WorkerError {
 
     #[error("failed to process error state of failed task {0}")]
     ErrorTaskFailed(TaskStoreError),
+
+    #[error("failed to retry task {0}")]
+    RetryTaskFailed(TaskStoreError),
 
     #[error("error while attempting to retrieve the next task: {0}")]
     StoreUnavailable(TaskStoreError),
