@@ -19,7 +19,7 @@ const userClient = new UserClient();
 const EnterEncryptionKey = () => {
     const messages = useAppSelector(state => state.locales.messages.pages.enterEncryptionKey);
     const { agreeToTerms, termsOfService, and, privacyPolicy } = useAppSelector(state => state.locales.messages.pages.createEncryptionKey);
-    const [isTermsCheckboxVisible, setIsTermsCheckboxVisible] = useState(false);
+    const [isTermsCheckboxVisible, setIsTermsCheckboxVisible] = useState(true);
     const [areTermsAccepted, setAreTermsAccepted] = useState(false);
     const navigate = useNavigate();
     const dispatch = useAppDispatch();
