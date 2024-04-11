@@ -4,7 +4,7 @@ import { useFolderLocation } from '@app/hooks/useFolderLocation';
 import { Bucket } from '@app/types/bucket';
 
 import { Upload } from '@static/images/common';
-import { useFilesUpload } from '@app/contexts/filesUpload';
+import { useFilesUpload } from '@contexts/filesUpload';
 import { ToastNotifications } from '@utils/toastNotifications';
 import { useAppSelector } from '@/app/store';
 
@@ -50,7 +50,7 @@ export const EmptyState: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         >
             <input
                 type="file"
-                multiple={false}
+                multiple
                 className="hidden"
                 onChange={handleChange}
             />

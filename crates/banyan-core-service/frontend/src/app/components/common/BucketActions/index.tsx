@@ -11,7 +11,7 @@ import { Action } from '@components/Bucket/Files/BucketTable/FileActions';
 import { useModal } from '@/app/contexts/modals';
 import { Bucket } from '@/app/types/bucket';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
-import { useTomb } from '@app/contexts/tomb';
+import { useTomb } from '@contexts/tomb';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { useAppSelector } from '@/app/store';
 

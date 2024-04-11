@@ -220,14 +220,6 @@ export default {
                 of: "de",
                 upgradePlan: "Plan de mise à niveau",
             },
-            termsAndConditions: {
-                accountTypeQuestion: "Pour quoi utilisez-vous Banyan ?",
-                agreeToTerms: "J'accepte les",
-                termsOf: "conditions d'utilisation",
-                and: "et",
-                privacyPolicy: "politique de confidentialité",
-                continue: "Continuer",
-            },
             uploadFileProgress: {
                 uploading: "Téléchargement",
                 uploadFailed: "Échec du téléchargement"
@@ -258,17 +250,6 @@ export default {
                     creationError: "Un problème est survenu lors de la création de votre dossier. Veuillez réessayer.",
                     tryAgain: "Réessayer",
                 },
-                createSecretKey: {
-                    title: "Créer une clé secrète",
-                    subtitle: "Votre clé secrète est le moyen de déverrouiller votre compte ; créez une clé secrète que vous pouvez mémoriser et gardez-la en sécurité – personne d'autre n'y a accès, pas même Banyan, alors assurez-vous de pouvoir vous en souvenir pour déverrouiller votre compte.",
-                    secretKey: "Clé secrète",
-                    enterSecretKey: "Entrez la clé secrète",
-                    keyRequirements: "La clé doit comporter au moins 8 caractères",
-                    confirmSecretKey: "Confirmer la clé secrète",
-                    passphraseNotMatch: "Les phrases secrètes ne correspondent pas, veuillez réessayer",
-                    confirm: "Confirmer",
-                    creationError: "Impossible d'initialiser le magasin de clés"
-                },
                 deleteBucket: {
                     title: "Supprimer le lecteur",
                     subtitle: "Êtes-vous sûr de vouloir supprimer",
@@ -290,15 +271,6 @@ export default {
                     wasDeleted: "a été supprimé",
                     deletionError: "Un problème est survenu avec la suppression. Veuillez réessayer",
                     tryAgain: "Réessayer",
-                },
-                enterSecretKey: {
-                    title: "Entrer la clé secrète",
-                    subtitle: "Entrez la clé secrète dans le champ de texte",
-                    secretKey: "Clé secrète",
-                    enterSecretKey: "Entrez la clé secrète",
-                    keyRequirements: "La clé doit comporter au moins 8 caractères",
-                    confirm: "Confirmer",
-                    sectretKeyError: "Clé secrète incorrecte",
                 },
                 hardStorageLimit: {
                     title: "Vous êtes à court de stockage",
@@ -435,6 +407,30 @@ export default {
             emptyTrash: "Cliquez pour vider la corbeille",
             trashIsEmpty: "La corbeille est vide",
             clickToEmptyTrash: "Cliquez pour vider la corbeille",
+        },
+        createEncryptionKey: {
+            title: "Créer une clé de chiffrement",
+            subtitle: "La clé de chiffrement est votre moyen d'accéder à vos données de compte, alors assurez-vous de pouvoir vous en souvenir.",
+            newEncryptionKey: "Nouvelle clé de chiffrement",
+            newEncryptionKeyPlaceholder: "créer une nouvelle clé",
+            reenterEncryptionKey: "Saisir à nouveau la clé de chiffrement",
+            reenterEncryptionKeyPlaceholder: "confirmer la clé",
+            keyRequirements: "La clé doit comporter au moins 8 caractères",
+            passphraseNotMatch: "Les phrases de passe ne correspondent pas, veuillez réessayer",
+            agreeToTerms: "J'accepte les",
+            termsOfService: "conditions d'utilisation",
+            and: "et",
+            privacyPolicy: "politique de confidentialité",
+            continue: "Continuer"
+        },
+        enterEncryptionKey: {
+            title: "Entrer la clé de chiffrement",
+            encryptionKey: "Clé de chiffrement",
+            encryptionKeyPlaceholder: "Entrez votre clé de chiffrement",
+            forgotEncryptionKey: "Clé de chiffrement oubliée",
+            resetKey: "Réinitialiser la clé",
+            continue: "Continuer",
+            secretKeyError: "Clé secrète incorrecte"
         }
     },
     contexts: {

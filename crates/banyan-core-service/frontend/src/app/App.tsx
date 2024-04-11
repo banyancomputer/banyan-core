@@ -1,25 +1,31 @@
-import { Suspense, useEffect } from 'react';
-import { BrowserRouter } from 'react-router-dom';
+import { Suspense, useEffect, useState } from 'react';
 
 import { Modal } from '@components/common/Modal';
 import { Notifications } from '@components/common/Notifications';
 import { FilePreview } from '@components/common/FilePreview';
 import { MobilePlaceholder } from '@components/common/MobilePlaceholder';
 
-import { Routes } from './routes';
-import { FilePreviewProvider } from '@app/contexts/filesPreview';
-import { FileUploadProvider } from '@app/contexts/filesUpload';
-import { TombProvider } from '@app/contexts/tomb';
+import { Routes, RoutesConfig } from './routes';
+import { FilePreviewProvider } from '@contexts/filesPreview';
+import { FileUploadProvider } from '@contexts/filesUpload';
+import { TombProvider } from '@contexts/tomb';
 import { getLocalStorageItem, setLocalStorageItem } from '@app/utils/localStorage';
 import { preventDefaultDragAction } from '@app/utils/dragHandlers';
-import { useAppDispatch } from '@app/store';
-import { LANGUAGES, LANGUAGES_KEYS, changeLanguage } from '@app/store/locales/slice';
+import { useAppDispatch, useAppSelector } from '@app/store';
+import { LANGUAGES, LANGUAGES_KEYS, changeLanguage } from '@store/locales/slice';
 import ECCKeystore from '@utils/crypto/ecc/keystore';
 import { getLocalKey } from '@app/utils';
-import { setKeystore, setKeystoreInitialized } from '@app/store/keystore/slice';
+import { setKeystore, setKeystoreInitialized } from '@store/keystore/slice';
+import { useNavigate } from 'react-router-dom';
+import { unwrapResult } from '@reduxjs/toolkit';
+import { getEscrowedKeyMaterial } from '@store/keystore/actions';
 
 const App = () => {
     const dispatch = useAppDispatch();
+    const navigate = useNavigate();
+    const { keystoreInitialized } = useAppSelector(state => state.keystore);
+    const { user } = useAppSelector(state => state.session);
+    const [isKeystorageLoading, setIsKeystorageLoading] = useState(true);
 
     useEffect(() => {
         const theme = getLocalStorageItem('theme');
@@ -58,9 +64,9 @@ const App = () => {
                         localKey.key, localKey.id
                     );
                     dispatch(setKeystoreInitialized(true));
-                    console.log("createKeystore: using cached key");
+                    setIsKeystorageLoading(false);
                 } catch (err) {
-                    console.log("No valid cached key material found for this session");
+                    setIsKeystorageLoading(false);
                 };
             } catch (error: any) {
                 throw new Error(error.message);
@@ -68,26 +74,40 @@ const App = () => {
         })();
     }, []);
 
+    useEffect(() => {
+        if(!user.id) return;
+
+        (async () => {
+            try {
+                const escrowedKeyMaterial = unwrapResult(await dispatch(getEscrowedKeyMaterial()));
+                if (isKeystorageLoading || keystoreInitialized) return;
+
+                navigate(escrowedKeyMaterial ? RoutesConfig.EnterEncryptionKey.path : RoutesConfig.CreateEncryptionKey.path);
+
+            } catch (error: any) {
+                navigate(RoutesConfig.CreateEncryptionKey.path);
+            }
+        })()
+    }, [isKeystorageLoading, keystoreInitialized, user.id]);
+
     return (
         <main
             className="flex flex-col h-screen max-h-screen font-sans bg-mainBackground text-text-900 max-sm:hidden"
             onDragOver={preventDefaultDragAction}
             onDrop={preventDefaultDragAction}
         >
-            <BrowserRouter basename="/" >
-                <TombProvider>
-                    <FileUploadProvider>
-                        <FilePreviewProvider>
-                            <Modal />
-                            <FilePreview />
-                            <Notifications />
-                            <Suspense>
-                                <Routes />
-                            </Suspense>
-                        </FilePreviewProvider>
-                    </FileUploadProvider>
-                </TombProvider>
-            </BrowserRouter>
+            <TombProvider>
+                <FileUploadProvider>
+                    <FilePreviewProvider>
+                        <Modal />
+                        <FilePreview />
+                        <Notifications />
+                        <Suspense>
+                            <Routes />
+                        </Suspense>
+                    </FilePreviewProvider>
+                </FileUploadProvider>
+            </TombProvider>
             <MobilePlaceholder />
         </main>
     );

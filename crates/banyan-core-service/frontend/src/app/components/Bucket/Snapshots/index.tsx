@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
-import { useTomb } from '@app/contexts/tomb';
+import { useTomb } from '@contexts/tomb';
 import { ArrowDown } from '@app/static/images/common';
 import { SnapshotsTable } from './Table';
 import { useAppSelector } from '@app/store';

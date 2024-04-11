@@ -3,7 +3,7 @@ import IDB from '../idb';
 import { ECCNotEnabled } from '../errors';
 import utils from '../utils';
 import KeyStoreBase from '../keystore/base';
-import aes from '../aes/index';
+import aes from '../aes';
 import {
     Config,
     EscrowedKeyMaterial,
@@ -16,7 +16,7 @@ import {
 } from '../types';
 import { DEFAULT_SALT_LENGTH } from '../constants';
 import pbkdf2 from '../pbkdf2/index';
-import * as ecc from './index';
+import * as ecc from './keys';
 
 export default class ECCKeyStore extends KeyStoreBase implements KeyStore {
     static async init(maybeCfg: Partial<Config>): Promise<ECCKeyStore> {

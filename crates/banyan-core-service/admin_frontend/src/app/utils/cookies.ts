@@ -1,5 +1,5 @@
 import { User } from '@/app/types';
-import { parseCookies, setCookie, destroyCookie } from 'nookies';
+import { destroyCookie, parseCookies, setCookie } from 'nookies';
 
 /* Cookie State Management. This should probably be within a context but watching for cookie changes proved difficult */
 

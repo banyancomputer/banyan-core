@@ -1,12 +1,15 @@
 import { lazy } from 'react';
 import { useRoutes } from 'react-router-dom';
 
-import { CommonLayout } from "@app/layouts/common"
+import { CommonLayout } from '@layouts/common';
+import { AuthLayout } from '@layouts/auth';
 
 /** Pages */
 const Home = lazy(() => import('@pages/home'));
 const Bucket = lazy(() => import('@pages/bucket'));
 const Account = lazy(() => import('@pages/account'));
+const CreateEncryptionKey = lazy(() => import('@pages/createEncryptionKey'));
+const EnterEncryptionKey = lazy(() => import('@pages/enterEncryptionKey'));
 const RegisterDevice = lazy(() => import('@pages/registerDevice'));
 
 /** Components */
@@ -45,6 +48,8 @@ class Route {
  */
 export class RoutesConfig {
     public static Home = new Route('/', <Home />);
+    public static CreateEncryptionKey = new Route('/create-encryption-key', <CreateEncryptionKey />, AuthLayout);
+    public static EnterEncryptionKey = new Route('/enter-encryption-key', <EnterEncryptionKey />, AuthLayout);
     public static Bucket = new Route('/drive/:id', <Bucket />);
     public static Account = new Route('/account', <Account />);
     public static RegisterDevice = new Route('/register-device/:spki', <RegisterDevice />);
@@ -58,6 +63,8 @@ export class RoutesConfig {
     /** Routes is an array of logical router components */
     public static routes: Route[] = [
         RoutesConfig.Home,
+        RoutesConfig.CreateEncryptionKey,
+        RoutesConfig.EnterEncryptionKey,
         RoutesConfig.Bucket.addChildren([
             RoutesConfig.Files,
             RoutesConfig.Snapshots

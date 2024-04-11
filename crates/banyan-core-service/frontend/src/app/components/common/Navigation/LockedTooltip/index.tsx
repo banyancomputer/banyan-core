@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { RequestBucketAccessModal } from '@components/common/Modal/RequestBucketAccessModal';
 
 import { Bucket } from '@app/types/bucket';
-import { useModal } from '@app/contexts/modals';
+import { useModal } from '@contexts/modals';
 import { useAppSelector } from '@/app/store';
 
 import { Lock } from '@static/images/buckets';
