@@ -99,16 +99,6 @@ export const FilePreview = () => {
                             {`${file.name}`}
                         </button>
                         <div className="flex items-center gap-4">
-                            <PreviewArrow
-                                action={openPrevious}
-                                isVisible={!!files.map(file => file.name).indexOf(file.name)}
-                                className="rotate-90"
-                            />
-                            <PreviewArrow
-                                action={openNext}
-                                isVisible={!(files.map(file => file.name).indexOf(file.name) === files.length - 1)}
-                                className="-rotate-90"
-                            />
                             <div
                                 className="text-white z-40 cursor-pointer"
                                 onClick={downloadFile}
@@ -134,13 +124,21 @@ export const FilePreview = () => {
                         className={`fixed w-screen h-[105vh] flex ${file.fileType === 'document' || file.fileType === 'spreadsheet' ? 'items-start' : 'items-center'} justify-center py-16 pb-20 z-20 bg-[#0d0d0dcc] overflow-scroll`}
                         onClick={close}
                     >
+                        <PreviewArrow
+                            action={openPrevious}
+                            isVisible={!!files.map(file => file.name).indexOf(file.name)}
+                            className="rotate-90 left-20"
+                        />
+                        <PreviewArrow
+                            action={openNext}
+                            isVisible={!(files.map(file => file.name).indexOf(file.name) === files.length - 1)}
+                            className="-rotate-90 right-20"
+                        />
                         {file.isLoading ?
                             <Loader spinnerSize="50px" containerHeight="80vh" className="text-white" />
                             :
                             <>
-                                {
-                                    getPreviewTag(file.objectUrl, file.fileType)
-                                }
+                                {getPreviewTag(file.objectUrl, file.fileType)}
                             </>
                         }
                     </div>
