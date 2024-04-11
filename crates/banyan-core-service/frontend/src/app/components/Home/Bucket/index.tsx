@@ -6,7 +6,7 @@ import { LockedTooltip } from '@components/common/Navigation/LockedTooltip';
 
 import { Bucket as IBucket } from '@/app/types/bucket';
 import { popupClickHandler } from '@/app/utils';
-import { useFilesUpload } from '@app/contexts/filesUpload';
+import { useFilesUpload } from '@contexts/filesUpload';
 import { ToastNotifications } from '@utils/toastNotifications';
 import { preventDefaultDragAction } from '@utils/dragHandlers';
 import { useAppSelector } from '@/app/store';

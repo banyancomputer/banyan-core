@@ -4,7 +4,7 @@ import { Link, NavLink, useLocation } from 'react-router-dom';
 import { LockedTooltip } from './LockedTooltip';
 
 import { useTomb } from '@/app/contexts/tomb';
-import { useFilesUpload } from '@app/contexts/filesUpload';
+import { useFilesUpload } from '@contexts/filesUpload';
 import { ToastNotifications } from '@utils/toastNotifications';
 import { Bucket } from '@app/types/bucket';
 import { preventDefaultDragAction } from '@utils/dragHandlers';

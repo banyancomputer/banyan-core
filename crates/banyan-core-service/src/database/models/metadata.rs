@@ -223,9 +223,19 @@ impl Metadata {
 
         Ok(())
     }
+
     pub async fn find_by_id(database: &Database, id: &str) -> Result<Self, sqlx::Error> {
         sqlx::query_as!(Self, "SELECT * FROM metadata WHERE id = $1;", id)
             .fetch_one(database)
+            .await
+    }
+
+    pub async fn find_by_id_with_conn(
+        conn: &mut DatabaseConnection,
+        id: &str,
+    ) -> Result<Self, sqlx::Error> {
+        sqlx::query_as!(Self, "SELECT * FROM metadata WHERE id = $1;", id)
+            .fetch_one(&mut *conn)
             .await
     }
 }

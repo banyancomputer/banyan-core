@@ -2,7 +2,6 @@ export type Msg = ArrayBuffer | string | Uint8Array;
 
 export type CipherText = ArrayBuffer;
 export type SymmKey = CryptoKey;
-export type SymmWrappingKey = CryptoKey;
 
 export type PublicKey = CryptoKey;
 export type PrivateKey = CryptoKey;
@@ -36,10 +35,6 @@ export enum ExportKeyFormat {
     PKCS8 = 'pkcs8',
     SPKI = 'spki',
     RAW = 'raw',
-}
-
-export enum CryptoSystem {
-    ECC = 'ecc',
 }
 
 export enum EccCurve {

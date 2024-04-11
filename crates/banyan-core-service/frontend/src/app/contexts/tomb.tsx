@@ -1,26 +1,20 @@
 import React, { ReactNode, createContext, useContext, useEffect, useState } from 'react';
 
-import { TombWasm, WasmBucket, WasmSnapshot } from 'tomb-wasm-experimental';
+import { TombWasm, WasmBucket } from 'tomb-wasm-experimental';
 import { unwrapResult } from '@reduxjs/toolkit';
 import { useNavigate } from 'react-router-dom';
 
-import { TermsAndConditionsModal } from '@components/common/Modal/TermsAndConditionsModal';
-import { TermaAndConditions } from '@components/common/TermsAndConditions';
-
-import { useModal } from '@app/contexts/modals';
 import {
 	BrowserObject, Bucket, BucketKey,
 	BucketSnapshot,
 } from '@/app/types/bucket';
-import { useFolderLocation } from '@app/hooks/useFolderLocation';
+import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 import { destroyIsUserNew, getIsUserNew, prettyFingerprintApiKeyPem, sortByType } from '@app/utils';
-import { TermsAndColditionsClient } from '@/api/termsAndConditions';
-import { UserClient } from '@/api/user';
 import { handleNameDuplication } from '@utils/names';
 import { StorageUsageClient } from '@/api/storageUsage';
 import { useAppDispatch, useAppSelector } from '../store';
-import { BannerError, setError } from '@app/store/errors/slice';
-import { getApiKey, getEncryptionKey, getEscrowedKeyMaterial } from '@app/store/keystore/actions';
+import { BannerError, setError } from '@store/errors/slice';
+import { getApiKey, getEncryptionKey } from '@store/keystore/actions';
 import { ToastNotifications } from '@utils/toastNotifications';
 import { SnapshotsClient } from '@/api/snapshots';
 import { StorageLimits, StorageUsage } from '@/entities/storage';
@@ -66,13 +60,11 @@ const TombContext = createContext<TombInterface>({} as TombInterface);
 export const TombProvider = ({ children }: { children: ReactNode }) => {
 	const dispatch = useAppDispatch();
 	const { user } = useAppSelector(state => state.session);
-	const { escrowedKeyMaterial, keystoreInitialized } = useAppSelector(state => state.keystore);
+	const { keystoreInitialized, escrowedKeyMaterial } = useAppSelector(state => state.keystore);
 	const navigate = useNavigate();
-	const { openEscrowModal, openModal } = useModal();
 	const [tomb, setTomb] = useState<TombWasm | null>(null);
 	const [buckets, setBuckets] = useState<Bucket[]>([]);
 	const [trash, setTrash] = useState<Bucket | null>(null);
-	const [areTermsAccepted, setAreTermsAccepted] = useState(false);
 	const [selectedBucket, setSelectedBucket] = useState<Bucket | null>(null);
 	const [storageUsage, setStorageUsage] = useState<StorageUsage>(new StorageUsage());
 	const [storageLimits, setStorageLimits] = useState<StorageLimits>(new StorageLimits());
@@ -203,7 +195,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	const download = async (bucket: Bucket, path: string[], name: string) => {
 		const link = document.createElement('a');
 		const arrayBuffer: Uint8Array = await getFile(bucket, path, name);
-		const blob = new Blob([arrayBuffer], { type: 'application/octet-stream' });
+		const blob = new Blob([arrayBuffer]);
 		const objectURL = URL.createObjectURL(blob);
 		link.href = objectURL;
 		link.download = name;
@@ -361,7 +353,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
 	// Initialize the tomb client
 	useEffect(() => {
-		if (!user.id || !keystoreInitialized  || !escrowedKeyMaterial) { return; }
+		if (!user.id || !keystoreInitialized || !escrowedKeyMaterial) { return; }
 
 		(async () => {
 			try {
@@ -377,64 +369,6 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 			}
 		})();
 	}, [user, keystoreInitialized, escrowedKeyMaterial]);
-
-	useEffect(() => {
-		if (!areTermsAccepted) return;
-
-		let escrowedKeyMaterial;
-		(async () => {
-			try {
-				escrowedKeyMaterial = unwrapResult(await dispatch(getEscrowedKeyMaterial()));
-			} catch (error: any) {
-				openEscrowModal(false);
-				return;
-			};
-
-			if (!keystoreInitialized) {
-				openEscrowModal(!!escrowedKeyMaterial);
-			};
-		})();
-	}, [keystoreInitialized, areTermsAccepted]);
-
-	useEffect(() => {
-		const userClient = new UserClient();
-		const termsClient = new TermsAndColditionsClient();
-
-		(async () => {
-			try {
-				const termsAndConditions = await termsClient.getTermsAndCondition();
-				const user = await userClient.getCurrentUser();
-
-				if (!user) return;
-
-				if (!user.acceptedTosAt) {
-					openModal(
-						<TermaAndConditions
-							acceptTerms={setAreTermsAccepted}
-							userData={user}
-						/>, null, true, '', false);
-
-					return;
-				};
-
-				if (user.acceptedTosAt <= +termsAndConditions.tos_date) {
-					openModal(
-						<TermsAndConditionsModal
-							setAreTermsAccepted={setAreTermsAccepted}
-							terms={termsAndConditions.tos_content}
-							userData={user} />
-						, null, true, '', false);
-
-					return;
-				};
-
-				setAreTermsAccepted(true);
-			} catch (error: any) {
-				console.log(error);
-			}
-
-		})()
-	}, [user])
 
 	useEffect(() => {
 		if (tomb) {
