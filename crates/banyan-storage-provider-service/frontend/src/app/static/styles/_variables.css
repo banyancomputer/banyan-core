@@ -1,5 +1,6 @@
 :root {
-    --main-background: #F0E9DD;
+    --main-background: #FDFDFB;
+    --secondary-background: #fff;
     --light-text: #57221E;
     --dark-text: #352F43;
     --table-head: #F1E5D7;
@@ -8,7 +9,7 @@
     --table-extend-text: #696969;
     --table-border: #AAAA;
     --storage-background: #E8DFD4;
-    --highlight-color: #648B60;
+    --highlight-color: #898989;
     --red-highlight-color: #F94144;
     --chart-dark: #352F43;
     --chart-light: #D99C67;
@@ -17,15 +18,17 @@
 }
 
 [prefers-color-scheme="dark"]:root {
-    --main-background: #F0E9DD;
+    --main-background: #FDFDFB;
+    --secondary-background: #fff;
     --light-text: #57221E;
     --dark-text: #352F43;
     --table-head: #F1E5D7;
-    --table-body: #AAAAAA;
-    --table-extend: #ececec;
+    --table-body: #e9ded3;
+    --table-extend: #F4F3F3;
     --table-extend-text: #696969;
+    --table-border: #AAAA;
     --storage-background: #E8DFD4;
-    --highlight-color: #648B60;
+    --highlight-color: #898989;
     --red-highlight-color: #F94144;
     --chart-dark: #352F43;
     --chart-light: #D99C67;

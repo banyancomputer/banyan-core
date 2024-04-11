@@ -1,19 +1,6 @@
-import {
-	FC,
-	ReactNode,
-	createContext,
-	useContext,
-	useEffect,
-	useState,
-} from 'react';
+import { createContext, FC, ReactNode, useContext, useEffect, useState } from 'react';
 
-import {
-	LocalKey,
-	UserData,
-	getLocalKey,
-	destroyLocalKey,
-	getSessionKey,
-} from '@/app/utils/cookies';
+import { destroyLocalKey, getLocalKey, getSessionKey, LocalKey, UserData } from '@/app/utils/cookies';
 import { AdminClient } from '@/api/admin';
 
 export interface SessionState {

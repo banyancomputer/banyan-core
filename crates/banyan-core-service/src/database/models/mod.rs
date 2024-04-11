@@ -36,7 +36,7 @@ mod user;
 mod user_total_consumption;
 
 #[cfg(test)]
-pub use block_location::tests::BlockLocations;
+pub use block_location::BlockLocations;
 pub use block_location::MinimalBlockLocation;
 pub use blocks::Blocks;
 pub use bucket::Bucket;
@@ -84,5 +84,5 @@ pub use user_total_consumption::UserTotalConsumption;
 /// such recommending this workaround. See launchbadge/sqlx#2814.
 #[derive(sqlx::FromRow)]
 pub struct ExplicitBigInt {
-    big_int: i64,
+    pub big_int: i64,
 }

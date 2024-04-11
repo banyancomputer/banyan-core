@@ -18,6 +18,18 @@ pub struct DistributeDataRequest {
 }
 
 #[derive(Serialize)]
+pub struct ReplicateDataRequest {
+    pub metadata_id: String,
+    pub block_cids: Vec<String>,
+    pub new_host_id: String,
+    pub new_host_url: String,
+    pub new_storage_grant_id: String,
+    pub new_storage_grant_size: i64,
+    pub old_host_id: String,
+    pub old_host_url: String,
+}
+
+#[derive(Serialize)]
 pub struct DeleteBlocksRequest {
     pub normalized_cids: Vec<String>,
     pub metadata_id: String,

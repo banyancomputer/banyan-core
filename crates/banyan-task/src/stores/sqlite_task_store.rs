@@ -1,7 +1,8 @@
 use std::time::Duration;
 
 use async_trait::async_trait;
-use sqlx::{Acquire, SqliteConnection, SqlitePool};
+use sqlx::pool::PoolConnection;
+use sqlx::{Acquire, Sqlite, SqliteConnection, SqlitePool};
 use time::OffsetDateTime;
 
 use crate::task_store::TaskStore;
@@ -16,6 +17,10 @@ pub struct SqliteTaskStore {
 }
 
 impl SqliteTaskStore {
+    async fn connect(&self) -> Result<PoolConnection<Sqlite>, TaskStoreError> {
+        Ok(self.pool.clone().acquire().await?)
+    }
+
     pub async fn is_present<T: TaskLike>(
         conn: &mut SqliteConnection,
         task: &T,
@@ -62,10 +67,10 @@ impl SqliteTaskStore {
     }
 
     pub async fn metrics(&self) -> Result<TaskStoreMetrics, TaskStoreError> {
-        let mut connection = self.pool.clone().acquire().await?;
+        let mut conn = self.connect().await?;
         let mut query_base = self.metrics_query();
         let query = query_base.build_query_as::<SqliteTaskStoreMetrics>();
-        let metrics = query.fetch_one(&mut *connection).await?;
+        let metrics = query.fetch_one(&mut *conn).await?;
         Ok(metrics.into())
     }
 
@@ -88,40 +93,9 @@ impl SqliteTaskStore {
         )
     }
 
-    pub async fn task_in_state<T: TaskLike>(
-        &self,
-        conn: &mut SqliteConnection,
-        states: Vec<TaskState>,
-    ) -> Result<Option<Task>, TaskStoreError> {
-        let mut query_builder =
-            sqlx::QueryBuilder::new("SELECT * FROM background_tasks WHERE task_name =");
-
-        query_builder.push_bind(T::TASK_NAME);
-        query_builder.push(" AND state IN (");
-
-        let mut separated_values = query_builder.separated(", ");
-        for state in states {
-            separated_values.push_bind(state);
-        }
-        query_builder.push(");");
-
-        let query = query_builder
-            .build_query_as::<Task>()
-            .persistent(false)
-            .fetch_optional(&mut *conn)
-            .await;
-
-        match query {
-            Ok(Some(res)) => Ok(Some(res)),
-            Ok(None) => Ok(None),
-            Err(err) => Err(TaskStoreError::DatabaseError(err)),
-        }
-    }
-
     pub async fn get_task(&self, id: String) -> Result<Task, TaskStoreError> {
-        let connection = self.pool.clone();
         let task = sqlx::query_as!(Task, r#"SELECT * FROM background_tasks WHERE id = $1"#, id)
-            .fetch_one(&connection)
+            .fetch_one(&self.pool)
             .await?;
 
         Ok(task)
@@ -135,19 +109,22 @@ impl SqliteTaskStore {
             // right now if we encounter a unique key that is already present in the DB we simply
             // don't queue the new instance of that task, the old one will have a bit of priority
             // due to its age.
-            if SqliteTaskStore::is_key_present(conn, ukey, &task.task_name).await? {
+            if SqliteTaskStore::is_key_present(&mut *conn, ukey, &task.task_name).await? {
                 return Ok(None);
             }
         }
 
         let background_task_id: String = sqlx::query_scalar!(
-            r#"INSERT INTO background_tasks (
-                           task_name, queue_name, unique_key, payload,
-                           current_attempt, maximum_attempts, state,
-                           original_task_id, scheduled_to_run_at
-                       )
-                       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-                       RETURNING id;"#,
+            r#"
+                INSERT INTO background_tasks
+                (
+                    task_name, queue_name, unique_key, payload, 
+                    current_attempt, maximum_attempts, state,
+                    original_task_id, scheduled_to_run_at
+                )
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                RETURNING id;
+            "#,
             task.task_name,
             task.queue_name,
             task.unique_key,
@@ -170,22 +147,11 @@ impl TaskStore for SqliteTaskStore {
     type Connection = SqliteConnection;
 
     async fn enqueue<T: TaskLike>(
-        conn: &mut Self::Connection,
+        connection: &mut Self::Connection,
         task: T,
     ) -> Result<Option<String>, TaskStoreError> {
         let task = TaskInstanceBuilder::for_task(task).await?;
-        let background_task_id = Self::create(conn, task).await?;
-
-        Ok(background_task_id)
-    }
-
-    async fn enqueue_with_connection<T: TaskLike>(
-        conn: &mut Self::Connection,
-        task: T,
-    ) -> Result<Option<String>, TaskStoreError> {
-        let task = TaskInstanceBuilder::for_task(task).await?;
-        let background_task_id = Self::create(&mut *conn, task).await?;
-
+        let background_task_id = Self::create(&mut *connection, task).await?;
         Ok(background_task_id)
     }
 
@@ -230,8 +196,7 @@ impl TaskStore for SqliteTaskStore {
         }
 
         transaction.commit().await?;
-        let mut connection = self.pool.clone().acquire().await?;
-
+        let mut conn = self.connect().await?;
         let timed_out_start_threshold = time::OffsetDateTime::now_utc() - TASK_EXECUTION_TIMEOUT;
         let pending_retry_tasks = sqlx::query_scalar!(
             r#"SELECT id FROM background_tasks
@@ -243,10 +208,9 @@ impl TaskStore for SqliteTaskStore {
             TaskState::Retry,
             timed_out_start_threshold,
         )
-        .fetch_all(&mut *connection)
+        .fetch_all(&mut *conn)
         .await;
-
-        connection.close().await?;
+        conn.close().await?;
 
         // if this query fails or any of our rescheduling fails, we still want to process our task,
         // let these retry again sometime in the future. Ideally we'd randomly shuffle some of
@@ -256,7 +220,7 @@ impl TaskStore for SqliteTaskStore {
         // extra complicated logic we don't need right now
         if let Ok(task_ids) = pending_retry_tasks {
             for id in task_ids.into_iter() {
-                let mut connection = self.pool.clone().acquire().await?;
+                let mut conn = self.connect().await?;
                 // we don't care of these fail either, but we'll stop attempting to retry them once
                 // we hit an error. Something else can handle the trouble
 
@@ -269,10 +233,10 @@ impl TaskStore for SqliteTaskStore {
                     TaskState::TimedOut,
                     id,
                 )
-                .execute(&mut *connection)
+                .execute(&mut *conn)
                 .await;
 
-                connection.close().await?;
+                conn.close().await?;
 
                 if state_update_res.is_err() {
                     break;
@@ -290,7 +254,7 @@ impl TaskStore for SqliteTaskStore {
         };
 
         // pull the full current version of the task
-        let mut connection = self.pool.clone().acquire().await?;
+        let mut connection = self.pool.acquire().await?;
         let chosen_task = sqlx::query_as!(
             Task,
             "SELECT * FROM background_tasks WHERE id = $1;",
@@ -303,7 +267,7 @@ impl TaskStore for SqliteTaskStore {
     }
 
     async fn retry(&self, id: String) -> Result<Option<String>, TaskStoreError> {
-        let mut connection = self.pool.clone().acquire().await?;
+        let mut connection = self.pool.acquire().await?;
         let mut transaction = connection.begin().await?;
 
         // We only care about tasks that are capable of being retried so some filters here allow
@@ -339,25 +303,8 @@ impl TaskStore for SqliteTaskStore {
         Ok(new_task_id)
     }
 
-    async fn schedule_next(
-        &self,
-        task_id: String,
-        next_schedule: OffsetDateTime,
-    ) -> Result<Option<String>, TaskStoreError> {
-        let task_instance = self.get_task(task_id).await?;
-
-        let task = TaskInstanceBuilder::from_task_instance(task_instance)
-            .await
-            .reset_task()
-            .run_at(next_schedule);
-
-        let mut conn = self.pool.clone().acquire().await?;
-        let new_task_id = Self::create(&mut conn, task).await?;
-        Ok(new_task_id)
-    }
-
     async fn update_state(&self, id: String, new_state: TaskState) -> Result<(), TaskStoreError> {
-        let mut connection = self.pool.clone().acquire().await?;
+        let mut connection = self.pool.acquire().await?;
 
         // this could probably use some protection against invalid state transitions but I'll leave
         // that as future work for now.
@@ -372,6 +319,51 @@ impl TaskStore for SqliteTaskStore {
         .await?;
 
         Ok(())
+    }
+
+    async fn schedule_next(
+        &self,
+        task_id: String,
+        next_schedule: OffsetDateTime,
+    ) -> Result<Option<String>, TaskStoreError> {
+        let task_instance = self.get_task(task_id).await?;
+
+        let task = TaskInstanceBuilder::from_task_instance(task_instance)
+            .await
+            .reset_task()
+            .run_at(next_schedule);
+
+        let mut conn = self.pool.acquire().await?;
+        let new_task_id = Self::create(&mut conn, task).await?;
+        Ok(new_task_id)
+    }
+
+    async fn get_task_in_state(
+        &self,
+        task_name: &str,
+        states: Vec<TaskState>,
+    ) -> Result<Option<Task>, TaskStoreError> {
+        let mut query_builder =
+            sqlx::QueryBuilder::new("SELECT * FROM background_tasks WHERE task_name =");
+        query_builder.push_bind(task_name);
+        query_builder.push(" AND state IN (");
+        let mut separated_values = query_builder.separated(", ");
+        for state in states {
+            separated_values.push_bind(state);
+        }
+        query_builder.push(");");
+
+        let query = query_builder
+            .build_query_as::<Task>()
+            .persistent(false)
+            .fetch_optional(&self.pool)
+            .await;
+
+        match query {
+            Ok(Some(res)) => Ok(Some(res)),
+            Ok(None) => Ok(None),
+            Err(err) => Err(TaskStoreError::DatabaseError(err)),
+        }
     }
 }
 #[derive(sqlx::FromRow)]
@@ -432,9 +424,8 @@ pub mod tests {
     #[tokio::test]
     async fn update_state_works() {
         let (task_store, _task_id) = singleton_task_store().await;
-        let mut conn = task_store.pool.clone().acquire().await.expect("acquire");
-
         let task = TestTask;
+        let mut conn = task_store.connect().await.unwrap();
         let task_id = task
             .enqueue::<SqliteTaskStore>(&mut conn)
             .await
@@ -452,9 +443,8 @@ pub mod tests {
     #[tokio::test]
     async fn error_tasks_are_retried() {
         let (task_store, _task_id) = singleton_task_store().await;
-        let mut conn = task_store.pool.clone().acquire().await.expect("acquire");
-
         let task = TestTask;
+        let mut conn = task_store.connect().await.unwrap();
         let task_id = task
             .enqueue::<SqliteTaskStore>(&mut conn)
             .await
@@ -474,10 +464,8 @@ pub mod tests {
     #[tokio::test]
     async fn timeout_tasks_are_retried() {
         let (task_store, _task_id) = singleton_task_store().await;
-        let mut conn = task_store.pool.clone().acquire().await.expect("acquire");
-
         let task = TestTask;
-
+        let mut conn = task_store.connect().await.unwrap();
         let task_id = task
             .enqueue::<SqliteTaskStore>(&mut conn)
             .await
@@ -497,9 +485,8 @@ pub mod tests {
     #[tokio::test]
     async fn non_error_tasks_are_not_retried() {
         let (task_store, _task_id) = singleton_task_store().await;
-        let mut conn = task_store.pool.clone().acquire().await.expect("acquire");
-
         let task = TestTask;
+        let mut conn = task_store.connect().await.unwrap();
         let task_id = task
             .enqueue::<SqliteTaskStore>(&mut conn)
             .await
@@ -525,8 +512,7 @@ pub mod tests {
 
     pub async fn singleton_task_store() -> (SqliteTaskStore, Option<String>) {
         let task_store = empty_task_store().await;
-        let mut conn = task_store.pool.clone().acquire().await.expect("acquire");
-
+        let mut conn = task_store.connect().await.unwrap();
         let task_id = TestTask
             .enqueue::<SqliteTaskStore>(&mut conn)
             .await
@@ -535,13 +521,13 @@ pub mod tests {
     }
 
     pub async fn empty_task_store() -> SqliteTaskStore {
-        let db_conn = SqlitePool::connect("sqlite::memory:")
+        let db = SqlitePool::connect("sqlite::memory:")
             .await
             .expect("db setup");
         sqlx::migrate!("./migrations")
-            .run(&db_conn)
+            .run(&db)
             .await
             .expect("db setup");
-        SqliteTaskStore::new(db_conn)
+        SqliteTaskStore::new(db)
     }
 }

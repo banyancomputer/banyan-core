@@ -4,7 +4,7 @@ use axum::response::{IntoResponse, Response};
 use uuid::Uuid;
 
 use crate::app::AppState;
-use crate::database::models::Bucket;
+use crate::database::models::{Bucket, ExplicitBigInt};
 use crate::extractors::UserIdentity;
 
 pub async fn handler(
@@ -24,8 +24,9 @@ pub async fn handler(
     }
 
     let user_id = user_identity.id().to_string();
-    let query_result: Result<i32, _> = sqlx::query_scalar!(
-        r#"SELECT COALESCE(SUM(m.data_size), 0) as size
+    let query_result = sqlx::query_as!(
+        ExplicitBigInt,
+        r#"SELECT COALESCE(SUM(m.data_size), 0) as big_int
                FROM metadata m
                JOIN buckets b ON m.bucket_id = b.id
                WHERE b.user_id = $1 AND b.id = $2;"#,
@@ -37,7 +38,7 @@ pub async fn handler(
 
     match query_result {
         Ok(size) => {
-            let resp = serde_json::json!({ "size": size });
+            let resp = serde_json::json!({ "size": size.big_int });
             Ok((StatusCode::OK, Json(resp)).into_response())
         }
         Err(_) => {

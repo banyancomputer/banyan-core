@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use banyan_task::{CurrentTask, TaskLike};
+use banyan_task::{CurrentTask, RecurringTask, RecurringTaskError, TaskLike};
 use jwt_simple::prelude::*;
 use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest::Client;
@@ -20,7 +20,7 @@ pub enum ReportHealthTaskError {
     Http(http::StatusCode, Url),
 }
 
-#[derive(Deserialize, Serialize, Default)]
+#[derive(Default, Deserialize, Serialize)]
 pub struct ReportHealthTask;
 
 #[derive(Deserialize, Serialize)]
@@ -104,13 +104,13 @@ impl TaskLike for ReportHealthTask {
             ))
         }
     }
+}
 
-    // Schedule every 5 minutes
-    fn next_time(&self) -> Option<OffsetDateTime> {
-        Some(
-            OffsetDateTime::now_utc()
-                .checked_add(time::Duration::minutes(5))
-                .unwrap(),
-        )
+impl RecurringTask for ReportHealthTask {
+    fn next_schedule(&self) -> Result<Option<time::OffsetDateTime>, RecurringTaskError> {
+        OffsetDateTime::now_utc()
+            .checked_add(time::Duration::minutes(5))
+            .ok_or(RecurringTaskError::DateTimeAddition)
+            .map(Some)
     }
 }

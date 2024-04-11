@@ -1,4 +1,4 @@
-import { EscrowedKeyMaterial } from '@app/types';
+import { EscrowedKeyMaterial } from '@app/types/escrowedKeyMaterial';
 import { APIClient } from './http';
 
 export class AuthClient extends APIClient {

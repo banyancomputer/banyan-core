@@ -10,10 +10,10 @@ import { FileRow } from '@components/Bucket/Files/BucketTable/FileRow';
 import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 import { sortByType, sortFiles } from '@app/utils';
-import { useFilesUpload } from '@app/contexts/filesUpload';
+import { useFilesUpload } from '@contexts/filesUpload';
 import { ToastNotifications } from '@utils/toastNotifications';
 import { preventDefaultDragAction } from '@utils/dragHandlers';
-import { useTomb } from '@app/contexts/tomb';
+import { useTomb } from '@contexts/tomb';
 import { useAppSelector } from '@/app/store';
 
 export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {

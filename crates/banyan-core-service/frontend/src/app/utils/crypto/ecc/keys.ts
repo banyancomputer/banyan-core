@@ -9,7 +9,6 @@ import {
   KeyUse,
   PublicKey,
   ExportKeyFormat,
-  SymmKey,
   PrivateKey,
 } from '../types';
 import { privatePemWrap, publicPemWrap, publicPemUnwrap } from '@utils/pem';
@@ -29,33 +28,6 @@ export async function genKeyPair(
   const uses: KeyUsage[] =
     use === KeyUse.Exchange ? ['deriveBits'] : ['sign', 'verify'];
   return webcrypto.subtle.generateKey(
-    { name: alg, namedCurve: curve },
-    true,
-    uses
-  );
-}
-
-
-/**
- * Import a public key from a base64 string
- * @param base64Key The base64 encoded public key
- * @param curve The curve to use
- * @param use The use of the key pair, either exchange or write
- */
-export async function importPublicKeyPem(
-  publicKeyPem: string,
-  curve: EccCurve,
-  use: KeyUse
-): Promise<PublicKey> {
-  checkValidKeyUse(use);
-  const alg = use === KeyUse.Exchange ? ECC_EXCHANGE_ALG : ECC_WRITE_ALG;
-  const uses: KeyUsage[] =
-    use === KeyUse.Exchange ? ['deriveBits'] : ['verify'];
-  let publicKey = publicPemUnwrap(publicKeyPem);
-  const buf = utils.base64ToArrBuf(publicKey);
-  return webcrypto.subtle.importKey(
-    ExportKeyFormat.SPKI,
-    buf,
     { name: alg, namedCurve: curve },
     true,
     uses
@@ -90,7 +62,6 @@ export async function exportPrivateKeyPem(privateKey: PrivateKey): Promise<strin
 
 export default {
   genKeyPair,
-  importPublicKeyPem,
   exportPublicKeyPem,
   exportPrivateKeyPem,
 };

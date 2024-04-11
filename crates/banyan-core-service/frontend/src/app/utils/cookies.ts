@@ -1,4 +1,3 @@
-import { EscrowedKeyMaterial } from '@/app/types';
 import { parseCookies, setCookie, destroyCookie } from 'nookies';
 
 /* Cookie State Management. This should probably be within a context but watching for cookie changes proved difficult */

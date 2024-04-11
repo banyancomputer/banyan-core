@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id FROM metadata AS m JOIN block_locations as bl ON bl.metadata_id = m.id WHERE block_id = $1;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "c9021807d20adaee8c8ae818b81f4f6341506acabb28c2f4ab6c5fd530a92c57"
+}

@@ -1,41 +1,10 @@
-import { importPublicKeyPem } from './ecc';
 import { webcrypto } from 'one-webcrypto';
 import * as uint8arrays from 'uint8arrays';
 import errors from './errors';
-import { CharSize, EccCurve, ExportKeyFormat, KeyUse, Msg, PublicKey } from './types';
+import { CharSize, ExportKeyFormat, Msg, PublicKey } from './types';
 import { DEFAULT_SALT_LENGTH } from './constants';
-import { publicPemUnwrap } from '@app/utils';
 
 /* Cryto */
-
-// Generate a public exponent
-export function publicExponent(): Uint8Array {
-	return new Uint8Array([0x01, 0x00, 0x01]);
-}
-
-export function eccCurveToBitLength(namedCurve: EccCurve): number {
-	// Get the integer following 'P-'
-	const bitLength = parseInt(namedCurve.slice(2), 10);
-	if (isNaN(bitLength) || bitLength % 8 !== 0) {
-		throw errors.InvalidEccCurve;
-	}
-	return bitLength;
-}
-
-
-/**
- * Fingerprint an ec device api public key by its PEM
- */
-export async function fingerprintDeviceApiPublicKeyPem(
-	pem: string
-): Promise<Uint8Array> {
-	const publicKey = await importPublicKeyPem(
-		pem,
-		EccCurve.P_384,
-		KeyUse.Write
-	);
-	return fingerprintEcPublicKey(publicKey);
-  }
 
 /**
  * Fingerprint an ec public key -- does not generalize to curves other than P-384
@@ -74,10 +43,6 @@ export function prettyFingerprint(buf: Uint8Array): string {
 		.join(':');
 }
 
-// Interpret a Uint8Array as a fingerprint
-export function hexFingerprint(buf: Uint8Array): string {
-	return prettyFingerprint(buf).replaceAll(':', '');
-}
 
 // How we join an iv and cipher into a cipher text
 export function joinCipherText(
@@ -114,12 +79,6 @@ export function splitCipherText(
 	return [ivBuf, cipherBuf];
 }
 
-/* Normalize _ to ArrayBuffer */
-
-export const normalizeUtf8ToBuf = (msg: Msg): ArrayBuffer => {
-	return normalizeToBuf(msg, (str) => strToArrBuf(str, CharSize.B8));
-};
-
 export const normalizeUtf16ToBuf = (msg: Msg): ArrayBuffer => {
 	return normalizeToBuf(msg, (str) => strToArrBuf(str, CharSize.B16));
 };
@@ -128,17 +87,7 @@ export const normalizeBase64ToBuf = (msg: Msg): ArrayBuffer => {
 	return normalizeToBuf(msg, base64ToArrBuf);
 };
 
-export const normalizeUnicodeToBuf = (msg: Msg, charSize: CharSize) => {
-	switch (charSize) {
-		case 8:
-			return normalizeUtf8ToBuf(msg);
-		default:
-			return normalizeUtf16ToBuf(msg);
-	}
-};
-
 /* Array Buffer to _ */
-
 export function arrBufToStr(buf: ArrayBuffer, charSize: CharSize): string {
 	const arr = charSize === 8 ? new Uint8Array(buf) : new Uint16Array(buf);
 	return Array.from(arr)
@@ -198,15 +147,6 @@ export function randomBuf(
 	return arr.buffer;
 }
 
-export function joinBufs(fst: ArrayBuffer, snd: ArrayBuffer): ArrayBuffer {
-	const view1 = new Uint8Array(fst);
-	const view2 = new Uint8Array(snd);
-	const joined = new Uint8Array(view1.length + view2.length);
-	joined.set(view1);
-	joined.set(view2, view1.length);
-	return joined.buffer;
-}
-
 export const normalizeToBuf = (
 	msg: Msg,
 	strConv: (str: string) => ArrayBuffer
@@ -236,16 +176,12 @@ export async function structuralClone(obj: any) {
 export default {
 	joinCipherText,
 	prettyFingerprint,
-	eccCurveToBitLength,
 	splitCipherText,
 	arrBufToStr,
 	arrBufToBase64,
 	strToArrBuf,
 	base64ToArrBuf,
-	publicExponent,
 	randomBuf,
-	joinBufs,
-	normalizeUtf8ToBuf,
 	normalizeUtf16ToBuf,
 	normalizeBase64ToBuf,
 	normalizeToBuf,

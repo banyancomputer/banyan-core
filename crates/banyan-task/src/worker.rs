@@ -1,29 +1,24 @@
 #![allow(dead_code)]
-
 use std::collections::BTreeMap;
 
-use time::OffsetDateTime;
-
 use crate::panic_safe_future::PanicSafeFuture;
-use crate::worker_pool::ScheduleFn;
 use crate::{
-    CurrentTask, CurrentTaskError, ExecuteTaskFn, QueueConfig, StateFn, Task, TaskExecError,
-    TaskState, TaskStore, TaskStoreError, MAXIMUM_CHECK_DELAY,
+    CurrentTask, CurrentTaskError, ExecuteTaskFn, NextScheduleFn, QueueConfig, StateFn, Task,
+    TaskExecError, TaskState, TaskStore, TaskStoreError, MAXIMUM_CHECK_DELAY,
 };
 
 pub struct Worker<Context, S>
 where
     Context: Clone + Send + 'static,
-    S: TaskStore + Clone,
+    S: TaskStore + Send + Clone,
 {
     name: String,
     queue_config: QueueConfig,
 
-    context_data_fn: StateFn<Context>,
+    context_fn: StateFn<Context>,
     store: S,
     task_registry: BTreeMap<&'static str, ExecuteTaskFn<Context>>,
-    schedule_registry: BTreeMap<&'static str, ScheduleFn>,
-
+    schedule_registry: BTreeMap<&'static str, NextScheduleFn>,
     shutdown_signal: Option<tokio::sync::watch::Receiver<()>>,
 }
 
@@ -35,16 +30,16 @@ where
     pub fn new(
         name: String,
         queue_config: QueueConfig,
-        context_data_fn: StateFn<Context>,
+        context_fn: StateFn<Context>,
         store: S,
         task_registry: BTreeMap<&'static str, ExecuteTaskFn<Context>>,
-        schedule_registry: BTreeMap<&'static str, ScheduleFn>,
+        schedule_registry: BTreeMap<&'static str, NextScheduleFn>,
         shutdown_signal: Option<tokio::sync::watch::Receiver<()>>,
     ) -> Self {
         Self {
             name,
             queue_config,
-            context_data_fn,
+            context_fn,
             store,
             task_registry,
             schedule_registry,
@@ -61,11 +56,19 @@ where
             .ok_or_else(|| WorkerError::UnregisteredTaskName(task.task_name.clone()))?
             .clone();
 
-        let context = (self.context_data_fn)();
+        let context = (self.context_fn)();
         let payload = task.payload.clone();
         let safe_runner = PanicSafeFuture::wrap(async move {
             deserialize_and_run_task_fn(task_info, payload, context).await
         });
+
+        // an error here occurs only when the task panicks, deserialization and regular task
+        // execution errors are handled next
+        //
+        // todo: should note the task as having panicked if that's why this failed. There is also a
+        // chance that the worker is corrupted in some way by the panic so I should set a flag on
+        // this worker and handle two consecutive panics as a worker problem. The second task
+        // triggering the panic should be presumed innocent and restored to a runnable state.
 
         // an error here occurs only when the task panicks, deserialization and regular task
         // execution errors are handled next
@@ -79,7 +82,7 @@ where
                 match task_result {
                     Ok(_) => {
                         match self.store.completed(task.id.clone()).await {
-                            Ok(_) => self.schedule_next_if_necessary(&task).await,
+                            Ok(_) => self.schedule_if_needed(&task).await,
                             Err(err) => {
                                 // TODO: "error returned from tests database: (code: 1) no such table: background_tasks"
                                 Err(WorkerError::UpdateTaskStatusFailed(err))
@@ -97,7 +100,7 @@ where
                             .await
                         {
                             // not retried
-                            Ok(None) => self.schedule_next_if_necessary(&task).await,
+                            Ok(None) => self.schedule_if_needed(&task).await,
                             // retry failed
                             Err(err) => Err(WorkerError::RetryTaskFailed(err)),
                             // retried
@@ -118,35 +121,41 @@ where
         }
     }
 
-    async fn schedule_next_if_necessary(&self, task: &Task) -> Result<(), WorkerError> {
-        if let Some(next_schedule) = self.get_next_schedule(task) {
-            return match self
-                .store
-                .schedule_next(task.id.clone(), next_schedule)
-                .await
-            {
-                Ok(_) => Ok(()),
-                Err(err) => {
-                    tracing::error!("Failed to schedule next occurrence of task: {err}");
-                    Err(WorkerError::ScheduleFailed(task.id.clone()))
-                }
-            };
+    async fn schedule_if_needed(&self, task: &Task) -> Result<(), WorkerError> {
+        // If there's already a schedule in place
+        if self
+            .store
+            .get_task_in_state(task.task_name.as_str(), vec![TaskState::New])
+            .await
+            .map_err(WorkerError::StoreUnavailable)?
+            .is_some()
+        {
+            return Ok(());
+        }
+
+        // If we need to schedule one and we can get one
+        if let Some(get_next_schedule) = self.schedule_registry.get(task.task_name.as_str()) {
+            if let Ok(Some(next_schedule)) = get_next_schedule(task.payload.clone()) {
+                return self
+                    .store
+                    .schedule_next(task.id.clone(), next_schedule)
+                    .await
+                    .map(|_| ())
+                    .map_err(|err| {
+                        WorkerError::ScheduleFailed(format!(
+                            "unable to schedule {}, err: {}",
+                            task.task_name, err
+                        ))
+                    });
+            }
         }
 
         Ok(())
     }
 
-    fn get_next_schedule(&self, task: &Task) -> Option<OffsetDateTime> {
-        if let Some(next_schedule) = self.schedule_registry.get(task.task_name.as_str()) {
-            return next_schedule(task.payload.clone());
-        }
-
-        None
-    }
-
     pub async fn run_tasks(&mut self) -> Result<(), WorkerError> {
         let relevant_task_names: Vec<&'static str> = self.task_registry.keys().cloned().collect();
-
+        // While there are still tasks in the queue
         loop {
             // check to see if its time to shutdown the worker
             //
@@ -160,26 +169,18 @@ where
                 }
             }
 
-            let next_task = self
+            if let Some(task) = self
                 .store
                 .next(self.queue_config.name(), &relevant_task_names)
                 .await
-                .map_err(WorkerError::StoreUnavailable)?;
-
-            if let Some(task) = next_task {
-                let task_name = task.task_name.clone();
-                let task_id = task.id.clone();
+                .map_err(WorkerError::StoreUnavailable)?
+            {
                 tracing::info!(
-                    task_name = task_name,
-                    task_id = task_id,
+                    task_name = task.task_name,
+                    task_id = task.id,
                     "starting execution of"
                 );
                 self.run(task).await?;
-                tracing::info!(
-                    task_name = task_name,
-                    task_id = task_id,
-                    "finished execution of"
-                );
                 continue;
             }
 
@@ -217,7 +218,10 @@ pub enum WorkerError {
     #[error("worker detected an error in the shutdown channel and forced and immediate exit")]
     EmergencyShutdown,
 
-    #[error("failed to enqueue a failed task for re-execution: {0}")]
+    #[error("failed to process error state of failed task {0}")]
+    ErrorTaskFailed(TaskStoreError),
+
+    #[error("failed to retry task {0}")]
     RetryTaskFailed(TaskStoreError),
 
     #[error("error while attempting to retrieve the next task: {0}")]
@@ -238,7 +242,6 @@ pub enum WorkerError {
 #[cfg(test)]
 mod tests {
     use std::sync::Arc;
-    use std::time::Duration;
 
     use futures::FutureExt;
     use tokio::sync::watch;
@@ -268,10 +271,7 @@ mod tests {
     }
     #[derive(Clone)]
     struct TestContext {}
-    fn create_registry() -> (
-        BTreeMap<&'static str, ExecuteTaskFn<TestContext>>,
-        BTreeMap<&'static str, ScheduleFn>,
-    ) {
+    fn create_registry() -> BTreeMap<&'static str, ExecuteTaskFn<TestContext>> {
         let mut task_registry = BTreeMap::new();
 
         let test_task_fn: ExecuteTaskFn<TestContext> =
@@ -289,34 +289,24 @@ mod tests {
 
         task_registry.insert(TestTask::TASK_NAME, test_task_fn);
         task_registry.insert(ScheduleTestTask::TASK_NAME, schedule_test_task_fn);
-
-        let mut schedule_registry = BTreeMap::new();
-
-        let test_task_fn: ScheduleFn = |_payload| None;
-        let schedule_test_task_fn: ScheduleFn =
-            |_payload| Some(OffsetDateTime::now_utc() - Duration::from_secs(60));
-
-        schedule_registry.insert(TestTask::TASK_NAME, test_task_fn);
-        schedule_registry.insert(ScheduleTestTask::TASK_NAME, schedule_test_task_fn);
-
-        (task_registry, schedule_registry)
+        task_registry
     }
     fn create_worker(
         ctx: &'static TestContext,
         task_store: SqliteTaskStore,
     ) -> Worker<TestContext, SqliteTaskStore> {
         let queue_config = QueueConfig::new(WORKER_NAME).with_worker_count(1);
-        let (task_registry, schedule_registry) = create_registry();
-        let context_data_fn = Arc::new(move || ctx.clone());
+        let task_registry = create_registry();
+        let context_fn = Arc::new(move || ctx.clone());
         let (_, inner_shutdown_rx) = watch::channel(());
 
         Worker::new(
             WORKER_NAME.to_string(),
             queue_config.clone(),
-            context_data_fn.clone(),
+            context_fn.clone(),
             task_store,
             task_registry.clone(),
-            schedule_registry.clone(),
+            BTreeMap::new(),
             Some(inner_shutdown_rx.clone()),
         )
     }
@@ -334,10 +324,10 @@ mod tests {
             result.is_err(),
             "Worker run should fail with unregistered task"
         );
-        if let WorkerError::UnregisteredTaskName(err) = result.unwrap_err() {
+        if let Err(WorkerError::UnregisteredTaskName(err)) = result {
             assert_eq!(err, task_name);
         } else {
-            panic!("did not return the correct error type")
+            panic!("did not return the correct error type {:?}", result);
         }
     }
 

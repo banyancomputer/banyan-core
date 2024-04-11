@@ -27,6 +27,7 @@ impl Blocks {
             .fetch_one(&mut *transaction)
             .await
     }
+
     pub async fn get_blocks_requiring_sync(
         database: &Database,
         storage_host_id: &str,
@@ -50,25 +51,41 @@ impl Blocks {
         .fetch_all(database)
         .await
     }
-    pub async fn get_block_ids(
-        transaction: &mut DatabaseConnection,
+    pub async fn get_cids_by_ids(
+        conn: &mut DatabaseConnection,
+        ids: &[String],
+    ) -> Result<Vec<String>, sqlx::Error> {
+        let mut query = sqlx::QueryBuilder::new("SELECT cid FROM blocks WHERE id IN(");
+
+        let mut block_id_iterator = ids.iter().peekable();
+        while let Some(bid) = block_id_iterator.next() {
+            query.push_bind(bid);
+
+            if block_id_iterator.peek().is_some() {
+                query.push(", ");
+            }
+        }
+        query.push(");");
+
+        query.build_query_scalar().fetch_all(&mut *conn).await
+    }
+
+    pub async fn get_ids_by_cids(
+        conn: &mut DatabaseConnection,
         normalized_cids: &[String],
     ) -> Result<Vec<String>, sqlx::Error> {
-        let mut prune_builder = sqlx::QueryBuilder::new("SELECT id FROM blocks WHERE cid IN(");
+        let mut query = sqlx::QueryBuilder::new("SELECT id FROM blocks WHERE cid IN(");
 
         let mut block_id_iterator = normalized_cids.iter().peekable();
         while let Some(bid) = block_id_iterator.next() {
-            prune_builder.push_bind(bid);
+            query.push_bind(bid);
 
             if block_id_iterator.peek().is_some() {
-                prune_builder.push(", ");
+                query.push(", ");
             }
         }
-        prune_builder.push(");");
+        query.push(");");
 
-        prune_builder
-            .build_query_scalar()
-            .fetch_all(&mut *transaction)
-            .await
+        query.build_query_scalar().fetch_all(&mut *conn).await
     }
 }

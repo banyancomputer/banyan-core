@@ -5,7 +5,7 @@ import { Fallback } from '@components/common/Fallback';
 import BucketHeader from '@components/Bucket/Files/Header';
 import { EmptyState } from '@components/Bucket/Files/EmptyState';
 
-import { useTomb } from '@app/contexts/tomb';
+import { useTomb } from '@contexts/tomb';
 
 const BucketFiles = () => {
     const { areBucketsLoading, selectedBucket } = useTomb();

@@ -220,14 +220,6 @@ export default {
                 of: "的",
                 upgradePlan: "升级计划",
             },
-            termsAndConditions: {
-                accountTypeQuestion: "您使用榕树做什么？",
-                agreeToTerms: "我同意榕树的",
-                termsOf: "服务条款",
-                and: "和",
-                privacyPolicy: "隐私政策",
-                continue: "继续",
-            },
             uploadFileProgress: {
                 uploading: "上传中",
                 uploadFailed: "上传失败"
@@ -258,17 +250,6 @@ export default {
                     creationError: "创建文件夹时出现问题。 请重试。",
                     tryAgain: "重试",
                 },
-                createSecretKey: {
-                    title: "创建秘密密钥",
-                    subtitle: "您的秘密密钥是解锁您的帐户的方法； 创建一个您可以记住并保持安全的秘密密钥 - 没有其他人可以访问它，甚至榕树，所以确保您可以记住它以解锁您的帐户。",
-                    secretKey: "秘密密钥",
-                    enterSecretKey: "输入秘密密钥",
-                    keyRequirements: "密钥必须至少为8个字符",
-                    confirmSecretKey: "确认秘密密钥",
-                    passphraseNotMatch: "密码不匹配，请重试",
-                    confirm: "确认",
-                    creationError: "初始化密钥库失败"
-                },
                 deleteBucket: {
                     title: "删除驱动器",
                     subtitle: "您确定要删除",
@@ -290,15 +271,6 @@ export default {
                     wasDeleted: "已删除",
                     deletionError: "删除时出现问题。 请重试",
                     tryAgain: "重试",
-                },
-                enterSecretKey: {
-                    title: "输入秘密密钥",
-                    subtitle: "将秘密密钥输入文本字段",
-                    secretKey: "秘密密钥",
-                    enterSecretKey: "输入秘密密钥",
-                    keyRequirements: "密钥必须至少为8个字符",
-                    confirm: "确认",
-                    sectretKeyError: "错误的秘密密钥",
                 },
                 hardStorageLimit: {
                     title: "您的存储空间不足",
@@ -435,6 +407,30 @@ export default {
             emptyTrash: "点击清空垃圾桶",
             trashIsEmpty: "垃圾桶是空的",
             clickToEmptyTrash: "点击清空垃圾桶",
+        },
+        createEncryptionKey: {
+            title: "创建加密密钥",
+            subtitle: "加密密钥是您访问帐户数据的途径，请确保您能记住它。",
+            newEncryptionKey: "新的加密密钥",
+            newEncryptionKeyPlaceholder: "创建新密钥",
+            reenterEncryptionKey: "重新输入加密密钥",
+            reenterEncryptionKeyPlaceholder: "确认密钥",
+            keyRequirements: "密钥必须至少为 8 个字符",
+            passphraseNotMatch: "密码不匹配，请重试",
+            agreeToTerms: "我同意 Banyan 的",
+            termsOfService: "服务条款",
+            and: "和",
+            privacyPolicy: "隐私政策",
+            continue: "继续"
+        },
+        enterEncryptionKey: {
+            title: "输入加密密钥",
+            encryptionKey: "加密密钥",
+            encryptionKeyPlaceholder: "输入您的加密密钥",
+            forgotEncryptionKey: "忘记加密密钥",
+            resetKey: "重置密钥",
+            continue: "继续",
+            secretKeyError: "错误的秘密密钥"
         }
     },
     contexts: {

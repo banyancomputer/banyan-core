@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE background_tasks\n                       SET started_at = DATETIME('now'),\n                           state = $1\n                       WHERE id = $2;",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "ec99f8f06a2887fe73fd3bb0557f43c2623bf6b98b0e0592b0afc1ddc29ee3bd"
+}

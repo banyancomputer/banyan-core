@@ -20,7 +20,12 @@ pub async fn handler(
     if !storage_provider.staging {
         return Err(ProviderGrantError::Unauthorized);
     }
-    let request_host = StorageHost::find_by_id(&database, storage_host_id.as_str())
+
+    let mut conn = database
+        .acquire()
+        .await
+        .map_err(ProviderGrantError::LookupFailed)?;
+    let request_host = StorageHost::find_by_id(&mut conn, storage_host_id.as_str())
         .await
         .map_err(ProviderGrantError::LookupFailed)?;
 
