@@ -106,7 +106,7 @@ pub async fn handler(
 
     // Now, let's re-evaluate the capacity of the new storage host
     HostCapacityTask::new(staging_host.id)
-        .enqueue::<banyan_task::SqliteTaskStore>(&mut *transaction)
+        .enqueue::<banyan_task::SqliteTaskStore>(&mut transaction)
         .await
         .map_err(CompleteRedistributionError::UnableToEnqueueTask)?;
     //  revaluate the capacity of staging service
