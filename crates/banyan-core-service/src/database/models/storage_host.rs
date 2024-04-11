@@ -185,12 +185,12 @@ impl UserStorageReport {
 
 #[derive(sqlx::FromRow)]
 pub struct HotUsage {
-    pub data_size: i32,
-    pub meta_size: i32,
+    pub data_size: i64,
+    pub meta_size: i64,
 }
 
 impl HotUsage {
     pub fn total(&self) -> i64 {
-        self.data_size as i64 + self.meta_size as i64
+        self.data_size + self.meta_size
     }
 }
