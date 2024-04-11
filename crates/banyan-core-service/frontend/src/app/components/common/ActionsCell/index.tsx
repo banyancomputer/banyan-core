@@ -36,23 +36,6 @@ export const ActionsCell: React.FC<{ actions: ReactElement; }> = ({ actions }) =
         };
     }, [isActionsVisible]);
 
-    useEffect(() => {
-        if (!isActionsVisible) return;
-
-        const table = document.getElementById('table');
-        if (!table) return;
-
-        const listener = () => {
-            setIsActionsVisible(false);
-        };
-
-        table.addEventListener('scroll', listener);
-
-        return () => {
-            document.removeEventListener('click', listener);
-        };
-    }, [isActionsVisible]);
-
     return (
         <div
             id="actionsCell"
@@ -64,7 +47,7 @@ export const ActionsCell: React.FC<{ actions: ReactElement; }> = ({ actions }) =
                 <Dots />
             </span>
             <div
-                className={`right-0 top-6 z-20 transition-none ${isActionsVisible ? 'absolute visible opacity-100' : 'fixed invisible opacity-0'}`}
+                className={`right-0 top-6 z-10 transition-none ${isActionsVisible ? 'absolute visible opacity-100' : 'fixed invisible opacity-0'}`}
             >
                 <div
                     ref={actionsBodyRef}
