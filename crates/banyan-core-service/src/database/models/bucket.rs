@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use banyan_task::TaskLikeExt;
+use banyan_task::{SqliteTaskStore, TaskLikeExt};
 use sqlx::sqlite::SqliteQueryResult;
 use sqlx::QueryBuilder;
 use time::OffsetDateTime;
@@ -199,14 +199,13 @@ impl Bucket {
             let block_list = block_set.into_iter().collect::<Vec<_>>();
             total_rows_pruned += block_list.len();
 
-            let queue_result = PruneBlocksTask::new(storage_host_id, block_list)
-                .enqueue::<banyan_task::SqliteTaskStore>(&mut *conn)
-                .await;
-
-            // A future clean up task can always come back through and catch any blocks not missed.
-            // We want to know if the queueing fails, but its not critical enough to abort the
-            // expiration transaction.
-            if let Err(err) = queue_result {
+            if let Err(err) = PruneBlocksTask::new(storage_host_id, block_list)
+                .enqueue::<SqliteTaskStore>(conn)
+                .await
+            {
+                // A future clean up task can always come back through and catch any blocks not missed.
+                // We want to know if the queueing fails, but its not critical enough to abort the
+                // expiration transaction.
                 tracing::warn!("failed to queue prune block task: {err}");
             }
         }

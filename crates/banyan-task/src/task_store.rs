@@ -34,19 +34,13 @@ pub trait TaskStore: Send + Sync + 'static {
         Ok(())
     }
 
-    async fn enqueue<T: TaskLike>(
+    async fn enqueue<T>(
         conn: &mut Self::Connection,
         task: T,
     ) -> Result<Option<String>, TaskStoreError>
     where
-        Self: Sized;
-
-    async fn enqueue_with_connection<T: TaskLike>(
-        conn: &mut Self::Connection,
-        task: T,
-    ) -> Result<Option<String>, TaskStoreError>
-    where
-        Self: Sized;
+        Self: Sized,
+        T: TaskLike;
 
     async fn errored(
         &self,
@@ -54,7 +48,9 @@ pub trait TaskStore: Send + Sync + 'static {
         error: TaskExecError,
     ) -> Result<Option<String>, TaskStoreError> {
         match error {
-            TaskExecError::DeserializationFailed(_) | TaskExecError::Panicked(_) => {
+            TaskExecError::DeserializationFailed(_)
+            | TaskExecError::Panicked(_)
+            | TaskExecError::SchedulingFailed(_) => {
                 self.update_state(id, TaskState::Dead).await?;
                 Ok(None)
             }
@@ -80,6 +76,20 @@ pub trait TaskStore: Send + Sync + 'static {
         id: String,
         next_schedule: OffsetDateTime,
     ) -> Result<Option<String>, TaskStoreError>;
+
+    async fn get_living_task(&self, task_name: &str) -> Result<Option<Task>, TaskStoreError> {
+        self.get_task_in_state(
+            task_name,
+            vec![TaskState::New, TaskState::InProgress, TaskState::Retry],
+        )
+        .await
+    }
+
+    async fn get_task_in_state(
+        &self,
+        task_name: &str,
+        states: Vec<TaskState>,
+    ) -> Result<Option<Task>, TaskStoreError>;
 }
 
 #[derive(Debug, thiserror::Error)]
