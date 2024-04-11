@@ -9,7 +9,6 @@ import { Upload } from '@static/images/common';
 import { useModal } from '@app/contexts/modals';
 import { CreateStorageHost } from '@components/pages/home/CreateStorageHost';
 import { Simulate } from 'react-dom/test-utils';
-import load = Simulate.load;
 
 const client = new AdminClient();
 

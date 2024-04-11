@@ -1,14 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 
-import {
-	ActiveDirectory,
-	ChevronUp,
-	Directory,
-	Logo,
-	DeleteHotData, Done, Mail
-} from '@static/images/common';
-import Users from '../../../../../../admin_dist/assets/users-25c11d26';
+import { ChevronUp, DeleteHotData, Directory, Logo, Mail } from '@static/images/common';
 
 export const Navigation = () => {
 	const location = useLocation();
