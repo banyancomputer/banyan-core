@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use async_trait::async_trait;
-use banyan_task::{CurrentTask, TaskLike};
+use banyan_task::{CurrentTask, RecurringTask, RecurringTaskError, TaskLike};
 use rand::prelude::SliceRandom;
 use serde::{Deserialize, Serialize};
 use sqlx::{Error, Row};
@@ -177,9 +177,14 @@ impl TaskLike for ReplicateDataTask {
 
         Ok(())
     }
+}
 
-    fn next_time(&self) -> Option<OffsetDateTime> {
-        Some(OffsetDateTime::now_utc() + time::Duration::hours(1))
+impl RecurringTask for ReplicateDataTask {
+    fn next_schedule(&self) -> Result<Option<OffsetDateTime>, RecurringTaskError> {
+        OffsetDateTime::now_utc()
+            .checked_add(time::Duration::hours(1))
+            .ok_or(RecurringTaskError::DateTimeAddition)
+            .map(Some)
     }
 }
 
