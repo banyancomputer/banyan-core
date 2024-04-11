@@ -4,6 +4,7 @@ mod email;
 mod host_capacity;
 mod prune_blocks;
 mod redistribute_staging_data;
+mod replicate_data;
 mod report_all_storage_hosts_consumption;
 mod report_all_users_consumption;
 mod report_storage_host_consumption;
@@ -26,6 +27,7 @@ use tokio::task::JoinHandle;
 
 use crate::app::AppState;
 use crate::tasks::redistribute_staging_data::RedistributeStagingDataTask;
+use crate::tasks::replicate_data::ReplicateDataTask;
 use crate::tasks::report_all_storage_hosts_consumption::ReportAllStorageHostsConsumptionTask;
 use crate::tasks::report_all_users_consumption::ReportAllUsersConsumptionTask;
 
@@ -39,6 +41,7 @@ pub async fn start_background_workers(
         .register_task_type::<PruneBlocksTask>()
         .register_task_type::<CreateDealsTask>()
         .register_task_type::<RedistributeStagingDataTask>()
+        .register_task_type::<ReplicateDataTask>()
         .register_task_type::<ReportUserConsumptionTask>()
         .register_task_type::<ReportAllUsersConsumptionTask>()
         .register_task_type::<ReportStorageHostConsumptionTask>()

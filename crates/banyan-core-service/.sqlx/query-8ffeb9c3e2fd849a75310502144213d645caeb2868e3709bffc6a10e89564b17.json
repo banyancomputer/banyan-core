@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                INSERT INTO background_tasks\n                (\n                    task_name, queue_name, unique_key, payload, \n                    current_attempt, maximum_attempts, state,\n                    original_task_id, scheduled_to_run_at\n                )\n                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)\n                RETURNING id;\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 9
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "8ffeb9c3e2fd849a75310502144213d645caeb2868e3709bffc6a10e89564b17"
+}

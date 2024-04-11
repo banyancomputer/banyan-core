@@ -36,7 +36,7 @@ mod user;
 mod user_total_consumption;
 
 #[cfg(test)]
-pub use block_location::tests::BlockLocations;
+pub use block_location::BlockLocations;
 pub use block_location::MinimalBlockLocation;
 pub use blocks::Blocks;
 pub use bucket::Bucket;
