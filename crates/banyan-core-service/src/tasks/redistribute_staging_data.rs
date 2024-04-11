@@ -113,7 +113,9 @@ impl TaskLike for RedistributeStagingDataTask {
             }
             transaction.commit().await?;
 
-            undistributed_blocks.retain(|s| !block_ids.contains(s));
+            for id in block_ids {
+                undistributed_blocks.remove(&id);
+            }
         }
 
         if !undistributed_blocks.is_empty() {

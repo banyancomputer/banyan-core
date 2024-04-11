@@ -163,7 +163,9 @@ impl TaskLike for ReplicateDataTask {
                 }
             }
 
-            undistributed_blocks.retain(|s| !block_ids.contains(s));
+            for id in block_ids {
+                undistributed_blocks.remove(&id);
+            }
         }
 
         if !undistributed_blocks.is_empty() {
