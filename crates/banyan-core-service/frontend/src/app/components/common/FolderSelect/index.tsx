@@ -52,6 +52,7 @@ export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBu
         openModal(<CreateFolderModal
             path={folder}
             bucket={selectedBucket!}
+            onSuccess={action}
         />
             ,
             action
