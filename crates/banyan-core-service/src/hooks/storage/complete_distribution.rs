@@ -14,6 +14,7 @@ use crate::tasks::{DeleteStagingDataTask, HostCapacityTask};
 
 #[derive(Deserialize)]
 pub struct CompleteRedistributionRequest {
+    replication: bool,
     normalized_cids: Vec<String>,
     grant_id: String,
 }
@@ -115,10 +116,12 @@ pub async fn handler(
         .await
         .map_err(CompleteRedistributionError::UnableToEnqueueTask)?;
 
-    DeleteStagingDataTask::new(metadata_id, request.normalized_cids.clone())
-        .enqueue::<banyan_task::SqliteTaskStore>(&mut *transaction)
-        .await
-        .map_err(CompleteRedistributionError::UnableToEnqueueTask)?;
+    if !request.replication {
+        DeleteStagingDataTask::new(metadata_id, request.normalized_cids.clone())
+            .enqueue::<banyan_task::SqliteTaskStore>(&mut *transaction)
+            .await
+            .map_err(CompleteRedistributionError::UnableToEnqueueTask)?;
+    }
 
     transaction.commit().await?;
 
@@ -157,7 +160,7 @@ mod tests {
     use crate::database::models::{Blocks, ExistingStorageGrant, MetadataState};
     use crate::database::{test_helpers, Database};
     use crate::extractors::StorageProviderIdentity;
-    use crate::hooks::storage::complete_redistribution::{handler, CompleteRedistributionRequest};
+    use crate::hooks::storage::complete_distribution::{handler, CompleteRedistributionRequest};
 
     pub async fn select_storage_grants_for_host(
         conn: &Database,
@@ -274,6 +277,7 @@ mod tests {
             mock_app_state(db.clone()),
             Path(metadata_id.clone()),
             Json(CompleteRedistributionRequest {
+                replication: false,
                 normalized_cids: block_cids.clone(),
                 grant_id: new_storage_grant_id,
             }),
@@ -318,6 +322,7 @@ mod tests {
             mock_app_state(db.clone()),
             Path(metadata_id.clone()),
             Json(CompleteRedistributionRequest {
+                replication: false,
                 normalized_cids: vec!["fake-cid".to_string()],
                 grant_id: new_storage_grant_id,
             }),
