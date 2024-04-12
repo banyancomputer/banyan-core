@@ -81,7 +81,6 @@ pub async fn handler(
 
         // Write this block to the tables
         write_block_to_tables(&mut conn, &upload.id, &request.cid, block.len() as i64).await?;
-        // TODO: that doesn't seem correct
         total_size += block.len();
 
         // Write the bytes to the expected location
