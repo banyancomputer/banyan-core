@@ -54,16 +54,6 @@ impl TaskLike for ReportRedistributionTask {
     type Context = ReportRedistributionTaskContext;
 
     async fn run(&self, _task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
-        // let normalized_cids = self
-        //     .cids
-        //     .iter()
-        // TODO: is that going to be a problem?
-        // .map(|c| {
-        //     c.to_string_of_base(Base::Base64Url)
-        //         .map_err(ReportRedistributionTaskError::InvalidInternalCid)
-        // })
-        // .collect::<Result<Vec<_>, _>>()?;
-
         let client = CoreServiceClient::new(
             ctx.secrets().service_signing_key(),
             ctx.service_name(),
