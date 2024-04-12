@@ -314,6 +314,16 @@ export default {
                     editError: "您的编辑出现问题。 请重试",
                     tryAgain: "重试",
                 },
+                renameFolder: {
+                    title: "重命名文件夹",
+                    folderName: "文件夹名称",
+                    enterNewName: "输入新名称",
+                    cancel: "取消",
+                    save: "保存",
+                    folderWasRenamed: "文件夹已重命名",
+                    editError: "您的编辑存在问题。请重试",
+                    tryAgain: "重试"
+                },
                 renameAccessKey: {
                     title: "重命名密钥",
                     keyName: "密钥名称",
