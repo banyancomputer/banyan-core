@@ -14,7 +14,7 @@ export class ToastNotifications {
 				<span className="bg-button-primary p-2 rounded-full text-navigation-text">
 					{icon}
 				</span>
-			) : null,
+			) : undefined,
 			bodyStyle: {
 				gap: '17px',
 				fontFamily: 'Inter',
