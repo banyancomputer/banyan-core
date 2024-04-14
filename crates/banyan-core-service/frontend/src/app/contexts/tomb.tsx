@@ -3,11 +3,13 @@ import React, { ReactNode, createContext, useContext, useEffect, useState } from
 import { TombWasm, WasmBucket } from 'tomb-wasm-experimental';
 import { unwrapResult } from '@reduxjs/toolkit';
 import { useNavigate } from 'react-router-dom';
+import { wrap } from 'comlink';
 
 import {
 	BrowserObject, Bucket, BucketKey,
 	BucketSnapshot,
 } from '@/app/types/bucket';
+import { UploadWorker } from '@/workers/upload.worker';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 import { destroyIsUserNew, getIsUserNew, prettyFingerprintApiKeyPem, sortByType } from '@app/utils';
 import { handleNameDuplication } from '@utils/names';
@@ -55,6 +57,9 @@ interface TombInterface {
 const storageUsageClient = new StorageUsageClient();
 const snapshotsClient = new SnapshotsClient();
 
+const worker = new Worker(new URL('../../workers/upload.worker.ts', import.meta.url));
+const uploadWorker = wrap<UploadWorker>(worker);
+
 const TombContext = createContext<TombInterface>({} as TombInterface);
 
 export const TombProvider = ({ children }: { children: ReactNode }) => {
@@ -84,15 +89,12 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 		}
 		const buckets: Bucket[] = [];
 		for (let bucket of wasm_buckets) {
-			let mount;
-			let locked;
-			let isSnapshotValid;
 			const snapshots = await snapshotsClient.getSnapshots(bucket.id());
-			mount = await tomb!.mount(bucket.id(), key.privatePem);
-			locked = await mount.locked();
-			isSnapshotValid = await mount.hasSnapshot();
+			const mount = await tomb!.mount(bucket.id(), key.privatePem);
+			const locked = await mount.locked();
+			const isSnapshotValid = await mount.hasSnapshot();
 			buckets.push({
-				mount: mount || null,
+				mount: mount,
 				id: bucket.id(),
 				name: bucket.name(),
 				storageClass: bucket.storageClass(),
@@ -100,8 +102,8 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 				files: [],
 				snapshots,
 				keys: [],
-				locked: locked || false,
-				isSnapshotValid: isSnapshotValid || false
+				locked: locked,
+				isSnapshotValid: isSnapshotValid
 			});
 		};
 		setBuckets(buckets);
@@ -307,16 +309,15 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 		const mount = bucket.mount!;
 		const extstingFiles = (await mount.ls(uploadPath)).map(file => file.name);
 		let fileName = handleNameDuplication(name, extstingFiles);
-		await mount.write([...uploadPath, fileName], file);
+		const files = await uploadWorker.uploadFile(bucket.id, uploadPath, fileName, file);
+
 		if (folder) {
-			const files = await mount.ls(uploadPath);
 			folder.files = files.sort(sortByType);
 			setSelectedBucket(prev => ({ ...prev! }));
 
 			return;
 		}
 		if (uploadPath.join('') !== folderLocation.join('')) { return; }
-		const files = await mount.ls(uploadPath) || [];
 		await updateBucketsState('files', files.sort(sortByType), bucket.id);
 		const isSnapshotValid = await mount.hasSnapshot();
 		await updateBucketsState('isSnapshotValid', isSnapshotValid, bucket.id);
@@ -364,6 +365,8 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 					window.location.protocol + '//' + window.location.host,
 				);
 				setTomb(tomb);
+				const encryptionKey = unwrapResult(await dispatch(getEncryptionKey()));
+				await uploadWorker.mountTomb(apiKey, user.id, window.location.protocol + '//' + window.location.host, encryptionKey);
 			} catch (error: any) {
 				dispatch(setError(new BannerError(error.message)));
 			}
