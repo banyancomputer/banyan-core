@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use http::{HeaderMap, HeaderValue};
 use jwt_simple::prelude::*;
 use reqwest::{Client, Response};
@@ -19,7 +21,7 @@ impl CoreServiceClient {
         service_name: &str,
         platform_name: &str,
         platform_hostname: Url,
-    ) -> Self {
+    ) -> Result<Self, CoreServiceError> {
         let mut claims = Claims::create(Duration::from_secs(60))
             .with_audiences(HashSet::from_strings(&[platform_name]))
             .with_subject(service_name)
@@ -27,20 +29,47 @@ impl CoreServiceClient {
 
         claims.create_nonce();
         claims.issued_at = Some(Clock::now_since_epoch());
-        let bearer_token = service_signing_key.sign(claims).unwrap();
+        let bearer_token = service_signing_key
+            .sign(claims)
+            .map_err(|_| CoreServiceError::TokenSigningError)?;
         let mut default_headers = HeaderMap::new();
         default_headers.insert("Content-Type", HeaderValue::from_static("application/json"));
 
         let client = Client::builder()
             .default_headers(default_headers)
             .build()
-            .unwrap();
+            .map_err(|_| CoreServiceError::ClientBuildingError)?;
 
-        Self {
+        Ok(Self {
             client,
             bearer_token,
             platform_hostname,
+        })
+    }
+    pub async fn locate_blocks(
+        &self,
+        block_cids: Vec<String>,
+    ) -> Result<HashMap<String, Vec<String>>, CoreServiceError> {
+        let locate_blocks_endpoint = self
+            .platform_hostname
+            .join("/api/v1/blocks/locate")
+            .map_err(|_| CoreServiceError::UrlJoinError)?;
+
+        let response = self
+            .client
+            .post(locate_blocks_endpoint.clone())
+            .json(&block_cids)
+            .bearer_auth(&self.bearer_token)
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            return Err(CoreServiceError::BadRequest(response.text().await?));
         }
+        response
+            .json::<HashMap<String, Vec<String>>>()
+            .await
+            .map_err(|_| CoreServiceError::ResponseParseError)
     }
 
     pub async fn report_upload(
@@ -59,7 +88,7 @@ impl CoreServiceClient {
         let report_endpoint = self
             .platform_hostname
             .join(&format!("/hooks/storage/report/{}", metadata_id))
-            .unwrap();
+            .map_err(|_| CoreServiceError::UrlJoinError)?;
 
         let response = self
             .client
@@ -69,11 +98,10 @@ impl CoreServiceClient {
             .send()
             .await?;
 
-        if response.status().is_success() {
-            return Ok(response);
+        if !response.status().is_success() {
+            return Err(CoreServiceError::BadRequest(response.text().await?));
         }
-
-        Err(CoreServiceError::BadRequest(response.text().await?))
+        Ok(response)
     }
 
     pub async fn request_provider_token(
@@ -83,7 +111,7 @@ impl CoreServiceClient {
         let provider_token_url = self
             .platform_hostname
             .join(format!("/api/v1/auth/provider_grant/{}", storage_provider_id).as_str())
-            .unwrap();
+            .map_err(|_| CoreServiceError::UrlJoinError)?;
 
         let response = self
             .client
@@ -92,14 +120,13 @@ impl CoreServiceClient {
             .send()
             .await?;
 
-        if response.status().is_success() {
-            return match response.json::<StorageProviderAuthResponse>().await {
-                Ok(response) => Ok(response),
-                Err(_) => Err(CoreServiceError::ResponseParseError),
-            };
+        if !response.status().is_success() {
+            return Err(CoreServiceError::BadRequest(response.text().await?));
         }
-
-        Err(CoreServiceError::BadRequest(response.text().await?))
+        response
+            .json::<StorageProviderAuthResponse>()
+            .await
+            .map_err(|_| CoreServiceError::ResponseParseError)
     }
 
     pub async fn report_user_bandwidth(
@@ -109,7 +136,7 @@ impl CoreServiceClient {
         let storage_hosts_endpoint = self
             .platform_hostname
             .join("/api/v1/metrics/traffic")
-            .unwrap();
+            .map_err(|_| CoreServiceError::UrlJoinError)?;
 
         let response = self
             .client
@@ -119,16 +146,21 @@ impl CoreServiceClient {
             .send()
             .await?;
 
-        if response.status().is_success() {
-            return Ok(());
+        if !response.status().is_success() {
+            return Err(CoreServiceError::BadRequest(response.text().await?));
         }
-
-        Err(CoreServiceError::BadRequest(response.text().await?))
+        Ok(())
     }
 }
 
 #[derive(Debug, thiserror::Error)]
 pub enum CoreServiceError {
+    #[error("client building error")]
+    ClientBuildingError,
+    #[error("token signing error")]
+    TokenSigningError,
+    #[error("url join error")]
+    UrlJoinError,
     #[error("response parse error")]
     ResponseParseError,
     #[error("failure during request: {0}")]

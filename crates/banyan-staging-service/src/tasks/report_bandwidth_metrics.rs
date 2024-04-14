@@ -8,7 +8,7 @@ use time::{Duration, OffsetDateTime};
 use url::Url;
 
 use crate::app::AppState;
-use crate::clients::{CoreServiceClient, MeterTrafficRequest};
+use crate::clients::{CoreServiceClient, CoreServiceError, MeterTrafficRequest};
 use crate::database::models::BandwidthMetrics;
 use crate::database::Database;
 
@@ -31,6 +31,9 @@ pub enum ReportBandwidthMetricsTaskError {
 
     #[error("could not calculate end slot: {0}")]
     EndSlotParsingError(#[from] ComponentRange),
+
+    #[error("core service error: {0}")]
+    CoreServiceError(#[from] CoreServiceError),
 }
 
 #[derive(Default, Deserialize, Serialize)]
@@ -53,7 +56,7 @@ impl TaskLike for ReportBandwidthMetricsTask {
             ctx.service_name(),
             ctx.platform_name(),
             ctx.platform_hostname(),
-        );
+        )?;
 
         for metrics in partitioned_metrics {
             let meter_traffic_request = MeterTrafficRequest {
