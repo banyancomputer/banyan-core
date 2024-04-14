@@ -39,7 +39,7 @@ export class UploadWorker {
             mount = currentBucket.mount
             console.error('oldMount');
         } else {
-            console.error('newMount');a
+            console.error('newMount');
             mount = await this.state.tomb!.mount(bucketId, this.state.encryptionKey!.privatePem);
             this.state.buckets.push({mount, id: bucketId});
         };
