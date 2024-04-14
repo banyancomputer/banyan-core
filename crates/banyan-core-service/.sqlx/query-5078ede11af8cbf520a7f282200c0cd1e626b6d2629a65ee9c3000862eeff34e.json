@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE block_locations SET pruned_at = DATETIME('now') WHERE storage_host_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "5078ede11af8cbf520a7f282200c0cd1e626b6d2629a65ee9c3000862eeff34e"
+}

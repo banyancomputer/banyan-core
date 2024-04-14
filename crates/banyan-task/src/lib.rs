@@ -18,10 +18,12 @@ pub use models::task_state::TaskState;
 pub use queue_config::QueueConfig;
 pub use stores::SqliteTaskStore;
 pub use task_instance_builder::TaskInstanceBuilder;
-pub use task_like::{TaskLike, TaskLikeExt};
+pub use task_like::{RecurringTask, RecurringTaskError, TaskLike, TaskLikeExt};
 pub use task_store::{TaskStore, TaskStoreError, TaskStoreMetrics};
 pub use worker::{Worker, WorkerError};
-pub use worker_pool::{ExecuteTaskFn, StateFn, WorkerPool, WorkerPoolError};
+pub use worker_pool::{
+    Contextual, ExecuteTaskFn, NextScheduleFn, StateFn, WorkerPool, WorkerPoolError,
+};
 
 #[cfg(any(test, feature = "test-utils"))]
 pub mod tests {

@@ -15,17 +15,17 @@ pub async fn handler(
     let mut conn = database.acquire().await?;
     let user_id = user_identity.id().to_string();
 
-    let user = User::find_by_id(&mut conn, &user_id)
+    let mut user: ApiUser = User::find_by_id(&mut conn, &user_id)
         .await?
+        .map(Into::into)
         .ok_or(CurrentUserError::NotFound)?;
 
     let user_metrics = MetricsTraffic::find_by_user_for_the_month(&mut conn, &user_id).await?;
-    let mut api_user = ApiUser::from(user);
     match user_metrics {
-        Some(metrics) => api_user = api_user.with_egress(metrics.egress),
-        None => api_user = api_user.with_egress(0),
+        Some(metrics) => user = user.with_egress(metrics.egress),
+        None => user = user.with_egress(0),
     }
-    Ok((StatusCode::OK, Json(api_user)).into_response())
+    Ok((StatusCode::OK, Json(user)).into_response())
 }
 
 #[derive(Debug, thiserror::Error)]

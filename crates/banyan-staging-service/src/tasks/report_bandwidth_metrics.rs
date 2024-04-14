@@ -1,14 +1,14 @@
 use std::collections::HashMap;
 
 use async_trait::async_trait;
-use banyan_task::{CurrentTask, TaskLike};
+use banyan_task::{CurrentTask, RecurringTask, RecurringTaskError, TaskLike};
 use serde::{Deserialize, Serialize};
 use time::error::ComponentRange;
 use time::{Duration, OffsetDateTime};
 use url::Url;
 
 use crate::app::AppState;
-use crate::clients::{CoreServiceClient, MeterTrafficRequest};
+use crate::clients::{CoreServiceClient, CoreServiceError, MeterTrafficRequest};
 use crate::database::models::BandwidthMetrics;
 use crate::database::Database;
 
@@ -31,9 +31,12 @@ pub enum ReportBandwidthMetricsTaskError {
 
     #[error("could not calculate end slot: {0}")]
     EndSlotParsingError(#[from] ComponentRange),
+
+    #[error("core service error: {0}")]
+    CoreServiceError(#[from] CoreServiceError),
 }
 
-#[derive(Deserialize, Serialize, Default)]
+#[derive(Default, Deserialize, Serialize)]
 pub struct ReportBandwidthMetricsTask;
 
 #[async_trait]
@@ -53,7 +56,7 @@ impl TaskLike for ReportBandwidthMetricsTask {
             ctx.service_name(),
             ctx.platform_name(),
             ctx.platform_hostname(),
-        );
+        )?;
 
         for metrics in partitioned_metrics {
             let meter_traffic_request = MeterTrafficRequest {
@@ -82,10 +85,14 @@ impl TaskLike for ReportBandwidthMetricsTask {
 
         Ok(())
     }
+}
 
-    fn next_time(&self) -> Option<OffsetDateTime> {
-        // every 20 minutes; not to miss the hour window
-        Some(OffsetDateTime::now_utc() + Duration::minutes(20))
+impl RecurringTask for ReportBandwidthMetricsTask {
+    fn next_schedule(&self) -> Result<Option<OffsetDateTime>, RecurringTaskError> {
+        OffsetDateTime::now_utc()
+            .checked_add(Duration::minutes(20))
+            .ok_or(RecurringTaskError::DateTimeAddition)
+            .map(Some)
     }
 }
 

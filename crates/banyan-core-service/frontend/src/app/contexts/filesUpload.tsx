@@ -32,7 +32,7 @@ export const FileUploadProvider: FC<{ children: ReactNode }> = ({ children }) =>
     const navigate = useNavigate();
 
     const uploadFiles = async (fileList: FileList, bucket: Bucket, path: string[], folder?: BrowserObject) => {
-        const files: UploadingFile[] = Array.from(fileList).slice(0, 1).map(file => ({ file, status: 'pending' }));
+        const files: UploadingFile[] = Array.from(fileList).map(file => ({ file, status: 'pending' }));
 
         if (files.some(file => file.file.size > FILE_SIZE_LIMIT)) {
             ToastNotifications.error(fileSizeExceeded);

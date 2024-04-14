@@ -24,6 +24,7 @@ const App = () => {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const { keystoreInitialized } = useAppSelector(state => state.keystore);
+    const { user } = useAppSelector(state => state.session);
     const [isKeystorageLoading, setIsKeystorageLoading] = useState(true);
 
     useEffect(() => {
@@ -74,6 +75,8 @@ const App = () => {
     }, []);
 
     useEffect(() => {
+        if(!user.id) return;
+
         (async () => {
             try {
                 const escrowedKeyMaterial = unwrapResult(await dispatch(getEscrowedKeyMaterial()));
@@ -85,7 +88,7 @@ const App = () => {
                 navigate(RoutesConfig.CreateEncryptionKey.path);
             }
         })()
-    }, [isKeystorageLoading, keystoreInitialized]);
+    }, [isKeystorageLoading, keystoreInitialized, user.id]);
 
     return (
         <main

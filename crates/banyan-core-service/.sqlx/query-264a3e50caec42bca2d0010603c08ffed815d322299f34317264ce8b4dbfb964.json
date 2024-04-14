@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM snapshot_restore_requests WHERE user_id = $1;",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "264a3e50caec42bca2d0010603c08ffed815d322299f34317264ce8b4dbfb964"
+}

@@ -13,7 +13,7 @@ mod user_identity;
 use std::sync::OnceLock;
 use std::time::Duration;
 
-pub use admin_identity::AdminIdentity;
+pub use admin_identity::{AdminIdentity, ADMIN_USERS};
 #[cfg(test)]
 pub(crate) use api_identity::tests::ApiIdentityBuilder;
 pub use api_identity::ApiIdentity;

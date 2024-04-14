@@ -68,22 +68,25 @@ impl StorageHost {
     }
 
     pub async fn select_for_capacity_with_exclusion(
-        database: &Database,
+        conn: &mut DatabaseConnection,
         required_bytes: i64,
-        exclude_host_id: &str,
+        exclude_host_ids: &[String],
     ) -> Result<Self, sqlx::Error> {
-        sqlx::query_as!(
-            Self,
-            r#"SELECT * FROM storage_hosts
-                       WHERE (available_storage - used_storage) > $1
-                       AND id != $2
-                       ORDER BY RANDOM()
-                       LIMIT 1;"#,
-            required_bytes,
-            exclude_host_id
-        )
-        .fetch_one(database)
-        .await
+        let mut query = sqlx::QueryBuilder::new(
+            "SELECT * FROM storage_hosts WHERE (available_storage - reserved_storage) > ",
+        );
+        query.push_bind(required_bytes);
+        query.push(" AND id NOT IN (");
+
+        let mut separated_values = query.separated(", ");
+        for id in exclude_host_ids {
+            separated_values.push_bind(id);
+        }
+
+        query.push(") ORDER BY RANDOM() LIMIT 1;");
+
+        let res = query.build_query_as::<Self>().fetch_one(conn).await?;
+        Ok(res)
     }
 
     pub async fn select_staging(conn: &Database) -> Result<Self, sqlx::Error> {
@@ -95,9 +98,9 @@ impl StorageHost {
         .await
     }
 
-    pub async fn find_by_id(conn: &Database, id: &str) -> Result<Self, sqlx::Error> {
+    pub async fn find_by_id(conn: &mut DatabaseConnection, id: &str) -> Result<Self, sqlx::Error> {
         sqlx::query_as!(Self, "SELECT * FROM storage_hosts WHERE id = $1;", id,)
-            .fetch_one(conn)
+            .fetch_one(&mut *conn)
             .await
     }
 
@@ -184,31 +187,13 @@ impl UserStorageReport {
 }
 
 #[derive(sqlx::FromRow)]
-pub struct ConsumedStorage {
+pub struct HotUsage {
     pub data_size: i64,
     pub meta_size: i64,
 }
-impl ConsumedStorage {
-    pub async fn total_consumption_for_user(
-        conn: &mut DatabaseConnection,
-        user_id: &str,
-    ) -> Result<Self, sqlx::Error> {
-        // (sstelfox): we need to include outdated currently as they include blocks referenced by the current
-        // version, todo: we'll need a better way of calculating this
-        sqlx::query_as!(
-            Self,
-            r#"SELECT
-                COALESCE(SUM(m.metadata_size), 0) as data_size,
-                COALESCE(SUM(COALESCE(m.data_size, m.expected_data_size)), 0) as meta_size
-            FROM
-                metadata m
-            INNER JOIN
-                buckets b ON b.id = m.bucket_id
-            WHERE
-                b.user_id = $1 AND b.deleted_at IS NULL AND m.state IN ('current', 'outdated', 'pending');"#,
-            user_id,
-        )
-        .fetch_one(&mut *conn)
-        .await
+
+impl HotUsage {
+    pub fn total(&self) -> i64 {
+        self.data_size + self.meta_size
     }
 }

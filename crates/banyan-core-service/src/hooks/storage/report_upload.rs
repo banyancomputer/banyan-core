@@ -1,7 +1,7 @@
 use axum::extract::{Json, Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use banyan_task::TaskLikeExt;
+use banyan_task::{SqliteTaskStore, TaskLikeExt};
 use serde::Deserialize;
 use uuid::Uuid;
 
@@ -76,6 +76,7 @@ pub async fn handler(
     )
     .await
     .map_err(ReportUploadError::MarkCurrentFailed)?;
+
     // Now that the state has changed, mark old unsnapshotted metadatas as being deleted
     Metadata::delete_outdated(&mut db_conn, &bucket_id)
         .await
@@ -83,7 +84,7 @@ pub async fn handler(
 
     // Now, let's re-evaluate the capacity of that storage host
     HostCapacityTask::new(storage_provider.id.clone())
-        .enqueue::<banyan_task::SqliteTaskStore>(&mut db_conn)
+        .enqueue::<SqliteTaskStore>(&mut db_conn)
         .await
         .map_err(ReportUploadError::UnableToEnqueueTask)?;
 
@@ -101,6 +102,9 @@ pub async fn handler(
         .enqueue::<banyan_task::SqliteTaskStore>(&mut db_conn)
         .await
         .map_err(ReportUploadError::UnableToEnqueueTask)?;
+
+    // Close the connection to prevent locking
+    db_conn.close().await?;
 
     Ok((StatusCode::NO_CONTENT, ()).into_response())
 }
@@ -193,7 +197,9 @@ mod tests {
         .await;
 
         assert!(result.is_ok());
-        let block_locations = BlockLocations::get_all(&db).await.expect("block locations");
+        let block_locations = BlockLocations::find_all(&db)
+            .await
+            .expect("block locations");
         assert_eq!(block_locations.len(), initial_cids.len());
     }
 }

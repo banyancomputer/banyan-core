@@ -1,0 +1,243 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Banyan Core Service Admin API",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://beta.data.banyan.computer/api/v1"
+    }
+  ],
+  "paths": {
+    "/admin/deals": {
+      "get": {
+        "summary": "Get all deals",
+        "operationId": "getAllDeals",
+        "security": [
+          {
+            "SessionIdentity": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of all deals",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApiDealsAdmin"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/providers": {
+      "get": {
+        "summary": "Get all storage providers",
+        "operationId": "getAllStorageHosts",
+        "security": [
+          {
+            "SessionIdentity": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of all storage providers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApiSelectedStorageHostAdmin"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new storage provider",
+        "operationId": "createStorageHost",
+        "security": [
+          {
+            "SessionIdentity": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SelectedStorageHostRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Storage provider created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiSelectedStorageHostAdmin"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request, possibly due to missing fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "SessionIdentity": {
+        "type": "oauth2",
+        "flows": {
+          "authorizationCode": {
+            "authorizationUrl": "https://accounts.google.com/o/oauth2/v2/auth",
+            "tokenUrl": "https://oauth2.googleapis.com/token",
+            "scopes": {
+              "email": "Access to the user's email address",
+              "profile": "Access to the user's basic profile information"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "ApiSelectedStorageHostAdmin": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "used_storage": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "available_storage": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "fingerprint": {
+            "type": "string"
+          },
+          "pem": {
+            "type": "string",
+            "format": "pem"
+          }
+        }
+      },
+      "ApiDealsAdmin": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/DealState"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "accepted_by": {
+            "type": "string",
+            "nullable": true
+          },
+          "accepted_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "SelectedStorageHostRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "available_storage": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "region": {
+            "type": "string"
+          }
+        }
+      },
+      "DealState": {
+        "type": "string",
+        "enum": [
+          "Pending",
+          "Accepted",
+          "Rejected"
+        ]
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "msg": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

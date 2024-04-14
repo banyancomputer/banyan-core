@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM block_locations where metadata_id in (\n        SELECT metadata_id\n    FROM metadata\n    JOIN buckets\n    ON metadata.bucket_id = buckets.id\n    WHERE user_id = $1);",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "640bdb5ed05d556a500d6e307a765243e289d4d971fa7694bf31bd039691c79c"
+}

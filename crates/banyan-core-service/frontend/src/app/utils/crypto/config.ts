@@ -10,7 +10,6 @@ import {
   DEFAULT_STORE_NAME,
 } from './constants'
 import { Config, KeyUse, SymmKeyOpts } from './types'
-import utils from './utils'
 
 export const defaultConfig = {
   exchangeAlg: ECC_EXCHANGE_ALG,
