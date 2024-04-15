@@ -1,4 +1,4 @@
-import { StorageHost, Deal, StorageHostRequest, User } from '@app/types';
+import { Deal, StorageHost, StorageHostRequest, User } from '@app/types';
 import { APIClient } from './http';
 
 export class AdminClient extends APIClient {

@@ -478,7 +478,10 @@ pub(crate) async fn sample_blocks(
     storage_host_id: &str,
     grant_id: &str,
 ) -> Vec<String> {
-    let initial_cids: Vec<_> = generate_cids(data_generator(0..number_of_blocks)).collect();
+    let my_uuid = Uuid::new_v4();
+    let start = u128::from_le_bytes(*my_uuid.as_bytes()) as usize;
+    let initial_cids: Vec<_> =
+        generate_cids(data_generator(start..start + number_of_blocks)).collect();
     let block_ids = create_blocks(&mut *conn, initial_cids.iter().map(String::as_str)).await;
 
     associate_blocks(

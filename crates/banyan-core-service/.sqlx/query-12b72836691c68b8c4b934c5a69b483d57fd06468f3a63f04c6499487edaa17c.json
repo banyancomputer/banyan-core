@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE block_locations SET expired_at = DATETIME('now') WHERE storage_host_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "12b72836691c68b8c4b934c5a69b483d57fd06468f3a63f04c6499487edaa17c"
+}

@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use async_trait::async_trait;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -10,7 +12,6 @@ use crate::{CurrentTask, TaskStoreError};
 pub trait TaskLike: Serialize + DeserializeOwned + Sync + Send + 'static {
     const MAX_ATTEMPTS: i64 = 3;
     const QUEUE_NAME: &'static str = "default";
-
     const TASK_NAME: &'static str;
 
     type Error: std::error::Error;
@@ -19,10 +20,6 @@ pub trait TaskLike: Serialize + DeserializeOwned + Sync + Send + 'static {
     async fn run(&self, task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error>;
 
     fn unique_key(&self) -> Option<String> {
-        None
-    }
-
-    fn next_time(&self) -> Option<OffsetDateTime> {
         None
     }
 }
@@ -44,22 +41,38 @@ where
         self,
         conn: &mut S::Connection,
     ) -> Result<Option<String>, TaskStoreError> {
-        S::enqueue_with_connection(conn, self).await
+        S::enqueue(conn, self).await
+    }
+}
+
+pub trait RecurringTask: TaskLike + Default {
+    fn next_schedule(&self) -> Result<Option<OffsetDateTime>, RecurringTaskError>;
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum RecurringTaskError {
+    DateTimeAddition,
+}
+
+impl Display for RecurringTaskError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::DateTimeAddition => f.write_str("OffsetDateTime checked_add failed"),
+        }
     }
 }
 
 #[cfg(any(test, feature = "test-utils"))]
 pub mod tests {
-    use std::time::Duration;
-
     use async_trait::async_trait;
     use serde::{Deserialize, Serialize};
+    use time::Duration;
 
     use super::*;
 
     #[derive(Debug, Serialize, Deserialize)]
     pub struct TestTask;
-    #[derive(Debug, Serialize, Deserialize)]
+    #[derive(Debug, Default, Serialize, Deserialize)]
     pub struct ScheduleTestTask;
 
     #[async_trait]
@@ -84,9 +97,15 @@ pub mod tests {
         async fn run(&self, _task: CurrentTask, _ctx: Self::Context) -> Result<(), Self::Error> {
             Ok(())
         }
+    }
 
-        fn next_time(&self) -> Option<OffsetDateTime> {
-            Some(OffsetDateTime::now_utc() + Duration::from_secs(60))
+    #[async_trait]
+    impl RecurringTask for ScheduleTestTask {
+        fn next_schedule(&self) -> Result<Option<OffsetDateTime>, RecurringTaskError> {
+            OffsetDateTime::now_utc()
+                .checked_add(Duration::minutes(5))
+                .ok_or(RecurringTaskError::DateTimeAddition)
+                .map(Some)
         }
     }
 }

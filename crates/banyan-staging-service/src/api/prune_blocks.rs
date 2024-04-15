@@ -26,7 +26,6 @@ pub async fn handler(
     PruneBlocksTask::new(cids_to_prune)
         .enqueue::<banyan_task::SqliteTaskStore>(&mut conn)
         .await?;
-
     Ok((StatusCode::OK, ()).into_response())
 }
 

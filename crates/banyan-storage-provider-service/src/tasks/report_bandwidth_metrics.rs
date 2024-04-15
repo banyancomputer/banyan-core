@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use async_trait::async_trait;
-use banyan_task::{CurrentTask, TaskLike};
+use banyan_task::{CurrentTask, RecurringTask, RecurringTaskError, TaskLike};
 use serde::{Deserialize, Serialize};
 use time::error::ComponentRange;
 use time::{Duration, OffsetDateTime};
@@ -33,7 +33,7 @@ pub enum ReportBandwidthMetricsTaskError {
     EndSlotParsingError(#[from] ComponentRange),
 }
 
-#[derive(Deserialize, Serialize, Default)]
+#[derive(Default, Deserialize, Serialize)]
 pub struct ReportBandwidthMetricsTask;
 
 #[async_trait]
@@ -82,10 +82,14 @@ impl TaskLike for ReportBandwidthMetricsTask {
 
         Ok(())
     }
+}
 
-    fn next_time(&self) -> Option<OffsetDateTime> {
-        // every 20 minutes; not to miss the hour window
-        Some(OffsetDateTime::now_utc() + Duration::minutes(20))
+impl RecurringTask for ReportBandwidthMetricsTask {
+    fn next_schedule(&self) -> Result<Option<OffsetDateTime>, RecurringTaskError> {
+        OffsetDateTime::now_utc()
+            .checked_add(Duration::minutes(20))
+            .ok_or(RecurringTaskError::DateTimeAddition)
+            .map(Some)
     }
 }
 
