@@ -6,6 +6,7 @@ import { DeleteBucketModal } from '@components/common/Modal/DeleteBucketModal';
 import { TakeSnapshotModal } from '@components/common/Modal/TakeSnapshotModal';
 import { UploadFileModal } from '@components/common/Modal/UploadFileModal';
 import { CreateFolderModal } from '@components/common/Modal/CreateFolderModal ';
+import { Tooltip } from '@components/common/Tooltip';
 
 import { Action } from '@components/Bucket/Files/BucketTable/FileActions';
 import { useModal } from '@/app/contexts/modals';
@@ -170,7 +171,11 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                                         {action.icon}
                                         {action.label}
                                         {action.tooltip ?
-                                            <span title={action.tooltip}>(?)</span>
+                                            <Tooltip
+                                                body={<span >(?)</span>}
+                                                tooltip={<>{action.tooltip}</>}
+                                                bodyClassName="right-10"
+                                            />
                                             :
                                             null
                                         }

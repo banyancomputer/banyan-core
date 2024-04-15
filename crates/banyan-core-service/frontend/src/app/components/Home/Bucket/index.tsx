@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { BucketActions } from '@components/common/BucketActions';
 import { LockedTooltip } from '@components/common/Navigation/LockedTooltip';
+import { Tooltip } from '@components/common/Tooltip';
 
 import { Bucket as IBucket } from '@/app/types/bucket';
 import { popupClickHandler } from '@/app/utils';
@@ -132,9 +133,10 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
                         <div className={`px-2 rounded-full text-mainBackground ${storageClassNames[bucket.storageClass]} capitalize`}>
                             {messages[bucket.storageClass as messagesKeys]}
                         </div>
-                        <div className="text-text-400" title={messages[`${bucket.storageClass}Tooltip` as messagesKeys]}>
-                            <Question width="24px" height="24px" />
-                        </div>
+                        <Tooltip
+                            body={<div className="text-text-400"><Question width="24px" height="24px" /></div>}
+                            tooltip={<div>{messages[`${bucket.storageClass}Tooltip` as messagesKeys]}</div>}
+                        />
                     </div>
                     <div className="capitalize">{bucket.bucketType}</div>
                     {bucket.snapshots.length ? <div>{bucket.snapshots.length} {`${messages.coldSnapshots}`}</div> : null}
