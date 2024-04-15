@@ -156,7 +156,7 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                                     className="w-full flex items-center gap-2 py-2 px-3 transition-colors hover:bg-hover"
                                     onClick={unlock}
                                 >
-                                    <Lock width="18px" height="18px" color="#111322" />
+                                    <Lock width="18px" height="18px" color="currentColor" />
                                     {`${messages.unlock}`}
                                 </div>
                             </>
