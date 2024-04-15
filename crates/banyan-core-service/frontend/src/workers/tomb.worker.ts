@@ -115,7 +115,8 @@ export class TombWorker {
 		self.postMessage('buckets');
 	};
 
-	public async getFiles (mount: WasmMount, path: string[]) {
+	public async getFiles (bucketId: string, path: string[]) {
+		const mount = this.state.buckets.find(bucket => bucket.id === bucketId)?.mount;
 		const rawFiles = await mount?.ls(path);
 		return rawFiles ? rawFiles?.map(file => ({
 			name: file.name,
@@ -128,7 +129,7 @@ export class TombWorker {
 	/** Returns selected bucket state according to current folder location. */
 	async getSelectedBucketFiles (path: string[]) {
 		this.state.areBucketsLoading = true;
-		const files = await this.getFiles(this.state.selectedBucket?.mount!, path);
+		const files = await this.getFiles(this.state.selectedBucket?.id!, path);
 		this.state.selectedBucket!.files = files;
 		self.postMessage('selectedBucket');
 
@@ -163,16 +164,16 @@ export class TombWorker {
 	/** Uploads file to selected bucket/directory, updates buckets state */
 	async uploadFile (bucketId: string, uploadPath: string[], folderLocation: string[], name: string, file: ArrayBuffer) {
 		const mount = this.state.buckets.find(bucket => bucket.id === bucketId)?.mount!;
-		const extstingFiles = (await this.getFiles(mount, uploadPath)).map(file => file.name);
+		const extstingFiles = (await this.getFiles(bucketId, uploadPath)).map(file => file.name);
 		let fileName = handleNameDuplication(name, extstingFiles);
 		await mount.write([...uploadPath, fileName], file);
 
-		if (uploadPath.join('') !== folderLocation.join('')) { return; }
-		const files = await this.getFiles(mount, uploadPath);
-		await this.updateBucketsState('files', files, bucketId);
-		const isSnapshotValid = await mount.hasSnapshot();
-		await this.updateBucketsState('isSnapshotValid', isSnapshotValid, bucketId);
-		await this.updateStorageUsageState();
+		// if (uploadPath.join('') !== folderLocation.join('')) { return; }
+		// const files = await this.getFiles(bucketId, uploadPath);
+		// await this.updateBucketsState('files', files, bucketId);
+		// const isSnapshotValid = await mount.hasSnapshot();
+		// await this.updateBucketsState('isSnapshotValid', isSnapshotValid, bucketId);
+		// await this.updateStorageUsageState();
 	};
 
     async updateStorageUsageState  () {
@@ -260,7 +261,7 @@ export class TombWorker {
     /** Changes placement of file inside bucket tree scructure */
 	async moveTo (bucketId: string, from: string[], to: string[], name: string) {
 		const bucket = this.state.buckets.find(bucket => bucket.id === bucketId)!;
-		const extstingFiles = (await this.getFiles(bucket.mount!, to)).map(file => file.name);
+		const extstingFiles = (await this.getFiles(bucket.id!, to)).map(file => file.name);
 		const browserObjectName = handleNameDuplication(name, extstingFiles);
 		await bucket.mount!.mv(from, [...to, browserObjectName]);
 		const isSnapshotValid = await bucket.mount!.hasSnapshot();
@@ -280,7 +281,7 @@ export class TombWorker {
 		const bucket = this.state.buckets.find(bucket => bucket.id === bucketId)!;
 		await bucket.mount!.mkdir([...path, name]);
 		if (path.join('') !== folderLocation.join('')) { return; }
-		const files = await this.getFiles(bucket.mount!, path) || [];
+		const files = await this.getFiles(bucket.id!, path) || [];
 		await this.updateBucketsState('files', files.sort(sortByType), bucket.id);
 		const isSnapshotValid = await bucket.mount!.hasSnapshot();
 		await this.updateBucketsState('isSnapshotValid', isSnapshotValid, bucket.id);

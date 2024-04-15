@@ -28,6 +28,7 @@ interface TombInterface {
 	remountBucket: (bucket: Bucket) => Promise<void>;
 	selectBucket: (bucket: Bucket | null) => void;
 	getSelectedBucketFiles: (path: string[]) => Promise<BrowserObject[]>;
+	getFiles: (bucketId: string, path: string[]) => Promise<BrowserObject[]>;
 	getExpandedFolderFiles: (path: string[], folder: BrowserObject, bucket: Bucket) => Promise<void>;
 	takeColdSnapshot: (bucket: Bucket) => Promise<void>;
 	getBucketSnapshots: (id: string) => Promise<any>;
@@ -87,6 +88,10 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	/** Returns selected bucket state according to current folder location. */
 	const getSelectedBucketFiles = async (path: string[]) => {
 		return await tombWorker.getSelectedBucketFiles(path)
+	};
+	/** Returns selected bucket state according to current folder location. */
+	const getFiles = async (bucketId: string, path: string[]) => {
+		return await tombWorker.getFiles(bucketId, path);
 	};
 
 	/** Returns selected folder files. */
@@ -259,7 +264,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 		<TombContext.Provider
 			value={{
 				tomb, buckets, storageUsage, storageLimits, trash, areBucketsLoading, selectedBucket,
-				getBuckets, getBucketsKeys, selectBucket, getSelectedBucketFiles,
+				getBuckets, getBucketsKeys, selectBucket, getSelectedBucketFiles, getFiles,
 				takeColdSnapshot, getBucketSnapshots, createBucketAndMount, deleteBucket, remountBucket,
 				getFile, renameBucket, createDirectory, uploadFile, purgeSnapshot,
 				removeBucketAccess, approveBucketAccess, approveDeviceApiKey, shareFile, download, moveTo,
