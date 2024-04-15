@@ -1,5 +1,7 @@
 mod delete_blocks;
 mod distribute;
+mod replicate;
+
 use std::error::Error;
 
 use axum::body::HttpBody;
@@ -18,5 +20,6 @@ where
     Router::new()
         .route("/blocks", delete(delete_blocks::handler))
         .route("/distribute", post(distribute::handler))
+        .route("/replicate", post(replicate::handler))
         .with_state(state)
 }

@@ -106,6 +106,8 @@ where
             None => return Err(Self::Rejection::SubjectMissing),
         };
 
+        // platform_id is the user_id as stored in core-service.
+        // client_fingerprint is the public key fingerprint that will be used to sign requests from the client from a specific device.
         let (platform_id, client_fingerprint) = match paired_id_validator().captures(&grant_subject)
         {
             Some(matches) => {
