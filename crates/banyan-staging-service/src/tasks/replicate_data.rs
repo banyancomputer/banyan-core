@@ -8,14 +8,13 @@ use crate::clients::{
     ClientsRequest, CoreServiceClient, CoreServiceError, NewUploadRequest, StorageProviderClient,
     StorageProviderError,
 };
-use crate::database::models::{Clients, Uploads};
-use crate::tasks::RedistributeBlocksTask;
+use crate::tasks::replicate_blocks::ReplicateBlocksTask;
 
-pub type RedistributeDataTaskContext = AppState;
+pub type ReplicateDataTaskContext = AppState;
 
 #[non_exhaustive]
 #[derive(Debug, thiserror::Error)]
-pub enum RedistributeDataTaskError {
+pub enum ReplicateDataTaskError {
     #[error("sql error: {0}")]
     DatabaseError(#[from] sqlx::Error),
 
@@ -33,21 +32,23 @@ pub enum RedistributeDataTaskError {
 }
 
 #[derive(Deserialize, Serialize)]
-pub struct RedistributeDataTask {
+pub struct ReplicateDataTask {
     pub metadata_id: String,
-    pub storage_grant_id: String,
-    pub storage_grant_size: i64,
     pub block_cids: Vec<String>,
     pub new_host_id: String,
     pub new_host_url: String,
+    pub new_storage_grant_id: String,
+    pub new_storage_grant_size: i64,
+    pub old_host_id: String,
+    pub old_host_url: String,
 }
 
 #[async_trait]
-impl TaskLike for RedistributeDataTask {
-    const TASK_NAME: &'static str = "redistribute_data_task";
+impl TaskLike for ReplicateDataTask {
+    const TASK_NAME: &'static str = "replicate_data_task";
 
-    type Error = RedistributeDataTaskError;
-    type Context = RedistributeDataTaskContext;
+    type Error = ReplicateDataTaskError;
+    type Context = ReplicateDataTaskContext;
 
     async fn run(&self, _task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
         let database = ctx.database();
@@ -57,38 +58,42 @@ impl TaskLike for RedistributeDataTask {
             ctx.platform_name(),
             ctx.platform_hostname(),
         )?;
-        let provider_credentials = client.request_provider_token(&self.new_host_id).await?;
-        let storage_client =
-            StorageProviderClient::new(&self.new_host_url, &provider_credentials.token);
-        let upload = Uploads::get_by_metadata_id(&database, &self.metadata_id).await?;
+        let old_provider_credentials = client.request_provider_token(&self.old_host_id).await?;
+        let old_storage_client =
+            StorageProviderClient::new(&self.old_host_url, &old_provider_credentials.token);
+        let new_provider_credentials = client.request_provider_token(&self.new_host_id).await?;
+        let new_storage_client =
+            StorageProviderClient::new(&self.new_host_url, &new_provider_credentials.token);
 
-        let client = Clients::find_by_upload_id(&database, &upload.id).await?;
-        let new_client = storage_client
+        let existing_client = old_storage_client.get_client(&self.metadata_id).await?;
+        let new_client = new_storage_client
             .push_client(ClientsRequest {
-                platform_id: client.platform_id,
-                fingerprint: client.fingerprint,
-                public_key: client.public_key,
+                platform_id: existing_client.platform_id,
+                fingerprint: existing_client.fingerprint,
+                public_key: existing_client.public_key,
             })
             .await?;
 
-        let new_upload = storage_client
+        let new_upload = new_storage_client
             .new_upload(&NewUploadRequest {
-                metadata_id: upload.metadata_id,
+                metadata_id: self.metadata_id.clone(),
                 client_id: new_client.id.clone(),
-                grant_id: self.storage_grant_id.clone(),
-                grant_size: self.storage_grant_size,
+                grant_size: self.new_storage_grant_size,
+                grant_id: self.new_storage_grant_id.clone(),
             })
             .await?;
 
         let mut conn = database.acquire().await?;
 
-        RedistributeBlocksTask {
+        ReplicateBlocksTask {
             metadata_id: self.metadata_id.clone(),
-            grant_id: self.storage_grant_id.clone(),
+            grant_id: self.new_storage_grant_id.clone(),
             block_cids: self.block_cids.clone(),
             new_upload_id: new_upload.upload_id.clone(),
-            storage_host_id: self.new_host_id.clone(),
-            storage_host_url: self.new_host_url.clone(),
+            new_storage_host_url: self.new_host_id.clone(),
+            new_storage_host_id: self.new_host_url.clone(),
+            old_storage_host_url: self.old_host_id.clone(),
+            old_storage_host_id: self.old_host_url.clone(),
         }
         .enqueue::<banyan_task::SqliteTaskStore>(&mut conn)
         .await?;

@@ -71,7 +71,7 @@ impl TaskLike for ReportUploadTask {
             ctx.service_name(),
             ctx.platform_name(),
             ctx.platform_hostname(),
-        );
+        )?;
 
         let response = client
             .report_upload(

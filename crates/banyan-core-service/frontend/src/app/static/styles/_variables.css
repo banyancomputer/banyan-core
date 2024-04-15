@@ -51,6 +51,8 @@
     --invoice-heading-background: #B39F8D1A;
     --contact-sales-button: #0066DE;
     --storage-usage-background: #DCEBF9;
+    --storage-usage-progress-background: #fff;
+    --storage-usage-progress-value: #0F3A4A;
 }
 
 [prefers-color-scheme="dark"]:root {
@@ -105,4 +107,6 @@
     --invoice-heading-background: #B39F8D1A;
     --contact-sales-button: #0066DE;
     --storage-usage-background: #0a2239;
+    --storage-usage-progress-background: #0D0D0D;
+    --storage-usage-progress-value: #B5E0F0;
 }

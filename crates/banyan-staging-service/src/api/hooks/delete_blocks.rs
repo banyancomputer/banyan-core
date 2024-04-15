@@ -9,7 +9,7 @@ use serde::Deserialize;
 use crate::app::AppState;
 use crate::database::models::{AuthorizedStorage, Blocks, Uploads};
 use crate::extractors::PlatformIdentity;
-use crate::tasks::UploadBlocksTask;
+use crate::tasks::RedistributeBlocksTask;
 
 #[derive(Deserialize)]
 pub struct DeleteBlocksRequest {
@@ -32,7 +32,7 @@ pub async fn handler(
 ) -> Result<Response, BlocksDeleteError> {
     let mut transaction = state.database().begin().await?;
     let metadata_id = request.metadata_id;
-    let task = UploadBlocksTask::new_with_metadata_id(metadata_id.to_string());
+    let task = RedistributeBlocksTask::new_with_metadata_id(metadata_id.to_string());
     if !SqliteTaskStore::is_present(&mut transaction, &task).await? {
         // there wasn't a previously scheduled upload blocks task to distribute
         // the data to a new storage provider we should not delete the blocks
@@ -169,7 +169,7 @@ mod tests {
         let blocks_cids = get_block_cids(&db, block_ids.clone()).await;
         SqliteTaskStore::enqueue(
             &mut conn,
-            UploadBlocksTask::new_with_metadata_id(metadata_id.clone()),
+            RedistributeBlocksTask::new_with_metadata_id(metadata_id.clone()),
         )
         .await
         .unwrap();
@@ -204,7 +204,7 @@ mod tests {
 
         SqliteTaskStore::enqueue(
             &mut conn,
-            UploadBlocksTask::new_with_metadata_id(metadata_id.clone()),
+            RedistributeBlocksTask::new_with_metadata_id(metadata_id.clone()),
         )
         .await
         .unwrap();
