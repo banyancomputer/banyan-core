@@ -59,7 +59,9 @@ module.exports = {
 					textSecondary: 'var(--navigation-textSecondary)',
 					border: 'var(--navigation-border)',
 					separator: 'var(--navigation-separator)',
-					storageUsageBackground: 'var(--storage-usage-background)'
+					storageUsageBackground: 'var(--storage-usage-background)',
+					storageUsageProgressBackground: 'var(--storage-usage-progress-background)',
+					storageUsageProgressValue: 'var(--storage-usage-progress-value)'
 				},
 				table: {
 					cellBackground: 'var(--table-cellBackground)',
