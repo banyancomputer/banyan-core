@@ -62,7 +62,6 @@ pub async fn handler(
         return Err(BlocksUploadError::UploadIsComplete);
     }
 
-    let mut conn = db.acquire().await?;
     // While there are still block fields encoded
     while let Some(block_field) = multipart
         .next_field()
