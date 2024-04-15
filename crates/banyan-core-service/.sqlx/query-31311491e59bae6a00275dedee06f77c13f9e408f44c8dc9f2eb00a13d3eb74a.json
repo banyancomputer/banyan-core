@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE block_locations SET stored_at = NULL WHERE block_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "31311491e59bae6a00275dedee06f77c13f9e408f44c8dc9f2eb00a13d3eb74a"
+}

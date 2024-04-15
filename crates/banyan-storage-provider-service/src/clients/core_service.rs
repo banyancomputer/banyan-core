@@ -73,7 +73,7 @@ impl CoreServiceClient {
     ) -> Result<(), CoreServiceError> {
         let storage_hosts_endpoint = self
             .platform_hostname
-            .join(&format!("/hooks/storage/redistribution/{}", metadata_id))
+            .join(&format!("/hooks/storage/distribution/{}", metadata_id))
             .unwrap();
 
         let response = self

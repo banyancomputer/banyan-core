@@ -9,8 +9,10 @@ use url::Url;
 use crate::app::AppState;
 use crate::clients::{DistributeDataRequest, StagingServiceClient, StagingServiceError};
 use crate::database::models::{
-    Blocks, Bucket, Metadata, MinimalBlockLocation, NewStorageGrant, StorageHost, UserStorageReport,
+    Blocks, Bucket, ExistingStorageGrant, Metadata, MinimalBlockLocation, NewStorageGrant,
+    StorageHost, UserStorageReport,
 };
+use crate::database::DatabaseConnection;
 use crate::utils::rounded_storage_authorization;
 
 #[derive(Deserialize, Serialize, Default, Clone)]
@@ -45,6 +47,7 @@ impl TaskLike for RedistributeStagingDataTask {
         for block in &blocks_for_sync {
             if !blocks_grouped_by_metadata
                 .values()
+                // deduplicate blocks across metadata
                 .any(|blocks| blocks.iter().any(|b| b.id == block.id))
             {
                 blocks_grouped_by_metadata
@@ -64,30 +67,20 @@ impl TaskLike for RedistributeStagingDataTask {
                 .unwrap_or_default()
                 .max(metadata.expected_data_size);
 
+            let mut transaction = database.begin().await?;
             let new_storage_host = StorageHost::select_for_capacity_with_exclusion(
-                &database,
+                &mut transaction,
                 total_size,
-                &staging_host.id,
+                &[staging_host.id.clone()],
             )
             .await?;
-            let mut conn = database.begin().await?;
-            let user_report =
-                UserStorageReport::user_report(&mut conn, &new_storage_host.id, &user_id).await?;
-            let authorization_grant = if user_report.authorization_available() < total_size
-                || user_report.existing_grant().is_none()
-            {
-                let new_authorized_capacity =
-                    rounded_storage_authorization(&user_report, total_size);
-                NewStorageGrant {
-                    storage_host_id: &new_storage_host.id,
-                    user_id: &user_id,
-                    authorized_amount: new_authorized_capacity,
-                }
-                .save(&mut conn)
-                .await?
-            } else {
-                user_report.existing_grant().unwrap()
-            };
+            let authorization_grant = get_or_create_client_grant(
+                &mut transaction,
+                &user_id,
+                total_size,
+                &new_storage_host,
+            )
+            .await?;
             let block_cids: Vec<_> = grouped_blocks
                 .iter()
                 .map(|block| block.cid.clone())
@@ -115,12 +108,14 @@ impl TaskLike for RedistributeStagingDataTask {
                     metadata_id: metadata_id.clone(),
                     storage_host_id: new_storage_host.id.clone(),
                 }
-                .save(&mut conn)
+                .save(&mut transaction)
                 .await?;
             }
-            conn.commit().await?;
+            transaction.commit().await?;
 
-            undistributed_blocks.retain(|s| !block_ids.contains(s));
+            for id in block_ids {
+                undistributed_blocks.remove(&id);
+            }
         }
 
         if !undistributed_blocks.is_empty() {
@@ -140,6 +135,31 @@ impl RecurringTask for RedistributeStagingDataTask {
             .ok_or(RecurringTaskError::DateTimeAddition)
             .map(Some)
     }
+}
+
+pub async fn get_or_create_client_grant(
+    conn: &mut DatabaseConnection,
+    user_id: &String,
+    total_size: i64,
+    new_storage_host: &StorageHost,
+) -> Result<ExistingStorageGrant, sqlx::Error> {
+    let user_report = UserStorageReport::user_report(conn, &new_storage_host.id, user_id).await?;
+
+    let authorization_grant = match user_report.existing_grant() {
+        Some(grant) if user_report.authorization_available() >= total_size => grant,
+        _ => {
+            let new_authorized_capacity = rounded_storage_authorization(&user_report, total_size);
+            NewStorageGrant {
+                storage_host_id: &new_storage_host.id,
+                user_id,
+                authorized_amount: new_authorized_capacity,
+            }
+            .save(conn)
+            .await?
+        }
+    };
+
+    Ok(authorization_grant)
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -222,7 +242,7 @@ mod tests {
             .create_async()
             .await;
 
-        let all_blocks = BlockLocations::get_all(&db).await.expect("get all blocks");
+        let all_blocks = BlockLocations::find_all(&db).await.expect("get all blocks");
         assert_eq!(all_blocks.len(), block_ids.len());
         let res = RedistributeStagingDataTask::default()
             .run(CurrentTask::default(), mock_app_state(db.clone()).0)
@@ -231,7 +251,7 @@ mod tests {
         println!("{:?}", res);
 
         assert!(res.is_ok());
-        let all_block_locations = BlockLocations::get_all(&db).await.expect("get all blocks");
+        let all_block_locations = BlockLocations::find_all(&db).await.expect("get all blocks");
         assert_eq!(all_block_locations.len(), block_ids.len() * 2);
         for block_location in all_block_locations.iter() {
             assert_eq!(block_location.expired_at, None);

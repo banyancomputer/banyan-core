@@ -25,7 +25,7 @@ export const StorageUsage = () => {
                 {`${messages.storage}`}
             </span>
             <progress
-                className="progress w-full [&::-webkit-progress-value]:bg-button-primary"
+                className="progress w-full bg-navigation-storageUsageProgressBackground [&::-webkit-progress-value]:bg-navigation-storageUsageProgressValue"
                 value={storageUsage.hotStorage * 100}
                 max={storageLimits.softLimit / (selectedSubscription?.features.included_hot_replica_count || 2)}
             />

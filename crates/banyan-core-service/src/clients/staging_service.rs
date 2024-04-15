@@ -5,7 +5,7 @@ use serde::Serialize;
 use url::Url;
 
 use crate::app::ServiceKey;
-use crate::clients::{DeleteBlocksRequest, DistributeDataRequest};
+use crate::clients::{DeleteBlocksRequest, DistributeDataRequest, ReplicateDataRequest};
 
 pub struct StagingServiceClient {
     client: Client,
@@ -80,6 +80,29 @@ impl StagingServiceClient {
         let endpoint = self
             .staging_service_hostname
             .join("/api/v1/hooks/distribute")
+            .unwrap();
+
+        let response = self
+            .client
+            .post(endpoint)
+            .json(&request)
+            .bearer_auth(&self.bearer_token)
+            .send()
+            .await?;
+
+        if response.status().is_success() {
+            return Ok(());
+        }
+
+        Err(StagingServiceError::BadRequest(response.text().await?))
+    }
+    pub async fn replicate_data(
+        &self,
+        request: ReplicateDataRequest,
+    ) -> Result<(), StagingServiceError> {
+        let endpoint = self
+            .staging_service_hostname
+            .join("/api/v1/hooks/replicate")
             .unwrap();
 
         let response = self
