@@ -11,8 +11,9 @@ import { useModal } from '@/app/contexts/modals';
 import { useAppSelector } from '@/app/store';
 
 import { MoveTo, Rename, Trash, Upload } from '@static/images/common';
+import { RenameFolderModal } from '@/app/components/common/Modal/RenameFolderModal';
 
-export const FolderActions: React.FC<{ bucket: Bucket; file: BrowserObject; parrentFolder: BrowserObject; path: string[] }> = ({ bucket, file, path, parrentFolder }) => {
+export const FolderActions: React.FC<{ bucket: Bucket; folder: BrowserObject; parrentFolder: BrowserObject; path: string[] }> = ({ bucket, folder, path, parrentFolder }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.bucket.files.bucketTable.folderActions);
     const { openModal } = useModal();
     const bucketType = `${bucket.bucketType}_${bucket.storageClass}`;
@@ -21,8 +22,8 @@ export const FolderActions: React.FC<{ bucket: Bucket; file: BrowserObject; parr
         openModal(
             <UploadFileModal
                 bucket={bucket}
-                folder={file}
-                path={[...path, file.name]}
+                folder={folder}
+                path={[...path, folder.name]}
             />
         );
     };
@@ -30,7 +31,7 @@ export const FolderActions: React.FC<{ bucket: Bucket; file: BrowserObject; parr
     const moveTo = () => {
         openModal(
             <MoveToModal
-                file={file}
+                file={folder}
                 bucket={bucket}
                 path={path}
                 parrentFolder={parrentFolder}
@@ -40,9 +41,9 @@ export const FolderActions: React.FC<{ bucket: Bucket; file: BrowserObject; parr
 
     const rename = async () => {
         openModal(
-            <RenameFileModal
+            <RenameFolderModal
                 bucket={bucket}
-                file={file}
+                folder={folder}
                 path={path}
             />
         );
@@ -52,7 +53,7 @@ export const FolderActions: React.FC<{ bucket: Bucket; file: BrowserObject; parr
         openModal(
             <DeleteFileModal
                 bucket={bucket}
-                file={file}
+                file={folder}
                 parrentFolder={parrentFolder}
                 path={path}
             />
