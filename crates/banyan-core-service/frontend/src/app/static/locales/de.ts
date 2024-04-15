@@ -314,6 +314,16 @@ export default {
                     editError: "Beim Bearbeiten ist ein Problem aufgetreten. Bitte versuchen Sie es erneut",
                     tryAgain: "Erneut versuchen",
                 },
+                renameFolder: {
+                    title: "Ordner umbenennen",
+                    folderName: "Ordnername",
+                    enterNewName: "Neuen Namen eingeben",
+                    cancel: "Abbrechen",
+                    save: "Speichern",
+                    folderWasRenamed: "Ordner wurde umbenannt",
+                    editError: "Es gab ein Problem mit Ihrer Bearbeitung. Bitte versuchen Sie es erneut",
+                    tryAgain: "Erneut versuchen"
+                },
                 renameAccessKey: {
                     title: "Schlüssel umbenennen",
                     keyName: "Schlüsselname",

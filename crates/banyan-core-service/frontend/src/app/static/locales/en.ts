@@ -314,6 +314,16 @@ export default {
                     editError: "There was an issue with your edit. Please try again",
                     tryAgain: "Try again",
                 },
+                renameFolder: {
+                    title: "Rename folder",
+                    folderName: "Folder name",
+                    enterNewName: "Enter new name",
+                    cancel: "Cancel",
+                    save: "Save",
+                    folderWasRenamed: "Folder was renamed",
+                    editError: "There was an issue with your edit. Please try again",
+                    tryAgain: "Try again",
+                },
                 renameAccessKey: {
                     title: "Rename key",
                     keyName: "Key name",
