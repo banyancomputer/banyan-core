@@ -1,11 +1,13 @@
 mod blocks;
 mod clients;
+mod get_clients;
+mod get_uploads;
 mod uploads;
 
 use std::error::Error;
 
 use axum::body::HttpBody;
-use axum::routing::post;
+use axum::routing::{get, post};
 use axum::Router;
 
 use crate::app::AppState;
@@ -20,6 +22,8 @@ where
     Router::new()
         .route("/clients", post(clients::handler))
         .route("/uploads", post(uploads::handler))
+        .route("/metadata/:metadata_id/uploads", get(get_uploads::handler))
+        .route("/metadata/:metadata_id/clients", get(get_clients::handler))
         .route("/blocks", post(blocks::handler))
         .with_state(state)
 }

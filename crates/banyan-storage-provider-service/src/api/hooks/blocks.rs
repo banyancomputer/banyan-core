@@ -24,6 +24,7 @@ pub struct BlockUploadRequest {
 
 #[derive(Serialize, Deserialize)]
 pub struct BlockUploadDetails {
+    pub replication: bool,
     pub completed: bool,
     pub upload_id: String,
     pub grant_id: Uuid,
@@ -61,7 +62,6 @@ pub async fn handler(
         return Err(BlocksUploadError::UploadIsComplete);
     }
 
-    let mut conn = db.acquire().await?;
     // While there are still block fields encoded
     while let Some(block_field) = multipart
         .next_field()
@@ -101,6 +101,7 @@ pub async fn handler(
             &upload.metadata_id,
             &upload.id,
             total_size as i64,
+            request.details.replication,
         )
         .await?;
     }
@@ -186,6 +187,7 @@ pub async fn report_complete_redistribution(
     metadata_id: &str,
     upload_id: &str,
     total_size: i64,
+    replication: bool,
 ) -> Result<(), sqlx::Error> {
     let all_cids: Vec<String> = sqlx::query_scalar!(
         r#"
@@ -200,7 +202,7 @@ pub async fn report_complete_redistribution(
     .fetch_all(&mut *conn)
     .await?;
 
-    ReportRedistributionTask::new(grant_id, metadata_id, &all_cids, total_size as u64)
+    ReportRedistributionTask::new(grant_id, metadata_id, &all_cids, total_size, replication)
         .enqueue::<banyan_task::SqliteTaskStore>(&mut *conn)
         .await
         .unwrap();

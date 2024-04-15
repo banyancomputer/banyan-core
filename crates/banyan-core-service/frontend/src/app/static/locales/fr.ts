@@ -314,6 +314,16 @@ export default {
                     editError: "Un problème est survenu avec votre modification. Veuillez réessayer",
                     tryAgain: "Réessayer",
                 },
+                renameFolder: {
+                    title: "Renommer le dossier",
+                    folderName: "Nom du dossier",
+                    enterNewName: "Entrer un nouveau nom",
+                    cancel: "Annuler",
+                    save: "Enregistrer",
+                    folderWasRenamed: "Le dossier a été renommé",
+                    editError: "Il y a eu un problème avec votre modification. Veuillez réessayer",
+                    tryAgain: "Réessayer"
+                },
                 renameAccessKey: {
                     title: "Renommer la clé",
                     keyName: "Nom de la clé",

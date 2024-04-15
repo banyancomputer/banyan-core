@@ -145,19 +145,18 @@ pub async fn get_or_create_client_grant(
 ) -> Result<ExistingStorageGrant, sqlx::Error> {
     let user_report = UserStorageReport::user_report(conn, &new_storage_host.id, user_id).await?;
 
-    let authorization_grant = if user_report.authorization_available() < total_size
-        || user_report.existing_grant().is_none()
-    {
-        let new_authorized_capacity = rounded_storage_authorization(&user_report, total_size);
-        NewStorageGrant {
-            storage_host_id: &new_storage_host.id,
-            user_id,
-            authorized_amount: new_authorized_capacity,
+    let authorization_grant = match user_report.existing_grant() {
+        Some(grant) if user_report.authorization_available() >= total_size => grant,
+        _ => {
+            let new_authorized_capacity = rounded_storage_authorization(&user_report, total_size);
+            NewStorageGrant {
+                storage_host_id: &new_storage_host.id,
+                user_id,
+                authorized_amount: new_authorized_capacity,
+            }
+            .save(conn)
+            .await?
         }
-        .save(conn)
-        .await?
-    } else {
-        user_report.existing_grant().unwrap()
     };
 
     Ok(authorization_grant)
