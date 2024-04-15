@@ -76,7 +76,7 @@ export const FilePreview = () => {
             case 'document':
                 return <div className="w-filePreview max-w-filePreview h-full" onClick={event => event.stopPropagation()}>
                     <object
-                        data={data}
+                        data={`${data}#toolbar=0`}
                         type={`${mime.getType([...file.name.split('.')].pop() || '')}`}
                         className="w-full h-full rounded-xl"
                     />
