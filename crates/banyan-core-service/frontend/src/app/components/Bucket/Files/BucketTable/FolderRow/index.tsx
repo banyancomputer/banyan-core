@@ -151,7 +151,7 @@ export const FolderRow: React.FC<{
                                             actions={
                                                 <FolderActions
                                                     bucket={bucket}
-                                                    file={folder}
+                                                    folder={folder}
                                                     parrentFolder={parrentFolder!}
                                                     path={path}
                                                 />
