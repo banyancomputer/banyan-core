@@ -8,7 +8,7 @@ import {
 	BrowserObject, Bucket,
 } from '@/app/types/bucket';
 import { useFolderLocation } from '@app/hooks/useFolderLocation';
-import { sortByType } from '@app/utils';
+import { destroyIsUserNew, getIsUserNew, sortByType } from '@app/utils';
 import { useAppDispatch, useAppSelector } from '@app/store';
 import { BannerError, setError } from '@app/store/errors/slice';
 import { getApiKey, getEncryptionKey } from '@app/store/keystore/actions';
@@ -73,7 +73,11 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
 	/** Returns list of buckets. */
 	const getBuckets = async () => {
-		await tombWorker.getBuckets();
+		const isUserNew = getIsUserNew();
+		await tombWorker.getBuckets(isUserNew);
+		if (isUserNew) {
+			destroyIsUserNew();
+		};
 	};
 
 	const remountBucket = async (bucket: Bucket) => {
@@ -108,7 +112,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
 	/** Creates new bucket with recieved parameters of type and storag class. */
 	const createBucketAndMount = async (name: string, storageClass: string, bucketType: string): Promise<any> => {
-		await tombWorker.createBucketAndMount(name, storageClass, bucketType);
+		return await tombWorker.createBucketAndMount(name, storageClass, bucketType);
 	};
 
 	/** Returns file as ArrayBuffer */

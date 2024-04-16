@@ -48,24 +48,20 @@ export class TombWorker {
     };
 
     /** Returns list of buckets. */
-    async getBuckets () {
+    async getBuckets (isUserNew?: boolean) {
 		this.state.areBucketsLoading = true;
 		const wasm_buckets: WasmBucket[] = await this.state.tomb!.listBuckets();
-		// if (getIsUserNew()) {
-			// 	createBucketAndMount("My Drive", 'hot', 'interactive');
-            // 	destroyIsUserNew();
-            // 	return;
-            // }
+		if (isUserNew) {
+				this.createBucketAndMount("My Drive", 'hot', 'interactive');
+            	return;
+            };
             const buckets: Bucket[] = [];
 
             for (let bucket of wasm_buckets) {
-				let mount;
-                let locked;
-                let isSnapshotValid;
                 const snapshots = await snapshotsClient.getSnapshots(bucket.id());
-                mount = await this.state.tomb!.mount(bucket.id(), this.state.encryptionKey!.privatePem);
-                locked = await mount.locked();
-                isSnapshotValid = await mount.hasSnapshot();
+                const mount = await this.state.tomb!.mount(bucket.id(), this.state.encryptionKey!.privatePem);
+                const locked = await mount.locked();
+                const isSnapshotValid = await mount.hasSnapshot();
                 buckets.push({
 					mount: mount || null,
                     id: bucket.id(),
@@ -168,12 +164,12 @@ export class TombWorker {
 		let fileName = handleNameDuplication(name, extstingFiles);
 		await mount.write([...uploadPath, fileName], file);
 
-		// if (uploadPath.join('') !== folderLocation.join('')) { return; }
-		// const files = await this.getFiles(bucketId, uploadPath);
-		// await this.updateBucketsState('files', files, bucketId);
-		// const isSnapshotValid = await mount.hasSnapshot();
-		// await this.updateBucketsState('isSnapshotValid', isSnapshotValid, bucketId);
-		// await this.updateStorageUsageState();
+		if (uploadPath.join('') !== folderLocation.join('')) { return; }
+		const files = await this.getFiles(bucketId, uploadPath);
+		await this.updateBucketsState('files', files, bucketId);
+		const isSnapshotValid = await mount.hasSnapshot();
+		await this.updateBucketsState('isSnapshotValid', isSnapshotValid, bucketId);
+		await this.updateStorageUsageState();
 	};
 
     async updateStorageUsageState  () {
@@ -206,7 +202,7 @@ export class TombWorker {
 			this.state.buckets = [...this.state.buckets, bucket].sort((a, b) => a.name.localeCompare(b.name));
 			self.postMessage('buckets');
 
-			return bucket.id
+			return bucket.id;
 	};
 
     /** Returns file as ArrayBuffer */
@@ -265,6 +261,11 @@ export class TombWorker {
 		const browserObjectName = handleNameDuplication(name, extstingFiles);
 		await bucket.mount!.mv(from, [...to, browserObjectName]);
 		const isSnapshotValid = await bucket.mount!.hasSnapshot();
+		from.pop()
+		const files = await this.getFiles(bucketId, from);
+		bucket.files = files;
+		this.state.areBucketsLoading = false;
+		self.postMessage('selectedBucket');
 		await this.updateBucketsState('isSnapshotValid', isSnapshotValid, bucket.id);
 	};
 

@@ -31,7 +31,9 @@ export const CreateBucketModal = () => {
 
     const create = async () => {
         try {
+            
             const bucketId = await createBucketAndMount(bucketName, storageClass, bucketType);
+            console.log(bucketId);
             closeModal();
             navigate(`/drive/${bucketId}`);
         } catch (error: any) {
