@@ -8,7 +8,7 @@ export const handleNameDuplication = (fileName: string, fileList: string[]): str
         const extension = dotIndex !== -1 ? fileName.slice(dotIndex) : '';
         const baseName = dotIndex !== -1 ? fileName.slice(0, dotIndex) : fileName;
 
-        newFileName = `${baseName} (${count})${extension}`;
+        newFileName = `${baseName} (${count}) ${extension}`;
         count++;
     }
 
