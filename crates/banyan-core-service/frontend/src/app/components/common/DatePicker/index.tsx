@@ -1,5 +1,4 @@
 import React, { ReactElement, useEffect, useRef, useState } from 'react';
-// @ts-ignore
 import { DateRange } from 'react-date-range';
 
 import { popupClickHandler } from '@/app/utils';

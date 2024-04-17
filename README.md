@@ -10,7 +10,7 @@ out-of-date.
 
 ### 📦 Dependencies
 
-You should have a working Rust toolchain, yarn, docker engine (or equivalent), and sqlite installed on your
+You should have a working Rust toolchain, npm, docker engine (or equivalent), and sqlite installed on your
 machine.
 
 ### 🐳 Docker (or equivalent)
@@ -164,11 +164,11 @@ setup as documented here.
 
 #### 🪟 Front-End Setup
 
-Run `yarn install` to install JavaScript dependencies for the frontend.
+Run `npm ci` to install JavaScript dependencies for the frontend.
 
 ```sh
 cd crates/banyan-core-service/frontend
-yarn install
+npm ci
 cd -
 ```
 
@@ -185,7 +185,7 @@ To build the web interface, run these commands from the root of the repository:
 
 ```sh
 cd crates/banyan-core-service/frontend
-yarn build
+npm run build
 cd -
 ```
 
