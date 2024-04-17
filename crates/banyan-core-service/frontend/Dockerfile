@@ -6,7 +6,7 @@ ARG DATA_URL
 
 RUN mkdir /app
 
-COPY package.json package-lock.lock /app/
+COPY package.json package-lock.json /app/
 COPY tomb_build /app/tomb_build
 
 ENV NEXT_TELEMETRY_DISABLED 1
