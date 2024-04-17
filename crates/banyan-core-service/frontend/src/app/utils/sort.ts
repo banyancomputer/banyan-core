@@ -13,7 +13,7 @@ export const sortByType = (prev: BrowserObject, next: BrowserObject) => {
     return 0;
 };
 
-export const sortByName = (prev: BrowserObject, next: BrowserObject, reversed: boolean = false) => reversed ? prev.name.localeCompare(next.name) : next.name.localeCompare(prev.name);
+export const sortByName = (prev: BrowserObject, next: BrowserObject, reversed: boolean = true) => reversed ? prev.name.localeCompare(next.name) : next.name.localeCompare(prev.name);
 
 export const sortByMetadataField = (prev: BrowserObject, next: BrowserObject, criteria: string, reversed: boolean = false) => reversed ? Number(prev.metadata[criteria]) - Number(next.metadata[criteria]) : Number(next.metadata[criteria]) - Number(prev.metadata[criteria]);
 

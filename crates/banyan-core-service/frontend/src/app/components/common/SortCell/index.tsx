@@ -18,9 +18,14 @@ export const SortCell: React.FC<SortCellProps> = ({ criteria, onChange, sortStat
             onClick={() => onChange(criteria)}
         >
             {text}
-            <div className={`${isActive && sortState.direction === 'ASC' ? 'rotate-180' : ''} ${isActive && 'text-button-primary'}`}>
-                <ArrowDown />
-            </div>
+            {
+                isActive ?
+                    <div className={`text-button-primary ${isActive && sortState.direction === 'ASC' ? 'rotate-180' : ''} `}>
+                        <ArrowDown />
+                    </div>
+                    :
+                    null
+            }
         </div>
     );
 };
