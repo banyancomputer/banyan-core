@@ -60,7 +60,7 @@ Run the frontend:
 ```bash
 export DB_PATH=$(pwd)/../data/server.db
 source ./.env.dev
-yarn dev
+npm  run dev
 ```
 
 This should start the frontend server on port 3000.
