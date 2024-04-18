@@ -1,36 +1,26 @@
-import { ActiveDeal, AvailiableDeal } from "@/entities/deals";
+import { ActiveDeal, AvailableDeal } from "@/entities/deals";
 import { APIClient } from ".";
 
 export class DealsClient extends APIClient {
-    public async getAcceptedDeals():Promise<ActiveDeal[]> {
-        const response = await this.http.get(`${this.ROOT_PATH}/api/v1/deals`)
-
+    public async getDeals(status?: string):Promise<ActiveDeal[]> {
+        const url = status ? `${this.ROOT_PATH}/api/v1/deals?status=${status}` : `${this.ROOT_PATH}/api/v1/deals`;
+        const response = await this.http.get(url);
         if (!response.ok) {
             await this.handleError(response);
         }
 
         return await response.json();
     };
-    public async getAvailableDeals():Promise<AvailiableDeal[]> {
-        const response = await this.http.get(`${this.ROOT_PATH}/api/v1/deals/available`)
-
-        if (!response.ok) {
-            await this.handleError(response);
-        }
-
-        return await response.json();
-    };
-
     public async acceptDeal(id: string): Promise<void> {
-        const response = await this.http.get(`${this.ROOT_PATH}/api/v1/deals/${id}/accept`)
+        const response = await this.http.put(`${this.ROOT_PATH}/api/v1/deals/${id}/accept`)
 
         if (!response.ok) {
             await this.handleError(response);
         }
     };
 
-    public async declineDeal(id: string): Promise<void> {
-        const response = await this.http.get(`${this.ROOT_PATH}/api/v1/deals/${id}/cancel`)
+    public async rejectDeal(id: string): Promise<void> {
+        const response = await this.http.put(`${this.ROOT_PATH}/api/v1/deals/${id}/reject`)
 
         if (!response.ok) {
             await this.handleError(response);

@@ -1,10 +1,10 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-import { AvailiableDeal, ActiveDeal } from "@/entities/deals";
-import { getAcceptedDeals, getAvailableDeals } from "./actions";
+import { AvailableDeal, ActiveDeal } from "@/entities/deals";
+import {getAvailableDeals, getAcceptedDeals} from "./actions";
 
 export interface DealsState {
-    availableDeals: AvailiableDeal[];
+    availableDeals: AvailableDeal[];
     acceptedDeals: ActiveDeal[];
 };
 

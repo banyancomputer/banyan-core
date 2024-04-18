@@ -4,7 +4,7 @@ import { BandwidthUsage, OveralStatistic, StorageUsage } from "@/entities/metric
 
 export class MetricsClient extends APIClient {
 
-    public async getOveralStatistic(): Promise<OveralStatistic> {
+    public async getOverallStatistic(): Promise<OveralStatistic> {
         const response = await this.http.get(`${this.ROOT_PATH}/api/v1/metrics/current`)
 
         if (!response.ok) {

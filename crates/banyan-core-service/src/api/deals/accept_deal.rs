@@ -17,7 +17,7 @@ pub async fn handler(
     let deal_id = deal_id.to_string();
 
     let query_result = sqlx::query!(
-        r#"UPDATE deals SET state =$1, accepted_by=$2, accepted_at=DATETIME('now') WHERE id = $3  AND state == $4;"#,
+        r#"UPDATE deals SET state =$1, accepted_by=$2, accepted_at=DATETIME('now') WHERE id = $3  AND state = $4;"#,
         DealState::Accepted,
         storage_provider.id,
         deal_id,

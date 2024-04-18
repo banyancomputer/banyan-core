@@ -1,18 +1,28 @@
-use axum::extract::State;
+use axum::extract::{Query, State};
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use http::StatusCode;
 
 use crate::api::models::ApiDeal;
 use crate::app::AppState;
-use crate::database::models::{Deal, DealState};
+use crate::database::models::{Deal, DealState, DealStateError};
 use crate::extractors::StorageProviderIdentity;
+
+#[derive(Debug, Clone, serde::Deserialize)]
+pub struct DealQuery {
+    pub status: Option<String>,
+}
 
 pub async fn handler(
     _: StorageProviderIdentity,
     State(state): State<AppState>,
+    Query(query): Query<DealQuery>,
 ) -> Result<Response, AllDealsError> {
     let database = state.database();
+    let status = match &query.status {
+        Some(status) => DealState::try_from(status.as_str()).map_err(AllDealsError::QueryError)?,
+        None => DealState::Active,
+    };
     let query_result = sqlx::query_as!(
         Deal,
         r#"SELECT d.id, d.state, SUM(ss.size) AS size, accepted_by, accepted_at
@@ -20,7 +30,7 @@ pub async fn handler(
             JOIN snapshot_segments ss ON d.id = ss.deal_id
         WHERE d.state = $1
         GROUP BY d.id;"#,
-        DealState::Active
+        status
     )
     .fetch_all(&database)
     .await
@@ -30,23 +40,35 @@ pub async fn handler(
 
     Ok((StatusCode::OK, Json(deals)).into_response())
 }
-
 #[derive(Debug, thiserror::Error)]
 pub enum AllDealsError {
     #[error("failed to query the database: {0}")]
     DatabaseFailure(sqlx::Error),
+    #[error("query error: {0}")]
+    QueryError(DealStateError),
 }
 
 impl IntoResponse for AllDealsError {
     fn into_response(self) -> Response {
-        tracing::error!("failed to lookup all deals: {self}");
-        let err_msg = serde_json::json!({"msg": "backend service experienced an issue servicing the request"});
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
+        match self {
+            AllDealsError::QueryError(err) => {
+                tracing::error!("Bad request on looking up all deals: {err}");
+                let err_msg = serde_json::json!({"msg": "Invalid deal status"});
+                (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
+            }
+            _ => {
+                tracing::error!("Internal server error on looking up all deals: {self}");
+                let err_msg = serde_json::json!({"msg": "backend service experienced an issue servicing the request"});
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
+            }
+        }
     }
 }
 #[cfg(test)]
 mod tests {
-    use crate::api::deals::all_deals::handler;
+    use axum::extract::Query;
+
+    use crate::api::deals::all_deals::{handler, DealQuery};
     use crate::api::models::ApiDeal;
     use crate::app::mock_app_state;
     use crate::database::models::DealState;
@@ -85,6 +107,7 @@ mod tests {
         let res = handler(
             StorageProviderIdentity::default(),
             mock_app_state(db.clone()),
+            Query(DealQuery { status: None }),
         )
         .await;
 

@@ -6,12 +6,12 @@ const client = new DealsClient();
 
 export const getAcceptedDeals = createAsyncThunk(
     'getAcceptedDeals',
-    async () => await client.getAcceptedDeals()
+    async () => await client.getDeals("accepted")
 );
 
 export const getAvailableDeals = createAsyncThunk(
     'getAvailableDeals',
-    async () => await client.getAvailableDeals()
+    async () => await client.getDeals()
 );
 
 export const acceptDeal = createAsyncThunk(
@@ -19,9 +19,9 @@ export const acceptDeal = createAsyncThunk(
     async (id: string) => await client.acceptDeal(id)
 );
 
-export const declineDeal = createAsyncThunk(
-    'declineDeal',
-    async (id: string) => await client.declineDeal(id)
+export const rejectDeal = createAsyncThunk(
+    'rejectDeal',
+    async (id: string) => await client.rejectDeal(id)
 );
 
 export const downloadDeal = createAsyncThunk(

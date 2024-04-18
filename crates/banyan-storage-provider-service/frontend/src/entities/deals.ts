@@ -1,20 +1,17 @@
-export interface AvailiableDeal {
+export interface AvailableDeal {
     id: string,
-    size: string,
-    payment: string,
-    status: string,
-    accept_by: string,
-    sealed_by: string
+    size: number,
+    state: string,
+    accepted_by: string | null,
+    accepted_at: string | null
 };
 
 export interface ActiveDeal {
     id: string,
-    size: string,
-    payment: string,
-    status: string,
-    accepted_at: string,
-    canceled_at: string,
-    sealed_by: string
+    size: number,
+    state: string,
+    accepted_by: string | null,
+    accepted_at: string | null
 };
 
 export interface Metrics {

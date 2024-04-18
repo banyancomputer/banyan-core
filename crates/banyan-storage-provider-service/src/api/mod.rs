@@ -21,10 +21,13 @@ mod auth;
 mod block_present;
 mod block_retrieval;
 mod client_grant;
+mod deals;
 mod hooks;
 mod models;
 mod prune_blocks;
 mod upload;
+
+pub use deals::DealQuery;
 
 use crate::app::AppState;
 
@@ -50,6 +53,7 @@ where
         .route("/client_grant", post(client_grant::handler))
         .route("/upload", post(upload::handler))
         .nest("/hooks", hooks::router(state.clone()))
+        .nest("/deals", deals::router(state.clone()))
         .route("/upload/new", post(upload::new::handler))
         .route("/upload/block", post(upload::block::handler))
         .route("/core/prune", post(prune_blocks::handler))

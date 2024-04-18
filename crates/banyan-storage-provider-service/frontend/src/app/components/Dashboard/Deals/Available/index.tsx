@@ -4,7 +4,7 @@ import { getAvailableDeals } from '@app/store/deals/actions';
 import { convertFileSize } from '@app/utils/storage';
 import { getDateLabel } from '@app/utils/time';
 import { SortCell } from '@components/common/SortCell';
-import { AvailiableDealsActions } from './Actions';
+import { AvailableDealsActions } from './Actions';
 
 export const AvailableDeals = () => {
     const dispatch = useAppDispatch();
@@ -14,6 +14,11 @@ export const AvailableDeals = () => {
     const sort = (criteria: string) => {
         setSortState(prev => ({ criteria, direction: prev.direction === 'ASC' ? 'DESC' : 'ASC' }));
     };
+
+    const reloadDeals = async () => {
+        await dispatch(getAvailableDeals());
+    };
+
 
     useEffect(() => {
         (async () => {
@@ -47,7 +52,7 @@ export const AvailableDeals = () => {
                                 criteria=''
                                 onChange={sort}
                                 sortState={sortState}
-                                text="Negotiated Price"
+                                text="State"
                             />
                         </th>
                         <th className="p-3 font-medium text-12">
@@ -55,7 +60,7 @@ export const AvailableDeals = () => {
                                 criteria=''
                                 onChange={sort}
                                 sortState={sortState}
-                                text="Seal by"
+                                text="Accepted By"
                             />
                         </th>
                         <th className="p-3 font-medium text-12">
@@ -63,23 +68,7 @@ export const AvailableDeals = () => {
                                 criteria=''
                                 onChange={sort}
                                 sortState={sortState}
-                                text="Proposed FIL amount"
-                            />
-                        </th>
-                        <th className="p-3 font-medium text-12">
-                            <SortCell
-                                criteria=''
-                                onChange={sort}
-                                sortState={sortState}
-                                text="Duration"
-                            />
-                        </th>
-                        <th className="p-3 font-medium text-12">
-                            <SortCell
-                                criteria=''
-                                onChange={sort}
-                                sortState={sortState}
-                                text="Requested At"
+                                text="Accepted At"
                             />
                         </th>
                         <th className="p-3 text-12 text-left font-medium">Action</th>
@@ -91,13 +80,11 @@ export const AvailableDeals = () => {
                             <tr className="border-b-1 border-[#DDD] transition-all hover:bg-[#FFF3E6]">
                                 <td className="p-3 text-14">{deal.id}</td>
                                 <td className="p-3 text-14">{convertFileSize(+deal.size)}</td>
-                                <td className="p-3 text-14">$24/TB</td>
-                                <td className="p-3 text-14">{getDateLabel(new Date(deal.sealed_by))}</td>
-                                <td className="p-3 text-14">10 FIL</td>
-                                <td className="p-3 text-14">4 months</td>
-                                <td className="p-3 text-14">{getDateLabel(new Date(deal.accept_by))}</td>
+                                <td className="p-3 text-14">{deal.state}</td>
+                                <td className="p-3 text-14">{deal.accepted_by}</td>
+                                <td className="p-3 text-14">{deal.accepted_at ? getDateLabel(new Date(deal.accepted_at)) : 'N/A'}</td>
                                 <td className="p-3 text-14">
-                                    <AvailiableDealsActions />
+                                <AvailableDealsActions dealId={deal.id} onDealAccepted={reloadDeals} />
                                 </td>
                             </tr>
                         )

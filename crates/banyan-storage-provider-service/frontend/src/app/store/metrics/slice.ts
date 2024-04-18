@@ -1,7 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 
 import { BandwidthUsage, OveralStatistic, StorageUsage } from "@/entities/metrics";
-import { getBandwidthUsage, getOveralStatistic, getStorageUsage } from "./actions";
+import { getBandwidthUsage, getOverallStatistic, getStorageUsage } from "./actions";
 
 export interface MetricsState {
     storageUsage: StorageUsage[];
@@ -20,7 +20,7 @@ const metricsSlice = createSlice({
     initialState,
     reducers: {},
     extraReducers(builder) {
-        builder.addCase(getOveralStatistic.fulfilled, (state, action) =>{
+        builder.addCase(getOverallStatistic.fulfilled, (state, action) =>{
             state.overalStatistic = action.payload;
         });
         builder.addCase(getBandwidthUsage.fulfilled, (state, action) =>{

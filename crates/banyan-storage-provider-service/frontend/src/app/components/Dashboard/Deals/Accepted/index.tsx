@@ -15,11 +15,14 @@ export const AcceptedDeals = () => {
         setSortState(prev => ({ criteria, direction: prev.direction === 'ASC' ? 'DESC' : 'ASC' }));
     };
 
-    // useEffect(() => {
-    //     (async () => {
-    //         await dispatch(getAcceptedDeals())
-    //     })()
-    // }, []);
+    const reloadDeals = async () => {
+        await dispatch(getAcceptedDeals());
+    };
+
+
+    useEffect(() => {
+        reloadDeals();
+    }, []);
 
     return (
         <div className="rounded-lg border-1 border-[#0000001A]">
@@ -47,7 +50,7 @@ export const AcceptedDeals = () => {
                                 criteria=''
                                 onChange={sort}
                                 sortState={sortState}
-                                text="Negotiated Price"
+                                text="State"
                             />
                         </th>
                         <th className="p-3 font-medium text-12">
@@ -55,7 +58,7 @@ export const AcceptedDeals = () => {
                                 criteria=''
                                 onChange={sort}
                                 sortState={sortState}
-                                text="Seal by"
+                                text="Accepted By"
                             />
                         </th>
                         <th className="p-3 font-medium text-12">
@@ -63,23 +66,7 @@ export const AcceptedDeals = () => {
                                 criteria=''
                                 onChange={sort}
                                 sortState={sortState}
-                                text="Proposed FIL amount"
-                            />
-                        </th>
-                        <th className="p-3 font-medium text-12">
-                            <SortCell
-                                criteria=''
-                                onChange={sort}
-                                sortState={sortState}
-                                text="Duration"
-                            />
-                        </th>
-                        <th className="p-3 font-medium text-12">
-                            <SortCell
-                                criteria=''
-                                onChange={sort}
-                                sortState={sortState}
-                                text="Requested At"
+                                text="Accepted At"
                             />
                         </th>
                         <th className="p-3 text-12 text-left font-medium">Action</th>
@@ -91,13 +78,11 @@ export const AcceptedDeals = () => {
                             <tr className="border-b-1 border-[#DDD] transition-all hover:bg-[#FFF3E6]">
                                 <td className="p-3 text-14">{deal.id}</td>
                                 <td className="p-3 text-14">{convertFileSize(+deal.size)}</td>
-                                <td className="p-3 text-14">$24/TB</td>
-                                <td className="p-3 text-14">{getDateLabel(new Date(deal.sealed_by))}</td>
-                                <td className="p-3 text-14">10 FIL</td>
-                                <td className="p-3 text-14">4 months</td>
-                                <td className="p-3 text-14">{getDateLabel(new Date(deal.accepted_at))}</td>
+                                <td className="p-3 text-14">{deal.state}</td>
+                                <td className="p-3 text-14">{deal.accepted_by}</td>
+                                <td className="p-3 text-14">{deal.accepted_at ? getDateLabel(new Date(deal.accepted_at)) : 'N/A'}</td>
                                 <td className="p-3 text-14">
-                                    <ActiveDealsActions />
+                                <ActiveDealsActions dealId={deal.id} onDealAccepted={reloadDeals} />
                                 </td>
                             </tr>
                         )
