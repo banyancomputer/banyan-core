@@ -7,7 +7,7 @@ const DashBoard = () => {
     return <>
         <Statistic />
         <Charts />
-        <ServiceDetails />
+        {/*<ServiceDetails />*/}
         <Deals />
     </>
 };

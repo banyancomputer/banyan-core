@@ -4,9 +4,9 @@ import { DealsClient } from "@/api/deals";
 
 const client = new DealsClient();
 
-export const getActiceDeals = createAsyncThunk(
-    'getActiceDeals',
-    async () => await client.getActiceDeals()
+export const getAcceptedDeals = createAsyncThunk(
+    'getAcceptedDeals',
+    async () => await client.getAcceptedDeals()
 );
 
 export const getAvailableDeals = createAsyncThunk(

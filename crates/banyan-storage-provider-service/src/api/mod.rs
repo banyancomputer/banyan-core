@@ -56,14 +56,6 @@ where
         // Storage provider API routes
         .route("/alerts", get(alerts_handler))
         .route("/alerts/history", get(alert_history_handler))
-        .route("/deals/available", get(deal_available_handler))
-        .route("/deals/:deal_id", get(deal_single_handler))
-        .route("/deals/:deal_id/accept", get(deal_accept_handler))
-        .route("/deals/:deal_id/cancel", get(deal_cancel_handler))
-        .route("/deals/:deal_id/download", get(deal_download_handler))
-        .route("/deals/:deal_id/ignore", get(deal_ignore_handler))
-        .route("/deals/:deal_id/proof", get(deal_proof_handler))
-        .route("/deals", get(deal_all_handler))
         .route("/metrics/current", get(metrics_current_handler))
         .route(
             "/metrics/bandwidth/daily",
@@ -106,44 +98,6 @@ pub async fn config_handler() -> Response {
     (StatusCode::OK, Json(resp_msg)).into_response()
 }
 
-pub async fn deal_accept_handler(Path(_deal_id): Path<Uuid>) -> Response {
-    (StatusCode::NO_CONTENT, ()).into_response()
-}
-
-pub async fn deal_all_handler() -> Response {
-    let mut rng = rand::thread_rng();
-    let target_count = rng.gen_range(3..=15);
-    let mut deals = Vec::new();
-
-    while deals.len() < target_count {
-        let new_deal = FullDeal::random();
-
-        if matches!(new_deal.status, DealStatus::Available) {
-            continue;
-        }
-
-        deals.push(new_deal);
-    }
-
-    (StatusCode::OK, Json(deals)).into_response()
-}
-
-pub async fn deal_available_handler() -> Response {
-    let deals = vec![
-        AvailableDeal::random(),
-        AvailableDeal::random(),
-        AvailableDeal::random(),
-        AvailableDeal::random(),
-    ];
-
-    (StatusCode::OK, Json(deals)).into_response()
-}
-
-pub async fn deal_cancel_handler(Path(_deal_id): Path<Uuid>) -> Response {
-    (StatusCode::NO_CONTENT, ()).into_response()
-}
-
-/// Note: this only allows downloading of files in the Pending state
 pub async fn deal_download_handler(Path(deal_id): Path<Uuid>) -> Response {
     let mut rng = rand::thread_rng();
 

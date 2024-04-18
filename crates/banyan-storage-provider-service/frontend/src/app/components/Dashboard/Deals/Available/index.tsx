@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@app/store';
-import { getActiceDeals } from '@app/store/deals/actions';
+import { getAvailableDeals } from '@app/store/deals/actions';
 import { convertFileSize } from '@app/utils/storage';
 import { getDateLabel } from '@app/utils/time';
 import { SortCell } from '@components/common/SortCell';
-import { ActiveDealsActions } from './Actions';
+import { AvailiableDealsActions } from './Actions';
 
-export const ActiveDeals = () => {
+export const AvailableDeals = () => {
     const dispatch = useAppDispatch();
-    const { activeDeals } = useAppSelector(state => state.deals);
+    const { availableDeals } = useAppSelector(state => state.deals);
     const [sortState, setSortState] = useState({ criteria: '', direction: 'DESC' });
 
     const sort = (criteria: string) => {
@@ -17,7 +17,7 @@ export const ActiveDeals = () => {
 
     useEffect(() => {
         (async () => {
-            await dispatch(getActiceDeals())
+            await dispatch(getAvailableDeals());
         })()
     }, []);
 
@@ -87,7 +87,7 @@ export const ActiveDeals = () => {
                 </thead>
                 <tbody className="bg-secondaryBackground text-[#3B3B3B]">
                     {
-                        activeDeals.map(deal =>
+                        availableDeals.map(deal =>
                             <tr className="border-b-1 border-[#DDD] transition-all hover:bg-[#FFF3E6]">
                                 <td className="p-3 text-14">{deal.id}</td>
                                 <td className="p-3 text-14">{convertFileSize(+deal.size)}</td>
@@ -95,9 +95,9 @@ export const ActiveDeals = () => {
                                 <td className="p-3 text-14">{getDateLabel(new Date(deal.sealed_by))}</td>
                                 <td className="p-3 text-14">10 FIL</td>
                                 <td className="p-3 text-14">4 months</td>
-                                <td className="p-3 text-14">{getDateLabel(new Date(deal.accepted_at))}</td>
+                                <td className="p-3 text-14">{getDateLabel(new Date(deal.accept_by))}</td>
                                 <td className="p-3 text-14">
-                                    <ActiveDealsActions />
+                                    <AvailiableDealsActions />
                                 </td>
                             </tr>
                         )

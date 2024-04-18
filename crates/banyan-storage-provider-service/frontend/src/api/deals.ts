@@ -2,7 +2,7 @@ import { ActiveDeal, AvailiableDeal } from "@/entities/deals";
 import { APIClient } from ".";
 
 export class DealsClient extends APIClient {
-    public async getActiceDeals():Promise<ActiveDeal[]> {
+    public async getAcceptedDeals():Promise<ActiveDeal[]> {
         const response = await this.http.get(`${this.ROOT_PATH}/api/v1/deals`)
 
         if (!response.ok) {
