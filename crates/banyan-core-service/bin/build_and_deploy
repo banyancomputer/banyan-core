@@ -60,8 +60,8 @@ rm -rf dist/assets/*
 	export TRACKER_PROJECT_KEY TRACKER_INGEST_POINT
 
 	cd frontend/
-	yarn
-	yarn build
+	npm ci
+	npm run build
 )
 
 # Create the actual container

@@ -3,7 +3,6 @@
 ## Prerequisites
 
 - [Cargo](https://www.rust-lang.org/tools/install)
-- [Yarn](https://classic.yarnpkg.com/en/docs/install/#debian-stable)
 - [Sqlx CLI](https://docs.rs/crate/sqlx-cli/0.5.7)
 
 ## Setup
@@ -12,7 +11,7 @@
 
 ```bash
 cd crates/banyan-core-service/frontend
-yarn install
+npm ci
 ```
 
 2.  You'll also need to setup NextAuth credentials. See [here](frontend/README.md) for more information.
@@ -36,7 +35,7 @@ cargo run
 cd crates/banyan-core-service/frontend
 export DB_PATH=$(pwd)/../data/server.db
 source ./.env.dev
-yarn dev
+npm run dev
 ```
 
 6. Allow your email to access the frontend -- make sure this email is allowed to sign in per the OAuth provider and client you're using.
@@ -56,7 +55,7 @@ curl -X POST \
 
 ```bash
 cd scripts/js
-yarn install
+npm ci
 ```
 
 Register a device to use for testing:
