@@ -1,4 +1,4 @@
-import { CreateBucketModal } from '@components/common/Modal/CreateBucketModal';
+import { CreateDriveModal } from '@components/common/Modal/CreateDriveModal';
 
 import { useModal } from '@/app/contexts/modals';
 
@@ -10,7 +10,7 @@ export const EmptyState = () => {
     const { openModal } = useModal();
 
     const createDrive = () => {
-        openModal(<CreateBucketModal />);
+        openModal(<CreateDriveModal />);
     };
 
     return (

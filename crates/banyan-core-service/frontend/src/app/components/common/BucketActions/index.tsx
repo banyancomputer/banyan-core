@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { RenameBucketModal } from '@components/common/Modal/RenameBucketModal';
-import { DeleteBucketModal } from '@components/common/Modal/DeleteBucketModal';
+import { DeleteDriveModal } from '@/app/components/common/Modal/DeleteDriveModal';
 import { TakeSnapshotModal } from '@components/common/Modal/TakeSnapshotModal';
 import { UploadFileModal } from '@components/common/Modal/UploadFileModal';
 import { CreateFolderModal } from '@components/common/Modal/CreateFolderModal ';
@@ -76,7 +76,7 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
 
     const deleteBucket = async () => {
         try {
-            openModal(<DeleteBucketModal bucket={bucket} />);
+            openModal(<DeleteDriveModal bucket={bucket} />);
         } catch (error: any) { }
     };
 
