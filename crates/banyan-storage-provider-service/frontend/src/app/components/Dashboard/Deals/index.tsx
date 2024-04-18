@@ -31,13 +31,13 @@ export const Deals = () => {
                     className={`p-2 cursor-pointer ${dealsType === 'available' ? 'text-[#274D5C] font-bold border-b-1 border-[#274D5C]' : ''}`}
                     onClick={() => setDealsType('available')}
                 >
-                    Potential
+                    Available
                 </div>
                 <div
                     className={`p-2 cursor-pointer ${dealsType === 'accepted' ? 'text-[#274D5C] font-bold border-b-1 border-[#274D5C]' : ''}`}
                     onClick={() => setDealsType('accepted')}
                 >
-                    Active
+                    Accepted
                 </div>
             </div>
             {dealsType === 'accepted' ?
