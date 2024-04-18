@@ -18,7 +18,7 @@ const Home = () => {
     const messages = useAppSelector(state => state.locales.messages.pages.home);
 
     const uploadFile = () => {
-        openModal(<UploadFileModal path={[]} />);
+        openModal(<UploadFileModal path={[]} driveSelect />);
     };
 
     const createDrive = () => {

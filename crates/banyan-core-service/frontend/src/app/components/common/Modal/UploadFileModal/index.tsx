@@ -22,7 +22,8 @@ export const UploadFileModal: React.FC<{
     path: string[];
     bucketId?: string;
     createdFolderPath?: string[];
-}> = ({ bucket, folder, path, bucketId, createdFolderPath }) => {
+    driveSelect?: boolean;
+}> = ({ bucket, folder, path, bucketId, createdFolderPath, driveSelect = false }) => {
     const { buckets } = useTomb();
     const { openModal, closeModal } = useModal();
     const { uploadFiles } = useFilesUpload();
@@ -72,13 +73,13 @@ export const UploadFileModal: React.FC<{
     };
 
     const returnToUploadModal = (id: string) => {
-        openModal(<UploadFileModal bucket={selectedBucket} path={path} bucketId={id} />)
+        openModal(<UploadFileModal path={path} bucketId={id} driveSelect={driveSelect} />)
     }
 
     const addNewBucket = () => {
         openModal(
             <CreateDriveModal onSuccess={returnToUploadModal} />,
-            () => openModal(<UploadFileModal bucket={selectedBucket} path={path} />)
+            () => openModal(<UploadFileModal path={path} bucketId={bucketId} driveSelect={driveSelect} />)
         );
     };
 
@@ -109,17 +110,19 @@ export const UploadFileModal: React.FC<{
                 </p>
             </div>
             {
-                !bucket &&
-                <div>
-                    <span className="inline-block mb-1 text-xs font-normal">{`${messages.selectDrive}`}:</span>
-                    <Select
-                        selectedOption={selectedBucket}
-                        onChange={selectBucket}
-                        options={buckets.filter(bucket => bucket.bucketType !== 'backup' && !bucket.locked).map(bucket => ({ value: bucket, label: bucket.name }))}
-                        placeholder={`${messages.selectDrive}`}
-                        initialOption={<AddNewOption label={`${messages.createNewDrive}`} action={addNewBucket} />}
-                    />
-                </div>
+                driveSelect ?
+                    <div>
+                        <span className="inline-block mb-1 text-xs font-normal">{`${messages.selectDrive}`}:</span>
+                        <Select
+                            selectedOption={selectedBucket}
+                            onChange={selectBucket}
+                            options={buckets.filter(bucket => bucket.bucketType !== 'backup' && !bucket.locked).map(bucket => ({ value: bucket, label: bucket.name }))}
+                            placeholder={`${messages.selectDrive}`}
+                            initialOption={<AddNewOption label={`${messages.createNewDrive}`} action={addNewBucket} />}
+                        />
+                    </div>
+                    :
+                    null
             }
             {(selectedBucket || bucket) &&
                 <div>
@@ -133,10 +136,11 @@ export const UploadFileModal: React.FC<{
                                 openModal(
                                     <UploadFileModal
                                         path={path}
-                                        bucket={bucket}
+                                        bucket={selectedBucket}
                                         bucketId={bucketId}
                                         folder={folder}
                                         createdFolderPath={createdFolderPath}
+                                        driveSelect={driveSelect}
                                     />)
                         }
                     />
