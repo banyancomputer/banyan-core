@@ -12,14 +12,14 @@ use crate::utils::keys::fingerprint_public_key;
 pub async fn handler(
     user_identity: UserIdentity,
     State(state): State<AppState>,
-    Json(request): Json<CreateDeviceApiKeyRequest>,
-) -> Result<Response, CreateDeviceApiKeyError> {
-    let public_device_key = ES384PublicKey::from_pem(&request.pem)
-        .map_err(CreateDeviceApiKeyError::InvalidPublicKey)?;
+    Json(request): Json<CreateUserKeyRequest>,
+) -> Result<Response, CreateUserKeyError> {
+    let public_device_key =
+        ES384PublicKey::from_pem(&request.pem).map_err(CreateUserKeyError::InvalidPublicKey)?;
     let database = state.database();
     let fingerprint = fingerprint_public_key(&public_device_key);
     let user_id = user_identity.id().to_string();
-    let device_api_key_id = sqlx::query_scalar!(
+    let user_key_id = sqlx::query_scalar!(
         r#"INSERT INTO user_keys (name, user_id, fingerprint, pem, api_access)
             VALUES ($1, $2, $3, $4, TRUE)
             RETURNING id;"#,
@@ -30,14 +30,14 @@ pub async fn handler(
     )
     .fetch_one(&database)
     .await
-    .map_err(CreateDeviceApiKeyError::FailedToCreateKey)?;
+    .map_err(CreateUserKeyError::FailedToCreateKey)?;
 
-    let resp_msg = serde_json::json!({"id": device_api_key_id, "fingerprint": fingerprint});
+    let resp_msg = serde_json::json!({"id": user_key_id, "fingerprint": fingerprint});
     Ok((StatusCode::OK, Json(resp_msg)).into_response())
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum CreateDeviceApiKeyError {
+pub enum CreateUserKeyError {
     #[error("failed to store device API key: {0}")]
     FailedToCreateKey(sqlx::Error),
 
@@ -45,10 +45,10 @@ pub enum CreateDeviceApiKeyError {
     InvalidPublicKey(jwt_simple::Error),
 }
 
-impl IntoResponse for CreateDeviceApiKeyError {
+impl IntoResponse for CreateUserKeyError {
     fn into_response(self) -> Response {
         match &self {
-            CreateDeviceApiKeyError::InvalidPublicKey(_) => {
+            CreateUserKeyError::InvalidPublicKey(_) => {
                 let err_msg = serde_json::json!({"msg": "provided public key was not valid"});
                 (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
             }
@@ -62,7 +62,7 @@ impl IntoResponse for CreateDeviceApiKeyError {
 }
 
 #[derive(Deserialize)]
-pub struct CreateDeviceApiKeyRequest {
+pub struct CreateUserKeyRequest {
     name: String,
     pem: String,
 }
