@@ -1,14 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@app/store';
 import { getAcceptedDeals, getAvailableDeals } from '@app/store/deals/actions';
-import { convertFileSize } from '@app/utils/storage';
-import { getDateLabel } from '@app/utils/time';
 import { AcceptedDeals } from './Accepted';
 import { AvailableDeals } from './Available';
 
 
 export const Deals = () => {
-    const { acceptedDeals, availableDeals } = useAppSelector(state => state.deals);
     const dispatch = useAppDispatch();
     const [dealsType, setDealsType] = useState<'available' | 'accepted'>('available');
 
