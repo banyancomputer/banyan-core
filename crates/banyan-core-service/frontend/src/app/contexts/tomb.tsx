@@ -9,7 +9,7 @@ import {
 	BucketSnapshot,
 } from '@/app/types/bucket';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
-import { destroyIsUserNew, getIsUserNew, prettyFingerprintApiKeyPem, sortByType } from '@app/utils';
+import { destroyIsUserNew, getIsUserNew, prettyFingerprintApiKeyPem, sortByName, sortByType } from '@app/utils';
 import { handleNameDuplication } from '@utils/names';
 import { StorageUsageClient } from '@/api/storageUsage';
 import { useAppDispatch, useAppSelector } from '../store';
@@ -143,14 +143,14 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	const getSelectedBucketFiles = async (path: string[]) => {
 		setAreBucketsLoading(true);
 		const files = await selectedBucket?.mount?.ls(path);
-		await setSelectedBucket(bucket => ({ ...bucket!, files: files ? files.sort(sortByType) : [] }));
+		await setSelectedBucket(bucket => ({ ...bucket!, files: files ? files.sort(sortByName).sort(sortByType) : [] }));
 		setAreBucketsLoading(false);
 	};
 
 	/** Returns selected folder files. */
 	const getExpandedFolderFiles = async (path: string[], folder: BrowserObject, bucket: Bucket) => {
 		const files = await selectedBucket?.mount?.ls(path);
-		folder.files = files ? files.sort(sortByType) : [];
+		folder.files = files ? files.sort(sortByName).sort(sortByType) : [];
 		setSelectedBucket(prev => ({ ...prev! }));
 	};
 
@@ -283,7 +283,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 		await mount.mkdir([...path, name]);
 		if (path.join('') !== folderLocation.join('')) { return; }
 		const files = await mount.ls(path) || [];
-		await updateBucketsState('files', files.sort(sortByType), bucket.id);
+		await updateBucketsState('files', files.sort(sortByName).sort(sortByType), bucket.id);
 		const isSnapshotValid = await mount.hasSnapshot();
 		await updateBucketsState('isSnapshotValid', isSnapshotValid, bucket.id);
 	};
@@ -310,14 +310,14 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 		await mount.write([...uploadPath, fileName], file);
 		if (folder) {
 			const files = await mount.ls(uploadPath);
-			folder.files = files.sort(sortByType);
+			folder.files = files.sort(sortByName).sort(sortByType);
 			setSelectedBucket(prev => ({ ...prev! }));
 
 			return;
 		}
 		if (uploadPath.join('') !== folderLocation.join('')) { return; }
 		const files = await mount.ls(uploadPath) || [];
-		await updateBucketsState('files', files.sort(sortByType), bucket.id);
+		await updateBucketsState('files', files.sort(sortByName).sort(sortByType), bucket.id);
 		const isSnapshotValid = await mount.hasSnapshot();
 		await updateBucketsState('isSnapshotValid', isSnapshotValid, bucket.id);
 		await updateStorageUsageState();
