@@ -4,6 +4,10 @@ version = "0.1.0"
 edition = "2021"
 license = "LicenseRef-LICENSE.txt"
 
+[[bin]]
+name = "banyan-core-service"
+path = "src/main.rs"
+
 [dependencies]
 banyan-task = { path = "../banyan-task", version = "^0.1" }
 banyan-object-store = { path = "../banyan-object-store", version = "^0.1" }
