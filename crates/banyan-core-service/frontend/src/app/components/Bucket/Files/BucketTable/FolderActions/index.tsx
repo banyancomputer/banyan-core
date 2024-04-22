@@ -1,63 +1,74 @@
 import React from 'react';
 
 import { MoveToModal } from '@components/common/Modal/MoveToModal';
-import { RenameFileModal } from '@components/common/Modal/RenameFileModal';
+import { RenameFolderModal } from '@components/common/Modal/RenameFolderModal';
 import { DeleteFileModal } from '@components/common/Modal/DeleteFileModal';
 import { UploadFileModal } from '@components/common/Modal/UploadFileModal';
 import { Action } from '@components/Bucket/Files/BucketTable/FileActions';
 
 import { BrowserObject, Bucket } from '@/app/types/bucket';
-import { useModal } from '@/app/contexts/modals';
-import { useAppSelector } from '@/app/store';
+import { openModal } from '@store/modals/slice';
+import { useAppDispatch, useAppSelector } from '@/app/store';
 
 import { MoveTo, Rename, Trash, Upload } from '@static/images/common';
-import { RenameFolderModal } from '@/app/components/common/Modal/RenameFolderModal';
 
 export const FolderActions: React.FC<{ bucket: Bucket; folder: BrowserObject; parrentFolder: BrowserObject; path: string[] }> = ({ bucket, folder, path, parrentFolder }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.bucket.files.bucketTable.folderActions);
-    const { openModal } = useModal();
     const bucketType = `${bucket.bucketType}_${bucket.storageClass}`;
+    const dispatch = useAppDispatch();
 
     const uploadFile = () => {
-        openModal(
-            <UploadFileModal
-                bucket={bucket}
-                folder={folder}
-                path={[...path, folder.name]}
-            />
+        dispatch(
+            openModal(
+                {
+                    content: <UploadFileModal
+                        bucket={bucket}
+                        folder={folder}
+                        path={[...path, folder.name]}
+                    />
+                }
+            )
         );
     };
 
     const moveTo = () => {
-        openModal(
-            <MoveToModal
-                file={folder}
-                bucket={bucket}
-                path={path}
-                parrentFolder={parrentFolder}
-            />
+        dispatch(openModal(
+            {
+                content: <MoveToModal
+                    file={folder}
+                    bucket={bucket}
+                    path={path}
+                    parrentFolder={parrentFolder}
+                />
+            }
+        )
         );
     };
 
     const rename = async () => {
-        openModal(
-            <RenameFolderModal
-                bucket={bucket}
-                folder={folder}
-                path={path}
-            />
+        dispatch(openModal(
+            {
+                content: <RenameFolderModal
+                    bucket={bucket}
+                    folder={folder}
+                    path={path}
+                />
+            }
+        )
         );
     };
 
     const remove = async () => {
-        openModal(
-            <DeleteFileModal
-                bucket={bucket}
-                file={folder}
-                parrentFolder={parrentFolder}
-                path={path}
-            />
-        );
+        dispatch(openModal(
+            {
+                content: <DeleteFileModal
+                    bucket={bucket}
+                    file={folder}
+                    parrentFolder={parrentFolder}
+                    path={path}
+                />
+            }
+        ));
     };
 
     const moveToAction = new Action(messages.moveTo, <MoveTo width="18px" height="18px" />, moveTo);

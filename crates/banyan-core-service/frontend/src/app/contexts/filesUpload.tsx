@@ -3,12 +3,12 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 import { useTomb } from './tomb';
 import { BrowserObject, Bucket } from '@/app/types/bucket';
-import { useModal } from './modals';
 import { BannerError, setError } from '../store/errors/slice';
 import { useAppDispatch, useAppSelector } from '../store';
 import { SubscriptionPlanModal } from '../components/common/Modal/SubscriptionPlanModal';
 import { FILE_SIZE_LIMIT } from '@app/utils/storage';
 import { ToastNotifications } from '@app/utils/toastNotifications';
+import { openModal } from '@store/modals/slice';
 
 export interface UploadingFile { file: File; status: "pending" | "uploading" | "success" | "failed" };
 interface FilesUploadState {
@@ -27,7 +27,6 @@ export const FileUploadProvider: FC<{ children: ReactNode }> = ({ children }) =>
     const { fileSizeExceeded } = useAppSelector(state => state.locales.messages.contexts.fileUpload);
     const dispatch = useAppDispatch();
     const [files, setFiles] = useState<UploadingFile[]>([]);
-    const { openModal } = useModal();
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -54,7 +53,11 @@ export const FileUploadProvider: FC<{ children: ReactNode }> = ({ children }) =>
                     file.file.size > storageLimits.hardLimit - storageUsage.hotStorage ?
                         dispatch(setError(new BannerError(hardStorageLimit, { callback: () => { window.location.href = 'mailto:tim@banyan.computer' }, label: contactSales })))
                         :
-                        dispatch(setError(new BannerError(softStorageLimit, { callback: () => { openModal(<SubscriptionPlanModal />) }, label: seePricingPage })))
+                        dispatch(setError(new BannerError(softStorageLimit, {
+                            callback: () => {
+                                dispatch(openModal({ content: <SubscriptionPlanModal /> }))
+                            }, label: seePricingPage
+                        })))
                 };
 
                 const arrayBuffer = await file.file.arrayBuffer();

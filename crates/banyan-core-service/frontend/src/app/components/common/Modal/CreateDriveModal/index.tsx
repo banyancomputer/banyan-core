@@ -4,13 +4,12 @@ import { useNavigate } from 'react-router-dom';
 import { PrimaryButton } from '@components/common/PrimaryButton';
 import { SecondaryButton } from '@components/common/SecondaryButton';
 
-import { useModal } from '@/app/contexts/modals';
+import { closeModal, openModal } from '@store/modals/slice';
 import { useTomb } from '@/app/contexts/tomb';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { useAppSelector } from '@/app/store';
 
 export const CreateDriveModal: React.FC<{ onSuccess?: (id: string) => void }> = ({ onSuccess }) => {
-    const { closeModal } = useModal();
     const navigate = useNavigate();
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.createBucket);
     const { driveAlreadyExists } = useAppSelector(state => state.locales.messages.contexts.tomb);
@@ -29,13 +28,17 @@ export const CreateDriveModal: React.FC<{ onSuccess?: (id: string) => void }> = 
         setBucketName(event.target.value);
     };
 
+    const cancel = () => {
+        dispatch(closeModal());
+    };
+
     const create = async () => {
         try {
             const bucketId = await createDriveAndMount(bucketName, storageClass, bucketType);
             if (onSuccess) {
                 onSuccess(bucketId);
             } else {
-                closeModal();
+                cancel();
                 navigate(`/drive/${bucketId}`);
             }
         } catch (error: any) {
@@ -73,7 +76,7 @@ export const CreateDriveModal: React.FC<{ onSuccess?: (id: string) => void }> = 
             </div> */}
             <div className="flex items-center justify-end gap-3 text-xs" >
                 <SecondaryButton
-                    action={closeModal}
+                    action={cancel}
                     text={`${messages.cancel}`}
                 />
                 <PrimaryButton
@@ -85,3 +88,7 @@ export const CreateDriveModal: React.FC<{ onSuccess?: (id: string) => void }> = 
         </div >
     );
 };
+function dispatch(arg0: any) {
+    throw new Error('Function not implemented.');
+}
+

@@ -1,17 +1,19 @@
 import React, { useRef } from 'react';
 
-import { useModal } from '@/app/contexts/modals';
+import { closeModal } from '@store/modals/slice';
 
 import { ArrowDown, Close } from '@static/images/common';
+import { useAppDispatch, useAppSelector } from '@/app/store';
 
 export const Modal = () => {
+    const dispatch = useAppDispatch();
     const modalRef = useRef<HTMLDivElement | null>(null);
-    const { modalState: { content, onBack, mandatory, closeButton = true, className = 'p-6 rounded-md' }, closeModal, } = useModal();
+    const { content, onBack, mandatory, closeButton = true, className } = useAppSelector(state => state.modals);
 
-    const close = (event: React.MouseEvent<HTMLDivElement>) => {
+    const close = (event: React.MouseEvent<HTMLDivElement | HTMLButtonElement>) => {
         if (mandatory) { return; }
         if (!modalRef.current!.contains(event.target as Node)) {
-            closeModal();
+            dispatch(closeModal());
         };
     };
 
@@ -23,7 +25,7 @@ export const Modal = () => {
                     onClick={close}
                 >
                     <div
-                        className={`relative bg-modalBackground ${className}`}
+                        className={`relative bg-modalBackground ${className || 'p-6 rounded-md'}`}
                         ref={modalRef}
                     >
                         {onBack &&
@@ -34,7 +36,7 @@ export const Modal = () => {
                         {(!mandatory || closeButton) &&
                             <button
                                 className="absolute right-6 top-6"
-                                onClick={closeModal}
+                                onClick={close}
                             >
                                 <Close width="24px" height="24px" />
                             </button>
