@@ -8,10 +8,9 @@ import { useAppDispatch, useAppSelector } from '@/app/store';
 export const Modal = () => {
     const dispatch = useAppDispatch();
     const modalRef = useRef<HTMLDivElement | null>(null);
-    const { content, onBack, mandatory, closeButton = true, className } = useAppSelector(state => state.modals);
+    const { content, onBack } = useAppSelector(state => state.modals);
 
     const close = (event: React.MouseEvent<HTMLDivElement | HTMLButtonElement>) => {
-        if (mandatory) { return; }
         if (!modalRef.current!.contains(event.target as Node)) {
             dispatch(closeModal());
         };
@@ -25,7 +24,7 @@ export const Modal = () => {
                     onClick={close}
                 >
                     <div
-                        className={`relative bg-modalBackground ${className || 'p-6 rounded-md'}`}
+                        className={`relative bg-modalBackground p-6 rounded-md`}
                         ref={modalRef}
                     >
                         {onBack &&
@@ -33,14 +32,12 @@ export const Modal = () => {
                                 <ArrowDown width="24px" height="24px" />
                             </button>
                         }
-                        {(!mandatory || closeButton) &&
-                            <button
-                                className="absolute right-6 top-6"
-                                onClick={close}
-                            >
-                                <Close width="24px" height="24px" />
-                            </button>
-                        }
+                        <button
+                            className="absolute right-6 top-6"
+                            onClick={close}
+                        >
+                            <Close width="24px" height="24px" />
+                        </button>
                         {content}
                     </div>
                 </div>
