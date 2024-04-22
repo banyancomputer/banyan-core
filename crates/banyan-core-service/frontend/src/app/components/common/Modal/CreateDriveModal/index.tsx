@@ -9,13 +9,13 @@ import { useTomb } from '@/app/contexts/tomb';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { useAppSelector } from '@/app/store';
 
-export const CreateBucketModal = () => {
+export const CreateDriveModal: React.FC<{ onSuccess?: (id: string) => void }> = ({ onSuccess }) => {
     const { closeModal } = useModal();
     const navigate = useNavigate();
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.createBucket);
     const { driveAlreadyExists } = useAppSelector(state => state.locales.messages.contexts.tomb);
     const [bucketName, setBucketName] = useState('');
-    const { createBucketAndMount } = useTomb();
+    const { createDriveAndMount } = useTomb();
     const [bucketType, setBucketType] = useState('interactive');
     const [storageClass, setStorageClass] = useState('hot');
     const isBucketDataFilled = useMemo(() =>
@@ -31,11 +31,15 @@ export const CreateBucketModal = () => {
 
     const create = async () => {
         try {
-            const bucketId = await createBucketAndMount(bucketName, storageClass, bucketType);
-            closeModal();
-            navigate(`/drive/${bucketId}`);
+            const bucketId = await createDriveAndMount(bucketName, storageClass, bucketType);
+            if (onSuccess) {
+                onSuccess(bucketId);
+            } else {
+                closeModal();
+                navigate(`/drive/${bucketId}`);
+            }
         } catch (error: any) {
-            if(error.message !== driveAlreadyExists) {
+            if (error.message !== driveAlreadyExists) {
                 ToastNotifications.error(`${messages.creationError}`, `${messages.tryAgain}`, create);
             };
         };

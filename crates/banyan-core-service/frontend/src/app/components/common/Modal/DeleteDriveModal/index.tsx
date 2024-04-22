@@ -11,7 +11,7 @@ import { useAppSelector } from '@/app/store';
 
 import { Trash } from '@static/images/common';
 
-export const DeleteBucketModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
+export const DeleteDriveModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.deleteBucket);
     const { closeModal } = useModal();
     const { deleteBucket } = useTomb();

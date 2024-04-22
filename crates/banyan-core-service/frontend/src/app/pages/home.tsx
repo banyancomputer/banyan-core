@@ -3,7 +3,7 @@ import React, { useEffect } from 'react';
 import { UploadFileModal } from '@components/common/Modal/UploadFileModal';
 import { Fallback } from '@components/common/Fallback';
 import { Bucket } from '@components/Home/Bucket';
-import { CreateBucketModal } from '@components/common/Modal/CreateBucketModal';
+import { CreateDriveModal } from '@components/common/Modal/CreateDriveModal';
 import { EmptyState } from '@components/Home/EmptyState';
 
 import { useTomb } from '@/app/contexts/tomb';
@@ -18,11 +18,11 @@ const Home = () => {
     const messages = useAppSelector(state => state.locales.messages.pages.home);
 
     const uploadFile = () => {
-        openModal(<UploadFileModal path={[]} />);
+        openModal(<UploadFileModal path={[]} driveSelect />);
     };
 
     const createDrive = () => {
-        openModal(<CreateBucketModal />);
+        openModal(<CreateDriveModal />);
     };
 
     return (

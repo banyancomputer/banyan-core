@@ -12,7 +12,7 @@ import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { stringToBase64 } from '@/app/utils/base64';
 import { useAppSelector } from '@/app/store';
 
-export const CreateFolderModal: React.FC<{ bucket: Bucket; onSuccess?: () => void; path: string[], redirect?: boolean }> = ({ bucket, onSuccess = () => { }, path, redirect = false }) => {
+export const CreateFolderModal: React.FC<{ bucket: Bucket; onSuccess?: (path: string[]) => void; path: string[], redirect?: boolean }> = ({ bucket, onSuccess = () => { }, path, redirect = false }) => {
     const { closeModal, openModal } = useModal();
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.createFolder);
     const { folderAlreadyExists } = useAppSelector(state => state.locales.messages.contexts.tomb);
@@ -31,7 +31,7 @@ export const CreateFolderModal: React.FC<{ bucket: Bucket; onSuccess?: () => voi
             await createDirectory(bucket, path, folderName);
             redirect && navigate(`/drive/${bucket.id}${path.length ? '?' : ''}${path.map(path => stringToBase64(path)).join('/')}${path.length ? '/' : '?'}${stringToBase64(folderName)}`);
             onSuccess ?
-                onSuccess()
+                onSuccess([...path, folderName])
                 :
                 openModal(<UploadFileModal bucket={bucket} path={[...path, folderName]} />);
         } catch (error: any) {

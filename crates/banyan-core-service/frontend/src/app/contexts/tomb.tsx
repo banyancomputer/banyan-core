@@ -35,7 +35,7 @@ interface TombInterface {
 	getExpandedFolderFiles: (path: string[], folder: BrowserObject, bucket: Bucket) => Promise<void>;
 	takeColdSnapshot: (bucket: Bucket) => Promise<void>;
 	getBucketSnapshots: (id: string) => Promise<BucketSnapshot[]>;
-	createBucketAndMount: (name: string, storageClass: string, bucketType: string) => Promise<string>;
+	createDriveAndMount: (name: string, storageClass: string, bucketType: string) => Promise<string>;
 	renameBucket: (bucket: Bucket, newName: string) => void;
 	deleteBucket: (id: string) => void;
 	createDirectory: (bucket: Bucket, path: string[], name: string) => Promise<void>;
@@ -78,7 +78,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 		const key = unwrapResult(await dispatch(getEncryptionKey()));
 		const wasm_buckets: WasmBucket[] = await tomb!.listBuckets();
 		if (getIsUserNew()) {
-			createBucketAndMount("My Drive", 'hot', 'interactive');
+			createDriveAndMount("My Drive", 'hot', 'interactive');
 			destroyIsUserNew();
 			return;
 		}
@@ -160,7 +160,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 	};
 
 	/** Creates new bucket with recieved parameters of type and storag class. */
-	const createBucketAndMount = async (name: string, storageClass: string, bucketType: string): Promise<string> => {
+	const createDriveAndMount = async (name: string, storageClass: string, bucketType: string): Promise<string> => {
 		const existingBuckets = buckets.map(bucket => bucket.name);
 
 		if (existingBuckets.includes(name)) {
@@ -390,7 +390,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 			value={{
 				tomb, buckets, storageUsage, storageLimits, trash, areBucketsLoading, selectedBucket,
 				getBuckets, getBucketsKeys, selectBucket, getSelectedBucketFiles,
-				takeColdSnapshot, getBucketSnapshots, createBucketAndMount, deleteBucket, remountBucket,
+				takeColdSnapshot, getBucketSnapshots, createDriveAndMount, deleteBucket, remountBucket,
 				getFile, renameBucket, createDirectory, uploadFile, purgeSnapshot,
 				removeBucketAccess, approveBucketAccess, approveDeviceApiKey, shareFile, download, moveTo,
 				restore, deleteFile, makeCopy, getExpandedFolderFiles,
