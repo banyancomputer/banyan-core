@@ -25,13 +25,21 @@ fn report_enabled_features() {
 }
 
 fn report_repository_version() {
-    let git_describe = std::process::Command::new("git")
-        .args(["describe", "--always", "--dirty", "--long", "--tags"])
-        .output()
-        .unwrap();
+    // attempt to get from env vars, fall back to command execution; relevant in docker build
+    let git_describe = if let Ok(ci_build_ref) = std::env::var("CI_BUILD_REF") {
+        ci_build_ref
+    } else {
+        String::from_utf8(
+            std::process::Command::new("git")
+                .args(["describe", "--always", "--dirty", "--long", "--tags"])
+                .output()
+                .unwrap()
+                .stdout,
+        )
+        .unwrap()
+    };
 
-    let long_version = String::from_utf8(git_describe.stdout).unwrap();
-    println!("cargo:rustc-env=REPO_VERSION={}", long_version);
+    println!("cargo:rustc-env=REPO_VERSION={}", git_describe);
 }
 
 fn main() {

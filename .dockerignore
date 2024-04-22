@@ -1,2 +1,27 @@
-crates/banyan-core-service/frontend/node_modules/
+# actual .env files
+crates/*/.env
+
+# any node modules
+crates/**/node_modules/
+
+# banyan-core-service
+crates/banyan-core-service/dist/**
+!crates/banyan-core-service/dist/login.html
+!crates/banyan-core-service/dist/placeholder.html
+!crates/banyan-core-service/dist/tos/
+
+crates/banyan-core-service/admin_dist/**
+!crates/banyan-core-service/admin_dist/login.html
+
+# general
 target/
+./.github
+./bin
+./docs
+./.git
+./.gitignore
+./Dockerfile*
+**/*.dockerfile
+./LICENSE.txt
+./Makefile
+./README.md
