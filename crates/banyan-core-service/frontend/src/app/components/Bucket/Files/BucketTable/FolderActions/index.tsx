@@ -85,7 +85,7 @@ export const FolderActions: React.FC<{ bucket: Bucket; folder: BrowserObject; pa
     };
 
     return (
-        <div className="w-48 right-8 text-xs font-medium bg-bucket-actionsBackground rounded-md shadow-md z-10 select-none text-bucket-actionsText overflow-hidden">{
+        <div className="absolute w-48 right-5 text-xs font-medium bg-bucket-actionsBackground rounded-md shadow-md z-10 select-none text-bucket-actionsText overflow-hidden">{
             actions[bucketType].map(action =>
                 <div
                     key={action.label}
