@@ -50,7 +50,7 @@ export const ActionsCell: React.FC<{ actions: ReactElement; }> = ({ actions }) =
     return (
         <div
             id="actionsCell"
-            className="relative flex justify-center p-4 cursor-pointer border-1 border-red-950"
+            className="relative flex justify-center p-4 cursor-pointer"
             ref={actionsRef}
             onClick={toggleActionsVisibility}
         >
