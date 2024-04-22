@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { PrimaryButton } from '@components/common/PrimaryButton';
 import { FolderSelect } from '@components/common/FolderSelect';
@@ -12,7 +12,13 @@ import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 import { useFilePreview } from '@/app/contexts/filesPreview';
 import { useAppSelector } from '@/app/store';
 
-export const MoveToModal: React.FC<{ file: BrowserObject; bucket: Bucket; path: string[]; parrentFolder: BrowserObject }> = ({ file, bucket, path, parrentFolder }) => {
+export const MoveToModal: React.FC<{
+    file: BrowserObject;
+    bucket: Bucket;
+    path: string[];
+    parrentFolder: BrowserObject,
+    createdFolderPath?: string[]
+}> = ({ file, bucket, path, parrentFolder, createdFolderPath }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.moteTo);
     const { moveTo, getSelectedBucketFiles, getExpandedFolderFiles } = useTomb();
     const { closeModal, openModal } = useModal();
@@ -42,6 +48,12 @@ export const MoveToModal: React.FC<{ file: BrowserObject; bucket: Bucket; path: 
         setSelectedFolder(option);
     };
 
+    useEffect(() => {
+        if (!createdFolderPath) return;
+
+        setSelectedFolder(createdFolderPath);
+    }, [createdFolderPath]);
+
     return (
         <div className="w-modal flex flex-col gap-6" >
             <div>
@@ -53,10 +65,21 @@ export const MoveToModal: React.FC<{ file: BrowserObject; bucket: Bucket; path: 
             <div>
                 <label className="inline-block mb-1 text-xs font-normal">{`${messages.folder}`}:</label>
                 <FolderSelect
+                    selectedFolder={selectedFolder}
                     selectedBucket={bucket}
                     onChange={selectFolder}
-                    path={path}
-                    onFolderCreation={() => openModal(<MoveToModal bucket={bucket} file={file} path={path} parrentFolder={parrentFolder} />)}
+                    onFolderCreation={
+                        (createdFolderPath?: string[]) =>
+                            openModal(
+                                <MoveToModal
+                                    bucket={bucket}
+                                    file={file}
+                                    path={path}
+                                    parrentFolder={parrentFolder}
+                                    createdFolderPath={createdFolderPath}
+                                />
+                            )
+                    }
                 />
             </div>
             <div className="mt-3 flex items-center justify-end gap-3 text-xs" >
