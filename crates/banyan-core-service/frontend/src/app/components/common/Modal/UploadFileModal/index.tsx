@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 
 import { Select } from '@components/common/Select';
 import { AddNewOption } from '@components/common/Select/AddNewOption';
-import { CreateBucketModal } from '@components/common/Modal/CreateBucketModal';
+import { CreateDriveModal } from '@components/common/Modal/CreateDriveModal';
 import { FolderSelect } from '@components/common/FolderSelect';
 import { PrimaryButton } from '@components/common/PrimaryButton';
 import { SecondaryButton } from '@components/common/SecondaryButton';
@@ -16,7 +16,14 @@ import { useAppSelector } from '@/app/store';
 
 import { Upload } from '@static/images/buckets';
 
-export const UploadFileModal: React.FC<{ bucket?: Bucket | null; folder?: BrowserObject; path: string[] }> = ({ bucket, folder, path }) => {
+export const UploadFileModal: React.FC<{
+    bucket?: Bucket | null;
+    folder?: BrowserObject;
+    path: string[];
+    bucketId?: string;
+    createdFolderPath?: string[];
+    driveSelect?: boolean;
+}> = ({ bucket, folder, path, bucketId, createdFolderPath, driveSelect = false }) => {
     const { buckets } = useTomb();
     const { openModal, closeModal } = useModal();
     const { uploadFiles } = useFilesUpload();
@@ -35,7 +42,7 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null; folder?: Browse
     };
 
     const handleChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        if (!event.target.files) { return; }
+        if (!event.target.files) { return; };
 
         setPreviewFiles(event.target.files);
     };
@@ -44,7 +51,7 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null; folder?: Browse
         event.preventDefault();
         event.stopPropagation();
 
-        if (!event.dataTransfer.files) { return; }
+        if (!event.dataTransfer.files) { return; };
 
         setPreviewFiles(event.dataTransfer.files);
     };
@@ -65,8 +72,15 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null; folder?: Browse
         };
     };
 
+    const returnToUploadModal = (id: string) => {
+        openModal(<UploadFileModal path={path} bucketId={id} driveSelect={driveSelect} />)
+    }
+
     const addNewBucket = () => {
-        openModal(<CreateBucketModal />, () => openModal(<UploadFileModal bucket={selectedBucket} path={path} />));
+        openModal(
+            <CreateDriveModal onSuccess={returnToUploadModal} />,
+            () => openModal(<UploadFileModal path={path} bucketId={bucketId} driveSelect={driveSelect} />)
+        );
     };
 
     useEffect(() => {
@@ -74,6 +88,18 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null; folder?: Browse
             setPreviewFiles(null);
         };
     }, []);
+
+    useEffect(() => {
+        if (!bucketId) return;
+
+        setSelectedBucket(buckets.find(bucket => bucket.id === bucketId) || null);
+    }, [bucketId]);
+
+    useEffect(() => {
+        if (!createdFolderPath) return;
+
+        setSelectedFolder(createdFolderPath);
+    }, [createdFolderPath]);
 
     return (
         <div className="w-modal flex flex-col gap-4">
@@ -84,25 +110,39 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null; folder?: Browse
                 </p>
             </div>
             {
-                !bucket &&
-                <div>
-                    <span className="inline-block mb-1 text-xs font-normal">{`${messages.selectDrive}`}:</span>
-                    <Select
-                        selectedOption={selectedBucket}
-                        onChange={selectBucket}
-                        options={buckets.filter(bucket => bucket.bucketType !== 'backup').map(bucket => ({ value: bucket, label: bucket.name }))}
-                        placeholder={`${messages.selectDrive}`}
-                        initialOption={<AddNewOption label={`${messages.createNewDrive}`} action={addNewBucket} />}
-                    />
-                </div>
+                driveSelect ?
+                    <div>
+                        <span className="inline-block mb-1 text-xs font-normal">{`${messages.selectDrive}`}:</span>
+                        <Select
+                            selectedOption={selectedBucket}
+                            onChange={selectBucket}
+                            options={buckets.filter(bucket => bucket.bucketType !== 'backup' && !bucket.locked).map(bucket => ({ value: bucket, label: bucket.name }))}
+                            placeholder={`${messages.selectDrive}`}
+                            initialOption={<AddNewOption label={`${messages.createNewDrive}`} action={addNewBucket} />}
+                        />
+                    </div>
+                    :
+                    null
             }
             {(selectedBucket || bucket) &&
                 <div>
                     <span className="inline-block mb-1 text-xs font-normal">{`${messages.selectFolder}`}:</span>
                     <FolderSelect
+                        selectedFolder={selectedFolder}
                         onChange={selectFolder}
                         selectedBucket={selectedBucket!}
-                        path={path}
+                        onFolderCreation={
+                            (createdFolderPath?: string[]) =>
+                                openModal(
+                                    <UploadFileModal
+                                        path={path}
+                                        bucket={selectedBucket}
+                                        bucketId={bucketId}
+                                        folder={folder}
+                                        createdFolderPath={createdFolderPath}
+                                        driveSelect={driveSelect}
+                                    />)
+                        }
                     />
                 </div>
             }
@@ -133,7 +173,7 @@ export const UploadFileModal: React.FC<{ bucket?: Bucket | null; folder?: Browse
                 }
                 <input
                     type="file"
-                    multiple={false}
+                    multiple
                     className="hidden"
                     onChange={handleChange}
                 />

@@ -19,6 +19,7 @@ pub async fn handler(
     let database = state.database();
     let mut conn = database.acquire().await?;
     let bucket = Bucket::find_by_id(&mut conn, &bucket_id).await?;
+
     if bucket.user_id != user_id || bucket.deleted_at.is_some() {
         return Err(BucketUsageError::NotFound);
     }

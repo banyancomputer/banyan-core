@@ -1,20 +1,19 @@
 use async_trait::async_trait;
 use banyan_task::{CurrentTask, TaskLike};
-use cid::multibase::Base;
-use cid::Cid;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::app::AppState;
 use crate::clients::{CoreServiceClient, CoreServiceError};
+use crate::utils::is_valid_cid;
 
 pub type ReportUploadTaskContext = AppState;
 
 #[non_exhaustive]
 #[derive(Debug, thiserror::Error)]
 pub enum ReportUploadTaskError {
-    #[error("invalid cid: {0}")]
-    InvalidInternalCid(#[from] cid::Error),
+    #[error("invalid cid")]
+    InvalidCid,
     #[error("sql error: {0}")]
     DatabaseError(#[from] sqlx::Error),
     #[error("reqwest error: {0}")]
@@ -31,7 +30,7 @@ pub enum ReportUploadTaskError {
 pub struct ReportUploadTask {
     storage_authorization_id: Uuid,
     metadata_id: String,
-    cids: Vec<Cid>,
+    cids: Vec<String>,
     data_size: u64,
 }
 
@@ -39,7 +38,7 @@ impl ReportUploadTask {
     pub fn new(
         storage_authorization_id: Uuid,
         metadata_id: &str,
-        cids: &[Cid],
+        cids: &[String],
         data_size: u64,
     ) -> Self {
         Self {
@@ -62,27 +61,23 @@ impl TaskLike for ReportUploadTask {
         let metadata_id = self.metadata_id.to_string();
         let storage_authorization_id = self.storage_authorization_id.to_string();
         let data_size = self.data_size;
-        let normalized_cids = self
-            .cids
-            .iter()
-            .map(|c| {
-                c.to_string_of_base(Base::Base64Url)
-                    .map_err(ReportUploadTaskError::InvalidInternalCid)
-            })
-            .collect::<Result<Vec<_>, _>>()?;
+
+        if self.cids.iter().any(|c| !is_valid_cid(c)) {
+            return Err(ReportUploadTaskError::InvalidCid);
+        }
 
         let client = CoreServiceClient::new(
             ctx.secrets().service_signing_key(),
             ctx.service_name(),
             ctx.platform_name(),
             ctx.platform_hostname(),
-        );
+        )?;
 
         let response = client
             .report_upload(
                 metadata_id,
                 data_size,
-                normalized_cids,
+                self.cids.clone(),
                 storage_authorization_id,
             )
             .await?;

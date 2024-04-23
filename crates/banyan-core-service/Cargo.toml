@@ -4,13 +4,13 @@ version = "0.1.0"
 edition = "2021"
 license = "LicenseRef-LICENSE.txt"
 
+[[bin]]
+name = "banyan-core-service"
+path = "src/main.rs"
+
 [dependencies]
-banyan-task = { path = "../banyan-task", version = "^0.1"}
+banyan-task = { path = "../banyan-task", version = "^0.1" }
 banyan-object-store = { path = "../banyan-object-store", version = "^0.1" }
-banyan-cli = { git = "https://github.com/banyancomputer/banyan-cli.git", branch = "main", version = "^1" }
-wnfs = { git = "https://github.com/banyancomputer/rs-wnfs", branch = "main", version = "^0.1" }
-# TODO: remove anyhow once we have an alternative to wnfs
-anyhow = "1.0.75"
 banyan-traffic-counter = { path = "../banyan-traffic-counter", version = "^0.1" }
 
 dotenvy = "^0.15"
@@ -21,7 +21,15 @@ lazy_static = "^1.4"
 pico-args = "^0.5"
 rand = "^0.8"
 thiserror = "^1"
-tokio = { version = "^1", features = ["macros", "net", "rt", "rt-multi-thread", "signal", "sync", "time"] }
+tokio = { version = "^1", features = [
+  "macros",
+  "net",
+  "rt",
+  "rt-multi-thread",
+  "signal",
+  "sync",
+  "time",
+] }
 
 blake3 = "^1.4"
 ecdsa = { version = "^0.16", features = ["signing", "verifying"] }
@@ -36,7 +44,6 @@ asn1 = "^0.15"
 base64 = "^0.21"
 bincode = "^1"
 bytes = "^1"
-cid = { version = "^0.10", features = ["serde-codec"] }
 hex = "^0.4"
 pem = "^2"
 phf = { version = "^0.11", features = ["macros"] }
@@ -47,7 +54,13 @@ serde = { version = "^1", features = ["derive"] }
 time = { version = "^0.3", features = ["serde", "parsing", "formatting"] }
 uuid = { version = "^1.3", features = ["fast-rng", "serde", "v4"] }
 
-axum = { version = "^0.6", features = ["macros", "headers", "http2", "multipart", "tracing"] }
+axum = { version = "^0.6", features = [
+  "macros",
+  "headers",
+  "http2",
+  "multipart",
+  "tracing",
+] }
 axum-extra = { version = "^0.8", features = ["cookie"] }
 http = "^0.2"
 jsonwebtoken = "^9"
@@ -58,24 +71,71 @@ mime = "^0.3"
 multer = { version = "^2", features = ["json", "tokio", "tokio-io"] }
 oauth2 = "^4"
 reqwest = { version = "^0.11", features = ["json"], default-features = false }
-sqlx = { version = "^0.7", default-features = false, features = ["macros", "migrate", "runtime-tokio", "sqlite", "time", "uuid"] }
-tower = { version = "^0.4", features = ["timeout", "load-shed", "limit", "util"] }
-tower-http = { version = "^0.4", features = ["auth", "cors", "limit", "fs", "propagate-header", "request-id", "sensitive-headers", "set-header", "util", "trace", "validate-request"] }
+sqlx = { version = "^0.7", default-features = false, features = [
+  "macros",
+  "migrate",
+  "runtime-tokio",
+  "sqlite",
+  "time",
+  "uuid",
+] }
+tower = { version = "^0.4", features = [
+  "timeout",
+  "load-shed",
+  "limit",
+  "util",
+] }
+tower-http = { version = "^0.4", features = [
+  "auth",
+  "cors",
+  "limit",
+  "fs",
+  "propagate-header",
+  "request-id",
+  "sensitive-headers",
+  "set-header",
+  "util",
+  "trace",
+  "validate-request",
+] }
 url = "^2.4"
 validify = "^1.0"
 
 tracing = "^0.1"
 tracing-appender = "^0.2"
-tracing-futures = { version = "^0.2", default-features = false, features = ["std-future"] }
-tracing-subscriber = { version = "^0.3", default-features = false, features = ["ansi", "env-filter", "fmt", "local-time", "time", "tracing"] }
-async-stripe = { version = "^0.29", default-features = false, features = ["runtime-tokio-hyper-rustls", "checkout", "billing", "fraud", "orders", "tax-calculation", "events", "webhook-endpoints", "chrono", "webhook-events", "connect"] }
+tracing-futures = { version = "^0.2", default-features = false, features = [
+  "std-future",
+] }
+tracing-subscriber = { version = "^0.3", default-features = false, features = [
+  "ansi",
+  "env-filter",
+  "fmt",
+  "local-time",
+  "time",
+  "tracing",
+] }
+async-stripe = { version = "^0.29", default-features = false, features = [
+  "runtime-tokio-hyper-rustls",
+  "checkout",
+  "billing",
+  "fraud",
+  "orders",
+  "tax-calculation",
+  "events",
+  "webhook-endpoints",
+  "chrono",
+  "webhook-events",
+  "connect",
+] }
 
 [dev-dependencies]
 hyper = "^0.14"
 proptest = "^1.4.0"
 proptest-derive = "^0.2.0"
 mockito = "1.4.0"
-banyan-task = { path = "../banyan-task", version = "^0.1", features = ["test-utils"]}
+banyan-task = { path = "../banyan-task", version = "^0.1", features = [
+  "test-utils",
+] }
 
 [build-dependencies]
 time = { version = "^0.3", features = ["formatting"] }

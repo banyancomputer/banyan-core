@@ -14,6 +14,16 @@ export class StorageUsageClient extends APIClient {
         return new StorageUsage(rawStorageUsage.hot_storage, rawStorageUsage.archival_storage);
     };
 
+    async getStorageUsageForBucket(buketId: string):Promise<number> {
+        const response = await this.http.get(`${this.ROOT_PATH}/api/v1/buckets/${buketId}/usage`);
+
+        if (!response.ok) {
+            await this.handleError(response);
+        };
+
+        return (await response.json()).size;
+    };
+
     async getStorageLimits():Promise<StorageLimits> {
         const response = await this.http.get(`${this.ROOT_PATH}/api/v1/buckets/usage_limit`);
 

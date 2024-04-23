@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE block_locations SET stored_at = NULL WHERE block_id = $1 AND storage_host_id != $2;",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "100c2ade4e31e44fac173e31b832dbb495be7b08c67c24cbafe2f0edea895cc0"
+}

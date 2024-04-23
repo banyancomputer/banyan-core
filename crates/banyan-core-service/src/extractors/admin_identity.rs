@@ -7,14 +7,16 @@ use crate::database::Database;
 use crate::extractors::session_identity::SessionIdentityError;
 use crate::extractors::SessionIdentity;
 
-const ADMIN_USERS: [&str; 7] = [
+pub const ADMIN_USERS: [&str; 9] = [
     "sam.stelfox@banyan.computer",
-    "alex@banyan.computer",
     "vera@banyan.computer",
     "sam@banyan.computer",
     "plamen@banyan.computer",
     "olive@banyan.computer",
     "vladyslav@boostylabs.com",
+    "jason@banyan.computer",
+    "naftuli@banyan.computer",
+    "dana@banyan.computer",
 ];
 
 /// Extracted identity from a request made with a server-signed JWT
@@ -23,7 +25,7 @@ pub struct AdminIdentity {
 }
 
 impl AdminIdentity {
-    fn new(identity: SessionIdentity) -> Self {
+    pub fn new(identity: SessionIdentity) -> Self {
         Self { identity }
     }
 }

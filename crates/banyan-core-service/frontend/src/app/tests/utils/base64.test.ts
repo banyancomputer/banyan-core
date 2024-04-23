@@ -1,3 +1,5 @@
+import { TextEncoder, TextDecoder } from 'util';
+Object.assign(global, { TextDecoder, TextEncoder });
 import { base64ToString, stringToBase64 } from '@utils/base64';
 
 const decodedValue = 'test string';
@@ -7,7 +9,7 @@ const encodedValue = 'dGVzdCBzdHJpbmc=';
 describe(
     'base64',
     () => {
-        test('stringTOBase64', () => {
+        test('stringToBase64', () => {
             expect(stringToBase64(decodedValue)).toBe(encodedValue);
         });
         test('base64ToString', () => {

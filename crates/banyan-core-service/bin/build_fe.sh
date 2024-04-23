@@ -1,1 +1,1 @@
-cd frontend && yarn && yarn build
+cd frontend && npm ci && npm run build

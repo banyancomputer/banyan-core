@@ -1,3 +1,4 @@
+import { EscrowedKeyMaterial } from '@/app/types/escrowedKeyMaterial';
 import { APIClient } from './http';
 import { User } from '@/entities/user';
 
@@ -23,5 +24,22 @@ export class UserClient extends APIClient {
             subscriptionId: rawUser.subscription_id,
             subscriptionValidUntil: rawUser.subscription_valid_until,
         };
+    };
+
+    public async getEscrowedKeyMaterial(): Promise<EscrowedKeyMaterial> {
+        const response = await this.http.get(`${this.ROOT_PATH}/api/v1/users/escrowed_device`);
+
+        if (!response.ok) {
+            await this.handleError(response);
+        }
+
+        const escrowedDevice =  await response.json();
+
+        return {
+			apiPublicKeyPem: escrowedDevice.api_public_key_pem,
+			encryptionPublicKeyPem: escrowedDevice.encryption_public_key_pem,
+			encryptedPrivateKeyMaterial: escrowedDevice.encrypted_private_key_material,
+			passKeySalt: escrowedDevice.pass_key_salt
+		};
     };
 };

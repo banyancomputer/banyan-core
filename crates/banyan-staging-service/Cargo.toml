@@ -4,8 +4,12 @@ version = "0.1.0"
 edition = "2021"
 license = "LicenseRef-LICENSE.txt"
 
+[[bin]]
+name = "banyan-staging-service"
+path = "src/main.rs"
+
 [dependencies]
-banyan-task = { path = "../banyan-task", version = "^0.1"}
+banyan-task = { path = "../banyan-task", version = "^0.1" }
 banyan-car-analyzer = { path = "../banyan-car-analyzer", version = "^0.1" }
 banyan-traffic-counter = { path = "../banyan-traffic-counter", version = "^0.1" }
 banyan-object-store = { path = "../banyan-object-store", version = "^0.1" }
@@ -15,12 +19,19 @@ futures = "^0.3"
 itertools = "^0.11"
 pico-args = "^0.5"
 thiserror = "^1"
-tokio = { version = "^1", features = ["macros", "net", "rt", "rt-multi-thread", "signal", "sync", "time"] }
+tokio = { version = "^1", features = [
+  "macros",
+  "net",
+  "rt",
+  "rt-multi-thread",
+  "signal",
+  "sync",
+  "time",
+] }
 
 async-trait = "^0.1"
 blake3 = "^1"
 bytes = "^1"
-cid = { version = "^0.10", features = ["serde-codec"] }
 jwt-simple = "^0.11"
 mime = "^0.3"
 regex = { version = "^1", default-features = false, features = ["std"] }
@@ -29,24 +40,72 @@ serde = { version = "^1", features = ["derive"] }
 uuid = { version = "^1", features = ["fast-rng", "serde", "v4"] }
 url = "^2"
 
-axum = { version = "^0.6", features = ["headers", "http2", "macros", "multipart", "tracing"] }
+axum = { version = "^0.6", features = [
+  "headers",
+  "http2",
+  "macros",
+  "multipart",
+  "tracing",
+] }
 axum-extra = { version = "^0.8" }
 http = "^0.2"
 hyper = "^0.14"
 multer = { version = "^2", features = ["json", "tokio", "tokio-io"] }
-reqwest = { version = "^0.11", default-features = false, features = ["json", "multipart", "rustls-tls-native-roots"] }
-sqlx = { version = "^0.7", default-features = false, features = ["macros", "migrate", "runtime-tokio", "tls-rustls", "uuid"] }
+reqwest = { version = "^0.11", default-features = false, features = [
+  "json",
+  "multipart",
+  "rustls-tls-native-roots",
+] }
+sqlx = { version = "^0.7", default-features = false, features = [
+  "macros",
+  "migrate",
+  "runtime-tokio",
+  "tls-rustls",
+  "uuid",
+] }
 time = { version = "^0.3", features = ["formatting", "serde"] }
-tower = { version = "^0.4", features = ["timeout", "load-shed", "limit", "util"] }
-tower-http = { version = "^0.4", features = ["auth", "cors", "limit", "fs", "propagate-header", "request-id", "sensitive-headers", "set-header", "util", "trace", "validate-request"] }
+tower = { version = "^0.4", features = [
+  "timeout",
+  "load-shed",
+  "limit",
+  "util",
+] }
+tower-http = { version = "^0.4", features = [
+  "auth",
+  "cors",
+  "limit",
+  "fs",
+  "propagate-header",
+  "request-id",
+  "sensitive-headers",
+  "set-header",
+  "util",
+  "trace",
+  "validate-request",
+] }
 
 tracing = "^0.1"
 tracing-appender = "^0.2"
-tracing-futures = { version = "^0.2", default-features = false, features = ["std-future"] }
-tracing-subscriber = { version = "^0.3", default-features = false, features = ["ansi", "env-filter", "fmt", "local-time", "time", "tracing"] }
+tracing-futures = { version = "^0.2", default-features = false, features = [
+  "std-future",
+] }
+tracing-subscriber = { version = "^0.3", default-features = false, features = [
+  "ansi",
+  "env-filter",
+  "fmt",
+  "local-time",
+  "time",
+  "tracing",
+] }
 rand = "0.8.5"
+base64 = "0.22.0"
 
 [dev-dependencies]
 bytes = "^1.4"
-reqwest = { version = "^0.11", default-features = false, features = ["multipart", "stream"] }
-banyan-task = { path = "../banyan-task", version = "^0.1", features = ["test-utils"]}
+reqwest = { version = "^0.11", default-features = false, features = [
+  "multipart",
+  "stream",
+] }
+banyan-task = { path = "../banyan-task", version = "^0.1", features = [
+  "test-utils",
+] }

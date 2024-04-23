@@ -3,13 +3,12 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 import { useTomb } from './tomb';
 import { BrowserObject, Bucket } from '@/app/types/bucket';
-import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { useModal } from './modals';
-import { HardStorageLimit } from '../components/common/Modal/HardStorageLimit';
 import { BannerError, setError } from '../store/errors/slice';
 import { useAppDispatch, useAppSelector } from '../store';
 import { SubscriptionPlanModal } from '../components/common/Modal/SubscriptionPlanModal';
-import { FILE_SIZE_LIMIT } from '../utils/storage';
+import { FILE_SIZE_LIMIT } from '@app/utils/storage';
+import { ToastNotifications } from '@app/utils/toastNotifications';
 
 export interface UploadingFile { file: File; status: "pending" | "uploading" | "success" | "failed" };
 interface FilesUploadState {
@@ -33,7 +32,7 @@ export const FileUploadProvider: FC<{ children: ReactNode }> = ({ children }) =>
     const navigate = useNavigate();
 
     const uploadFiles = async (fileList: FileList, bucket: Bucket, path: string[], folder?: BrowserObject) => {
-        const files: UploadingFile[] = Array.from(fileList).slice(0, 1).map(file => ({ file, status: 'pending' }));
+        const files: UploadingFile[] = Array.from(fileList).map(file => ({ file, status: 'pending' }));
 
         if (files.some(file => file.file.size > FILE_SIZE_LIMIT)) {
             ToastNotifications.error(fileSizeExceeded);
@@ -65,6 +64,7 @@ export const FileUploadProvider: FC<{ children: ReactNode }> = ({ children }) =>
                 file.status = 'success';
                 setFiles(prev => [...prev]);
             } catch (error: any) {
+                console.log('upload error', error);
                 file.status = 'failed';
                 setFiles(prev => [...prev]);
                 continue;
@@ -90,6 +90,7 @@ export const FileUploadProvider: FC<{ children: ReactNode }> = ({ children }) =>
             file.status = 'success';
             setFiles(prev => [...prev]);
         } catch (error: any) {
+            console.log('upload retry error', error);
             file.status = 'failed';
             setFiles(prev => [...prev]);
         };

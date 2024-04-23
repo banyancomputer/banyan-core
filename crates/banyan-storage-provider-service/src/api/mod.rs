@@ -17,6 +17,8 @@ use time::{Date, OffsetDateTime};
 use tower_http::cors::CorsLayer;
 use uuid::Uuid;
 
+mod auth;
+mod block_present;
 mod block_retrieval;
 mod client_grant;
 mod hooks;
@@ -40,9 +42,11 @@ where
     let cors_layer = CorsLayer::very_permissive();
 
     Router::new()
+        .nest("/auth", auth::router(state.clone()))
         // TODO: Should we place these behind a new prefix?
         // Client Storage API routes
         .route("/blocks/:block_id", get(block_retrieval::handler))
+        .route("/blocks/present", get(block_present::handler))
         .route("/client_grant", post(client_grant::handler))
         .route("/upload", post(upload::handler))
         .nest("/hooks", hooks::router(state.clone()))

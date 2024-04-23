@@ -10,7 +10,15 @@ pub struct MeterTrafficRequest<'a> {
 
 #[derive(Serialize)]
 pub struct ReportRedistributionRequest {
-    pub data_size: u64,
+    pub replication: bool,
+    pub data_size: i64,
     pub normalized_cids: Vec<String>,
     pub grant_id: String,
+}
+
+#[derive(Serialize)]
+pub struct ReportUploadRequest {
+    pub data_size: u64,
+    pub normalized_cids: Vec<String>,
+    pub storage_authorization_id: String,
 }

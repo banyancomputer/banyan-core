@@ -1,10 +1,12 @@
 use serde::Serialize;
 use time::OffsetDateTime;
 
+use super::Subscription;
 use crate::database::models::{
-    BucketAccess, BucketAccessState, ExplicitBigInt, SubscriptionStatus, TaxClass,
+    BucketAccess, BucketAccessState, HotUsage, SnapshotState, SubscriptionStatus, TaxClass,
 };
 use crate::database::DatabaseConnection;
+use crate::utils::GIBIBYTE;
 
 #[derive(Debug, Serialize, sqlx::FromRow)]
 pub struct User {
@@ -17,6 +19,7 @@ pub struct User {
     pub profile_image: Option<String>,
     pub created_at: OffsetDateTime,
     pub accepted_tos_at: Option<OffsetDateTime>,
+    pub earned_tokens: i64,
 
     pub account_tax_class: TaxClass,
     pub stripe_customer_id: Option<String>,
@@ -32,8 +35,9 @@ impl User {
         sqlx::query_as!(
             User,
             r#"
-                SELECT id, email, verified_email, display_name, locale, region_preference, profile_image, 
-                       created_at, accepted_tos_at, account_tax_class as 'account_tax_class: TaxClass',
+                SELECT id, email, verified_email, display_name, locale, region_preference,
+                       profile_image, created_at, accepted_tos_at, earned_tokens,
+                       account_tax_class as 'account_tax_class: TaxClass',
                        stripe_customer_id, stripe_subscription_id, subscription_id as 'subscription_id!',
                        subscription_status as 'subscription_status: SubscriptionStatus',
                        subscription_valid_until
@@ -57,24 +61,90 @@ impl User {
     /// This measure needs to be updated once blocks are properly expired as we'll need to do
     /// better accounting on older metadata versions that no longer have all their associated
     /// blocks.
-    pub async fn consumed_storage(
-        &self,
-        conn: &mut DatabaseConnection,
-    ) -> Result<i64, sqlx::Error> {
-        let ex_size = sqlx::query_as!(
-            ExplicitBigInt,
-            r#"SELECT
-                   COALESCE(SUM(m.metadata_size), 0) +
-                     COALESCE(SUM(COALESCE(m.data_size, m.expected_data_size)), 0) AS big_int
-                 FROM metadata m
-                 INNER JOIN buckets b ON b.id = m.bucket_id
-                 WHERE b.user_id = $1 AND m.state IN ('current', 'outdated', 'pending');"#,
+    pub async fn hot_usage(&self, conn: &mut DatabaseConnection) -> Result<HotUsage, sqlx::Error> {
+        sqlx::query_as!(
+            HotUsage,
+            r#"
+                SELECT
+                   COALESCE(SUM(m.metadata_size), 0) as data_size,
+                   COALESCE(SUM(COALESCE(m.data_size, m.expected_data_size)), 0) AS meta_size
+                FROM metadata m
+                INNER JOIN buckets b ON b.id = m.bucket_id
+                WHERE b.user_id = $1
+                AND b.deleted_at IS NULL
+                AND m.state IN ('current', 'outdated', 'pending');
+            "#,
             self.id,
         )
         .fetch_one(&mut *conn)
-        .await?;
+        .await
+    }
 
-        Ok(ex_size.big_int)
+    pub async fn included_archival(
+        &self,
+        conn: &mut DatabaseConnection,
+    ) -> Result<i64, sqlx::Error> {
+        // Grab the user's included archival tokens based on subscription
+        Subscription::by_id(&mut *conn, &self.subscription_id)
+            .await
+            .map(|subscription| subscription.included_archival * GIBIBYTE)
+    }
+
+    pub async fn archival_usage(&self, conn: &mut DatabaseConnection) -> Result<i64, sqlx::Error> {
+        sqlx::query_scalar!(
+            r#"
+                SELECT IFNULL(SUM(s.tokens_used), 0)
+                FROM snapshots AS s
+                JOIN metadata AS m ON m.id = s.metadata_id
+                JOIN buckets AS b ON b.id = m.bucket_id
+                JOIN users AS u ON u.id = b.user_id
+                WHERE u.id = $1
+                AND b.deleted_at IS NULL
+                AND m.state IN ('current', 'outdated', 'pending')
+                AND s.state != $2;
+            "#,
+            self.id,
+            SnapshotState::Error
+        )
+        .fetch_one(&mut *conn)
+        .await
+        .map(|t| t as i64)
+    }
+
+    pub async fn remaining_tokens(
+        &self,
+        conn: &mut DatabaseConnection,
+    ) -> Result<i64, sqlx::Error> {
+        // Ensure that even if a user has earned more than their current plan, they cannot
+        // currently take advantage of it
+        let available = std::cmp::min(self.included_archival(conn).await?, self.earned_tokens);
+        let usage = self.archival_usage(conn).await?;
+        Ok(available - usage)
+    }
+
+    pub async fn award_tokens(&mut self, conn: &mut DatabaseConnection) -> Result<(), sqlx::Error> {
+        let included = self.included_archival(conn).await?;
+        let tokens_earned = std::cmp::min(included - self.earned_tokens, included / 6);
+
+        // No need to query if we've already maxxed out
+        if tokens_earned == 0 {
+            return Ok(());
+        }
+
+        sqlx::query!(
+            r#"
+                UPDATE users
+                SET earned_tokens = earned_tokens + $1
+                WHERE id = $2;
+            "#,
+            tokens_earned,
+            self.id
+        )
+        .execute(&mut *conn)
+        .await
+        .map(|_| {
+            self.earned_tokens += tokens_earned;
+        })
     }
 
     pub async fn find_by_id(
@@ -85,7 +155,7 @@ impl User {
             User,
             r#"
                 SELECT id, email, verified_email, display_name, locale, region_preference, profile_image, created_at,
-                       accepted_tos_at, account_tax_class as 'account_tax_class: TaxClass',
+                       accepted_tos_at, earned_tokens, account_tax_class as 'account_tax_class: TaxClass',
                        stripe_customer_id, stripe_subscription_id, subscription_id as 'subscription_id!',
                        subscription_status as 'subscription_status: SubscriptionStatus',
                        subscription_valid_until 
@@ -106,7 +176,7 @@ impl User {
             User,
             r#"
                 SELECT id, email, verified_email, display_name, locale, region_preference, profile_image, created_at,
-                       accepted_tos_at, account_tax_class as 'account_tax_class: TaxClass',
+                       accepted_tos_at, earned_tokens, account_tax_class as 'account_tax_class: TaxClass',
                        stripe_customer_id, stripe_subscription_id, subscription_id as 'subscription_id!',
                        subscription_status as 'subscription_status: SubscriptionStatus',
                        subscription_valid_until

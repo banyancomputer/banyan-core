@@ -74,6 +74,18 @@ impl Metadata {
         metadata_id: &str,
         data_size: Option<i64>,
     ) -> Result<(), sqlx::Error> {
+        // If the metadata is already marked as current don't do anything else
+        let current_metadata_id = sqlx::query_scalar!(
+            "SELECT id FROM metadata WHERE bucket_id = $1 AND state = 'current';",
+            bucket_id,
+        )
+        .fetch_optional(&mut *conn)
+        .await?;
+
+        if current_metadata_id.as_deref() == Some(metadata_id) {
+            return Ok(());
+        }
+
         // Note: default timestamp values are not sufficient, so force the value to be set to a precise form
         // by including the timestamp in the query.
         let now = OffsetDateTime::now_utc();
@@ -211,9 +223,19 @@ impl Metadata {
 
         Ok(())
     }
+
     pub async fn find_by_id(database: &Database, id: &str) -> Result<Self, sqlx::Error> {
         sqlx::query_as!(Self, "SELECT * FROM metadata WHERE id = $1;", id)
             .fetch_one(database)
+            .await
+    }
+
+    pub async fn find_by_id_with_conn(
+        conn: &mut DatabaseConnection,
+        id: &str,
+    ) -> Result<Self, sqlx::Error> {
+        sqlx::query_as!(Self, "SELECT * FROM metadata WHERE id = $1;", id)
+            .fetch_one(&mut *conn)
             .await
     }
 }

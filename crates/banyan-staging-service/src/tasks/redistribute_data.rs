@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use async_trait::async_trait;
 use banyan_task::{CurrentTask, TaskLike, TaskLikeExt, TaskStoreError};
 use serde::{Deserialize, Serialize};
@@ -10,8 +8,8 @@ use crate::clients::{
     ClientsRequest, CoreServiceClient, CoreServiceError, NewUploadRequest, StorageProviderClient,
     StorageProviderError,
 };
-use crate::database::models::{Blocks, Clients, Uploads};
-use crate::tasks::upload_blocks::UploadBlocksTask;
+use crate::database::models::{Clients, Uploads};
+use crate::tasks::RedistributeBlocksTask;
 
 pub type RedistributeDataTaskContext = AppState;
 
@@ -58,29 +56,11 @@ impl TaskLike for RedistributeDataTask {
             ctx.service_name(),
             ctx.platform_name(),
             ctx.platform_hostname(),
-        );
+        )?;
         let provider_credentials = client.request_provider_token(&self.new_host_id).await?;
         let storage_client =
             StorageProviderClient::new(&self.new_host_url, &provider_credentials.token);
         let upload = Uploads::get_by_metadata_id(&database, &self.metadata_id).await?;
-        let blocks = Blocks::get_blocks_by_cid(&database, &self.block_cids).await?;
-
-        if blocks.len() != self.block_cids.len() {
-            let missing_cids: HashSet<_> = blocks
-                .iter()
-                .map(|block| block.cid.clone())
-                .chain(self.block_cids.iter().cloned())
-                .collect::<HashSet<_>>()
-                .difference(&self.block_cids.iter().cloned().collect::<HashSet<_>>())
-                .cloned()
-                .collect();
-            return Err(RedistributeDataTaskError::StorageProviderError(
-                StorageProviderError::BadRequest(format!(
-                    "Block CIDs do not match {:?}",
-                    missing_cids
-                )),
-            ));
-        }
 
         let client = Clients::find_by_upload_id(&database, &upload.id).await?;
         let new_client = storage_client
@@ -102,7 +82,7 @@ impl TaskLike for RedistributeDataTask {
 
         let mut conn = database.acquire().await?;
 
-        UploadBlocksTask {
+        RedistributeBlocksTask {
             metadata_id: self.metadata_id.clone(),
             grant_id: self.storage_grant_id.clone(),
             block_cids: self.block_cids.clone(),

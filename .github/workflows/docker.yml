@@ -1,0 +1,123 @@
+on:
+  workflow_call:
+    inputs:
+      cache_version:
+        type: string
+        required: false
+        default: v1
+      service:
+        type: string
+        required: true
+      registry:
+        type: string
+        default: ghcr.io
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          key: ${{ runner.os }}-${{ github.workflow }}-${{ inputs.cache_version }}-docker-${{ github.job }}-${{ inputs.service }}-${{ hashFiles('Dockerfile') }}-${{ github.sha }}
+          path: |
+            docker-*cache
+          restore-keys: |
+            ${{ runner.os }}-${{ github.workflow }}-${{ inputs.cache_version }}-docker-${{ github.job }}-
+      - run: find . -maxdepth 1 -type f -name 'docker*cache' -exec du -bh {} \;
+      - uses: docker/setup-buildx-action@v3
+      # expose the git description to the environment for use in build-args
+      - name: setup build args
+        run: |-
+          (
+            echo "GIT_DESC=$(git describe --always --dirty --long --tags)"
+            echo "DOCKER_CARGO_BUILD_CACHE_ID=com.github.banyancomputer.banyan-core.cargo-build.${{ inputs.cache_version }}"
+            echo "DOCKER_CARGO_REGISTRY_CACHE_ID=com.github.banyancomputer.banyan-core.cargo-registry.${{ inputs.cache_version }}"
+            echo "DOCKER_SCCACHE_CACHE_ID=com.github.banyancomputer.banyan-core.sccache.${{ inputs.cache_version }}"
+            echo "DOCKER_CORE_SVC_NODE_CACHE_ID=com.github.banyancomputer.banyan-core.core-service.node.${{ inputs.cache_version }}"
+            echo "DOCKER_CORE_SVC_ADMIN_NODE_CACHE_ID=com.github.banyancomputer.banyan-core.core-service.node-admin.${{ inputs.cache_version }}"
+            echo "DOCKER_STORAGE_SVC_NODE_CACHE_ID=com.github.banyancomputer.banyan-core.storage-service.node.${{ inputs.cache_version }}"
+          ) >> "$GITHUB_ENV"
+      - name: show build args
+        run: |-
+          echo 'INFO: Docker Build Args:' >&2
+          env | sort -u | grep -P '^(?:GIT|DOCKER)'
+      # provides opencontainers labels by default
+      - id: metadata
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ inputs.registry }}/banyancomputer/${{ inputs.service }}
+          tags: |
+            type=schedule
+            type=ref,event=branch
+            type=ref,event=tag
+            type=ref,event=pr
+            type=sha,prefix=
+            type=sha,prefix=,format=long
+            type=raw,enable=${{ github.ref == 'refs/heads/main' }},value=latest
+            type=raw,enable=${{ github.ref == 'refs/heads/main' }},value=stable
+            type=raw,enable=${{ github.ref != 'refs/heads/main' }},value=edge
+            type=raw,enable=${{ github.ref != 'refs/heads/main' }},value=unstable
+            type=raw,value=${{ env.GIT_DESC }}
+          labels: |
+            org.opencontainers.image.title=${{ inputs.service }}
+            org.opencontainers.image.build-env=ci
+      # cache dance to enable caching of RUN --mount=type=cache mounts
+      - uses: reproducible-containers/buildkit-cache-dance@v3.1.0
+        with:
+          cache-map: |-
+            {
+              "docker-cargo-target-cache": {
+                "id": "${{ env.DOCKER_CARGO_BUILD_CACHE_ID }}",
+                "target": "/usr/src/app/target"
+              },
+              "docker-cargo-registry-cache": {
+                "id": "${{ env.DOCKER_CARGO_REGISTRY_CACHE_ID }}",
+                "target": "/usr/local/cargo/registry"
+              },
+              "docker-sccache": {
+                "id": "${{ env.DOCKER_SCCACHE_CACHE_ID }}",
+                "target": "/root/.cache/sccache"
+              },
+              "docker-node-modules-core-cache": {
+                "id": "${{ env.DOCKER_CORE_SVC_NODE_CACHE_ID }}",
+                "target": "/usr/src/app/crates/banyan-core-service/frontend/node_modules"
+              },
+              "docker-node-modules-core-admin-cache": {
+                "id": "${{ env.DOCKER_CORE_SVC_ADMIN_NODE_CACHE_ID }}",
+                "target": "/usr/src/app/crates/banyan-core-service/admin_frontend/node_modules"
+              },
+              "docker-node-modules-storage-cache": {
+                "id": "${{ env.DOCKER_STORAGE_SVC_NODE_CACHE_ID }}",
+                "target": "/usr/src/app/crates/banyan-storage-provider-service/frontend/node_modules"
+              }
+            }
+      # log in to github container registry
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ inputs.registry }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      # build the image
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          build-args: |-
+            CARGO_BUILD_CACHE_ID=${{ env.DOCKER_CARGO_BUILD_CACHE_ID }}
+            CARGO_REGISTRY_CACHE_ID=${{ env.DOCKER_CARGO_REGISTRY_CACHE_ID }}
+            SCCACHE_CACHE_ID=${{ env.DOCKER_SCCACHE_CACHE_ID }}
+            CORE_SVC_NODE_CACHE_ID=${{ env.DOCKER_CORE_SVC_NODE_CACHE_ID }}
+            CORE_SVC_ADMIN_NODE_CACHE_ID=${{ env.DOCKER_CORE_SVC_ADMIN_NODE_CACHE_ID }}
+            STORAGE_SVC_NODE_CACHE_ID=${{ env.DOCKER_STORAGE_SVC_NODE_CACHE_ID }}
+            CACHE_VERSION=${{ inputs.cache_version }}
+            SERVICE=${{ inputs.service }}
+            CI_BUILD_REF=${{ env.GIT_DESC }}
+          tags: ${{ steps.metadata.outputs.tags }}
+          labels: ${{ steps.metadata.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

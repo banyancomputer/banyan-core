@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import { PrimaryButton } from '@components/common/PrimaryButton';
 import { SecondaryButton } from '@components/common/SecondaryButton';
@@ -11,10 +11,11 @@ import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 import { useAppSelector } from '@/app/store';
 
 export const RenameFileModal: React.FC<{ bucket: Bucket; file: BrowserObject; path: string[] }> = ({ bucket, file, path }) => {
+    const inputRef = useRef<HTMLInputElement | null>(null);
     const { closeModal } = useModal();
     const { moveTo, getSelectedBucketFiles, selectBucket } = useTomb();
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.renameFile);
-    const [newName, setNewName] = useState('');
+    const [newName, setNewName] = useState(file.name);
     const folderLocation = useFolderLocation();
 
     const save = async () => {
@@ -35,6 +36,14 @@ export const RenameFileModal: React.FC<{ bucket: Bucket; file: BrowserObject; pa
         };
     };
 
+    useEffect(() => {
+        if(!inputRef.current) return;
+
+        const separatorIndex = file.name.lastIndexOf('.');
+        inputRef.current.select();
+        inputRef.current.selectionEnd = separatorIndex;
+    }, [inputRef]);
+
     return (
         <div className="w-modal flex flex-col gap-8" >
             <div>
@@ -44,6 +53,7 @@ export const RenameFileModal: React.FC<{ bucket: Bucket; file: BrowserObject; pa
                 <label>
                     {`${messages.fileName}`}
                     <input
+                        ref={inputRef}
                         className="mt-2 input w-full h-11 py-3 px-4 rounded-md border-border-darken shadow-sm focus:outline-none"
                         type="text"
                         placeholder={`${messages.enterNewName}`}
@@ -60,7 +70,7 @@ export const RenameFileModal: React.FC<{ bucket: Bucket; file: BrowserObject; pa
                 <PrimaryButton
                     text={`${messages.save}`}
                     action={save}
-                    disabled={newName.length < 3}
+                    disabled={newName === file.name || newName.length < 3}
                 />
             </div>
         </div >

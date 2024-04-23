@@ -22,8 +22,7 @@ use crate::database::models::{
 };
 use crate::extractors::ApiIdentity;
 use crate::utils::car_buffer::CarBuffer;
-use crate::utils::rounded_storage_authorization;
-use crate::{utils, GIBIBYTE};
+use crate::utils::{is_valid_cid, rounded_storage_authorization, GIBIBYTE};
 
 /// Size limit of the pure metadata CAR file that is being uploaded (128MiB)
 const CAR_DATA_SIZE_LIMIT: u64 = 128 * 1_024 * 1_024;
@@ -58,12 +57,6 @@ pub async fn handler(
     if !Bucket::is_owned_by_user_id(&mut conn, &bucket_id, &user_id).await? {
         let err_msg = serde_json::json!({"msg": "not found"});
         return Ok((StatusCode::NOT_FOUND, Json(err_msg)).into_response());
-    }
-
-    if Bucket::is_change_in_progress(&mut conn, &bucket_id).await? {
-        tracing::warn!("attempted upload to bucket while other write was in progress");
-        let err_msg = serde_json::json!({"msg": "waiting for other upload to complete"});
-        return Ok((StatusCode::CONFLICT, Json(err_msg)).into_response());
     }
 
     // Request is authorized, and we're ready to receive it. Start processing the multipart
@@ -106,17 +99,15 @@ pub async fn handler(
         }
     };
 
-    // If the client specifies a previous_cid, attempt to determine if its reachable
-    // within the bucket's history following the most current version
-    if let Some(previous_metadata_cid) = request_data.previous_cid {
+    if let Some(previous_metadata_id) = request_data.previous_id {
         // If the update is not valid within the bucket's history, reject the request
-        if !Bucket::update_is_valid(&mut conn, &bucket_id, &previous_metadata_cid).await? {
-            tracing::warn!("pushed metadata specified conflicting previous metadata cid");
-            let err_msg = serde_json::json!({"msg": "request specifies a previous_cid in conflict with the current history"});
+        if !Bucket::update_is_valid(&mut conn, &bucket_id, &previous_metadata_id).await? {
+            tracing::warn!("pushed metadata specified conflicting previous metadata id");
+            let err_msg = serde_json::json!({"msg": "request specifies a previous_id in conflict with the current history"});
             return Ok((StatusCode::CONFLICT, Json(err_msg)).into_response());
         }
     } else {
-        tracing::warn!("pushed metadata specified no previous cid");
+        tracing::warn!("pushed metadata specified no previous id");
     };
 
     Bucket::approve_user_keys(
@@ -137,25 +128,19 @@ pub async fn handler(
     .save(&mut conn)
     .await?;
 
-    let normalized_cids: Vec<_> = match request_data
-        .deleted_block_cids
-        .iter()
-        .map(String::as_str)
-        .map(utils::normalize_cid)
-        .collect()
-    {
-        Ok(nc) => nc,
-        Err(_) => {
-            let err_msg = serde_json::json!({"msg": "request data included invalid CID in deleted block list"});
-            return Ok((StatusCode::BAD_REQUEST, Json(err_msg)).into_response());
-        }
-    };
+    let deleted_block_cids: Vec<_> = request_data.deleted_block_cids.iter().cloned().collect();
+
+    // todo(sstelfox): The CID crate doesn't properly parse hashes other than 512 byte sha2 hashes
+    // which we no longer use. We should be replace this with a proper CID parsing and normalization.
+    if deleted_block_cids.iter().any(|c| !is_valid_cid(c)) {
+        return Err(PushMetadataError::InvalidCid);
+    }
 
     PendingExpiration::record_pending_block_expirations(
         &mut conn,
         &bucket_id,
         &metadata_id,
-        &normalized_cids,
+        &deleted_block_cids,
     )
     .await?;
 
@@ -190,18 +175,18 @@ pub async fn handler(
     let mut conn = database.acquire().await?;
     Metadata::upload_complete(&mut conn, &metadata_id, &hash, size as i64).await?;
 
-    let needed_capacity = request_data.expected_data_size;
+    let new_required_capacity = request_data.expected_data_size;
     let user = User::by_id(&mut conn, &user_id).await?;
     let subscription = Subscription::by_id(&mut conn, &user.subscription_id).await?;
 
     if let Some(hard_limit) = subscription.hot_storage_hard_limit {
         let hard_limit_bytes = hard_limit * GIBIBYTE;
 
-        let consumed_storage = user.consumed_storage(&mut conn).await?;
-        if (consumed_storage + needed_capacity) > hard_limit_bytes {
+        let hot_usage = user.hot_usage(&mut conn).await?.total();
+        if (hot_usage + new_required_capacity) > hard_limit_bytes {
             tracing::warn!(
-                consumed_storage,
-                needed_capacity,
+                hot_usage,
+                new_required_capacity,
                 hard_limit_bytes,
                 "account reached storage limit"
             );
@@ -210,8 +195,24 @@ pub async fn handler(
         }
     }
 
+    // We no longer need the pending state as the filesystem is now aware of when data should and
+    // shouldn't be available. We'll mark this as complete, and continue handling the request if we
+    // expect there to be data.
+    //
+    // We do need to trust the client size here as we haven't received it. If they give us a size
+    // and its too large, we'll trust what the client tells us and bill for that until we receive
+    // the data and can't update it with the true size. If they tell us too little they won't get a
+    // storage authorization sufficient to store their data (and we'll still learn about the true
+    // size if they're in the margins of error on our storage).
+    Metadata::mark_current(
+        &mut conn,
+        &bucket_id,
+        &metadata_id,
+        Some(request_data.expected_data_size),
+    )
+    .await?;
+
     if request_data.expected_data_size == 0 {
-        Metadata::mark_current(&mut conn, &bucket_id, &metadata_id, None).await?;
         let resp_msg = serde_json::json!({"id": metadata_id, "state": "current"});
         return Ok((StatusCode::OK, Json(resp_msg)).into_response());
     }
@@ -220,25 +221,35 @@ pub async fn handler(
     conn.close().await?;
     let mut conn = database.begin().await?;
 
-    let storage_host =
-        match StorageHost::select_for_capacity(&mut conn, user.region_preference, needed_capacity)
-            .await?
-        {
-            Some(sh) => sh,
-            None => {
-                tracing::warn!(
-                    needed_capacity,
-                    "unable to locate host with sufficient capacity"
-                );
-                let err_msg = serde_json::json!({"msg": ""});
-                return Ok((StatusCode::INSUFFICIENT_STORAGE, Json(err_msg)).into_response());
-            }
-        };
+    let storage_host = match StorageHost::select_for_capacity(
+        &mut conn,
+        user.region_preference,
+        new_required_capacity,
+    )
+    .await?
+    {
+        Some(sh) => sh,
+        None => {
+            tracing::warn!(
+                new_required_capacity,
+                "unable to locate host with sufficient capacity"
+            );
+            let err_msg = serde_json::json!({"msg": "insufficient storage"});
+            return Ok((StatusCode::INSUFFICIENT_STORAGE, Json(err_msg)).into_response());
+        }
+    };
     let user_report = UserStorageReport::user_report(&mut conn, &storage_host.id, &user_id).await?;
 
     let mut storage_authorization: Option<String> = None;
-    if user_report.authorization_available() < needed_capacity {
-        let new_authorized_capacity = rounded_storage_authorization(&user_report, needed_capacity);
+
+    // We need to take into account all the data the user currently has stored in at the storage
+    // host. We need to take that into account in addition to the newly requested capacity to
+    // determine if we need to issue a new grant authorization.
+    let total_required_capacity = user_report.current_consumption() + new_required_capacity;
+
+    if user_report.authorization_available() < total_required_capacity {
+        let new_authorized_capacity =
+            rounded_storage_authorization(&user_report, total_required_capacity);
 
         let authorization_grant = NewStorageGrant {
             storage_host_id: &storage_host.id,
@@ -279,6 +290,7 @@ pub async fn handler(
         "storage_host": storage_host.url,
         "storage_authorization": storage_authorization,
     });
+
     Ok((StatusCode::OK, Json(response)).into_response())
 }
 
@@ -286,6 +298,9 @@ pub async fn handler(
 pub enum PushMetadataError {
     #[error("failed to run query: {0}")]
     QueryFailure(#[from] sqlx::Error),
+
+    #[error("request contained one or more invalid CIDs")]
+    InvalidCid,
 
     #[error("the request was badly formatted: {0}")]
     InvalidMultipart(#[from] multer::Error),
@@ -395,12 +410,11 @@ pub enum PersistanceError {
 
 #[derive(Deserialize)]
 pub struct PushMetadataRequest {
-    // TODO: either let's remove the distinction between root and metadata cids
-    // or rename this to previous_metadata_cid. For now the client as implemented
-    // within the cli / wasm is epxecting this name
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub previous_cid: Option<String>,
+    pub previous_id: Option<String>,
 
+    // todo(sstelfox): These no longer make sense to keep as separate values the metadata_cid field
+    // should be removed.
     pub root_cid: String,
     pub metadata_cid: String,
 

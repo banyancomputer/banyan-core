@@ -18,7 +18,7 @@ export const NotificationsHistory = () => {
         setTimeout(() => {
             deal!.style.border = '1px solid #AAAA';
         }, 3000);
-    }
+    };
 
     useEffect(() => {
         try {
@@ -30,7 +30,7 @@ export const NotificationsHistory = () => {
     }, []);
 
     return (
-        <div className="absolute top-10 right-0 rounded-xl overflow-hidden shadow-xl">
+        <div className="absolute top-10 right-0 z-10 rounded-xl overflow-hidden shadow-xl">
             <div className=' w-96 max-h-notifications bg-contextMenuBackground overflow-y-scroll'>
                 {
                     notificationsHistory.map(notification =>

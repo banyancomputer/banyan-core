@@ -10,7 +10,7 @@ import { getDateLabel } from '@/app/utils/date';
 import { convertFileSize } from '@/app/utils/storage';
 import { useFilePreview } from '@/app/contexts/filesPreview';
 import { handleDrag, handleDragEnd, handleDragStart } from '@utils/dragHandlers';
-import { useTomb } from '@app/contexts/tomb';
+import { useTomb } from '@contexts/tomb';
 
 export const FileRow: React.FC<{
     file: BrowserObject;
@@ -38,7 +38,7 @@ export const FileRow: React.FC<{
             className="cursor-pointer border-b-1 border-b-border-regular text-text-900 font-normal transition-all last:border-b-0 hover:bg-bucket-bucketHoverBackground"
             onClick={event => previewFile(event, bucket, file)}
             onDrag={event => handleDrag(event, file.name)}
-            onDragStart={event => handleDragStart(event, file, setIsDragging, path)}
+            onDragStart={event => handleDragStart(event, file.name, setIsDragging, path)}
             onDragEnd={() => handleDragEnd(setIsDragging, getExpandedFolderFiles, getSelectedBucketFiles, path, parrentFolder, bucket)}
             draggable
         >

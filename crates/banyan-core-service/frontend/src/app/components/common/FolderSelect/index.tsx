@@ -15,17 +15,17 @@ import { ChevronUp } from '@static/images/common';
 export interface FolderSelectProps {
     onChange: (option: string[]) => void;
     selectedBucket: Bucket;
-    path: string[];
-    onFolderCreation?: () => void;
+    onFolderCreation?: (path?: string[]) => void;
+    selectedFolder: string[];
 };
 
-export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBucket, onFolderCreation, path }) => {
-    const { buckets, uploadFile, tomb } = useTomb();
+export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBucket, selectedFolder, onFolderCreation }) => {
+    const { buckets } = useTomb();
     const selectRef = useRef<HTMLDivElement | null>(null);
     const [isOptionstVisible, setIsOptionsVisible] = useState(false);
-    const [folder, setFolder] = useState(path);
+    const [folder, setFolder] = useState(selectedFolder);
     const [folders, setFolders] = useState<BrowserObject[]>([]);
-    const { openModal, closeModal } = useModal();
+    const { openModal } = useModal();
     const messages = useAppSelector(state => state.locales.messages.coponents.common.folderSelect);
 
     const toggleSelect = () => {
@@ -49,12 +49,14 @@ export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBu
 
     const addNewFolder = () => {
         const action = onFolderCreation || (() => openModal(<UploadFileModal bucket={selectedBucket} path={folder} />));
-        openModal(<CreateFolderModal
-            path={folder}
-            bucket={selectedBucket!}
-        />
+        openModal(
+            <CreateFolderModal
+                path={folder}
+                bucket={selectedBucket!}
+                onSuccess={(path: string[]) => action(path)}
+            />
             ,
-            action
+            () => action(folder)
         );
     };
 
@@ -68,8 +70,8 @@ export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBu
     }, [folder, buckets]);
 
     useEffect(() => {
-        handleSelect(path);
-    }, [path]);
+        handleSelect(selectedFolder);
+    }, [selectedFolder]);
 
     useEffect(() => {
         const listener = popupClickHandler(selectRef.current!, setIsOptionsVisible);

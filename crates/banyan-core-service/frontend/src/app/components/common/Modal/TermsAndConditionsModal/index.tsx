@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 
 
-import { useModal } from '@app/contexts/modals';
+import { useModal } from '@contexts/modals';
 import { TermsAndColditionsClient } from '@/api/termsAndConditions';
 import { User } from '@/entities/user';
 import { useAppSelector } from '@/app/store';

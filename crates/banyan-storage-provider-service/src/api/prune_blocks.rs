@@ -1,44 +1,41 @@
+use std::collections::HashSet;
+
 use axum::extract::{Json, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use banyan_task::TaskLikeExt;
-use cid::Cid;
 
 use crate::app::AppState;
 use crate::extractors::PlatformIdentity;
 use crate::tasks::PruneBlocksTask;
-use crate::utils::NORMALIZED_CID_BASE;
+use crate::utils::is_valid_cid;
 
 pub async fn handler(
     _ci: PlatformIdentity,
     State(state): State<AppState>,
-    Json(prune_cids): Json<Vec<Cid>>,
+    Json(cids_to_prune): Json<HashSet<String>>,
 ) -> Result<Response, PruneBlocksError> {
+    let cids_to_prune = cids_to_prune.into_iter().collect::<Vec<_>>();
+    if cids_to_prune.iter().any(|c| !is_valid_cid(c)) {
+        return Err(PruneBlocksError::InvalidCid);
+    }
+
     let db = state.database();
     let mut conn = db.acquire().await?;
 
-    // Normalize the block CIDs, warn but keep going on any invalid ones
-    let mut prune_block_list = Vec::new();
-    for cid in prune_cids.into_iter() {
-        match cid.to_string_of_base(NORMALIZED_CID_BASE) {
-            Ok(cid_str) => prune_block_list.push(cid_str),
-            Err(err) => {
-                tracing::warn!("failed to normalize CID from platform prune request: {err}")
-            }
-        }
-    }
-
-    PruneBlocksTask::new(prune_block_list)
+    PruneBlocksTask::new(cids_to_prune)
         .enqueue::<banyan_task::SqliteTaskStore>(&mut conn)
         .await?;
-
     Ok((StatusCode::OK, ()).into_response())
 }
 
 #[derive(Debug, thiserror::Error)]
 pub enum PruneBlocksError {
-    #[error("could not acquire a database connection: {0}")]
-    DatabaseError(#[from] sqlx::Error),
+    #[error("database failure: {0}")]
+    Database(#[from] sqlx::Error),
+
+    #[error("request contained an invalid CID")]
+    InvalidCid,
 
     #[error("could not enqueue task: {0}")]
     UnableToEnqueueTask(#[from] banyan_task::TaskStoreError),

@@ -1,17 +1,19 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 
-import user from '@app/store/user/slice';
-import billing from '@app/store/billing/slice';
-import locales from '@app/store/locales/slice';
-import errors from '@app/store/errors/slice';
+import session from '@store/session/slice';
+import keystore from '@store/keystore/slice';
+import billing from '@store/billing/slice';
+import locales from '@store/locales/slice';
+import errors from '@store/errors/slice';
 
 export const store = configureStore({
     reducer: {
         errors,
-        user,
         billing,
-        locales
+        locales,
+        session,
+        keystore
     },
 });
 

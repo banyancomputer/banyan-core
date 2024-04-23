@@ -5,7 +5,6 @@ Experimental frontend for Tomb.
 ## Dependencies
 
 - [Node.js](https://nodejs.org/en/)
-- [Yarn](https://yarnpkg.com/)
 - Next.js
 - Docker
 
@@ -14,7 +13,7 @@ Experimental frontend for Tomb.
 Install dependencies:
 
 ```bash
-yarn install
+npm ci
 ```
 
 ### Environment and Services
@@ -61,7 +60,7 @@ Run the frontend:
 ```bash
 export DB_PATH=$(pwd)/../data/server.db
 source ./.env.dev
-yarn dev
+npm  run dev
 ```
 
 This should start the frontend server on port 3000.

@@ -15,15 +15,3 @@ export const DEFAULT_HASH_ALG = HashAlg.SHA_256;
 export const DEFAULT_CHAR_SIZE = CharSize.B16;
 
 export const DEFAULT_STORE_NAME = 'keystore';
-
-export default {
-    ECC_EXCHANGE_ALG,
-    ECC_WRITE_ALG,
-    DEFAULT_SALT_LENGTH,
-    DEFAULT_ECC_CURVE,
-    DEFAULT_SYMM_ALG,
-    DEFAULT_SYMM_KEY_LENGTH,
-    DEFAULT_HASH_ALG,
-    DEFAULT_CHAR_SIZE,
-    DEFAULT_STORE_NAME,
-};

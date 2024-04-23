@@ -1,4 +1,5 @@
 use sqlx::sqlite::SqliteQueryResult;
+use time::OffsetDateTime;
 
 use crate::database::{DatabaseConnection, BIND_LIMIT};
 
@@ -94,30 +95,29 @@ impl MinimalBlockLocation {
     }
 }
 
+#[derive(Debug, sqlx::FromRow)]
+pub struct BlockLocations {
+    pub block_id: String,
+    pub metadata_id: String,
+    pub storage_host_id: String,
+    pub associated_at: OffsetDateTime,
+    pub stored_at: Option<OffsetDateTime>,
+    pub expired_at: Option<OffsetDateTime>,
+    pub pruned_at: Option<OffsetDateTime>,
+}
+
 #[cfg(test)]
 pub mod tests {
-    use time::OffsetDateTime;
-
+    use crate::database::models::block_location::BlockLocations;
     use crate::database::models::MetadataState;
     use crate::database::test_helpers::{
         associate_blocks, create_blocks, create_storage_host, data_generator, generate_cids,
-        normalize_cids, sample_bucket, sample_metadata, sample_user, setup_database,
+        sample_bucket, sample_metadata, sample_user, setup_database,
     };
     use crate::database::Database;
 
-    #[derive(Debug, sqlx::FromRow)]
-    pub struct BlockLocations {
-        pub block_id: String,
-        pub metadata_id: String,
-        pub storage_host_id: String,
-        pub associated_at: OffsetDateTime,
-        pub stored_at: Option<OffsetDateTime>,
-        pub expired_at: Option<OffsetDateTime>,
-        pub pruned_at: Option<OffsetDateTime>,
-    }
-
     impl BlockLocations {
-        pub async fn get_all(pool: &Database) -> Result<Vec<Self>, sqlx::Error> {
+        pub async fn find_all(pool: &Database) -> Result<Vec<Self>, sqlx::Error> {
             sqlx::query_as!(Self, "SELECT * FROM block_locations;")
                 .fetch_all(pool)
                 .await
@@ -139,7 +139,7 @@ pub mod tests {
             1_000_000,
         )
         .await;
-        let initial_cids: Vec<_> = normalize_cids(generate_cids(data_generator(0..3))).collect();
+        let initial_cids: Vec<_> = generate_cids(data_generator(0..3)).collect();
         let block_ids = create_blocks(&mut conn, initial_cids.iter().map(String::as_str)).await;
         associate_blocks(
             &mut conn,
@@ -149,7 +149,7 @@ pub mod tests {
         )
         .await;
 
-        let new_blocks = BlockLocations::get_all(&db)
+        let new_blocks = BlockLocations::find_all(&db)
             .await
             .expect("get all block locations");
         assert_eq!(new_blocks.len(), 3);

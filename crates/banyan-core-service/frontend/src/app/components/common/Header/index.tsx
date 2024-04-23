@@ -3,18 +3,17 @@ import { Link, useLocation } from 'react-router-dom';
 
 import { ProfileControls } from './ProfileControls';
 import { HelpControls } from './HelpControls';
-import { SubscriptionPlanModal } from '../Modal/SubscriptionPlanModal';
+import { SubscriptionPlanModal } from '@components/common/Modal/SubscriptionPlanModal';
 
-import { useSession } from '@app/contexts/session';
-import { popupClickHandler } from '@/app/utils';
-import { useKeystore } from '@/app/contexts/keystore';
+import { popupClickHandler } from '@app/utils';
 import { HttpClient } from '@/api/http/client';
-import { useAppDispatch, useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@app/store';
 import { unwrapResult } from '@reduxjs/toolkit';
-import { getUserInfo } from '@/app/store/user/actions';
-import { RoutesConfig } from '@/app/routes';
-import { useModal } from '@/app/contexts/modals';
-import { getSubscriptionById } from '@/app/store/billing/actions';
+import { getUser } from '@store/session/actions';
+import { RoutesConfig } from '@app/routes';
+import { useModal } from '@contexts/modals';
+import { getSubscriptionById } from '@store/billing/actions';
+import { purgeKeystore } from '@store/keystore/actions';
 
 import { Question } from '@static/images/common';
 
@@ -22,13 +21,12 @@ export const Header: React.FC<{ className?: string }> = ({ className = '' }) => 
     const dispatch = useAppDispatch();
     const messages = useAppSelector(state => state.locales.messages.coponents.common.header);
     const { selectedSubscription } = useAppSelector(state => state.billing);
+    const { user } = useAppSelector(state => state.session);
     const profileOptionsRef = useRef<HTMLDivElement | null>(null);
     const helpOptionsRef = useRef<HTMLDivElement | null>(null);
-    const { purgeKeystore } = useKeystore();
     const location = useLocation();
     const { openModal } = useModal();
 
-    const { userData } = useSession();
     const [areProfileOptionsVisible, setAreProfileOptionsVisible] = useState(false);
     const [areHelpOptionsVisible, setAreHelpOptionsVisible] = useState(false);
 
@@ -59,12 +57,12 @@ export const Header: React.FC<{ className?: string }> = ({ className = '' }) => 
     useEffect(() => {
         (async () => {
             try {
-                const userInfo = unwrapResult(await dispatch(getUserInfo()));
-                dispatch(getSubscriptionById(userInfo.subscriptionId));
+                const userData = unwrapResult(await dispatch(getUser()));
+                dispatch(getSubscriptionById(userData.subscriptionId));
             } catch (error: any) {
                 if (error.message === 'Unauthorized') {
                     const api = new HttpClient;
-                    await purgeKeystore();
+                    unwrapResult(await dispatch(purgeKeystore()));
                     await api.get('/auth/logout');
                     window.location.href = '/login';
                 }
@@ -100,10 +98,10 @@ export const Header: React.FC<{ className?: string }> = ({ className = '' }) => 
                     onClick={toggleProfileOptionsVisibility}
                     ref={profileOptionsRef}
                 >
-                    {userData?.user?.profileImage ?
+                    {user?.profileImage ?
                         <img
                             className="rounded-full"
-                            src={userData?.user.profileImage}
+                            src={user.profileImage}
                             width={40}
                             height={40}
                             alt="User Avatar"

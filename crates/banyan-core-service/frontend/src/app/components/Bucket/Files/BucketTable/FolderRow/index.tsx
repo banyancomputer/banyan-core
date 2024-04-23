@@ -12,7 +12,7 @@ import { getDateLabel } from '@/app/utils/date';
 import { convertFileSize } from '@/app/utils/storage';
 import { useTomb } from '@/app/contexts/tomb';
 import { stringToBase64 } from '@utils/base64';
-import { useFilesUpload } from '@app/contexts/filesUpload';
+import { useFilesUpload } from '@contexts/filesUpload';
 import { ToastNotifications } from '@utils/toastNotifications';
 import { handleDrag, handleDragEnd, handleDragStart, preventDefaultDragAction } from '@utils/dragHandlers';
 import { useAppSelector } from '@/app/store';
@@ -86,10 +86,10 @@ export const FolderRow: React.FC<{
         const dragData = event.dataTransfer.getData('browserObject');
         if (dragData) {
             try {
-                const droppedItem: { item: BrowserObject; path: string[] } = JSON.parse(dragData);
+                const droppedItem: { name: string; path: string[] } = JSON.parse(dragData);
                 if ([...path, folder.name].join('/') === droppedItem.path.join('/')) { return; }
 
-                await moveTo(bucket, [...droppedItem.path, droppedItem.item.name], [...path, folder.name], droppedItem.item.name);
+                await moveTo(bucket, [...droppedItem.path, droppedItem.name], [...path, folder.name], droppedItem.name);
                 await getSelectedBucketFiles(path);
                 ToastNotifications.notify(messages.fileWasMoved);
             } catch (error: any) {
@@ -101,7 +101,7 @@ export const FolderRow: React.FC<{
     return (
         <tr
             className={`border-b-1 border-b-border-regular ${isFolderDraggingOver && 'bg-dragging border-draggingBorder'} transition-all `}
-            onDragStart={event => handleDragStart(event, folder, setIsDragging, path)}
+            onDragStart={event => handleDragStart(event, folder.name, setIsDragging, path)}
             onDrag={event => handleDrag(event, folder.name)}
             onDragOver={dragOverHandler}
             onDragLeave={dragLeaveHandler}
@@ -151,7 +151,7 @@ export const FolderRow: React.FC<{
                                             actions={
                                                 <FolderActions
                                                     bucket={bucket}
-                                                    file={folder}
+                                                    folder={folder}
                                                     parrentFolder={parrentFolder!}
                                                     path={path}
                                                 />

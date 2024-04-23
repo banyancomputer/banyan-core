@@ -1,7 +1,5 @@
 use async_trait::async_trait;
 use banyan_task::{CurrentTask, TaskLike};
-use cid::multibase::Base;
-use cid::Cid;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -13,8 +11,8 @@ pub type ReportRedistributionTaskContext = AppState;
 #[non_exhaustive]
 #[derive(Debug, thiserror::Error)]
 pub enum ReportRedistributionTaskError {
-    #[error("invalid cid: {0}")]
-    InvalidInternalCid(#[from] cid::Error),
+    #[error("invalid cid")]
+    InvalidInternalCid,
     #[error("sql error: {0}")]
     DatabaseError(#[from] sqlx::Error),
     #[error("reqwest error: {0}")]
@@ -24,18 +22,26 @@ pub enum ReportRedistributionTaskError {
 #[derive(Deserialize, Serialize)]
 pub struct ReportRedistributionTask {
     grant_id: Uuid,
+    replication: bool,
     metadata_id: String,
-    cids: Vec<Cid>,
-    data_size: u64,
+    cids: Vec<String>,
+    data_size: i64,
 }
 
 impl ReportRedistributionTask {
-    pub fn new(grant_id: Uuid, metadata_id: &str, cids: &[Cid], data_size: u64) -> Self {
+    pub fn new(
+        grant_id: Uuid,
+        metadata_id: &str,
+        cids: &[String],
+        data_size: i64,
+        replication: bool,
+    ) -> Self {
         Self {
             grant_id,
             metadata_id: String::from(metadata_id),
             cids: cids.to_vec(),
             data_size,
+            replication,
         }
     }
 }
@@ -48,17 +54,6 @@ impl TaskLike for ReportRedistributionTask {
     type Context = ReportRedistributionTaskContext;
 
     async fn run(&self, _task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
-        let grant_id = self.grant_id.to_string();
-        let data_size = self.data_size;
-        let normalized_cids = self
-            .cids
-            .iter()
-            .map(|c| {
-                c.to_string_of_base(Base::Base64Url)
-                    .map_err(ReportRedistributionTaskError::InvalidInternalCid)
-            })
-            .collect::<Result<Vec<_>, _>>()?;
-
         let client = CoreServiceClient::new(
             ctx.secrets().service_signing_key(),
             ctx.service_name(),
@@ -70,9 +65,10 @@ impl TaskLike for ReportRedistributionTask {
             .report_distribution_complete(
                 &self.metadata_id,
                 ReportRedistributionRequest {
-                    data_size,
-                    grant_id,
-                    normalized_cids,
+                    replication: self.replication,
+                    data_size: self.data_size,
+                    grant_id: self.grant_id.to_string(),
+                    normalized_cids: self.cids.clone(),
                 },
             )
             .await?;

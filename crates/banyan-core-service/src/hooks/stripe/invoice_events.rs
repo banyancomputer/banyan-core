@@ -1,7 +1,7 @@
 use time::OffsetDateTime;
 
 use crate::app::stripe_helper::{METADATA_SUBSCRIPTION_KEY, METADATA_USER_KEY};
-use crate::database::models::{Invoice, InvoiceStatus, NewInvoice, PriceUnits};
+use crate::database::models::{Invoice, InvoiceStatus, NewInvoice, PriceUnits, User};
 use crate::database::DatabaseConnection;
 use crate::hooks::stripe::StripeWebhookError;
 
@@ -107,6 +107,11 @@ pub async fn update_handler(
         .await?
         .ok_or(StripeWebhookError::missing_target("db_invoice"))?;
     invoice.update_status(&mut *conn, new_status).await?;
+
+    // Grab the user associated with the invoice
+    let mut user = User::by_id(&mut *conn, &invoice.user_id).await?;
+    // Give the user their montly allotment
+    user.award_tokens(conn).await?;
 
     Ok(())
 }

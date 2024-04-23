@@ -74,7 +74,10 @@ where
 
         let key_id = match header_data.kid {
             Some(key_id) if key_regex.is_match(key_id.as_str()) => key_id,
-            Some(_) => return Err(StorageProviderIdentityError::BadKeyFormat),
+            Some(unknown_kid) => {
+                tracing::warn!("encountered key not matching expected format: {unknown_kid}");
+                return Err(StorageProviderIdentityError::BadKeyFormat);
+            }
             None => return Err(StorageProviderIdentityError::UnidentifiedKey),
         };
 
@@ -96,10 +99,21 @@ where
             }
         };
 
-        let key = DecodingKey::from_ec_pem(storage_host.pem.as_bytes())
-            .map_err(StorageProviderIdentityError::FormatError)?;
-        let token_data = decode::<StorageHostToken>(token, &key, &token_validator)
-            .map_err(StorageProviderIdentityError::FormatError)?;
+        let key = match DecodingKey::from_ec_pem(storage_host.pem.as_bytes()) {
+            Ok(k) => k,
+            Err(err) => {
+                tracing::error!("storage host for public key was invalid: {err}");
+                return Err(StorageProviderIdentityError::FormatError(err));
+            }
+        };
+
+        let token_data = match decode::<StorageHostToken>(token, &key, &token_validator) {
+            Ok(td) => td,
+            Err(err) => {
+                tracing::error!("failed to validate the JWT with our given parameters: {err}");
+                return Err(StorageProviderIdentityError::FormatError(err));
+            }
+        };
 
         let claims = token_data.claims;
 

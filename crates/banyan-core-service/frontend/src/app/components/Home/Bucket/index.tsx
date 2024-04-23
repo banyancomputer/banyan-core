@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom';
 
 import { BucketActions } from '@components/common/BucketActions';
 import { LockedTooltip } from '@components/common/Navigation/LockedTooltip';
+import { Tooltip } from '@components/common/Tooltip';
 
 import { Bucket as IBucket } from '@/app/types/bucket';
 import { popupClickHandler } from '@/app/utils';
-import { useFilesUpload } from '@app/contexts/filesUpload';
+import { useFilesUpload } from '@contexts/filesUpload';
 import { ToastNotifications } from '@utils/toastNotifications';
 import { preventDefaultDragAction } from '@utils/dragHandlers';
 import { useAppSelector } from '@/app/store';
@@ -48,7 +49,7 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
     };
 
     const openBucket = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-        if (!bucket.mount) return;
+        if (!bucket.mount || bucket.locked) return;
         // @ts-ignore
         if (event.target.id === 'bucketContextMenu') { return; }
         navigate(`/drive/${bucket.id}`);
@@ -86,7 +87,7 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
 
     return (
         <div
-            className={`rounded-xl cursor-pointer transition-all border-1 border-border-regular ${!bucket.mount && 'cursor-not-allowed'}`}
+            className={`rounded-xl transition-all border-1 border-border-regular ${!bucket.mount || bucket.locked ? 'cursor-not-allowed' : 'cursor-pointer'}`}
             ref={bucketRef}
             onContextMenu={onContextMenu}
             onClick={openBucket}
@@ -132,15 +133,13 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
                         <div className={`px-2 rounded-full text-mainBackground ${storageClassNames[bucket.storageClass]} capitalize`}>
                             {messages[bucket.storageClass as messagesKeys]}
                         </div>
-                        <div className="text-text-400" title={messages[`${bucket.storageClass}Tooltip` as messagesKeys]}>
-                            <Question width="24px" height="24px" />
-                        </div>
+                        <Tooltip
+                            body={<div className="text-text-400"><Question width="24px" height="24px" /></div>}
+                            tooltip={<div>{messages[`${bucket.storageClass}Tooltip` as messagesKeys]}</div>}
+                        />
                     </div>
                     <div className="capitalize">{bucket.bucketType}</div>
                     {bucket.snapshots.length ? <div>{bucket.snapshots.length} {`${messages.coldSnapshots}`}</div> : null}
-                    <div className="flex justify-between items-center">
-                        <div>{bucket.files.length} {`${messages.files}`}</div>
-                    </div>
                 </div>
             </div>
         </div>

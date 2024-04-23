@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use axum::extract::{BodyStream, State};
 use axum::headers::ContentType;
 use axum::http::StatusCode;
@@ -8,26 +6,25 @@ use axum::{Json, TypedHeader};
 use banyan_object_store::{ObjectStore, ObjectStorePath};
 use banyan_task::TaskLikeExt;
 use bytes::Bytes;
-use cid::multibase::Base;
-use cid::multihash::{Code, MultihashDigest};
-use cid::Cid;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::api::upload::{complete_upload, upload_size, write_block_to_tables, Upload};
+use crate::api::upload::db::{complete_upload, write_block_to_tables};
 use crate::app::AppState;
+use crate::database::models::Upload;
 use crate::database::DatabaseConnection;
 use crate::extractors::PlatformIdentity;
 use crate::tasks::ReportRedistributionTask;
 
 #[derive(Deserialize, Serialize)]
 pub struct BlockUploadRequest {
-    cid: Cid,
+    cid: String,
     details: BlockUploadDetails,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct BlockUploadDetails {
+    pub replication: bool,
     pub completed: bool,
     pub upload_id: String,
     pub grant_id: Uuid,
@@ -40,11 +37,14 @@ pub async fn handler(
     body: BodyStream,
 ) -> Result<Response, BlocksUploadError> {
     let db = state.database();
+    let mut conn = db.acquire().await?;
+
     let mime_ct = mime::Mime::from(content_type);
     let boundary = multer::parse_boundary(mime_ct).unwrap();
     let constraints = multer::Constraints::new().allowed_fields(vec!["request-data", "block"]);
 
     let mut multipart = multer::Multipart::with_constraints(body, boundary, constraints);
+    let mut total_size = 0;
 
     // Grab the request object
     let request: BlockUploadRequest = multipart
@@ -56,15 +56,12 @@ pub async fn handler(
         .await
         .map_err(BlocksUploadError::InvalidRequestData)?;
 
-    let upload = Upload::find_by_id(&db, &request.details.upload_id)
-        .await?
-        .unwrap();
-    // If the upload had already been marked as complete
+    let upload = Upload::by_id(&mut conn, &request.details.upload_id).await?;
+
     if upload.state == "complete" {
         return Err(BlocksUploadError::UploadIsComplete);
     }
 
-    let mut conn = db.acquire().await?;
     // While there are still block fields encoded
     while let Some(block_field) = multipart
         .next_field()
@@ -77,29 +74,17 @@ pub async fn handler(
             .await
             .map_err(BlocksUploadError::DataFieldUnavailable)?;
 
-        // Compute the cid associated with that block to verify data integrity
-        let codec = request.cid.codec();
-        let hash = Code::Sha2_256.digest(&block);
-        let computed_cid = Cid::new(cid::Version::V1, codec, hash)
-            .map_err(BlocksUploadError::Cid)?
-            .to_string_of_base(Base::Base64Url)
-            .map_err(BlocksUploadError::Cid)?;
-        let normalized_cid = request
-            .cid
-            .to_string_of_base(Base::Base64Url)
-            .map_err(BlocksUploadError::Cid)?;
-        if computed_cid != normalized_cid {
-            return Err(BlocksUploadError::MismatchedCid((
-                normalized_cid,
-                computed_cid,
-            )));
+        if !crate::utils::is_valid_cid(&request.cid) {
+            return Err(BlocksUploadError::InvalidCid)?;
         }
+
         // Write this block to the tables
-        write_block_to_tables(&mut conn, &upload.id, &normalized_cid, block.len() as i64).await?;
+        write_block_to_tables(&mut conn, &upload.id, &request.cid, block.len() as i64).await?;
+        total_size += block.len();
 
         // Write the bytes to the expected location
         let location =
-            ObjectStorePath::from(format!("{}/{}.bin", upload.base_path, normalized_cid).as_str());
+            ObjectStorePath::from(format!("{}/{}.bin", upload.base_path, request.cid).as_str());
         store
             .put(&location, block)
             .await
@@ -108,14 +93,15 @@ pub async fn handler(
 
     // If we've just finished off the upload, complete and report it
     if request.details.completed {
-        let total_size = upload_size(&mut conn, &upload.id).await?;
-        complete_upload(&mut conn, total_size, "", &upload.id).await?;
+        complete_upload(&mut conn, total_size as i64, "", &upload.id).await?;
+
         report_complete_redistribution(
             &mut conn,
             request.details.grant_id,
             &upload.metadata_id,
             &upload.id,
-            total_size,
+            total_size as i64,
+            request.details.replication,
         )
         .await?;
     }
@@ -134,8 +120,8 @@ pub enum BlocksUploadError {
     #[error("Data in request mismatched attached CID")]
     MismatchedCid((String, String)),
 
-    #[error("a CID from our internal reports wasn't convertable: {0}")]
-    Cid(cid::Error),
+    #[error("the provided CID is invalid")]
+    InvalidCid,
 
     #[error("failed to acquire data field from body")]
     DataFieldUnavailable(multer::Error),
@@ -163,13 +149,14 @@ impl IntoResponse for BlocksUploadError {
         let default_response =
             (StatusCode::INTERNAL_SERVER_ERROR, Json(default_err_msg)).into_response();
         match self {
-            DatabaseError(_) | Cid(_) => {
+            DatabaseError(_) => {
                 tracing::error!("{self}");
                 let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
             }
             DataFieldUnavailable(_)
             | InvalidRequestData(_)
+            | InvalidCid
             | RequestFieldUnavailable(_)
             | MismatchedCid(_)
             | RequestFieldMissing => {
@@ -200,6 +187,7 @@ pub async fn report_complete_redistribution(
     metadata_id: &str,
     upload_id: &str,
     total_size: i64,
+    replication: bool,
 ) -> Result<(), sqlx::Error> {
     let all_cids: Vec<String> = sqlx::query_scalar!(
         r#"
@@ -214,12 +202,7 @@ pub async fn report_complete_redistribution(
     .fetch_all(&mut *conn)
     .await?;
 
-    let all_cids = all_cids
-        .into_iter()
-        .map(|cid_string| Cid::from_str(&cid_string).unwrap())
-        .collect::<Vec<Cid>>();
-
-    ReportRedistributionTask::new(grant_id, metadata_id, &all_cids, total_size as u64)
+    ReportRedistributionTask::new(grant_id, metadata_id, &all_cids, total_size, replication)
         .enqueue::<banyan_task::SqliteTaskStore>(&mut *conn)
         .await
         .unwrap();
