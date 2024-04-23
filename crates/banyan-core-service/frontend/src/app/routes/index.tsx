@@ -10,7 +10,6 @@ const Bucket = lazy(() => import('@pages/bucket'));
 const Account = lazy(() => import('@pages/account'));
 const CreateEncryptionKey = lazy(() => import('@pages/createEncryptionKey'));
 const EnterEncryptionKey = lazy(() => import('@pages/enterEncryptionKey'));
-const RegisterDevice = lazy(() => import('@pages/registerDevice'));
 
 /** Components */
 const Billing = lazy(() => import('@components/Account/Billing'));
@@ -52,7 +51,6 @@ export class RoutesConfig {
     public static EnterEncryptionKey = new Route('/enter-encryption-key', <EnterEncryptionKey />, AuthLayout);
     public static Bucket = new Route('/drive/:id', <Bucket />);
     public static Account = new Route('/account', <Account />);
-    public static RegisterDevice = new Route('/register-device/:spki', <RegisterDevice />);
 
     public static Billing = new Route('billing', <Billing />, null);
     public static ManageKeys = new Route('manage-keys', <ManageKeys />, null);
@@ -69,7 +67,6 @@ export class RoutesConfig {
             RoutesConfig.Files,
             RoutesConfig.Snapshots
         ]),
-        RoutesConfig.RegisterDevice,
         RoutesConfig.Account.addChildren([
             RoutesConfig.Billing,
             RoutesConfig.ManageKeys,

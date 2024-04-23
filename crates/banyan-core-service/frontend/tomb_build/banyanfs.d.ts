@@ -1,6 +1,8 @@
 /* tslint:disable */
 /* eslint-disable */
 /**
+* Performs first time setup to the WASM environment once this library is loaded. This primarily
+* sets up logging and reports the library version.
 */
 export function wasm_init(): void;
 /**
@@ -63,10 +65,11 @@ export class IntoUnderlyingSource {
 export class TombWasm {
   free(): void;
 /**
+* @param {string} name
 * @param {string} public_pem
 * @returns {Promise<void>}
 */
-  approveDeviceApiKey(public_pem: string): Promise<void>;
+  createUserKey(name: string, public_pem: string): Promise<void>;
 /**
 * @param {string} name
 * @param {string} storage_class
@@ -76,11 +79,6 @@ export class TombWasm {
 * @returns {Promise<WasmBucketMount>}
 */
   createBucketAndMount(name: string, storage_class: string, bucket_type: string, private_key_pem: string, public_key_pem: string): Promise<WasmBucketMount>;
-/**
-* @param {string} _bucket_id
-* @returns {Promise<WasmBucketKey>}
-*/
-  createBucketKey(_bucket_id: string): Promise<WasmBucketKey>;
 /**
 * @param {string} bucket_id
 * @returns {Promise<void>}
@@ -102,7 +100,7 @@ export class TombWasm {
 * @param {string} bucket_id
 * @returns {Promise<Array<any>>}
 */
-  listBucketKeys(bucket_id: string): Promise<Array<any>>;
+  listBucketAccess(bucket_id: string): Promise<Array<any>>;
 /**
 * @param {string} bucket_id
 * @returns {Promise<Array<any>>}
@@ -150,23 +148,20 @@ export class WasmBucket {
 }
 /**
 */
-export class WasmBucketKey {
+export class WasmBucketAccess {
   free(): void;
 /**
 */
-  readonly approved: boolean;
-/**
-*/
-  readonly bucketId: string;
+  readonly driveId: string;
 /**
 */
   readonly fingerprint: string;
 /**
 */
-  readonly id: string;
+  readonly state: string;
 /**
 */
-  readonly publicKey: string;
+  readonly userKeyId: string;
 }
 /**
 */

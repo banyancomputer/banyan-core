@@ -4,7 +4,7 @@
     "Sam Stelfox <sstelfox@bedroomprogrammers.net>"
   ],
   "description": "A modern end-to-end encrypted filesystem built on distributed block replication primitives",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "license": "MIT OR Apache-2.0",
   "repository": {
     "type": "git",
@@ -14,9 +14,7 @@
     "banyanfs_bg.wasm",
     "banyanfs.js",
     "banyanfs_bg.js",
-    "banyanfs.d.ts",
-    "LICENSE-APACHE",
-    "LICENSE-MIT"
+    "banyanfs.d.ts"
   ],
   "module": "banyanfs.js",
   "homepage": "https://banyan.computer",
