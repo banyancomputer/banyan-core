@@ -1,0 +1,44 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            SELECT \n                uk.id, \n                uk.user_id, \n                uk.pem, \n                uk.fingerprint, \n                FORMAT(\n                    '[%s]',\n                    GROUP_CONCAT(\n                        FORMAT('\"%s\"', b.id)\n                    )\n                ) AS \"bucket_ids!: SqlxJson<Vec<String>>\"\n            FROM user_keys AS uk\n            JOIN bucket_access AS ba ON ba.user_key_id = uk.id\n            JOIN buckets AS b ON b.id = ba.bucket_id WHERE b.id IN (\n                SELECT b2.id FROM buckets AS b2\n                JOIN bucket_access AS ba2 ON ba2.bucket_id = b2.id\n                JOIN user_keys AS uk2 ON uk2.id = ba2.user_key_id\n                WHERE uk2.user_id=$1\n            ) GROUP BY uk.id\n            UNION\n            SELECT \n                uk.id, \n                uk.user_id,\n                uk.fingerprint,\n                uk.pem, '[]' as \"bucket_ids!: SqlxJson<Vec<String>>\"\n            FROM user_keys AS uk \n            LEFT OUTER JOIN bucket_access AS ba ON ba.user_key_id = uk.id\n            WHERE ba.user_key_id IS NULL\n            AND uk.user_id=$1;\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "user_id",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "pem",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "fingerprint",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "bucket_ids!: SqlxJson<Vec<String>>",
+        "ordinal": 4,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "1065c6bb343cc86369cd785e1d9e48f29e61a4a0db9067d1c726d17f2b36f874"
+}

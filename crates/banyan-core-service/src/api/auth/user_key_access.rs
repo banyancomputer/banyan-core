@@ -63,14 +63,24 @@ pub async fn handler(
                         FORMAT('"%s"', b.id)
                     )
                 ) AS "bucket_ids!: SqlxJson<Vec<String>>"
-                FROM user_keys AS uk
+            FROM user_keys AS uk
             JOIN bucket_access AS ba ON ba.user_key_id = uk.id
             JOIN buckets AS b ON b.id = ba.bucket_id WHERE b.id IN (
                 SELECT b2.id FROM buckets AS b2
                 JOIN bucket_access AS ba2 ON ba2.bucket_id = b2.id
                 JOIN user_keys AS uk2 ON uk2.id = ba2.user_key_id
                 WHERE uk2.user_id=$1
-            ) GROUP BY uk.id;
+            ) GROUP BY uk.id
+            UNION
+            SELECT 
+                uk.id, 
+                uk.user_id,
+                uk.fingerprint,
+                uk.pem, '[]' as "bucket_ids!: SqlxJson<Vec<String>>"
+            FROM user_keys AS uk 
+            LEFT OUTER JOIN bucket_access AS ba ON ba.user_key_id = uk.id
+            WHERE ba.user_key_id IS NULL
+            AND uk.user_id=$1;
         "#,
         user_id,
     )
