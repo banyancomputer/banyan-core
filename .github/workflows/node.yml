@@ -1,0 +1,79 @@
+---
+on:
+  workflow_call:
+    inputs:
+      cache_version:
+        type: string
+        default: v1
+      service:
+        type: string
+        required: true
+        description: |-
+          The service/crate to build, e.g. banyan-core-service.
+      frontend:
+        type: string
+        required: true
+        description: |-
+          The frontend to build for the service, e.g. admin_frontend or frontend.
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: derive cache hash
+        run: |-
+          echo "CACHE_HASH=$(sha256sum package-lock.json | awk '{print $1;}')" >> "$GITHUB_ENV"
+        working-directory: crates/${{ inputs.service }}/${{ inputs.frontend }}
+      - uses: actions/cache@v4
+        with:
+          key: ${{ runner.os }}-${{ github.workflow }}-${{ inputs.cache_version }}-node-${{ github.job }}-${{ inputs.service }}-${{ inputs.frontend }}-${{ env.CACHE_HASH }}
+          path: |
+            crates/${{ inputs.service }}/${{ inputs.frontend }}/node_modules
+          restore-keys: |
+            ${{ runner.os }}-${{ github.workflow }}-${{ inputs.cache_version }}-node-${{ github.job }}-${{ inputs.service }}-${{ inputs.frontend }}-
+            ${{ runner.os }}-${{ github.workflow }}-${{ inputs.cache_version }}-node-${{ github.job }}-${{ inputs.service }}-
+            ${{ runner.os }}-${{ github.workflow }}-${{ inputs.cache_version }}-node-${{ github.job }}-
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: crates/${{ inputs.service }}/${{ inputs.frontend }}/.node-version
+      - run: npm install
+        working-directory: crates/${{ inputs.service }}/${{ inputs.frontend }}
+      - run: npm run build
+        working-directory: crates/${{ inputs.service }}/${{ inputs.frontend }}
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: derive cache hash
+        run: |-
+          echo "CACHE_HASH=$(sha256sum package-lock.json | awk '{print $1;}')" >> "$GITHUB_ENV"
+        working-directory: crates/${{ inputs.service }}/${{ inputs.frontend }}
+      - uses: actions/cache@v4
+        with:
+          key: ${{ runner.os }}-${{ github.workflow }}-${{ inputs.cache_version }}-node-${{ github.job }}-${{ inputs.service }}-${{ inputs.frontend }}-${{ env.CACHE_HASH }}
+          path: |
+            crates/${{ inputs.service }}/${{ inputs.frontend }}/node_modules
+          restore-keys: |
+            ${{ runner.os }}-${{ github.workflow }}-${{ inputs.cache_version }}-node-${{ github.job }}-${{ inputs.service }}-${{ inputs.frontend }}-
+            ${{ runner.os }}-${{ github.workflow }}-${{ inputs.cache_version }}-node-${{ github.job }}-${{ inputs.service }}-
+            ${{ runner.os }}-${{ github.workflow }}-${{ inputs.cache_version }}-node-${{ github.job }}-
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: crates/${{ inputs.service }}/${{ inputs.frontend }}/.node-version
+      - run: npm install
+        working-directory: crates/${{ inputs.service }}/${{ inputs.frontend }}
+      - run: npm run test
+        working-directory: crates/${{ inputs.service }}/${{ inputs.frontend }}
+
+  audit:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: crates/${{ inputs.service }}/${{ inputs.frontend }}/.node-version
+      - run: npm audit || echo "::error file=${{ inputs.service }}/${{ inputs.frontend }}/package-lock.json::Audit failed for ${{ inputs.service }}/${{ inputs.frontend }}"
+        working-directory: crates/${{ inputs.service }}/${{ inputs.frontend }}
