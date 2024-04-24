@@ -60,7 +60,7 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     };
 
     const createFolder = async () => {
-        openModal(<CreateFolderModal bucket={bucket} path={folderLocation} onSuccess={closeModal} redirect />);
+        openModal(<CreateFolderModal bucket={bucket} path={folderLocation} onSuccess={closeModal} />);
     };
 
     const retoreColdVersion = async () => {

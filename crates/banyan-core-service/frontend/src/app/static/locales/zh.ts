@@ -239,6 +239,8 @@ export default {
                     cancel: "取消",
                     create: "创建",
                     creationError: "创建驱动器时出现问题。 请重试。",
+                    driveCreated: "驱动器已创建",
+                    viewDrive: "查看驱动器",
                     tryAgain: "重试",
                 },
                 createFolder: {
@@ -248,6 +250,8 @@ export default {
                     cancel: "取消",
                     create: "创建",
                     creationError: "创建文件夹时出现问题。 请重试。",
+                    folderCreated: "文件夹已创建",
+                    viewFolder: "查看文件夹",
                     tryAgain: "重试",
                 },
                 deleteBucket: {
@@ -286,6 +290,9 @@ export default {
                     moveTo: "移动到",
                     fileWasMoved: "文件已移动",
                     moveToError: "移动文件时出现问题。 请重试",
+                    folderWasMoved: "文件夹已移动",
+                    viewFile: "查看文件",
+                    viewFolder: "查看文件夹",
                     tryAgain: "重试",
                 },
                 removeBucketAccess: {

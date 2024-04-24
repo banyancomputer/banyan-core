@@ -29,7 +29,12 @@ export const CreateFolderModal: React.FC<{ bucket: Bucket; onSuccess?: (path: st
     const create = async () => {
         try {
             await createDirectory(bucket, path, folderName);
-            redirect && navigate(`/drive/${bucket.id}${path.length ? '?' : ''}${path.map(path => stringToBase64(path)).join('/')}${path.length ? '/' : '?'}${stringToBase64(folderName)}`);
+            ToastNotifications.notify(
+                messages.folderCreated,
+                null,
+                messages.viewFolder,
+                () => navigate(`/drive/${bucket.id}${path.length ? '?' : ''}${path.map(path => stringToBase64(path)).join('/')}${path.length ? '/' : '?'}${stringToBase64(folderName)}`)
+            );
             onSuccess ?
                 onSuccess([...path, folderName])
                 :

@@ -1,5 +1,4 @@
 import React, { FC, ReactNode, createContext, useContext, useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
 
 import { useTomb } from './tomb';
 import { BrowserObject, Bucket } from '@/app/types/bucket';
@@ -28,8 +27,6 @@ export const FileUploadProvider: FC<{ children: ReactNode }> = ({ children }) =>
     const dispatch = useAppDispatch();
     const [files, setFiles] = useState<UploadingFile[]>([]);
     const { openModal } = useModal();
-    const location = useLocation();
-    const navigate = useNavigate();
 
     const uploadFiles = async (fileList: FileList, bucket: Bucket, path: string[], folder?: BrowserObject) => {
         const files: UploadingFile[] = Array.from(fileList).map(file => ({ file, status: 'pending' }));
@@ -42,10 +39,6 @@ export const FileUploadProvider: FC<{ children: ReactNode }> = ({ children }) =>
         setFiles(files);
 
         ToastNotifications.uploadProgress(bucket, path, folder);
-
-        if (!location.pathname.includes('drive')) {
-            navigate(`/drive/${bucket.id}`);
-        };
 
         for (const file of files) {
             try {

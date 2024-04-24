@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import React, { useMemo, useState } from 'react';
 
 import { Loader } from '../Loader';
@@ -6,14 +7,16 @@ import { useFilesUpload } from '@/app/contexts/filesUpload';
 import { useAppSelector } from '@/app/store';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { BrowserObject, Bucket } from '@/app/types/bucket';
+import { stringToBase64 } from '@/app/utils/base64';
 
-import { ChevronUp, Clock, Close, Retry, UploadFailIcon, UploadSuccessIcon } from '@static/images/common';
+import { ChevronUp, Clock, Close, Retry, UploadFailIcon, UploadFileFolder, UploadSuccessIcon } from '@static/images/common';
 
-export const UploadFileProgress: React.FC<{bucket: Bucket, path: string[], folder?: BrowserObject }> = ({ bucket, path, folder }) => {
+export const UploadFileProgress: React.FC<{ bucket: Bucket, path: string[], folder?: BrowserObject }> = ({ bucket, path, folder }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.common.uploadFileProgress);
     const { files, setFiles, deleteFromUploadList, retryUpload } = useFilesUpload();
     const [isExpanded, setIsExpanded] = useState(true);
     const uploadedFilesLength = useMemo(() => files.filter(file => file.status === 'success').length, [files]);
+    const navigate = useNavigate();
 
     const toggleVisibility = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
         event.stopPropagation();
@@ -24,6 +27,10 @@ export const UploadFileProgress: React.FC<{bucket: Bucket, path: string[], folde
         event.stopPropagation();
         ToastNotifications.close();
         setFiles([]);
+    };
+
+    const goToFile = () => {
+        navigate(`/drive/${bucket.id}${path.length ? '?' : ''}${path.map(path => stringToBase64(path)).join('/')}`);
     };
 
     const ICONS_MAPPER = {
@@ -89,6 +96,11 @@ export const UploadFileProgress: React.FC<{bucket: Bucket, path: string[], folde
                                     >
                                         <Close />
                                     </span>
+                                </span>
+                            }
+                            {file.status === 'success' &&
+                                <span onClick={goToFile} className="cursor-pointer">
+                                    <UploadFileFolder />
                                 </span>
                             }
                         </div>
