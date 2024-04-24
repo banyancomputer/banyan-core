@@ -11,6 +11,7 @@ mod create_user_key;
 mod delete_user_key;
 mod read_all_user_keys;
 mod read_user_key;
+mod user_key_access;
 
 mod end_regwait;
 pub(crate) mod registration_event;
@@ -30,6 +31,7 @@ where
             "/provider_grant/:storage_host_id",
             get(provider_grant::handler),
         )
+        .route("/user_key_access", get(user_key_access::handler))
         .route(
             "/user_key",
             get(read_all_user_keys::handler).post(create_user_key::handler),

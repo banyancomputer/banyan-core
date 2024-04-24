@@ -22,13 +22,13 @@ pico-args = "^0.5"
 rand = "^0.8"
 thiserror = "^1"
 tokio = { version = "^1", features = [
-  "macros",
-  "net",
-  "rt",
-  "rt-multi-thread",
-  "signal",
-  "sync",
-  "time",
+	"macros",
+	"net",
+	"rt",
+	"rt-multi-thread",
+	"signal",
+	"sync",
+	"time",
 ] }
 
 blake3 = "^1.4"
@@ -55,11 +55,11 @@ time = { version = "^0.3", features = ["serde", "parsing", "formatting"] }
 uuid = { version = "^1.3", features = ["fast-rng", "serde", "v4"] }
 
 axum = { version = "^0.6", features = [
-  "macros",
-  "headers",
-  "http2",
-  "multipart",
-  "tracing",
+	"macros",
+	"headers",
+	"http2",
+	"multipart",
+	"tracing",
 ] }
 axum-extra = { version = "^0.8", features = ["cookie"] }
 http = "^0.2"
@@ -72,31 +72,32 @@ multer = { version = "^2", features = ["json", "tokio", "tokio-io"] }
 oauth2 = "^4"
 reqwest = { version = "^0.11", features = ["json"], default-features = false }
 sqlx = { version = "^0.7", default-features = false, features = [
-  "macros",
-  "migrate",
-  "runtime-tokio",
-  "sqlite",
-  "time",
-  "uuid",
+	"macros",
+	"migrate",
+	"runtime-tokio",
+	"sqlite",
+	"time",
+	"json",
+	"uuid",
 ] }
 tower = { version = "^0.4", features = [
-  "timeout",
-  "load-shed",
-  "limit",
-  "util",
+	"timeout",
+	"load-shed",
+	"limit",
+	"util",
 ] }
 tower-http = { version = "^0.4", features = [
-  "auth",
-  "cors",
-  "limit",
-  "fs",
-  "propagate-header",
-  "request-id",
-  "sensitive-headers",
-  "set-header",
-  "util",
-  "trace",
-  "validate-request",
+	"auth",
+	"cors",
+	"limit",
+	"fs",
+	"propagate-header",
+	"request-id",
+	"sensitive-headers",
+	"set-header",
+	"util",
+	"trace",
+	"validate-request",
 ] }
 url = "^2.4"
 validify = "^1.0"
@@ -104,28 +105,28 @@ validify = "^1.0"
 tracing = "^0.1"
 tracing-appender = "^0.2"
 tracing-futures = { version = "^0.2", default-features = false, features = [
-  "std-future",
+	"std-future",
 ] }
 tracing-subscriber = { version = "^0.3", default-features = false, features = [
-  "ansi",
-  "env-filter",
-  "fmt",
-  "local-time",
-  "time",
-  "tracing",
+	"ansi",
+	"env-filter",
+	"fmt",
+	"local-time",
+	"time",
+	"tracing",
 ] }
 async-stripe = { version = "^0.29", default-features = false, features = [
-  "runtime-tokio-hyper-rustls",
-  "checkout",
-  "billing",
-  "fraud",
-  "orders",
-  "tax-calculation",
-  "events",
-  "webhook-endpoints",
-  "chrono",
-  "webhook-events",
-  "connect",
+	"runtime-tokio-hyper-rustls",
+	"checkout",
+	"billing",
+	"fraud",
+	"orders",
+	"tax-calculation",
+	"events",
+	"webhook-endpoints",
+	"chrono",
+	"webhook-events",
+	"connect",
 ] }
 
 [dev-dependencies]
@@ -134,7 +135,7 @@ proptest = "^1.4.0"
 proptest-derive = "^0.2.0"
 mockito = "1.4.0"
 banyan-task = { path = "../banyan-task", version = "^0.1", features = [
-  "test-utils",
+	"test-utils",
 ] }
 
 [build-dependencies]

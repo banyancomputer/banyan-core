@@ -12,6 +12,8 @@ use crate::database::models::{
 use crate::database::{Database, DatabaseConnection, BIND_LIMIT};
 use crate::tasks::PruneBlocksTask;
 
+use super::UserKey;
+
 /// Internal representation of a "Drive", the name is a holdover from a previous design iteration
 /// that referred to these as Buckets. This type is an organization type collecting the contents
 /// and versions of the filesystem changes. Content exists as blocks in the storage providers,
@@ -40,6 +42,24 @@ impl Bucket {
         sqlx::query_scalar!("SELECT user_id FROM buckets WHERE id = $1;", bucket_id,)
             .fetch_one(conn)
             .await
+    }
+
+    pub async fn list_user_keys(
+        conn: &mut DatabaseConnection,
+        bucket_id: &str,
+    ) -> Result<Vec<UserKey>, sqlx::Error> {
+        sqlx::query_as!(
+            UserKey,
+            r#"
+                SELECT uk.* FROM user_keys AS uk
+                JOIN bucket_access AS ba ON ba.user_key_id = uk.id
+                JOIN buckets AS b ON b.id = ba.bucket_id
+                WHERE b.id = $1;
+            "#,
+            bucket_id
+        )
+        .fetch_all(conn)
+        .await
     }
 
     pub async fn approve_user_keys(

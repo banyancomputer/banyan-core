@@ -1,0 +1,62 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                SELECT uk.* FROM user_keys AS uk\n                JOIN bucket_access AS ba ON ba.user_key_id = uk.id\n                JOIN buckets AS b ON b.id = ba.bucket_id\n                WHERE b.id = $1;\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "user_id",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "fingerprint",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "pem",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 4,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "updated_at",
+        "ordinal": 5,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "name",
+        "ordinal": 6,
+        "type_info": "Text"
+      },
+      {
+        "name": "api_access",
+        "ordinal": 7,
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "adec9a0211639f5a8a97befa9d1de94e39b09e8b20ff1fdf741e70b3ec3da82b"
+}
