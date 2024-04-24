@@ -1,3 +1,4 @@
+use app::Config;
 use tracing::Level;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
@@ -17,8 +18,6 @@ mod http_server;
 mod pricing;
 mod tasks;
 mod utils;
-
-use app::Config;
 
 #[tokio::main]
 async fn main() {

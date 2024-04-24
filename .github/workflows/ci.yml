@@ -1,50 +1,53 @@
-name: 💕 Continuous Integration
+---
+name: ci
 
 on:
-  pull_request:
-    branches: [ "main" ]
   push:
-    tags:
-    branches: [ "main" ]
-
-env:
-  CARGO_TERM_COLOR: always
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch: {}
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - name: build
-        run: cargo build --workspace --bins --tests --benches
-      - name: test
-        run: make test
+  rust:
+    uses: ./.github/workflows/rust.yml
+    with:
+      cache_version: v1
+      # FIXME remove audit ignores
+      #       RUSTSEC-2023-007: rsa crate, side-channel timing attack, no fix as of 2024-03-20
+      cargo_audit_ignores: RUSTSEC-2023-0071
 
+  node:
+    uses: ./.github/workflows/node.yml
+    strategy:
+      fail-fast: false
+      matrix:
+        job:
+          - service: banyan-core-service
+            frontend: admin_frontend
+          - service: banyan-core-service
+            frontend: frontend
+          - service: banyan-storage-provider-service
+            frontend: frontend
+    with:
+      cache_version: v1
+      service: ${{ matrix.job.service }}
+      frontend: ${{ matrix.job.frontend }}
 
-  fmt:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          override: true
-          components: rustfmt
-      - run: make fmt-check
-
-  clippy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-          components: clippy
-      - run: make clippy
+  docker:
+    uses: ./.github/workflows/docker.yml
+    # rust and node testing/auditing must pass before producing a docker image
+    needs:
+      - rust
+      - node
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - banyan-core-service
+          - banyan-staging-service
+          - banyan-storage-provider-service
+    with:
+      service: ${{ matrix.service }}
