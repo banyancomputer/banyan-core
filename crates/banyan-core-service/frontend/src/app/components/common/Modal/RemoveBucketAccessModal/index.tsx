@@ -3,15 +3,19 @@ import React from 'react';
 import { PrimaryButton } from '@components/common/PrimaryButton';
 import { SecondaryButton } from '@components/common/SecondaryButton';
 
-import { useModal } from '@/app/contexts/modals';
+import { closeModal } from '@store/modals/slice';
 import { useTomb } from '@/app/contexts/tomb';
 import { Bucket, BucketAccess } from '@/app/types/bucket';
-import { useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@/app/store';
 
 export const RemoveBucketAccessModal: React.FC<{ bucket: Bucket; bucketAccess: BucketAccess }> = ({ bucket, bucketAccess }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.removeBucketAccess);
     const { removeBucketAccess } = useTomb();
-    const { closeModal } = useModal();
+    const dispatch = useAppDispatch();
+
+    const close = () => {
+        dispatch(closeModal());
+    };
 
     const removeAccess = async () => {
         try {
@@ -30,7 +34,7 @@ export const RemoveBucketAccessModal: React.FC<{ bucket: Bucket; bucketAccess: B
             </div>
             <div className="mt-3 flex items-center justify-end gap-3 text-xs" >
                 <SecondaryButton
-                    action={closeModal}
+                    action={close}
                     text={`${messages.cancel}`}
                 />
                 <PrimaryButton

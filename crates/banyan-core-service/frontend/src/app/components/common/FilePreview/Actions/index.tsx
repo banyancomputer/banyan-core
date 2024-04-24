@@ -6,7 +6,7 @@ import { RenameFileModal } from '@components/common/Modal/RenameFileModal';
 import { MoveToModal } from '@components/common/Modal/MoveToModal';
 
 import { BrowserObject, Bucket } from '@/app/types/bucket';
-import { useModal } from '@/app/contexts/modals';
+import { openModal } from '@store/modals/slice';
 import { popupClickHandler } from '@/app/utils';
 
 import { Dots, MoveTo, Rename, Trash } from '@/app/static/images/common';
@@ -14,46 +14,47 @@ import { useAppSelector } from '@/app/store';
 
 export const FilePreviewActions: React.FC<{ bucket: Bucket; file: BrowserObject; parrentFolder: BrowserObject; path: string[] }> = ({ bucket, file, path, parrentFolder }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.common.filePreview.actions);
-    const { openModal } = useModal();
     const actionsRef = useRef<HTMLDivElement | null>(null);
     const [isVisible, setIsVisible] = useState(false);
     const bucketType = `${bucket.bucketType}_${bucket.storageClass}`;
+
 
     const toggleVisibility = () => {
         setIsVisible(prev => !prev);
     };
 
     const moveTo = () => {
-        openModal(
-            <MoveToModal
+
+        openModal({
+            content: <MoveToModal
                 file={file}
                 bucket={bucket}
                 path={path}
                 parrentFolder={parrentFolder}
             />
-        );
+        });
     };
 
     const rename = async () => {
-        openModal(
-            <RenameFileModal
+        openModal({
+            content: <RenameFileModal
                 bucket={bucket}
                 file={file}
                 path={path}
             />
-        );
+        });
     };
 
     const remove = async () => {
         try {
-            openModal(
-                <DeleteFileModal
+            openModal({
+                content: <DeleteFileModal
                     bucket={bucket}
                     file={file}
                     parrentFolder={parrentFolder}
                     path={path}
                 />
-            );
+            });
         } catch (error: any) { }
     };
 

@@ -6,11 +6,11 @@ import { UploadFileModal } from '@components/common/Modal/UploadFileModal';
 import { CreateFolderModal } from '@components/common/Modal/CreateFolderModal';
 
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
-import { useModal } from '@/app/contexts/modals';
+import { closeModal, openModal } from '@store/modals/slice';
 import { useTomb } from '@/app/contexts/tomb';
 import { stringToBase64 } from '@utils/base64';
 import { getLocalStorageItem, setLocalStorageItem } from '@utils/localStorage';
-import { useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@/app/store';
 import { Tooltip } from '@components/common/Tooltip';
 
 import { Close, Copy, Upload } from '@static/images/common';
@@ -26,22 +26,29 @@ const BucketHeader = () => {
     const { selectedBucket, areBucketsLoading } = useTomb();
     const params = useParams();
     const bucketId = params.id;
-    const { openModal, closeModal } = useModal();
     const [isBannerVisible, setIsBannerVisible] = useState(false);
     const [storageUsage, setStorageUsage] = useState(0);
+    const dispatch = useAppDispatch();
 
     const uploadFile = () => {
         if (selectedBucket) {
-            openModal(<UploadFileModal
-                bucket={selectedBucket}
-                path={folderLocation}
-            />);
+            dispatch(openModal(
+                {
+                    content: <UploadFileModal
+                        bucket={selectedBucket}
+                        path={folderLocation}
+                    />
+                }
+            )
+            );
         }
     };
 
     const takeSnapshot = async () => {
         try {
-            selectedBucket && openModal(<TakeSnapshotModal bucket={selectedBucket} />);
+            selectedBucket && dispatch(openModal({
+                content: <TakeSnapshotModal bucket={selectedBucket} />
+            }));
         } catch (error: any) { }
     };
 
@@ -50,15 +57,22 @@ const BucketHeader = () => {
         setLocalStorageItem('has_dissmissed_snapshot_banner', 'true');
     };
 
+    const hideModal = () => {
+        dispatch(closeModal());
+    };
+
     const createFolder = () => {
-        openModal(
-            <CreateFolderModal
-                bucket={selectedBucket!}
-                path={folderLocation}
-                onSuccess={closeModal}
-                redirect
-            />
+        dispatch(openModal(
+            {
+                content: <CreateFolderModal
+                    bucket={selectedBucket!}
+                    path={folderLocation}
+                    onSuccess={hideModal}
+                    redirect
+                />
+            }
         )
+        );
     };
 
     useEffect(() => {

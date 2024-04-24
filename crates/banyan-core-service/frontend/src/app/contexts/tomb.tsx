@@ -48,8 +48,8 @@ interface TombInterface {
     purgeSnapshot: (id: string) => void;
     deleteFile: (bucket: Bucket, path: string[], name: string) => void;
     createUserKey: (name: string, pem: string) => Promise<void>;
-    approveBucketAccess: (bucket: Bucket, bucketKeyId: string) => Promise<void>;
-    removeBucketAccess: (bucket: Bucket, bucketKeyId: string) => Promise<void>;
+    approveBucketAccess: (bucket: Bucket, userKeyId: string) => Promise<void>;
+    removeBucketAccess: (bucket: Bucket, userKeyId: string) => Promise<void>;
     restore: (bucket: Bucket, snapshotId: string) => Promise<void>;
 };
 const storageUsageClient = new StorageUsageClient();
@@ -247,7 +247,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     const createUserKey = async (name: string, pem: string) => await tomb!.createUserKey(name, pem);
 
     /** Deletes access key for bucket */
-    const removeBucketAccess = async (bucket: Bucket, bucketKeyId: string) => {
+    const removeBucketAccess = async (bucket: Bucket, userKeyId: string) => {
         /** TODO:  connect removeBucketAccess method when in will be implemented.  */
         await getBucketsAccess();
     };

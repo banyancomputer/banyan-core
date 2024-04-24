@@ -6,17 +6,17 @@ import { FilePreviewActions } from '@components/common/FilePreview/Actions';
 import { PreviewArrow } from '@components/common/FilePreview/Arrow';
 import { ShareFileModal } from '@components/common/Modal/ShareFileModal';
 
-import { useModal } from '@/app/contexts/modals';
+import { openModal } from '@store/modals/slice';
 import { useFilePreview } from '@/app/contexts/filesPreview';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { useTomb } from '@/app/contexts/tomb';
-import { useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@/app/store';
 
 import { Close, Done, DownloadAlternative, Upload } from '@static/images/common';
 
 export const FilePreview = () => {
     const { download, shareFile } = useTomb();
-    const { openModal } = useModal();
+    const dispatch = useAppDispatch();
     const messages = useAppSelector(state => state.locales.messages.coponents.common.filePreview);
     const { file, files, bucket, parrentFolder, path, openNext, openPrevious, closeFile } = useFilePreview();
 
@@ -41,9 +41,7 @@ export const FilePreview = () => {
         try {
             const payload = await shareFile(bucket!, [...path, file.name]);
             const link = `${window.location.origin}/api/v1/share?payload=${payload}`;
-            openModal(
-                <ShareFileModal link={link} />
-            );
+            dispatch(openModal({ content: <ShareFileModal link={link} /> }));
         } catch (error: any) {
             ToastNotifications.error('Error while sharing file', `${messages.tryAgain}`, share);
         }

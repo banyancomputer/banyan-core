@@ -3,8 +3,8 @@ import React from 'react';
 import { RenameAccessKeyModal } from '@components/common/Modal/RenameAccessKeyModal';
 
 import { Bucket, BucketAccess } from '@app/types/bucket';
-import { useModal } from '@app/contexts/modals';
-import { useAppSelector } from '@app/store';
+import { openModal } from '@store/modals/slice';
+import { useAppDispatch, useAppSelector } from '@app/store';
 import { AccessKeysClient } from '@/api/accessKeys';
 import { useTomb } from '@contexts/tomb';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
@@ -15,11 +15,11 @@ const client = new AccessKeysClient();
 
 export const KeyActions: React.FC<{ bucket: Bucket; bucketAccess: BucketAccess }> = ({ bucket, bucketAccess }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.account.manageKeys.keyActions);
-    const { openModal } = useModal();
     const { getBucketsAccess } = useTomb();
+    const dispatch = useAppDispatch();
 
     const rename = async () => {
-        openModal(<RenameAccessKeyModal bucket={bucket} bucketAccess={bucketAccess} />);
+        dispatch(openModal({ content: <RenameAccessKeyModal bucket={bucket} bucketAccess={bucketAccess} /> }));
     };
 
     const remove = async () => {

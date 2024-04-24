@@ -8,11 +8,11 @@ import { PrimaryButton } from '@components/common/PrimaryButton';
 import { SecondaryButton } from '@components/common/SecondaryButton';
 
 import { BrowserObject, Bucket } from '@/app/types/bucket';
-import { useModal } from '@/app/contexts/modals';
+import { closeModal, openModal } from '@store/modals/slice';
 import { useTomb } from '@/app/contexts/tomb';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { useFilesUpload } from '@/app/contexts/filesUpload';
-import { useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@/app/store';
 
 import { Upload } from '@static/images/buckets';
 
@@ -25,7 +25,7 @@ export const UploadFileModal: React.FC<{
     driveSelect?: boolean;
 }> = ({ bucket, folder, path, bucketId, createdFolderPath, driveSelect = false }) => {
     const { buckets } = useTomb();
-    const { openModal, closeModal } = useModal();
+    const dispatch = useAppDispatch();
     const { uploadFiles } = useFilesUpload();
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.uploadFile);
     const [selectedBucket, setSelectedBucket] = useState<Bucket | null>(bucket || null);
@@ -61,11 +61,15 @@ export const UploadFileModal: React.FC<{
         event.stopPropagation();
     };
 
+    const close = () => {
+        dispatch(closeModal());
+    };
+
     const upload = async () => {
         if (!previewFiles) { return; };
 
         try {
-            closeModal();
+            close();
             await uploadFiles(previewFiles!, selectedBucket!, selectedFolder.length ? selectedFolder : [], folder);
         } catch (error: any) {
             ToastNotifications.error(`${messages.uploadError}`, `${messages.tryAgain}`, upload);
@@ -73,14 +77,14 @@ export const UploadFileModal: React.FC<{
     };
 
     const returnToUploadModal = (id: string) => {
-        openModal(<UploadFileModal path={path} bucketId={id} driveSelect={driveSelect} />)
-    }
+        dispatch(openModal({ content: <UploadFileModal path={path} bucketId={id} driveSelect={driveSelect} /> }));
+    };
 
     const addNewBucket = () => {
-        openModal(
-            <CreateDriveModal onSuccess={returnToUploadModal} />,
-            () => openModal(<UploadFileModal path={path} bucketId={bucketId} driveSelect={driveSelect} />)
-        );
+        dispatch(openModal({
+            content: <CreateDriveModal onSuccess={returnToUploadModal} />,
+            onBack: () => dispatch(openModal({ content: <UploadFileModal path={path} bucketId={bucketId} driveSelect={driveSelect} /> }))
+        }));
     };
 
     useEffect(() => {
@@ -133,15 +137,16 @@ export const UploadFileModal: React.FC<{
                         selectedBucket={selectedBucket!}
                         onFolderCreation={
                             (createdFolderPath?: string[]) =>
-                                openModal(
-                                    <UploadFileModal
+                                dispatch(openModal({
+                                    content: <UploadFileModal
                                         path={path}
                                         bucket={selectedBucket}
                                         bucketId={bucketId}
                                         folder={folder}
                                         createdFolderPath={createdFolderPath}
                                         driveSelect={driveSelect}
-                                    />)
+                                    />
+                                }))
                         }
                     />
                 </div>
@@ -180,7 +185,7 @@ export const UploadFileModal: React.FC<{
             </label>
             <div className="flex items-center justify-end gap-3 text-xs" >
                 <SecondaryButton
-                    action={closeModal}
+                    action={close}
                     text={`${messages.cancel}`}
                 />
                 <PrimaryButton
