@@ -17,10 +17,15 @@ pub struct Key {
     user_id: String,
 }
 
+type AssociatedKeys = SqlxJson<Vec<UserKey>>;
+
 #[derive(sqlx::FromRow)]
 pub struct Thing {
-    pub bucket_id: String,
-    pub user_key_ids: SqlxJson<Vec<Key>>,
+    pub id: String,
+    pub user_id: String,
+    pub pem: String,
+    pub fingerprint: String,
+    pub bucket_ids: SqlxJson<Vec<String>>,
 }
 
 pub async fn handler(
@@ -47,25 +52,25 @@ pub async fn handler(
     let things = sqlx::query_as!(
         Thing,
         r#"
-            SELECT
-                b.id AS bucket_id, 
-                CONCAT(
-                    '[',
+            SELECT 
+                uk.id, 
+                uk.user_id, 
+                uk.pem, 
+                uk.fingerprint, 
+                FORMAT(
+                    '[%s]',
                     GROUP_CONCAT(
-                        CONCAT('{ "id": "', uk.id, '", "user_id": "', uk.user_id, '" }')
-                    ),
-                    ']'
-                ) AS "user_key_ids!: SqlxJson<Vec<Key>>"
-
-            FROM user_keys AS uk
+                        FORMAT('"%s"', b.id)
+                    )
+                ) AS "bucket_ids!: SqlxJson<Vec<String>>"
+                FROM user_keys AS uk
             JOIN bucket_access AS ba ON ba.user_key_id = uk.id
-            JOIN buckets AS b ON b.id = ba.bucket_id
-            WHERE b.id IN (
+            JOIN buckets AS b ON b.id = ba.bucket_id WHERE b.id IN (
                 SELECT b2.id FROM buckets AS b2
                 JOIN bucket_access AS ba2 ON ba2.bucket_id = b2.id
                 JOIN user_keys AS uk2 ON uk2.id = ba2.user_key_id
                 WHERE uk2.user_id=$1
-            ) GROUP BY b.id;
+            ) GROUP BY uk.id;
         "#,
         user_id,
     )
