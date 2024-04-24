@@ -5,26 +5,30 @@ import { PrimaryButton } from '@components/common/PrimaryButton';
 import { SecondaryButton } from '@components/common/SecondaryButton';
 import { SubscriptionPlanModal } from '@components/common/Modal/SubscriptionPlanModal';
 
-import { useModal } from '@/app/contexts/modals';
-import { useAppSelector } from '@/app/store';
+import { closeModal, openModal } from '@store/modals/slice';
+import { useAppDispatch, useAppSelector } from '@/app/store';
 import { RoutesConfig } from '@/app/routes';
 
 import { OutOfStorageIcon } from '@/app/static/images/common/modal';
 
 export const HardStorageLimit = () => {
+    const dispatch = useAppDispatch();
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.hardStorageLimit);
-    const { closeModal, openModal } = useModal();
     const navigate = useNavigate();
     const { selectedSubscription } = useAppSelector(state => state.billing);
+
+    const close = () => {
+        dispatch(closeModal());
+    };
 
     const upgradePlan = () => {
         if (selectedSubscription?.pricing) {
             navigate(RoutesConfig.Billing.fullPath);
-            closeModal();
+            close();
             return;
         };
 
-        openModal(<SubscriptionPlanModal />);
+        dispatch(openModal({ content: <SubscriptionPlanModal /> }));
     };
 
     return (
@@ -39,7 +43,7 @@ export const HardStorageLimit = () => {
                 </div>
                 <div className="ml-auto mt-3 w-1/2 flex items-center gap-3 text-xs" >
                     <SecondaryButton
-                        action={closeModal}
+                        action={close}
                         text={`${messages.cancel}`}
                     />
                     <PrimaryButton

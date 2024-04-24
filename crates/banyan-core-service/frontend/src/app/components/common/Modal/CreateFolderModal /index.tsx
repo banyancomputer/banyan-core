@@ -5,20 +5,24 @@ import { PrimaryButton } from '@components/common/PrimaryButton';
 import { SecondaryButton } from '@components/common/SecondaryButton';
 import { UploadFileModal } from '@components/common/Modal/UploadFileModal';
 
-import { useModal } from '@/app/contexts/modals';
+import { closeModal, openModal } from '@store/modals/slice';
 import { useTomb } from '@/app/contexts/tomb';
 import { Bucket } from '@/app/types/bucket';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { stringToBase64 } from '@/app/utils/base64';
-import { useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@/app/store';
 
 export const CreateFolderModal: React.FC<{ bucket: Bucket; onSuccess?: (path: string[]) => void; path: string[], redirect?: boolean }> = ({ bucket, onSuccess = () => { }, path, redirect = false }) => {
-    const { closeModal, openModal } = useModal();
+    const dispatch = useAppDispatch();
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.createFolder);
     const { folderAlreadyExists } = useAppSelector(state => state.locales.messages.contexts.tomb);
     const [folderName, setfolderName] = useState('');
     const { createDirectory } = useTomb();
     const navigate = useNavigate();
+
+    const close = () => {
+        dispatch(closeModal());
+    };
 
     const changeName = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.value.length >= 32) { return; }
@@ -38,7 +42,7 @@ export const CreateFolderModal: React.FC<{ bucket: Bucket; onSuccess?: (path: st
             onSuccess ?
                 onSuccess([...path, folderName])
                 :
-                openModal(<UploadFileModal bucket={bucket} path={[...path, folderName]} />);
+                dispatch(openModal({content: <UploadFileModal bucket={bucket} path={[...path, folderName]} />}));
         } catch (error: any) {
             if (error.message !== folderAlreadyExists) {
                 ToastNotifications.error(`${messages.creationError}`);
@@ -65,7 +69,7 @@ export const CreateFolderModal: React.FC<{ bucket: Bucket; onSuccess?: (path: st
             </div>
             <div className="flex items-center justify-end gap-3 text-xs" >
                 <SecondaryButton
-                    action={closeModal}
+                    action={close}
                     text={`${messages.cancel}`}
                 />
                 <PrimaryButton

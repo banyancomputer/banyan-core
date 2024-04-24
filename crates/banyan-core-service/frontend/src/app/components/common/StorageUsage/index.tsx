@@ -5,18 +5,18 @@ import { SubscriptionPlanModal } from '../Modal/SubscriptionPlanModal';
 
 import { convertFileSize } from '@/app/utils/storage';
 import { useTomb } from '@/app/contexts/tomb';
-import { useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@/app/store';
 import { RoutesConfig } from '@/app/routes';
-import { useModal } from '@/app/contexts/modals';
+import { openModal } from '@store/modals/slice';
 
 export const StorageUsage = () => {
+    const dispatch = useAppDispatch();
     const { storageUsage, storageLimits } = useTomb();
-    const { openModal } = useModal();
     const messages = useAppSelector(state => state.locales.messages.coponents.common.storageUsage);
     const { selectedSubscription } = useAppSelector(state => state.billing);
 
     const upgragePlan = () => {
-        openModal(<SubscriptionPlanModal />);
+        dispatch(openModal({content: <SubscriptionPlanModal />}));
     };
 
     return (

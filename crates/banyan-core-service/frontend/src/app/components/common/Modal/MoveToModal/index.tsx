@@ -5,14 +5,14 @@ import { PrimaryButton } from '@components/common/PrimaryButton';
 import { FolderSelect } from '@components/common/FolderSelect';
 import { SecondaryButton } from '@components/common/SecondaryButton';
 
-import { useModal } from '@/app/contexts/modals';
+import { closeModal, openModal } from '@store/modals/slice';
 import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { useTomb } from '@/app/contexts/tomb';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 import { useFilePreview } from '@/app/contexts/filesPreview';
-import { useAppSelector } from '@/app/store';
 import { stringToBase64 } from '@/app/utils/base64';
+import { useAppDispatch, useAppSelector } from '@/app/store';
 
 export const MoveToModal: React.FC<{
     file: BrowserObject;
@@ -24,10 +24,14 @@ export const MoveToModal: React.FC<{
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.moteTo);
     const { moveTo, getSelectedBucketFiles, getExpandedFolderFiles } = useTomb();
     const navigate = useNavigate();
-    const { closeModal, openModal } = useModal();
     const { closeFile } = useFilePreview();
     const [selectedFolder, setSelectedFolder] = useState<string[]>([]);
     const folderLocation = useFolderLocation();
+    const dispatch = useAppDispatch();
+
+    const close = () => {
+        dispatch(closeModal());
+    };
 
     const move = async () => {
         try {
@@ -41,12 +45,12 @@ export const MoveToModal: React.FC<{
             );
             if (path.join('/') === folderLocation.join('/')) {
                 await getSelectedBucketFiles(folderLocation);
-                closeModal();
+                close();
 
                 return;
             };
             await getExpandedFolderFiles(path, parrentFolder, bucket);
-            closeModal();
+            close();
         } catch (error: any) {
             ToastNotifications.error(`${messages.moveToError}`, `${messages.tryAgain}`, move);
         };
@@ -78,21 +82,21 @@ export const MoveToModal: React.FC<{
                     onChange={selectFolder}
                     onFolderCreation={
                         (createdFolderPath?: string[]) =>
-                            openModal(
-                                <MoveToModal
+                            dispatch(openModal({
+                                content: <MoveToModal
                                     bucket={bucket}
                                     file={file}
                                     path={path}
                                     parrentFolder={parrentFolder}
                                     createdFolderPath={createdFolderPath}
                                 />
-                            )
+                            }))
                     }
                 />
             </div>
             <div className="mt-3 flex items-center justify-end gap-3 text-xs" >
                 <SecondaryButton
-                    action={closeModal}
+                    action={close}
                     text={`${messages.cancel}`}
                 />
                 <PrimaryButton

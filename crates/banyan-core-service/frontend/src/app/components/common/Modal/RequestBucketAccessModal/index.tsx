@@ -3,17 +3,21 @@ import React from 'react';
 import { PrimaryButton } from '@components/common/PrimaryButton';
 import { SecondaryButton } from '@components/common/SecondaryButton';
 
-import { useModal } from '@contexts/modals';
+import { closeModal } from '@store/modals/slice';
 import { Bucket } from '@app/types/bucket';
-import { useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@/app/store';
 
 export const RequestBucketAccessModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.requestBucketAccess);
-    const { closeModal } = useModal();
+    const dispatch = useAppDispatch();
+
+    const close = () => {
+        dispatch(closeModal());
+    };
 
     const requestAccess = async () => {
         try {
-            closeModal();
+            close();
         } catch (error: any) { }
     };
 
@@ -27,7 +31,7 @@ export const RequestBucketAccessModal: React.FC<{ bucket: Bucket }> = ({ bucket 
             </div>
             <div className="mt-3 flex items-center justify-end gap-3 text-xs" >
                 <SecondaryButton
-                    action={closeModal}
+                    action={close}
                     text={`${messages.cancel}`}
                 />
                 <PrimaryButton

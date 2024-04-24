@@ -1,16 +1,16 @@
 import { CreateDriveModal } from '@components/common/Modal/CreateDriveModal';
 
-import { useModal } from '@/app/contexts/modals';
+import { openModal } from '@store/modals/slice';
 
 import { ActiveDirectory, PlusBold } from '@/app/static/images/common';
-import { useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@/app/store';
 
 export const EmptyState = () => {
     const messages = useAppSelector(state => state.locales.messages.coponents.home.emptyState);
-    const { openModal } = useModal();
+    const dispatch = useAppDispatch();
 
     const createDrive = () => {
-        openModal(<CreateDriveModal />);
+        dispatch(openModal({ content: <CreateDriveModal /> }));
     };
 
     return (

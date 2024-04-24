@@ -6,17 +6,17 @@ import { ApproveBucketAccessModal } from '@components/common/Modal/ApproveBucket
 import { RemoveBucketAccessModal } from '@components/common/Modal/RemoveBucketAccessModal';
 import { SecondaryButton } from '@components/common/SecondaryButton';
 
-import { useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@/app/store';
 import { Bucket, BucketKey, Bucket as IBucket } from '@/app/types/bucket';
-import { useModal } from '@/app/contexts/modals';
+import { openModal } from '@store/modals/slice';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 
 export const KeyManagementTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
+    const dispatch = useAppDispatch();
     const messages = useAppSelector(state => state.locales.messages.coponents.account.manageKeys.keyManagementTable);
-    const { openModal } = useModal();
 
     const approveAccess = async (bucket: Bucket, bucketKey: BucketKey) => {
-        openModal(<ApproveBucketAccessModal bucket={bucket} bucketKey={bucketKey} />);
+        dispatch(openModal({content: <ApproveBucketAccessModal bucket={bucket} bucketKey={bucketKey} />}));
     };
 
     const removeAccess = async (bucket: Bucket, bucketKey: BucketKey) => {
@@ -24,7 +24,7 @@ export const KeyManagementTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }
             ToastNotifications.error('The final key cannot be disabled or removed without at least one backup.');
             return;
         };
-        openModal(<RemoveBucketAccessModal bucket={bucket} bucketKey={bucketKey} />);
+        dispatch(openModal({content: <RemoveBucketAccessModal bucket={bucket} bucketKey={bucketKey} />}));
     };
 
     return (

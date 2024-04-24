@@ -4,10 +4,10 @@ import { unwrapResult } from '@reduxjs/toolkit';
 import { DatePicker } from '@components/common/DatePicker';
 import { InvoicesTable } from './InvoicesTable';
 import { SubscriptionPlanModal } from '@/app/components/common/Modal/SubscriptionPlanModal';
+import { openModal } from '@store/modals/slice';
 
 import { useAppDispatch, useAppSelector } from '@/app/store';
 import { getInvoices, manageSubscriptions } from '@/app/store/billing/actions';
-import { useModal } from '@/app/contexts/modals';
 
 import { Check } from '@static/images/account';
 
@@ -15,7 +15,6 @@ export const Invoices = () => {
     const dispatch = useAppDispatch();
     const { invoices, selectedSubscription } = useAppSelector(state => state.billing);
     const messages = useAppSelector(state => state.locales.messages.coponents.account.billing.invoices);
-    const { openModal } = useModal();
     const [dateRange, setDateRange] = useState({ from: new Date(), to: new Date() });
 
     const changeDateRange = (startDate: Date, endDate: Date) => {
@@ -23,7 +22,7 @@ export const Invoices = () => {
     };
 
     const upgragePlan = () => {
-        openModal(<SubscriptionPlanModal />);
+        dispatch(openModal({content: <SubscriptionPlanModal />}));
     };
 
     const manage = async () => {

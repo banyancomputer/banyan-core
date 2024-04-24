@@ -6,10 +6,10 @@ import { ShareFileModal } from '@components/common/Modal/ShareFileModal';
 import { DeleteFileModal } from '@components/common/Modal/DeleteFileModal';
 
 import { BrowserObject, Bucket } from '@/app/types/bucket';
-import { useModal } from '@/app/contexts/modals';
+import { openModal } from '@store/modals/slice';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { useTomb } from '@/app/contexts/tomb';
-import { useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@/app/store';
 
 import { Copy, Done, Download, LinkIcon, MoveTo, Rename, Share, Trash } from '@static/images/common';
 
@@ -25,7 +25,7 @@ export class Action {
 export const FileActions: React.FC<{ bucket: Bucket; file: BrowserObject; parrentFolder: BrowserObject; path: string[] }> = ({ bucket, file, path, parrentFolder }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.bucket.files.bucketTable.fileActions);
     const { download, makeCopy, shareFile } = useTomb();
-    const { openModal } = useModal();
+    const dispatch = useAppDispatch();
     const bucketType = `${bucket.bucketType}_${bucket.storageClass}`;
 
     const downloadFile = async () => {
@@ -39,14 +39,16 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BrowserObject; parren
     };
 
     const moveTo = () => {
-        openModal(
-            <MoveToModal
-                file={file}
-                bucket={bucket}
-                path={path}
-                parrentFolder={parrentFolder}
-            />
-        );
+        dispatch(openModal(
+            {
+                content: <MoveToModal
+                    file={file}
+                    bucket={bucket}
+                    path={path}
+                    parrentFolder={parrentFolder}
+                />
+            }
+        ));
     };
 
     const copy = async () => {
@@ -59,25 +61,25 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BrowserObject; parren
     };
 
     const rename = async () => {
-        openModal(
-            <RenameFileModal
+        openModal({
+            content: <RenameFileModal
                 bucket={bucket}
                 file={file}
                 path={path}
             />
-        );
+        });
     };
 
     const remove = async () => {
         try {
-            openModal(
-                <DeleteFileModal
+            openModal({
+                content: <DeleteFileModal
                     bucket={bucket}
                     file={file}
                     parrentFolder={parrentFolder}
                     path={path}
                 />
-            );
+            });
         } catch (error: any) { }
     };
 
@@ -91,9 +93,9 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BrowserObject; parren
         try {
             const payload = await shareFile(bucket, [...path, file.name]);
             const link = `${window.location.origin}/api/v1/share?payload=${payload}`;
-            openModal(
-                <ShareFileModal link={link} />
-            );
+            openModal({
+                content: <ShareFileModal link={link} />
+            });
         } catch (error: any) {
             ToastNotifications.error('Error while sharing file', `${messages.tryAgain}`, share);
         }

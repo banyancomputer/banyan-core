@@ -3,20 +3,24 @@ import React, { useEffect, useRef, useState } from 'react';
 import { PrimaryButton } from '@components/common/PrimaryButton';
 import { SecondaryButton } from '@components/common/SecondaryButton';
 
-import { useModal } from '@/app/contexts/modals';
+import { closeModal } from '@store/modals/slice';
 import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { useTomb } from '@/app/contexts/tomb';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
-import { useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@/app/store';
 
 export const RenameFolderModal: React.FC<{ bucket: Bucket; folder: BrowserObject; path: string[] }> = ({ bucket, folder, path }) => {
     const inputRef = useRef<HTMLInputElement | null>(null);
-    const { closeModal } = useModal();
     const { moveTo, getSelectedBucketFiles, selectBucket } = useTomb();
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.renameFolder);
     const [newName, setNewName] = useState(folder.name);
     const folderLocation = useFolderLocation();
+    const dispatch = useAppDispatch();
+
+    const close = () => {
+        dispatch(closeModal());
+    };
 
     const save = async () => {
         try {
@@ -24,20 +28,20 @@ export const RenameFolderModal: React.FC<{ bucket: Bucket; folder: BrowserObject
             ToastNotifications.notify(`${messages.folderWasRenamed}`);
             if (path.join('/') === folderLocation.join('/')) {
                 await getSelectedBucketFiles(folderLocation);
-                closeModal();
+                close();
 
                 return;
             };
             folder.name = newName;
             selectBucket({ ...bucket });
-            closeModal();
+            close();
         } catch (error: any) {
             ToastNotifications.error(`${messages.editError}`, `${messages.tryAgain}`, save);
         };
     };
 
     useEffect(() => {
-        if(!inputRef.current) return;
+        if (!inputRef.current) return;
 
         const separatorIndex = folder.name.lastIndexOf('.');
         inputRef.current.select();
@@ -64,7 +68,7 @@ export const RenameFolderModal: React.FC<{ bucket: Bucket; folder: BrowserObject
             </div>
             <div className="mt-3 flex items-center justify-end gap-3 text-xs" >
                 <SecondaryButton
-                    action={closeModal}
+                    action={close}
                     text={`${messages.cancel}`}
                 />
                 <PrimaryButton

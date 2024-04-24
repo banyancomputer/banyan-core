@@ -3,8 +3,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { RequestBucketAccessModal } from '@components/common/Modal/RequestBucketAccessModal';
 
 import { Bucket } from '@app/types/bucket';
-import { useModal } from '@contexts/modals';
-import { useAppSelector } from '@/app/store';
+import { openModal } from '@store/modals/slice';
+import { useAppDispatch, useAppSelector } from '@/app/store';
 
 import { Lock } from '@static/images/buckets';
 
@@ -12,15 +12,14 @@ export const LockedTooltip: React.FC<{ bucket: Bucket, className?: string, size?
     const messages = useAppSelector(state => state.locales.messages.coponents.common.navigation.lockedTooltip);
     const tooltipRef = useRef<null | HTMLDivElement>(null);
     const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
-    const { openModal } = useModal();
-
+    const dispatch = useAppDispatch();
     const stopPopagation = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
         event.stopPropagation();
         event.preventDefault();
     };
 
     const requestAccess = () => {
-        openModal(<RequestBucketAccessModal bucket={bucket} />);
+        dispatch(openModal({ content: <RequestBucketAccessModal bucket={bucket} /> }));
     };
 
     useEffect(() => {

@@ -11,7 +11,7 @@ import { useAppDispatch, useAppSelector } from '@app/store';
 import { unwrapResult } from '@reduxjs/toolkit';
 import { getUser } from '@store/session/actions';
 import { RoutesConfig } from '@app/routes';
-import { useModal } from '@contexts/modals';
+import { openModal } from '@store/modals/slice';
 import { getSubscriptionById } from '@store/billing/actions';
 import { purgeKeystore } from '@store/keystore/actions';
 
@@ -25,7 +25,6 @@ export const Header: React.FC<{ className?: string }> = ({ className = '' }) => 
     const profileOptionsRef = useRef<HTMLDivElement | null>(null);
     const helpOptionsRef = useRef<HTMLDivElement | null>(null);
     const location = useLocation();
-    const { openModal } = useModal();
 
     const [areProfileOptionsVisible, setAreProfileOptionsVisible] = useState(false);
     const [areHelpOptionsVisible, setAreHelpOptionsVisible] = useState(false);
@@ -39,7 +38,7 @@ export const Header: React.FC<{ className?: string }> = ({ className = '' }) => 
     };
 
     const upgragePlan = () => {
-        openModal(<SubscriptionPlanModal />);
+        dispatch(openModal({ content: <SubscriptionPlanModal /> }));
     };
 
     useEffect(() => {

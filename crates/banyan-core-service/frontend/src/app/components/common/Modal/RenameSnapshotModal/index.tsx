@@ -3,20 +3,24 @@ import React, { useState } from 'react';
 import { PrimaryButton } from '@components/common/PrimaryButton';
 import { SecondaryButton } from '@components/common/SecondaryButton';
 
-import { useModal } from '@contexts/modals';
+import { closeModal } from '@store/modals/slice';
 import { Bucket, BucketSnapshot } from '@app/types/bucket';
-import { useAppSelector } from '@app/store';
+import { useAppDispatch, useAppSelector } from '@app/store';
 import { ToastNotifications } from '@app/utils/toastNotifications';
 
 export const RenameSnapshotModal: React.FC<{ bucket: Bucket; snapshot: BucketSnapshot }> = ({ bucket, snapshot }) => {
-    const { closeModal } = useModal();
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.renameSnapshot);
     const [newName, setNewName] = useState('');
+    const dispatch = useAppDispatch();
+
+    const close = () => {
+        dispatch(closeModal());
+    };
 
     const save = async () => {
         try {
             /** TODO: implement when backend will be ready */
-            closeModal();
+            close();
         } catch (error: any) {
             ToastNotifications.error(`${messages.editError}`);
         };
@@ -41,7 +45,7 @@ export const RenameSnapshotModal: React.FC<{ bucket: Bucket; snapshot: BucketSna
             </div>
             <div className="mt-3 flex items-center justify-end gap-3 text-xs" >
                 <SecondaryButton
-                    action={closeModal}
+                    action={close}
                     text={`${messages.cancel}`}
                 />
                 <PrimaryButton
