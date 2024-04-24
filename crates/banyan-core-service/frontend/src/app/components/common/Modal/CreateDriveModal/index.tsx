@@ -4,13 +4,14 @@ import { useNavigate } from 'react-router-dom';
 import { PrimaryButton } from '@components/common/PrimaryButton';
 import { SecondaryButton } from '@components/common/SecondaryButton';
 
-import { closeModal, openModal } from '@store/modals/slice';
+import { closeModal } from '@store/modals/slice';
 import { useTomb } from '@/app/contexts/tomb';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
-import { useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@/app/store';
 
 export const CreateDriveModal: React.FC<{ onSuccess?: (id: string) => void }> = ({ onSuccess }) => {
     const navigate = useNavigate();
+    const dispatch = useAppDispatch();
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.createBucket);
     const { driveAlreadyExists } = useAppSelector(state => state.locales.messages.contexts.tomb);
     const [bucketName, setBucketName] = useState('');
@@ -88,7 +89,3 @@ export const CreateDriveModal: React.FC<{ onSuccess?: (id: string) => void }> = 
         </div >
     );
 };
-function dispatch(arg0: any) {
-    throw new Error('Function not implemented.');
-}
-
