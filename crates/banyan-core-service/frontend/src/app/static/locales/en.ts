@@ -239,6 +239,8 @@ export default {
                     cancel: "Cancel",
                     create: "Create",
                     creationError: "There was an issue creating your drive. Please try again.",
+                    driveCreated: "Drive Created",
+                    viewDrive: "View Drive",
                     tryAgain: "Try again",
                 },
                 createFolder: {
@@ -248,6 +250,8 @@ export default {
                     cancel: "Cancel",
                     create: "Create",
                     creationError: "There was an issue creating your folder. Please try again.",
+                    folderCreated: "Folder Created",
+                    viewFolder: "View Folder",
                     tryAgain: "Try again",
                 },
                 deleteBucket: {
@@ -285,6 +289,9 @@ export default {
                     cancel: "Cancel",
                     moveTo: "Move to",
                     fileWasMoved: "File was moved",
+                    folderWasMoved: "Folder was moved",
+                    viewFile: "View File",
+                    viewFolder: "View Folder",
                     moveToError: "There was an issue moving your file. Please try again",
                     tryAgain: "Try again",
                 },

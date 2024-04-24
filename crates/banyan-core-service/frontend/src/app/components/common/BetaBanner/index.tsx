@@ -1,6 +1,5 @@
 import { useAppSelector } from "@/app/store";
 
-
 export const BetaBanner = () => {
     const messages = useAppSelector(state => state.locales.messages.coponents.common.betaBanner);
 

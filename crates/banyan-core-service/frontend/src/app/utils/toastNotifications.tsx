@@ -10,15 +10,32 @@ import { BrowserObject, Bucket } from '../types/bucket';
 export class ToastNotifications {
     static notify(
         message: string,
-        icon?: ReactElement,
+        icon?: ReactElement | null,
+        buttonMessage?: string,
+        callback?: () => void,
     ) {
         toast.info(
-            message,
+            <div className="w-full flex items-center justify-between gap-2 text-xs">
+                {message}
+                {buttonMessage ?
+                    <div
+                        className="underline cursor-pointer"
+                        onClick={() => {
+                            callback && callback()
+                            this.close();
+                        }}
+                    >
+                        {buttonMessage}
+                    </div>
+                    :
+                    null
+                }
+            </div>,
             {
                 hideProgressBar: true,
                 autoClose: 2000,
                 icon: icon ? icon : <SuccessToastIcon />,
-                closeButton: () => <Close />,
+                closeButton: buttonMessage ? false : <Close />,
                 bodyStyle: { gap: '8px', padding: '0', fontFamily: 'Inter', fontSize: '14px', fontWeight: 600 },
                 style: { display: "flex", alignItems: 'center', padding: '12px 16px', borderRadius: '4px 4px 0 0', bottom: 0, margin: 0, width: '400px' },
             }

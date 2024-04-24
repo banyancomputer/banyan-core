@@ -68,7 +68,6 @@ const BucketHeader = () => {
                     bucket={selectedBucket!}
                     path={folderLocation}
                     onSuccess={hideModal}
-                    redirect
                 />
             }
         )

@@ -75,7 +75,7 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const createFolder = async () => {
         dispatch(openModal(
             {
-                content: <CreateFolderModal bucket={bucket} path={folderLocation} onSuccess={hideModal} redirect />
+                content: <CreateFolderModal bucket={bucket} path={folderLocation} onSuccess={hideModal} />
             }
         ));
     };
