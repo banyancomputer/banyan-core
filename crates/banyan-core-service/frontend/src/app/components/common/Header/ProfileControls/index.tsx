@@ -8,7 +8,7 @@ import { HttpClient } from '@/api/http/client';
 import { useAppDispatch, useAppSelector } from '@app/store';
 import { getSubscriptions } from '@store/billing/actions';
 import { RoutesConfig } from '@/app/routes';
-import { useModal } from '@contexts/modals';
+import { openModal } from '@store/modals/slice';
 import { unwrapResult } from '@reduxjs/toolkit';
 import { purgeKeystore } from '@store/keystore/actions';
 
@@ -17,7 +17,6 @@ import { LogoutAlternative, Settings } from '@static/images/common';
 export const ProfileControls = () => {
     const navigate = useNavigate();
     const messages = useAppSelector(state => state.locales.messages.coponents.common.header.profileControls);
-    const { openModal } = useModal();
     const { displayName, email, profileImage } = useAppSelector(state => state.session.user);
     const { selectedSubscription } = useAppSelector(state => state.billing);
     const dispatch = useAppDispatch();
@@ -40,7 +39,7 @@ export const ProfileControls = () => {
     };
 
     const upgragePlan = () => {
-        openModal(<SubscriptionPlanModal />);
+        dispatch(openModal({ content: <SubscriptionPlanModal /> }));
     };
 
     const options = [

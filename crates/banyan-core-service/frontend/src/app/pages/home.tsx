@@ -7,23 +7,23 @@ import { CreateDriveModal } from '@components/common/Modal/CreateDriveModal';
 import { EmptyState } from '@components/Home/EmptyState';
 
 import { useTomb } from '@/app/contexts/tomb';
-import { useModal } from '@/app/contexts/modals';
-import { useAppSelector } from '../store';
+import { useAppDispatch, useAppSelector } from '../store';
+import { openModal } from '@store/modals/slice';
 
 import { PlusBold, Upload } from '@static/images/common';
 
 const Home = () => {
-    const { openModal } = useModal();
+    const dispatch = useAppDispatch();
     const { buckets, areBucketsLoading } = useTomb();
     const messages = useAppSelector(state => state.locales.messages.pages.home);
 
     const uploadFile = () => {
-        openModal(<UploadFileModal path={[]} driveSelect />);
+        dispatch(openModal({ content: <UploadFileModal path={[]} driveSelect /> }));
     };
 
     const createDrive = () => {
-        openModal(<CreateDriveModal />);
-    };
+        dispatch(openModal({ content: <CreateDriveModal />}));
+};
 
     return (
         <section className="h-[455px] py-9 pt-14 px-4" id="buckets">

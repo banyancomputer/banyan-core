@@ -5,7 +5,7 @@ import { SubscriptionPlanModal } from '@/app/components/common/Modal/Subscriptio
 
 import { useAppDispatch, useAppSelector } from '@/app/store';
 import { getSubscriptions, manageSubscriptions } from '@/app/store/billing/actions';
-import { useModal } from '@/app/contexts/modals';
+import { openModal } from '@store/modals/slice';
 import { convertFileSize, convertSubscriptionsSizes } from '@/app/utils/storage';
 import { getHotStorageAmount } from '@/app/utils/subscritions';
 import { getDateLabel } from '@/app/utils/date';
@@ -16,11 +16,10 @@ export const NextBillingDate = () => {
     const { selectedSubscription } = useAppSelector(state => state.billing);
     const { subscriptionValidUntil, monthlyEggress } = useAppSelector(state => state.session.user);
     const messages = useAppSelector(state => state.locales.messages.coponents.account.billing.invoices.nextBillingDate);
-    const { openModal } = useModal();
     const { storageUsage, storageLimits } = useTomb();
 
     const upgragePlan = () => {
-        openModal(<SubscriptionPlanModal />);
+        dispatch(openModal({ content: <SubscriptionPlanModal /> }));
     };
 
     const manage = async () => {

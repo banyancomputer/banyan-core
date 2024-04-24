@@ -6,6 +6,7 @@ import keystore from '@store/keystore/slice';
 import billing from '@store/billing/slice';
 import locales from '@store/locales/slice';
 import errors from '@store/errors/slice';
+import modals from '@store/modals/slice';
 
 export const store = configureStore({
     reducer: {
@@ -13,7 +14,8 @@ export const store = configureStore({
         billing,
         locales,
         session,
-        keystore
+        keystore,
+        modals
     },
 });
 

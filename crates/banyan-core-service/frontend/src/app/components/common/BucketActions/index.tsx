@@ -9,37 +9,48 @@ import { CreateFolderModal } from '@components/common/Modal/CreateFolderModal ';
 import { Tooltip } from '@components/common/Tooltip';
 
 import { Action } from '@components/Bucket/Files/BucketTable/FileActions';
-import { useModal } from '@/app/contexts/modals';
+import { closeModal, openModal } from '@store/modals/slice';
 import { Bucket } from '@/app/types/bucket';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 import { useTomb } from '@contexts/tomb';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
-import { useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@/app/store';
 
 import { Bolt, DeleteHotData, Rename, Retry, Trash, Upload, Versions } from '@static/images/common';
 import { AddFolderIcon, Lock } from '@static/images/buckets';
 
 export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.common.bucketActions);
-    const { openModal, closeModal } = useModal();
     const { remountBucket } = useTomb();
     const bucketType = `${bucket.bucketType}_${bucket.storageClass}`;
     const folderLocation = useFolderLocation();
     const navigate = useNavigate();
+    const dispatch = useAppDispatch();
+
+    const hideModal = () => {
+        dispatch(closeModal());
+    }
 
     const upload = async () => {
         try {
-            openModal(<UploadFileModal
-                bucket={bucket}
-                path={folderLocation}
-            />
-            );
+            dispatch(openModal(
+                {
+                    content: <UploadFileModal
+                        bucket={bucket}
+                        path={folderLocation}
+                    />
+                }
+            ));
         } catch (error: any) { }
     };
 
     const takeSnapshot = async () => {
         try {
-            openModal(<TakeSnapshotModal bucket={bucket} />);
+            dispatch(openModal(
+                {
+                    content: <TakeSnapshotModal bucket={bucket} />
+                }
+            ));
         } catch (error: any) { }
     };
 
@@ -56,11 +67,17 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     };
 
     const rename = async () => {
-        openModal(<RenameBucketModal bucket={bucket} />);
+        dispatch(openModal({
+            content: <RenameBucketModal bucket={bucket} />
+        }));
     };
 
     const createFolder = async () => {
-        openModal(<CreateFolderModal bucket={bucket} path={folderLocation} onSuccess={closeModal} redirect />);
+        dispatch(openModal(
+            {
+                content: <CreateFolderModal bucket={bucket} path={folderLocation} onSuccess={hideModal} redirect />
+            }
+        ));
     };
 
     const retoreColdVersion = async () => {
@@ -76,7 +93,11 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
 
     const deleteBucket = async () => {
         try {
-            openModal(<DeleteDriveModal bucket={bucket} />);
+            dispatch(openModal(
+            {
+                content: <DeleteDriveModal bucket={bucket} />
+            }
+        ));
         } catch (error: any) { }
     };
 

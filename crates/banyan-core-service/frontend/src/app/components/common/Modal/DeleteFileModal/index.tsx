@@ -4,32 +4,34 @@ import { PrimaryButton } from '@components/common/PrimaryButton';
 import { SecondaryButton } from '@components/common/SecondaryButton';
 
 import { BrowserObject, Bucket } from '@/app/types/bucket';
-import { useModal } from '@/app/contexts/modals';
 import { useTomb } from '@/app/contexts/tomb';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
-import { useFilePreview } from '@/app/contexts/filesPreview';
-import { useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@/app/store';
+import { closeModal } from '@/app/store/modals/slice';
 
 import { Trash } from '@static/images/common';
 
 export const DeleteFileModal: React.FC<{ bucket: Bucket; file: BrowserObject; path: string[]; parrentFolder: BrowserObject }> = ({ bucket, file, path, parrentFolder }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.deleteFile);
-    const { closeModal } = useModal();
-    const { closeFile } = useFilePreview();
+    const dispatch = useAppDispatch();
     const { deleteFile, getSelectedBucketFiles, getExpandedFolderFiles } = useTomb();
     const folderLocation = useFolderLocation();
+
+    const cancel = () => {
+        dispatch(closeModal());
+    };
 
     const removeFile = async () => {
         try {
             await deleteFile(bucket, [...path], file.name);
-            closeFile();
+            cancel();
             if (path.join('/') === folderLocation.join('/')) {
                 await getSelectedBucketFiles(folderLocation);
             } else {
                 await getExpandedFolderFiles(path, parrentFolder, bucket);
             };
-            closeModal();
+            dispatch(closeModal());
             ToastNotifications.notify(`${messages.file} "${file.name}" ${messages.wasDeleted}`, <Trash width="20px" height="20px" />);
         } catch (error: any) {
             ToastNotifications.error(`${messages.deletionError}`, `${messages.tryAgain}`, removeFile);
@@ -46,7 +48,7 @@ export const DeleteFileModal: React.FC<{ bucket: Bucket; file: BrowserObject; pa
             </div>
             <div className="mt-3 flex items-center justify-end gap-3 text-xs" >
                 <SecondaryButton
-                    action={closeModal}
+                    action={cancel}
                     text={`${messages.cancel}`}
                 />
                 <PrimaryButton

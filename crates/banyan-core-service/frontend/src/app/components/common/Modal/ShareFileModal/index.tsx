@@ -3,17 +3,21 @@ import React from 'react';
 import { PrimaryButton } from '@components/common/PrimaryButton';
 import { SecondaryButton } from '@components/common/SecondaryButton';
 
-import { useModal } from '@/app/contexts/modals';
+import { closeModal } from '@store/modals/slice';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
-import { useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@/app/store';
 
 export const ShareFileModal: React.FC<{ link: string }> = ({ link }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.shareFile);
-    const { closeModal } = useModal();
+    const dispatch = useAppDispatch();
+
+    const close = () => {
+        dispatch(closeModal());
+    };
 
     const copy = () => {
         navigator.clipboard?.writeText(link);
-        closeModal();
+        close();
         ToastNotifications.notify(`${messages.linkWasCopied}`);
     };
 
@@ -27,7 +31,7 @@ export const ShareFileModal: React.FC<{ link: string }> = ({ link }) => {
             </div>
             <div className="mt-3 flex items-center justify-end gap-3 text-xs" >
                 <SecondaryButton
-                    action={closeModal}
+                    action={close}
                     text={`${messages.cancel}`}
                 />
                 <PrimaryButton

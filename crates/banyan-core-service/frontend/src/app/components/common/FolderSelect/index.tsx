@@ -5,10 +5,10 @@ import { CreateFolderModal } from '../Modal/CreateFolderModal ';
 import { UploadFileModal } from '../Modal/UploadFileModal';
 
 import { popupClickHandler } from '@/app/utils';
-import { useModal } from '@/app/contexts/modals';
+import { openModal } from '@store/modals/slice';
 import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { useTomb } from '@/app/contexts/tomb';
-import { useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@/app/store';
 
 import { ChevronUp } from '@static/images/common';
 
@@ -21,11 +21,11 @@ export interface FolderSelectProps {
 
 export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBucket, selectedFolder, onFolderCreation }) => {
     const { buckets } = useTomb();
+    const dispatch = useAppDispatch();
     const selectRef = useRef<HTMLDivElement | null>(null);
     const [isOptionstVisible, setIsOptionsVisible] = useState(false);
     const [folder, setFolder] = useState(selectedFolder);
     const [folders, setFolders] = useState<BrowserObject[]>([]);
-    const { openModal } = useModal();
     const messages = useAppSelector(state => state.locales.messages.coponents.common.folderSelect);
 
     const toggleSelect = () => {
@@ -48,16 +48,18 @@ export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBu
     };
 
     const addNewFolder = () => {
-        const action = onFolderCreation || (() => openModal(<UploadFileModal bucket={selectedBucket} path={folder} />));
-        openModal(
-            <CreateFolderModal
-                path={folder}
-                bucket={selectedBucket!}
-                onSuccess={(path: string[]) => action(path)}
-            />
-            ,
-            () => action(folder)
-        );
+        const action = onFolderCreation || (() => dispatch(openModal({ content: <UploadFileModal bucket={selectedBucket} path={folder} /> })));
+        dispatch(openModal(
+            {
+                content: <CreateFolderModal
+                    path={folder}
+                    bucket={selectedBucket!}
+                    onSuccess={(path: string[]) => action(path)}
+                />
+                ,
+                onBack: () => action(folder)
+            }
+        ));
     };
 
     useEffect(() => {

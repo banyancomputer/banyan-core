@@ -1,20 +1,24 @@
 import React, { useEffect, useRef, useState } from 'react'
 
 
-import { useModal } from '@contexts/modals';
+import { closeModal } from '@store/modals/slice';
 import { TermsAndColditionsClient } from '@/api/termsAndConditions';
 import { User } from '@/entities/user';
-import { useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@/app/store';
 
 const termsClient = new TermsAndColditionsClient();
 
 export const TermsAndConditionsModal: React.FC<{
     terms: string, userData: User, setAreTermsAccepted: React.Dispatch<React.SetStateAction<boolean>>
 }> = ({ terms, userData, setAreTermsAccepted }) => {
+    const dispatch = useAppDispatch();
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.termsAndConditions);
-    const { closeModal } = useModal();
     const [areTermsRead, setAreTermsRead] = useState(false);
     const termsRef = useRef<HTMLDivElement | null>(null);
+
+    const close = () => {
+        dispatch(closeModal());
+    };
 
     const acceptTerms = async () => {
         const accepted_tos_at = Math.trunc(Date.now() / 1000);
@@ -22,7 +26,7 @@ export const TermsAndConditionsModal: React.FC<{
         try {
             await termsClient.confirmTermsAndConditions(userData, accepted_tos_at, userData.accountTaxClass);
             setAreTermsAccepted(true);
-            closeModal();
+            close();
         } catch (error: any) { }
     };
 

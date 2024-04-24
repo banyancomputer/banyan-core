@@ -4,26 +4,30 @@ import { PrimaryButton } from '@components/common/PrimaryButton';
 import { SecondaryButton } from '@components/common/SecondaryButton';
 
 import { Bucket } from '@/app/types/bucket';
-import { useModal } from '@/app/contexts/modals';
+import { closeModal } from '@store/modals/slice';
 import { useTomb } from '@/app/contexts/tomb';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
-import { useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@/app/store';
 
 import { Trash } from '@static/images/common';
 
 export const DeleteDriveModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
+    const dispatch = useAppDispatch();
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.deleteBucket);
-    const { closeModal } = useModal();
     const { deleteBucket } = useTomb();
+
+    const close = () => {
+        dispatch(closeModal());
+    };
 
     const removeBucket = async () => {
         try {
             await deleteBucket(bucket.id);
-            closeModal();
+            dispatch(closeModal());
             ToastNotifications.notify(`${messages.drive} "${bucket.name}" ${messages.wasDeleted}`, <Trash width="20px" height="20px" />);
         } catch (error: any) {
             ToastNotifications.error(`${messages.deletionError}`, `${messages.tryAgain}`, removeBucket);
-            closeModal();
+            dispatch(closeModal());
         };
     };
 
@@ -37,7 +41,7 @@ export const DeleteDriveModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
             </div>
             <div className="mt-3 flex items-center justify-end gap-3 text-xs" >
                 <SecondaryButton
-                    action={closeModal}
+                    action={close}
                     text={`${messages.cancel}`}
                 />
                 <PrimaryButton
