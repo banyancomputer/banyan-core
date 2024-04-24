@@ -8,7 +8,7 @@ export class MetricsClient extends APIClient {
         const response = await this.http.get(`${this.ROOT_PATH}/api/v1/metrics/current`)
 
         if (!response.ok) {
-            await this.handleError(response);
+            throw await this.handleError(response);
         }
 
         return await response.json();
@@ -18,7 +18,7 @@ export class MetricsClient extends APIClient {
         const response = await this.http.get(`${this.ROOT_PATH}/api/v1/metrics/bandwidth/daily`)
 
         if (!response.ok) {
-            await this.handleError(response);
+            throw await this.handleError(response);
         }
 
         return await response.json();
@@ -28,7 +28,7 @@ export class MetricsClient extends APIClient {
         const response = await this.http.get(`${this.ROOT_PATH}/api/v1/metrics/storage/daily`)
 
         if (!response.ok) {
-            await this.handleError(response);
+            throw await this.handleError(response);
         }
 
         return await response.json();

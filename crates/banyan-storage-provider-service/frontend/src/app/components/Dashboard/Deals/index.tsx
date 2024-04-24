@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@app/store';
-import { getAcceptedDeals, getAvailableDeals } from '@app/store/deals/actions';
+import { getAcceptedDeals, getActiveDeals } from '@app/store/deals/actions';
 import { AcceptedDeals } from './Accepted';
-import { AvailableDeals } from './Available';
+import { ActiveDeals } from './Active';
 
 
 export const Deals = () => {
     const dispatch = useAppDispatch();
-    const [dealsType, setDealsType] = useState<'available' | 'accepted'>('available');
+    const [dealsType, setDealsType] = useState<'active' | 'accepted'>('active');
 
     useEffect(() => {
         try {
@@ -15,7 +15,7 @@ export const Deals = () => {
                 dealsType === 'accepted' ?
                     await dispatch(getAcceptedDeals())
                     :
-                    await dispatch(getAvailableDeals());
+                    await dispatch(getActiveDeals());
             })()
         } catch (error: any) { }
     }, [dealsType]);
@@ -25,10 +25,10 @@ export const Deals = () => {
             <h2 className='mt-20 mb-10 text-28 text-darkText font-bold'>Deals</h2>
             <div className="mb-4 flex items-center justify-start gap-4 border-b-1 border-[#AAA] text-16 text-[#707070]">
                 <div
-                    className={`p-2 cursor-pointer ${dealsType === 'available' ? 'text-[#274D5C] font-bold border-b-1 border-[#274D5C]' : ''}`}
-                    onClick={() => setDealsType('available')}
+                    className={`p-2 cursor-pointer ${dealsType === 'active' ? 'text-[#274D5C] font-bold border-b-1 border-[#274D5C]' : ''}`}
+                    onClick={() => setDealsType('active')}
                 >
-                    Available
+                    Active
                 </div>
                 <div
                     className={`p-2 cursor-pointer ${dealsType === 'accepted' ? 'text-[#274D5C] font-bold border-b-1 border-[#274D5C]' : ''}`}
@@ -40,7 +40,7 @@ export const Deals = () => {
             {dealsType === 'accepted' ?
                 <AcceptedDeals />
                 :
-                <AvailableDeals />
+                <ActiveDeals />
             }
         </section>
     );

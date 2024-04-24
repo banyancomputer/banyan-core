@@ -8,7 +8,7 @@ use crate::app::AppState;
 
 mod accept_deal;
 mod all_deals;
-mod reject_deal;
+mod cancel_deal;
 
 pub use all_deals::DealQuery;
 
@@ -21,6 +21,6 @@ where
     Router::new()
         .route("/", get(all_deals::handler))
         .route("/:deal_id/accept", put(accept_deal::handler))
-        .route("/:deal_id/reject", put(reject_deal::handler))
+        .route("/:deal_id/cancel", put(cancel_deal::handler))
         .with_state(state)
 }

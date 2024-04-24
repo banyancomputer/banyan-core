@@ -8,7 +8,7 @@ use crate::clients::{CoreServiceClient, CoreServiceError};
 
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct DealQuery {
-    pub status: Option<String>,
+    pub state: Option<String>,
 }
 
 pub async fn handler(

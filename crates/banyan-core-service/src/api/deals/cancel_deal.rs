@@ -55,7 +55,7 @@ mod tests {
     use http::StatusCode;
     use uuid::Uuid;
 
-    use crate::api::deals::reject_deal::handler;
+    use crate::api::deals::cancel_deal::handler;
     use crate::app::mock_app_state;
     use crate::database::models::DealState;
     use crate::database::test_helpers;

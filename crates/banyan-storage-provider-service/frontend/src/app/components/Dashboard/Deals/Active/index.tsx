@@ -1,14 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@app/store';
-import { getAcceptedDeals } from '@app/store/deals/actions';
-import { convertFileSize } from '@app/utils/storage';
+import { getActiveDeals } from '@app/store/deals/actions';
+import { convertFileSize, convertToCurrency } from '@app/utils/storage';
 import { getDateLabel } from '@app/utils/time';
 import { SortCell } from '@components/common/SortCell';
-import { ActiveDealsActions } from './Actions';
+import { ActiveDealsActions, REJECTED_DEALS_LOCAL_STORAGE_KEY } from './Actions';
 
-export const AcceptedDeals = () => {
+export const ActiveDeals = () => {
     const dispatch = useAppDispatch();
-    const { acceptedDeals } = useAppSelector(state => state.deals);
+    const { activeDeals } = useAppSelector(state => {
+        let rejectedDeals = JSON.parse(localStorage.getItem(REJECTED_DEALS_LOCAL_STORAGE_KEY) || '[]');
+        let { activeDeals } = state.deals;
+        activeDeals = activeDeals.filter(deal => !rejectedDeals.includes(deal.id));
+        return { activeDeals };
+
+    });
     const [sortState, setSortState] = useState({ criteria: '', direction: 'DESC' });
 
     const sort = (criteria: string) => {
@@ -16,12 +22,14 @@ export const AcceptedDeals = () => {
     };
 
     const reloadDeals = async () => {
-        await dispatch(getAcceptedDeals());
+        await dispatch(getActiveDeals());
     };
 
 
     useEffect(() => {
-        reloadDeals();
+        (async () => {
+            await dispatch(getActiveDeals());
+        })()
     }, []);
 
     return (
@@ -50,7 +58,7 @@ export const AcceptedDeals = () => {
                           criteria=""
                           onChange={sort}
                           sortState={sortState}
-                          text="State"
+                          text="Negotiated Price"
                         />
                     </th>
                     <th className="p-3 font-medium text-12">
@@ -58,7 +66,7 @@ export const AcceptedDeals = () => {
                           criteria=""
                           onChange={sort}
                           sortState={sortState}
-                          text="Accepted At"
+                          text="Requested At"
                         />
                     </th>
                     <th className="p-3 font-medium text-12">
@@ -66,7 +74,7 @@ export const AcceptedDeals = () => {
                           criteria=""
                           onChange={sort}
                           sortState={sortState}
-                          text="Seal By"
+                          text="Accept by"
                         />
                     </th>
                     <th className="p-3 text-12 text-left font-medium">Action</th>
@@ -74,19 +82,21 @@ export const AcceptedDeals = () => {
                 </thead>
                 <tbody className="bg-secondaryBackground text-[#3B3B3B]">
                 {
-                    acceptedDeals.map(deal =>
-                      <tr className="border-b-1 border-[#DDD] transition-all hover:bg-[#FFF3E6]">
-                          <td className="p-3 text-14">{deal.id}</td>
-                          <td className="p-3 text-14">{convertFileSize(+deal.size)}</td>
-                          <td className="p-3 text-14">{deal.state}</td>
-                          <td className="p-3 text-14">{deal.accepted_at ? getDateLabel(new Date(deal.accepted_at)) : 'N/A'}</td>
-                          <td className="p-3 text-14">{deal.seal_by ? getDateLabel(new Date(deal.seal_by)) : 'N/A'}</td>
-                          <td className="p-3 text-14">
-                              <ActiveDealsActions dealId={deal.id} onDealCancelled={reloadDeals} />
-                          </td>
-                      </tr>
-                    )
-                }
+                    activeDeals.map(deal =>
+                        <tr className="border-b-1 border-[#DDD] transition-all hover:bg-[#FFF3E6]">
+                            <td className="p-3 text-14">{deal.id}</td>
+                              <td className="p-3 text-14">{convertFileSize(+deal.size)}</td>
+                              <td className="p-3 text-14">{convertToCurrency(deal.payment)}</td>
+                              <td
+                                className="p-3 text-14">{deal.requested_at ? getDateLabel(new Date(deal.requested_at)) : 'N/A'}</td>
+                              <td
+                                className="p-3 text-14">{deal.accept_by ? getDateLabel(new Date(deal.accept_by)) : 'N/A'}</td>
+                              <td className="p-3 text-14">
+                                  <ActiveDealsActions dealId={deal.id} onDealAccepted={reloadDeals} />
+                              </td>
+                          </tr>
+                        )
+                    }
                 </tbody>
             </table>
         </div>

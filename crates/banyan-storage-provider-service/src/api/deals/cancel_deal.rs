@@ -34,13 +34,13 @@ impl IntoResponse for CancelDealError {
         match self {
             CancelDealError::CoreServiceError(err) => match err {
                 CoreServiceError::RequestError(_) => {
-                    tracing::error!("Internal server error on reject deal: {err}");
+                    tracing::error!("Internal server error on cancel deal: {err}");
                     let err_msg = serde_json::json!({"msg": "Internal server error"});
                     (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
                 }
                 CoreServiceError::BadRequest(_) => {
-                    tracing::error!("Could not reject deal: {err}");
-                    let err_msg = serde_json::json!({"msg": "Could not reject deal"});
+                    tracing::error!("Could not cancel deal: {err}");
+                    let err_msg = serde_json::json!({"msg": "Could not cancel deal"});
                     (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
                 }
             },

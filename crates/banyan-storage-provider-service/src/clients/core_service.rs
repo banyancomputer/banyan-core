@@ -70,8 +70,8 @@ impl CoreServiceClient {
     pub async fn get_all_deals(&self, query: DealQuery) -> Result<Vec<ApiDeal>, CoreServiceError> {
         let mut deals_endpoint = self.platform_hostname.join("/api/v1/deals").unwrap();
 
-        if let Some(status) = query.status {
-            deals_endpoint = deals_endpoint.join(&format!("?status={}", status)).unwrap();
+        if let Some(state) = query.state {
+            deals_endpoint = deals_endpoint.join(&format!("?state={}", state)).unwrap();
         }
 
         let response = self
@@ -112,7 +112,7 @@ impl CoreServiceClient {
     pub async fn reject_deal(&self, deal_id: &str) -> Result<(), CoreServiceError> {
         let deal_endpoint = self
             .platform_hostname
-            .join(&format!("/api/v1/deals/{}/reject", deal_id))
+            .join(&format!("/api/v1/deals/{}/cancel", deal_id))
             .unwrap();
 
         let response = self
