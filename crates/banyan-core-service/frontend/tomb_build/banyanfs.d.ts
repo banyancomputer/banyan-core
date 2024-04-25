@@ -1,6 +1,8 @@
 /* tslint:disable */
 /* eslint-disable */
 /**
+* Performs first time setup to the WASM environment once this library is loaded. This primarily
+* sets up logging and reports the library version.
 */
 export function wasm_init(): void;
 /**
