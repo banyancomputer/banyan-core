@@ -2,11 +2,10 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
-use serde::Deserialize;
 
-use crate::api::models::{ApiUserKey, ApiUserKeyAccess};
+use crate::api::models::ApiUserKeyAccess;
 use crate::app::AppState;
-use crate::database::models::{Bucket, UserKey, UserKeyAccess};
+use crate::database::models::UserKeyAccess;
 use crate::extractors::UserIdentity;
 
 pub async fn handler(
@@ -14,7 +13,6 @@ pub async fn handler(
     State(state): State<AppState>,
 ) -> Result<Response, UserKeyAccessError> {
     let database = state.database();
-
     let user_id = user_identity.id().to_string();
 
     let user_key_access_states: Vec<UserKeyAccess> = sqlx::query_as!(
