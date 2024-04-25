@@ -34,6 +34,7 @@ mod subscription_status;
 mod tax_class;
 mod user;
 mod user_key;
+mod user_key_access;
 mod user_total_consumption;
 
 #[cfg(test)]
@@ -75,6 +76,7 @@ pub use subscription_status::SubscriptionStatus;
 pub use tax_class::TaxClass;
 pub use user::User;
 pub use user_key::UserKey;
+pub use user_key_access::UserKeyAccess;
 pub use user_total_consumption::UserTotalConsumption;
 
 /// Something about sqlx's type detection fails on complex queries such as the result of COALESCE

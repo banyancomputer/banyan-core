@@ -1,0 +1,44 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            SELECT \n                uk.id, \n                uk.user_id, \n                uk.pem, \n                uk.fingerprint, \n                GROUP_CONCAT(b.id) AS \"bucket_ids!: String\"\n            FROM user_keys AS uk\n            LEFT OUTER JOIN bucket_access AS ba ON ba.user_key_id = uk.id\n            LEFT OUTER JOIN buckets AS b ON b.id = ba.bucket_id\n            WHERE (\n                ba.user_key_id IS NULL\n                AND\n                uk.user_id = $1\n            ) OR (\n                b.id IN (\n                    SELECT b2.id FROM buckets AS b2\n                    JOIN bucket_access AS ba2 ON ba2.bucket_id = b2.id\n                    JOIN user_keys AS uk2 ON uk2.id = ba2.user_key_id\n                    WHERE uk2.user_id = $1\n                )\n            )\n            GROUP BY uk.id;\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "user_id",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "pem",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "fingerprint",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "bucket_ids!: String",
+        "ordinal": 4,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "a1a40342bf9601dbf0effd01489226361f49980462ebd80a7ed558148e6ed090"
+}
