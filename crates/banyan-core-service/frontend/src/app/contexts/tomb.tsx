@@ -1,5 +1,5 @@
 import React, { ReactNode, createContext, useContext, useEffect, useState } from 'react';
-import { TombWasm, WasmBucket, WasmBucketAccess } from 'tomb-wasm-experimental';
+import { TombWasm, WasmBucket, WasmBucketAccess, WasmUserKeyAccess } from 'tomb-wasm-experimental';
 import { unwrapResult } from '@reduxjs/toolkit';
 import { useNavigate } from 'react-router-dom';
 
@@ -7,6 +7,9 @@ import {
     BrowserObject, Bucket, BucketAccess,
     BucketSnapshot,
 } from '@/app/types/bucket';
+import {
+    UserKeyAccess,
+} from '@/app/types/userKeyAccess';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 import { destroyIsUserNew, getIsUserNew, prettyFingerprintApiKeyPem, sortByName, sortByType } from '@app/utils';
 import { handleNameDuplication } from '@utils/names';
@@ -21,6 +24,7 @@ import { StorageLimits, StorageUsage } from '@/entities/storage';
 interface TombInterface {
     tomb: TombWasm | null;
     buckets: Bucket[];
+    userKeyAccess: UserKeyAccess[];
     storageUsage: StorageUsage;
     storageLimits: StorageLimits;
     trash: Bucket | null;
@@ -29,6 +33,7 @@ interface TombInterface {
     getBuckets: () => Promise<void>;
     getBucketsFiles: () => Promise<void>;
     getBucketsAccess: () => Promise<void>;
+    getUserKeyAccess: () => Promise<void>;
     remountBucket: (bucket: Bucket) => Promise<void>;
     selectBucket: (bucket: Bucket | null) => void;
     getSelectedBucketFiles: (path: string[]) => void;
@@ -64,11 +69,13 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     const navigate = useNavigate();
     const [tomb, setTomb] = useState<TombWasm | null>(null);
     const [buckets, setBuckets] = useState<Bucket[]>([]);
+    const [userKeyAccess, setUserKeyAccess] = useState<UserKeyAccess[]>([]);
     const [trash, setTrash] = useState<Bucket | null>(null);
     const [selectedBucket, setSelectedBucket] = useState<Bucket | null>(null);
     const [storageUsage, setStorageUsage] = useState<StorageUsage>(new StorageUsage());
     const [storageLimits, setStorageLimits] = useState<StorageLimits>(new StorageLimits());
     const [areBucketsLoading, setAreBucketsLoading] = useState<boolean>(true);
+    const [isUserKeyAccessLoading, setIsUserKeyAccessLoading] = useState<boolean>(true);
     const folderLocation = useFolderLocation();
     const { driveAlreadyExists, folderAlreadyExists } = useAppSelector(state => state.locales.messages.contexts.tomb);
 
@@ -159,6 +166,27 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
             setAreBucketsLoading(false);
         }
     };
+
+    const getUserKeyAccess = async () => {
+        setIsUserKeyAccessLoading(true);
+        const user_key_access: UserKeyAccess[] = [];
+        const rawAccess: WasmUserKeyAccess[] = await tomb!.userKeyAccess();
+        for (let a of rawAccess) {
+            const key = a.key;
+            const bucket_ids = a.bucketIds;
+            user_key_access.push({
+                id: key.id(),
+                name: key.name(),
+                user_id: key.userId(),
+                pem: key.pem(),
+                fingerprint: key.fingerprint(),
+                api_access: key.apiAccess(),
+                bucket_ids,
+            });
+        };
+        setUserKeyAccess(user_key_access);
+        setIsUserKeyAccessLoading(false);
+    }
 
     /** Returns selected bucket state according to current folder location. */
     const getSelectedBucketFiles = async (path: string[]) => {
@@ -407,8 +435,8 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     return (
         <TombContext.Provider
             value={{
-                tomb, buckets, storageUsage, storageLimits, trash, areBucketsLoading, selectedBucket,
-                getBuckets, getBucketsFiles, getBucketsAccess, selectBucket, getSelectedBucketFiles,
+                tomb, buckets, userKeyAccess, storageUsage, storageLimits, trash, areBucketsLoading, selectedBucket,
+                getBuckets, getBucketsFiles, getBucketsAccess, getUserKeyAccess, selectBucket, getSelectedBucketFiles,
                 takeColdSnapshot, getBucketSnapshots, createDriveAndMount, deleteBucket, remountBucket,
                 getFile, renameBucket, createDirectory, uploadFile, purgeSnapshot,
                 removeBucketAccess, approveBucketAccess, createUserKey, shareFile, download, moveTo,

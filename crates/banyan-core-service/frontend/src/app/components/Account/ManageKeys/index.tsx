@@ -8,16 +8,16 @@ import { useTomb } from '@/app/contexts/tomb';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 
 const ManageKeys = () => {
-    const { buckets, areBucketsLoading, tomb, getBucketsAccess } = useTomb();
+    const { buckets, areBucketsLoading, getUserKeyAccess, userKeyAccess, tomb } = useTomb();
 
     useEffect(() => {
         if (!tomb) { return; }
 
         const getAccess = async () => {
             try {
-                await getBucketsAccess();
+                await getUserKeyAccess();
             } catch (error: any) {
-                ToastNotifications.error('Failed to get bucket access', 'Try again', getAccess)
+                ToastNotifications.error('Failed to get user key access', 'Try again', getAccess)
             }
         };
 
@@ -27,7 +27,7 @@ const ManageKeys = () => {
     return (
         <div className="flex flex-grow flex-col gap-5 p-6">
             <Fallback shouldRender={!areBucketsLoading}>
-                <KeyManagementTable buckets={buckets} />
+                <KeyManagementTable buckets={buckets} userKeyAccess={userKeyAccess} />
             </Fallback>
         </div>
     );

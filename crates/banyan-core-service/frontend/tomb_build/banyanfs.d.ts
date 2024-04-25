@@ -71,6 +71,10 @@ export class TombWasm {
 */
   createUserKey(name: string, public_pem: string): Promise<void>;
 /**
+* @returns {Promise<Array<any>>}
+*/
+  userKeyAccess(): Promise<Array<any>>;
+/**
 * @param {string} name
 * @param {string} storage_class
 * @param {string} bucket_type
@@ -334,4 +338,50 @@ export class WasmSnapshot {
 /**
 */
   readonly size: bigint;
+}
+/**
+*/
+export class WasmUserKey {
+  free(): void;
+/**
+* Key Id
+* @returns {string}
+*/
+  id(): string;
+/**
+* Name of the Key
+* @returns {string}
+*/
+  name(): string;
+/**
+* User Id of the Owner of the Key
+* @returns {string}
+*/
+  userId(): string;
+/**
+* API usability
+* @returns {boolean}
+*/
+  apiAccess(): boolean;
+/**
+* PEM
+* @returns {string}
+*/
+  pem(): string;
+/**
+* Public Key Fingerprint
+* @returns {string}
+*/
+  fingerprint(): string;
+}
+/**
+*/
+export class WasmUserKeyAccess {
+  free(): void;
+/**
+*/
+  readonly bucketIds: Array<any>;
+/**
+*/
+  readonly key: WasmUserKey;
 }

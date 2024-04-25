@@ -7,25 +7,17 @@ import { RemoveBucketAccessModal } from '@components/common/Modal/RemoveBucketAc
 import { SecondaryButton } from '@components/common/SecondaryButton';
 
 import { Bucket, BucketAccess, Bucket as IBucket } from '@/app/types/bucket';
+import { UserKeyAccess } from '@/app/types/userKeyAccess'
 import { useAppDispatch, useAppSelector } from '@/app/store';
 import { openModal } from '@store/modals/slice';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 
-export const KeyManagementTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }) => {
+export const KeyManagementTable: React.FC<{ buckets: IBucket[], userKeyAccess: UserKeyAccess[] }> = ({ buckets, userKeyAccess }) => {
     const dispatch = useAppDispatch();
     const messages = useAppSelector(state => state.locales.messages.coponents.account.manageKeys.keyManagementTable);
 
-    const approveAccess = async (bucket: Bucket, bucketAccess: BucketAccess) => {
-        dispatch(openModal({ content: <ApproveBucketAccessModal bucket={bucket} bucketAccess={bucketAccess} /> }));
-    };
-
-    const removeAccess = async (bucket: Bucket, bucketAccess: BucketAccess) => {
-        if (bucket.access.length <= 1) {
-            ToastNotifications.error('The final key cannot be disabled or removed without at least one backup.');
-            return;
-        };
-        dispatch(openModal({ content: <RemoveBucketAccessModal bucket={bucket} bucketAccess={bucketAccess} /> }));
-    };
+    console.log('hey!');
+    console.log(JSON.stringify(userKeyAccess));
 
     return (
         <div
@@ -50,38 +42,7 @@ export const KeyManagementTable: React.FC<{ buckets: IBucket[] }> = ({ buckets }
                     </tr>
                 </thead>
                 <tbody>
-                    {buckets.map(bucket =>
-                        <React.Fragment key={bucket.id}>
-                            {
-                                bucket?.access?.map(bucketAccess =>
-                                    <tr key={bucketAccess.user_key_id} className="border-b-1 border-y-border-regular">
-                                        <td className="px-6 py-12 ">
-                                            <div className="text-ellipsis overflow-hidden">
-                                                {bucketAccess.fingerprint}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-12">-</td>
-                                        <td className="px-6 py-12">{bucket.name}</td>
-                                        <td className="px-6 py-12">-</td>
-                                        <td className="px-6 py-12">
-                                            <SecondaryButton
-                                                // TODO make this language compatible
-                                                text={bucketAccess.state}
-                                                action={() => bucketAccess.state == "approved" ? removeAccess(bucket, bucketAccess) : approveAccess(bucket, bucketAccess)}
-                                            />
-                                        </td>
-                                        <td className="px-3 py-12">
-                                            {bucket.access.length >= 1 &&
-                                                <ActionsCell
-                                                    actions={<KeyActions bucket={bucket} bucketAccess={bucketAccess} />}
-                                                />
-                                            }
-                                        </td>
-                                    </tr>
-                                )
-                            }
-                        </React.Fragment>
-                    )}
+
                 </tbody>
             </table >
         </div >
