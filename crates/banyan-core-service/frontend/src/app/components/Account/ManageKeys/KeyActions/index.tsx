@@ -35,7 +35,7 @@ export const KeyActions: React.FC<{ bucket: Bucket; bucketKey: BucketKey }> = ({
     };
 
     return (
-        <div className="w-52 text-xs font-medium bg-bucket-actionsBackground rounded-md shadow-md z-10 text-bucket-actionsText overflow-hidden">
+        <div className="absolute right-5 w-52 text-xs font-medium bg-bucket-actionsBackground rounded-md shadow-md z-10 text-bucket-actionsText overflow-hidden">
             <div
                 className="flex items-center gap-2 py-3 px-4 transition-all hover:bg-hover"
                 onClick={rename}
