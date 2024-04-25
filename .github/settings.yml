@@ -34,8 +34,22 @@ branches:
       required_status_checks:
         strict: true
         contexts:
-          - "rust"
-          - "node"
+          - "ci / rust / build"
+          - "ci / rust / test"
+          - "ci / rust / format"
+          - "ci / rust / audit"
+          - "ci / node (banyan-core-service, admin_frontend) / build"
+          - "ci / node (banyan-core-service, admin_frontend) / test"
+          - "ci / node (banyan-core-service, admin_frontend) / audit"
+          - "ci / node (banyan-core-service, frontend) / build"
+          - "ci / node (banyan-core-service, frontend) / test"
+          - "ci / node (banyan-core-service, frontend) / audit"
+          - "ci / node (banyan-staging-service, admin_frontend) / build"
+          - "ci / node (banyan-staging-service, admin_frontend) / test"
+          - "ci / node (banyan-staging-service, admin_frontend) / audit"
+          - "ci / node (banyan-storage-provider-service, frontend) / build"
+          - "ci / node (banyan-storage-provider-service, frontend) / test"
+          - "ci / node (banyan-storage-provider-service, frontend) / audit"
 
       # Required to to be present due too a limitation in GitHub's GraphQL API
       restrictions: null
