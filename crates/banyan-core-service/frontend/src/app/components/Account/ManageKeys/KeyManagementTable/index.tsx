@@ -16,35 +16,13 @@ export const KeyManagementTable: React.FC<{ buckets: IBucket[], userKeyAccess: U
     const dispatch = useAppDispatch();
     const messages = useAppSelector(state => state.locales.messages.coponents.account.manageKeys.keyManagementTable);
 
-    console.log('hey!');
-    console.log(JSON.stringify(userKeyAccess));
+    const access = JSON.stringify(userKeyAccess);
+    console.log('HEY!');
+    console.log(access);
 
     return (
-        <div
-            className="max-h-[calc(100vh-300px)] flex-grow overflow-x-auto border-1 border-border-regular"
-            id="table"
-        >
-            <table className="table table-pin-rows w-full text-text-600">
-                <thead className="border-b-reg text-xxs font-normal text-text-600 border-b-1 border-border-regular">
-                    <tr className="border-b-table-cellBackground bg-table-headBackground border-none">
-                        <th className="py-3 px-6 whitespace-break-spaces text-left font-medium">{messages.key}</th>
-                        <th className="py-3 px-6 text-left font-medium whitespace-pre">
-                            {messages.device}
-                        </th>
-                        <th className="py-3 px-6 w-32 text-left font-medium">
-                            {messages.drive}
-                        </th>
-                        <th className="py-3 px-6 w-32 text-left font-medium">
-                            {messages.createdOn}
-                        </th>
-                        <th className="w-16"></th>
-                        <th className="w-10"></th>
-                    </tr>
-                </thead>
-                <tbody>
-
-                </tbody>
-            </table >
+        <div>
+            {access}
         </div >
     );
 };
