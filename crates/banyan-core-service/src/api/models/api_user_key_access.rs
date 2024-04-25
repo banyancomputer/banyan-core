@@ -1,22 +1,25 @@
 use crate::database::models::UserKeyAccess;
 use serde::{Deserialize, Serialize};
 
+use super::ApiUserKey;
+
 #[derive(Serialize, Deserialize)]
 pub struct ApiUserKeyAccess {
-    pub id: String,
-    pub user_id: String,
-    pub pem: String,
-    pub fingerprint: String,
+    pub key: ApiUserKey,
     pub bucket_ids: Vec<String>,
 }
 
 impl From<UserKeyAccess> for ApiUserKeyAccess {
     fn from(value: UserKeyAccess) -> Self {
         Self {
-            id: value.id,
-            user_id: value.user_id,
-            pem: value.pem,
-            fingerprint: value.fingerprint,
+            key: ApiUserKey {
+                id: value.id,
+                name: value.name,
+                user_id: value.user_id,
+                api_access: value.api_access,
+                pem: value.pem,
+                fingerprint: value.fingerprint,
+            },
             bucket_ids: value
                 .bucket_ids
                 .split(",")

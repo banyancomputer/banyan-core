@@ -20,7 +20,9 @@ pub async fn handler(
         r#"
             SELECT 
                 uk.id, 
+                uk.name,
                 uk.user_id, 
+                uk.api_access,
                 uk.pem, 
                 uk.fingerprint, 
                 GROUP_CONCAT(b.id) AS "bucket_ids!: String"
