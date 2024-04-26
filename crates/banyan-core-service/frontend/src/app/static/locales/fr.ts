@@ -41,6 +41,7 @@ export default {
                 }
             },
             manageKeys: {
+                addKey: "Ajouter une clé",
                 keyActions: {
                     rename: "Renommer",
                     removeKey: "Supprimer la clé",
@@ -225,6 +226,16 @@ export default {
                 uploadFailed: "Échec du téléchargement"
             },
             modal: {
+                createAccessKey:{
+                    title: "Créer une nouvelle clé d'accès",
+                    accessKeyName: "Nom de la clé d'accès",
+                    enterKeyName: "Entrez le nom de la clé d'accès",
+                    pem: "PEM",
+                    enterPem: "Entrez le PEM",
+                    cancel: "Annuler",
+                    create: "Créer",
+                    creationError: "Un problème est survenu lors de la création de la clé. Veuillez réessayer."
+                },
                 approveBucketAccess: {
                     title: "Approuver l'accès",
                     subtitle: "Êtes-vous sûr de vouloir approuver l'accès ",

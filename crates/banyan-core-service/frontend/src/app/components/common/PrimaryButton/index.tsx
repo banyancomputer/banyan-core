@@ -1,12 +1,20 @@
-import React, { useEffect } from 'react';
+import React, { ReactElement, useEffect } from 'react';
 
-export const PrimaryButton: React.FC<{ text: string; action?: () => void; disabled?: boolean; className?: string; type?: 'button' | 'reset' | 'submit' | undefined }> =
+export const PrimaryButton: React.FC<{
+    text: string;
+    action?: () => void;
+    disabled?: boolean;
+    className?: string;
+    type?: 'button' | 'reset' | 'submit' | undefined,
+    icon?: ReactElement
+}> =
     ({
         action = () => { },
         className,
         disabled = false,
         text,
         type = 'submit',
+        icon,
     }) => {
 
         useEffect(() => {
@@ -29,6 +37,7 @@ export const PrimaryButton: React.FC<{ text: string; action?: () => void; disabl
                 onClick={action}
                 className={`btn-primary py-2 px-4 ${className}`}
             >
+                {icon || null}
                 {text}
             </button>
         );

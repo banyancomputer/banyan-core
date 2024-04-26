@@ -5,10 +5,11 @@ import { SecondaryButton } from '@components/common/SecondaryButton';
 
 import { closeModal } from '@store/modals/slice';
 import { useTomb } from '@/app/contexts/tomb';
-import { Bucket, BucketAccess } from '@/app/types/bucket';
+import { Bucket } from '@/app/types/bucket';
 import { useAppDispatch, useAppSelector } from '@/app/store';
+import { UserAccessKey } from '@/app/types/userAccessKeys';
 
-export const RemoveBucketAccessModal: React.FC<{ bucket: Bucket; bucketAccess: BucketAccess }> = ({ bucket, bucketAccess }) => {
+export const RemoveBucketAccessModal: React.FC<{ bucket: Bucket; accessKey: UserAccessKey }> = ({ bucket, accessKey }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.removeBucketAccess);
     const { removeBucketAccess } = useTomb();
     const dispatch = useAppDispatch();
@@ -19,7 +20,7 @@ export const RemoveBucketAccessModal: React.FC<{ bucket: Bucket; bucketAccess: B
 
     const removeAccess = async () => {
         try {
-            await removeBucketAccess(bucket, bucketAccess.user_key_id);
+            await removeBucketAccess(bucket, accessKey.userId);
             closeModal();
         } catch (error: any) { }
     };

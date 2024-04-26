@@ -2,6 +2,7 @@ import React from 'react';
 
 import { RenameAccessKeyModal } from '@components/common/Modal/RenameAccessKeyModal';
 
+import { Bucket } from '@app/types/bucket';
 import { openModal } from '@store/modals/slice';
 import { useAppDispatch, useAppSelector } from '@app/store';
 import { AccessKeysClient } from '@/api/accessKeys';
@@ -13,13 +14,13 @@ import { UserAccessKey } from '@/app/types/userAccessKeys';
 
 const client = new AccessKeysClient();
 
-export const KeyActions: React.FC<{ accessKey: UserAccessKey }> = ({ accessKey }) => {
+export const BucketKeyActions: React.FC<{ bucket: Bucket; accessKey: UserAccessKey }> = ({ bucket, accessKey }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.account.manageKeys.keyActions);
     const { } = useTomb();
     const dispatch = useAppDispatch();
 
     const rename = async () => {
-        dispatch(openModal({ content: <RenameAccessKeyModal accessKey={accessKey} /> }));
+        // dispatch(openModal({ content: <RenameAccessKeyModal bucket={bucket} bucketAccess={bucketAccess} /> }));
     };
 
     const remove = async () => {
@@ -27,11 +28,10 @@ export const KeyActions: React.FC<{ accessKey: UserAccessKey }> = ({ accessKey }
             ToastNotifications.error('The final key cannot be disabled or removed without at least one backup.');
             return;
         };
-        // try {
-        //     await client.deleteAccessKey(bucket.id, accessKey.userId);
-        //     await getBucketsAccess();
-        // } catch (error: any) {
-        // };
+        try {
+            await client.deleteAccessKey(bucket.id, accessKey.userId);
+        } catch (error: any) {
+        };
     };
 
     return (

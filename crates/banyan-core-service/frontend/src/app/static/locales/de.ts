@@ -41,6 +41,7 @@ export default {
                 }
             },
             manageKeys: {
+                addKey: "Schlüssel hinzufügen",
                 keyActions: {
                     rename: "Umbenennen",
                     removeKey: "Schlüssel entfernen",
@@ -225,6 +226,16 @@ export default {
                 uploadFailed: "Upload fehlgeschlagen"
             },
             modal: {
+                createAccessKey:{
+                    title: "Neuen Zugriffsschlüssel erstellen",
+                    accessKeyName: "Name des Zugriffsschlüssels",
+                    enterKeyName: "Geben Sie den Namen des Zugriffsschlüssels ein",
+                    pem: "PEM",
+                    enterPem: "PEM eingeben",
+                    cancel: "Abbrechen",
+                    create: "Erstellen",
+                    creationError: "Beim Erstellen des Schlüssels ist ein Problem aufgetreten. Bitte versuchen Sie es erneut."
+                },
                 approveBucketAccess: {
                     title: "Zugriff genehmigen",
                     subtitle: "Sind Sie sicher, dass Sie den Zugriff genehmigen möchten ",

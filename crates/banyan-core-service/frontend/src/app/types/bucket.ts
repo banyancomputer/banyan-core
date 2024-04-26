@@ -15,13 +15,6 @@ export interface BrowserObject {
     metadata: FileMetadata;
 };
 
-export interface BucketAccess {
-    user_key_id: string;
-    bucket_id: string;
-    state: string;
-    fingerprint: string;
-};
-
 export interface BucketSnapshot {
     id: string;
     bucket_id: string;
@@ -41,7 +34,6 @@ export interface Bucket {
     files: BrowserObject[];
     snapshots: BucketSnapshot[];
     isSnapshotValid: boolean;
-    access: BucketAccess[];
     locked: boolean;
 };
 

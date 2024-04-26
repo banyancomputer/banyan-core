@@ -4,19 +4,19 @@ import { unwrapResult } from '@reduxjs/toolkit';
 import { useNavigate } from 'react-router-dom';
 
 import {
-    BrowserObject, Bucket, BucketAccess,
+    BrowserObject, Bucket,
     BucketSnapshot,
 } from '@/app/types/bucket';
 import {
-    UserKeyAccess,
-} from '@/app/types/userKeyAccess';
+    UserAccessKey,
+} from '@/app/types/userAccessKeys';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
-import { destroyIsUserNew, getIsUserNew, prettyFingerprintApiKeyPem, sortByName, sortByType } from '@app/utils';
+import { destroyIsUserNew, getIsUserNew, sortByName, sortByType } from '@app/utils';
 import { handleNameDuplication } from '@utils/names';
 import { StorageUsageClient } from '@/api/storageUsage';
 import { useAppDispatch, useAppSelector } from '../store';
 import { BannerError, setError } from '@store/errors/slice';
-import { getApiKey, getEncryptionKey } from '@store/keystore/actions';
+import { getApiKey } from '@store/keystore/actions';
 import { ToastNotifications } from '@utils/toastNotifications';
 import { SnapshotsClient } from '@/api/snapshots';
 import { StorageLimits, StorageUsage } from '@/entities/storage';
@@ -24,16 +24,16 @@ import { StorageLimits, StorageUsage } from '@/entities/storage';
 interface TombInterface {
     tomb: TombWasm | null;
     buckets: Bucket[];
-    userKeyAccess: UserKeyAccess[];
+    userAccessKeys: UserAccessKey[];
     storageUsage: StorageUsage;
     storageLimits: StorageLimits;
     trash: Bucket | null;
     areBucketsLoading: boolean;
+    areAccessKeysLoading: boolean;
     selectedBucket: Bucket | null;
-    getBuckets: () => Promise<void>;
+    getBuckets: () => Promise<Bucket[]>;
     getBucketsFiles: () => Promise<void>;
-    getBucketsAccess: () => Promise<void>;
-    getUserKeyAccess: () => Promise<void>;
+    getUserAccessKeys: () => Promise<void>;
     remountBucket: (bucket: Bucket) => Promise<void>;
     selectBucket: (bucket: Bucket | null) => void;
     getSelectedBucketFiles: (path: string[]) => void;
@@ -52,7 +52,7 @@ interface TombInterface {
     uploadFile: (nucket: Bucket, path: string[], name: string, file: any, folder?: BrowserObject) => Promise<void>;
     purgeSnapshot: (id: string) => void;
     deleteFile: (bucket: Bucket, path: string[], name: string) => void;
-    createUserKey: (name: string, pem: string) => Promise<void>;
+    createAccessKey: (name: string, pem: string) => Promise<void>;
     approveBucketAccess: (bucket: Bucket, userKeyId: string) => Promise<void>;
     removeBucketAccess: (bucket: Bucket, userKeyId: string) => Promise<void>;
     restore: (bucket: Bucket, snapshotId: string) => Promise<void>;
@@ -69,13 +69,13 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     const navigate = useNavigate();
     const [tomb, setTomb] = useState<TombWasm | null>(null);
     const [buckets, setBuckets] = useState<Bucket[]>([]);
-    const [userKeyAccess, setUserKeyAccess] = useState<UserKeyAccess[]>([]);
+    const [userAccessKeys, setUserAccessKeys] = useState<UserAccessKey[]>([]);
     const [trash, setTrash] = useState<Bucket | null>(null);
     const [selectedBucket, setSelectedBucket] = useState<Bucket | null>(null);
     const [storageUsage, setStorageUsage] = useState<StorageUsage>(new StorageUsage());
     const [storageLimits, setStorageLimits] = useState<StorageLimits>(new StorageLimits());
     const [areBucketsLoading, setAreBucketsLoading] = useState<boolean>(true);
-    const [isUserKeyAccessLoading, setIsUserKeyAccessLoading] = useState<boolean>(true);
+    const [areAccessKeysLoading, setAreAccessKeysLoading] = useState<boolean>(true);
     const folderLocation = useFolderLocation();
     const { driveAlreadyExists, folderAlreadyExists } = useAppSelector(state => state.locales.messages.contexts.tomb);
 
@@ -86,7 +86,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         if (getIsUserNew()) {
             createDriveAndMount("My Drive", 'hot', 'interactive');
             destroyIsUserNew();
-            return;
+            return [];
         }
         const buckets: Bucket[] = [];
         for (let bucket of wasm_buckets) {
@@ -107,13 +107,14 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
                 bucketType: bucket.bucketType(),
                 files: [],
                 snapshots,
-                access: [],
                 locked: locked || false,
                 isSnapshotValid: isSnapshotValid || false
             });
         };
 
         setBuckets(buckets);
+
+        return buckets;
     };
 
     /** Pushes files and snapshots inside of buckets list. */
@@ -142,50 +143,26 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         setBuckets(prev => prev.map(element => element.id === bucket.id ? { ...element, mount, locked, isSnapshotValid } : element));
     };
 
-    /** Pushes keys inside of buckets list. */
-    const getBucketsAccess = async () => {
-        setAreBucketsLoading(true);
-        const wasm_buckets: Bucket[] = [];
-        for (const bucket of buckets) {
-            const rawAccess: WasmBucketAccess[] = await tomb!.listBucketAccess(bucket.id);
-            console.log("ralen: " + rawAccess.length + ", " + JSON.stringify(rawAccess[0]));
-            const access: BucketAccess[] = [];
-            for (let a of rawAccess) {
-                const user_key_id = a.userKeyId;
-                const bucket_id = a.driveId;
-                const fingerprint = a.fingerprint;
-                const state = a.state;
-                access.push({ user_key_id, bucket_id, fingerprint, state });
-            };
-            wasm_buckets.push({
-                ...bucket,
-                access,
-            });
+    /** Returns list of access keys. */
+    const getUserAccessKeys = async () => {
+        setAreAccessKeysLoading(true);
+        const rawAccessKeys: WasmUserKeyAccess[] = await tomb!.userKeyAccess();
+        const buckets = await getBuckets();
+        setUserAccessKeys(rawAccessKeys.map(accessKey => {
+            const key = accessKey.key;
+            const keyBuckets = accessKey.bucketIds.map(bucketId => buckets.find(bucket => bucket.id === bucketId)!);
 
-            setBuckets(wasm_buckets);
-            setAreBucketsLoading(false);
-        }
-    };
-
-    const getUserKeyAccess = async () => {
-        setIsUserKeyAccessLoading(true);
-        const user_key_access: UserKeyAccess[] = [];
-        const rawAccess: WasmUserKeyAccess[] = await tomb!.userKeyAccess();
-        for (let a of rawAccess) {
-            const key = a.key;
-            const bucket_ids = a.bucketIds;
-            user_key_access.push({
+            return {
                 id: key.id(),
                 name: key.name(),
-                user_id: key.userId(),
+                userId: key.userId(),
                 pem: key.pem(),
                 fingerprint: key.fingerprint(),
-                api_access: key.apiAccess(),
-                bucket_ids,
-            });
-        };
-        setUserKeyAccess(user_key_access);
-        setIsUserKeyAccessLoading(false);
+                apiAccess: key.apiAccess(),
+                buckets: keyBuckets ,
+            }
+        }));
+        setAreAccessKeysLoading(false);
     }
 
     /** Returns selected bucket state according to current folder location. */
@@ -272,12 +249,13 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     const getBucketSnapshots = async (id: string) => await snapshotsClient.getSnapshots(id);
 
     /** Creates a new API authenticated UserKey */
-    const createUserKey = async (name: string, pem: string) => await tomb!.createUserKey(name, pem);
+    const createAccessKey = async (name: string, pem: string) => {
+        await tomb!.createUserKey(name, pem);
+    };
 
     /** Deletes access key for bucket */
     const removeBucketAccess = async (bucket: Bucket, userKeyId: string) => {
         /** TODO:  connect removeBucketAccess method when in will be implemented.  */
-        await getBucketsAccess();
     };
 
     const purgeSnapshot = async (id: string) => {
@@ -435,11 +413,11 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     return (
         <TombContext.Provider
             value={{
-                tomb, buckets, userKeyAccess, storageUsage, storageLimits, trash, areBucketsLoading, selectedBucket,
-                getBuckets, getBucketsFiles, getBucketsAccess, getUserKeyAccess, selectBucket, getSelectedBucketFiles,
+                tomb, buckets, userAccessKeys, areAccessKeysLoading, storageUsage, storageLimits, trash, areBucketsLoading, selectedBucket,
+                getBuckets, getBucketsFiles, getUserAccessKeys, selectBucket, getSelectedBucketFiles,
                 takeColdSnapshot, getBucketSnapshots, createDriveAndMount, deleteBucket, remountBucket,
                 getFile, renameBucket, createDirectory, uploadFile, purgeSnapshot,
-                removeBucketAccess, approveBucketAccess, createUserKey, shareFile, download, moveTo,
+                removeBucketAccess, approveBucketAccess, createAccessKey, shareFile, download, moveTo,
                 restore, deleteFile, makeCopy, getExpandedFolderFiles,
             }}
         >

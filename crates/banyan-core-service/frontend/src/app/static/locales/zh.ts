@@ -41,6 +41,7 @@ export default {
                 }
             },
             manageKeys: {
+                addKey: "添加密钥",
                 keyActions: {
                     rename: "重命名",
                     removeKey: "删除密钥",
@@ -225,6 +226,16 @@ export default {
                 uploadFailed: "上传失败"
             },
             modal: {
+                createAccessKey: {
+                    title: "创建新访问密钥",
+                    accessKeyName: "访问密钥名称",
+                    enterKeyName: "输入访问密钥名称",
+                    pem: "PEM",
+                    enterPem: "输入 PEM",
+                    cancel: "取消",
+                    create: "创建",
+                    creationError: "创建密钥时出现问题。请重试。"
+                },
                 approveBucketAccess: {
                     title: "批准访问",
                     subtitle: "您确定要批准访问吗 ",

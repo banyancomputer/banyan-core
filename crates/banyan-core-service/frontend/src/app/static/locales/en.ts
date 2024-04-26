@@ -41,6 +41,7 @@ export default {
                 }
             },
             manageKeys: {
+                addKey: "Add key",
                 keyActions: {
                     rename:"Rename",
                     removeKey:"Remove key",
@@ -225,6 +226,16 @@ export default {
                 uploadFailed: "Upload failed",
             },
             modal: {
+                createAccessKey: {
+                    title: "Create new access key",
+                    accessKeyName: "Access key name",
+                    enterKeyName: "Enter access key name",
+                    pem: "PEM",
+                    enterPem: "Enter PEM",
+                    cancel: "Cancel",
+                    create: "Create",
+                    creationError: "There was an issue creating key. Please try again.",
+                },
                 approveBucketAccess: {
                     title: "Approve access",
                     subtitle: "Are you sure you want to approve access ",
