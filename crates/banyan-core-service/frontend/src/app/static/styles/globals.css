@@ -119,6 +119,12 @@ input {
     }
 }
 
+.access-keys-table {
+    th, tr {
+        border-bottom: 1px solid  var(--regular-border);
+    }
+}
+
 .Toastify__toast-container  {
     bottom: 0;
     padding: 0;

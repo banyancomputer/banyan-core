@@ -17,7 +17,7 @@ export const AccessKeyRow: React.FC<{ accessKey: UserAccessKey }> = ({ accessKey
     const approveAccess = async (accessKey: UserAccessKey) => {
         // dispatch(openModal(<ApproveBucketAccessModal accessKey={accessKey} />))
     };
-    
+
     const removeAccess = async (accessKey: UserAccessKey) => {
         // dispatch(openModal(<RemoveBucketAccessModal accessKey={accessKey} />))
     };
@@ -25,9 +25,9 @@ export const AccessKeyRow: React.FC<{ accessKey: UserAccessKey }> = ({ accessKey
     return (
         <tr className="border-b-1 border-y-border-regular">
             <td colSpan={5} className="p-0">
-                <table className="table table-fixed table-pin-rows w-full">
-                    <thead>
-                        <tr className="bg-secondaryBackground font-normal border-none">
+                <table className="access-keys-table table table-fixed table-pin-rows w-full">
+                    <thead className='text-text-900'>
+                        <tr className="bg-mainBackground font-normal border-1 border-border-regular">
                             <th className="w-32 py-3 px-6 text-left font-medium">
                                 {accessKey.name}
                             </th>

@@ -81,6 +81,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
     /** Returns list of buckets. */
     const getBuckets = async () => {
+        setAreBucketsLoading(true);
         const key = unwrapResult(await dispatch(getApiKey()));
         const wasm_buckets: WasmBucket[] = await tomb!.listBuckets();
         if (getIsUserNew()) {
@@ -114,6 +115,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
         setBuckets(buckets);
 
+        setAreBucketsLoading(false);
         return buckets;
     };
 
