@@ -15,7 +15,6 @@ on:
 jobs:
   image:
     runs-on: ubuntu-latest
-    if: github.ref_name == 'main'
     permissions:
       contents: read
       packages: write
