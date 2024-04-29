@@ -49,6 +49,9 @@ export const KeyManagementTable: React.FC<{ userAccessKeys: UserAccessKey[] }> =
                         <th className="w-1/4 py-3 px-6 text-left font-medium">
                             User Id
                         </th>
+                        <th className="w-1/4 py-3 px-6 text-left font-medium">
+                            Created At
+                        </th>
                         <th className="w-40"></th>
                     </tr>
                 </thead>
