@@ -147,19 +147,10 @@ mod tests {
     use super::*;
     use crate::api::buckets::create_bucket::CreateBucketRequest;
     use crate::app::mock_app_state;
+    use crate::database::models::BucketAccess;
     use crate::database::test_helpers::{get_or_create_identity, sample_user, setup_database};
     use crate::database::DatabaseConnection;
     use crate::utils::tests::deserialize_response;
-    impl UserKey {
-        pub async fn find_by_id(
-            conn: &mut DatabaseConnection,
-            id: &str,
-        ) -> Result<UserKey, sqlx::Error> {
-            sqlx::query_as!(UserKey, "SELECT * FROM user_keys WHERE id = $1;", id)
-                .fetch_one(conn)
-                .await
-        }
-    }
 
     #[tokio::test]
     async fn test_create_bucket() {
@@ -169,16 +160,16 @@ mod tests {
         let user_id = sample_user(&mut conn, "test@example.com").await;
         let key_pair = ES384KeyPair::generate();
         let api_id = get_or_create_identity(&mut conn, &user_id).await;
+        let fingerprint = api_id.key_fingerprint().to_string();
 
         let new_config = CreateBucketRequest {
             name: "new_name".to_string(),
             bucket_type: BucketType::Backup,
             storage_class: StorageClass::Hot,
-            fingerprint: api_id.key_fingerprint().to_string(),
+            fingerprint: fingerprint.clone(),
         };
 
         let result = handler(api_id, mock_app_state(db.clone()), Json(new_config.clone())).await;
-
         assert!(result.is_ok());
         let response = result.unwrap();
         let status = response.status();
@@ -186,22 +177,21 @@ mod tests {
         let bucket_in_db = Bucket::find_by_id(&mut conn, &bucket_response.id)
             .await
             .unwrap();
-        /*
 
-        let bucket_key = UserKey::find_by_id(&mut conn, &bucket_response.initial_bucket_key.id)
+        let user_key = UserKey::by_fingerprint(&mut conn, &fingerprint)
             .await
             .unwrap();
+        let state = BucketAccess::by_fingerprint(&mut conn, &fingerprint)
+            .await
+            .unwrap()
+            .state;
+
         assert_eq!(status, StatusCode::OK);
         assert_eq!(bucket_response.id, bucket_in_db.id);
         assert_eq!(user_id, bucket_in_db.user_id);
         assert_eq!(bucket_response.r#type, bucket_in_db.r#type);
         assert_eq!(bucket_response.storage_class, bucket_in_db.storage_class);
-        assert_eq!(bucket_key.id, bucket_response.initial_bucket_key.id);
-        assert_eq!(
-            bucket_key.fingerprint,
-            bucket_response.initial_bucket_key.fingerprint
-        );
-        //assert_eq!(bucket_key.state, bucket_response.initial_bucket_key.state);
-        */
+        assert_eq!(user_key.fingerprint, fingerprint);
+        assert_eq!(state, BucketAccessState::Approved);
     }
 }

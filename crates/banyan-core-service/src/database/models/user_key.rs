@@ -21,7 +21,6 @@ pub struct UserKey {
 
 impl UserKey {
     pub async fn by_id(conn: &mut DatabaseConnection, id: &str) -> Result<Self, sqlx::Error> {
-        tracing::info!("looking key up by id {id}");
         sqlx::query_as!(
             UserKey,
             r#"
@@ -38,7 +37,6 @@ impl UserKey {
         conn: &mut DatabaseConnection,
         fingerprint: &str,
     ) -> Result<Self, sqlx::Error> {
-        tracing::info!("looking key up by fingerprint {fingerprint}");
         sqlx::query_as!(
             UserKey,
             r#"
