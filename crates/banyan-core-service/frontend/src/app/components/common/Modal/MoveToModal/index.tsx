@@ -53,6 +53,7 @@ export const MoveToModal: React.FC<{
             close();
         } catch (error: any) {
             ToastNotifications.error(`${messages.moveToError}`, `${messages.tryAgain}`, move);
+            close();
         };
     };
 

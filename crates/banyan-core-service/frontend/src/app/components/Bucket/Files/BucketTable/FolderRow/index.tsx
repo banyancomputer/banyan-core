@@ -94,8 +94,8 @@ export const FolderRow: React.FC<{
                 ToastNotifications.notify(messages.fileWasMoved);
             } catch (error: any) {
                 ToastNotifications.error(messages.moveToError);
-            }
-        }
+            };
+        };
     };
 
     return (
@@ -105,7 +105,7 @@ export const FolderRow: React.FC<{
             onDrag={event => handleDrag(event, folder.name)}
             onDragOver={dragOverHandler}
             onDragLeave={dragLeaveHandler}
-            onDragEnd={() => handleDragEnd(setIsDragging, getExpandedFolderFiles, getSelectedBucketFiles, path, parrentFolder, bucket)}
+            onDragEnd={() => handleDragEnd(setIsDragging)}
             onDrop={handleDrop}
             ref={folderRef}
         >
