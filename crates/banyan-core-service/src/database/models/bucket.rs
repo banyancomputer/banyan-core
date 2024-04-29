@@ -541,7 +541,10 @@ struct PruneCandidate {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::database::test_helpers::*;
+    use crate::database::{
+        models::{MetadataState, SnapshotState},
+        test_helpers::*,
+    };
     use std::time::Duration;
     use time::OffsetDateTime;
 
@@ -673,7 +676,6 @@ mod tests {
         );
     }
 
-    /*
     #[tokio::test]
     async fn test_no_current_metadata_retrieval() {
         let db = setup_database().await;
@@ -1377,5 +1379,4 @@ mod tests {
         // the two blocks due to the association to the `alt_metadata_id`
         assert_eq!(pruned, 3);
     }
-    */
 }
