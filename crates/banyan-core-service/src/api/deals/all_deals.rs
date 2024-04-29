@@ -227,18 +227,17 @@ mod tests {
         deal_ids: &[String],
     ) -> Result<Vec<(String, i64)>, sqlx::Error> {
         let mut snapshot_ids = Vec::new();
-        let timestamp_offset = 1_000_000_000;
-        for _ in deal_ids {
-            for idx in 0..3 {
+        let timestamp_offset: i128 = 1_000_000_000;
+        let mut current_timestamp = OffsetDateTime::now_utc().unix_timestamp_nanos();
+        for deal_id in deal_ids {
+            for _ in 0..2 {
                 let (_, metadata_id) = test_helpers::create_user_and_associated_data(db)
                     .await
                     .expect("user and metadata");
                 let snapshot_id =
                     test_helpers::create_snapshot(db, &metadata_id, SnapshotState::Pending, None)
                         .await;
-                let adjusted_timestamp = ((OffsetDateTime::now_utc().unix_timestamp_nanos()
-                    - (timestamp_offset * idx))
-                    / timestamp_offset) as i64;
+                let adjusted_timestamp = (current_timestamp / timestamp_offset) as i64;
                 sqlx::query!(
                     r#"UPDATE snapshots SET created_at = DATETIME(?, 'unixepoch') WHERE id = ?;"#,
                     adjusted_timestamp,
@@ -247,10 +246,16 @@ mod tests {
                 .execute(&mut *db)
                 .await
                 .unwrap();
+                let segment_id =
+                    test_helpers::create_snapshot_segment(db, deal_id.to_string(), 2 * BLOCK_SIZE)
+                        .await?;
+                test_helpers::create_snapshot_segment_association(db, &snapshot_id, &segment_id)
+                    .await?;
+
                 snapshot_ids.push((snapshot_id, adjusted_timestamp));
+                current_timestamp -= timestamp_offset;
             }
         }
-
         Ok(snapshot_ids)
     }
     #[tokio::test]
