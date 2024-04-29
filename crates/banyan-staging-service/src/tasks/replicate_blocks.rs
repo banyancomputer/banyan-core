@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use async_trait::async_trait;
 use banyan_task::{CurrentTask, TaskLike};
 use rand::seq::SliceRandom;
@@ -54,22 +56,31 @@ impl TaskLike for ReplicateBlocksTask {
             .request_provider_token(&self.old_storage_host_id)
             .await?;
         let old_client =
-            StorageProviderClient::new(&self.old_storage_host_url, &provider_credentials.token);
+            StorageProviderClient::new(&self.old_storage_host_url, &provider_credentials.token)?;
 
         let provider_credentials = client
             .request_provider_token(&self.new_storage_host_id)
             .await?;
         let new_client =
-            StorageProviderClient::new(&self.new_storage_host_url, &provider_credentials.token);
+            StorageProviderClient::new(&self.new_storage_host_url, &provider_credentials.token)?;
 
-        let mut block_cids = self.block_cids.clone();
-        let located_blocks = new_client.blocks_present(block_cids.clone()).await?;
-        block_cids.retain(|block_cid| !located_blocks.contains(block_cid));
+        let replicated_blocks = new_client
+            .blocks_present(self.block_cids.as_slice())
+            .await?;
+        let replicated_blocks_set: HashSet<_> = replicated_blocks.into_iter().collect();
+        let mut non_replicated: Vec<_> = self
+            .block_cids
+            .iter()
+            .filter(|block_cid| !replicated_blocks_set.contains(*block_cid))
+            .cloned()
+            .collect();
 
         // handling the case where we failed and want to start from another block
         // so that in the end only the failing block would be left
-        block_cids.as_mut_slice().shuffle(&mut rand::thread_rng());
-        let mut blocks_iter = block_cids.into_iter().peekable();
+        non_replicated
+            .as_mut_slice()
+            .shuffle(&mut rand::thread_rng());
+        let mut blocks_iter = non_replicated.into_iter().peekable();
         while let Some(block_cid) = blocks_iter.next() {
             let fetched_block = old_client.get_block(&block_cid).await?;
 
@@ -91,7 +102,7 @@ impl TaskLike for ReplicateBlocksTask {
     }
 
     fn unique_key(&self) -> Option<String> {
-        Some(self.metadata_id.clone())
+        Some(format!("{}-{}", self.new_storage_host_id, self.metadata_id))
     }
 }
 

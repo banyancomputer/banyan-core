@@ -59,7 +59,7 @@ impl TaskLike for RedistributeDataTask {
         )?;
         let provider_credentials = client.request_provider_token(&self.new_host_id).await?;
         let storage_client =
-            StorageProviderClient::new(&self.new_host_url, &provider_credentials.token);
+            StorageProviderClient::new(&self.new_host_url, &provider_credentials.token)?;
         let upload = Uploads::get_by_metadata_id(&database, &self.metadata_id).await?;
 
         let client = Clients::find_by_upload_id(&database, &upload.id).await?;

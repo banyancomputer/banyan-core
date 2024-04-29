@@ -16,22 +16,25 @@ pub struct StorageProviderClient {
 }
 
 impl StorageProviderClient {
-    pub fn new(service_hostname: &str, service_authorization: &str) -> Self {
+    pub fn new(
+        service_hostname: &str,
+        service_authorization: &str,
+    ) -> Result<Self, StorageProviderError> {
         let mut headers = HeaderMap::new();
         headers.insert("Content-Type", HeaderValue::from_static("application/json"));
 
-        let client = Client::builder().default_headers(headers).build().unwrap();
+        let client = Client::builder().default_headers(headers).build()?;
 
-        Self {
+        Ok(Self {
             client,
             service_hostname: service_hostname.to_string(),
             service_authorization: service_authorization.to_string(),
-        }
+        })
     }
 
     pub async fn blocks_present(
         &self,
-        block_cids: Vec<String>,
+        block_cids: &[String],
     ) -> Result<Vec<String>, StorageProviderError> {
         let url = Url::parse(&self.service_hostname)
             .map_err(|_| StorageProviderError::UrlParseError)?
