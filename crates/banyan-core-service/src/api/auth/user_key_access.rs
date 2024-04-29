@@ -25,6 +25,7 @@ pub async fn handler(
                 uk.api_access,
                 uk.pem, 
                 uk.fingerprint, 
+                uk.created_at, 
                 GROUP_CONCAT(b.id) AS "bucket_ids!: String"
             FROM user_keys AS uk
             LEFT OUTER JOIN bucket_access AS ba ON ba.user_key_id = uk.id

@@ -1,3 +1,5 @@
+use time::OffsetDateTime;
+
 #[derive(sqlx::FromRow)]
 pub struct UserKeyAccess {
     pub id: String,
@@ -6,5 +8,6 @@ pub struct UserKeyAccess {
     pub api_access: bool,
     pub pem: String,
     pub fingerprint: String,
+    pub created_at: OffsetDateTime,
     pub bucket_ids: String,
 }

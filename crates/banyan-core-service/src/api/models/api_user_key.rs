@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use time::OffsetDateTime;
 
 use crate::database::models::UserKey;
 
@@ -12,6 +13,7 @@ pub struct ApiUserKey {
 
     pub pem: String,
     pub fingerprint: String,
+    pub created_at: OffsetDateTime,
 }
 
 impl From<UserKey> for ApiUserKey {
@@ -23,6 +25,7 @@ impl From<UserKey> for ApiUserKey {
             api_access: value.api_access,
             pem: value.pem,
             fingerprint: value.fingerprint,
+            created_at: value.created_at,
         }
     }
 }

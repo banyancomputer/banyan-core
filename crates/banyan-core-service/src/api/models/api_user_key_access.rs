@@ -19,6 +19,7 @@ impl From<UserKeyAccess> for ApiUserKeyAccess {
                 api_access: value.api_access,
                 pem: value.pem,
                 fingerprint: value.fingerprint,
+                created_at: value.created_at,
             },
             bucket_ids: value
                 .bucket_ids
