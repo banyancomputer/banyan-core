@@ -250,6 +250,8 @@ export default {
                     cancel: "Abbrechen",
                     create: "Erstellen",
                     creationError: "Beim Erstellen Ihres Laufwerks ist ein Problem aufgetreten. Bitte versuchen Sie es erneut.",
+                    driveCreated: "Laufwerk erstellt",
+                    viewDrive: "Laufwerk anzeigen",
                     tryAgain: "Erneut versuchen",
                 },
                 createFolder: {
@@ -259,6 +261,8 @@ export default {
                     cancel: "Abbrechen",
                     create: "Erstellen",
                     creationError: "Beim Erstellen Ihres Ordners ist ein Problem aufgetreten. Bitte versuchen Sie es erneut.",
+                    folderCreated: "Ordner erstellt",
+                    viewFolder: "Ordner anzeigen",
                     tryAgain: "Erneut versuchen",
                 },
                 deleteBucket: {
@@ -296,6 +300,9 @@ export default {
                     cancel: "Abbrechen",
                     moveTo: "Verschieben nach",
                     fileWasMoved: "Datei wurde verschoben",
+                    folderWasMoved: "Ordner wurde verschoben",
+                    viewFile: "Datei anzeigen",
+                    viewFolder: "Ordner anzeigen",
                     moveToError: "Beim Verschieben Ihrer Datei ist ein Problem aufgetreten. Bitte versuchen Sie es erneut",
                     tryAgain: "Erneut versuchen",
                 },

@@ -250,6 +250,8 @@ export default {
                     cancel: "Annuler",
                     create: "Créer",
                     creationError: "Un problème est survenu lors de la création de votre lecteur. Veuillez réessayer.",
+                    driveCreated: "Disque créé",
+                    viewDrive: "Voir le disque",
                     tryAgain: "Réessayer",
                 },
                 createFolder: {
@@ -259,6 +261,8 @@ export default {
                     cancel: "Annuler",
                     create: "Créer",
                     creationError: "Un problème est survenu lors de la création de votre dossier. Veuillez réessayer.",
+                    folderCreated: "Dossier créé",
+                    viewFolder: "Voir le dossier",
                     tryAgain: "Réessayer",
                 },
                 deleteBucket: {
@@ -296,6 +300,9 @@ export default {
                     cancel: "Annuler",
                     moveTo: "Déplacer vers",
                     fileWasMoved: "Le fichier a été déplacé",
+                    folderWasMoved: "Le dossier a été déplacé",
+                    viewFile: "Voir le fichier",
+                    viewFolder: "Voir le dossier",
                     moveToError: "Un problème est survenu lors du déplacement de votre fichier. Veuillez réessayer",
                     tryAgain: "Réessayer",
                 },

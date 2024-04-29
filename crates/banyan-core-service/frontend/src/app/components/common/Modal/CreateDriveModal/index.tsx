@@ -40,8 +40,13 @@ export const CreateDriveModal: React.FC<{ onSuccess?: (id: string) => void }> = 
                 onSuccess(bucketId);
             } else {
                 cancel();
-                navigate(`/drive/${bucketId}`);
-            }
+                ToastNotifications.notify(
+                    messages.driveCreated,
+                    null,
+                    messages.viewDrive,
+                    () => navigate(`/drive/${bucketId}`)
+                );
+            };
         } catch (error: any) {
             if (error.message !== driveAlreadyExists) {
                 ToastNotifications.error(`${messages.creationError}`, `${messages.tryAgain}`, create);

@@ -142,7 +142,7 @@ export const FolderRow: React.FC<{
                             </td>
                             <td className="px-6 py-2">{getDateLabel(+folder.metadata.modified)}</td>
                             <td className="px-6 py-2">{convertFileSize(folder.metadata.size)}</td>
-                            <td className="px-6 py-2">
+                            <td className="px-6 py-0">
                                 {
                                     bucket.bucketType === 'backup' ?
                                         null

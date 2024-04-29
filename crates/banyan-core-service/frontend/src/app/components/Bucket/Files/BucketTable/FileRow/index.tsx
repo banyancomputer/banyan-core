@@ -53,7 +53,7 @@ export const FileRow: React.FC<{
             </td>
             <td className="px-6 py-2">{getDateLabel(+file.metadata.modified)}</td>
             <td className="px-6 py-2">{convertFileSize(file.metadata.size)}</td>
-            <td className="px-6 py-2">
+            <td className="px-6 py-0">
                 <ActionsCell
                     actions={
                         <FileActions

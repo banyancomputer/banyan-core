@@ -117,7 +117,7 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                                     text={messages.fileSize}
                                 />
                             </th>
-                            <th className="px-6 py-4 text-left font-medium w-20">
+                            <th className="px-6 py-0 text-left font-medium w-20">
                                 <ActionsCell actions={<BucketActions bucket={bucket} />} />
                             </th>
                         </tr>

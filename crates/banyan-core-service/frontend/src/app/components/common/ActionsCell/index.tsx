@@ -10,18 +10,12 @@ export const ActionsCell: React.FC<{ actions: ReactElement; }> = ({ actions }) =
     const [isActionsVisible, setIsActionsVisible] = useState(false);
 
     const toggleActionsVisibility = () => {
-        const table = document.getElementById('table');
-        const tableHeight = table!.clientHeight;
-        const scrollTop = table!.scrollTop;
-        const actionsTop = actionsRef.current!.offsetTop;
+        const { y } = actionsRef.current!.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
         const actionsHeight = actionsBodyRef.current!.scrollHeight;
-
-        const actionsOverflow = tableHeight - (actionsTop + actionsHeight + actionsRef.current!.clientHeight + 50 - scrollTop);
-
-        if (actionsOverflow < 0) {
-            actionsBodyRef.current!.style.top = `${actionsOverflow}px`;
-        };
-
+        const overflow = (actionsHeight + y) - viewportHeight;
+        const top = overflow > 0 ? y - overflow : y;
+        actionsBodyRef.current!.style.top = `${top}px`;
         setIsActionsVisible(prev => !prev);
     };
 
@@ -49,14 +43,14 @@ export const ActionsCell: React.FC<{ actions: ReactElement; }> = ({ actions }) =
         table.addEventListener('scroll', listener);
 
         return () => {
-            document.removeEventListener('click', listener);
+            document.removeEventListener('scroll', listener);
         };
     }, [isActionsVisible]);
 
     return (
         <div
             id="actionsCell"
-            className="relative flex justify-end cursor-pointer"
+            className="relative flex justify-center p-4 cursor-pointer"
             ref={actionsRef}
             onClick={toggleActionsVisibility}
         >
@@ -64,10 +58,10 @@ export const ActionsCell: React.FC<{ actions: ReactElement; }> = ({ actions }) =
                 <Dots />
             </span>
             <div
-                className={`right-0 top-6 z-20 transition-none ${isActionsVisible ? 'absolute visible opacity-100' : 'fixed invisible opacity-0'}`}
+                ref={actionsBodyRef}
+                className={`fixed z-20 transition-none ${isActionsVisible ? 'visible opacity-100' : 'invisible opacity-0'}`}
             >
                 <div
-                    ref={actionsBodyRef}
                     className="relative"
                     onClick={event => {
                         event.stopPropagation();
