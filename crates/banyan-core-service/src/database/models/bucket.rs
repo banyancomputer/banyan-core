@@ -62,10 +62,11 @@ impl Bucket {
         .await
     }
 
-    pub async fn approve_user_keys(
+    pub async fn set_bucket_access_group(
         conn: &mut DatabaseConnection,
         bucket_id: &str,
         fingerprints: &[String],
+        state: BucketAccessState,
     ) -> Result<(), sqlx::Error> {
         let mut builder = QueryBuilder::new(
             r#"
@@ -74,10 +75,10 @@ impl Bucket {
             "#,
         );
         builder.push_bind(bucket_id);
-
+        builder.push(", ");
+        builder.push_bind(state);
         builder.push(
             r#"
-                , 'approved'  
                 FROM user_keys 
                 WHERE fingerprint IN (
             "#,
@@ -92,20 +93,22 @@ impl Bucket {
         Ok(())
     }
 
-    pub async fn grant_bucket_access(
+    pub async fn set_bucket_access(
         conn: &mut DatabaseConnection,
         user_key_id: &str,
         bucket_id: &str,
+        state: BucketAccessState,
     ) -> Result<BucketAccess, sqlx::Error> {
         let access = sqlx::query_as!(
             BucketAccess,
             r#"
                 INSERT OR REPLACE INTO bucket_access (user_key_id, bucket_id, state)
-                VALUES ($1, $2, 'approved')
+                VALUES ($1, $2, $3)
                 RETURNING user_key_id, bucket_id, state as 'state: BucketAccessState';
             "#,
             user_key_id,
             bucket_id,
+            state
         )
         .fetch_one(&mut *conn)
         .await?;
@@ -576,7 +579,14 @@ mod tests {
         let user_id = sample_user(&mut conn, "user@domain.tld").await;
         let bucket_id = sample_bucket(&mut conn, &user_id).await;
 
-        grant_bucket_access(&mut conn, &bucket_id, "<pubkey>", "001122", false).await;
+        set_bucket_access(
+            &mut conn,
+            &bucket_id,
+            "<pubkey>",
+            "001122",
+            BucketAccessState::Pending,
+        )
+        .await;
 
         Bucket::approve_keys_by_fingerprint(&mut conn, &bucket_id, &Vec::new())
             .await
@@ -595,10 +605,26 @@ mod tests {
         let user_id = sample_user(&mut conn, "user@domain.tld").await;
         let bucket_id = sample_bucket(&mut conn, &user_id).await;
 
-        grant_bucket_access(&mut conn, &bucket_id, "<pubkey>", "001122", false).await;
-        grant_bucket_access(&mut conn, &bucket_id, "<pubkey>", "003355", false).await;
+        set_bucket_access(
+            &mut conn,
+            &user_id,
+            &bucket_id,
+            "<pubkey>",
+            "001122",
+            BucketAccessState::Pending,
+        )
+        .await;
+        set_bucket_access(
+            &mut conn,
+            &user_id,
+            &bucket_id,
+            "<pubkey>",
+            "003355",
+            BucketAccessState::Pending,
+        )
+        .await;
 
-        Bucket::approve_keys_by_fingerprint(&mut conn, &bucket_id, &["003355".to_string()])
+        Bucket::grant_user_keys_access(&mut conn, &bucket_id, &["003355".to_string()])
             .await
             .expect("appoval success");
 
@@ -618,25 +644,21 @@ mod tests {
         let user_id = sample_user(&mut conn, "user@domain.tld").await;
         let bucket_id = sample_bucket(&mut conn, &user_id).await;
 
-        grant_bucket_access(
-            &mut conn,
-            &bucket_id,
-            "<pubkey>",
-            "001122",
-            BucketAccessState::Pending,
-        )
-        .await;
-        grant_bucket_access(&mut conn, &bucket_id, "<pubkey>", "003355", false).await;
-        grant_bucket_access(&mut conn, &bucket_id, "<pubkey>", "abcdef", false).await;
+        let fingerprints = vec![
+            String::from("001122"),
+            String::from("003355"),
+            String::from("abcdef"),
+        ];
+        create_user_key(&mut conn, &user_id, &fingerprints[0], "<fakepem>").await;
+        create_user_key(&mut conn, &user_id, &fingerprints[1], "<fakepem>").await;
+        create_user_key(&mut conn, &user_id, &fingerprints[2], "<fakepem>").await;
+        Bucket::set_bucket_access_group(&mut conn, &bucket_id, &fingerprints);
 
-        let approve_keys = vec!["001122".to_string(), "abcdef".to_string()];
-        Bucket::approve_keys_by_fingerprint(&mut conn, &bucket_id, &approve_keys)
-            .await
-            .expect("appoval success");
-
-        assert!(is_bucket_key_approved(&mut conn, &bucket_id, "001122")
-            .await
-            .unwrap());
+        assert!(
+            is_bucket_key_approved(&mut conn, &bucket_id, &fingerprints[0])
+                .await
+                .unwrap()
+        );
         assert!(!is_bucket_key_approved(&mut conn, &bucket_id, "003355")
             .await
             .unwrap());

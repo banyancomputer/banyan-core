@@ -17,8 +17,8 @@ use uuid::Uuid;
 use crate::app::AppState;
 use crate::auth::storage_ticket::StorageTicketBuilder;
 use crate::database::models::{
-    Bucket, Metadata, MetadataState, NewMetadata, NewStorageGrant, PendingExpiration, StorageHost,
-    Subscription, User, UserStorageReport,
+    Bucket, BucketAccessState, Metadata, MetadataState, NewMetadata, NewStorageGrant,
+    PendingExpiration, StorageHost, Subscription, User, UserStorageReport,
 };
 use crate::extractors::ApiIdentity;
 use crate::utils::car_buffer::CarBuffer;
@@ -110,10 +110,11 @@ pub async fn handler(
         tracing::warn!("pushed metadata specified no previous id");
     };
 
-    Bucket::approve_user_keys(
+    Bucket::set_bucket_access_group(
         &mut conn,
         &bucket_id,
         &request_data.included_key_fingerprints,
+        BucketAccessState::Approved,
     )
     .await?;
 

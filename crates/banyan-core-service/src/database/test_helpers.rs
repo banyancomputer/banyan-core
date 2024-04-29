@@ -104,10 +104,9 @@ pub(crate) async fn create_blocks(
     block_ids
 }
 
-pub(crate) async fn grant_bucket_access(
+pub(crate) async fn create_user_key(
     conn: &mut DatabaseConnection,
     user_id: &str,
-    bucket_id: &str,
     fingerprint: &str,
     pem: &str,
 ) -> String {
@@ -124,18 +123,6 @@ pub(crate) async fn grant_bucket_access(
     .fetch_one(&mut *conn)
     .await
     .expect("user key creation");
-
-    sqlx::query_scalar!(
-        r#"
-            INSERT INTO bucket_access (bucket_id, user_key_id, state)
-            VALUES ($1, $2, 'approved');
-        "#,
-        bucket_id,
-        user_key_id,
-    )
-    .fetch_one(&mut *conn)
-    .await
-    .expect("bucket access creation");
 
     user_key_id
 }
