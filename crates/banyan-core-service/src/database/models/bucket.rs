@@ -585,7 +585,56 @@ mod tests {
 
         let user_key_ids = vec![
             create_user_key(&mut conn, &user_id, "001122", "<pubkey>").await,
-            create_user_key(&mut conn, &user_id, "003355", "<pubkey>").await,
+            create_user_key(&mut conn, &user_id, "002233", "<pubkey>").await,
+        ];
+
+        Bucket::set_bucket_access(
+            &mut conn,
+            &user_key_ids[0],
+            &bucket_id,
+            BucketAccessState::Pending,
+        )
+        .await
+        .unwrap();
+        Bucket::set_bucket_access(
+            &mut conn,
+            &user_key_ids[1],
+            &bucket_id,
+            BucketAccessState::Pending,
+        )
+        .await
+        .unwrap();
+
+        Bucket::set_bucket_access(
+            &mut conn,
+            &user_key_ids[0],
+            &bucket_id,
+            BucketAccessState::Approved,
+        )
+        .await
+        .expect("appoval success");
+
+        assert_eq!(
+            get_user_key_bucket_access(&mut conn, &bucket_id, &user_key_ids[0]).await,
+            Some(BucketAccessState::Approved)
+        );
+        assert_eq!(
+            get_user_key_bucket_access(&mut conn, &bucket_id, &user_key_ids[1]).await,
+            Some(BucketAccessState::Pending)
+        );
+    }
+
+    #[tokio::test]
+    async fn test_associated_key_multiple_approval() {
+        let db = setup_database().await;
+        let mut conn = db.begin().await.expect("connection");
+
+        let user_id = sample_user(&mut conn, "user@domain.tld").await;
+        let bucket_id = sample_bucket(&mut conn, &user_id).await;
+
+        let user_key_ids = vec![
+            create_user_key(&mut conn, &user_id, "003344", "<pubkey>").await,
+            create_user_key(&mut conn, &user_id, "004455", "<pubkey>").await,
         ];
 
         Bucket::set_bucket_access(
@@ -625,37 +674,6 @@ mod tests {
     }
 
     /*
-    #[tokio::test]
-    async fn test_associated_key_multiple_approval() {
-        let db = setup_database().await;
-        let mut conn = db.begin().await.expect("connection");
-
-        let user_id = sample_user(&mut conn, "user@domain.tld").await;
-        let bucket_id = sample_bucket(&mut conn, &user_id).await;
-
-        let fingerprints = vec![
-            String::from("001122"),
-            String::from("003355"),
-            String::from("abcdef"),
-        ];
-        create_user_key(&mut conn, &user_id, &fingerprints[0], "<fakepem>").await;
-        create_user_key(&mut conn, &user_id, &fingerprints[1], "<fakepem>").await;
-        create_user_key(&mut conn, &user_id, &fingerprints[2], "<fakepem>").await;
-        Bucket::set_bucket_access_group(&mut conn, &bucket_id, &fingerprints);
-
-        assert!(
-            is_bucket_key_approved(&mut conn, &bucket_id, &fingerprints[0])
-                .await
-                .unwrap()
-        );
-        assert!(!is_bucket_key_approved(&mut conn, &bucket_id, "003355")
-            .await
-            .unwrap());
-        assert!(is_bucket_key_approved(&mut conn, &bucket_id, "abcdef")
-            .await
-            .unwrap());
-    }
-
     #[tokio::test]
     async fn test_no_current_metadata_retrieval() {
         let db = setup_database().await;
