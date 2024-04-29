@@ -65,7 +65,7 @@ impl Bucket {
     pub async fn set_bucket_access_group(
         conn: &mut DatabaseConnection,
         bucket_id: &str,
-        fingerprints: &[String],
+        user_key_ids: &[String],
         state: BucketAccessState,
     ) -> Result<(), sqlx::Error> {
         let mut builder = QueryBuilder::new(
@@ -75,20 +75,19 @@ impl Bucket {
             "#,
         );
         builder.push_bind(bucket_id);
-        builder.push(", ");
+        builder.push(r#" AS bucket_id, "#);
         builder.push_bind(state);
         builder.push(
-            r#"
-                FROM user_keys 
-                WHERE fingerprint IN (
+            r#" AS state
+                FROM user_keys AS uk
+                WHERE uk.id IN (
             "#,
         );
-
         let mut separator = builder.separated(", ");
-        for fingerprint in fingerprints {
-            separator.push_bind(fingerprint);
+        for user_key_id in user_key_ids {
+            separator.push_bind(user_key_id);
         }
-        builder.push(");");
+        builder.push(r#");"#);
         builder.build().execute(&mut *conn).await?;
         Ok(())
     }
