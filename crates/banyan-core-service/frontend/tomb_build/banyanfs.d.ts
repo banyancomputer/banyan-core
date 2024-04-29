@@ -373,6 +373,11 @@ export class WasmUserKey {
 * @returns {string}
 */
   fingerprint(): string;
+/**
+* Created at timestamp
+* @returns {string}
+*/
+  createdAt(): string;
 }
 /**
 */

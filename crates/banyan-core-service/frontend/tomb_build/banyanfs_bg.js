@@ -276,7 +276,7 @@ function handleError(f, args) {
         wasm.__wbindgen_exn_store(addHeapObject(e));
     }
 }
-function __wbg_adapter_253(arg0, arg1, arg2, arg3) {
+function __wbg_adapter_254(arg0, arg1, arg2, arg3) {
     _assertNum(arg0);
     _assertNum(arg1);
     wasm.wasm_bindgen__convert__closures__invoke2_mut__hb26b958429064932(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
@@ -1698,6 +1698,28 @@ export class WasmUserKey {
             wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
         }
     }
+    /**
+    * Created at timestamp
+    * @returns {string}
+    */
+    createdAt() {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            _assertNum(this.__wbg_ptr);
+            wasm.wasmuserkey_createdAt(retptr, this.__wbg_ptr);
+            var r0 = getInt32Memory0()[retptr / 4 + 0];
+            var r1 = getInt32Memory0()[retptr / 4 + 1];
+            deferred1_0 = r0;
+            deferred1_1 = r1;
+            return getStringFromWasm0(r0, r1);
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+        }
+    }
 }
 
 const WasmUserKeyAccessFinalization = (typeof FinalizationRegistry === 'undefined')
@@ -2239,7 +2261,7 @@ export function __wbg_new_81740750da40724f() { return logError(function (arg0, a
             const a = state0.a;
             state0.a = 0;
             try {
-                return __wbg_adapter_253(a, state0.b, arg0, arg1);
+                return __wbg_adapter_254(a, state0.b, arg0, arg1);
             } finally {
                 state0.a = a;
             }
@@ -2390,7 +2412,7 @@ export function __wbindgen_memory() {
     return addHeapObject(ret);
 };
 
-export function __wbindgen_closure_wrapper12900() { return logError(function (arg0, arg1, arg2) {
+export function __wbindgen_closure_wrapper12904() { return logError(function (arg0, arg1, arg2) {
     const ret = makeMutClosure(arg0, arg1, 1201, __wbg_adapter_30);
     return addHeapObject(ret);
 }, arguments) };

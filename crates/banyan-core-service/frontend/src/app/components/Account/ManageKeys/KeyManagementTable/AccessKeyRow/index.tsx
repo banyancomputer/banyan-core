@@ -46,6 +46,12 @@ export const AccessKeyRow: React.FC<{ accessKey: UserAccessKey }> = ({ accessKey
                                     {accessKey.userId}
                                 </div>
                             </th>
+                            <th className="w-1/4 py-3 px-6 text-left font-medium">
+                                <div className="text-ellipsis overflow-hidden">
+                                    {accessKey.createdAt}
+                                </div>
+                            </th>
+
                             <th className="w-40 py-3 px-6 text-left font-medium">
                                 <div className="flex items-center justify-end gap-4">
                                     <SecondaryButton

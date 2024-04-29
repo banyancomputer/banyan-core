@@ -161,7 +161,8 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
                 pem: key.pem(),
                 fingerprint: key.fingerprint(),
                 apiAccess: key.apiAccess(),
-                buckets: keyBuckets ,
+                createdAt: key.createdAt(),
+                buckets: keyBuckets,
             }
         }));
         setAreAccessKeysLoading(false);

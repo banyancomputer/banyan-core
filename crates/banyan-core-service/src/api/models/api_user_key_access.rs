@@ -11,6 +11,15 @@ pub struct ApiUserKeyAccess {
 
 impl From<UserKeyAccess> for ApiUserKeyAccess {
     fn from(value: UserKeyAccess) -> Self {
+        let bucket_ids = if value.bucket_ids.is_empty() {
+            vec![]
+        } else {
+            value
+                .bucket_ids
+                .split(",")
+                .map(String::from)
+                .collect::<Vec<_>>()
+        };
         Self {
             key: ApiUserKey {
                 id: value.id,
@@ -21,11 +30,7 @@ impl From<UserKeyAccess> for ApiUserKeyAccess {
                 fingerprint: value.fingerprint,
                 created_at: value.created_at,
             },
-            bucket_ids: value
-                .bucket_ids
-                .split(",")
-                .map(String::from)
-                .collect::<Vec<_>>(),
+            bucket_ids,
         }
     }
 }

@@ -13,6 +13,7 @@ pub struct ApiUserKey {
 
     pub pem: String,
     pub fingerprint: String,
+    #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
 }
 
