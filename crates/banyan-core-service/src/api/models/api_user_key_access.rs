@@ -1,7 +1,7 @@
-use crate::database::models::UserKeyAccess;
 use serde::{Deserialize, Serialize};
 
 use super::ApiUserKey;
+use crate::database::models::UserKeyAccess;
 
 #[derive(Serialize, Deserialize)]
 pub struct ApiUserKeyAccess {

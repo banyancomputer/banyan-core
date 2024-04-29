@@ -5,14 +5,13 @@ use sqlx::sqlite::SqliteQueryResult;
 use sqlx::QueryBuilder;
 use time::OffsetDateTime;
 
+use super::UserKey;
 use crate::api::models::ApiBucketConfiguration;
 use crate::database::models::{
     BucketAccess, BucketAccessState, BucketType, MinimalBlockLocation, StorageClass,
 };
 use crate::database::{Database, DatabaseConnection, BIND_LIMIT};
 use crate::tasks::PruneBlocksTask;
-
-use super::UserKey;
 
 /// Internal representation of a "Drive", the name is a holdover from a previous design iteration
 /// that referred to these as Buckets. This type is an organization type collecting the contents
@@ -542,13 +541,13 @@ struct PruneCandidate {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::database::{
-        models::{MetadataState, SnapshotState},
-        test_helpers::*,
-    };
     use std::time::Duration;
+
     use time::OffsetDateTime;
+
+    use super::*;
+    use crate::database::models::{MetadataState, SnapshotState};
+    use crate::database::test_helpers::*;
 
     #[tokio::test]
     async fn test_associated_key_empty_approval() {
