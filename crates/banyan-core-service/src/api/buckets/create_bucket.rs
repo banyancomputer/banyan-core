@@ -167,7 +167,6 @@ mod tests {
         };
 
         let result = handler(api_id, mock_app_state(db.clone()), Json(new_config.clone())).await;
-        println!("result: {result:?}");
         assert!(result.is_ok());
         let response = result.unwrap();
         let status = response.status();
