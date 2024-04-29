@@ -578,8 +578,8 @@ pub(crate) async fn get_or_create_identity(
 
             sqlx::query_scalar!(
                 r#"
-                    INSERT INTO user_keys (name, user_id, fingerprint, pem)
-                    VALUES ('example', $1, $2, $3)
+                    INSERT INTO user_keys (name, user_id, fingerprint, pem, api_access)
+                    VALUES ('example', $1, $2, $3, true)
                     RETURNING id;
                 "#,
                 user_id,
