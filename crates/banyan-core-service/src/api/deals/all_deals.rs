@@ -60,17 +60,18 @@ pub async fn handler(
 
     // want to get the oldest snapshot for the deal
     let mut query = sqlx::QueryBuilder::new(
-        "SELECT * FROM snapshots AS s
+        "SELECT ss.deal_id, MIN(s.created_at) as created_at
+            FROM snapshots AS s
                 JOIN snapshot_segment_associations AS ssa ON ssa.snapshot_id = s.id
                 JOIN snapshot_segments AS ss  ON ssa.segment_id = ss.id
-            WHERE deal_id IN (",
+            WHERE ss.deal_id IN (",
     );
 
     let mut separated_values = query.separated(", ");
     for deal in deals.iter() {
         separated_values.push_bind(&deal.id);
     }
-    query.push(") ORDER BY s.created_at ASC LIMIT 1;");
+    query.push(") GROUP BY ss.deal_id ORDER BY s.created_at ASC;");
 
     let snapshot = query
         .build_query_as::<SnapshotCreation>()
@@ -206,10 +207,11 @@ mod tests {
         let deal_states = vec![
             DealState::Active,
             DealState::Accepted,
-            DealState::Active,
             DealState::Sealed,
             DealState::Finalized,
             DealState::Cancelled,
+            // putting it at the front so that the oldest snapshot is created for this deal
+            DealState::Active,
         ];
         let mut deal_ids = Vec::new();
         for deal_state in deal_states.into_iter() {
@@ -265,7 +267,6 @@ mod tests {
 
         let deal_ids = setup_deals(&mut conn).await.unwrap();
         let snapshot_ids = setup_snapshots(&mut conn, &deal_ids).await.unwrap();
-
         let res = handler(
             StorageProviderIdentity::default(),
             mock_app_state(db.clone()),
@@ -274,12 +275,11 @@ mod tests {
         .await;
 
         let deals: Vec<ApiAllDealsResponse> = deserialize_result(res).await;
-
         for deal in deals {
             // deals created from newest to oldest
             let oldest_snapshot = snapshot_ids
                 .iter()
-                .max_by_key(|&(_, timestamp)| timestamp)
+                .min_by_key(|&(_, timestamp)| timestamp)
                 .unwrap();
             assert_eq!(
                 deal.requested_at,
