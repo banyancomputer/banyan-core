@@ -146,7 +146,6 @@ mod tests {
     use crate::app::mock_app_state;
     use crate::database::models::BucketAccess;
     use crate::database::test_helpers::{get_or_create_identity, sample_user, setup_database};
-    use crate::database::DatabaseConnection;
     use crate::utils::tests::deserialize_response;
 
     #[tokio::test]
@@ -155,7 +154,6 @@ mod tests {
         let mut conn = db.acquire().await.expect("connection");
 
         let user_id = sample_user(&mut conn, "test@example.com").await;
-        let key_pair = ES384KeyPair::generate();
         let api_id = get_or_create_identity(&mut conn, &user_id).await;
         let fingerprint = api_id.key_fingerprint().to_string();
 

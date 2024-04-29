@@ -110,7 +110,7 @@ pub(crate) async fn create_user_key(
     fingerprint: &str,
     pem: &str,
 ) -> String {
-    let user_key_id = sqlx::query_scalar!(
+    sqlx::query_scalar!(
         r#"
             INSERT INTO user_keys (name, user_id, fingerprint, pem)
             VALUES ('Owner', $1, $2, $3)
@@ -122,9 +122,7 @@ pub(crate) async fn create_user_key(
     )
     .fetch_one(&mut *conn)
     .await
-    .expect("user key creation");
-
-    user_key_id
+    .expect("user key creation")
 }
 
 pub(crate) async fn get_user_key_bucket_access(

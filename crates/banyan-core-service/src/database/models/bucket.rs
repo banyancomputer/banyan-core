@@ -567,14 +567,9 @@ mod tests {
         .await
         .unwrap();
 
-        Bucket::set_bucket_access_group(
-            &mut conn,
-            &bucket_id,
-            &vec![],
-            BucketAccessState::Approved,
-        )
-        .await
-        .expect("appoval success");
+        Bucket::set_bucket_access_group(&mut conn, &bucket_id, &[], BucketAccessState::Approved)
+            .await
+            .expect("appoval success");
 
         assert_eq!(
             get_user_key_bucket_access(&mut conn, &bucket_id, &user_key_id).await,
@@ -590,7 +585,7 @@ mod tests {
         let user_id = sample_user(&mut conn, "user@domain.tld").await;
         let bucket_id = sample_bucket(&mut conn, &user_id).await;
 
-        let user_key_ids = vec![
+        let user_key_ids = [
             create_user_key(&mut conn, &user_id, "001122", "<pubkey>").await,
             create_user_key(&mut conn, &user_id, "002233", "<pubkey>").await,
         ];
