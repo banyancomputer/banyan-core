@@ -548,7 +548,6 @@ mod tests {
     use std::time::Duration;
     use time::OffsetDateTime;
 
-    /*
     #[tokio::test]
     async fn test_associated_key_empty_approval() {
         let db = setup_database().await;
@@ -556,27 +555,31 @@ mod tests {
 
         let user_id = sample_user(&mut conn, "user@domain.tld").await;
         let bucket_id = sample_bucket(&mut conn, &user_id).await;
+        let user_key_id = create_user_key(&mut conn, &user_id, "001122", "<pubkey>").await;
 
-        set_bucket_access(
+        Bucket::set_bucket_access(
             &mut conn,
+            &user_key_id,
             &bucket_id,
-            "<pubkey>",
-            "001122",
             BucketAccessState::Pending,
         )
-        .await;
+        .await
+        .unwrap();
 
-        Bucket::approve_keys_by_fingerprint(&mut conn, &bucket_id, &Vec::new())
-            .await
-            .expect("appoval success");
+        Bucket::set_bucket_access_group(
+            &mut conn,
+            &bucket_id,
+            &vec![],
+            BucketAccessState::Approved,
+        )
+        .await
+        .expect("appoval success");
 
-        assert!(
-            get_user_key_bucket_access(&mut conn, &bucket_id, &user_key_id)
-                .await
-                .unwrap()
+        assert_eq!(
+            get_user_key_bucket_access(&mut conn, &bucket_id, &user_key_id).await,
+            Some(BucketAccessState::Pending)
         );
     }
-    */
 
     #[tokio::test]
     async fn test_associated_key_single_approval() {
