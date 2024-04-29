@@ -20,7 +20,7 @@ export const RemoveBucketAccessModal: React.FC<{ bucket: Bucket; accessKey: User
 
     const removeAccess = async () => {
         try {
-            await removeBucketAccess(bucket, accessKey.userId);
+            await removeBucketAccess(bucket, accessKey.fingerprint);
             closeModal();
         } catch (error: any) { }
     };

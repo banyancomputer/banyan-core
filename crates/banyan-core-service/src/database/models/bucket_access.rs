@@ -28,7 +28,6 @@ impl BucketAccess {
         conn: &mut DatabaseConnection,
         fingerprint: &str,
     ) -> Result<BucketAccess, sqlx::Error> {
-        tracing::warn!("looking key up by fingerprint {fingerprint}");
         sqlx::query_as!(
             BucketAccess,
             r#"
