@@ -16,7 +16,7 @@ impl From<UserKeyAccess> for ApiUserKeyAccess {
         } else {
             value
                 .bucket_ids
-                .split(",")
+                .split(',')
                 .map(String::from)
                 .collect::<Vec<_>>()
         };

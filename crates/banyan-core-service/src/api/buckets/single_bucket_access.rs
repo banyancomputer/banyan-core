@@ -3,9 +3,9 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use uuid::Uuid;
 
-use crate::api::models::{ApiBucket, ApiBucketAccess};
+use crate::api::models::{ApiBucketAccess};
 use crate::app::AppState;
-use crate::database::models::{Bucket, BucketAccessState, BucketType, StorageClass};
+use crate::database::models::{BucketAccessState};
 use crate::extractors::UserIdentity;
 
 pub async fn handler(

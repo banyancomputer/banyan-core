@@ -69,12 +69,10 @@ pub enum UserKeyAccessError {
 
 impl IntoResponse for UserKeyAccessError {
     fn into_response(self) -> Response {
-        match &self {
-            _ => {
-                tracing::error!("a stripe webhook error occurred: {self}");
-                let err_msg = serde_json::json!({"msg": "backend service experienced an issue servicing the request"});
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
-            }
+        {
+            tracing::error!("a stripe webhook error occurred: {self}");
+            let err_msg = serde_json::json!({"msg": "backend service experienced an issue servicing the request"});
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
         }
     }
 }

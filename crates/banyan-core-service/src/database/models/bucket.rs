@@ -44,6 +44,8 @@ impl Bucket {
             .await
     }
 
+    /// I think this might come in handy later but we're not using rn
+    #[allow(dead_code)]
     pub async fn list_user_keys(
         conn: &mut DatabaseConnection,
         bucket_id: &str,

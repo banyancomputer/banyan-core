@@ -119,9 +119,6 @@ pub enum CreateBucketError {
 
     #[error("invalid bucket creation request received: {0}")]
     InvalidBucket(#[from] validify::ValidationErrors),
-
-    #[error("provided public key was not valid: {0}")]
-    InvalidPublicKey(jwt_simple::Error),
 }
 
 impl IntoResponse for CreateBucketError {
@@ -129,7 +126,7 @@ impl IntoResponse for CreateBucketError {
         use CreateBucketError as CBE;
 
         match self {
-            CBE::InvalidBucket(_) | CBE::InvalidPublicKey(_) => {
+            CBE::InvalidBucket(_) => {
                 let err_msg = serde_json::json!({"msg": "{self}"});
                 (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
             }

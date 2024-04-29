@@ -20,6 +20,8 @@ pub struct UserKey {
 }
 
 impl UserKey {
+    /// I think this might come in handy later but we're not using rn
+    #[allow(dead_code)]
     pub async fn by_id(conn: &mut DatabaseConnection, id: &str) -> Result<Self, sqlx::Error> {
         sqlx::query_as!(
             UserKey,

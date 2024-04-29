@@ -6,7 +6,7 @@ use sqlx::error::BoxDynError;
 use sqlx::sqlite::{SqliteArgumentValue, SqliteTypeInfo, SqliteValueRef};
 use sqlx::{Decode, Encode, Sqlite, Type};
 
-use crate::database::models::UserKey;
+
 use crate::database::DatabaseConnection;
 
 #[derive(sqlx::FromRow, Serialize)]

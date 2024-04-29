@@ -5,7 +5,7 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::app::AppState;
-use crate::database::models::{BucketAccess, BucketAccessState, User};
+use crate::database::models::{BucketAccess, BucketAccessState};
 use crate::extractors::UserIdentity;
 
 pub async fn handler(
@@ -14,10 +14,10 @@ pub async fn handler(
     Path(bucket_id): Path<Uuid>,
     Json(request): Json<RevokeBucketAccessRequest>,
 ) -> Result<Response, RevokeBucketAccessError> {
-    let bucket_id = bucket_id.to_string();
+    let _bucket_id = bucket_id.to_string();
     let database = state.database();
     let mut conn = database.acquire().await?;
-    let user_id = user_identity.id().to_string();
+    let _user_id = user_identity.id().to_string();
 
     let bucket_access = BucketAccess::by_fingerprint(&mut conn, &request.fingerprint).await?;
     if bucket_access.state != BucketAccessState::Approved {
