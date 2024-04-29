@@ -60,10 +60,9 @@ pub async fn handler(
 
     // want to get the oldest snapshot for the deal
     let mut query = sqlx::QueryBuilder::new(
-        "
-        SELECT * FROM snapshots AS s
-            JOIN snapshot_segment_associations AS ssa ON ssa.snapshot_id = s.id
-            JOIN snapshot_segments AS ss  ON ssa.segment_id = ss.id
+        "SELECT * FROM snapshots AS s
+                JOIN snapshot_segment_associations AS ssa ON ssa.snapshot_id = s.id
+                JOIN snapshot_segments AS ss  ON ssa.segment_id = ss.id
             WHERE deal_id IN (",
     );
 
@@ -190,11 +189,14 @@ impl ApiAllDealsResponse {
 #[cfg(test)]
 mod tests {
     use axum::extract::Query;
+    use time::OffsetDateTime;
 
-    use crate::api::deals::all_deals::{handler, ApiAllDealsResponse, DealQuery};
+    use crate::api::deals::all_deals::{
+        handler, ApiAllDealsResponse, DealQuery, PRICE_USD_PER_TB, TB_IN_BYTES,
+    };
     use crate::api::models::ApiDeal;
     use crate::app::mock_app_state;
-    use crate::database::models::{Deal, DealState};
+    use crate::database::models::{Deal, DealState, SnapshotState};
     use crate::database::{test_helpers, DatabaseConnection};
     use crate::extractors::StorageProviderIdentity;
     use crate::tasks::BLOCK_SIZE;
@@ -218,6 +220,67 @@ mod tests {
         }
 
         Ok(deal_ids)
+    }
+
+    async fn setup_snapshots(
+        db: &mut DatabaseConnection,
+        deal_ids: &[String],
+    ) -> Result<Vec<(String, i64)>, sqlx::Error> {
+        let mut snapshot_ids = Vec::new();
+        let timestamp_offset = 1_000_000_000;
+        for _ in deal_ids {
+            for idx in 0..3 {
+                let (_, metadata_id) = test_helpers::create_user_and_associated_data(db)
+                    .await
+                    .expect("user and metadata");
+                let snapshot_id =
+                    test_helpers::create_snapshot(db, &metadata_id, SnapshotState::Pending, None)
+                        .await;
+                let adjusted_timestamp = ((OffsetDateTime::now_utc().unix_timestamp_nanos()
+                    - (timestamp_offset * idx))
+                    / timestamp_offset) as i64;
+                sqlx::query!(
+                    r#"UPDATE snapshots SET created_at = DATETIME(?, 'unixepoch') WHERE id = ?;"#,
+                    adjusted_timestamp,
+                    snapshot_id,
+                )
+                .execute(&mut *db)
+                .await
+                .unwrap();
+                snapshot_ids.push((snapshot_id, adjusted_timestamp));
+            }
+        }
+
+        Ok(snapshot_ids)
+    }
+    #[tokio::test]
+    async fn test_oldest_snapshot_for_multiple_deals() {
+        let db = test_helpers::setup_database().await;
+        let mut conn = db.acquire().await.expect("connection");
+
+        let deal_ids = setup_deals(&mut conn).await.unwrap();
+        let snapshot_ids = setup_snapshots(&mut conn, &deal_ids).await.unwrap();
+
+        let res = handler(
+            StorageProviderIdentity::default(),
+            mock_app_state(db.clone()),
+            Query(DealQuery { state: None }),
+        )
+        .await;
+
+        let deals: Vec<ApiAllDealsResponse> = deserialize_result(res).await;
+
+        for deal in deals {
+            // deals created from newest to oldest
+            let oldest_snapshot = snapshot_ids
+                .iter()
+                .max_by_key(|&(_, timestamp)| timestamp)
+                .unwrap();
+            assert_eq!(
+                deal.requested_at,
+                Some(OffsetDateTime::from_unix_timestamp(oldest_snapshot.1).unwrap())
+            );
+        }
     }
 
     #[tokio::test]
@@ -263,15 +326,15 @@ mod tests {
         let payment = ApiAllDealsResponse::calculate_payment_amount(&deal);
         assert_eq!(payment, 500); // $2.5 per TB
 
-        let deal = Deal {
+        let deal_cent = Deal {
             id: "test".to_string(),
             state: DealState::Active,
-            size: 549_755_813_888, // 0.5 TB
+            size: ((TB_IN_BYTES * 0.01) / PRICE_USD_PER_TB).round() as i64,
             accepted_by: None,
             accepted_at: None,
         };
-        let payment = ApiAllDealsResponse::calculate_payment_amount(&deal);
-        assert_eq!(payment, 125); // $2.5 per TB
+        let payment = ApiAllDealsResponse::calculate_payment_amount(&deal_cent);
+        assert_eq!(payment, 1); // $0.01
 
         let deal_half_cent = Deal {
             id: "test_half_cent".to_string(),
