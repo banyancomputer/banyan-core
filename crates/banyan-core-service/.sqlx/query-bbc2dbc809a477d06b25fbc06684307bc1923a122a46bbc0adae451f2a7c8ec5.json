@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            SELECT state as \"state!: BucketAccessState\" FROM bucket_access\n            WHERE bucket_id = $1\n            AND user_key_id = $2\n\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "state!: BucketAccessState",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "bbc2dbc809a477d06b25fbc06684307bc1923a122a46bbc0adae451f2a7c8ec5"
+}

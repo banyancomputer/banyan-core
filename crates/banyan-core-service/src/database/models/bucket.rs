@@ -539,38 +539,14 @@ struct PruneCandidate {
     block_id: String,
 }
 
-/*
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use crate::database::test_helpers::*;
     use std::time::Duration;
-
     use time::OffsetDateTime;
 
-    use crate::database::models::bucket::METADATA_WRITE_LOCK_DURATION;
-    use crate::database::models::{
-        Bucket, BucketAccessState, BucketType, MetadataState, SnapshotState, StorageClass,
-    };
-    use crate::database::models::{
-        Bucket, BucketAccessState, BucketType, MetadataState, SnapshotState, StorageClass,
-    };
-    use crate::database::test_helpers::*;
-    use crate::database::DatabaseConnection;
-
-    async fn is_bucket_key_approved(
-        conn: &mut DatabaseConnection,
-        bucket_id: &str,
-        fingerprint: &str,
-    ) -> Option<bool> {
-        sqlx::query_scalar!(
-            "SELECT state FROM api_keys WHERE bucket_id = $1 AND fingerprint = $2;",
-            bucket_id,
-            fingerprint,
-        )
-        .fetch_optional(&mut *conn)
-        .await
-        .expect("query success")
-    }
-
+    /*
     #[tokio::test]
     async fn test_associated_key_empty_approval() {
         let db = setup_database().await;
@@ -592,10 +568,13 @@ mod tests {
             .await
             .expect("appoval success");
 
-        assert!(!is_bucket_key_approved(&mut conn, &bucket_id, "001122")
-            .await
-            .unwrap());
+        assert!(
+            get_user_key_bucket_access(&mut conn, &bucket_id, &user_key_id)
+                .await
+                .unwrap()
+        );
     }
+    */
 
     #[tokio::test]
     async fn test_associated_key_single_approval() {
@@ -605,37 +584,48 @@ mod tests {
         let user_id = sample_user(&mut conn, "user@domain.tld").await;
         let bucket_id = sample_bucket(&mut conn, &user_id).await;
 
-        set_bucket_access(
+        let user_key_ids = vec![
+            create_user_key(&mut conn, &user_id, "001122", "<pubkey>").await,
+            create_user_key(&mut conn, &user_id, "003355", "<pubkey>").await,
+        ];
+
+        Bucket::set_bucket_access(
             &mut conn,
-            &user_id,
+            &user_key_ids[0],
             &bucket_id,
-            "<pubkey>",
-            "001122",
             BucketAccessState::Pending,
         )
-        .await;
-        set_bucket_access(
+        .await
+        .unwrap();
+        Bucket::set_bucket_access(
             &mut conn,
-            &user_id,
+            &user_key_ids[1],
             &bucket_id,
-            "<pubkey>",
-            "003355",
             BucketAccessState::Pending,
         )
-        .await;
+        .await
+        .unwrap();
 
-        Bucket::grant_user_keys_access(&mut conn, &bucket_id, &["003355".to_string()])
-            .await
-            .expect("appoval success");
+        Bucket::set_bucket_access_group(
+            &mut conn,
+            &bucket_id,
+            &user_key_ids,
+            BucketAccessState::Approved,
+        )
+        .await
+        .expect("appoval success");
 
-        assert!(!is_bucket_key_approved(&mut conn, &bucket_id, "001122")
-            .await
-            .unwrap());
-        assert!(is_bucket_key_approved(&mut conn, &bucket_id, "003355")
-            .await
-            .unwrap());
+        assert_eq!(
+            get_user_key_bucket_access(&mut conn, &bucket_id, &user_key_ids[0]).await,
+            Some(BucketAccessState::Approved)
+        );
+        assert_eq!(
+            get_user_key_bucket_access(&mut conn, &bucket_id, &user_key_ids[1]).await,
+            Some(BucketAccessState::Approved)
+        );
     }
 
+    /*
     #[tokio::test]
     async fn test_associated_key_multiple_approval() {
         let db = setup_database().await;
@@ -1370,5 +1360,5 @@ mod tests {
         // the two blocks due to the association to the `alt_metadata_id`
         assert_eq!(pruned, 3);
     }
+    */
 }
-*/

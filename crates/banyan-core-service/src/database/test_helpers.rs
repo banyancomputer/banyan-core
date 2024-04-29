@@ -127,6 +127,26 @@ pub(crate) async fn create_user_key(
     user_key_id
 }
 
+pub(crate) async fn get_user_key_bucket_access(
+    conn: &mut DatabaseConnection,
+    bucket_id: &str,
+    user_key_id: &str,
+) -> Option<BucketAccessState> {
+    sqlx::query_scalar!(
+        r#"
+            SELECT state as "state!: BucketAccessState" FROM bucket_access
+            WHERE bucket_id = $1
+            AND user_key_id = $2
+
+        "#,
+        bucket_id,
+        user_key_id,
+    )
+    .fetch_optional(&mut *conn)
+    .await
+    .expect("query success")
+}
+
 pub(crate) async fn create_storage_hosts(
     database: &mut DatabaseConnection,
     host_url: &str,
