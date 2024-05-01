@@ -46,7 +46,7 @@ where
         // TODO: Should we place these behind a new prefix?
         // Client Storage API routes
         .route("/blocks/:block_id", get(block_retrieval::handler))
-        .route("/blocks/present", get(block_present::handler))
+        .route("/blocks/present", post(block_present::handler))
         .route("/client_grant", post(client_grant::handler))
         .route("/upload", post(upload::handler))
         .nest("/hooks", hooks::router(state.clone()))

@@ -43,7 +43,17 @@ impl TaskLike for ReplicateDataTask {
             &staging_host.name,
             Url::parse(&staging_host.url)?,
         );
-        let mut conn = db.acquire().await?;
+
+        // We are hitting a case where
+        // replicate_data task -> (open db conn) -> staging service -> core service (try to open db conn again storage_provider_identity.rs)
+        // before the task has completed, thus we try to do double db.acquire() and the connection locks
+        //
+        // Solutions:
+        // 1. Increase max_connections(2) - probably don't want to do that, since it applies to the whole service.
+        // 2. conn.acquire()/conn.close() before/after specific statements - reasonable, but when you have two nested for loops
+        // it's not that simple writing code that isn't buggy (borrow checker + closed accidentally connection + a fellow dev potentially refactoring)
+        // 3. detach() from the conn pool and let the max_connections temporarily increase to more than 1 conn.
+        let mut conn = db.acquire().await?.detach();
         let blocks_for_replication = get_blocks_for_replication(&mut conn).await?;
         let mut undistributed_blocks: HashSet<String> = blocks_for_replication
             .iter()
@@ -100,6 +110,9 @@ impl TaskLike for ReplicateDataTask {
                 .into_iter()
                 .collect();
 
+            // make sure to not allocate blocks to staging
+            already_selected_hosts.push(staging_host.id.clone());
+
             let existing_hosts: Vec<String> = grouped_blocks
                 .iter()
                 .map(|block| block.storage_host_id.clone())
@@ -113,20 +126,19 @@ impl TaskLike for ReplicateDataTask {
                 .max(metadata.expected_data_size);
 
             for _ in 0..replicas_diff {
-                let new_storage_host = match StorageHost::select_for_capacity_with_exclusion(
+                let new_storage_host = StorageHost::select_for_capacity_with_exclusion(
                     &mut conn,
                     total_size,
                     &already_selected_hosts,
                 )
                 .await
-                {
-                    Ok(host) => host,
-                    _ => {
-                        tracing::error!("not enough storage hosts for metadata {}", metadata_id);
-                        return Err(NotEnoughStorageHosts(Error::RowNotFound));
-                    }
-                };
+                .map_err(|_| {
+                    tracing::error!("not enough storage hosts for metadata {}", metadata_id);
+                    NotEnoughStorageHosts(Error::RowNotFound)
+                })?;
+
                 already_selected_hosts.push(new_storage_host.id.clone());
+
                 let authorization_grant = get_or_create_client_grant(
                     &mut conn,
                     &bucket.user_id,
@@ -139,7 +151,7 @@ impl TaskLike for ReplicateDataTask {
                 let old_host_id = existing_hosts.choose(&mut rand::thread_rng()).unwrap();
                 let old_storage_host = StorageHost::find_by_id(&mut conn, old_host_id).await?;
 
-                staging_client
+                if staging_client
                     .replicate_data(ReplicateDataRequest {
                         metadata_id: metadata_id.clone(),
                         block_cids: block_cids.clone(),
@@ -150,11 +162,15 @@ impl TaskLike for ReplicateDataTask {
                         old_host_id: old_storage_host.id.clone(),
                         old_host_url: old_storage_host.url.clone(),
                     })
-                    .await?;
+                    .await
+                    .is_err()
+                {
+                    continue;
+                }
 
-                for block_id in block_ids.iter() {
+                for block_id in &block_ids {
                     MinimalBlockLocation {
-                        block_id: (*block_id).clone(),
+                        block_id: block_id.clone(),
                         metadata_id: metadata_id.clone(),
                         storage_host_id: new_storage_host.id.clone(),
                     }

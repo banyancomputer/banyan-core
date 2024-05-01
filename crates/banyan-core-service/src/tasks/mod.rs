@@ -40,14 +40,14 @@ pub async fn start_background_workers(
         .configure_queue(QueueConfig::new("default").with_worker_count(5))
         .register_task_type::<PruneBlocksTask>()
         .register_task_type::<CreateDealsTask>()
-        .register_task_type::<RedistributeStagingDataTask>()
-        .register_task_type::<ReplicateDataTask>()
         .register_task_type::<ReportUserConsumptionTask>()
         .register_task_type::<ReportAllUsersConsumptionTask>()
         .register_task_type::<ReportStorageHostConsumptionTask>()
-        .register_task_type::<ReportAllStorageHostsConsumptionTask>()
         .register_task_type::<DeleteStagingDataTask>()
         .register_task_type::<HostCapacityTask>()
+        .register_recurring_task_type::<ReplicateDataTask>()
+        .register_recurring_task_type::<RedistributeStagingDataTask>()
+        .register_recurring_task_type::<ReportAllStorageHostsConsumptionTask>()
         .start(async move {
             let _ = shutdown_rx.changed().await;
         })

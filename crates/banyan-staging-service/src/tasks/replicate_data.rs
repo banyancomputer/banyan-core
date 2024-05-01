@@ -65,7 +65,10 @@ impl TaskLike for ReplicateDataTask {
         let new_storage_client =
             StorageProviderClient::new(&self.new_host_url, &new_provider_credentials.token)?;
 
-        let existing_client = old_storage_client.get_client(&self.metadata_id).await?;
+        // get the authorization credentials for the upload
+        let existing_client = old_storage_client
+            .get_client_for_metadata(&self.metadata_id)
+            .await?;
         let new_client = new_storage_client
             .push_client(ClientsRequest {
                 platform_id: existing_client.platform_id,
@@ -90,10 +93,10 @@ impl TaskLike for ReplicateDataTask {
             grant_id: self.new_storage_grant_id.clone(),
             block_cids: self.block_cids.clone(),
             new_upload_id: new_upload.upload_id.clone(),
-            new_storage_host_url: self.new_host_id.clone(),
-            new_storage_host_id: self.new_host_url.clone(),
-            old_storage_host_url: self.old_host_id.clone(),
-            old_storage_host_id: self.old_host_url.clone(),
+            new_storage_host_id: self.new_host_id.clone(),
+            new_storage_host_url: self.new_host_url.clone(),
+            old_storage_host_id: self.old_host_id.clone(),
+            old_storage_host_url: self.old_host_url.clone(),
         }
         .enqueue::<banyan_task::SqliteTaskStore>(&mut conn)
         .await?;

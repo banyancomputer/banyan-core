@@ -27,8 +27,7 @@ pub async fn handler(
     State(state): State<AppState>,
     Json(distribute_data): Json<DistributeData>,
 ) -> Result<Response, DistributeBlocksError> {
-    let db = state.database();
-    let mut conn = db.acquire().await?;
+    let mut conn = state.database().acquire().await?;
     let metadata_id = &distribute_data.metadata_id;
 
     let task = RedistributeDataTask {
@@ -43,8 +42,9 @@ pub async fn handler(
         return Ok((StatusCode::OK, ()).into_response());
     }
 
-    Uploads::get_by_metadata_id(&db, metadata_id).await?;
-    let blocks: Vec<Blocks> = Blocks::get_blocks_by_cid(&db, &distribute_data.block_cids).await?;
+    Uploads::get_by_metadata_id(&mut conn, metadata_id).await?;
+    let blocks: Vec<Blocks> =
+        Blocks::get_blocks_by_cid(&mut conn, &distribute_data.block_cids).await?;
 
     if blocks.len() != distribute_data.block_cids.len() {
         let block_cids: HashSet<String> = distribute_data.block_cids.into_iter().collect();

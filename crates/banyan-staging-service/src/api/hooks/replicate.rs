@@ -10,7 +10,6 @@ use crate::app::AppState;
 use crate::clients::{
     CoreServiceClient, CoreServiceError, StorageProviderClient, StorageProviderError,
 };
-use crate::database::models::Uploads;
 use crate::extractors::PlatformIdentity;
 use crate::tasks::ReplicateDataTask;
 
@@ -19,14 +18,12 @@ pub async fn handler(
     State(state): State<AppState>,
     Json(task): Json<ReplicateDataTask>,
 ) -> Result<Response, ReplicateError> {
-    let db = state.database();
-    let mut conn = db.acquire().await?;
+    let mut conn = state.database().acquire().await?;
 
     if SqliteTaskStore::is_present(&mut conn, &task).await? {
-        return Ok((StatusCode::OK, ()).into_response());
+        return Err(ReplicateError::AlreadyProcessed);
     }
 
-    Uploads::get_by_metadata_id(&db, &task.metadata_id).await?;
     let core_client = CoreServiceClient::new(
         state.secrets().service_signing_key(),
         state.service_name(),
@@ -36,18 +33,19 @@ pub async fn handler(
     let provider_credentials = core_client
         .request_provider_token(&task.old_host_id)
         .await?;
-    let new_client = StorageProviderClient::new(&task.old_host_url, &provider_credentials.token)?;
-    let res = new_client
-        .blocks_present(task.block_cids.as_slice())
-        .await?;
+    let old_host = StorageProviderClient::new(&task.old_host_url, &provider_credentials.token)?;
+    let res = old_host.blocks_present(task.block_cids.as_slice()).await?;
     let res_set: HashSet<_> = res.into_iter().collect();
     let missing_blocks: Vec<_> = task
         .block_cids
         .iter()
         .filter(|i| !res_set.contains(*i))
+        .map(|s| s.as_str())
         .collect();
     if !missing_blocks.is_empty() {
-        return Ok((StatusCode::BAD_REQUEST, Json(missing_blocks)).into_response());
+        return Err(ReplicateError::MissingBlocksError(
+            missing_blocks.join(", "),
+        ));
     }
 
     task.enqueue::<SqliteTaskStore>(&mut conn).await?;
@@ -65,6 +63,10 @@ pub enum ReplicateError {
     CoreServiceError(#[from] CoreServiceError),
     #[error("staging service error: {0}")]
     StagingServiceError(#[from] StorageProviderError),
+    #[error("missing blocks on old host: {0}")]
+    MissingBlocksError(String),
+    #[error("already scheduled")]
+    AlreadyProcessed,
 }
 
 impl IntoResponse for ReplicateError {
@@ -80,12 +82,11 @@ impl IntoResponse for ReplicateError {
                 let err_msg = serde_json::json!({ "msg": "upload not found" });
                 (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
             }
-            ReplicateError::CoreServiceError(e) => {
-                let err_msg = serde_json::json!({ "msg": format!("could not connect to core service error {e}") });
-                (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
-            }
-            ReplicateError::StagingServiceError(e) => {
-                let err_msg = serde_json::json!({ "msg": format!("could not connect to storage provider error {e}") });
+            ReplicateError::StagingServiceError(_)
+            | ReplicateError::CoreServiceError(_)
+            | ReplicateError::AlreadyProcessed
+            | ReplicateError::MissingBlocksError(_) => {
+                let err_msg = serde_json::json!({ "msg": format!("{self}") });
                 (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
             }
         }

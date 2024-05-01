@@ -14,17 +14,16 @@ pub async fn handler(
     State(state): State<AppState>,
     Path(storage_host_id): Path<String>,
 ) -> Result<Response, ProviderGrantError> {
-    let database = state.database();
+    let mut conn = state
+        .database()
+        .acquire()
+        .await
+        .map_err(ProviderGrantError::LookupFailed)?;
     let service_key = state.secrets().service_key();
 
     if !storage_provider.staging {
         return Err(ProviderGrantError::Unauthorized);
     }
-
-    let mut conn = database
-        .acquire()
-        .await
-        .map_err(ProviderGrantError::LookupFailed)?;
     let request_host = StorageHost::find_by_id(&mut conn, storage_host_id.as_str())
         .await
         .map_err(ProviderGrantError::LookupFailed)?;

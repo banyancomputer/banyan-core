@@ -52,7 +52,7 @@ pub async fn handler(
 
     let block_ids = Blocks::get_ids_by_cids(&mut transaction, &request.normalized_cids).await?;
     if block_ids.len() != request.normalized_cids.len() {
-        return Err(CompleteRedistributionError::UpdateFailed(format!(
+        return Err(CompleteRedistributionError::MissingBlocks(format!(
             "not enough blocks found {} for cids {} for metadata {} from host {} to host {}",
             block_ids.len(),
             request.normalized_cids.len(),
@@ -75,7 +75,8 @@ pub async fn handler(
     // deleting more blocks is fine, since (although rare) there are cases of block duplication
     // between uploads (thus between metadata_ids). Those duplicated blocks will not be
     // added to the blocks table, but they will be added to the block_locations table
-    if deleted_blocks < block_ids.len() as u64 {
+    // when it's a replication there is nothing to delete from the staging host
+    if !request.replication && deleted_blocks < block_ids.len() as u64 {
         return Err(CompleteRedistributionError::UpdateFailed(format!(
             "deleted {} vs cids {} for metadata {} from host {}",
             deleted_blocks,
@@ -86,7 +87,8 @@ pub async fn handler(
     }
 
     let updated_blocks =
-        MinimalBlockLocation::update_stored_at(&mut transaction, &block_ids).await?;
+        MinimalBlockLocation::update_stored_at(&mut transaction, &block_ids, &new_storage_host_id)
+            .await?;
     if updated_blocks
         .iter()
         .map(|r| r.rows_affected())
@@ -94,7 +96,7 @@ pub async fn handler(
         != block_ids.len() as u64
     {
         return Err(CompleteRedistributionError::UpdateFailed(format!(
-            "updated {} vs cids {} for metadata {} from host {}",
+            "updated {} vs passed cids {} for metadata {} from host {}",
             updated_blocks
                 .iter()
                 .map(|r| r.rows_affected())
@@ -132,6 +134,9 @@ pub async fn handler(
 pub enum CompleteRedistributionError {
     #[error("failed to register storage grant as redeemed: {0}")]
     RedeemFailed(sqlx::Error),
+
+    #[error("missing blocks from record: {0}")]
+    MissingBlocks(String),
 
     #[error("failed to update the database correctly: {0}")]
     UpdateFailed(String),
@@ -331,7 +336,7 @@ mod tests {
 
         assert!(res.is_err());
         assert_eq!(res.unwrap_err().to_string(), format!(
-            "failed to update the database correctly: not enough blocks found {} for cids {} for metadata {} from host {} to host {}",
+            "missing blocks from record: not enough blocks found {} for cids {} for metadata {} from host {} to host {}",
             0,
             1,
             metadata_id,

@@ -43,7 +43,7 @@ impl StorageProviderClient {
 
         let response = self
             .client
-            .get(url)
+            .post(url)
             .bearer_auth(&self.service_authorization)
             .body(serde_json::json!(block_cids).to_string())
             .send()
@@ -107,13 +107,13 @@ impl StorageProviderClient {
             .map_err(|_| StorageProviderError::ResponseParseError)
     }
 
-    pub async fn get_client(
+    pub async fn get_client_for_metadata(
         &self,
         metadata_id: &str,
     ) -> Result<ExistingClientResponse, StorageProviderError> {
         let full_url = Url::parse(&self.service_hostname)
             .map_err(|_| StorageProviderError::UrlParseError)?
-            .join(&format!("/api/v1/hooks/clients/{}", metadata_id))
+            .join(&format!("/api/v1/hooks/metadata/{}/clients", metadata_id))
             .map_err(|_| StorageProviderError::UrlJoinError)?;
 
         let response = self
@@ -133,13 +133,13 @@ impl StorageProviderClient {
             .map_err(|_| StorageProviderError::ResponseParseError)
     }
 
-    pub async fn get_upload(
+    pub async fn get_upload_for_metadata(
         &self,
         metadata_id: &str,
     ) -> Result<NewUploadResponse, StorageProviderError> {
         let full_url = Url::parse(&self.service_hostname)
             .map_err(|_| StorageProviderError::UrlParseError)?
-            .join(&format!("/api/v1/hooks/uploads/{}", metadata_id))
+            .join(&format!("/api/v1/hooks/metadata/{}/uploads", metadata_id))
             .map_err(|_| StorageProviderError::UrlJoinError)?;
 
         let response = self
