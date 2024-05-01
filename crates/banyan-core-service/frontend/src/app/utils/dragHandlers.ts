@@ -24,21 +24,12 @@ export const handleDrag = (event: React.DragEvent<HTMLDivElement>, name: string)
     if(element) {
         element.style.top = `${event?.clientY}px`;
         element.style.left = `${event?.clientX}px`;
-    }
+    };
 };
 
 /** Sets dragging state to false, ,which will hide drag preview. */
 export const handleDragEnd = async(
     setIsDragging: React.Dispatch<React.SetStateAction<boolean>>,
-    updateFolderState: (path: string[], folder: BrowserObject, bucket: Bucket) => void,
-    updateBucketState: (path: string[]) => void,
-    path: string[],
-    folder: BrowserObject | undefined,
-    bucket: Bucket
 ) => {
     setIsDragging(false);
-    folder?
-        await updateFolderState(path, folder, bucket)
-        :
-        await updateBucketState(path);
 };

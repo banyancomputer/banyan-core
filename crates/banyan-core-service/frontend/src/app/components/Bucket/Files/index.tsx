@@ -1,5 +1,3 @@
-import React from 'react';
-
 import { BucketTable } from '@components/Bucket/Files/BucketTable';
 import { Fallback } from '@components/common/Fallback';
 import BucketHeader from '@components/Bucket/Files/Header';

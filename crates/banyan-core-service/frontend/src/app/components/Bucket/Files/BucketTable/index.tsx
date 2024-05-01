@@ -21,12 +21,10 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const bucketId = params.id;
     const messages = useAppSelector(state => state.locales.messages.coponents.bucket.files.bucketTable);
     const { uploadFiles } = useFilesUpload();
-    const { getSelectedBucketFiles, moveTo } = useTomb();
-    /** Created to prevent sotring logic affect initial buckets array */
-    const [bucketCopy, setBucketCopy] = useState(bucket);
+    const { getSelectedBucketFiles, moveTo, selectBucket } = useTomb();
     const [sortState, setSortState] = useState<{ criteria: string; direction: 'ASC' | 'DESC' | '' }>({ criteria: 'name', direction: 'DESC' });
     const folderLocation = useFolderLocation();
-    const siblingFiles = useMemo(() => bucketCopy.files?.filter(file => file.type !== 'dir'), [bucketCopy.files]);
+    const siblingFiles = useMemo(() => bucket.files?.filter(file => file.type !== 'dir'), [bucket.files]);
 
     const sort = (criteria: string) => {
         setSortState(prev => ({ criteria, direction: prev.direction === 'ASC' ? 'DESC' : 'ASC' }));
@@ -49,34 +47,26 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         if (dragData) {
             try {
 
-                const droppedItem: { item: BrowserObject; path: string[] } = JSON.parse(dragData);
+                const droppedItem: { name: string; path: string[] } = JSON.parse(dragData);
 
                 if (!droppedItem.path.length) { return; }
 
-                await moveTo(bucket, [...droppedItem.path, droppedItem.item.name], [], droppedItem.item.name);
+                await moveTo(bucket, [...droppedItem.path, droppedItem.name], [], droppedItem.name);
                 ToastNotifications.notify(messages.fileWasMoved);
                 await getSelectedBucketFiles([]);
             } catch (error: any) {
                 ToastNotifications.error(messages.moveToError, messages.tryAgain, () => handleDrop(event));
             };
-        }
+        };
     };
 
     useEffect(() => {
         if (!bucket.files) { return; }
-        setBucketCopy(bucket => ({
+        selectBucket({
             ...bucket,
             files: [...bucket.files].sort((prev: BrowserObject, next: BrowserObject) => sortFiles(prev, next, sortState.criteria, sortState.direction !== 'ASC')).sort(sortByType),
-        }));
+        });
     }, [sortState.criteria, sortState.direction, bucket]);
-
-    useEffect(() => {
-        setSortState(prev => ({ ...prev }));
-    }, [bucketCopy]);
-
-    useEffect(() => {
-        setBucketCopy(bucket);
-    }, [bucket]);
 
     useEffect(() => {
         setSortState({ criteria: 'name', direction: 'DESC' });
@@ -124,7 +114,7 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                     </thead>
                     <tbody>
                         {
-                            bucketCopy.files.map(file =>
+                            bucket.files.map(file =>
                                 file.type === 'dir' ?
                                     <FolderRow
                                         bucket={bucket}

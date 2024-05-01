@@ -81,16 +81,13 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 			createDriveAndMount("My Drive", 'hot', 'interactive');
 			destroyIsUserNew();
 			return;
-		}
+		};
 		const buckets: Bucket[] = [];
 		for (let bucket of wasm_buckets) {
-			let mount;
-			let locked;
-			let isSnapshotValid;
 			const snapshots = await snapshotsClient.getSnapshots(bucket.id());
-			mount = await tomb!.mount(bucket.id(), key.privatePem);
-			locked = await mount.locked();
-			isSnapshotValid = await mount.hasSnapshot();
+			let mount = await tomb!.mount(bucket.id(), key.privatePem);
+			let locked = await mount.locked();
+			let isSnapshotValid = await mount.hasSnapshot();
 			buckets.push({
 				mount: mount || null,
 				id: bucket.id(),
@@ -237,7 +234,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 		// await tomb.purgeSnapshot(id);
 	};
 
-	/** Renames bucket */
+	/** Renames files  */
 	const moveTo = async (bucket: Bucket, from: string[], to: string[], name: string) => {
 		const mount = bucket.mount!;
 		const extstingFiles = (await mount.ls(to)).map(file => file.name);
