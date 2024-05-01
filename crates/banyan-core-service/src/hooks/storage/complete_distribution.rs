@@ -62,28 +62,30 @@ pub async fn handler(
         )));
     }
 
-    let deleted_blocks: u64 = MinimalBlockLocation::delete_blocks_for_host(
-        &mut transaction,
-        &block_ids,
-        &staging_host.id,
-    )
-    .await?
-    .iter()
-    .map(|r| r.rows_affected())
-    .sum();
+    if !request.replication {
+        let deleted_blocks: u64 = MinimalBlockLocation::delete_blocks_for_host(
+            &mut transaction,
+            &block_ids,
+            &staging_host.id,
+        )
+        .await?
+        .iter()
+        .map(|r| r.rows_affected())
+        .sum();
 
-    // deleting more blocks is fine, since (although rare) there are cases of block duplication
-    // between uploads (thus between metadata_ids). Those duplicated blocks will not be
-    // added to the blocks table, but they will be added to the block_locations table
-    // when it's a replication there is nothing to delete from the staging host
-    if !request.replication && deleted_blocks < block_ids.len() as u64 {
-        return Err(CompleteRedistributionError::UpdateFailed(format!(
-            "deleted {} vs cids {} for metadata {} from host {}",
-            deleted_blocks,
-            block_ids.len(),
-            metadata_id,
-            staging_host.id,
-        )));
+        // deleting more blocks is fine, since (although rare) there are cases of block duplication
+        // between uploads (thus between metadata_ids). Those duplicated blocks will not be
+        // added to the blocks table, but they will be added to the block_locations table
+        // when it's a replication there is nothing to delete from the staging host
+        if deleted_blocks < block_ids.len() as u64 {
+            return Err(CompleteRedistributionError::UpdateFailed(format!(
+                "deleted {} vs cids {} for metadata {} from host {}",
+                deleted_blocks,
+                block_ids.len(),
+                metadata_id,
+                staging_host.id,
+            )));
+        }
     }
 
     let updated_blocks =
@@ -108,17 +110,17 @@ pub async fn handler(
     }
 
     // Now, let's re-evaluate the capacity of the new storage host
-    HostCapacityTask::new(staging_host.id)
-        .enqueue::<banyan_task::SqliteTaskStore>(&mut transaction)
-        .await
-        .map_err(CompleteRedistributionError::UnableToEnqueueTask)?;
-    //  revaluate the capacity of staging service
     HostCapacityTask::new(new_storage_host_id)
         .enqueue::<banyan_task::SqliteTaskStore>(&mut *transaction)
         .await
         .map_err(CompleteRedistributionError::UnableToEnqueueTask)?;
 
     if !request.replication {
+        //  revaluate the capacity of staging service
+        HostCapacityTask::new(staging_host.id)
+            .enqueue::<banyan_task::SqliteTaskStore>(&mut transaction)
+            .await
+            .map_err(CompleteRedistributionError::UnableToEnqueueTask)?;
         DeleteStagingDataTask::new(metadata_id, request.normalized_cids.clone())
             .enqueue::<banyan_task::SqliteTaskStore>(&mut *transaction)
             .await
@@ -159,6 +161,7 @@ impl IntoResponse for CompleteRedistributionError {
 mod tests {
     use axum::extract::Path;
     use axum::Json;
+    use banyan_task::SqliteTaskStore;
     use http::StatusCode;
 
     use crate::app::mock_app_state;
@@ -166,6 +169,7 @@ mod tests {
     use crate::database::{test_helpers, Database};
     use crate::extractors::StorageProviderIdentity;
     use crate::hooks::storage::complete_distribution::{handler, CompleteRedistributionRequest};
+    use crate::tasks::DeleteStagingDataTask;
 
     pub async fn select_storage_grants_for_host(
         conn: &Database,
@@ -222,6 +226,13 @@ mod tests {
             3_000_000,
         )
         .await;
+        let second_host_id = test_helpers::create_storage_host(
+            &mut conn,
+            "Second Host",
+            "https://127.0.0.1:8003/",
+            3_000_000,
+        )
+        .await;
 
         let user_id = test_helpers::sample_user(&mut conn, "user@domain.tld").await;
         let bucket_id = test_helpers::sample_bucket(&mut conn, &user_id).await;
@@ -250,6 +261,14 @@ mod tests {
             &mut conn,
             &metadata_id,
             &new_storage_host_id,
+            block_ids.iter().map(String::as_str),
+        )
+        .await;
+
+        test_helpers::associate_blocks(
+            &mut conn,
+            &metadata_id,
+            &second_host_id,
             block_ids.iter().map(String::as_str),
         )
         .await;
@@ -308,6 +327,13 @@ mod tests {
         let new_storage_grant = select_storage_grants_for_host(&db, &new_storage_host_id).await;
         assert!(new_storage_grant.is_some());
         assert!(new_storage_grant.unwrap().redeemed_at.is_some());
+        let mut conn = db.acquire().await.expect("database connection");
+        assert!(SqliteTaskStore::is_present(
+            &mut conn,
+            &DeleteStagingDataTask::new(metadata_id, block_cids.clone())
+        )
+        .await
+        .expect("could not retrieve task"));
     }
 
     #[tokio::test]
@@ -356,5 +382,57 @@ mod tests {
         let storage_grant = select_storage_grants_for_host(&db, &new_storage_host_id).await;
         assert!(storage_grant.is_some());
         assert!(storage_grant.unwrap().redeemed_at.is_none());
+    }
+
+    #[tokio::test]
+    async fn handler_does_not_delete_blocks_on_replication() {
+        let (
+            db,
+            new_storage_host_id,
+            metadata_id,
+            new_storage_grant_id,
+            staging_host_id,
+            block_cids,
+        ) = setup_test_environment().await;
+
+        let res = handler(
+            StorageProviderIdentity::default().with_host_id(&new_storage_host_id),
+            mock_app_state(db.clone()),
+            Path(metadata_id.clone()),
+            Json(CompleteRedistributionRequest {
+                replication: true,
+                normalized_cids: block_cids.clone(),
+                grant_id: new_storage_grant_id,
+            }),
+        )
+        .await;
+
+        assert!(res.is_ok());
+        assert_eq!(res.unwrap().status(), StatusCode::NO_CONTENT);
+
+        let old_host = select_blocks_for_host(&db, &staging_host_id).await;
+        assert_eq!(old_host.len(), block_cids.len());
+        let staging_grant_metadata =
+            select_storage_metadata_grant_for_host(&db, &staging_host_id).await;
+        assert!(staging_grant_metadata.is_some());
+        let staging_grant = select_storage_grants_for_host(&db, &staging_host_id).await;
+        assert!(staging_grant.is_some());
+
+        let blocks_for_host = select_blocks_for_host(&db, &new_storage_host_id).await;
+        assert_eq!(blocks_for_host.len(), block_cids.len());
+        let new_storage_grant_metadata =
+            select_storage_metadata_grant_for_host(&db, &new_storage_host_id).await;
+        assert!(new_storage_grant_metadata.is_some());
+        let new_storage_grant = select_storage_grants_for_host(&db, &new_storage_host_id).await;
+        assert!(new_storage_grant.is_some());
+        assert!(new_storage_grant.unwrap().redeemed_at.is_some());
+
+        let mut conn = db.acquire().await.expect("database connection");
+        assert!(!SqliteTaskStore::is_present(
+            &mut conn,
+            &DeleteStagingDataTask::new(metadata_id, block_cids.clone())
+        )
+        .await
+        .expect("could not retrieve task"));
     }
 }

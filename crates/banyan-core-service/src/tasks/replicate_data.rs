@@ -62,11 +62,13 @@ impl TaskLike for ReplicateDataTask {
 
         let mut blocks_grouped_by_metadata: HashMap<String, Vec<&BlockData>> = HashMap::new();
         for block in &blocks_for_replication {
-            if !blocks_grouped_by_metadata
+            // deduplicate blocks across metadata
+            let block_exists_in_metadata = blocks_grouped_by_metadata
                 .values()
-                // deduplicate blocks across metadata
-                .any(|blocks| blocks.iter().any(|b| b.block_id == block.block_id))
-            {
+                .flat_map(|blocks| blocks.iter())
+                .any(|b| b.block_id == block.block_id);
+
+            if !block_exists_in_metadata {
                 blocks_grouped_by_metadata
                     .entry(block.metadata_id.clone())
                     .or_default()
@@ -110,7 +112,7 @@ impl TaskLike for ReplicateDataTask {
                 .into_iter()
                 .collect();
 
-            // make sure to not allocate blocks to staging
+            // make sure to not allocate blocks to staging host
             already_selected_hosts.push(staging_host.id.clone());
 
             let existing_hosts: Vec<String> = grouped_blocks
