@@ -36,12 +36,14 @@ pub(crate) async fn associate_blocks(
     storage_host_id: &str,
     block_ids: impl Iterator<Item = &str>,
 ) {
+    let now = OffsetDateTime::now_utc();
     for bid in block_ids {
         sqlx::query!(
-            "INSERT INTO block_locations (metadata_id, storage_host_id, block_id, stored_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP);",
+            "INSERT INTO block_locations (metadata_id, storage_host_id, block_id, stored_at) VALUES ($1, $2, $3, $4);",
             metadata_id,
             storage_host_id,
             bid,
+            now
         )
         .execute(&mut *conn)
         .await

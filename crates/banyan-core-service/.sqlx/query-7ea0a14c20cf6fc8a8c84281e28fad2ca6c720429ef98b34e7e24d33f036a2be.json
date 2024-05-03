@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO block_locations (metadata_id, storage_host_id, block_id, stored_at) VALUES ($1, $2, $3, $4);",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "7ea0a14c20cf6fc8a8c84281e28fad2ca6c720429ef98b34e7e24d33f036a2be"
+}

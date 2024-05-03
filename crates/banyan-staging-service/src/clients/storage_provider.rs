@@ -16,22 +16,25 @@ pub struct StorageProviderClient {
 }
 
 impl StorageProviderClient {
-    pub fn new(service_hostname: &str, service_authorization: &str) -> Self {
+    pub fn new(
+        service_hostname: &str,
+        service_authorization: &str,
+    ) -> Result<Self, StorageProviderError> {
         let mut headers = HeaderMap::new();
         headers.insert("Content-Type", HeaderValue::from_static("application/json"));
 
-        let client = Client::builder().default_headers(headers).build().unwrap();
+        let client = Client::builder().default_headers(headers).build()?;
 
-        Self {
+        Ok(Self {
             client,
             service_hostname: service_hostname.to_string(),
             service_authorization: service_authorization.to_string(),
-        }
+        })
     }
 
     pub async fn blocks_present(
         &self,
-        block_cids: Vec<String>,
+        block_cids: &[String],
     ) -> Result<Vec<String>, StorageProviderError> {
         let url = Url::parse(&self.service_hostname)
             .map_err(|_| StorageProviderError::UrlParseError)?
@@ -40,7 +43,7 @@ impl StorageProviderClient {
 
         let response = self
             .client
-            .get(url)
+            .post(url)
             .bearer_auth(&self.service_authorization)
             .body(serde_json::json!(block_cids).to_string())
             .send()
@@ -104,13 +107,13 @@ impl StorageProviderClient {
             .map_err(|_| StorageProviderError::ResponseParseError)
     }
 
-    pub async fn get_client(
+    pub async fn get_client_for_metadata(
         &self,
         metadata_id: &str,
     ) -> Result<ExistingClientResponse, StorageProviderError> {
         let full_url = Url::parse(&self.service_hostname)
             .map_err(|_| StorageProviderError::UrlParseError)?
-            .join(&format!("/api/v1/hooks/clients/{}", metadata_id))
+            .join(&format!("/api/v1/hooks/metadata/{}/clients", metadata_id))
             .map_err(|_| StorageProviderError::UrlJoinError)?;
 
         let response = self
@@ -130,13 +133,13 @@ impl StorageProviderClient {
             .map_err(|_| StorageProviderError::ResponseParseError)
     }
 
-    pub async fn get_upload(
+    pub async fn get_upload_for_metadata(
         &self,
         metadata_id: &str,
     ) -> Result<NewUploadResponse, StorageProviderError> {
         let full_url = Url::parse(&self.service_hostname)
             .map_err(|_| StorageProviderError::UrlParseError)?
-            .join(&format!("/api/v1/hooks/uploads/{}", metadata_id))
+            .join(&format!("/api/v1/hooks/metadata/{}/uploads", metadata_id))
             .map_err(|_| StorageProviderError::UrlJoinError)?;
 
         let response = self

@@ -62,7 +62,7 @@ impl StorageHost {
                 "#,
                 required_bytes,
             )
-            .fetch_optional(&mut *conn)
+            .fetch_optional(conn)
             .await
         }
     }
@@ -100,7 +100,7 @@ impl StorageHost {
 
     pub async fn find_by_id(conn: &mut DatabaseConnection, id: &str) -> Result<Self, sqlx::Error> {
         sqlx::query_as!(Self, "SELECT * FROM storage_hosts WHERE id = $1;", id,)
-            .fetch_one(&mut *conn)
+            .fetch_one(conn)
             .await
     }
 
@@ -117,7 +117,7 @@ impl StorageHost {
              "#,
             storage_host_id,
         )
-        .fetch_one(&mut *conn)
+        .fetch_one(conn)
         .await?;
 
         Ok(ex_bigint.big_int)
@@ -148,7 +148,7 @@ impl UserStorageReport {
             r#"SELECT COALESCE(SUM(m.data_size), 0) as big_int FROM metadata m
                    JOIN storage_hosts_metadatas_storage_grants shmg ON shmg.metadata_id = m.id
                    JOIN storage_grants sg ON shmg.storage_grant_id = sg.id
-                   WHERE shmg.storage_host_id = $1 AND sg.user_id = $2;
+               WHERE shmg.storage_host_id = $1 AND sg.user_id = $2;
              "#,
             storage_host_id,
             user_id,
