@@ -43,12 +43,17 @@ impl MinimalBlockLocation {
     pub async fn update_stored_at(
         conn: &mut DatabaseConnection,
         block_ids: &[String],
+        storage_host_id: &String,
     ) -> Result<Vec<SqliteQueryResult>, sqlx::Error> {
         let mut affected = Vec::new();
         for cid_chunk in block_ids.chunks(BIND_LIMIT) {
-            let mut block_id_builder = sqlx::QueryBuilder::new(
-                "UPDATE block_locations SET stored_at = CURRENT_TIMESTAMP WHERE block_id IN (",
-            );
+            let mut block_id_builder =
+                sqlx::QueryBuilder::new("UPDATE block_locations SET stored_at = ");
+            block_id_builder.push_bind(OffsetDateTime::now_utc());
+            block_id_builder.push(" WHERE storage_host_id = ");
+            block_id_builder.push_bind(storage_host_id);
+            block_id_builder.push(" AND block_id IN (");
+
             let mut separated_values = block_id_builder.separated(", ");
             for cid in cid_chunk {
                 separated_values.push_bind(cid);
@@ -67,12 +72,14 @@ impl MinimalBlockLocation {
         &self,
         db: &mut DatabaseConnection,
     ) -> Result<(), sqlx::Error> {
+        let now = OffsetDateTime::now_utc();
         sqlx::query!(
             "INSERT INTO block_locations (block_id, metadata_id, storage_host_id, stored_at)
-            VALUES ($1, $2, $3, CURRENT_TIMESTAMP);",
+            VALUES ($1, $2, $3, $4);",
             self.block_id,
             self.metadata_id,
             self.storage_host_id,
+            now
         )
         .execute(&mut *db)
         .await?;

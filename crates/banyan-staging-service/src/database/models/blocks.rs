@@ -2,7 +2,7 @@ use sqlx::sqlite::SqliteQueryResult;
 use sqlx::FromRow;
 use time::OffsetDateTime;
 
-use crate::database::{Database, DatabaseConnection};
+use crate::database::DatabaseConnection;
 
 #[derive(FromRow)]
 pub struct Blocks {
@@ -14,7 +14,7 @@ pub struct Blocks {
 
 impl Blocks {
     pub async fn get_blocks_by_cid(
-        transaction: &Database,
+        conn: &mut DatabaseConnection,
         normalized_cids: &[String],
     ) -> Result<Vec<Blocks>, sqlx::Error> {
         let mut prune_builder = sqlx::QueryBuilder::new("SELECT * FROM blocks WHERE cid IN(");
@@ -31,7 +31,7 @@ impl Blocks {
 
         prune_builder
             .build_query_as::<Blocks>()
-            .fetch_all(transaction)
+            .fetch_all(conn)
             .await
     }
 
@@ -51,6 +51,6 @@ impl Blocks {
         }
         prune_builder.push(");");
 
-        prune_builder.build().execute(&mut *transaction).await
+        prune_builder.build().execute(transaction).await
     }
 }

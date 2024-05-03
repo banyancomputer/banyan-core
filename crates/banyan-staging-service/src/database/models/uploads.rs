@@ -1,7 +1,7 @@
 use sqlx::sqlite::SqliteQueryResult;
 use time::OffsetDateTime;
 
-use crate::database::{Database, DatabaseConnection};
+use crate::database::DatabaseConnection;
 
 pub struct CreateUpload<'a> {
     pub(crate) client_id: &'a str,
@@ -62,12 +62,12 @@ impl Uploads {
             upload_id,
             client_id,
         )
-        .fetch_one(&mut *conn)
+        .fetch_one(conn)
         .await
     }
 
     pub async fn get_by_metadata_id(
-        pool: &Database,
+        conn: &mut DatabaseConnection,
         metadata_id: &str,
     ) -> sqlx::Result<Self, sqlx::Error> {
         sqlx::query_as!(
@@ -75,7 +75,7 @@ impl Uploads {
             "SELECT * FROM uploads WHERE metadata_id = $1",
             metadata_id
         )
-        .fetch_one(pool)
+        .fetch_one(conn)
         .await
     }
     pub async fn delete_by_metadata_id(

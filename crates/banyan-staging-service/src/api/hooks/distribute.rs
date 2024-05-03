@@ -5,56 +5,34 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 use banyan_task::{SqliteTaskStore, TaskLikeExt};
 use http::StatusCode;
-use serde::{Deserialize, Serialize};
 
 use crate::app::AppState;
 use crate::database::models::{Blocks, Uploads};
 use crate::extractors::PlatformIdentity;
 use crate::tasks::RedistributeDataTask;
 
-#[derive(Serialize, Deserialize)]
-pub struct DistributeData {
-    metadata_id: String,
-    storage_grant_id: String,
-    storage_grant_size: i64,
-    block_cids: Vec<String>,
-    new_host_id: String,
-    new_host_url: String,
-}
-
 pub async fn handler(
     _: PlatformIdentity,
     State(state): State<AppState>,
-    Json(distribute_data): Json<DistributeData>,
+    Json(task): Json<RedistributeDataTask>,
 ) -> Result<Response, DistributeBlocksError> {
-    let db = state.database();
-    let mut conn = db.acquire().await?;
-    let metadata_id = &distribute_data.metadata_id;
+    let mut conn = state.database().acquire().await?;
+    let metadata_id = &task.metadata_id;
 
-    let task = RedistributeDataTask {
-        metadata_id: distribute_data.metadata_id.clone(),
-        storage_grant_id: distribute_data.storage_grant_id.clone(),
-        storage_grant_size: distribute_data.storage_grant_size,
-        block_cids: distribute_data.block_cids.clone(),
-        new_host_id: distribute_data.new_host_id.clone(),
-        new_host_url: distribute_data.new_host_url.clone(),
-    };
     if SqliteTaskStore::is_present(&mut conn, &task).await? {
-        return Ok((StatusCode::OK, ()).into_response());
+        return Err(DistributeBlocksError::AlreadyProcessed);
     }
 
-    Uploads::get_by_metadata_id(&db, metadata_id).await?;
-    let blocks: Vec<Blocks> = Blocks::get_blocks_by_cid(&db, &distribute_data.block_cids).await?;
-
-    if blocks.len() != distribute_data.block_cids.len() {
-        let block_cids: HashSet<String> = distribute_data.block_cids.into_iter().collect();
-        let blocks_cids_set: HashSet<String> =
-            blocks.iter().map(|block| block.cid.clone()).collect();
-
-        let missing_cids = block_cids
-            .symmetric_difference(&blocks_cids_set)
-            .collect::<HashSet<_>>();
-
+    Uploads::get_by_metadata_id(&mut conn, metadata_id).await?;
+    let blocks: Vec<Blocks> = Blocks::get_blocks_by_cid(&mut conn, &task.block_cids).await?;
+    let blocks_cids_set: HashSet<String> = blocks.into_iter().map(|block| block.cid).collect();
+    let missing_cids: Vec<_> = task
+        .block_cids
+        .iter()
+        .filter(|i| !blocks_cids_set.contains(*i))
+        .map(|s| s.as_str())
+        .collect();
+    if !missing_cids.is_empty() {
         return Err(DistributeBlocksError::BadRequest(format!(
             "block CIDs do not match: {:?}",
             missing_cids
@@ -70,6 +48,8 @@ pub async fn handler(
 pub enum DistributeBlocksError {
     #[error("a database error occurred: {0}")]
     Database(#[from] sqlx::Error),
+    #[error("already scheduled")]
+    AlreadyProcessed,
     #[error("could not task: {0}")]
     BadRequest(String),
     #[error("could not enqueue task: {0}")]
@@ -84,7 +64,9 @@ impl IntoResponse for DistributeBlocksError {
                 let err_msg = serde_json::json!({ "msg": "a backend service issue occurred" });
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
             }
-            DistributeBlocksError::BadRequest(_) | DistributeBlocksError::Database(_) => {
+            DistributeBlocksError::AlreadyProcessed
+            | DistributeBlocksError::BadRequest(_)
+            | DistributeBlocksError::Database(_) => {
                 let err_msg = serde_json::json!({ "msg": "invalid request" });
                 (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
             }
