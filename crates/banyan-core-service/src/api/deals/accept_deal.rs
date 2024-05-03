@@ -30,20 +30,20 @@ pub async fn handler(
     .await;
 
     match query_result {
-        Ok(result) => {
-            if result.rows_affected() == 0 {
-                let err_msg = serde_json::json!({"msg": "not found"});
-                (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
-            } else {
-                (StatusCode::NO_CONTENT, ()).into_response()
-            }
-        }
         Err(err) => {
             tracing::error!("failed to update deal: {err}");
             let err_msg = serde_json::json!({"msg": "a backend service issue occurred"});
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
+            return (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response();
+        }
+        Ok(result) => {
+            if result.rows_affected() == 0 {
+                let err_msg = serde_json::json!({"msg": "not found"});
+                return (StatusCode::NOT_FOUND, Json(err_msg)).into_response();
+            }
         }
     }
+
+    (StatusCode::NO_CONTENT, ()).into_response()
 }
 
 #[cfg(test)]

@@ -175,12 +175,19 @@ where
                 .await
                 .map_err(WorkerError::StoreUnavailable)?
             {
+                let task_name = task.task_name.clone();
+                let task_id = task.id.clone();
                 tracing::info!(
-                    task_name = task.task_name,
-                    task_id = task.id,
+                    task_name = task_name,
+                    task_id = task_id,
                     "starting execution of"
                 );
                 self.run(task).await?;
+                tracing::info!(
+                    task_name = task_name,
+                    task_id = task_id,
+                    "finished execution of"
+                );
                 continue;
             }
 

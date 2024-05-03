@@ -81,14 +81,16 @@ where
             None => return Err(StorageProviderIdentityError::UnidentifiedKey),
         };
 
-        let database = Database::from_ref(state);
-
+        let mut conn = Database::from_ref(state)
+            .acquire()
+            .await
+            .map_err(StorageProviderIdentityError::DatabaseConnection)?;
         let maybe_storage_host = sqlx::query_as!(
             StorageHost,
             "SELECT id, name, pem, staging FROM storage_hosts WHERE fingerprint = $1",
             key_id
         )
-        .fetch_optional(&database)
+        .fetch_optional(&mut *conn)
         .await
         .map_err(StorageProviderIdentityError::DatabaseUnavailable)?;
 
@@ -153,6 +155,9 @@ pub enum StorageProviderIdentityError {
 
     #[error("unable to lookup identity in database: {0}")]
     DatabaseUnavailable(sqlx::Error),
+
+    #[error("could not acquire connection: {0}")]
+    DatabaseConnection(sqlx::Error),
 
     #[error("unable to lookup storage host in database")]
     StorageHostNotFound,
