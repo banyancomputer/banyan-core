@@ -80,21 +80,21 @@ export class APIClient {
          * @private
          */
     /* eslint-disable */
-    protected async handleError(response: Response): Promise<void> {
+    protected async handleError(response: Response): Promise<Error> {
         const error = await response.json();
         switch (response.status) {
             case BAD_REQUEST_ERROR:
-                throw new BadRequestError(error.message);
+                return new BadRequestError(error.message);
             case FORBIDDEN_ERROR:
-                throw new ForbiddenError(error.message);
+                return new ForbiddenError(error.message);
             case NOT_FOUND_ERROR:
-                throw new NotFoundError(error.message);
+                return new NotFoundError(error.message);
             case UNAUTHORISED_ERROR: {
-                throw new UnauthorizedError(error.message);
+                return new UnauthorizedError(error.message);
             }
             case INTERNAL_ERROR:
             default:
-                throw new InternalError(error.message);
+                return new InternalError(error.message);
         }
     }
 }

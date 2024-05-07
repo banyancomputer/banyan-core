@@ -1,21 +1,27 @@
-export interface AvailiableDeal {
-    id: string,
-    size: string,
-    payment: string,
-    status: string,
-    accept_by: string,
-    sealed_by: string
-};
-
 export interface ActiveDeal {
     id: string,
-    size: string,
-    payment: string,
-    status: string,
-    accepted_at: string,
-    canceled_at: string,
-    sealed_by: string
+    size: number,
+    state: string,
+    payment: number,
+    status: DealState,
+    accept_by: string,
+    requested_at: string,
 };
+
+export interface AcceptedDeal {
+    id: string,
+    payment: string,
+    size: number,
+    state: DealState,
+    accept_by: string | null,
+    accepted_at: string | null,
+    seal_by: string | null
+};
+
+export enum DealState {
+    Accepted = 'accepted',
+    Active = 'active',
+}
 
 export interface Metrics {
     bandwidth: {
@@ -27,7 +33,7 @@ export interface Metrics {
         sealed: number
     },
     storage: {
-        available: number,
+        active: number,
         used: number
     }
 };

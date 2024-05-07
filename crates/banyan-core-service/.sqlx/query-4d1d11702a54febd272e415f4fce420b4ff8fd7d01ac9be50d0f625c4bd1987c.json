@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            UPDATE deals\n            SET state = $1, accepted_by = NULL, accepted_at = NULL\n            WHERE id = $2\n            AND state = $3\n            AND accepted_by = $4;\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "4d1d11702a54febd272e415f4fce420b4ff8fd7d01ac9be50d0f625c4bd1987c"
+}

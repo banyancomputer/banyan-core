@@ -135,12 +135,9 @@ pub(crate) async fn create_storage_hosts(
     .expect("storage host creation")
 }
 
-pub(crate) async fn create_deal(
+pub(crate) async fn create_user_and_associated_data(
     database: &mut DatabaseConnection,
-    deal_state: DealState,
-    size: Option<i64>,
-    accepted_by: Option<String>,
-) -> Result<String, sqlx::Error> {
+) -> Result<(String, String), sqlx::Error> {
     let user_email = format!("deal_user{}@test.tld", Uuid::new_v4());
     let user_id = sample_user(database, &user_email).await;
     let bucket_id = create_hot_bucket(database, user_id.as_str(), "test_bucket").await;
@@ -154,7 +151,16 @@ pub(crate) async fn create_deal(
         None,
     )
     .await;
+    Ok((user_id, metadata_id))
+}
 
+pub(crate) async fn create_deal(
+    database: &mut DatabaseConnection,
+    deal_state: DealState,
+    size: Option<i64>,
+    accepted_by: Option<String>,
+) -> Result<String, sqlx::Error> {
+    let (_user_id, metadata_id) = create_user_and_associated_data(database).await?;
     let deal_id = match accepted_by {
         Some(accepted_by) => {
             sqlx::query_scalar!(
@@ -184,28 +190,38 @@ pub(crate) async fn create_deal(
     ))
     .collect();
     let block_ids = create_blocks(database, initial_cids.iter().map(String::as_str)).await;
-    let segment_id = create_snapshot_segment(
+    create_snapshot_entries(
         database,
         deal_id.to_string(),
-        number_of_blocks as i64 * size,
+        metadata_id,
+        size * number_of_blocks as i64,
+        block_ids,
     )
-    .await
-    .unwrap();
-    let snapshot_id = create_snapshot(
-        database,
-        &metadata_id,
-        SnapshotState::Pending,
-        Some(number_of_blocks as i64 * size),
-    )
-    .await;
-    create_snapshot_segment_association(database, &snapshot_id, &segment_id)
-        .await
-        .unwrap();
-    create_snapshot_block_locations(database, &snapshot_id, block_ids).await;
+    .await?;
 
     Ok(deal_id)
 }
 
+pub(crate) async fn create_snapshot_entries(
+    database: &mut DatabaseConnection,
+    deal_id: String,
+    metadata_id: String,
+    deal_size: i64,
+    block_ids: Vec<String>,
+) -> Result<(String, String), sqlx::Error> {
+    let segment_id = create_snapshot_segment(database, deal_id, deal_size).await?;
+    let snapshot_id = create_snapshot(
+        database,
+        &metadata_id,
+        SnapshotState::Pending,
+        Some(deal_size),
+    )
+    .await;
+    create_snapshot_segment_association(database, &snapshot_id, &segment_id).await?;
+    create_snapshot_block_locations(database, &snapshot_id, block_ids).await;
+
+    Ok((snapshot_id, segment_id))
+}
 pub(crate) async fn create_snapshot_segment_association(
     database: &mut DatabaseConnection,
     snapshot_id: &str,

@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 
 import { useAppDispatch, useAppSelector } from '@app/store'
-import { getOveralStatistic } from '@app/store/metrics/actions';
+import { getOverallStatistic } from '@app/store/metrics/actions';
 import { convertFileSize } from '@app/utils/storage';
 
 import { HealthStatus } from '@static/images';
@@ -20,7 +20,7 @@ export const Statistic = () => {
 
     useEffect(() => {
         (async () => {
-            await dispatch(getOveralStatistic());
+            await dispatch(getOverallStatistic());
         })()
     }, []);
 

@@ -1,17 +1,18 @@
-import { createAsyncThunk } from "@reduxjs/toolkit";
+import { createAsyncThunk } from '@reduxjs/toolkit';
 
-import { DealsClient } from "@/api/deals";
+import { DealsClient } from '@/api/deals';
+import { DealState } from '@/entities/deals';
 
 const client = new DealsClient();
 
-export const getActiceDeals = createAsyncThunk(
-    'getActiceDeals',
-    async () => await client.getActiceDeals()
+export const getAcceptedDeals = createAsyncThunk(
+    'getAcceptedDeals',
+    async () => await client.getDeals(DealState.Accepted)
 );
 
-export const getAvailableDeals = createAsyncThunk(
-    'getAvailableDeals',
-    async () => await client.getAvailableDeals()
+export const getActiveDeals = createAsyncThunk(
+    'getActiveDeals',
+    async () => await client.getDeals(DealState.Active)
 );
 
 export const acceptDeal = createAsyncThunk(
@@ -19,16 +20,16 @@ export const acceptDeal = createAsyncThunk(
     async (id: string) => await client.acceptDeal(id)
 );
 
-export const declineDeal = createAsyncThunk(
-    'declineDeal',
-    async (id: string) => await client.declineDeal(id)
+export const cancelDeal = createAsyncThunk(
+    'cancelDeal',
+    async (id: string) => await client.cancelDeal(id)
 );
 
 export const downloadDeal = createAsyncThunk(
     'downloadDeal',
     async (id: string) => await client.downloadDeal(id)
 );
-export const proofDeal = createAsyncThunk(
-    'proofDeal',
-    async (id: string) => await client.proofDeal(id)
+export const sealDeal = createAsyncThunk(
+    'sealDeal',
+    async (id: string) => await client.sealDeal(id)
 );

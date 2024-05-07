@@ -3,9 +3,9 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 
 const client = new MetricsClient();
 
-export const getOveralStatistic = createAsyncThunk(
-    'getOveralStatistic',
-    async () => await client.getOveralStatistic()
+export const getOverallStatistic = createAsyncThunk(
+    'getOverallStatistic',
+    async () => await client.getOverallStatistic()
 );
 
 export const getBandwidthUsage = createAsyncThunk(

@@ -3,7 +3,8 @@ use jwt_simple::prelude::*;
 use reqwest::Client;
 use url::Url;
 
-use crate::clients::models::ReportUploadRequest;
+use crate::api::DealQuery;
+use crate::clients::models::{ApiDeal, ReportUploadRequest};
 use crate::clients::{MeterTrafficRequest, ReportRedistributionRequest};
 use crate::utils::SigningKey;
 
@@ -61,6 +62,89 @@ impl CoreServiceClient {
 
         if response.status().is_success() {
             return Ok(());
+        }
+
+        Err(CoreServiceError::BadRequest(response.text().await?))
+    }
+
+    pub async fn get_all_deals(&self, query: DealQuery) -> Result<Vec<ApiDeal>, CoreServiceError> {
+        let mut deals_endpoint = self.platform_hostname.join("/api/v1/deals").unwrap();
+
+        if let Some(state) = query.state {
+            deals_endpoint = deals_endpoint.join(&format!("?state={}", state)).unwrap();
+        }
+
+        let response = self
+            .client
+            .get(deals_endpoint.clone())
+            .bearer_auth(&self.bearer_token)
+            .send()
+            .await?;
+
+        if response.status().is_success() {
+            let deals: Vec<ApiDeal> = response.json().await?;
+            return Ok(deals);
+        }
+
+        Err(CoreServiceError::BadRequest(response.text().await?))
+    }
+
+    pub async fn accept_deal(&self, deal_id: &str) -> Result<(), CoreServiceError> {
+        let deal_endpoint = self
+            .platform_hostname
+            .join(&format!("/api/v1/deals/{}/accept", deal_id))
+            .unwrap();
+
+        let response = self
+            .client
+            .put(deal_endpoint.clone())
+            .bearer_auth(&self.bearer_token)
+            .send()
+            .await?;
+
+        if response.status().is_success() {
+            return Ok(());
+        }
+
+        Err(CoreServiceError::BadRequest(response.text().await?))
+    }
+
+    pub async fn reject_deal(&self, deal_id: &str) -> Result<(), CoreServiceError> {
+        let deal_endpoint = self
+            .platform_hostname
+            .join(&format!("/api/v1/deals/{}/cancel", deal_id))
+            .unwrap();
+
+        let response = self
+            .client
+            .put(deal_endpoint.clone())
+            .bearer_auth(&self.bearer_token)
+            .send()
+            .await?;
+
+        if response.status().is_success() {
+            return Ok(());
+        }
+
+        Err(CoreServiceError::BadRequest(response.text().await?))
+    }
+
+    pub async fn get_deal(&self, deal_id: &str) -> Result<ApiDeal, CoreServiceError> {
+        let deal_endpoint = self
+            .platform_hostname
+            .join(&format!("/api/v1/deals/{}", deal_id))
+            .unwrap();
+
+        let response = self
+            .client
+            .get(deal_endpoint.clone())
+            .bearer_auth(&self.bearer_token)
+            .send()
+            .await?;
+
+        if response.status().is_success() {
+            let deal: ApiDeal = response.json().await?;
+            return Ok(deal);
         }
 
         Err(CoreServiceError::BadRequest(response.text().await?))
