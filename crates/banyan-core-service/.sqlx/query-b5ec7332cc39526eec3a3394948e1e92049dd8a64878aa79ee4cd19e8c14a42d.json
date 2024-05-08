@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                SELECT id FROM user_keys\n                JOIN bucket_access AS ba ON ba.user_key_id = id\n                WHERE ba.bucket_id = $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "b5ec7332cc39526eec3a3394948e1e92049dd8a64878aa79ee4cd19e8c14a42d"
+}

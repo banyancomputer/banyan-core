@@ -46,12 +46,32 @@ impl BucketAccess {
         conn: &mut DatabaseConnection,
         bucket_id: &str,
         user_key_ids: &[String],
-        state: BucketAccessState,
     ) -> Result<(), sqlx::Error> {
-        todo!()
+        // List all keys associated with the bucket
+        let existing_key_ids: Vec<String> = sqlx::query_scalar!(
+            r#"
+                SELECT id FROM user_keys
+                JOIN bucket_access AS ba ON ba.user_key_id = id
+                WHERE ba.bucket_id = $1
+            "#,
+            bucket_id
+        )
+        .fetch_all(&mut *conn)
+        .await?;
+
+        // Any not present in the request should be revoked
+        let revoked_keys: Vec<String> = existing_key_ids
+            .into_iter()
+            .filter(|id| !user_key_ids.contains(id))
+            .collect();
+
+        // Revoke keys appropriately
+        Self::set_group(conn, bucket_id, &revoked_keys, BucketAccessState::Revoked).await?;
+
+        Self::set_group(conn, bucket_id, &user_key_ids, BucketAccessState::Approved).await
     }
 
-    pub async fn grant_group(
+    pub async fn set_group(
         conn: &mut DatabaseConnection,
         bucket_id: &str,
         user_key_ids: &[String],
@@ -81,7 +101,7 @@ impl BucketAccess {
         Ok(())
     }
 
-    pub async fn grant(
+    pub async fn set(
         conn: &mut DatabaseConnection,
         user_key_id: &str,
         bucket_id: &str,

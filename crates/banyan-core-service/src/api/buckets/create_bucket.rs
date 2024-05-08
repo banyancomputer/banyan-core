@@ -53,7 +53,7 @@ pub async fn handler(
     // Provide this Api Key with Bucket Access
 
     let mut conn = database.acquire().await?;
-    let access = BucketAccess::grant(
+    let access = BucketAccess::set(
         &mut conn,
         &user_key.id,
         &bucket_id,

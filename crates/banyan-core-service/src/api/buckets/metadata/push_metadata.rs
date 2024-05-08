@@ -110,11 +110,10 @@ pub async fn handler(
         tracing::warn!("pushed metadata specified no previous id");
     };
 
-    BucketAccess::grant_group(
+    BucketAccess::update_access_associations(
         &mut conn,
         &bucket_id,
         &request_data.included_key_fingerprints,
-        BucketAccessState::Approved,
     )
     .await?;
 

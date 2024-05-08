@@ -505,7 +505,7 @@ mod tests {
         let bucket_id = sample_bucket(&mut conn, &user_id).await;
         let user_key_id = create_user_key(&mut conn, &user_id, "001122", "<pubkey>").await;
 
-        BucketAccess::grant(
+        BucketAccess::set(
             &mut conn,
             &user_key_id,
             &bucket_id,
@@ -514,7 +514,7 @@ mod tests {
         .await
         .unwrap();
 
-        BucketAccess::grant_group(&mut conn, &bucket_id, &[], BucketAccessState::Approved)
+        BucketAccess::set_group(&mut conn, &bucket_id, &[], BucketAccessState::Approved)
             .await
             .expect("appoval success");
 
@@ -537,7 +537,7 @@ mod tests {
             create_user_key(&mut conn, &user_id, "002233", "<pubkey>").await,
         ];
 
-        BucketAccess::grant(
+        BucketAccess::set(
             &mut conn,
             &user_key_ids[0],
             &bucket_id,
@@ -545,7 +545,7 @@ mod tests {
         )
         .await
         .unwrap();
-        BucketAccess::grant(
+        BucketAccess::set(
             &mut conn,
             &user_key_ids[1],
             &bucket_id,
@@ -554,7 +554,7 @@ mod tests {
         .await
         .unwrap();
 
-        BucketAccess::grant(
+        BucketAccess::set(
             &mut conn,
             &user_key_ids[0],
             &bucket_id,
@@ -586,7 +586,7 @@ mod tests {
             create_user_key(&mut conn, &user_id, "004455", "<pubkey>").await,
         ];
 
-        BucketAccess::grant(
+        BucketAccess::set(
             &mut conn,
             &user_key_ids[0],
             &bucket_id,
@@ -594,7 +594,7 @@ mod tests {
         )
         .await
         .unwrap();
-        BucketAccess::grant(
+        BucketAccess::set(
             &mut conn,
             &user_key_ids[1],
             &bucket_id,
@@ -603,7 +603,7 @@ mod tests {
         .await
         .unwrap();
 
-        BucketAccess::grant_group(
+        BucketAccess::set_group(
             &mut conn,
             &bucket_id,
             &user_key_ids,
