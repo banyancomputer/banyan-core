@@ -1,16 +1,16 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-import { AvailiableDeal, ActiveDeal } from "@/entities/deals";
-import { getActiceDeals, getAvailableDeals } from "./actions";
+import { ActiveDeal, AcceptedDeal } from "@/entities/deals";
+import {getActiveDeals, getAcceptedDeals} from "./actions";
 
 export interface DealsState {
-    availiableDeals: AvailiableDeal[];
     activeDeals: ActiveDeal[];
+    acceptedDeals: AcceptedDeal[];
 };
 
 const initialState: DealsState = {
-    activeDeals: [],
-    availiableDeals:[]
+    acceptedDeals: [],
+    activeDeals: []
 }
 
 const dealsSlice = createSlice({
@@ -20,12 +20,12 @@ const dealsSlice = createSlice({
 
     },
     extraReducers(builder) {
-        builder.addCase(getActiceDeals.fulfilled, (state, action) => {
-            state.activeDeals = action.payload;
+        builder.addCase(getAcceptedDeals.fulfilled, (state, action) => {
+            state.acceptedDeals = action.payload;
         });
 
-        builder.addCase(getAvailableDeals.fulfilled, (state, action) => {
-            state.availiableDeals = action.payload;
+        builder.addCase(getActiveDeals.fulfilled, (state, action) => {
+            state.activeDeals = action.payload;
         });
     },
 });

@@ -28,7 +28,9 @@ export const PrimaryButton: React.FC<{
             return () => {
                 window.removeEventListener('keypress', listener);
             };
-        });
+            // important to pass, otherwise stale version of action might be called,
+            // which would lead to incorrect name for the drive
+        }, [action, disabled]);
 
         return (
             <button

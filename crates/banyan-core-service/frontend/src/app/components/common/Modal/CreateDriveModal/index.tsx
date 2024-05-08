@@ -18,9 +18,7 @@ export const CreateDriveModal: React.FC<{ onSuccess?: (id: string) => void }> = 
     const { createDriveAndMount } = useTomb();
     const [bucketType, setBucketType] = useState('interactive');
     const [storageClass, setStorageClass] = useState('hot');
-    const isBucketDataFilled = useMemo(() =>
-        !!bucketType && !!(bucketName.length >= 3),
-        [bucketName, bucketName]);
+    const isBucketDataFilled = !!bucketType && bucketName.length >= 3;
 
     const changeBucketName = (event: React.ChangeEvent<HTMLInputElement>) => {
         const regexp = new RegExp(/^.{0,32}$/);

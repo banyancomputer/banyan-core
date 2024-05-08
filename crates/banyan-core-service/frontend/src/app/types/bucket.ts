@@ -25,16 +25,18 @@ export interface BucketSnapshot {
     created_at: number;
 };
 
-export interface Bucket {
-    id: string;
-    name: string;
-    mount: WasmMount | null;
-    bucketType: string;
-    storageClass: string;
-    files: BrowserObject[];
-    snapshots: BucketSnapshot[];
-    isSnapshotValid: boolean;
-    locked: boolean;
+export class Bucket {
+    constructor(
+        public id: string,
+        public name: string,
+        public mount: WasmMount | null,
+        public bucketType: string,
+        public storageClass: string,
+        public isSnapshotValid: boolean = false,
+        public locked: boolean = false,
+        public snapshots: BucketSnapshot[] = [],
+        public files: BrowserObject[] = [],
+    ) { }
 };
 
 export class MockBucket {

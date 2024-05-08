@@ -273,22 +273,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "banyan-api-client"
-version = "0.1.0"
-dependencies = [
- "futures",
- "jsonwebtoken",
- "openssl",
- "pem 2.0.1",
- "rand 0.8.5",
- "reqwest",
- "serde",
- "serde_json",
- "tokio",
- "uuid",
-]
-
-[[package]]
 name = "banyan-car-analyzer"
 version = "0.1.0"
 dependencies = [

@@ -91,15 +91,10 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         }
         const buckets: Bucket[] = [];
         for (let bucket of wasm_buckets) {
-            let mount;
-            let locked;
-            let isSnapshotValid;
             const snapshots = await snapshotsClient.getSnapshots(bucket.id());
-            try {
-                mount = await tomb!.mount(bucket.id(), key.privatePem);
-                locked = await mount.locked();
-                isSnapshotValid = await mount.hasSnapshot();
-            } catch (error: any) { }
+            let mount = await tomb!.mount(bucket.id(), key.privatePem);
+            let locked = await mount.locked();
+            let isSnapshotValid = await mount.hasSnapshot();
             buckets.push({
                 mount: mount || null,
                 id: bucket.id(),
@@ -112,7 +107,6 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
                 isSnapshotValid: isSnapshotValid || false
             });
         };
-
         setBuckets(buckets);
 
         setAreBucketsLoading(false);
@@ -143,6 +137,11 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         const locked = await mount.locked();
         const isSnapshotValid = await mount.hasSnapshot();
         setBuckets(prev => prev.map(element => element.id === bucket.id ? { ...element, mount, locked, isSnapshotValid } : element));
+    };
+
+    /** Sets selected bucket into state. */
+    const selectBucket = async (bucket: Bucket | null) => {
+        setSelectedBucket(bucket);
     };
 
     /** Returns list of access keys. */
@@ -181,11 +180,6 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         const files = await selectedBucket?.mount?.ls(path);
         folder.files = files ? files.sort(sortByName).sort(sortByType) : [];
         setSelectedBucket(prev => ({ ...prev! }));
-    };
-
-    /** Sets selected bucket into state */
-    const selectBucket = async (bucket: Bucket | null) => {
-        setSelectedBucket(bucket);
     };
 
     /** Creates new bucket with recieved parameters of type and storag class. */
@@ -238,23 +232,14 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
     /** Restores bucket from selected snapshot. */
     const restore = async (bucket: Bucket, snapshotId: string) => await snapshotsClient.restoreFromSnapshot(bucket.id, snapshotId);
+    /** Approves access key for bucket */
+    const approveBucketAccess = async (bucket: Bucket, bucketKeyId: string) => {
+    };
 
     /** Generates public link to share file. */
     const shareFile = async (bucket: Bucket, path: string[]) => await bucket.mount!.shareFile(path);
-
-    /** Approves access key for bucket */
-    const approveBucketAccess = async (bucket: Bucket, userKeyId: string) => {
-        // await tomb!.shareWith(userKeyId);
-        // await getBucketsAccess();
-    };
-
-    /** Returns list of snapshots for selected bucket */
+    /** Returns list of snapshots for selected bucket. */
     const getBucketSnapshots = async (id: string) => await snapshotsClient.getSnapshots(id);
-
-    /** Creates a new API authenticated UserKey */
-    const createAccessKey = async (name: string, pem: string) => {
-        await tomb!.createUserKey(name, pem);
-    };
 
     /** Deletes access key for bucket */
     const removeBucketAccess = async (bucket: Bucket, fingerprint: string) => {
@@ -262,11 +247,12 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         await tomb!.revokeBucketAccess(bucket.id, fingerprint);
     };
 
-    const purgeSnapshot = async (id: string) => {
-        // await tomb.purgeSnapshot(id);
+    /** Creates a new API authenticated UserKey */
+    const createAccessKey = async (name: string, pem: string) => {
+        await tomb!.createUserKey(name, pem);
     };
 
-    /** Renames bucket */
+    /** Moves file into different location. */
     const moveTo = async (bucket: Bucket, from: string[], to: string[], name: string) => {
         const mount = bucket.mount!;
         const extstingFiles = (await mount.ls(to)).map(file => file.name);
@@ -274,6 +260,10 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         await mount.mv(from, [...to, browserObjectName]);
         const isSnapshotValid = await mount.hasSnapshot();
         await updateBucketsState('isSnapshotValid', isSnapshotValid, bucket.id);
+    };
+
+    const purgeSnapshot = async (id: string) => {
+        // await tomb.purgeSnapshot(id);
     };
 
     /** Internal function which looking for selected bucket and updates it, or bucket in buckets list if no bucket selected. */
@@ -292,6 +282,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         }));
     };
 
+    /** Changes name of bucket. */
     const renameBucket = async (bucket: Bucket, newName: string) => {
         await bucket.mount!.rename(newName);
         bucket.name = newName;
@@ -317,6 +308,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         await updateBucketsState('isSnapshotValid', isSnapshotValid, bucket.id);
     };
 
+    /** Gets storage usage info and sets it into state. */
     const updateStorageUsageState = async () => {
         try {
             const usage = await storageUsageClient.getStorageUsage();
@@ -335,7 +327,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     const uploadFile = async (bucket: Bucket, uploadPath: string[], name: string, file: ArrayBuffer, folder?: BrowserObject) => {
         const mount = bucket.mount!;
         const extstingFiles = (await mount.ls(uploadPath)).map(file => file.name);
-        let fileName = handleNameDuplication(name, extstingFiles);
+        const fileName = handleNameDuplication(name, extstingFiles);
         await mount.write([...uploadPath, fileName], file);
         if (folder) {
             const files = await mount.ls(uploadPath);
@@ -366,9 +358,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         await tomb?.deleteBucket(id);
         await getBuckets();
         await updateStorageUsageState();
-        if (selectedBucket?.id === id) {
-            navigate('/')
-        }
+        selectedBucket?.id === id && navigate('/');
         await updateStorageUsageState();
     };
 

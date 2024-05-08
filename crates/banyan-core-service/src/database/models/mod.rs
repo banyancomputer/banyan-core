@@ -45,7 +45,7 @@ pub use bucket::Bucket;
 pub use bucket_access::{BucketAccess, BucketAccessState};
 pub use bucket_type::BucketType;
 pub use deal::Deal;
-pub use deal_state::DealState;
+pub use deal_state::{DealState, DealStateError};
 #[allow(unused)]
 pub use email_message::EmailMessage;
 pub use email_message_state::EmailMessageState;

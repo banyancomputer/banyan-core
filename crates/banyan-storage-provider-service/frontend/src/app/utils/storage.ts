@@ -13,3 +13,11 @@ export function convertFileSize(bytes: number, floatLength: number = 2) {
 
     return `${+size.toFixed(floatLength)} ${labels[counter]}`;
 };
+export function convertToCurrency(amount: number): string {
+    if (!Number.isInteger(amount)) {
+        throw new Error('Input must be a whole number');
+    }
+    const dollars = Math.floor(amount / 100);
+    const cents = amount % 100;
+    return `$${dollars}.${cents.toString().padStart(2, '0')}`;
+}

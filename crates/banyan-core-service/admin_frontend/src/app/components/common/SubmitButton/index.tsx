@@ -15,9 +15,7 @@ export const SubmitButton: React.FC<{
 }) => {
 	useEffect(() => {
 		const listener = async (event: KeyboardEvent) => {
-			if (event.key !== 'Enter' || disabled) {
-				return;
-			}
+			if (event.key !== 'Enter' || disabled) { return; }
 			action();
 		};
 
@@ -26,7 +24,9 @@ export const SubmitButton: React.FC<{
 		return () => {
 			window.removeEventListener('keypress', listener);
 		};
-	});
+		// important to pass, otherwise stale version of action might be called,
+		// which would lead to incorrect name for the drive
+	}, [action, disabled]);
 
 	return (
 		<button

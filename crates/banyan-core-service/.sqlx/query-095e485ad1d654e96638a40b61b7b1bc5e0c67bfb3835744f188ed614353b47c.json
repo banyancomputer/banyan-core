@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE snapshots SET created_at = DATETIME(?, 'unixepoch') WHERE id = ?;",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "095e485ad1d654e96638a40b61b7b1bc5e0c67bfb3835744f188ed614353b47c"
+}

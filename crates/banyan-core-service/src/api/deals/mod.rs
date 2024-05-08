@@ -4,7 +4,7 @@ mod cancel_deal;
 mod get_deal;
 
 use axum::body::HttpBody;
-use axum::routing::{get, post};
+use axum::routing::{get, put};
 use axum::Router;
 
 use crate::app::AppState;
@@ -16,7 +16,7 @@ where
     Router::new()
         .route("/", get(all_deals::handler))
         .route("/:deal_id", get(get_deal::handler))
-        .route("/:deal_id/accept", post(accept_deal::handler))
-        .route("/:deal_id/cancel", post(cancel_deal::handler))
+        .route("/:deal_id/accept", put(accept_deal::handler))
+        .route("/:deal_id/cancel", put(cancel_deal::handler))
         .with_state(state)
 }

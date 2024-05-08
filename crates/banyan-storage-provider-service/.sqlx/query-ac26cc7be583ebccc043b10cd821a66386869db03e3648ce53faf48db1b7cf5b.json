@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            SELECT 1 FROM user_keys\n            WHERE user_id = $1\n            AND fingerprint = $2;\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "1",
+        "ordinal": 0,
+        "type_info": "Int"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "2a06e9627c56879a78fb6484d4c55df28b9c0a6f2cb01dcfcb5fa0a141792723"
+}
