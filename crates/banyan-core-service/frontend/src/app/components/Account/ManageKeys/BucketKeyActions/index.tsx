@@ -5,14 +5,11 @@ import { RenameAccessKeyModal } from '@components/common/Modal/RenameAccessKeyMo
 import { Bucket } from '@app/types/bucket';
 import { openModal } from '@store/modals/slice';
 import { useAppDispatch, useAppSelector } from '@app/store';
-import { AccessKeysClient } from '@/api/accessKeys';
 import { useTomb } from '@contexts/tomb';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 
 import { Rename, Trash } from '@static/images/common';
 import { UserAccessKey } from '@/app/types/userAccessKeys';
-
-const client = new AccessKeysClient();
 
 export const BucketKeyActions: React.FC<{ bucket: Bucket; accessKey: UserAccessKey }> = ({ bucket, accessKey }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.account.manageKeys.keyActions);
@@ -29,7 +26,7 @@ export const BucketKeyActions: React.FC<{ bucket: Bucket; accessKey: UserAccessK
             return;
         };
         try {
-            await client.deleteAccessKey(bucket.id, accessKey.userId);
+            ToastNotifications.error('This functionality is still being implemented.');
         } catch (error: any) {
         };
     };

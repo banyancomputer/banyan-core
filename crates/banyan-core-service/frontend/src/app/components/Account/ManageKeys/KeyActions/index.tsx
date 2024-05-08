@@ -4,14 +4,12 @@ import { RenameAccessKeyModal } from '@components/common/Modal/RenameAccessKeyMo
 
 import { openModal } from '@store/modals/slice';
 import { useAppDispatch, useAppSelector } from '@app/store';
-import { AccessKeysClient } from '@/api/accessKeys';
 import { useTomb } from '@contexts/tomb';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 
 import { Rename, Trash } from '@static/images/common';
 import { UserAccessKey } from '@/app/types/userAccessKeys';
 
-const client = new AccessKeysClient();
 
 export const KeyActions: React.FC<{ accessKey: UserAccessKey }> = ({ accessKey }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.account.manageKeys.keyActions);
@@ -27,11 +25,8 @@ export const KeyActions: React.FC<{ accessKey: UserAccessKey }> = ({ accessKey }
             ToastNotifications.error('The final key cannot be disabled or removed without at least one backup.');
             return;
         };
-        // try {
-        //     await client.deleteAccessKey(bucket.id, accessKey.userId);
-        //     await getBucketsAccess();
-        // } catch (error: any) {
-        // };
+        // TODO
+        ToastNotifications.error('This functionality is still being implemented.');
     };
 
     return (
