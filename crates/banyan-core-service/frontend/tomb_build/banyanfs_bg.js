@@ -276,7 +276,7 @@ function handleError(f, args) {
         wasm.__wbindgen_exn_store(addHeapObject(e));
     }
 }
-function __wbg_adapter_255(arg0, arg1, arg2, arg3) {
+function __wbg_adapter_256(arg0, arg1, arg2, arg3) {
     _assertNum(arg0);
     _assertNum(arg1);
     wasm.wasm_bindgen__convert__closures__invoke2_mut__hb26b958429064932(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
@@ -498,6 +498,21 @@ export class TombWasm {
         const ptr1 = passStringToWasm0(public_pem, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len1 = WASM_VECTOR_LEN;
         const ret = wasm.tombwasm_createUserKey(this.__wbg_ptr, ptr0, len0, ptr1, len1);
+        return takeObject(ret);
+    }
+    /**
+    * @param {string} name
+    * @param {string} user_key_id
+    * @returns {Promise<void>}
+    */
+    renameUserKey(name, user_key_id) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        const ptr0 = passStringToWasm0(name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(user_key_id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.tombwasm_renameUserKey(this.__wbg_ptr, ptr0, len0, ptr1, len1);
         return takeObject(ret);
     }
     /**
@@ -2276,7 +2291,7 @@ export function __wbg_new_81740750da40724f() { return logError(function (arg0, a
             const a = state0.a;
             state0.a = 0;
             try {
-                return __wbg_adapter_255(a, state0.b, arg0, arg1);
+                return __wbg_adapter_256(a, state0.b, arg0, arg1);
             } finally {
                 state0.a = a;
             }
@@ -2427,8 +2442,8 @@ export function __wbindgen_memory() {
     return addHeapObject(ret);
 };
 
-export function __wbindgen_closure_wrapper12956() { return logError(function (arg0, arg1, arg2) {
-    const ret = makeMutClosure(arg0, arg1, 1208, __wbg_adapter_30);
+export function __wbindgen_closure_wrapper13231() { return logError(function (arg0, arg1, arg2) {
+    const ret = makeMutClosure(arg0, arg1, 1235, __wbg_adapter_30);
     return addHeapObject(ret);
 }, arguments) };
 

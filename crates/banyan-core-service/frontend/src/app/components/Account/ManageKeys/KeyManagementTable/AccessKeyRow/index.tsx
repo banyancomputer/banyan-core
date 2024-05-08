@@ -74,11 +74,6 @@ export const AccessKeyRow: React.FC<{ accessKey: UserAccessKey }> = ({ accessKey
                                         </div>
                                     </td>
                                     <td></td>
-                                    <td className="py-3 px-6">
-                                        <ActionsCell actions={
-                                            <KeyActions accessKey={accessKey} />
-                                        } />
-                                    </td>
                                 </tr>
                             )}
                         </tbody>

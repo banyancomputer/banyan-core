@@ -55,7 +55,7 @@ impl IntoResponse for CreateUserKeyError {
                 (StatusCode::BAD_REQUEST, Json(err_msg)).into_response()
             }
             _ => {
-                tracing::error!("failed to create device api key: {self}");
+                tracing::error!("failed to create user key: {self}");
                 let err_msg = serde_json::json!({"msg": "backend service experienced an issue servicing the request"});
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
             }

@@ -34,6 +34,7 @@ interface TombInterface {
     getBuckets: () => Promise<Bucket[]>;
     getBucketsFiles: () => Promise<void>;
     getUserAccessKeys: () => Promise<void>;
+    renameUserKey: (name: string, userKeyId: string) => Promise<void>;
     remountBucket: (bucket: Bucket) => Promise<void>;
     selectBucket: (bucket: Bucket | null) => void;
     getSelectedBucketFiles: (path: string[]) => void;
@@ -165,6 +166,11 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
             }
         }));
         setAreAccessKeysLoading(false);
+    }
+
+    const renameUserKey = async (name: string, userKeyId: string) => {
+        await tomb!.renameUserKey(name, userKeyId);
+        await getUserAccessKeys();
     }
 
     /** Returns selected bucket state according to current folder location. */
@@ -406,7 +412,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     return (
         <TombContext.Provider
             value={{
-                tomb, buckets, userAccessKeys, areAccessKeysLoading, storageUsage, storageLimits, trash, areBucketsLoading, selectedBucket,
+                tomb, buckets, userAccessKeys, renameUserKey, areAccessKeysLoading, storageUsage, storageLimits, trash, areBucketsLoading, selectedBucket,
                 getBuckets, getBucketsFiles, getUserAccessKeys, selectBucket, getSelectedBucketFiles,
                 takeColdSnapshot, getBucketSnapshots, createDriveAndMount, deleteBucket, remountBucket,
                 getFile, renameBucket, createDirectory, uploadFile, purgeSnapshot,

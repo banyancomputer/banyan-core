@@ -4,9 +4,7 @@ use axum::response::{IntoResponse, Response};
 use serde::Deserialize;
 use uuid::Uuid;
 
-use crate::api::models::ApiUserKey;
 use crate::app::AppState;
-use crate::database::models::UserKey;
 use crate::extractors::UserIdentity;
 
 /// Register a new device api key with an account
@@ -17,15 +15,15 @@ pub async fn handler(
     Json(request): Json<RenameUserKeyRequest>,
 ) -> Result<Response, RenameUserKeyError> {
     let database = state.database();
+    let key_id = key_id.to_string();
     let user_id = user_identity.id().to_string();
-    let new_key = sqlx::query_as!(
-        UserKey,
+    let _ = sqlx::query_scalar!(
         r#"
             UPDATE user_keys 
             SET name = $1
             WHERE id = $2
             AND user_id = $3
-            RETURNING *;
+            RETURNING name;
         "#,
         request.name,
         key_id,
@@ -35,9 +33,7 @@ pub async fn handler(
     .await
     .map_err(RenameUserKeyError::FailedToRenameKey)?;
 
-    let response: ApiUserKey = new_key.into();
-
-    Ok((StatusCode::OK, Json(response)).into_response())
+    Ok((StatusCode::OK, ()).into_response())
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -50,7 +46,7 @@ impl IntoResponse for RenameUserKeyError {
     fn into_response(self) -> Response {
         match &self {
             _ => {
-                tracing::error!("failed to create device api key: {self}");
+                tracing::error!("failed to update user key: {self}");
                 let err_msg = serde_json::json!({"msg": "backend service experienced an issue servicing the request"});
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
             }
@@ -58,7 +54,7 @@ impl IntoResponse for RenameUserKeyError {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct RenameUserKeyRequest {
     name: String,
 }

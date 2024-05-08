@@ -71,6 +71,12 @@ export class TombWasm {
 */
   createUserKey(name: string, public_pem: string): Promise<void>;
 /**
+* @param {string} name
+* @param {string} user_key_id
+* @returns {Promise<void>}
+*/
+  renameUserKey(name: string, user_key_id: string): Promise<void>;
+/**
 * @param {string} bucket_id
 * @param {string} fingerprint
 * @returns {Promise<void>}

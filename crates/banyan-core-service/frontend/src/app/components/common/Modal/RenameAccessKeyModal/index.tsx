@@ -5,6 +5,7 @@ import { SecondaryButton } from '@components/common/SecondaryButton';
 
 import { closeModal } from '@store/modals/slice';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
+import { useTomb } from '@/app/contexts/tomb';
 import { useAppDispatch, useAppSelector } from '@/app/store';
 import { UserAccessKey } from '@/app/types/userAccessKeys';
 
@@ -12,6 +13,7 @@ export const RenameAccessKeyModal: React.FC<{ accessKey: UserAccessKey }> = ({ a
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.renameAccessKey);
     const [newName, setNewName] = useState('');
     const dispatch = useAppDispatch();
+    const { renameUserKey } = useTomb();
 
     const close = () => {
         dispatch(closeModal());
@@ -20,6 +22,7 @@ export const RenameAccessKeyModal: React.FC<{ accessKey: UserAccessKey }> = ({ a
     const save = async () => {
         try {
             /** TODO: implement when api will be ready. */
+            renameUserKey(newName, accessKey.id);
             close();
         } catch (error: any) {
             ToastNotifications.error(`${messages.editError}`);
