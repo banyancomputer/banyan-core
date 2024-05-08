@@ -63,59 +63,6 @@ impl Bucket {
         .await
     }
 
-    pub async fn set_bucket_access_group(
-        conn: &mut DatabaseConnection,
-        bucket_id: &str,
-        user_key_ids: &[String],
-        state: BucketAccessState,
-    ) -> Result<(), sqlx::Error> {
-        let mut builder = QueryBuilder::new(
-            r#"
-                INSERT OR REPLACE INTO bucket_access (user_key_id, bucket_id, state)
-                SELECT id,
-            "#,
-        );
-        builder.push_bind(bucket_id);
-        builder.push(r#" AS bucket_id, "#);
-        builder.push_bind(state);
-        builder.push(
-            r#" AS state
-                FROM user_keys AS uk
-                WHERE uk.id IN (
-            "#,
-        );
-        let mut separator = builder.separated(", ");
-        for user_key_id in user_key_ids {
-            separator.push_bind(user_key_id);
-        }
-        builder.push(r#");"#);
-        builder.build().execute(&mut *conn).await?;
-        Ok(())
-    }
-
-    pub async fn set_bucket_access(
-        conn: &mut DatabaseConnection,
-        user_key_id: &str,
-        bucket_id: &str,
-        state: BucketAccessState,
-    ) -> Result<BucketAccess, sqlx::Error> {
-        let access = sqlx::query_as!(
-            BucketAccess,
-            r#"
-                INSERT OR REPLACE INTO bucket_access (user_key_id, bucket_id, state)
-                VALUES ($1, $2, $3)
-                RETURNING user_key_id, bucket_id, state as 'state: BucketAccessState';
-            "#,
-            user_key_id,
-            bucket_id,
-            state
-        )
-        .fetch_one(&mut *conn)
-        .await?;
-
-        Ok(access)
-    }
-
     /// Takes that list of blocks, verifies they're associated with the bucket (part of the query),
     /// and marks them as expired so they no longer count against a user's quota and can be
     /// eventually cleaned up.
@@ -558,7 +505,7 @@ mod tests {
         let bucket_id = sample_bucket(&mut conn, &user_id).await;
         let user_key_id = create_user_key(&mut conn, &user_id, "001122", "<pubkey>").await;
 
-        Bucket::set_bucket_access(
+        BucketAccess::grant(
             &mut conn,
             &user_key_id,
             &bucket_id,
@@ -567,7 +514,7 @@ mod tests {
         .await
         .unwrap();
 
-        Bucket::set_bucket_access_group(&mut conn, &bucket_id, &[], BucketAccessState::Approved)
+        BucketAccess::grant_group(&mut conn, &bucket_id, &[], BucketAccessState::Approved)
             .await
             .expect("appoval success");
 
@@ -590,7 +537,7 @@ mod tests {
             create_user_key(&mut conn, &user_id, "002233", "<pubkey>").await,
         ];
 
-        Bucket::set_bucket_access(
+        BucketAccess::grant(
             &mut conn,
             &user_key_ids[0],
             &bucket_id,
@@ -598,7 +545,7 @@ mod tests {
         )
         .await
         .unwrap();
-        Bucket::set_bucket_access(
+        BucketAccess::grant(
             &mut conn,
             &user_key_ids[1],
             &bucket_id,
@@ -607,7 +554,7 @@ mod tests {
         .await
         .unwrap();
 
-        Bucket::set_bucket_access(
+        BucketAccess::grant(
             &mut conn,
             &user_key_ids[0],
             &bucket_id,
@@ -639,7 +586,7 @@ mod tests {
             create_user_key(&mut conn, &user_id, "004455", "<pubkey>").await,
         ];
 
-        Bucket::set_bucket_access(
+        BucketAccess::grant(
             &mut conn,
             &user_key_ids[0],
             &bucket_id,
@@ -647,7 +594,7 @@ mod tests {
         )
         .await
         .unwrap();
-        Bucket::set_bucket_access(
+        BucketAccess::grant(
             &mut conn,
             &user_key_ids[1],
             &bucket_id,
@@ -656,7 +603,7 @@ mod tests {
         .await
         .unwrap();
 
-        Bucket::set_bucket_access_group(
+        BucketAccess::grant_group(
             &mut conn,
             &bucket_id,
             &user_key_ids,

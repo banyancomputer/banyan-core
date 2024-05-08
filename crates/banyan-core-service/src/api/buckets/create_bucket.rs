@@ -8,7 +8,9 @@ use validify::{Validate, Validify};
 
 use crate::api::models::ApiBucketAccess;
 use crate::app::AppState;
-use crate::database::models::{Bucket, BucketAccessState, BucketType, StorageClass, UserKey};
+use crate::database::models::{
+    Bucket, BucketAccess, BucketAccessState, BucketType, StorageClass, UserKey,
+};
 use crate::extractors::ApiIdentity;
 
 pub async fn handler(
@@ -51,7 +53,7 @@ pub async fn handler(
     // Provide this Api Key with Bucket Access
 
     let mut conn = database.acquire().await?;
-    let access = Bucket::set_bucket_access(
+    let access = BucketAccess::grant(
         &mut conn,
         &user_key.id,
         &bucket_id,
