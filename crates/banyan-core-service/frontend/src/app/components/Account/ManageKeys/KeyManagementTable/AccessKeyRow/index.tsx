@@ -8,7 +8,6 @@ import { Bucket } from '@/app/types/bucket';
 import { ApproveBucketAccessModal } from '@/app/components/common/Modal/ApproveBucketAccessModal';
 import { RemoveBucketAccessModal } from '@/app/components/common/Modal/RemoveBucketAccessModal';
 import { KeyActions } from '../../KeyActions';
-import { BucketKeyActions } from '../../BucketKeyActions';
 
 export const AccessKeyRow: React.FC<{ accessKey: UserAccessKey }> = ({ accessKey }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.account.manageKeys.keyManagementTable);
@@ -77,7 +76,7 @@ export const AccessKeyRow: React.FC<{ accessKey: UserAccessKey }> = ({ accessKey
                                     <td></td>
                                     <td className="py-3 px-6">
                                         <ActionsCell actions={
-                                            <BucketKeyActions bucket={bucket} accessKey={accessKey} />
+                                            <KeyActions accessKey={accessKey} />
                                         } />
                                     </td>
                                 </tr>

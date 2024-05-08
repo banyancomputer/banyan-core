@@ -4,6 +4,7 @@ use axum::response::{IntoResponse, Response};
 use serde::Deserialize;
 use uuid::Uuid;
 
+use crate::api::models::ApiUserKey;
 use crate::app::AppState;
 use crate::database::models::UserKey;
 use crate::extractors::UserIdentity;
@@ -34,8 +35,9 @@ pub async fn handler(
     .await
     .map_err(RenameUserKeyError::FailedToRenameKey)?;
 
-    let resp_msg = serde_json::json!({"key": new_key});
-    Ok((StatusCode::OK, Json(resp_msg)).into_response())
+    let response: ApiUserKey = new_key.into();
+
+    Ok((StatusCode::OK, Json(response)).into_response())
 }
 
 #[derive(Debug, thiserror::Error)]

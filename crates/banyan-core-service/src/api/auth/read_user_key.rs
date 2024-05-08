@@ -3,6 +3,7 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use uuid::Uuid;
 
+use crate::api::models::ApiUserKey;
 use crate::app::AppState;
 use crate::database::models::UserKey;
 use crate::extractors::UserIdentity;
@@ -31,7 +32,7 @@ pub async fn handler(
     .await;
 
     match query_result {
-        Ok(dk) => (StatusCode::OK, Json(dk)).into_response(),
+        Ok(dk) => (StatusCode::OK, Json(Into::<ApiUserKey>::into(dk))).into_response(),
         Err(sqlx::Error::RowNotFound) => {
             let err_msg = serde_json::json!({"msg": "key not found"});
             (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
