@@ -2,14 +2,11 @@ use std::collections::{HashMap, HashSet};
 
 use banyan_task::{SqliteTaskStore, TaskLikeExt};
 use sqlx::sqlite::SqliteQueryResult;
-use sqlx::QueryBuilder;
 use time::OffsetDateTime;
 
 use super::UserKey;
 use crate::api::models::ApiBucketConfiguration;
-use crate::database::models::{
-    BucketAccess, BucketAccessState, BucketType, MinimalBlockLocation, StorageClass,
-};
+use crate::database::models::{BucketType, MinimalBlockLocation, StorageClass};
 use crate::database::{Database, DatabaseConnection, BIND_LIMIT};
 use crate::tasks::PruneBlocksTask;
 
@@ -493,7 +490,7 @@ mod tests {
     use time::OffsetDateTime;
 
     use super::*;
-    use crate::database::models::{MetadataState, SnapshotState};
+    use crate::database::models::{BucketAccess, BucketAccessState, MetadataState, SnapshotState};
     use crate::database::test_helpers::*;
 
     #[tokio::test]

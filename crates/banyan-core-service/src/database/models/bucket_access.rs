@@ -69,7 +69,7 @@ impl BucketAccess {
         Self::set_group(conn, bucket_id, &revoked_keys, BucketAccessState::Revoked).await?;
 
         // Approve keys appropriately
-        Self::set_group(conn, bucket_id, &user_key_ids, BucketAccessState::Approved).await
+        Self::set_group(conn, bucket_id, user_key_ids, BucketAccessState::Approved).await
     }
 
     pub async fn set_group(
