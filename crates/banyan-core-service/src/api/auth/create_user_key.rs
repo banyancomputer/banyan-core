@@ -20,9 +20,11 @@ pub async fn handler(
     let fingerprint = fingerprint_public_key(&public_device_key);
     let user_id = user_identity.id().to_string();
     let user_key_id = sqlx::query_scalar!(
-        r#"INSERT INTO user_keys (name, user_id, fingerprint, pem, api_access)
+        r#"
+            INSERT INTO user_keys (name, user_id, fingerprint, pem, api_access)
             VALUES ($1, $2, $3, $4, TRUE)
-            RETURNING id;"#,
+            RETURNING id;
+        "#,
         request.name,
         user_id,
         fingerprint,

@@ -8,6 +8,8 @@ use crate::app::AppState;
 
 mod create_escrowed_device;
 mod create_user_key;
+mod rename_user_key;
+
 mod read_all_user_keys;
 mod read_user_key;
 mod user_key_access;
@@ -35,7 +37,10 @@ where
             "/user_key",
             get(read_all_user_keys::handler).post(create_user_key::handler),
         )
-        .route("/user_key/:key_id", get(read_user_key::handler))
+        .route(
+            "/user_key/:key_id",
+            get(read_user_key::handler).post(rename_user_key::handler),
+        )
         .route(
             "/user_key/start_regwait/:fingerprint",
             get(start_regwait::handler),
