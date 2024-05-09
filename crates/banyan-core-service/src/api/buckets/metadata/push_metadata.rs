@@ -110,8 +110,6 @@ pub async fn handler(
         tracing::warn!("pushed metadata specified no previous id");
     };
 
-    tracing::warn!("meow: {:?}", request_data.user_key_fingerprints);
-
     BucketAccess::update_access_associations(
         &mut conn,
         &bucket_id,
