@@ -6,10 +6,9 @@ use sqlx::error::BoxDynError;
 use sqlx::sqlite::{SqliteArgumentValue, SqliteTypeInfo, SqliteValueRef};
 use sqlx::{Decode, Encode, QueryBuilder, Sqlite, Type};
 
+use super::UserKey;
 use crate::api::models::ApiPushKey;
 use crate::database::DatabaseConnection;
-
-use super::UserKey;
 
 #[derive(sqlx::FromRow, Serialize)]
 pub struct BucketAccess {
@@ -67,22 +66,17 @@ impl BucketAccess {
         )
         .fetch_all(&mut *conn)
         .await?;
-        tracing::warn!("provided_prints: {provided_prints:?}");
-        tracing::warn!("existing_prints: {existing_prints:?}");
 
         let new_keys: Vec<ApiPushKey> = user_keys
-            .to_vec()
-            .into_iter()
-            .filter(|k| !existing_prints.contains(&k.fingerprint))
+            .iter()
+            .filter(|&k| !existing_prints.contains(&k.fingerprint))
+            .cloned()
             .collect();
 
         // Any not present in the request should be revoked
         let (approve_prints, revoke_prints): (Vec<_>, Vec<_>) = existing_prints
             .into_iter()
             .partition(|k| provided_prints.contains(k));
-
-        tracing::warn!("approve: {approve_prints:?}");
-        tracing::warn!("revoke: {revoke_prints:?}");
 
         // Revoke unused keys
         Self::set_group(conn, bucket_id, &revoke_prints, BucketAccessState::Revoked).await?;
@@ -97,7 +91,6 @@ impl BucketAccess {
             }
         }
         let new_key_prints: Vec<String> = new_keys.into_iter().map(|k| k.fingerprint).collect();
-        tracing::warn!("nkp: {new_key_prints:?}");
 
         // Approve all keys being utilized
         Self::set_group(
