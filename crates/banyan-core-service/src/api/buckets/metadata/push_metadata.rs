@@ -14,6 +14,7 @@ use serde::Deserialize;
 use tokio::io::{AsyncWrite, AsyncWriteExt};
 use uuid::Uuid;
 
+use crate::api::models::ApiPushKey;
 use crate::app::AppState;
 use crate::auth::storage_ticket::StorageTicketBuilder;
 use crate::database::models::{
@@ -113,7 +114,8 @@ pub async fn handler(
     BucketAccess::update_access_associations(
         &mut conn,
         &bucket_id,
-        &request_data.user_key_fingerprints,
+        &user_id,
+        &request_data.user_keys,
     )
     .await?;
 
@@ -421,6 +423,6 @@ pub struct PushMetadataRequest {
     pub expected_data_size: i64,
 
     /// TODO deprecate these
-    pub user_key_fingerprints: Vec<String>,
+    pub user_keys: Vec<ApiPushKey>,
     pub deleted_block_cids: BTreeSet<String>,
 }

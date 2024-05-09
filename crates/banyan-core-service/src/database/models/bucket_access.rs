@@ -6,7 +6,10 @@ use sqlx::error::BoxDynError;
 use sqlx::sqlite::{SqliteArgumentValue, SqliteTypeInfo, SqliteValueRef};
 use sqlx::{Decode, Encode, QueryBuilder, Sqlite, Type};
 
+use crate::api::models::ApiPushKey;
 use crate::database::DatabaseConnection;
+
+use super::UserKey;
 
 #[derive(sqlx::FromRow, Serialize)]
 pub struct BucketAccess {
@@ -45,8 +48,14 @@ impl BucketAccess {
     pub async fn update_access_associations(
         conn: &mut DatabaseConnection,
         bucket_id: &str,
-        user_key_fingerprints: &[String],
+        user_id: &str,
+        user_keys: &[ApiPushKey],
     ) -> Result<(), sqlx::Error> {
+        // Fingerprints of the keys pushed
+        let provided_prints: Vec<String> = user_keys
+            .iter()
+            .map(|k| k.fingerprint.to_string())
+            .collect();
         // List all keys associated with the bucket
         let existing_prints: Vec<String> = sqlx::query_scalar!(
             r#"
@@ -58,24 +67,48 @@ impl BucketAccess {
         )
         .fetch_all(&mut *conn)
         .await?;
+        tracing::warn!("provided_prints: {provided_prints:?}");
+        tracing::warn!("existing_prints: {existing_prints:?}");
 
-        // Any not present in the request should be revoked
-        let revoked_prints: Vec<String> = existing_prints
+        let new_keys: Vec<ApiPushKey> = user_keys
+            .to_vec()
             .into_iter()
-            .filter(|print| !user_key_fingerprints.contains(print))
+            .filter(|k| !existing_prints.contains(&k.fingerprint))
             .collect();
 
-        // Revoke keys appropriately
-        Self::set_group(conn, bucket_id, &revoked_prints, BucketAccessState::Revoked).await?;
+        // Any not present in the request should be revoked
+        let (approve_prints, revoke_prints): (Vec<_>, Vec<_>) = existing_prints
+            .into_iter()
+            .partition(|k| provided_prints.contains(k));
 
-        // Approve keys appropriately
+        tracing::warn!("approve: {approve_prints:?}");
+        tracing::warn!("revoke: {revoke_prints:?}");
+
+        // Revoke unused keys
+        Self::set_group(conn, bucket_id, &revoke_prints, BucketAccessState::Revoked).await?;
+
+        // Create new keys
+        for key in &new_keys {
+            if UserKey::by_fingerprint(conn, &key.fingerprint)
+                .await
+                .is_err()
+            {
+                UserKey::create(conn, "unknown", user_id, &key.fingerprint, &key.pem).await?;
+            }
+        }
+        let new_key_prints: Vec<String> = new_keys.into_iter().map(|k| k.fingerprint).collect();
+        tracing::warn!("nkp: {new_key_prints:?}");
+
+        // Approve all keys being utilized
         Self::set_group(
             conn,
             bucket_id,
-            user_key_fingerprints,
+            &[approve_prints, new_key_prints].concat(),
             BucketAccessState::Approved,
         )
-        .await
+        .await?;
+
+        Ok(())
     }
 
     pub async fn set_group(

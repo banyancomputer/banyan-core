@@ -5,6 +5,7 @@ use jwt_simple::prelude::*;
 use serde::Deserialize;
 
 use crate::app::AppState;
+use crate::database::models::UserKey;
 use crate::extractors::UserIdentity;
 use crate::utils::keys::fingerprint_public_key;
 
@@ -17,22 +18,18 @@ pub async fn handler(
     let public_device_key =
         ES384PublicKey::from_pem(&request.pem).map_err(CreateUserKeyError::InvalidPublicKey)?;
     let database = state.database();
+    let mut conn = database.acquire().await?;
     let fingerprint = fingerprint_public_key(&public_device_key);
     let user_id = user_identity.id().to_string();
-    let user_key_id = sqlx::query_scalar!(
-        r#"
-            INSERT INTO user_keys (name, user_id, fingerprint, pem, api_access)
-            VALUES ($1, $2, $3, $4, TRUE)
-            RETURNING id;
-        "#,
-        request.name,
-        user_id,
-        fingerprint,
-        request.pem,
+    let user_key_id = UserKey::create(
+        &mut conn,
+        &request.name,
+        &user_id,
+        &fingerprint,
+        &request.pem,
     )
-    .fetch_one(&database)
     .await
-    .map_err(CreateUserKeyError::FailedToCreateKey)?;
+    .map_err(CreateUserKeyError::Database)?;
 
     let resp_msg = serde_json::json!({"id": user_key_id, "fingerprint": fingerprint});
     Ok((StatusCode::OK, Json(resp_msg)).into_response())
@@ -41,7 +38,7 @@ pub async fn handler(
 #[derive(Debug, thiserror::Error)]
 pub enum CreateUserKeyError {
     #[error("failed to store device API key: {0}")]
-    FailedToCreateKey(sqlx::Error),
+    Database(#[from] sqlx::Error),
 
     #[error("provided public key was not a valid EC P384 pem")]
     InvalidPublicKey(jwt_simple::Error),

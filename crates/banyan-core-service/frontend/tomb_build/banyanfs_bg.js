@@ -2442,7 +2442,7 @@ export function __wbindgen_memory() {
     return addHeapObject(ret);
 };
 
-export function __wbindgen_closure_wrapper13277() { return logError(function (arg0, arg1, arg2) {
+export function __wbindgen_closure_wrapper13301() { return logError(function (arg0, arg1, arg2) {
     const ret = makeMutClosure(arg0, arg1, 1234, __wbg_adapter_30);
     return addHeapObject(ret);
 }, arguments) };

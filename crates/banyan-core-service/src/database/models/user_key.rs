@@ -20,6 +20,29 @@ pub struct UserKey {
 }
 
 impl UserKey {
+    /// Create key
+    pub async fn create(
+        conn: &mut DatabaseConnection,
+        name: &str,
+        user_id: &str,
+        fingerprint: &str,
+        pem: &str,
+    ) -> Result<String, sqlx::Error> {
+        sqlx::query_scalar!(
+            r#"
+                INSERT INTO user_keys (name, user_id, fingerprint, pem, api_access)
+                VALUES ($1, $2, $3, $4, TRUE)
+                RETURNING id;
+            "#,
+            name,
+            user_id,
+            fingerprint,
+            pem,
+        )
+        .fetch_one(&mut *conn)
+        .await
+    }
+
     /// I think this might come in handy later but we're not using rn
     #[allow(dead_code)]
     pub async fn by_id(conn: &mut DatabaseConnection, id: &str) -> Result<Self, sqlx::Error> {
