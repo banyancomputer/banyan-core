@@ -500,23 +500,19 @@ mod tests {
 
         let user_id = sample_user(&mut conn, "user@domain.tld").await;
         let bucket_id = sample_bucket(&mut conn, &user_id).await;
-        let user_key_id = create_user_key(&mut conn, &user_id, "001122", "<pubkey>").await;
+        let print = String::from("001122");
+        create_user_key(&mut conn, &user_id, &print, "<pubkey>").await;
 
-        BucketAccess::set(
-            &mut conn,
-            &user_key_id,
-            &bucket_id,
-            BucketAccessState::Pending,
-        )
-        .await
-        .unwrap();
+        BucketAccess::set(&mut conn, &bucket_id, &print, BucketAccessState::Pending)
+            .await
+            .unwrap();
 
         BucketAccess::set_group(&mut conn, &bucket_id, &[], BucketAccessState::Approved)
             .await
             .expect("appoval success");
 
         assert_eq!(
-            get_user_key_bucket_access(&mut conn, &bucket_id, &user_key_id).await,
+            get_user_key_bucket_access(&mut conn, &bucket_id, &print).await,
             Some(BucketAccessState::Pending)
         );
     }
@@ -529,23 +525,22 @@ mod tests {
         let user_id = sample_user(&mut conn, "user@domain.tld").await;
         let bucket_id = sample_bucket(&mut conn, &user_id).await;
 
-        let user_key_ids = [
-            create_user_key(&mut conn, &user_id, "001122", "<pubkey>").await,
-            create_user_key(&mut conn, &user_id, "002233", "<pubkey>").await,
-        ];
+        let prints = [String::from("001122"), String::from("002233")];
+        create_user_key(&mut conn, &user_id, &prints[0], "<pubkey>").await;
+        create_user_key(&mut conn, &user_id, &prints[1], "<pubkey>").await;
 
         BucketAccess::set(
             &mut conn,
-            &user_key_ids[0],
             &bucket_id,
+            &prints[0],
             BucketAccessState::Pending,
         )
         .await
         .unwrap();
         BucketAccess::set(
             &mut conn,
-            &user_key_ids[1],
             &bucket_id,
+            &prints[1],
             BucketAccessState::Pending,
         )
         .await
@@ -553,19 +548,19 @@ mod tests {
 
         BucketAccess::set(
             &mut conn,
-            &user_key_ids[0],
             &bucket_id,
+            &prints[0],
             BucketAccessState::Approved,
         )
         .await
         .expect("appoval success");
 
         assert_eq!(
-            get_user_key_bucket_access(&mut conn, &bucket_id, &user_key_ids[0]).await,
+            get_user_key_bucket_access(&mut conn, &bucket_id, &prints[0]).await,
             Some(BucketAccessState::Approved)
         );
         assert_eq!(
-            get_user_key_bucket_access(&mut conn, &bucket_id, &user_key_ids[1]).await,
+            get_user_key_bucket_access(&mut conn, &bucket_id, &prints[1]).await,
             Some(BucketAccessState::Pending)
         );
     }
@@ -578,43 +573,37 @@ mod tests {
         let user_id = sample_user(&mut conn, "user@domain.tld").await;
         let bucket_id = sample_bucket(&mut conn, &user_id).await;
 
-        let user_key_ids = vec![
-            create_user_key(&mut conn, &user_id, "003344", "<pubkey>").await,
-            create_user_key(&mut conn, &user_id, "004455", "<pubkey>").await,
-        ];
+        let prints = [String::from("334455"), String::from("445566")];
+        create_user_key(&mut conn, &user_id, &prints[0], "<pubkey>").await;
+        create_user_key(&mut conn, &user_id, &prints[1], "<pubkey>").await;
 
         BucketAccess::set(
             &mut conn,
-            &user_key_ids[0],
             &bucket_id,
+            &prints[0],
             BucketAccessState::Pending,
         )
         .await
         .unwrap();
         BucketAccess::set(
             &mut conn,
-            &user_key_ids[1],
             &bucket_id,
+            &prints[1],
             BucketAccessState::Pending,
         )
         .await
         .unwrap();
 
-        BucketAccess::set_group(
-            &mut conn,
-            &bucket_id,
-            &user_key_ids,
-            BucketAccessState::Approved,
-        )
-        .await
-        .expect("appoval success");
+        BucketAccess::set_group(&mut conn, &bucket_id, &prints, BucketAccessState::Approved)
+            .await
+            .expect("appoval success");
 
         assert_eq!(
-            get_user_key_bucket_access(&mut conn, &bucket_id, &user_key_ids[0]).await,
+            get_user_key_bucket_access(&mut conn, &bucket_id, &prints[0]).await,
             Some(BucketAccessState::Approved)
         );
         assert_eq!(
-            get_user_key_bucket_access(&mut conn, &bucket_id, &user_key_ids[1]).await,
+            get_user_key_bucket_access(&mut conn, &bucket_id, &prints[1]).await,
             Some(BucketAccessState::Approved)
         );
     }

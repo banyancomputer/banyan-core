@@ -55,8 +55,8 @@ pub async fn handler(
     let mut conn = database.acquire().await?;
     let access = BucketAccess::set(
         &mut conn,
-        &user_key.id,
         &bucket_id,
+        &user_key.fingerprint,
         BucketAccessState::Approved,
     )
     .await

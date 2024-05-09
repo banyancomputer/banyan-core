@@ -45,12 +45,12 @@ impl BucketAccess {
     pub async fn update_access_associations(
         conn: &mut DatabaseConnection,
         bucket_id: &str,
-        user_key_ids: &[String],
+        user_key_fingerprints: &[String],
     ) -> Result<(), sqlx::Error> {
         // List all keys associated with the bucket
-        let existing_key_ids: Vec<String> = sqlx::query_scalar!(
+        let existing_prints: Vec<String> = sqlx::query_scalar!(
             r#"
-                SELECT id FROM user_keys
+                SELECT fingerprint FROM user_keys
                 JOIN bucket_access AS ba ON ba.user_key_id = id
                 WHERE ba.bucket_id = $1
             "#,
@@ -60,22 +60,28 @@ impl BucketAccess {
         .await?;
 
         // Any not present in the request should be revoked
-        let revoked_keys: Vec<String> = existing_key_ids
+        let revoked_prints: Vec<String> = existing_prints
             .into_iter()
-            .filter(|id| !user_key_ids.contains(id))
+            .filter(|print| !user_key_fingerprints.contains(print))
             .collect();
 
         // Revoke keys appropriately
-        Self::set_group(conn, bucket_id, &revoked_keys, BucketAccessState::Revoked).await?;
+        Self::set_group(conn, bucket_id, &revoked_prints, BucketAccessState::Revoked).await?;
 
         // Approve keys appropriately
-        Self::set_group(conn, bucket_id, user_key_ids, BucketAccessState::Approved).await
+        Self::set_group(
+            conn,
+            bucket_id,
+            user_key_fingerprints,
+            BucketAccessState::Approved,
+        )
+        .await
     }
 
     pub async fn set_group(
         conn: &mut DatabaseConnection,
         bucket_id: &str,
-        user_key_ids: &[String],
+        user_key_fingerprints: &[String],
         state: BucketAccessState,
     ) -> Result<(), sqlx::Error> {
         let mut builder = QueryBuilder::new(
@@ -90,12 +96,12 @@ impl BucketAccess {
         builder.push(
             r#" AS state
                 FROM user_keys AS uk
-                WHERE uk.id IN (
+                WHERE uk.fingerprint IN (
             "#,
         );
         let mut separator = builder.separated(", ");
-        for user_key_id in user_key_ids {
-            separator.push_bind(user_key_id);
+        for user_key_fingerprint in user_key_fingerprints {
+            separator.push_bind(user_key_fingerprint);
         }
         builder.push(r#");"#);
         builder.build().execute(&mut *conn).await?;
@@ -104,20 +110,22 @@ impl BucketAccess {
 
     pub async fn set(
         conn: &mut DatabaseConnection,
-        user_key_id: &str,
         bucket_id: &str,
+        user_key_fingerprint: &str,
         state: BucketAccessState,
     ) -> Result<BucketAccess, sqlx::Error> {
         let access = sqlx::query_as!(
             BucketAccess,
             r#"
                 INSERT OR REPLACE INTO bucket_access (user_key_id, bucket_id, state)
-                VALUES ($1, $2, $3)
+                SELECT uk.id AS user_key_id, $1 AS bucket_id, $2 AS state
+                FROM user_keys AS uk
+                WHERE uk.fingerprint = $3
                 RETURNING user_key_id, bucket_id, state as 'state: BucketAccessState';
             "#,
-            user_key_id,
             bucket_id,
-            state
+            state,
+            user_key_fingerprint,
         )
         .fetch_one(&mut *conn)
         .await?;

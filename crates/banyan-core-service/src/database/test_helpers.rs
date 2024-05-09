@@ -130,17 +130,17 @@ pub(crate) async fn create_user_key(
 pub(crate) async fn get_user_key_bucket_access(
     conn: &mut DatabaseConnection,
     bucket_id: &str,
-    user_key_id: &str,
+    user_key_print: &str,
 ) -> Option<BucketAccessState> {
     sqlx::query_scalar!(
         r#"
             SELECT state as "state!: BucketAccessState" FROM bucket_access
+            JOIN user_keys AS uk ON uk.id = user_key_id
             WHERE bucket_id = $1
-            AND user_key_id = $2
-
+            AND uk.fingerprint = $2
         "#,
         bucket_id,
-        user_key_id,
+        user_key_print,
     )
     .fetch_optional(&mut *conn)
     .await

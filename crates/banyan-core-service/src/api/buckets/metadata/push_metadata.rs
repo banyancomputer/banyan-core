@@ -110,10 +110,12 @@ pub async fn handler(
         tracing::warn!("pushed metadata specified no previous id");
     };
 
+    tracing::warn!("meow: {:?}", request_data.user_key_fingerprints);
+
     BucketAccess::update_access_associations(
         &mut conn,
         &bucket_id,
-        &request_data.included_key_fingerprints,
+        &request_data.user_key_fingerprints,
     )
     .await?;
 
@@ -420,10 +422,7 @@ pub struct PushMetadataRequest {
 
     pub expected_data_size: i64,
 
-    /// Fingerprints of the public portion of the bucket keys that are valid for this metadata
-    /// upload
-    #[serde(rename = "valid_keys")]
-    pub included_key_fingerprints: Vec<String>,
-
+    /// TODO deprecate these
+    pub user_key_fingerprints: Vec<String>,
     pub deleted_block_cids: BTreeSet<String>,
 }
