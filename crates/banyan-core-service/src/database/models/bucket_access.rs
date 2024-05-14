@@ -87,7 +87,15 @@ impl BucketAccess {
                 .await
                 .is_err()
             {
-                UserKey::create(conn, "unknown", user_id, &key.fingerprint, &key.pem).await?;
+                UserKey::create(
+                    conn,
+                    "unknown",
+                    user_id,
+                    &key.fingerprint,
+                    &key.public_key,
+                    false,
+                )
+                .await?;
             }
         }
         let new_key_prints: Vec<String> = new_keys.into_iter().map(|k| k.fingerprint).collect();

@@ -25,18 +25,20 @@ impl UserKey {
         name: &str,
         user_id: &str,
         fingerprint: &str,
-        pem: &str,
+        public_key: &str,
+        api_access: bool,
     ) -> Result<String, sqlx::Error> {
         sqlx::query_scalar!(
             r#"
                 INSERT INTO user_keys (name, user_id, fingerprint, pem, api_access)
-                VALUES ($1, $2, $3, $4, TRUE)
+                VALUES ($1, $2, $3, $4, $5)
                 RETURNING id;
             "#,
             name,
             user_id,
             fingerprint,
-            pem,
+            public_key,
+            api_access,
         )
         .fetch_one(&mut *conn)
         .await

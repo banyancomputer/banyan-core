@@ -15,7 +15,7 @@ pub async fn handler(
     State(state): State<AppState>,
     Json(request): Json<CreateUserKeyRequest>,
 ) -> Result<Response, CreateUserKeyError> {
-    let public_device_key = ES384PublicKey::from_pem(&request.public_key_pem)
+    let public_device_key = ES384PublicKey::from_pem(&request.public_key)
         .map_err(CreateUserKeyError::InvalidPublicKey)?;
     let database = state.database();
     let mut conn = database.acquire().await?;
@@ -26,7 +26,8 @@ pub async fn handler(
         &request.name,
         &user_id,
         &fingerprint,
-        &request.public_key_pem,
+        &request.public_key,
+        true,
     )
     .await
     .map_err(CreateUserKeyError::Database)?;
@@ -63,5 +64,5 @@ impl IntoResponse for CreateUserKeyError {
 #[derive(Deserialize)]
 pub struct CreateUserKeyRequest {
     name: String,
-    public_key_pem: String,
+    public_key: String,
 }
