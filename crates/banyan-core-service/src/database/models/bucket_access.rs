@@ -5,6 +5,7 @@ use sqlx::encode::IsNull;
 use sqlx::error::BoxDynError;
 use sqlx::sqlite::{SqliteArgumentValue, SqliteTypeInfo, SqliteValueRef};
 use sqlx::{Decode, Encode, QueryBuilder, Sqlite, Type};
+use tracing::warn;
 
 use super::UserKey;
 use crate::api::models::ApiPushKey;
@@ -70,8 +71,8 @@ impl BucketAccess {
             .into_iter()
             .partition(|k| provided_prints.contains(k));
 
-        // Revoke unused keys
-        // Self::set_group(conn, bucket_id, &revoke_prints, false).await?;
+        // Revoke unused keys, deleting them from the table
+        Self::revoke_group(conn, bucket_id, &revoke_prints).await?;
 
         // Create new keys
         for key in &new_keys {
@@ -104,6 +105,46 @@ impl BucketAccess {
         Ok(())
     }
 
+    pub async fn revoke_group(
+        conn: &mut DatabaseConnection,
+        bucket_id: &str,
+        user_key_fingerprints: &[String],
+    ) -> Result<(), sqlx::Error> {
+        let mut builder = QueryBuilder::new(
+            r#"
+                DELETE FROM bucket_access AS ba
+                WHERE ba.bucket_id = 
+            "#,
+        );
+        builder.push_bind(bucket_id);
+        builder.push(
+            r#"
+                AND ba.user_key_id IN (
+                    SELECT uk.id FROM user_keys AS uk
+                    WHERE uk.fingerprint IN (
+            "#,
+        );
+        let mut separator = builder.separated(", ");
+        for user_key_fingerprint in user_key_fingerprints {
+            separator.push_bind(user_key_fingerprint);
+        }
+        builder.push(
+            r#" 
+                    )
+                );
+            "#,
+        );
+        let result = builder.build().execute(&mut *conn).await?;
+        if result.rows_affected() != user_key_fingerprints.len() as u64 {
+            warn!(
+                "expected to revoke buckets access for {} rows but only touched {}",
+                user_key_fingerprints.len(),
+                result.rows_affected()
+            );
+        }
+        Ok(())
+    }
+
     pub async fn set_group(
         conn: &mut DatabaseConnection,
         bucket_id: &str,
@@ -112,7 +153,7 @@ impl BucketAccess {
     ) -> Result<(), sqlx::Error> {
         let mut builder = QueryBuilder::new(
             r#"
-                INSERT OR REPLACE INTO bucket_access (user_key_id, bucket_id, state)
+                INSERT OR REPLACE INTO bucket_access (user_key_id, bucket_id, approved)
                 SELECT id,
             "#,
         );
