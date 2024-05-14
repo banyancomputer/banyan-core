@@ -3,7 +3,7 @@ use time::OffsetDateTime;
 
 use super::Subscription;
 use crate::database::models::{
-    BucketAccess, BucketAccessState, HotUsage, SnapshotState, SubscriptionStatus, TaxClass,
+    BucketAccess, HotUsage, SnapshotState, SubscriptionStatus, TaxClass,
 };
 use crate::database::DatabaseConnection;
 use crate::utils::GIBIBYTE;
@@ -296,7 +296,7 @@ impl User {
         sqlx::query_as!(
             BucketAccess,
             r#"
-                SELECT ba.user_key_id, ba.bucket_id, ba.state AS 'state: BucketAccessState' FROM bucket_access AS ba
+                SELECT ba.* FROM bucket_access AS ba
                 JOIN buckets AS b ON b.id = ba.bucket_id
                 JOIN user_keys AS uk ON uk.id = ba.user_key_id
                 JOIN users AS u ON u.id = uk.user_id

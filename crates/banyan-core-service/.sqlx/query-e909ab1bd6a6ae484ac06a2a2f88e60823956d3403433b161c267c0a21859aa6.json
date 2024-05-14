@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            SELECT approved FROM bucket_access\n            JOIN user_keys AS uk ON uk.id = user_key_id\n            WHERE bucket_id = $1\n            AND uk.fingerprint = $2\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "approved",
+        "ordinal": 0,
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "e909ab1bd6a6ae484ac06a2a2f88e60823956d3403433b161c267c0a21859aa6"
+}

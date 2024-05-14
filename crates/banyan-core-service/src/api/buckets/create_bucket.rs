@@ -8,9 +8,7 @@ use validify::{Validate, Validify};
 
 use crate::api::models::ApiBucketAccess;
 use crate::app::AppState;
-use crate::database::models::{
-    Bucket, BucketAccess, BucketAccessState, BucketType, StorageClass, UserKey,
-};
+use crate::database::models::{Bucket, BucketAccess, BucketType, StorageClass, UserKey};
 use crate::extractors::ApiIdentity;
 
 pub async fn handler(
@@ -53,14 +51,9 @@ pub async fn handler(
     // Provide this Api Key with Bucket Access
 
     let mut conn = database.acquire().await?;
-    let access = BucketAccess::set(
-        &mut conn,
-        &bucket_id,
-        &user_key.fingerprint,
-        BucketAccessState::Approved,
-    )
-    .await
-    .map_err(CreateBucketError::GrantAccessFailed)?;
+    let access = BucketAccess::set(&mut conn, &bucket_id, &user_key.fingerprint, true)
+        .await
+        .map_err(CreateBucketError::GrantAccessFailed)?;
 
     let bucket = Bucket::find_by_id(&mut conn, &bucket_id)
         .await
@@ -75,7 +68,7 @@ pub async fn handler(
             user_key_id: user_key.id,
             bucket_id: bucket.id,
             fingerprint: user_key.fingerprint,
-            state: access.state,
+            approved: access.approved,
         },
     };
 
@@ -178,10 +171,10 @@ mod tests {
         let user_key = UserKey::by_fingerprint(&mut conn, &fingerprint)
             .await
             .unwrap();
-        let state = BucketAccess::by_fingerprint(&mut conn, &fingerprint)
+        let approved = BucketAccess::by_fingerprint(&mut conn, &fingerprint)
             .await
             .unwrap()
-            .state;
+            .approved;
 
         assert_eq!(status, StatusCode::OK);
         assert_eq!(bucket_response.id, bucket_in_db.id);
@@ -189,6 +182,6 @@ mod tests {
         assert_eq!(bucket_response.r#type, bucket_in_db.r#type);
         assert_eq!(bucket_response.storage_class, bucket_in_db.storage_class);
         assert_eq!(user_key.fingerprint, fingerprint);
-        assert_eq!(state, BucketAccessState::Approved);
+        assert_eq!(approved, true);
     }
 }

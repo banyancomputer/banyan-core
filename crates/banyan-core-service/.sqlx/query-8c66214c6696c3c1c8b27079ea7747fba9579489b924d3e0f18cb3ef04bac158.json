@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                INSERT OR REPLACE INTO bucket_access (user_key_id, bucket_id, approved)\n                SELECT uk.id AS user_key_id, $1 AS bucket_id, $2 AS approved\n                FROM user_keys AS uk\n                WHERE uk.fingerprint = $3\n                RETURNING user_key_id, bucket_id, approved;\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "user_key_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "bucket_id",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "approved",
+        "ordinal": 2,
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "8c66214c6696c3c1c8b27079ea7747fba9579489b924d3e0f18cb3ef04bac158"
+}

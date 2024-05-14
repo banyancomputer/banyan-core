@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            SELECT ba.user_key_id, ba.bucket_id, uk.fingerprint, ba.approved\n            FROM bucket_access AS ba\n            JOIN user_keys AS uk ON uk.id = ba.user_key_id\n            JOIN users AS u on u.id = uk.user_id\n            JOIN buckets AS b on b.id = ba.bucket_id\n            WHERE uk.id = $1\n            AND u.id = $2\n            AND b.id = $3;\n        ;",
+  "describe": {
+    "columns": [
+      {
+        "name": "user_key_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "bucket_id",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "fingerprint",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "approved",
+        "ordinal": 3,
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "94ea08c05283477a9bc2512125d922afbba26fff20d86583f33e5fb9a088bd68"
+}

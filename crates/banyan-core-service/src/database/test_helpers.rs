@@ -6,7 +6,7 @@ use sqlx::sqlite::{SqlitePoolOptions, SqliteQueryResult};
 use time::OffsetDateTime;
 use uuid::Uuid;
 
-use super::models::{BucketAccessState, NewStorageGrant};
+use super::models::NewStorageGrant;
 use crate::database::models::{BucketType, DealState, MetadataState, SnapshotState, StorageClass};
 use crate::database::{Database, DatabaseConnection};
 use crate::extractors::{ApiIdentity, ApiIdentityBuilder, SessionIdentity, SessionIdentityBuilder};
@@ -131,10 +131,10 @@ pub(crate) async fn get_user_key_bucket_access(
     conn: &mut DatabaseConnection,
     bucket_id: &str,
     user_key_print: &str,
-) -> Option<BucketAccessState> {
+) -> Option<bool> {
     sqlx::query_scalar!(
         r#"
-            SELECT state as "state!: BucketAccessState" FROM bucket_access
+            SELECT approved FROM bucket_access
             JOIN user_keys AS uk ON uk.id = user_key_id
             WHERE bucket_id = $1
             AND uk.fingerprint = $2

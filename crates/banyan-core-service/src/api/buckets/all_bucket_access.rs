@@ -5,7 +5,6 @@ use uuid::Uuid;
 
 use crate::api::models::ApiBucketAccess;
 use crate::app::AppState;
-use crate::database::models::BucketAccessState;
 use crate::extractors::UserIdentity;
 
 pub async fn handler(
@@ -19,7 +18,7 @@ pub async fn handler(
     let access = sqlx::query_as!(
         ApiBucketAccess,
         r#"
-            SELECT ba.user_key_id, ba.bucket_id, uk.fingerprint, ba.state as 'state: BucketAccessState'
+            SELECT ba.user_key_id, ba.bucket_id, uk.fingerprint, ba.approved
             FROM bucket_access AS ba
             JOIN user_keys AS uk ON ba.user_key_id = uk.id
             WHERE uk.user_id = $1

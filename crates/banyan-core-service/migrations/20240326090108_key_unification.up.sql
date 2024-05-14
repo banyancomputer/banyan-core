@@ -26,10 +26,7 @@ CREATE TABLE bucket_access (
     bucket_id TEXT NOT NULL
         REFERENCES buckets(id)
         ON DELETE CASCADE,
-    -- rather than simple y/n approval, let's include ['pending', 'approved', 'revoked'] as valid 
-    state TEXT NOT NULL
-         CHECK (state IN ('pending', 'approved', 'revoked'))
-         DEFAULT 'pending'
+	approved BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 CREATE UNIQUE INDEX idx_api_access_on_buckets
@@ -49,11 +46,11 @@ INSERT INTO user_keys(id, user_id, fingerprint, pem, name)
     JOIN users AS u ON b.user_id = u.id
 ;
 
-INSERT INTO bucket_access(user_key_id, bucket_id, state) 
+INSERT INTO bucket_access(user_key_id, bucket_id, approved) 
     SELECT
         ak.id,
         bk.bucket_id,
-		(CASE WHEN bk.approved THEN 'approved' ELSE 'pending' END)
+		bk.approved
     FROM bucket_keys AS bk
     JOIN user_keys AS ak ON ak.fingerprint = bk.fingerprint
 ;
