@@ -158,7 +158,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
                 id: key.id(),
                 name: key.name(),
                 userId: key.userId(),
-                publicKeyPem: key.public_key_pem(),
+                publicKey: key.public_key(),
                 fingerprint: key.fingerprint(),
                 apiAccess: key.apiAccess(),
                 createdAt: key.createdAt(),

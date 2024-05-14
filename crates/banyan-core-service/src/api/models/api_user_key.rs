@@ -11,7 +11,7 @@ pub struct ApiUserKey {
 
     pub api_access: bool,
 
-    pub pem: String,
+    pub public_key: String,
     pub fingerprint: String,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
@@ -24,7 +24,7 @@ impl From<UserKey> for ApiUserKey {
             name: value.name,
             user_id: value.user_id,
             api_access: value.api_access,
-            pem: value.pem,
+            public_key: value.public_key,
             fingerprint: value.fingerprint,
             created_at: value.created_at,
         }

@@ -19,7 +19,7 @@
         "type_info": "Text"
       },
       {
-        "name": "pem",
+        "name": "public_key",
         "ordinal": 3,
         "type_info": "Text"
       },

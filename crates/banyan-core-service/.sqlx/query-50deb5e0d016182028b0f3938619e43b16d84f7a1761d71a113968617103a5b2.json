@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, public_key, fingerprint FROM user_keys WHERE user_id = $1;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "public_key",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "fingerprint",
+        "ordinal": 2,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "50deb5e0d016182028b0f3938619e43b16d84f7a1761d71a113968617103a5b2"
+}

@@ -11,7 +11,7 @@ pub struct UserKey {
 
     pub api_access: bool,
 
-    pub pem: String,
+    pub public_key: String,
     pub fingerprint: String,
 
     pub updated_at: OffsetDateTime,
@@ -30,7 +30,7 @@ impl UserKey {
     ) -> Result<String, sqlx::Error> {
         sqlx::query_scalar!(
             r#"
-                INSERT INTO user_keys (name, user_id, fingerprint, pem, api_access)
+                INSERT INTO user_keys (name, user_id, fingerprint, public_key, api_access)
                 VALUES ($1, $2, $3, $4, $5)
                 RETURNING id;
             "#,

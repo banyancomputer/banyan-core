@@ -110,17 +110,17 @@ pub(crate) async fn create_user_key(
     conn: &mut DatabaseConnection,
     user_id: &str,
     fingerprint: &str,
-    pem: &str,
+    public_key: &str,
 ) -> String {
     sqlx::query_scalar!(
         r#"
-            INSERT INTO user_keys (name, user_id, fingerprint, pem)
+            INSERT INTO user_keys (name, user_id, fingerprint, public_key)
             VALUES ('Owner', $1, $2, $3)
             RETURNING id;
         "#,
         user_id,
         fingerprint,
-        pem,
+        public_key,
     )
     .fetch_one(&mut *conn)
     .await
@@ -574,7 +574,7 @@ pub(crate) async fn get_or_create_identity(
         .expect("user query");
 
     let device_api_key = sqlx::query!(
-        "SELECT id, pem, fingerprint FROM user_keys WHERE user_id = $1;",
+        "SELECT id, public_key, fingerprint FROM user_keys WHERE user_id = $1;",
         user_id
     )
     .fetch_optional(&mut *conn)
@@ -589,18 +589,18 @@ pub(crate) async fn get_or_create_identity(
         .build(),
         None => {
             let key_pair = ES384KeyPair::generate();
-            let pem = key_pair.to_pem().expect("pem key");
+            let public_key = key_pair.to_pem().expect("pem key");
             let fingerprint = fingerprint_public_key(&key_pair.public_key());
 
             sqlx::query_scalar!(
                 r#"
-                    INSERT INTO user_keys (name, user_id, fingerprint, pem, api_access)
+                    INSERT INTO user_keys (name, user_id, fingerprint, public_key, api_access)
                     VALUES ('example', $1, $2, $3, true)
                     RETURNING id;
                 "#,
                 user_id,
                 fingerprint,
-                pem,
+                public_key,
             )
             .fetch_one(&mut *conn)
             .await

@@ -23,7 +23,7 @@ pub async fn handler(
                 uk.name,
                 uk.user_id, 
                 uk.api_access,
-                uk.pem, 
+                uk.public_key, 
                 uk.fingerprint, 
                 uk.created_at, 
                 GROUP_CONCAT(b.id) AS "bucket_ids!: String"

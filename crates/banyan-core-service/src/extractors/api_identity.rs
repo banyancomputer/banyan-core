@@ -111,7 +111,7 @@ where
             return Err(ApiIdentityError::UserKeyNotApiAuthorized);
         }
 
-        let key = DecodingKey::from_ec_pem(db_user_key.pem.as_bytes())
+        let key = DecodingKey::from_ec_pem(db_user_key.public_key.as_bytes())
             .map_err(|err| ApiIdentityError::DatabaseCorrupt(db_user_key.id.clone(), err))?;
 
         // TODO: we probably want to use device keys to sign this instead of a

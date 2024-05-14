@@ -10,6 +10,9 @@ ALTER TABLE user_keys
     ADD COLUMN name TEXT NOT NULL;
 
 ALTER TABLE user_keys
+	RENAME COLUMN pem TO public_key;
+
+ALTER TABLE user_keys
     -- add API access as column
     ADD COLUMN api_access BOOLEAN NOT NULL DEFAULT FALSE;
 
@@ -34,7 +37,7 @@ CREATE UNIQUE INDEX idx_api_access_on_buckets
 
 -- Part 2: Modify Bucket Keys
 -- These will default to being keys without API access
-INSERT INTO user_keys(id, user_id, fingerprint, pem, name)
+INSERT INTO user_keys(id, user_id, fingerprint, public_key, name)
     SELECT 
 		bk.id,
         u.id, 

@@ -26,7 +26,7 @@ impl From<UserKeyAccess> for ApiUserKeyAccess {
                 name: value.name,
                 user_id: value.user_id,
                 api_access: value.api_access,
-                pem: value.pem,
+                public_key: value.public_key,
                 fingerprint: value.fingerprint,
                 created_at: value.created_at,
             },
