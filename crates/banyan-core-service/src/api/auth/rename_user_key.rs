@@ -17,7 +17,7 @@ pub async fn handler(
     let database = state.database();
     let key_id = key_id.to_string();
     let user_id = user_identity.id().to_string();
-    sqlx::query!(
+    let result = sqlx::query!(
         r#"
             UPDATE user_keys 
             SET name = $1
@@ -32,20 +32,35 @@ pub async fn handler(
     .await
     .map_err(RenameUserKeyError::FailedToRenameKey)?;
 
-    Ok((StatusCode::OK, ()).into_response())
+    if result.rows_affected() == 0 {
+        Err(RenameUserKeyError::NotFound)
+    } else {
+        Ok((StatusCode::OK, ()).into_response())
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
 pub enum RenameUserKeyError {
     #[error("failed to store device API key: {0}")]
     FailedToRenameKey(sqlx::Error),
+
+    #[error("no matching key")]
+    NotFound,
 }
 
 impl IntoResponse for RenameUserKeyError {
     fn into_response(self) -> Response {
-        tracing::error!("failed to rename user key: {self}");
-        let err_msg = serde_json::json!({"msg": "backend service experienced an issue servicing the request"});
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
+        match self {
+            RenameUserKeyError::FailedToRenameKey(_) => {
+                tracing::error!("failed to rename user key: {self}");
+                let err_msg = serde_json::json!({"msg": "backend service experienced an issue servicing the request"});
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(err_msg)).into_response()
+            }
+            RenameUserKeyError::NotFound => {
+                let err_msg = serde_json::json!({"msg": "not found"});
+                (StatusCode::NOT_FOUND, Json(err_msg)).into_response()
+            }
+        }
     }
 }
 
