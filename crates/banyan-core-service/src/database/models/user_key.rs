@@ -14,7 +14,6 @@ pub struct UserKey {
     pub pem: String,
     pub fingerprint: String,
 
-    //
     pub updated_at: OffsetDateTime,
     pub created_at: OffsetDateTime,
 }

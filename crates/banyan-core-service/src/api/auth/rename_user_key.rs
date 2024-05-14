@@ -17,19 +17,18 @@ pub async fn handler(
     let database = state.database();
     let key_id = key_id.to_string();
     let user_id = user_identity.id().to_string();
-    let _ = sqlx::query_scalar!(
+    sqlx::query!(
         r#"
             UPDATE user_keys 
             SET name = $1
             WHERE id = $2
-            AND user_id = $3
-            RETURNING name;
+            AND user_id = $3;
         "#,
         request.name,
         key_id,
         user_id,
     )
-    .fetch_one(&database)
+    .execute(&database)
     .await
     .map_err(RenameUserKeyError::FailedToRenameKey)?;
 
