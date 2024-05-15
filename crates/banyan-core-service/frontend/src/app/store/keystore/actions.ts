@@ -80,24 +80,9 @@ const authClient = new AuthClient();
 		destroyLocalKey();
 	});
 
-
-	// Get the user's Encryption Key Pair as a Public / Private PEM combo
-	export const getEncryptionKey = createAsyncThunk(
-        'getEncryptionKey',
-        async (_, { getState }): Promise<{ privatePem: string, publicPem: string }> => {
-        const {keystore: {escrowedKeyMaterial, keystore}} = getState() as RootState;
-		const localKey = getLocalKey();
-		const keyMaterial = await keystore!.retrieveCachedPrivateKeyMaterial(localKey.key, localKey.id);
-
-		return {
-			privatePem: keyMaterial.encryptionPrivateKeyPem,
-			publicPem: escrowedKeyMaterial!.encryptionPublicKeyPem
-		};
-	});
-
 	// Get the user's API Key as a Private / Public PEM combo
-	export const getApiKey = createAsyncThunk(
-        'getApiKey',
+	export const getUserKey = createAsyncThunk(
+        'getUserKey',
         async (_, {getState}): Promise<{ privatePem: string, publicPem: string }> => {
         const {keystore: { escrowedKeyMaterial, keystore }} = getState() as RootState;
 
@@ -105,7 +90,7 @@ const authClient = new AuthClient();
 		const privateKeyMaterial = await keystore!.retrieveCachedPrivateKeyMaterial(localKey.key, localKey.id);
 
 		return {
-			privatePem: privateKeyMaterial.apiPrivateKeyPem,
-			publicPem: escrowedKeyMaterial!.apiPublicKeyPem
+			privatePem: privateKeyMaterial.privateKeyPem,
+			publicPem: escrowedKeyMaterial!.publicKey
 		};
 	});

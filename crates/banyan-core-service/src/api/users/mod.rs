@@ -6,8 +6,8 @@ use axum::Router;
 
 use crate::app::AppState;
 
-mod current_escrowed_device;
 mod current_user;
+mod escrowed_user_key;
 mod storage_grant;
 mod update_user;
 
@@ -22,7 +22,7 @@ where
             "/current",
             get(current_user::handler).patch(update_user::handler),
         )
-        .route("/escrowed_device", get(current_escrowed_device::handler))
+        .route("/escrowed_user_key", get(escrowed_user_key::handler))
         .route("/storage_grant/:base_url", get(storage_grant::handler))
         .with_state(state)
 }

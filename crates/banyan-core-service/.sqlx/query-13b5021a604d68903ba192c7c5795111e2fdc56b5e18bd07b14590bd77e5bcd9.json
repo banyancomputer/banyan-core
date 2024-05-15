@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            INSERT INTO escrowed_user_keys (\n                user_id, \n                public_key, \n                encrypted_private_key_material, \n                pass_key_salt\n            )\n            VALUES ($1, $2, $3, $4);\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "13b5021a604d68903ba192c7c5795111e2fdc56b5e18bd07b14590bd77e5bcd9"
+}

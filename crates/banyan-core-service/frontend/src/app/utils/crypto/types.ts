@@ -68,20 +68,10 @@ export enum KeyUse {
     Write = 'write',
 }
 
-// Generated device key material on platform sign-up
-// This is the only time CryptoKeyPairs are generated,
-// after which everything is PEM formatted Strings
-export interface KeyMaterial {
-    encryptionKeyPair: CryptoKeyPair;
-    apiKeyPair: CryptoKeyPair;
-}
-
 // Escrowed device key material stored on the platform
 export interface EscrowedKeyMaterial {
     // SPKI encoded public key pem
-    encryptionPublicKeyPem: string;
-    // SPKI encoded public key pem
-    apiPublicKeyPem: string;
+    publicKey: string;
     // AES encrypted instance of Json.stringify(PrivateKeyMaterial)
     encryptedPrivateKeyMaterial: string;
     // Salt used to derive the decryption key
@@ -91,9 +81,7 @@ export interface EscrowedKeyMaterial {
 // Exported private key material that can be used by rust
 export interface PrivateKeyMaterial {
     // Pkcs8 encoded private key pem
-    encryptionPrivateKeyPem: string;
-    // Pkcs8 encoded private key pem
-    apiPrivateKeyPem: string;
+    privateKeyPem: string;
 }
 
 // Format of cached key material blob placed in user's browser storage

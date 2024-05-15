@@ -7,7 +7,7 @@ mod deal;
 mod deal_state;
 mod email_message;
 mod email_message_state;
-mod escrowed_device;
+mod escrowed_user_key;
 mod invoice;
 mod invoice_status;
 mod metadata;
@@ -49,7 +49,7 @@ pub use deal_state::{DealState, DealStateError};
 #[allow(unused)]
 pub use email_message::EmailMessage;
 pub use email_message_state::EmailMessageState;
-pub use escrowed_device::EscrowedDevice;
+pub use escrowed_user_key::EscrowedUserKey;
 pub use invoice::{Invoice, NewInvoice};
 pub use invoice_status::InvoiceStatus;
 pub use metadata::{Metadata, NewMetadata};

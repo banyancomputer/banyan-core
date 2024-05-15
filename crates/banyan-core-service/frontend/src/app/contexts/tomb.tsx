@@ -16,7 +16,7 @@ import { handleNameDuplication } from '@utils/names';
 import { StorageUsageClient } from '@/api/storageUsage';
 import { useAppDispatch, useAppSelector } from '../store';
 import { BannerError, setError } from '@store/errors/slice';
-import { getApiKey } from '@store/keystore/actions';
+import { getUserKey } from '@store/keystore/actions';
 import { ToastNotifications } from '@utils/toastNotifications';
 import { SnapshotsClient } from '@/api/snapshots';
 import { StorageLimits, StorageUsage } from '@/entities/storage';
@@ -83,7 +83,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     /** Returns list of buckets. */
     const getBuckets = async () => {
         setAreBucketsLoading(true);
-        const key = unwrapResult(await dispatch(getApiKey()));
+        const key = unwrapResult(await dispatch(getUserKey()));
         const wasm_buckets: WasmBucket[] = await tomb!.listBuckets();
         if (getIsUserNew()) {
             createDriveAndMount('My Drive', 'hot', 'interactive');
@@ -133,7 +133,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const remountBucket = async (bucket: Bucket) => {
-        const key = unwrapResult(await dispatch(getApiKey()));
+        const key = unwrapResult(await dispatch(getUserKey()));
         const mount = await tomb!.mount(bucket.id, key.privatePem);
         const locked = await mount.locked();
         const isSnapshotValid = await mount.hasSnapshot();
@@ -197,7 +197,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
             throw new Error(driveAlreadyExists);
         }
 
-        const key = unwrapResult(await dispatch(getApiKey()));
+        const key = unwrapResult(await dispatch(getUserKey()));
         const { bucket: wasmBucket, mount: wasmMount } = await tomb!.createBucketAndMount(name, storageClass, bucketType, key.privatePem, key.publicPem);
         const bucket = {
             mount: wasmMount,
@@ -381,9 +381,9 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
 
         (async () => {
             try {
-                const apiKey = unwrapResult(await dispatch(getApiKey()));
+                const userKey = unwrapResult(await dispatch(getUserKey()));
                 const tomb = await new TombWasm(
-                    apiKey.privatePem,
+                    userKey.privatePem,
                     user.id,
                     window.location.protocol + '//' + window.location.host,
                 );

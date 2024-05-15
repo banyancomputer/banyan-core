@@ -6,7 +6,7 @@ use axum::Router;
 
 use crate::app::AppState;
 
-mod create_escrowed_device;
+mod create_escrowed_user_key;
 mod create_user_key;
 mod rename_user_key;
 
@@ -50,8 +50,8 @@ where
             get(end_regwait::handler),
         )
         .route(
-            "/create_escrowed_device",
-            post(create_escrowed_device::handler),
+            "/create_escrowed_user_key",
+            post(create_escrowed_user_key::handler),
         )
         .route("/who_am_i", get(who_am_i::handler))
         .with_state(state)

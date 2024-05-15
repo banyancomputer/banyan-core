@@ -6,7 +6,7 @@ import {
 } from '@utils/crypto/utils';
 import { publicPemUnwrap } from './pem';
 
-export const prettyFingerprintApiKeySpki = async(
+export const prettyFingerprintUserKeySpki = async(
     spki: string
 ): Promise<string> => await webcrypto.subtle
     .importKey(
@@ -22,10 +22,10 @@ export const prettyFingerprintApiKeySpki = async(
     .then((key) => fingerprintEcPublicKey(key))
     .then((fingerprintBytes) => prettyFingerprint(fingerprintBytes));
 
-export const prettyFingerprintApiKeyPem = async(
+export const prettyFingerprintUserKeyPem = async(
     pem: string
 ): Promise<string> => {
     const publicSpki = publicPemUnwrap(pem);
 
-    return await prettyFingerprintApiKeySpki(publicSpki);
+    return await prettyFingerprintUserKeySpki(publicSpki);
 };

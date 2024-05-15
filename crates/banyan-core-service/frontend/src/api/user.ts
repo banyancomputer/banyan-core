@@ -36,8 +36,7 @@ export class UserClient extends APIClient {
         const escrowedDevice =  await response.json();
 
         return {
-			apiPublicKeyPem: escrowedDevice.api_public_key_pem,
-			encryptionPublicKeyPem: escrowedDevice.encryption_public_key_pem,
+			publicKey: escrowedDevice.public_key,
 			encryptedPrivateKeyMaterial: escrowedDevice.encrypted_private_key_material,
 			passKeySalt: escrowedDevice.pass_key_salt
 		};

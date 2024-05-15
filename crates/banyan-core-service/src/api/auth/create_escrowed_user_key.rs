@@ -13,15 +13,13 @@ pub async fn handler(
     State(state): State<AppState>,
     Json(request): Json<ApiEscrowedKeyMaterial>,
 ) -> Result<Response, CreateEscrowedDeviceError> {
-    let api_public_key_pem = request.api_public_key_pem;
-    let encryption_public_key_pem = request.encryption_public_key_pem;
+    // Extract the public key PEM
+    let public_key = request.public_key;
 
     // Validate that the public key material is valid
-    let public_device_api_key = ES384PublicKey::from_pem(&api_public_key_pem)
+    let public_user_key = ES384PublicKey::from_pem(&public_key)
         .map_err(CreateEscrowedDeviceError::InvalidPublicKey)?;
-    let _public_encryption_key = ES384PublicKey::from_pem(&encryption_public_key_pem)
-        .map_err(CreateEscrowedDeviceError::InvalidPublicKey)?;
-    let device_api_key_fingerprint = fingerprint_public_key(&public_device_api_key);
+    let user_key_fingerprint = fingerprint_public_key(&public_user_key);
 
     let user_id = session_id.user_id().to_string();
     let encrypted_private_key_material = request.encrypted_private_key_material;
@@ -30,31 +28,29 @@ pub async fn handler(
     let database = state.database();
     let mut conn = database.begin().await?;
 
-    let existing_device_key = sqlx::query_scalar!(
-        "SELECT id FROM escrowed_devices WHERE user_id = $1",
+    let existing_user_key = sqlx::query_scalar!(
+        "SELECT id FROM escrowed_user_keys WHERE user_id = $1",
         user_id,
     )
     .fetch_optional(&mut *conn)
     .await?;
 
-    if existing_device_key.is_some() {
+    if existing_user_key.is_some() {
         return Err(CreateEscrowedDeviceError::EscrowedDeviceAlreadyExists);
     };
 
     sqlx::query!(
         r#"
-            INSERT INTO escrowed_devices (
+            INSERT INTO escrowed_user_keys (
                 user_id, 
-                api_public_key_pem, 
-                encryption_public_key_pem, 
+                public_key, 
                 encrypted_private_key_material, 
                 pass_key_salt
             )
-            VALUES ($1, $2, $3, $4, $5);
+            VALUES ($1, $2, $3, $4);
         "#,
         user_id,
-        api_public_key_pem,
-        encryption_public_key_pem,
+        public_key,
         encrypted_private_key_material,
         pass_key_salt
     )
@@ -68,8 +64,8 @@ pub async fn handler(
         "#,
         "Owner",
         user_id,
-        device_api_key_fingerprint,
-        api_public_key_pem,
+        user_key_fingerprint,
+        public_key,
     )
     .execute(&mut *conn)
     .await?;
