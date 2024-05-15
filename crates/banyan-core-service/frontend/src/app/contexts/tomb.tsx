@@ -53,7 +53,7 @@ interface TombInterface {
     uploadFile: (nucket: Bucket, path: string[], name: string, file: any, folder?: BrowserObject) => Promise<void>;
     purgeSnapshot: (id: string) => void;
     deleteFile: (bucket: Bucket, path: string[], name: string) => void;
-    createAccessKey: (name: string, pem: string) => Promise<void>;
+    createAccessKey: (name: string, public_key: string) => Promise<void>;
     approveBucketAccess: (bucket: Bucket, userKeyId: string) => Promise<void>;
     removeBucketAccess: (bucket: Bucket, userKeyId: string) => Promise<void>;
     restore: (bucket: Bucket, snapshotId: string) => Promise<void>;
@@ -86,7 +86,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
         const key = unwrapResult(await dispatch(getApiKey()));
         const wasm_buckets: WasmBucket[] = await tomb!.listBuckets();
         if (getIsUserNew()) {
-            createDriveAndMount("My Drive", 'hot', 'interactive');
+            createDriveAndMount('My Drive', 'hot', 'interactive');
             destroyIsUserNew();
             return [];
         }
@@ -253,8 +253,8 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     };
 
     /** Creates a new API authenticated UserKey */
-    const createAccessKey = async (name: string, pem: string) => {
-        await tomb!.createUserKey(name, pem);
+    const createAccessKey = async (name: string, public_key: string) => {
+        await tomb!.createUserKey(name, public_key);
     };
 
     /** Moves file into different location. */

@@ -38,7 +38,7 @@ export function wasmuserkey_id(a: number, b: number): void;
 export function wasmuserkey_name(a: number, b: number): void;
 export function wasmuserkey_userId(a: number, b: number): void;
 export function wasmuserkey_apiAccess(a: number): number;
-export function wasmuserkey_public_key_pem(a: number, b: number): void;
+export function wasmuserkey_public_key(a: number, b: number): void;
 export function wasmuserkey_fingerprint(a: number, b: number): void;
 export function wasmuserkey_createdAt(a: number, b: number): void;
 export function wasm_init(): void;

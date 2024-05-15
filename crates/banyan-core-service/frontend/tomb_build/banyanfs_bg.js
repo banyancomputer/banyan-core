@@ -1685,17 +1685,17 @@ export class WasmUserKey {
         return ret !== 0;
     }
     /**
-    * Public Key PEM
+    * Public Key
     * @returns {string}
     */
-    public_key_pem() {
+    public_key() {
         let deferred1_0;
         let deferred1_1;
         try {
             if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
             _assertNum(this.__wbg_ptr);
-            wasm.wasmuserkey_public_key_pem(retptr, this.__wbg_ptr);
+            wasm.wasmuserkey_public_key(retptr, this.__wbg_ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
             deferred1_0 = r0;

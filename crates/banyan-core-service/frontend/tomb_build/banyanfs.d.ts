@@ -376,10 +376,10 @@ export class WasmUserKey {
 */
   apiAccess(): boolean;
 /**
-* Public Key PEM
+* Public Key
 * @returns {string}
 */
-  public_key_pem(): string;
+  public_key(): string;
 /**
 * Public Key Fingerprint
 * @returns {string}
