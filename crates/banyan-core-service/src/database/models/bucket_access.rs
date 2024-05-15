@@ -1,10 +1,5 @@
-use std::fmt::{self, Display, Formatter};
-
-use serde::{Deserialize, Serialize};
-use sqlx::encode::IsNull;
-use sqlx::error::BoxDynError;
-use sqlx::sqlite::{SqliteArgumentValue, SqliteTypeInfo, SqliteValueRef};
-use sqlx::{Decode, Encode, QueryBuilder, Sqlite, Type};
+use serde::Serialize;
+use sqlx::QueryBuilder;
 use tracing::warn;
 
 use super::UserKey;

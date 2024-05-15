@@ -182,6 +182,6 @@ mod tests {
         assert_eq!(bucket_response.r#type, bucket_in_db.r#type);
         assert_eq!(bucket_response.storage_class, bucket_in_db.storage_class);
         assert_eq!(user_key.fingerprint, fingerprint);
-        assert_eq!(approved, true);
+        assert!(approved);
     }
 }
