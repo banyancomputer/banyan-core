@@ -11,6 +11,7 @@ class SettingsLink {
 
 export const AccountNavigation = () => {
     const { pathname } = useLocation();
+    const { user } = useAppSelector(state => state.session);
     const messages = useAppSelector(state => state.locales.messages.coponents.account.navigation);
 
     const links = [
@@ -27,6 +28,9 @@ export const AccountNavigation = () => {
                 <h2 className="text-lg font-semibold">
                     {`${messages.title}`}
                 </h2>
+                <h4>
+                    account_id: {`${user.id}`}
+                </h4>
             </div>
             <div className="border-b-1 border-border-regular">
                 <ul className="w-max flex justify-between rounded-md">

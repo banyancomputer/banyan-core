@@ -310,6 +310,11 @@ export class WasmMount {
 * @returns {Promise<void>}
 */
   write(path_segments: Array<any>, content_buffer: ArrayBuffer): Promise<void>;
+/**
+* @param {string} public_key
+* @returns {Promise<void>}
+*/
+  authorizeKey(public_key: string): Promise<void>;
 }
 /**
 */

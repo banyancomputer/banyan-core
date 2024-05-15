@@ -277,7 +277,7 @@ function handleError(f, args) {
         wasm.__wbindgen_exn_store(addHeapObject(e));
     }
 }
-function __wbg_adapter_256(arg0, arg1, arg2, arg3) {
+function __wbg_adapter_257(arg0, arg1, arg2, arg3) {
     _assertNum(arg0);
     _assertNum(arg1);
     wasm.wasm_bindgen__convert__closures__invoke2_mut__hc193666deed04f7b(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
@@ -1362,6 +1362,18 @@ export class WasmMount {
         const ret = wasm.wasmmount_write(this.__wbg_ptr, addHeapObject(path_segments), addHeapObject(content_buffer));
         return takeObject(ret);
     }
+    /**
+    * @param {string} public_key
+    * @returns {Promise<void>}
+    */
+    authorizeKey(public_key) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        const ptr0 = passStringToWasm0(public_key, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.wasmmount_authorizeKey(this.__wbg_ptr, ptr0, len0);
+        return takeObject(ret);
+    }
 }
 
 const WasmNodeMetadataFinalization = (typeof FinalizationRegistry === 'undefined')
@@ -2280,7 +2292,7 @@ export function __wbg_new_81740750da40724f() { return logError(function (arg0, a
             const a = state0.a;
             state0.a = 0;
             try {
-                return __wbg_adapter_256(a, state0.b, arg0, arg1);
+                return __wbg_adapter_257(a, state0.b, arg0, arg1);
             } finally {
                 state0.a = a;
             }
@@ -2431,8 +2443,8 @@ export function __wbindgen_memory() {
     return addHeapObject(ret);
 };
 
-export function __wbindgen_closure_wrapper14444() { return logError(function (arg0, arg1, arg2) {
-    const ret = makeMutClosure(arg0, arg1, 1272, __wbg_adapter_30);
+export function __wbindgen_closure_wrapper14470() { return logError(function (arg0, arg1, arg2) {
+    const ret = makeMutClosure(arg0, arg1, 1277, __wbg_adapter_30);
     return addHeapObject(ret);
 }, arguments) };
 

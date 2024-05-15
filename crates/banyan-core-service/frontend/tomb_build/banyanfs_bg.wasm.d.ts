@@ -56,6 +56,7 @@ export function wasmmount_shareFile(a: number, b: number): number;
 export function wasmmount_shareWith(a: number, b: number, c: number): number;
 export function wasmmount_snapshot(a: number): number;
 export function wasmmount_write(a: number, b: number, c: number): number;
+export function wasmmount_authorizeKey(a: number, b: number, c: number): number;
 export function __wbg_wasmnodemetadata_free(a: number): void;
 export function __wbg_wasmbucket_free(a: number): void;
 export function wasmbucket_bucketType(a: number, b: number): void;

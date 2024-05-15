@@ -21,7 +21,7 @@ export const ApproveBucketAccessModal: React.FC<{ bucket: Bucket; accessKey: Use
 
     const approveAccess = async () => {
         try {
-            await approveBucketAccess(bucket, accessKey.userId);
+            await approveBucketAccess(bucket, accessKey.publicKey);
             cancel();
         } catch (error: any) {
             ToastNotifications.error('Something went wrong', `${messages.tryAgain}`, approveAccess);

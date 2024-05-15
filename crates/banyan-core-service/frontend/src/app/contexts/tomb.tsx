@@ -54,7 +54,7 @@ interface TombInterface {
     purgeSnapshot: (id: string) => void;
     deleteFile: (bucket: Bucket, path: string[], name: string) => void;
     createAccessKey: (name: string, public_key: string) => Promise<void>;
-    approveBucketAccess: (bucket: Bucket, userKeyId: string) => Promise<void>;
+    approveBucketAccess: (bucket: Bucket, publicKey: string) => Promise<void>;
     removeBucketAccess: (bucket: Bucket, userKeyId: string) => Promise<void>;
     restore: (bucket: Bucket, snapshotId: string) => Promise<void>;
 };
@@ -239,7 +239,10 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
     /** Restores bucket from selected snapshot. */
     const restore = async (bucket: Bucket, snapshotId: string) => await snapshotsClient.restoreFromSnapshot(bucket.id, snapshotId);
     /** Approves access key for bucket */
-    const approveBucketAccess = async (bucket: Bucket, bucketKeyId: string) => {
+    const approveBucketAccess = async (bucket: Bucket, publicKey: string) => {
+		const mount = bucket.mount!;
+		const r = await mount.authorizeKey(publicKey);
+        console.log("r: " + JSON.stringify(r));
     };
 
     /** Generates public link to share file. */
