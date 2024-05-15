@@ -7,14 +7,18 @@ export class AuthClient extends APIClient {
     * @param escrowed_device - the escrowed device key material to be associated with the user's account
     */
     public async escrowDevice(request: EscrowedKeyMaterial): Promise<void> {
-        const response = await this.http.post(`${this.ROOT_PATH}/api/v1/auth/create_escrowed_user_key`, JSON.stringify({
-            public_key: request.publicKey,
-            encrypted_private_key_material: request.encryptedPrivateKeyMaterial,
-            pass_key_salt: request.passKeySalt,
-        }));
+        if (request.publicKey && request.encryptedPrivateKeyMaterial && request.passKeySalt) {
 
-        if (!response.ok) {
-            await this.handleError(response);
+            const response = await this.http.post(`${this.ROOT_PATH}/api/v1/auth/create_escrowed_user_key`, JSON.stringify({
+                public_key: request.publicKey,
+                encrypted_private_key_material: request.encryptedPrivateKeyMaterial,
+                pass_key_salt: request.passKeySalt,
+            }));
+
+            if (!response.ok) {
+                await this.handleError(response);
+            }
         }
+
     };
 }

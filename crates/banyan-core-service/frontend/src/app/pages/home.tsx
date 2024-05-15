@@ -22,8 +22,8 @@ const Home = () => {
     };
 
     const createDrive = () => {
-        dispatch(openModal({ content: <CreateDriveModal />}));
-};
+        dispatch(openModal({ content: <CreateDriveModal /> }));
+    };
 
     return (
         <section className="h-[455px] py-9 pt-14 px-4" id="buckets">

@@ -57,7 +57,7 @@ export default class ECCKeyStore extends KeyStoreBase implements KeyStore {
 
         // Get the public key pems from the key material
         const publicKey = await ecc.exportPublicKeyPem(pair.publicKey as PublicKey);
-        const privateKey = await ecc.exportPublicKeyPem(pair.privateKey as PrivateKey);
+        const privateKey = await ecc.exportPrivateKeyPem(pair.privateKey as PrivateKey);
 
         // Derive a key from the passphrase and salt
         const key = await pbkdf2.deriveKey(

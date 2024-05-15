@@ -27,7 +27,7 @@ export class UserClient extends APIClient {
     };
 
     public async getEscrowedKeyMaterial(): Promise<EscrowedKeyMaterial> {
-        const response = await this.http.get(`${this.ROOT_PATH}/api/v1/users/escrowed_device`);
+        const response = await this.http.get(`${this.ROOT_PATH}/api/v1/users/escrowed_user_key`);
 
         if (!response.ok) {
             await this.handleError(response);
