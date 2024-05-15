@@ -68,6 +68,13 @@ export enum KeyUse {
     Write = 'write',
 }
 
+// Generated device key material on platform sign-up
+// This is the only time CryptoKeyPairs are generated,
+// after which everything is PEM formatted Strings
+export interface KeyMaterial {
+    pair: CryptoKeyPair;
+}
+
 // Escrowed device key material stored on the platform
 export interface EscrowedKeyMaterial {
     // SPKI encoded public key pem

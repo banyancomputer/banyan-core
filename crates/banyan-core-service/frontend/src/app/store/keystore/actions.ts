@@ -16,25 +16,11 @@ const authClient = new AuthClient();
         async (passphrase: string, { dispatch, getState } ): Promise<PrivateKeyMaterial> => {
     console.log("escrowdevice");
     const {keystore: {keystore}} = getState() as RootState;
-    console.log("got keystore state");
-
 		const keyMaterial = await keystore!.genKeyMaterial();
-    console.log("generated key materialj");
-
 		const privateKeyMaterial = await keystore!.exportPrivateKeyMaterial(keyMaterial);
-    console.log("got private key materialj");
-
 		const escrowedKeyMaterial = await keystore!.escrowKeyMaterial(keyMaterial, passphrase);
-    console.log("escrowed key materialj");
-
-
 		await authClient.escrowDevice(escrowedKeyMaterial);
-    console.log("escrowed api key materialj");
-
 		dispatch(setEscrowedKeyMaterial(escrowedKeyMaterial));
-    console.log("set api key materialj state");
-
-
 		return privateKeyMaterial;
 	});
 
@@ -68,8 +54,10 @@ const authClient = new AuthClient();
 		try {
 			if (escrowedKeyMaterial) {
 				privateKeyMaterial = unwrapResult(await dispatch(recoverDevice(passkey)));
+        console.log('pkm_r:' + privateKeyMaterial);
 			} else {
 				privateKeyMaterial = unwrapResult(await dispatch(escrowDevice(passkey)));
+        console.log('pkm_e:' + privateKeyMaterial);
 			}
 			let localKey = getLocalKey();
 			// Cache the key material encrypted with the session key

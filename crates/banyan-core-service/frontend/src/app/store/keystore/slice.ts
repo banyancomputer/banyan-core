@@ -18,13 +18,14 @@ const keystoreSlice = createSlice({
         keystoreInitialized: false,
     } as KeystoreState,
     reducers: {
-        setEscrowedKeyMaterial(state, action:PayloadAction<EscrowedKeyMaterial>){
+        setEscrowedKeyMaterial(state, action: PayloadAction<EscrowedKeyMaterial>) {
+            console.log('omg, setting key material');
             state.escrowedKeyMaterial = action.payload;
         },
-        setKeystore(state, action:PayloadAction<ECCKeystore>){
+        setKeystore(state, action: PayloadAction<ECCKeystore>) {
             state.keystore = action.payload;
         },
-        setKeystoreInitialized(state, action:PayloadAction<boolean>){
+        setKeystoreInitialized(state, action: PayloadAction<boolean>) {
             state.keystoreInitialized = action.payload;
         },
     },

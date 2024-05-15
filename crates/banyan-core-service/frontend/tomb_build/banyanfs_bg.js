@@ -255,18 +255,19 @@ function __wbg_adapter_30(arg0, arg1, arg2) {
     wasm._dyn_core__ops__function__FnMut__A____Output___R_as_wasm_bindgen__closure__WasmClosure___describe__invoke__h5e12422a0140e1ad(arg0, arg1, addHeapObject(arg2));
 }
 
-function _assertClass(instance, klass) {
-    if (!(instance instanceof klass)) {
-        throw new Error(`expected instance of ${klass.name}`);
-    }
-    return instance.ptr;
-}
 /**
 * Performs first time setup to the WASM environment once this library is loaded. This primarily
 * sets up logging and reports the library version.
 */
 export function wasm_init() {
     wasm.wasm_init();
+}
+
+function _assertClass(instance, klass) {
+    if (!(instance instanceof klass)) {
+        throw new Error(`expected instance of ${klass.name}`);
+    }
+    return instance.ptr;
 }
 
 function handleError(f, args) {
@@ -487,15 +488,15 @@ export class TombWasm {
     }
     /**
     * @param {string} name
-    * @param {string} public_pem
+    * @param {string} public_key
     * @returns {Promise<void>}
     */
-    createUserKey(name, public_pem) {
+    createUserKey(name, public_key) {
         if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
         _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(public_pem, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const ptr1 = passStringToWasm0(public_key, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len1 = WASM_VECTOR_LEN;
         const ret = wasm.tombwasm_createUserKey(this.__wbg_ptr, ptr0, len0, ptr1, len1);
         return takeObject(ret);
@@ -862,25 +863,13 @@ export class WasmBucketAccess {
         }
     }
     /**
-    * @returns {string}
+    * @returns {boolean}
     */
-    get state() {
-        let deferred1_0;
-        let deferred1_1;
-        try {
-            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
-            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-            _assertNum(this.__wbg_ptr);
-            wasm.wasmbucketaccess_state(retptr, this.__wbg_ptr);
-            var r0 = getInt32Memory0()[retptr / 4 + 0];
-            var r1 = getInt32Memory0()[retptr / 4 + 1];
-            deferred1_0 = r0;
-            deferred1_1 = r1;
-            return getStringFromWasm0(r0, r1);
-        } finally {
-            wasm.__wbindgen_add_to_stack_pointer(16);
-            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
-        }
+    get approved() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        const ret = wasm.wasmbucketaccess_approved(this.__wbg_ptr);
+        return ret !== 0;
     }
     /**
     * @returns {string}
@@ -2442,8 +2431,8 @@ export function __wbindgen_memory() {
     return addHeapObject(ret);
 };
 
-export function __wbindgen_closure_wrapper14478() { return logError(function (arg0, arg1, arg2) {
-    const ret = makeMutClosure(arg0, arg1, 1274, __wbg_adapter_30);
+export function __wbindgen_closure_wrapper14444() { return logError(function (arg0, arg1, arg2) {
+    const ret = makeMutClosure(arg0, arg1, 1272, __wbg_adapter_30);
     return addHeapObject(ret);
 }, arguments) };
 

@@ -66,10 +66,10 @@ export class TombWasm {
   free(): void;
 /**
 * @param {string} name
-* @param {string} public_pem
+* @param {string} public_key
 * @returns {Promise<void>}
 */
-  createUserKey(name: string, public_pem: string): Promise<void>;
+  createUserKey(name: string, public_key: string): Promise<void>;
 /**
 * @param {string} name
 * @param {string} user_key_id
@@ -168,13 +168,13 @@ export class WasmBucketAccess {
   free(): void;
 /**
 */
+  readonly approved: boolean;
+/**
+*/
   readonly driveId: string;
 /**
 */
   readonly fingerprint: string;
-/**
-*/
-  readonly state: string;
 /**
 */
   readonly userKeyId: string;
