@@ -14,7 +14,6 @@ const authClient = new AuthClient();
 	export const escrowDevice = createAsyncThunk(
         'escrowDevice',
         async (passphrase: string, { dispatch, getState } ): Promise<PrivateKeyMaterial> => {
-    console.log("escrowdevice");
     const {keystore: {keystore}} = getState() as RootState;
 		const keyMaterial = await keystore!.genKeyMaterial();
 		const privateKeyMaterial = await keystore!.exportPrivateKeyMaterial(keyMaterial);
@@ -54,10 +53,8 @@ const authClient = new AuthClient();
 		try {
 			if (escrowedKeyMaterial) {
 				privateKeyMaterial = unwrapResult(await dispatch(recoverDevice(passkey)));
-        console.log('pkm_r:' + privateKeyMaterial);
 			} else {
 				privateKeyMaterial = unwrapResult(await dispatch(escrowDevice(passkey)));
-        console.log('pkm_e:' + privateKeyMaterial);
 			}
 			let localKey = getLocalKey();
 			// Cache the key material encrypted with the session key
