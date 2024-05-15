@@ -4,6 +4,7 @@ use axum::response::{IntoResponse, Response};
 use jwt_simple::prelude::*;
 use serde::Deserialize;
 
+use crate::api::models::ApiUserKey;
 use crate::app::AppState;
 use crate::database::models::UserKey;
 use crate::extractors::UserIdentity;
@@ -32,8 +33,8 @@ pub async fn handler(
     .await
     .map_err(CreateUserKeyError::Database)?;
 
-    let resp_msg = serde_json::json!({"id": user_key_id, "fingerprint": fingerprint});
-    Ok((StatusCode::OK, Json(resp_msg)).into_response())
+    let user_key = UserKey::by_id(&mut conn, &user_key_id).await?;
+    Ok((StatusCode::OK, Json(Into::<ApiUserKey>::into(user_key))).into_response())
 }
 
 #[derive(Debug, thiserror::Error)]

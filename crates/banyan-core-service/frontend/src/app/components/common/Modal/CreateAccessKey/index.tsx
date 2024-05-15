@@ -18,7 +18,7 @@ export const CreateAccessKey = () => {
     const changeName = (event: React.ChangeEvent<HTMLInputElement>) => {
         setAccessKeyName(event.target.value);
     };
-    const changePem = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const changePem = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
         setPem(event.target.value);
     };
 
@@ -53,9 +53,8 @@ export const CreateAccessKey = () => {
             </label>
             <label>
                 {`${messages.pem}`}
-                <input
+                <textarea
                     className="mt-2 input w-full h-11 py-3 px-4 rounded-md border-border-darken focus:outline-none"
-                    type="text"
                     placeholder={`${messages.enterPem}`}
                     value={pem}
                     onChange={changePem}
