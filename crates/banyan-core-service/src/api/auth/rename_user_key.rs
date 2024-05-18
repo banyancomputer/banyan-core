@@ -35,7 +35,7 @@ pub async fn handler(
     if result.rows_affected() == 0 {
         Err(RenameUserKeyError::NotFound)
     } else {
-        Ok((StatusCode::OK, ()).into_response())
+        Ok((StatusCode::NO_CONTENT, ()).into_response())
     }
 }
 
