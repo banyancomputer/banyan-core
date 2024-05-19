@@ -249,7 +249,7 @@ function logError(f, args) {
 function _assertNum(n) {
     if (typeof(n) !== 'number') throw new Error(`expected a number argument, found ${typeof(n)}`);
 }
-function __wbg_adapter_30(arg0, arg1, arg2) {
+function __wbg_adapter_32(arg0, arg1, arg2) {
     _assertNum(arg0);
     _assertNum(arg1);
     wasm._dyn_core__ops__function__FnMut__A____Output___R_as_wasm_bindgen__closure__WasmClosure___describe__invoke__h5e12422a0140e1ad(arg0, arg1, addHeapObject(arg2));
@@ -277,7 +277,7 @@ function handleError(f, args) {
         wasm.__wbindgen_exn_store(addHeapObject(e));
     }
 }
-function __wbg_adapter_257(arg0, arg1, arg2, arg3) {
+function __wbg_adapter_259(arg0, arg1, arg2, arg3) {
     _assertNum(arg0);
     _assertNum(arg1);
     wasm.wasm_bindgen__convert__closures__invoke2_mut__hc193666deed04f7b(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
@@ -517,16 +517,16 @@ export class TombWasm {
         return takeObject(ret);
     }
     /**
-    * @param {string} bucket_id
-    * @param {string} fingerprint
+    * @param {string} _bucket_id
+    * @param {string} _fingerprint
     * @returns {Promise<void>}
     */
-    revokeBucketAccess(bucket_id, fingerprint) {
+    revokeBucketAccess(_bucket_id, _fingerprint) {
         if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
         _assertNum(this.__wbg_ptr);
-        const ptr0 = passStringToWasm0(bucket_id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const ptr0 = passStringToWasm0(_bucket_id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(fingerprint, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const ptr1 = passStringToWasm0(_fingerprint, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len1 = WASM_VECTOR_LEN;
         const ret = wasm.tombwasm_revokeBucketAccess(this.__wbg_ptr, ptr0, len0, ptr1, len1);
         return takeObject(ret);
@@ -577,7 +577,7 @@ export class TombWasm {
         return takeObject(ret);
     }
     /**
-    * @returns {Promise<number>}
+    * @returns {Promise<bigint>}
     */
     getUsage() {
         if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
@@ -1874,6 +1874,11 @@ export function __wbindgen_is_object(arg0) {
     return ret;
 };
 
+export function __wbindgen_bigint_from_u64(arg0) {
+    const ret = BigInt.asUintN(64, arg0);
+    return addHeapObject(ret);
+};
+
 export function __wbg_error_f851667af71bcfc6() { return logError(function (arg0, arg1) {
     let deferred0_0;
     let deferred0_1;
@@ -2292,7 +2297,7 @@ export function __wbg_new_81740750da40724f() { return logError(function (arg0, a
             const a = state0.a;
             state0.a = 0;
             try {
-                return __wbg_adapter_257(a, state0.b, arg0, arg1);
+                return __wbg_adapter_259(a, state0.b, arg0, arg1);
             } finally {
                 state0.a = a;
             }
@@ -2443,8 +2448,8 @@ export function __wbindgen_memory() {
     return addHeapObject(ret);
 };
 
-export function __wbindgen_closure_wrapper14470() { return logError(function (arg0, arg1, arg2) {
-    const ret = makeMutClosure(arg0, arg1, 1277, __wbg_adapter_30);
+export function __wbindgen_closure_wrapper14480() { return logError(function (arg0, arg1, arg2) {
+    const ret = makeMutClosure(arg0, arg1, 1277, __wbg_adapter_32);
     return addHeapObject(ret);
 }, arguments) };
 

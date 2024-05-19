@@ -77,11 +77,11 @@ export class TombWasm {
 */
   renameUserKey(name: string, user_key_id: string): Promise<void>;
 /**
-* @param {string} bucket_id
-* @param {string} fingerprint
+* @param {string} _bucket_id
+* @param {string} _fingerprint
 * @returns {Promise<void>}
 */
-  revokeBucketAccess(bucket_id: string, fingerprint: string): Promise<void>;
+  revokeBucketAccess(_bucket_id: string, _fingerprint: string): Promise<void>;
 /**
 * @returns {Promise<Array<any>>}
 */
@@ -101,9 +101,9 @@ export class TombWasm {
 */
   deleteBucket(bucket_id: string): Promise<void>;
 /**
-* @returns {Promise<number>}
+* @returns {Promise<bigint>}
 */
-  getUsage(): Promise<number>;
+  getUsage(): Promise<bigint>;
 /**
 * @returns {Promise<number>}
 */
