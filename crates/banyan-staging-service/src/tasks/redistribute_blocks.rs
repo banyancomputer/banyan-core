@@ -60,7 +60,7 @@ impl TaskLike for RedistributeBlocksTask {
         )?;
         let provider_credentials = client.request_provider_token(&self.storage_host_id).await?;
         let client =
-            StorageProviderClient::new(&self.storage_host_url, &provider_credentials.token);
+            StorageProviderClient::new(&self.storage_host_url, &provider_credentials.token)?;
 
         let mut blocks = self.block_cids.clone();
         if blocks.iter().any(|c| !is_valid_cid(c)) {

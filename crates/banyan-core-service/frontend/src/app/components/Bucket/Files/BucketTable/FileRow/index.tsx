@@ -10,7 +10,6 @@ import { getDateLabel } from '@/app/utils/date';
 import { convertFileSize } from '@/app/utils/storage';
 import { useFilePreview } from '@/app/contexts/filesPreview';
 import { handleDrag, handleDragEnd, handleDragStart } from '@utils/dragHandlers';
-import { useTomb } from '@contexts/tomb';
 
 export const FileRow: React.FC<{
     file: BrowserObject;
@@ -22,7 +21,6 @@ export const FileRow: React.FC<{
 }> = ({ file, bucket, nestingLevel = 0, path = [], parrentFolder, siblingFiles }) => {
     const { openFile } = useFilePreview();
     const [isDragging, setIsDragging] = useState(false);
-    const { getExpandedFolderFiles, getSelectedBucketFiles } = useTomb();
 
     const previewFile = (event: React.MouseEvent<HTMLTableRowElement, MouseEvent>, bucket: Bucket, file: BrowserObject) => {
         //@ts-ignore
@@ -39,7 +37,7 @@ export const FileRow: React.FC<{
             onClick={event => previewFile(event, bucket, file)}
             onDrag={event => handleDrag(event, file.name)}
             onDragStart={event => handleDragStart(event, file.name, setIsDragging, path)}
-            onDragEnd={() => handleDragEnd(setIsDragging, getExpandedFolderFiles, getSelectedBucketFiles, path, parrentFolder, bucket)}
+            onDragEnd={() => handleDragEnd(setIsDragging)}
             draggable
         >
             <td

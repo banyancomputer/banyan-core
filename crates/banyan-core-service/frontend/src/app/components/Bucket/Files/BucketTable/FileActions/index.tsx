@@ -61,25 +61,25 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BrowserObject; parren
     };
 
     const rename = async () => {
-        openModal({
+        dispatch(openModal({
             content: <RenameFileModal
                 bucket={bucket}
                 file={file}
                 path={path}
             />
-        });
+        }));
     };
 
     const remove = async () => {
         try {
-            openModal({
+            dispatch(openModal({
                 content: <DeleteFileModal
                     bucket={bucket}
                     file={file}
                     parrentFolder={parrentFolder}
                     path={path}
                 />
-            });
+            }));
         } catch (error: any) { }
     };
 
@@ -93,9 +93,9 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BrowserObject; parren
         try {
             const payload = await shareFile(bucket, [...path, file.name]);
             const link = `${window.location.origin}/api/v1/share?payload=${payload}`;
-            openModal({
+            dispatch(openModal({
                 content: <ShareFileModal link={link} />
-            });
+            }));
         } catch (error: any) {
             ToastNotifications.error('Error while sharing file', `${messages.tryAgain}`, share);
         }

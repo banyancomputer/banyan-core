@@ -6,7 +6,7 @@ export class NotificationsClient extends APIClient {
         const response = await this.http.get(`${this.ROOT_PATH}/api/v1/alerts/history`)
 
         if (!response.ok) {
-            await this.handleError(response);
+            throw await this.handleError(response);
         }
 
         return await response.json();
@@ -16,7 +16,7 @@ export class NotificationsClient extends APIClient {
         const response = await this.http.get(`${this.ROOT_PATH}/api/v1/alerts`)
 
         if (!response.ok) {
-            await this.handleError(response);
+            throw await this.handleError(response);
         }
 
         return await response.json();

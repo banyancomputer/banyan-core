@@ -1,39 +1,30 @@
-import { ActiveDeal, AvailiableDeal } from "@/entities/deals";
+import { AcceptedDeal, ActiveDeal, DealState } from "@/entities/deals";
 import { APIClient } from ".";
 
 export class DealsClient extends APIClient {
-    public async getActiceDeals():Promise<ActiveDeal[]> {
-        const response = await this.http.get(`${this.ROOT_PATH}/api/v1/deals`)
-
+    public async getDeals<T extends DealState>(state: T):
+      Promise<T extends DealState.Accepted ? AcceptedDeal[] : ActiveDeal[]> {
+        const url = `${this.ROOT_PATH}/api/v1/deals?state=${state}`;
+        const response = await this.http.get(url);
         if (!response.ok) {
-            await this.handleError(response);
+            throw await this.handleError(response);
         }
-
-        return await response.json();
-    };
-    public async getAvailableDeals():Promise<AvailiableDeal[]> {
-        const response = await this.http.get(`${this.ROOT_PATH}/api/v1/deals/available`)
-
-        if (!response.ok) {
-            await this.handleError(response);
-        }
-
-        return await response.json();
+        return await response.json() as T extends DealState.Accepted ? AcceptedDeal[] : ActiveDeal[];
     };
 
     public async acceptDeal(id: string): Promise<void> {
-        const response = await this.http.get(`${this.ROOT_PATH}/api/v1/deals/${id}/accept`)
+        const response = await this.http.put(`${this.ROOT_PATH}/api/v1/deals/${id}/accept`)
 
         if (!response.ok) {
-            await this.handleError(response);
+            throw await this.handleError(response);
         }
     };
 
-    public async declineDeal(id: string): Promise<void> {
-        const response = await this.http.get(`${this.ROOT_PATH}/api/v1/deals/${id}/cancel`)
+    public async cancelDeal(id: string): Promise<void> {
+        const response = await this.http.put(`${this.ROOT_PATH}/api/v1/deals/${id}/cancel`)
 
         if (!response.ok) {
-            await this.handleError(response);
+            throw await this.handleError(response);
         }
     };
 
@@ -41,17 +32,17 @@ export class DealsClient extends APIClient {
         const response = await this.http.get(`${this.ROOT_PATH}/api/v1/deals/${id}/download`, undefined, { 'Content-Type': 'application/vnd.ipld.car'})
 
         if (!response.ok) {
-            await this.handleError(response);
+            throw await this.handleError(response);
         }
 
         return await response.blob();
     };
 
-    public async proofDeal(id: string): Promise<void> {
-        const response = await this.http.get(`${this.ROOT_PATH}/api/v1/deals/${id}/proof`)
+    public async sealDeal(id: string): Promise<void> {
+        const response = await this.http.get(`${this.ROOT_PATH}/api/v1/deals/${id}/seal`)
 
         if (!response.ok) {
-            await this.handleError(response);
+            throw await this.handleError(response);
         }
     };
 }
