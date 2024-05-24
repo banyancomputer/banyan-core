@@ -9,14 +9,14 @@ import { openModal } from '@store/modals/slice';
 import { convertFileSize, convertSubscriptionsSizes } from '@/app/utils/storage';
 import { getHotStorageAmount } from '@/app/utils/subscritions';
 import { getDateLabel } from '@/app/utils/date';
-import { useTomb } from '@contexts/tomb';
 
 export const NextBillingDate = () => {
     const dispatch = useAppDispatch();
     const { selectedSubscription } = useAppSelector(state => state.billing);
+    const { storageLimits, storageUsage } = useAppSelector(state => state.tomb);
     const { subscriptionValidUntil, monthlyEggress } = useAppSelector(state => state.session.user);
     const messages = useAppSelector(state => state.locales.messages.coponents.account.billing.invoices.nextBillingDate);
-    const { storageUsage, storageLimits } = useTomb();
+
 
     const upgragePlan = () => {
         dispatch(openModal({ content: <SubscriptionPlanModal /> }));

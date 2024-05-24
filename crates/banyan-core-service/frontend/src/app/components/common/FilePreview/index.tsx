@@ -9,13 +9,13 @@ import { ShareFileModal } from '@components/common/Modal/ShareFileModal';
 import { openModal } from '@store/modals/slice';
 import { useFilePreview } from '@/app/contexts/filesPreview';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
-import { useTomb } from '@/app/contexts/tomb';
 import { useAppDispatch, useAppSelector } from '@/app/store';
 
 import { Close, Done, DownloadAlternative, Upload } from '@static/images/common';
+import { unwrapResult } from '@reduxjs/toolkit';
+import { getFile, shareFile } from '@/app/store/tomb/actions';
 
 export const FilePreview = () => {
-    const { download, shareFile } = useTomb();
     const dispatch = useAppDispatch();
     const messages = useAppSelector(state => state.locales.messages.coponents.common.filePreview);
     const { file, files, bucket, parrentFolder, path, openNext, openPrevious, closeFile } = useFilePreview();
@@ -27,11 +27,18 @@ export const FilePreview = () => {
     const downloadFile = async () => {
         try {
             await ToastNotifications.promise(`${messages.downloading}...`, `${messages.fileWasDownloaded}`, <Done width="20px" height="20px" />,
-                download(bucket!, path, file.name)
+                (async () => {
+                    const link = document.createElement('a');
+                    const arrayBuffer = unwrapResult(await dispatch(getFile({ bucket: bucket!, path, name: file.name })));
+                    const blob = new Blob([arrayBuffer]);
+                    const objectURL = URL.createObjectURL(blob);
+                    link.href = objectURL;
+                    link.download = file.name;
+                    document.body.appendChild(link);
+                    link.click();
+                })()
             );
         } catch (error: any) {
-            console.log(error);
-
             ToastNotifications.error('Failed to download file', `${messages.tryAgain}`, downloadFile);
         }
     };
@@ -39,7 +46,7 @@ export const FilePreview = () => {
 
     const share = async () => {
         try {
-            const payload = await shareFile(bucket!, [...path, file.name]);
+            const payload = unwrapResult(await dispatch(shareFile({ bucket: bucket!, path: [...path, file.name] })));
             const link = `${window.location.origin}/api/v1/share?payload=${payload}`;
             dispatch(openModal({ content: <ShareFileModal link={link} /> }));
         } catch (error: any) {

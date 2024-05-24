@@ -49,7 +49,7 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
     };
 
     const openBucket = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-        if (!bucket.mount || bucket.locked) return;
+        if (bucket.locked) return;
         // @ts-ignore
         if (event.target.id === 'bucketContextMenu') { return; }
         navigate(`/drive/${bucket.id}`);
@@ -87,7 +87,7 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
 
     return (
         <div
-            className={`rounded-xl transition-all border-1 border-border-regular ${!bucket.mount || bucket.locked ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+            className={`rounded-xl transition-all border-1 border-border-regular ${bucket.locked ? 'cursor-not-allowed' : 'cursor-pointer'}`}
             ref={bucketRef}
             onContextMenu={onContextMenu}
             onClick={openBucket}

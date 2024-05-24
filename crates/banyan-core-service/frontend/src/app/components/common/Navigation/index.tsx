@@ -3,7 +3,6 @@ import { Link, NavLink, useLocation } from 'react-router-dom';
 
 import { LockedTooltip } from './LockedTooltip';
 
-import { useTomb } from '@/app/contexts/tomb';
 import { useFilesUpload } from '@contexts/filesUpload';
 import { ToastNotifications } from '@utils/toastNotifications';
 import { Bucket } from '@app/types/bucket';
@@ -14,10 +13,10 @@ import { useAppSelector } from '@/app/store';
 import { ActiveDirectory, ChevronUp, Directory, Logo } from '@static/images/common';
 
 export const Navigation = () => {
-	const { buckets } = useTomb();
 	const { uploadFiles } = useFilesUpload();
 	const [isBucketsVisible, setIsBucketsVisible] = useState(false);
 	const messages = useAppSelector(state => state.locales.messages.coponents.common.navigation);
+	const { buckets } = useAppSelector(state => state.tomb);
 	const location = useLocation();
 
 	const toggleBucketsVisibility = (event: React.MouseEvent<HTMLDivElement>) => {
@@ -36,10 +35,6 @@ export const Navigation = () => {
 		} catch (error: any) {
 			ToastNotifications.error(`${messages.uploadError}`, `${messages.tryAgain}`, () => { });
 		};
-	};
-
-	const preventNavigation = (event: React.MouseEvent<HTMLAnchorElement, MouseEvent>, bucket: Bucket) => {
-		!bucket.mount && event.preventDefault();
 	};
 
 	useEffect(() => {
@@ -91,7 +86,6 @@ export const Navigation = () => {
 										to={bucket.locked ? '' : `/drive/${bucket.id}`}
 										onDrag={preventDefaultDragAction}
 										onDrop={event => handleDrop(event, bucket)}
-										onClick={event => preventNavigation(event, bucket)}
 										className={`flex items-center justify-between gap-2 w-full h-10 ${!bucket.mount && 'cursor-not-allowed'} bg-navigation-primary transition-all hover:brightness-95 ${bucket.locked ? 'cursor-not-allowed' : 'cursor-pointer'}`}
 									>
 										<span

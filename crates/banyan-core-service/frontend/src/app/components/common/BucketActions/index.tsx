@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { unwrapResult } from '@reduxjs/toolkit';
 
 import { RenameBucketModal } from '@components/common/Modal/RenameBucketModal';
 import { DeleteDriveModal } from '@/app/components/common/Modal/DeleteDriveModal';
@@ -12,16 +13,15 @@ import { Action } from '@components/Bucket/Files/BucketTable/FileActions';
 import { closeModal, openModal } from '@store/modals/slice';
 import { Bucket } from '@/app/types/bucket';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
-import { useTomb } from '@contexts/tomb';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { useAppDispatch, useAppSelector } from '@/app/store';
+import { mountBucket } from '@/app/store/tomb/actions';
 
 import { Bolt, DeleteHotData, Rename, Retry, Trash, Upload, Versions } from '@static/images/common';
 import { AddFolderIcon, Lock } from '@static/images/buckets';
 
 export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.common.bucketActions);
-    const { remountBucket } = useTomb();
     const bucketType = `${bucket.bucketType}_${bucket.storageClass}`;
     const folderLocation = useFolderLocation();
     const navigate = useNavigate();
@@ -94,10 +94,10 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const deleteBucket = async () => {
         try {
             dispatch(openModal(
-            {
-                content: <DeleteDriveModal bucket={bucket} />
-            }
-        ));
+                {
+                    content: <DeleteDriveModal bucket={bucket} />
+                }
+            ));
         } catch (error: any) { }
     };
 
@@ -114,7 +114,7 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
 
     const remount = async () => {
         try {
-            await remountBucket(bucket);
+            unwrapResult(await dispatch(mountBucket(bucket.id)));
         } catch (error: any) {
             ToastNotifications.error('Error on bucket remount', 'Try again', remount);
         }
@@ -158,6 +158,12 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         backup_warm: warmBackupActions,
         backup_cold: coldBackupActions,
     };
+
+    useEffect(() => {
+        if(bucket.mount) return;
+
+        dispatch(mountBucket(bucket.id));
+    }, [bucket.mount]);
 
     return (
         <div className={'absolute right-5 w-64 text-xs font-medium bg-bucket-actionsBackground rounded-md overflow-hidden shadow-md z-10 select-none text-bucket-actionsText'}>

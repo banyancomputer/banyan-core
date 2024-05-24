@@ -1,4 +1,5 @@
 import React, { ReactElement, useMemo } from 'react';
+import { unwrapResult } from '@reduxjs/toolkit';
 
 import { MoveToModal } from '@components/common/Modal/MoveToModal';
 import { RenameFileModal } from '@components/common/Modal/RenameFileModal';
@@ -8,10 +9,11 @@ import { DeleteFileModal } from '@components/common/Modal/DeleteFileModal';
 import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { openModal } from '@store/modals/slice';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
-import { useTomb } from '@/app/contexts/tomb';
 import { useAppDispatch, useAppSelector } from '@/app/store';
 
 import { Copy, Done, Download, LinkIcon, MoveTo, Rename, Share, Trash } from '@static/images/common';
+import { getFile, makeCopy, shareFile } from '@/app/store/tomb/actions';
+import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 
 export class Action {
     constructor(
@@ -24,14 +26,15 @@ export class Action {
 
 export const FileActions: React.FC<{ bucket: Bucket; file: BrowserObject; parrentFolder: BrowserObject; path: string[] }> = ({ bucket, file, path, parrentFolder }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.bucket.files.bucketTable.fileActions);
-    const { download, makeCopy, shareFile } = useTomb();
     const dispatch = useAppDispatch();
     const bucketType = `${bucket.bucketType}_${bucket.storageClass}`;
+    const folderLocation = useFolderLocation();
+
 
     const downloadFile = async () => {
         try {
             await ToastNotifications.promise(`${messages.downloading}...`, `${messages.fileWasDownloaded}`, <Done width="20px" height="20px" />,
-                download(bucket, path, file.name)
+                await dispatch(getFile({ bucket, path, name: file.name }))
             );
         } catch (error: any) {
             ToastNotifications.error('Failed to download file', messages.tryAgain, downloadFile);
@@ -53,7 +56,7 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BrowserObject; parren
 
     const copy = async () => {
         try {
-            await makeCopy(bucket, path, file.name);
+            unwrapResult(await dispatch(makeCopy({ bucket, path, name: file.name, folderLocation })));
             ToastNotifications.notify(`${messages.copyOf} ${file.name} ${messages.wasCreated}`);
         } catch (error: any) {
             ToastNotifications.error('Error while copying file', `${messages.tryAgain}`, copy);
@@ -91,7 +94,7 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BrowserObject; parren
 
     const share = async () => {
         try {
-            const payload = await shareFile(bucket, [...path, file.name]);
+            const payload = unwrapResult(await dispatch(shareFile({ bucket, path: [...path, file.name] })));
             const link = `${window.location.origin}/api/v1/share?payload=${payload}`;
             dispatch(openModal({
                 content: <ShareFileModal link={link} />

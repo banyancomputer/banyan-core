@@ -9,7 +9,6 @@ import { SecondaryButton } from '@components/common/SecondaryButton';
 
 import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { closeModal, openModal } from '@store/modals/slice';
-import { useTomb } from '@/app/contexts/tomb';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { useFilesUpload } from '@/app/contexts/filesUpload';
 import { useAppDispatch, useAppSelector } from '@/app/store';
@@ -24,10 +23,10 @@ export const UploadFileModal: React.FC<{
     createdFolderPath?: string[];
     driveSelect?: boolean;
 }> = ({ bucket, folder, path, bucketId, createdFolderPath, driveSelect = false }) => {
-    const { buckets } = useTomb();
     const dispatch = useAppDispatch();
     const { uploadFiles } = useFilesUpload();
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.uploadFile);
+    const { buckets } = useAppSelector(state => state.tomb);
     const [selectedBucket, setSelectedBucket] = useState<Bucket | null>(bucket || null);
     const [selectedFolder, setSelectedFolder] = useState<string[]>(path);
     const [previewFiles, setPreviewFiles] = useState<FileList | null>(null);

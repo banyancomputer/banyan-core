@@ -1,14 +1,12 @@
-import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
-import { useTomb } from '@contexts/tomb';
 import { ArrowDown } from '@app/static/images/common';
 import { SnapshotsTable } from './Table';
 import { useAppSelector } from '@app/store';
 
 const Snapshots = () => {
     const messages = useAppSelector(state => state.locales.messages.coponents.bucket.snapshots);
-    const { selectedBucket } = useTomb();
+    const { selectedBucket } = useAppSelector(state => state.tomb);
 
     return (
         <div className="flex flex-col gap-3 flex-grow">

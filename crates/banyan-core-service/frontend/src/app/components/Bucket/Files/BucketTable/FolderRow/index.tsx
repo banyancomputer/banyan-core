@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { ActionsCell } from '@components/common/ActionsCell';
@@ -10,12 +10,14 @@ import { DraggingPreview } from '../FileRow/DraggingPreview';
 import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { getDateLabel } from '@/app/utils/date';
 import { convertFileSize } from '@/app/utils/storage';
-import { useTomb } from '@/app/contexts/tomb';
 import { stringToBase64 } from '@utils/base64';
 import { useFilesUpload } from '@contexts/filesUpload';
 import { ToastNotifications } from '@utils/toastNotifications';
 import { handleDrag, handleDragEnd, handleDragStart, preventDefaultDragAction } from '@utils/dragHandlers';
-import { useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@/app/store';
+import { selectBucket } from '@/app/store/tomb/slice';
+import { getExpandedFolderFiles, getSelectedBucketFiles, moveTo } from '@/app/store/tomb/actions';
+import { unwrapResult } from '@reduxjs/toolkit';
 
 import { ChevronUp } from '@static/images/common';
 
@@ -26,10 +28,10 @@ export const FolderRow: React.FC<{
     nestingLevel?: number;
     parrentFolder?: BrowserObject;
 }> = ({ folder, bucket, nestingLevel = 0, path = [], parrentFolder }) => {
+    const dispatch = useAppDispatch();
     const messages = useAppSelector(state => state.locales.messages.coponents.bucket.files.bucketTable.folderRow);
     const folderRef = useRef<HTMLTableRowElement | null>(null);
     const navigate = useNavigate();
-    const { getExpandedFolderFiles, getSelectedBucketFiles, moveTo, selectBucket } = useTomb();
     const { uploadFiles } = useFilesUpload();
     const [isFolderDraggingOver, setIsFolderDragingOver] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
@@ -50,9 +52,9 @@ export const FolderRow: React.FC<{
         try {
             if (folder.files?.length) {
                 folder.files = [];
-                selectBucket({ ...bucket });
+                dispatch(selectBucket({ ...bucket }));
             } else {
-                await getExpandedFolderFiles([...path, folder.name], folder, bucket);
+                unwrapResult(await dispatch(getExpandedFolderFiles({path:[...path, folder.name], folder})));
             };
         } catch (error: any) {
             ToastNotifications.error(messages.failedToLoadFiles, messages.tryAgain, () => expandFolder(event));
@@ -89,8 +91,8 @@ export const FolderRow: React.FC<{
                 const droppedItem: { name: string; path: string[] } = JSON.parse(dragData);
                 if ([...path, folder.name].join('/') === droppedItem.path.join('/')) { return; }
 
-                await moveTo(bucket, [...droppedItem.path, droppedItem.name], [...path, folder.name], droppedItem.name);
-                await getSelectedBucketFiles(path);
+                unwrapResult(await dispatch(moveTo({bucket, from: [...droppedItem.path, droppedItem.name], to: [...path, folder.name], name: droppedItem.name})));
+                unwrapResult(await dispatch(getSelectedBucketFiles(path)));
                 ToastNotifications.notify(messages.fileWasMoved);
             } catch (error: any) {
                 ToastNotifications.error(messages.moveToError);

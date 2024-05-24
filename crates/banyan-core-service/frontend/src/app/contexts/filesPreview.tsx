@@ -1,11 +1,12 @@
 import React, { FC, ReactNode, createContext, useContext, useEffect, useState } from 'react';
 import mime from 'mime';
 
-import { useTomb } from './tomb';
 import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { ToastNotifications } from '../utils/toastNotifications';
 import { SUPPORTED_EXTENSIONS, fileTypes } from "@app/types/filesPreview"
-import { useAppSelector } from '../store';
+import { useAppDispatch, useAppSelector } from '../store';
+import { unwrapResult } from '@reduxjs/toolkit';
+import { getFile } from '../store/tomb/actions';
 
 
 interface OpenedFile {
@@ -38,14 +39,13 @@ class FilePreviewState {
     closeFile: () => void = () => { };
 };
 
-
 export const FilePreviewContext = createContext<FilePreviewState>({} as FilePreviewState);
 
 export const FilePreviewProvider: FC<{ children: ReactNode }> = ({ children }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.common.filePreview);
     const [previewState, setPsreviewState] = useState<FilePreviewState>(new FilePreviewState());
     const { bucket, file, files, path, parrentFolder } = previewState;
-    const { getFile } = useTomb();
+    const dispatch = useAppDispatch();
 
     const openFile = async (bucket: Bucket, file: BrowserObject, files: BrowserObject[], path: string[], parrentFolder?: BrowserObject) => {
         if (!file) return;
@@ -65,7 +65,7 @@ export const FilePreviewProvider: FC<{ children: ReactNode }> = ({ children }) =
 
         try {
             setPsreviewState(prev => ({ ...prev, file: { ...prev.file, isLoading: true } }));
-            const arrayBuffer = await getFile(bucket, path, file.name);
+            const arrayBuffer = unwrapResult(await dispatch(getFile({bucket, path, name: file.name})));
             const blob = new File([arrayBuffer], file.name, { type: mime.getType(fileExtension) || '' });
             const objectUrl = URL.createObjectURL(blob);
             setPsreviewState(prev => ({ ...prev, file: { ...prev.file, objectUrl, isLoading: false } }));

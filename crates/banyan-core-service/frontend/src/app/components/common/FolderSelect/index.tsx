@@ -7,7 +7,6 @@ import { UploadFileModal } from '../Modal/UploadFileModal';
 import { popupClickHandler } from '@/app/utils';
 import { openModal } from '@store/modals/slice';
 import { BrowserObject, Bucket } from '@/app/types/bucket';
-import { useTomb } from '@/app/contexts/tomb';
 import { useAppDispatch, useAppSelector } from '@/app/store';
 
 import { ChevronUp } from '@static/images/common';
@@ -20,13 +19,13 @@ export interface FolderSelectProps {
 };
 
 export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBucket, selectedFolder, onFolderCreation }) => {
-    const { buckets } = useTomb();
     const dispatch = useAppDispatch();
     const selectRef = useRef<HTMLDivElement | null>(null);
     const [isOptionstVisible, setIsOptionsVisible] = useState(false);
     const [folder, setFolder] = useState(selectedFolder);
     const [folders, setFolders] = useState<BrowserObject[]>([]);
     const messages = useAppSelector(state => state.locales.messages.coponents.common.folderSelect);
+    const { buckets } = useAppSelector(state => state.tomb);
 
     const toggleSelect = () => {
         setIsOptionsVisible(prev => !prev);
