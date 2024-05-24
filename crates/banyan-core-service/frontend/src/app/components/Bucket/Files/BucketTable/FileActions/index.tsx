@@ -6,12 +6,12 @@ import { RenameFileModal } from '@components/common/Modal/RenameFileModal';
 import { ShareFileModal } from '@components/common/Modal/ShareFileModal';
 import { DeleteFileModal } from '@components/common/Modal/DeleteFileModal';
 
-import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { openModal } from '@store/modals/slice';
+import { Copy, Done, Download, LinkIcon, MoveTo, Rename, Share, Trash } from '@static/images/common';
+import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { useAppDispatch, useAppSelector } from '@/app/store';
 
-import { Copy, Done, Download, LinkIcon, MoveTo, Rename, Share, Trash } from '@static/images/common';
 import { getFile, shareFile, uploadFile } from '@/app/store/tomb/actions';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 
@@ -31,10 +31,19 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BrowserObject; parren
     const folderLocation = useFolderLocation();
 
 
-    const downloadFile = async () => {
+    const downloadFile = async() => {
         try {
             await ToastNotifications.promise(`${messages.downloading}...`, `${messages.fileWasDownloaded}`, <Done width="20px" height="20px" />,
-                await dispatch(getFile({ bucket, path, name: file.name }))
+            (async() => {
+                const link = document.createElement('a');
+                const arrayBuffer = unwrapResult(await dispatch(getFile({ bucket: bucket!, path, name: file.name })));
+                const blob = new Blob([arrayBuffer]);
+                const objectURL = URL.createObjectURL(blob);
+                link.href = objectURL;
+                link.download = file.name;
+                document.body.appendChild(link);
+                link.click();
+            })()
             );
         } catch (error: any) {
             ToastNotifications.error('Failed to download file', messages.tryAgain, downloadFile);
@@ -49,12 +58,12 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BrowserObject; parren
                     bucket={bucket}
                     path={path}
                     parrentFolder={parrentFolder}
-                />
+                />,
             }
         ));
     };
 
-    const copy = async () => {
+    const copy = async() => {
         try {
             const arrayBuffer: ArrayBuffer = unwrapResult(await dispatch(getFile({ bucket, path, name: file.name })));
             await dispatch(uploadFile({ bucket, uploadPath: path, name: `Copy of ${file.name}`, file: arrayBuffer, folderLocation }));
@@ -64,17 +73,17 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BrowserObject; parren
         };
     };
 
-    const rename = async () => {
+    const rename = async() => {
         dispatch(openModal({
             content: <RenameFileModal
                 bucket={bucket}
                 file={file}
                 path={path}
-            />
+            />,
         }));
     };
 
-    const remove = async () => {
+    const remove = async() => {
         try {
             dispatch(openModal({
                 content: <DeleteFileModal
@@ -82,23 +91,23 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BrowserObject; parren
                     file={file}
                     parrentFolder={parrentFolder}
                     path={path}
-                />
+                />,
             }));
         } catch (error: any) { }
     };
 
-    const viewFileVersions = async () => {
+    const viewFileVersions = async() => {
         try {
 
         } catch (error: any) { }
     };
 
-    const share = async () => {
+    const share = async() => {
         try {
             const payload = unwrapResult(await dispatch(shareFile({ bucket, path: [...path, file.name] })));
             const link = `${window.location.origin}/api/v1/share?payload=${payload}`;
             dispatch(openModal({
-                content: <ShareFileModal link={link} />
+                content: <ShareFileModal link={link} />,
             }));
         } catch (error: any) {
             ToastNotifications.error('Error while sharing file', `${messages.tryAgain}`, share);
@@ -154,11 +163,11 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BrowserObject; parren
                 </div>
             )
         }
-            <div
-                className="w-full flex justify-between items-center gap-2 py-2 px-3 border-t-1 border-border-regular transition-all hover:bg-hover"
-            >
+        <div
+            className="w-full flex justify-between items-center gap-2 py-2 px-3 border-t-1 border-border-regular transition-all hover:bg-hover"
+        >
                 Your file is secure <span className="rounded-full w-2 h-2" style={{ background: '#2bb65e' }} />
-            </div>
+        </div>
         </div>
     );
 };
