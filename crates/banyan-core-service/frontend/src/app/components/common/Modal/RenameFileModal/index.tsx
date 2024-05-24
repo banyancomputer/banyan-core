@@ -28,7 +28,7 @@ export const RenameFileModal: React.FC<{ bucket: Bucket; file: BrowserObject; pa
             unwrapResult(await dispatch(moveTo({ bucket, from: [...path, file.name], to: [...path], name: newName })));
             ToastNotifications.notify(`${messages.fileWasRenamed}`);
             if (path.join('/') === folderLocation.join('/')) {
-                dispatch(await dispatch(getSelectedBucketFiles(folderLocation)));
+                unwrapResult(await dispatch(getSelectedBucketFiles(folderLocation)));
                 close();
 
                 return;
@@ -37,6 +37,7 @@ export const RenameFileModal: React.FC<{ bucket: Bucket; file: BrowserObject; pa
             dispatch(selectBucket({ ...bucket }));
             close();
         } catch (error: any) {
+            console.error(error)
             ToastNotifications.error(`${messages.editError}`, `${messages.tryAgain}`, save);
         };
     };

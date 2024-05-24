@@ -2,7 +2,7 @@ import { BrowserObject, Bucket } from "@/app/types/bucket";
 import { StorageLimits, StorageUsage } from "@/entities/storage";
 import { PayloadAction, createSlice } from "@reduxjs/toolkit";
 import { TombWasm } from "tomb_build/banyanfs";
-import { createBucketAndMount, getSelectedBucketSnapshots, getBuckets, getBucketsKeys, getExpandedFolderFiles, getSelectedBucketFiles, mountBucket, moveTo, renameBucket, createDirectory, updateStorageUsageState, updateStorageLimitsState, uploadFile, takeColdSnapshot } from "./actions";
+import { createBucketAndMount, getSelectedBucketSnapshots, deleteFile, getBuckets, getExpandedFolderFiles, getSelectedBucketFiles, mountBucket, moveTo, renameBucket, createDirectory, updateStorageUsageState, updateStorageLimitsState, uploadFile, takeColdSnapshot } from "./actions";
 
 interface TombState {
     tomb: TombWasm | null;
@@ -44,6 +44,9 @@ const tombSlice = createSlice({
         },
         setEncryptionKey(state, action: PayloadAction<{privatePem: string, publicPem: string } | null>) {
             state.encryptionKey = action.payload
+        },
+        setIsLoading(state, action: PayloadAction<boolean>) {
+            state.isLoading = action.payload
         }
     },
     extraReducers(builder) {
@@ -55,20 +58,33 @@ const tombSlice = createSlice({
             state.buckets = [...state.buckets, action.payload];
         });
         builder.addCase(mountBucket.fulfilled, (state, action) => {
-            const bucket = state.buckets.find(bucket => bucket.id === action.payload.id)!;
-            Object.assign(bucket, action.payload);
-            if(bucket.id === state.selectedBucket?.id) {
-                state.selectedBucket = {...bucket}
+            if(action.payload.id === state.selectedBucket?.id) {
+                state.selectedBucket = {...state.selectedBucket}
             };
-            state.buckets = state.buckets.map(wasmBucket => wasmBucket.id === bucket.id ? bucket: wasmBucket);
+            state.buckets = state.buckets.map(wasmBucket => wasmBucket.id === action.payload.id ? {...wasmBucket, mount: action.payload.mount} : wasmBucket);
         });
         builder.addCase(uploadFile.fulfilled, (state, action) => {
             if(action.payload.id === state.selectedBucket?.id) {
                 Object.assign(state.selectedBucket!, action.payload);
             }
         });
+        builder.addCase(getExpandedFolderFiles.fulfilled, (state) => {
+            state.selectedBucket!.files = [...state.selectedBucket!.files];
+        });
+        builder.addCase(takeColdSnapshot.fulfilled, (state) => {
+            if(state.selectedBucket) {
+                state.selectedBucket = {...state.selectedBucket}
+            };
+            state.buckets = [...state.buckets];
+        });
+        builder.addCase(getSelectedBucketFiles.pending, (state, action) => {
+            if(!state.selectedBucket?.files.length) {
+                state.isLoading = true;
+            };
+        });
         builder.addCase(getSelectedBucketFiles.fulfilled, (state, action) => {
             state.selectedBucket!.files = action.payload;
+            state.isLoading = false;
         });
         builder.addCase(getSelectedBucketSnapshots.fulfilled, (state, action) => {
             state.selectedBucket!.snapshots = action.payload;
@@ -76,11 +92,28 @@ const tombSlice = createSlice({
         builder.addCase(updateStorageUsageState.fulfilled, (state, action) => {
             state.storageUsage = action.payload;
         });
+        builder.addCase(createDirectory.fulfilled, (state, action) => {
+            const files = action.payload?.files;
+            const id = action.payload?.id;
+            if(files) {
+                if(state.selectedBucket) {
+                    state.selectedBucket!.files = action.payload!.files;
+                    state.selectedBucket!.isSnapshotValid = false;
+                };
+                state.buckets = state.buckets.map(wasmBucket => wasmBucket.id === id ? {...wasmBucket, files, isSnapshotValid: false } : wasmBucket);
+        }
+        });
+        builder.addCase(moveTo.fulfilled, (state) => {
+            state.selectedBucket!.isSnapshotValid = false;
+        });
         builder.addCase(updateStorageLimitsState.fulfilled, (state, action) => {
             state.storageLimits = action.payload;
+        });
+        builder.addCase(deleteFile.fulfilled, (state) => {
+            state.selectedBucket!.isSnapshotValid = false;
         });
     }
 });
 
-export const { selectBucket, setTomb, setBucketFiles, setEncryptionKey, updateBucketsState } = tombSlice.actions;
+export const { selectBucket, setTomb, setBucketFiles, setIsLoading, setEncryptionKey, updateBucketsState } = tombSlice.actions;
 export default tombSlice.reducer;

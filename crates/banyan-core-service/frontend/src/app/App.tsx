@@ -128,9 +128,6 @@ const App = () => {
         })()
     }, [isKeystorageLoading, keystoreInitialized, user.id]);
 
-    console.log('mounts', buckets.map(bucket => bucket.mount));
-    
-
     return (
         <main
             className="flex flex-col h-screen max-h-screen font-sans bg-mainBackground text-text-900 max-sm:hidden"

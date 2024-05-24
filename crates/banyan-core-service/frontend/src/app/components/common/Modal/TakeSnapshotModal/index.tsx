@@ -8,7 +8,7 @@ import { Bucket } from '@/app/types/bucket';
 import { closeModal } from '@store/modals/slice';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { useAppDispatch, useAppSelector } from '@/app/store';
-import { takeColdSnapshot } from '@/app/store/tomb/actions';
+import { takeColdSnapshot, updateStorageUsageState } from '@/app/store/tomb/actions';
 
 import { Bolt } from '@static/images/common';
 
@@ -23,6 +23,7 @@ export const TakeSnapshotModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const takeSnapshot = async () => {
         try {
             unwrapResult(await dispatch(takeColdSnapshot(bucket)));
+            unwrapResult(await dispatch(updateStorageUsageState()));
             ToastNotifications.notify(`${messages.snapshotWasTaken}`, <Bolt width="20px" height="20px" />);
             close();
         } catch (error: any) {

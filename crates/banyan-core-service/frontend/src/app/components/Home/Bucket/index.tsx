@@ -29,7 +29,7 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
 
     const onContextMenu = async (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
         if(!bucket.mount) {
-            await dispatch(mountBucket(bucket.id));
+            await dispatch(mountBucket(bucket));
         };
         event.preventDefault();
         const bucketActionnBottom = bucketActionsRef.current!.clientHeight + event.clientY;

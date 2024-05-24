@@ -6,7 +6,7 @@ import { EmptyState } from '@components/Bucket/Files/EmptyState';
 import { useAppSelector } from '@/app/store';
 
 const BucketFiles = () => {
-    const {selectedBucket, isLoading} = useAppSelector(state => state.tomb);
+    const { selectedBucket, isLoading } = useAppSelector(state => state.tomb);
 
     return (
         <section className="py-9 px-10 flex flex-col flex-grow">

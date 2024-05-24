@@ -31,7 +31,7 @@ export const FileUploadProvider: FC<{ children: ReactNode }> = ({ children }) =>
     const [files, setFiles] = useState<UploadingFile[]>([]);
 
     const uploadFiles = async (fileList: FileList, bucket: Bucket, path: string[], folder?: BrowserObject) => {
-        const mount = bucket.mount || unwrapResult(await dispatch(mountBucket(bucket.id))).mount;
+        const mount = bucket.mount || unwrapResult(await dispatch(mountBucket(bucket))).mount;
         const files: UploadingFile[] = Array.from(fileList).map(file => ({ file, status: 'pending' }));
 
         if (files.some(file => file.file.size > FILE_SIZE_LIMIT)) {

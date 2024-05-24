@@ -12,7 +12,7 @@ import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { useAppDispatch, useAppSelector } from '@/app/store';
 
 import { Copy, Done, Download, LinkIcon, MoveTo, Rename, Share, Trash } from '@static/images/common';
-import { getFile, makeCopy, shareFile } from '@/app/store/tomb/actions';
+import { getFile, shareFile, uploadFile } from '@/app/store/tomb/actions';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 
 export class Action {
@@ -56,7 +56,8 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BrowserObject; parren
 
     const copy = async () => {
         try {
-            unwrapResult(await dispatch(makeCopy({ bucket, path, name: file.name, folderLocation })));
+            const arrayBuffer: ArrayBuffer = unwrapResult(await dispatch(getFile({ bucket, path, name: file.name })));
+            await dispatch(uploadFile({ bucket, uploadPath: path, name: `Copy of ${file.name}`, file: arrayBuffer, folderLocation }));
             ToastNotifications.notify(`${messages.copyOf} ${file.name} ${messages.wasCreated}`);
         } catch (error: any) {
             ToastNotifications.error('Error while copying file', `${messages.tryAgain}`, copy);

@@ -42,14 +42,18 @@ export const getBuckets = createAsyncThunk(
 /** Mounts buckets, and loads info about locked state and snapshots. */
 export const mountBucket = createAsyncThunk(
     'mountBucket',
-    async (id: string, { getState }) => {
+    async (bucket: Bucket, { getState }) => {
         const { tomb: { tomb, encryptionKey } } = getState() as RootState;
 
-        const mount = await tomb!.mount(id, encryptionKey!.privatePem);
+        const mount = await tomb!.mount(bucket.id, encryptionKey!.privatePem);
 		const locked = await mount.locked();
 		const isSnapshotValid = await mount.hasSnapshot();
 
-        return { id, mount, locked, isSnapshotValid };
+		bucket.mount = mount;
+		bucket.isSnapshotValid = isSnapshotValid
+		bucket.locked = locked;
+
+        return { id: bucket.id, mount };
     }
 );
 
@@ -174,7 +178,6 @@ export const removeBucketAccess = createAsyncThunk(
 );
 
 /** Moves file/folder into different location. */
-
 export const moveTo = createAsyncThunk(
     'moveTo',
     async ({bucket, from, to, name}:{bucket: Bucket, from: string[], to: string[], name: string }, { dispatch }) => {
@@ -182,8 +185,6 @@ export const moveTo = createAsyncThunk(
 		const extstingFiles = (await mount.ls(to)).map(file => file.name);
 		const browserObjectName = handleNameDuplication(name, extstingFiles);
 		await mount.mv(from, [...to, browserObjectName]);
-		const isSnapshotValid = await mount.hasSnapshot();
-		bucket.isSnapshotValid = isSnapshotValid;
     }
 );
 
@@ -211,9 +212,8 @@ export const createDirectory = createAsyncThunk(
 		await mount.mkdir([...path, name]);
 		if (path.join('') !== folderLocation.join('')) { return; }
 		const files = await mount.ls(path) || [];
-		bucket.files =  files.sort(sortByName).sort(sortByType), bucket.id;
-		const isSnapshotValid = await mount.hasSnapshot();
-		bucket.isSnapshotValid = isSnapshotValid;
+
+		return { files: files.sort(sortByName).sort(sortByType), id: bucket.id };
     }
 );
 
@@ -271,38 +271,17 @@ export const uploadFile = createAsyncThunk(
 	}
 );
 
-/** Creates copy of fie in same direction with "Copy of" prefix. */
-export const makeCopy = createAsyncThunk(
-	'makeCopy',
-	async ({
-		bucket,
-		path,
-		name,
-		folderLocation
-	}
-	:
-	{
-		bucket: Bucket,
-		path: string[],
-		name: string,
-		folderLocation: string[],
-	}, { dispatch }) => {
-		const arrayBuffer: ArrayBuffer = unwrapResult(await dispatch(getFile({bucket, path, name})));
-		await dispatch(uploadFile({ bucket, uploadPath: path, name:`Copy of ${name}`, file:arrayBuffer, folderLocation }));
-	}
-);
-
 /** Creates bucket snapshot */
 export const takeColdSnapshot = createAsyncThunk(
-	'renameBucket',
-    async (bucket: Bucket, { dispatch, getState }) => {
-		const { tomb: { tomb, selectedBucket } } = getState() as RootState;
+	'takeColdSnapshot',
+    async (bucket: Bucket, { getState }) => {
+		const { tomb: { tomb } } = getState() as RootState;
 		await bucket.mount!.snapshot();
 		const snapshots = await tomb!.listBucketSnapshots(bucket.id);
-		bucket.snapshots = snapshots;
-		const isSnapshotValid = await bucket.mount!.hasSnapshot();
-		bucket.isSnapshotValid = isSnapshotValid;
-		await dispatch(updateStorageUsageState());
+		bucket.snapshots  = snapshots;
+		bucket.isSnapshotValid = true;
+
+		return { snapshots, id: bucket.id };
     }
 );
 
@@ -329,9 +308,6 @@ export const deleteFile = createAsyncThunk(
     async ({bucket, name, path}: {bucket: Bucket, name: string, path: string[]}, { dispatch, getState }) => {
 		const mount = bucket.mount!;
 		await mount.rm([...path, name]);
-		const isSnapshotValid = await mount.hasSnapshot();
-		bucket.isSnapshotValid = isSnapshotValid;
-		await dispatch(updateStorageUsageState());
     }
 );
 

@@ -5,7 +5,7 @@ import { unwrapResult } from '@reduxjs/toolkit';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 import { useAppDispatch, useAppSelector } from '@store/index';
 import { getSelectedBucketFiles, mountBucket } from '@store/tomb/actions';
-import { selectBucket } from '@store/tomb/slice';
+import { selectBucket, setIsLoading } from '@store/tomb/slice';
 
 const Bucket = () => {
     const params = useParams();
@@ -26,23 +26,27 @@ const Bucket = () => {
     useEffect(() => {
         const bucket = buckets.find(bucket => bucket.id === bucketId);
         bucket && dispatch(selectBucket(bucket));
-    }, [bucketId, buckets.length]);
+    }, [bucketId, buckets]);
 
     useEffect(() => () => {
         dispatch(selectBucket(null));
     }, []);
 
     useEffect(() => {
-        if (selectedBucket?.mount) return;
+        const bucket = buckets.find(bucket => bucket.id === bucketId);
+
+        if (bucket?.mount) return;
 
         (async () => {
             try {
-                unwrapResult(await dispatch(mountBucket(selectedBucket!.id)));
+                dispatch(setIsLoading(true));
+                unwrapResult(await dispatch(mountBucket(selectedBucket!)));
+                dispatch(setIsLoading(false));
             } catch (error: any) {
                 console.log(error);
             }
         })()
-    }, [selectedBucket?.mount, selectedBucket?.id])
+    }, [selectedBucket?.mount, selectedBucket?.id, buckets])
 
     return (
         <section className="flex flex-col flex-grow">

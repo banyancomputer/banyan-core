@@ -114,7 +114,7 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
 
     const remount = async () => {
         try {
-            unwrapResult(await dispatch(mountBucket(bucket.id)));
+            unwrapResult(await dispatch(mountBucket(bucket)));
         } catch (error: any) {
             ToastNotifications.error('Error on bucket remount', 'Try again', remount);
         }
