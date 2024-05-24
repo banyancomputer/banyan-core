@@ -8,7 +8,7 @@ import { SubscriptionPlanModal } from '../components/common/Modal/SubscriptionPl
 import { FILE_SIZE_LIMIT } from '@app/utils/storage';
 import { ToastNotifications } from '@app/utils/toastNotifications';
 import { openModal } from '@store/modals/slice';
-import { mountBucket, uploadFile } from '@store/tomb/actions';
+import { mountBucket, updateStorageUsageState, uploadFile } from '@store/tomb/actions';
 import { useFolderLocation } from '@app/hooks/useFolderLocation';
 
 export interface UploadingFile { file: File; status: "pending" | "uploading" | "success" | "failed" };
@@ -61,6 +61,7 @@ export const FileUploadProvider: FC<{ children: ReactNode }> = ({ children }) =>
                 file.status = 'uploading';
                 setFiles(prev => [...prev]);
                 unwrapResult(await dispatch(uploadFile({ bucket: {...bucket, mount}, uploadPath: path, name: file.file.name, file: arrayBuffer, folder, folderLocation })));
+                await dispatch(updateStorageUsageState());
                 file.status = 'success';
                 setFiles(prev => [...prev]);
             } catch (error: any) {

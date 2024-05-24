@@ -62,6 +62,11 @@ const tombSlice = createSlice({
             };
             state.buckets = state.buckets.map(wasmBucket => wasmBucket.id === bucket.id ? bucket: wasmBucket);
         });
+        builder.addCase(uploadFile.fulfilled, (state, action) => {
+            if(action.payload.id === state.selectedBucket?.id) {
+                Object.assign(state.selectedBucket!, action.payload);
+            }
+        });
         builder.addCase(getSelectedBucketFiles.fulfilled, (state, action) => {
             state.selectedBucket!.files = action.payload;
         });

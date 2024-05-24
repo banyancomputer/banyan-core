@@ -247,25 +247,27 @@ export const uploadFile = createAsyncThunk(
 		name: string,
 		file: ArrayBuffer,
 		folder?: BrowserObject
-	}, { dispatch, getState }) => {
-		const {tomb: { selectedBucket }} = getState() as RootState;
+	}, {getState}) => {
+		const { tomb: { selectedBucket } } = getState() as RootState;
+		const result = {files: bucket.files, isSnapshotValid:bucket.isSnapshotValid, id: bucket.id};
 		const mount = bucket.mount!;
 		const extstingFiles = (await mount.ls(uploadPath)).map(file => file.name);
 
 		let fileName = handleNameDuplication(name, extstingFiles);
 		await mount.write([...uploadPath, fileName], file);
+		if(bucket.id !== selectedBucket?.id) return result;
+
 		if (folder) {
 			const files = await mount.ls(uploadPath);
 			folder.files = files.sort(sortByName).sort(sortByType);
 
-			return;
+			return result;
 		}
-		if (uploadPath.join('') !== folderLocation.join('')) { return; }
+		if (uploadPath.join('') !== folderLocation.join('')) { return result; }
 		const files = await mount.ls(uploadPath) || [];
-		bucket.files = files.sort(sortByName).sort(sortByType), bucket.id;
 		const isSnapshotValid = await mount.hasSnapshot();
-		bucket.isSnapshotValid = isSnapshotValid;
-		await dispatch(updateStorageUsageState());
+
+		return {files:  files.sort(sortByName).sort(sortByType), isSnapshotValid, id: bucket.id}
 	}
 );
 
