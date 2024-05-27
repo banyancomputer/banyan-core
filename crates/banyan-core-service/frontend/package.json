@@ -23,7 +23,7 @@
   },
   "scripts": {
     "dev": "tsc && vite build --watch --mode development",
-    "build": "tsc && vite build",
+    "build": "tsc && vite build --mode production",
     "start": "vite",
     "lint": "eslint --fix --ext .js,.ts,.tsx .",
     "test": "jest --config=jest.config.js"
@@ -52,7 +52,7 @@
     "ts-jest": "29.1.2",
     "typescript": "5.4.5",
     "vite": "4.5.3",
-    "vite-plugin-compression": "0.5.1",
+    "vite-plugin-compression2": "^1.1.1",
     "vite-plugin-top-level-await": "1.4.1",
     "vite-plugin-wasm": "3.3.0"
   },

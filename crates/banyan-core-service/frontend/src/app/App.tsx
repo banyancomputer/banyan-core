@@ -1,5 +1,4 @@
 import { Suspense, useEffect, useState } from 'react';
-import { TombWasm } from 'tomb-wasm-experimental';
 
 import { Modal } from '@components/common/Modal';
 import { Notifications } from '@components/common/Notifications';
@@ -85,6 +84,7 @@ const App = () => {
         (async () => {
             try {
                 const apiKey = unwrapResult(await dispatch(getApiKey()));
+                const TombWasm = (await import('tomb-wasm-experimental')).TombWasm;
                 const tomb = await new TombWasm(
                     apiKey.privatePem,
                     user.id,
