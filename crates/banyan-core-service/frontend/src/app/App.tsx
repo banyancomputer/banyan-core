@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState } from 'react';
+import { Profiler, Suspense, useEffect, useState } from 'react';
 
 import { Modal } from '@components/common/Modal';
 import { Notifications } from '@components/common/Notifications';
@@ -26,7 +26,7 @@ const App = () => {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const { keystoreInitialized, escrowedKeyMaterial } = useAppSelector(state => state.keystore);
-    const { tomb, buckets } = useAppSelector(state => state.tomb);
+    const { tomb } = useAppSelector(state => state.tomb);
 
     const { user } = useAppSelector(state => state.session);
     const [isKeystorageLoading, setIsKeystorageLoading] = useState(true);

@@ -22,8 +22,8 @@
     "uint8arrays": "5.0.3"
   },
   "scripts": {
-    "dev": "tsc && vite build --watch --mode development",
-    "build": "tsc && vite build --mode production",
+    "dev": "vite build --watch --mode development",
+    "build": "vite build --mode production",
     "start": "vite",
     "lint": "eslint --fix --ext .js,.ts,.tsx .",
     "test": "jest --config=jest.config.js"

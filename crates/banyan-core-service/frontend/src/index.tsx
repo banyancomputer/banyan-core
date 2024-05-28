@@ -3,8 +3,9 @@ import ReactDOM from 'react-dom/client';
 import { Provider } from 'react-redux';
 import { BrowserRouter } from 'react-router-dom';
 
-import { store } from '@app/store';
 import App from '@app/App';
+
+import { store } from '@app/store';
 
 import './index.css';
 
@@ -14,7 +15,7 @@ const root = ReactDOM.createRoot(
 
 root.render(
     <Provider store={store}>
-            <BrowserRouter basename="/" >
+            <BrowserRouter basename="/" future={{ v7_startTransition: true }}>
                 <App />
             </BrowserRouter>
     </Provider>
