@@ -90,11 +90,9 @@ export class TombWasm {
 * @param {string} name
 * @param {string} storage_class
 * @param {string} bucket_type
-* @param {string} private_key_pem
-* @param {string} public_key_pem
 * @returns {Promise<WasmBucketMount>}
 */
-  createBucketAndMount(name: string, storage_class: string, bucket_type: string, private_key_pem: string, public_key_pem: string): Promise<WasmBucketMount>;
+  createBucketAndMount(name: string, storage_class: string, bucket_type: string): Promise<WasmBucketMount>;
 /**
 * @param {string} bucket_id
 * @returns {Promise<void>}

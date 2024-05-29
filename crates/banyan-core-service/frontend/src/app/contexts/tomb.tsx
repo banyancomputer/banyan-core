@@ -197,8 +197,7 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
             throw new Error(driveAlreadyExists);
         }
 
-        const key = unwrapResult(await dispatch(getUserKey()));
-        const { bucket: wasmBucket, mount: wasmMount } = await tomb!.createBucketAndMount(name, storageClass, bucketType, key.privatePem, key.publicPem);
+        const { bucket: wasmBucket, mount: wasmMount } = await tomb!.createBucketAndMount(name, storageClass, bucketType);
         const bucket = {
             mount: wasmMount,
             id: wasmBucket.id(),

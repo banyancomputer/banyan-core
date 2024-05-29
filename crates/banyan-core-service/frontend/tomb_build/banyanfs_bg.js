@@ -544,11 +544,9 @@ export class TombWasm {
     * @param {string} name
     * @param {string} storage_class
     * @param {string} bucket_type
-    * @param {string} private_key_pem
-    * @param {string} public_key_pem
     * @returns {Promise<WasmBucketMount>}
     */
-    createBucketAndMount(name, storage_class, bucket_type, private_key_pem, public_key_pem) {
+    createBucketAndMount(name, storage_class, bucket_type) {
         if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
         _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
@@ -557,11 +555,7 @@ export class TombWasm {
         const len1 = WASM_VECTOR_LEN;
         const ptr2 = passStringToWasm0(bucket_type, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len2 = WASM_VECTOR_LEN;
-        const ptr3 = passStringToWasm0(private_key_pem, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len3 = WASM_VECTOR_LEN;
-        const ptr4 = passStringToWasm0(public_key_pem, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len4 = WASM_VECTOR_LEN;
-        const ret = wasm.tombwasm_createBucketAndMount(this.__wbg_ptr, ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3, ptr4, len4);
+        const ret = wasm.tombwasm_createBucketAndMount(this.__wbg_ptr, ptr0, len0, ptr1, len1, ptr2, len2);
         return takeObject(ret);
     }
     /**
@@ -2448,7 +2442,7 @@ export function __wbindgen_memory() {
     return addHeapObject(ret);
 };
 
-export function __wbindgen_closure_wrapper14480() { return logError(function (arg0, arg1, arg2) {
+export function __wbindgen_closure_wrapper14460() { return logError(function (arg0, arg1, arg2) {
     const ret = makeMutClosure(arg0, arg1, 1277, __wbg_adapter_32);
     return addHeapObject(ret);
 }, arguments) };

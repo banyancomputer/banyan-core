@@ -6,9 +6,8 @@ use serde::Deserialize;
 use time::OffsetDateTime;
 use validify::{Validate, Validify};
 
-use crate::api::models::ApiBucketAccess;
 use crate::app::AppState;
-use crate::database::models::{Bucket, BucketAccess, BucketType, StorageClass, UserKey};
+use crate::database::models::{Bucket, BucketType, StorageClass};
 use crate::extractors::ApiIdentity;
 
 pub async fn handler(
@@ -19,14 +18,6 @@ pub async fn handler(
     request.validate()?;
     let database = state.database();
     let now = OffsetDateTime::now_utc();
-
-    let mut conn = database.acquire().await?;
-    //UserKey::can
-    let user_key = UserKey::by_fingerprint(&mut conn, &request.fingerprint).await?;
-    if !user_key.api_access || user_key.user_id != api_id.user_id().to_string() {
-        return Err(CreateBucketError::Unauthorized);
-    }
-    conn.close().await?;
 
     let user_id = api_id.user_id().to_string();
     let bucket_id = sqlx::query_scalar!(
@@ -48,13 +39,9 @@ pub async fn handler(
     // todo: when the extra returns have been removed this can turn into an execute query, for now
     // we need to keep a handle on the id
     //let
+
     // Provide this Api Key with Bucket Access
-
     let mut conn = database.acquire().await?;
-    let access = BucketAccess::set(&mut conn, &bucket_id, &user_key.fingerprint, true)
-        .await
-        .map_err(CreateBucketError::GrantAccessFailed)?;
-
     let bucket = Bucket::find_by_id(&mut conn, &bucket_id)
         .await
         .map_err(CreateBucketError::BucketLookupFailed)?;
@@ -64,12 +51,6 @@ pub async fn handler(
         name: bucket.name,
         r#type: bucket.r#type,
         storage_class: bucket.storage_class,
-        access: ApiBucketAccess {
-            user_key_id: user_key.id,
-            bucket_id: bucket.id,
-            fingerprint: user_key.fingerprint,
-            approved: access.approved,
-        },
     };
 
     Ok((StatusCode::OK, Json(resp)).into_response())
@@ -83,7 +64,6 @@ pub struct CreateBucketRequest {
     #[serde(rename = "type")]
     bucket_type: BucketType,
     storage_class: StorageClass,
-    fingerprint: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -92,14 +72,10 @@ struct ApiCreateBucketResponse {
     name: String,
     r#type: BucketType,
     storage_class: StorageClass,
-    access: ApiBucketAccess,
 }
 
 #[derive(Debug, thiserror::Error)]
 pub enum CreateBucketError {
-    #[error("key is unauthorized for API use")]
-    Unauthorized,
-
     #[error("database errror: {0}")]
     Database(#[from] sqlx::Error),
 
@@ -108,9 +84,6 @@ pub enum CreateBucketError {
 
     #[error("failed to insert bucket into database: {0}")]
     BucketCreationFailed(sqlx::Error),
-
-    #[error("failed to insert bucket key into database: {0}")]
-    GrantAccessFailed(sqlx::Error),
 
     #[error("invalid bucket creation request received: {0}")]
     InvalidBucket(#[from] validify::ValidationErrors),
@@ -139,7 +112,6 @@ mod tests {
     use super::*;
     use crate::api::buckets::create_bucket::CreateBucketRequest;
     use crate::app::mock_app_state;
-    use crate::database::models::BucketAccess;
     use crate::database::test_helpers::{get_or_create_identity, sample_user, setup_database};
     use crate::utils::tests::deserialize_response;
 
@@ -150,13 +122,11 @@ mod tests {
 
         let user_id = sample_user(&mut conn, "test@example.com").await;
         let api_id = get_or_create_identity(&mut conn, &user_id).await;
-        let fingerprint = api_id.key_fingerprint().to_string();
 
         let new_config = CreateBucketRequest {
             name: "new_name".to_string(),
             bucket_type: BucketType::Backup,
             storage_class: StorageClass::Hot,
-            fingerprint: fingerprint.clone(),
         };
 
         let result = handler(api_id, mock_app_state(db.clone()), Json(new_config.clone())).await;
@@ -168,20 +138,10 @@ mod tests {
             .await
             .unwrap();
 
-        let user_key = UserKey::by_fingerprint(&mut conn, &fingerprint)
-            .await
-            .unwrap();
-        let approved = BucketAccess::by_fingerprint(&mut conn, &fingerprint)
-            .await
-            .unwrap()
-            .approved;
-
         assert_eq!(status, StatusCode::OK);
         assert_eq!(bucket_response.id, bucket_in_db.id);
         assert_eq!(user_id, bucket_in_db.user_id);
         assert_eq!(bucket_response.r#type, bucket_in_db.r#type);
         assert_eq!(bucket_response.storage_class, bucket_in_db.storage_class);
-        assert_eq!(user_key.fingerprint, fingerprint);
-        assert!(approved);
     }
 }
