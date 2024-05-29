@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { ActionsCell } from '@/app/components/common/ActionsCell'
-import { SecondaryButton } from '@/app/components/common/SecondaryButton'
-import { useAppDispatch, useAppSelector } from '@/app/store'
-import { UserAccessKey } from '@/app/types/userAccessKeys'
+import { KeyActions } from '../../KeyActions';
+import { ActionsCell } from '@/app/components/common/ActionsCell';
+import { SecondaryButton } from '@/app/components/common/SecondaryButton';
+import { useAppDispatch, useAppSelector } from '@/app/store';
+import { UserAccessKey } from '@/app/types/userAccessKeys';
 import { openModal } from '@/app/store/modals/slice';
 import { Bucket } from '@/app/types/bucket';
 import { ApproveBucketAccessModal } from '@/app/components/common/Modal/ApproveBucketAccessModal';
 import { RemoveBucketAccessModal } from '@/app/components/common/Modal/RemoveBucketAccessModal';
-import { KeyActions } from '../../KeyActions';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { useTomb } from '@/app/contexts/tomb';
 
@@ -16,13 +16,14 @@ export const AccessKeyRow: React.FC<{ accessKey: UserAccessKey }> = ({ accessKey
     const messages = useAppSelector(state => state.locales.messages.coponents.account.manageKeys.keyManagementTable);
     const dispatch = useAppDispatch();
 
-    const approveAccess = async (bucket: Bucket, accessKey: UserAccessKey) => {
+    const approveAccess = async(bucket: Bucket, accessKey: UserAccessKey) => {
         dispatch(openModal({ content: <ApproveBucketAccessModal bucket={bucket} accessKey={accessKey} /> }));
     };
 
-    const removeAccess = async (bucket: Bucket, accessKey: UserAccessKey) => {
+    const removeAccess = async(bucket: Bucket, accessKey: UserAccessKey) => {
         if (accessKey.buckets.length <= 1) {
             ToastNotifications.error('The final key cannot be disabled or removed without at least one backup.');
+
             return;
         };
         dispatch(openModal({ content: <RemoveBucketAccessModal bucket={bucket} accessKey={accessKey} /> }));
@@ -61,9 +62,6 @@ export const AccessKeyRow: React.FC<{ accessKey: UserAccessKey }> = ({ accessKey
 
                             <th className="w-40 py-3 px-6 text-left font-medium">
                                 <div className="flex items-center justify-end gap-4">
-                                    <SecondaryButton
-                                        text={accessKey.apiAccess ? messages.disable : messages.enable}
-                                    />
                                     <ActionsCell actions={
                                         <KeyActions accessKey={accessKey} />
                                     } />
@@ -99,5 +97,5 @@ export const AccessKeyRow: React.FC<{ accessKey: UserAccessKey }> = ({ accessKey
                 </table>
             </td>
         </tr>
-    )
-}
+    );
+};
