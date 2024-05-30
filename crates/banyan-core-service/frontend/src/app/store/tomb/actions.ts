@@ -49,11 +49,7 @@ export const mountBucket = createAsyncThunk(
 		const locked = await mount.locked();
 		const isSnapshotValid = await mount.hasSnapshot();
 
-		bucket.mount = mount;
-		bucket.isSnapshotValid = isSnapshotValid
-		bucket.locked = locked;
-
-        return { id: bucket.id, mount };
+        return { id: bucket.id, mount, isSnapshotValid, locked };
     }
 );
 

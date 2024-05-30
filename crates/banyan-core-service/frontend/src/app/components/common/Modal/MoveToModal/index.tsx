@@ -10,10 +10,10 @@ import { closeModal, openModal } from '@store/modals/slice';
 import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
-import { useFilePreview } from '@/app/contexts/filesPreview';
 import { stringToBase64 } from '@/app/utils/base64';
 import { useAppDispatch, useAppSelector } from '@/app/store';
 import { getExpandedFolderFiles, getSelectedBucketFiles, moveTo } from '@/app/store/tomb/actions';
+import { closeFile } from '@/app/store/filePreview/slice';
 
 export const MoveToModal: React.FC<{
     file: BrowserObject;
@@ -24,7 +24,6 @@ export const MoveToModal: React.FC<{
 }> = ({ file, bucket, path, parrentFolder, createdFolderPath }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.moteTo);
     const navigate = useNavigate();
-    const { closeFile } = useFilePreview();
     const [selectedFolder, setSelectedFolder] = useState<string[]>([]);
     const folderLocation = useFolderLocation();
     const dispatch = useAppDispatch();
@@ -36,7 +35,7 @@ export const MoveToModal: React.FC<{
     const move = async () => {
         try {
             unwrapResult(await dispatch(moveTo({ bucket, from: [...path, file.name], to: [...selectedFolder], name: file.name })));
-            closeFile();
+            dispatch(closeFile());
             ToastNotifications.notify(
                 `${file.type === 'dir' ? messages.fileWasMoved : messages.fileWasMoved}`,
                 null,

@@ -33,9 +33,7 @@ const Bucket = () => {
     }, []);
 
     useEffect(() => {
-        const bucket = buckets.find(bucket => bucket.id === bucketId);
-
-        if (bucket?.mount) return;
+        if (!selectedBucket || selectedBucket?.mount) return;
 
         (async () => {
             try {

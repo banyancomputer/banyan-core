@@ -58,10 +58,16 @@ const tombSlice = createSlice({
             state.buckets = [...state.buckets, action.payload];
         });
         builder.addCase(mountBucket.fulfilled, (state, action) => {
-            if(action.payload.id === state.selectedBucket?.id) {
-                state.selectedBucket = {...state.selectedBucket}
+            const { id, mount, isSnapshotValid, locked } = action.payload;
+            if(id === state.selectedBucket?.id) {
+                state.selectedBucket = {...state.selectedBucket, mount, isSnapshotValid, locked}
             };
-            state.buckets = state.buckets.map(wasmBucket => wasmBucket.id === action.payload.id ? {...wasmBucket, mount: action.payload.mount} : wasmBucket);
+            state.buckets = state.buckets.map(wasmBucket =>
+                wasmBucket.id === action.payload.id ?
+                {...wasmBucket, mount, isSnapshotValid, locked}
+                :
+                wasmBucket
+            );
         });
         builder.addCase(uploadFile.fulfilled, (state, action) => {
             if(action.payload.id === state.selectedBucket?.id) {

@@ -1,3 +1,5 @@
+import { useEffect } from 'react';
+import { unwrapResult } from '@reduxjs/toolkit';
 import mime from 'mime';
 
 import { Loader } from '@components/common/Loader';
@@ -7,21 +9,21 @@ import { PreviewArrow } from '@components/common/FilePreview/Arrow';
 import { ShareFileModal } from '@components/common/Modal/ShareFileModal';
 
 import { openModal } from '@store/modals/slice';
-import { useFilePreview } from '@/app/contexts/filesPreview';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { useAppDispatch, useAppSelector } from '@/app/store';
 
 import { Close, Done, DownloadAlternative, Upload } from '@static/images/common';
-import { unwrapResult } from '@reduxjs/toolkit';
 import { getFile, shareFile } from '@/app/store/tomb/actions';
+import { closeFile, openFile } from '@/app/store/filePreview/slice';
+import { loadFilePreview } from '@/app/store/filePreview/actions';
 
 export const FilePreview = () => {
     const dispatch = useAppDispatch();
     const messages = useAppSelector(state => state.locales.messages.coponents.common.filePreview);
-    const { file, files, bucket, parrentFolder, path, openNext, openPrevious, closeFile } = useFilePreview();
+    const { file, files, bucket, path, parrentFolder } = useAppSelector(state => state.filePreview);
 
     const close = () => {
-        closeFile();
+        dispatch(closeFile());
     };
 
     const downloadFile = async () => {
@@ -43,7 +45,6 @@ export const FilePreview = () => {
         }
     };
 
-
     const share = async () => {
         try {
             const payload = unwrapResult(await dispatch(shareFile({ bucket: bucket!, path: [...path, file.name] })));
@@ -52,6 +53,16 @@ export const FilePreview = () => {
         } catch (error: any) {
             ToastNotifications.error('Error while sharing file', `${messages.tryAgain}`, share);
         }
+    };
+
+    const openNext = () => {
+        const selectedFileIndex = files.map(file => file.name).indexOf(file.name);
+        dispatch(openFile({ bucket: bucket!, file: files[selectedFileIndex + 1], files, path, parrentFolder }));
+    };
+
+    const openPrevious = () => {
+        const selectedFileIndex = files.map(file => file.name).indexOf(file.name);
+        dispatch(openFile({ bucket: bucket!, file: files[selectedFileIndex - 1], files, path, parrentFolder }));
     };
 
     const getPreviewTag = (data: string, type: string) => {
@@ -90,6 +101,32 @@ export const FilePreview = () => {
                 return <div className="flex items-center text-white text-lg pointer-events-none">File is not supported for preview</div>;
         };
     };
+
+
+    useEffect(() => {
+        if (!file.name || !file.fileType) return;
+
+        dispatch(loadFilePreview());
+    }, [file.name, file.fileType]);
+
+    useEffect(() => {
+        if (!file.name) return;
+
+        const listener = (event: KeyboardEvent) => {
+            const selectedFileIndex = files.map(file => file.name).indexOf(file.name);
+            if (event.code === 'ArrowLeft' && selectedFileIndex) {
+                openPrevious();
+            } else if (event.code === 'ArrowRight' && (selectedFileIndex < files.length - 1)) {
+                openNext();
+            }
+        };
+
+        document.addEventListener('keydown', listener);
+
+        return () => {
+            document.removeEventListener('keydown', listener);
+        }
+    }, [file.name]);
 
     return (
         <>
