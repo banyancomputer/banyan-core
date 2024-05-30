@@ -6,7 +6,6 @@ import { FilePreview } from '@components/common/FilePreview';
 import { MobilePlaceholder } from '@components/common/MobilePlaceholder';
 
 import { Routes, RoutesConfig } from './routes';
-import { FilePreviewProvider } from '@contexts/filesPreview';
 import { FileUploadProvider } from '@contexts/filesUpload';
 import { getLocalStorageItem, setLocalStorageItem } from '@app/utils/localStorage';
 import { preventDefaultDragAction } from '@app/utils/dragHandlers';
@@ -135,14 +134,12 @@ const App = () => {
             onDrop={preventDefaultDragAction}
         >
             <FileUploadProvider>
-                <FilePreviewProvider>
-                    <Modal />
-                    <FilePreview />
-                    <Notifications />
-                    <Suspense>
-                        <Routes />
-                    </Suspense>
-                </FilePreviewProvider>
+                <Modal />
+                <FilePreview />
+                <Notifications />
+                <Suspense>
+                    <Routes />
+                </Suspense>
             </FileUploadProvider>
             <MobilePlaceholder />
         </main>

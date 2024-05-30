@@ -8,6 +8,7 @@ import locales from '@store/locales/slice';
 import errors from '@store/errors/slice';
 import modals from '@store/modals/slice';
 import tomb from '@store/tomb/slice';
+import filePreview from '@store/filePreview/slice';
 
 export const store = configureStore({
     reducer: {
@@ -17,6 +18,7 @@ export const store = configureStore({
         session,
         keystore,
         modals,
+        filePreview,
         tomb
     },
 });

@@ -101,10 +101,6 @@ export const FileUploadProvider: FC<{ children: ReactNode }> = ({ children }) =>
         setFiles(prev => prev.filter(uploadingFile => uploadingFile !== file));
     };
 
-    useEffect(() => {
-
-    }, [])
-
     return (
         <FilesUploadContext.Provider value={{ files, deleteFromUploadList, retryUpload, setFiles, uploadFiles }}>
             {children}
