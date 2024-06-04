@@ -101,7 +101,7 @@ pub async fn handler(
         }
     };
 
-    let resp = serde_json::json!({"token": bearer_token });
+    let resp = serde_json::json!({"authorization_token": bearer_token });
     (StatusCode::OK, Json(resp)).into_response()
 }
 
