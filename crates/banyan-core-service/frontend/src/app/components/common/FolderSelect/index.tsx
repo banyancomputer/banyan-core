@@ -7,7 +7,7 @@ import { UploadFileModal } from '../Modal/UploadFileModal';
 import { popupClickHandler } from '@/app/utils';
 import { openModal } from '@store/modals/slice';
 import { BrowserObject, Bucket } from '@/app/types/bucket';
-import { useAppDispatch, useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@store/index';
 
 import { ChevronUp } from '@static/images/common';
 

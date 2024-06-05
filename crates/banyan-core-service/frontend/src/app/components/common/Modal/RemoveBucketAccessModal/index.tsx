@@ -6,8 +6,8 @@ import { SecondaryButton } from '@components/common/SecondaryButton';
 
 import { closeModal } from '@store/modals/slice';
 import { Bucket, BucketKey } from '@/app/types/bucket';
-import { useAppDispatch, useAppSelector } from '@/app/store';
-import { removeBucketAccess } from '@/app/store/tomb/actions';
+import { useAppDispatch, useAppSelector } from '@store/index';
+import { removeBucketAccess } from '@store/tomb/actions';
 
 export const RemoveBucketAccessModal: React.FC<{ bucket: Bucket; bucketKey: BucketKey }> = ({ bucket, bucketKey }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.removeBucketAccess);
@@ -19,7 +19,7 @@ export const RemoveBucketAccessModal: React.FC<{ bucket: Bucket; bucketKey: Buck
 
     const removeAccess = async () => {
         try {
-            unwrapResult(await dispatch(removeBucketAccess({bucket, bucketKeyId: bucketKey.id})));
+            unwrapResult(await dispatch(removeBucketAccess({ bucket, bucketKeyId: bucketKey.id })));
             close();
         } catch (error: any) { }
     };

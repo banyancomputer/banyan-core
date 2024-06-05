@@ -11,19 +11,18 @@ import { FileRow } from '@components/Bucket/Files/BucketTable/FileRow';
 import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 import { sortByType, sortFiles } from '@app/utils';
-import { useFilesUpload } from '@contexts/filesUpload';
 import { ToastNotifications } from '@utils/toastNotifications';
 import { preventDefaultDragAction } from '@utils/dragHandlers';
-import { useAppDispatch, useAppSelector } from '@/app/store';
-import { getSelectedBucketFiles, moveTo } from '@/app/store/tomb/actions';
-import { setBucketFiles } from '@/app/store/tomb/slice';
+import { useAppDispatch, useAppSelector } from '@store/index';
+import { getSelectedBucketFiles, moveTo } from '@store/tomb/actions';
+import { setBucketFiles } from '@store/tomb/slice';
+import { uploadFiles } from '@store/filesUpload/actions';
 
 export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const params = useParams();
     const dispatch = useAppDispatch();
     const bucketId = params.id;
     const messages = useAppSelector(state => state.locales.messages.coponents.bucket.files.bucketTable);
-    const { uploadFiles } = useFilesUpload();
     const [sortState, setSortState] = useState<{ criteria: string; direction: 'ASC' | 'DESC' | '' }>({ criteria: 'name', direction: 'DESC' });
     const folderLocation = useFolderLocation();
     const siblingFiles = useMemo(() => bucket.files?.filter(file => file.type !== 'dir'), [bucket.files]);
@@ -37,9 +36,9 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
 
         if (event?.dataTransfer.files.length) {
             try {
-                await uploadFiles(event.dataTransfer.files, bucket, folderLocation);
+                unwrapResult(await dispatch(uploadFiles({ fileList: event.dataTransfer.files, bucket, path: folderLocation, folderLocation })));
             } catch (error: any) {
-                ToastNotifications.error(messages.uploadError, messages.tryAgain, () => { });
+                ToastNotifications.error(messages.uploadError);
             };
 
             return;

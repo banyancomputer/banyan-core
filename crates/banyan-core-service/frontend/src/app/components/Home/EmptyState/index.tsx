@@ -3,7 +3,7 @@ import { CreateDriveModal } from '@components/common/Modal/CreateDriveModal';
 import { openModal } from '@store/modals/slice';
 
 import { ActiveDirectory, PlusBold } from '@/app/static/images/common';
-import { useAppDispatch, useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@store/index';
 
 export const EmptyState = () => {
     const messages = useAppSelector(state => state.locales.messages.coponents.home.emptyState);

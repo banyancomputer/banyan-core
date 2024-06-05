@@ -1,22 +1,26 @@
 import { useNavigate } from 'react-router-dom';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import { Loader } from '../Loader';
 
-import { useFilesUpload } from '@/app/contexts/filesUpload';
-import { useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@store/index';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { stringToBase64 } from '@/app/utils/base64';
+import { deleteFile, setFiles } from '@store/filesUpload/slice';
+import { retryUpload } from '@store/filesUpload/actions';
+import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 
 import { ChevronUp, Clock, Close, Retry, UploadFailIcon, UploadFileFolder, UploadSuccessIcon } from '@static/images/common';
 
 export const UploadFileProgress: React.FC<{ bucket: Bucket, path: string[], folder?: BrowserObject }> = ({ bucket, path, folder }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.common.uploadFileProgress);
-    const { files, setFiles, deleteFromUploadList, retryUpload } = useFilesUpload();
+    const { files } = useAppSelector(state => state.filesUpload);
     const [isExpanded, setIsExpanded] = useState(true);
     const uploadedFilesLength = useMemo(() => files.filter(file => file.status === 'success').length, [files]);
     const navigate = useNavigate();
+    const folderLocation = useFolderLocation();
+    const dispatch = useAppDispatch();
 
     const toggleVisibility = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
         event.stopPropagation();
@@ -26,7 +30,7 @@ export const UploadFileProgress: React.FC<{ bucket: Bucket, path: string[], fold
     const close = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
         event.stopPropagation();
         ToastNotifications.close();
-        setFiles([]);
+        dispatch(setFiles([]));
     };
 
     const goToFile = () => {
@@ -39,6 +43,15 @@ export const UploadFileProgress: React.FC<{ bucket: Bucket, path: string[], fold
         failed: <UploadFailIcon width="20px" height="20px" />,
         uploading: <Loader spinnerSize="20px" containerHeight="100%" />
     };
+
+    useEffect(() => {
+        if (files.every(file => file.status === 'success')) {
+            setTimeout(() => {
+                ToastNotifications.close();
+                setFiles([]);
+            }, 3000);
+        };
+    }, [files])
 
     return (
         <div
@@ -86,13 +99,13 @@ export const UploadFileProgress: React.FC<{ bucket: Bucket, path: string[], fold
                                     </span>
                                     <span
                                         className="cursor-pointer"
-                                        onClick={() => retryUpload(file, bucket, path, folder)}
+                                        onClick={() => dispatch(retryUpload({ file, bucket, path, folder, folderLocation }))}
                                     >
                                         <Retry />
                                     </span>
                                     <span
                                         className="text-text-600 cursor-pointer"
-                                        onClick={() => deleteFromUploadList(file)}
+                                        onClick={() => dispatch(deleteFile(file))}
                                     >
                                         <Close />
                                     </span>

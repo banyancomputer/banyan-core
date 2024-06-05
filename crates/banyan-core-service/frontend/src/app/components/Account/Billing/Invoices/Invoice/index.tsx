@@ -2,9 +2,9 @@ import React from 'react';
 
 import { Invoice } from '@/entities/billing';
 import { getDateLabel } from '@/app/utils/date';
-import { useAppDispatch, useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@store/index';
 import { convertSubscriptionsSizes } from '@/app/utils/storage';
-import { selectInvoice } from '@/app/store/billing/slice';
+import { selectInvoice } from '@store/billing/slice';
 import { getHotStorageAmount } from '@/app/utils/subscritions';
 
 import { Close } from '@/app/static/images/common';

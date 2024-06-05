@@ -6,7 +6,7 @@ import { SecondaryButton } from '@components/common/SecondaryButton';
 import { closeModal } from '@store/modals/slice';
 import { Bucket, BucketKey } from '@/app/types/bucket';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
-import { useAppDispatch, useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@store/index';
 
 export const RenameAccessKeyModal: React.FC<{ bucket: Bucket; bucketKey: BucketKey }> = ({ bucket, bucketKey }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.renameAccessKey);

@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { SubscriptionPlanModal } from '../Modal/SubscriptionPlanModal';
 
 import { convertFileSize } from '@/app/utils/storage';
-import { useAppDispatch, useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@store/index';
 import { RoutesConfig } from '@/app/routes';
 import { openModal } from '@store/modals/slice';
 
@@ -15,7 +15,7 @@ export const StorageUsage = () => {
     const { storageUsage, storageLimits } = useAppSelector(state => state.tomb);
 
     const upgragePlan = () => {
-        dispatch(openModal({content: <SubscriptionPlanModal />}));
+        dispatch(openModal({ content: <SubscriptionPlanModal /> }));
     };
 
     return (

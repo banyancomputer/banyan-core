@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { unwrapResult } from '@reduxjs/toolkit';
 import { useNavigate } from 'react-router-dom';
 
 import { BucketActions } from '@components/common/BucketActions';
@@ -7,28 +8,29 @@ import { Tooltip } from '@components/common/Tooltip';
 
 import { Bucket as IBucket } from '@/app/types/bucket';
 import { popupClickHandler } from '@/app/utils';
-import { useFilesUpload } from '@contexts/filesUpload';
 import { ToastNotifications } from '@utils/toastNotifications';
 import { preventDefaultDragAction } from '@utils/dragHandlers';
-import { useAppDispatch, useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@store/index';
+import { uploadFiles } from '@store/filesUpload/actions';
+import { mountBucket } from '@store/tomb/actions';
 
 import { BucketIcon } from '@static/images/buckets';
 import { Dots, Question } from '@static/images/common';
-import { mountBucket } from '@/app/store/tomb/actions';
+import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 
 export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.home.bucket);
     const dispatch = useAppDispatch();
-    const { uploadFiles } = useFilesUpload();
     const bucketRef = useRef<HTMLDivElement | null>(null);
     const bucketActionsRef = useRef<HTMLDivElement | null>(null);
     const [position, setPosition] = useState({ x: 0, y: 0 });
     const [isContextMenuVisible, setIsContextMenuVisible] = useState(false);
     const navigate = useNavigate();
     type messagesKeys = keyof typeof messages;
+    const folderLocation = useFolderLocation();
 
     const onContextMenu = async (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-        if(!bucket.mount) {
+        if (!bucket.mount) {
             await dispatch(mountBucket(bucket));
         };
         event.preventDefault();
@@ -66,7 +68,7 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
         if (!event?.dataTransfer.files.length) { return; }
 
         try {
-            await uploadFiles(event.dataTransfer.files, bucket, []);
+            unwrapResult(await dispatch(uploadFiles({ fileList: event.dataTransfer.files, bucket, path: [], folderLocation })));
         } catch (error: any) {
             ToastNotifications.error(`${messages.uploadError}`, `${messages.tryAgain}`, () => { });
         }

@@ -9,7 +9,7 @@ import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 import { closeModal, openModal } from '@store/modals/slice';
 import { stringToBase64 } from '@utils/base64';
 import { getLocalStorageItem, setLocalStorageItem } from '@utils/localStorage';
-import { useAppDispatch, useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@store/index';
 import { Tooltip } from '@components/common/Tooltip';
 
 import { Close, Copy, Upload } from '@static/images/common';
@@ -22,7 +22,7 @@ const storageUsageClient = new StorageUsageClient();
 const BucketHeader = () => {
     const messages = useAppSelector(state => state.locales.messages.coponents.bucket.files.header);
     const folderLocation = useFolderLocation();
-    const {selectedBucket, isLoading} = useAppSelector(state => state.tomb);
+    const { selectedBucket, isLoading } = useAppSelector(state => state.tomb);
     const params = useParams();
     const bucketId = params.id;
     const [isBannerVisible, setIsBannerVisible] = useState(false);

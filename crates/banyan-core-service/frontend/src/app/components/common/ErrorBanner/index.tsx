@@ -1,5 +1,5 @@
-import { useAppDispatch, useAppSelector } from '@/app/store';
-import { BannerError, closeError } from '@/app/store/errors/slice';
+import { useAppDispatch, useAppSelector } from '@store/index';
+import { BannerError, closeError } from '@store/errors/slice';
 
 import { Close } from '@static/images/common';
 

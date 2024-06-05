@@ -6,8 +6,8 @@ import { SecondaryButton } from '@components/common/SecondaryButton';
 import { closeModal } from '@store/modals/slice';
 import { Bucket, BucketKey } from '@/app/types/bucket';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
-import { useAppDispatch, useAppSelector } from '@/app/store';
-import { approveBucketAccess } from '@/app/store/tomb/actions';
+import { useAppDispatch, useAppSelector } from '@store/index';
+import { approveBucketAccess } from '@store/tomb/actions';
 import { unwrapResult } from '@reduxjs/toolkit';
 
 export const ApproveBucketAccessModal: React.FC<{ bucket: Bucket; bucketKey: BucketKey }> = ({ bucket, bucketKey }) => {
@@ -20,7 +20,7 @@ export const ApproveBucketAccessModal: React.FC<{ bucket: Bucket; bucketKey: Buc
 
     const approveAccess = async () => {
         try {
-            unwrapResult(await dispatch(approveBucketAccess({bucket, bucketKeyId: bucketKey.id})));
+            unwrapResult(await dispatch(approveBucketAccess({ bucket, bucketKeyId: bucketKey.id })));
             cancel();
         } catch (error: any) {
             ToastNotifications.error('Something went wrong', `${messages.tryAgain}`, approveAccess);

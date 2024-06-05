@@ -11,9 +11,9 @@ import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 import { stringToBase64 } from '@/app/utils/base64';
-import { useAppDispatch, useAppSelector } from '@/app/store';
-import { getExpandedFolderFiles, getSelectedBucketFiles, moveTo } from '@/app/store/tomb/actions';
-import { closeFile } from '@/app/store/filePreview/slice';
+import { useAppDispatch, useAppSelector } from '@store/index';
+import { getExpandedFolderFiles, getSelectedBucketFiles, moveTo } from '@store/tomb/actions';
+import { closeFile } from '@store/filePreview/slice';
 
 export const MoveToModal: React.FC<{
     file: BrowserObject;

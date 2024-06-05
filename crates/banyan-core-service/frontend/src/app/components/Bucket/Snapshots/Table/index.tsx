@@ -7,7 +7,7 @@ import { getDateLabel, getTime } from '@app/utils/date';
 import { convertFileSize } from '@app/utils/storage';
 
 import { Bucket } from '@/app/types/bucket';
-import { getSelectedBucketSnapshots, restore } from '@/app/store/tomb/actions';
+import { getSelectedBucketSnapshots, restore } from '@store/tomb/actions';
 
 export const SnapshotsTable = () => {
     const dispatch = useAppDispatch();

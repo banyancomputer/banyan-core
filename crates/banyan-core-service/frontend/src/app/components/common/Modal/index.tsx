@@ -3,7 +3,7 @@ import React, { useRef } from 'react';
 import { closeModal } from '@store/modals/slice';
 
 import { ArrowDown, Close } from '@static/images/common';
-import { useAppDispatch, useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@store/index';
 
 export const Modal = () => {
     const dispatch = useAppDispatch();

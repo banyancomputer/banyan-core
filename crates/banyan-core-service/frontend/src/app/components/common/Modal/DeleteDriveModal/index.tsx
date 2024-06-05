@@ -6,10 +6,10 @@ import { SecondaryButton } from '@components/common/SecondaryButton';
 import { Bucket } from '@/app/types/bucket';
 import { closeModal } from '@store/modals/slice';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
-import { useAppDispatch, useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@store/index';
 
 import { Trash } from '@static/images/common';
-import { deleteBucket } from '@/app/store/tomb/actions';
+import { deleteBucket } from '@store/tomb/actions';
 import { unwrapResult } from '@reduxjs/toolkit';
 
 export const DeleteDriveModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {

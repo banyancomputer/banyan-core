@@ -1,12 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 
 import { localeToLanguage } from '@utils/locales';
-import { LANGUAGES, LANGUAGES_KEYS, changeLanguage } from '@/app/store/locales/slice';
+import { LANGUAGES, LANGUAGES_KEYS, changeLanguage } from '@store/locales/slice';
 import { setLocalStorageItem } from '@utils/localStorage';
 import { popupClickHandler } from '@/app/utils';
 
 import { ChevronUp } from '@static/images/common';
-import { useAppDispatch, useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@store/index';
 
 export const LanguageSelect = () => {
     const { key } = useAppSelector(state => state.locales);
