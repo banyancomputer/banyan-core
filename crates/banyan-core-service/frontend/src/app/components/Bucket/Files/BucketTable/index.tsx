@@ -10,7 +10,7 @@ import { FileRow } from '@components/Bucket/Files/BucketTable/FileRow';
 
 import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
-import { sortByType, sortFiles } from '@app/utils';
+import { sortByType, sortFiles } from '@utils/index';
 import { ToastNotifications } from '@utils/toastNotifications';
 import { preventDefaultDragAction } from '@utils/dragHandlers';
 import { useAppDispatch, useAppSelector } from '@store/index';

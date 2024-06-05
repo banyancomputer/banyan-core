@@ -2,9 +2,9 @@ import { useEffect } from 'react';
 import { unwrapResult } from '@reduxjs/toolkit';
 
 import { useAppDispatch, useAppSelector } from '@app/store';
-import { ToastNotifications } from '@app/utils/toastNotifications';
-import { getDateLabel, getTime } from '@app/utils/date';
-import { convertFileSize } from '@app/utils/storage';
+import { ToastNotifications } from '@utils/toastNotifications';
+import { getDateLabel, getTime } from '@utils/date';
+import { convertFileSize } from '@utils/storage';
 
 import { Bucket } from '@/app/types/bucket';
 import { getSelectedBucketSnapshots, restore } from '@store/tomb/actions';

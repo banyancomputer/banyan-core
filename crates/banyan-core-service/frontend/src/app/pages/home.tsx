@@ -4,7 +4,7 @@ import { Bucket } from '@components/Home/Bucket';
 import { CreateDriveModal } from '@components/common/Modal/CreateDriveModal';
 import { EmptyState } from '@components/Home/EmptyState';
 
-import { useAppDispatch, useAppSelector } from '../store';
+import { useAppDispatch, useAppSelector } from '@store/index';
 import { openModal } from '@store/modals/slice';
 
 import { PlusBold, Upload } from '@static/images/common';
