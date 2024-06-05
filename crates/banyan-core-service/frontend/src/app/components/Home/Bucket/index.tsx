@@ -138,7 +138,6 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
                             tooltip={<div>{messages[`${bucket.storageClass}Tooltip` as messagesKeys]}</div>}
                         />
                     </div>
-                    <div className="capitalize">{bucket.bucketType}</div>
                     {bucket.snapshots.length ? <div>{bucket.snapshots.length} {`${messages.coldSnapshots}`}</div> : null}
                 </div>
             </div>
