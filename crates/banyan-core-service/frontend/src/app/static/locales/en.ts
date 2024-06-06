@@ -108,7 +108,7 @@ export default {
                     }
                 },
                 emptyState: {
-                    description: "Drag & drop files here to upload,or use the 'Upload' button",
+                    description: "Drag & drop files here to upload, or use the 'Upload' button",
                     buttonText: "Upload",
                     tryAgain: "Try again",
                     uploadError: "There was an issue with upload. Please try again",
