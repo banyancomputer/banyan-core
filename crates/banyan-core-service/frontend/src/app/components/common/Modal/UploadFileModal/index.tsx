@@ -73,6 +73,7 @@ export const UploadFileModal: React.FC<{
             close();
             unwrapResult(await dispatch(uploadFiles({ fileList: previewFiles!, bucket: selectedBucket!, path: selectedFolder.length ? selectedFolder : [], folder, folderLocation })));
         } catch (error: any) {
+            close();
             ToastNotifications.error(`${messages.uploadError}`, `${messages.tryAgain}`, upload);
         };
     };
