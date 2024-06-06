@@ -5,16 +5,16 @@ import { SecondaryButton } from '@components/common/SecondaryButton';
 
 import { Bucket } from '@/app/types/bucket';
 import { closeModal } from '@store/modals/slice';
-import { useTomb } from '@/app/contexts/tomb';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { useAppDispatch, useAppSelector } from '@/app/store';
 
 import { Trash } from '@static/images/common';
+import { deleteBucket } from '@/app/store/tomb/actions';
+import { unwrapResult } from '@reduxjs/toolkit';
 
 export const DeleteDriveModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const dispatch = useAppDispatch();
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.deleteBucket);
-    const { deleteBucket } = useTomb();
 
     const close = () => {
         dispatch(closeModal());
@@ -22,7 +22,7 @@ export const DeleteDriveModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
 
     const removeBucket = async () => {
         try {
-            await deleteBucket(bucket.id);
+            unwrapResult(await dispatch(deleteBucket(bucket.id)));
             dispatch(closeModal());
             ToastNotifications.notify(`${messages.drive} "${bucket.name}" ${messages.wasDeleted}`, <Trash width="20px" height="20px" />);
         } catch (error: any) {

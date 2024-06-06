@@ -10,13 +10,15 @@ import { popupClickHandler } from '@/app/utils';
 import { useFilesUpload } from '@contexts/filesUpload';
 import { ToastNotifications } from '@utils/toastNotifications';
 import { preventDefaultDragAction } from '@utils/dragHandlers';
-import { useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@/app/store';
 
 import { BucketIcon } from '@static/images/buckets';
 import { Dots, Question } from '@static/images/common';
+import { mountBucket } from '@/app/store/tomb/actions';
 
 export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.home.bucket);
+    const dispatch = useAppDispatch();
     const { uploadFiles } = useFilesUpload();
     const bucketRef = useRef<HTMLDivElement | null>(null);
     const bucketActionsRef = useRef<HTMLDivElement | null>(null);
@@ -25,7 +27,10 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
     const navigate = useNavigate();
     type messagesKeys = keyof typeof messages;
 
-    const onContextMenu = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+    const onContextMenu = async (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+        if(!bucket.mount) {
+            await dispatch(mountBucket(bucket));
+        };
         event.preventDefault();
         const bucketActionnBottom = bucketActionsRef.current!.clientHeight + event.clientY;
         const bucketActionsRight = bucketActionsRef.current!.clientWidth + event.clientX;
@@ -49,7 +54,7 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
     };
 
     const openBucket = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-        if (!bucket.mount || bucket.locked) return;
+        if (bucket.locked) return;
         // @ts-ignore
         if (event.target.id === 'bucketContextMenu') { return; }
         navigate(`/drive/${bucket.id}`);
@@ -87,7 +92,7 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
 
     return (
         <div
-            className={`rounded-xl transition-all border-1 border-border-regular ${!bucket.mount || bucket.locked ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+            className={`rounded-xl transition-all border-1 border-border-regular ${bucket.locked ? 'cursor-not-allowed' : 'cursor-pointer'}`}
             ref={bucketRef}
             onContextMenu={onContextMenu}
             onClick={openBucket}

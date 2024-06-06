@@ -1,6 +1,6 @@
 import React, { FC, ReactNode, createContext, useContext, useEffect, useState } from 'react';
+import { unwrapResult } from '@reduxjs/toolkit';
 
-import { useTomb } from './tomb';
 import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { BannerError, setError } from '../store/errors/slice';
 import { useAppDispatch, useAppSelector } from '../store';
@@ -8,6 +8,8 @@ import { SubscriptionPlanModal } from '../components/common/Modal/SubscriptionPl
 import { FILE_SIZE_LIMIT } from '@app/utils/storage';
 import { ToastNotifications } from '@app/utils/toastNotifications';
 import { openModal } from '@store/modals/slice';
+import { mountBucket, updateStorageUsageState, uploadFile } from '@store/tomb/actions';
+import { useFolderLocation } from '@app/hooks/useFolderLocation';
 
 export interface UploadingFile { file: File; status: "pending" | "uploading" | "success" | "failed" };
 interface FilesUploadState {
@@ -21,13 +23,15 @@ interface FilesUploadState {
 export const FilesUploadContext = createContext<FilesUploadState>({} as FilesUploadState);
 
 export const FileUploadProvider: FC<{ children: ReactNode }> = ({ children }) => {
-    const { storageUsage, storageLimits, uploadFile } = useTomb();
     const { hardStorageLimit, seePricingPage, softStorageLimit, contactSales } = useAppSelector(state => state.locales.messages.contexts.fileUpload);
+    const { storageLimits, storageUsage, } = useAppSelector(state => state.tomb);
     const { fileSizeExceeded } = useAppSelector(state => state.locales.messages.contexts.fileUpload);
     const dispatch = useAppDispatch();
+    const folderLocation = useFolderLocation();
     const [files, setFiles] = useState<UploadingFile[]>([]);
 
     const uploadFiles = async (fileList: FileList, bucket: Bucket, path: string[], folder?: BrowserObject) => {
+        const mount = bucket.mount || unwrapResult(await dispatch(mountBucket(bucket))).mount;
         const files: UploadingFile[] = Array.from(fileList).map(file => ({ file, status: 'pending' }));
 
         if (files.some(file => file.file.size > FILE_SIZE_LIMIT)) {
@@ -56,7 +60,8 @@ export const FileUploadProvider: FC<{ children: ReactNode }> = ({ children }) =>
                 const arrayBuffer = await file.file.arrayBuffer();
                 file.status = 'uploading';
                 setFiles(prev => [...prev]);
-                await uploadFile(bucket, path, file.file.name, arrayBuffer, folder);
+                unwrapResult(await dispatch(uploadFile({ bucket: {...bucket, mount}, uploadPath: path, name: file.file.name, file: arrayBuffer, folder, folderLocation })));
+                await dispatch(updateStorageUsageState());
                 file.status = 'success';
                 setFiles(prev => [...prev]);
             } catch (error: any) {
@@ -82,7 +87,7 @@ export const FileUploadProvider: FC<{ children: ReactNode }> = ({ children }) =>
             const arrayBuffer = await file.file.arrayBuffer();
             file.status = 'uploading';
             setFiles(prev => [...prev]);
-            await uploadFile(bucket!, path, file.file.name, arrayBuffer, folder!);
+            unwrapResult(await dispatch(uploadFile({ bucket: bucket!, uploadPath: path, name: file.file.name, file: arrayBuffer, folder: folder!, folderLocation })));
             file.status = 'success';
             setFiles(prev => [...prev]);
         } catch (error: any) {
@@ -95,10 +100,6 @@ export const FileUploadProvider: FC<{ children: ReactNode }> = ({ children }) =>
     const deleteFromUploadList = (file: UploadingFile) => {
         setFiles(prev => prev.filter(uploadingFile => uploadingFile !== file));
     };
-
-    useEffect(() => {
-
-    }, [])
 
     return (
         <FilesUploadContext.Provider value={{ files, deleteFromUploadList, retryUpload, setFiles, uploadFiles }}>

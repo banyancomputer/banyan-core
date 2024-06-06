@@ -2,14 +2,13 @@ import { useState } from 'react';
 
 import { Fallback } from '@components/common/Fallback';
 
-import { useTomb } from '@/app/contexts/tomb';
-import { useAppDispatch, useAppSelector } from '../store';
+import { useAppSelector } from '../store';
 
 import { ArrowDown, Close, EmptyIcon } from '@static/images/common';
 
 const Trash = () => {
-    const { trash } = useTomb();
     const messages = useAppSelector(state => state.locales.messages.pages.trash);
+    const { trash } = useAppSelector(state => state.tomb);
     const [isLabelVisible, setIsLabelVisible] = useState(true);
 
     const closeLabel = () => {

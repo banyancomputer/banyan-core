@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState } from 'react';
+import { Profiler, Suspense, useEffect, useState } from 'react';
 
 import { Modal } from '@components/common/Modal';
 import { Notifications } from '@components/common/Notifications';
@@ -6,9 +6,7 @@ import { FilePreview } from '@components/common/FilePreview';
 import { MobilePlaceholder } from '@components/common/MobilePlaceholder';
 
 import { Routes, RoutesConfig } from './routes';
-import { FilePreviewProvider } from '@contexts/filesPreview';
 import { FileUploadProvider } from '@contexts/filesUpload';
-import { TombProvider } from '@contexts/tomb';
 import { getLocalStorageItem, setLocalStorageItem } from '@app/utils/localStorage';
 import { preventDefaultDragAction } from '@app/utils/dragHandlers';
 import { useAppDispatch, useAppSelector } from '@app/store';
@@ -18,12 +16,17 @@ import { getLocalKey } from '@app/utils';
 import { setKeystore, setKeystoreInitialized } from '@store/keystore/slice';
 import { useNavigate } from 'react-router-dom';
 import { unwrapResult } from '@reduxjs/toolkit';
-import { getEscrowedKeyMaterial } from '@store/keystore/actions';
+import { getApiKey, getEncryptionKey, getEscrowedKeyMaterial } from '@store/keystore/actions';
+import { setEncryptionKey, setTomb } from '@store/tomb/slice';
+import { BannerError, setError } from '@store/errors/slice';
+import { getBuckets, updateStorageLimitsState, updateStorageUsageState } from '@store/tomb/actions';
 
 const App = () => {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
-    const { keystoreInitialized } = useAppSelector(state => state.keystore);
+    const { keystoreInitialized, escrowedKeyMaterial } = useAppSelector(state => state.keystore);
+    const { tomb } = useAppSelector(state => state.tomb);
+
     const { user } = useAppSelector(state => state.session);
     const [isKeystorageLoading, setIsKeystorageLoading] = useState(true);
 
@@ -75,7 +78,42 @@ const App = () => {
     }, []);
 
     useEffect(() => {
-        if(!user.id) return;
+        if (!user.id || !keystoreInitialized || !escrowedKeyMaterial) { return; }
+
+        (async () => {
+            try {
+                const apiKey = unwrapResult(await dispatch(getApiKey()));
+                const TombWasm = (await import('tomb-wasm-experimental')).TombWasm;
+                const tomb = await new TombWasm(
+                    apiKey.privatePem,
+                    user.id,
+                    window.location.protocol + '//' + window.location.host,
+                );
+                const key = unwrapResult(await dispatch(getEncryptionKey()));
+                dispatch(setEncryptionKey(key));
+                dispatch(setTomb(tomb));
+            } catch (error: any) {
+                dispatch(setError(new BannerError(error.message)));
+            };
+        })()
+    }, [user, keystoreInitialized, escrowedKeyMaterial]);
+
+    useEffect(() => {
+        if (!tomb) return;
+
+        (async () => {
+            try {
+                unwrapResult(await dispatch(getBuckets()));
+                unwrapResult(await dispatch(updateStorageUsageState()));
+                unwrapResult(await dispatch(updateStorageLimitsState()));
+            } catch (error: any) {
+                dispatch(setError(new BannerError(error.message)));
+            };
+        })();
+    }, [tomb]);
+
+    useEffect(() => {
+        if (!user.id) return;
 
         (async () => {
             try {
@@ -83,7 +121,6 @@ const App = () => {
                 if (isKeystorageLoading || keystoreInitialized) return;
 
                 navigate(escrowedKeyMaterial ? RoutesConfig.EnterEncryptionKey.path : RoutesConfig.CreateEncryptionKey.path);
-
             } catch (error: any) {
                 navigate(RoutesConfig.CreateEncryptionKey.path);
             }
@@ -96,18 +133,14 @@ const App = () => {
             onDragOver={preventDefaultDragAction}
             onDrop={preventDefaultDragAction}
         >
-            <TombProvider>
-                <FileUploadProvider>
-                    <FilePreviewProvider>
-                        <Modal />
-                        <FilePreview />
-                        <Notifications />
-                        <Suspense>
-                            <Routes />
-                        </Suspense>
-                    </FilePreviewProvider>
-                </FileUploadProvider>
-            </TombProvider>
+            <FileUploadProvider>
+                <Modal />
+                <FilePreview />
+                <Notifications />
+                <Suspense>
+                    <Routes />
+                </Suspense>
+            </FileUploadProvider>
             <MobilePlaceholder />
         </main>
     );

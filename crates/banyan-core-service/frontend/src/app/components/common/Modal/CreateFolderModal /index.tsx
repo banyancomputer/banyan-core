@@ -1,23 +1,25 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { unwrapResult } from '@reduxjs/toolkit';
 
 import { PrimaryButton } from '@components/common/PrimaryButton';
 import { SecondaryButton } from '@components/common/SecondaryButton';
 import { UploadFileModal } from '@components/common/Modal/UploadFileModal';
 
 import { closeModal, openModal } from '@store/modals/slice';
-import { useTomb } from '@/app/contexts/tomb';
 import { Bucket } from '@/app/types/bucket';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { stringToBase64 } from '@/app/utils/base64';
 import { useAppDispatch, useAppSelector } from '@/app/store';
+import { createDirectory } from '@/app/store/tomb/actions';
+import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 
 export const CreateFolderModal: React.FC<{ bucket: Bucket; onSuccess?: (path: string[]) => void; path: string[], redirect?: boolean }> = ({ bucket, onSuccess = () => { }, path, redirect = false }) => {
     const dispatch = useAppDispatch();
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.createFolder);
     const { folderAlreadyExists } = useAppSelector(state => state.locales.messages.contexts.tomb);
     const [folderName, setfolderName] = useState('');
-    const { createDirectory } = useTomb();
+    const folderLocation = useFolderLocation()
     const navigate = useNavigate();
 
     const close = () => {
@@ -32,7 +34,7 @@ export const CreateFolderModal: React.FC<{ bucket: Bucket; onSuccess?: (path: st
 
     const create = async () => {
         try {
-            await createDirectory(bucket, path, folderName);
+            unwrapResult(await dispatch(createDirectory({bucket, path, name: folderName, folderLocation})));
             ToastNotifications.notify(
                 messages.folderCreated,
                 null,

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { unwrapResult } from '@reduxjs/toolkit';
 
 import { PrimaryButton } from '@components/common/PrimaryButton';
 import { FolderSelect } from '@components/common/FolderSelect';
@@ -8,11 +9,11 @@ import { SecondaryButton } from '@components/common/SecondaryButton';
 import { closeModal, openModal } from '@store/modals/slice';
 import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
-import { useTomb } from '@/app/contexts/tomb';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
-import { useFilePreview } from '@/app/contexts/filesPreview';
 import { stringToBase64 } from '@/app/utils/base64';
 import { useAppDispatch, useAppSelector } from '@/app/store';
+import { getExpandedFolderFiles, getSelectedBucketFiles, moveTo } from '@/app/store/tomb/actions';
+import { closeFile } from '@/app/store/filePreview/slice';
 
 export const MoveToModal: React.FC<{
     file: BrowserObject;
@@ -22,9 +23,7 @@ export const MoveToModal: React.FC<{
     createdFolderPath?: string[]
 }> = ({ file, bucket, path, parrentFolder, createdFolderPath }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.moteTo);
-    const { moveTo, getSelectedBucketFiles, getExpandedFolderFiles } = useTomb();
     const navigate = useNavigate();
-    const { closeFile } = useFilePreview();
     const [selectedFolder, setSelectedFolder] = useState<string[]>([]);
     const folderLocation = useFolderLocation();
     const dispatch = useAppDispatch();
@@ -35,8 +34,8 @@ export const MoveToModal: React.FC<{
 
     const move = async () => {
         try {
-            await moveTo(bucket, [...path, file.name], [...selectedFolder], file.name);
-            closeFile();
+            unwrapResult(await dispatch(moveTo({ bucket, from: [...path, file.name], to: [...selectedFolder], name: file.name })));
+            dispatch(closeFile());
             ToastNotifications.notify(
                 `${file.type === 'dir' ? messages.fileWasMoved : messages.fileWasMoved}`,
                 null,
@@ -44,12 +43,12 @@ export const MoveToModal: React.FC<{
                 () => navigate(`/drive/${bucket.id}${selectedFolder.length ? '?' : ''}${selectedFolder.map(path => stringToBase64(path)).join('/')}`)
             );
             if (path.join('/') === folderLocation.join('/')) {
-                await getSelectedBucketFiles(folderLocation);
+                unwrapResult(await dispatch(getSelectedBucketFiles(folderLocation)));
                 close();
 
                 return;
             };
-            await getExpandedFolderFiles(path, parrentFolder, bucket);
+            unwrapResult(await dispatch(getExpandedFolderFiles({ path, folder: parrentFolder })));
             close();
         } catch (error: any) {
             ToastNotifications.error(`${messages.moveToError}`, `${messages.tryAgain}`, move);

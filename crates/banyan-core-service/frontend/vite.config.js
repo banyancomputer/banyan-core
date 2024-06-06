@@ -2,7 +2,7 @@ const path = require("path");
 const zlib = require("zlib");
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
-import viteCompression from "vite-plugin-compression";
+import viteCompression from "vite-plugin-compression2";
 import wasm from "vite-plugin-wasm";
 import topLevelAwait from "vite-plugin-top-level-await";
 import { resolve } from 'path';
@@ -10,18 +10,7 @@ import { rm } from 'node:fs/promises';
 
 const PRODUCTION_PLUGINS = [
 	react(),
-	viteCompression({
-		algorithm: "brotliCompress",
-		ext: ".br",
-		compressionOptions: {
-			params: {
-				[zlib.constants.BROTLI_PARAM_QUALITY]: 11,
-			},
-		},
-		threshold: 10240,
-		minRatio: 0.8,
-		deleteOriginalAssets: true,
-	}),
+	viteCompression(),
 	wasm(),
 	topLevelAwait()
 ];
@@ -54,7 +43,7 @@ export default ({ mode }) => {
 		build: {
 			minify: isProduction ? "esbuild": false,
 			outDir: path.resolve(__dirname, "../dist/"),
-			cssCodeSplit: false,
+			cssCodeSplit: true,
 		},
 		plugins: isProduction ? PRODUCTION_PLUGINS : DEVELOPMENT_PLUGINS,
 		resolve: {
