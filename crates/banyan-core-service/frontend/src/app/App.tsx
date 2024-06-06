@@ -1,6 +1,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { unwrapResult } from '@reduxjs/toolkit';
+import { wrap } from 'comlink';
 
 import { Modal } from '@components/common/Modal';
 import { Notifications } from '@components/common/Notifications';
@@ -16,11 +17,14 @@ import ECCKeystore from '@utils/crypto/ecc/keystore';
 import { getLocalKey } from '@utils/index';
 import { setKeystore, setKeystoreInitialized } from '@store/keystore/slice';
 import { getApiKey, getEncryptionKey, getEscrowedKeyMaterial } from '@store/keystore/actions';
-import { setEncryptionKey, setTomb } from '@store/tomb/slice';
+import { setEncryptionKey, setTomb, setWorker } from '@store/tomb/slice';
 import { BannerError, setError } from '@store/errors/slice';
 import { getBuckets, updateStorageLimitsState, updateStorageUsageState } from '@store/tomb/actions';
+import { UploadWorker } from '@/workers/upload.worker';
 
 const App = () => {
+    const worker = new Worker(new URL('../../workers/upload.worker.ts', import.meta.url));
+    const uploadWorker = wrap<UploadWorker>(worker);
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const { keystoreInitialized, escrowedKeyMaterial } = useAppSelector(state => state.keystore);
@@ -91,6 +95,8 @@ const App = () => {
                 const key = unwrapResult(await dispatch(getEncryptionKey()));
                 dispatch(setEncryptionKey(key));
                 dispatch(setTomb(tomb));
+                await uploadWorker.mountTomb(apiKey, user.id, window.location.protocol + '//' + window.location.host, key);
+                dispatch(setWorker(uploadWorker));
             } catch (error: any) {
                 dispatch(setError(new BannerError(error.message)));
             };
