@@ -7,7 +7,7 @@ ALTER TABLE device_api_keys
 
 ALTER TABLE user_keys
     -- add name now that there will be many per user
-    ADD COLUMN name TEXT NOT NULL;
+    ADD COLUMN name TEXT NOT NULL DEFAULT 'Default Key';
 
 ALTER TABLE user_keys
 	RENAME COLUMN pem TO public_key;
