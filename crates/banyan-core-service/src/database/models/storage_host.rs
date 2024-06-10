@@ -71,7 +71,7 @@ impl StorageHost {
         conn: &mut DatabaseConnection,
         required_bytes: i64,
         exclude_host_ids: &[String],
-    ) -> Result<Self, sqlx::Error> {
+    ) -> Result<Option<Self>, sqlx::Error> {
         let mut query = sqlx::QueryBuilder::new(
             "SELECT * FROM storage_hosts WHERE (available_storage - reserved_storage) > ",
         );
@@ -85,8 +85,7 @@ impl StorageHost {
 
         query.push(") ORDER BY RANDOM() LIMIT 1;");
 
-        let res = query.build_query_as::<Self>().fetch_one(conn).await?;
-        Ok(res)
+        query.build_query_as::<Self>().fetch_optional(conn).await
     }
 
     pub async fn select_staging(conn: &Database) -> Result<Self, sqlx::Error> {

@@ -128,15 +128,16 @@ impl TaskLike for ReplicateDataTask {
                 .max(metadata.expected_data_size);
 
             for _ in 0..replicas_diff {
-                let new_storage_host = StorageHost::select_for_capacity_with_exclusion(
+                let maybe_storage_host = StorageHost::select_for_capacity_with_exclusion(
                     &mut conn,
                     total_size,
                     &already_selected_hosts,
                 )
-                .await
-                .map_err(|_| {
+                .await?;
+
+                let new_storage_host = maybe_storage_host.ok_or_else(|| {
                     tracing::error!("not enough storage hosts for metadata {}", metadata_id);
-                    NotEnoughStorageHosts(Error::RowNotFound)
+                    return NotEnoughStorageHosts(Error::RowNotFound);
                 })?;
 
                 already_selected_hosts.push(new_storage_host.id.clone());

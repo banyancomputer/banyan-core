@@ -68,12 +68,22 @@ impl TaskLike for RedistributeStagingDataTask {
                 .max(metadata.expected_data_size);
 
             let mut transaction = database.begin().await?;
-            let new_storage_host = StorageHost::select_for_capacity_with_exclusion(
+            let new_storage_host = match StorageHost::select_for_capacity_with_exclusion(
                 &mut transaction,
                 total_size,
                 &[staging_host.id.clone()],
             )
-            .await?;
+            .await?
+            {
+                Some(sh) => sh,
+                None => {
+                    tracing::warn!(
+                        metadata_id,
+                        "no storage host available to sync unreplicated metadata"
+                    );
+                    continue;
+                }
+            };
             let authorization_grant = get_or_create_client_grant(
                 &mut transaction,
                 &user_id,
