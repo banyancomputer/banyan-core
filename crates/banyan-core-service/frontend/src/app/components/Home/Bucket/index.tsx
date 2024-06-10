@@ -63,6 +63,7 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
         try {
             await uploadFiles(event.dataTransfer.files, bucket, []);
         } catch (error: any) {
+            console.error('failed to upload files', error);
             ToastNotifications.error(`${messages.uploadError}`, `${messages.tryAgain}`, () => { });
         }
     };
