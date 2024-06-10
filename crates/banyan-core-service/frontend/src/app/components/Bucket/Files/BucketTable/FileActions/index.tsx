@@ -10,9 +10,9 @@ import { openModal } from '@store/modals/slice';
 import { Copy, Done, Download, LinkIcon, MoveTo, Rename, Share, Trash } from '@static/images/common';
 import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
-import { useAppDispatch, useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@store/index';
 
-import { getFile, shareFile, uploadFile } from '@/app/store/tomb/actions';
+import { getFile, shareFile, uploadFile } from '@store/tomb/actions';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 
 export class Action {
@@ -34,16 +34,16 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BrowserObject; parren
     const downloadFile = async() => {
         try {
             await ToastNotifications.promise(`${messages.downloading}...`, `${messages.fileWasDownloaded}`, <Done width="20px" height="20px" />,
-            (async() => {
-                const link = document.createElement('a');
-                const arrayBuffer = unwrapResult(await dispatch(getFile({ bucket: bucket!, path, name: file.name })));
-                const blob = new Blob([arrayBuffer]);
-                const objectURL = URL.createObjectURL(blob);
-                link.href = objectURL;
-                link.download = file.name;
-                document.body.appendChild(link);
-                link.click();
-            })()
+                (async () => {
+                    const link = document.createElement('a');
+                    const arrayBuffer = unwrapResult(await dispatch(getFile({ bucket: bucket!, path, name: file.name })));
+                    const blob = new Blob([arrayBuffer]);
+                    const objectURL = URL.createObjectURL(blob);
+                    link.href = objectURL;
+                    link.download = file.name;
+                    document.body.appendChild(link);
+                    link.click();
+                })()
             );
         } catch (error: any) {
             ToastNotifications.error('Failed to download file', messages.tryAgain, downloadFile);

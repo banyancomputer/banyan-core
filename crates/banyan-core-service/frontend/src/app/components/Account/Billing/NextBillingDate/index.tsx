@@ -3,8 +3,8 @@ import { unwrapResult } from '@reduxjs/toolkit';
 
 import { SubscriptionPlanModal } from '@/app/components/common/Modal/SubscriptionPlanModal';
 
-import { useAppDispatch, useAppSelector } from '@/app/store';
-import { getSubscriptions, manageSubscriptions } from '@/app/store/billing/actions';
+import { useAppDispatch, useAppSelector } from '@store/index';
+import { getSubscriptions, manageSubscriptions } from '@store/billing/actions';
 import { openModal } from '@store/modals/slice';
 import { convertFileSize, convertSubscriptionsSizes } from '@/app/utils/storage';
 import { getHotStorageAmount } from '@/app/utils/subscritions';

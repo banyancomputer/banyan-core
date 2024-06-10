@@ -9,6 +9,7 @@ import errors from '@store/errors/slice';
 import modals from '@store/modals/slice';
 import tomb from '@store/tomb/slice';
 import filePreview from '@store/filePreview/slice';
+import filesUpload from '@store/filesUpload/slice';
 
 export const store = configureStore({
     reducer: {
@@ -19,8 +20,13 @@ export const store = configureStore({
         keystore,
         modals,
         filePreview,
+        filesUpload,
         tomb
     },
+    middleware: (getDefaultMiddleware) =>
+        getDefaultMiddleware({
+            serializableCheck: false,
+        }),
 });
 
 // Infer the `RootState` and `AppDispatch` types from the store itself

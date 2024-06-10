@@ -10,7 +10,7 @@ import { openModal } from '@store/modals/slice';
 import { popupClickHandler } from '@/app/utils';
 
 import { Dots, MoveTo, Rename, Trash } from '@/app/static/images/common';
-import { useAppSelector } from '@/app/store';
+import { useAppSelector } from '@store/index';
 
 export const FilePreviewActions: React.FC<{ bucket: Bucket; file: BrowserObject; parrentFolder: BrowserObject; path: string[] }> = ({ bucket, file, path, parrentFolder }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.common.filePreview.actions);

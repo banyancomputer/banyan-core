@@ -6,7 +6,7 @@ import { SecondaryButton } from '@components/common/SecondaryButton';
 import { closeModal } from '@store/modals/slice';
 import { Bucket, BucketSnapshot } from '@app/types/bucket';
 import { useAppDispatch, useAppSelector } from '@app/store';
-import { ToastNotifications } from '@app/utils/toastNotifications';
+import { ToastNotifications } from '@utils/toastNotifications';
 
 export const RenameSnapshotModal: React.FC<{ bucket: Bucket; snapshot: BucketSnapshot }> = ({ bucket, snapshot }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.renameSnapshot);

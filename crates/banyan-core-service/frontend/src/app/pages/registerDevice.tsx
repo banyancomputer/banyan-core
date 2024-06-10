@@ -2,8 +2,8 @@ import { useParams } from 'react-router-dom';
 
 import { SecondaryButton } from '@components/common/SecondaryButton';
 
-import { publicPemWrap } from '@app/utils';
-import { useAppDispatch, useAppSelector } from '../store';
+import { publicPemWrap } from '@utils/index';
+import { useAppDispatch, useAppSelector } from '@store/index';
 import { approveDeviceApiKey } from '@store/tomb/actions';
 import { unwrapResult } from '@reduxjs/toolkit';
 import { ToastNotifications } from '../utils/toastNotifications';

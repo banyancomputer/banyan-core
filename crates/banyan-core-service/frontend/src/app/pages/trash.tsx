@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 import { Fallback } from '@components/common/Fallback';
 
-import { useAppSelector } from '../store';
+import { useAppSelector } from '@store/index';
 
 import { ArrowDown, Close, EmptyIcon } from '@static/images/common';
 

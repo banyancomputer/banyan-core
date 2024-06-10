@@ -9,8 +9,8 @@ import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { getDateLabel } from '@/app/utils/date';
 import { convertFileSize } from '@/app/utils/storage';
 import { handleDrag, handleDragEnd, handleDragStart } from '@utils/dragHandlers';
-import { openFile } from '@/app/store/filePreview/slice';
-import { useAppDispatch } from '@/app/store';
+import { openFile } from '@store/filePreview/slice';
+import { useAppDispatch } from '@store/index';
 
 export const FileRow: React.FC<{
     file: BrowserObject;
@@ -29,7 +29,7 @@ export const FileRow: React.FC<{
             return;
         };
 
-        dispatch(openFile({bucket, file, files: siblingFiles, path, parrentFolder}));
+        dispatch(openFile({ bucket, file, files: siblingFiles, path, parrentFolder }));
     };
 
     return (

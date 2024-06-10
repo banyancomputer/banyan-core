@@ -1,4 +1,7 @@
-import { Profiler, Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { unwrapResult } from '@reduxjs/toolkit';
+
 
 import { Modal } from '@components/common/Modal';
 import { Notifications } from '@components/common/Notifications';
@@ -6,16 +9,13 @@ import { FilePreview } from '@components/common/FilePreview';
 import { MobilePlaceholder } from '@components/common/MobilePlaceholder';
 
 import { Routes, RoutesConfig } from './routes';
-import { FileUploadProvider } from '@contexts/filesUpload';
-import { getLocalStorageItem, setLocalStorageItem } from '@app/utils/localStorage';
-import { preventDefaultDragAction } from '@app/utils/dragHandlers';
+import { getLocalStorageItem, setLocalStorageItem } from '@utils/localStorage';
+import { preventDefaultDragAction } from '@utils/dragHandlers';
 import { useAppDispatch, useAppSelector } from '@app/store';
 import { LANGUAGES, LANGUAGES_KEYS, changeLanguage } from '@store/locales/slice';
 import ECCKeystore from '@utils/crypto/ecc/keystore';
-import { getLocalKey } from '@app/utils';
+import { getLocalKey } from '@utils/index';
 import { setKeystore, setKeystoreInitialized } from '@store/keystore/slice';
-import { useNavigate } from 'react-router-dom';
-import { unwrapResult } from '@reduxjs/toolkit';
 import { getApiKey, getEncryptionKey, getEscrowedKeyMaterial } from '@store/keystore/actions';
 import { setEncryptionKey, setTomb } from '@store/tomb/slice';
 import { BannerError, setError } from '@store/errors/slice';
@@ -133,14 +133,12 @@ const App = () => {
             onDragOver={preventDefaultDragAction}
             onDrop={preventDefaultDragAction}
         >
-            <FileUploadProvider>
-                <Modal />
-                <FilePreview />
-                <Notifications />
-                <Suspense>
-                    <Routes />
-                </Suspense>
-            </FileUploadProvider>
+            <Modal />
+            <FilePreview />
+            <Notifications />
+            <Suspense>
+                <Routes />
+            </Suspense>
             <MobilePlaceholder />
         </main>
     );

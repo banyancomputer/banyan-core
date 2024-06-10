@@ -8,9 +8,9 @@ import { closeModal } from '@store/modals/slice';
 import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
-import { useAppDispatch, useAppSelector } from '@/app/store';
-import { getSelectedBucketFiles, moveTo } from '@/app/store/tomb/actions';
-import { selectBucket } from '@/app/store/tomb/slice';
+import { useAppDispatch, useAppSelector } from '@store/index';
+import { getSelectedBucketFiles, moveTo } from '@store/tomb/actions';
+import { selectBucket } from '@store/tomb/slice';
 
 export const RenameFileModal: React.FC<{ bucket: Bucket; file: BrowserObject; path: string[] }> = ({ bucket, file, path }) => {
     const inputRef = useRef<HTMLInputElement | null>(null);

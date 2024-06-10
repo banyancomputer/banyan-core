@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 
 import { LanguageSelect } from '@components/common/LanguageSelect';
 
-import { getLocalStorageItem, setLocalStorageItem } from '@app/utils/localStorage';
+import { getLocalStorageItem, setLocalStorageItem } from '@utils/localStorage';
 import { useAppSelector } from '@app/store';
 
 export const Profile = () => {

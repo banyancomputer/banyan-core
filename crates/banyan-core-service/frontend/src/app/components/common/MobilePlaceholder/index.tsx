@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { useAppSelector } from '@/app/store';
+import { useAppSelector } from '@store/index';
 
 import { Folders, Logo } from '@static/images/common'
 

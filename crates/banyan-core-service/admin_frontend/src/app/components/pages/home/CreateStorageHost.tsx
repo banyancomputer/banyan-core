@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { SubmitButton } from '@components/common/SubmitButton';
 
 import { useModal } from '@app/contexts/modals';
-import { ToastNotifications } from '@app/utils/toastNotifications';
+import { ToastNotifications } from '@utils/toastNotifications';
 import { AdminClient } from '@/api/admin';
 import { StorageHostRequest } from '@app/types';
 
@@ -84,7 +84,7 @@ export const CreateStorageHost = ({
 			</div>
 			<div>
 				<label>
-					{}
+					{ }
 					<input
 						className="mt-2 input w-full h-11 py-3 px-4 rounded-md border-1 border-border-darken focus:outline-none"
 						type="text"
@@ -96,7 +96,7 @@ export const CreateStorageHost = ({
 			</div>
 			<div>
 				<label>
-					{}
+					{ }
 					<input
 						className="mt-2 input w-full h-11 py-3 px-4 rounded-md border-1 border-border-darken focus:outline-none"
 						type="text"
@@ -108,7 +108,7 @@ export const CreateStorageHost = ({
 			</div>
 			<div>
 				<label>
-					{}
+					{ }
 					<input
 						className="mt-2 input w-full h-11 py-3 px-4 rounded-md border-1 border-border-darken focus:outline-none"
 						type="number"

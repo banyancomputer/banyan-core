@@ -7,8 +7,8 @@ import { SecondaryButton } from '@components/common/SecondaryButton';
 import { Bucket } from '@/app/types/bucket';
 import { closeModal } from '@store/modals/slice';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
-import { useAppDispatch, useAppSelector } from '@/app/store';
-import { takeColdSnapshot, updateStorageUsageState } from '@/app/store/tomb/actions';
+import { useAppDispatch, useAppSelector } from '@store/index';
+import { takeColdSnapshot, updateStorageUsageState } from '@store/tomb/actions';
 
 import { Bolt } from '@static/images/common';
 

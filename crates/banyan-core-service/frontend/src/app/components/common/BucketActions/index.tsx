@@ -14,8 +14,8 @@ import { closeModal, openModal } from '@store/modals/slice';
 import { Bucket } from '@/app/types/bucket';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
-import { useAppDispatch, useAppSelector } from '@/app/store';
-import { mountBucket } from '@/app/store/tomb/actions';
+import { useAppDispatch, useAppSelector } from '@store/index';
+import { mountBucket } from '@store/tomb/actions';
 
 import { Bolt, DeleteHotData, Rename, Retry, Trash, Upload, Versions } from '@static/images/common';
 import { AddFolderIcon, Lock } from '@static/images/buckets';

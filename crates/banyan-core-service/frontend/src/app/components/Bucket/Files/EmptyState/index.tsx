@@ -1,16 +1,17 @@
 import React from 'react';
+import { unwrapResult } from '@reduxjs/toolkit';
 
 import { useFolderLocation } from '@app/hooks/useFolderLocation';
 import { Bucket } from '@app/types/bucket';
 
 import { Upload } from '@static/images/common';
-import { useFilesUpload } from '@contexts/filesUpload';
 import { ToastNotifications } from '@utils/toastNotifications';
-import { useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@store/index';
+import { uploadFiles } from '@store/filesUpload/actions';
 
 export const EmptyState: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.bucket.files.emptyState);
-    const { uploadFiles } = useFilesUpload();
+    const dispatch = useAppDispatch();
 
     const folderLocation = useFolderLocation();
 
@@ -21,7 +22,7 @@ export const EmptyState: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         if (!event.dataTransfer.files) { return; }
 
         try {
-            await uploadFiles(event.dataTransfer.files, bucket!, folderLocation);
+            unwrapResult(await dispatch(uploadFiles({ fileList: event.dataTransfer.files, bucket: bucket!, path: folderLocation, folderLocation })));
         } catch (error: any) {
             ToastNotifications.error(messages.uploadError);
         };
@@ -31,7 +32,7 @@ export const EmptyState: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         if (!event.target.files) { return; }
 
         try {
-            await uploadFiles(event.target.files, bucket!, folderLocation);
+            unwrapResult(await dispatch(uploadFiles({ fileList: event.target.files, bucket: bucket!, path: folderLocation, folderLocation })));
         } catch (error: any) {
             ToastNotifications.error(messages.uploadError);
         };

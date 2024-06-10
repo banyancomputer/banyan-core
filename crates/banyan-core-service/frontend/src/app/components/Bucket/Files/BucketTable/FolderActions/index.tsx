@@ -8,7 +8,7 @@ import { Action } from '@components/Bucket/Files/BucketTable/FileActions';
 
 import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { openModal } from '@store/modals/slice';
-import { useAppDispatch, useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@store/index';
 
 import { MoveTo, Rename, Trash, Upload } from '@static/images/common';
 

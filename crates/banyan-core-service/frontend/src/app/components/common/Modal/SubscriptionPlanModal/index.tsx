@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { unwrapResult } from '@reduxjs/toolkit';
 
-import { useAppDispatch, useAppSelector } from '@/app/store'
-import { getSubscriptions, subscribe } from '@/app/store/billing/actions';
+import { useAppDispatch, useAppSelector } from '@store/index'
+import { getSubscriptions, subscribe } from '@store/billing/actions';
 import { convertSubscriptionsSizes } from '@/app/utils/storage';
 import { getHotStorageAmount } from '@/app/utils/subscritions';
 
