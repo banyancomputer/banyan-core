@@ -391,11 +391,12 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
                 );
                 setTomb(tomb);
             } catch (error: any) {
+                console.error(error);
                 dispatch(setError(new BannerError(error.message)));
-            }
-        })();
-    }, [user, keystoreInitialized, escrowedKeyMaterial]);
-
+                }
+                })();
+                }, [user, keystoreInitialized, escrowedKeyMaterial]);
+                
     useEffect(() => {
         if (tomb) {
             (async () => {
@@ -403,7 +404,8 @@ export const TombProvider = ({ children }: { children: ReactNode }) => {
                     await getBuckets();
                     await updateStorageUsageState();
                     await updateStorageLimitsState();
-                } catch (error: any) {
+                    } catch (error: any) {
+                    console.error(error);
                     dispatch(setError(new BannerError(error.message)));
                     setAreBucketsLoading(false);
                 }
