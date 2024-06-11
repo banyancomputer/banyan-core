@@ -15,8 +15,8 @@
     "banyanfs.js",
     "banyanfs_bg.js",
     "banyanfs.d.ts",
-    "LICENSE-MIT",
-    "LICENSE-APACHE"
+    "LICENSE-APACHE",
+    "LICENSE-MIT"
   ],
   "module": "banyanfs.js",
   "homepage": "https://banyan.computer",
