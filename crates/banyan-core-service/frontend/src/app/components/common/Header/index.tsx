@@ -5,7 +5,7 @@ import { ProfileControls } from './ProfileControls';
 import { HelpControls } from './HelpControls';
 import { SubscriptionPlanModal } from '@components/common/Modal/SubscriptionPlanModal';
 
-import { popupClickHandler } from '@app/utils';
+import { popupClickHandler } from '@utils/index';
 import { HttpClient } from '@/api/http/client';
 import { useAppDispatch, useAppSelector } from '@app/store';
 import { unwrapResult } from '@reduxjs/toolkit';

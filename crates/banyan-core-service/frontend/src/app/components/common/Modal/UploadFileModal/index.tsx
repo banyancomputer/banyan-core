@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { unwrapResult } from '@reduxjs/toolkit';
 
 import { Select } from '@components/common/Select';
 import { AddNewOption } from '@components/common/Select/AddNewOption';
@@ -10,8 +11,9 @@ import { SecondaryButton } from '@components/common/SecondaryButton';
 import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { closeModal, openModal } from '@store/modals/slice';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
-import { useFilesUpload } from '@/app/contexts/filesUpload';
-import { useAppDispatch, useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@store/index';
+import { uploadFiles } from '@store/filesUpload/actions';
+import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 
 import { Upload } from '@static/images/buckets';
 
@@ -24,7 +26,6 @@ export const UploadFileModal: React.FC<{
     driveSelect?: boolean;
 }> = ({ bucket, folder, path, bucketId, createdFolderPath, driveSelect = false }) => {
     const dispatch = useAppDispatch();
-    const { uploadFiles } = useFilesUpload();
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.uploadFile);
     const { buckets } = useAppSelector(state => state.tomb);
     const [selectedBucket, setSelectedBucket] = useState<Bucket | null>(bucket || null);
@@ -32,6 +33,7 @@ export const UploadFileModal: React.FC<{
     const [previewFiles, setPreviewFiles] = useState<FileList | null>(null);
     const [fileSizeError, setFileSizeError] = useState(false);
     const isUploadDataFilled = useMemo(() => Boolean(selectedBucket && previewFiles?.length), [selectedBucket, previewFiles]);
+    const folderLocation = useFolderLocation();
 
     const selectBucket = (bucket: Bucket) => {
         setSelectedBucket(bucket);
@@ -81,7 +83,7 @@ export const UploadFileModal: React.FC<{
 
         try {
             close();
-            await uploadFiles(previewFiles!, selectedBucket!, selectedFolder.length ? selectedFolder : [], folder);
+            unwrapResult(await dispatch(uploadFiles({ fileList: previewFiles!, bucket: selectedBucket!, path: selectedFolder.length ? selectedFolder : [], folder, folderLocation })));
         } catch (error: any) {
             close();
             ToastNotifications.error(`${messages.uploadError}`, `${messages.tryAgain}`, upload);

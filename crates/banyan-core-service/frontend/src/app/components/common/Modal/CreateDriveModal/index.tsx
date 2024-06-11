@@ -7,8 +7,8 @@ import { SecondaryButton } from '@components/common/SecondaryButton';
 
 import { closeModal } from '@store/modals/slice';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
-import { useAppDispatch, useAppSelector } from '@/app/store';
-import { createBucketAndMount } from '@/app/store/tomb/actions';
+import { useAppDispatch, useAppSelector } from '@store/index';
+import { createBucketAndMount } from '@store/tomb/actions';
 
 export const CreateDriveModal: React.FC<{ onSuccess?: (id: string) => void }> = ({ onSuccess }) => {
     const navigate = useNavigate();
@@ -33,7 +33,7 @@ export const CreateDriveModal: React.FC<{ onSuccess?: (id: string) => void }> = 
 
     const create = async () => {
         try {
-            const bucket = unwrapResult(await dispatch(createBucketAndMount({name: bucketName, storageClass, bucketType})));
+            const bucket = unwrapResult(await dispatch(createBucketAndMount({ name: bucketName, storageClass, bucketType })));
             if (onSuccess) {
                 onSuccess(bucket.id);
             } else {

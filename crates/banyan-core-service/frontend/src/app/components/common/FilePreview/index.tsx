@@ -10,12 +10,12 @@ import { ShareFileModal } from '@components/common/Modal/ShareFileModal';
 
 import { openModal } from '@store/modals/slice';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
-import { useAppDispatch, useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@store/index';
 
 import { Close, Done, DownloadAlternative, Upload } from '@static/images/common';
-import { getFile, shareFile } from '@/app/store/tomb/actions';
-import { closeFile, openFile } from '@/app/store/filePreview/slice';
-import { loadFilePreview } from '@/app/store/filePreview/actions';
+import { getFile, shareFile } from '@store/tomb/actions';
+import { closeFile, openFile } from '@store/filePreview/slice';
+import { loadFilePreview } from '@store/filePreview/actions';
 
 export const FilePreview = () => {
     const dispatch = useAppDispatch();

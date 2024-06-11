@@ -6,8 +6,8 @@ import { InvoicesTable } from './InvoicesTable';
 import { SubscriptionPlanModal } from '@/app/components/common/Modal/SubscriptionPlanModal';
 import { openModal } from '@store/modals/slice';
 
-import { useAppDispatch, useAppSelector } from '@/app/store';
-import { getInvoices, manageSubscriptions } from '@/app/store/billing/actions';
+import { useAppDispatch, useAppSelector } from '@store/index';
+import { getInvoices, manageSubscriptions } from '@store/billing/actions';
 
 import { Check } from '@static/images/account';
 
@@ -22,7 +22,7 @@ export const Invoices = () => {
     };
 
     const upgragePlan = () => {
-        dispatch(openModal({content: <SubscriptionPlanModal />}));
+        dispatch(openModal({ content: <SubscriptionPlanModal /> }));
     };
 
     const manage = async () => {

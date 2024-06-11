@@ -6,6 +6,7 @@ import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 import { useAppDispatch, useAppSelector } from '@store/index';
 import { getSelectedBucketFiles, mountBucket } from '@store/tomb/actions';
 import { selectBucket, setIsLoading } from '@store/tomb/slice';
+import { ToastNotifications } from '@utils/toastNotifications';
 
 const Bucket = () => {
     const params = useParams();
@@ -41,7 +42,7 @@ const Bucket = () => {
                 unwrapResult(await dispatch(mountBucket(selectedBucket!)));
                 dispatch(setIsLoading(false));
             } catch (error: any) {
-                console.log(error);
+                ToastNotifications.error('Failed to mount bucket');
             }
         })()
     }, [selectedBucket?.mount, selectedBucket?.id, buckets])

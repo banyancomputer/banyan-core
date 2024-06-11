@@ -3,7 +3,7 @@ import { Fallback } from '@components/common/Fallback';
 import BucketHeader from '@components/Bucket/Files/Header';
 import { EmptyState } from '@components/Bucket/Files/EmptyState';
 
-import { useAppSelector } from '@/app/store';
+import { useAppSelector } from '@store/index';
 
 const BucketFiles = () => {
     const { selectedBucket, isLoading } = useAppSelector(state => state.tomb);

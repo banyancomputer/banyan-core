@@ -7,10 +7,10 @@ import { SecondaryButton } from '@components/common/SecondaryButton';
 import { closeModal, openModal } from '@store/modals/slice';
 import { Bucket } from '@/app/types/bucket';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
-import { useAppDispatch, useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@store/index';
 
 import { Done } from '@static/images/common';
-import { renameBucket } from '@/app/store/tomb/actions';
+import { renameBucket } from '@store/tomb/actions';
 
 export const RenameBucketModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const dispatch = useAppDispatch();

@@ -7,9 +7,9 @@ import { SecondaryButton } from '@components/common/SecondaryButton';
 import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
-import { useAppDispatch, useAppSelector } from '@/app/store';
-import { closeModal } from '@/app/store/modals/slice';
-import { deleteFile, getExpandedFolderFiles, getSelectedBucketFiles } from '@/app/store/tomb/actions';
+import { useAppDispatch, useAppSelector } from '@store/index';
+import { closeModal } from '@store/modals/slice';
+import { deleteFile, getExpandedFolderFiles, getSelectedBucketFiles } from '@store/tomb/actions';
 
 import { Trash } from '@static/images/common';
 
@@ -24,7 +24,7 @@ export const DeleteFileModal: React.FC<{ bucket: Bucket; file: BrowserObject; pa
 
     const removeFile = async () => {
         try {
-            unwrapResult(await dispatch(deleteFile({bucket, path: [...path], name: file.name})));
+            unwrapResult(await dispatch(deleteFile({ bucket, path: [...path], name: file.name })));
             cancel();
             if (path.join('/') === folderLocation.join('/')) {
                 unwrapResult(await dispatch(getSelectedBucketFiles(folderLocation)));

@@ -1,23 +1,26 @@
 import React, { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
+import { unwrapResult } from '@reduxjs/toolkit';
 
 import { LockedTooltip } from './LockedTooltip';
 
-import { useFilesUpload } from '@contexts/filesUpload';
 import { ToastNotifications } from '@utils/toastNotifications';
 import { Bucket } from '@app/types/bucket';
 import { preventDefaultDragAction } from '@utils/dragHandlers';
 import { StorageUsage } from '../StorageUsage';
-import { useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@store/index';
+import { uploadFiles } from '@store/filesUpload/actions';
+import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 
 import { ActiveDirectory, ChevronUp, Directory, Logo } from '@static/images/common';
 
 export const Navigation = () => {
-	const { uploadFiles } = useFilesUpload();
 	const [isBucketsVisible, setIsBucketsVisible] = useState(false);
 	const messages = useAppSelector(state => state.locales.messages.coponents.common.navigation);
 	const { buckets } = useAppSelector(state => state.tomb);
 	const location = useLocation();
+	const folderLocation = useFolderLocation();
+	const dispatch = useAppDispatch();
 
 	const toggleBucketsVisibility = (event: React.MouseEvent<HTMLDivElement>) => {
 		event.stopPropagation();
@@ -31,7 +34,7 @@ export const Navigation = () => {
 		if (!event?.dataTransfer.files.length) { return; }
 
 		try {
-			await uploadFiles(event.dataTransfer.files, bucket, []);
+			unwrapResult(await dispatch(uploadFiles({ fileList: event.dataTransfer.files, bucket, path: [], folderLocation })));
 		} catch (error: any) {
 			ToastNotifications.error(`${messages.uploadError}`, `${messages.tryAgain}`, () => { });
 		};

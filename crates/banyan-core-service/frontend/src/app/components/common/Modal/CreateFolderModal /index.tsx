@@ -10,8 +10,8 @@ import { closeModal, openModal } from '@store/modals/slice';
 import { Bucket } from '@/app/types/bucket';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { stringToBase64 } from '@/app/utils/base64';
-import { useAppDispatch, useAppSelector } from '@/app/store';
-import { createDirectory } from '@/app/store/tomb/actions';
+import { useAppDispatch, useAppSelector } from '@store/index';
+import { createDirectory } from '@store/tomb/actions';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 
 export const CreateFolderModal: React.FC<{ bucket: Bucket; onSuccess?: (path: string[]) => void; path: string[], redirect?: boolean }> = ({ bucket, onSuccess = () => { }, path, redirect = false }) => {
