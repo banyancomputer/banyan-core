@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-import { AddNewOption } from '../Select/AddNewOption';
-import { CreateFolderModal } from '../Modal/CreateFolderModal ';
-import { UploadFileModal } from '../Modal/UploadFileModal';
+import { AddNewOption } from '@components/common/Select/AddNewOption';
+import { CreateFolderModal } from '@components/common/Modal/CreateFolderModal ';
+import { UploadFileModal } from '@components/common/Modal/UploadFileModal';
 
 import { popupClickHandler } from '@/app/utils';
 import { openModal } from '@store/modals/slice';
@@ -47,15 +47,20 @@ export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBu
     };
 
     const addNewFolder = () => {
-        const action = onFolderCreation || (() => dispatch(openModal({ content: <UploadFileModal bucket={selectedBucket} path={folder} /> })));
+        const action = onFolderCreation || (() => {
+            dispatch(openModal({
+                content: <UploadFileModal bucket={selectedBucket} path={folder} />,
+                path: [selectedBucket.name, ...folder]
+            }))
+        });
         dispatch(openModal(
             {
                 content: <CreateFolderModal
                     path={folder}
                     bucket={selectedBucket!}
                     onSuccess={(path: string[]) => action(path)}
-                />
-                ,
+                />,
+                path: [selectedBucket.name, ...selectedFolder],
                 onBack: () => action(folder)
             }
         ));
@@ -85,7 +90,7 @@ export const FolderSelect: React.FC<FolderSelectProps> = ({ onChange, selectedBu
         <div
             ref={selectRef}
             onClick={toggleSelect}
-            className="relative p-2.5 flex justify-between items-center text-sm font-medium border-1 border-border-darken rounded-lg shadow-sm cursor-pointer select-none"
+            className="relative p-2.5 flex justify-between items-center text-sm font-medium border-1 border-border-darken rounded-md shadow-sm cursor-pointer select-none"
         >
             <span className="overflow-hidden text-ellipsis">
                 /{folder.join('/')}

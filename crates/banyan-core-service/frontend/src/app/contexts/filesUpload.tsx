@@ -65,7 +65,6 @@ export const FileUploadProvider: FC<{ children: ReactNode }> = ({ children }) =>
                 file.status = 'success';
                 setFiles(prev => [...prev]);
             } catch (error: any) {
-                console.log('upload error', error);
                 file.status = 'failed';
                 setFiles(prev => [...prev]);
                 continue;
@@ -91,7 +90,6 @@ export const FileUploadProvider: FC<{ children: ReactNode }> = ({ children }) =>
             file.status = 'success';
             setFiles(prev => [...prev]);
         } catch (error: any) {
-            console.log('upload retry error', error);
             file.status = 'failed';
             setFiles(prev => [...prev]);
         };

@@ -38,7 +38,8 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                     content: <UploadFileModal
                         bucket={bucket}
                         path={folderLocation}
-                    />
+                    />,
+                    path: [bucket.name, ...folderLocation]
                 }
             ));
         } catch (error: any) { }
@@ -75,7 +76,8 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const createFolder = async () => {
         dispatch(openModal(
             {
-                content: <CreateFolderModal bucket={bucket} path={folderLocation} onSuccess={hideModal} />
+                content: <CreateFolderModal bucket={bucket} path={folderLocation} onSuccess={hideModal} />,
+                path: [bucket.name, ...folderLocation]
             }
         ));
     };
@@ -95,7 +97,8 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         try {
             dispatch(openModal(
                 {
-                    content: <DeleteDriveModal bucket={bucket} />
+                    content: <DeleteDriveModal bucket={bucket} />,
+                    path: [bucket.name]
                 }
             ));
         } catch (error: any) { }

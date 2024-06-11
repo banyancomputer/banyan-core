@@ -34,7 +34,7 @@ export const CreateFolderModal: React.FC<{ bucket: Bucket; onSuccess?: (path: st
 
     const create = async () => {
         try {
-            unwrapResult(await dispatch(createDirectory({bucket, path, name: folderName, folderLocation})));
+            unwrapResult(await dispatch(createDirectory({ bucket, path, name: folderName, folderLocation })));
             ToastNotifications.notify(
                 messages.folderCreated,
                 null,
@@ -44,7 +44,10 @@ export const CreateFolderModal: React.FC<{ bucket: Bucket; onSuccess?: (path: st
             onSuccess ?
                 onSuccess([...path, folderName])
                 :
-                dispatch(openModal({content: <UploadFileModal bucket={bucket} path={[...path, folderName]} />}));
+                dispatch(openModal({
+                    content: <UploadFileModal bucket={bucket} path={[...path, folderName]} />,
+                    path
+                }));
         } catch (error: any) {
             if (error.message !== folderAlreadyExists) {
                 ToastNotifications.error(`${messages.creationError}`);
