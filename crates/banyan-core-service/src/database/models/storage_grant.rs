@@ -43,6 +43,7 @@ impl NewStorageGrant<'_> {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, sqlx::FromRow)]
 pub struct ExistingStorageGrant {
     pub id: String,

@@ -175,6 +175,7 @@ mod tests {
     use crate::database::Database;
     use crate::extractors::UserIdentity;
 
+    #[allow(dead_code)]
     #[derive(Debug, sqlx::FromRow)]
     pub struct SnapshotBlockLocation {
         pub snapshot_id: String,

@@ -5,6 +5,7 @@ use crate::database::{Database, DatabaseConnection};
 
 /// A partial version of a storage host encompassing only the data needed for clients that need to
 /// send data to the storage host.
+#[allow(dead_code)]
 #[derive(sqlx::FromRow)]
 pub struct StorageHost {
     pub id: String,
