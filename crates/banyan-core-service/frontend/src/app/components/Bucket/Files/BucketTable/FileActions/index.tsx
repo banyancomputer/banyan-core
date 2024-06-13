@@ -92,6 +92,7 @@ export const FileActions: React.FC<{ bucket: Bucket; file: BrowserObject; parren
                     parrentFolder={parrentFolder}
                     path={path}
                 />,
+                path: [bucket.name, ...path]
             }));
         } catch (error: any) { }
     };

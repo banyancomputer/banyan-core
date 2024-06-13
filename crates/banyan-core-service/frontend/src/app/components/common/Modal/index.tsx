@@ -8,7 +8,7 @@ import { useAppDispatch, useAppSelector } from '@store/index';
 export const Modal = () => {
     const dispatch = useAppDispatch();
     const modalRef = useRef<HTMLDivElement | null>(null);
-    const { content, onBack } = useAppSelector(state => state.modals);
+    const { content, onBack, path } = useAppSelector(state => state.modals);
 
     const close = (event: React.MouseEvent<HTMLDivElement | HTMLButtonElement>) => {
         if (!modalRef.current!.contains(event.target as Node)) {
@@ -31,6 +31,15 @@ export const Modal = () => {
                             <button onClick={onBack} className="rotate-90">
                                 <ArrowDown width="24px" height="24px" />
                             </button>
+                        }
+                        {path &&
+                            <div className="mb-2 text-xs text-text-600">
+                                {
+                                    path.map((pathPart, index) =>
+                                        <span key={index}>{pathPart} / </span>
+                                    )
+                                }
+                            </div>
                         }
                         <button
                             className="absolute right-6 top-6"

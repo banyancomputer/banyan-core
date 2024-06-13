@@ -36,7 +36,8 @@ const BucketHeader = () => {
                     content: <UploadFileModal
                         bucket={selectedBucket}
                         path={folderLocation}
-                    />
+                    />,
+                    path: [selectedBucket.name, ...folderLocation]
                 }
             )
             );
@@ -67,7 +68,8 @@ const BucketHeader = () => {
                     bucket={selectedBucket!}
                     path={folderLocation}
                     onSuccess={hideModal}
-                />
+                />,
+                path: [selectedBucket?.name || '', ...folderLocation]
             }
         )
         );

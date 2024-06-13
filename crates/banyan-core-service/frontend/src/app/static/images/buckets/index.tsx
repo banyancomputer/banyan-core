@@ -1,9 +1,7 @@
 import { SVGProps } from 'react';
 
-export const Upload = () => <svg width="47" height="46" viewBox="0 0 47 46" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect x="3.5" y="3" width="40" height="40" rx="20" fill="#EFF1F5" />
-    <path d="M20.168 26.3333L23.5013 23M23.5013 23L26.8346 26.3333M23.5013 23V30.5M30.168 26.9524C31.1859 26.1117 31.8346 24.8399 31.8346 23.4167C31.8346 20.8854 29.7826 18.8333 27.2513 18.8333C27.0692 18.8333 26.8989 18.7383 26.8064 18.5814C25.7197 16.7374 23.7133 15.5 21.418 15.5C17.9662 15.5 15.168 18.2982 15.168 21.75C15.168 23.4718 15.8642 25.0309 16.9904 26.1613" stroke="#4A5578" strokeWidth="1.66667" strokeLinecap="round" strokeLinejoin="round" />
-    <rect x="3.5" y="3" width="40" height="40" rx="20" stroke="white" strokeWidth="6" />
+export const Upload = () => <svg width="32" height="33" viewBox="0 0 32 33" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M15.9997 3.94824L23.885 11.8336L21.9997 13.7189L17.333 9.05224V21.8336H14.6663V9.05224L9.99967 13.7189L8.11434 11.8336L15.9997 3.94824ZM5.99967 19.1669V25.8336H25.9997V19.1669H28.6663V28.5002H3.33301V19.1669H5.99967Z" fill="currentColor" fillOpacity="0.501961"/>
 </svg>;
 
 export const BucketIcon = (params: SVGProps<any>) => <svg width="122" height="122" viewBox="0 0 122 122" fill="none" xmlns="http://www.w3.org/2000/svg" {...params}>

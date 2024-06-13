@@ -53,7 +53,8 @@ export const FilePreviewActions: React.FC<{ bucket: Bucket; file: BrowserObject;
                     file={file}
                     parrentFolder={parrentFolder}
                     path={path}
-                />
+                />,
+                path: [bucket.name, ...path]
             });
         } catch (error: any) { }
     };
